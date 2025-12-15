@@ -1,0 +1,35 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🚀 Running frontend pre-commit checks..."
+cd frontend
+
+# Проверка TypeScript типов
+echo "🔍 Type checking..."
+npm run type-check || {
+  echo "❌ TypeScript errors found"
+  exit 1
+}
+
+# ESLint
+echo "🔍 Linting..."
+npm run lint || {
+  echo "❌ ESLint errors found"
+  exit 1
+}
+
+# Проверка форматирования
+echo "🔍 Checking formatting..."
+npm run format:check || {
+  echo "❌ Formatting issues found"
+  exit 1
+}
+
+# Проверка секретов
+echo "🔍 Checking for secrets..."
+npx secretlint "**/*" || {
+  echo "⚠️  Potential secrets found"
+  exit 1
+}
+
+echo "✅ All frontend checks passed!"
