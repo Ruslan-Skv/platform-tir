@@ -1,26 +1,125 @@
 .logo {
+  cursor: pointer;
   height: 5rem;
   max-width: clamp(12.5rem, 7.4172rem + 22.5904vw, 21.875rem);
+  transition: transform 0.3s ease;
+}
+
+.logo:hover {
+  transform: scale(1.05);
 }
 
 .color1 {
   fill: #057f36;
+  transition: fill 0.3s ease;
 }
 
 .color2 {
   fill: #1987c9;
+  transition: fill 0.3s ease;
 }
 
 .color3 {
   fill: #fab71d;
+  transition: fill 0.3s ease;
 }
 
 .color4 {
   fill: #2d2d2d;
+  transition: fill 0.3s ease;
 }
 
 .color5 {
   fill: #d90652;
+  transition: fill 0.3s ease;
+}
+
+/* Анимация для цветных элементов при наведении */
+.logo:hover .color1 {
+  animation: colorPulse1 1.5s ease-in-out infinite;
+}
+
+.logo:hover .color2 {
+  animation: colorPulse2 1.5s ease-in-out infinite;
+}
+
+.logo:hover .color3 {
+  animation: colorPulse3 1.5s ease-in-out infinite;
+}
+
+.logo:hover .color4 {
+  animation: colorPulse4 1.5s ease-in-out infinite;
+}
+
+.logo:hover .color5 {
+  animation: colorPulse5 1.5s ease-in-out infinite;
+}
+
+/* Анимация для прямоугольников */
+.logo:hover rect {
+  animation: bounce 0.6s ease-in-out;
+}
+
+/* Keyframes для пульсации цветов */
+@keyframes colorPulse1 {
+  0%,
+  100% {
+    fill: #057f36;
+  }
+  50% {
+    fill: #10b981;
+  }
+}
+
+@keyframes colorPulse2 {
+  0%,
+  100% {
+    fill: #1987c9;
+  }
+  50% {
+    fill: #0ea5e9;
+  }
+}
+
+@keyframes colorPulse3 {
+  0%,
+  100% {
+    fill: #fab71d;
+  }
+  50% {
+    fill: #fbbf24;
+  }
+}
+
+@keyframes colorPulse4 {
+  0%,
+  100% {
+    fill: #2d2d2d;
+  }
+  50% {
+    fill: #4b5563;
+  }
+}
+
+@keyframes colorPulse5 {
+  0%,
+  100% {
+    fill: #d90652;
+  }
+  50% {
+    fill: #ec4899;
+  }
+}
+
+/* Анимация подпрыгивания для прямоугольников */
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
 }
 
 /* Темная тема для текста логотипа */
@@ -30,6 +129,35 @@ html[data-theme='dark'] .color4 {
 
 html[data-theme='dark'] .color5 {
   fill: #ec4899;
+}
+
+/* Анимация для темной темы */
+html[data-theme='dark'] .logo:hover .color4 {
+  animation: colorPulse4Dark 1.5s ease-in-out infinite;
+}
+
+html[data-theme='dark'] .logo:hover .color5 {
+  animation: colorPulse5Dark 1.5s ease-in-out infinite;
+}
+
+@keyframes colorPulse4Dark {
+  0%,
+  100% {
+    fill: #ec4899;
+  }
+  50% {
+    fill: #f472b6;
+  }
+}
+
+@keyframes colorPulse5Dark {
+  0%,
+  100% {
+    fill: #ec4899;
+  }
+  50% {
+    fill: #f472b6;
+  }
 }
 
 @media (width <= 1023px) {
