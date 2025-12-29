@@ -8,10 +8,13 @@
     "start": "next start",
     "prepare": "husky install",
     "type-check": "tsc --noEmit --skipLibCheck",
-    "lint": "echo '✅ ESLint check skipped (will configure later)' && exit 0",
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "validate": "npm run type-check && npm run format:check"
+    "check-fsd": "node scripts/check-fsd.js",
+    "validate": "npm run type-check && npm run lint && npm run format:check && npm run check-fsd",
+    "commit": "cd .. && git add -A && cd frontend && cz"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -52,6 +55,29 @@
     "playwright": "^1.57.0",
     "prettier": "^3.7.4",
     "secretlint": "^11.2.5",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "commitizen": "^4.3.1",
+    "cz-conventional-changelog": "^3.3.0"
+  },
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "prettier --write",
+      "eslint --fix",
+      "npx secretlint"
+    ],
+    "*.{js,jsx}": [
+      "prettier --write",
+      "eslint --fix",
+      "npx secretlint"
+    ],
+    "*.{json,css,scss,md}": [
+      "prettier --write",
+      "npx secretlint"
+    ]
   }
 }
