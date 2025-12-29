@@ -1,0 +1,31 @@
+.desktopButtons {
+  /* Стили для десктопных кнопок */
+  display: flex;
+  gap: 1rem;
+}
+
+.mobileButtons {
+  /* Стили для мобильных кнопок */
+  display: flex;
+  gap: 0.5rem;
+}
+
+.mobileMenuButton {
+  /* Стили для контейнера кнопки мобильного меню */
+}
+
+.menuButton {
+  /* Стили для кнопки мобильного меню */
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+.menuIcon {
+  /* Стили для иконки меню */
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+

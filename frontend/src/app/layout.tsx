@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { StoreProvider } from '@/shared/lib/redux';
+import { ThemeInitializer } from '@/features/theme';
+import { SiteLayout } from '@/widgets/site-layout';
 import './globals.css';
-
-const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Территория интерьерных решений',
@@ -16,7 +16,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body className={inter.className}>{children}</body>
+      <body>
+        <StoreProvider>
+          <ThemeInitializer>
+            <SiteLayout>{children}</SiteLayout>
+          </ThemeInitializer>
+        </StoreProvider>
+      </body>
     </html>
   );
 }

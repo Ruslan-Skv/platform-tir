@@ -1,0 +1,91 @@
+.contact {
+  background: transparent;
+  color: white;
+  padding: 5rem 1rem;
+  text-align: center;
+}
+
+.container {
+  margin: 0 auto;
+  max-width: 800px;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: #cbd5e0;
+  font-size: 1.125rem;
+  margin: 0 auto 2rem;
+  max-width: 600px;
+}
+
+.buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 3rem;
+}
+
+.contactInfo {
+  border-top: 1px solid rgb(255 255 255 / 10%);
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  margin-top: 3rem;
+  padding-top: 3rem;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.infoLabel {
+  color: #a0aec0;
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.infoValue {
+  color: white;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+/* Темная тема - уже темная, меняем только для светлой */
+html[data-theme='light'] .infoLabel {
+  color: rgb(255 255 255 / 80%);
+}
+
+/* Адаптация */
+@media (width <= 768px) {
+  .contact {
+    padding: 3rem 1rem;
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .buttons {
+    display: none;
+  }
+
+  .contactInfo {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+}
+

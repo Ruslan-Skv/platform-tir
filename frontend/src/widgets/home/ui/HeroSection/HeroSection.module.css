@@ -1,0 +1,188 @@
+.hero {
+  align-items: center;
+  background: transparent;
+  display: flex;
+  min-height: 80vh;
+  padding: 1rem;
+}
+
+.container {
+  display: grid;
+  gap: 2rem;
+  grid-template-rows: auto 1fr;
+  margin: 0 auto;
+  max-width: 1200px;
+}
+
+.titleRow {
+  text-align: center;
+}
+
+.title {
+  color: #1a202c;
+  font-size: 3.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.titleAccent {
+  color: #d90652;
+  display: block;
+}
+
+.contentWrapper {
+  align-items: center;
+  display: grid;
+  gap: 4rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.subtitle {
+  color: #4a5568;
+  font-size: 1.25rem;
+  max-width: 500px;
+}
+
+.buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.primaryButton {
+  background-color: #d90652;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 1rem 2rem;
+  transition: background-color 0.2s;
+}
+
+.primaryButton:hover {
+  background-color: #b80546;
+}
+
+.secondaryButton {
+  background-color: transparent;
+  border: 2px solid #d90652;
+  border-radius: 8px;
+  color: #d90652;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 1rem 2rem;
+  transition: all 0.2s;
+}
+
+.secondaryButton:hover {
+  background-color: #d90652;
+  color: white;
+}
+
+.features {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, 1fr);
+  margin-top: 2rem;
+}
+
+.feature {
+  align-items: center;
+  color: #4a5568;
+  display: flex;
+  font-size: 0.9rem;
+  gap: 0.5rem;
+}
+
+.featureIcon {
+  font-size: 1.5rem;
+}
+
+.imageWrapper {
+  position: relative;
+}
+
+.imagePlaceholder {
+  align-items: center;
+  background: linear-gradient(135deg, #d90652 0%, #ec4899 100%);
+  border-radius: 20px;
+  color: white;
+  display: flex;
+  font-size: 1.5rem;
+  font-weight: 600;
+  height: 400px;
+  justify-content: center;
+  width: 100%;
+}
+
+.imageText {
+  padding: 2rem;
+  text-align: center;
+}
+
+/* Темная тема */
+html[data-theme='dark'] .title {
+  color: #f7fafc;
+}
+
+html[data-theme='dark'] .subtitle {
+  color: #cbd5e0;
+}
+
+html[data-theme='dark'] .feature {
+  color: #cbd5e0;
+}
+
+/* Адаптация */
+@media (width <= 1024px) {
+  .contentWrapper {
+    gap: 2rem;
+  }
+
+  .title {
+    font-size: 2.5rem;
+  }
+}
+
+@media (width <= 768px) {
+  .hero {
+    padding: 2rem 1rem;
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .contentWrapper {
+    gap: 3rem;
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .subtitle {
+    margin: 0 auto;
+  }
+
+  .buttons {
+    flex-direction: column;
+  }
+
+  .features {
+    grid-template-columns: 1fr;
+  }
+
+  .imagePlaceholder {
+    height: 300px;
+  }
+}
+

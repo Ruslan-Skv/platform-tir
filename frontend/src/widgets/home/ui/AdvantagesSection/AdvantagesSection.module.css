@@ -1,0 +1,99 @@
+.advantages {
+  background: transparent;
+  padding: 5rem 1rem;
+}
+
+.container {
+  margin: 0 auto;
+  max-width: 1200px;
+}
+
+.header {
+  margin-bottom: 3rem;
+  text-align: center;
+}
+
+.title {
+  color: #1a202c;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.subtitle {
+  color: #718096;
+  font-size: 1.125rem;
+}
+
+.grid {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.advantageCard {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.advantageCard:hover {
+  transform: translateY(-5px);
+}
+
+.icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.advantageTitle {
+  color: #1a202c;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.advantageDescription {
+  color: #718096;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* Темная тема */
+html[data-theme='dark'] .title {
+  color: #f7fafc;
+}
+
+html[data-theme='dark'] .subtitle {
+  color: #cbd5e0;
+}
+
+html[data-theme='dark'] .advantageCard {
+  background: #2d3748;
+}
+
+html[data-theme='dark'] .advantageTitle {
+  color: #f7fafc;
+}
+
+html[data-theme='dark'] .advantageDescription {
+  color: #a0aec0;
+}
+
+/* Адаптация */
+@media (width <= 768px) {
+  .advantages {
+    padding: 3rem 1rem;
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+

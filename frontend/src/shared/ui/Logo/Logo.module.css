@@ -1,0 +1,40 @@
+.logo {
+  height: 5rem;
+  max-width: clamp(12.5rem, 7.4172rem + 22.5904vw, 21.875rem);
+}
+
+.color1 {
+  fill: #057f36;
+}
+
+.color2 {
+  fill: #1987c9;
+}
+
+.color3 {
+  fill: #fab71d;
+}
+
+.color4 {
+  fill: #2d2d2d;
+}
+
+.color5 {
+  fill: #d90652;
+}
+
+/* Темная тема для текста логотипа */
+html[data-theme='dark'] .color4 {
+  fill: #ec4899;
+}
+
+html[data-theme='dark'] .color5 {
+  fill: #ec4899;
+}
+
+@media (width <= 1023px) {
+  .logo {
+    height: 3rem;
+  }
+}
+

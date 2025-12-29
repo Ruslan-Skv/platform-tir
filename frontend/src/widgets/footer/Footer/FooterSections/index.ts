@@ -1,0 +1,2 @@
+export { FooterSections } from './FooterSections';
+

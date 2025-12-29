@@ -1,0 +1,161 @@
+.categories {
+  background-color: transparent;
+  padding: 5rem 1rem;
+}
+
+.container {
+  margin: 0 auto;
+  max-width: 1200px;
+}
+
+.header {
+  margin-bottom: 3rem;
+  text-align: center;
+}
+
+.title {
+  color: #1a202c;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.subtitle {
+  color: #718096;
+  font-size: 1.125rem;
+  margin: 0 auto;
+  max-width: 600px;
+}
+
+.grid {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  text-align: left;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  border-color: #d90652;
+  box-shadow: 0 10px 25px rgb(0 0 0 / 10%);
+  transform: translateY(-5px);
+}
+
+.cardImage {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  height: 200px;
+  position: relative;
+}
+
+.saleBadge {
+  background-color: #d90652;
+  border-radius: 20px;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+}
+
+.cardContent {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  padding: 1.5rem;
+}
+
+.cardTitle {
+  color: #1a202c;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.cardDescription {
+  color: #718096;
+  flex-grow: 1;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.cardFooter {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.productCount {
+  color: #d90652;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.arrow {
+  color: #d90652;
+  font-size: 1.25rem;
+  font-weight: bold;
+  transition: transform 0.2s;
+}
+
+.card:hover .arrow {
+  transform: translateX(5px);
+}
+
+.saleCard {
+  border-color: #d90652;
+  box-shadow: 0 0 0 1px rgb(217 6 82 / 10%);
+}
+
+/* Темная тема */
+html[data-theme='dark'] .title {
+  color: #f7fafc;
+}
+
+html[data-theme='dark'] .subtitle {
+  color: #cbd5e0;
+}
+
+html[data-theme='dark'] .card {
+  background: #2d3748;
+  border-color: #4a5568;
+}
+
+html[data-theme='dark'] .cardTitle {
+  color: #f7fafc;
+}
+
+html[data-theme='dark'] .cardDescription {
+  color: #a0aec0;
+}
+
+/* Адаптация */
+@media (width <= 768px) {
+  .categories {
+    padding: 3rem 1rem;
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+

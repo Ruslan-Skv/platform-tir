@@ -1,0 +1,162 @@
+export interface Category {
+  id: number;
+  name: string;
+  description: string;
+  image: string;
+  productCount: number;
+  href: string;
+  isSale?: boolean;
+}
+
+export interface Advantage {
+  id: number;
+  title: string;
+  description: string;
+  icon: string;
+}
+
+export interface Service {
+  id: number;
+  title: string;
+  description: string;
+  features: string[];
+  price: string;
+  image: string;
+}
+
+export const categories: Category[] = [
+  {
+    id: 1,
+    name: 'Мебель на заказ',
+    description: 'Кухни, шкафы, гостиные по индивидуальным размерам',
+    image: '/images/categories/furniture.jpg',
+    productCount: 156,
+    href: '/catalog?category=мебель',
+  },
+  {
+    id: 2,
+    name: 'Ремонт квартир',
+    description: 'Ремонт под ключ и отделочные работы',
+    image: '/images/categories/repair.jpg',
+    productCount: 42,
+    href: '/catalog?category=ремонт',
+  },
+  {
+    id: 3,
+    name: 'Двери',
+    description: 'Межкомнатные и входные двери',
+    image: '/images/categories/doors.jpg',
+    productCount: 89,
+    href: '/catalog?category=двери',
+  },
+  {
+    id: 4,
+    name: 'Окна',
+    description: 'Пластиковые и алюминиевые окна',
+    image: '/images/categories/windows.jpg',
+    productCount: 67,
+    href: '/catalog?category=окна',
+  },
+  {
+    id: 5,
+    name: 'Потолки',
+    description: 'Натяжные и гипсокартонные потолки',
+    image: '/images/categories/ceilings.jpg',
+    productCount: 54,
+    href: '/catalog?category=потолки',
+  },
+  {
+    id: 6,
+    name: 'Жалюзи',
+    description: 'Горизонтальные, вертикальные, рулонные',
+    image: '/images/categories/blinds.jpg',
+    productCount: 73,
+    href: '/catalog?category=жалюзи',
+  },
+  {
+    id: 7,
+    name: 'Акции',
+    description: 'Специальные предложения и скидки',
+    image: '/images/categories/sales.jpg',
+    productCount: 28,
+    href: '/catalog?category=акции',
+    isSale: true,
+  },
+];
+
+export const advantages: Advantage[] = [
+  {
+    id: 1,
+    title: 'Собственное производство',
+    description: 'Изготавливаем мебель и конструкции на собственном производстве в Мурманске',
+    icon: '🏭',
+  },
+  {
+    id: 2,
+    title: 'Бесплатный замер',
+    description: 'Выезд специалиста для точных замеров и консультации',
+    icon: '📐',
+  },
+  {
+    id: 3,
+    title: 'Опыт 15+ лет',
+    description: 'Более 15 лет создаем интерьеры в Мурманске и области',
+    icon: '🏆',
+  },
+  {
+    id: 4,
+    title: 'Сроки от 1 дня',
+    description: 'Быстрое изготовление и монтаж без задержек',
+    icon: '⚡',
+  },
+  {
+    id: 5,
+    title: 'Гарантия 3 года',
+    description: 'Предоставляем гарантию на все работы и материалы',
+    icon: '🛡️',
+  },
+  {
+    id: 6,
+    title: 'Дизайн-проект',
+    description: 'Разработка индивидуального дизайн-проекта',
+    icon: '🎨',
+  },
+];
+
+export const services: Service[] = [
+  {
+    id: 1,
+    title: 'Ремонт под ключ',
+    description: 'Полный цикл от дизайна до чистовой отделки',
+    features: [
+      'Дизайн-проект',
+      'Черновые работы',
+      'Чистовая отделка',
+      'Мебель на заказ',
+      'Авторский надзор',
+    ],
+    price: 'от 5 000 ₽/м²',
+    image: '/images/services/repair-full.jpg',
+  },
+  {
+    id: 2,
+    title: 'Мебель на заказ',
+    description: 'Изготовление мебели по индивидуальным размерам',
+    features: [
+      'Кухни любой сложности',
+      'Шкафы-купе и гардеробные',
+      'Гостиные и стенки',
+      'Спальни и детские',
+    ],
+    price: 'от 15 000 ₽',
+    image: '/images/services/furniture-custom.jpg',
+  },
+  {
+    id: 3,
+    title: 'Дизайн интерьера',
+    description: 'Создание индивидуального дизайн-проекта',
+    features: ['3D-визуализация', 'Подбор материалов', 'Смета и планировка', 'Авторский надзор'],
+    price: 'от 1 500 ₽/м²',
+    image: '/images/services/interior-design.jpg',
+  },
+];
