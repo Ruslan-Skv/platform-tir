@@ -1,31 +1,65 @@
-.desktopButtons {
-  /* Стили для десктопных кнопок */
-  display: flex;
-  gap: 1rem;
+.button {
+  white-space: nowrap;
 }
 
-.mobileButtons {
-  /* Стили для мобильных кнопок */
-  display: flex;
+.desktopButtons {
+  display: none;
+  flex-direction: row;
   gap: 0.5rem;
 }
 
-.mobileMenuButton {
-  /* Стили для контейнера кнопки мобильного меню */
+/* Мобильные кнопки */
+.mobileButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
 }
 
 .menuButton {
-  /* Стили для кнопки мобильного меню */
-  background: none;
-  border: none;
-  cursor: pointer;
+  background-color: transparent;
+  border: 1px solid #d90652;
+  border-radius: 0.375rem;
+  color: #374151;
   padding: 0.5rem;
+  transition: color 0.2s;
+}
+
+.menuButton:hover {
+  color: #111827;
 }
 
 .menuIcon {
-  /* Стили для иконки меню */
-  width: 1.5rem;
   height: 1.5rem;
+  width: 1.5rem;
+}
+
+.mobileMenuButton {
+  display: flex;
+}
+
+/* Темная тема для кнопки меню */
+html[data-theme='dark'] .menuButton {
+  border-color: #ec4899;
+  color: #d1d5db;
+}
+
+html[data-theme='dark'] .menuButton:hover {
+  color: #f9fafb;
+}
+
+@media (width >= 767px) {
+  .desktopButtons {
+    display: flex;
+  }
+
+  .mobileButtons {
+    display: none;
+  }
+
+  .mobileMenuButton {
+    display: none;
+  }
 }
 
 
