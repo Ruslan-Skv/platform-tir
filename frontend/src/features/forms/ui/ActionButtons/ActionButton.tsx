@@ -23,9 +23,10 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
   const buttonClass = `${styles.button} ${styles[variant]} ${mobile ? styles.mobile : ''} ${className}`;
 
   return (
-    <Button variant="outline" onClick={onClick} className={buttonClass}>
+    <Button variant="outline" onClick={onClick} className={buttonClass} data-action-button={variant}>
       {buttonText}
     </Button>
   );
 };
+
 

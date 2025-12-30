@@ -10,6 +10,7 @@
 
 .navText {
   font-style: normal;
+  font-size: 1rem;
   white-space: nowrap;
 }
 
@@ -31,7 +32,7 @@
   box-shadow: 0 10px 15px -3px rgb(0 0 0 / 10%);
   left: 0;
   position: absolute;
-  top: 100%;
+  top: 110%;
   width: 24rem;
   z-index: 50;
 }

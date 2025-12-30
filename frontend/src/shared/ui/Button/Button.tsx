@@ -4,12 +4,13 @@ import styles from './Button.module.css';
 export interface ButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
-  variant?: 'primary' | 'secondary' | 'outline' | 'menu';
+  variant?: 'primary' | 'secondary' | 'outline' | 'menu' | 'link';
   size?: 'sm' | 'md' | 'lg';
   className?: string;
   type?: 'button' | 'submit' | 'reset';
   disabled?: boolean;
   style?: React.CSSProperties;
+  'data-action-button'?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -21,6 +22,7 @@ export const Button: React.FC<ButtonProps> = ({
   type = 'button',
   disabled = false,
   style,
+  'data-action-button': dataActionButton,
 }) => {
   const variantClass = styles[variant] || '';
   const sizeClass = styles[size] || '';
@@ -33,6 +35,7 @@ export const Button: React.FC<ButtonProps> = ({
       disabled={disabled}
       className={`${styles.base} ${variantClass} ${sizeClass} ${disabledClass} ${className}`}
       style={style}
+      data-action-button={dataActionButton}
     >
       <span className={styles.content}>{children}</span>
       <div className={styles.glow} />

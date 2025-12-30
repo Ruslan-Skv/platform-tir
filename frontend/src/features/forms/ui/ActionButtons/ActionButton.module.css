@@ -1,5 +1,4 @@
 .button {
-  transition: all 0.2s ease;
   white-space: nowrap;
   width: 100%;
 }
@@ -17,62 +16,96 @@
   width: 100%;
 }
 
-.measurement {
+.button.measurement,
+.button.outline.measurement {
+  background-color: transparent !important;
   border-color: #10b981;
   color: #000;
-  transition: all 0.2s ease;
+  transition: color 0.3s ease;
 }
 
-.measurement:hover {
-  background-color: #10b981;
-  color: white;
+.button.measurement:hover:not(.disabled),
+.button.outline.measurement:hover:not(.disabled) {
+  background-color: transparent !important;
+  box-shadow: none;
+  color: #d90652;
 }
 
-.callback {
+/* Отключаем glow эффект для measurement */
+.button.measurement .glow,
+.button.outline.measurement .glow {
+  display: none;
+}
+
+.button.callback,
+.button.outline.callback {
+  background-color: transparent !important;
   border-color: #3b82f6;
   color: #000;
-  transition: all 0.2s ease;
+  transition: color 0.3s ease;
 }
 
-.callback:hover {
-  background-color: #3b82f6;
-  color: white;
+.button.callback:hover:not(.disabled),
+.button.outline.callback:hover:not(.disabled) {
+  background-color: transparent !important;
+  box-shadow: none;
+  color: #d90652;
+}
+
+/* Отключаем glow эффект для callback */
+.button.callback .glow,
+.button.outline.callback .glow {
+  display: none;
 }
 
 /* Светлая тема - черный текст */
-html[data-theme='light'] .measurement,
-html[data-theme='light'] .callback {
+html[data-theme='light'] .button.measurement,
+html[data-theme='light'] .button.outline.measurement,
+html[data-theme='light'] .button.callback,
+html[data-theme='light'] .button.outline.callback {
+  background-color: transparent !important;
   color: #000;
 }
 
 /* Темная тема */
-html[data-theme='dark'] .measurement {
+html[data-theme='dark'] .button.measurement,
+html[data-theme='dark'] .button.outline.measurement {
+  background-color: transparent !important;
   border-color: #34d399;
   color: #34d399;
 }
 
-html[data-theme='dark'] .measurement:hover {
-  background-color: #34d399;
-  color: #1f2937;
+html[data-theme='dark'] .button.measurement:hover:not(.disabled),
+html[data-theme='dark'] .button.outline.measurement:hover:not(.disabled) {
+  background-color: transparent !important;
+  box-shadow: none;
+  color: #d90652;
 }
 
-html[data-theme='dark'] .callback {
+html[data-theme='dark'] .button.callback,
+html[data-theme='dark'] .button.outline.callback {
+  background-color: transparent !important;
   border-color: #60a5fa;
   color: #60a5fa;
 }
 
-html[data-theme='dark'] .callback:hover {
-  background-color: #60a5fa;
-  color: #1f2937;
+html[data-theme='dark'] .button.callback:hover:not(.disabled),
+html[data-theme='dark'] .button.outline.callback:hover:not(.disabled) {
+  background-color: transparent !important;
+  box-shadow: none;
+  color: #d90652;
 }
 
 @media (width <= 480px) {
-  .measurement {
+  .button.measurement,
+  .button.outline.measurement {
     background-color: #d90652;
   }
 
-  html[data-theme='dark'] .measurement {
+  html[data-theme='dark'] .button.measurement,
+  html[data-theme='dark'] .button.outline.measurement {
     background-color: transparent;
   }
 }
+
 

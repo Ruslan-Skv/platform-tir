@@ -48,7 +48,7 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
 
   return (
     <div className={styles.navItem} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
-      <Button variant="outline" size="sm" onClick={handleClick} className={styles.navButton}>
+      <Button variant="link" size="sm" onClick={handleClick} className={styles.navButton}>
         <span className={styles.navText}>{item.name}</span>
         {hasDropdown && (
           <ChevronDownIcon

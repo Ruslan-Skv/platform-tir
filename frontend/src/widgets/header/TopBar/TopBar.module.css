@@ -3,6 +3,11 @@
   font-family: play, oswald, arial, 'great vibes', Georgia, 'Times New Roman', Times, serif;
   font-size: 1.8rem;
   font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.contact:hover {
+  color: #d90652;
 }
 
 .contactMobile .contact {
@@ -82,6 +87,10 @@
 /* Темная тема для TopBar */
 html[data-theme='dark'] .contact {
   color: #d1d5db;
+}
+
+html[data-theme='dark'] .contact:hover {
+  color: #ec4899;
 }
 
 html[data-theme='dark'] .utilityButton {
