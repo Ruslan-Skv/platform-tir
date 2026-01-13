@@ -23,6 +23,7 @@ export interface DropdownItem {
   productType: string;
   hasSubmenu?: boolean;
   submenu?: DropdownSubItem[];
+  icon?: string; // Имя иконки из heroicons или путь к изображению
 }
 
 export interface DropdownMenu {

@@ -31,31 +31,44 @@
   border-radius: 0.375rem;
   box-shadow: 0 10px 15px -3px rgb(0 0 0 / 10%);
   left: 0;
+  max-width: min(48rem, calc(100vw - 2rem));
   position: absolute;
   top: 110%;
-  width: 24rem;
+  width: 48rem;
   z-index: 50;
 }
 
-.dropdownContent {
-  display: flex;
+.dropdownRight {
+  left: auto;
+  right: 0;
 }
 
-.dropdownList {
-  flex: 1;
-  min-width: 0;
-  padding: 0.5rem 0;
+.dropdownCenter {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+.dropdownContent {
+  padding: 1rem;
+}
+
+.dropdownGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
 }
 
 .dropdownItem {
+  align-items: center;
   color: #374151;
-  display: block;
+  display: flex;
   font-size: 0.875rem;
-  overflow: hidden;
-  padding: 0.5rem 1rem;
-  text-overflow: ellipsis;
-  transition: color 0.2s;
-  white-space: nowrap;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  text-decoration: none;
+  transition: all 0.2s;
+  border-radius: 0.25rem;
 }
 
 .dropdownItem:hover {
@@ -63,19 +76,23 @@
   color: #d90652;
 }
 
-.dropdownImage {
-  background: #f3f4f6;
-  border-left: 1px solid #e5e7eb;
-  border-radius: 0 0.375rem 0.375rem 0;
-  height: 100%;
-  overflow: hidden;
-  width: 8rem;
+.dropdownItemIconWrapper {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
-.dropdownImage img {
-  height: 100%;
-  object-fit: cover;
-  width: 100%;
+.dropdownItemIcon {
+  height: 1.25rem;
+  width: 1.25rem;
+  color: currentColor;
+}
+
+.dropdownItemText {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Темная тема для dropdown */
@@ -93,9 +110,5 @@ html[data-theme='dark'] .dropdownItem:hover {
   color: #ec4899;
 }
 
-html[data-theme='dark'] .dropdownImage {
-  background: #374151;
-  border-left-color: #4b5563;
-}
 
 

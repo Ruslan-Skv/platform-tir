@@ -6,13 +6,16 @@
 .container {
   margin: 0 auto;
   max-width: 1200px;
+  overflow: visible;
   padding: 0 1rem;
+  position: relative;
 }
 
 .navContainer {
   display: flex;
   gap: 0.625rem;
   justify-content: space-between;
+  overflow: visible;
   padding: 0.75rem 0;
   position: relative;
   width: 100%;

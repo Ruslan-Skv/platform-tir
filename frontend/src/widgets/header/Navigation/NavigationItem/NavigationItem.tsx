@@ -1,9 +1,47 @@
 import React from 'react';
-import { ChevronDownIcon } from '@heroicons/react/24/outline';
+import {
+  ChevronDownIcon,
+  RectangleStackIcon,
+  WrenchScrewdriverIcon,
+  Squares2X2Icon,
+  ViewColumnsIcon,
+  CubeIcon,
+  HomeIcon,
+  TableCellsIcon,
+  MoonIcon,
+  CubeTransparentIcon,
+  LightBulbIcon,
+  PaintBrushIcon,
+  BoltIcon,
+  Square3Stack3DIcon,
+  TagIcon,
+  DocumentTextIcon,
+  BuildingOfficeIcon,
+} from '@heroicons/react/24/outline';
 import { Button } from '@/shared/ui/Button';
 import type { NavigationItem as NavigationItemType } from '@/shared/types/navigation';
 import { dropdownMenus } from '@/shared/constants/navigation';
 import styles from './NavigationItem.module.css';
+
+// Маппинг имен иконок на компоненты
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  RectangleStack: RectangleStackIcon,
+  WrenchScrewdriver: WrenchScrewdriverIcon,
+  Squares2X2: Squares2X2Icon,
+  ViewColumns: ViewColumnsIcon,
+  Cube: CubeIcon,
+  Home: HomeIcon,
+  TableCells: TableCellsIcon,
+  Moon: MoonIcon,
+  CubeTransparent: CubeTransparentIcon,
+  LightBulb: LightBulbIcon,
+  PaintBrush: PaintBrushIcon,
+  Bolt: BoltIcon,
+  Square3Stack3D: Square3Stack3DIcon,
+  Tag: TagIcon,
+  DocumentText: DocumentTextIcon,
+  BuildingOffice: BuildingOfficeIcon,
+};
 
 export interface NavigationItemProps {
   item: NavigationItemType;
@@ -26,6 +64,95 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
 }) => {
   const hasDropdown = item.hasDropdown;
   const menuData = hasDropdown ? dropdownMenus[item.name] : null;
+  const navItemRef = React.useRef<HTMLDivElement>(null);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const [alignment, setAlignment] = React.useState<'left' | 'right' | 'center'>('left');
+
+  // Определяем тип выравнивания для выпадающего меню
+  React.useEffect(() => {
+    if (isActive) {
+      // Для "ПОЛЕЗНЫЕ СТАТЬИ" и "НАШИ РАБОТЫ" - всегда выравнивание по правому краю
+      if (item.name === 'ПОЛЕЗНЫЕ СТАТЬИ' || item.name === 'НАШИ РАБОТЫ') {
+        setAlignment('right');
+      }
+      // Для "АКЦИИ" - выравнивание по центру (с проверкой границ)
+      else if (item.name === 'АКЦИИ') {
+        if (navItemRef.current && dropdownRef.current) {
+          const updatePosition = () => {
+            if (!navItemRef.current || !dropdownRef.current) return;
+
+            const navItemRect = navItemRef.current.getBoundingClientRect();
+            const dropdownWidth = dropdownRef.current.offsetWidth;
+            const viewportWidth = window.innerWidth;
+            const navItemCenter = navItemRect.left + navItemRect.width / 2;
+            const dropdownHalfWidth = dropdownWidth / 2;
+
+            // Проверяем, не выйдет ли центрированное меню за границы
+            const leftBound = navItemCenter - dropdownHalfWidth;
+            const rightBound = navItemCenter + dropdownHalfWidth;
+            const minMargin = 16; // 1rem = 16px
+
+            if (leftBound >= minMargin && rightBound <= viewportWidth - minMargin) {
+              setAlignment('center');
+            } else {
+              // Если центрирование выходит за границы, используем динамическое определение
+              const spaceOnRight = viewportWidth - navItemRect.left;
+              if (spaceOnRight < dropdownWidth) {
+                setAlignment('right');
+              } else {
+                setAlignment('left');
+              }
+            }
+          };
+
+          const timeoutId = setTimeout(updatePosition, 0);
+          window.addEventListener('resize', updatePosition);
+          return () => {
+            clearTimeout(timeoutId);
+            window.removeEventListener('resize', updatePosition);
+          };
+        } else {
+          setAlignment('center');
+        }
+      }
+      // Для остальных - динамическое определение или по левому краю
+      else if (navItemRef.current && dropdownRef.current) {
+        const updatePosition = () => {
+          if (!navItemRef.current || !dropdownRef.current) return;
+
+          const navItemRect = navItemRef.current.getBoundingClientRect();
+          const dropdownWidth = dropdownRef.current.offsetWidth;
+          const viewportWidth = window.innerWidth;
+          const spaceOnRight = viewportWidth - navItemRect.left;
+
+          // Если справа недостаточно места, выравниваем по правому краю
+          if (spaceOnRight < dropdownWidth) {
+            const rightAlignedLeft = navItemRect.right - dropdownWidth;
+            const minMargin = 16; // 1rem = 16px
+            if (rightAlignedLeft >= minMargin) {
+              setAlignment('right');
+            } else {
+              setAlignment('right');
+            }
+          } else {
+            setAlignment('left');
+          }
+        };
+
+        // Небольшая задержка для корректного расчета размеров после рендера
+        const timeoutId = setTimeout(updatePosition, 0);
+        window.addEventListener('resize', updatePosition);
+        return () => {
+          clearTimeout(timeoutId);
+          window.removeEventListener('resize', updatePosition);
+        };
+      } else {
+        setAlignment('left');
+      }
+    } else {
+      setAlignment('left');
+    }
+  }, [isActive, item.name]);
 
   const handleClick = () => {
     if (hasDropdown) {
@@ -46,8 +173,43 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
     }
   };
 
+  // Функция для получения иконки по имени
+  const getIcon = (iconName?: string) => {
+    if (!iconName) {
+      return null;
+    }
+
+    // Если это путь к изображению
+    if (iconName.startsWith('/') || iconName.startsWith('http')) {
+      return (
+        <img
+          src={iconName}
+          alt=""
+          className={styles.dropdownItemIcon}
+          onError={e => {
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+          }}
+        />
+      );
+    }
+
+    // Если это имя иконки из маппинга
+    const IconComponent = iconMap[iconName];
+    if (IconComponent) {
+      return <IconComponent className={styles.dropdownItemIcon} />;
+    }
+
+    return null;
+  };
+
   return (
-    <div className={styles.navItem} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
+    <div
+      ref={navItemRef}
+      className={styles.navItem}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
       <Button variant="link" size="sm" onClick={handleClick} className={styles.navButton}>
         <span className={styles.navText}>{item.name}</span>
         {hasDropdown && (
@@ -59,12 +221,19 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
 
       {hasDropdown && isActive && menuData && (
         <div
-          className={styles.dropdown}
+          ref={dropdownRef}
+          className={`${styles.dropdown} ${
+            alignment === 'right'
+              ? styles.dropdownRight
+              : alignment === 'center'
+                ? styles.dropdownCenter
+                : ''
+          }`}
           onMouseEnter={onDropdownMouseEnter}
           onMouseLeave={onDropdownMouseLeave}
         >
           <div className={styles.dropdownContent}>
-            <div className={styles.dropdownList}>
+            <div className={styles.dropdownGrid}>
               {menuData.items.map(dropdownItem => (
                 <a
                   key={dropdownItem.name}
@@ -73,24 +242,15 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
                   className={styles.dropdownItem}
                   title={dropdownItem.name}
                 >
-                  {dropdownItem.name}
+                  {dropdownItem.icon && (
+                    <span className={styles.dropdownItemIconWrapper}>
+                      {getIcon(dropdownItem.icon)}
+                    </span>
+                  )}
+                  <span className={styles.dropdownItemText}>{dropdownItem.name}</span>
                 </a>
               ))}
             </div>
-
-            {menuData.image && (
-              <div className={styles.dropdownImage}>
-                <img
-                  src={menuData.image}
-                  alt={item.name}
-                  onError={e => {
-                    const target = e.target as HTMLImageElement;
-                    target.src =
-                      'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik02NCA0MEM1MS4yNDg3IDQwIDQwIDUxLjI0ODcgNDAgNjRDNDAgNzYuNzUxMyA1MS4yNDg3IDg4IDY0IDg4Qzc2Ljc1MTMgODggODggNzYuNzUxMyA4OCA2NEM4OCA1MS4yNDg3IDc2Ljc1MTMgNDAgNjQgNDBaTTY0IDcyQzU5LjU4MTcgNzIgNTYgNjguNDE4MyA1NiA2NEM1NiA1OS41ODE3IDU5LjU4MTcgNTYgNjQgNTZDNjguNDE4MyA1NiA3MiA1OS41ODE3IDcyIDY0QzcyIDY4LjQxODMgNjguNDE4MyA3MiA2NCA3MloiIGZpbGw9IiNkOTA2NTIiLz4KPHBhdGggZD0iTTg4IDI0SDQwQzM0LjQ3NzIgMjQgMzAgMjguNDc3MiAzMCAzNFY5NEMzMCA5OS41MjI4IDM0LjQ3NzIgMTA0IDQwIDEwNEg4OEM5My41MjI4IDEwNCA5OCA5OS41MjI4IDk4IDk0VjM0Qzk4IDI4LjQ3NzIgOTMuNTIyOCAyNCA4OCAyNFpNNDAwIDI4SDg4QzkxLjMxMzcgMjggOTQgMzAuNjg2MyA5NCAzNFY4Mi4zNDM4TDc4LjY1NjIgNjdDNzcuODQwNyA2Ni4zMTI1IDc2Ljc1MzIgNjYuMzEyNSA3NS45Mzc4IDY3TDU3LjI1IDgyLjI1TDEwMCAyOEg0MDBaIiBmaWxsPSIjZDkwNjUyIi8+Cjwvc3ZnPgo=';
-                  }}
-                />
-              </div>
-            )}
           </div>
         </div>
       )}
