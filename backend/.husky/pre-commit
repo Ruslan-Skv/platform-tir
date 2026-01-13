@@ -1,0 +1,51 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🚀 Running backend pre-commit checks..."
+
+# Переходим в директорию backend для выполнения команд
+cd backend || {
+  echo "❌ Cannot find backend directory"
+  exit 1
+}
+
+# 1. Запуск lint-staged для проверки и форматирования только staged файлов
+# (Prettier, ESLint, Secretlint для staged файлов)
+echo "🔍 Running lint-staged on staged files..."
+cd .. && npx lint-staged || {
+  echo "❌ Lint-staged checks failed"
+  exit 1
+}
+
+# Возвращаемся в backend для выполнения остальных команд
+cd backend || exit 1
+
+# 2. Проверка типов TypeScript (tsc --noEmit)
+echo "🔍 Type checking (tsc --noEmit)..."
+npm run type-check || {
+  echo "❌ TypeScript errors found"
+  exit 1
+}
+
+# 3. Проверка форматирования Prettier
+echo "🔍 Checking formatting (Prettier)..."
+npm run format:check || {
+  echo "❌ Formatting issues found. Run 'npm run format' to fix."
+  exit 1
+}
+
+# 4. Проверка ESLint
+echo "🔍 Linting (ESLint)..."
+npm run lint || {
+  echo "❌ ESLint errors found"
+  exit 1
+}
+
+# 5. Проверка секретов (Secretlint) для всего проекта
+echo "🔍 Checking for secrets (Secretlint)..."
+npx secretlint "src/**/*.{ts,js}" "prisma/**/*.ts" "*.{js,json}" --format json || {
+  echo "⚠️  Potential secrets found"
+  exit 1
+}
+
+echo "✅ All backend pre-commit checks passed!"
