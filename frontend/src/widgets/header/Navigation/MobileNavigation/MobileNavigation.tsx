@@ -74,33 +74,25 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
   // Функция для получения картинки в зависимости от темы
   const getImageForMenuItem = (itemName: string): string => {
     const imageMap: Record<string, { light: string; dark: string }> = {
-      Мебель: {
+      'КАТАЛОГ ТОВАРОВ': {
         light: '/images/menu/light/02.png',
         dark: '/images/menu/dark/02.png',
       },
-      Ремонт: {
+      'КАТАЛОГ УСЛУГ': {
         light: '/images/menu/light/01.png',
         dark: '/images/menu/dark/01.png',
       },
-      Двери: {
+      АКЦИИ: {
+        light: '/images/menu/light/07.png',
+        dark: '/images/menu/dark/07.png',
+      },
+      'ПОЛЕЗНЫЕ СТАТЬИ': {
         light: '/images/menu/light/03.png',
         dark: '/images/menu/dark/03.png',
       },
-      Окна: {
+      'НАШИ РАБОТЫ': {
         light: '/images/menu/light/04.png',
         dark: '/images/menu/dark/04.png',
-      },
-      Потолки: {
-        light: '/images/menu/light/06.png',
-        dark: '/images/menu/dark/06.png',
-      },
-      Жалюзи: {
-        light: '/images/menu/light/05.png',
-        dark: '/images/menu/dark/05.png',
-      },
-      Акции: {
-        light: '/images/menu/light/07.png',
-        dark: '/images/menu/dark/07.png',
       },
     };
 
