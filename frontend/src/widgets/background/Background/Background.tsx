@@ -17,6 +17,7 @@ export const Background: React.FC = () => {
       className={styles.background}
       style={{ backgroundImage }}
       data-theme={isDarkTheme ? 'dark' : 'light'}
+      suppressHydrationWarning
     />
   );
 };

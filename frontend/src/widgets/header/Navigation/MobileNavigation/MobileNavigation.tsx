@@ -41,6 +41,12 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
   const [currentMenu, setCurrentMenu] = React.useState<MenuState>('main');
   const [activeMenuItem, setActiveMenuItem] = React.useState<string | null>(null);
   const { isDarkTheme } = useTheme();
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  // Избегаем hydration mismatch, используя тему только после монтирования
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Предзагрузка изображений при монтировании компонента
   React.useEffect(() => {
@@ -97,11 +103,14 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
     };
 
     const itemImages = imageMap[itemName];
+    // На сервере и до монтирования используем светлую тему для избежания mismatch
+    const theme = isMounted ? (isDarkTheme ? 'dark' : 'light') : 'light';
+    
     if (itemImages) {
-      return isDarkTheme ? itemImages.dark : itemImages.light;
+      return theme === 'dark' ? itemImages.dark : itemImages.light;
     }
 
-    return isDarkTheme ? '/images/menu/dark/default.jpg' : '/images/menu/light/default.jpg';
+    return theme === 'dark' ? '/images/menu/dark/default.jpg' : '/images/menu/light/default.jpg';
   };
 
   // Преобразуем навигацию в формат для кнопок с изображениями
@@ -217,6 +226,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
                   style={{
                     backgroundImage: `url(${getImageForMenuItem(button.name)})`,
                   }}
+                  suppressHydrationWarning
                 >
                   <span className={styles.buttonText}>{button.name}</span>
                   {/* {button.hasDropdown && <span className={styles.buttonArrow}>›</span>} */}
