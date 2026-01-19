@@ -1,2 +1,1 @@
 export { CategoriesGrid } from './CategoriesGrid';
-

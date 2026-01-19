@@ -1,0 +1,47 @@
+.adminLayout {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--admin-bg, #f5f7fa);
+}
+
+.mainArea {
+  flex: 1;
+  margin-left: 260px;
+  transition: margin-left 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.mainArea.expanded {
+  margin-left: 80px;
+}
+
+.content {
+  flex: 1;
+  padding: 24px;
+  overflow-x: hidden;
+}
+
+.loadingContainer {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--admin-bg, #f5f7fa);
+}
+
+.loading {
+  font-size: 18px;
+  color: #666;
+}
+
+@media (max-width: 1024px) {
+  .mainArea {
+    margin-left: 0;
+  }
+
+  .mainArea.expanded {
+    margin-left: 0;
+  }
+}

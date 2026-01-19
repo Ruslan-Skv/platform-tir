@@ -36,15 +36,46 @@ async function main() {
   });
   console.log('✅ Created test user:', user.email);
 
-  // Create categories
-  const doorsCategory = await prisma.category.upsert({
-    where: { slug: 'doors' },
+  // ============================================
+  // КАТЕГОРИИ
+  // ============================================
+
+  // Родительская категория: Двери входные
+  const entranceDoorsCategory = await prisma.category.upsert({
+    where: { slug: 'entrance-doors' },
     update: {},
     create: {
-      name: 'Двери',
-      slug: 'doors',
-      description: 'Входные и межкомнатные двери',
+      name: 'Двери входные',
+      slug: 'entrance-doors',
+      description: 'Входные двери различных типов и размеров',
       order: 1,
+    },
+  });
+
+  // Подкатегория: Входные двери ТТ XL / XXL
+  const ttXlXxlCategory = await prisma.category.upsert({
+    where: { slug: 'entrance-doors-tt-xl-xxl' },
+    update: {
+      parentId: entranceDoorsCategory.id,
+    },
+    create: {
+      name: 'Входные двери ТТ XL / XXL',
+      slug: 'entrance-doors-tt-xl-xxl',
+      description: 'Входные двери увеличенного размера серии ТТ XL и XXL',
+      parentId: entranceDoorsCategory.id,
+      order: 1,
+    },
+  });
+
+  // Другие категории
+  const interiorDoorsCategory = await prisma.category.upsert({
+    where: { slug: 'interior-doors' },
+    update: {},
+    create: {
+      name: 'Двери межкомнатные',
+      slug: 'interior-doors',
+      description: 'Межкомнатные двери',
+      order: 2,
     },
   });
 
@@ -55,41 +86,183 @@ async function main() {
       name: 'Окна',
       slug: 'windows',
       description: 'Пластиковые и алюминиевые окна',
-      order: 2,
+      order: 3,
     },
   });
 
   const furnitureCategory = await prisma.category.upsert({
-    where: { slug: 'furniture' },
+    where: { slug: 'upholstered-furniture' },
     update: {},
     create: {
-      name: 'Мебель',
-      slug: 'furniture',
+      name: 'Мягкая мебель',
+      slug: 'upholstered-furniture',
       description: 'Мягкая мебель и мебель на заказ',
-      order: 3,
+      order: 4,
     },
   });
 
   console.log('✅ Created categories');
 
-  // Create products
-  const product1 = await prisma.product.upsert({
-    where: { slug: 'entrance-door-metal' },
-    update: {},
-    create: {
-      name: 'Дверь входная металлическая',
-      slug: 'entrance-door-metal',
-      description: 'Надежная входная дверь из металла',
-      sku: 'DOOR-001',
-      price: 15000,
-      comparePrice: 18000,
-      stock: 10,
-      categoryId: doorsCategory.id,
-      isActive: true,
-      isFeatured: true,
-      images: ['/images/products/door-classic.jpg'],
+  // ============================================
+  // ТОВАРЫ: Входные двери ТТ XL / XXL
+  // ============================================
+
+  const entranceDoorProducts = [
+    {
+      name: 'Входная дверь ТТ XL "Премиум"',
+      slug: 'tt-xl-premium',
+      description:
+        'Входная дверь увеличенного размера ТТ XL серии Премиум. Толщина полотна 100 мм, три контура уплотнения, терморазрыв.',
+      sku: 'TT-XL-001',
+      price: 45900,
+      comparePrice: 52000,
+      stock: 5,
+      images: ['/images/products/door-tt-xl-1.jpg'],
+      attributes: {
+        width: '960 мм',
+        height: '2050 мм',
+        thickness: '100 мм',
+        steel_thickness: '2.0 мм',
+        insulation: 'Минеральная вата',
+        lock: 'Двухсистемный',
+        color_outside: 'Антик медь',
+        color_inside: 'Беленый дуб',
+        thermal_break: true,
+      },
     },
-  });
+    {
+      name: 'Входная дверь ТТ XXL "Люкс"',
+      slug: 'tt-xxl-lux',
+      description:
+        'Входная дверь максимального размера ТТ XXL серии Люкс. Усиленная конструкция, противосъемные ригели, биометрический замок.',
+      sku: 'TT-XXL-001',
+      price: 68500,
+      comparePrice: 75000,
+      stock: 3,
+      images: ['/images/products/door-tt-xxl-1.jpg'],
+      attributes: {
+        width: '1050 мм',
+        height: '2200 мм',
+        thickness: '110 мм',
+        steel_thickness: '2.5 мм',
+        insulation: 'Пенополиуретан',
+        lock: 'Биометрический + ключевой',
+        color_outside: 'Графит',
+        color_inside: 'Венге',
+        thermal_break: true,
+      },
+    },
+    {
+      name: 'Входная дверь ТТ XL "Стандарт"',
+      slug: 'tt-xl-standard',
+      description:
+        'Надежная входная дверь ТТ XL серии Стандарт. Оптимальное соотношение цены и качества.',
+      sku: 'TT-XL-002',
+      price: 32400,
+      comparePrice: 38000,
+      stock: 8,
+      images: ['/images/products/door-tt-xl-2.jpg'],
+      attributes: {
+        width: '960 мм',
+        height: '2050 мм',
+        thickness: '85 мм',
+        steel_thickness: '1.8 мм',
+        insulation: 'Минеральная вата',
+        lock: 'Сувальдный',
+        color_outside: 'Антик серебро',
+        color_inside: 'Сосна прованс',
+        thermal_break: false,
+      },
+    },
+    {
+      name: 'Входная дверь ТТ XXL "Терморазрыв"',
+      slug: 'tt-xxl-thermobreak',
+      description:
+        'Входная дверь ТТ XXL с усиленным терморазрывом для холодного климата. Идеальна для частного дома.',
+      sku: 'TT-XXL-002',
+      price: 78900,
+      comparePrice: 89000,
+      stock: 4,
+      images: ['/images/products/door-tt-xxl-2.jpg'],
+      attributes: {
+        width: '1050 мм',
+        height: '2200 мм',
+        thickness: '120 мм',
+        steel_thickness: '2.5 мм',
+        insulation: 'Пенополиуретан + минвата',
+        lock: 'Трехсистемный',
+        color_outside: 'Черный муар',
+        color_inside: 'Белый софт',
+        thermal_break: true,
+      },
+    },
+    {
+      name: 'Входная дверь ТТ XL "Классика"',
+      slug: 'tt-xl-classic',
+      description:
+        'Классическая входная дверь ТТ XL с элегантным дизайном. Декоративные молдинги, патина.',
+      sku: 'TT-XL-003',
+      price: 54700,
+      comparePrice: 62000,
+      stock: 2,
+      images: ['/images/products/door-tt-xl-3.jpg'],
+      attributes: {
+        width: '960 мм',
+        height: '2050 мм',
+        thickness: '100 мм',
+        steel_thickness: '2.0 мм',
+        insulation: 'Минеральная вата',
+        lock: 'Двухсистемный Mottura',
+        color_outside: 'Слоновая кость с патиной',
+        color_inside: 'Слоновая кость',
+        thermal_break: true,
+      },
+    },
+    {
+      name: 'Входная дверь ТТ XXL "Модерн"',
+      slug: 'tt-xxl-modern',
+      description:
+        'Современная входная дверь ТТ XXL в стиле модерн. Минималистичный дизайн, скрытые петли.',
+      sku: 'TT-XXL-003',
+      price: 92000,
+      comparePrice: 105000,
+      stock: 1,
+      images: ['/images/products/door-tt-xxl-3.jpg'],
+      attributes: {
+        width: '1100 мм',
+        height: '2300 мм',
+        thickness: '115 мм',
+        steel_thickness: '3.0 мм',
+        insulation: 'Пенополиуретан',
+        lock: 'Электронный кодовый',
+        color_outside: 'Антрацит матовый',
+        color_inside: 'Бетон светлый',
+        thermal_break: true,
+      },
+    },
+  ];
+
+  for (const productData of entranceDoorProducts) {
+    await prisma.product.upsert({
+      where: { slug: productData.slug },
+      update: {
+        ...productData,
+        categoryId: ttXlXxlCategory.id,
+      },
+      create: {
+        ...productData,
+        categoryId: ttXlXxlCategory.id,
+        isActive: true,
+        isFeatured: true,
+      },
+    });
+  }
+
+  console.log('✅ Created entrance door products (ТТ XL / XXL)');
+
+  // ============================================
+  // ДРУГИЕ ТОВАРЫ (для других категорий)
+  // ============================================
 
   const product2 = await prisma.product.upsert({
     where: { slug: 'window-plastic-veka' },
@@ -127,7 +300,7 @@ async function main() {
     },
   });
 
-  console.log('✅ Created products');
+  console.log('✅ Created other products');
   console.log('🎉 Seeding completed!');
 }
 

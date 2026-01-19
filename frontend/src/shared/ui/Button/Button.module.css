@@ -240,7 +240,6 @@ html[data-theme='dark'] .menu:not(.disabled):hover .glow {
 html[data-theme='dark'] .link {
   color: #d1d5db;
 }
-
 html[data-theme='dark'] .link::after {
   background-color: #ec4899;
 }

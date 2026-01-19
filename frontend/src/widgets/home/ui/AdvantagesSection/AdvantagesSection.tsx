@@ -1,7 +1,8 @@
 import React from 'react';
+
 import { advantages } from '../../lib/constants';
-import styles from './AdvantagesSection.module.css';
 import { AdvantageCard } from './AdvantageCard';
+import styles from './AdvantagesSection.module.css';
 
 export const AdvantagesSection: React.FC = () => {
   return (
@@ -13,7 +14,7 @@ export const AdvantagesSection: React.FC = () => {
         </div>
 
         <div className={styles.grid}>
-          {advantages.map(advantage => (
+          {advantages.map((advantage) => (
             <AdvantageCard key={advantage.id} advantage={advantage} />
           ))}
         </div>
@@ -21,4 +22,3 @@ export const AdvantagesSection: React.FC = () => {
     </section>
   );
 };
-

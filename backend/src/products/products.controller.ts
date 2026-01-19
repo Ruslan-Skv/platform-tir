@@ -41,6 +41,12 @@ export class ProductsController {
     return this.productsService.search(searchDto);
   }
 
+  @Get('catalog/all')
+  @ApiOperation({ summary: 'Получить все товары каталога' })
+  findAllProducts() {
+    return this.productsService.findAllProducts();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Получить товар по ID' })
   findOne(@Param('id') id: string) {
@@ -51,6 +57,12 @@ export class ProductsController {
   @ApiOperation({ summary: 'Получить товар по slug' })
   findBySlug(@Param('slug') slug: string) {
     return this.productsService.findBySlug(slug);
+  }
+
+  @Get('category/:categorySlug')
+  @ApiOperation({ summary: 'Получить товары по категории (slug)' })
+  findByCategory(@Param('categorySlug') categorySlug: string) {
+    return this.productsService.findByCategory(categorySlug);
   }
 
   @Patch(':id')

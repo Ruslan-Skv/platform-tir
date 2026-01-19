@@ -1,7 +1,9 @@
 'use client';
 
 import React from 'react';
+
 import { useTheme } from '@/features/theme';
+
 import styles from './Background.module.css';
 
 export const Background: React.FC = () => {
@@ -21,4 +23,3 @@ export const Background: React.FC = () => {
     />
   );
 };
-

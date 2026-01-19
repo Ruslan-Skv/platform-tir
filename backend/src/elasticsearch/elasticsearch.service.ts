@@ -48,6 +48,7 @@ export class ElasticsearchService implements OnModuleInit {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async createIndex(index: string, body?: any): Promise<void> {
     try {
       const exists = await this.indexExists(index);
@@ -64,6 +65,7 @@ export class ElasticsearchService implements OnModuleInit {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async indexDocument(index: string, id: string, document: any): Promise<void> {
     try {
       await this.client.index({
@@ -77,6 +79,7 @@ export class ElasticsearchService implements OnModuleInit {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async search(index: string, query: any): Promise<any> {
     try {
       const result = await this.client.search({
@@ -102,6 +105,7 @@ export class ElasticsearchService implements OnModuleInit {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async bulk(operations: any[]): Promise<any> {
     try {
       const result = await this.client.bulk({

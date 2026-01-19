@@ -6,4 +6,3 @@ export {
   type Category,
   type Service,
 } from './homeConstants';
-

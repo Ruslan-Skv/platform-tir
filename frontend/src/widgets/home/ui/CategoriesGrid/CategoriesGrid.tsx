@@ -1,7 +1,9 @@
 'use client';
 
 import React from 'react';
+
 import { useRouter } from 'next/navigation';
+
 import { categories } from '../../lib/constants';
 import styles from './CategoriesGrid.module.css';
 import { CategoryCard } from './CategoryCard';
@@ -22,7 +24,7 @@ export const CategoriesGrid: React.FC = () => {
         </div>
 
         <div className={styles.grid}>
-          {categories.map(category => (
+          {categories.map((category) => (
             <CategoryCard
               key={category.id}
               category={category}
@@ -34,4 +36,3 @@ export const CategoriesGrid: React.FC = () => {
     </section>
   );
 };
-

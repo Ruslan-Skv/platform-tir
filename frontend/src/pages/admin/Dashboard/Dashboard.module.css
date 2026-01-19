@@ -1,0 +1,433 @@
+.dashboard {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 24px;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 4px;
+}
+
+.subtitle {
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Stats Grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.statCard {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.statIcon {
+  font-size: 2rem;
+}
+
+.statContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.statValue {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.statLabel {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.statTrend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.trendPositive {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.trendNegative {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.trendLabel {
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.statAction {
+  margin-top: auto;
+}
+
+.statAction a {
+  color: #6366f1;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.statAction a:hover {
+  text-decoration: underline;
+}
+
+/* Alerts */
+.alertsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-radius: 10px;
+}
+
+.alertWarning {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+}
+
+.alertInfo {
+  background: #dbeafe;
+  border: 1px solid #93c5fd;
+}
+
+.alertIcon {
+  font-size: 1.25rem;
+}
+
+.alertText {
+  flex: 1;
+  color: #1f2937;
+}
+
+.alertLink {
+  color: #6366f1;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.alertLink:hover {
+  text-decoration: underline;
+}
+
+/* Content Grid */
+.contentGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.cardTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.cardLink {
+  color: #6366f1;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.cardLink:hover {
+  text-decoration: underline;
+}
+
+/* Table */
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 12px 20px;
+  text-align: left;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.table th {
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.table td {
+  color: #374151;
+}
+
+.table a {
+  color: #6366f1;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.table a:hover {
+  text-decoration: underline;
+}
+
+/* Status Badges */
+.status {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.statusPending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusProcessing {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.statusShipped {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.statusDelivered {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.statusCancelled {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Tasks */
+.tasksList {
+  padding: 12px 0;
+}
+
+.taskItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.taskItem:last-child {
+  border-bottom: none;
+}
+
+.taskContent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.taskPriority {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.priorityHigh {
+  background: #ef4444;
+}
+
+.priorityMedium {
+  background: #f59e0b;
+}
+
+.priorityLow {
+  background: #10b981;
+}
+
+.priorityUrgent {
+  background: #dc2626;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.taskInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.taskTitle {
+  font-size: 0.95rem;
+  color: #1f2937;
+}
+
+.taskDue {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.taskComplete {
+  width: 28px;
+  height: 28px;
+  border: 2px solid #d1d5db;
+  background: none;
+  border-radius: 6px;
+  color: #d1d5db;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.taskComplete:hover {
+  border-color: #10b981;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+/* Revenue Summary */
+.revenueSummary {
+  padding: 20px;
+}
+
+.revenueItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.revenueItem:last-of-type {
+  border-bottom: none;
+}
+
+.revenueLabel {
+  color: #6b7280;
+}
+
+.revenueValue {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.revenueChart {
+  margin-top: 20px;
+}
+
+.chartPlaceholder {
+  height: 150px;
+  background: #f9fafb;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 1.1rem;
+}
+
+/* Quick Actions */
+.quickActions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 20px;
+}
+
+.quickAction {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 10px;
+  text-decoration: none;
+  color: #374151;
+  transition: all 0.2s;
+}
+
+.quickAction:hover {
+  background: #f3f4f6;
+  transform: translateY(-2px);
+}
+
+.quickActionIcon {
+  font-size: 1.5rem;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .quickActions {
+    grid-template-columns: 1fr;
+  }
+}

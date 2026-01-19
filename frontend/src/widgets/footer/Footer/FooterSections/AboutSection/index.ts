@@ -1,2 +1,1 @@
 export { AboutSection } from './AboutSection';
-

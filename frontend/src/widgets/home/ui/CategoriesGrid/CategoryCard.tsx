@@ -1,4 +1,5 @@
 import React from 'react';
+
 import type { Category } from '../../lib/constants';
 import styles from './CategoriesGrid.module.css';
 
@@ -33,4 +34,3 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({ category, onClick })
     </button>
   );
 };
-

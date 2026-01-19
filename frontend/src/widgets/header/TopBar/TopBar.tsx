@@ -1,17 +1,21 @@
 'use client';
 
-import React from 'react';
 import {
-  HeartIcon,
-  ShoppingCartIcon,
-  UserIcon,
-  SunIcon,
-  MoonIcon,
-  MagnifyingGlassIcon,
   ChartBarIcon,
+  HeartIcon,
+  MagnifyingGlassIcon,
+  MoonIcon,
+  ShoppingCartIcon,
+  SunIcon,
+  UserIcon,
 } from '@heroicons/react/24/outline';
+
+import React from 'react';
+
 import { useRouter } from 'next/navigation';
+
 import { useTheme } from '@/features/theme';
+
 import styles from './TopBar.module.css';
 
 export const TopBar: React.FC = () => {
@@ -59,19 +63,31 @@ export const TopBar: React.FC = () => {
           </button>
 
           {/* Личный кабинет */}
-          <button onClick={() => router.push('/profile')} className={styles.utilityButton} type="button">
+          <button
+            onClick={() => router.push('/profile')}
+            className={styles.utilityButton}
+            type="button"
+          >
             <UserIcon className={styles.icon} />
             <span className={styles.utilityText}>Кабинет</span>
           </button>
 
           {/* Избранное */}
-          <button onClick={() => router.push('/favorites')} className={styles.utilityButton} type="button">
+          <button
+            onClick={() => router.push('/favorites')}
+            className={styles.utilityButton}
+            type="button"
+          >
             <HeartIcon className={styles.icon} />
             <span className={styles.utilityText}>Избранное</span>
           </button>
 
           {/* Корзина */}
-          <button onClick={() => router.push('/cart')} className={styles.utilityButton} type="button">
+          <button
+            onClick={() => router.push('/cart')}
+            className={styles.utilityButton}
+            type="button"
+          >
             <ShoppingCartIcon className={styles.icon} />
             <span className={styles.utilityText}>Корзина</span>
           </button>

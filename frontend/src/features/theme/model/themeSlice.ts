@@ -1,5 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
+
 import type { ThemeState } from '../types/theme';
 
 // Функция для безопасного доступа к localStorage только на клиенте
@@ -37,7 +38,7 @@ const themeSlice = createSlice({
   name: 'theme',
   initialState,
   reducers: {
-    toggleTheme: state => {
+    toggleTheme: (state) => {
       state.isDarkTheme = !state.isDarkTheme;
       applyThemeToDOM(state.isDarkTheme);
     },
@@ -45,7 +46,7 @@ const themeSlice = createSlice({
       state.isDarkTheme = action.payload;
       applyThemeToDOM(action.payload);
     },
-    initializeTheme: state => {
+    initializeTheme: (state) => {
       // На сервере ничего не делаем, на клиенте применяем текущую тему
       if (typeof window !== 'undefined') {
         applyThemeToDOM(state.isDarkTheme);
@@ -56,5 +57,3 @@ const themeSlice = createSlice({
 
 export const { toggleTheme, setTheme, initializeTheme } = themeSlice.actions;
 export default themeSlice.reducer;
-
-

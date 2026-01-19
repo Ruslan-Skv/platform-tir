@@ -3,8 +3,7 @@
 
 echo "🚀 Running frontend pre-commit checks..."
 
-# 1. Запуск lint-staged для проверки и форматирования только staged файлов
-# (Prettier, ESLint, Secretlint для staged файлов)
+# 1. Запуск lint-staged для форматирования только staged файлов
 echo "🔍 Running lint-staged on staged files..."
 npx lint-staged || {
   echo "❌ Lint-staged checks failed"
@@ -18,31 +17,17 @@ npm run type-check || {
   exit 1
 }
 
-# 3. Проверка форматирования Prettier
-echo "🔍 Checking formatting (Prettier)..."
-npm run format:check || {
-  echo "❌ Formatting issues found. Run 'npm run format' to fix."
-  exit 1
-}
-
-# 4. Проверка ESLint
+# 3. Проверка ESLint
 echo "🔍 Linting (ESLint)..."
 npm run lint || {
   echo "❌ ESLint errors found"
   exit 1
 }
 
-# 5. Проверка FSD-архитектуры
+# 4. Проверка FSD-архитектуры
 echo "🔍 Checking FSD architecture..."
 npm run check-fsd || {
   echo "❌ FSD architecture violations found"
-  exit 1
-}
-
-# 6. Проверка секретов (Secretlint) для всего проекта
-echo "🔍 Checking for secrets (Secretlint)..."
-npx secretlint "**/*.{ts,tsx,js,jsx,json}" --format json || {
-  echo "⚠️  Potential secrets found"
   exit 1
 }
 

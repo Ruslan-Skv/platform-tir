@@ -1,2 +1,1 @@
 export { FooterSections } from './FooterSections';
-

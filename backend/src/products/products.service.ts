@@ -4,6 +4,9 @@ import { ElasticsearchService } from '../elasticsearch/elasticsearch.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { SearchProductsDto } from './dto/search-products.dto';
+import { Category } from '@prisma/client';
+
+type CategoryWithChildren = Category & { children?: CategoryWithChildren[] };
 
 @Injectable()
 export class ProductsService {
@@ -76,10 +79,90 @@ export class ProductsService {
     return product;
   }
 
+  async findByCategory(categorySlug: string) {
+    // Находим категорию по slug
+    const category = await this.prisma.category.findUnique({
+      where: { slug: categorySlug },
+      include: {
+        children: {
+          include: {
+            children: true, // Поддержка вложенности до 2 уровней
+          },
+        },
+      },
+    });
+
+    if (!category) {
+      throw new NotFoundException(`Category with slug ${categorySlug} not found`);
+    }
+
+    // Рекурсивно собираем все ID категорий (включая все дочерние)
+    const categoryIds = this.collectCategoryIds(category);
+
+    // Получаем товары из этой категории и всех дочерних
+    const products = await this.prisma.product.findMany({
+      where: {
+        categoryId: { in: categoryIds },
+        isActive: true,
+      },
+      include: {
+        category: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      category: {
+        id: category.id,
+        name: category.name,
+        slug: category.slug,
+        description: category.description,
+      },
+      products,
+      total: products.length,
+    };
+  }
+
+  // Вспомогательный метод для рекурсивного сбора ID категорий
+  private collectCategoryIds(category: CategoryWithChildren): string[] {
+    const ids = [category.id];
+    if (category.children && category.children.length > 0) {
+      for (const child of category.children) {
+        ids.push(...this.collectCategoryIds(child));
+      }
+    }
+    return ids;
+  }
+
+  // Получить все товары (для страницы "Каталог товаров")
+  async findAllProducts() {
+    const products = await this.prisma.product.findMany({
+      where: {
+        isActive: true,
+      },
+      include: {
+        category: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      category: {
+        id: 'all',
+        name: 'Каталог товаров',
+        slug: 'all',
+        description: 'Все товары',
+      },
+      products,
+      total: products.length,
+    };
+  }
+
   async search(searchDto: SearchProductsDto) {
     const { query, category, minPrice, maxPrice, page = 1, limit = 20 } = searchDto;
     const from = (page - 1) * limit;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const searchQuery: any = {
       query: {
         bool: {
@@ -107,6 +190,7 @@ export class ProductsService {
     }
 
     if (minPrice || maxPrice) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const range: any = {};
       if (minPrice) range.gte = minPrice;
       if (maxPrice) range.lte = maxPrice;
@@ -115,6 +199,7 @@ export class ProductsService {
 
     const result = await this.elasticsearch.search(this.indexName, searchQuery);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const productIds = result.body.hits.hits.map((hit: any) => hit._id);
     const products = await this.prisma.product.findMany({
       where: {
@@ -165,6 +250,7 @@ export class ProductsService {
     await this.elasticsearch.deleteDocument(this.indexName, id);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async indexProduct(product: any) {
     try {
       await this.elasticsearch.createIndex(this.indexName, {

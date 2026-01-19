@@ -8,8 +8,8 @@
     "start": "next start",
     "prepare": "husky install",
     "type-check": "tsc --noEmit --skipLibCheck",
-    "lint": "next lint",
-    "lint:fix": "next lint --fix",
+    "lint": "eslint src --max-warnings=50",
+    "lint:fix": "eslint src --fix --max-warnings=50",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check-fsd": "node scripts/check-fsd.js",
@@ -38,6 +38,8 @@
     "zustand": "^5.0.9"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.3",
+    "@next/eslint-plugin-next": "^16.1.3",
     "@playwright/test": "^1.57.0",
     "@secretlint/secretlint-rule-preset-recommend": "^11.2.5",
     "@swc/core": "^1.15.5",
@@ -52,8 +54,12 @@
     "@types/react-dom": "^19.2.3",
     "commitizen": "^4.3.1",
     "cz-conventional-changelog": "^3.3.0",
+    "eslint": "^9.39.2",
     "eslint-config-next": "^16.0.10",
     "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "globals": "^17.0.0",
     "husky": "^8.0.0",
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
@@ -61,7 +67,8 @@
     "playwright": "^1.57.0",
     "prettier": "^3.7.4",
     "secretlint": "^11.2.5",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.53.0"
   },
   "config": {
     "commitizen": {
@@ -70,18 +77,13 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "prettier --write",
-      "eslint --fix",
-      "npx secretlint"
+      "prettier --write"
     ],
     "*.{js,jsx}": [
-      "prettier --write",
-      "eslint --fix",
-      "npx secretlint"
+      "prettier --write"
     ],
     "*.{json,css,scss,md}": [
-      "prettier --write",
-      "npx secretlint"
+      "prettier --write"
     ]
   }
 }

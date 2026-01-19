@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { initializeTheme } from '../model/themeSlice';
+
 import { useAppDispatch } from '@/shared/lib/redux/hooks';
+
+import { initializeTheme } from '../model/themeSlice';
 
 interface ThemeInitializerProps {
   children: React.ReactNode;
@@ -18,5 +20,3 @@ export const ThemeInitializer: React.FC<ThemeInitializerProps> = ({ children }) 
 
   return <>{children}</>;
 };
-
-

@@ -1,9 +1,11 @@
 'use client';
 
 import React from 'react';
-import { Button } from '@/shared/ui/Button';
+
 import { useFormContext } from '@/features/forms';
 import type { CompanyInfo, SocialLinks } from '@/shared/constants/footer';
+import { Button } from '@/shared/ui/Button';
+
 import styles from './ContactSection.module.css';
 
 interface ContactSectionProps {
@@ -49,4 +51,3 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ companyInfo, soc
     </div>
   );
 };
-

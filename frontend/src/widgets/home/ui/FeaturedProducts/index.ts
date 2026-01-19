@@ -1,2 +1,1 @@
 export { FeaturedProducts } from './FeaturedProducts';
-

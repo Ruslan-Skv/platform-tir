@@ -1,6 +1,7 @@
 'use client';
 
 import { useAppDispatch, useAppSelector } from '@/shared/lib/redux/hooks';
+
 import { toggleTheme } from '../model/themeSlice';
 
 export const useTheme = () => {
@@ -12,4 +13,3 @@ export const useTheme = () => {
     toggleTheme: () => dispatch(toggleTheme()),
   };
 };
-

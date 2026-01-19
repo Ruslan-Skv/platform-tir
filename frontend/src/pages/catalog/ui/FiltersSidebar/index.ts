@@ -1,2 +1,1 @@
 export { FiltersSidebar } from './FiltersSidebar';
-

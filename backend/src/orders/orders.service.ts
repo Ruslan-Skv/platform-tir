@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaService } from '../database/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class OrdersService {
@@ -21,19 +22,22 @@ export class OrdersService {
     }, 0);
 
     const tax = subtotal * 0.2; // 20% VAT
-    const shipping = createOrderDto.shipping || 0;
-    const total = subtotal + tax + shipping;
+    const shippingCost = createOrderDto.shippingCost || 0;
+    const total = subtotal + tax + shippingCost;
+
+    // Generate order number
+    const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
 
     // Create order with items
     return this.prisma.order.create({
       data: {
+        orderNumber,
         userId,
         shippingAddressId: createOrderDto.shippingAddressId,
         subtotal,
         tax,
-        shipping,
+        shippingCost,
         total,
-        paymentMethod: createOrderDto.paymentMethod,
         items: {
           create: createOrderDto.items.map((item) => {
             const product = products.find((p) => p.id === item.productId);
@@ -65,7 +69,7 @@ export class OrdersService {
   }
 
   async findAll(userId?: string, role?: string) {
-    const where: any = {};
+    const where: Prisma.OrderWhereInput = {};
     if (role !== 'ADMIN' && userId) {
       where.userId = userId;
     }

@@ -1,5 +1,7 @@
 import React from 'react';
+
 import { companyInfo } from '@/shared/constants/footer';
+
 import styles from './FooterBottom.module.css';
 
 export const FooterBottom: React.FC = () => {
@@ -18,4 +20,3 @@ export const FooterBottom: React.FC = () => {
     </div>
   );
 };
-

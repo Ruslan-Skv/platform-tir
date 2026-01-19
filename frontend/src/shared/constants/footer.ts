@@ -72,4 +72,3 @@ export const socialLinks: SocialLinks = {
     ariaLabel: 'ВКонтакте',
   },
 };
-

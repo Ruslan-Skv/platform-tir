@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from './HomePage.module.css';
+
 import {
   AdvantagesSection,
   CategoriesGrid,
@@ -8,6 +8,8 @@ import {
   HeroSection,
   ServicesSection,
 } from '@/widgets/home';
+
+import styles from './HomePage.module.css';
 
 export const HomePage: React.FC = () => {
   return (
@@ -21,4 +23,3 @@ export const HomePage: React.FC = () => {
     </div>
   );
 };
-

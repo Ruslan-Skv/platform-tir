@@ -1,2 +1,1 @@
 export { CatalogSection } from './CatalogSection';
-

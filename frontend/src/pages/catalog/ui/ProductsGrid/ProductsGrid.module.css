@@ -8,7 +8,20 @@
   align-items: center;
   display: flex;
   justify-content: space-between;
-  padding: 0 0.5rem; /* Добавляем отступы для заголовка */
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0 0.5rem;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.totalCount {
+  color: #6b7280;
+  font-size: 0.875rem;
 }
 
 .title {
@@ -44,10 +57,18 @@
 }
 
 .grid {
+  align-items: stretch;
   display: grid;
   gap: 1.5rem;
-  grid-template-columns: repeat(3, 1fr);
-  padding: 0 0.5rem; /* Добавляем отступы для сетки */
+  grid-template-columns: repeat(4, 1fr);
+  padding: 0 0.5rem;
+}
+
+/* Большие экраны */
+@media (width <= 1280px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 /* Планшеты */
@@ -62,18 +83,51 @@
   .gridHeader {
     flex-direction: column;
     gap: 1rem;
-    padding: 0; /* Убираем внутренние отступы на мобильных */
+    padding: 0;
+  }
+
+  .headerRight {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .grid {
     grid-template-columns: 1fr;
-    padding: 0; /* Убираем внутренние отступы на мобильных */
+    padding: 0;
   }
+}
+
+/* Состояния загрузки, ошибки, пусто */
+.loading,
+.error,
+.empty {
+  padding: 3rem 1rem;
+  text-align: center;
+  font-size: 1rem;
+  color: #6b7280;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+}
+
+.error {
+  color: #dc2626;
+  background: #fef2f2;
 }
 
 /* Темная тема */
 html[data-theme='dark'] .title {
   color: #f9fafb;
+}
+
+html[data-theme='dark'] .loading,
+html[data-theme='dark'] .empty {
+  background: #1f2937;
+  color: #9ca3af;
+}
+
+html[data-theme='dark'] .error {
+  background: #450a0a;
+  color: #fca5a5;
 }
 
 html[data-theme='dark'] .sortSelect {
@@ -90,3 +144,6 @@ html[data-theme='dark'] .sortSelect:focus {
   border-color: #ec4899;
 }
 
+html[data-theme='dark'] .totalCount {
+  color: #9ca3af;
+}

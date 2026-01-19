@@ -1,0 +1,277 @@
+.page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.count {
+  background: #e5e7eb;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+/* Stats */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.statCard {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.statLabel {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+/* Filters */
+.filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 250px;
+  max-width: 400px;
+  padding: 10px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.select {
+  padding: 10px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: #fff;
+  min-width: 150px;
+}
+
+.select:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.dateInput {
+  padding: 10px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: #fff;
+}
+
+.dateInput:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+/* Bulk Actions */
+.bulkActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #eff6ff;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.bulkActions span {
+  font-weight: 500;
+  color: #1e40af;
+}
+
+.bulkButton {
+  padding: 8px 16px;
+  border: 1px solid #93c5fd;
+  background: #fff;
+  color: #1e40af;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.bulkButton:hover {
+  background: #dbeafe;
+}
+
+/* Order Number */
+.orderNumber {
+  font-weight: 600;
+  color: #6366f1;
+}
+
+/* Customer Cell */
+.customerCell {
+  display: flex;
+  flex-direction: column;
+}
+
+.customerName {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.customerEmail {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+/* Status Badge */
+.statusBadge,
+.paymentBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.statusPENDING {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusPROCESSING {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.statusSHIPPED {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.statusDELIVERED {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.statusCANCELLED {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.statusREFUNDED {
+  background: #fae8ff;
+  color: #86198f;
+}
+
+.paymentPENDING {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.paymentPAID {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.paymentFAILED {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.paymentREFUNDED {
+  background: #fae8ff;
+  color: #86198f;
+}
+
+/* Total Cell */
+.totalCell {
+  display: flex;
+  flex-direction: column;
+}
+
+.totalAmount {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.itemsCount {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+/* View Button */
+.viewButton {
+  padding: 6px 12px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 6px;
+  color: #374151;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.viewButton:hover {
+  background: #e5e7eb;
+}
+
+@media (max-width: 1024px) {
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .filters {
+    flex-direction: column;
+  }
+
+  .searchInput {
+    max-width: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
+}

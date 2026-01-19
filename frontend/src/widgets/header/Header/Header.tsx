@@ -1,11 +1,13 @@
 'use client';
 
 import React from 'react';
-import styles from './Header.module.css';
-import { TopBar } from '../TopBar';
+
+import { Logo } from '@/shared/ui/Logo';
+
 import { ActionButtons } from '../ActionButtons';
 import { Navigation } from '../Navigation';
-import { Logo } from '@/shared/ui/Logo';
+import { TopBar } from '../TopBar';
+import styles from './Header.module.css';
 
 export interface HeaderProps {
   onNavigationClick?: (sectionName: string) => void;
@@ -35,4 +37,3 @@ export const Header: React.FC<HeaderProps> = ({ onNavigationClick }) => {
     </header>
   );
 };
-

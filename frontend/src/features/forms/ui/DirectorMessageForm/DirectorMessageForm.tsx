@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+
 import { Button } from '@/shared/ui/Button';
+
 import type { DirectorMessageFormData } from '../../types/forms';
 import styles from './DirectorMessageForm.module.css';
 
@@ -32,7 +34,7 @@ export const DirectorMessageForm: React.FC<DirectorMessageFormProps> = ({
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
     }));
@@ -40,7 +42,7 @@ export const DirectorMessageForm: React.FC<DirectorMessageFormProps> = ({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       attachment: file,
     }));
@@ -164,5 +166,3 @@ export const DirectorMessageForm: React.FC<DirectorMessageFormProps> = ({
     </form>
   );
 };
-
-

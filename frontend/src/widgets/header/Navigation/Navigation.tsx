@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import styles from './Navigation.module.css';
+
 import { DesktopNavigation } from './DesktopNavigation';
 import { MobileNavigation } from './MobileNavigation';
+import styles from './Navigation.module.css';
 
 export interface NavigationProps {
   onNavigationClick?: (sectionName: string) => void;
@@ -27,4 +28,3 @@ export const Navigation: React.FC<NavigationProps> = ({
     </div>
   );
 };
-

@@ -32,16 +32,11 @@ export class CreateOrderDto {
   @Type(() => OrderItemDto)
   items: OrderItemDto[];
 
-  @ApiProperty({ example: 'card', required: false })
-  @IsOptional()
-  @IsString()
-  paymentMethod?: string;
-
   @ApiProperty({ example: 500, required: false })
   @IsOptional()
   @IsNumber()
   @Min(0)
-  shipping?: number;
+  shippingCost?: number;
 
   @ApiProperty({ required: false })
   @IsOptional()

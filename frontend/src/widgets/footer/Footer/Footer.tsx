@@ -1,7 +1,8 @@
 import React from 'react';
-import { FooterSections } from './FooterSections';
-import { FooterBottom } from './FooterBottom';
+
 import styles from './Footer.module.css';
+import { FooterBottom } from './FooterBottom';
+import { FooterSections } from './FooterSections';
 
 export const Footer: React.FC = () => {
   return (
@@ -11,4 +12,3 @@ export const Footer: React.FC = () => {
     </footer>
   );
 };
-

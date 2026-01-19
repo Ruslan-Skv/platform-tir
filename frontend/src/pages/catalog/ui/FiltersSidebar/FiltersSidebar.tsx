@@ -1,4 +1,5 @@
 import React from 'react';
+
 import styles from './FiltersSidebar.module.css';
 
 interface FilterSection {
@@ -47,7 +48,7 @@ export const FiltersSidebar: React.FC = () => {
 
             {section.type === 'checkbox' && (
               <div className={styles.options}>
-                {section.options.map(option => (
+                {section.options.map((option) => (
                   <label key={option} className={styles.option}>
                     <input type="checkbox" />
                     <span className={styles.optionText}>{option}</span>
@@ -58,7 +59,7 @@ export const FiltersSidebar: React.FC = () => {
 
             {section.type === 'radio' && (
               <div className={styles.options}>
-                {section.options.map(option => (
+                {section.options.map((option) => (
                   <label key={option} className={styles.option}>
                     <input type="radio" name={section.title} />
                     <span className={styles.optionText}>{option}</span>

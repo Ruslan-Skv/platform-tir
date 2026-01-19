@@ -5,7 +5,19 @@
 
 .container {
   margin: 0 auto;
-  max-width: 1200px;
+  max-width: 1440px;
+}
+
+@media (width <= 1280px) {
+  .container {
+    max-width: 1200px;
+  }
+}
+
+@media (width <= 1024px) {
+  .container {
+    max-width: 960px;
+  }
 }
 
 .header {
@@ -167,3 +179,43 @@ html[data-theme='dark'] .feature {
   }
 }
 
+@media (width <= 480px) {
+  .services {
+    padding: 2rem 0.75rem;
+  }
+
+  .title {
+    font-size: 1.75rem;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+  }
+
+  .servicesGrid {
+    gap: 1.5rem;
+    grid-template-columns: 1fr;
+  }
+
+  .serviceContent {
+    padding: 1.5rem;
+  }
+
+  .serviceTitle {
+    font-size: 1.25rem;
+  }
+}
+
+@media (width <= 320px) {
+  .services {
+    padding: 1.5rem 0.5rem;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .serviceImage {
+    height: 150px;
+  }
+}

@@ -10,21 +10,33 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ==================== USERS & AUTH ====================
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
   password  String
   firstName String?
   lastName  String?
+  phone     String?
+  avatar    String?
   role      UserRole @default(USER)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  orders     Order[]
-  addresses  Address[]
-  cartItems  CartItem[]
-  wishlist   WishlistItem[]
+  orders            Order[]
+  addresses         Address[]
+  cartItems         CartItem[]
+  wishlist          WishlistItem[]
+  // CRM relations
+  assignedCustomers Customer[]     @relation("ManagerCustomers")
+  tasks             Task[]         @relation("AssignedTasks")
+  createdTasks      Task[]         @relation("CreatedTasks")
+  interactions      Interaction[]
+  blogPosts         BlogPost[]
+  comments          Comment[]
+  salesMetrics      SalesMetric[]
 
   @@map("users")
 }
@@ -33,73 +45,584 @@ enum UserRole {
   USER
   ADMIN
   MANAGER
+  CONTENT_MANAGER
 }
 
-model Category {
+// ==================== CRM ====================
+
+model Customer {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  phone         String?
+  firstName     String
+  lastName      String?
+  company       String?
+  position      String?
+  source        LeadSource     @default(WEBSITE)
+  status        CustomerStatus @default(LEAD)
+  stage         DealStage      @default(NEW)
+  dealValue     Decimal?       @db.Decimal(12, 2)
+  notes         String?        @db.Text
+  tags          String[]
+  managerId     String?
+  manager       User?          @relation("ManagerCustomers", fields: [managerId], references: [id])
+  isActive      Boolean        @default(true)
+  lastContactAt DateTime?
+  nextFollowUp  DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  interactions Interaction[]
+  tasks        Task[]
+  deals        Deal[]
+
+  @@map("customers")
+}
+
+enum LeadSource {
+  WEBSITE
+  PHONE
+  EMAIL
+  REFERRAL
+  SOCIAL
+  ADVERTISING
+  EXHIBITION
+  OTHER
+}
+
+enum CustomerStatus {
+  LEAD
+  PROSPECT
+  CUSTOMER
+  INACTIVE
+  CHURNED
+}
+
+enum DealStage {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+model Interaction {
+  id          String          @id @default(cuid())
+  customerId  String
+  customer    Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User            @relation(fields: [userId], references: [id])
+  type        InteractionType
+  subject     String?
+  description String?         @db.Text
+  outcome     String?
+  createdAt   DateTime        @default(now())
+
+  @@map("interactions")
+}
+
+enum InteractionType {
+  CALL
+  EMAIL
+  MEETING
+  NOTE
+  TASK
+  ORDER
+}
+
+model Deal {
+  id                String    @id @default(cuid())
+  customerId        String
+  customer          Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  title             String
+  value             Decimal   @db.Decimal(12, 2)
+  stage             DealStage @default(NEW)
+  probability       Int       @default(0)
+  expectedCloseDate DateTime?
+  closedAt          DateTime?
+  notes             String?   @db.Text
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("deals")
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  title       String
+  description String?      @db.Text
+  type        TaskType     @default(TODO)
+  priority    TaskPriority @default(MEDIUM)
+  status      TaskStatus   @default(PENDING)
+  dueDate     DateTime?
+  completedAt DateTime?
+  customerId  String?
+  customer    Customer?    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  assigneeId  String?
+  assignee    User?        @relation("AssignedTasks", fields: [assigneeId], references: [id])
+  createdById String
+  createdBy   User         @relation("CreatedTasks", fields: [createdById], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("tasks")
+}
+
+enum TaskType {
+  TODO
+  CALL
+  EMAIL
+  MEETING
+  FOLLOW_UP
+  REMINDER
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// ==================== CMS ====================
+
+model Page {
+  id             String     @id @default(cuid())
+  title          String
+  slug           String     @unique
+  content        String     @db.Text
+  excerpt        String?
+  featuredImage  String?
+  template       String     @default("default")
+  status         PageStatus @default(DRAFT)
+  publishedAt    DateTime?
+  seoTitle       String?
+  seoDescription String?
+  seoKeywords    String[]
+  parentId       String?
+  parent         Page?      @relation("PageTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children       Page[]     @relation("PageTree")
+  order          Int        @default(0)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@map("pages")
+}
+
+enum PageStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model BlogPost {
+  id             String        @id @default(cuid())
+  title          String
+  slug           String        @unique
+  content        String        @db.Text
+  excerpt        String?
+  featuredImage  String?
+  status         PageStatus    @default(DRAFT)
+  publishedAt    DateTime?
+  authorId       String
+  author         User          @relation(fields: [authorId], references: [id])
+  categoryId     String?
+  category       BlogCategory? @relation(fields: [categoryId], references: [id])
+  tags           String[]
+  viewCount      Int           @default(0)
+  seoTitle       String?
+  seoDescription String?
+  allowComments  Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  comments Comment[]
+
+  @@map("blog_posts")
+}
+
+model BlogCategory {
   id          String   @id @default(cuid())
   name        String
   slug        String   @unique
   description String?
   image       String?
-  parentId    String?
-  parent      Category? @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
-  children    Category[] @relation("CategoryTree")
   order       Int      @default(0)
-  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  products    Product[]
+  posts BlogPost[]
 
-  @@map("categories")
+  @@map("blog_categories")
 }
 
-model Product {
+model Comment {
+  id          String        @id @default(cuid())
+  postId      String
+  post        BlogPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId    String?
+  author      User?         @relation(fields: [authorId], references: [id])
+  authorName  String?
+  authorEmail String?
+  content     String        @db.Text
+  status      CommentStatus @default(PENDING)
+  parentId    String?
+  parent      Comment?      @relation("CommentTree", fields: [parentId], references: [id], onDelete: Cascade)
+  replies     Comment[]     @relation("CommentTree")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("comments")
+}
+
+enum CommentStatus {
+  PENDING
+  APPROVED
+  SPAM
+  REJECTED
+}
+
+// ==================== CATALOG ====================
+
+model Manufacturer {
   id          String   @id @default(cuid())
   name        String
   slug        String   @unique
   description String?  @db.Text
-  sku         String?  @unique
-  price       Decimal  @db.Decimal(10, 2)
-  comparePrice Decimal? @db.Decimal(10, 2)
-  stock       Int      @default(0)
+  logo        String?
+  website     String?
+  country     String?
   isActive    Boolean  @default(true)
-  isFeatured  Boolean  @default(false)
-  categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id])
-  images      String[]
-  attributes  Json?
-  seoTitle    String?
-  seoDescription String?
+  order       Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  orderItems  OrderItem[]
-  cartItems   CartItem[]
-  wishlist    WishlistItem[]
-  reviews     Review[]
+  products Product[]
+
+  @@map("manufacturers")
+}
+
+model Attribute {
+  id           String        @id @default(cuid())
+  name         String
+  slug         String        @unique
+  type         AttributeType @default(TEXT)
+  unit         String?
+  isFilterable Boolean       @default(true)
+  isRequired   Boolean       @default(false)
+  order        Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  values     AttributeValue[]
+  categories CategoryAttribute[]
+
+  @@map("attributes")
+}
+
+enum AttributeType {
+  TEXT
+  NUMBER
+  BOOLEAN
+  SELECT
+  MULTI_SELECT
+  COLOR
+}
+
+model AttributeValue {
+  id          String    @id @default(cuid())
+  attributeId String
+  attribute   Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  value       String
+  colorHex    String?
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@map("attribute_values")
+}
+
+model Supplier {
+  id           String    @id @default(cuid())
+  name         String
+  code         String    @unique
+  email        String?
+  phone        String?
+  website      String?
+  apiUrl       String?
+  apiKey       String?
+  priceMarkup  Decimal   @default(0) @db.Decimal(5, 2)
+  isActive     Boolean   @default(true)
+  syncEnabled  Boolean   @default(false)
+  syncSchedule String? // cron expression
+  lastSyncAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  products ProductSupplier[]
+  syncLogs SupplierSyncLog[]
+
+  @@map("suppliers")
+}
+
+model ProductSupplier {
+  id             String    @id @default(cuid())
+  productId      String
+  product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplierId     String
+  supplier       Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  supplierSku    String
+  supplierPrice  Decimal   @db.Decimal(10, 2)
+  supplierStock  Int       @default(0)
+  isMainSupplier Boolean   @default(false)
+  lastSyncAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([productId, supplierId])
+  @@map("product_suppliers")
+}
+
+model SupplierSyncLog {
+  id              String     @id @default(cuid())
+  supplierId      String
+  supplier        Supplier   @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  status          SyncStatus
+  productsAdded   Int        @default(0)
+  productsUpdated Int        @default(0)
+  productsRemoved Int        @default(0)
+  errors          String?    @db.Text
+  startedAt       DateTime   @default(now())
+  completedAt     DateTime?
+
+  @@map("supplier_sync_logs")
+}
+
+enum SyncStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+// ==================== ORDERS & PAYMENTS ====================
+
+model ShippingMethod {
+  id              String   @id @default(cuid())
+  name            String
+  code            String   @unique
+  description     String?
+  price           Decimal  @db.Decimal(10, 2)
+  freeFromAmount  Decimal? @db.Decimal(10, 2)
+  minDeliveryDays Int?
+  maxDeliveryDays Int?
+  isActive        Boolean  @default(true)
+  order           Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  orders Order[]
+
+  @@map("shipping_methods")
+}
+
+model PaymentMethod {
+  id          String   @id @default(cuid())
+  name        String
+  code        String   @unique
+  description String?
+  icon        String?
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  payments Payment[]
+
+  @@map("payment_methods")
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  orderId         String
+  order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  methodId        String
+  method          PaymentMethod @relation(fields: [methodId], references: [id])
+  amount          Decimal       @db.Decimal(10, 2)
+  status          PaymentStatus @default(PENDING)
+  transactionId   String?
+  gatewayResponse Json?
+  paidAt          DateTime?
+  refundedAt      DateTime?
+  refundAmount    Decimal?      @db.Decimal(10, 2)
+  refundReason    String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("payments")
+}
+
+// ==================== ANALYTICS ====================
+
+model SalesMetric {
+  id             String   @id @default(cuid())
+  date           DateTime @db.Date
+  managerId      String?
+  manager        User?    @relation(fields: [managerId], references: [id])
+  ordersCount    Int      @default(0)
+  revenue        Decimal  @default(0) @db.Decimal(12, 2)
+  avgOrderValue  Decimal  @default(0) @db.Decimal(10, 2)
+  newCustomers   Int      @default(0)
+  conversionRate Decimal  @default(0) @db.Decimal(5, 2)
+  createdAt      DateTime @default(now())
+
+  @@unique([date, managerId])
+  @@map("sales_metrics")
+}
+
+model MarketingChannel {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  metrics MarketingMetric[]
+
+  @@map("marketing_channels")
+}
+
+model MarketingMetric {
+  id        String           @id @default(cuid())
+  channelId String
+  channel   MarketingChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  date      DateTime         @db.Date
+  visits    Int              @default(0)
+  leads     Int              @default(0)
+  orders    Int              @default(0)
+  revenue   Decimal          @default(0) @db.Decimal(12, 2)
+  cost      Decimal          @default(0) @db.Decimal(10, 2)
+  createdAt DateTime         @default(now())
+
+  @@unique([channelId, date])
+  @@map("marketing_metrics")
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  image       String?
+  parentId    String?
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Category[] @relation("CategoryTree")
+  order       Int        @default(0)
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  products   Product[]
+  attributes CategoryAttribute[]
+
+  @@map("categories")
+}
+
+model CategoryAttribute {
+  id          String    @id @default(cuid())
+  categoryId  String
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  attributeId String
+  attribute   Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  isRequired  Boolean   @default(false)
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@unique([categoryId, attributeId])
+  @@map("category_attributes")
+}
+
+model Product {
+  id               String        @id @default(cuid())
+  name             String
+  slug             String        @unique
+  description      String?       @db.Text
+  shortDescription String?
+  sku              String?       @unique
+  barcode          String?
+  price            Decimal       @db.Decimal(10, 2)
+  comparePrice     Decimal?      @db.Decimal(10, 2)
+  costPrice        Decimal?      @db.Decimal(10, 2)
+  stock            Int           @default(0)
+  minStock         Int           @default(0)
+  weight           Decimal?      @db.Decimal(8, 3)
+  length           Decimal?      @db.Decimal(8, 2)
+  width            Decimal?      @db.Decimal(8, 2)
+  height           Decimal?      @db.Decimal(8, 2)
+  isActive         Boolean       @default(true)
+  isFeatured       Boolean       @default(false)
+  isNew            Boolean       @default(false)
+  categoryId       String
+  category         Category      @relation(fields: [categoryId], references: [id])
+  manufacturerId   String?
+  manufacturer     Manufacturer? @relation(fields: [manufacturerId], references: [id])
+  images           String[]
+  attributes       Json?
+  seoTitle         String?
+  seoDescription   String?
+  seoKeywords      String[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  orderItems OrderItem[]
+  cartItems  CartItem[]
+  wishlist   WishlistItem[]
+  reviews    Review[]
+  suppliers  ProductSupplier[]
 
   @@map("products")
 }
 
 model Order {
-  id          String      @id @default(cuid())
-  userId      String
-  user        User        @relation(fields: [userId], references: [id])
-  status      OrderStatus @default(PENDING)
-  total       Decimal     @db.Decimal(10, 2)
-  subtotal    Decimal     @db.Decimal(10, 2)
-  tax         Decimal     @db.Decimal(10, 2)
-  shipping    Decimal     @db.Decimal(10, 2)
+  id                String          @id @default(cuid())
+  orderNumber       String          @unique
+  userId            String
+  user              User            @relation(fields: [userId], references: [id])
+  status            OrderStatus     @default(PENDING)
+  total             Decimal         @db.Decimal(10, 2)
+  subtotal          Decimal         @db.Decimal(10, 2)
+  tax               Decimal         @db.Decimal(10, 2)
+  discount          Decimal         @default(0) @db.Decimal(10, 2)
+  shippingCost      Decimal         @db.Decimal(10, 2)
+  shippingMethodId  String?
+  shippingMethod    ShippingMethod? @relation(fields: [shippingMethodId], references: [id])
   shippingAddressId String
-  shippingAddress Address  @relation(fields: [shippingAddressId], references: [id])
-  paymentMethod String?
-  paymentStatus PaymentStatus @default(PENDING)
-  notes       String?     @db.Text
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  shippingAddress   Address         @relation(fields: [shippingAddressId], references: [id])
+  paymentStatus     PaymentStatus   @default(PENDING)
+  customerNotes     String?         @db.Text
+  adminNotes        String?         @db.Text
+  trackingNumber    String?
+  shippedAt         DateTime?
+  deliveredAt       DateTime?
+  cancelledAt       DateTime?
+  cancelReason      String?
+  refundedAt        DateTime?
+  refundAmount      Decimal?        @db.Decimal(10, 2)
+  refundReason      String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
-  items       OrderItem[]
+  items    OrderItem[]
+  payments Payment[]
 
   @@map("orders")
 }
@@ -134,23 +657,23 @@ model OrderItem {
 }
 
 model Address {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      AddressType @default(SHIPPING)
-  firstName String
-  lastName  String
-  phone     String
-  street    String
-  city      String
-  region    String?
+  id         String      @id @default(cuid())
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       AddressType @default(SHIPPING)
+  firstName  String
+  lastName   String
+  phone      String
+  street     String
+  city       String
+  region     String?
   postalCode String
-  country   String   @default("RU")
-  isDefault Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  country    String      @default("RU")
+  isDefault  Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 
-  orders    Order[]
+  orders Order[]
 
   @@map("addresses")
 }
@@ -187,16 +710,16 @@ model WishlistItem {
 }
 
 model Review {
-  id        String   @id @default(cuid())
-  productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  userId    String?
-  userName  String
-  rating    Int      @db.SmallInt
-  comment   String?  @db.Text
-  isApproved Boolean @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId     String?
+  userName   String
+  rating     Int      @db.SmallInt
+  comment    String?  @db.Text
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@map("reviews")
 }

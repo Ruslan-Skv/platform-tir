@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+
 import { Button } from '@/shared/ui/Button';
+
 import type { MeasurementFormData } from '../../types/forms';
 import styles from './MeasurementForm.module.css';
 
@@ -35,7 +37,7 @@ export const MeasurementForm: React.FC<MeasurementFormProps> = ({
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
     }));
@@ -135,7 +137,7 @@ export const MeasurementForm: React.FC<MeasurementFormProps> = ({
             className={styles.select}
           >
             <option value="">Выберите дату</option>
-            {getAvailableDates().map(date => (
+            {getAvailableDates().map((date) => (
               <option key={date} value={date}>
                 {new Date(date).toLocaleDateString('ru-RU', {
                   weekday: 'short',
@@ -157,7 +159,7 @@ export const MeasurementForm: React.FC<MeasurementFormProps> = ({
             className={styles.select}
           >
             <option value="">Выберите время</option>
-            {timeSlots.map(time => (
+            {timeSlots.map((time) => (
               <option key={time} value={time}>
                 {time}
               </option>
@@ -175,7 +177,7 @@ export const MeasurementForm: React.FC<MeasurementFormProps> = ({
           className={styles.select}
         >
           <option value="">Не выбрано</option>
-          {productTypes.map(type => (
+          {productTypes.map((type) => (
             <option key={type} value={type}>
               {type}
             </option>
@@ -230,4 +232,3 @@ export const MeasurementForm: React.FC<MeasurementFormProps> = ({
     </form>
   );
 };
-

@@ -43,6 +43,24 @@ export const dropdownMenus: DropdownMenus = {
         href: '/catalog/products/entrance-doors',
         productType: 'entrance_doors',
         icon: 'RectangleStack',
+        hasSubmenu: true,
+        submenu: [
+          {
+            name: 'Входные двери ТТ XL / XXL',
+            href: '/catalog/products/entrance-doors/tt-xl-xxl',
+            productType: 'entrance_doors_tt_xl_xxl',
+          },
+          {
+            name: 'Входные двери М',
+            href: '/catalog/products/entrance-doors/m',
+            productType: 'entrance_doors_m',
+          },
+          {
+            name: 'Входные двери Аргус',
+            href: '/catalog/products/entrance-doors/argus',
+            productType: 'entrance_doors_argus',
+          },
+        ],
       },
       {
         name: 'Двери межкомнатные',
@@ -260,13 +278,13 @@ export const dropdownMenus: DropdownMenus = {
 
 export function getPathForProductType(productType: string): string {
   for (const menu of Object.values(dropdownMenus)) {
-    const item = menu.items.find(item => item.productType === productType);
+    const item = menu.items.find((item) => item.productType === productType);
     if (item) {
       return item.href;
     }
     for (const mainItem of menu.items) {
       if (mainItem.submenu) {
-        const subItem = mainItem.submenu.find(subItem => subItem.productType === productType);
+        const subItem = mainItem.submenu.find((subItem) => subItem.productType === productType);
         if (subItem) {
           return subItem.href;
         }
@@ -277,17 +295,17 @@ export function getPathForProductType(productType: string): string {
 }
 
 export function getProductTypesForCategory(category: string): string[] {
-  const menu = Object.values(dropdownMenus).find(m => m.category === category);
+  const menu = Object.values(dropdownMenus).find((m) => m.category === category);
   if (!menu) return [];
 
   const productTypes: string[] = [];
 
-  menu.items.forEach(item => {
+  menu.items.forEach((item) => {
     if (item.productType) {
       productTypes.push(item.productType);
     }
     if (item.submenu) {
-      item.submenu.forEach(subItem => {
+      item.submenu.forEach((subItem) => {
         if (subItem.productType) {
           productTypes.push(subItem.productType);
         }
@@ -305,7 +323,7 @@ export function getMenuItemByProductType(productType: string): DropdownItem | nu
         return item;
       }
       if (item.submenu) {
-        const subItem = item.submenu.find(subItem => subItem.productType === productType);
+        const subItem = item.submenu.find((subItem) => subItem.productType === productType);
         if (subItem) {
           return subItem;
         }
@@ -315,7 +333,7 @@ export function getMenuItemByProductType(productType: string): DropdownItem | nu
   return null;
 }
 
-export const mainCategories = navigation.map(item => ({
+export const mainCategories = navigation.map((item) => ({
   name: item.name,
   href: item.href,
 }));

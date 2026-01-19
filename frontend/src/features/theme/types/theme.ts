@@ -3,5 +3,3 @@ export interface ThemeState {
 }
 
 export type ThemeMode = 'light' | 'dark';
-
-

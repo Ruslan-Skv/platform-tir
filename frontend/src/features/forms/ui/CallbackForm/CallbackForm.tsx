@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+
 import { Button } from '@/shared/ui/Button';
+
 import type { CallbackFormData } from '../../types/forms';
 import type { CallbackFormProps } from '../types';
 import styles from './CallbackForm.module.css';
@@ -27,7 +29,7 @@ export const CallbackForm: React.FC<CallbackFormProps> = ({
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
     }));
@@ -93,7 +95,7 @@ export const CallbackForm: React.FC<CallbackFormProps> = ({
           className={styles.select}
         >
           <option value="">Выберите время</option>
-          {timeSlots.map(time => (
+          {timeSlots.map((time) => (
             <option key={time} value={time}>
               {time}
             </option>
@@ -144,5 +146,3 @@ export const CallbackForm: React.FC<CallbackFormProps> = ({
     </form>
   );
 };
-
-

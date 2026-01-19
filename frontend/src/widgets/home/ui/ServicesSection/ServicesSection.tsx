@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { services } from '../../lib/constants';
 import styles from './ServicesSection.module.css';
 
@@ -12,7 +13,7 @@ export const ServicesSection: React.FC = () => {
         </div>
 
         <div className={styles.servicesGrid}>
-          {services.map(service => (
+          {services.map((service) => (
             <div key={service.id} className={styles.serviceCard}>
               <div
                 className={styles.serviceImage}
@@ -42,4 +43,3 @@ export const ServicesSection: React.FC = () => {
     </section>
   );
 };
-

@@ -1,26 +1,29 @@
-import React from 'react';
 import {
-  ChevronDownIcon,
-  RectangleStackIcon,
-  WrenchScrewdriverIcon,
-  Squares2X2Icon,
-  ViewColumnsIcon,
-  CubeIcon,
-  HomeIcon,
-  TableCellsIcon,
-  MoonIcon,
-  CubeTransparentIcon,
-  LightBulbIcon,
-  PaintBrushIcon,
   BoltIcon,
-  Square3Stack3DIcon,
-  TagIcon,
-  DocumentTextIcon,
   BuildingOfficeIcon,
+  ChevronDownIcon,
+  CubeIcon,
+  CubeTransparentIcon,
+  DocumentTextIcon,
+  HomeIcon,
+  LightBulbIcon,
+  MoonIcon,
+  PaintBrushIcon,
+  RectangleStackIcon,
+  Square3Stack3DIcon,
+  Squares2X2Icon,
+  TableCellsIcon,
+  TagIcon,
+  ViewColumnsIcon,
+  WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline';
-import { Button } from '@/shared/ui/Button';
-import type { NavigationItem as NavigationItemType } from '@/shared/types/navigation';
+
+import React from 'react';
+
 import { dropdownMenus } from '@/shared/constants/navigation';
+import type { NavigationItem as NavigationItemType } from '@/shared/types/navigation';
+import { Button } from '@/shared/ui/Button';
+
 import styles from './NavigationItem.module.css';
 
 // Маппинг имен иконок на компоненты
@@ -155,22 +158,22 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
   }, [isActive, item.name]);
 
   const handleClick = () => {
-    if (hasDropdown) {
-      if (onClick) {
-        onClick(item.name);
-      }
-    } else {
-      if (item.href) {
-        window.location.href = item.href;
-      }
+    // Всегда переходим по ссылке, если она есть
+    if (item.href) {
+      window.location.href = item.href;
+    }
+    // Дополнительно вызываем колбэк
+    if (onClick) {
+      onClick(item.name);
     }
   };
 
-  const handleDropdownItemClick = (itemName: string, e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleDropdownItemClick = (itemName: string) => {
+    // Вызываем колбэк для дополнительной логики (например, закрытие меню)
     if (onClick) {
       onClick(itemName);
     }
+    // Переход выполняется стандартным поведением ссылки <a href="...">
   };
 
   // Функция для получения иконки по имени
@@ -186,7 +189,7 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
           src={iconName}
           alt=""
           className={styles.dropdownItemIcon}
-          onError={e => {
+          onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
           }}
@@ -234,21 +237,41 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
         >
           <div className={styles.dropdownContent}>
             <div className={styles.dropdownGrid}>
-              {menuData.items.map(dropdownItem => (
-                <a
-                  key={dropdownItem.name}
-                  href={dropdownItem.href}
-                  onClick={e => handleDropdownItemClick(dropdownItem.name, e)}
-                  className={styles.dropdownItem}
-                  title={dropdownItem.name}
-                >
-                  {dropdownItem.icon && (
-                    <span className={styles.dropdownItemIconWrapper}>
-                      {getIcon(dropdownItem.icon)}
+              {menuData.items.map((dropdownItem) => (
+                <div key={dropdownItem.name} className={styles.dropdownSection}>
+                  {/* Название раздела (жирным) */}
+                  <a
+                    href={dropdownItem.href}
+                    onClick={() => handleDropdownItemClick(dropdownItem.name)}
+                    className={styles.dropdownItem}
+                    title={dropdownItem.name}
+                  >
+                    {dropdownItem.icon && (
+                      <span className={styles.dropdownItemIconWrapper}>
+                        {getIcon(dropdownItem.icon)}
+                      </span>
+                    )}
+                    <span className={`${styles.dropdownItemText} ${styles.dropdownItemTextBold}`}>
+                      {dropdownItem.name}
                     </span>
+                  </a>
+                  {/* Подразделы (серии) */}
+                  {dropdownItem.hasSubmenu && dropdownItem.submenu && (
+                    <div className={styles.submenu}>
+                      {dropdownItem.submenu.map((subItem) => (
+                        <a
+                          key={subItem.name}
+                          href={subItem.href}
+                          onClick={() => handleDropdownItemClick(subItem.name)}
+                          className={styles.submenuItem}
+                          title={subItem.name}
+                        >
+                          {subItem.name}
+                        </a>
+                      ))}
+                    </div>
                   )}
-                  <span className={styles.dropdownItemText}>{dropdownItem.name}</span>
-                </a>
+                </div>
               ))}
             </div>
           </div>

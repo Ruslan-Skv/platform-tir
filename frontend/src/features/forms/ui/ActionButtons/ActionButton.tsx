@@ -1,5 +1,7 @@
 import React from 'react';
+
 import { Button } from '@/shared/ui/Button';
+
 import styles from './ActionButton.module.css';
 
 export interface ActionButtonProps {
@@ -23,10 +25,13 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
   const buttonClass = `${styles.button} ${styles[variant]} ${mobile ? styles.mobile : ''} ${className}`;
 
   return (
-    <Button variant="outline" onClick={onClick} className={buttonClass} data-action-button={variant}>
+    <Button
+      variant="outline"
+      onClick={onClick}
+      className={buttonClass}
+      data-action-button={variant}
+    >
       {buttonText}
     </Button>
   );
 };
-
-

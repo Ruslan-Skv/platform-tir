@@ -1,7 +1,9 @@
 'use client';
 
 import React from 'react';
+
 import { useRouter } from 'next/navigation';
+
 import styles from './HeroSection.module.css';
 
 export const HeroSection: React.FC = () => {
@@ -72,4 +74,3 @@ export const HeroSection: React.FC = () => {
     </section>
   );
 };
-

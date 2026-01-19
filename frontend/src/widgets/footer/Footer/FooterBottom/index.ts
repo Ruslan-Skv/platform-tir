@@ -1,2 +1,1 @@
 export { FooterBottom } from './FooterBottom';
-

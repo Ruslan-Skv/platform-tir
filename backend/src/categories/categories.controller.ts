@@ -24,6 +24,31 @@ export class CategoriesController {
     return this.categoriesService.findAll();
   }
 
+  // Атрибуты - общий список
+  @Get('attributes/all')
+  @ApiOperation({ summary: 'Получить все доступные атрибуты' })
+  getAllAttributes() {
+    return this.categoriesService.getAllAttributes();
+  }
+
+  @Post('attributes')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Создать новый атрибут' })
+  createAttribute(
+    @Body()
+    body: {
+      name: string;
+      slug: string;
+      type?: 'TEXT' | 'NUMBER' | 'BOOLEAN' | 'SELECT' | 'MULTI_SELECT' | 'COLOR';
+      unit?: string;
+      isFilterable?: boolean;
+      values?: string[];
+    },
+  ) {
+    return this.categoriesService.createAttribute(body);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Получить категорию по ID' })
   findOne(@Param('id') id: string) {
@@ -50,5 +75,66 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Удалить категорию' })
   remove(@Param('id') id: string) {
     return this.categoriesService.remove(id);
+  }
+
+  // ==================== АТРИБУТЫ КАТЕГОРИИ ====================
+
+  @Get(':id/attributes')
+  @ApiOperation({ summary: 'Получить атрибуты категории' })
+  getCategoryAttributes(@Param('id') id: string) {
+    return this.categoriesService.getCategoryAttributes(id);
+  }
+
+  @Post(':id/attributes')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Добавить атрибут к категории' })
+  addAttributeToCategory(
+    @Param('id') id: string,
+    @Body() body: { attributeId: string; isRequired?: boolean; order?: number },
+  ) {
+    return this.categoriesService.addAttributeToCategory(id, body);
+  }
+
+  @Post(':id/attributes/bulk')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Массовое добавление атрибутов к категории' })
+  bulkAddAttributes(
+    @Param('id') id: string,
+    @Body() body: { attributeIds: string[]; isRequired?: boolean },
+  ) {
+    return this.categoriesService.bulkAddAttributesToCategory(id, body);
+  }
+
+  @Patch(':id/attributes/:attributeId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Обновить настройки атрибута в категории' })
+  updateCategoryAttribute(
+    @Param('id') id: string,
+    @Param('attributeId') attributeId: string,
+    @Body() body: { isRequired?: boolean; order?: number },
+  ) {
+    return this.categoriesService.updateCategoryAttribute(id, attributeId, body);
+  }
+
+  @Delete(':id/attributes/:attributeId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Удалить атрибут из категории' })
+  removeAttributeFromCategory(@Param('id') id: string, @Param('attributeId') attributeId: string) {
+    return this.categoriesService.removeAttributeFromCategory(id, attributeId);
+  }
+
+  @Post(':id/attributes/apply')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Применить атрибуты категории ко всем её товарам' })
+  applyAttributesToProducts(
+    @Param('id') id: string,
+    @Body() body: { attributes: { attributeId: string; defaultValue?: string }[] },
+  ) {
+    return this.categoriesService.applyAttributesToProducts(id, body.attributes);
   }
 }

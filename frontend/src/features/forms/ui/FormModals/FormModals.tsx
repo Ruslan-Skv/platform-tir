@@ -1,12 +1,14 @@
 'use client';
 
 import React from 'react';
+
 import { Modal } from '@/shared/ui/Modal';
+
+import { useFormContext } from '../../context/FormContext';
 import { CallbackForm } from '../CallbackForm';
+import { DirectorMessageForm } from '../DirectorMessageForm';
 import { MeasurementForm } from '../MeasurementForm';
 import { SuccessMessage } from '../SuccessMessage';
-import { DirectorMessageForm } from '../DirectorMessageForm';
-import { useFormContext } from '../../context/FormContext';
 import styles from './FormModals.module.css';
 
 export const FormModals: React.FC = () => {
@@ -96,5 +98,3 @@ export const FormModals: React.FC = () => {
     </>
   );
 };
-
-

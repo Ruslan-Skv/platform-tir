@@ -1,19 +1,22 @@
 'use client';
 
-import React from 'react';
 import {
-  ChevronLeftIcon,
-  XMarkIcon,
-  MagnifyingGlassIcon,
   ChartBarIcon,
-  UserIcon,
+  ChevronLeftIcon,
   HeartIcon,
+  MagnifyingGlassIcon,
   ShoppingCartIcon,
+  UserIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
-import { navigation, dropdownMenus } from '@/shared/constants/navigation';
-import { ActionButtons } from '@/widgets/header/ActionButtons/ActionButtons';
-import { Logo } from '@/shared/ui/Logo';
+
+import React from 'react';
+
 import { useTheme } from '@/features/theme';
+import { dropdownMenus, navigation } from '@/shared/constants/navigation';
+import { Logo } from '@/shared/ui/Logo';
+import { ActionButtons } from '@/widgets/header/ActionButtons/ActionButtons';
+
 import styles from './MobileNavigation.module.css';
 
 export interface MobileNavigationProps {
@@ -68,7 +71,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
         '/images/menu/dark/07.png',
       ];
 
-      imagePaths.forEach(path => {
+      imagePaths.forEach((path) => {
         const img = new Image();
         img.src = path;
       });
@@ -105,7 +108,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
     const itemImages = imageMap[itemName];
     // На сервере и до монтирования используем светлую тему для избежания mismatch
     const theme = isMounted ? (isDarkTheme ? 'dark' : 'light') : 'light';
-    
+
     if (itemImages) {
       return theme === 'dark' ? itemImages.dark : itemImages.light;
     }
@@ -114,7 +117,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
   };
 
   // Преобразуем навигацию в формат для кнопок с изображениями
-  const menuButtons: MenuButton[] = navigation.map(item => ({
+  const menuButtons: MenuButton[] = navigation.map((item) => ({
     name: item.name,
     hasDropdown: !!item.hasDropdown,
     imageLight: getImageForMenuItem(item.name),
@@ -217,7 +220,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
           {currentMenu === 'main' ? (
             /* Главное меню в виде сетки кнопок */
             <div className={styles.menuGrid}>
-              {menuButtons.map(button => (
+              {menuButtons.map((button) => (
                 <button
                   key={button.name}
                   type="button"
@@ -241,7 +244,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
                 Назад
               </button>
               {activeSubmenu &&
-                activeSubmenu.items.map(subItem => (
+                activeSubmenu.items.map((subItem) => (
                   <button
                     key={subItem.name}
                     type="button"
@@ -266,5 +269,3 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
     </>
   );
 };
-
-

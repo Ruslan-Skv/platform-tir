@@ -28,27 +28,21 @@ function checkFile(filePath, layer) {
     const importMatch = line.match(/from\s+['"](@[\w/]+|\.\.?\/[\w/]+)/);
     if (importMatch) {
       const importPath = importMatch[1];
-      
+
       // Проверка импортов из других слоёв
       if (importPath.startsWith('@shared/')) {
         // Разрешено
       } else if (importPath.startsWith('@entities/')) {
         if (!ALLOWED_IMPORTS[layer].includes('entities')) {
-          errors.push(
-            `❌ ${filePath}:${index + 1} - Импорт из entities в ${layer} запрещён`
-          );
+          errors.push(`❌ ${filePath}:${index + 1} - Импорт из entities в ${layer} запрещён`);
         }
       } else if (importPath.startsWith('@features/')) {
         if (!ALLOWED_IMPORTS[layer].includes('features')) {
-          errors.push(
-            `❌ ${filePath}:${index + 1} - Импорт из features в ${layer} запрещён`
-          );
+          errors.push(`❌ ${filePath}:${index + 1} - Импорт из features в ${layer} запрещён`);
         }
       } else if (importPath.startsWith('@widgets/')) {
         if (!ALLOWED_IMPORTS[layer].includes('widgets')) {
-          errors.push(
-            `❌ ${filePath}:${index + 1} - Импорт из widgets в ${layer} запрещён`
-          );
+          errors.push(`❌ ${filePath}:${index + 1} - Импорт из widgets в ${layer} запрещён`);
         }
       } else if (importPath.startsWith('../')) {
         // Относительные импорты - проверяем уровень вложенности
@@ -69,7 +63,7 @@ function checkLayer(layerPath, layerName) {
   }
 
   const items = fs.readdirSync(layerPath);
-  
+
   items.forEach((item) => {
     const itemPath = path.join(layerPath, item);
     const stat = fs.statSync(itemPath);
@@ -133,9 +127,3 @@ function main() {
 }
 
 main();
-
-
-
-
-
-

@@ -4,5 +4,3 @@ export type {
   FormSubmissionState,
   MeasurementFormData,
 } from './forms';
-
-

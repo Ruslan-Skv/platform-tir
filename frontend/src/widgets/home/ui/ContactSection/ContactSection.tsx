@@ -1,6 +1,8 @@
 import React from 'react';
-import styles from './ContactSection.module.css';
+
 import { ActionButtons } from '@/widgets/header/ActionButtons';
+
+import styles from './ContactSection.module.css';
 
 export const ContactSection: React.FC = () => {
   return (
@@ -20,4 +22,3 @@ export const ContactSection: React.FC = () => {
     </section>
   );
 };
-

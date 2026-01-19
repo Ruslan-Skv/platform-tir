@@ -1,25 +1,29 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
+
 import styles from './Pagination.module.css';
 
-export const Pagination: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 3;
+interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
+export const Pagination: React.FC<PaginationProps> = ({
+  currentPage,
+  totalPages,
+  onPageChange,
+}) => {
   const handlePrev = () => {
     if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
+      onPageChange(currentPage - 1);
     }
   };
 
   const handleNext = () => {
     if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
+      onPageChange(currentPage + 1);
     }
   };
 
@@ -36,12 +40,12 @@ export const Pagination: React.FC = () => {
       </button>
 
       <div className={styles.pages}>
-        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
           <button
             key={page}
             type="button"
             className={`${styles.pageButton} ${page === currentPage ? styles.active : ''}`}
-            onClick={() => handlePageChange(page)}
+            onClick={() => onPageChange(page)}
             aria-label={`Страница ${page}`}
             aria-current={page === currentPage ? 'page' : undefined}
           >

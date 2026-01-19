@@ -1,6 +1,8 @@
-import React from 'react';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+
+import React from 'react';
+
 import styles from './Modal.module.css';
 
 export interface ModalProps {
@@ -61,4 +63,3 @@ export const Modal: React.FC<ModalProps> = ({
     </Dialog>
   );
 };
-

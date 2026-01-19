@@ -1,4 +1,5 @@
 import React from 'react';
+
 import type { Advantage } from '../../lib/constants';
 import styles from './AdvantagesSection.module.css';
 
@@ -15,4 +16,3 @@ export const AdvantageCard: React.FC<AdvantageCardProps> = ({ advantage }) => {
     </div>
   );
 };
-

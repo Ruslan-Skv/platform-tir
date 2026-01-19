@@ -1,6 +1,9 @@
 .productCard {
   background: rgb(255 255 255 / 50%);
   border-radius: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   overflow: hidden;
   transition:
     transform 0.2s ease,
@@ -14,7 +17,9 @@
 
 .cardLink {
   color: inherit;
-  display: block;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   text-decoration: none;
 }
 
@@ -81,15 +86,23 @@
 }
 
 .content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   padding: 1rem;
 }
 
 .name {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   color: #111827;
+  display: -webkit-box;
   font-size: 1rem;
   font-weight: 600;
   line-height: 1.4;
   margin: 0 0 0.5rem;
+  min-height: 2.8em; /* 2 строки × 1.4 line-height */
+  overflow: hidden;
 }
 
 .category {
@@ -140,6 +153,7 @@
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 500;
+  margin-top: auto;
   padding: 0.75rem 1rem;
   transition: background-color 0.2s ease;
   width: 100%;

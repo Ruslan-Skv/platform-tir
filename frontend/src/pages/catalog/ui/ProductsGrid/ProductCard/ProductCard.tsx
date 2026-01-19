@@ -1,6 +1,9 @@
 import React from 'react';
+
 import Link from 'next/link';
+
 import type { Product } from '@/entities/product';
+
 import styles from './ProductCard.module.css';
 
 interface ProductCardProps {
@@ -28,7 +31,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
   return (
     <div className={styles.productCard}>
-      <Link href={`/product/${product.id}`} className={styles.cardLink}>
+      <Link href={`/product/${product.slug}`} className={styles.cardLink}>
         <div className={styles.imageContainer}>
           <img src={product.image} alt={product.name} className={styles.image} loading="lazy" />
 
@@ -63,11 +66,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             <span className={styles.finalPrice}>{finalPrice.toLocaleString()} ₽</span>
           </div>
 
-          <button
-            type="button"
-            className={styles.addToCartButton}
-            onClick={handleAddToCart}
-          >
+          <button type="button" className={styles.addToCartButton} onClick={handleAddToCart}>
             В корзину
           </button>
         </div>

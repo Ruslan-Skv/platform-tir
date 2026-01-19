@@ -1,3 +1,18 @@
+/* ===== CSS ПЕРЕМЕННЫЕ ===== */
+:root {
+  /* Брейкпойнты (для справки, CSS не поддерживает переменные в media queries) */
+  /* --breakpoint-desktop: 1440px */
+  /* --breakpoint-laptop: 1280px */
+  /* --breakpoint-tablet-landscape: 1024px */
+  /* --breakpoint-tablet: 768px */
+  /* --breakpoint-mobile: 480px */
+  /* --breakpoint-mobile-small: 320px */
+
+  /* Максимальная ширина контейнера */
+  --container-max-width: 1440px;
+  --container-padding: 1rem;
+}
+
 /* ===== ПОДКЛЮЧЕНИЕ ШРИФТОВ ===== */
 @font-face {
   font-display: swap;
@@ -167,7 +182,27 @@ button {
 }
 
 /* ===== АДАПТИВНОСТЬ ===== */
+/* Ноутбуки (1280px) */
+@media (width <= 1280px) {
+  :root {
+    --container-max-width: 1200px;
+  }
+}
+
+/* Планшеты горизонтально (1024px) */
+@media (width <= 1024px) {
+  :root {
+    --container-max-width: 960px;
+  }
+}
+
+/* Планшеты вертикально (768px) */
 @media (width <= 768px) {
+  :root {
+    --container-max-width: 100%;
+    --container-padding: 1rem;
+  }
+
   h1 {
     font-size: 2.5rem;
   }
@@ -185,12 +220,50 @@ button {
   }
 }
 
+/* Мобильные телефоны (480px) */
+@media (width <= 480px) {
+  :root {
+    --container-padding: 0.75rem;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  h2 {
+    font-size: 1.75rem;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+  }
+
+  h4 {
+    font-size: 1.25rem;
+  }
+}
+
+/* Маленькие мобильные (320px) */
+@media (width <= 320px) {
+  :root {
+    --container-padding: 0.5rem;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+}
+
 /* ===== КОНТЕЙНЕР ===== */
 .container {
   width: 100%;
-  max-width: 1200px;
+  max-width: var(--container-max-width, 1440px);
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 var(--container-padding, 1rem);
 }
 
 /* ===== ОСНОВНОЕ ПРИЛОЖЕНИЕ ===== */

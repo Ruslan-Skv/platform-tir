@@ -1,6 +1,9 @@
-import React from 'react';
 import { CheckCircleIcon } from '@heroicons/react/24/outline';
+
+import React from 'react';
+
 import { Button } from '@/shared/ui/Button';
+
 import styles from './SuccessMessage.module.css';
 
 export interface SuccessMessageProps {
@@ -24,4 +27,3 @@ export const SuccessMessage: React.FC<SuccessMessageProps> = ({ title, message, 
     </div>
   );
 };
-

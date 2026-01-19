@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
-import { StoreProvider } from '@/shared/lib/redux';
+
 import { ThemeInitializer } from '@/features/theme';
-import { SiteLayout } from '@/widgets/site-layout';
+import { StoreProvider } from '@/shared/lib/redux';
+
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -23,9 +24,7 @@ export default function RootLayout({
     <html lang="ru">
       <body>
         <StoreProvider>
-          <ThemeInitializer>
-            <SiteLayout>{children}</SiteLayout>
-          </ThemeInitializer>
+          <ThemeInitializer>{children}</ThemeInitializer>
         </StoreProvider>
       </body>
     </html>

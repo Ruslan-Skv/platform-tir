@@ -11,4 +11,3 @@ export interface SuccessMessageProps {
   message: string;
   onClose: () => void;
 }
-

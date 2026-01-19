@@ -1,5 +1,7 @@
 import React from 'react';
+
 import { companyInfo, socialLinks } from '@/shared/constants/footer';
+
 import { AboutSection } from './AboutSection';
 import { CatalogSection } from './CatalogSection';
 import { ContactSection } from './ContactSection';
@@ -18,4 +20,3 @@ export const FooterSections: React.FC = () => {
     </div>
   );
 };
-

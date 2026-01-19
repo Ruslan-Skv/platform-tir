@@ -1,0 +1,241 @@
+.page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.count {
+  background: #e5e7eb;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.addButton {
+  padding: 12px 24px;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.addButton:hover {
+  background: #4f46e5;
+}
+
+.filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.searchInput {
+  flex: 1;
+  max-width: 400px;
+  padding: 10px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.select {
+  padding: 10px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: #fff;
+  min-width: 150px;
+}
+
+.select:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.bulkActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #eff6ff;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.bulkActions span {
+  font-weight: 500;
+  color: #1e40af;
+}
+
+.bulkButton {
+  padding: 8px 16px;
+  border: 1px solid #93c5fd;
+  background: #fff;
+  color: #1e40af;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.bulkButton:hover {
+  background: #dbeafe;
+}
+
+.bulkButton.danger {
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+.bulkButton.danger:hover {
+  background: #fee2e2;
+}
+
+/* Customer Cell */
+.customerCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.customerAvatar {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.customerInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.customerName {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.customerEmail {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.statusLEAD {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusPROSPECT {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.statusCUSTOMER {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.statusINACTIVE {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.statusCHURNED {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.stageNEW {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.stageCONTACTED {
+  background: #fce7f3;
+  color: #9d174d;
+}
+
+.stageQUALIFIED {
+  background: #cffafe;
+  color: #0e7490;
+}
+
+.stagePROPOSAL {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.stageNEGOTIATION {
+  background: #fae8ff;
+  color: #86198f;
+}
+
+.stageWON {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.stageLOST {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+@media (max-width: 768px) {
+  .filters {
+    flex-direction: column;
+  }
+
+  .searchInput {
+    max-width: none;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+}

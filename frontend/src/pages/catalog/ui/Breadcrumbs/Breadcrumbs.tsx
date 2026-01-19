@@ -1,5 +1,7 @@
 import React from 'react';
+
 import Link from 'next/link';
+
 import styles from './Breadcrumbs.module.css';
 
 interface BreadcrumbItem {
@@ -7,12 +9,37 @@ interface BreadcrumbItem {
   href?: string;
 }
 
-export const Breadcrumbs: React.FC = () => {
-  const breadcrumbs: BreadcrumbItem[] = [
-    { label: 'Главная', href: '/' },
-    { label: 'Каталог', href: '/catalog' },
-    { label: 'Мебель' },
-  ];
+interface BreadcrumbsProps {
+  categoryName?: string;
+  parentCategoryName?: string;
+  parentCategorySlug?: string;
+}
+
+export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
+  categoryName = 'Каталог',
+  parentCategoryName,
+  parentCategorySlug,
+}) => {
+  const breadcrumbs: BreadcrumbItem[] = [{ label: 'Главная', href: '/' }];
+
+  // Если текущая категория - "Каталог товаров", не добавляем её дважды
+  const isAllProducts = categoryName === 'Каталог товаров';
+
+  if (!isAllProducts) {
+    // Добавляем "Каталог товаров" как промежуточную ссылку
+    breadcrumbs.push({ label: 'Каталог товаров', href: '/catalog/products' });
+  }
+
+  // Если есть родительская категория, добавляем её
+  if (parentCategoryName && parentCategorySlug) {
+    breadcrumbs.push({
+      label: parentCategoryName,
+      href: `/catalog/products/${parentCategorySlug}`,
+    });
+  }
+
+  // Текущая категория (без ссылки)
+  breadcrumbs.push({ label: categoryName });
 
   return (
     <nav className={styles.breadcrumbs} aria-label="Хлебные крошки">
