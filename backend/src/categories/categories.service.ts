@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -34,19 +39,27 @@ export class CategoriesService {
     });
   }
 
-  async findAll() {
+  async findAll(includeInactive = false) {
     // Возвращаем только корневые категории с вложенными дочерними
-    return this.prisma.category.findMany({
+    const whereClause = includeInactive ? {} : { isActive: true };
+    const childrenWhere = includeInactive ? {} : { isActive: true };
+
+    const categories = await this.prisma.category.findMany({
       where: {
-        isActive: true,
+        ...whereClause,
         parentId: null, // Только корневые категории
       },
       include: {
         children: {
-          where: { isActive: true },
+          where: childrenWhere,
           include: {
             children: {
-              where: { isActive: true },
+              where: childrenWhere,
+              include: {
+                _count: {
+                  select: { products: true },
+                },
+              },
             },
             _count: {
               select: { products: true },
@@ -60,6 +73,80 @@ export class CategoriesService {
       },
       orderBy: { order: 'asc' },
     });
+
+    // Рекурсивно подсчитываем общее количество товаров включая подкатегории
+    const calculateTotalProducts = (
+      category: (typeof categories)[0],
+    ): (typeof categories)[0] & { _count: { products: number; totalProducts: number } } => {
+      let totalProducts = category._count.products;
+
+      const processedChildren = category.children?.map((child) => {
+        const processedChild = calculateTotalProducts(child as (typeof categories)[0]);
+        totalProducts += processedChild._count.totalProducts;
+        return processedChild;
+      });
+
+      return {
+        ...category,
+        children: processedChildren,
+        _count: {
+          products: category._count.products,
+          totalProducts,
+        },
+      };
+    };
+
+    return categories.map(calculateTotalProducts);
+  }
+
+  // Получить все категории плоским списком (для админки)
+  async findAllFlat() {
+    return this.prisma.category.findMany({
+      include: {
+        parent: {
+          select: { id: true, name: true, slug: true },
+        },
+        _count: {
+          select: { products: true },
+        },
+      },
+      orderBy: [{ parentId: 'asc' }, { order: 'asc' }, { name: 'asc' }],
+    });
+  }
+
+  // Получить структуру навигации для публичной части
+  async getNavigationStructure() {
+    const categories = await this.prisma.category.findMany({
+      where: { isActive: true },
+      include: {
+        children: {
+          where: { isActive: true },
+          orderBy: { order: 'asc' },
+        },
+        _count: {
+          select: { products: true },
+        },
+      },
+      orderBy: { order: 'asc' },
+    });
+
+    // Строим структуру для навигации
+    const rootCategories = categories.filter((c) => !c.parentId);
+
+    return rootCategories.map((root) => ({
+      name: root.name,
+      slug: root.slug,
+      href: `/catalog/products/${root.slug}`,
+      productCount: root._count.products,
+      hasSubmenu: root.children.length > 0,
+      submenu: root.children.map((child) => ({
+        name: child.name,
+        slug: child.slug,
+        href: `/catalog/products/${root.slug}/${child.slug.replace(`${root.slug}-`, '')}`,
+        productCount:
+          (child as typeof child & { _count?: { products: number } })._count?.products || 0,
+      })),
+    }));
   }
 
   async findOne(id: string) {
@@ -352,6 +439,88 @@ export class CategoriesService {
     return this.prisma.attribute.findUnique({
       where: { id: attribute.id },
       include: { values: true },
+    });
+  }
+
+  // Обновить атрибут
+  async updateAttribute(
+    id: string,
+    data: {
+      name?: string;
+      slug?: string;
+      type?: string;
+      unit?: string | null;
+      isFilterable?: boolean;
+      values?: string[];
+    },
+  ) {
+    const attribute = await this.prisma.attribute.findUnique({
+      where: { id },
+    });
+
+    if (!attribute) {
+      throw new NotFoundException(`Attribute with ID ${id} not found`);
+    }
+
+    // Если меняется slug - проверяем уникальность
+    if (data.slug && data.slug !== attribute.slug) {
+      const existing = await this.prisma.attribute.findUnique({
+        where: { slug: data.slug },
+      });
+      if (existing) {
+        throw new ConflictException(`Attribute with slug "${data.slug}" already exists`);
+      }
+    }
+
+    // Обновляем атрибут
+    await this.prisma.attribute.update({
+      where: { id },
+      data: {
+        name: data.name,
+        slug: data.slug,
+        type: data.type as 'TEXT' | 'NUMBER' | 'BOOLEAN' | 'SELECT' | 'MULTI_SELECT' | 'COLOR',
+        unit: data.unit,
+        isFilterable: data.isFilterable,
+      },
+    });
+
+    // Если переданы значения - обновляем их
+    if (data.values !== undefined) {
+      // Удаляем старые значения
+      await this.prisma.attributeValue.deleteMany({
+        where: { attributeId: id },
+      });
+
+      // Создаём новые
+      if (data.values.length > 0) {
+        await this.prisma.attributeValue.createMany({
+          data: data.values.map((value, index) => ({
+            attributeId: id,
+            value,
+            order: index,
+          })),
+        });
+      }
+    }
+
+    return this.prisma.attribute.findUnique({
+      where: { id },
+      include: { values: { orderBy: { order: 'asc' } } },
+    });
+  }
+
+  // Удалить атрибут
+  async deleteAttribute(id: string) {
+    const attribute = await this.prisma.attribute.findUnique({
+      where: { id },
+    });
+
+    if (!attribute) {
+      throw new NotFoundException(`Attribute with ID ${id} not found`);
+    }
+
+    return this.prisma.attribute.delete({
+      where: { id },
     });
   }
 }

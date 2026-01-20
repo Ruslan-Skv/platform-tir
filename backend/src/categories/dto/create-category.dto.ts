@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsInt, IsUUID, Min } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsInt, Min } from 'class-validator';
 
 export class CreateCategoryDto {
   @ApiProperty({ example: 'Двери' })
@@ -22,9 +22,14 @@ export class CreateCategoryDto {
   @IsString()
   image?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ example: '🚪', required: false, description: 'Emoji or icon name' })
   @IsOptional()
-  @IsUUID()
+  @IsString()
+  icon?: string;
+
+  @ApiProperty({ required: false, description: 'Parent category ID (CUID format)' })
+  @IsOptional()
+  @IsString()
   parentId?: string;
 
   @ApiProperty({ example: 0, default: 0, required: false })

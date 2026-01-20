@@ -319,6 +319,260 @@
   cursor: not-allowed;
 }
 
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modalTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 20px;
+}
+
+.formGroup {
+  margin-bottom: 16px;
+}
+
+.formGroup label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.textarea {
+  resize: vertical;
+  font-family: inherit;
+}
+
+.fileInput {
+  width: 100%;
+  padding: 12px;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  background: #f9fafb;
+  cursor: pointer;
+}
+
+.fileInput:hover {
+  border-color: #9ca3af;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.link {
+  color: #6366f1;
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.categorySelectWrapper {
+  display: flex;
+  gap: 8px;
+}
+
+.categorySelectWrapper .select {
+  flex: 1;
+}
+
+.addCategoryBtn {
+  width: 40px;
+  height: 40px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  color: #16a34a;
+  font-size: 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.addCategoryBtn:hover {
+  background: #dcfce7;
+}
+
+.modalActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.cancelButton {
+  padding: 10px 20px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  color: #374151;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.cancelButton:hover {
+  background: #e5e7eb;
+}
+
+.primaryButton {
+  padding: 10px 20px;
+  background: #6366f1;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.primaryButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.message {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.message.success {
+  background: #d1fae5;
+  border: 1px solid #6ee7b7;
+  color: #065f46;
+}
+
+.message.error {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+}
+
+/* Import Results */
+.importResult {
+  text-align: center;
+}
+
+.resultStats {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.resultItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.resultNumber {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.resultNumber.success {
+  color: #10b981;
+}
+
+.resultNumber.info {
+  color: #3b82f6;
+}
+
+.resultNumber.error {
+  color: #ef4444;
+}
+
+.resultItem span:last-child {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.errorsList {
+  text-align: left;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.errorsList h4 {
+  margin: 0 0 12px;
+  color: #991b1b;
+  font-size: 0.9rem;
+}
+
+.errorItem {
+  font-size: 0.85rem;
+  color: #7f1d1d;
+  margin-bottom: 8px;
+}
+
+.errorItem:last-child {
+  margin-bottom: 0;
+}
+
+.moreErrors {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  margin: 8px 0 0;
+}
+
 @media (max-width: 1024px) {
   .filters {
     flex-wrap: wrap;
@@ -337,5 +591,17 @@
 
   .headerActions {
     flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 600px) {
+  .modal {
+    width: 95%;
+    padding: 20px;
+  }
+
+  .resultStats {
+    flex-wrap: wrap;
+    gap: 16px;
   }
 }

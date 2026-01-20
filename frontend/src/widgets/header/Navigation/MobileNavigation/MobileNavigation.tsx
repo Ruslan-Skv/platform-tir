@@ -14,6 +14,7 @@ import React from 'react';
 
 import { useTheme } from '@/features/theme';
 import { dropdownMenus, navigation } from '@/shared/constants/navigation';
+import { useDynamicCategories } from '@/shared/lib/hooks';
 import { Logo } from '@/shared/ui/Logo';
 import { ActionButtons } from '@/widgets/header/ActionButtons/ActionButtons';
 
@@ -160,9 +161,35 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
     handleCloseMenu();
   };
 
+  // Загружаем динамические категории из API
+  const { navigationCategories } = useDynamicCategories();
+
   // Получаем данные для активного подменю
   const getActiveSubmenu = () => {
     if (!activeMenuItem) return null;
+
+    // Для "КАТАЛОГ ТОВАРОВ" используем динамические категории
+    if (activeMenuItem === 'КАТАЛОГ ТОВАРОВ' && navigationCategories.length > 0) {
+      return {
+        category: 'products',
+        items: navigationCategories.map((cat) => ({
+          name: cat.name,
+          href: cat.href,
+          productType: cat.slug,
+          icon: cat.icon,
+          image: cat.image,
+          hasSubmenu: cat.hasSubmenu,
+          submenu: cat.submenu.map((sub) => ({
+            name: sub.name,
+            href: sub.href,
+            productType: sub.slug,
+            icon: sub.icon,
+            image: sub.image,
+          })),
+        })),
+      };
+    }
+
     return dropdownMenus[activeMenuItem];
   };
 
@@ -245,14 +272,51 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
               </button>
               {activeSubmenu &&
                 activeSubmenu.items.map((subItem) => (
-                  <button
-                    key={subItem.name}
-                    type="button"
-                    onClick={() => handleSubMenuItemClick(subItem.name)}
-                    className={styles.subMenuItem}
-                  >
-                    {subItem.name}
-                  </button>
+                  <div key={subItem.name} className={styles.subMenuSection}>
+                    <a
+                      href={subItem.href}
+                      onClick={() => handleSubMenuItemClick(subItem.name)}
+                      className={styles.subMenuItem}
+                    >
+                      {subItem.image ? (
+                        <img src={subItem.image} alt="" className={styles.subMenuItemImage} />
+                      ) : subItem.icon ? (
+                        <span className={styles.subMenuItemIcon}>{subItem.icon}</span>
+                      ) : null}
+                      <span>{subItem.name}</span>
+                    </a>
+                    {/* Показываем подкатегории если есть */}
+                    {subItem.hasSubmenu && subItem.submenu && subItem.submenu.length > 0 && (
+                      <div className={styles.subSubMenu}>
+                        {subItem.submenu.map(
+                          (subSubItem: {
+                            name: string;
+                            href: string;
+                            icon?: string | null;
+                            image?: string | null;
+                          }) => (
+                            <a
+                              key={subSubItem.name}
+                              href={subSubItem.href}
+                              onClick={() => handleSubMenuItemClick(subSubItem.name)}
+                              className={styles.subSubMenuItem}
+                            >
+                              {subSubItem.image ? (
+                                <img
+                                  src={subSubItem.image}
+                                  alt=""
+                                  className={styles.subSubMenuItemImage}
+                                />
+                              ) : subSubItem.icon ? (
+                                <span className={styles.subSubMenuItemIcon}>{subSubItem.icon}</span>
+                              ) : null}
+                              <span>{subSubItem.name}</span>
+                            </a>
+                          )
+                        )}
+                      </div>
+                    )}
+                  </div>
                 ))}
             </div>
           )}

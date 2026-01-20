@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 import { DataTable } from '@/shared/ui/admin/DataTable';
@@ -47,6 +47,20 @@ export function ProductsPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const limit = 20;
+
+  // Import modal state
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importCategoryId, setImportCategoryId] = useState('');
+  const [importSkuPrefix, setImportSkuPrefix] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    created: number;
+    updated: number;
+    errors: { name: string; error: string }[];
+    totalFound: number;
+  } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch categories
   useEffect(() => {
@@ -112,9 +126,39 @@ export function ProductsPage() {
       );
     }
 
-    // Category filter
+    // Category filter - включает подкатегории
     if (categoryFilter) {
-      result = result.filter((p) => p.category.id === categoryFilter);
+      // Собираем ID выбранной категории и всех её подкатегорий
+      const getCategoryIds = (cats: CategoriesResponse[], targetId: string): string[] => {
+        const ids: string[] = [];
+        const findAndCollect = (categories: CategoriesResponse[]): boolean => {
+          for (const cat of categories) {
+            if (cat.id === targetId) {
+              // Нашли целевую категорию - собираем её ID и все подкатегории
+              ids.push(cat.id);
+              const collectChildren = (c: CategoriesResponse) => {
+                if (c.children) {
+                  for (const child of c.children) {
+                    ids.push(child.id);
+                    collectChildren(child);
+                  }
+                }
+              };
+              collectChildren(cat);
+              return true;
+            }
+            if (cat.children && findAndCollect(cat.children)) {
+              return true;
+            }
+          }
+          return false;
+        };
+        findAndCollect(cats);
+        return ids;
+      };
+
+      const categoryIds = getCategoryIds(categories, categoryFilter);
+      result = result.filter((p) => categoryIds.includes(p.category.id));
     }
 
     // Stock filter
@@ -206,6 +250,65 @@ export function ProductsPage() {
       }
     } catch (err) {
       console.error('Failed to bulk delete:', err);
+    }
+  };
+
+  // Handle file import
+  const handleImport = async () => {
+    if (!importFile || !importCategoryId) {
+      return;
+    }
+
+    setImporting(true);
+    setImportResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', importFile);
+      formData.append('categoryId', importCategoryId);
+      if (importSkuPrefix) {
+        formData.append('skuPrefix', importSkuPrefix);
+      }
+
+      const response = await fetch(`${API_URL}/admin/catalog/products/import/file`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setImportResult(result);
+        fetchProducts();
+      } else {
+        setImportResult({
+          created: 0,
+          updated: 0,
+          totalFound: 0,
+          errors: [{ name: 'Ошибка', error: result.message || 'Не удалось импортировать файл' }],
+        });
+      }
+    } catch (err) {
+      setImportResult({
+        created: 0,
+        updated: 0,
+        totalFound: 0,
+        errors: [{ name: 'Ошибка', error: 'Ошибка сети при импорте' }],
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const resetImportModal = () => {
+    setShowImportModal(false);
+    setImportFile(null);
+    setImportCategoryId('');
+    setImportSkuPrefix('');
+    setImportResult(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -316,8 +419,18 @@ export function ProductsPage() {
           <span className={styles.count}>{totalProducts} товаров</span>
         </div>
         <div className={styles.headerActions}>
-          <button className={styles.secondaryButton}>📥 Импорт</button>
-          <button className={styles.secondaryButton}>📤 Экспорт</button>
+          <button className={styles.secondaryButton} onClick={() => setShowImportModal(true)}>
+            📥 Импорт
+          </button>
+          <button
+            className={styles.secondaryButton}
+            onClick={() => {
+              // TODO: Реализовать экспорт товаров
+              alert('Функционал экспорта будет реализован позже');
+            }}
+          >
+            📤 Экспорт
+          </button>
           <button
             className={styles.addButton}
             onClick={() => (window.location.href = '/admin/catalog/products/new')}
@@ -401,6 +514,131 @@ export function ProductsPage() {
           onPageChange: setPage,
         }}
       />
+
+      {/* Import Modal */}
+      {showImportModal && (
+        <div className={styles.modalOverlay} onClick={resetImportModal}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.modalTitle}>Импорт товаров</h3>
+
+            {importResult ? (
+              <div className={styles.importResult}>
+                <div className={styles.resultStats}>
+                  <div className={styles.resultItem}>
+                    <span className={styles.resultNumber}>{importResult.totalFound}</span>
+                    <span>Найдено</span>
+                  </div>
+                  <div className={styles.resultItem}>
+                    <span className={`${styles.resultNumber} ${styles.success}`}>
+                      {importResult.created}
+                    </span>
+                    <span>Создано</span>
+                  </div>
+                  <div className={styles.resultItem}>
+                    <span className={`${styles.resultNumber} ${styles.info}`}>
+                      {importResult.updated}
+                    </span>
+                    <span>Обновлено</span>
+                  </div>
+                  {importResult.errors.length > 0 && (
+                    <div className={styles.resultItem}>
+                      <span className={`${styles.resultNumber} ${styles.error}`}>
+                        {importResult.errors.length}
+                      </span>
+                      <span>Ошибок</span>
+                    </div>
+                  )}
+                </div>
+
+                {importResult.errors.length > 0 && (
+                  <div className={styles.errorsList}>
+                    <h4>Ошибки:</h4>
+                    {importResult.errors.slice(0, 5).map((err, i) => (
+                      <div key={i} className={styles.errorItem}>
+                        <strong>{err.name}:</strong> {err.error}
+                      </div>
+                    ))}
+                    {importResult.errors.length > 5 && (
+                      <p className={styles.moreErrors}>
+                        ...и ещё {importResult.errors.length - 5} ошибок
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className={styles.modalActions}>
+                  <button className={styles.primaryButton} onClick={resetImportModal}>
+                    Закрыть
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className={styles.formGroup}>
+                  <label>Файл для импорта *</label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".xls,.xlsx,.html,.htm"
+                    onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                    className={styles.fileInput}
+                  />
+                  <p className={styles.hint}>
+                    Поддерживаются файлы .xls, .xlsx, .html (экспорт из Битрикс)
+                  </p>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>Категория для импорта *</label>
+                  <select
+                    value={importCategoryId}
+                    onChange={(e) => setImportCategoryId(e.target.value)}
+                    className={styles.select}
+                  >
+                    <option value="">Выберите категорию</option>
+                    {flatCategories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className={styles.hint}>
+                    Для создания новой категории перейдите в{' '}
+                    <a href="/admin/catalog/categories" className={styles.link}>
+                      раздел Категории
+                    </a>
+                  </p>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>Префикс артикула</label>
+                  <input
+                    type="text"
+                    value={importSkuPrefix}
+                    onChange={(e) => setImportSkuPrefix(e.target.value.toUpperCase())}
+                    placeholder="Например: ARGUS, DOORS, LOCK"
+                    className={styles.input}
+                  />
+                  <p className={styles.hint}>Будет добавлен к артикулу каждого товара</p>
+                </div>
+
+                <div className={styles.modalActions}>
+                  <button className={styles.cancelButton} onClick={resetImportModal}>
+                    Отмена
+                  </button>
+                  <button
+                    className={styles.primaryButton}
+                    onClick={handleImport}
+                    disabled={importing || !importFile || !importCategoryId}
+                  >
+                    {importing ? 'Импорт...' : 'Импортировать'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

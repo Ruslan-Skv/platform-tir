@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -20,8 +30,20 @@ export class CategoriesController {
 
   @Get()
   @ApiOperation({ summary: 'Получить все категории' })
-  findAll() {
-    return this.categoriesService.findAll();
+  findAll(@Query('includeInactive') includeInactive?: string) {
+    return this.categoriesService.findAll(includeInactive === 'true');
+  }
+
+  @Get('flat')
+  @ApiOperation({ summary: 'Получить все категории плоским списком' })
+  findAllFlat() {
+    return this.categoriesService.findAllFlat();
+  }
+
+  @Get('navigation')
+  @ApiOperation({ summary: 'Получить структуру навигации' })
+  getNavigation() {
+    return this.categoriesService.getNavigationStructure();
   }
 
   // Атрибуты - общий список
@@ -136,5 +158,39 @@ export class CategoriesController {
     @Body() body: { attributes: { attributeId: string; defaultValue?: string }[] },
   ) {
     return this.categoriesService.applyAttributesToProducts(id, body.attributes);
+  }
+}
+
+// Отдельный контроллер для атрибутов (public API с JWT)
+@ApiTags('attributes')
+@Controller('attributes')
+export class AttributesPublicController {
+  constructor(private readonly categoriesService: CategoriesService) {}
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Обновить атрибут' })
+  updateAttribute(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      name?: string;
+      slug?: string;
+      type?: string;
+      unit?: string | null;
+      isFilterable?: boolean;
+      values?: string[];
+    },
+  ) {
+    return this.categoriesService.updateAttribute(id, body);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Удалить атрибут' })
+  deleteAttribute(@Param('id') id: string) {
+    return this.categoriesService.deleteAttribute(id);
   }
 }

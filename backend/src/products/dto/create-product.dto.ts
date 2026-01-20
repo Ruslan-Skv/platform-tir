@@ -72,10 +72,9 @@ export class CreateProductDto {
   @IsUrl({}, { each: true })
   images?: string[];
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   @ApiProperty({ required: false })
   @IsOptional()
-  attributes?: any;
+  attributes?: Record<string, string | number | boolean | string[]>;
 
   @ApiProperty({ required: false })
   @IsOptional()

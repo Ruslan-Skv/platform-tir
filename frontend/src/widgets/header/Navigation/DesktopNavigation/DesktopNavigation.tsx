@@ -3,7 +3,7 @@
 import React, { useRef } from 'react';
 
 import { navigation } from '@/shared/constants/navigation';
-import { useDropdown } from '@/shared/lib/hooks';
+import { useDropdown, useDynamicCategories } from '@/shared/lib/hooks';
 
 import { NavigationItem } from '../NavigationItem';
 import styles from './DesktopNavigation.module.css';
@@ -23,6 +23,9 @@ export const DesktopNavigation: React.FC<DesktopNavigationProps> = ({ onNavigati
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Загружаем динамические категории из API
+  const { navigationCategories } = useDynamicCategories();
+
   return (
     <div className={styles.desktopNavigation} ref={dropdownRef}>
       <div className={styles.container}>
@@ -37,6 +40,7 @@ export const DesktopNavigation: React.FC<DesktopNavigationProps> = ({ onNavigati
               onDropdownMouseEnter={handleDropdownMouseEnter}
               onDropdownMouseLeave={handleDropdownMouseLeave}
               onClick={onNavigationClick}
+              dynamicCategories={navigationCategories}
             />
           ))}
         </div>

@@ -10,17 +10,19 @@ import styles from './CatalogPage.module.css';
 
 export interface CatalogPageProps {
   categorySlug?: string;
-  categoryName?: string;
+  categoryName?: string | null;
   parentCategoryName?: string;
   parentCategorySlug?: string;
 }
 
 export const CatalogPage: React.FC<CatalogPageProps> = ({
   categorySlug,
-  categoryName = 'Каталог',
+  categoryName,
   parentCategoryName,
   parentCategorySlug,
 }) => {
+  // Если categoryName не передан, используем categorySlug как fallback
+  const displayCategoryName = categoryName || categorySlug || 'Каталог';
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -34,7 +36,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
       {/* 1. Верхний ряд - хлебные крошки */}
       <div className={styles.breadcrumbsSection}>
         <Breadcrumbs
-          categoryName={categoryName}
+          categoryName={displayCategoryName}
           parentCategoryName={parentCategoryName}
           parentCategorySlug={parentCategorySlug}
         />
@@ -51,7 +53,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         <main className={styles.productsSection}>
           <ProductsGrid
             categorySlug={categorySlug}
-            categoryName={categoryName}
+            categoryName={displayCategoryName}
             currentPage={currentPage}
             onTotalPagesChange={setTotalPages}
           />

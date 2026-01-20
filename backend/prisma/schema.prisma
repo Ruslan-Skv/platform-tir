@@ -523,6 +523,7 @@ model Category {
   slug        String     @unique
   description String?
   image       String?
+  icon        String?    // Emoji или название иконки
   parentId    String?
   parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
   children    Category[] @relation("CategoryTree")

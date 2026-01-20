@@ -257,16 +257,54 @@
   accent-color: #6366f1;
 }
 
+.attributeActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editButton {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  color: #0284c7;
+  font-size: 0.85rem;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.editButton:hover {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+}
+
 .removeButton {
   background: none;
   border: none;
-  color: #dc2626;
+  color: #f59e0b;
   font-size: 0.85rem;
   cursor: pointer;
 }
 
 .removeButton:hover {
   text-decoration: underline;
+}
+
+.deleteButton {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  font-size: 0.85rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.deleteButton:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
 }
 
 .empty {

@@ -8,37 +8,15 @@ import { useAuth } from '@/features/auth';
 
 import styles from './ProductEditPage.module.css';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 interface Category {
   id: string;
   name: string;
   slug: string;
   children?: Category[];
-}
-
-interface Product {
-  id: string;
-  name: string;
-  slug: string;
-  sku: string | null;
-  description: string | null;
-  price: string;
-  comparePrice: string | null;
-  stock: number;
-  categoryId: string;
-  category: Category;
-  manufacturerId: string | null;
-  isActive: boolean;
-  isFeatured: boolean;
-  isNew: boolean;
-  images: string[];
-  seoTitle: string | null;
-  seoDescription: string | null;
-  attributes: Record<string, string> | null;
 }
 
 interface AttributeValue {
@@ -64,19 +42,93 @@ interface CategoryAttribute {
   attribute: Attribute;
 }
 
-interface ProductEditPageProps {
-  productId: string;
+// Функция транслитерации для автогенерации slug
+function transliterate(text: string): string {
+  const ru: Record<string, string> = {
+    а: 'a',
+    б: 'b',
+    в: 'v',
+    г: 'g',
+    д: 'd',
+    е: 'e',
+    ё: 'yo',
+    ж: 'zh',
+    з: 'z',
+    и: 'i',
+    й: 'y',
+    к: 'k',
+    л: 'l',
+    м: 'm',
+    н: 'n',
+    о: 'o',
+    п: 'p',
+    р: 'r',
+    с: 's',
+    т: 't',
+    у: 'u',
+    ф: 'f',
+    х: 'h',
+    ц: 'ts',
+    ч: 'ch',
+    ш: 'sh',
+    щ: 'sch',
+    ъ: '',
+    ы: 'y',
+    ь: '',
+    э: 'e',
+    ю: 'yu',
+    я: 'ya',
+    А: 'A',
+    Б: 'B',
+    В: 'V',
+    Г: 'G',
+    Д: 'D',
+    Е: 'E',
+    Ё: 'Yo',
+    Ж: 'Zh',
+    З: 'Z',
+    И: 'I',
+    Й: 'Y',
+    К: 'K',
+    Л: 'L',
+    М: 'M',
+    Н: 'N',
+    О: 'O',
+    П: 'P',
+    Р: 'R',
+    С: 'S',
+    Т: 'T',
+    У: 'U',
+    Ф: 'F',
+    Х: 'H',
+    Ц: 'Ts',
+    Ч: 'Ch',
+    Ш: 'Sh',
+    Щ: 'Sch',
+    Ъ: '',
+    Ы: 'Y',
+    Ь: '',
+    Э: 'E',
+    Ю: 'Yu',
+    Я: 'Ya',
+  };
+
+  return text
+    .split('')
+    .map((char) => ru[char] || char)
+    .join('')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .substring(0, 100);
 }
 
-export function ProductEditPage({ productId }: ProductEditPageProps) {
+export function ProductCreatePage() {
   const router = useRouter();
   const { getAuthHeaders } = useAuth();
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [productNotFound, setProductNotFound] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -89,11 +141,11 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     categoryId: '',
     isActive: true,
     isFeatured: false,
-    isNew: false,
+    isNew: true,
     seoTitle: '',
     seoDescription: '',
-    images: [] as string[],
     attributes: {} as Record<string, string>,
+    images: [] as string[],
   });
 
   // Атрибуты категории и товара
@@ -101,10 +153,10 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   const [customAttributes, setCustomAttributes] = useState<{ key: string; value: string }[]>([]);
   const [newAttrKey, setNewAttrKey] = useState('');
   const [newAttrValue, setNewAttrValue] = useState('');
+  const [autoSlug, setAutoSlug] = useState(true);
 
   // Загрузка изображений
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadingImages, setUploadingImages] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
 
@@ -124,86 +176,27 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     fetchCategories();
   }, []);
 
-  // Fetch product
+  // Fetch category attributes when category changes
   useEffect(() => {
-    const fetchProduct = async () => {
-      if (!productId) {
-        setError('ID товара не указан');
-        setLoading(false);
+    const fetchCategoryAttributes = async () => {
+      if (!formData.categoryId) {
+        setCategoryAttributes([]);
         return;
       }
 
-      setLoading(true);
-      setError(null);
-      setProductNotFound(false);
-
       try {
-        console.log('Fetching product:', productId);
-        const response = await fetch(`${API_URL}/products/${productId}`);
-
-        if (response.status === 404) {
-          setProductNotFound(true);
-          throw new Error('Товар не найден');
-        }
-
-        if (!response.ok) {
-          throw new Error(`Ошибка загрузки: ${response.status}`);
-        }
-
-        const product: Product = await response.json();
-        console.log('Product loaded:', product);
-
-        const productAttrs = (product.attributes as Record<string, string>) || {};
-
-        setFormData({
-          name: product.name || '',
-          slug: product.slug || '',
-          sku: product.sku || '',
-          description: product.description || '',
-          price: String(product.price || ''),
-          comparePrice: product.comparePrice ? String(product.comparePrice) : '',
-          stock: product.stock || 0,
-          categoryId: product.categoryId || '',
-          isActive: product.isActive ?? true,
-          isFeatured: product.isFeatured ?? false,
-          isNew: product.isNew ?? false,
-          seoTitle: product.seoTitle || '',
-          seoDescription: product.seoDescription || '',
-          images: product.images || [],
-          attributes: productAttrs,
-        });
-
-        // Загружаем атрибуты категории
-        if (product.categoryId) {
-          try {
-            const attrsResponse = await fetch(
-              `${API_URL}/categories/${product.categoryId}/attributes`
-            );
-            if (attrsResponse.ok) {
-              const attrsData = await attrsResponse.json();
-              setCategoryAttributes(attrsData);
-
-              // Выделяем кастомные атрибуты (которые не входят в атрибуты категории)
-              const categoryAttrSlugs = attrsData.map((ca: CategoryAttribute) => ca.attribute.slug);
-              const custom = Object.entries(productAttrs)
-                .filter(([key]) => !categoryAttrSlugs.includes(key))
-                .map(([key, value]) => ({ key, value }));
-              setCustomAttributes(custom);
-            }
-          } catch (attrErr) {
-            console.error('Error loading category attributes:', attrErr);
-          }
+        const response = await fetch(`${API_URL}/categories/${formData.categoryId}/attributes`);
+        if (response.ok) {
+          const data = await response.json();
+          setCategoryAttributes(data);
         }
       } catch (err) {
-        console.error('Error fetching product:', err);
-        setError(err instanceof Error ? err.message : 'Ошибка загрузки');
-      } finally {
-        setLoading(false);
+        console.error('Failed to fetch category attributes:', err);
       }
     };
 
-    fetchProduct();
-  }, [productId]);
+    fetchCategoryAttributes();
+  }, [formData.categoryId]);
 
   // Flatten categories for select
   const flattenCategories = (cats: Category[], prefix = ''): { id: string; name: string }[] => {
@@ -231,7 +224,21 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
       setFormData((prev) => ({ ...prev, [name]: parseFloat(value) || 0 }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
+
+      // Auto-generate slug from name
+      if (name === 'name' && autoSlug) {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value,
+          slug: transliterate(value),
+        }));
+      }
     }
+  };
+
+  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAutoSlug(false);
+    setFormData((prev) => ({ ...prev, slug: e.target.value }));
   };
 
   // Обработка загрузки изображений
@@ -242,19 +249,16 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     const newImages: string[] = [];
 
     for (const file of Array.from(files)) {
-      // Проверка типа файла
       if (!ALLOWED_TYPES.includes(file.type)) {
         setImageError(`Файл ${file.name}: неподдерживаемый формат. Разрешены: JPG, PNG, WebP, GIF`);
         continue;
       }
 
-      // Проверка размера
       if (file.size > MAX_FILE_SIZE) {
         setImageError(`Файл ${file.name}: размер превышает 5MB`);
         continue;
       }
 
-      // Конвертируем в base64
       const base64 = await fileToBase64(file);
       newImages.push(base64);
     }
@@ -325,7 +329,6 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     e.preventDefault();
     setSaving(true);
     setError(null);
-    setSuccess(null);
 
     try {
       // Собираем все атрибуты (из формы + кастомные)
@@ -336,72 +339,46 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         }
       });
 
-      const response = await fetch(`${API_URL}/products/${productId}`, {
-        method: 'PATCH',
+      const productData = {
+        name: formData.name,
+        slug: formData.slug,
+        sku: formData.sku || null,
+        description: formData.description || null,
+        price: parseFloat(formData.price) || 0,
+        comparePrice: formData.comparePrice ? parseFloat(formData.comparePrice) : null,
+        stock: formData.stock,
+        categoryId: formData.categoryId,
+        isActive: formData.isActive,
+        isFeatured: formData.isFeatured,
+        isNew: formData.isNew,
+        seoTitle: formData.seoTitle || null,
+        seoDescription: formData.seoDescription || null,
+        attributes: Object.keys(allAttributes).length > 0 ? allAttributes : null,
+        images: formData.images.length > 0 ? formData.images : [],
+      };
+
+      const response = await fetch(`${API_URL}/products`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...getAuthHeaders(),
         },
-        body: JSON.stringify({
-          name: formData.name,
-          slug: formData.slug,
-          sku: formData.sku || null,
-          description: formData.description || null,
-          price: parseFloat(formData.price),
-          comparePrice: formData.comparePrice ? parseFloat(formData.comparePrice) : null,
-          stock: formData.stock,
-          categoryId: formData.categoryId,
-          isActive: formData.isActive,
-          isFeatured: formData.isFeatured,
-          isNew: formData.isNew,
-          seoTitle: formData.seoTitle || null,
-          seoDescription: formData.seoDescription || null,
-          attributes: allAttributes,
-          images: formData.images,
-        }),
+        body: JSON.stringify(productData),
       });
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || 'Ошибка сохранения');
+        throw new Error(data.message || 'Ошибка создания товара');
       }
 
-      setSuccess('Товар успешно сохранён');
-      setTimeout(() => setSuccess(null), 3000);
+      const createdProduct = await response.json();
+      router.push(`/admin/catalog/products/${createdProduct.id}/edit`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка сохранения');
+      setError(err instanceof Error ? err.message : 'Ошибка создания товара');
     } finally {
       setSaving(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.loading}>
-          <div className={styles.spinner}></div>
-          <p>Загрузка товара...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (productNotFound) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.notFound}>
-          <h2>Товар не найден</h2>
-          <p>Товар с ID {productId} не существует или был удалён.</p>
-          <button
-            className={styles.backButton}
-            onClick={() => router.push('/admin/catalog/products')}
-          >
-            ← Вернуться к списку товаров
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className={styles.page}>
@@ -412,11 +389,10 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         >
           ← Назад к списку
         </button>
-        <h1 className={styles.title}>Редактирование товара</h1>
+        <h1 className={styles.title}>Добавление товара</h1>
       </div>
 
       {error && <div className={styles.error}>{error}</div>}
-      {success && <div className={styles.success}>{success}</div>}
 
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.formGrid}>
@@ -434,6 +410,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                 onChange={handleChange}
                 required
                 className={styles.input}
+                placeholder="Введите название товара"
               />
             </div>
 
@@ -445,10 +422,12 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                   id="slug"
                   name="slug"
                   value={formData.slug}
-                  onChange={handleChange}
+                  onChange={handleSlugChange}
                   required
                   className={styles.input}
+                  placeholder="url-tovara"
                 />
+                <p className={styles.hint}>Генерируется автоматически из названия</p>
               </div>
               <div className={styles.formGroup}>
                 <label htmlFor="sku">Артикул (SKU)</label>
@@ -459,6 +438,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                   value={formData.sku}
                   onChange={handleChange}
                   className={styles.input}
+                  placeholder="ART-001"
                 />
               </div>
             </div>
@@ -472,6 +452,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                 onChange={handleChange}
                 rows={6}
                 className={styles.textarea}
+                placeholder="Подробное описание товара..."
               />
             </div>
 
@@ -512,6 +493,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                   min="0"
                   step="0.01"
                   className={styles.input}
+                  placeholder="0.00"
                 />
               </div>
               <div className={styles.formGroup}>
@@ -525,7 +507,9 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                   min="0"
                   step="0.01"
                   className={styles.input}
+                  placeholder="0.00"
                 />
+                <p className={styles.hint}>Для отображения скидки</p>
               </div>
             </div>
 
@@ -775,22 +759,6 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                             className={styles.input}
                           />
                         )}
-                        {formData.attributes[ca.attribute.slug] && (
-                          <button
-                            type="button"
-                            className={styles.clearAttrButton}
-                            onClick={() =>
-                              setFormData((prev) => {
-                                const newAttrs = { ...prev.attributes };
-                                delete newAttrs[ca.attribute.slug];
-                                return { ...prev, attributes: newAttrs };
-                              })
-                            }
-                            title="Очистить"
-                          >
-                            ✕
-                          </button>
-                        )}
                       </div>
                     </div>
                   ))}
@@ -882,12 +850,13 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
               </div>
             </div>
 
-            {categoryAttributes.length === 0 && customAttributes.length === 0 && (
-              <p className={styles.noAttributes}>
-                Характеристики не заданы. Добавьте атрибуты к категории или создайте дополнительные
-                характеристики вручную.
-              </p>
-            )}
+            {categoryAttributes.length === 0 &&
+              customAttributes.length === 0 &&
+              !formData.categoryId && (
+                <p className={styles.noAttributes}>
+                  Выберите категорию, чтобы увидеть доступные атрибуты
+                </p>
+              )}
           </div>
         </div>
 
@@ -900,7 +869,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
             Отмена
           </button>
           <button type="submit" className={styles.saveButton} disabled={saving}>
-            {saving ? 'Сохранение...' : 'Сохранить изменения'}
+            {saving ? 'Создание...' : 'Создать товар'}
           </button>
         </div>
       </form>

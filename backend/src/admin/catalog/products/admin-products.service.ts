@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { Prisma } from '@prisma/client';
+import * as fs from 'fs';
+import * as path from 'path';
 
 interface BulkUpdateDto {
   ids: string[];
@@ -477,5 +479,263 @@ export class AdminProductsService {
     return this.prisma.review.delete({
       where: { id: reviewId },
     });
+  }
+
+  // Import from file (XLS/HTML Bitrix format)
+  async importFromFile(
+    fileBuffer: Buffer,
+    filename: string,
+    categoryId: string,
+    skuPrefix?: string,
+  ) {
+    // Check category exists
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+    });
+
+    if (!category) {
+      throw new BadRequestException('Категория не найдена');
+    }
+
+    const html = fileBuffer.toString('utf-8');
+    const products = this.parseHtmlTable(html, skuPrefix || 'IMPORT');
+
+    if (products.length === 0) {
+      throw new BadRequestException('Не удалось найти товары в файле. Проверьте формат файла.');
+    }
+
+    const results = {
+      created: 0,
+      updated: 0,
+      errors: [] as { name: string; error: string }[],
+      totalFound: products.length,
+    };
+
+    for (const product of products) {
+      try {
+        const existing = await this.prisma.product.findFirst({
+          where: {
+            OR: [{ sku: product.sku }, { slug: product.slug }],
+          },
+        });
+
+        if (existing) {
+          await this.prisma.product.update({
+            where: { id: existing.id },
+            data: {
+              name: product.name,
+              description: product.description,
+              price: new Prisma.Decimal(product.price),
+              images: product.images,
+              attributes: product.attributes as Prisma.InputJsonValue,
+              isActive: true,
+              isFeatured: product.isFeatured,
+            },
+          });
+          results.updated++;
+        } else {
+          await this.prisma.product.create({
+            data: {
+              name: product.name,
+              slug: product.slug,
+              sku: product.sku,
+              description: product.description,
+              price: new Prisma.Decimal(product.price),
+              stock: 10,
+              categoryId,
+              images: product.images,
+              attributes: product.attributes as Prisma.InputJsonValue,
+              isActive: true,
+              isFeatured: product.isFeatured,
+            },
+          });
+          results.created++;
+        }
+      } catch (error) {
+        results.errors.push({
+          name: product.name,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return results;
+  }
+
+  // Parse HTML table from Bitrix export
+  private parseHtmlTable(html: string, skuPrefix: string) {
+    interface ParsedProduct {
+      name: string;
+      slug: string;
+      sku: string;
+      price: number;
+      description: string;
+      images: string[];
+      attributes: Record<string, unknown>;
+      isFeatured: boolean;
+    }
+
+    const products: ParsedProduct[] = [];
+    const rows = html.split('</tr>');
+
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row.includes('<td>') && !row.includes('<td ')) continue;
+
+      const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+      const cells: string[] = [];
+      let match;
+
+      while ((match = cellRegex.exec(row)) !== null) {
+        const value = match[1]
+          .replace(/<[^>]*>/g, '')
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/\s+/g, ' ')
+          .trim();
+        cells.push(value);
+      }
+
+      if (cells.length < 10) continue;
+      if (cells[0] === 'Название' || cells[0] === 'ID' || cells[0] === '') continue;
+
+      // Try to parse as Bitrix format
+      const name = cells[0];
+      const isActive =
+        cells[1] === 'Да' || cells[1] === 'да' || cells[1] === 'Y' || cells[1] === '1';
+
+      if (!name || !isActive) continue;
+
+      // Find price (usually a number > 1000)
+      let price = 0;
+      let priceIdx = -1;
+      for (let j = 2; j < cells.length; j++) {
+        const num = parseInt(cells[j].replace(/[^\d]/g, ''), 10);
+        if (num >= 1000) {
+          price = num;
+          priceIdx = j;
+          break;
+        }
+      }
+
+      if (price === 0) continue;
+
+      // Generate slug
+      const slug = name
+        .toLowerCase()
+        .replace(/[^a-zа-яё0-9]+/gi, '-')
+        .replace(/^-|-$/g, '')
+        .substring(0, 100);
+
+      // Generate SKU
+      const externalId = cells[4] || String(i);
+      const sku = `${skuPrefix}-${externalId.replace(/[^\d]/g, '') || i}`;
+
+      // Collect images
+      const images: string[] = [];
+      for (const cell of cells) {
+        if (
+          cell.includes('http') &&
+          (cell.includes('.jpg') ||
+            cell.includes('.png') ||
+            cell.includes('.jpeg') ||
+            cell.includes('.webp'))
+        ) {
+          const urls = cell.match(/https?:\/\/[^\s"'<>]+\.(jpg|jpeg|png|webp|gif)/gi);
+          if (urls) {
+            images.push(...urls);
+          }
+        }
+      }
+
+      // Description (usually longer text)
+      let description = '';
+      for (const cell of cells) {
+        if (cell.length > 100 && !cell.includes('http')) {
+          description = cell;
+          break;
+        }
+      }
+
+      // Attributes from remaining cells
+      const attributes: Record<string, string> = {};
+      const attributeNames = ['sizes', 'manufacturer', 'color', 'coating', 'thickness', 'material'];
+      let attrIdx = 0;
+      for (let j = priceIdx + 1; j < cells.length && attrIdx < attributeNames.length; j++) {
+        if (
+          cells[j] &&
+          cells[j].length > 0 &&
+          cells[j].length < 200 &&
+          !cells[j].includes('http')
+        ) {
+          attributes[attributeNames[attrIdx]] = cells[j];
+          attrIdx++;
+        }
+      }
+
+      // Check for featured flags
+      const isFeatured = cells.some((c) => c === 'Да' && cells.indexOf(c) > priceIdx);
+
+      products.push({
+        name,
+        slug,
+        sku,
+        price,
+        description,
+        images: [...new Set(images)].slice(0, 10),
+        attributes,
+        isFeatured,
+      });
+    }
+
+    return products;
+  }
+
+  // Preview import file from local path
+  async previewImportFile(filePath: string) {
+    const importDir = path.join(process.cwd(), 'import-bitriks');
+    const files: string[] = [];
+
+    try {
+      const dirContents = fs.readdirSync(importDir);
+      for (const file of dirContents) {
+        if (
+          file.endsWith('.xls') ||
+          file.endsWith('.xlsx') ||
+          file.endsWith('.html') ||
+          file.endsWith('.htm')
+        ) {
+          files.push(file);
+        }
+      }
+    } catch {
+      // Directory doesn't exist
+    }
+
+    if (filePath) {
+      const fullPath = path.join(importDir, filePath);
+      if (fs.existsSync(fullPath)) {
+        const content = fs.readFileSync(fullPath, 'utf-8');
+        const products = this.parseHtmlTable(content, 'PREVIEW');
+        return {
+          files,
+          preview: {
+            file: filePath,
+            totalProducts: products.length,
+            samples: products.slice(0, 5).map((p) => ({
+              name: p.name,
+              price: p.price,
+              sku: p.sku,
+              imagesCount: p.images.length,
+            })),
+          },
+        };
+      }
+    }
+
+    return { files, preview: null };
   }
 }

@@ -8,7 +8,11 @@ import {
   Delete,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AdminProductsService } from './admin-products.service';
 import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
@@ -135,6 +139,34 @@ export class AdminProductsController {
     },
   ) {
     return this.adminProductsService.importProducts(body.products);
+  }
+
+  @Post('import/file')
+  @UseInterceptors(FileInterceptor('file'))
+  async importFromFile(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('categoryId') categoryId: string,
+    @Body('skuPrefix') skuPrefix?: string,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Файл не загружен');
+    }
+
+    if (!categoryId) {
+      throw new BadRequestException('Не указана категория');
+    }
+
+    return this.adminProductsService.importFromFile(
+      file.buffer,
+      file.originalname,
+      categoryId,
+      skuPrefix,
+    );
+  }
+
+  @Get('import/preview')
+  async getImportPreview(@Query('path') filePath: string) {
+    return this.adminProductsService.previewImportFile(filePath);
   }
 
   // Reviews

@@ -1,18 +1,6 @@
 import { CatalogPage } from '@/pages/catalog/ui/CatalogPage';
 
-// Маппинг slug подкатегории на человекочитаемое название
-const subcategoryNames: Record<string, Record<string, string>> = {
-  'entrance-doors': {
-    'tt-xl-xxl': 'Входные двери ТТ XL / XXL',
-    m: 'Входные двери М',
-    argus: 'Входные двери Аргус',
-  },
-  'interior-doors': {},
-  windows: {},
-  // Добавлять подкатегории по мере необходимости
-};
-
-// Маппинг slug категории на человекочитаемое название
+// Маппинг slug категории на человекочитаемое название (fallback)
 const categoryNames: Record<string, string> = {
   'entrance-doors': 'Двери входные',
   'interior-doors': 'Двери межкомнатные',
@@ -37,19 +25,19 @@ interface SubcategoryPageProps {
 export default async function SubcategoryPage({ params }: SubcategoryPageProps) {
   const { category, subcategory } = await params;
 
-  // Получаем названия
-  const categoryName = categoryNames[category] || 'Каталог';
-  const subcategoryName = subcategoryNames[category]?.[subcategory] || subcategory;
+  // Получаем название родительской категории
+  const parentCategoryName = categoryNames[category] || category;
 
-  // Формируем slug для API (category-subcategory формат для БД)
-  // Например: entrance-doors + tt-xl-xxl = entrance-doors-tt-xl-xxl
-  const categorySlug = `${category}-${subcategory}`;
+  // Slug подкатегории передаётся напрямую - он уже является полным slug из БД
+  // Например: /catalog/products/entrance-doors/entrance-doors-argus
+  // subcategory = "entrance-doors-argus" (полный slug из БД)
+  const categorySlug = subcategory;
 
   return (
     <CatalogPage
       categorySlug={categorySlug}
-      categoryName={subcategoryName}
-      parentCategoryName={categoryName}
+      categoryName={null} // Будет загружено из API по slug
+      parentCategoryName={parentCategoryName}
       parentCategorySlug={category}
     />
   );
@@ -57,11 +45,10 @@ export default async function SubcategoryPage({ params }: SubcategoryPageProps) 
 
 export async function generateMetadata({ params }: SubcategoryPageProps) {
   const { category, subcategory } = await params;
-  const categoryName = categoryNames[category] || 'Каталог';
-  const subcategoryName = subcategoryNames[category]?.[subcategory] || subcategory;
+  const parentCategoryName = categoryNames[category] || category;
 
   return {
-    title: `${subcategoryName} | ${categoryName} | Территория интерьерных решений`,
-    description: `${subcategoryName} - ${categoryName} - Территория интерьерных решений`,
+    title: `${subcategory} | ${parentCategoryName} | Территория интерьерных решений`,
+    description: `${subcategory} - ${parentCategoryName} - Территория интерьерных решений`,
   };
 }

@@ -21,6 +21,7 @@ import {
 import React from 'react';
 
 import { dropdownMenus } from '@/shared/constants/navigation';
+import type { NavigationCategory } from '@/shared/lib/hooks';
 import type { NavigationItem as NavigationItemType } from '@/shared/types/navigation';
 import { Button } from '@/shared/ui/Button';
 
@@ -54,6 +55,7 @@ export interface NavigationItemProps {
   onDropdownMouseEnter: () => void;
   onDropdownMouseLeave: () => void;
   onClick?: (sectionName: string) => void;
+  dynamicCategories?: NavigationCategory[];
 }
 
 export const NavigationItem: React.FC<NavigationItemProps> = ({
@@ -64,9 +66,14 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
   onDropdownMouseEnter,
   onDropdownMouseLeave,
   onClick,
+  dynamicCategories,
 }) => {
   const hasDropdown = item.hasDropdown;
   const menuData = hasDropdown ? dropdownMenus[item.name] : null;
+
+  // Для "КАТАЛОГ ТОВАРОВ" используем динамические категории если они есть
+  const useDynamicMenu =
+    item.name === 'КАТАЛОГ ТОВАРОВ' && dynamicCategories && dynamicCategories.length > 0;
   const navItemRef = React.useRef<HTMLDivElement>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const [alignment, setAlignment] = React.useState<'left' | 'right' | 'center'>('left');
@@ -222,7 +229,7 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
         )}
       </Button>
 
-      {hasDropdown && isActive && menuData && (
+      {hasDropdown && isActive && (useDynamicMenu || menuData) && (
         <div
           ref={dropdownRef}
           className={`${styles.dropdown} ${
@@ -237,42 +244,91 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
         >
           <div className={styles.dropdownContent}>
             <div className={styles.dropdownGrid}>
-              {menuData.items.map((dropdownItem) => (
-                <div key={dropdownItem.name} className={styles.dropdownSection}>
-                  {/* Название раздела (жирным) */}
-                  <a
-                    href={dropdownItem.href}
-                    onClick={() => handleDropdownItemClick(dropdownItem.name)}
-                    className={styles.dropdownItem}
-                    title={dropdownItem.name}
-                  >
-                    {dropdownItem.icon && (
+              {/* Динамические категории для "КАТАЛОГ ТОВАРОВ" */}
+              {useDynamicMenu &&
+                dynamicCategories!.map((category) => (
+                  <div key={category.slug} className={styles.dropdownSection}>
+                    <a
+                      href={category.href}
+                      onClick={() => handleDropdownItemClick(category.name)}
+                      className={styles.dropdownItem}
+                      title={category.name}
+                    >
                       <span className={styles.dropdownItemIconWrapper}>
-                        {getIcon(dropdownItem.icon)}
+                        {category.image ? (
+                          <img src={category.image} alt="" className={styles.categoryImage} />
+                        ) : category.icon ? (
+                          <span className={styles.categoryIcon}>{category.icon}</span>
+                        ) : (
+                          <RectangleStackIcon className={styles.dropdownItemIcon} />
+                        )}
                       </span>
+                      <span className={`${styles.dropdownItemText} ${styles.dropdownItemTextBold}`}>
+                        {category.name}
+                      </span>
+                    </a>
+                    {category.hasSubmenu && category.submenu.length > 0 && (
+                      <div className={styles.submenu}>
+                        {category.submenu.map((subItem) => (
+                          <a
+                            key={subItem.slug}
+                            href={subItem.href}
+                            onClick={() => handleDropdownItemClick(subItem.name)}
+                            className={styles.submenuItem}
+                            title={subItem.name}
+                          >
+                            {subItem.image ? (
+                              <img src={subItem.image} alt="" className={styles.submenuItemImage} />
+                            ) : subItem.icon ? (
+                              <span className={styles.submenuItemIcon}>{subItem.icon}</span>
+                            ) : null}
+                            <span>{subItem.name}</span>
+                          </a>
+                        ))}
+                      </div>
                     )}
-                    <span className={`${styles.dropdownItemText} ${styles.dropdownItemTextBold}`}>
-                      {dropdownItem.name}
-                    </span>
-                  </a>
-                  {/* Подразделы (серии) */}
-                  {dropdownItem.hasSubmenu && dropdownItem.submenu && (
-                    <div className={styles.submenu}>
-                      {dropdownItem.submenu.map((subItem) => (
-                        <a
-                          key={subItem.name}
-                          href={subItem.href}
-                          onClick={() => handleDropdownItemClick(subItem.name)}
-                          className={styles.submenuItem}
-                          title={subItem.name}
-                        >
-                          {subItem.name}
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                ))}
+
+              {/* Статические меню для других разделов */}
+              {!useDynamicMenu &&
+                menuData &&
+                menuData.items.map((dropdownItem) => (
+                  <div key={dropdownItem.name} className={styles.dropdownSection}>
+                    {/* Название раздела (жирным) */}
+                    <a
+                      href={dropdownItem.href}
+                      onClick={() => handleDropdownItemClick(dropdownItem.name)}
+                      className={styles.dropdownItem}
+                      title={dropdownItem.name}
+                    >
+                      {dropdownItem.icon && (
+                        <span className={styles.dropdownItemIconWrapper}>
+                          {getIcon(dropdownItem.icon)}
+                        </span>
+                      )}
+                      <span className={`${styles.dropdownItemText} ${styles.dropdownItemTextBold}`}>
+                        {dropdownItem.name}
+                      </span>
+                    </a>
+                    {/* Подразделы (серии) */}
+                    {dropdownItem.hasSubmenu && dropdownItem.submenu && (
+                      <div className={styles.submenu}>
+                        {dropdownItem.submenu.map((subItem) => (
+                          <a
+                            key={subItem.name}
+                            href={subItem.href}
+                            onClick={() => handleDropdownItemClick(subItem.name)}
+                            className={styles.submenuItem}
+                            title={subItem.name}
+                          >
+                            {subItem.name}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
             </div>
           </div>
         </div>

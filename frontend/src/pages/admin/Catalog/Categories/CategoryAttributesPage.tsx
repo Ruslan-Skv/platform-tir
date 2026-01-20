@@ -70,6 +70,18 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
     values: '',
   });
 
+  // Edit attribute modal
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingAttribute, setEditingAttribute] = useState<Attribute | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    slug: '',
+    type: 'TEXT' as Attribute['type'],
+    unit: '',
+    isFilterable: true,
+    values: '',
+  });
+
   // Apply to products state
   const [applyingToProducts, setApplyingToProducts] = useState(false);
   const [selectedForApply, setSelectedForApply] = useState<string[]>([]);
@@ -304,6 +316,96 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
     );
   };
 
+  // Open edit modal
+  const openEditModal = (attr: Attribute) => {
+    setEditingAttribute(attr);
+    setEditForm({
+      name: attr.name,
+      slug: attr.slug,
+      type: attr.type,
+      unit: attr.unit || '',
+      isFilterable: attr.isFilterable,
+      values: attr.values.map((v) => v.value).join('\n'),
+    });
+    setShowEditModal(true);
+  };
+
+  // Handle edit attribute
+  const handleEditAttribute = async () => {
+    if (!editingAttribute || !editForm.name || !editForm.slug) {
+      showMessage('error', 'Заполните название и slug');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const values =
+        editForm.type === 'SELECT' || editForm.type === 'MULTI_SELECT'
+          ? editForm.values
+              .split('\n')
+              .map((v) => v.trim())
+              .filter(Boolean)
+          : undefined;
+
+      const response = await fetch(`${API_URL}/attributes/${editingAttribute.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({
+          name: editForm.name,
+          slug: editForm.slug,
+          type: editForm.type,
+          unit: editForm.unit || null,
+          isFilterable: editForm.isFilterable,
+          values,
+        }),
+      });
+
+      if (response.ok) {
+        showMessage('success', 'Атрибут обновлён');
+        setShowEditModal(false);
+        setEditingAttribute(null);
+        fetchData();
+      } else {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || 'Failed to update attribute');
+      }
+    } catch (error) {
+      showMessage('error', error instanceof Error ? error.message : 'Ошибка обновления атрибута');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handle delete attribute completely
+  const handleDeleteAttribute = async (attributeId: string, attributeName: string) => {
+    if (
+      !confirm(
+        `Удалить атрибут "${attributeName}" полностью? Это удалит его из всех категорий и товаров.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/attributes/${attributeId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+
+      if (response.ok) {
+        showMessage('success', 'Атрибут удалён');
+        fetchData();
+      } else {
+        throw new Error('Failed to delete attribute');
+      }
+    } catch {
+      showMessage('error', 'Ошибка удаления атрибута');
+    }
+  };
+
   const getTypeLabel = (type: Attribute['type']) => {
     const labels: Record<Attribute['type'], string> = {
       TEXT: 'Текст',
@@ -421,12 +523,29 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
                       />
                       <span>Обязательный</span>
                     </label>
-                    <button
-                      className={styles.removeButton}
-                      onClick={() => handleRemoveAttribute(ca.attributeId)}
-                    >
-                      Удалить
-                    </button>
+                    <div className={styles.attributeActions}>
+                      <button
+                        className={styles.editButton}
+                        onClick={() => openEditModal(ca.attribute)}
+                        title="Редактировать атрибут"
+                      >
+                        ✏️ Редактировать
+                      </button>
+                      <button
+                        className={styles.removeButton}
+                        onClick={() => handleRemoveAttribute(ca.attributeId)}
+                        title="Убрать из категории"
+                      >
+                        Убрать
+                      </button>
+                      <button
+                        className={styles.deleteButton}
+                        onClick={() => handleDeleteAttribute(ca.attributeId, ca.attribute.name)}
+                        title="Удалить атрибут полностью"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -613,6 +732,109 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
                 disabled={saving}
               >
                 {saving ? 'Создание...' : 'Создать и добавить'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit attribute modal */}
+      {showEditModal && editingAttribute && (
+        <div className={styles.modalOverlay} onClick={() => setShowEditModal(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h3>Редактировать атрибут</h3>
+
+            <div className={styles.formGroup}>
+              <label>Название *</label>
+              <input
+                type="text"
+                value={editForm.name}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+                className={styles.input}
+                placeholder="Например: Материал"
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>Slug (URL) *</label>
+              <input
+                type="text"
+                value={editForm.slug}
+                onChange={(e) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+                  }))
+                }
+                className={styles.input}
+                placeholder="material"
+              />
+            </div>
+
+            <div className={styles.formRow}>
+              <div className={styles.formGroup}>
+                <label>Тип</label>
+                <select
+                  value={editForm.type}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      type: e.target.value as Attribute['type'],
+                    }))
+                  }
+                  className={styles.select}
+                >
+                  <option value="TEXT">Текст</option>
+                  <option value="NUMBER">Число</option>
+                  <option value="BOOLEAN">Да/Нет</option>
+                  <option value="SELECT">Выбор из списка</option>
+                  <option value="MULTI_SELECT">Множественный выбор</option>
+                  <option value="COLOR">Цвет</option>
+                </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Единица измерения</label>
+                <input
+                  type="text"
+                  value={editForm.unit}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, unit: e.target.value }))}
+                  className={styles.input}
+                  placeholder="мм, кг, шт"
+                />
+              </div>
+            </div>
+
+            {(editForm.type === 'SELECT' || editForm.type === 'MULTI_SELECT') && (
+              <div className={styles.formGroup}>
+                <label>Значения (по одному на строку)</label>
+                <textarea
+                  value={editForm.values}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, values: e.target.value }))}
+                  className={styles.textarea}
+                  rows={5}
+                  placeholder="Сталь&#10;Дерево&#10;Пластик"
+                />
+              </div>
+            )}
+
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={editForm.isFilterable}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, isFilterable: e.target.checked }))
+                }
+              />
+              <span>Использовать для фильтрации</span>
+            </label>
+
+            <div className={styles.modalActions}>
+              <button className={styles.cancelButton} onClick={() => setShowEditModal(false)}>
+                Отмена
+              </button>
+              <button className={styles.saveButton} onClick={handleEditAttribute} disabled={saving}>
+                {saving ? 'Сохранение...' : 'Сохранить'}
               </button>
             </div>
           </div>

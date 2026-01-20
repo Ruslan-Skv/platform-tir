@@ -197,18 +197,105 @@
   font-size: 0.95rem;
 }
 
+/* Image upload section */
+.imageError {
+  padding: 10px 14px;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  color: #991b1b;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+
+.dropZone {
+  border: 2px dashed #d1d5db;
+  border-radius: 10px;
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+  margin-bottom: 12px;
+}
+
+.dropZone:hover {
+  border-color: #6366f1;
+  background: #f5f3ff;
+}
+
+.dropZoneActive {
+  border-color: #6366f1;
+  background: #eef2ff;
+  border-style: solid;
+}
+
+.dropZoneContent {
+  pointer-events: none;
+}
+
+.dropZoneIcon {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.dropZoneText {
+  color: #374151;
+  font-size: 0.95rem;
+  margin: 0 0 4px;
+}
+
+.dropZoneLink {
+  color: #6366f1;
+  font-weight: 500;
+}
+
+.dropZoneHint {
+  color: #9ca3af;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.fileInput {
+  display: none;
+}
+
+.addUrlButton {
+  padding: 8px 16px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  color: #374151;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 16px;
+}
+
+.addUrlButton:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
 .imagesGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
-  margin-bottom: 12px;
+  margin-top: 16px;
 }
 
 .imageItem {
+  position: relative;
   aspect-ratio: 1;
   border-radius: 8px;
   overflow: hidden;
   background: #e5e7eb;
+  border: 2px solid transparent;
+}
+
+.imageItem:first-child {
+  border-color: #6366f1;
 }
 
 .imageItem img {
@@ -217,12 +304,75 @@
   object-fit: cover;
 }
 
+.mainImageBadge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: #6366f1;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.imageActions {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.imageItem:hover .imageActions {
+  opacity: 1;
+}
+
+.imageActionBtn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #374151;
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.imageActionBtn:hover:not(:disabled) {
+  background: white;
+}
+
+.imageActionBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.imageDeleteBtn:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
 .noImages {
   color: #6b7280;
   font-style: italic;
-  grid-column: 1 / -1;
   text-align: center;
   padding: 20px;
+  background: #fff;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  margin-top: 16px;
 }
 
 .hint {
@@ -301,6 +451,173 @@
 
   .cancelButton,
   .saveButton {
+    width: 100%;
+  }
+}
+
+/* Attributes / Characteristics section */
+.attributesSection {
+  margin-bottom: 20px;
+}
+
+.attributesSubtitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.customAttrHint {
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.attributesList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.attributeRow {
+  display: grid;
+  grid-template-columns: 180px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.attributeLabel {
+  font-size: 0.9rem;
+  color: #374151;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.required {
+  color: #dc2626;
+}
+
+.unit {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.attributeInput {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.attributeInput .input,
+.attributeInput .select {
+  flex: 1;
+}
+
+.clearAttrButton {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.clearAttrButton:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+.addAttrRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #f0fdf4;
+  border: 1px dashed #86efac;
+  border-radius: 8px;
+}
+
+.addAttrButton {
+  padding: 8px 16px;
+  background: #16a34a;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.addAttrButton:hover:not(:disabled) {
+  background: #15803d;
+}
+
+.addAttrButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.removeAttrButton {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.removeAttrButton:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.noAttributes {
+  color: #6b7280;
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+  background: #fff;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+  .attributeRow {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .addAttrRow {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .addAttrButton {
     width: 100%;
   }
 }
