@@ -11,11 +11,9 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const finalPrice = product.discount
-    ? product.price * (1 - product.discount / 100)
-    : product.price;
-
-  const oldPrice = product.discount ? product.price : undefined;
+  // price - актуальная цена товара, oldPrice - старая цена (если есть скидка)
+  const finalPrice = product.price;
+  const oldPrice = product.oldPrice;
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -37,6 +35,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
           {/* Бейджи */}
           <div className={styles.badges}>
+            {product.isFeatured && <span className={styles.hitBadge}>ХИТ</span>}
             {product.isNew && <span className={styles.newBadge}>Новинка</span>}
             {product.discount && <span className={styles.discountBadge}>-{product.discount}%</span>}
           </div>
@@ -53,6 +52,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
         <div className={styles.content}>
           <h3 className={styles.name}>{product.name}</h3>
+          {product.sku && <p className={styles.sku}>Арт. {product.sku}</p>}
           <p className={styles.category}>{product.category}</p>
 
           <div className={styles.rating}>

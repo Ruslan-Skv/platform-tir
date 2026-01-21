@@ -30,13 +30,86 @@ export class CategoriesService {
   constructor(private prisma: PrismaService) {}
 
   async create(createCategoryDto: CreateCategoryDto) {
-    return this.prisma.category.create({
+    // Создаём категорию
+    const category = await this.prisma.category.create({
       data: createCategoryDto,
       include: {
         parent: true,
         children: true,
       },
     });
+
+    // Если есть родительская категория - наследуем её атрибуты
+    if (createCategoryDto.parentId) {
+      await this.inheritAttributesFromParent(category.id, createCategoryDto.parentId);
+    }
+
+    return category;
+  }
+
+  // Наследование атрибутов от родительской категории (приватный метод)
+  private async inheritAttributesFromParent(categoryId: string, parentId: string) {
+    // Получаем атрибуты родительской категории
+    const parentAttributes = await this.prisma.categoryAttribute.findMany({
+      where: { categoryId: parentId },
+      orderBy: { order: 'asc' },
+    });
+
+    if (parentAttributes.length === 0) {
+      return { inherited: 0, skipped: 0 };
+    }
+
+    // Получаем уже существующие атрибуты категории
+    const existingAttributes = await this.prisma.categoryAttribute.findMany({
+      where: { categoryId },
+      select: { attributeId: true },
+    });
+    const existingAttributeIds = new Set(existingAttributes.map((a) => a.attributeId));
+
+    // Фильтруем только те атрибуты, которых ещё нет
+    const attributesToAdd = parentAttributes.filter(
+      (attr) => !existingAttributeIds.has(attr.attributeId),
+    );
+
+    if (attributesToAdd.length === 0) {
+      return { inherited: 0, skipped: parentAttributes.length };
+    }
+
+    // Копируем атрибуты в категорию
+    await this.prisma.categoryAttribute.createMany({
+      data: attributesToAdd.map((attr) => ({
+        categoryId,
+        attributeId: attr.attributeId,
+        isRequired: attr.isRequired,
+        order: attr.order,
+      })),
+    });
+
+    return {
+      inherited: attributesToAdd.length,
+      skipped: parentAttributes.length - attributesToAdd.length,
+    };
+  }
+
+  // Публичный метод для наследования атрибутов от родителя
+  async inheritAttributesFromParentPublic(categoryId: string) {
+    const category = await this.findOne(categoryId);
+
+    if (!category.parentId) {
+      throw new BadRequestException('Эта категория не имеет родительской категории');
+    }
+
+    const result = await this.inheritAttributesFromParent(categoryId, category.parentId);
+
+    // Возвращаем обновлённый список атрибутов категории
+    const attributes = await this.getCategoryAttributes(categoryId);
+
+    return {
+      message: `Унаследовано атрибутов: ${result.inherited}, пропущено (уже существуют): ${result.skipped}`,
+      inherited: result.inherited,
+      skipped: result.skipped,
+      attributes,
+    };
   }
 
   async findAll(includeInactive = false) {

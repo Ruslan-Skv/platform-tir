@@ -105,7 +105,8 @@
 }
 
 .addButton,
-.createButton {
+.createButton,
+.inheritButton {
   padding: 8px 14px;
   border-radius: 6px;
   font-size: 0.9rem;
@@ -132,6 +133,21 @@
 
 .createButton:hover {
   background: #4f46e5;
+}
+
+.inheritButton {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+}
+
+.inheritButton:hover {
+  background: #fde68a;
+}
+
+.inheritButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .attributesList {

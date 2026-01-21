@@ -102,6 +102,110 @@
   border-color: #6366f1;
 }
 
+.filterToggleButton {
+  padding: 10px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filterToggleButton:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.filterToggleButton.active {
+  background: #eff6ff;
+  border-color: #6366f1;
+  color: #4f46e5;
+}
+
+.filterToggleButton.hasFilters {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  color: #b45309;
+}
+
+.advancedFilters {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.filterRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filterGroup label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.filterSelect {
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #fff;
+  min-width: 120px;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.filterInput {
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #fff;
+  width: 100px;
+}
+
+.filterInput:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.filterInput::placeholder {
+  color: #9ca3af;
+}
+
+.resetFiltersButton {
+  padding: 8px 16px;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  color: #dc2626;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+
+.resetFiltersButton:hover {
+  background: #fecaca;
+}
+
 .bulkActions {
   display: flex;
   align-items: center;
@@ -405,6 +509,45 @@
   margin-top: 4px;
 }
 
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.radioOption {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.15s;
+}
+
+.radioOption:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.radioOption input[type='radio'] {
+  margin-top: 2px;
+  accent-color: #6366f1;
+}
+
+.radioOption span {
+  font-size: 0.95rem;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.scopeHint {
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
 .link {
   color: #6366f1;
   text-decoration: none;
@@ -620,7 +763,7 @@
   border: 1px solid #e5e7eb;
   border-radius: 10px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  min-width: 220px;
+  min-width: 280px;
   z-index: 100;
   padding: 8px 0;
 }
@@ -632,6 +775,117 @@
   color: #6b7280;
   border-bottom: 1px solid #e5e7eb;
   margin-bottom: 4px;
+}
+
+.columnsList {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.selectedColumnsSection {
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 8px;
+}
+
+.availableColumnsSection {
+  padding-top: 4px;
+}
+
+.sectionLabel {
+  padding: 6px 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.columnItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+  user-select: none;
+}
+
+.columnItem:hover {
+  background: #f3f4f6;
+}
+
+.columnItem.selected {
+  background: #f8fafc;
+}
+
+.columnItem.dragging {
+  opacity: 0.5;
+  background: #e0e7ff;
+}
+
+.columnItem input {
+  width: 16px;
+  height: 16px;
+  accent-color: #6366f1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.columnTitle {
+  font-size: 0.9rem;
+  color: #374151;
+  flex: 1;
+}
+
+.dragHandle {
+  cursor: grab;
+  color: #9ca3af;
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.dragHandle:hover {
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.columnOrderButtons {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.orderButton {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: #6b7280;
+  transition: all 0.15s;
+}
+
+.orderButton:hover:not(:disabled) {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.orderButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 .columnOption {

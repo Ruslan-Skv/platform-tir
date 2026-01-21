@@ -71,6 +71,14 @@ export function ProductsPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
 
+  // Advanced filters
+  const [activeFilter, setActiveFilter] = useState<'all' | 'yes' | 'no'>('all');
+  const [featuredFilter, setFeaturedFilter] = useState<'all' | 'yes' | 'no'>('all');
+  const [newFilter, setNewFilter] = useState<'all' | 'yes' | 'no'>('all');
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
   // Inline editing state
   const [editMode, setEditMode] = useState(false);
   const [selectedColumns, setSelectedColumns] = useState<string[]>(() => {
@@ -109,6 +117,11 @@ export function ProductsPage() {
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const columnSelectorRef = useRef<HTMLDivElement>(null);
+
+  // Export state
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportScope, setExportScope] = useState<'all' | 'filtered' | 'selected'>('filtered');
 
   // Close column selector when clicking outside
   useEffect(() => {
@@ -243,8 +256,55 @@ export function ProductsPage() {
       result = result.filter((p) => p.stock > 0 && p.stock <= 5);
     }
 
+    // Active filter
+    if (activeFilter === 'yes') {
+      result = result.filter((p) => p.isActive === true);
+    } else if (activeFilter === 'no') {
+      result = result.filter((p) => p.isActive === false);
+    }
+
+    // Featured filter
+    if (featuredFilter === 'yes') {
+      result = result.filter((p) => p.isFeatured === true);
+    } else if (featuredFilter === 'no') {
+      result = result.filter((p) => p.isFeatured === false);
+    }
+
+    // New filter
+    if (newFilter === 'yes') {
+      result = result.filter((p) => p.isNew === true);
+    } else if (newFilter === 'no') {
+      result = result.filter((p) => p.isNew === false);
+    }
+
+    // Price range filter
+    const minPrice = priceMin ? parseFloat(priceMin) : null;
+    const maxPrice = priceMax ? parseFloat(priceMax) : null;
+    if (minPrice !== null && !isNaN(minPrice)) {
+      result = result.filter((p) => {
+        const price = typeof p.price === 'string' ? parseFloat(p.price) : p.price;
+        return price >= minPrice;
+      });
+    }
+    if (maxPrice !== null && !isNaN(maxPrice)) {
+      result = result.filter((p) => {
+        const price = typeof p.price === 'string' ? parseFloat(p.price) : p.price;
+        return price <= maxPrice;
+      });
+    }
+
     return result;
-  }, [allProducts, searchQuery, categoryFilter, stockFilter]);
+  }, [
+    allProducts,
+    searchQuery,
+    categoryFilter,
+    stockFilter,
+    activeFilter,
+    featuredFilter,
+    newFilter,
+    priceMin,
+    priceMax,
+  ]);
 
   const totalProducts = filteredProducts.length;
   const _totalPages = Math.ceil(totalProducts / limit);
@@ -253,7 +313,33 @@ export function ProductsPage() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, categoryFilter, stockFilter]);
+  }, [
+    searchQuery,
+    categoryFilter,
+    stockFilter,
+    activeFilter,
+    featuredFilter,
+    newFilter,
+    priceMin,
+    priceMax,
+  ]);
+
+  // Check if any advanced filter is active
+  const hasAdvancedFilters =
+    activeFilter !== 'all' ||
+    featuredFilter !== 'all' ||
+    newFilter !== 'all' ||
+    priceMin !== '' ||
+    priceMax !== '';
+
+  // Reset all advanced filters
+  const resetAdvancedFilters = () => {
+    setActiveFilter('all');
+    setFeaturedFilter('all');
+    setNewFilter('all');
+    setPriceMin('');
+    setPriceMax('');
+  };
 
   const formatCurrency = (value: number | string) => {
     const numValue = typeof value === 'string' ? parseFloat(value) : value;
@@ -382,6 +468,174 @@ export function ProductsPage() {
     }
   };
 
+  // Export functions
+  const getProductsToExport = (): Product[] => {
+    switch (exportScope) {
+      case 'all':
+        return allProducts;
+      case 'selected':
+        return allProducts.filter((p) => selectedIds.includes(p.id));
+      case 'filtered':
+      default:
+        return filteredProducts;
+    }
+  };
+
+  const exportToCSV = () => {
+    const products = getProductsToExport();
+    if (products.length === 0) {
+      alert('Нет товаров для экспорта');
+      return;
+    }
+
+    setExporting(true);
+
+    try {
+      // CSV headers
+      const headers = [
+        'ID',
+        'Название',
+        'Артикул',
+        'Цена',
+        'Старая цена',
+        'Остаток',
+        'Категория',
+        'Активен',
+        'Хит',
+        'Новинка',
+        'Изображения',
+      ];
+
+      // CSV rows
+      const rows = products.map((p) => [
+        p.id,
+        `"${(p.name || '').replace(/"/g, '""')}"`,
+        p.sku || '',
+        p.price,
+        p.comparePrice || '',
+        p.stock,
+        `"${(p.category?.name || '').replace(/"/g, '""')}"`,
+        p.isActive ? 'Да' : 'Нет',
+        p.isFeatured ? 'Да' : 'Нет',
+        p.isNew ? 'Да' : 'Нет',
+        `"${(p.images || []).join(', ')}"`,
+      ]);
+
+      // BOM for UTF-8
+      const BOM = '\uFEFF';
+      const csvContent = BOM + [headers.join(';'), ...rows.map((r) => r.join(';'))].join('\n');
+
+      // Download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `products_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      setShowExportModal(false);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Ошибка при экспорте');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const exportToExcel = () => {
+    const products = getProductsToExport();
+    if (products.length === 0) {
+      alert('Нет товаров для экспорта');
+      return;
+    }
+
+    setExporting(true);
+
+    try {
+      // Create Excel XML (простой формат, работает без библиотек)
+      const escapeXml = (str: string) =>
+        str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+
+      const headers = [
+        'ID',
+        'Название',
+        'Артикул',
+        'Цена',
+        'Старая цена',
+        'Остаток',
+        'Категория',
+        'Активен',
+        'Хит',
+        'Новинка',
+        'Изображения',
+      ];
+
+      let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+  <Styles>
+    <Style ss:ID="Header">
+      <Font ss:Bold="1"/>
+      <Interior ss:Color="#E0E0E0" ss:Pattern="Solid"/>
+    </Style>
+  </Styles>
+  <Worksheet ss:Name="Товары">
+    <Table>
+      <Row>`;
+
+      // Headers
+      headers.forEach((h) => {
+        xml += `<Cell ss:StyleID="Header"><Data ss:Type="String">${escapeXml(h)}</Data></Cell>`;
+      });
+      xml += '</Row>';
+
+      // Data rows
+      products.forEach((p) => {
+        xml += '<Row>';
+        xml += `<Cell><Data ss:Type="String">${escapeXml(p.id)}</Data></Cell>`;
+        xml += `<Cell><Data ss:Type="String">${escapeXml(p.name || '')}</Data></Cell>`;
+        xml += `<Cell><Data ss:Type="String">${escapeXml(p.sku || '')}</Data></Cell>`;
+        xml += `<Cell><Data ss:Type="Number">${p.price || 0}</Data></Cell>`;
+        xml += `<Cell><Data ss:Type="Number">${p.comparePrice || 0}</Data></Cell>`;
+        xml += `<Cell><Data ss:Type="Number">${p.stock || 0}</Data></Cell>`;
+        xml += `<Cell><Data ss:Type="String">${escapeXml(p.category?.name || '')}</Data></Cell>`;
+        xml += `<Cell><Data ss:Type="String">${p.isActive ? 'Да' : 'Нет'}</Data></Cell>`;
+        xml += `<Cell><Data ss:Type="String">${p.isFeatured ? 'Да' : 'Нет'}</Data></Cell>`;
+        xml += `<Cell><Data ss:Type="String">${p.isNew ? 'Да' : 'Нет'}</Data></Cell>`;
+        xml += `<Cell><Data ss:Type="String">${escapeXml((p.images || []).join(', '))}</Data></Cell>`;
+        xml += '</Row>';
+      });
+
+      xml += '</Table></Worksheet></Workbook>';
+
+      // Download
+      const blob = new Blob([xml], { type: 'application/vnd.ms-excel' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `products_${new Date().toISOString().split('T')[0]}.xls`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      setShowExportModal(false);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Ошибка при экспорте');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   // Toggle column selection
   const toggleColumn = (columnKey: string) => {
     setSelectedColumns((prev) => {
@@ -389,6 +643,68 @@ export function ProductsPage() {
         ? prev.filter((k) => k !== columnKey)
         : [...prev, columnKey];
       // Save to localStorage
+      localStorage.setItem('admin_products_columns', JSON.stringify(newColumns));
+      return newColumns;
+    });
+  };
+
+  // Drag and drop state for column reordering
+  const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, columnKey: string) => {
+    setDraggedColumn(columnKey);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', columnKey);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, targetKey: string) => {
+    e.preventDefault();
+    if (!draggedColumn || draggedColumn === targetKey) {
+      setDraggedColumn(null);
+      return;
+    }
+
+    setSelectedColumns((prev) => {
+      const newColumns = [...prev];
+      const draggedIndex = newColumns.indexOf(draggedColumn);
+      const targetIndex = newColumns.indexOf(targetKey);
+
+      if (draggedIndex === -1 || targetIndex === -1) {
+        return prev;
+      }
+
+      // Remove dragged item and insert at target position
+      newColumns.splice(draggedIndex, 1);
+      newColumns.splice(targetIndex, 0, draggedColumn);
+
+      // Save to localStorage
+      localStorage.setItem('admin_products_columns', JSON.stringify(newColumns));
+      return newColumns;
+    });
+
+    setDraggedColumn(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedColumn(null);
+  };
+
+  const moveColumn = (columnKey: string, direction: 'up' | 'down') => {
+    setSelectedColumns((prev) => {
+      const index = prev.indexOf(columnKey);
+      if (index === -1) return prev;
+      if (direction === 'up' && index === 0) return prev;
+      if (direction === 'down' && index === prev.length - 1) return prev;
+
+      const newColumns = [...prev];
+      const newIndex = direction === 'up' ? index - 1 : index + 1;
+      [newColumns[index], newColumns[newIndex]] = [newColumns[newIndex], newColumns[index]];
+
       localStorage.setItem('admin_products_columns', JSON.stringify(newColumns));
       return newColumns;
     });
@@ -667,18 +983,85 @@ export function ProductsPage() {
             {showColumnSelector && (
               <div className={styles.columnSelectorDropdown}>
                 <div className={styles.columnSelectorHeader}>
-                  <span>Отображать колонки:</span>
+                  <span>Выберите и упорядочьте колонки:</span>
                 </div>
-                {AVAILABLE_COLUMNS.map((col) => (
-                  <label key={col.key} className={styles.columnOption}>
-                    <input
-                      type="checkbox"
-                      checked={selectedColumns.includes(col.key)}
-                      onChange={() => toggleColumn(col.key)}
-                    />
-                    <span>{col.title}</span>
-                  </label>
-                ))}
+                <div className={styles.columnsList}>
+                  {/* Selected columns - can be reordered */}
+                  {selectedColumns.length > 0 && (
+                    <div className={styles.selectedColumnsSection}>
+                      <div className={styles.sectionLabel}>
+                        Отображаемые (перетащите для сортировки):
+                      </div>
+                      {selectedColumns.map((colKey, index) => {
+                        const col = AVAILABLE_COLUMNS.find((c) => c.key === colKey);
+                        if (!col) return null;
+                        return (
+                          <div
+                            key={col.key}
+                            className={`${styles.columnItem} ${styles.selected} ${draggedColumn === col.key ? styles.dragging : ''}`}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, col.key)}
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDrop(e, col.key)}
+                            onDragEnd={handleDragEnd}
+                          >
+                            <span className={styles.dragHandle}>⋮⋮</span>
+                            <input
+                              type="checkbox"
+                              checked={true}
+                              onChange={() => toggleColumn(col.key)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <span className={styles.columnTitle}>{col.title}</span>
+                            <div className={styles.columnOrderButtons}>
+                              <button
+                                className={styles.orderButton}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  moveColumn(col.key, 'up');
+                                }}
+                                disabled={index === 0}
+                                title="Переместить вверх"
+                              >
+                                ↑
+                              </button>
+                              <button
+                                className={styles.orderButton}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  moveColumn(col.key, 'down');
+                                }}
+                                disabled={index === selectedColumns.length - 1}
+                                title="Переместить вниз"
+                              >
+                                ↓
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {/* Available columns - not selected */}
+                  {AVAILABLE_COLUMNS.filter((col) => !selectedColumns.includes(col.key)).length >
+                    0 && (
+                    <div className={styles.availableColumnsSection}>
+                      <div className={styles.sectionLabel}>Доступные:</div>
+                      {AVAILABLE_COLUMNS.filter((col) => !selectedColumns.includes(col.key)).map(
+                        (col) => (
+                          <div key={col.key} className={styles.columnItem}>
+                            <input
+                              type="checkbox"
+                              checked={false}
+                              onChange={() => toggleColumn(col.key)}
+                            />
+                            <span className={styles.columnTitle}>{col.title}</span>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -700,12 +1083,7 @@ export function ProductsPage() {
           <button className={styles.secondaryButton} onClick={() => setShowImportModal(true)}>
             📥 Импорт
           </button>
-          <button
-            className={styles.secondaryButton}
-            onClick={() => {
-              alert('Функционал экспорта будет реализован позже');
-            }}
-          >
+          <button className={styles.secondaryButton} onClick={() => setShowExportModal(true)}>
             📤 Экспорт
           </button>
           <button
@@ -767,6 +1145,14 @@ export function ProductsPage() {
           <option value={200}>200 на странице</option>
         </select>
         <button
+          className={`${styles.filterToggleButton} ${showAdvancedFilters ? styles.active : ''} ${hasAdvancedFilters ? styles.hasFilters : ''}`}
+          onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+        >
+          🔍 Фильтры{' '}
+          {hasAdvancedFilters &&
+            `(${[activeFilter !== 'all', featuredFilter !== 'all', newFilter !== 'all', priceMin !== '', priceMax !== ''].filter(Boolean).length})`}
+        </button>
+        <button
           className={styles.refreshButton}
           onClick={() => fetchProducts(true)}
           disabled={loading || refreshing}
@@ -774,6 +1160,82 @@ export function ProductsPage() {
           🔄 {refreshing ? 'Обновление...' : loading ? 'Загрузка...' : 'Обновить'}
         </button>
       </div>
+
+      {/* Advanced Filters Panel */}
+      {showAdvancedFilters && (
+        <div className={styles.advancedFilters}>
+          <div className={styles.filterRow}>
+            <div className={styles.filterGroup}>
+              <label>Статус</label>
+              <select
+                value={activeFilter}
+                onChange={(e) => setActiveFilter(e.target.value as 'all' | 'yes' | 'no')}
+                className={styles.filterSelect}
+              >
+                <option value="all">Все</option>
+                <option value="yes">Активные</option>
+                <option value="no">Неактивные</option>
+              </select>
+            </div>
+
+            <div className={styles.filterGroup}>
+              <label>Хит продаж</label>
+              <select
+                value={featuredFilter}
+                onChange={(e) => setFeaturedFilter(e.target.value as 'all' | 'yes' | 'no')}
+                className={styles.filterSelect}
+              >
+                <option value="all">Все</option>
+                <option value="yes">Да</option>
+                <option value="no">Нет</option>
+              </select>
+            </div>
+
+            <div className={styles.filterGroup}>
+              <label>Новинка</label>
+              <select
+                value={newFilter}
+                onChange={(e) => setNewFilter(e.target.value as 'all' | 'yes' | 'no')}
+                className={styles.filterSelect}
+              >
+                <option value="all">Все</option>
+                <option value="yes">Да</option>
+                <option value="no">Нет</option>
+              </select>
+            </div>
+
+            <div className={styles.filterGroup}>
+              <label>Цена от</label>
+              <input
+                type="number"
+                value={priceMin}
+                onChange={(e) => setPriceMin(e.target.value)}
+                placeholder="0"
+                className={styles.filterInput}
+                min="0"
+              />
+            </div>
+
+            <div className={styles.filterGroup}>
+              <label>Цена до</label>
+              <input
+                type="number"
+                value={priceMax}
+                onChange={(e) => setPriceMax(e.target.value)}
+                placeholder="∞"
+                className={styles.filterInput}
+                min="0"
+              />
+            </div>
+
+            {hasAdvancedFilters && (
+              <button className={styles.resetFiltersButton} onClick={resetAdvancedFilters}>
+                ✕ Сбросить фильтры
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {selectedIds.length > 0 && !editMode && (
         <div className={styles.bulkActions}>
@@ -957,6 +1419,82 @@ export function ProductsPage() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowExportModal(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.modalTitle}>Экспорт товаров</h3>
+
+            <div className={styles.formGroup}>
+              <label>Какие товары экспортировать?</label>
+              <div className={styles.radioGroup}>
+                <label className={styles.radioOption}>
+                  <input
+                    type="radio"
+                    name="exportScope"
+                    value="filtered"
+                    checked={exportScope === 'filtered'}
+                    onChange={() => setExportScope('filtered')}
+                  />
+                  <span>
+                    Отфильтрованные ({filteredProducts.length} шт.)
+                    {(searchQuery || categoryFilter || stockFilter) && (
+                      <span className={styles.scopeHint}> — с учётом текущих фильтров</span>
+                    )}
+                  </span>
+                </label>
+                <label className={styles.radioOption}>
+                  <input
+                    type="radio"
+                    name="exportScope"
+                    value="all"
+                    checked={exportScope === 'all'}
+                    onChange={() => setExportScope('all')}
+                  />
+                  <span>Все товары ({allProducts.length} шт.)</span>
+                </label>
+                {selectedIds.length > 0 && (
+                  <label className={styles.radioOption}>
+                    <input
+                      type="radio"
+                      name="exportScope"
+                      value="selected"
+                      checked={exportScope === 'selected'}
+                      onChange={() => setExportScope('selected')}
+                    />
+                    <span>Выбранные ({selectedIds.length} шт.)</span>
+                  </label>
+                )}
+              </div>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>Формат файла</label>
+              <p className={styles.hint}>
+                Выберите формат для скачивания. CSV подходит для импорта в другие системы, Excel —
+                для просмотра и редактирования.
+              </p>
+            </div>
+
+            <div className={styles.modalActions}>
+              <button
+                className={styles.cancelButton}
+                onClick={() => setShowExportModal(false)}
+                disabled={exporting}
+              >
+                Отмена
+              </button>
+              <button className={styles.secondaryButton} onClick={exportToCSV} disabled={exporting}>
+                {exporting ? 'Экспорт...' : '📄 Скачать CSV'}
+              </button>
+              <button className={styles.primaryButton} onClick={exportToExcel} disabled={exporting}>
+                {exporting ? 'Экспорт...' : '📊 Скачать Excel'}
+              </button>
+            </div>
           </div>
         </div>
       )}

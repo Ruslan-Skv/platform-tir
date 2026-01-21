@@ -2,6 +2,7 @@ export interface Product {
   id: number;
   slug: string;
   name: string;
+  sku?: string;
   description?: string;
   price: number;
   oldPrice?: number;
@@ -12,6 +13,7 @@ export interface Product {
   rating: number;
   reviewsCount?: number;
   isNew?: boolean;
+  isFeatured?: boolean;
   isSale?: boolean;
   discount?: number;
   inStock?: boolean;

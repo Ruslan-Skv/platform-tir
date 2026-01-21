@@ -13,6 +13,116 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
+// Функция транслитерации для автогенерации slug
+function transliterate(text: string): string {
+  const ru: Record<string, string> = {
+    а: 'a',
+    б: 'b',
+    в: 'v',
+    г: 'g',
+    д: 'd',
+    е: 'e',
+    ё: 'yo',
+    ж: 'zh',
+    з: 'z',
+    и: 'i',
+    й: 'y',
+    к: 'k',
+    л: 'l',
+    м: 'm',
+    н: 'n',
+    о: 'o',
+    п: 'p',
+    р: 'r',
+    с: 's',
+    т: 't',
+    у: 'u',
+    ф: 'f',
+    х: 'h',
+    ц: 'ts',
+    ч: 'ch',
+    ш: 'sh',
+    щ: 'sch',
+    ъ: '',
+    ы: 'y',
+    ь: '',
+    э: 'e',
+    ю: 'yu',
+    я: 'ya',
+    А: 'A',
+    Б: 'B',
+    В: 'V',
+    Г: 'G',
+    Д: 'D',
+    Е: 'E',
+    Ё: 'Yo',
+    Ж: 'Zh',
+    З: 'Z',
+    И: 'I',
+    Й: 'Y',
+    К: 'K',
+    Л: 'L',
+    М: 'M',
+    Н: 'N',
+    О: 'O',
+    П: 'P',
+    Р: 'R',
+    С: 'S',
+    Т: 'T',
+    У: 'U',
+    Ф: 'F',
+    Х: 'H',
+    Ц: 'Ts',
+    Ч: 'Ch',
+    Ш: 'Sh',
+    Щ: 'Sch',
+    Ъ: '',
+    Ы: 'Y',
+    Ь: '',
+    Э: 'E',
+    Ю: 'Yu',
+    Я: 'Ya',
+  };
+
+  return text
+    .split('')
+    .map((char) => ru[char] || char)
+    .join('')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .substring(0, 100);
+}
+
+// Функция генерации SKU (цифровой артикул)
+function generateSku(): string {
+  const timestamp = Date.now().toString().slice(-6); // последние 6 цифр timestamp
+  const random = Math.floor(Math.random() * 1000)
+    .toString()
+    .padStart(3, '0'); // 3 случайные цифры
+  return `${timestamp}${random}`; // Итого 9 цифр
+}
+
+// Константа для названия сайта
+const SITE_NAME = 'Территория интерьерных решений';
+
+// Функция генерации SEO заголовка
+function generateSeoTitle(productName: string, categoryName: string): string {
+  if (!productName) return '';
+  const title = categoryName
+    ? `${productName} - ${categoryName} | ${SITE_NAME}`
+    : `${productName} | ${SITE_NAME}`;
+  return title.substring(0, 70);
+}
+
+// Функция генерации SEO описания
+function generateSeoDescription(productName: string, categoryName: string): string {
+  if (!productName) return '';
+  const categoryText = categoryName ? ` в категории ${categoryName}` : '';
+  const description = `Купить ${productName}${categoryText}. Гарантия качества. ${SITE_NAME}`;
+  return description.substring(0, 160);
+}
+
 interface Category {
   id: string;
   name: string;
@@ -102,6 +212,13 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   const [customAttributes, setCustomAttributes] = useState<{ key: string; value: string }[]>([]);
   const [newAttrKey, setNewAttrKey] = useState('');
   const [newAttrValue, setNewAttrValue] = useState('');
+
+  // Флаги автогенерации
+  const [autoSlug, setAutoSlug] = useState(false); // false по умолчанию, т.к. редактирование
+  const [autoSku, setAutoSku] = useState(false); // false по умолчанию, т.к. редактирование
+  const [autoSeoTitle, setAutoSeoTitle] = useState(false);
+  const [autoSeoDescription, setAutoSeoDescription] = useState(false);
+  const [initialName, setInitialName] = useState(''); // для отслеживания изменения названия
 
   // Загрузка изображений
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -241,6 +358,9 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           attributes: categoryAttrsOnly,
         });
 
+        // Сохраняем начальное название для отслеживания изменений
+        setInitialName(product.name || '');
+
         setCustomAttributes(customAttrs);
       } catch (err) {
         console.error('Error fetching product:', err);
@@ -267,6 +387,49 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
 
   const flatCategories = flattenCategories(categories);
 
+  // Получить название категории по ID
+  const getCategoryName = (categoryId: string): string => {
+    const category = flatCategories.find((c) => c.id === categoryId);
+    return category ? category.name.replace(/^[—\s]+/, '') : '';
+  };
+
+  // Обновить SEO поля при изменении данных
+  const updateSeoFields = (
+    name: string,
+    categoryId: string,
+    shouldUpdateTitle: boolean,
+    shouldUpdateDescription: boolean
+  ) => {
+    const categoryName = getCategoryName(categoryId);
+    const updates: { seoTitle?: string; seoDescription?: string } = {};
+
+    if (shouldUpdateTitle) {
+      updates.seoTitle = generateSeoTitle(name, categoryName);
+    }
+    if (shouldUpdateDescription) {
+      updates.seoDescription = generateSeoDescription(name, categoryName);
+    }
+
+    return updates;
+  };
+
+  // Обработчик для полей цены - позволяет вводить только числа и точку
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    // Разрешаем пустую строку, числа и одну точку для десятичных
+    const sanitized = value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+    setFormData((prev) => ({ ...prev, [name]: sanitized }));
+  };
+
+  // Обработчик для целочисленных полей (stock)
+  const handleIntegerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    // Разрешаем только цифры
+    const sanitized = value.replace(/[^0-9]/g, '');
+    const numValue = sanitized === '' ? 0 : parseInt(sanitized, 10);
+    setFormData((prev) => ({ ...prev, [name]: numValue }));
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -275,11 +438,83 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
       setFormData((prev) => ({ ...prev, [name]: checked }));
-    } else if (type === 'number') {
-      setFormData((prev) => ({ ...prev, [name]: parseFloat(value) || 0 }));
     } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+      // Автогенерация полей при изменении названия
+      if (name === 'name') {
+        const nameChanged = value !== initialName;
+        setFormData((prev) => {
+          const updates: Partial<typeof prev> = { name: value };
+
+          // Автогенерируем slug если название изменилось или включён autoSlug
+          if (nameChanged || autoSlug) {
+            updates.slug = transliterate(value);
+            setAutoSlug(true);
+          }
+
+          // Автогенерируем SKU если пустой или если sku был сгенерирован автоматически
+          if (!prev.sku || autoSku) {
+            updates.sku = generateSku();
+            setAutoSku(true);
+          }
+
+          // Обновляем SEO поля если пустые или были автосгенерированы
+          if (!prev.seoTitle || autoSeoTitle) {
+            const seoUpdates = updateSeoFields(value, prev.categoryId, true, false);
+            Object.assign(updates, seoUpdates);
+            setAutoSeoTitle(true);
+          }
+          if (!prev.seoDescription || autoSeoDescription) {
+            const seoUpdates = updateSeoFields(value, prev.categoryId, false, true);
+            Object.assign(updates, seoUpdates);
+            setAutoSeoDescription(true);
+          }
+
+          return { ...prev, ...updates };
+        });
+      } else if (name === 'categoryId') {
+        // При смене категории обновляем SEO если поля пустые или автосгенерированы
+        setFormData((prev) => {
+          const updates: Partial<typeof prev> = { categoryId: value };
+
+          if (!prev.seoTitle || autoSeoTitle) {
+            const seoUpdates = updateSeoFields(prev.name, value, true, false);
+            Object.assign(updates, seoUpdates);
+          }
+          if (!prev.seoDescription || autoSeoDescription) {
+            const seoUpdates = updateSeoFields(prev.name, value, false, true);
+            Object.assign(updates, seoUpdates);
+          }
+
+          return { ...prev, ...updates };
+        });
+      } else {
+        setFormData((prev) => ({ ...prev, [name]: value }));
+      }
     }
+  };
+
+  // Обработчик ручного изменения slug
+  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAutoSlug(false);
+    setFormData((prev) => ({ ...prev, slug: e.target.value }));
+  };
+
+  // Обработчик ручного изменения SKU
+  const handleSkuChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAutoSku(false);
+    setFormData((prev) => ({ ...prev, sku: e.target.value }));
+  };
+
+  // Обработчик ручного изменения SEO заголовка
+  const handleSeoTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAutoSeoTitle(false);
+    setFormData((prev) => ({ ...prev, seoTitle: e.target.value }));
+  };
+
+  // Обработчик ручного изменения SEO описания
+  const handleSeoDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setAutoSeoDescription(false);
+    setFormData((prev) => ({ ...prev, seoDescription: e.target.value }));
   };
 
   // Обработка загрузки изображений
@@ -525,10 +760,11 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                   id="slug"
                   name="slug"
                   value={formData.slug}
-                  onChange={handleChange}
+                  onChange={handleSlugChange}
                   required
                   className={styles.input}
                 />
+                <p className={styles.hint}>Генерируется автоматически при изменении названия</p>
               </div>
               <div className={styles.formGroup}>
                 <label htmlFor="sku">Артикул (SKU)</label>
@@ -537,9 +773,10 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                   id="sku"
                   name="sku"
                   value={formData.sku}
-                  onChange={handleChange}
+                  onChange={handleSkuChange}
                   className={styles.input}
                 />
+                <p className={styles.hint}>Генерируется автоматически при изменении названия</p>
               </div>
             </div>
 
@@ -571,28 +808,30 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
               <div className={styles.formGroup}>
                 <label htmlFor="price">Цена *</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   id="price"
                   name="price"
                   value={formData.price}
-                  onChange={handleChange}
+                  onChange={handlePriceChange}
                   required
-                  min="0"
-                  step="0.01"
                   className={styles.input}
+                  placeholder="0.00"
+                  autoComplete="off"
                 />
               </div>
               <div className={styles.formGroup}>
                 <label htmlFor="comparePrice">Старая цена</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   id="comparePrice"
                   name="comparePrice"
                   value={formData.comparePrice}
-                  onChange={handleChange}
-                  min="0"
-                  step="0.01"
+                  onChange={handlePriceChange}
                   className={styles.input}
+                  placeholder="0.00"
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -600,13 +839,15 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
             <div className={styles.formGroup}>
               <label htmlFor="stock">Остаток на складе</label>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 id="stock"
                 name="stock"
                 value={formData.stock}
-                onChange={handleChange}
-                min="0"
+                onChange={handleIntegerChange}
                 className={styles.input}
+                placeholder="0"
+                autoComplete="off"
               />
             </div>
 
@@ -627,7 +868,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                   checked={formData.isFeatured}
                   onChange={handleChange}
                 />
-                <span>Рекомендуемый товар</span>
+                <span>ХИТ</span>
               </label>
               <label className={styles.checkbox}>
                 <input
@@ -652,10 +893,15 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                 id="seoTitle"
                 name="seoTitle"
                 value={formData.seoTitle}
-                onChange={handleChange}
+                onChange={handleSeoTitleChange}
                 className={styles.input}
-                placeholder="Оставьте пустым для использования названия товара"
+                placeholder="Название товара - Категория | Сайт"
+                maxLength={70}
               />
+              <p className={styles.hint}>
+                Генерируется автоматически при изменении названия. Рекомендуемая длина: до 70
+                символов ({formData.seoTitle.length}/70)
+              </p>
             </div>
 
             <div className={styles.formGroup}>
@@ -664,11 +910,16 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                 id="seoDescription"
                 name="seoDescription"
                 value={formData.seoDescription}
-                onChange={handleChange}
+                onChange={handleSeoDescriptionChange}
                 rows={3}
                 className={styles.textarea}
-                placeholder="Краткое описание для поисковых систем"
+                placeholder="Купить [товар] в категории [категория]. Гарантия качества."
+                maxLength={160}
               />
+              <p className={styles.hint}>
+                Генерируется автоматически при изменении названия/цены. Рекомендуемая длина: до 160
+                символов ({formData.seoDescription.length}/160)
+              </p>
             </div>
           </div>
 
@@ -976,14 +1227,23 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         <div className={styles.formActions}>
           <button
             type="button"
-            className={styles.cancelButton}
+            className={styles.backButtonBottom}
             onClick={() => router.push('/admin/catalog/products')}
           >
-            Отмена
+            ← Назад к списку
           </button>
-          <button type="submit" className={styles.saveButton} disabled={saving}>
-            {saving ? 'Сохранение...' : 'Сохранить изменения'}
-          </button>
+          <div className={styles.formActionsRight}>
+            <button
+              type="button"
+              className={styles.cancelButton}
+              onClick={() => router.push('/admin/catalog/products')}
+            >
+              Отмена
+            </button>
+            <button type="submit" className={styles.saveButton} disabled={saving}>
+              {saving ? 'Сохранение...' : 'Сохранить изменения'}
+            </button>
+          </div>
         </div>
       </form>
 

@@ -456,11 +456,33 @@
 
 .formActions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   gap: 12px;
   margin-top: 24px;
   padding-top: 20px;
   border-top: 1px solid #e5e7eb;
+}
+
+.formActionsRight {
+  display: flex;
+  gap: 12px;
+}
+
+.backButtonBottom {
+  padding: 12px 20px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #6366f1;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.backButtonBottom:hover {
+  background: #eef2ff;
+  border-color: #c7d2fe;
 }
 
 .cancelButton {

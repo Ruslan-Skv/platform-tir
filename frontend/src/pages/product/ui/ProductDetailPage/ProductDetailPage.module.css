@@ -69,19 +69,23 @@
 
 .mainImage {
   position: relative;
-  aspect-ratio: 1;
-  background: #f9fafb;
-  border-radius: 0.5rem;
-  overflow: hidden;
+  background: transparent;
+  border-radius: 0.75rem;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 300px;
+  max-height: 500px;
 }
 
 .image {
   max-width: 100%;
-  max-height: 100%;
+  max-height: 500px;
+  width: auto;
+  height: auto;
   object-fit: contain;
+  border-radius: 0.5rem;
 }
 
 .mainImageButton {
@@ -101,11 +105,36 @@
   font-size: 1rem;
 }
 
-.discountBadge {
+.badges {
   position: absolute;
   top: 1rem;
   left: 1rem;
-  background: #dc2626;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 1;
+}
+
+.hitBadge {
+  background: #f59e0b;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.25rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.newBadge {
+  background: #10b981;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.discountBadge {
+  background: #d90652;
   color: white;
   padding: 0.25rem 0.75rem;
   border-radius: 0.25rem;
@@ -120,15 +149,23 @@
 }
 
 .thumbnail {
-  width: 80px;
-  height: 80px;
-  border: 2px solid transparent;
-  border-radius: 0.375rem;
+  width: 72px;
+  height: 72px;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.5rem;
   overflow: hidden;
   cursor: pointer;
   padding: 0;
-  background: #f9fafb;
+  background: transparent;
   flex-shrink: 0;
+  transition:
+    border-color 0.2s,
+    transform 0.2s;
+}
+
+.thumbnail:hover {
+  border-color: #d1d5db;
+  transform: scale(1.05);
 }
 
 .thumbnail img {
@@ -316,11 +353,17 @@ html[data-theme='dark'] .breadcrumbCurrent {
 }
 
 html[data-theme='dark'] .mainImage {
-  background: #1f2937;
+  background: transparent;
+  border-color: #374151;
 }
 
 html[data-theme='dark'] .thumbnail {
-  background: #1f2937;
+  background: transparent;
+  border-color: #374151;
+}
+
+html[data-theme='dark'] .thumbnail:hover {
+  border-color: #4b5563;
 }
 
 html[data-theme='dark'] .thumbnailActive {

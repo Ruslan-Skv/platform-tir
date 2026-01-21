@@ -38,6 +38,11 @@ interface Category {
   id: string;
   name: string;
   slug: string;
+  parentId: string | null;
+  parent?: {
+    id: string;
+    name: string;
+  } | null;
 }
 
 interface CategoryAttributesPageProps {
@@ -86,6 +91,9 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
   const [applyingToProducts, setApplyingToProducts] = useState(false);
   const [selectedForApply, setSelectedForApply] = useState<string[]>([]);
   const [defaultValues, setDefaultValues] = useState<Record<string, string>>({});
+
+  // Inherit attributes state
+  const [inheriting, setInheriting] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -316,6 +324,41 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
     );
   };
 
+  // Inherit attributes from parent category
+  const handleInheritFromParent = async () => {
+    if (!category?.parentId) return;
+
+    setInheriting(true);
+    try {
+      const response = await fetch(`${API_URL}/categories/${categoryId}/attributes/inherit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        showMessage(
+          'success',
+          `Унаследовано: ${result.inherited} атрибут(ов), пропущено: ${result.skipped}`
+        );
+        fetchData();
+      } else {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || 'Failed to inherit attributes');
+      }
+    } catch (error) {
+      showMessage(
+        'error',
+        error instanceof Error ? error.message : 'Ошибка наследования атрибутов'
+      );
+    } finally {
+      setInheriting(false);
+    }
+  };
+
   // Open edit modal
   const openEditModal = (attr: Attribute) => {
     setEditingAttribute(attr);
@@ -449,6 +492,18 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
           <div className={styles.sectionHeader}>
             <h2>Атрибуты категории ({categoryAttributes.length})</h2>
             <div className={styles.sectionActions}>
+              {category?.parentId && (
+                <button
+                  className={styles.inheritButton}
+                  onClick={handleInheritFromParent}
+                  disabled={inheriting}
+                  title={`Скопировать атрибуты из родительской категории "${category.parent?.name || ''}"`}
+                >
+                  {inheriting
+                    ? '⏳ Наследование...'
+                    : `📥 Унаследовать от "${category.parent?.name || 'родителя'}"`}
+                </button>
+              )}
               <button className={styles.addButton} onClick={() => setShowAddModal(true)}>
                 + Добавить существующий
               </button>

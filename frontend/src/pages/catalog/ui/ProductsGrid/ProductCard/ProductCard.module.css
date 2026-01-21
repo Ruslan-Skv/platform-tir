@@ -40,6 +40,17 @@
   z-index: 1;
 }
 
+.hitBadge {
+  background: #f59e0b;
+  border-radius: 0.25rem;
+  color: white;
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  padding: 0.25rem 0.5rem;
+}
+
 .newBadge {
   background: #10b981;
   border-radius: 0.25rem;
@@ -52,7 +63,7 @@
 }
 
 .discountBadge {
-  background: #ef4444;
+  background: #d90652;
   border-radius: 0.25rem;
   color: white;
   display: block;
@@ -103,6 +114,12 @@
   margin: 0 0 0.5rem;
   min-height: 2.8em; /* 2 строки × 1.4 line-height */
   overflow: hidden;
+}
+
+.sku {
+  color: #9ca3af;
+  font-size: 0.75rem;
+  margin: 0 0 0.25rem;
 }
 
 .category {
@@ -170,6 +187,10 @@ html[data-theme='dark'] .productCard {
 
 html[data-theme='dark'] .name {
   color: #f9fafb;
+}
+
+html[data-theme='dark'] .sku {
+  color: #6b7280;
 }
 
 html[data-theme='dark'] .category {

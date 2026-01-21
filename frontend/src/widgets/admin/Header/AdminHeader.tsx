@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -19,6 +19,26 @@ export function AdminHeader() {
   const { user, logout } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const notificationRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Закрытие dropdown при клике за его пределами
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const displayName = user?.firstName
     ? `${user.firstName} ${user.lastName || ''}`.trim()
@@ -49,7 +69,7 @@ export function AdminHeader() {
       </div>
 
       <div className={styles.actions}>
-        <div className={styles.notificationWrapper}>
+        <div className={styles.notificationWrapper} ref={notificationRef}>
           <button
             className={styles.iconButton}
             onClick={() => setShowNotifications(!showNotifications)}
@@ -84,7 +104,7 @@ export function AdminHeader() {
           )}
         </div>
 
-        <div className={styles.userWrapper}>
+        <div className={styles.userWrapper} ref={userMenuRef}>
           <button className={styles.userButton} onClick={() => setShowUserMenu(!showUserMenu)}>
             <div className={styles.avatar}>{displayName.charAt(0).toUpperCase()}</div>
             <div className={styles.userInfo}>

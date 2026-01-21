@@ -159,6 +159,14 @@ export class CategoriesController {
   ) {
     return this.categoriesService.applyAttributesToProducts(id, body.attributes);
   }
+
+  @Post(':id/attributes/inherit')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Унаследовать атрибуты от родительской категории' })
+  inheritAttributesFromParent(@Param('id') id: string) {
+    return this.categoriesService.inheritAttributesFromParentPublic(id);
+  }
 }
 
 // Отдельный контроллер для атрибутов (public API с JWT)

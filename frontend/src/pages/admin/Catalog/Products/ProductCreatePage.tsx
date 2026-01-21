@@ -124,6 +124,35 @@ function transliterate(text: string): string {
     .substring(0, 100);
 }
 
+// Функция генерации SKU (цифровой артикул)
+function generateSku(): string {
+  const timestamp = Date.now().toString().slice(-6); // последние 6 цифр timestamp
+  const random = Math.floor(Math.random() * 1000)
+    .toString()
+    .padStart(3, '0'); // 3 случайные цифры
+  return `${timestamp}${random}`; // Итого 9 цифр
+}
+
+// Константа для названия сайта
+const SITE_NAME = 'Территория интерьерных решений';
+
+// Функция генерации SEO заголовка
+function generateSeoTitle(productName: string, categoryName: string): string {
+  if (!productName) return '';
+  const title = categoryName
+    ? `${productName} - ${categoryName} | ${SITE_NAME}`
+    : `${productName} | ${SITE_NAME}`;
+  return title.substring(0, 70); // Оптимальная длина для SEO
+}
+
+// Функция генерации SEO описания
+function generateSeoDescription(productName: string, categoryName: string): string {
+  if (!productName) return '';
+  const categoryText = categoryName ? ` в категории ${categoryName}` : '';
+  const description = `Купить ${productName}${categoryText}. Гарантия качества. ${SITE_NAME}`;
+  return description.substring(0, 160); // Оптимальная длина для SEO
+}
+
 export function ProductCreatePage() {
   const router = useRouter();
   const { getAuthHeaders } = useAuth();
@@ -155,6 +184,9 @@ export function ProductCreatePage() {
   const [newAttrKey, setNewAttrKey] = useState('');
   const [newAttrValue, setNewAttrValue] = useState('');
   const [autoSlug, setAutoSlug] = useState(true);
+  const [autoSku, setAutoSku] = useState(true);
+  const [autoSeoTitle, setAutoSeoTitle] = useState(true);
+  const [autoSeoDescription, setAutoSeoDescription] = useState(true);
 
   // Загрузка изображений
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -215,6 +247,49 @@ export function ProductCreatePage() {
 
   const flatCategories = flattenCategories(categories);
 
+  // Получить название категории по ID
+  const getCategoryName = (categoryId: string): string => {
+    const category = flatCategories.find((c) => c.id === categoryId);
+    return category ? category.name.replace(/^[—\s]+/, '') : ''; // Убираем префиксы вложенности
+  };
+
+  // Обновить SEO поля при изменении данных
+  const updateSeoFields = (
+    name: string,
+    categoryId: string,
+    shouldUpdateTitle: boolean,
+    shouldUpdateDescription: boolean
+  ) => {
+    const categoryName = getCategoryName(categoryId);
+    const updates: { seoTitle?: string; seoDescription?: string } = {};
+
+    if (shouldUpdateTitle) {
+      updates.seoTitle = generateSeoTitle(name, categoryName);
+    }
+    if (shouldUpdateDescription) {
+      updates.seoDescription = generateSeoDescription(name, categoryName);
+    }
+
+    return updates;
+  };
+
+  // Обработчик для полей цены - позволяет вводить только числа и точку
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    // Разрешаем пустую строку, числа и одну точку для десятичных
+    const sanitized = value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+    setFormData((prev) => ({ ...prev, [name]: sanitized }));
+  };
+
+  // Обработчик для целочисленных полей (stock)
+  const handleIntegerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    // Разрешаем только цифры
+    const sanitized = value.replace(/[^0-9]/g, '');
+    const numValue = sanitized === '' ? 0 : parseInt(sanitized, 10);
+    setFormData((prev) => ({ ...prev, [name]: numValue }));
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -223,18 +298,38 @@ export function ProductCreatePage() {
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
       setFormData((prev) => ({ ...prev, [name]: checked }));
-    } else if (type === 'number') {
-      setFormData((prev) => ({ ...prev, [name]: parseFloat(value) || 0 }));
     } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+      // Auto-generate fields from name
+      if (name === 'name') {
+        setFormData((prev) => {
+          const updates: Partial<typeof prev> = { name: value };
 
-      // Auto-generate slug from name
-      if (name === 'name' && autoSlug) {
-        setFormData((prev) => ({
-          ...prev,
-          [name]: value,
-          slug: transliterate(value),
-        }));
+          if (autoSlug) {
+            updates.slug = transliterate(value);
+          }
+
+          if (autoSku) {
+            updates.sku = generateSku();
+          }
+
+          // Обновляем SEO поля
+          const seoUpdates = updateSeoFields(
+            value,
+            prev.categoryId,
+            autoSeoTitle,
+            autoSeoDescription
+          );
+
+          return { ...prev, ...updates, ...seoUpdates };
+        });
+      } else if (name === 'categoryId') {
+        // При смене категории обновляем SEO
+        setFormData((prev) => {
+          const seoUpdates = updateSeoFields(prev.name, value, autoSeoTitle, autoSeoDescription);
+          return { ...prev, categoryId: value, ...seoUpdates };
+        });
+      } else {
+        setFormData((prev) => ({ ...prev, [name]: value }));
       }
     }
   };
@@ -242,6 +337,21 @@ export function ProductCreatePage() {
   const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAutoSlug(false);
     setFormData((prev) => ({ ...prev, slug: e.target.value }));
+  };
+
+  const handleSkuChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAutoSku(false);
+    setFormData((prev) => ({ ...prev, sku: e.target.value }));
+  };
+
+  const handleSeoTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAutoSeoTitle(false);
+    setFormData((prev) => ({ ...prev, seoTitle: e.target.value }));
+  };
+
+  const handleSeoDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setAutoSeoDescription(false);
+    setFormData((prev) => ({ ...prev, seoDescription: e.target.value }));
   };
 
   // Обработка загрузки изображений
@@ -472,10 +582,11 @@ export function ProductCreatePage() {
                   id="sku"
                   name="sku"
                   value={formData.sku}
-                  onChange={handleChange}
+                  onChange={handleSkuChange}
                   className={styles.input}
                   placeholder="ART-001"
                 />
+                <p className={styles.hint}>Генерируется автоматически из названия</p>
               </div>
             </div>
 
@@ -507,30 +618,30 @@ export function ProductCreatePage() {
               <div className={styles.formGroup}>
                 <label htmlFor="price">Цена *</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   id="price"
                   name="price"
                   value={formData.price}
-                  onChange={handleChange}
+                  onChange={handlePriceChange}
                   required
-                  min="0"
-                  step="0.01"
                   className={styles.input}
                   placeholder="0.00"
+                  autoComplete="off"
                 />
               </div>
               <div className={styles.formGroup}>
                 <label htmlFor="comparePrice">Старая цена</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   id="comparePrice"
                   name="comparePrice"
                   value={formData.comparePrice}
-                  onChange={handleChange}
-                  min="0"
-                  step="0.01"
+                  onChange={handlePriceChange}
                   className={styles.input}
                   placeholder="0.00"
+                  autoComplete="off"
                 />
                 <p className={styles.hint}>Для отображения скидки</p>
               </div>
@@ -539,13 +650,15 @@ export function ProductCreatePage() {
             <div className={styles.formGroup}>
               <label htmlFor="stock">Остаток на складе</label>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 id="stock"
                 name="stock"
                 value={formData.stock}
-                onChange={handleChange}
-                min="0"
+                onChange={handleIntegerChange}
                 className={styles.input}
+                placeholder="0"
+                autoComplete="off"
               />
             </div>
 
@@ -566,7 +679,7 @@ export function ProductCreatePage() {
                   checked={formData.isFeatured}
                   onChange={handleChange}
                 />
-                <span>Рекомендуемый товар</span>
+                <span>ХИТ</span>
               </label>
               <label className={styles.checkbox}>
                 <input
@@ -591,10 +704,15 @@ export function ProductCreatePage() {
                 id="seoTitle"
                 name="seoTitle"
                 value={formData.seoTitle}
-                onChange={handleChange}
+                onChange={handleSeoTitleChange}
                 className={styles.input}
-                placeholder="Оставьте пустым для использования названия товара"
+                placeholder="Название товара - Категория | Сайт"
+                maxLength={70}
               />
+              <p className={styles.hint}>
+                Генерируется автоматически. Рекомендуемая длина: до 70 символов (
+                {formData.seoTitle.length}/70)
+              </p>
             </div>
 
             <div className={styles.formGroup}>
@@ -603,11 +721,16 @@ export function ProductCreatePage() {
                 id="seoDescription"
                 name="seoDescription"
                 value={formData.seoDescription}
-                onChange={handleChange}
+                onChange={handleSeoDescriptionChange}
                 rows={3}
                 className={styles.textarea}
-                placeholder="Краткое описание для поисковых систем"
+                placeholder="Купить [товар] в категории [категория]. Гарантия качества."
+                maxLength={160}
               />
+              <p className={styles.hint}>
+                Генерируется автоматически. Рекомендуемая длина: до 160 символов (
+                {formData.seoDescription.length}/160)
+              </p>
             </div>
           </div>
 
@@ -903,14 +1026,23 @@ export function ProductCreatePage() {
         <div className={styles.formActions}>
           <button
             type="button"
-            className={styles.cancelButton}
+            className={styles.backButtonBottom}
             onClick={() => router.push('/admin/catalog/products')}
           >
-            Отмена
+            ← Назад к списку
           </button>
-          <button type="submit" className={styles.saveButton} disabled={saving}>
-            {saving ? 'Создание...' : 'Создать товар'}
-          </button>
+          <div className={styles.formActionsRight}>
+            <button
+              type="button"
+              className={styles.cancelButton}
+              onClick={() => router.push('/admin/catalog/products')}
+            >
+              Отмена
+            </button>
+            <button type="submit" className={styles.saveButton} disabled={saving}>
+              {saving ? 'Создание...' : 'Создать товар'}
+            </button>
+          </div>
         </div>
       </form>
 

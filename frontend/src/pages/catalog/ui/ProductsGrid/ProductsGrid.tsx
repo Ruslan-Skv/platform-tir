@@ -17,6 +17,7 @@ interface ApiProduct {
   comparePrice: string | null;
   stock: number;
   isActive: boolean;
+  isNew: boolean;
   isFeatured: boolean;
   images: string[];
   attributes: Record<string, unknown> | null;
@@ -87,6 +88,7 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
           id: index + 1,
           slug: p.slug,
           name: p.name,
+          sku: p.sku || undefined,
           description: p.description || undefined,
           price: parseFloat(p.price),
           oldPrice: p.comparePrice ? parseFloat(p.comparePrice) : undefined,
@@ -95,7 +97,8 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
           category: p.category.name,
           categoryId: parseInt(p.category.id) || undefined,
           rating: 4.5, // Пока захардкожено, позже можно добавить reviews
-          isNew: p.isFeatured,
+          isNew: p.isNew,
+          isFeatured: p.isFeatured,
           inStock: p.stock > 0,
           discount: p.comparePrice
             ? Math.round(

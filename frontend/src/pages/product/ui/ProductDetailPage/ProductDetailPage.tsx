@@ -17,6 +17,8 @@ interface ProductData {
   comparePrice: string | null;
   stock: number;
   images: string[];
+  isNew: boolean;
+  isFeatured: boolean;
   // Атрибуты могут быть массивом (новый формат) или объектом (старый формат)
   attributes: Array<{ name: string; value: string }> | Record<string, unknown> | null;
   category: {
@@ -234,7 +236,12 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
             ) : (
               <div className={styles.noImage}>Нет изображения</div>
             )}
-            {discount && <span className={styles.discountBadge}>-{discount}%</span>}
+            {/* Бейджи */}
+            <div className={styles.badges}>
+              {product.isFeatured && <span className={styles.hitBadge}>ХИТ</span>}
+              {product.isNew && <span className={styles.newBadge}>Новинка</span>}
+              {discount && <span className={styles.discountBadge}>-{discount}%</span>}
+            </div>
           </div>
 
           {product.images.length > 1 && (
