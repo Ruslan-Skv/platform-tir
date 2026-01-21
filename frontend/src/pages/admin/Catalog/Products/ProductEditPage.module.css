@@ -94,6 +94,69 @@
   margin-bottom: 20px;
 }
 
+/* Toast notification - fixed at bottom of screen */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 16px 24px;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: slideIn 0.3s ease-out;
+  max-width: 400px;
+}
+
+.toastSuccess {
+  background: #065f46;
+  color: white;
+}
+
+.toastError {
+  background: #991b1b;
+  color: white;
+}
+
+.toastIcon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.toastMessage {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.toastClose {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  padding: 4px;
+  margin-left: auto;
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.toastClose:hover {
+  color: white;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 .form {
   background: #fff;
   border-radius: 12px;
@@ -115,6 +178,16 @@
 
 .formSection:first-child {
   grid-column: 1 / -1;
+}
+
+.formSectionFullWidth {
+  grid-column: 1 / -1;
+}
+
+.attributesGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .sectionTitle {
@@ -485,13 +558,18 @@
 
 .attributeRow {
   display: grid;
-  grid-template-columns: 180px 1fr auto;
+  grid-template-columns: 200px 1fr auto;
   gap: 12px;
   align-items: center;
   padding: 10px 12px;
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
+}
+
+.attributeRow .input,
+.attributeRow .select {
+  min-width: 300px;
 }
 
 .attributeLabel {
@@ -549,12 +627,20 @@
 
 .addAttrRow {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: 200px 1fr auto;
   gap: 12px;
   padding: 10px 12px;
   background: #f0fdf4;
   border: 1px dashed #86efac;
   border-radius: 8px;
+}
+
+.addAttrRow .input {
+  min-width: 200px;
+}
+
+.addAttrRow .input:nth-child(2) {
+  min-width: 300px;
 }
 
 .addAttrButton {

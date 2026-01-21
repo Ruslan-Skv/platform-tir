@@ -169,51 +169,60 @@ export function DataTable<T>({
         </table>
       </div>
 
-      {pagination && totalPages > 1 && (
+      {pagination && pagination.total > 0 && (
         <div className={styles.pagination}>
           <span className={styles.paginationInfo}>
-            Показано {(pagination.page - 1) * pagination.limit + 1} -{' '}
-            {Math.min(pagination.page * pagination.limit, pagination.total)} из {pagination.total}
+            {totalPages > 1 ? (
+              <>
+                Показано {(pagination.page - 1) * pagination.limit + 1} -{' '}
+                {Math.min(pagination.page * pagination.limit, pagination.total)} из{' '}
+                {pagination.total}
+              </>
+            ) : (
+              <>Всего: {pagination.total}</>
+            )}
           </span>
-          <div className={styles.paginationButtons}>
-            <button
-              className={styles.pageButton}
-              disabled={pagination.page === 1}
-              onClick={() => pagination.onPageChange(pagination.page - 1)}
-            >
-              ←
-            </button>
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              let page: number;
-              if (totalPages <= 5) {
-                page = i + 1;
-              } else if (pagination.page <= 3) {
-                page = i + 1;
-              } else if (pagination.page >= totalPages - 2) {
-                page = totalPages - 4 + i;
-              } else {
-                page = pagination.page - 2 + i;
-              }
-              return (
-                <button
-                  key={page}
-                  className={`${styles.pageButton} ${
-                    page === pagination.page ? styles.active : ''
-                  }`}
-                  onClick={() => pagination.onPageChange(page)}
-                >
-                  {page}
-                </button>
-              );
-            })}
-            <button
-              className={styles.pageButton}
-              disabled={pagination.page === totalPages}
-              onClick={() => pagination.onPageChange(pagination.page + 1)}
-            >
-              →
-            </button>
-          </div>
+          {totalPages > 1 && (
+            <div className={styles.paginationButtons}>
+              <button
+                className={styles.pageButton}
+                disabled={pagination.page === 1}
+                onClick={() => pagination.onPageChange(pagination.page - 1)}
+              >
+                ←
+              </button>
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let page: number;
+                if (totalPages <= 5) {
+                  page = i + 1;
+                } else if (pagination.page <= 3) {
+                  page = i + 1;
+                } else if (pagination.page >= totalPages - 2) {
+                  page = totalPages - 4 + i;
+                } else {
+                  page = pagination.page - 2 + i;
+                }
+                return (
+                  <button
+                    key={page}
+                    className={`${styles.pageButton} ${
+                      page === pagination.page ? styles.active : ''
+                    }`}
+                    onClick={() => pagination.onPageChange(page)}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+              <button
+                className={styles.pageButton}
+                disabled={pagination.page === totalPages}
+                onClick={() => pagination.onPageChange(pagination.page + 1)}
+              >
+                →
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

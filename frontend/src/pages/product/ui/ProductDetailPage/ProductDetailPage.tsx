@@ -17,7 +17,8 @@ interface ProductData {
   comparePrice: string | null;
   stock: number;
   images: string[];
-  attributes: Record<string, unknown> | null;
+  // Атрибуты могут быть массивом (новый формат) или объектом (старый формат)
+  attributes: Array<{ name: string; value: string }> | Record<string, unknown> | null;
   category: {
     id: string;
     name: string;
@@ -143,7 +144,26 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
   const price = parseFloat(product.price);
   const comparePrice = product.comparePrice ? parseFloat(product.comparePrice) : null;
   const discount = comparePrice ? Math.round(((comparePrice - price) / comparePrice) * 100) : null;
-  const attributes = product.attributes as Record<string, string> | null;
+
+  // Атрибуты могут быть в двух форматах:
+  // 1. Новый формат (массив): [{name: "Модель", value: "..."}, ...]
+  // 2. Старый формат (объект): {key: value, ...}
+  type AttributeItem = { name: string; value: string };
+  let attributesArray: AttributeItem[] = [];
+
+  if (product.attributes) {
+    if (Array.isArray(product.attributes)) {
+      // Новый формат - массив
+      attributesArray = product.attributes as AttributeItem[];
+    } else {
+      // Старый формат - объект (порядок не гарантирован)
+      const attrsObj = product.attributes as Record<string, string>;
+      attributesArray = Object.entries(attrsObj).map(([key, value]) => ({
+        name: key,
+        value: String(value),
+      }));
+    }
+  }
 
   // Формируем хлебные крошки
   const breadcrumbs = [
@@ -264,40 +284,21 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
           </div>
 
           {/* Характеристики */}
-          {attributes && Object.keys(attributes).length > 0 && (
+          {attributesArray.length > 0 && (
             <div className={styles.attributes}>
               <h2 className={styles.attributesTitle}>Характеристики</h2>
               <dl className={styles.attributesList}>
-                {attributes.sizes && (
-                  <>
-                    <dt>Размеры</dt>
-                    <dd>{attributes.sizes}</dd>
-                  </>
-                )}
-                {attributes.manufacturer && (
-                  <>
-                    <dt>Производитель</dt>
-                    <dd>{attributes.manufacturer}</dd>
-                  </>
-                )}
-                {attributes.color && (
-                  <>
-                    <dt>Цвет</dt>
-                    <dd>{attributes.color}</dd>
-                  </>
-                )}
-                {attributes.coating && (
-                  <>
-                    <dt>Покрытие</dt>
-                    <dd>{attributes.coating}</dd>
-                  </>
-                )}
-                {attributes.thickness && (
-                  <>
-                    <dt>Толщина полотна</dt>
-                    <dd>{attributes.thickness}</dd>
-                  </>
-                )}
+                {attributesArray.map((attr, index) => {
+                  // Пропускаем пустые значения
+                  if (!attr.value) return null;
+
+                  return (
+                    <React.Fragment key={`${attr.name}-${index}`}>
+                      <dt>{attr.name}</dt>
+                      <dd>{attr.value}</dd>
+                    </React.Fragment>
+                  );
+                })}
               </dl>
             </div>
           )}

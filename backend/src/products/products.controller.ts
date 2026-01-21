@@ -30,9 +30,17 @@ export class ProductsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Получить все товары' })
+  @ApiOperation({ summary: 'Получить все товары (только активные)' })
   findAll() {
     return this.productsService.findAll();
+  }
+
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Получить все товары для админки (включая неактивные)' })
+  findAllAdmin() {
+    return this.productsService.findAllAdmin();
   }
 
   @Get('search')

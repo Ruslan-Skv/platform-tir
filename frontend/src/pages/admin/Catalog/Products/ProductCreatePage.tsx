@@ -39,6 +39,7 @@ interface CategoryAttribute {
   id: string;
   attributeId: string;
   isRequired: boolean;
+  order: number;
   attribute: Attribute;
 }
 
@@ -187,8 +188,10 @@ export function ProductCreatePage() {
       try {
         const response = await fetch(`${API_URL}/categories/${formData.categoryId}/attributes`);
         if (response.ok) {
-          const data = await response.json();
-          setCategoryAttributes(data);
+          const data: CategoryAttribute[] = await response.json();
+          // Сортируем по order для гарантии правильного порядка
+          const sortedData = data.sort((a, b) => (a.order || 0) - (b.order || 0));
+          setCategoryAttributes(sortedData);
         }
       } catch (err) {
         console.error('Failed to fetch category attributes:', err);
@@ -331,30 +334,65 @@ export function ProductCreatePage() {
     setError(null);
 
     try {
-      // Собираем все атрибуты (из формы + кастомные)
-      const allAttributes = { ...formData.attributes };
-      customAttributes.forEach(({ key, value }) => {
-        if (key.trim()) {
-          allAttributes[key.trim()] = value;
+      // Собираем все атрибуты в правильном порядке
+      // Используем массив для сохранения порядка, затем конвертируем в объект
+      const orderedAttributes: Array<{ key: string; value: string }> = [];
+
+      // 1. Сначала атрибуты категории в порядке их определения
+      // categoryAttributes уже отсортированы по order
+      categoryAttributes.forEach((ca) => {
+        const slug = ca.attribute.slug;
+        const value = formData.attributes[slug];
+        if (value) {
+          orderedAttributes.push({
+            key: ca.attribute.name,
+            value: value,
+          });
         }
       });
+
+      // 2. Затем кастомные атрибуты в порядке их добавления
+      customAttributes.forEach(({ key, value }) => {
+        if (key.trim() && value) {
+          orderedAttributes.push({
+            key: key.trim(),
+            value: value,
+          });
+        }
+      });
+
+      // Сохраняем как массив для гарантии порядка
+      // Формат: [{name: "Модель", value: "..."}, {name: "Цвет", value: "..."}, ...]
+      const attributesArray = orderedAttributes.map(({ key, value }) => ({
+        name: key,
+        value: value,
+      }));
+
+      // Validate categoryId before sending
+      if (!formData.categoryId || formData.categoryId.trim() === '') {
+        setError('Выберите категорию');
+        setSaving(false);
+        return;
+      }
+
+      console.log('Creating product with attributes (ordered array):', attributesArray);
 
       const productData = {
         name: formData.name,
         slug: formData.slug,
-        sku: formData.sku || null,
-        description: formData.description || null,
+        sku: formData.sku || undefined,
+        description: formData.description || undefined,
         price: parseFloat(formData.price) || 0,
-        comparePrice: formData.comparePrice ? parseFloat(formData.comparePrice) : null,
+        comparePrice: formData.comparePrice ? parseFloat(formData.comparePrice) : undefined,
         stock: formData.stock,
         categoryId: formData.categoryId,
         isActive: formData.isActive,
         isFeatured: formData.isFeatured,
         isNew: formData.isNew,
-        seoTitle: formData.seoTitle || null,
-        seoDescription: formData.seoDescription || null,
-        attributes: Object.keys(allAttributes).length > 0 ? allAttributes : null,
-        images: formData.images.length > 0 ? formData.images : [],
+        seoTitle: formData.seoTitle || undefined,
+        seoDescription: formData.seoDescription || undefined,
+        attributes: attributesArray, // Массив с гарантированным порядком
+        images: formData.images.length > 0 ? formData.images : undefined,
       };
 
       const response = await fetch(`${API_URL}/products`, {
@@ -391,8 +429,6 @@ export function ProductCreatePage() {
         </button>
         <h1 className={styles.title}>Добавление товара</h1>
       </div>
-
-      {error && <div className={styles.error}>{error}</div>}
 
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.formGrid}>
@@ -441,19 +477,6 @@ export function ProductCreatePage() {
                   placeholder="ART-001"
                 />
               </div>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="description">Описание</label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows={6}
-                className={styles.textarea}
-                placeholder="Подробное описание товара..."
-              />
             </div>
 
             <div className={styles.formGroup}>
@@ -589,7 +612,7 @@ export function ProductCreatePage() {
           </div>
 
           {/* Images */}
-          <div className={styles.formSection}>
+          <div className={`${styles.formSection} ${styles.formSectionFullWidth}`}>
             <h2 className={styles.sectionTitle}>Изображения</h2>
 
             {imageError && <div className={styles.imageError}>{imageError}</div>}
@@ -669,194 +692,211 @@ export function ProductCreatePage() {
             )}
           </div>
 
+          {/* Description */}
+          <div className={`${styles.formSection} ${styles.formSectionFullWidth}`}>
+            <h2 className={styles.sectionTitle}>Описание</h2>
+
+            <div className={styles.formGroup}>
+              <textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                rows={8}
+                className={styles.textarea}
+                placeholder="Подробное описание товара..."
+              />
+            </div>
+          </div>
+
           {/* Attributes / Characteristics */}
-          <div className={styles.formSection}>
+          <div className={`${styles.formSection} ${styles.formSectionFullWidth}`}>
             <h2 className={styles.sectionTitle}>Характеристики товара</h2>
 
-            {/* Category attributes */}
-            {categoryAttributes.length > 0 && (
+            <div className={styles.attributesGrid}>
+              {/* Category attributes */}
               <div className={styles.attributesSection}>
                 <h3 className={styles.attributesSubtitle}>Атрибуты категории</h3>
-                <div className={styles.attributesList}>
-                  {categoryAttributes.map((ca) => (
-                    <div key={ca.id} className={styles.attributeRow}>
-                      <label className={styles.attributeLabel}>
-                        {ca.attribute.name}
-                        {ca.isRequired && <span className={styles.required}>*</span>}
-                        {ca.attribute.unit && (
-                          <span className={styles.unit}>({ca.attribute.unit})</span>
-                        )}
-                      </label>
-                      <div className={styles.attributeInput}>
-                        {ca.attribute.type === 'BOOLEAN' ? (
-                          <select
-                            value={formData.attributes[ca.attribute.slug] || ''}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                attributes: {
-                                  ...prev.attributes,
-                                  [ca.attribute.slug]: e.target.value,
-                                },
-                              }))
-                            }
-                            className={styles.select}
-                          >
-                            <option value="">Не указано</option>
-                            <option value="Да">Да</option>
-                            <option value="Нет">Нет</option>
-                          </select>
-                        ) : ca.attribute.type === 'SELECT' ? (
-                          <select
-                            value={formData.attributes[ca.attribute.slug] || ''}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                attributes: {
-                                  ...prev.attributes,
-                                  [ca.attribute.slug]: e.target.value,
-                                },
-                              }))
-                            }
-                            className={styles.select}
-                          >
-                            <option value="">Выберите значение</option>
-                            {ca.attribute.values.map((v) => (
-                              <option key={v.id} value={v.value}>
-                                {v.value}
-                              </option>
-                            ))}
-                          </select>
-                        ) : ca.attribute.type === 'NUMBER' ? (
-                          <input
-                            type="number"
-                            value={formData.attributes[ca.attribute.slug] || ''}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                attributes: {
-                                  ...prev.attributes,
-                                  [ca.attribute.slug]: e.target.value,
-                                },
-                              }))
-                            }
-                            className={styles.input}
-                            step="any"
-                          />
-                        ) : (
-                          <input
-                            type="text"
-                            value={formData.attributes[ca.attribute.slug] || ''}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                attributes: {
-                                  ...prev.attributes,
-                                  [ca.attribute.slug]: e.target.value,
-                                },
-                              }))
-                            }
-                            className={styles.input}
-                          />
-                        )}
+                {categoryAttributes.length > 0 ? (
+                  <div className={styles.attributesList}>
+                    {categoryAttributes.map((ca) => (
+                      <div key={ca.id} className={styles.attributeRow}>
+                        <label className={styles.attributeLabel}>
+                          {ca.attribute.name}
+                          {ca.isRequired && <span className={styles.required}>*</span>}
+                          {ca.attribute.unit && (
+                            <span className={styles.unit}>({ca.attribute.unit})</span>
+                          )}
+                        </label>
+                        <div className={styles.attributeInput}>
+                          {ca.attribute.type === 'BOOLEAN' ? (
+                            <select
+                              value={formData.attributes[ca.attribute.slug] || ''}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  attributes: {
+                                    ...prev.attributes,
+                                    [ca.attribute.slug]: e.target.value,
+                                  },
+                                }))
+                              }
+                              className={styles.select}
+                            >
+                              <option value="">Не указано</option>
+                              <option value="Да">Да</option>
+                              <option value="Нет">Нет</option>
+                            </select>
+                          ) : ca.attribute.type === 'SELECT' ? (
+                            <select
+                              value={formData.attributes[ca.attribute.slug] || ''}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  attributes: {
+                                    ...prev.attributes,
+                                    [ca.attribute.slug]: e.target.value,
+                                  },
+                                }))
+                              }
+                              className={styles.select}
+                            >
+                              <option value="">Выберите значение</option>
+                              {ca.attribute.values.map((v) => (
+                                <option key={v.id} value={v.value}>
+                                  {v.value}
+                                </option>
+                              ))}
+                            </select>
+                          ) : ca.attribute.type === 'NUMBER' ? (
+                            <input
+                              type="number"
+                              value={formData.attributes[ca.attribute.slug] || ''}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  attributes: {
+                                    ...prev.attributes,
+                                    [ca.attribute.slug]: e.target.value,
+                                  },
+                                }))
+                              }
+                              className={styles.input}
+                              step="any"
+                            />
+                          ) : (
+                            <input
+                              type="text"
+                              value={formData.attributes[ca.attribute.slug] || ''}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  attributes: {
+                                    ...prev.attributes,
+                                    [ca.attribute.slug]: e.target.value,
+                                  },
+                                }))
+                              }
+                              className={styles.input}
+                            />
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={styles.noAttributes}>
+                    {formData.categoryId
+                      ? 'Нет атрибутов для выбранной категории'
+                      : 'Выберите категорию, чтобы увидеть атрибуты'}
+                  </p>
+                )}
               </div>
-            )}
 
-            {/* Custom attributes */}
-            <div className={styles.attributesSection}>
-              <h3 className={styles.attributesSubtitle}>
-                Дополнительные характеристики
-                <span className={styles.customAttrHint}>(специфичные для этого товара)</span>
-              </h3>
+              {/* Custom attributes */}
+              <div className={styles.attributesSection}>
+                <h3 className={styles.attributesSubtitle}>
+                  Дополнительные характеристики
+                  <span className={styles.customAttrHint}>(специфичные для этого товара)</span>
+                </h3>
 
-              {customAttributes.length > 0 && (
-                <div className={styles.attributesList}>
-                  {customAttributes.map((attr, index) => (
-                    <div key={index} className={styles.attributeRow}>
-                      <input
-                        type="text"
-                        value={attr.key}
-                        onChange={(e) => {
-                          const newCustom = [...customAttributes];
-                          newCustom[index].key = e.target.value;
-                          setCustomAttributes(newCustom);
-                        }}
-                        className={styles.input}
-                        placeholder="Название"
-                      />
-                      <input
-                        type="text"
-                        value={attr.value}
-                        onChange={(e) => {
-                          const newCustom = [...customAttributes];
-                          newCustom[index].value = e.target.value;
-                          setCustomAttributes(newCustom);
-                        }}
-                        className={styles.input}
-                        placeholder="Значение"
-                      />
-                      <button
-                        type="button"
-                        className={styles.removeAttrButton}
-                        onClick={() => {
-                          setCustomAttributes(customAttributes.filter((_, i) => i !== index));
-                        }}
-                        title="Удалить"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  ))}
+                {customAttributes.length > 0 && (
+                  <div className={styles.attributesList}>
+                    {customAttributes.map((attr, index) => (
+                      <div key={index} className={styles.attributeRow}>
+                        <input
+                          type="text"
+                          value={attr.key}
+                          onChange={(e) => {
+                            const newCustom = [...customAttributes];
+                            newCustom[index].key = e.target.value;
+                            setCustomAttributes(newCustom);
+                          }}
+                          className={styles.input}
+                          placeholder="Название"
+                        />
+                        <input
+                          type="text"
+                          value={attr.value}
+                          onChange={(e) => {
+                            const newCustom = [...customAttributes];
+                            newCustom[index].value = e.target.value;
+                            setCustomAttributes(newCustom);
+                          }}
+                          className={styles.input}
+                          placeholder="Значение"
+                        />
+                        <button
+                          type="button"
+                          className={styles.removeAttrButton}
+                          onClick={() => {
+                            setCustomAttributes(customAttributes.filter((_, i) => i !== index));
+                          }}
+                          title="Удалить"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add new custom attribute */}
+                <div className={styles.addAttrRow}>
+                  <input
+                    type="text"
+                    value={newAttrKey}
+                    onChange={(e) => setNewAttrKey(e.target.value)}
+                    className={styles.input}
+                    placeholder="Название характеристики"
+                  />
+                  <input
+                    type="text"
+                    value={newAttrValue}
+                    onChange={(e) => setNewAttrValue(e.target.value)}
+                    className={styles.input}
+                    placeholder="Значение"
+                  />
+                  <button
+                    type="button"
+                    className={styles.addAttrButton}
+                    onClick={() => {
+                      if (newAttrKey.trim()) {
+                        setCustomAttributes([
+                          ...customAttributes,
+                          { key: newAttrKey.trim(), value: newAttrValue },
+                        ]);
+                        setNewAttrKey('');
+                        setNewAttrValue('');
+                      }
+                    }}
+                    disabled={!newAttrKey.trim()}
+                  >
+                    + Добавить
+                  </button>
                 </div>
-              )}
-
-              {/* Add new custom attribute */}
-              <div className={styles.addAttrRow}>
-                <input
-                  type="text"
-                  value={newAttrKey}
-                  onChange={(e) => setNewAttrKey(e.target.value)}
-                  className={styles.input}
-                  placeholder="Название характеристики"
-                />
-                <input
-                  type="text"
-                  value={newAttrValue}
-                  onChange={(e) => setNewAttrValue(e.target.value)}
-                  className={styles.input}
-                  placeholder="Значение"
-                />
-                <button
-                  type="button"
-                  className={styles.addAttrButton}
-                  onClick={() => {
-                    if (newAttrKey.trim()) {
-                      setCustomAttributes([
-                        ...customAttributes,
-                        { key: newAttrKey.trim(), value: newAttrValue },
-                      ]);
-                      setNewAttrKey('');
-                      setNewAttrValue('');
-                    }
-                  }}
-                  disabled={!newAttrKey.trim()}
-                >
-                  + Добавить
-                </button>
               </div>
             </div>
-
-            {categoryAttributes.length === 0 &&
-              customAttributes.length === 0 &&
-              !formData.categoryId && (
-                <p className={styles.noAttributes}>
-                  Выберите категорию, чтобы увидеть доступные атрибуты
-                </p>
-              )}
           </div>
         </div>
 
@@ -873,6 +913,22 @@ export function ProductCreatePage() {
           </button>
         </div>
       </form>
+
+      {/* Toast notification for errors */}
+      {error && (
+        <div className={`${styles.toast} ${styles.toastError}`}>
+          <span className={styles.toastIcon}>⚠</span>
+          <span className={styles.toastMessage}>{error}</span>
+          <button
+            type="button"
+            className={styles.toastClose}
+            onClick={() => setError(null)}
+            aria-label="Закрыть"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 }

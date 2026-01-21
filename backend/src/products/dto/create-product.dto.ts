@@ -6,9 +6,7 @@ import {
   IsOptional,
   IsBoolean,
   IsArray,
-  IsUrl,
   Min,
-  IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -62,14 +60,20 @@ export class CreateProductDto {
   @IsBoolean()
   isFeatured?: boolean;
 
+  @ApiProperty({ example: false, default: false })
+  @IsOptional()
+  @IsBoolean()
+  isNew?: boolean;
+
   @ApiProperty({ example: 'category-id' })
-  @IsUUID()
+  @IsString()
+  @IsNotEmpty()
   categoryId: string;
 
   @ApiProperty({ example: ['/images/product1.jpg'], required: false })
   @IsOptional()
   @IsArray()
-  @IsUrl({}, { each: true })
+  @IsString({ each: true })
   images?: string[];
 
   @ApiProperty({ required: false })

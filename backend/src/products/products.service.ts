@@ -41,6 +41,16 @@ export class ProductsService {
     });
   }
 
+  // Для админки - возвращает ВСЕ товары (включая неактивные)
+  async findAllAdmin() {
+    return this.prisma.product.findMany({
+      include: {
+        category: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async findOne(id: string) {
     const product = await this.prisma.product.findUnique({
       where: { id },
@@ -226,9 +236,19 @@ export class ProductsService {
 
   async update(id: string, updateProductDto: UpdateProductDto) {
     await this.findOne(id);
+
+    // Для JSON поля attributes нужна полная замена, а не merge
+    // Если attributes передан (даже пустой объект), заменяем полностью
+    const data = { ...updateProductDto };
+    if ('attributes' in updateProductDto) {
+      // Явно устанавливаем attributes для полной замены
+      // Prisma заменит весь JSON объект
+      data.attributes = updateProductDto.attributes ?? {};
+    }
+
     const product = await this.prisma.product.update({
       where: { id },
-      data: updateProductDto,
+      data,
       include: {
         category: true,
       },

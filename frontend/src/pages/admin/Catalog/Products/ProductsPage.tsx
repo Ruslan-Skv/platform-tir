@@ -26,8 +26,30 @@ interface Product {
   manufacturer: { id: string; name: string } | null;
   isActive: boolean;
   isFeatured: boolean;
+  isNew: boolean;
   images: string[];
 }
+
+// Доступные для отображения и редактирования колонки
+interface ColumnConfig {
+  key: string;
+  title: string;
+  editable: boolean;
+  type: 'text' | 'number' | 'boolean' | 'currency';
+}
+
+const AVAILABLE_COLUMNS: ColumnConfig[] = [
+  { key: 'price', title: 'Цена', editable: true, type: 'currency' },
+  { key: 'comparePrice', title: 'Старая цена', editable: true, type: 'currency' },
+  { key: 'stock', title: 'Остаток', editable: true, type: 'number' },
+  { key: 'isActive', title: 'Активен', editable: true, type: 'boolean' },
+  { key: 'isFeatured', title: 'Хит', editable: true, type: 'boolean' },
+  { key: 'isNew', title: 'Новинка', editable: true, type: 'boolean' },
+];
+
+// Типы для редактируемых значений
+type EditableValue = string | number | boolean | null;
+type ProductEdits = Partial<Record<string, EditableValue>>;
 
 interface CategoriesResponse {
   id: string;
@@ -41,12 +63,37 @@ export function ProductsPage() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<CategoriesResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [stockFilter, setStockFilter] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
-  const limit = 20;
+  const [limit, setLimit] = useState(20);
+
+  // Inline editing state
+  const [editMode, setEditMode] = useState(false);
+  const [selectedColumns, setSelectedColumns] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('admin_products_columns');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        } catch {
+          // ignore parse errors
+        }
+      }
+    }
+    return ['price', 'stock', 'isActive'];
+  });
+  const [showColumnSelector, setShowColumnSelector] = useState(false);
+  const [editedProducts, setEditedProducts] = useState<Record<string, ProductEdits>>({});
+  const [savingEdits, setSavingEdits] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [saveMessageType, setSaveMessageType] = useState<'success' | 'error'>('success');
 
   // Import modal state
   const [showImportModal, setShowImportModal] = useState(false);
@@ -61,6 +108,24 @@ export function ProductsPage() {
     totalFound: number;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const columnSelectorRef = useRef<HTMLDivElement>(null);
+
+  // Close column selector when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (columnSelectorRef.current && !columnSelectorRef.current.contains(event.target as Node)) {
+        setShowColumnSelector(false);
+      }
+    };
+
+    if (showColumnSelector) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showColumnSelector]);
 
   // Fetch categories
   useEffect(() => {
@@ -93,11 +158,17 @@ export function ProductsPage() {
     return flatten(categories);
   }, [categories]);
 
-  // Fetch all products once
-  const fetchProducts = useCallback(async () => {
-    setLoading(true);
+  // Fetch all products once (including inactive for admin)
+  const fetchProducts = useCallback(async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     try {
-      const response = await fetch(`${API_URL}/products`);
+      const response = await fetch(`${API_URL}/products/admin/all`, {
+        headers: getAuthHeaders(),
+      });
       if (response.ok) {
         const data = await response.json();
         setAllProducts(Array.isArray(data) ? data : []);
@@ -106,7 +177,9 @@ export function ProductsPage() {
       console.error('Failed to fetch products:', err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -191,28 +264,13 @@ export function ProductsPage() {
     }).format(numValue);
   };
 
-  // Toggle product active status
-  const toggleProductActive = async (productId: string, currentStatus: boolean) => {
-    try {
-      const response = await fetch(`${API_URL}/products/${productId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify({ isActive: !currentStatus }),
-      });
-      if (response.ok) {
-        fetchProducts();
-      }
-    } catch (err) {
-      console.error('Failed to toggle product status:', err);
-    }
-  };
-
   // Bulk activate/deactivate
   const bulkToggleActive = async (isActive: boolean) => {
     if (selectedIds.length === 0) return;
+
+    const count = selectedIds.length;
+    const action = isActive ? 'активированы' : 'деактивированы';
+
     try {
       const response = await fetch(`${API_URL}/admin/catalog/products/bulk/activate`, {
         method: 'POST',
@@ -225,9 +283,21 @@ export function ProductsPage() {
       if (response.ok) {
         setSelectedIds([]);
         fetchProducts();
+
+        // Show success toast
+        setSaveMessage(`✓ ${count} товар(ов) ${action}`);
+        setSaveMessageType('success');
+        setTimeout(() => setSaveMessage(null), 3000);
+      } else {
+        setSaveMessage(`Ошибка при массовом обновлении`);
+        setSaveMessageType('error');
+        setTimeout(() => setSaveMessage(null), 3000);
       }
     } catch (err) {
       console.error('Failed to bulk update:', err);
+      setSaveMessage(`Ошибка при массовом обновлении`);
+      setSaveMessageType('error');
+      setTimeout(() => setSaveMessage(null), 3000);
     }
   };
 
@@ -312,7 +382,171 @@ export function ProductsPage() {
     }
   };
 
-  const columns = [
+  // Toggle column selection
+  const toggleColumn = (columnKey: string) => {
+    setSelectedColumns((prev) => {
+      const newColumns = prev.includes(columnKey)
+        ? prev.filter((k) => k !== columnKey)
+        : [...prev, columnKey];
+      // Save to localStorage
+      localStorage.setItem('admin_products_columns', JSON.stringify(newColumns));
+      return newColumns;
+    });
+  };
+
+  // Handle inline edit
+  const handleInlineEdit = (productId: string, field: string, value: EditableValue) => {
+    setEditedProducts((prev) => ({
+      ...prev,
+      [productId]: {
+        ...prev[productId],
+        [field]: value,
+      },
+    }));
+  };
+
+  // Get current value (edited or original)
+  const getCurrentValue = (product: Product, field: string): EditableValue => {
+    if (editedProducts[product.id]?.[field] !== undefined) {
+      return editedProducts[product.id][field] as EditableValue;
+    }
+    return product[field as keyof Product] as EditableValue;
+  };
+
+  // Check if product has edits
+  const hasEdits = (productId: string): boolean => {
+    return Object.keys(editedProducts[productId] || {}).length > 0;
+  };
+
+  // Save all edits
+  const saveAllEdits = async () => {
+    const productIdsToSave = Object.keys(editedProducts).filter((id) => hasEdits(id));
+    if (productIdsToSave.length === 0) return;
+
+    setSavingEdits(true);
+
+    try {
+      // Create all save promises
+      const savePromises = productIdsToSave.map(async (productId) => {
+        const edits = editedProducts[productId];
+        const response = await fetch(`${API_URL}/products/${productId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders(),
+          },
+          body: JSON.stringify(edits),
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to save product ${productId}`);
+        }
+        return productId;
+      });
+
+      // Wait for all promises to settle (either resolve or reject)
+      const results = await Promise.allSettled(savePromises);
+
+      const successCount = results.filter((r) => r.status === 'fulfilled').length;
+      const errorCount = results.filter((r) => r.status === 'rejected').length;
+
+      // Clear edits and exit edit mode
+      setEditedProducts({});
+      setSavingEdits(false);
+      setEditMode(false); // Exit edit mode after successful save
+
+      // Show result message
+      setSaveMessage(
+        errorCount === 0
+          ? `✓ Успешно сохранено: ${successCount} товар(ов)`
+          : `Сохранено: ${successCount}, ошибок: ${errorCount}`
+      );
+      setSaveMessageType(errorCount === 0 ? 'success' : 'error');
+
+      // Auto-hide message after 3 seconds
+      setTimeout(() => {
+        setSaveMessage(null);
+      }, 3000);
+
+      // Refresh products list
+      fetchProducts();
+    } catch (err) {
+      console.error('Error saving edits:', err);
+      setSavingEdits(false);
+      setSaveMessage('Ошибка при сохранении изменений');
+      setSaveMessageType('error');
+      setTimeout(() => {
+        setSaveMessage(null);
+      }, 3000);
+    }
+  };
+
+  // Cancel all edits
+  const cancelEdits = () => {
+    setEditedProducts({});
+    setEditMode(false);
+  };
+
+  // Count total edits
+  const totalEditsCount = Object.keys(editedProducts).filter((id) => hasEdits(id)).length;
+
+  // Render editable cell based on column type
+  const renderEditableCell = (product: Product, columnConfig: ColumnConfig) => {
+    const currentValue = getCurrentValue(product, columnConfig.key);
+    const isEdited = editedProducts[product.id]?.[columnConfig.key] !== undefined;
+
+    if (columnConfig.type === 'boolean') {
+      return (
+        <label className={styles.editableCheckbox}>
+          <input
+            type="checkbox"
+            checked={currentValue as boolean}
+            onChange={(e) => {
+              e.stopPropagation();
+              handleInlineEdit(product.id, columnConfig.key, e.target.checked);
+            }}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <span className={`${styles.checkboxLabel} ${isEdited ? styles.edited : ''}`}>
+            {currentValue ? 'Да' : 'Нет'}
+          </span>
+        </label>
+      );
+    }
+
+    if (columnConfig.type === 'currency' || columnConfig.type === 'number') {
+      return (
+        <input
+          type="number"
+          className={`${styles.editableInput} ${isEdited ? styles.edited : ''}`}
+          value={currentValue === null ? '' : currentValue}
+          onChange={(e) => {
+            e.stopPropagation();
+            const val = e.target.value === '' ? null : parseFloat(e.target.value);
+            handleInlineEdit(product.id, columnConfig.key, val);
+          }}
+          onClick={(e) => e.stopPropagation()}
+          step={columnConfig.type === 'currency' ? '0.01' : '1'}
+          min="0"
+        />
+      );
+    }
+
+    return (
+      <input
+        type="text"
+        className={`${styles.editableInput} ${isEdited ? styles.edited : ''}`}
+        value={(currentValue as string) || ''}
+        onChange={(e) => {
+          e.stopPropagation();
+          handleInlineEdit(product.id, columnConfig.key, e.target.value);
+        }}
+        onClick={(e) => e.stopPropagation()}
+      />
+    );
+  };
+
+  // Build columns dynamically
+  const baseColumns = [
     {
       key: 'product',
       title: 'Товар',
@@ -337,79 +571,83 @@ export function ProductsPage() {
       title: 'Категория',
       render: (product: Product) => product.category.name,
     },
-    {
-      key: 'price',
-      title: 'Цена',
-      sortable: true,
-      render: (product: Product) => (
-        <div className={styles.priceCell}>
-          <span className={styles.price}>{formatCurrency(product.price)}</span>
-          {product.comparePrice && (
-            <span className={styles.comparePrice}>{formatCurrency(product.comparePrice)}</span>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: 'stock',
-      title: 'Остаток',
-      sortable: true,
-      render: (product: Product) => (
-        <span
-          className={`${styles.stock} ${
-            product.stock === 0 ? styles.stockOut : product.stock <= 5 ? styles.stockLow : ''
-          }`}
-        >
-          {product.stock} шт.
-        </span>
-      ),
-    },
-    {
-      key: 'status',
-      title: 'Статус',
-      render: (product: Product) => (
-        <div className={styles.statusCell}>
-          <span
-            className={`${styles.statusBadge} ${
-              product.isActive ? styles.active : styles.inactive
-            }`}
-          >
-            {product.isActive ? 'Активен' : 'Скрыт'}
-          </span>
-          {product.isFeatured && <span className={styles.featuredBadge}>⭐</span>}
-        </div>
-      ),
-    },
-    {
-      key: 'actions',
-      title: '',
-      width: '100px',
-      render: (product: Product) => (
-        <div className={styles.actions}>
-          <button
-            className={styles.actionButton}
-            onClick={(e) => {
-              e.stopPropagation();
-              window.location.href = `/admin/catalog/products/${product.id}/edit`;
-            }}
-            title="Редактировать"
-          >
-            ✏️
-          </button>
-          <button
-            className={styles.actionButton}
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleProductActive(product.id, product.isActive);
-            }}
-            title={product.isActive ? 'Скрыть' : 'Показать'}
-          >
-            {product.isActive ? '👁️' : '👁️‍🗨️'}
-          </button>
-        </div>
-      ),
-    },
   ];
+
+  // Generate dynamic columns based on selection and edit mode
+  const dynamicColumns = selectedColumns
+    .map((columnKey) => {
+      const columnConfig = AVAILABLE_COLUMNS.find((c) => c.key === columnKey);
+      if (!columnConfig) return null;
+
+      return {
+        key: columnConfig.key,
+        title: columnConfig.title,
+        sortable: columnConfig.type === 'number' || columnConfig.type === 'currency',
+        render: (product: Product) => {
+          if (editMode && columnConfig.editable) {
+            return renderEditableCell(product, columnConfig);
+          }
+
+          // Non-edit mode rendering
+          const value = product[columnConfig.key as keyof Product];
+
+          if (columnConfig.type === 'currency') {
+            return <span className={styles.price}>{formatCurrency(value as number)}</span>;
+          }
+
+          if (columnConfig.type === 'number') {
+            const stockValue = value as number;
+            return (
+              <span
+                className={`${styles.stock} ${
+                  stockValue === 0 ? styles.stockOut : stockValue <= 5 ? styles.stockLow : ''
+                }`}
+              >
+                {stockValue} шт.
+              </span>
+            );
+          }
+
+          if (columnConfig.type === 'boolean') {
+            return (
+              <span className={`${styles.statusBadge} ${value ? styles.active : styles.inactive}`}>
+                {value ? 'Да' : 'Нет'}
+              </span>
+            );
+          }
+
+          return <span>{String(value)}</span>;
+        },
+      };
+    })
+    .filter(Boolean);
+
+  const actionColumn = {
+    key: 'actions',
+    title: '',
+    width: '60px',
+    render: (product: Product) => (
+      <div className={styles.actions}>
+        {editMode && hasEdits(product.id) && (
+          <span className={styles.editedIndicator} title="Есть изменения">
+            ●
+          </span>
+        )}
+        <button
+          className={styles.actionButton}
+          onClick={(e) => {
+            e.stopPropagation();
+            window.location.href = `/admin/catalog/products/${product.id}/edit`;
+          }}
+          title="Редактировать"
+        >
+          ✏️
+        </button>
+      </div>
+    ),
+  };
+
+  const columns = [...baseColumns, ...dynamicColumns, actionColumn];
 
   return (
     <div className={styles.page}>
@@ -419,13 +657,52 @@ export function ProductsPage() {
           <span className={styles.count}>{totalProducts} товаров</span>
         </div>
         <div className={styles.headerActions}>
+          <div className={styles.columnSelectorWrapper} ref={columnSelectorRef}>
+            <button
+              className={`${styles.secondaryButton} ${showColumnSelector ? styles.active : ''}`}
+              onClick={() => setShowColumnSelector(!showColumnSelector)}
+            >
+              ⚙️ Колонки
+            </button>
+            {showColumnSelector && (
+              <div className={styles.columnSelectorDropdown}>
+                <div className={styles.columnSelectorHeader}>
+                  <span>Отображать колонки:</span>
+                </div>
+                {AVAILABLE_COLUMNS.map((col) => (
+                  <label key={col.key} className={styles.columnOption}>
+                    <input
+                      type="checkbox"
+                      checked={selectedColumns.includes(col.key)}
+                      onChange={() => toggleColumn(col.key)}
+                    />
+                    <span>{col.title}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+          <button
+            className={`${styles.secondaryButton} ${editMode ? styles.editModeActive : ''}`}
+            onClick={() => {
+              if (editMode && totalEditsCount > 0) {
+                if (confirm('Есть несохранённые изменения. Выйти без сохранения?')) {
+                  cancelEdits();
+                }
+              } else {
+                setEditMode(!editMode);
+                setEditedProducts({});
+              }
+            }}
+          >
+            {editMode ? '✕ Выйти из редактирования' : '✏️ Быстрое редактирование'}
+          </button>
           <button className={styles.secondaryButton} onClick={() => setShowImportModal(true)}>
             📥 Импорт
           </button>
           <button
             className={styles.secondaryButton}
             onClick={() => {
-              // TODO: Реализовать экспорт товаров
               alert('Функционал экспорта будет реализован позже');
             }}
           >
@@ -476,23 +753,67 @@ export function ProductsPage() {
           <option value="low-stock">Мало</option>
           <option value="out-of-stock">Нет в наличии</option>
         </select>
-        <button className={styles.refreshButton} onClick={fetchProducts} disabled={loading}>
-          🔄 {loading ? 'Загрузка...' : 'Обновить'}
+        <select
+          value={limit}
+          onChange={(e) => {
+            setLimit(Number(e.target.value));
+            setPage(1);
+          }}
+          className={styles.select}
+        >
+          <option value={20}>20 на странице</option>
+          <option value={50}>50 на странице</option>
+          <option value={100}>100 на странице</option>
+          <option value={200}>200 на странице</option>
+        </select>
+        <button
+          className={styles.refreshButton}
+          onClick={() => fetchProducts(true)}
+          disabled={loading || refreshing}
+        >
+          🔄 {refreshing ? 'Обновление...' : loading ? 'Загрузка...' : 'Обновить'}
         </button>
       </div>
 
-      {selectedIds.length > 0 && (
+      {selectedIds.length > 0 && !editMode && (
         <div className={styles.bulkActions}>
           <span>Выбрано: {selectedIds.length}</span>
           <button className={styles.bulkButton} onClick={() => bulkToggleActive(true)}>
-            Активировать
+            ✓ Активировать
           </button>
           <button className={styles.bulkButton} onClick={() => bulkToggleActive(false)}>
-            Скрыть
+            ✗ Деактивировать
           </button>
           <button className={`${styles.bulkButton} ${styles.danger}`} onClick={bulkDelete}>
-            Удалить
+            🗑️ Удалить
           </button>
+        </div>
+      )}
+
+      {/* Edit mode save bar */}
+      {editMode && (
+        <div className={styles.editModeBar}>
+          <div className={styles.editModeInfo}>
+            <span className={styles.editModeIcon}>✏️</span>
+            <span>Режим быстрого редактирования</span>
+            {totalEditsCount > 0 && (
+              <span className={styles.editCount}>
+                Изменено товаров: <strong>{totalEditsCount}</strong>
+              </span>
+            )}
+          </div>
+          <div className={styles.editModeActions}>
+            <button className={styles.cancelButton} onClick={cancelEdits} disabled={savingEdits}>
+              Отмена
+            </button>
+            <button
+              className={styles.saveButton}
+              onClick={saveAllEdits}
+              disabled={savingEdits || totalEditsCount === 0}
+            >
+              {savingEdits ? 'Сохранение...' : `Сохранить изменения (${totalEditsCount})`}
+            </button>
+          </div>
         </div>
       )}
 
@@ -637,6 +958,24 @@ export function ProductsPage() {
               </>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Save result toast */}
+      {saveMessage && (
+        <div
+          className={`${styles.toast} ${
+            saveMessageType === 'success' ? styles.toastSuccess : styles.toastError
+          }`}
+        >
+          <span className={styles.toastMessage}>{saveMessage}</span>
+          <button
+            className={styles.toastClose}
+            onClick={() => setSaveMessage(null)}
+            aria-label="Закрыть"
+          >
+            ✕
+          </button>
         </div>
       )}
     </div>
