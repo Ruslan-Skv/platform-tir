@@ -18,15 +18,15 @@
 
 .button.measurement,
 .button.outline.measurement {
-  background-color: transparent !important;
-  border-color: #10b981;
+  background-color: #ffffff80 !important;
+  border: none !important;
   color: #000;
   transition: color 0.3s ease;
 }
 
 .button.measurement:hover:not(.disabled),
 .button.outline.measurement:hover:not(.disabled) {
-  background-color: transparent !important;
+  background-color: #ffffff80 !important;
   box-shadow: none;
   color: #d90652;
 }
@@ -39,15 +39,15 @@
 
 .button.callback,
 .button.outline.callback {
-  background-color: transparent !important;
-  border-color: #3b82f6;
+  background-color: #ffffff80 !important;
+  border: none !important;
   color: #000;
   transition: color 0.3s ease;
 }
 
 .button.callback:hover:not(.disabled),
 .button.outline.callback:hover:not(.disabled) {
-  background-color: transparent !important;
+  background-color: #ffffff80 !important;
   box-shadow: none;
   color: #d90652;
 }
@@ -63,7 +63,8 @@ html[data-theme='light'] .button.measurement,
 html[data-theme='light'] .button.outline.measurement,
 html[data-theme='light'] .button.callback,
 html[data-theme='light'] .button.outline.callback {
-  background-color: transparent !important;
+  background-color: #ffffff80 !important;
+  border: none !important;
   color: #000;
 }
 

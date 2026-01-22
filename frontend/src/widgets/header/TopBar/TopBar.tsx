@@ -3,7 +3,6 @@
 import {
   ChartBarIcon,
   HeartIcon,
-  MagnifyingGlassIcon,
   MoonIcon,
   ShoppingCartIcon,
   SunIcon,
@@ -21,12 +20,6 @@ import styles from './TopBar.module.css';
 export const TopBar: React.FC = () => {
   const { isDarkTheme, toggleTheme } = useTheme();
   const router = useRouter();
-
-  const handleSearchClick = () => {
-    // Здесь будет логика открытия поиска
-    console.log('Открыть поиск');
-    // В будущем можно реализовать открытие модального окна поиска
-  };
 
   const handleCompareClick = () => {
     router.push('/compare');
@@ -50,12 +43,6 @@ export const TopBar: React.FC = () => {
           <div className={styles.contactMobile}>
             <span className={styles.contact}>8-(8152)-60-12-70</span>
           </div>
-          {/* Поиск */}
-          <button onClick={handleSearchClick} className={styles.utilityButton} type="button">
-            <MagnifyingGlassIcon className={styles.icon} />
-            <span className={styles.utilityText}>Поиск</span>
-          </button>
-
           {/* Сравнение товаров */}
           <button onClick={handleCompareClick} className={styles.utilityButton} type="button">
             <ChartBarIcon className={styles.icon} />

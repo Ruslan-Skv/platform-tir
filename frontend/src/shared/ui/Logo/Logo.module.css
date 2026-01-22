@@ -5,7 +5,7 @@
 
 .logo {
   cursor: pointer;
-  height: 5rem;
+  height: 3.75rem;
   max-width: clamp(12.5rem, 7.4172rem + 22.5904vw, 21.875rem);
   transition: transform 0.3s ease;
 }
@@ -167,6 +167,6 @@ html[data-theme='dark'] .logo:hover .color5 {
 
 @media (width <= 1023px) {
   .logo {
-    height: 3rem;
+    height: 2.25rem;
   }
 }
