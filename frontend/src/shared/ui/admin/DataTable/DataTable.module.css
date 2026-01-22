@@ -3,21 +3,146 @@
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  position: relative;
 }
 
 .tableWrapper {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.scrollContainer {
   overflow-x: auto;
+  overflow-y: visible;
+  flex: 1;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+  position: relative;
+  padding-left: 0;
+  padding-right: 0;
+  transition: padding 0.2s ease;
+  /* Создаем скроллируемый контекст для sticky */
+  max-height: none;
+}
+
+/* Добавляем отступы когда стрелки видны */
+.tableWrapper:has(.scrollArrowLeft) .scrollContainer {
+  padding-left: 0;
+}
+
+.tableWrapper:has(.scrollArrowRight) .scrollContainer {
+  padding-right: 0;
+}
+
+/* Стрелки для прокрутки */
+.scrollArrow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.8));
+  color: #374151;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+  z-index: 20;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+  pointer-events: auto;
+}
+
+.scrollArrow:hover {
+  background: linear-gradient(to right, rgba(249, 250, 251, 0.95), rgba(249, 250, 251, 0.8));
+  color: #d90652;
+}
+
+.scrollArrowLeft {
+  left: 0;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.8));
+}
+
+.scrollArrowLeft:hover {
+  background: linear-gradient(to right, rgba(249, 250, 251, 0.95), rgba(249, 250, 251, 0.8));
+}
+
+.scrollArrowRight {
+  right: 0;
+  background: linear-gradient(to left, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.8));
+}
+
+.scrollArrowRight:hover {
+  background: linear-gradient(to left, rgba(249, 250, 251, 0.95), rgba(249, 250, 251, 0.8));
+}
+
+/* Темная тема для стрелок */
+html[data-theme='dark'] .scrollArrow {
+  background: linear-gradient(to right, rgba(31, 41, 55, 0.95), rgba(31, 41, 55, 0.8));
+  color: #d1d5db;
+}
+
+html[data-theme='dark'] .scrollArrow:hover {
+  background: linear-gradient(to right, rgba(55, 65, 81, 0.95), rgba(55, 65, 81, 0.8));
+  color: #ec4899;
+}
+
+html[data-theme='dark'] .scrollArrowLeft {
+  background: linear-gradient(to right, rgba(31, 41, 55, 0.95), rgba(31, 41, 55, 0.8));
+}
+
+html[data-theme='dark'] .scrollArrowLeft:hover {
+  background: linear-gradient(to right, rgba(55, 65, 81, 0.95), rgba(55, 65, 81, 0.8));
+}
+
+html[data-theme='dark'] .scrollArrowRight {
+  background: linear-gradient(to left, rgba(31, 41, 55, 0.95), rgba(31, 41, 55, 0.8));
+}
+
+html[data-theme='dark'] .scrollArrowRight:hover {
+  background: linear-gradient(to left, rgba(55, 65, 81, 0.95), rgba(55, 65, 81, 0.8));
+}
+
+/* Стилизация скроллбара для WebKit браузеров */
+.scrollContainer::-webkit-scrollbar {
+  height: 12px;
+}
+
+.scrollContainer::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.scrollContainer::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 6px;
+}
+
+.scrollContainer::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: auto;
+}
+
+.stickyHeader {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #f9fafb;
 }
 
 .table th,
 .table td {
   padding: 14px 16px;
-  text-align: left;
+  text-align: center;
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -48,6 +173,7 @@
 .headerContent {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 

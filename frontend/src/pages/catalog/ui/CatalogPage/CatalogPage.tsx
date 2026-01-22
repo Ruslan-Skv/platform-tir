@@ -56,6 +56,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
             categoryName={displayCategoryName}
             currentPage={currentPage}
             onTotalPagesChange={setTotalPages}
+            onSortChange={() => setCurrentPage(1)}
           />
         </main>
       </div>

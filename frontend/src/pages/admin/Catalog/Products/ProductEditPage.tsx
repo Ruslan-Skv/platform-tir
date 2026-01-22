@@ -145,6 +145,7 @@ interface Product {
   isActive: boolean;
   isFeatured: boolean;
   isNew: boolean;
+  sortOrder: number;
   images: string[];
   seoTitle: string | null;
   seoDescription: string | null;
@@ -201,6 +202,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     isActive: true,
     isFeatured: false,
     isNew: false,
+    sortOrder: 0,
     seoTitle: '',
     seoDescription: '',
     images: [] as string[],
@@ -352,6 +354,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           isActive: product.isActive ?? true,
           isFeatured: product.isFeatured ?? false,
           isNew: product.isNew ?? false,
+          sortOrder: product.sortOrder ?? 0,
           seoTitle: product.seoTitle || '',
           seoDescription: product.seoDescription || '',
           images: product.images || [],
@@ -672,6 +675,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           isActive: formData.isActive,
           isFeatured: formData.isFeatured,
           isNew: formData.isNew,
+          sortOrder: formData.sortOrder || 0,
           seoTitle: formData.seoTitle || null,
           seoDescription: formData.seoDescription || null,
           attributes: attributesArray, // Теперь массив с гарантированным порядком
@@ -879,6 +883,28 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                 />
                 <span>Новинка</span>
               </label>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="sortOrder">Сортировка</label>
+              <input
+                type="number"
+                id="sortOrder"
+                name="sortOrder"
+                value={formData.sortOrder}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    sortOrder: parseInt(e.target.value, 10) || 0,
+                  }))
+                }
+                className={styles.input}
+                placeholder="0"
+              />
+              <p className={styles.hint}>
+                Чем меньше число, тем выше товар в списке. Товары с одинаковым значением сортируются
+                по дате создания.
+              </p>
             </div>
           </div>
 

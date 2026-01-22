@@ -18,6 +18,9 @@ export interface Product {
   discount?: number;
   inStock?: boolean;
   characteristics?: ProductCharacteristic[];
+  // Дополнительные поля для сортировки
+  sortOrder?: number;
+  createdAt?: number;
 }
 
 export interface ProductCharacteristic {

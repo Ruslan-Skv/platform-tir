@@ -172,6 +172,7 @@ export function ProductCreatePage() {
     isActive: true,
     isFeatured: false,
     isNew: true,
+    sortOrder: 0,
     seoTitle: '',
     seoDescription: '',
     attributes: {} as Record<string, string>,
@@ -499,6 +500,7 @@ export function ProductCreatePage() {
         isActive: formData.isActive,
         isFeatured: formData.isFeatured,
         isNew: formData.isNew,
+        sortOrder: formData.sortOrder || 0,
         seoTitle: formData.seoTitle || undefined,
         seoDescription: formData.seoDescription || undefined,
         attributes: attributesArray, // Массив с гарантированным порядком
@@ -690,6 +692,28 @@ export function ProductCreatePage() {
                 />
                 <span>Новинка</span>
               </label>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="sortOrder">Сортировка</label>
+              <input
+                type="number"
+                id="sortOrder"
+                name="sortOrder"
+                value={formData.sortOrder}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    sortOrder: parseInt(e.target.value, 10) || 0,
+                  }))
+                }
+                className={styles.input}
+                placeholder="0"
+              />
+              <p className={styles.hint}>
+                Чем меньше число, тем выше товар в списке. Товары с одинаковым значением сортируются
+                по дате создания.
+              </p>
             </div>
           </div>
 

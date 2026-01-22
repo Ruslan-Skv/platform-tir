@@ -27,6 +27,8 @@ interface Product {
   isActive: boolean;
   isFeatured: boolean;
   isNew: boolean;
+  sortOrder?: number;
+  attributes?: Record<string, string | number | boolean | string[]> | null;
   images: string[];
 }
 
@@ -42,6 +44,7 @@ const AVAILABLE_COLUMNS: ColumnConfig[] = [
   { key: 'price', title: 'Цена', editable: true, type: 'currency' },
   { key: 'comparePrice', title: 'Старая цена', editable: true, type: 'currency' },
   { key: 'stock', title: 'Остаток', editable: true, type: 'number' },
+  { key: 'sortOrder', title: 'Сортировка', editable: true, type: 'number' },
   { key: 'isActive', title: 'Активен', editable: true, type: 'boolean' },
   { key: 'isFeatured', title: 'Хит', editable: true, type: 'boolean' },
   { key: 'isNew', title: 'Новинка', editable: true, type: 'boolean' },
@@ -62,6 +65,9 @@ export function ProductsPage() {
   const { getAuthHeaders } = useAuth();
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<CategoriesResponse[]>([]);
+  const [categoryAttributes, setCategoryAttributes] = useState<
+    Array<{ id: string; name: string; slug: string; type: string }>
+  >([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -155,6 +161,72 @@ export function ProductsPage() {
     };
     fetchCategories();
   }, []);
+
+  // Fetch category attributes for all categories
+  useEffect(() => {
+    const fetchAllCategoryAttributes = async () => {
+      if (categories.length === 0) return;
+
+      const allAttrsMap = new Map<
+        string,
+        { id: string; name: string; slug: string; type: string }
+      >();
+
+      // Функция для рекурсивного обхода категорий и сбора всех ID
+      const getAllCategoryIds = (cats: CategoriesResponse[]): string[] => {
+        const ids: string[] = [];
+        const collect = (categoryList: CategoriesResponse[]) => {
+          for (const cat of categoryList) {
+            ids.push(cat.id);
+            if (cat.children && cat.children.length > 0) {
+              collect(cat.children);
+            }
+          }
+        };
+        collect(cats);
+        return ids;
+      };
+
+      const categoryIds = getAllCategoryIds(categories);
+
+      // Загружаем атрибуты для всех категорий параллельно
+      const attrPromises = categoryIds.map(async (categoryId) => {
+        try {
+          const response = await fetch(`${API_URL}/categories/${categoryId}/attributes`);
+          if (response.ok) {
+            const attrs: Array<{
+              id: string;
+              attributeId: string;
+              attribute: { id: string; name: string; slug: string; type: string };
+            }> = await response.json();
+            return attrs;
+          }
+          return [];
+        } catch (err) {
+          console.error(`Failed to fetch attributes for category ${categoryId}:`, err);
+          return [];
+        }
+      });
+
+      const allAttrsArrays = await Promise.all(attrPromises);
+      allAttrsArrays.forEach((attrs) => {
+        attrs.forEach((ca) => {
+          if (!allAttrsMap.has(ca.attribute.slug)) {
+            allAttrsMap.set(ca.attribute.slug, {
+              id: ca.attribute.id,
+              name: ca.attribute.name,
+              slug: ca.attribute.slug,
+              type: ca.attribute.type,
+            });
+          }
+        });
+      });
+
+      setCategoryAttributes(Array.from(allAttrsMap.values()));
+    };
+
+    fetchAllCategoryAttributes();
+  }, [categories]);
 
   // Flatten categories for select dropdown (with unique keys)
   const flatCategories = useMemo(() => {
@@ -892,6 +964,30 @@ export function ProductsPage() {
   // Generate dynamic columns based on selection and edit mode
   const dynamicColumns = selectedColumns
     .map((columnKey) => {
+      // Проверяем, это атрибут или обычная колонка
+      const isAttribute = columnKey.startsWith('attr:');
+      if (isAttribute) {
+        const attrSlug = columnKey.replace('attr:', '');
+        const attr = categoryAttributes.find((a) => a.slug === attrSlug);
+        if (!attr) return null;
+
+        return {
+          key: columnKey,
+          title: attr.name,
+          sortable: false,
+          render: (product: Product) => {
+            const attrValue = product.attributes?.[attrSlug];
+            if (attrValue === undefined || attrValue === null) {
+              return <span className={styles.emptyValue}>—</span>;
+            }
+            if (Array.isArray(attrValue)) {
+              return <span>{attrValue.join(', ')}</span>;
+            }
+            return <span>{String(attrValue)}</span>;
+          },
+        };
+      }
+
       const columnConfig = AVAILABLE_COLUMNS.find((c) => c.key === columnKey);
       if (!columnConfig) return null;
 
@@ -912,14 +1008,19 @@ export function ProductsPage() {
           }
 
           if (columnConfig.type === 'number') {
-            const stockValue = value as number;
+            const numValue = value as number;
+            // Для колонки "Сортировка" не добавляем единицы измерения
+            if (columnConfig.key === 'sortOrder') {
+              return <span>{numValue}</span>;
+            }
+            // Для остальных числовых колонок (например, "Остаток") добавляем "шт."
             return (
               <span
                 className={`${styles.stock} ${
-                  stockValue === 0 ? styles.stockOut : stockValue <= 5 ? styles.stockLow : ''
+                  numValue === 0 ? styles.stockOut : numValue <= 5 ? styles.stockLow : ''
                 }`}
               >
-                {stockValue} шт.
+                {numValue} шт.
               </span>
             );
           }
@@ -993,32 +1094,40 @@ export function ProductsPage() {
                         Отображаемые (перетащите для сортировки):
                       </div>
                       {selectedColumns.map((colKey, index) => {
-                        const col = AVAILABLE_COLUMNS.find((c) => c.key === colKey);
-                        if (!col) return null;
+                        // Проверяем, это атрибут или обычная колонка
+                        const isAttribute = colKey.startsWith('attr:');
+                        const col = isAttribute
+                          ? null
+                          : AVAILABLE_COLUMNS.find((c) => c.key === colKey);
+                        const attr = isAttribute
+                          ? categoryAttributes.find((a) => a.slug === colKey.replace('attr:', ''))
+                          : null;
+                        if (!col && !attr) return null;
+                        const title = col ? col.title : attr?.name || colKey;
                         return (
                           <div
-                            key={col.key}
-                            className={`${styles.columnItem} ${styles.selected} ${draggedColumn === col.key ? styles.dragging : ''}`}
+                            key={colKey}
+                            className={`${styles.columnItem} ${styles.selected} ${draggedColumn === colKey ? styles.dragging : ''}`}
                             draggable
-                            onDragStart={(e) => handleDragStart(e, col.key)}
+                            onDragStart={(e) => handleDragStart(e, colKey)}
                             onDragOver={handleDragOver}
-                            onDrop={(e) => handleDrop(e, col.key)}
+                            onDrop={(e) => handleDrop(e, colKey)}
                             onDragEnd={handleDragEnd}
                           >
                             <span className={styles.dragHandle}>⋮⋮</span>
                             <input
                               type="checkbox"
                               checked={true}
-                              onChange={() => toggleColumn(col.key)}
+                              onChange={() => toggleColumn(colKey)}
                               onClick={(e) => e.stopPropagation()}
                             />
-                            <span className={styles.columnTitle}>{col.title}</span>
+                            <span className={styles.columnTitle}>{title}</span>
                             <div className={styles.columnOrderButtons}>
                               <button
                                 className={styles.orderButton}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  moveColumn(col.key, 'up');
+                                  moveColumn(colKey, 'up');
                                 }}
                                 disabled={index === 0}
                                 title="Переместить вверх"
@@ -1029,7 +1138,7 @@ export function ProductsPage() {
                                 className={styles.orderButton}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  moveColumn(col.key, 'down');
+                                  moveColumn(colKey, 'down');
                                 }}
                                 disabled={index === selectedColumns.length - 1}
                                 title="Переместить вниз"
@@ -1046,7 +1155,7 @@ export function ProductsPage() {
                   {AVAILABLE_COLUMNS.filter((col) => !selectedColumns.includes(col.key)).length >
                     0 && (
                     <div className={styles.availableColumnsSection}>
-                      <div className={styles.sectionLabel}>Доступные:</div>
+                      <div className={styles.sectionLabel}>Доступные колонки:</div>
                       {AVAILABLE_COLUMNS.filter((col) => !selectedColumns.includes(col.key)).map(
                         (col) => (
                           <div key={col.key} className={styles.columnItem}>
@@ -1059,6 +1168,26 @@ export function ProductsPage() {
                           </div>
                         )
                       )}
+                    </div>
+                  )}
+                  {/* Available attributes - not selected */}
+                  {categoryAttributes.filter(
+                    (attr) => !selectedColumns.includes(`attr:${attr.slug}`)
+                  ).length > 0 && (
+                    <div className={styles.availableColumnsSection}>
+                      <div className={styles.sectionLabel}>Атрибуты категорий:</div>
+                      {categoryAttributes
+                        .filter((attr) => !selectedColumns.includes(`attr:${attr.slug}`))
+                        .map((attr) => (
+                          <div key={`attr:${attr.slug}`} className={styles.columnItem}>
+                            <input
+                              type="checkbox"
+                              checked={false}
+                              onChange={() => toggleColumn(`attr:${attr.slug}`)}
+                            />
+                            <span className={styles.columnTitle}>{attr.name}</span>
+                          </div>
+                        ))}
                     </div>
                   )}
                 </div>

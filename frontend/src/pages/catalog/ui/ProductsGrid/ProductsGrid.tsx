@@ -21,6 +21,8 @@ interface ApiProduct {
   isFeatured: boolean;
   images: string[];
   attributes: Record<string, unknown> | null;
+  sortOrder?: number;
+  createdAt?: string;
   category: {
     id: string;
     name: string;
@@ -44,19 +46,32 @@ interface ProductsGridProps {
   categoryName?: string;
   currentPage?: number;
   onTotalPagesChange?: (totalPages: number) => void;
+  onSortChange?: () => void;
 }
 
 const PRODUCTS_PER_PAGE = 20; // 5 строк × 4 столбца
+
+type SortOption =
+  | 'default'
+  | 'price-asc'
+  | 'price-desc'
+  | 'name-asc'
+  | 'name-desc'
+  | 'new'
+  | 'rating';
 
 export const ProductsGrid: React.FC<ProductsGridProps> = ({
   categorySlug,
   categoryName = 'Каталог',
   currentPage = 1,
   onTotalPagesChange,
+  onSortChange,
 }) => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [originalProducts, setOriginalProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>('default');
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -106,8 +121,12 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
                   100
               )
             : undefined,
+          // Сохраняем дополнительные данные для сортировки
+          sortOrder: p.sortOrder ?? 0,
+          createdAt: p.createdAt ? new Date(p.createdAt).getTime() : Date.now(),
         }));
 
+        setOriginalProducts(mappedProducts);
         setProducts(mappedProducts);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Произошла ошибка');
@@ -117,7 +136,52 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
     };
 
     fetchProducts();
+    // Сбрасываем сортировку при изменении категории
+    setSortBy('default');
   }, [categorySlug]);
+
+  // Функция сортировки товаров
+  const sortProducts = (productsToSort: Product[], sortOption: SortOption): Product[] => {
+    const sorted = [...productsToSort];
+
+    switch (sortOption) {
+      case 'price-asc':
+        return sorted.sort((a, b) => a.price - b.price);
+      case 'price-desc':
+        return sorted.sort((a, b) => b.price - a.price);
+      case 'name-asc':
+        return sorted.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+      case 'name-desc':
+        return sorted.sort((a, b) => b.name.localeCompare(a.name, 'ru'));
+      case 'new':
+        return sorted.sort((a, b) => {
+          // Сначала новые товары (isNew), затем по дате создания
+          if (a.isNew !== b.isNew) {
+            return a.isNew ? -1 : 1;
+          }
+          return (b.createdAt || 0) - (a.createdAt || 0);
+        });
+      case 'rating':
+        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      case 'default':
+      default:
+        // Сортировка по sortOrder (из админки), затем по дате создания
+        return sorted.sort((a, b) => {
+          const sortOrderA = a.sortOrder ?? 0;
+          const sortOrderB = b.sortOrder ?? 0;
+          if (sortOrderA !== sortOrderB) {
+            return sortOrderA - sortOrderB;
+          }
+          return (b.createdAt || 0) - (a.createdAt || 0);
+        });
+    }
+  };
+
+  // Применяем сортировку при изменении sortBy или originalProducts
+  useEffect(() => {
+    const sorted = sortProducts(originalProducts, sortBy);
+    setProducts(sorted);
+  }, [sortBy, originalProducts]);
 
   // Пагинация - вычисляем до условных возвратов
   const totalPages = Math.ceil(products.length / PRODUCTS_PER_PAGE);
@@ -174,10 +238,25 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
             {products.length === 1 ? 'товар' : products.length < 5 ? 'товара' : 'товаров'}
           </span>
           <div className={styles.sorting}>
-            <select className={styles.sortSelect}>
-              <option value="popular">По популярности</option>
+            <label htmlFor="sort-select" className={styles.sortLabel}>
+              Сортировка:
+            </label>
+            <select
+              id="sort-select"
+              className={styles.sortSelect}
+              value={sortBy}
+              onChange={(e) => {
+                setSortBy(e.target.value as SortOption);
+                // Сбрасываем на первую страницу при изменении сортировки
+                onSortChange?.();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            >
+              <option value="default">По умолчанию</option>
               <option value="price-asc">По цене (сначала дешевые)</option>
               <option value="price-desc">По цене (сначала дорогие)</option>
+              <option value="name-asc">По названию (А-Я)</option>
+              <option value="name-desc">По названию (Я-А)</option>
               <option value="new">По новизне</option>
               <option value="rating">По рейтингу</option>
             </select>

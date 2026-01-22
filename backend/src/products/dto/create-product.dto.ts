@@ -65,6 +65,12 @@ export class CreateProductDto {
   @IsBoolean()
   isNew?: boolean;
 
+  @ApiProperty({ example: 0, default: 0, required: false })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  sortOrder?: number;
+
   @ApiProperty({ example: 'category-id' })
   @IsString()
   @IsNotEmpty()

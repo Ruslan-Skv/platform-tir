@@ -37,7 +37,7 @@ export class ProductsService {
       include: {
         category: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
     });
   }
 
@@ -118,7 +118,7 @@ export class ProductsService {
       include: {
         category: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
     });
 
     return {
@@ -153,7 +153,7 @@ export class ProductsService {
       include: {
         category: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
     });
 
     return {
