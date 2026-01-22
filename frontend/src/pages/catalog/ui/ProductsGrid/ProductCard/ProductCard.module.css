@@ -72,28 +72,81 @@
   padding: 0.25rem 0.5rem;
 }
 
-.favoriteButton {
+.actionButtons {
+  bottom: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+  position: absolute;
+  right: 0.75rem;
+  z-index: 2;
+}
+
+.favoriteButton,
+.compareButton {
   align-items: center;
   background: rgb(255 255 255 / 90%);
   border: none;
   border-radius: 50%;
-  bottom: 0.75rem;
   color: #6b7280;
   cursor: pointer;
   display: flex;
   height: 2.5rem;
   justify-content: center;
-  position: absolute;
-  right: 0.75rem;
   transition: all 0.2s ease;
   width: 2.5rem;
-  z-index: 2;
 }
 
 .favoriteButton:hover {
   background: #fff;
   color: #ef4444;
   transform: scale(1.1);
+}
+
+.compareButton:hover {
+  background: #fff;
+  color: #0070f3;
+  transform: scale(1.1);
+}
+
+.favoriteButton:disabled,
+.compareButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.favoriteButtonActive {
+  color: #ef4444;
+}
+
+.favoriteButtonActive:hover {
+  color: #dc2626;
+}
+
+.compareButtonActive {
+  color: #0070f3;
+}
+
+.compareButtonActive:hover {
+  color: #0051cc;
+}
+
+.favoriteButton:hover {
+  background: #fff;
+  color: #ef4444;
+  transform: scale(1.1);
+}
+
+.favoriteButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.favoriteButtonActive {
+  color: #ef4444;
+}
+
+.favoriteButtonActive:hover {
+  color: #dc2626;
 }
 
 .content {
@@ -205,7 +258,8 @@ html[data-theme='dark'] .finalPrice {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .favoriteButton {
+html[data-theme='dark'] .favoriteButton,
+html[data-theme='dark'] .compareButton {
   background: rgb(55 65 81 / 90%);
   color: #d1d5db;
 }

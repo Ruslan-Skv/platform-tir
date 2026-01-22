@@ -2,6 +2,7 @@
 
 import React from 'react';
 
+import { UserAuthProvider } from '@/features/auth/context/UserAuthContext';
 import { FormModals, FormProvider } from '@/features/forms';
 import { Background } from '@/widgets/background';
 import { Footer } from '@/widgets/footer';
@@ -13,16 +14,18 @@ interface SiteLayoutProps {
 
 export const SiteLayout: React.FC<SiteLayoutProps> = ({ children }) => {
   return (
-    <FormProvider>
-      <div className="App">
-        <Background />
-        <Header />
+    <UserAuthProvider>
+      <FormProvider>
+        <div className="App">
+          <Background />
+          <Header />
 
-        <div className="mainContent">{children}</div>
+          <div className="mainContent">{children}</div>
 
-        <Footer />
-        <FormModals />
-      </div>
-    </FormProvider>
+          <Footer />
+          <FormModals />
+        </div>
+      </FormProvider>
+    </UserAuthProvider>
   );
 };

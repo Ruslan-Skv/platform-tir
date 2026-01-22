@@ -1,5 +1,6 @@
 export interface Product {
   id: number;
+  originalId?: string; // Оригинальный ID из API (string)
   slug: string;
   name: string;
   sku?: string;

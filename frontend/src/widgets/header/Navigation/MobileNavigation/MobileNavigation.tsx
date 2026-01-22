@@ -12,6 +12,9 @@ import {
 
 import React from 'react';
 
+import { useRouter } from 'next/navigation';
+
+import { useUserAuth } from '@/features/auth/context/UserAuthContext';
 import { useTheme } from '@/features/theme';
 import { dropdownMenus, navigation } from '@/shared/constants/navigation';
 import { useDynamicCategories } from '@/shared/lib/hooks';
@@ -46,6 +49,8 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
   const [activeMenuItem, setActiveMenuItem] = React.useState<string | null>(null);
   const { isDarkTheme } = useTheme();
   const [isMounted, setIsMounted] = React.useState(false);
+  const router = useRouter();
+  const { isAuthenticated } = useUserAuth();
 
   // Избегаем hydration mismatch, используя тему только после монтирования
   React.useEffect(() => {
@@ -161,6 +166,15 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
     handleCloseMenu();
   };
 
+  const handleProfileClick = () => {
+    if (isAuthenticated) {
+      router.push('/profile');
+    } else {
+      router.push('/login');
+    }
+    handleCloseMenu();
+  };
+
   // Загружаем динамические категории из API
   const { navigationCategories } = useDynamicCategories();
 
@@ -214,7 +228,12 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
             <button className={styles.topBarIcon} aria-label="Сравнение" type="button">
               <ChartBarIcon className={styles.icon} />
             </button>
-            <button className={styles.topBarIcon} aria-label="Личный кабинет" type="button">
+            <button
+              className={styles.topBarIcon}
+              aria-label="Личный кабинет"
+              type="button"
+              onClick={handleProfileClick}
+            >
               <UserIcon className={styles.icon} />
             </button>
             <button className={styles.topBarIcon} aria-label="Избранное" type="button">

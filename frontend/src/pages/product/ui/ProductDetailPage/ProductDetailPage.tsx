@@ -5,6 +5,8 @@ import { createPortal } from 'react-dom';
 
 import Link from 'next/link';
 
+import { useCart } from '@/shared/lib/hooks';
+
 import styles from './ProductDetailPage.module.css';
 
 interface ProductData {
@@ -38,6 +40,7 @@ interface ProductDetailPageProps {
 }
 
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) => {
+  const { addToCart } = useCart();
   const [product, setProduct] = useState<ProductData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +48,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   // Для SSR — портал работает только на клиенте
   useEffect(() => {
@@ -282,8 +286,28 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
           </div>
 
           <div className={styles.actions}>
-            <button type="button" className={styles.addToCartButton}>
-              Добавить в корзину
+            <button
+              type="button"
+              className={styles.addToCartButton}
+              onClick={async () => {
+                if (!product) return;
+                try {
+                  setIsAddingToCart(true);
+                  await addToCart(product.id, 1);
+                  // Можно показать уведомление об успешном добавлении
+                } catch (error) {
+                  if (error instanceof Error) {
+                    alert(error.message);
+                  } else {
+                    alert('Произошла ошибка при добавлении в корзину');
+                  }
+                } finally {
+                  setIsAddingToCart(false);
+                }
+              }}
+              disabled={isAddingToCart || !product || product.stock === 0}
+            >
+              {isAddingToCart ? 'Добавление...' : 'Добавить в корзину'}
             </button>
             <button type="button" className={styles.favoriteButton}>
               ♡

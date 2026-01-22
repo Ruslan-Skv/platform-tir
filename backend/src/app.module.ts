@@ -11,6 +11,9 @@ import { ProductsModule } from './products/products.module';
 import { CategoriesModule } from './categories/categories.module';
 import { OrdersModule } from './orders/orders.module';
 import { AdminModule } from './admin/admin.module';
+import { WishlistModule } from './wishlist/wishlist.module';
+import { CompareModule } from './compare/compare.module';
+import { CartModule } from './cart/cart.module';
 
 @Module({
   imports: [
@@ -32,6 +35,9 @@ import { AdminModule } from './admin/admin.module';
     CategoriesModule,
     OrdersModule,
     AdminModule,
+    WishlistModule,
+    CompareModule,
+    CartModule,
   ],
   controllers: [AppController],
   providers: [AppService],

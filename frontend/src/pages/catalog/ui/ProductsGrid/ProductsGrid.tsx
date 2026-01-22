@@ -101,6 +101,7 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
         // Преобразуем API-формат в формат Product для компонента
         const mappedProducts: Product[] = data.products.map((p, index) => ({
           id: index + 1,
+          originalId: p.id, // Сохраняем оригинальный ID из API для работы с wishlist
           slug: p.slug,
           name: p.name,
           sku: p.sku || undefined,
