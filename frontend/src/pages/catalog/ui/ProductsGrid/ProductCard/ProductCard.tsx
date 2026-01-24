@@ -22,6 +22,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isCompareLoading, setIsCompareLoading] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Получаем массив изображений: используем images если есть, иначе [image]
+  const productImages =
+    product.images && product.images.length > 0
+      ? product.images
+      : product.image
+        ? [product.image]
+        : [];
+  const hasMultipleImages = productImages.length > 1;
+
+  // Сбрасываем индекс изображения при смене товара
+  useEffect(() => {
+    setCurrentImageIndex(0);
+  }, [product.id]);
 
   // Получаем оригинальный ID товара из API
   const getProductId = (): string => {
@@ -132,11 +147,69 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     }
   };
 
+  const handlePreviousImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev === 0 ? productImages.length - 1 : prev - 1));
+  };
+
+  const handleNextImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev === productImages.length - 1 ? 0 : prev + 1));
+  };
+
+  const handleImageDotClick = (e: React.MouseEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentImageIndex(index);
+  };
+
   return (
     <div className={styles.productCard}>
       <Link href={`/product/${product.slug}`} className={styles.cardLink}>
         <div className={styles.imageContainer}>
-          <img src={product.image} alt={product.name} className={styles.image} loading="lazy" />
+          <img
+            src={productImages[currentImageIndex] || product.image}
+            alt={product.name}
+            className={styles.image}
+            loading="lazy"
+          />
+
+          {/* Навигация по изображениям */}
+          {hasMultipleImages && (
+            <>
+              <button
+                type="button"
+                className={styles.imageNavButton}
+                style={{ left: '0.5rem' }}
+                onClick={handlePreviousImage}
+                aria-label="Предыдущее изображение"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                className={styles.imageNavButton}
+                style={{ right: '0.5rem' }}
+                onClick={handleNextImage}
+                aria-label="Следующее изображение"
+              >
+                ›
+              </button>
+              <div className={styles.imageDots}>
+                {productImages.map((_, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    className={`${styles.imageDot} ${index === currentImageIndex ? styles.imageDotActive : ''}`}
+                    onClick={(e) => handleImageDotClick(e, index)}
+                    aria-label={`Изображение ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
 
           {/* Бейджи */}
           <div className={styles.badges}>
