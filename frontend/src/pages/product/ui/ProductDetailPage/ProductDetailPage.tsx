@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 
 import Link from 'next/link';
 
-import { useCart } from '@/shared/lib/hooks';
+import { useCart, useWishlist } from '@/shared/lib/hooks';
 
 import { ProductComponents } from './ProductComponents';
 import styles from './ProductDetailPage.module.css';
@@ -41,7 +41,8 @@ interface ProductDetailPageProps {
 }
 
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) => {
-  const { addToCart } = useCart();
+  const { cart, addToCart, updateQuantity } = useCart();
+  const { toggleWishlist, isInWishlist, checkInWishlist } = useWishlist();
   const [product, setProduct] = useState<ProductData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +51,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isWishlistLoading, setIsWishlistLoading] = useState(false);
 
   // Для SSR — портал работает только на клиенте
   useEffect(() => {
@@ -83,6 +86,39 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
 
     fetchProduct();
   }, [slug]);
+
+  // Проверяем, находится ли товар в избранном при загрузке продукта
+  useEffect(() => {
+    if (!product) return;
+    const productId = String(product.id);
+    const inWishlist = isInWishlist(productId);
+    setIsFavorite(inWishlist);
+    if (!inWishlist) {
+      checkInWishlist(productId)
+        .then(setIsFavorite)
+        .catch(() => {
+          // Игнорируем ошибки (пользователь может быть не авторизован)
+        });
+    }
+  }, [product, isInWishlist, checkInWishlist]);
+
+  const handleFavoriteClick = async () => {
+    if (!product) return;
+    const productId = String(product.id);
+    try {
+      setIsWishlistLoading(true);
+      await toggleWishlist(productId);
+      setIsFavorite((prev) => !prev);
+    } catch (err) {
+      if (err instanceof Error) {
+        alert(err.message);
+      } else {
+        alert('Произошла ошибка при работе с избранным');
+      }
+    } finally {
+      setIsWishlistLoading(false);
+    }
+  };
 
   // Функции для лайтбокса
   const openLightbox = (index: number) => {
@@ -287,27 +323,115 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
           </div>
 
           <div className={styles.actions}>
+            {(() => {
+              if (!product) return null;
+
+              const productId = String(product.id);
+              const cartItem = cart.find(
+                (item) => item.productId !== null && String(item.productId) === productId
+              );
+              const quantity = cartItem ? Number(cartItem.quantity) : 0;
+              const isInCart = quantity > 0;
+
+              if (isInCart) {
+                return (
+                  <div className={styles.cartControls}>
+                    <span className={styles.inCartLabel}>В корзине</span>
+                    <div className={styles.quantityControls} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        className={styles.quantityButton}
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (isAddingToCart) return;
+                          try {
+                            const newQuantity = Number(quantity) - 1;
+                            if (newQuantity < 0) return;
+                            await updateQuantity(productId, newQuantity);
+                          } catch (error) {
+                            if (error instanceof Error) {
+                              alert(error.message);
+                            } else {
+                              alert('Произошла ошибка при обновлении количества');
+                            }
+                          }
+                        }}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                        disabled={isAddingToCart}
+                      >
+                        −
+                      </button>
+                      <span className={styles.quantityValue}>{quantity}</span>
+                      <button
+                        type="button"
+                        className={styles.quantityButton}
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (isAddingToCart) return;
+                          try {
+                            const newQuantity = Number(quantity) + 1;
+                            await updateQuantity(productId, newQuantity);
+                          } catch (error) {
+                            if (error instanceof Error) {
+                              alert(error.message);
+                            } else {
+                              alert('Произошла ошибка при обновлении количества');
+                            }
+                          }
+                        }}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                        disabled={isAddingToCart}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <button
+                  type="button"
+                  className={styles.addToCartButton}
+                  onClick={async () => {
+                    if (!product) return;
+
+                    try {
+                      setIsAddingToCart(true);
+                      const productId = String(product.id);
+                      await addToCart(productId, 1);
+                    } catch (error) {
+                      if (error instanceof Error) {
+                        alert(error.message);
+                      } else {
+                        alert('Произошла ошибка при добавлении товара в корзину');
+                      }
+                    } finally {
+                      setIsAddingToCart(false);
+                    }
+                  }}
+                  disabled={isAddingToCart || !product}
+                >
+                  {isAddingToCart ? 'Добавление...' : 'Добавить в корзину'}
+                </button>
+              );
+            })()}
             <button
               type="button"
-              className={styles.addToCartButton}
-              onClick={async () => {
-                if (!product) return;
-                try {
-                  setIsAddingToCart(true);
-                  await addToCart(product.id, 1);
-                  // Можно показать уведомление об успешном добавлении
-                } catch (error) {
-                  console.error('Failed to add product to cart:', error);
-                } finally {
-                  setIsAddingToCart(false);
-                }
-              }}
-              disabled={isAddingToCart || !product || product.stock === 0}
+              className={`${styles.favoriteButton} ${isFavorite ? styles.favoriteButtonActive : ''}`}
+              aria-label={isFavorite ? 'Удалить из избранного' : 'Добавить в избранное'}
+              onClick={handleFavoriteClick}
+              disabled={isWishlistLoading}
             >
-              {isAddingToCart ? 'Добавление...' : 'Добавить в корзину'}
-            </button>
-            <button type="button" className={styles.favoriteButton}>
-              ♡
+              {isFavorite ? '♥' : '♡'}
             </button>
           </div>
 

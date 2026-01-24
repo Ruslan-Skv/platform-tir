@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 
-import { addComponentToCart } from '@/shared/api/cart';
 import { type ProductComponent, getProductComponents } from '@/shared/api/product-components';
+import { useCart } from '@/shared/lib/hooks';
 
 import styles from './ProductComponents.module.css';
 
@@ -12,6 +12,7 @@ interface ProductComponentsProps {
 }
 
 export const ProductComponents: React.FC<ProductComponentsProps> = ({ productId }) => {
+  const { cart, addComponentToCart, updateComponentQuantity } = useCart();
   const [components, setComponents] = useState<ProductComponent[]>([]);
   const [loading, setLoading] = useState(true);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -52,7 +53,11 @@ export const ProductComponents: React.FC<ProductComponentsProps> = ({ productId 
       setAddingToCart((prev) => ({ ...prev, [component.id]: true }));
       await addComponentToCart(component.id, quantities[component.id] || 1);
     } catch (error) {
-      // Error handled silently
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert('Произошла ошибка при добавлении комплектующего в корзину');
+      }
     } finally {
       setAddingToCart((prev) => ({ ...prev, [component.id]: false }));
     }
@@ -103,32 +108,114 @@ export const ProductComponents: React.FC<ProductComponentsProps> = ({ productId 
                 </div>
               </div>
               <div className={styles.componentActions}>
-                <div className={styles.quantitySelector}>
-                  <button
-                    type="button"
-                    className={styles.quantityButton}
-                    onClick={() => handleQuantityChange(component.id, -1)}
-                    disabled={quantity <= 1}
-                  >
-                    −
-                  </button>
-                  <span className={styles.quantityValue}>{quantity}</span>
-                  <button
-                    type="button"
-                    className={styles.quantityButton}
-                    onClick={() => handleQuantityChange(component.id, 1)}
-                  >
-                    +
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  className={styles.addToCartButton}
-                  onClick={() => handleAddToCart(component)}
-                  disabled={isAdding}
-                >
-                  {isAdding ? 'Добавление...' : 'В корзину'}
-                </button>
+                {(() => {
+                  const cartItem = cart.find(
+                    (item) =>
+                      item.componentId !== null &&
+                      item.productId === null &&
+                      String(item.componentId) === String(component.id)
+                  );
+                  const cartQuantity = cartItem ? Number(cartItem.quantity) : 0;
+                  const isInCart = cartQuantity > 0;
+
+                  if (isInCart) {
+                    return (
+                      <div className={styles.cartControls}>
+                        <span className={styles.inCartLabel}>В корзине</span>
+                        <div
+                          className={styles.quantityControls}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            className={styles.quantityButton}
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (isAdding) return;
+                              try {
+                                const newQuantity = Number(cartQuantity) - 1;
+                                if (newQuantity < 0) return;
+                                await updateComponentQuantity(component.id, newQuantity);
+                              } catch (error) {
+                                if (error instanceof Error) {
+                                  alert(error.message);
+                                } else {
+                                  alert('Произошла ошибка при обновлении количества');
+                                }
+                              }
+                            }}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
+                            disabled={isAdding}
+                          >
+                            −
+                          </button>
+                          <span className={styles.quantityValue}>{cartQuantity}</span>
+                          <button
+                            type="button"
+                            className={styles.quantityButton}
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (isAdding) return;
+                              try {
+                                const newQuantity = Number(cartQuantity) + 1;
+                                await updateComponentQuantity(component.id, newQuantity);
+                              } catch (error) {
+                                if (error instanceof Error) {
+                                  alert(error.message);
+                                } else {
+                                  alert('Произошла ошибка при обновлении количества');
+                                }
+                              }
+                            }}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
+                            disabled={isAdding}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <>
+                      <div className={styles.quantitySelector}>
+                        <button
+                          type="button"
+                          className={styles.quantityButton}
+                          onClick={() => handleQuantityChange(component.id, -1)}
+                          disabled={quantity <= 1}
+                        >
+                          −
+                        </button>
+                        <span className={styles.quantityValue}>{quantity}</span>
+                        <button
+                          type="button"
+                          className={styles.quantityButton}
+                          onClick={() => handleQuantityChange(component.id, 1)}
+                        >
+                          +
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.addToCartButton}
+                        onClick={() => handleAddToCart(component)}
+                        disabled={isAdding}
+                      >
+                        {isAdding ? 'Добавление...' : 'В корзину'}
+                      </button>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           );

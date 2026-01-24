@@ -1,0 +1,92 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.message {
+  margin: 0;
+  color: #374151;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.cancelButton {
+  padding: 0.625rem 1.25rem;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancelButton:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+  color: #374151;
+}
+
+.confirmButton {
+  padding: 0.625rem 1.25rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.confirmButton.default {
+  background: #d90652;
+  color: white;
+}
+
+.confirmButton.default:hover {
+  background: #b80545;
+}
+
+.confirmButton.danger {
+  background: #ef4444;
+  color: white;
+}
+
+.confirmButton.danger:hover {
+  background: #dc2626;
+}
+
+/* Темная тема */
+html[data-theme='dark'] .message {
+  color: #d1d5db;
+}
+
+html[data-theme='dark'] .cancelButton {
+  border-color: #374151;
+  color: #9ca3af;
+}
+
+html[data-theme='dark'] .cancelButton:hover {
+  border-color: #4b5563;
+  background: #374151;
+  color: #d1d5db;
+}
+
+/* Мобильная адаптация */
+@media (width <= 480px) {
+  .actions {
+    flex-direction: column-reverse;
+  }
+
+  .cancelButton,
+  .confirmButton {
+    width: 100%;
+  }
+}

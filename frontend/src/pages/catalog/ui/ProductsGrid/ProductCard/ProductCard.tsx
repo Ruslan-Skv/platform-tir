@@ -16,7 +16,7 @@ interface ProductCardProps {
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { toggleWishlist, isInWishlist, checkInWishlist } = useWishlist();
   const { toggleCompare, isInCompare, checkInCompare } = useCompare();
-  const { addToCart } = useCart();
+  const { cart, addToCart, updateQuantity } = useCart();
   const [isFavorite, setIsFavorite] = useState(false);
   const [isInCompareState, setIsInCompareState] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -183,14 +183,92 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             <span className={styles.finalPrice}>{finalPrice.toLocaleString()} ₽</span>
           </div>
 
-          <button
-            type="button"
-            className={styles.addToCartButton}
-            onClick={handleAddToCart}
-            disabled={isAddingToCart}
-          >
-            {isAddingToCart ? 'Добавление...' : 'В корзину'}
-          </button>
+          {(() => {
+            const productId = getProductId();
+            const cartItem = cart.find(
+              (item) =>
+                item.productId !== null &&
+                item.componentId === null &&
+                String(item.productId) === String(productId)
+            );
+            const quantity = cartItem ? Number(cartItem.quantity) : 0;
+            const isInCart = quantity > 0;
+
+            if (isInCart) {
+              return (
+                <div className={styles.cartControls}>
+                  <span className={styles.inCartLabel}>В корзине</span>
+                  <div className={styles.quantityControls} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      className={styles.quantityButton}
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (isAddingToCart) return;
+                        try {
+                          const newQuantity = Number(quantity) - 1;
+                          if (newQuantity < 0) return;
+                          await updateQuantity(productId, newQuantity);
+                        } catch (error) {
+                          if (error instanceof Error) {
+                            alert(error.message);
+                          } else {
+                            alert('Произошла ошибка при обновлении количества');
+                          }
+                        }
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      disabled={isAddingToCart}
+                    >
+                      −
+                    </button>
+                    <span className={styles.quantityValue}>{quantity}</span>
+                    <button
+                      type="button"
+                      className={styles.quantityButton}
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (isAddingToCart) return;
+                        try {
+                          const newQuantity = Number(quantity) + 1;
+                          await updateQuantity(productId, newQuantity);
+                        } catch (error) {
+                          if (error instanceof Error) {
+                            alert(error.message);
+                          } else {
+                            alert('Произошла ошибка при обновлении количества');
+                          }
+                        }
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      disabled={isAddingToCart}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <button
+                type="button"
+                className={styles.addToCartButton}
+                onClick={handleAddToCart}
+                disabled={isAddingToCart}
+              >
+                {isAddingToCart ? 'Добавление...' : 'В корзину'}
+              </button>
+            );
+          })()}
         </div>
       </Link>
     </div>

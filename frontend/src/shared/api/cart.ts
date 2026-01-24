@@ -3,7 +3,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1
 export interface CartItem {
   id: string;
   userId: string;
-  productId: string;
+  productId: string | null;
+  componentId: string | null;
   quantity: number;
   createdAt: string;
   updatedAt: string;
@@ -14,12 +15,25 @@ export interface CartItem {
     price: number;
     comparePrice?: number;
     images: string[];
+    stock?: number;
     category: {
       id: string;
       name: string;
       slug: string;
     };
-  };
+  } | null;
+  component: {
+    id: string;
+    name: string;
+    type: string;
+    price: number;
+    image?: string | null;
+    product: {
+      id: string;
+      name: string;
+      slug: string;
+    };
+  } | null;
 }
 
 function getAuthToken(): string | null {
@@ -99,7 +113,7 @@ export async function updateCartItemQuantity(
   const response = await fetch(`${API_URL}/cart/${productId}`, {
     method: 'PUT',
     headers: getAuthHeaders(),
-    body: JSON.stringify({ quantity }),
+    body: JSON.stringify({ quantity: Number(quantity) }),
   });
 
   if (!response.ok) {
@@ -167,4 +181,44 @@ export async function addComponentToCart(
   }
 
   return response.json();
+}
+
+export async function updateComponentQuantity(
+  componentId: string,
+  quantity: number
+): Promise<CartItem> {
+  const response = await fetch(`${API_URL}/cart/component/${componentId}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ quantity: Number(quantity) }),
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Необходима авторизация');
+    }
+    if (response.status === 404) {
+      throw new Error('Комплектующее не найдено в корзине');
+    }
+    throw new Error('Ошибка при обновлении количества');
+  }
+
+  return response.json();
+}
+
+export async function removeComponentFromCart(componentId: string): Promise<void> {
+  const response = await fetch(`${API_URL}/cart/component/${componentId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Необходима авторизация');
+    }
+    if (response.status === 404) {
+      throw new Error('Комплектующее не найдено в корзине');
+    }
+    throw new Error('Ошибка при удалении из корзины');
+  }
 }

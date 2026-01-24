@@ -9,12 +9,18 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiProperty } from '@nestjs/swagger';
+import { IsNumber, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import { CartService } from './cart.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { RequestWithUser } from '../common/types/request-with-user.types';
 
 class UpdateCartItemDto {
+  @ApiProperty({ example: 1, description: 'Количество товара' })
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
   quantity: number;
 }
 

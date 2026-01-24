@@ -1,11 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import * as wishlistApi from '@/shared/api/wishlist';
 
-interface UseWishlistReturn {
-  wishlist: string[]; // массив ID товаров в избранном
+interface WishlistContextValue {
+  wishlist: string[];
   count: number;
   isLoading: boolean;
   isChecking: boolean;
@@ -17,33 +17,31 @@ interface UseWishlistReturn {
   refreshCount: () => Promise<void>;
 }
 
-export function useWishlist(): UseWishlistReturn {
+const WishlistContext = createContext<WishlistContextValue | undefined>(undefined);
+
+export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [count, setCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
 
-  // Загружаем количество избранных товаров при монтировании
-  useEffect(() => {
-    refreshCount().catch(() => {
-      // Игнорируем ошибки при загрузке (пользователь может быть не авторизован)
-    });
-  }, []);
-
   const refreshCount = useCallback(async () => {
     try {
       const newCount = await wishlistApi.getWishlistCount();
       setCount(newCount);
-    } catch (error) {
-      // Если пользователь не авторизован, устанавливаем 0
+    } catch {
       setCount(0);
     }
   }, []);
 
+  useEffect(() => {
+    refreshCount().catch(() => {});
+  }, [refreshCount]);
+
   const addToWishlist = useCallback(async (productId: string) => {
     try {
       await wishlistApi.addToWishlist(productId);
-      setWishlist((prev) => [...prev, productId]);
+      setWishlist((prev) => (prev.includes(productId) ? prev : [...prev, productId]));
       setCount((prev) => prev + 1);
     } catch (error) {
       if (error instanceof Error && error.message === 'Необходима авторизация') {
@@ -68,8 +66,8 @@ export function useWishlist(): UseWishlistReturn {
 
   const toggleWishlist = useCallback(
     async (productId: string) => {
-      const isInWishlist = wishlist.includes(productId);
-      if (isInWishlist) {
+      const inList = wishlist.includes(productId);
+      if (inList) {
         await removeFromWishlist(productId);
       } else {
         await addToWishlist(productId);
@@ -78,12 +76,7 @@ export function useWishlist(): UseWishlistReturn {
     [wishlist, addToWishlist, removeFromWishlist]
   );
 
-  const isInWishlist = useCallback(
-    (productId: string): boolean => {
-      return wishlist.includes(productId);
-    },
-    [wishlist]
-  );
+  const isInWishlist = useCallback((productId: string) => wishlist.includes(productId), [wishlist]);
 
   const checkInWishlist = useCallback(
     async (productId: string): Promise<boolean> => {
@@ -105,16 +98,40 @@ export function useWishlist(): UseWishlistReturn {
     [wishlist]
   );
 
-  return {
-    wishlist,
-    count,
-    isLoading,
-    isChecking,
-    addToWishlist,
-    removeFromWishlist,
-    toggleWishlist,
-    isInWishlist,
-    checkInWishlist,
-    refreshCount,
-  };
+  const value = useMemo<WishlistContextValue>(
+    () => ({
+      wishlist,
+      count,
+      isLoading,
+      isChecking,
+      addToWishlist,
+      removeFromWishlist,
+      toggleWishlist,
+      isInWishlist,
+      checkInWishlist,
+      refreshCount,
+    }),
+    [
+      wishlist,
+      count,
+      isLoading,
+      isChecking,
+      addToWishlist,
+      removeFromWishlist,
+      toggleWishlist,
+      isInWishlist,
+      checkInWishlist,
+      refreshCount,
+    ]
+  );
+
+  return <WishlistContext.Provider value={value}>{children}</WishlistContext.Provider>;
+}
+
+export function useWishlist(): WishlistContextValue {
+  const ctx = useContext(WishlistContext);
+  if (ctx === undefined) {
+    throw new Error('useWishlist must be used within a WishlistProvider');
+  }
+  return ctx;
 }
