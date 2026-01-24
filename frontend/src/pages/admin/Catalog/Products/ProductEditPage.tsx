@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
 
+import { ProductComponentsSection } from './ProductComponentsSection';
 import styles from './ProductEditPage.module.css';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -1251,13 +1252,6 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         </div>
 
         <div className={styles.formActions}>
-          <button
-            type="button"
-            className={styles.backButtonBottom}
-            onClick={() => router.push('/admin/catalog/products')}
-          >
-            ← Назад к списку
-          </button>
           <div className={styles.formActionsRight}>
             <button
               type="button"
@@ -1272,6 +1266,21 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           </div>
         </div>
       </form>
+
+      {/* Product Components Section */}
+      {/* Вынесено за пределы основной формы, т.к. содержит свою форму */}
+      {productId && <ProductComponentsSection productId={productId} />}
+
+      {/* Кнопка "Назад к списку" в самом низу */}
+      <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
+        <button
+          type="button"
+          className={styles.backButtonBottom}
+          onClick={() => router.push('/admin/catalog/products')}
+        >
+          ← Назад к списку
+        </button>
+      </div>
 
       {/* Toast notifications */}
       {success && (

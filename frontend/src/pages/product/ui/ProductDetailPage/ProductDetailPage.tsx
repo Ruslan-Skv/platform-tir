@@ -7,6 +7,7 @@ import Link from 'next/link';
 
 import { useCart } from '@/shared/lib/hooks';
 
+import { ProductComponents } from './ProductComponents';
 import styles from './ProductDetailPage.module.css';
 
 interface ProductData {
@@ -296,11 +297,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                   await addToCart(product.id, 1);
                   // Можно показать уведомление об успешном добавлении
                 } catch (error) {
-                  if (error instanceof Error) {
-                    alert(error.message);
-                  } else {
-                    alert('Произошла ошибка при добавлении в корзину');
-                  }
+                  console.error('Failed to add product to cart:', error);
                 } finally {
                   setIsAddingToCart(false);
                 }
@@ -346,6 +343,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
           />
         </div>
       )}
+
+      {/* Комплектующие */}
+      <ProductComponents productId={product.id} />
 
       {/* Лайтбокс через Portal — рендерится в body, вне иерархии компонентов */}
       {isMounted &&

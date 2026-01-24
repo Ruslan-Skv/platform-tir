@@ -430,45 +430,64 @@ model CategoryAttribute {
 }
 
 model Product {
-  id               String            @id @default(cuid())
+  id               String             @id @default(cuid())
   name             String
-  slug             String            @unique
+  slug             String             @unique
   description      String?
-  sku              String?           @unique
-  price            Decimal           @db.Decimal(10, 2)
-  comparePrice     Decimal?          @db.Decimal(10, 2)
-  stock            Int               @default(0)
-  isActive         Boolean           @default(true)
-  isFeatured       Boolean           @default(false)
-  isNew            Boolean           @default(false)
-  sortOrder        Int               @default(0)
+  sku              String?            @unique
+  price            Decimal            @db.Decimal(10, 2)
+  comparePrice     Decimal?           @db.Decimal(10, 2)
+  stock            Int                @default(0)
+  isActive         Boolean            @default(true)
+  isFeatured       Boolean            @default(false)
+  isNew            Boolean            @default(false)
+  sortOrder        Int                @default(0)
   categoryId       String
   images           String[]
   attributes       Json?
   seoTitle         String?
   seoDescription   String?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
   barcode          String?
-  costPrice        Decimal?          @db.Decimal(10, 2)
-  height           Decimal?          @db.Decimal(8, 2)
-  length           Decimal?          @db.Decimal(8, 2)
+  costPrice        Decimal?           @db.Decimal(10, 2)
+  height           Decimal?           @db.Decimal(8, 2)
+  length           Decimal?           @db.Decimal(8, 2)
   manufacturerId   String?
-  minStock         Int               @default(0)
+  minStock         Int                @default(0)
   seoKeywords      String[]
   shortDescription String?
-  weight           Decimal?          @db.Decimal(8, 3)
-  width            Decimal?          @db.Decimal(8, 2)
+  weight           Decimal?           @db.Decimal(8, 3)
+  width            Decimal?           @db.Decimal(8, 2)
   cartItems        CartItem[]
   orderItems       OrderItem[]
   suppliers        ProductSupplier[]
-  category         Category          @relation(fields: [categoryId], references: [id])
-  manufacturer     Manufacturer?     @relation(fields: [manufacturerId], references: [id])
+  category         Category           @relation(fields: [categoryId], references: [id])
+  manufacturer     Manufacturer?      @relation(fields: [manufacturerId], references: [id])
   reviews          Review[]
   wishlist         WishlistItem[]
   compareItems     CompareItem[]
+  components       ProductComponent[]
 
   @@map("products")
+}
+
+model ProductComponent {
+  id        String     @id @default(cuid())
+  productId String
+  name      String // Наименование: коробка, наличник, добор, притворная планка
+  type      String // Конкретный тип комплектующей
+  price     Decimal    @db.Decimal(10, 2) // Стоимость за 1 шт.
+  image     String? // Иконка/изображение комплектующего (base64 или URL)
+  stock     Int        @default(0)
+  isActive  Boolean    @default(true)
+  sortOrder Int        @default(0)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  product   Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartItems CartItem[]
+
+  @@map("product_components")
 }
 
 model Order {
@@ -540,16 +559,19 @@ model Address {
 }
 
 model CartItem {
-  id        String   @id @default(cuid())
-  userId    String
-  productId String
-  quantity  Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String            @id @default(cuid())
+  userId      String
+  productId   String?
+  componentId String?
+  quantity    Int
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  product     Product?          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  component   ProductComponent? @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, productId])
+  @@index([userId, productId])
+  @@index([userId, componentId])
   @@map("cart_items")
 }
 

@@ -4,7 +4,7 @@
 }
 
 .header {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .backButton {
@@ -161,19 +161,19 @@
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 24px;
+  padding: 16px;
 }
 
 .formGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
+  gap: 16px;
 }
 
 .formSection {
   background: #f9fafb;
-  border-radius: 10px;
-  padding: 20px;
+  border-radius: 8px;
+  padding: 12px;
 }
 
 .formSection:first-child {
@@ -187,44 +187,44 @@
 .attributesGrid {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 12px;
 }
 
 .sectionTitle {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #1f2937;
-  margin: 0 0 16px;
-  padding-bottom: 12px;
+  margin: 0 0 10px;
+  padding-bottom: 8px;
   border-bottom: 1px solid #e5e7eb;
 }
 
 .formGroup {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .formGroup label {
   display: block;
   font-weight: 500;
   color: #374151;
-  margin-bottom: 6px;
-  font-size: 0.9rem;
+  margin-bottom: 4px;
+  font-size: 0.875rem;
 }
 
 .formRow {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 12px;
 }
 
 .input,
 .select,
 .textarea {
   width: 100%;
-  padding: 10px 14px;
+  padding: 8px 12px;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 0.95rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
@@ -241,14 +241,14 @@
 
 .textarea {
   resize: vertical;
-  min-height: 100px;
+  min-height: 80px;
 }
 
 .checkboxGroup {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 16px;
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .checkbox {
@@ -272,24 +272,24 @@
 
 /* Image upload section */
 .imageError {
-  padding: 10px 14px;
+  padding: 8px 12px;
   background: #fee2e2;
   border: 1px solid #fca5a5;
   border-radius: 6px;
   color: #991b1b;
-  margin-bottom: 12px;
-  font-size: 0.9rem;
+  margin-bottom: 10px;
+  font-size: 0.875rem;
 }
 
 .dropZone {
   border: 2px dashed #d1d5db;
-  border-radius: 10px;
-  padding: 32px 20px;
+  border-radius: 8px;
+  padding: 20px 16px;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s;
   background: #fff;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .dropZone:hover {
@@ -308,15 +308,15 @@
 }
 
 .dropZoneIcon {
-  font-size: 2.5rem;
+  font-size: 2rem;
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .dropZoneText {
   color: #374151;
-  font-size: 0.95rem;
-  margin: 0 0 4px;
+  font-size: 0.875rem;
+  margin: 0 0 3px;
 }
 
 .dropZoneLink {
@@ -335,15 +335,15 @@
 }
 
 .addUrlButton {
-  padding: 8px 16px;
+  padding: 6px 12px;
   background: #f3f4f6;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   color: #374151;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.15s;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .addUrlButton:hover {
@@ -353,9 +353,9 @@
 
 .imagesGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-top: 16px;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 10px;
+  margin-top: 12px;
 }
 
 .imageItem {
@@ -441,15 +441,16 @@
   color: #6b7280;
   font-style: italic;
   text-align: center;
-  padding: 20px;
+  padding: 12px;
   background: #fff;
   border: 1px dashed #d1d5db;
-  border-radius: 8px;
-  margin-top: 16px;
+  border-radius: 6px;
+  margin-top: 10px;
+  font-size: 0.875rem;
 }
 
 .hint {
-  font-size: 0.85rem;
+  font-size: 0.8125rem;
   color: #6b7280;
   margin: 0;
 }
@@ -458,9 +459,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  margin-top: 24px;
-  padding-top: 20px;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 12px;
   border-top: 1px solid #e5e7eb;
 }
 
@@ -470,12 +471,13 @@
 }
 
 .backButtonBottom {
-  padding: 12px 20px;
+  padding: 8px 16px;
   background: #fff;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 6px;
   color: #6366f1;
   font-weight: 500;
+  font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -486,12 +488,13 @@
 }
 
 .cancelButton {
-  padding: 12px 24px;
+  padding: 8px 16px;
   background: #fff;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border-radius: 6px;
   color: #374151;
   font-weight: 500;
+  font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -502,12 +505,13 @@
 }
 
 .saveButton {
-  padding: 12px 24px;
+  padding: 8px 16px;
   background: #6366f1;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   color: #fff;
   font-weight: 500;
+  font-size: 0.875rem;
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -531,13 +535,13 @@
   }
 
   .imagesGrid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(6, 1fr);
   }
 }
 
 @media (max-width: 640px) {
   .imagesGrid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
 
   .formActions {
@@ -552,41 +556,41 @@
 
 /* Attributes / Characteristics section */
 .attributesSection {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .attributesSubtitle {
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: #374151;
-  margin: 0 0 12px;
+  margin: 0 0 8px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .customAttrHint {
   font-weight: 400;
-  font-size: 0.85rem;
+  font-size: 0.8125rem;
   color: #9ca3af;
 }
 
 .attributesList {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .attributeRow {
   display: grid;
   grid-template-columns: 200px 1fr auto;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
-  padding: 10px 12px;
+  padding: 8px 10px;
   background: #fff;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .attributeRow .input,
@@ -595,7 +599,7 @@
 }
 
 .attributeLabel {
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   color: #374151;
   font-weight: 500;
   display: flex;
@@ -610,7 +614,7 @@
 
 .unit {
   font-weight: 400;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: #9ca3af;
 }
 
@@ -650,11 +654,11 @@
 .addAttrRow {
   display: grid;
   grid-template-columns: 200px 1fr auto;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: 10px;
+  padding: 8px 10px;
   background: #f0fdf4;
   border: 1px dashed #86efac;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .addAttrRow .input {
@@ -666,12 +670,13 @@
 }
 
 .addAttrButton {
-  padding: 8px 16px;
+  padding: 6px 12px;
   background: #16a34a;
   color: white;
   border: none;
   border-radius: 6px;
   font-weight: 500;
+  font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
@@ -687,8 +692,8 @@
 }
 
 .removeAttrButton {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -708,10 +713,11 @@
   color: #6b7280;
   font-style: italic;
   text-align: center;
-  padding: 20px;
+  padding: 12px;
   background: #fff;
   border: 1px dashed #d1d5db;
-  border-radius: 8px;
+  border-radius: 6px;
+  font-size: 0.875rem;
 }
 
 @media (max-width: 768px) {

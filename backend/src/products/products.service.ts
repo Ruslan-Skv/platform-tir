@@ -55,7 +55,11 @@ export class ProductsService {
     const product = await this.prisma.product.findUnique({
       where: { id },
       include: {
-        category: true,
+        category: {
+          include: {
+            parent: true,
+          },
+        },
         reviews: {
           where: { isApproved: true },
           orderBy: { createdAt: 'desc' },
@@ -74,7 +78,11 @@ export class ProductsService {
     const product = await this.prisma.product.findUnique({
       where: { slug },
       include: {
-        category: true,
+        category: {
+          include: {
+            parent: true,
+          },
+        },
         reviews: {
           where: { isApproved: true },
           orderBy: { createdAt: 'desc' },

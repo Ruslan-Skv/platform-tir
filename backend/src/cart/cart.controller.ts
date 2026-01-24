@@ -54,6 +54,17 @@ export class CartController {
     return this.cartService.addToCart(req.user.id, productId, quantity);
   }
 
+  @Post('component/:componentId')
+  @ApiOperation({ summary: 'Добавить комплектующее в корзину' })
+  addComponentToCart(
+    @Request() req: RequestWithUser,
+    @Param('componentId') componentId: string,
+    @Body() body?: { quantity?: number },
+  ) {
+    const quantity = body?.quantity || 1;
+    return this.cartService.addComponentToCart(req.user.id, componentId, quantity);
+  }
+
   @Put(':productId')
   @ApiOperation({ summary: 'Обновить количество товара в корзине' })
   updateCartItem(
@@ -64,10 +75,29 @@ export class CartController {
     return this.cartService.updateCartItemQuantity(req.user.id, productId, body.quantity);
   }
 
+  @Put('component/:componentId')
+  @ApiOperation({ summary: 'Обновить количество комплектующего в корзине' })
+  updateComponentQuantity(
+    @Request() req: RequestWithUser,
+    @Param('componentId') componentId: string,
+    @Body() body: UpdateCartItemDto,
+  ) {
+    return this.cartService.updateComponentQuantity(req.user.id, componentId, body.quantity);
+  }
+
   @Delete(':productId')
   @ApiOperation({ summary: 'Удалить товар из корзины' })
   removeFromCart(@Request() req: RequestWithUser, @Param('productId') productId: string) {
     return this.cartService.removeFromCart(req.user.id, productId);
+  }
+
+  @Delete('component/:componentId')
+  @ApiOperation({ summary: 'Удалить комплектующее из корзины' })
+  removeComponentFromCart(
+    @Request() req: RequestWithUser,
+    @Param('componentId') componentId: string,
+  ) {
+    return this.cartService.removeComponentFromCart(req.user.id, componentId);
   }
 
   @Delete()

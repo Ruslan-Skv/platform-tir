@@ -1048,13 +1048,6 @@ export function ProductCreatePage() {
         </div>
 
         <div className={styles.formActions}>
-          <button
-            type="button"
-            className={styles.backButtonBottom}
-            onClick={() => router.push('/admin/catalog/products')}
-          >
-            ← Назад к списку
-          </button>
           <div className={styles.formActionsRight}>
             <button
               type="button"
@@ -1069,6 +1062,17 @@ export function ProductCreatePage() {
           </div>
         </div>
       </form>
+
+      {/* Кнопка "Назад к списку" в самом низу */}
+      <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
+        <button
+          type="button"
+          className={styles.backButtonBottom}
+          onClick={() => router.push('/admin/catalog/products')}
+        >
+          ← Назад к списку
+        </button>
+      </div>
 
       {/* Toast notification for errors */}
       {error && (

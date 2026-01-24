@@ -145,3 +145,26 @@ export async function clearCart(): Promise<void> {
     throw new Error('Ошибка при очистке корзины');
   }
 }
+
+export async function addComponentToCart(
+  componentId: string,
+  quantity: number = 1
+): Promise<CartItem> {
+  const response = await fetch(`${API_URL}/cart/component/${componentId}`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ quantity }),
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Необходима авторизация');
+    }
+    if (response.status === 404) {
+      throw new Error('Комплектующее не найдено');
+    }
+    throw new Error('Ошибка при добавлении в корзину');
+  }
+
+  return response.json();
+}
