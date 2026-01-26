@@ -56,7 +56,9 @@ export default function CartPage() {
   }, [refreshCart]);
 
   const handleQuantityChange = async (itemId: string, newQuantity: number) => {
+    // Если количество становится 0 или меньше, удаляем товар из корзины
     if (newQuantity < 1) {
+      await handleRemoveItem(itemId);
       return;
     }
 
@@ -80,7 +82,9 @@ export default function CartPage() {
   };
 
   const handleComponentQuantityChange = async (componentId: string, newQuantity: number) => {
+    // Если количество становится 0 или меньше, удаляем комплектующее из корзины
     if (newQuantity < 1) {
+      await handleRemoveComponent(componentId);
       return;
     }
 
@@ -222,7 +226,20 @@ export default function CartPage() {
               .map((item) => {
                 const itemKey = `item-${item.id}`;
                 const isUpdating = updatingItems.has(itemKey);
-                const itemTotal = item.product.price * item.quantity;
+                // Убеждаемся, что quantity - это число, и оно больше 0
+                let quantity: number;
+                if (typeof item.quantity === 'number') {
+                  quantity = item.quantity;
+                } else if (typeof item.quantity === 'string') {
+                  quantity = parseInt(item.quantity, 10);
+                } else {
+                  quantity = 1;
+                }
+                // Гарантируем, что quantity >= 1
+                if (isNaN(quantity) || quantity < 1) {
+                  quantity = 1;
+                }
+                const itemTotal = item.product.price * quantity;
 
                 return (
                   <div key={item.id} className={styles.cartItem}>
@@ -265,17 +282,19 @@ export default function CartPage() {
                       <button
                         type="button"
                         className={styles.quantityButton}
-                        onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
-                        disabled={isUpdating || item.quantity <= 1}
+                        onClick={() => handleQuantityChange(item.id, quantity - 1)}
+                        disabled={isUpdating}
+                        aria-label="Уменьшить количество"
                       >
                         −
                       </button>
-                      <span className={styles.quantityValue}>{item.quantity}</span>
+                      <span className={styles.quantityValue}>{quantity}</span>
                       <button
                         type="button"
                         className={styles.quantityButton}
-                        onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                        onClick={() => handleQuantityChange(item.id, quantity + 1)}
                         disabled={isUpdating}
+                        aria-label="Увеличить количество"
                       >
                         +
                       </button>
@@ -307,7 +326,20 @@ export default function CartPage() {
               .map((item) => {
                 const itemKey = `component-${item.componentId}`;
                 const isUpdating = updatingItems.has(itemKey);
-                const itemTotal = item.component.price * item.quantity;
+                // Убеждаемся, что quantity - это число, и оно больше 0
+                let quantity: number;
+                if (typeof item.quantity === 'number') {
+                  quantity = item.quantity;
+                } else if (typeof item.quantity === 'string') {
+                  quantity = parseInt(item.quantity, 10);
+                } else {
+                  quantity = 1;
+                }
+                // Гарантируем, что quantity >= 1
+                if (isNaN(quantity) || quantity < 1) {
+                  quantity = 1;
+                }
+                const itemTotal = item.component.price * quantity;
 
                 return (
                   <div key={item.id} className={styles.cartItem}>
@@ -344,20 +376,22 @@ export default function CartPage() {
                         type="button"
                         className={styles.quantityButton}
                         onClick={() =>
-                          handleComponentQuantityChange(item.componentId!, item.quantity - 1)
+                          handleComponentQuantityChange(item.componentId!, quantity - 1)
                         }
-                        disabled={isUpdating || item.quantity <= 1}
+                        disabled={isUpdating}
+                        aria-label="Уменьшить количество"
                       >
                         −
                       </button>
-                      <span className={styles.quantityValue}>{item.quantity}</span>
+                      <span className={styles.quantityValue}>{quantity}</span>
                       <button
                         type="button"
                         className={styles.quantityButton}
                         onClick={() =>
-                          handleComponentQuantityChange(item.componentId!, item.quantity + 1)
+                          handleComponentQuantityChange(item.componentId!, quantity + 1)
                         }
                         disabled={isUpdating}
+                        aria-label="Увеличить количество"
                       >
                         +
                       </button>
