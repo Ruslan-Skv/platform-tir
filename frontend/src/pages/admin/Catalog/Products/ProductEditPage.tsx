@@ -229,6 +229,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
 
   // Загрузка изображений
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -742,17 +743,35 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
+      <div
+        className={styles.header}
+        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <button
+            className={styles.backButton}
+            onClick={() => router.push('/admin/catalog/products')}
+          >
+            ← Назад к списку
+          </button>
+          <h1 className={styles.title}>Редактирование товара</h1>
+        </div>
         <button
-          className={styles.backButton}
-          onClick={() => router.push('/admin/catalog/products')}
+          type="button"
+          className={styles.saveButton}
+          disabled={saving}
+          onClick={(e) => {
+            e.preventDefault();
+            if (formRef.current) {
+              formRef.current.requestSubmit();
+            }
+          }}
         >
-          ← Назад к списку
+          {saving ? 'Сохранение...' : 'Сохранить изменения'}
         </button>
-        <h1 className={styles.title}>Редактирование товара</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className={styles.form}>
+      <form ref={formRef} onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.formGrid}>
           {/* Main Info */}
           <div className={styles.formSection}>
