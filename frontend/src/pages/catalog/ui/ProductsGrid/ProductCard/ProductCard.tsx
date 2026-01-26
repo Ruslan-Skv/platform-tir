@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 
@@ -11,14 +11,18 @@ import styles from './ProductCard.module.css';
 
 interface ProductCardProps {
   product: Product;
+  isCompareMode?: boolean; // Режим сравнения - скрыть кнопку сравнения, показать кнопку удаления
+  onRemoveFromCompare?: () => void; // Callback после удаления из сравнения
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const { toggleWishlist, isInWishlist, checkInWishlist } = useWishlist();
-  const { toggleCompare, isInCompare, checkInCompare } = useCompare();
+export const ProductCard: React.FC<ProductCardProps> = ({
+  product,
+  isCompareMode = false,
+  onRemoveFromCompare,
+}) => {
+  const { toggleWishlist, isInWishlist, checkInWishlist, wishlist } = useWishlist();
+  const { toggleCompare, isInCompare, checkInCompare, compare, removeFromCompare } = useCompare();
   const { cart, addToCart, updateQuantity } = useCart();
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [isInCompareState, setIsInCompareState] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isCompareLoading, setIsCompareLoading] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
@@ -48,37 +52,28 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     return String(product.id);
   };
 
+  // Получаем ID товара один раз
+  const productId = useMemo(() => getProductId(), [product.id, product.originalId]);
+
+  // Используем глобальное состояние напрямую - автоматически обновляется при изменении wishlist/compare
+  const isFavorite = useMemo(() => isInWishlist(productId), [isInWishlist, productId, wishlist]);
+  const isInCompareState = useMemo(() => isInCompare(productId), [isInCompare, productId, compare]);
+
   // Проверяем, находится ли товар в избранном при монтировании
   useEffect(() => {
-    const productId = getProductId();
-    const inWishlist = isInWishlist(productId);
-    setIsFavorite(inWishlist);
-
-    // Если не в локальном состоянии, проверяем на сервере
-    if (!inWishlist) {
-      checkInWishlist(productId)
-        .then(setIsFavorite)
-        .catch(() => {
-          // Игнорируем ошибки (пользователь может быть не авторизован)
-        });
-    }
-  }, [product, isInWishlist, checkInWishlist]);
+    // Проверяем на сервере при монтировании или смене товара
+    checkInWishlist(productId).catch(() => {
+      // Игнорируем ошибки (пользователь может быть не авторизован)
+    });
+  }, [product.id, productId, checkInWishlist]); // Проверяем только при смене товара
 
   // Проверяем, находится ли товар в сравнении при монтировании
   useEffect(() => {
-    const productId = getProductId();
-    const inCompare = isInCompare(productId);
-    setIsInCompareState(inCompare);
-
-    // Если не в локальном состоянии, проверяем на сервере
-    if (!inCompare) {
-      checkInCompare(productId)
-        .then(setIsInCompareState)
-        .catch(() => {
-          // Игнорируем ошибки (пользователь может быть не авторизован)
-        });
-    }
-  }, [product, isInCompare, checkInCompare]);
+    // Проверяем на сервере при монтировании или смене товара
+    checkInCompare(productId).catch(() => {
+      // Игнорируем ошибки (пользователь может быть не авторизован)
+    });
+  }, [product.id, productId, checkInCompare]); // Проверяем только при смене товара
 
   // price - актуальная цена товара, oldPrice - старая цена (если есть скидка)
   const finalPrice = product.price;
@@ -88,12 +83,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const productId = getProductId();
-
     try {
       setIsLoading(true);
       await toggleWishlist(productId);
-      setIsFavorite((prev) => !prev);
+      // Состояние обновится автоматически через глобальный контекст
     } catch (error) {
       if (error instanceof Error) {
         alert(error.message);
@@ -108,18 +101,44 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const handleCompareClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
 
-    const productId = getProductId();
+    if (isCompareLoading) {
+      return;
+    }
 
     try {
       setIsCompareLoading(true);
       await toggleCompare(productId);
-      setIsInCompareState((prev) => !prev);
+      // Состояние обновится автоматически через глобальный контекст
     } catch (error) {
       if (error instanceof Error) {
         alert(error.message);
       } else {
         alert('Произошла ошибка при работе с сравнением');
+      }
+    } finally {
+      setIsCompareLoading(false);
+    }
+  };
+
+  const handleRemoveFromCompare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
+      setIsCompareLoading(true);
+      await removeFromCompare(productId);
+      // Состояние обновится автоматически через глобальный контекст
+      // Вызываем callback для обновления списка на странице сравнения
+      if (onRemoveFromCompare) {
+        onRemoveFromCompare();
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert('Произошла ошибка при удалении из сравнения');
       }
     } finally {
       setIsCompareLoading(false);
@@ -219,15 +238,27 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </div>
 
           <div className={styles.actionButtons}>
-            <button
-              type="button"
-              className={`${styles.compareButton} ${isInCompareState ? styles.compareButtonActive : ''}`}
-              aria-label={isInCompareState ? 'Удалить из сравнения' : 'Добавить в сравнение'}
-              onClick={handleCompareClick}
-              disabled={isCompareLoading}
-            >
-              ⚖
-            </button>
+            {isCompareMode ? (
+              <button
+                type="button"
+                className={`${styles.removeButton} ${isCompareLoading ? styles.compareButtonLoading : ''}`}
+                aria-label="Удалить из сравнения"
+                onClick={handleRemoveFromCompare}
+                style={{ pointerEvents: isCompareLoading ? 'none' : 'auto' }}
+              >
+                🗑
+              </button>
+            ) : (
+              <button
+                type="button"
+                className={`${styles.compareButton} ${isInCompareState ? styles.compareButtonActive : ''} ${isCompareLoading ? styles.compareButtonLoading : ''}`}
+                aria-label={isInCompareState ? 'Удалить из сравнения' : 'Добавить в сравнение'}
+                onClick={handleCompareClick}
+                style={{ pointerEvents: isCompareLoading ? 'none' : 'auto' }}
+              >
+                ⚖
+              </button>
+            )}
             <button
               type="button"
               className={`${styles.favoriteButton} ${isFavorite ? styles.favoriteButtonActive : ''}`}
@@ -257,7 +288,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </div>
 
           {(() => {
-            const productId = getProductId();
+            // Проверяем основной товар в корзине
             const cartItem = cart.find(
               (item) =>
                 item.productId !== null &&
@@ -267,10 +298,49 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             const quantity = cartItem ? Number(cartItem.quantity) : 0;
             const isInCart = quantity > 0;
 
+            // Проверяем комплектующие этого товара в корзине
+            // Сопоставляем по productId (originalId если есть, иначе id) или по числовому id как fallback
+            const componentItems = cart.filter((item) => {
+              if (
+                item.componentId === null ||
+                item.productId !== null ||
+                item.component === null ||
+                item.component.product === null
+              ) {
+                return false;
+              }
+              const componentProductId = String(item.component.product.id);
+              // Основное сопоставление: component.product.id должен совпадать с productId
+              // productId это либо originalId (если есть), либо String(id)
+              if (componentProductId === String(productId)) {
+                return true;
+              }
+              // Fallback: проверяем числовой id на случай несоответствия
+              // (если backend вернул числовой id, а frontend использует originalId)
+              if (componentProductId === String(product.id)) {
+                return true;
+              }
+              return false;
+            });
+            const componentsTotalQuantity = componentItems.reduce(
+              (sum, item) => sum + Number(item.quantity),
+              0
+            );
+            const hasComponents = componentsTotalQuantity > 0;
+
             if (isInCart) {
               return (
                 <div className={styles.cartControls}>
-                  <span className={styles.inCartLabel}>В корзине</span>
+                  <div className={styles.cartInfo}>
+                    <span className={styles.inCartLabel}>В корзине</span>
+                    {hasComponents && (
+                      <div className={styles.componentsIconWrapper}>
+                        <span className={styles.componentsBadge}>
+                          {componentsTotalQuantity > 99 ? '99+' : componentsTotalQuantity}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                   <div className={styles.quantityControls} onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"
@@ -326,6 +396,20 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                     >
                       +
                     </button>
+                  </div>
+                </div>
+              );
+            }
+
+            // Если товара нет в корзине, но есть комплектующие
+            if (hasComponents && !isInCart) {
+              return (
+                <div className={styles.cartControlsYellow}>
+                  <div className={styles.cartInfo}>
+                    <span className={styles.inCartLabel}>В корзине</span>
+                  </div>
+                  <div className={styles.quantityDisplay}>
+                    <span className={styles.quantityValue}>{componentsTotalQuantity}</span>
                   </div>
                 </div>
               );

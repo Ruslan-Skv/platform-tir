@@ -32,6 +32,10 @@ interface Product {
     name: string;
     slug: string;
   };
+  stock?: number;
+  isNew?: boolean;
+  isFeatured?: boolean;
+  attributes?: Array<{ name: string; value: string }> | Record<string, unknown> | null;
 }
 
 function getAuthToken(): string | null {
@@ -97,7 +101,7 @@ export async function addToCompare(productId: string): Promise<CompareItem> {
     if (response.status === 409) {
       const errorData = await response.json().catch(() => ({}));
       if (errorData.message?.includes('Maximum')) {
-        throw new Error('Максимум 5 товаров можно сравнить одновременно');
+        throw new Error('Максимум 10 товаров можно сравнить одновременно');
       }
       throw new Error('Товар уже в сравнении');
     }

@@ -54,10 +54,16 @@ export class CartController {
   addToCart(
     @Request() req: RequestWithUser,
     @Param('productId') productId: string,
-    @Body() body?: { quantity?: number },
+    @Body() body?: { quantity?: number; size?: string; openingSide?: string },
   ) {
     const quantity = body?.quantity || 1;
-    return this.cartService.addToCart(req.user.id, productId, quantity);
+    return this.cartService.addToCart(
+      req.user.id,
+      productId,
+      quantity,
+      body?.size,
+      body?.openingSide,
+    );
   }
 
   @Post('component/:componentId')
@@ -71,8 +77,20 @@ export class CartController {
     return this.cartService.addComponentToCart(req.user.id, componentId, quantity);
   }
 
+  @Put('item/:itemId')
+  @ApiOperation({ summary: 'Обновить количество элемента корзины по ID' })
+  updateCartItemById(
+    @Request() req: RequestWithUser,
+    @Param('itemId') itemId: string,
+    @Body() body: UpdateCartItemDto,
+  ) {
+    return this.cartService.updateCartItemQuantityById(req.user.id, itemId, body.quantity);
+  }
+
   @Put(':productId')
-  @ApiOperation({ summary: 'Обновить количество товара в корзине' })
+  @ApiOperation({
+    summary: 'Обновить количество товара в корзине (устаревший метод, используйте /item/:itemId)',
+  })
   updateCartItem(
     @Request() req: RequestWithUser,
     @Param('productId') productId: string,
@@ -91,8 +109,16 @@ export class CartController {
     return this.cartService.updateComponentQuantity(req.user.id, componentId, body.quantity);
   }
 
+  @Delete('item/:itemId')
+  @ApiOperation({ summary: 'Удалить элемент корзины по ID' })
+  removeCartItem(@Request() req: RequestWithUser, @Param('itemId') itemId: string) {
+    return this.cartService.removeCartItemById(req.user.id, itemId);
+  }
+
   @Delete(':productId')
-  @ApiOperation({ summary: 'Удалить товар из корзины' })
+  @ApiOperation({
+    summary: 'Удалить товар из корзины (устаревший метод, используйте /item/:itemId)',
+  })
   removeFromCart(@Request() req: RequestWithUser, @Param('productId') productId: string) {
     return this.cartService.removeFromCart(req.user.id, productId);
   }

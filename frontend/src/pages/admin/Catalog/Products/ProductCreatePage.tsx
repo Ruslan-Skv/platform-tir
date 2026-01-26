@@ -177,6 +177,8 @@ export function ProductCreatePage() {
     seoDescription: '',
     attributes: {} as Record<string, string>,
     images: [] as string[],
+    sizes: [] as string[],
+    openingSide: [] as string[],
   });
 
   // Атрибуты категории и товара
@@ -488,6 +490,12 @@ export function ProductCreatePage() {
 
       console.log('Creating product with attributes (ordered array):', attributesArray);
 
+      const cleanedSizes = formData.sizes
+        .map((size) => size.trim())
+        .filter((size) => size.length > 0);
+      const hasSizes = cleanedSizes.length > 0;
+      const hasOpeningSide = formData.openingSide.length > 0;
+
       const productData = {
         name: formData.name,
         slug: formData.slug,
@@ -505,6 +513,8 @@ export function ProductCreatePage() {
         seoDescription: formData.seoDescription || undefined,
         attributes: attributesArray, // Массив с гарантированным порядком
         images: formData.images.length > 0 ? formData.images : undefined,
+        sizes: hasSizes ? cleanedSizes : null,
+        openingSide: hasOpeningSide ? formData.openingSide : null,
       };
 
       const response = await fetch(`${API_URL}/products`, {
@@ -713,6 +723,107 @@ export function ProductCreatePage() {
               <p className={styles.hint}>
                 Чем меньше число, тем выше товар в списке. Товары с одинаковым значением сортируются
                 по дате создания.
+              </p>
+            </div>
+          </div>
+
+          {/* Product Options */}
+          <div className={styles.formSection}>
+            <h2 className={styles.sectionTitle}>Варианты исполнения</h2>
+
+            <div className={styles.formGroup}>
+              <label>Размеры</label>
+              <div className={styles.attributesList}>
+                {(formData.sizes.length > 0 ? formData.sizes : ['']).map((size, index) => (
+                  <div key={`size-${index}`} className={styles.attributeRow}>
+                    <input
+                      type="text"
+                      value={size}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setFormData((prev) => {
+                          const nextSizes = prev.sizes.length > 0 ? [...prev.sizes] : [''];
+                          nextSizes[index] = value;
+                          return { ...prev, sizes: nextSizes };
+                        });
+                      }}
+                      className={styles.input}
+                      placeholder="60x200"
+                      aria-label={`Размер ${index + 1}`}
+                    />
+                    {formData.sizes.length > 1 && (
+                      <button
+                        type="button"
+                        className={styles.removeAttrButton}
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            sizes: prev.sizes.filter((_, i) => i !== index),
+                          }))
+                        }
+                        title="Удалить"
+                      >
+                        🗑️
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                className={styles.addAttrButton}
+                onClick={() =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    sizes: [...prev.sizes, ''],
+                  }))
+                }
+              >
+                + Добавить размер
+              </button>
+              <p className={styles.hint}>
+                Добавьте один или несколько размеров. Если не указано, параметр не будет
+                отображаться в публичке.
+              </p>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="openingSide">Сторона открывания</label>
+              <div className={styles.checkboxGroup}>
+                <label className={styles.checkbox}>
+                  <input
+                    type="checkbox"
+                    checked={formData.openingSide.includes('правое')}
+                    onChange={(e) => {
+                      setFormData((prev) => {
+                        const sides = e.target.checked
+                          ? [...prev.openingSide, 'правое']
+                          : prev.openingSide.filter((s) => s !== 'правое');
+                        return { ...prev, openingSide: sides };
+                      });
+                    }}
+                  />
+                  <span>Правое</span>
+                </label>
+                <label className={styles.checkbox}>
+                  <input
+                    type="checkbox"
+                    checked={formData.openingSide.includes('левое')}
+                    onChange={(e) => {
+                      setFormData((prev) => {
+                        const sides = e.target.checked
+                          ? [...prev.openingSide, 'левое']
+                          : prev.openingSide.filter((s) => s !== 'левое');
+                        return { ...prev, openingSide: sides };
+                      });
+                    }}
+                  />
+                  <span>Левое</span>
+                </label>
+              </div>
+              <p className={styles.hint}>
+                Выберите доступные стороны открывания. Если ничего не выбрано, параметр не будет
+                отображаться в публичке.
               </p>
             </div>
           </div>

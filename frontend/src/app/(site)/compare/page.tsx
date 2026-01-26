@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
 
@@ -25,40 +25,48 @@ interface CompareProduct {
   isNew?: boolean;
   isFeatured?: boolean;
   stock?: number;
-  attributes?: Record<string, any>;
+  attributes?: Array<{ name: string; value: string }> | Record<string, unknown> | null;
 }
 
 export default function ComparePage() {
-  const { count, refreshCount } = useCompare();
+  const { count, refreshCount, compare } = useCompare();
   const [products, setProducts] = useState<CompareProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const loadCompare = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const compareProducts = await compareApi.getCompare();
+      setProducts(compareProducts);
+      await refreshCount();
+    } catch (err) {
+      if (err instanceof Error) {
+        if (err.message === 'Необходима авторизация') {
+          setError('Войдите в систему, чтобы просмотреть сравнение товаров');
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('Произошла ошибка при загрузке сравнения');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [refreshCount]);
 
   useEffect(() => {
-    const loadCompare = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const compareProducts = await compareApi.getCompare();
-        setProducts(compareProducts);
-        await refreshCount();
-      } catch (err) {
-        if (err instanceof Error) {
-          if (err.message === 'Необходима авторизация') {
-            setError('Войдите в систему, чтобы просмотреть сравнение товаров');
-          } else {
-            setError(err.message);
-          }
-        } else {
-          setError('Произошла ошибка при загрузке сравнения');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadCompare();
-  }, [refreshCount]);
+  }, [loadCompare]);
+
+  // Обновляем список товаров при изменении количества в сравнении
+  useEffect(() => {
+    if (!loading && products.length !== count) {
+      loadCompare();
+    }
+  }, [count, loading, products.length, loadCompare]);
 
   // Преобразуем формат API в формат Product для ProductCard
   const mappedProducts = products.map((p, index) => {
@@ -87,12 +95,31 @@ export default function ComparePage() {
       discount: comparePrice
         ? Math.round(((comparePrice - price) / comparePrice) * 100)
         : undefined,
-      characteristics: p.attributes
-        ? Object.entries(p.attributes).map(([name, value]) => ({
-            name,
-            value: String(value),
-          }))
-        : undefined,
+      characteristics: (() => {
+        if (!p.attributes) return undefined;
+
+        // Если атрибуты - массив
+        if (Array.isArray(p.attributes)) {
+          return p.attributes
+            .filter((attr) => attr && attr.name && attr.value !== null && attr.value !== undefined)
+            .map((attr) => ({
+              name: String(attr.name),
+              value: String(attr.value),
+            }));
+        }
+
+        // Если атрибуты - объект
+        if (typeof p.attributes === 'object' && p.attributes !== null) {
+          return Object.entries(p.attributes)
+            .filter(([_, value]) => value !== null && value !== undefined && value !== '')
+            .map(([name, value]) => ({
+              name: String(name),
+              value: String(value),
+            }));
+        }
+
+        return undefined;
+      })(),
     };
   });
 
@@ -100,16 +127,19 @@ export default function ComparePage() {
   const allCharacteristics = React.useMemo(() => {
     const charMap = new Map<string, Set<string>>();
     mappedProducts.forEach((product) => {
-      if (product.characteristics) {
+      if (product.characteristics && Array.isArray(product.characteristics)) {
         product.characteristics.forEach((char) => {
-          if (!charMap.has(char.name)) {
-            charMap.set(char.name, new Set());
+          // Пропускаем пустые значения и некорректные данные
+          if (char && char.name && char.value) {
+            if (!charMap.has(char.name)) {
+              charMap.set(char.name, new Set());
+            }
+            charMap.get(char.name)!.add(char.value);
           }
-          charMap.get(char.name)!.add(char.value);
         });
       }
     });
-    return Array.from(charMap.keys());
+    return Array.from(charMap.keys()).sort(); // Сортируем для консистентности
   }, [mappedProducts]);
 
   if (loading) {
@@ -163,80 +193,112 @@ export default function ComparePage() {
       </div>
 
       {/* Таблица сравнения */}
-      <div className={styles.compareTable}>
-        <div className={styles.tableHeader}>
-          <div className={styles.headerCell}>Характеристика</div>
-          {mappedProducts.map((product) => (
-            <div key={product.originalId || product.slug} className={styles.headerCell}>
-              <ProductCard product={product} />
-            </div>
-          ))}
+      <div className={styles.compareTableWrapper}>
+        <div className={styles.scrollControls}>
+          <button
+            type="button"
+            className={styles.scrollButton}
+            onClick={() => {
+              if (scrollContainerRef.current) {
+                scrollContainerRef.current.scrollBy({ left: -300, behavior: 'smooth' });
+              }
+            }}
+            aria-label="Прокрутить влево"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            className={styles.scrollButton}
+            onClick={() => {
+              if (scrollContainerRef.current) {
+                scrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+              }
+            }}
+            aria-label="Прокрутить вправо"
+          >
+            ›
+          </button>
         </div>
-
-        {/* Основные характеристики */}
-        <div className={styles.tableRow}>
-          <div className={styles.rowLabel}>Название</div>
-          {mappedProducts.map((product) => (
-            <div key={`name-${product.originalId}`} className={styles.rowCell}>
-              {product.name}
-            </div>
-          ))}
-        </div>
-
-        <div className={styles.tableRow}>
-          <div className={styles.rowLabel}>Цена</div>
-          {mappedProducts.map((product) => (
-            <div key={`price-${product.originalId}`} className={styles.rowCell}>
-              <div className={styles.priceContainer}>
-                {product.oldPrice && (
-                  <span className={styles.oldPrice}>{product.oldPrice.toLocaleString()} ₽</span>
-                )}
-                <span className={styles.price}>{product.price.toLocaleString()} ₽</span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className={styles.tableRow}>
-          <div className={styles.rowLabel}>Категория</div>
-          {mappedProducts.map((product) => (
-            <div key={`category-${product.originalId}`} className={styles.rowCell}>
-              {product.category}
-            </div>
-          ))}
-        </div>
-
-        <div className={styles.tableRow}>
-          <div className={styles.rowLabel}>Наличие</div>
-          {mappedProducts.map((product) => (
-            <div key={`stock-${product.originalId}`} className={styles.rowCell}>
-              {product.inStock ? (
-                <span className={styles.inStock}>✓ В наличии</span>
-              ) : (
-                <span className={styles.outOfStock}>Под заказ</span>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Дополнительные характеристики */}
-        {allCharacteristics.length > 0 && (
-          <>
-            {allCharacteristics.map((charName) => (
-              <div key={charName} className={styles.tableRow}>
-                <div className={styles.rowLabel}>{charName}</div>
-                {mappedProducts.map((product) => {
-                  const char = product.characteristics?.find((c) => c.name === charName);
-                  return (
-                    <div key={`${charName}-${product.originalId}`} className={styles.rowCell}>
-                      {char ? char.value : '—'}
-                    </div>
-                  );
-                })}
+        <div className={styles.compareTable} ref={scrollContainerRef}>
+          <div className={styles.tableHeader}>
+            <div className={styles.headerCell}>Характеристика</div>
+            {mappedProducts.map((product) => (
+              <div key={product.originalId || product.slug} className={styles.headerCell}>
+                <ProductCard
+                  product={product}
+                  isCompareMode={true}
+                  onRemoveFromCompare={loadCompare}
+                />
               </div>
             ))}
-          </>
-        )}
+          </div>
+
+          {/* Основные характеристики */}
+          <div className={styles.tableRow}>
+            <div className={styles.rowLabel}>Название</div>
+            {mappedProducts.map((product) => (
+              <div key={`name-${product.originalId}`} className={styles.rowCell}>
+                {product.name}
+              </div>
+            ))}
+          </div>
+
+          <div className={styles.tableRow}>
+            <div className={styles.rowLabel}>Цена</div>
+            {mappedProducts.map((product) => (
+              <div key={`price-${product.originalId}`} className={styles.rowCell}>
+                <div className={styles.priceContainer}>
+                  {product.oldPrice && (
+                    <span className={styles.oldPrice}>{product.oldPrice.toLocaleString()} ₽</span>
+                  )}
+                  <span className={styles.price}>{product.price.toLocaleString()} ₽</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className={styles.tableRow}>
+            <div className={styles.rowLabel}>Категория</div>
+            {mappedProducts.map((product) => (
+              <div key={`category-${product.originalId}`} className={styles.rowCell}>
+                {product.category}
+              </div>
+            ))}
+          </div>
+
+          <div className={styles.tableRow}>
+            <div className={styles.rowLabel}>Наличие</div>
+            {mappedProducts.map((product) => (
+              <div key={`stock-${product.originalId}`} className={styles.rowCell}>
+                {product.inStock ? (
+                  <span className={styles.inStock}>✓ В наличии</span>
+                ) : (
+                  <span className={styles.outOfStock}>Под заказ</span>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Дополнительные характеристики */}
+          {allCharacteristics.length > 0 && (
+            <>
+              {allCharacteristics.map((charName) => (
+                <div key={charName} className={styles.tableRow}>
+                  <div className={styles.rowLabel}>{charName}</div>
+                  {mappedProducts.map((product) => {
+                    const char = product.characteristics?.find((c) => c.name === charName);
+                    return (
+                      <div key={`${charName}-${product.originalId}`} className={styles.rowCell}>
+                        {char ? char.value : '—'}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

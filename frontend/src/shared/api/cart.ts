@@ -6,6 +6,8 @@ export interface CartItem {
   productId: string | null;
   componentId: string | null;
   quantity: number;
+  size: string | null;
+  openingSide: string | null;
   createdAt: string;
   updatedAt: string;
   product: {
@@ -86,11 +88,16 @@ export async function getCartCount(): Promise<number> {
   return typeof data === 'number' ? data : Number(data) || 0;
 }
 
-export async function addToCart(productId: string, quantity: number = 1): Promise<CartItem> {
+export async function addToCart(
+  productId: string,
+  quantity: number = 1,
+  size?: string,
+  openingSide?: string
+): Promise<CartItem> {
   const response = await fetch(`${API_URL}/cart/${productId}`, {
     method: 'POST',
     headers: getAuthHeaders(),
-    body: JSON.stringify({ quantity }),
+    body: JSON.stringify({ quantity, size, openingSide }),
   });
 
   if (!response.ok) {
@@ -101,6 +108,29 @@ export async function addToCart(productId: string, quantity: number = 1): Promis
       throw new Error('Товар не найден');
     }
     throw new Error('Ошибка при добавлении в корзину');
+  }
+
+  return response.json();
+}
+
+export async function updateCartItemQuantityById(
+  itemId: string,
+  quantity: number
+): Promise<CartItem> {
+  const response = await fetch(`${API_URL}/cart/item/${itemId}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ quantity: Number(quantity) }),
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Необходима авторизация');
+    }
+    if (response.status === 404) {
+      throw new Error('Элемент корзины не найден');
+    }
+    throw new Error('Ошибка при обновлении количества');
   }
 
   return response.json();
@@ -127,6 +157,23 @@ export async function updateCartItemQuantity(
   }
 
   return response.json();
+}
+
+export async function removeCartItemById(itemId: string): Promise<void> {
+  const response = await fetch(`${API_URL}/cart/item/${itemId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Необходима авторизация');
+    }
+    if (response.status === 404) {
+      throw new Error('Элемент корзины не найден');
+    }
+    throw new Error('Ошибка при удалении из корзины');
+  }
 }
 
 export async function removeFromCart(productId: string): Promise<void> {

@@ -9,11 +9,18 @@ interface CartContextValue {
   cart: CartItem[];
   count: number;
   isLoading: boolean;
-  addToCart: (productId: string, quantity?: number) => Promise<void>;
+  addToCart: (
+    productId: string,
+    quantity?: number,
+    size?: string,
+    openingSide?: string
+  ) => Promise<void>;
   addComponentToCart: (componentId: string, quantity?: number) => Promise<void>;
   updateQuantity: (productId: string, quantity: number) => Promise<void>;
+  updateCartItemQuantityById: (itemId: string, quantity: number) => Promise<void>;
   updateComponentQuantity: (componentId: string, quantity: number) => Promise<void>;
   removeFromCart: (productId: string) => Promise<void>;
+  removeCartItemById: (itemId: string) => Promise<void>;
   removeComponentFromCart: (componentId: string) => Promise<void>;
   clearCart: () => Promise<void>;
   refreshCart: () => Promise<void>;
@@ -64,16 +71,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [refreshCart]);
 
   const addToCart = useCallback(
-    async (productId: string, quantity: number = 1) => {
+    async (productId: string, quantity: number = 1, size?: string, openingSide?: string) => {
       try {
-        const newItem = await cartApi.addToCart(productId, quantity);
+        const newItem = await cartApi.addToCart(productId, quantity, size, openingSide);
         setCart((prev) => {
           // Ищем среди товаров (где productId не null и совпадает, а componentId null или undefined)
+          // Также проверяем совпадение size и openingSide
           const existingIndex = prev.findIndex(
             (item) =>
               item.productId != null &&
               item.componentId == null &&
-              String(item.productId) === String(productId)
+              String(item.productId) === String(productId) &&
+              item.size === (size || null) &&
+              item.openingSide === (openingSide || null)
           );
           if (existingIndex >= 0) {
             // Обновляем существующий элемент
@@ -143,6 +153,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const removeCartItemById = useCallback(async (itemId: string) => {
+    try {
+      await cartApi.removeCartItemById(itemId);
+      setCart((prev) => prev.filter((item) => item.id !== itemId));
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Необходима авторизация') {
+        throw new Error('Войдите в систему, чтобы удалить товар из корзины');
+      }
+      throw error;
+    }
+  }, []);
+
   const updateQuantity = useCallback(
     async (productId: string, quantity: number) => {
       try {
@@ -175,6 +197,34 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
     },
     [removeFromCartInternal]
+  );
+
+  const updateCartItemQuantityById = useCallback(
+    async (itemId: string, quantity: number) => {
+      try {
+        if (quantity <= 0) {
+          await removeCartItemById(itemId);
+          return;
+        }
+
+        const updatedItem = await cartApi.updateCartItemQuantityById(itemId, quantity);
+        setCart((prev) => {
+          const existingIndex = prev.findIndex((item) => item.id === itemId);
+          if (existingIndex >= 0) {
+            const updated = [...prev];
+            updated[existingIndex] = updatedItem;
+            return updated;
+          }
+          return prev;
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Необходима авторизация') {
+          throw new Error('Войдите в систему, чтобы обновить корзину');
+        }
+        throw error;
+      }
+    },
+    [removeCartItemById]
   );
 
   const removeFromCart = useCallback(
@@ -270,8 +320,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     addToCart,
     addComponentToCart,
     updateQuantity,
+    updateCartItemQuantityById,
     updateComponentQuantity,
     removeFromCart,
+    removeCartItemById,
     removeComponentFromCart,
     clearCart,
     refreshCart,

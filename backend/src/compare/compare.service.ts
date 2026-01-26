@@ -29,13 +29,13 @@ export class CompareService {
       throw new ConflictException('Product already in compare');
     }
 
-    // Проверяем лимит сравнения (обычно максимум 3-5 товаров)
+    // Проверяем лимит сравнения (максимум 10 товаров)
     const compareCount = await this.prisma.compareItem.count({
       where: { userId },
     });
 
-    if (compareCount >= 5) {
-      throw new ConflictException('Maximum 5 products can be compared');
+    if (compareCount >= 10) {
+      throw new ConflictException('Maximum 10 products can be compared');
     }
 
     return this.prisma.compareItem.create({

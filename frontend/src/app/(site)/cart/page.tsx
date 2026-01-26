@@ -18,8 +18,10 @@ export default function CartPage() {
     count,
     refreshCart,
     updateQuantity,
+    updateCartItemQuantityById,
     updateComponentQuantity,
     removeFromCart,
+    removeCartItemById,
     removeComponentFromCart,
     clearCart,
     getTotalPrice,
@@ -53,15 +55,15 @@ export default function CartPage() {
     loadCart();
   }, [refreshCart]);
 
-  const handleQuantityChange = async (productId: string, newQuantity: number) => {
+  const handleQuantityChange = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) {
       return;
     }
 
-    const itemKey = `product-${productId}`;
+    const itemKey = `item-${itemId}`;
     setUpdatingItems((prev) => new Set(prev).add(itemKey));
     try {
-      await updateQuantity(productId, newQuantity);
+      await updateCartItemQuantityById(itemId, newQuantity);
     } catch (err) {
       if (err instanceof Error) {
         alert(err.message);
@@ -101,11 +103,11 @@ export default function CartPage() {
     }
   };
 
-  const handleRemoveItem = async (productId: string) => {
-    const itemKey = `product-${productId}`;
+  const handleRemoveItem = async (itemId: string) => {
+    const itemKey = `item-${itemId}`;
     setUpdatingItems((prev) => new Set(prev).add(itemKey));
     try {
-      await removeFromCart(productId);
+      await removeCartItemById(itemId);
     } catch (err) {
       if (err instanceof Error) {
         alert(err.message);
@@ -218,7 +220,7 @@ export default function CartPage() {
                   item.product !== null && item.componentId === null
               )
               .map((item) => {
-                const itemKey = `product-${item.productId}`;
+                const itemKey = `item-${item.id}`;
                 const isUpdating = updatingItems.has(itemKey);
                 const itemTotal = item.product.price * item.quantity;
 
@@ -242,6 +244,18 @@ export default function CartPage() {
                       <p className={styles.itemPrice}>
                         {item.product.price.toLocaleString()} ₽ за шт.
                       </p>
+                      {(item.size || item.openingSide) && (
+                        <div className={styles.itemOptions}>
+                          {item.size && (
+                            <span className={styles.itemOption}>Размер: {item.size}</span>
+                          )}
+                          {item.openingSide && (
+                            <span className={styles.itemOption}>
+                              Сторона открывания: {item.openingSide}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {item.product.stock !== undefined && item.product.stock === 0 && (
                         <span className={styles.outOfStockBadge}>Под заказ</span>
                       )}
@@ -251,7 +265,7 @@ export default function CartPage() {
                       <button
                         type="button"
                         className={styles.quantityButton}
-                        onClick={() => handleQuantityChange(item.productId!, item.quantity - 1)}
+                        onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
                         disabled={isUpdating || item.quantity <= 1}
                       >
                         −
@@ -260,7 +274,7 @@ export default function CartPage() {
                       <button
                         type="button"
                         className={styles.quantityButton}
-                        onClick={() => handleQuantityChange(item.productId!, item.quantity + 1)}
+                        onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
                         disabled={isUpdating}
                       >
                         +
@@ -274,7 +288,7 @@ export default function CartPage() {
                     <button
                       type="button"
                       className={styles.removeButton}
-                      onClick={() => handleRemoveItem(item.productId!)}
+                      onClick={() => handleRemoveItem(item.id)}
                       disabled={isUpdating}
                       aria-label="Удалить товар"
                     >

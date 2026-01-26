@@ -45,6 +45,8 @@ export class OrdersService {
               productId: item.productId,
               quantity: item.quantity,
               price: product?.price || 0,
+              size: item.size || null,
+              openingSide: item.openingSide || null,
             };
           }),
         },

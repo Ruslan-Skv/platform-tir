@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import Link from 'next/link';
 
-import { useCart, useWishlist } from '@/shared/lib/hooks';
+import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 
 import { ProductComponents } from './ProductComponents';
 import styles from './ProductDetailPage.module.css';
@@ -24,6 +24,8 @@ interface ProductData {
   isFeatured: boolean;
   // Атрибуты могут быть массивом (новый формат) или объектом (старый формат)
   attributes: Array<{ name: string; value: string }> | Record<string, unknown> | null;
+  sizes?: string[];
+  openingSide?: string[];
   category: {
     id: string;
     name: string;
@@ -41,8 +43,10 @@ interface ProductDetailPageProps {
 }
 
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) => {
-  const { cart, addToCart, updateQuantity } = useCart();
-  const { toggleWishlist, isInWishlist, checkInWishlist } = useWishlist();
+  const { cart, addToCart, updateQuantity, updateCartItemQuantityById, removeCartItemById } =
+    useCart();
+  const { toggleWishlist, isInWishlist, checkInWishlist, wishlist } = useWishlist();
+  const { toggleCompare, isInCompare, checkInCompare, compare } = useCompare();
   const [product, setProduct] = useState<ProductData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,8 +55,71 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [isWishlistLoading, setIsWishlistLoading] = useState(false);
+  const [isCompareLoading, setIsCompareLoading] = useState(false);
+
+  // Варианты товара для добавления в корзину
+  interface ProductVariant {
+    id: string;
+    size: string;
+    openingSide: string;
+    quantity: number;
+  }
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [addingToCart, setAddingToCart] = useState<Record<string, boolean>>({});
+
+  // Получаем информацию о варианте в корзине
+  const getCartItemForVariant = useCallback(
+    (size: string, openingSide: string) => {
+      if (!product) return null;
+      const productId = String(product.id);
+
+      // Нормализуем значения для сравнения (пустые строки и null считаются одинаковыми)
+      const normalizedSize = size || null;
+      const normalizedOpeningSide = openingSide || null;
+
+      return cart.find(
+        (item) =>
+          item.productId !== null &&
+          String(item.productId) === productId &&
+          item.componentId === null &&
+          (item.size || null) === normalizedSize &&
+          (item.openingSide || null) === normalizedOpeningSide
+      );
+    },
+    [product, cart]
+  );
+
+  // Сбрасываем варианты при загрузке нового товара
+  useEffect(() => {
+    if (product) {
+      setVariants([
+        {
+          id: `variant-${Date.now()}`,
+          size: '',
+          openingSide: '',
+          quantity: 1,
+        },
+      ]);
+    }
+  }, [product]);
+
+  // Обновляем состояние добавления в корзину при изменении корзины
+  // Это помогает синхронизировать UI после добавления товара
+  useEffect(() => {
+    // Сбрасываем флаги добавления, если товар уже в корзине
+    setAddingToCart((prev) => {
+      const updated = { ...prev };
+      variants.forEach((variant) => {
+        const cartItem = getCartItemForVariant(variant.size, variant.openingSide);
+        if (cartItem) {
+          // Если товар в корзине, сбрасываем флаг добавления
+          delete updated[variant.id];
+        }
+      });
+      return updated;
+    });
+  }, [cart, variants, getCartItemForVariant]);
 
   // Для SSR — портал работает только на клиенте
   useEffect(() => {
@@ -87,28 +154,41 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     fetchProduct();
   }, [slug]);
 
+  // Получаем ID товара для работы с wishlist и compare
+  const productId = useMemo(() => (product ? String(product.id) : ''), [product]);
+
+  // Используем глобальное состояние напрямую - автоматически обновляется при изменении wishlist/compare
+  const isFavorite = useMemo(
+    () => (productId ? isInWishlist(productId) : false),
+    [isInWishlist, productId, wishlist]
+  );
+  const isInCompareState = useMemo(
+    () => (productId ? isInCompare(productId) : false),
+    [isInCompare, productId, compare]
+  );
+
   // Проверяем, находится ли товар в избранном при загрузке продукта
   useEffect(() => {
-    if (!product) return;
-    const productId = String(product.id);
-    const inWishlist = isInWishlist(productId);
-    setIsFavorite(inWishlist);
-    if (!inWishlist) {
-      checkInWishlist(productId)
-        .then(setIsFavorite)
-        .catch(() => {
-          // Игнорируем ошибки (пользователь может быть не авторизован)
-        });
-    }
-  }, [product, isInWishlist, checkInWishlist]);
+    if (!productId) return;
+    checkInWishlist(productId).catch(() => {
+      // Игнорируем ошибки (пользователь может быть не авторизован)
+    });
+  }, [productId, checkInWishlist]);
+
+  // Проверяем, находится ли товар в сравнении при загрузке продукта
+  useEffect(() => {
+    if (!productId) return;
+    checkInCompare(productId).catch(() => {
+      // Игнорируем ошибки (пользователь может быть не авторизован)
+    });
+  }, [productId, checkInCompare]);
 
   const handleFavoriteClick = async () => {
-    if (!product) return;
-    const productId = String(product.id);
+    if (!productId) return;
     try {
       setIsWishlistLoading(true);
       await toggleWishlist(productId);
-      setIsFavorite((prev) => !prev);
+      // Состояние обновится автоматически через глобальный контекст
     } catch (err) {
       if (err instanceof Error) {
         alert(err.message);
@@ -117,6 +197,23 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
       }
     } finally {
       setIsWishlistLoading(false);
+    }
+  };
+
+  const handleCompareClick = async () => {
+    if (!productId) return;
+    try {
+      setIsCompareLoading(true);
+      await toggleCompare(productId);
+      // Состояние обновится автоматически через глобальный контекст
+    } catch (err) {
+      if (err instanceof Error) {
+        alert(err.message);
+      } else {
+        alert('Произошла ошибка при работе с сравнением');
+      }
+    } finally {
+      setIsCompareLoading(false);
     }
   };
 
@@ -308,18 +405,39 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
           {product.sku && <p className={styles.sku}>Артикул: {product.sku}</p>}
 
           <div className={styles.priceBlock}>
-            {comparePrice && (
-              <span className={styles.oldPrice}>{comparePrice.toLocaleString()} ₽</span>
-            )}
-            <span className={styles.price}>{price.toLocaleString()} ₽</span>
-          </div>
-
-          <div className={styles.availability}>
-            {product.stock > 0 ? (
-              <span className={styles.inStock}>✓ В наличии</span>
-            ) : (
-              <span className={styles.outOfStock}>Под заказ</span>
-            )}
+            <div className={styles.priceInfo}>
+              {comparePrice && (
+                <span className={styles.oldPrice}>{comparePrice.toLocaleString()} ₽</span>
+              )}
+              <span className={styles.price}>{price.toLocaleString()} ₽</span>
+            </div>
+            <div className={styles.availability}>
+              {product.stock > 0 ? (
+                <span className={styles.inStock}>✓ В наличии</span>
+              ) : (
+                <span className={styles.outOfStock}>Под заказ</span>
+              )}
+            </div>
+            <div className={styles.priceActions}>
+              <button
+                type="button"
+                className={`${styles.compareButton} ${isInCompareState ? styles.compareButtonActive : ''}`}
+                aria-label={isInCompareState ? 'Удалить из сравнения' : 'Добавить в сравнение'}
+                onClick={handleCompareClick}
+                disabled={isCompareLoading}
+              >
+                ⚖
+              </button>
+              <button
+                type="button"
+                className={`${styles.favoriteButton} ${isFavorite ? styles.favoriteButtonActive : ''}`}
+                aria-label={isFavorite ? 'Удалить из избранного' : 'Добавить в избранное'}
+                onClick={handleFavoriteClick}
+                disabled={isWishlistLoading}
+              >
+                {isFavorite ? '♥' : '♡'}
+              </button>
+            </div>
           </div>
 
           <div className={styles.actions}>
@@ -327,8 +445,294 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
               if (!product) return null;
 
               const productId = String(product.id);
+
+              // Если есть варианты исполнения, показываем компактный блок вариантов
+              const hasVariants =
+                (product.sizes && Array.isArray(product.sizes) && product.sizes.length > 0) ||
+                (product.openingSide &&
+                  Array.isArray(product.openingSide) &&
+                  product.openingSide.length > 0);
+
+              if (hasVariants) {
+                return (
+                  <div className={styles.variantsCompact}>
+                    <div className={styles.variantsListCompact}>
+                      {variants.map((variant) => {
+                        const cartItem = getCartItemForVariant(variant.size, variant.openingSide);
+                        const isInCart = cartItem !== null;
+                        const cartQuantity = cartItem ? Number(cartItem.quantity) : 0;
+                        const isAdding = addingToCart[variant.id] || false;
+
+                        return (
+                          <div key={variant.id} className={styles.variantItemCompact}>
+                            <div className={styles.variantRowCompact}>
+                              {product.sizes &&
+                                Array.isArray(product.sizes) &&
+                                product.sizes.length > 0 && (
+                                  <div className={styles.variantFieldCompact}>
+                                    <label className={styles.variantLabelCompact}>Размер:</label>
+                                    <select
+                                      value={variant.size}
+                                      onChange={(e) => {
+                                        setVariants((prev) =>
+                                          prev.map((v) =>
+                                            v.id === variant.id ? { ...v, size: e.target.value } : v
+                                          )
+                                        );
+                                      }}
+                                      className={styles.optionSelectCompact}
+                                    >
+                                      <option value="">Выберите</option>
+                                      {product.sizes.map((size) => (
+                                        <option key={size} value={size}>
+                                          {size}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                )}
+
+                              {product.openingSide &&
+                                Array.isArray(product.openingSide) &&
+                                product.openingSide.length > 0 && (
+                                  <div className={styles.variantFieldCompact}>
+                                    <label className={styles.variantLabelCompact}>Сторона:</label>
+                                    <select
+                                      value={variant.openingSide}
+                                      onChange={(e) => {
+                                        setVariants((prev) =>
+                                          prev.map((v) =>
+                                            v.id === variant.id
+                                              ? { ...v, openingSide: e.target.value }
+                                              : v
+                                          )
+                                        );
+                                      }}
+                                      className={styles.optionSelectCompact}
+                                    >
+                                      <option value="">Выберите</option>
+                                      {product.openingSide.map((side) => (
+                                        <option key={side} value={side}>
+                                          {side}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                )}
+
+                              {variants.length > 1 && (
+                                <button
+                                  type="button"
+                                  className={styles.removeVariantButtonCompact}
+                                  onClick={() => {
+                                    setVariants((prev) => prev.filter((v) => v.id !== variant.id));
+                                  }}
+                                  title="Удалить вариант"
+                                  aria-label="Удалить вариант"
+                                >
+                                  🗑️
+                                </button>
+                              )}
+
+                              <div className={styles.variantActionsCompact}>
+                                {isInCart && cartItem ? (
+                                  <div className={styles.cartControlsCompact}>
+                                    <span className={styles.inCartLabelCompact}>В корзине</span>
+                                    <div
+                                      className={styles.quantityControlsCompact}
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <button
+                                        type="button"
+                                        className={styles.quantityButtonCompact}
+                                        onClick={async (e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          if (isAdding || !cartItem) return;
+                                          try {
+                                            const newQuantity = Number(cartQuantity) - 1;
+                                            if (newQuantity < 0) return;
+                                            await updateCartItemQuantityById(
+                                              cartItem.id,
+                                              newQuantity
+                                            );
+                                          } catch (error) {
+                                            if (error instanceof Error) {
+                                              alert(error.message);
+                                            } else {
+                                              alert('Произошла ошибка при обновлении количества');
+                                            }
+                                          }
+                                        }}
+                                        onMouseDown={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                        }}
+                                        disabled={isAdding || !cartItem}
+                                      >
+                                        −
+                                      </button>
+                                      <span className={styles.quantityValueCompact}>
+                                        {cartQuantity}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        className={styles.quantityButtonCompact}
+                                        onClick={async (e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          if (isAdding || !cartItem) return;
+                                          try {
+                                            const newQuantity = Number(cartQuantity) + 1;
+                                            await updateCartItemQuantityById(
+                                              cartItem.id,
+                                              newQuantity
+                                            );
+                                          } catch (error) {
+                                            if (error instanceof Error) {
+                                              alert(error.message);
+                                            } else {
+                                              alert('Произошла ошибка при обновлении количества');
+                                            }
+                                          }
+                                        }}
+                                        onMouseDown={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                        }}
+                                        disabled={isAdding || !cartItem}
+                                      >
+                                        +
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div className={styles.quantitySelectorCompact}>
+                                      <button
+                                        type="button"
+                                        className={styles.quantityButtonCompact}
+                                        onClick={() => {
+                                          const newQuantity = Math.max(1, variant.quantity - 1);
+                                          setVariants((prev) =>
+                                            prev.map((v) =>
+                                              v.id === variant.id
+                                                ? { ...v, quantity: newQuantity }
+                                                : v
+                                            )
+                                          );
+                                        }}
+                                        disabled={variant.quantity <= 1}
+                                      >
+                                        −
+                                      </button>
+                                      <span className={styles.quantityValueCompact}>
+                                        {variant.quantity}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        className={styles.quantityButtonCompact}
+                                        onClick={() => {
+                                          const newQuantity = variant.quantity + 1;
+                                          setVariants((prev) =>
+                                            prev.map((v) =>
+                                              v.id === variant.id
+                                                ? { ...v, quantity: newQuantity }
+                                                : v
+                                            )
+                                          );
+                                        }}
+                                      >
+                                        +
+                                      </button>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      className={styles.addToCartButtonCompact}
+                                      onClick={async () => {
+                                        if (!product) return;
+
+                                        const hasSize = !product.sizes?.length || variant.size;
+                                        const hasOpeningSide =
+                                          !product.openingSide?.length || variant.openingSide;
+
+                                        if (!hasSize || !hasOpeningSide) {
+                                          alert('Выберите все параметры варианта');
+                                          return;
+                                        }
+
+                                        try {
+                                          setAddingToCart((prev) => ({
+                                            ...prev,
+                                            [variant.id]: true,
+                                          }));
+                                          await addToCart(
+                                            productId,
+                                            variant.quantity,
+                                            variant.size && variant.size.trim()
+                                              ? variant.size
+                                              : undefined,
+                                            variant.openingSide && variant.openingSide.trim()
+                                              ? variant.openingSide
+                                              : undefined
+                                          );
+                                          await new Promise((resolve) => setTimeout(resolve, 100));
+                                        } catch (error) {
+                                          if (error instanceof Error) {
+                                            alert(error.message);
+                                          } else {
+                                            alert(
+                                              'Произошла ошибка при добавлении товара в корзину'
+                                            );
+                                          }
+                                        } finally {
+                                          setAddingToCart((prev) => ({
+                                            ...prev,
+                                            [variant.id]: false,
+                                          }));
+                                        }
+                                      }}
+                                      disabled={isAdding}
+                                    >
+                                      {isAdding ? 'Добавление...' : 'В корзину'}
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Кнопка добавления варианта */}
+                    <button
+                      type="button"
+                      className={styles.addVariantButtonCompact}
+                      onClick={() => {
+                        const newVariant: ProductVariant = {
+                          id: `variant-${Date.now()}-${Math.random()}`,
+                          size: '',
+                          openingSide: '',
+                          quantity: 1,
+                        };
+                        setVariants((prev) => [...prev, newVariant]);
+                      }}
+                    >
+                      + Добавить товар
+                    </button>
+                  </div>
+                );
+              }
+
+              // Интерфейс для товаров без вариантов
               const cartItem = cart.find(
-                (item) => item.productId !== null && String(item.productId) === productId
+                (item) =>
+                  item.productId !== null &&
+                  String(item.productId) === productId &&
+                  item.componentId === null &&
+                  item.size === null &&
+                  item.openingSide === null
               );
               const quantity = cartItem ? Number(cartItem.quantity) : 0;
               const isInCart = quantity > 0;
@@ -400,13 +804,12 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
               return (
                 <button
                   type="button"
-                  className={styles.addToCartButton}
+                  className={`${styles.addToCartButton} ${isInCart ? styles.addToCartButtonSuccess : ''}`}
                   onClick={async () => {
                     if (!product) return;
 
                     try {
                       setIsAddingToCart(true);
-                      const productId = String(product.id);
                       await addToCart(productId, 1);
                     } catch (error) {
                       if (error instanceof Error) {
@@ -420,19 +823,14 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                   }}
                   disabled={isAddingToCart || !product}
                 >
-                  {isAddingToCart ? 'Добавление...' : 'Добавить в корзину'}
+                  {isAddingToCart
+                    ? 'Добавление...'
+                    : isInCart
+                      ? `Добавлено в корзину ${quantity} шт.`
+                      : 'Добавить в корзину'}
                 </button>
               );
             })()}
-            <button
-              type="button"
-              className={`${styles.favoriteButton} ${isFavorite ? styles.favoriteButtonActive : ''}`}
-              aria-label={isFavorite ? 'Удалить из избранного' : 'Добавить в избранное'}
-              onClick={handleFavoriteClick}
-              disabled={isWishlistLoading}
-            >
-              {isFavorite ? '♥' : '♡'}
-            </button>
           </div>
 
           {/* Характеристики */}

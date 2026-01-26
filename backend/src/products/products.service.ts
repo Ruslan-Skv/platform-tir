@@ -18,8 +18,18 @@ export class ProductsService {
   ) {}
 
   async create(createProductDto: CreateProductDto) {
+    // Преобразуем null в пустые массивы для sizes и openingSide
+    // В PostgreSQL массивы не могут быть null, только пустые массивы []
+    const data: any = { ...createProductDto };
+    if (data.sizes === null) {
+      data.sizes = [];
+    }
+    if (data.openingSide === null) {
+      data.openingSide = [];
+    }
+
     const product = await this.prisma.product.create({
-      data: createProductDto,
+      data,
       include: {
         category: true,
       },
@@ -247,11 +257,20 @@ export class ProductsService {
 
     // Для JSON поля attributes нужна полная замена, а не merge
     // Если attributes передан (даже пустой объект), заменяем полностью
-    const data = { ...updateProductDto };
+    const data: any = { ...updateProductDto };
     if ('attributes' in updateProductDto) {
       // Явно устанавливаем attributes для полной замены
       // Prisma заменит весь JSON объект
       data.attributes = updateProductDto.attributes ?? {};
+    }
+
+    // Преобразуем null в пустые массивы для sizes и openingSide
+    // В PostgreSQL массивы не могут быть null, только пустые массивы []
+    if ('sizes' in updateProductDto) {
+      data.sizes = updateProductDto.sizes === null ? [] : updateProductDto.sizes;
+    }
+    if ('openingSide' in updateProductDto) {
+      data.openingSide = updateProductDto.openingSide === null ? [] : updateProductDto.openingSide;
     }
 
     const product = await this.prisma.product.update({

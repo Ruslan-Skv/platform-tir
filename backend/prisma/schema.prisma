@@ -459,6 +459,8 @@ model Product {
   shortDescription String?
   weight           Decimal?           @db.Decimal(8, 3)
   width            Decimal?           @db.Decimal(8, 2)
+  sizes            String[]
+  openingSide      String[]
   cartItems        CartItem[]
   orderItems       OrderItem[]
   suppliers        ProductSupplier[]
@@ -525,14 +527,16 @@ model Order {
 }
 
 model OrderItem {
-  id        String   @id @default(cuid())
-  orderId   String
-  productId String
-  quantity  Int
-  price     Decimal  @db.Decimal(10, 2)
-  createdAt DateTime @default(now())
-  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product   Product  @relation(fields: [productId], references: [id])
+  id          String   @id @default(cuid())
+  orderId     String
+  productId   String
+  quantity    Int
+  price       Decimal  @db.Decimal(10, 2)
+  size        String?
+  openingSide String?
+  createdAt   DateTime @default(now())
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id])
 
   @@map("order_items")
 }
@@ -564,6 +568,8 @@ model CartItem {
   productId   String?
   componentId String?
   quantity    Int
+  size        String?
+  openingSide String?
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   product     Product?          @relation(fields: [productId], references: [id], onDelete: Cascade)

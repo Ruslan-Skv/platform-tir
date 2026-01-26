@@ -5,7 +5,13 @@ import { PrismaService } from '../database/prisma.service';
 export class CartService {
   constructor(private prisma: PrismaService) {}
 
-  async addToCart(userId: string, productId: string, quantity: number = 1) {
+  async addToCart(
+    userId: string,
+    productId: string,
+    quantity: number = 1,
+    size?: string,
+    openingSide?: string,
+  ) {
     // Проверяем, существует ли товар
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
@@ -15,17 +21,19 @@ export class CartService {
       throw new NotFoundException(`Product with ID ${productId} not found`);
     }
 
-    // Проверяем, есть ли уже товар в корзине
+    // Проверяем, есть ли уже товар в корзине с теми же параметрами
     const existingItem = await this.prisma.cartItem.findFirst({
       where: {
         userId,
         productId,
         componentId: null,
+        size: size || null,
+        openingSide: openingSide || null,
       },
     });
 
     if (existingItem) {
-      // Если товар уже в корзине, увеличиваем количество
+      // Если товар уже в корзине с теми же параметрами, увеличиваем количество
       return this.prisma.cartItem.update({
         where: { id: existingItem.id },
         data: {
@@ -48,6 +56,8 @@ export class CartService {
         userId,
         productId,
         quantity,
+        size: size || null,
+        openingSide: openingSide || null,
       },
       include: {
         product: {
@@ -127,6 +137,39 @@ export class CartService {
     });
   }
 
+  async updateCartItemQuantityById(userId: string, itemId: string, quantity: number) {
+    if (quantity <= 0) {
+      return this.removeCartItemById(userId, itemId);
+    }
+
+    // Проверяем, что элемент корзины принадлежит пользователю
+    const item = await this.prisma.cartItem.findFirst({
+      where: {
+        id: itemId,
+        userId,
+      },
+    });
+
+    if (!item) {
+      throw new NotFoundException('Cart item not found');
+    }
+
+    return this.prisma.cartItem.update({
+      where: { id: itemId },
+      data: {
+        quantity,
+      },
+      include: {
+        product: {
+          include: {
+            category: true,
+          },
+        },
+        component: true,
+      },
+    });
+  }
+
   async updateCartItemQuantity(userId: string, productId: string, quantity: number) {
     if (quantity <= 0) {
       return this.removeFromCart(userId, productId);
@@ -196,6 +239,24 @@ export class CartService {
         },
         product: true,
       },
+    });
+  }
+
+  async removeCartItemById(userId: string, itemId: string) {
+    // Проверяем, что элемент корзины принадлежит пользователю
+    const item = await this.prisma.cartItem.findFirst({
+      where: {
+        id: itemId,
+        userId,
+      },
+    });
+
+    if (!item) {
+      throw new NotFoundException('Cart item not found');
+    }
+
+    return this.prisma.cartItem.delete({
+      where: { id: itemId },
     });
   }
 

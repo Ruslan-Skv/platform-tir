@@ -19,6 +19,16 @@ class OrderItemDto {
   @IsNumber()
   @Min(1)
   quantity: number;
+
+  @ApiProperty({ example: '60x200', required: false })
+  @IsOptional()
+  @IsString()
+  size?: string;
+
+  @ApiProperty({ example: 'правое', required: false })
+  @IsOptional()
+  @IsString()
+  openingSide?: string;
 }
 
 export class CreateOrderDto {

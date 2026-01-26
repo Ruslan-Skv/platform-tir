@@ -95,4 +95,16 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   seoDescription?: string;
+
+  @ApiProperty({ example: ['60x200', '70x200', '80x200'], required: false })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  sizes?: string[];
+
+  @ApiProperty({ example: ['правое', 'левое'], required: false })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  openingSide?: string[];
 }
