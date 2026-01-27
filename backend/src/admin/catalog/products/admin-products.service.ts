@@ -163,7 +163,7 @@ export class AdminProductsService {
               select: {
                 id: true,
                 name: true,
-                code: true,
+                legalName: true,
               },
             },
           },
@@ -234,6 +234,12 @@ export class AdminProductsService {
     if (!ids.length) {
       throw new BadRequestException('No product IDs provided');
     }
+
+    // Явно удаляем связи с поставщиками перед удалением товаров
+    // Это гарантирует, что счетчики обновятся корректно
+    await this.prisma.productSupplier.deleteMany({
+      where: { productId: { in: ids } },
+    });
 
     const result = await this.prisma.product.deleteMany({
       where: { id: { in: ids } },

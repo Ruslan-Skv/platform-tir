@@ -30,6 +30,16 @@ interface Product {
   sortOrder?: number;
   attributes?: Record<string, string | number | boolean | string[]> | null;
   images: string[];
+  suppliers?: Array<{
+    id: string;
+    supplierId: string;
+    isMainSupplier: boolean;
+    supplier: {
+      id: string;
+      legalName: string;
+      commercialName?: string | null;
+    };
+  }>;
 }
 
 // Доступные для отображения и редактирования колонки
@@ -48,6 +58,7 @@ const AVAILABLE_COLUMNS: ColumnConfig[] = [
   { key: 'isActive', title: 'Активен', editable: true, type: 'boolean' },
   { key: 'isFeatured', title: 'Хит', editable: true, type: 'boolean' },
   { key: 'isNew', title: 'Новинка', editable: true, type: 'boolean' },
+  { key: 'supplier', title: 'Поставщик', editable: true, type: 'text' },
 ];
 
 // Типы для редактируемых значений
@@ -67,6 +78,9 @@ export function ProductsPage() {
   const [categories, setCategories] = useState<CategoriesResponse[]>([]);
   const [categoryAttributes, setCategoryAttributes] = useState<
     Array<{ id: string; name: string; slug: string; type: string }>
+  >([]);
+  const [suppliers, setSuppliers] = useState<
+    Array<{ id: string; legalName: string; commercialName?: string | null }>
   >([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -161,6 +175,24 @@ export function ProductsPage() {
     };
     fetchCategories();
   }, []);
+
+  // Fetch suppliers
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const response = await fetch(`${API_URL}/admin/catalog/suppliers?limit=1000`, {
+          headers: getAuthHeaders(),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setSuppliers(data.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch suppliers:', err);
+      }
+    };
+    fetchSuppliers();
+  }, [getAuthHeaders]);
 
   // Fetch category attributes for all categories
   useEffect(() => {
@@ -798,6 +830,11 @@ export function ProductsPage() {
     if (editedProducts[product.id]?.[field] !== undefined) {
       return editedProducts[product.id][field] as EditableValue;
     }
+    // Special handling for supplier field
+    if (field === 'supplier') {
+      const mainSupplier = product.suppliers?.find((s) => s.isMainSupplier);
+      return mainSupplier?.supplierId || '';
+    }
     return product[field as keyof Product] as EditableValue;
   };
 
@@ -816,7 +853,12 @@ export function ProductsPage() {
     try {
       // Create all save promises
       const savePromises = productIdsToSave.map(async (productId) => {
-        const edits = editedProducts[productId];
+        const edits = { ...editedProducts[productId] };
+        // Convert 'supplier' field to 'supplierId' for API
+        if ('supplier' in edits) {
+          edits.supplierId = edits.supplier;
+          delete edits.supplier;
+        }
         const response = await fetch(`${API_URL}/products/${productId}`, {
           method: 'PATCH',
           headers: {
@@ -881,6 +923,28 @@ export function ProductsPage() {
   const renderEditableCell = (product: Product, columnConfig: ColumnConfig) => {
     const currentValue = getCurrentValue(product, columnConfig.key);
     const isEdited = editedProducts[product.id]?.[columnConfig.key] !== undefined;
+
+    // Special handling for supplier field
+    if (columnConfig.key === 'supplier') {
+      return (
+        <select
+          className={`${styles.editableInput} ${styles.editableSelect} ${isEdited ? styles.edited : ''}`}
+          value={(currentValue as string) || ''}
+          onChange={(e) => {
+            e.stopPropagation();
+            handleInlineEdit(product.id, columnConfig.key, e.target.value || null);
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <option value="">Не выбран</option>
+          {suppliers.map((supplier) => (
+            <option key={supplier.id} value={supplier.id}>
+              {supplier.commercialName || supplier.legalName}
+            </option>
+          ))}
+        </select>
+      );
+    }
 
     if (columnConfig.type === 'boolean') {
       return (
@@ -1001,6 +1065,17 @@ export function ProductsPage() {
           }
 
           // Non-edit mode rendering
+          // Special handling for supplier field
+          if (columnConfig.key === 'supplier') {
+            const mainSupplier = product.suppliers?.find((s) => s.isMainSupplier);
+            if (!mainSupplier) {
+              return <span className={styles.emptyValue}>—</span>;
+            }
+            return (
+              <span>{mainSupplier.supplier.commercialName || mainSupplier.supplier.legalName}</span>
+            );
+          }
+
           const value = product[columnConfig.key as keyof Product];
 
           if (columnConfig.type === 'currency') {

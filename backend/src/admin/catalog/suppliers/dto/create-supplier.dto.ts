@@ -1,23 +1,49 @@
-import { IsString, IsOptional, IsBoolean, IsNumber, IsEmail } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNumber, IsEmail, IsArray } from 'class-validator';
 
 export class CreateSupplierDto {
   @IsString()
-  name: string;
+  @IsOptional()
+  name?: string; // Для обратной совместимости
 
   @IsString()
-  code: string;
+  legalName: string; // Наименование юридическое (обязательное)
+
+  @IsString()
+  @IsOptional()
+  commercialName?: string; // Наименование коммерческое
 
   @IsEmail()
   @IsOptional()
   email?: string;
 
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
-  phone?: string;
+  phone?: string[]; // Массив телефонов
 
   @IsString()
   @IsOptional()
-  website?: string;
+  website?: string; // Адрес сайта
+
+  @IsString()
+  @IsOptional()
+  legalAddress?: string; // Юридический адрес
+
+  @IsString()
+  @IsOptional()
+  inn?: string; // ИНН
+
+  @IsString()
+  @IsOptional()
+  bankName?: string; // Банк
+
+  @IsString()
+  @IsOptional()
+  bankAccount?: string; // Расчетный счет (р/сч)
+
+  @IsString()
+  @IsOptional()
+  bankBik?: string; // БИК
 
   @IsString()
   @IsOptional()

@@ -159,6 +159,9 @@ export function ProductCreatePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [suppliers, setSuppliers] = useState<
+    Array<{ id: string; legalName: string; commercialName?: string | null }>
+  >([]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -175,6 +178,7 @@ export function ProductCreatePage() {
     sortOrder: 0,
     seoTitle: '',
     seoDescription: '',
+    supplierId: '',
     attributes: {} as Record<string, string>,
     images: [] as string[],
     sizes: [] as string[],
@@ -212,6 +216,24 @@ export function ProductCreatePage() {
     };
     fetchCategories();
   }, []);
+
+  // Fetch suppliers
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const response = await fetch(`${API_URL}/admin/catalog/suppliers?limit=1000`, {
+          headers: getAuthHeaders(),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setSuppliers(data.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch suppliers:', err);
+      }
+    };
+    fetchSuppliers();
+  }, [getAuthHeaders]);
 
   // Fetch category attributes when category changes
   useEffect(() => {
@@ -516,6 +538,7 @@ export function ProductCreatePage() {
         images: formData.images.length > 0 ? formData.images : undefined,
         sizes: hasSizes ? cleanedSizes : null,
         openingSide: hasOpeningSide ? formData.openingSide : null,
+        supplierId: formData.supplierId || undefined,
       };
 
       const response = await fetch(`${API_URL}/products`, {
@@ -621,23 +644,43 @@ export function ProductCreatePage() {
               </div>
             </div>
 
-            <div className={styles.formGroup}>
-              <label htmlFor="categoryId">Категория *</label>
-              <select
-                id="categoryId"
-                name="categoryId"
-                value={formData.categoryId}
-                onChange={handleChange}
-                required
-                className={styles.select}
-              >
-                <option value="">Выберите категорию</option>
-                {flatCategories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
+            <div className={`${styles.formRow} ${styles.categorySupplierRow}`}>
+              <div className={styles.formGroup}>
+                <label htmlFor="categoryId">Категория *</label>
+                <select
+                  id="categoryId"
+                  name="categoryId"
+                  value={formData.categoryId}
+                  onChange={handleChange}
+                  required
+                  className={styles.select}
+                >
+                  <option value="">Выберите категорию</option>
+                  {flatCategories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="supplierId">Поставщик</label>
+                <select
+                  id="supplierId"
+                  name="supplierId"
+                  value={formData.supplierId}
+                  onChange={handleChange}
+                  className={styles.select}
+                >
+                  <option value="">Не выбран</option>
+                  {suppliers.map((supplier) => (
+                    <option key={supplier.id} value={supplier.id}>
+                      {supplier.commercialName || supplier.legalName}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 

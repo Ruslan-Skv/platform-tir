@@ -8,12 +8,15 @@ export class SuppliersService {
   constructor(private prisma: PrismaService) {}
 
   async create(createSupplierDto: CreateSupplierDto) {
-    const existing = await this.prisma.supplier.findUnique({
-      where: { code: createSupplierDto.code },
-    });
+    // Check if INN is unique (if provided)
+    if (createSupplierDto.inn) {
+      const existingByInn = await this.prisma.supplier.findUnique({
+        where: { inn: createSupplierDto.inn },
+      });
 
-    if (existing) {
-      throw new ConflictException(`Supplier with code "${createSupplierDto.code}" already exists`);
+      if (existingByInn) {
+        throw new ConflictException(`Supplier with INN "${createSupplierDto.inn}" already exists`);
+      }
     }
 
     return this.prisma.supplier.create({
@@ -48,31 +51,55 @@ export class SuppliersService {
 
     if (search) {
       where.OR = [
+        { legalName: { contains: search, mode: 'insensitive' } },
+        { commercialName: { contains: search, mode: 'insensitive' } },
         { name: { contains: search, mode: 'insensitive' } },
-        { code: { contains: search, mode: 'insensitive' } },
+        { inn: { contains: search, mode: 'insensitive' } },
       ];
     }
 
-    const [suppliers, total] = await Promise.all([
-      this.prisma.supplier.findMany({
-        where,
-        include: {
-          _count: {
-            select: {
-              products: true,
-              syncLogs: true,
-            },
+    const suppliers = await this.prisma.supplier.findMany({
+      where,
+      include: {
+        _count: {
+          select: {
+            syncLogs: true,
           },
         },
-        skip,
-        take: limit,
-        orderBy: { name: 'asc' },
+      },
+      skip,
+      take: limit,
+      orderBy: { legalName: 'asc' },
+    });
+
+    // Подсчитываем только товары, которые реально существуют
+    // Используем отдельный запрос для каждого поставщика, чтобы избежать проблем с "осиротевшими" записями
+    const suppliersWithCounts = await Promise.all(
+      suppliers.map(async (supplier) => {
+        const productsCount = await this.prisma.productSupplier.count({
+          where: {
+            supplierId: supplier.id,
+            product: {
+              // Проверяем, что товар существует
+              id: { not: undefined },
+            },
+          },
+        });
+
+        return {
+          ...supplier,
+          _count: {
+            ...supplier._count,
+            products: productsCount,
+          },
+        };
       }),
-      this.prisma.supplier.count({ where }),
-    ]);
+    );
+
+    const total = await this.prisma.supplier.count({ where });
 
     return {
-      data: suppliers,
+      data: suppliersWithCounts,
       total,
       page,
       limit,
@@ -84,11 +111,6 @@ export class SuppliersService {
     const supplier = await this.prisma.supplier.findUnique({
       where: { id },
       include: {
-        _count: {
-          select: {
-            products: true,
-          },
-        },
         syncLogs: {
           take: 10,
           orderBy: { startedAt: 'desc' },
@@ -100,26 +122,49 @@ export class SuppliersService {
       throw new NotFoundException(`Supplier with ID ${id} not found`);
     }
 
-    return supplier;
+    // Подсчитываем только товары, которые реально существуют
+    const productsCount = await this.prisma.productSupplier.count({
+      where: {
+        supplierId: id,
+        product: {
+          // Проверяем, что товар существует
+          id: { not: undefined },
+        },
+      },
+    });
+
+    return {
+      ...supplier,
+      _count: {
+        products: productsCount,
+      },
+    };
   }
 
   async update(id: string, data: Partial<CreateSupplierDto>) {
     const supplier = await this.findOne(id);
 
-    if (data.code && data.code !== supplier.code) {
-      const existing = await this.prisma.supplier.findUnique({
-        where: { code: data.code },
+    // Check if INN is unique (if provided and changed)
+    if (data.inn && data.inn !== supplier.inn) {
+      const existingByInn = await this.prisma.supplier.findUnique({
+        where: { inn: data.inn },
       });
 
-      if (existing) {
-        throw new ConflictException(`Supplier with code "${data.code}" already exists`);
+      if (existingByInn) {
+        throw new ConflictException(`Supplier with INN "${data.inn}" already exists`);
       }
     }
 
     const updateData: Prisma.SupplierUpdateInput = {
       name: data.name,
-      code: data.code,
+      legalName: data.legalName,
+      commercialName: data.commercialName,
       website: data.website,
+      legalAddress: data.legalAddress,
+      inn: data.inn,
+      bankName: data.bankName,
+      bankAccount: data.bankAccount,
+      bankBik: data.bankBik,
       apiUrl: data.apiUrl,
       apiKey: data.apiKey,
       isActive: data.isActive,

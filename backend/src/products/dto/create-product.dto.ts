@@ -107,4 +107,9 @@ export class CreateProductDto {
   @IsArray()
   @IsString({ each: true })
   openingSide?: string[];
+
+  @ApiProperty({ example: 'supplier-id', required: false })
+  @IsOptional()
+  @IsString()
+  supplierId?: string;
 }

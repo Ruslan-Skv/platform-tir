@@ -20,7 +20,8 @@ export class ProductsService {
   async create(createProductDto: CreateProductDto) {
     // Преобразуем null в пустые массивы для sizes и openingSide
     // В PostgreSQL массивы не могут быть null, только пустые массивы []
-    const data: any = { ...createProductDto };
+    const { supplierId, ...productData } = createProductDto;
+    const data: any = { ...productData };
     if (data.sizes === null) {
       data.sizes = [];
     }
@@ -34,6 +35,36 @@ export class ProductsService {
         category: true,
       },
     });
+
+    // Если указан поставщик, создаем связь ProductSupplier
+    if (supplierId) {
+      // Сначала снимаем флаг isMainSupplier у всех существующих поставщиков этого товара (если есть)
+      await this.prisma.productSupplier.updateMany({
+        where: { productId: product.id },
+        data: { isMainSupplier: false },
+      });
+
+      // Создаем или обновляем связь с поставщиком
+      await this.prisma.productSupplier.upsert({
+        where: {
+          productId_supplierId: {
+            productId: product.id,
+            supplierId: supplierId,
+          },
+        },
+        create: {
+          productId: product.id,
+          supplierId: supplierId,
+          supplierSku: product.sku || '',
+          supplierPrice: product.price,
+          supplierStock: product.stock || 0,
+          isMainSupplier: true,
+        },
+        update: {
+          isMainSupplier: true,
+        },
+      });
+    }
 
     // Index in Elasticsearch
     await this.indexProduct(product);
@@ -56,6 +87,21 @@ export class ProductsService {
     return this.prisma.product.findMany({
       include: {
         category: true,
+        suppliers: {
+          where: {
+            isMainSupplier: true,
+          },
+          include: {
+            supplier: {
+              select: {
+                id: true,
+                legalName: true,
+                commercialName: true,
+              },
+            },
+          },
+          take: 1,
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -73,6 +119,17 @@ export class ProductsService {
         reviews: {
           where: { isApproved: true },
           orderBy: { createdAt: 'desc' },
+        },
+        suppliers: {
+          include: {
+            supplier: {
+              select: {
+                id: true,
+                legalName: true,
+                commercialName: true,
+              },
+            },
+          },
         },
       },
     });
@@ -257,7 +314,8 @@ export class ProductsService {
 
     // Для JSON поля attributes нужна полная замена, а не merge
     // Если attributes передан (даже пустой объект), заменяем полностью
-    const data: any = { ...updateProductDto };
+    const { supplierId, ...productData } = updateProductDto;
+    const data: any = { ...productData };
     if ('attributes' in updateProductDto) {
       // Явно устанавливаем attributes для полной замены
       // Prisma заменит весь JSON объект
@@ -281,6 +339,47 @@ export class ProductsService {
       },
     });
 
+    // Обработка поставщика
+    if ('supplierId' in updateProductDto) {
+      if (supplierId) {
+        // Сначала снимаем флаг isMainSupplier у всех существующих поставщиков этого товара
+        await this.prisma.productSupplier.updateMany({
+          where: { productId: id },
+          data: { isMainSupplier: false },
+        });
+
+        // Создаем или обновляем связь с поставщиком
+        await this.prisma.productSupplier.upsert({
+          where: {
+            productId_supplierId: {
+              productId: id,
+              supplierId: supplierId,
+            },
+          },
+          create: {
+            productId: id,
+            supplierId: supplierId,
+            supplierSku: product.sku || '',
+            supplierPrice: product.price,
+            supplierStock: product.stock || 0,
+            isMainSupplier: true,
+          },
+          update: {
+            isMainSupplier: true,
+          },
+        });
+      } else {
+        // Если supplierId не указан (пользователь убрал поставщика),
+        // удаляем связь с главным поставщиком, чтобы счетчик обновился
+        await this.prisma.productSupplier.deleteMany({
+          where: {
+            productId: id,
+            isMainSupplier: true,
+          },
+        });
+      }
+    }
+
     // Update in Elasticsearch
     await this.indexProduct(product);
 
@@ -289,6 +388,13 @@ export class ProductsService {
 
   async remove(id: string) {
     await this.findOne(id);
+
+    // Явно удаляем связи с поставщиками перед удалением товара
+    // Это гарантирует, что счетчики обновятся корректно
+    await this.prisma.productSupplier.deleteMany({
+      where: { productId: id },
+    });
+
     await this.prisma.product.delete({
       where: { id },
     });
