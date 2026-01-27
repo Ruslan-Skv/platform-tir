@@ -272,18 +272,20 @@ model Supplier {
 }
 
 model ProductSupplier {
-  id             String    @id @default(cuid())
-  productId      String
-  supplierId     String
-  supplierSku    String
-  supplierPrice  Decimal   @db.Decimal(10, 2)
-  supplierStock  Int       @default(0)
-  isMainSupplier Boolean   @default(false)
-  lastSyncAt     DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  supplier       Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  id                     String    @id @default(cuid())
+  productId              String
+  supplierId             String
+  supplierSku            String
+  supplierPrice          Decimal   @db.Decimal(10, 2)
+  supplierStock         Int       @default(0)
+  supplierProductUrl    String?   // Ссылка на товар у поставщика
+  supplierPriceChangedAt DateTime? // Пометка: цена поставщика изменилась при последней синхронизации
+  isMainSupplier        Boolean   @default(false)
+  lastSyncAt            DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  product               Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplier              Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
 
   @@unique([productId, supplierId])
   @@map("product_suppliers")

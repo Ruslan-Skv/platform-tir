@@ -34,6 +34,9 @@ interface Product {
     id: string;
     supplierId: string;
     isMainSupplier: boolean;
+    supplierPrice?: string | number;
+    supplierProductUrl?: string | null;
+    supplierPriceChangedAt?: string | null;
     supplier: {
       id: string;
       legalName: string;
@@ -53,6 +56,7 @@ interface ColumnConfig {
 const AVAILABLE_COLUMNS: ColumnConfig[] = [
   { key: 'price', title: 'Цена', editable: true, type: 'currency' },
   { key: 'comparePrice', title: 'Старая цена', editable: true, type: 'currency' },
+  { key: 'supplierPrice', title: 'Цена поставщика', editable: false, type: 'currency' },
   { key: 'stock', title: 'Остаток', editable: true, type: 'number' },
   { key: 'sortOrder', title: 'Сортировка', editable: true, type: 'number' },
   { key: 'isActive', title: 'Активен', editable: true, type: 'boolean' },
@@ -142,6 +146,10 @@ export function ProductsPage() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportScope, setExportScope] = useState<'all' | 'filtered' | 'selected'>('filtered');
+
+  // Массовая синхронизация цен поставщика
+  const [syncingSupplierPrices, setSyncingSupplierPrices] = useState(false);
+  const [syncSupplierPricesMessage, setSyncSupplierPricesMessage] = useState<string | null>(null);
 
   // Close column selector when clicking outside
   useEffect(() => {
@@ -835,6 +843,11 @@ export function ProductsPage() {
       const mainSupplier = product.suppliers?.find((s) => s.isMainSupplier);
       return mainSupplier?.supplierId || '';
     }
+    // Цена поставщика — из главного поставщика
+    if (field === 'supplierPrice') {
+      const mainSupplier = product.suppliers?.find((s) => s.isMainSupplier);
+      return mainSupplier?.supplierPrice ?? null;
+    }
     return product[field as keyof Product] as EditableValue;
   };
 
@@ -966,11 +979,17 @@ export function ProductsPage() {
     }
 
     if (columnConfig.type === 'currency' || columnConfig.type === 'number') {
+      const numericValue =
+        currentValue === null || currentValue === undefined
+          ? ''
+          : typeof currentValue === 'number'
+            ? currentValue
+            : '';
       return (
         <input
           type="number"
           className={`${styles.editableInput} ${isEdited ? styles.edited : ''}`}
-          value={currentValue === null ? '' : currentValue}
+          value={numericValue}
           onChange={(e) => {
             e.stopPropagation();
             const val = e.target.value === '' ? null : parseFloat(e.target.value);
@@ -1076,6 +1095,33 @@ export function ProductsPage() {
             );
           }
 
+          // Цена поставщика + пометка «изменилась»
+          if (columnConfig.key === 'supplierPrice') {
+            const mainSupplier = product.suppliers?.find((s) => s.isMainSupplier);
+            if (!mainSupplier) {
+              return <span className={styles.emptyValue}>—</span>;
+            }
+            const price = mainSupplier.supplierPrice;
+            const changed = Boolean(mainSupplier.supplierPriceChangedAt);
+            if (price === undefined || price === null) {
+              return <span className={styles.emptyValue}>—</span>;
+            }
+            const num = typeof price === 'string' ? parseFloat(price) : Number(price);
+            return (
+              <span className={styles.supplierPriceCell}>
+                <span className={styles.price}>{formatCurrency(Number.isNaN(num) ? 0 : num)}</span>
+                {changed && (
+                  <span
+                    className={styles.supplierPriceChangedBadge}
+                    title="Цена поставщика изменилась"
+                  >
+                    !
+                  </span>
+                )}
+              </span>
+            );
+          }
+
           const value = product[columnConfig.key as keyof Product];
 
           if (columnConfig.type === 'currency') {
@@ -1112,7 +1158,7 @@ export function ProductsPage() {
         },
       };
     })
-    .filter(Boolean);
+    .filter((col): col is NonNullable<typeof col> => col !== null);
 
   const actionColumn = {
     key: 'actions',
@@ -1289,6 +1335,43 @@ export function ProductsPage() {
           </button>
           <button className={styles.secondaryButton} onClick={() => setShowExportModal(true)}>
             📤 Экспорт
+          </button>
+          <button
+            className={styles.secondaryButton}
+            disabled={syncingSupplierPrices}
+            onClick={async () => {
+              setSyncingSupplierPrices(true);
+              setSyncSupplierPricesMessage(null);
+              try {
+                const response = await fetch(`${API_URL}/products/admin/sync-supplier-prices`, {
+                  method: 'POST',
+                  headers: getAuthHeaders(),
+                });
+                if (!response.ok) {
+                  const err = await response.json().catch(() => ({}));
+                  throw new Error(err.message || 'Ошибка синхронизации');
+                }
+                const data = await response.json();
+                const msg =
+                  data.total === 0
+                    ? 'Нет товаров с указанной ссылкой на товар поставщика'
+                    : `Обработано: ${data.total}, обновлено: ${data.updated}, цена изменилась: ${data.changed}` +
+                      (data.errors?.length ? `, ошибок: ${data.errors.length}` : '');
+                setSyncSupplierPricesMessage(msg);
+                setTimeout(() => setSyncSupplierPricesMessage(null), 5000);
+                fetchProducts(true);
+              } catch (e) {
+                setSyncSupplierPricesMessage(
+                  e instanceof Error ? e.message : 'Ошибка массовой синхронизации цен'
+                );
+                setTimeout(() => setSyncSupplierPricesMessage(null), 5000);
+              } finally {
+                setSyncingSupplierPrices(false);
+              }
+            }}
+            title="Для товаров с заданной ссылкой на товар поставщика получить актуальную цену и обновить «Цена поставщика». Если цена изменилась — ставится пометка «!»."
+          >
+            {syncingSupplierPrices ? '⏳ Синхронизация...' : '🔄 Синхр. цены'}
           </button>
           <button
             className={styles.addButton}
@@ -1714,6 +1797,20 @@ export function ProductsPage() {
           <button
             className={styles.toastClose}
             onClick={() => setSaveMessage(null)}
+            aria-label="Закрыть"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Sync supplier prices toast */}
+      {syncSupplierPricesMessage && (
+        <div className={`${styles.toast} ${styles.toastSuccess}`}>
+          <span className={styles.toastMessage}>{syncSupplierPricesMessage}</span>
+          <button
+            className={styles.toastClose}
+            onClick={() => setSyncSupplierPricesMessage(null)}
             aria-label="Закрыть"
           >
             ✕

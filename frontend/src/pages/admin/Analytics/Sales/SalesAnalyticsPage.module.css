@@ -11,7 +11,7 @@
 }
 
 .title {
-  font-size: 1.75rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: #1f2937;
   margin: 0;
@@ -193,8 +193,8 @@
 }
 
 .barLabel {
-  margin-top: 8px;
-  font-size: 0.8rem;
+  margin-top: 6px;
+  font-size: 0.7rem;
   color: #6b7280;
   text-transform: capitalize;
 }
@@ -220,14 +220,14 @@
 
 .table th,
 .table td {
-  padding: 12px 20px;
+  padding: 8px 6px;
   text-align: left;
   border-bottom: 1px solid #e5e7eb;
 }
 
 .table th {
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -236,6 +236,7 @@
 
 .table td {
   color: #374151;
+  font-size: 0.8125rem;
 }
 
 .table tr:last-child td {
@@ -246,14 +247,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   background: #e5e7eb;
   color: #374151;
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   border-radius: 50%;
-  margin-right: 12px;
+  margin-right: 8px;
 }
 
 .table tr:nth-child(1) .rank {

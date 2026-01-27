@@ -40,6 +40,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        avatar: (user as UserWithoutPassword).avatar ?? null,
       },
     };
   }

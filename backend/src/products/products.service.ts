@@ -1,12 +1,20 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { ElasticsearchService } from '../elasticsearch/elasticsearch.service';
+import { PriceScraperService } from './price-scraper.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { SearchProductsDto } from './dto/search-products.dto';
-import { Category } from '@prisma/client';
+import { Category, Prisma } from '@prisma/client';
 
 type CategoryWithChildren = Category & { children?: CategoryWithChildren[] };
+
+export interface SyncSupplierPricesResult {
+  total: number;
+  updated: number;
+  changed: number;
+  errors: Array<{ productId: string; productName: string; error: string }>;
+}
 
 @Injectable()
 export class ProductsService {
@@ -15,13 +23,19 @@ export class ProductsService {
   constructor(
     private prisma: PrismaService,
     private elasticsearch: ElasticsearchService,
+    private priceScraper: PriceScraperService,
   ) {}
 
   async create(createProductDto: CreateProductDto) {
     // Преобразуем null в пустые массивы для sizes и openingSide
     // В PostgreSQL массивы не могут быть null, только пустые массивы []
-    const { supplierId, ...productData } = createProductDto;
-    const data: any = { ...productData };
+    const { supplierId, categoryId, ...productData } = createProductDto;
+    const data: Prisma.ProductCreateInput = {
+      ...productData,
+      category: {
+        connect: { id: categoryId },
+      },
+    };
     if (data.sizes === null) {
       data.sizes = [];
     }
@@ -38,6 +52,8 @@ export class ProductsService {
 
     // Если указан поставщик, создаем связь ProductSupplier
     if (supplierId) {
+      const { supplierProductUrl, supplierPrice } = createProductDto;
+
       // Сначала снимаем флаг isMainSupplier у всех существующих поставщиков этого товара (если есть)
       await this.prisma.productSupplier.updateMany({
         where: { productId: product.id },
@@ -56,12 +72,17 @@ export class ProductsService {
           productId: product.id,
           supplierId: supplierId,
           supplierSku: product.sku || '',
-          supplierPrice: product.price,
+          supplierPrice: supplierPrice ? new Prisma.Decimal(supplierPrice) : product.price,
+          supplierProductUrl: supplierProductUrl || null,
           supplierStock: product.stock || 0,
           isMainSupplier: true,
         },
         update: {
           isMainSupplier: true,
+          ...(supplierPrice !== undefined && { supplierPrice: new Prisma.Decimal(supplierPrice) }),
+          ...(supplierProductUrl !== undefined && {
+            supplierProductUrl: supplierProductUrl || null,
+          }),
         },
       });
     }
@@ -314,8 +335,16 @@ export class ProductsService {
 
     // Для JSON поля attributes нужна полная замена, а не merge
     // Если attributes передан (даже пустой объект), заменяем полностью
-    const { supplierId, ...productData } = updateProductDto;
-    const data: any = { ...productData };
+    const { supplierId, categoryId, ...productData } = updateProductDto;
+    const data: Prisma.ProductUpdateInput = { ...productData };
+
+    // Преобразуем categoryId в связь category, если он передан
+    if (categoryId !== undefined) {
+      data.category = {
+        connect: { id: categoryId },
+      };
+    }
+
     if ('attributes' in updateProductDto) {
       // Явно устанавливаем attributes для полной замены
       // Prisma заменит весь JSON объект
@@ -340,7 +369,13 @@ export class ProductsService {
     });
 
     // Обработка поставщика
-    if ('supplierId' in updateProductDto) {
+    if (
+      'supplierId' in updateProductDto ||
+      'supplierProductUrl' in updateProductDto ||
+      'supplierPrice' in updateProductDto
+    ) {
+      const { supplierProductUrl, supplierPrice } = updateProductDto;
+
       if (supplierId) {
         // Сначала снимаем флаг isMainSupplier у всех существующих поставщиков этого товара
         await this.prisma.productSupplier.updateMany({
@@ -360,14 +395,44 @@ export class ProductsService {
             productId: id,
             supplierId: supplierId,
             supplierSku: product.sku || '',
-            supplierPrice: product.price,
+            supplierPrice: supplierPrice ? new Prisma.Decimal(supplierPrice) : product.price,
+            supplierProductUrl: supplierProductUrl || null,
             supplierStock: product.stock || 0,
             isMainSupplier: true,
           },
           update: {
             isMainSupplier: true,
+            ...(supplierPrice !== undefined && {
+              supplierPrice: new Prisma.Decimal(supplierPrice),
+            }),
+            ...(supplierProductUrl !== undefined && {
+              supplierProductUrl: supplierProductUrl || null,
+            }),
           },
         });
+      } else if (supplierProductUrl !== undefined || supplierPrice !== undefined) {
+        // Если обновляются только supplierProductUrl или supplierPrice, но supplierId не указан
+        // Находим главного поставщика и обновляем его данные
+        const mainSupplier = await this.prisma.productSupplier.findFirst({
+          where: {
+            productId: id,
+            isMainSupplier: true,
+          },
+        });
+
+        if (mainSupplier) {
+          await this.prisma.productSupplier.update({
+            where: { id: mainSupplier.id },
+            data: {
+              ...(supplierPrice !== undefined && {
+                supplierPrice: new Prisma.Decimal(supplierPrice),
+              }),
+              ...(supplierProductUrl !== undefined && {
+                supplierProductUrl: supplierProductUrl || null,
+              }),
+            },
+          });
+        }
       } else {
         // Если supplierId не указан (пользователь убрал поставщика),
         // удаляем связь с главным поставщиком, чтобы счетчик обновился
@@ -444,5 +509,58 @@ export class ProductsService {
     } catch (error) {
       console.error('Error indexing product:', error);
     }
+  }
+
+  /**
+   * Массовая синхронизация цен поставщика: для всех ProductSupplier с заданной ссылкой
+   * получает цену по URL, при изменении обновляет supplierPrice и ставит supplierPriceChangedAt.
+   */
+  async syncSupplierPrices(): Promise<SyncSupplierPricesResult> {
+    const rows = await this.prisma.productSupplier.findMany({
+      where: {
+        supplierProductUrl: { not: null },
+      },
+      include: {
+        product: { select: { id: true, name: true } },
+      },
+    });
+
+    const result: SyncSupplierPricesResult = {
+      total: rows.length,
+      updated: 0,
+      changed: 0,
+      errors: [],
+    };
+
+    for (const row of rows) {
+      const url = row.supplierProductUrl;
+      if (!url) continue;
+
+      try {
+        const newPrice = await this.priceScraper.getPriceFromUrl(url);
+        const currentPrice = Number(row.supplierPrice);
+        const priceChanged = Math.abs(newPrice - currentPrice) > 0.01;
+
+        await this.prisma.productSupplier.update({
+          where: { id: row.id },
+          data: {
+            supplierPrice: new Prisma.Decimal(newPrice),
+            lastSyncAt: new Date(),
+            ...(priceChanged && { supplierPriceChangedAt: new Date() }),
+          },
+        });
+
+        result.updated += 1;
+        if (priceChanged) result.changed += 1;
+      } catch (err) {
+        result.errors.push({
+          productId: row.productId,
+          productName: row.product.name,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    return result;
   }
 }

@@ -9,8 +9,9 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
+import { PriceScraperService } from './price-scraper.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { SearchProductsDto } from './dto/search-products.dto';
@@ -19,7 +20,10 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @ApiTags('products')
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly priceScraperService: PriceScraperService,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard)
@@ -41,6 +45,14 @@ export class ProductsController {
   @ApiOperation({ summary: 'Получить все товары для админки (включая неактивные)' })
   findAllAdmin() {
     return this.productsService.findAllAdmin();
+  }
+
+  @Post('admin/sync-supplier-prices')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Массовая синхронизация цен поставщика по ссылкам' })
+  async syncSupplierPrices() {
+    return this.productsService.syncSupplierPrices();
   }
 
   @Get('search')
@@ -87,5 +99,15 @@ export class ProductsController {
   @ApiOperation({ summary: 'Удалить товар' })
   remove(@Param('id') id: string) {
     return this.productsService.remove(id);
+  }
+
+  @Get('scrape/price')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Получить цену товара по ссылке поставщика' })
+  @ApiQuery({ name: 'url', required: true, description: 'URL товара у поставщика' })
+  async getPriceFromUrl(@Query('url') url: string) {
+    const price = await this.priceScraperService.getPriceFromUrl(url);
+    return { price };
   }
 }

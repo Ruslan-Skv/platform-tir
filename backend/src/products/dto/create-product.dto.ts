@@ -112,4 +112,16 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   supplierId?: string;
+
+  @ApiProperty({ example: 'https://supplier.com/product/123', required: false })
+  @IsOptional()
+  @IsString()
+  supplierProductUrl?: string;
+
+  @ApiProperty({ example: 12000.0, required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  supplierPrice?: number;
 }

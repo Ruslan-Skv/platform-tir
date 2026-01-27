@@ -106,7 +106,11 @@ export function AdminHeader() {
 
         <div className={styles.userWrapper} ref={userMenuRef}>
           <button className={styles.userButton} onClick={() => setShowUserMenu(!showUserMenu)}>
-            <div className={styles.avatar}>{displayName.charAt(0).toUpperCase()}</div>
+            {user?.avatar ? (
+              <img src={user.avatar} alt="" className={styles.avatarImg} />
+            ) : (
+              <div className={styles.avatar}>{displayName.charAt(0).toUpperCase()}</div>
+            )}
             <div className={styles.userInfo}>
               <span className={styles.userName}>{displayName}</span>
               <span className={styles.userRole}>

@@ -17,7 +17,7 @@
 }
 
 .title {
-  font-size: 1.75rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: #1f2937;
   margin: 0;
@@ -128,13 +128,13 @@
 }
 
 .bulkButton {
-  padding: 8px 16px;
+  padding: 6px 12px;
   border: 1px solid #93c5fd;
   background: #fff;
   color: #1e40af;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.8125rem;
   transition: all 0.2s;
 }
 
@@ -146,6 +146,7 @@
 .orderNumber {
   font-weight: 600;
   color: #6366f1;
+  font-size: 0.8125rem;
 }
 
 /* Customer Cell */
@@ -157,10 +158,11 @@
 .customerName {
   font-weight: 500;
   color: #1f2937;
+  font-size: 0.8125rem;
 }
 
 .customerEmail {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   color: #6b7280;
 }
 
@@ -168,9 +170,9 @@
 .statusBadge,
 .paymentBadge {
   display: inline-block;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.8rem;
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 0.7rem;
   font-weight: 500;
 }
 
@@ -233,21 +235,22 @@
 .totalAmount {
   font-weight: 600;
   color: #1f2937;
+  font-size: 0.8125rem;
 }
 
 .itemsCount {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   color: #6b7280;
 }
 
 /* View Button */
 .viewButton {
-  padding: 6px 12px;
+  padding: 4px 8px;
   background: #f3f4f6;
   border: none;
   border-radius: 6px;
   color: #374151;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   cursor: pointer;
   transition: background 0.2s;
 }

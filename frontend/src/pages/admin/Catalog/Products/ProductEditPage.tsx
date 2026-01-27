@@ -157,6 +157,8 @@ interface Product {
     id: string;
     supplierId: string;
     isMainSupplier: boolean;
+    supplierPrice?: string | number;
+    supplierProductUrl?: string | null;
     supplier: {
       id: string;
       legalName: string;
@@ -198,6 +200,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   const { getAuthHeaders } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [fetchingPrice, setFetchingPrice] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -225,6 +228,9 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     attributes: {} as Record<string, string>,
     sizes: [] as string[],
     openingSide: [] as string[],
+    supplierId: '',
+    supplierProductUrl: '',
+    supplierPrice: '',
   });
 
   // Атрибуты категории и товара
@@ -382,6 +388,8 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         // Находим основного поставщика
         const mainSupplier = product.suppliers?.find((ps) => ps.isMainSupplier);
         const supplierId = mainSupplier?.supplierId || '';
+        const supplierProductUrl = mainSupplier?.supplierProductUrl || '';
+        const supplierPrice = mainSupplier?.supplierPrice ? String(mainSupplier.supplierPrice) : '';
 
         setFormData({
           name: product.name || '',
@@ -394,6 +402,8 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           categoryId: product.categoryId || '',
           manufacturerId: product.manufacturerId || null,
           supplierId: supplierId,
+          supplierProductUrl: supplierProductUrl,
+          supplierPrice: supplierPrice,
           isActive: product.isActive ?? true,
           isFeatured: product.isFeatured ?? false,
           isNew: product.isNew ?? false,
@@ -734,6 +744,8 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           sizes: hasSizes ? cleanedSizes : null,
           openingSide: hasOpeningSide ? formData.openingSide : null,
           supplierId: formData.supplierId || null,
+          supplierProductUrl: formData.supplierProductUrl || null,
+          supplierPrice: formData.supplierPrice ? parseFloat(formData.supplierPrice) : undefined,
         }),
       });
 
@@ -894,6 +906,129 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                 </select>
               </div>
             </div>
+
+            {formData.supplierId && (
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label htmlFor="supplierProductUrl">Ссылка на товар поставщика</label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input
+                      type="url"
+                      id="supplierProductUrl"
+                      name="supplierProductUrl"
+                      value={formData.supplierProductUrl}
+                      onChange={handleChange}
+                      className={styles.input}
+                      placeholder="https://supplier.com/product/123"
+                    />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!formData.supplierProductUrl) {
+                          setError('Введите ссылку на товар поставщика');
+                          return;
+                        }
+                        try {
+                          setFetchingPrice(true);
+                          setError(null);
+                          const response = await fetch(
+                            `${API_URL}/products/scrape/price?url=${encodeURIComponent(formData.supplierProductUrl)}`,
+                            {
+                              headers: getAuthHeaders(),
+                            }
+                          );
+                          if (!response.ok) {
+                            const data = await response.json().catch(() => ({}));
+                            throw new Error(data.message || 'Ошибка получения цены');
+                          }
+                          const data = await response.json();
+                          setFormData((prev) => ({
+                            ...prev,
+                            supplierPrice: String(data.price),
+                          }));
+                          setSuccess(`Цена получена: ${data.price} ₽`);
+                          setTimeout(() => setSuccess(null), 3000);
+                        } catch (err) {
+                          setError(err instanceof Error ? err.message : 'Ошибка получения цены');
+                        } finally {
+                          setFetchingPrice(false);
+                        }
+                      }}
+                      disabled={fetchingPrice || !formData.supplierProductUrl}
+                      className={styles.button}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        whiteSpace: 'nowrap',
+                        backgroundColor: '#3b82f6',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '0.375rem',
+                        cursor:
+                          fetchingPrice || !formData.supplierProductUrl ? 'not-allowed' : 'pointer',
+                        opacity: fetchingPrice || !formData.supplierProductUrl ? 0.5 : 1,
+                      }}
+                    >
+                      {fetchingPrice ? 'Загрузка...' : 'Получить цену'}
+                    </button>
+                  </div>
+                  <p className={styles.hint}>
+                    Введите ссылку на товар у поставщика и нажмите "Получить цену" для
+                    автоматического заполнения
+                  </p>
+                </div>
+                <div className={styles.formGroup}>
+                  <label htmlFor="supplierPrice">Цена поставщика</label>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      id="supplierPrice"
+                      name="supplierPrice"
+                      value={formData.supplierPrice}
+                      onChange={handlePriceChange}
+                      className={styles.input}
+                      placeholder="0.00"
+                      autoComplete="off"
+                      style={{ flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!formData.supplierPrice) {
+                          setError('Сначала укажите цену поставщика');
+                          return;
+                        }
+                        setFormData((prev) => ({
+                          ...prev,
+                          price: prev.supplierPrice,
+                        }));
+                        setSuccess('Цена товара обновлена на основе цены поставщика');
+                        setTimeout(() => setSuccess(null), 3000);
+                      }}
+                      disabled={!formData.supplierPrice}
+                      className={styles.button}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        whiteSpace: 'nowrap',
+                        backgroundColor: '#10b981',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '0.375rem',
+                        cursor: !formData.supplierPrice ? 'not-allowed' : 'pointer',
+                        opacity: !formData.supplierPrice ? 0.5 : 1,
+                      }}
+                      title="Синхронизировать цену товара с ценой поставщика"
+                    >
+                      Синхронизировать
+                    </button>
+                  </div>
+                  <p className={styles.hint}>
+                    Цена товара у поставщика. Может быть заполнена автоматически по ссылке. Нажмите
+                    "Синхронизировать" чтобы обновить цену товара.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Pricing & Stock */}
