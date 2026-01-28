@@ -492,6 +492,17 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
     {} as Record<string, ProductComponent[]>
   );
 
+  // Состав комплекта на публичке (для справки в админке)
+  const kitComposition = (() => {
+    const stoikaKorobka = components.find(
+      (c) =>
+        (/стойк/i.test(c.name) && /коробк/i.test(c.name)) ||
+        (/стойк/i.test(c.type) && /коробк/i.test(c.type))
+    );
+    const nalichnik = components.find((c) => /наличник/i.test(c.name) || /наличник/i.test(c.type));
+    return stoikaKorobka && nalichnik ? { stoikaKorobka, nalichnik } : null;
+  })();
+
   return (
     <div className={styles.section}>
       <div className={styles.sectionHeader}>
@@ -507,6 +518,13 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
           + Добавить комплектующее
         </button>
       </div>
+
+      {kitComposition && (
+        <div className={styles.kitCompositionInfo}>
+          <strong>Состав комплекта на сайте:</strong> полотно 1 шт., стойка коробки 2,5 шт.,
+          наличники 5 шт. Покупатель может выбрать «Полотно» или «Комплект» в карточке товара.
+        </div>
+      )}
 
       {showAddForm && !editingId && (
         <form onSubmit={handleSubmit} className={styles.form}>

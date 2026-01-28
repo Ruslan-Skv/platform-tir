@@ -17,7 +17,7 @@ export const ProductComponents: React.FC<ProductComponentsProps> = ({
   productId,
   initialComponents,
 }) => {
-  const { cart, addComponentToCart, updateComponentQuantity } = useCart();
+  const { cart, addComponentToCart, updateComponentQuantity, removeComponentFromCart } = useCart();
   const [components, setComponents] = useState<ProductComponent[]>(initialComponents ?? []);
   const [loading, setLoading] = useState(typeof initialComponents === 'undefined');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -170,11 +170,11 @@ export const ProductComponents: React.FC<ProductComponentsProps> = ({
                               if (isAdding) return;
                               try {
                                 const newQuantity = Math.round((cartQtyNum - cartStep) * 2) / 2;
-                                if (newQuantity < cartMin) return;
-                                await updateComponentQuantity(
-                                  component.id,
-                                  Math.max(cartMin, newQuantity)
-                                );
+                                if (newQuantity < cartMin) {
+                                  await removeComponentFromCart(component.id);
+                                  return;
+                                }
+                                await updateComponentQuantity(component.id, newQuantity);
                               } catch (error) {
                                 if (error instanceof Error) {
                                   alert(error.message);
@@ -187,7 +187,7 @@ export const ProductComponents: React.FC<ProductComponentsProps> = ({
                               e.preventDefault();
                               e.stopPropagation();
                             }}
-                            disabled={isAdding || cartQtyNum <= cartMin}
+                            disabled={isAdding}
                           >
                             −
                           </button>

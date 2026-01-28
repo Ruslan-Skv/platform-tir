@@ -44,8 +44,14 @@ interface ProductDetailPageProps {
 }
 
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) => {
-  const { cart, addToCart, updateQuantity, updateCartItemQuantityById, removeCartItemById } =
-    useCart();
+  const {
+    cart,
+    addToCart,
+    addComponentToCart,
+    updateQuantity,
+    updateCartItemQuantityById,
+    removeCartItemById,
+  } = useCart();
   const { toggleWishlist, isInWishlist, checkInWishlist, wishlist } = useWishlist();
   const { toggleCompare, isInCompare, checkInCompare, compare } = useCompare();
   const [product, setProduct] = useState<ProductData | null>(null);
@@ -60,15 +66,18 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
   const [isCompareLoading, setIsCompareLoading] = useState(false);
 
   // Варианты товара для добавления в корзину
+  type DeliveryType = 'polotno' | 'komplekt';
   interface ProductVariant {
     id: string;
     size: string;
     openingSide: string;
     quantity: number;
+    deliveryType: DeliveryType | '';
   }
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [addingToCart, setAddingToCart] = useState<Record<string, boolean>>({});
   const [components, setComponents] = useState<ProductComponent[]>([]);
+  const [variantNotification, setVariantNotification] = useState<string | null>(null);
 
   // Получаем информацию о варианте в корзине
   const getCartItemForVariant = useCallback(
@@ -92,6 +101,25 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     [product, cart]
   );
 
+  // Компоненты комплекта для добавления в корзину при выборе «Комплект»
+  const kitComponentsForCart = useMemo(() => {
+    if (components.length === 0) return null;
+    const stoikaKorobka = components.find(
+      (c) =>
+        (/стойк/i.test(c.name) && /коробк/i.test(c.name)) ||
+        (/стойк/i.test(c.type) && /коробк/i.test(c.type))
+    );
+    const nalichnik = components.find((c) => /наличник/i.test(c.name) || /наличник/i.test(c.type));
+    return stoikaKorobka && nalichnik ? { stoikaKorobka, nalichnik } : null;
+  }, [components]);
+
+  // Автоскрытие уведомления о выборе параметров варианта
+  useEffect(() => {
+    if (!variantNotification) return;
+    const timer = setTimeout(() => setVariantNotification(null), 4000);
+    return () => clearTimeout(timer);
+  }, [variantNotification]);
+
   // Сбрасываем варианты при загрузке нового товара
   useEffect(() => {
     if (product) {
@@ -101,6 +129,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
           size: '',
           openingSide: '',
           quantity: 1,
+          deliveryType: '',
         },
       ]);
     }
@@ -369,6 +398,22 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
 
   return (
     <div className={styles.container}>
+      {/* Кастомное уведомление при невыбранных параметрах варианта */}
+      {variantNotification && (
+        <div className={styles.variantNotification} role="alert" aria-live="polite">
+          <span className={styles.variantNotificationIcon}>!</span>
+          <span className={styles.variantNotificationText}>{variantNotification}</span>
+          <button
+            type="button"
+            className={styles.variantNotificationClose}
+            onClick={() => setVariantNotification(null)}
+            aria-label="Закрыть"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Хлебные крошки */}
       <nav className={styles.breadcrumbs}>
         {breadcrumbs.map((item, index) => (
@@ -582,6 +627,32 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                                   </div>
                                 )}
 
+                              {components.length > 0 && (
+                                <div className={styles.variantFieldCompact}>
+                                  <label className={styles.variantLabelCompact}>Тип:</label>
+                                  <select
+                                    value={variant.deliveryType}
+                                    onChange={(e) => {
+                                      setVariants((prev) =>
+                                        prev.map((v) =>
+                                          v.id === variant.id
+                                            ? {
+                                                ...v,
+                                                deliveryType: e.target.value as DeliveryType,
+                                              }
+                                            : v
+                                        )
+                                      );
+                                    }}
+                                    className={styles.optionSelectCompact}
+                                  >
+                                    <option value="">Выберите тип</option>
+                                    <option value="polotno">Полотно</option>
+                                    <option value="komplekt">Комплект</option>
+                                  </select>
+                                </div>
+                              )}
+
                               {variants.length > 1 && (
                                 <button
                                   type="button"
@@ -714,12 +785,28 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                                       onClick={async () => {
                                         if (!product) return;
 
-                                        const hasSize = !product.sizes?.length || variant.size;
+                                        const hasSize =
+                                          !product.sizes?.length || !!variant.size?.trim();
                                         const hasOpeningSide =
-                                          !product.openingSide?.length || variant.openingSide;
+                                          !product.openingSide?.length ||
+                                          !!variant.openingSide?.trim();
+                                        const hasType =
+                                          components.length === 0 ||
+                                          variant.deliveryType === 'polotno' ||
+                                          variant.deliveryType === 'komplekt';
 
-                                        if (!hasSize || !hasOpeningSide) {
-                                          alert('Выберите все параметры варианта');
+                                        if (!hasSize || !hasOpeningSide || !hasType) {
+                                          const messages: string[] = [];
+                                          if (!hasSize) messages.push('Выберите размер двери');
+                                          if (!hasOpeningSide)
+                                            messages.push('Выберите сторону открывания двери');
+                                          if (!hasType)
+                                            messages.push('Выберите «полотно» или «комплект»');
+                                          setVariantNotification(
+                                            messages.length === 1
+                                              ? messages[0]
+                                              : messages.join('\n')
+                                          );
                                           return;
                                         }
 
@@ -738,6 +825,20 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                                               ? variant.openingSide
                                               : undefined
                                           );
+                                          if (
+                                            variant.deliveryType === 'komplekt' &&
+                                            kitComponentsForCart
+                                          ) {
+                                            const qty = variant.quantity;
+                                            await addComponentToCart(
+                                              kitComponentsForCart.stoikaKorobka.id,
+                                              2.5 * qty
+                                            );
+                                            await addComponentToCart(
+                                              kitComponentsForCart.nalichnik.id,
+                                              5 * qty
+                                            );
+                                          }
                                           await new Promise((resolve) => setTimeout(resolve, 100));
                                         } catch (error) {
                                           if (error instanceof Error) {
@@ -777,6 +878,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                           size: '',
                           openingSide: '',
                           quantity: 1,
+                          deliveryType: '',
                         };
                         setVariants((prev) => [...prev, newVariant]);
                       }}

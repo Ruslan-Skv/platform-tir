@@ -393,7 +393,7 @@ export default function CartPage() {
                             await handleComponentQuantityChange(item.componentId!, newQtyDown);
                           }
                         }}
-                        disabled={isUpdating || quantity <= minQty}
+                        disabled={isUpdating}
                         aria-label="Уменьшить количество"
                       >
                         −
