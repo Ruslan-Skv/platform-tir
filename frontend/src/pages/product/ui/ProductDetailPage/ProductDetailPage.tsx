@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 
 import Link from 'next/link';
 
+import { type ProductComponent, getProductComponents } from '@/shared/api/product-components';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 
 import { ProductComponents } from './ProductComponents';
@@ -67,6 +68,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
   }
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [addingToCart, setAddingToCart] = useState<Record<string, boolean>>({});
+  const [components, setComponents] = useState<ProductComponent[]>([]);
 
   // Получаем информацию о варианте в корзине
   const getCartItemForVariant = useCallback(
@@ -154,8 +156,19 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     fetchProduct();
   }, [slug]);
 
-  // Получаем ID товара для работы с wishlist и compare
+  // Получаем ID товара для работы с wishlist, compare и загрузки комплектующих
   const productId = useMemo(() => (product ? String(product.id) : ''), [product]);
+
+  // Загружаем комплектующие при наличии товара (для отображения двух цен и блока комплектующих)
+  useEffect(() => {
+    if (!productId) {
+      setComponents([]);
+      return;
+    }
+    getProductComponents(productId)
+      .then(setComponents)
+      .catch(() => setComponents([]));
+  }, [productId]);
 
   // Используем глобальное состояние напрямую - автоматически обновляется при изменении wishlist/compare
   const isFavorite = useMemo(
@@ -258,6 +271,24 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isLightboxOpen, goToPrevImage, goToNextImage]);
+
+  // Стоимость комплекта по подсказке: полотно 1шт., стойка коробки 2,5шт., наличники 5шт.
+  const kitPrice = useMemo(() => {
+    if (!product || components.length === 0) return null;
+    const canvasPrice = parseFloat(product.price);
+    // Стойка коробки — 2,5 шт. (название/тип содержит «стойк» и «коробк»: «стойка коробки» или «стойки коробки»)
+    const stoikaKorobka = components.find(
+      (c) =>
+        (/стойк/i.test(c.name) && /коробк/i.test(c.name)) ||
+        (/стойк/i.test(c.type) && /коробк/i.test(c.type))
+    );
+    // Наличники — 5 шт.
+    const nalichnik = components.find((c) => /наличник/i.test(c.name) || /наличник/i.test(c.type));
+    let total = canvasPrice; // полотно 1 шт.
+    if (stoikaKorobka) total += 2.5 * parseFloat(stoikaKorobka.price);
+    if (nalichnik) total += 5 * parseFloat(nalichnik.price);
+    return Math.round(total);
+  }, [product, components]);
 
   if (loading) {
     return (
@@ -400,22 +431,53 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
 
         {/* Информация о товаре */}
         <div className={styles.info}>
-          <h1 className={styles.title}>{product.name}</h1>
-
-          {product.sku && <p className={styles.sku}>Артикул: {product.sku}</p>}
-
-          <div className={styles.priceBlock}>
-            <div className={styles.priceInfo}>
-              {comparePrice && (
-                <span className={styles.oldPrice}>{comparePrice.toLocaleString()} ₽</span>
-              )}
-              <span className={styles.price}>{price.toLocaleString()} ₽</span>
-            </div>
-            <div className={styles.availability}>
+          <div className={styles.titleRow}>
+            <h1 className={styles.title}>{product.name}</h1>
+            <div className={styles.titleAvailability}>
               {product.stock > 0 ? (
                 <span className={styles.inStock}>✓ В наличии</span>
               ) : (
                 <span className={styles.outOfStock}>Под заказ</span>
+              )}
+            </div>
+          </div>
+
+          {product.sku && <p className={styles.sku}>Артикул: {product.sku}</p>}
+
+          <div className={styles.priceBlock}>
+            <div className={styles.pricesRow}>
+              {components.length > 0 ? (
+                <>
+                  <div className={styles.priceBox}>
+                    <span className={styles.priceLabel}>полотно</span>
+                    <div className={styles.priceInfo}>
+                      {comparePrice && (
+                        <span className={styles.oldPrice}>{comparePrice.toLocaleString()} ₽</span>
+                      )}
+                      <span className={styles.price}>{price.toLocaleString()} ₽</span>
+                    </div>
+                  </div>
+                  <div
+                    className={`${styles.priceBox} ${styles.priceBoxTooltip}`}
+                    data-tooltip="В комплект входит: полотно 1шт., стойка коробки 2,5шт., наличники 5шт."
+                  >
+                    <span className={styles.priceLabel}>комплект</span>
+                    <div className={styles.priceInfo}>
+                      <span className={styles.price}>
+                        {(kitPrice ?? price).toLocaleString('ru-RU')} ₽
+                      </span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className={styles.priceItem}>
+                  <div className={styles.priceInfo}>
+                    {comparePrice && (
+                      <span className={styles.oldPrice}>{comparePrice.toLocaleString()} ₽</span>
+                    )}
+                    <span className={styles.price}>{price.toLocaleString()} ₽</span>
+                  </div>
+                </div>
               )}
             </div>
             <div className={styles.priceActions}>
@@ -867,7 +929,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
       )}
 
       {/* Комплектующие */}
-      <ProductComponents productId={product.id} />
+      <ProductComponents productId={product.id} initialComponents={components} />
 
       {/* Лайтбокс через Portal — рендерится в body, вне иерархии компонентов */}
       {isMounted &&

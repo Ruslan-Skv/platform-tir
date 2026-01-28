@@ -9,22 +9,37 @@ import styles from './ProductComponents.module.css';
 
 interface ProductComponentsProps {
   productId: string;
+  /** Переданные с родителя комплектующие — используются вместо отдельного запроса */
+  initialComponents?: ProductComponent[] | null;
 }
 
-export const ProductComponents: React.FC<ProductComponentsProps> = ({ productId }) => {
+export const ProductComponents: React.FC<ProductComponentsProps> = ({
+  productId,
+  initialComponents,
+}) => {
   const { cart, addComponentToCart, updateComponentQuantity } = useCart();
-  const [components, setComponents] = useState<ProductComponent[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [components, setComponents] = useState<ProductComponent[]>(initialComponents ?? []);
+  const [loading, setLoading] = useState(typeof initialComponents === 'undefined');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [addingToCart, setAddingToCart] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
+    if (typeof initialComponents !== 'undefined') {
+      setComponents(initialComponents ?? []);
+      setLoading(false);
+      const initialQuantities: Record<string, number> = {};
+      (initialComponents ?? []).forEach((comp) => {
+        initialQuantities[comp.id] = 1;
+      });
+      setQuantities(initialQuantities);
+      return;
+    }
+
     const fetchComponents = async () => {
       try {
         setLoading(true);
         const data = await getProductComponents(productId);
         setComponents(data);
-        // Инициализируем количества
         const initialQuantities: Record<string, number> = {};
         data.forEach((comp) => {
           initialQuantities[comp.id] = 1;
@@ -38,13 +53,27 @@ export const ProductComponents: React.FC<ProductComponentsProps> = ({ productId 
     };
 
     fetchComponents();
-  }, [productId]);
+  }, [productId, initialComponents]);
 
-  const handleQuantityChange = (componentId: string, delta: number) => {
+  // «Стойка коробки» продаётся половинками (шаг 0,5), остальные — целыми
+  const getQuantityStep = (component: ProductComponent): number =>
+    /стойка\s+коробки/i.test(component.name) ||
+    /стойка\s+коробки/i.test(component.type) ||
+    (component.name === 'Коробка' && !/стойки/i.test(component.type))
+      ? 0.5
+      : 1;
+
+  const getMinQuantity = (component: ProductComponent): number =>
+    getQuantityStep(component) === 0.5 ? 0.5 : 1;
+
+  const handleQuantityChange = (componentId: string, delta: number, step: number) => {
     setQuantities((prev) => {
-      const current = prev[componentId] || 1;
-      const newQuantity = Math.max(1, current + delta);
-      return { ...prev, [componentId]: newQuantity };
+      const current = prev[componentId] ?? (step === 0.5 ? 1 : 1);
+      const minQty = step === 0.5 ? 0.5 : 1;
+      const raw = current + delta * step;
+      const newQuantity = Math.round(raw * 2) / 2; // округление до 0,5
+      const clamped = Math.max(minQty, newQuantity);
+      return { ...prev, [componentId]: clamped };
     });
   };
 
@@ -90,8 +119,11 @@ export const ProductComponents: React.FC<ProductComponentsProps> = ({ productId 
       <div className={styles.componentsList}>
         {components.map((component) => {
           const price = parseFloat(component.price);
-          const quantity = quantities[component.id] || 1;
+          const step = getQuantityStep(component);
+          const minQty = getMinQuantity(component);
+          const quantity = quantities[component.id] ?? (step === 0.5 ? 1 : 1);
           const isAdding = addingToCart[component.id] || false;
+          const formatQty = (q: number) => (step === 0.5 && q % 1 !== 0 ? q.toFixed(1) : String(q));
 
           return (
             <div key={component.id} className={styles.componentItem}>
@@ -119,6 +151,9 @@ export const ProductComponents: React.FC<ProductComponentsProps> = ({ productId 
                   const isInCart = cartQuantity > 0;
 
                   if (isInCart) {
+                    const cartStep = getQuantityStep(component);
+                    const cartMin = getMinQuantity(component);
+                    const cartQtyNum = Number(cartQuantity);
                     return (
                       <div className={styles.cartControls}>
                         <span className={styles.inCartLabel}>В корзине</span>
@@ -134,9 +169,12 @@ export const ProductComponents: React.FC<ProductComponentsProps> = ({ productId 
                               e.stopPropagation();
                               if (isAdding) return;
                               try {
-                                const newQuantity = Number(cartQuantity) - 1;
-                                if (newQuantity < 0) return;
-                                await updateComponentQuantity(component.id, newQuantity);
+                                const newQuantity = Math.round((cartQtyNum - cartStep) * 2) / 2;
+                                if (newQuantity < cartMin) return;
+                                await updateComponentQuantity(
+                                  component.id,
+                                  Math.max(cartMin, newQuantity)
+                                );
                               } catch (error) {
                                 if (error instanceof Error) {
                                   alert(error.message);
@@ -149,11 +187,15 @@ export const ProductComponents: React.FC<ProductComponentsProps> = ({ productId 
                               e.preventDefault();
                               e.stopPropagation();
                             }}
-                            disabled={isAdding}
+                            disabled={isAdding || cartQtyNum <= cartMin}
                           >
                             −
                           </button>
-                          <span className={styles.quantityValue}>{cartQuantity}</span>
+                          <span className={styles.quantityValue}>
+                            {cartStep === 0.5 && cartQtyNum % 1 !== 0
+                              ? cartQtyNum.toFixed(1)
+                              : cartQuantity}
+                          </span>
                           <button
                             type="button"
                             className={styles.quantityButton}
@@ -162,7 +204,7 @@ export const ProductComponents: React.FC<ProductComponentsProps> = ({ productId 
                               e.stopPropagation();
                               if (isAdding) return;
                               try {
-                                const newQuantity = Number(cartQuantity) + 1;
+                                const newQuantity = Math.round((cartQtyNum + cartStep) * 2) / 2;
                                 await updateComponentQuantity(component.id, newQuantity);
                               } catch (error) {
                                 if (error instanceof Error) {
@@ -191,16 +233,16 @@ export const ProductComponents: React.FC<ProductComponentsProps> = ({ productId 
                         <button
                           type="button"
                           className={styles.quantityButton}
-                          onClick={() => handleQuantityChange(component.id, -1)}
-                          disabled={quantity <= 1}
+                          onClick={() => handleQuantityChange(component.id, -1, step)}
+                          disabled={quantity <= minQty}
                         >
                           −
                         </button>
-                        <span className={styles.quantityValue}>{quantity}</span>
+                        <span className={styles.quantityValue}>{formatQty(quantity)}</span>
                         <button
                           type="button"
                           className={styles.quantityButton}
-                          onClick={() => handleQuantityChange(component.id, 1)}
+                          onClick={() => handleQuantityChange(component.id, 1, step)}
                         >
                           +
                         </button>

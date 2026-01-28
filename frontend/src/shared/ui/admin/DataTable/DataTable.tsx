@@ -19,6 +19,10 @@ interface DataTableProps<T> {
   onRowClick?: (item: T) => void;
   selectable?: boolean;
   onSelectionChange?: (selectedIds: string[]) => void;
+  /** ID строк для подсветки (например, цена поставщика изменилась) */
+  highlightedIds?: string[];
+  /** CSS-класс для подсвеченных строк */
+  highlightedRowClassName?: string;
   loading?: boolean;
   emptyMessage?: string;
   pagination?: {
@@ -36,6 +40,8 @@ export function DataTable<T>({
   onRowClick,
   selectable = false,
   onSelectionChange,
+  highlightedIds,
+  highlightedRowClassName,
   loading = false,
   emptyMessage = 'Нет данных',
   pagination,
@@ -285,12 +291,13 @@ export function DataTable<T>({
               ) : (
                 data.map((item) => {
                   const id = keyExtractor(item);
+                  const isHighlighted = highlightedIds?.includes(id) && highlightedRowClassName;
                   return (
                     <tr
                       key={id}
                       className={`${styles.row} ${onRowClick ? styles.clickable : ''} ${
                         selectedIds.includes(id) ? styles.selected : ''
-                      }`}
+                      } ${isHighlighted ? highlightedRowClassName : ''}`}
                       onClick={() => onRowClick?.(item)}
                     >
                       {selectable && (

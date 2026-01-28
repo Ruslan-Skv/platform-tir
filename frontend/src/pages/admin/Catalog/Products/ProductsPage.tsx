@@ -92,6 +92,7 @@ export function ProductsPage() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [stockFilter, setStockFilter] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const hasSelection = selectedIds.length > 0;
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
 
@@ -142,14 +143,38 @@ export function ProductsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const columnSelectorRef = useRef<HTMLDivElement>(null);
 
-  // Export state
+  // Export state (экспортируем только выбранные товары)
   const [showExportModal, setShowExportModal] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [exportScope, setExportScope] = useState<'all' | 'filtered' | 'selected'>('filtered');
+  const [exportScope, setExportScope] = useState<'all' | 'filtered' | 'selected'>('selected');
 
-  // Массовая синхронизация цен поставщика
+  // Обновление цен поставщика (по ссылкам) и синхронизация (цена товара = цена поставщика)
+  const [updatingSupplierPrices, setUpdatingSupplierPrices] = useState(false);
   const [syncingSupplierPrices, setSyncingSupplierPrices] = useState(false);
   const [syncSupplierPricesMessage, setSyncSupplierPricesMessage] = useState<string | null>(null);
+  const [selectionHintMessage, setSelectionHintMessage] = useState<string | null>(null);
+  /** ID товаров, у которых изменилась цена поставщика после «Обновить цены» */
+  const [priceChangedIds, setPriceChangedIds] = useState<string[]>([]);
+  const selectionHintTimeoutRef = useRef<number | null>(null);
+
+  const showSelectionHint = useCallback((message = 'Выберите товары в таблице') => {
+    setSelectionHintMessage(message);
+    if (selectionHintTimeoutRef.current) {
+      window.clearTimeout(selectionHintTimeoutRef.current);
+    }
+    selectionHintTimeoutRef.current = window.setTimeout(() => {
+      setSelectionHintMessage(null);
+      selectionHintTimeoutRef.current = null;
+    }, 3000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (selectionHintTimeoutRef.current) {
+        window.clearTimeout(selectionHintTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Close column selector when clicking outside
   useEffect(() => {
@@ -464,7 +489,7 @@ export function ProductsPage() {
 
   // Bulk activate/deactivate
   const bulkToggleActive = async (isActive: boolean) => {
-    if (selectedIds.length === 0) return;
+    if (!hasSelection) return;
 
     const count = selectedIds.length;
     const action = isActive ? 'активированы' : 'деактивированы';
@@ -501,7 +526,7 @@ export function ProductsPage() {
 
   // Bulk delete
   const bulkDelete = async () => {
-    if (selectedIds.length === 0) return;
+    if (!hasSelection) return;
     if (!confirm(`Удалить ${selectedIds.length} товар(ов)?`)) return;
     try {
       const response = await fetch(`${API_URL}/admin/catalog/products/bulk/delete`, {
@@ -580,17 +605,9 @@ export function ProductsPage() {
     }
   };
 
-  // Export functions
+  // Export functions: экспортируем только выбранные товары
   const getProductsToExport = (): Product[] => {
-    switch (exportScope) {
-      case 'all':
-        return allProducts;
-      case 'selected':
-        return allProducts.filter((p) => selectedIds.includes(p.id));
-      case 'filtered':
-      default:
-        return filteredProducts;
-    }
+    return allProducts.filter((p) => selectedIds.includes(p.id));
   };
 
   const exportToCSV = () => {
@@ -1079,7 +1096,8 @@ export function ProductsPage() {
         title: columnConfig.title,
         sortable: columnConfig.type === 'number' || columnConfig.type === 'currency',
         render: (product: Product) => {
-          if (editMode && columnConfig.editable) {
+          // В режиме быстрого редактирования редактируем только выбранные товары
+          if (editMode && columnConfig.editable && selectedIds.includes(product.id)) {
             return renderEditableCell(product, columnConfig);
           }
 
@@ -1316,8 +1334,13 @@ export function ProductsPage() {
             )}
           </div>
           <button
-            className={`${styles.secondaryButton} ${editMode ? styles.editModeActive : ''}`}
+            className={`${styles.secondaryButton} ${!editMode && !hasSelection ? styles.secondaryButtonDisabled : ''} ${editMode ? styles.editModeActive : ''}`}
+            title={!editMode && !hasSelection ? 'Сначала выберите товары в таблице' : undefined}
             onClick={() => {
+              if (!editMode && !hasSelection) {
+                showSelectionHint();
+                return;
+              }
               if (editMode && totalEditsCount > 0) {
                 if (confirm('Есть несохранённые изменения. Выйти без сохранения?')) {
                   cancelEdits();
@@ -1330,31 +1353,55 @@ export function ProductsPage() {
           >
             {editMode ? '✕ Выйти из редактирования' : '✏️ Быстрое редактирование'}
           </button>
+
           <button className={styles.secondaryButton} onClick={() => setShowImportModal(true)}>
             📥 Импорт
           </button>
-          <button className={styles.secondaryButton} onClick={() => setShowExportModal(true)}>
+          <button
+            className={`${styles.secondaryButton} ${!hasSelection ? styles.secondaryButtonDisabled : ''}`}
+            title={!hasSelection ? 'Сначала выберите товары в таблице' : undefined}
+            onClick={() => {
+              if (!hasSelection) {
+                showSelectionHint();
+                return;
+              }
+              setShowExportModal(true);
+            }}
+          >
             📤 Экспорт
           </button>
           <button
-            className={styles.secondaryButton}
-            disabled={syncingSupplierPrices}
+            className={`${styles.secondaryButton} ${!hasSelection ? styles.secondaryButtonDisabled : ''}`}
+            title={
+              !hasSelection
+                ? 'Сначала выберите товары в таблице'
+                : 'Для выбранных товаров с ссылкой на товар поставщика получить актуальную цену. Строки с изменившейся ценой подсветятся.'
+            }
             onClick={async () => {
-              setSyncingSupplierPrices(true);
+              if (!hasSelection) {
+                showSelectionHint();
+                return;
+              }
+              setUpdatingSupplierPrices(true);
               setSyncSupplierPricesMessage(null);
               try {
-                const response = await fetch(`${API_URL}/products/admin/sync-supplier-prices`, {
+                const response = await fetch(`${API_URL}/products/admin/update-supplier-prices`, {
                   method: 'POST',
-                  headers: getAuthHeaders(),
+                  headers: {
+                    'Content-Type': 'application/json',
+                    ...getAuthHeaders(),
+                  },
+                  body: JSON.stringify({ productIds: selectedIds }),
                 });
                 if (!response.ok) {
                   const err = await response.json().catch(() => ({}));
-                  throw new Error(err.message || 'Ошибка синхронизации');
+                  throw new Error(err.message || 'Ошибка обновления цен');
                 }
                 const data = await response.json();
+                setPriceChangedIds(data.changedIds ?? []);
                 const msg =
                   data.total === 0
-                    ? 'Нет товаров с указанной ссылкой на товар поставщика'
+                    ? 'Среди выбранных нет товаров с ссылкой на товар поставщика'
                     : `Обработано: ${data.total}, обновлено: ${data.updated}, цена изменилась: ${data.changed}` +
                       (data.errors?.length ? `, ошибок: ${data.errors.length}` : '');
                 setSyncSupplierPricesMessage(msg);
@@ -1362,14 +1409,64 @@ export function ProductsPage() {
                 fetchProducts(true);
               } catch (e) {
                 setSyncSupplierPricesMessage(
-                  e instanceof Error ? e.message : 'Ошибка массовой синхронизации цен'
+                  e instanceof Error ? e.message : 'Ошибка обновления цен поставщика'
+                );
+                setTimeout(() => setSyncSupplierPricesMessage(null), 5000);
+              } finally {
+                setUpdatingSupplierPrices(false);
+              }
+            }}
+          >
+            {updatingSupplierPrices ? '⏳ Обновление...' : '📡 Обновить цены'}
+          </button>
+          <button
+            className={`${styles.secondaryButton} ${!hasSelection ? styles.secondaryButtonDisabled : ''}`}
+            title={
+              !hasSelection
+                ? 'Сначала выберите товары в таблице'
+                : 'Установить цену товара равной цене поставщика для выбранных товаров'
+            }
+            onClick={async () => {
+              if (!hasSelection) {
+                showSelectionHint();
+                return;
+              }
+              setSyncingSupplierPrices(true);
+              setSyncSupplierPricesMessage(null);
+              try {
+                const response = await fetch(`${API_URL}/products/admin/apply-supplier-prices`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    ...getAuthHeaders(),
+                  },
+                  body: JSON.stringify({ productIds: selectedIds }),
+                });
+                if (!response.ok) {
+                  const err = await response.json().catch(() => ({}));
+                  throw new Error(err.message || 'Ошибка синхронизации');
+                }
+                const data = await response.json();
+                setPriceChangedIds((prev) =>
+                  prev.filter((id) => !(data.syncedIds ?? []).includes(id))
+                );
+                const msg =
+                  data.total === 0
+                    ? 'Среди выбранных нет товаров с поставщиком'
+                    : `Синхронизировано: ${data.synced} из ${data.total}` +
+                      (data.errors?.length ? `, ошибок: ${data.errors.length}` : '');
+                setSyncSupplierPricesMessage(msg);
+                setTimeout(() => setSyncSupplierPricesMessage(null), 5000);
+                fetchProducts(true);
+              } catch (e) {
+                setSyncSupplierPricesMessage(
+                  e instanceof Error ? e.message : 'Ошибка синхронизации цен'
                 );
                 setTimeout(() => setSyncSupplierPricesMessage(null), 5000);
               } finally {
                 setSyncingSupplierPrices(false);
               }
             }}
-            title="Для товаров с заданной ссылкой на товар поставщика получить актуальную цену и обновить «Цена поставщика». Если цена изменилась — ставится пометка «!»."
           >
             {syncingSupplierPrices ? '⏳ Синхронизация...' : '🔄 Синхр. цены'}
           </button>
@@ -1524,7 +1621,7 @@ export function ProductsPage() {
         </div>
       )}
 
-      {selectedIds.length > 0 && !editMode && (
+      {hasSelection && !editMode && (
         <div className={styles.bulkActions}>
           <span>Выбрано: {selectedIds.length}</span>
           <button className={styles.bulkButton} onClick={() => bulkToggleActive(true)}>
@@ -1575,6 +1672,8 @@ export function ProductsPage() {
         }}
         selectable
         onSelectionChange={setSelectedIds}
+        highlightedIds={priceChangedIds}
+        highlightedRowClassName={styles.priceChangedRow}
         loading={loading}
         emptyMessage="Товары не найдены"
         pagination={{
@@ -1718,45 +1817,10 @@ export function ProductsPage() {
 
             <div className={styles.formGroup}>
               <label>Какие товары экспортировать?</label>
-              <div className={styles.radioGroup}>
-                <label className={styles.radioOption}>
-                  <input
-                    type="radio"
-                    name="exportScope"
-                    value="filtered"
-                    checked={exportScope === 'filtered'}
-                    onChange={() => setExportScope('filtered')}
-                  />
-                  <span>
-                    Отфильтрованные ({filteredProducts.length} шт.)
-                    {(searchQuery || categoryFilter || stockFilter) && (
-                      <span className={styles.scopeHint}> — с учётом текущих фильтров</span>
-                    )}
-                  </span>
-                </label>
-                <label className={styles.radioOption}>
-                  <input
-                    type="radio"
-                    name="exportScope"
-                    value="all"
-                    checked={exportScope === 'all'}
-                    onChange={() => setExportScope('all')}
-                  />
-                  <span>Все товары ({allProducts.length} шт.)</span>
-                </label>
-                {selectedIds.length > 0 && (
-                  <label className={styles.radioOption}>
-                    <input
-                      type="radio"
-                      name="exportScope"
-                      value="selected"
-                      checked={exportScope === 'selected'}
-                      onChange={() => setExportScope('selected')}
-                    />
-                    <span>Выбранные ({selectedIds.length} шт.)</span>
-                  </label>
-                )}
-              </div>
+              <p className={styles.hint}>
+                Будут экспортированы <strong>только выбранные</strong> товары ({selectedIds.length}{' '}
+                шт.).
+              </p>
             </div>
 
             <div className={styles.formGroup}>
@@ -1811,6 +1875,20 @@ export function ProductsPage() {
           <button
             className={styles.toastClose}
             onClick={() => setSyncSupplierPricesMessage(null)}
+            aria-label="Закрыть"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Selection required toast */}
+      {selectionHintMessage && (
+        <div className={`${styles.toast} ${styles.toastError}`}>
+          <span className={styles.toastMessage}>{selectionHintMessage}</span>
+          <button
+            className={styles.toastClose}
+            onClick={() => setSelectionHintMessage(null)}
             aria-label="Закрыть"
           >
             ✕

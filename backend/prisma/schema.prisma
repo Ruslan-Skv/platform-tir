@@ -575,7 +575,7 @@ model CartItem {
   userId      String
   productId   String?
   componentId String?
-  quantity    Int
+  quantity    Float             // Float для поддержки половинок (например, 2,5 стойки коробки)
   size        String?
   openingSide String?
   createdAt   DateTime          @default(now())

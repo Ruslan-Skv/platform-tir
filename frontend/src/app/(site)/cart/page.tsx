@@ -83,7 +83,7 @@ export default function CartPage() {
 
   const handleComponentQuantityChange = async (componentId: string, newQuantity: number) => {
     // Если количество становится 0 или меньше, удаляем комплектующее из корзины
-    if (newQuantity < 1) {
+    if (newQuantity <= 0) {
       await handleRemoveComponent(componentId);
       return;
     }
@@ -326,19 +326,30 @@ export default function CartPage() {
               .map((item) => {
                 const itemKey = `component-${item.componentId}`;
                 const isUpdating = updatingItems.has(itemKey);
-                // Убеждаемся, что quantity - это число, и оно больше 0
+                // quantity может быть дробным (например, 2,5 для «Стойка коробки»)
                 let quantity: number;
                 if (typeof item.quantity === 'number') {
                   quantity = item.quantity;
                 } else if (typeof item.quantity === 'string') {
-                  quantity = parseInt(item.quantity, 10);
+                  quantity = parseFloat(item.quantity);
                 } else {
                   quantity = 1;
                 }
-                // Гарантируем, что quantity >= 1
-                if (isNaN(quantity) || quantity < 1) {
+                if (isNaN(quantity) || quantity <= 0) {
                   quantity = 1;
                 }
+                // «Стойка коробки» — шаг 0,5, минимум 0,5; остальные — шаг 1, минимум 1
+                const isStoikaKorobka =
+                  /стойка\s+коробки/i.test(item.component.name) ||
+                  /стойка\s+коробки/i.test(item.component.type) ||
+                  (item.component.name === 'Коробка' && !/стойки/i.test(item.component.type ?? ''));
+                const step = isStoikaKorobka ? 0.5 : 1;
+                const minQty = isStoikaKorobka ? 0.5 : 1;
+                const displayQty =
+                  step === 0.5 && quantity % 1 !== 0 ? quantity.toFixed(1) : String(quantity);
+                const newQtyDown = Math.round((quantity - step) * 2) / 2;
+                const newQtyUp = Math.round((quantity + step) * 2) / 2;
+
                 const itemTotal = item.component.price * quantity;
 
                 return (
@@ -375,21 +386,23 @@ export default function CartPage() {
                       <button
                         type="button"
                         className={styles.quantityButton}
-                        onClick={() =>
-                          handleComponentQuantityChange(item.componentId!, quantity - 1)
-                        }
-                        disabled={isUpdating}
+                        onClick={async () => {
+                          if (newQtyDown < minQty) {
+                            await handleRemoveComponent(item.componentId!);
+                          } else {
+                            await handleComponentQuantityChange(item.componentId!, newQtyDown);
+                          }
+                        }}
+                        disabled={isUpdating || quantity <= minQty}
                         aria-label="Уменьшить количество"
                       >
                         −
                       </button>
-                      <span className={styles.quantityValue}>{quantity}</span>
+                      <span className={styles.quantityValue}>{displayQty}</span>
                       <button
                         type="button"
                         className={styles.quantityButton}
-                        onClick={() =>
-                          handleComponentQuantityChange(item.componentId!, quantity + 1)
-                        }
+                        onClick={() => handleComponentQuantityChange(item.componentId!, newQtyUp)}
                         disabled={isUpdating}
                         aria-label="Увеличить количество"
                       >

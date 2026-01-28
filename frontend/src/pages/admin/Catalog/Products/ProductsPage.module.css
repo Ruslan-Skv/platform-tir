@@ -65,9 +65,27 @@
   transition: all 0.2s;
 }
 
-.secondaryButton:hover {
+.secondaryButton:hover:not(:disabled) {
   background: #f9fafb;
   border-color: #d1d5db;
+}
+
+.secondaryButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.secondaryButtonDisabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.actionGuard {
+  display: inline-flex;
+}
+
+.actionGuardDisabled {
+  cursor: default;
 }
 
 .filters {
@@ -323,6 +341,20 @@
   font-size: 12px;
   font-weight: 700;
   line-height: 1;
+}
+
+/* Подсветка строки: цена поставщика изменилась после «Обновить цены» */
+.priceChangedRow {
+  background: #fef3c7 !important;
+}
+.priceChangedRow:hover {
+  background: #fde68a !important;
+}
+.priceChangedRow.selected {
+  background: #fef9c3 !important;
+}
+.priceChangedRow.selected:hover {
+  background: #fef08a !important;
 }
 
 .price {

@@ -15,6 +15,7 @@ import { PriceScraperService } from './price-scraper.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { SearchProductsDto } from './dto/search-products.dto';
+import { ProductIdsDto } from './dto/product-ids.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('products')
@@ -50,9 +51,29 @@ export class ProductsController {
   @Post('admin/sync-supplier-prices')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Массовая синхронизация цен поставщика по ссылкам' })
+  @ApiOperation({ summary: 'Массовая синхронизация цен поставщика по ссылкам (все товары)' })
   async syncSupplierPrices() {
     return this.productsService.syncSupplierPrices();
+  }
+
+  @Post('admin/update-supplier-prices')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Обновить цены поставщика по ссылкам для выбранных товаров',
+  })
+  async updateSupplierPrices(@Body() dto: ProductIdsDto) {
+    return this.productsService.updateSupplierPrices(dto.productIds);
+  }
+
+  @Post('admin/apply-supplier-prices')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Синхронизация: установить цену товара = цена поставщика для выбранных',
+  })
+  async applySupplierPrices(@Body() dto: ProductIdsDto) {
+    return this.productsService.applySupplierPrices(dto.productIds);
   }
 
   @Get('search')

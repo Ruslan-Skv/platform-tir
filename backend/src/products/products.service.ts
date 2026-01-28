@@ -16,6 +16,21 @@ export interface SyncSupplierPricesResult {
   errors: Array<{ productId: string; productName: string; error: string }>;
 }
 
+export interface UpdateSupplierPricesResult {
+  total: number;
+  updated: number;
+  changed: number;
+  changedIds: string[];
+  errors: Array<{ productId: string; productName: string; error: string }>;
+}
+
+export interface ApplySupplierPricesResult {
+  total: number;
+  synced: number;
+  syncedIds: string[];
+  errors: Array<{ productId: string; productName: string; error: string }>;
+}
+
 @Injectable()
 export class ProductsService {
   private readonly indexName = 'products';
@@ -27,15 +42,17 @@ export class ProductsService {
   ) {}
 
   async create(createProductDto: CreateProductDto) {
-    // Преобразуем null в пустые массивы для sizes и openingSide
-    // В PostgreSQL массивы не могут быть null, только пустые массивы []
-    const { supplierId, categoryId, ...productData } = createProductDto;
+    // Поля поставщика хранятся в ProductSupplier — исключаем их из data для prisma.product.create
+    const { supplierId, supplierProductUrl, supplierPrice, categoryId, ...productData } =
+      createProductDto;
     const data: Prisma.ProductCreateInput = {
       ...productData,
       category: {
         connect: { id: categoryId },
       },
     };
+    // Преобразуем null в пустые массивы для sizes и openingSide
+    // В PostgreSQL массивы не могут быть null, только пустые массивы []
     if (data.sizes === null) {
       data.sizes = [];
     }
@@ -52,8 +69,6 @@ export class ProductsService {
 
     // Если указан поставщик, создаем связь ProductSupplier
     if (supplierId) {
-      const { supplierProductUrl, supplierPrice } = createProductDto;
-
       // Сначала снимаем флаг isMainSupplier у всех существующих поставщиков этого товара (если есть)
       await this.prisma.productSupplier.updateMany({
         where: { productId: product.id },
@@ -333,9 +348,10 @@ export class ProductsService {
   async update(id: string, updateProductDto: UpdateProductDto) {
     await this.findOne(id);
 
-    // Для JSON поля attributes нужна полная замена, а не merge
-    // Если attributes передан (даже пустой объект), заменяем полностью
-    const { supplierId, categoryId, ...productData } = updateProductDto;
+    // Поля поставщика (supplierId, supplierProductUrl, supplierPrice) хранятся в ProductSupplier,
+    // а не в Product — исключаем их из data для prisma.product.update
+    const { supplierId, supplierProductUrl, supplierPrice, categoryId, ...productData } =
+      updateProductDto;
     const data: Prisma.ProductUpdateInput = { ...productData };
 
     // Преобразуем categoryId в связь category, если он передан
@@ -374,8 +390,6 @@ export class ProductsService {
       'supplierProductUrl' in updateProductDto ||
       'supplierPrice' in updateProductDto
     ) {
-      const { supplierProductUrl, supplierPrice } = updateProductDto;
-
       if (supplierId) {
         // Сначала снимаем флаг isMainSupplier у всех существующих поставщиков этого товара
         await this.prisma.productSupplier.updateMany({
@@ -559,6 +573,124 @@ export class ProductsService {
           error: err instanceof Error ? err.message : String(err),
         });
       }
+    }
+
+    return result;
+  }
+
+  /**
+   * Обновить цены поставщика по ссылкам для выбранных товаров.
+   * Получает цену по URL, обновляет supplierPrice; при изменении ставит supplierPriceChangedAt.
+   * Возвращает changedIds — id товаров, у которых цена изменилась.
+   */
+  async updateSupplierPrices(productIds: string[]): Promise<UpdateSupplierPricesResult> {
+    const rows = await this.prisma.productSupplier.findMany({
+      where: {
+        productId: { in: productIds },
+        isMainSupplier: true,
+        supplierProductUrl: { not: null },
+      },
+      include: {
+        product: { select: { id: true, name: true } },
+      },
+    });
+
+    const result: UpdateSupplierPricesResult = {
+      total: rows.length,
+      updated: 0,
+      changed: 0,
+      changedIds: [],
+      errors: [],
+    };
+
+    for (const row of rows) {
+      const url = row.supplierProductUrl;
+      if (!url) continue;
+
+      try {
+        const newPrice = await this.priceScraper.getPriceFromUrl(url);
+        const currentPrice = Number(row.supplierPrice);
+        const priceChanged = Math.abs(newPrice - currentPrice) > 0.01;
+
+        await this.prisma.productSupplier.update({
+          where: { id: row.id },
+          data: {
+            supplierPrice: new Prisma.Decimal(newPrice),
+            lastSyncAt: new Date(),
+            ...(priceChanged && { supplierPriceChangedAt: new Date() }),
+          },
+        });
+
+        result.updated += 1;
+        if (priceChanged) {
+          result.changed += 1;
+          result.changedIds.push(row.productId);
+        }
+      } catch (err) {
+        result.errors.push({
+          productId: row.productId,
+          productName: row.product.name,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Синхронизация: установить цену товара равной цене поставщика для выбранных товаров.
+   */
+  async applySupplierPrices(productIds: string[]): Promise<ApplySupplierPricesResult> {
+    const rows = await this.prisma.productSupplier.findMany({
+      where: {
+        productId: { in: productIds },
+        isMainSupplier: true,
+      },
+      include: {
+        product: { select: { id: true, name: true } },
+      },
+    });
+
+    const result: ApplySupplierPricesResult = {
+      total: rows.length,
+      synced: 0,
+      syncedIds: [],
+      errors: [],
+    };
+
+    for (const row of rows) {
+      try {
+        const supplierPrice = Number(row.supplierPrice);
+        await this.prisma.product.update({
+          where: { id: row.productId },
+          data: { price: new Prisma.Decimal(supplierPrice) },
+        });
+        result.synced += 1;
+        result.syncedIds.push(row.productId);
+      } catch (err) {
+        result.errors.push({
+          productId: row.productId,
+          productName: row.product.name,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    // Обновить индексы в Elasticsearch и сбросить supplierPriceChangedAt у синхронизированных
+    const syncedIds = result.syncedIds;
+    if (syncedIds.length > 0) {
+      const products = await this.prisma.product.findMany({
+        where: { id: { in: syncedIds } },
+        include: { category: true },
+      });
+      for (const p of products) {
+        await this.indexProduct(p);
+      }
+      await this.prisma.productSupplier.updateMany({
+        where: { productId: { in: syncedIds }, isMainSupplier: true },
+        data: { supplierPriceChangedAt: null },
+      });
     }
 
     return result;

@@ -520,7 +520,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
                 className={styles.input}
               >
                 <option value="">Выберите наименование</option>
-                <option value="Коробка">Коробка</option>
+                <option value="Стойка коробки">Стойка коробки</option>
                 <option value="Наличник">Наличник</option>
                 <option value="Добор">Добор</option>
                 <option value="Притворная планка">Притворная планка</option>
@@ -534,7 +534,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
                 onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                 required
                 className={styles.input}
-                placeholder="Например: Коробка 2000x800"
+                placeholder="Например: Стойка коробки 2000x800"
               />
             </div>
           </div>
@@ -712,7 +712,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
                               }
                               className={styles.inlineInput}
                             >
-                              <option value="Коробка">Коробка</option>
+                              <option value="Стойка коробки">Стойка коробки</option>
                               <option value="Наличник">Наличник</option>
                               <option value="Добор">Добор</option>
                               <option value="Притворная планка">Притворная планка</option>
