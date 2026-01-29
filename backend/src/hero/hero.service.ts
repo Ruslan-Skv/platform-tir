@@ -44,7 +44,7 @@ export class HeroService {
       })),
       features: features.map((f) => ({
         id: f.id,
-        icon: f.icon,
+        icon: f.icon.startsWith('http') ? f.icon : prefix ? `${prefix}${f.icon}` : f.icon,
         title: f.title,
         sortOrder: f.sortOrder,
       })),
@@ -118,6 +118,16 @@ export class HeroService {
       ),
     );
     return this.prisma.heroSlide.findMany({ orderBy: { sortOrder: 'asc' } });
+  }
+
+  async uploadFeatureIcon(file: Express.Multer.File, baseUrl: string): Promise<{ icon: string }> {
+    if (!file?.path) {
+      throw new BadRequestException('Файл не загружен');
+    }
+    const filename = path.basename(file.path);
+    const iconUrl = `/uploads/hero/icons/${filename}`;
+    const prefix = baseUrl.replace(/\/$/, '');
+    return { icon: `${prefix}${iconUrl}` };
   }
 
   async createFeature(data: { icon: string; title: string }) {

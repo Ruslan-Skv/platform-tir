@@ -16,6 +16,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { diskStorage } from 'multer';
 import * as fs from 'fs';
+import * as path from 'path';
 import { extname } from 'path';
 import { HeroService } from './hero.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -27,7 +28,8 @@ import { UpdateHeroFeatureDto } from './dto/update-hero-feature.dto';
 import { ReorderDto } from './dto/reorder.dto';
 import type { Request } from 'express';
 
-const uploadDir = process.cwd() + '/uploads/hero';
+const uploadDir = path.join(process.cwd(), 'uploads', 'hero');
+const iconsDir = path.join(process.cwd(), 'uploads', 'hero', 'icons');
 
 const storage = diskStorage({
   destination: (_req, _file, cb) => {
@@ -108,6 +110,42 @@ export class AdminHeroController {
   @ApiOperation({ summary: 'Изменить порядок слайдов' })
   reorderSlides(@Body() dto: ReorderDto) {
     return this.heroService.reorderSlides(dto.ids);
+  }
+
+  @Post('features/icon')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (_req, _file, cb) => {
+          if (!fs.existsSync(iconsDir)) fs.mkdirSync(iconsDir, { recursive: true });
+          cb(null, iconsDir);
+        },
+        filename: (_req, file, cb) => {
+          cb(null, `icon-${Date.now()}${extname(file.originalname) || '.png'}`);
+        },
+      }),
+      limits: { fileSize: 512 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const allowed = /\.(jpe?g|png|webp|gif|svg)$/i.test(file.originalname);
+        if (!allowed) {
+          cb(
+            new BadRequestException('Допустимы только изображения: jpg, png, webp, gif, svg'),
+            false,
+          );
+          return;
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } },
+  })
+  @ApiOperation({ summary: 'Загрузить иконку для преимущества' })
+  async uploadFeatureIcon(@UploadedFile() file: Express.Multer.File, @Req() req: Request) {
+    const baseUrl = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
+    return this.heroService.uploadFeatureIcon(file, baseUrl);
   }
 
   @Post('features')

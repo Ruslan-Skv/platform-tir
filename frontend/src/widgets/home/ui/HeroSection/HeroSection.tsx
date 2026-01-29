@@ -87,10 +87,6 @@ export const HeroSection: React.FC = () => {
     }
   }, [slideIndex, count]);
 
-  const handleDotClick = (i: number) => {
-    setSlideIndex(i);
-  };
-
   const imageUrl = (url: string) => {
     if (!url) return '';
     if (url.startsWith('http')) return url;
@@ -143,7 +139,11 @@ export const HeroSection: React.FC = () => {
             <div className={styles.features}>
               {data.features.map((f) => (
                 <div key={f.id} className={styles.feature}>
-                  <span className={styles.featureIcon}>{f.icon}</span>
+                  {f.icon.startsWith('http') || f.icon.startsWith('/') ? (
+                    <img src={imageUrl(f.icon)} alt="" className={styles.featureIconImg} />
+                  ) : (
+                    <span className={styles.featureIcon}>{f.icon}</span>
+                  )}
                   <span>{f.title}</span>
                 </div>
               ))}
@@ -175,19 +175,6 @@ export const HeroSection: React.FC = () => {
                     />
                   ))}
                 </div>
-                {count > 1 && (
-                  <div className={styles.slideDots}>
-                    {data.slides.map((_, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        className={`${styles.slideDot} ${i === slideIndex % count ? styles.slideDotActive : ''}`}
-                        onClick={() => handleDotClick(i)}
-                        aria-label={`Слайд ${i + 1}`}
-                      />
-                    ))}
-                  </div>
-                )}
               </div>
             ) : (
               <div className={styles.imagePlaceholder}>

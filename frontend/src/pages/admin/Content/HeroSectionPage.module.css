@@ -186,6 +186,61 @@
   text-align: center;
 }
 
+.featureIconImg {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.iconCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.iconPreview {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  background: #f3f4f6;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.iconPreview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.iconUploadBtn {
+  padding: 6px 10px;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.iconUploadBtn:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.iconUploadBtn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.saveBlock {
+  margin-top: 24px;
+  padding: 20px 0;
+  border-top: 1px solid #e5e7eb;
+}
+
 .featureTitle {
   flex: 1;
   font-size: 0.9375rem;

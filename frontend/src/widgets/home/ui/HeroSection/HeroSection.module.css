@@ -114,6 +114,12 @@
   font-size: 1.5rem;
 }
 
+.featureIconImg {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
 .imageWrapper {
   display: flex;
   justify-content: center;

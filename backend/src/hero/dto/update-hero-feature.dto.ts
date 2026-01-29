@@ -6,7 +6,7 @@ export class UpdateHeroFeatureDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  @MaxLength(10)
+  @MaxLength(500)
   icon?: string;
 
   @ApiProperty({ required: false })

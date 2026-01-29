@@ -45,7 +45,10 @@ export function HeroSectionPage() {
   const [newFeature, setNewFeature] = useState({ icon: '', title: '' });
   const [slideToDelete, setSlideToDelete] = useState<string | null>(null);
   const [deletingSlide, setDeletingSlide] = useState(false);
+  const [uploadingIcon, setUploadingIcon] = useState<string | null>(null);
+  const iconUploadTargetRef = useRef<'new' | string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const iconFileInputRef = useRef<HTMLInputElement>(null);
 
   const showMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
@@ -221,6 +224,48 @@ export function HeroSectionPage() {
     }
   };
 
+  const handleUploadFeatureIcon = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const target = iconUploadTargetRef.current;
+    if (!file || !target) return;
+    setUploadingIcon(target);
+    setMessage(null);
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch(`${API_URL}/admin/home/hero/features/icon`, {
+        method: 'POST',
+        headers: getAuthHeaders() as Record<string, string>,
+        body: formData,
+      });
+      if (res.ok) {
+        const { icon } = await res.json();
+        if (target === 'new') {
+          setNewFeature((p) => ({ ...p, icon }));
+        } else {
+          setData((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  features: prev.features.map((x) => (x.id === target ? { ...x, icon } : x)),
+                }
+              : prev
+          );
+        }
+        showMessage('success', 'Иконка загружена');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showMessage('error', err.message || 'Ошибка загрузки иконки');
+      }
+    } catch {
+      showMessage('error', 'Ошибка подключения');
+    } finally {
+      setUploadingIcon(null);
+      setIconUploadTarget(null);
+      e.target.value = '';
+    }
+  };
+
   const handleDeleteFeature = async (id: string) => {
     if (!confirm('Удалить это преимущество?')) return;
     try {
@@ -295,14 +340,6 @@ export function HeroSectionPage() {
             placeholder="Мебель на заказ, ремонт под ключ..."
           />
         </div>
-        <button
-          type="button"
-          className={styles.saveBtn}
-          onClick={handleSaveBlock}
-          disabled={saving}
-        >
-          {saving ? 'Сохранение...' : 'Сохранить текст'}
-        </button>
       </section>
 
       {/* Слайд-шоу */}
@@ -353,6 +390,26 @@ export function HeroSectionPage() {
             <div key={f.id} className={styles.featureRow}>
               {editingFeature === f.id ? (
                 <>
+                  <div className={styles.iconCell}>
+                    {f.icon.startsWith('http') || f.icon.startsWith('/') ? (
+                      <div className={styles.iconPreview}>
+                        <img src={imageUrl(f.icon)} alt="" />
+                      </div>
+                    ) : (
+                      <span className={styles.iconPreview}>{f.icon || '📷'}</span>
+                    )}
+                    <button
+                      type="button"
+                      className={styles.iconUploadBtn}
+                      onClick={() => {
+                        iconUploadTargetRef.current = f.id;
+                        iconFileInputRef.current?.click();
+                      }}
+                      disabled={uploadingIcon === f.id}
+                    >
+                      {uploadingIcon === f.id ? '...' : 'Загрузить'}
+                    </button>
+                  </div>
                   <input
                     type="text"
                     value={f.icon}
@@ -369,7 +426,7 @@ export function HeroSectionPage() {
                       )
                     }
                     className={styles.iconInput}
-                    placeholder="🏭"
+                    placeholder="Emoji или URL"
                   />
                   <input
                     type="text"
@@ -406,7 +463,11 @@ export function HeroSectionPage() {
                 </>
               ) : (
                 <>
-                  <span className={styles.featureIcon}>{f.icon}</span>
+                  {f.icon.startsWith('http') || f.icon.startsWith('/') ? (
+                    <img src={imageUrl(f.icon)} alt="" className={styles.featureIconImg} />
+                  ) : (
+                    <span className={styles.featureIcon}>{f.icon}</span>
+                  )}
                   <span className={styles.featureTitle}>{f.title}</span>
                   <button
                     type="button"
@@ -429,11 +490,38 @@ export function HeroSectionPage() {
         </div>
         <div className={styles.addFeature}>
           <input
+            ref={iconFileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+            className={styles.fileInput}
+            onChange={handleUploadFeatureIcon}
+          />
+          <div className={styles.iconCell}>
+            {newFeature.icon.startsWith('http') || newFeature.icon.startsWith('/') ? (
+              <div className={styles.iconPreview}>
+                <img src={imageUrl(newFeature.icon)} alt="" />
+              </div>
+            ) : (
+              <span className={styles.iconPreview}>{newFeature.icon || '📷'}</span>
+            )}
+            <button
+              type="button"
+              className={styles.iconUploadBtn}
+              onClick={() => {
+                iconUploadTargetRef.current = 'new';
+                iconFileInputRef.current?.click();
+              }}
+              disabled={uploadingIcon === 'new'}
+            >
+              {uploadingIcon === 'new' ? '...' : 'Загрузить'}
+            </button>
+          </div>
+          <input
             type="text"
             value={newFeature.icon}
             onChange={(e) => setNewFeature((p) => ({ ...p, icon: e.target.value }))}
             className={styles.iconInput}
-            placeholder="Иконка (emoji)"
+            placeholder="Emoji или URL"
           />
           <input
             type="text"
@@ -452,6 +540,17 @@ export function HeroSectionPage() {
           </button>
         </div>
       </section>
+
+      <div className={styles.saveBlock}>
+        <button
+          type="button"
+          className={styles.saveBtn}
+          onClick={handleSaveBlock}
+          disabled={saving}
+        >
+          {saving ? 'Сохранение...' : 'Сохранить изменения'}
+        </button>
+      </div>
 
       {/* Модалка подтверждения удаления слайда */}
       {slideToDelete && (
