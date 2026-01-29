@@ -60,6 +60,12 @@
   margin-bottom: 1rem;
 }
 
+.iconImg {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
 .advantageTitle {
   color: #1a202c;
   font-size: 1.25rem;

@@ -43,6 +43,8 @@ const navItems: NavItem[] = [
     icon: '📝',
     children: [
       { label: 'Hero-блок главной', href: '/admin/content/hero' },
+      { label: 'Почему выбирают нас', href: '/admin/content/advantages' },
+      { label: 'Комплексные решения', href: '/admin/content/services' },
       { label: 'Наши направления', href: '/admin/content/directions' },
       { label: 'Страницы', href: '/admin/content/pages' },
       { label: 'Блог', href: '/admin/content/blog' },

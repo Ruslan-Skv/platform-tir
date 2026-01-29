@@ -17,6 +17,8 @@ import { CartModule } from './cart/cart.module';
 import { SupportChatModule } from './support-chat/support-chat.module';
 import { HomeDirectionsModule } from './home-directions/home-directions.module';
 import { HeroModule } from './hero/hero.module';
+import { AdvantagesModule } from './advantages/advantages.module';
+import { HomeServicesModule } from './home-services/home-services.module';
 
 @Module({
   imports: [
@@ -44,6 +46,8 @@ import { HeroModule } from './hero/hero.module';
     SupportChatModule,
     HomeDirectionsModule,
     HeroModule,
+    AdvantagesModule,
+    HomeServicesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

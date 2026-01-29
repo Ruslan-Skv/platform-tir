@@ -102,6 +102,48 @@ model HeroFeature {
   @@map("hero_features")
 }
 
+model AdvantagesBlock {
+  id        String   @id @default("main")
+  title     String   @default("Почему выбирают нас")
+  subtitle  String   @default("Мы делаем качество доступным")
+  updatedAt DateTime @updatedAt
+
+  @@map("advantages_block")
+}
+
+model AdvantageItem {
+  id          String   @id @default(cuid())
+  icon        String
+  title       String
+  description String   @db.Text
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@map("advantage_items")
+}
+
+model ServicesBlock {
+  id        String   @id @default("main")
+  title     String   @default("Комплексные решения")
+  subtitle  String   @default("Полный цикл услуг для вашего комфорта")
+  updatedAt DateTime @updatedAt
+
+  @@map("services_block")
+}
+
+model ServiceItem {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  features    String[]
+  price       String
+  imageUrl    String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@map("service_items")
+}
+
 model Customer {
   id            String         @id @default(cuid())
   email         String         @unique
