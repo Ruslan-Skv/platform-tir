@@ -17,9 +17,7 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({ category, onClick })
     >
       <div
         className={styles.cardImage}
-        style={{
-          backgroundImage: `url(${category.image})`,
-        }}
+        style={category.image ? { backgroundImage: `url(${category.image})` } : undefined}
       >
         {category.isSale && <span className={styles.saleBadge}>Акция</span>}
       </div>

@@ -72,7 +72,8 @@ export class OrdersService {
 
   async findAll(userId?: string, role?: string) {
     const where: Prisma.OrderWhereInput = {};
-    if (role !== 'ADMIN' && userId) {
+    const canSeeAllOrders = role === 'ADMIN' || role === 'SUPER_ADMIN';
+    if (!canSeeAllOrders && userId) {
       where.userId = userId;
     }
 
@@ -123,7 +124,8 @@ export class OrdersService {
       throw new NotFoundException(`Order with ID ${id} not found`);
     }
 
-    if (role !== 'ADMIN' && order.userId !== userId) {
+    const canSeeAnyOrder = role === 'ADMIN' || role === 'SUPER_ADMIN';
+    if (!canSeeAnyOrder && order.userId !== userId) {
       throw new ForbiddenException('Access denied');
     }
 

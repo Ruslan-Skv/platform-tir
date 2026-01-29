@@ -15,6 +15,8 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 import type { RequestWithUser } from '../common/types/request-with-user.types';
 
 @ApiTags('users')
@@ -25,24 +27,32 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Создать пользователя' })
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
 
   @Get()
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Получить всех пользователей' })
   findAll() {
     return this.usersService.findAll();
   }
 
   @Get(':id')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Получить пользователя по ID' })
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }
 
   @Patch(':id')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Обновить пользователя' })
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
@@ -55,8 +65,7 @@ export class UsersController {
     @Body() body: { currentPassword: string; newPassword: string },
     @Request() req: RequestWithUser,
   ) {
-    // Check if user is changing their own password or is admin
-    if (req.user.id !== id && req.user.role !== 'ADMIN') {
+    if (req.user.id !== id && req.user.role !== 'SUPER_ADMIN') {
       throw new BadRequestException('Вы можете изменить только свой пароль');
     }
 
@@ -64,6 +73,8 @@ export class UsersController {
   }
 
   @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Удалить пользователя' })
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);

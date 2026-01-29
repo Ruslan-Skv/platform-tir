@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -9,88 +9,81 @@ import { ProductCard } from '@/pages/catalog/ui/ProductsGrid';
 
 import styles from './FeaturedProducts.module.css';
 
-// Временные данные - потом замените на реальные из API
-const featuredProducts: Product[] = [
-  {
-    id: 1,
-    name: 'Кухня "Модерн" с барной стойкой',
-    slug: 'kuhnya-modern-s-barnoy-stoykoy',
-    price: 85000,
-    image: '/images/products/kitchen-modern.jpg',
-    category: 'Кухни',
-    rating: 4.8,
-    isNew: true,
-  },
-  {
-    id: 2,
-    name: 'Шкаф-купе 3-х створчатый "Престиж"',
-    slug: 'shkaf-kupe-3-stvorchaty-prestizh',
-    price: 42000,
-    image: '/images/products/wardrobe.jpg',
-    category: 'Шкафы',
-    rating: 4.6,
-  },
-  {
-    id: 3,
-    name: 'Межкомнатная дверь "Classic" дуб',
-    slug: 'mezhkomnatnaya-dver-classic-dub',
-    price: 12500,
-    image: '/images/products/door-classic.jpg',
-    category: 'Двери',
-    rating: 4.7,
-    discount: 15,
-  },
-  {
-    id: 4,
-    name: 'Пластиковое окно 1500x1500 с ламинацией',
-    slug: 'plastikovoe-okno-1500x1500-s-laminaciey',
-    price: 8900,
-    image: '/images/products/window-standard.jpg',
-    category: 'Окна',
-    rating: 4.9,
-  },
-  {
-    id: 5,
-    name: 'Натяжной потолок глянцевый белый',
-    slug: 'natyazhnoy-potolok-glyantsevyy-belyy',
-    price: 550,
-    image: '/images/products/ceiling-glossy.jpg',
-    category: 'Потолки',
-    rating: 4.8,
-    isNew: true,
-  },
-  {
-    id: 6,
-    name: 'Жалюзи горизонтальные алюминиевые',
-    slug: 'zhalyuzi-gorizontalnye-alyuminievye',
-    price: 2800,
-    image: '/images/products/blinds-horizontal.jpg',
-    category: 'Жалюзи',
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+
+interface ApiProduct {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  sku: string | null;
+  price: string;
+  comparePrice: string | null;
+  stock: number;
+  isActive: boolean;
+  isNew: boolean;
+  isFeatured: boolean;
+  images: string[];
+  sortOrder?: number;
+  createdAt?: string;
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+}
+
+function mapApiProductToProduct(p: ApiProduct, index: number): Product {
+  const price = parseFloat(p.price);
+  const comparePrice = p.comparePrice ? parseFloat(p.comparePrice) : null;
+  return {
+    id: index + 1,
+    originalId: p.id,
+    slug: p.slug,
+    name: p.name,
+    sku: p.sku || undefined,
+    description: p.description || undefined,
+    price,
+    oldPrice: comparePrice ?? undefined,
+    image: p.images[0] || '',
+    images: p.images,
+    category: p.category.name,
+    categoryId: parseInt(p.category.id, 10) || undefined,
     rating: 4.5,
-    discount: 10,
-  },
-  {
-    id: 7,
-    name: 'Гостиная "Милан" с ТВ-тумбой',
-    slug: 'gostinaya-milan-s-tv-tumboy',
-    price: 120000,
-    image: '/images/products/living-room.jpg',
-    category: 'Гостиные',
-    rating: 4.9,
-  },
-  {
-    id: 8,
-    name: 'Входная дверь стальная с терморазрывом',
-    slug: 'vhodnaya-dver-stalnaya-s-termorazryvom',
-    price: 28000,
-    image: '/images/products/entrance-door.jpg',
-    category: 'Двери',
-    rating: 4.7,
-  },
-];
+    isNew: p.isNew,
+    isFeatured: p.isFeatured,
+    inStock: p.stock > 0,
+    discount:
+      comparePrice && comparePrice > price
+        ? Math.round(((comparePrice - price) / comparePrice) * 100)
+        : undefined,
+    sortOrder: p.sortOrder ?? 0,
+    createdAt: p.createdAt ? new Date(p.createdAt).getTime() : Date.now(),
+  };
+}
 
 export const FeaturedProducts: React.FC = () => {
   const router = useRouter();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFeatured = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${API_URL}/products/featured?limit=8`);
+        if (!response.ok) return;
+        const data: { products: ApiProduct[] } = await response.json();
+        const mapped = (data.products || []).map((p, i) => mapApiProductToProduct(p, i));
+        setProducts(mapped);
+      } catch {
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFeatured();
+  }, []);
 
   const handleViewAll = () => {
     router.push('/catalog');
@@ -109,11 +102,17 @@ export const FeaturedProducts: React.FC = () => {
           </button>
         </div>
 
-        <div className={styles.productsGrid}>
-          {featuredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {loading ? (
+          <div className={styles.loading}>Загрузка...</div>
+        ) : products.length > 0 ? (
+          <div className={styles.productsGrid}>
+            {products.map((product) => (
+              <ProductCard key={product.originalId ?? product.id} product={product} />
+            ))}
+          </div>
+        ) : (
+          <div className={styles.empty}>Популярных товаров пока нет</div>
+        )}
       </div>
     </section>
   );

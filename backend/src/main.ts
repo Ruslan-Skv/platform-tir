@@ -2,10 +2,15 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { json, urlencoded } from 'express';
+import * as express from 'express';
+import { join } from 'path';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Раздача загруженных файлов (картинки «Наши направления» и др.)
+  app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
   // Увеличиваем лимит размера body для загрузки изображений (base64)
   app.use(json({ limit: '50mb' }));

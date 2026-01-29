@@ -3,38 +3,43 @@ import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
+const TEST_PASSWORD = 'Test123!';
+
+// Супер-администратора не создаём — его создаёте вы сами.
+const TEST_USERS = [
+  { email: 'admin@example.com', firstName: 'Админ', lastName: 'Системы', role: 'ADMIN' as const },
+  { email: 'content_manager@example.com', firstName: 'Контент', lastName: 'Менеджер', role: 'CONTENT_MANAGER' as const },
+  { email: 'moderator@example.com', firstName: 'Модератор', lastName: 'Сайта', role: 'MODERATOR' as const },
+  { email: 'support@example.com', firstName: 'Поддержка', lastName: 'Клиентов', role: 'SUPPORT' as const },
+  { email: 'partner@example.com', firstName: 'Партнёр', lastName: 'Компании', role: 'PARTNER' as const },
+  { email: 'user@example.com', firstName: 'Тестовый', lastName: 'Пользователь', role: 'USER' as const },
+  { email: 'guest@example.com', firstName: 'Гость', lastName: 'Сайта', role: 'GUEST' as const },
+];
+
 async function main() {
   console.log('🌱 Seeding database...');
 
-  // Create admin user
-  const adminPassword = await bcrypt.hash('admin123', 10);
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@example.com' },
-    update: {},
-    create: {
-      email: 'admin@example.com',
-      password: adminPassword,
-      firstName: 'Admin',
-      lastName: 'User',
-      role: 'ADMIN',
-    },
-  });
-  console.log('✅ Created admin user:', admin.email);
+  const hashedPassword = await bcrypt.hash(TEST_PASSWORD, 10);
 
-  // Create test user
-  const userPassword = await bcrypt.hash('user123', 10);
-  const user = await prisma.user.upsert({
-    where: { email: 'user@example.com' },
-    update: {},
-    create: {
-      email: 'user@example.com',
-      password: userPassword,
-      firstName: 'Test',
-      lastName: 'User',
-      role: 'USER',
-    },
-  });
-  console.log('✅ Created test user:', user.email);
+  for (const u of TEST_USERS) {
+    const user = await prisma.user.upsert({
+      where: { email: u.email },
+      update: { role: u.role, firstName: u.firstName, lastName: u.lastName },
+      create: {
+        email: u.email,
+        password: hashedPassword,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        role: u.role,
+      },
+    });
+    console.log(`✅ ${u.role}: ${user.email}`);
+  }
+
+  console.log(`\n📋 Пароль для всех тестовых пользователей: ${TEST_PASSWORD}`);
+  console.log('   Вход в админку: admin@example.com, content_manager@example.com, moderator@example.com, support@example.com, partner@example.com');
+  console.log('   Обычный пользователь: user@example.com. Гость: guest@example.com');
+  console.log('   Супер-администратора в seed нет — создаёте сами.\n');
 
   // ============================================
   // КАТЕГОРИИ

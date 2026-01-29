@@ -6,7 +6,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 
 @Controller('admin/analytics')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'MANAGER')
+@Roles('ADMIN', 'MODERATOR', 'SUPPORT')
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 

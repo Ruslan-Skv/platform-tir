@@ -31,8 +31,75 @@ model User {
   createdTasks      Task[]         @relation("CreatedTasks")
   wishlist          WishlistItem[]
   compareItems      CompareItem[]
+  supportConversations       SupportConversation[] @relation("SupportUser")
+  assignedSupportConversations SupportConversation[] @relation("SupportAgent")
+  supportMessages   SupportMessage[]
 
   @@map("users")
+}
+
+model SupportConversation {
+  id           String              @id @default(cuid())
+  userId       String
+  assignedToId String?
+  status       ConversationStatus  @default(OPEN)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  user         User                @relation("SupportUser", fields: [userId], references: [id], onDelete: Cascade)
+  assignedTo   User?               @relation("SupportAgent", fields: [assignedToId], references: [id], onDelete: SetNull)
+  messages     SupportMessage[]
+
+  @@map("support_conversations")
+}
+
+model SupportMessage {
+  id             String             @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String             @db.Text
+  createdAt      DateTime           @default(now())
+  conversation   SupportConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User               @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("support_messages")
+}
+
+model HomeDirectionImage {
+  id       String   @id @default(cuid())
+  slug     String   @unique
+  imageUrl String
+  updatedAt DateTime @updatedAt
+
+  @@map("home_direction_images")
+}
+
+model HeroBlock {
+  id          String   @id @default("main")
+  titleMain   String   @default("Создаем интерьеры мечты")
+  titleAccent String   @default("в Мурманске")
+  subtitle    String   @default("Мебель на заказ, ремонт под ключ, двери входные и межкомнатные, натяжные потолки, жалюзи, мягкая мебель, кровати, матрасы .....") @db.Text
+  updatedAt   DateTime @updatedAt
+
+  @@map("hero_block")
+}
+
+model HeroSlide {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("hero_slides")
+}
+
+model HeroFeature {
+  id        String   @id @default(cuid())
+  icon      String
+  title     String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("hero_features")
 }
 
 model Customer {
@@ -628,11 +695,21 @@ model Review {
   @@map("reviews")
 }
 
+enum ConversationStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
 enum UserRole {
-  USER
+  SUPER_ADMIN
   ADMIN
-  MANAGER
   CONTENT_MANAGER
+  MODERATOR
+  SUPPORT
+  PARTNER
+  USER
+  GUEST
 }
 
 enum LeadSource {

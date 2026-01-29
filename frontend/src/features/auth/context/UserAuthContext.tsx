@@ -4,12 +4,22 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
+export type UserRole =
+  | 'SUPER_ADMIN'
+  | 'ADMIN'
+  | 'CONTENT_MANAGER'
+  | 'MODERATOR'
+  | 'SUPPORT'
+  | 'PARTNER'
+  | 'USER'
+  | 'GUEST';
+
 export interface User {
   id: string;
   email: string;
   firstName: string | null;
   lastName: string | null;
-  role: 'USER' | 'ADMIN' | 'MANAGER' | 'CONTENT_MANAGER';
+  role: UserRole;
 }
 
 interface UserAuthContextType {

@@ -229,7 +229,7 @@ export class AnalyticsService {
     const managers = managerId
       ? [{ id: managerId }]
       : await this.prisma.user.findMany({
-          where: { role: { in: ['MANAGER', 'ADMIN'] } },
+          where: { role: { in: ['MODERATOR', 'ADMIN'] } },
           select: { id: true, firstName: true, lastName: true, email: true },
         });
 

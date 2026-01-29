@@ -54,6 +54,14 @@
   color: #b80546;
 }
 
+.loading,
+.empty {
+  color: #718096;
+  font-size: 1rem;
+  padding: 2rem;
+  text-align: center;
+}
+
 .productsGrid {
   display: grid;
   gap: 1.5rem;

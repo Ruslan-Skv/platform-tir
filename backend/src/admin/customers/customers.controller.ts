@@ -21,7 +21,7 @@ import { RequestWithUser } from '../../common/types/request-with-user.types';
 
 @Controller('admin/customers')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'MANAGER')
+@Roles('ADMIN', 'MODERATOR', 'SUPPORT')
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 

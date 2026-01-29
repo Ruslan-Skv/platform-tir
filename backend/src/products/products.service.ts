@@ -279,6 +279,40 @@ export class ProductsService {
     };
   }
 
+  /** Популярные товары для главной страницы (isFeatured=true, isActive=true). Если меньше limit — добирает активные товары до limit. */
+  async findFeatured(limit = 8) {
+    const featured = await this.prisma.product.findMany({
+      where: {
+        isActive: true,
+        isFeatured: true,
+      },
+      include: {
+        category: true,
+      },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+      take: limit,
+    });
+
+    if (featured.length >= limit) {
+      return { products: featured };
+    }
+
+    const featuredIds = featured.map((p) => p.id);
+    const additional = await this.prisma.product.findMany({
+      where: {
+        isActive: true,
+        id: { notIn: featuredIds },
+      },
+      include: {
+        category: true,
+      },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+      take: limit - featured.length,
+    });
+
+    return { products: [...featured, ...additional] };
+  }
+
   async search(searchDto: SearchProductsDto) {
     const { query, category, minPrice, maxPrice, page = 1, limit = 20 } = searchDto;
     const from = (page - 1) * limit;

@@ -20,7 +20,7 @@ import { Roles } from '../../../common/decorators/roles.decorator';
 
 @Controller('admin/catalog/products')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'MANAGER')
+@Roles('ADMIN', 'CONTENT_MANAGER', 'PARTNER')
 export class AdminProductsController {
   constructor(private readonly adminProductsService: AdminProductsService) {}
 

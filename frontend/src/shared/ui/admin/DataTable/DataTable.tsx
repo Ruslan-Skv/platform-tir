@@ -18,6 +18,8 @@ interface DataTableProps<T> {
   keyExtractor: (item: T) => string;
   onRowClick?: (item: T) => void;
   selectable?: boolean;
+  /** Управляемый выбор: если передан, таблица использует этот массив (при сбросе выбора родителем отображается актуально) */
+  selectedIds?: string[];
   onSelectionChange?: (selectedIds: string[]) => void;
   /** ID строк для подсветки (например, цена поставщика изменилась) */
   highlightedIds?: string[];
@@ -39,6 +41,7 @@ export function DataTable<T>({
   keyExtractor,
   onRowClick,
   selectable = false,
+  selectedIds: selectedIdsProp,
   onSelectionChange,
   highlightedIds,
   highlightedRowClassName,
@@ -46,7 +49,10 @@ export function DataTable<T>({
   emptyMessage = 'Нет данных',
   pagination,
 }: DataTableProps<T>) {
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [internalSelectedIds, setInternalSelectedIds] = useState<string[]>([]);
+  const isControlled = selectedIdsProp !== undefined;
+  const selectedIds = isControlled ? selectedIdsProp : internalSelectedIds;
+
   const [sortBy, setSortBy] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -58,11 +64,11 @@ export function DataTable<T>({
 
   const handleSelectAll = () => {
     if (selectedIds.length === data.length) {
-      setSelectedIds([]);
+      if (!isControlled) setInternalSelectedIds([]);
       onSelectionChange?.([]);
     } else {
       const allIds = data.map(keyExtractor);
-      setSelectedIds(allIds);
+      if (!isControlled) setInternalSelectedIds(allIds);
       onSelectionChange?.(allIds);
     }
   };
@@ -71,7 +77,7 @@ export function DataTable<T>({
     const newSelection = selectedIds.includes(id)
       ? selectedIds.filter((i) => i !== id)
       : [...selectedIds, id];
-    setSelectedIds(newSelection);
+    if (!isControlled) setInternalSelectedIds(newSelection);
     onSelectionChange?.(newSelection);
   };
 

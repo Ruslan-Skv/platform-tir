@@ -4,12 +4,14 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
+type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | 'CONTENT_MANAGER' | 'MODERATOR' | 'SUPPORT' | 'PARTNER';
+
 interface User {
   id: string;
   email: string;
   firstName: string | null;
   lastName: string | null;
-  role: 'USER' | 'ADMIN' | 'MANAGER' | 'CONTENT_MANAGER';
+  role: AdminRole | 'USER' | 'GUEST';
   avatar?: string | null;
 }
 
@@ -91,8 +93,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const data = await response.json();
 
-      // Check if user has admin access
-      const allowedRoles = ['ADMIN', 'MANAGER', 'CONTENT_MANAGER'];
+      const allowedRoles: string[] = [
+        'SUPER_ADMIN',
+        'ADMIN',
+        'CONTENT_MANAGER',
+        'MODERATOR',
+        'SUPPORT',
+        'PARTNER',
+      ];
       if (!allowedRoles.includes(data.user.role)) {
         return {
           success: false,
@@ -135,7 +143,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     token,
     isLoading,
     isAuthenticated: !!token && !!user,
-    isAdmin: user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.role === 'CONTENT_MANAGER',
+    isAdmin: [
+      'SUPER_ADMIN',
+      'ADMIN',
+      'CONTENT_MANAGER',
+      'MODERATOR',
+      'SUPPORT',
+      'PARTNER',
+    ].includes(user?.role ?? ''),
     login,
     logout,
     getAuthHeaders,

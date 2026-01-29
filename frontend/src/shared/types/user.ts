@@ -1,12 +1,12 @@
 export type UserRole =
-  | 'super_admin'
-  | 'admin'
-  | 'content_manager'
-  | 'moderator'
-  | 'support'
-  | 'partner'
-  | 'user'
-  | 'guest';
+  | 'SUPER_ADMIN'
+  | 'ADMIN'
+  | 'CONTENT_MANAGER'
+  | 'MODERATOR'
+  | 'SUPPORT'
+  | 'PARTNER'
+  | 'USER'
+  | 'GUEST';
 
 export interface PaginatedResponse<T> {
   items: T[];

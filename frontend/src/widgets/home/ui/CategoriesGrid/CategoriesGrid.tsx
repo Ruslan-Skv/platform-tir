@@ -1,15 +1,30 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { categories } from '../../lib/constants';
+import { type Category, categories } from '../../lib/constants';
 import styles from './CategoriesGrid.module.css';
 import { CategoryCard } from './CategoryCard';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+
 export const CategoriesGrid: React.FC = () => {
   const router = useRouter();
+  const [directionImages, setDirectionImages] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetch(`${API_URL}/home/directions/images`)
+      .then((res) => (res.ok ? res.json() : {}))
+      .then((data: Record<string, string>) => setDirectionImages(data || {}))
+      .catch(() => {});
+  }, []);
+
+  const categoriesWithImages: Category[] = categories.map((cat) => ({
+    ...cat,
+    image: directionImages[cat.slug] || cat.image,
+  }));
 
   const handleCategoryClick = (href: string) => {
     router.push(href);
@@ -24,7 +39,7 @@ export const CategoriesGrid: React.FC = () => {
         </div>
 
         <div className={styles.grid}>
-          {categories.map((category) => (
+          {categoriesWithImages.map((category) => (
             <CategoryCard
               key={category.id}
               category={category}

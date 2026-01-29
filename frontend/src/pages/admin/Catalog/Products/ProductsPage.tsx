@@ -148,6 +148,10 @@ export function ProductsPage() {
   const [exporting, setExporting] = useState(false);
   const [exportScope, setExportScope] = useState<'all' | 'filtered' | 'selected'>('selected');
 
+  // Модалка подтверждения массового удаления
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   // Обновление цен поставщика (по ссылкам) и синхронизация (цена товара = цена поставщика)
   const [updatingSupplierPrices, setUpdatingSupplierPrices] = useState(false);
   const [syncingSupplierPrices, setSyncingSupplierPrices] = useState(false);
@@ -524,10 +528,10 @@ export function ProductsPage() {
     }
   };
 
-  // Bulk delete
-  const bulkDelete = async () => {
+  // Bulk delete (вызывается после подтверждения в модалке)
+  const performBulkDelete = async () => {
     if (!hasSelection) return;
-    if (!confirm(`Удалить ${selectedIds.length} товар(ов)?`)) return;
+    setDeleting(true);
     try {
       const response = await fetch(`${API_URL}/admin/catalog/products/bulk/delete`, {
         method: 'POST',
@@ -538,11 +542,14 @@ export function ProductsPage() {
         body: JSON.stringify({ ids: selectedIds }),
       });
       if (response.ok) {
+        setShowDeleteConfirmModal(false);
         setSelectedIds([]);
         fetchProducts();
       }
     } catch (err) {
       console.error('Failed to bulk delete:', err);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -1630,7 +1637,10 @@ export function ProductsPage() {
           <button className={styles.bulkButton} onClick={() => bulkToggleActive(false)}>
             ✗ Деактивировать
           </button>
-          <button className={`${styles.bulkButton} ${styles.danger}`} onClick={bulkDelete}>
+          <button
+            className={`${styles.bulkButton} ${styles.danger}`}
+            onClick={() => setShowDeleteConfirmModal(true)}
+          >
             🗑️ Удалить
           </button>
         </div>
@@ -1671,6 +1681,7 @@ export function ProductsPage() {
           window.location.href = `/admin/catalog/products/${product.id}/edit`;
         }}
         selectable
+        selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
         highlightedIds={priceChangedIds}
         highlightedRowClassName={styles.priceChangedRow}
@@ -1683,6 +1694,39 @@ export function ProductsPage() {
           onPageChange: setPage,
         }}
       />
+
+      {/* Delete confirmation modal */}
+      {showDeleteConfirmModal && (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => !deleting && setShowDeleteConfirmModal(false)}
+        >
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.modalTitle}>Подтверждение удаления</h3>
+            <p className={styles.deleteConfirmText}>
+              Удалить выбранные товары ({selectedIds.length}{' '}
+              {selectedIds.length === 1 ? 'товар' : selectedIds.length < 5 ? 'товара' : 'товаров'})?
+              Это действие нельзя отменить.
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                className={styles.cancelButton}
+                onClick={() => setShowDeleteConfirmModal(false)}
+                disabled={deleting}
+              >
+                Отмена
+              </button>
+              <button
+                className={styles.dangerButton}
+                onClick={performBulkDelete}
+                disabled={deleting}
+              >
+                {deleting ? 'Удаление...' : '🗑️ Удалить'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Import Modal */}
       {showImportModal && (

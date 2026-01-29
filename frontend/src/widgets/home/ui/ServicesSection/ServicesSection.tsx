@@ -17,7 +17,7 @@ export const ServicesSection: React.FC = () => {
             <div key={service.id} className={styles.serviceCard}>
               <div
                 className={styles.serviceImage}
-                style={{ backgroundImage: `url(${service.image})` }}
+                style={service.image ? { backgroundImage: `url(${service.image})` } : undefined}
               />
               <div className={styles.serviceContent}>
                 <h3 className={styles.serviceTitle}>{service.title}</h3>

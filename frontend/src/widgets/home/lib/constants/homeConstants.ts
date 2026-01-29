@@ -1,5 +1,6 @@
 export interface Category {
   id: number;
+  slug: string;
   name: string;
   description: string;
   image: string;
@@ -27,57 +28,64 @@ export interface Service {
 export const categories: Category[] = [
   {
     id: 1,
+    slug: 'furniture',
     name: 'Мебель на заказ',
     description: 'Кухни, шкафы, гостиные по индивидуальным размерам',
-    image: '/images/categories/furniture.jpg',
+    image: '',
     productCount: 156,
     href: '/catalog?category=мебель',
   },
   {
     id: 2,
+    slug: 'repair',
     name: 'Ремонт квартир',
     description: 'Ремонт под ключ и отделочные работы',
-    image: '/images/categories/repair.jpg',
+    image: '',
     productCount: 42,
     href: '/catalog?category=ремонт',
   },
   {
     id: 3,
+    slug: 'doors',
     name: 'Двери',
     description: 'Межкомнатные и входные двери',
-    image: '/images/categories/doors.jpg',
+    image: '',
     productCount: 89,
     href: '/catalog?category=двери',
   },
   {
     id: 4,
+    slug: 'windows',
     name: 'Окна',
     description: 'Пластиковые и алюминиевые окна',
-    image: '/images/categories/windows.jpg',
+    image: '',
     productCount: 67,
     href: '/catalog?category=окна',
   },
   {
     id: 5,
+    slug: 'ceilings',
     name: 'Потолки',
     description: 'Натяжные и гипсокартонные потолки',
-    image: '/images/categories/ceilings.jpg',
+    image: '',
     productCount: 54,
     href: '/catalog?category=потолки',
   },
   {
     id: 6,
+    slug: 'blinds',
     name: 'Жалюзи',
     description: 'Горизонтальные, вертикальные, рулонные',
-    image: '/images/categories/blinds.jpg',
+    image: '',
     productCount: 73,
     href: '/catalog?category=жалюзи',
   },
   {
     id: 7,
+    slug: 'sales',
     name: 'Акции',
     description: 'Специальные предложения и скидки',
-    image: '/images/categories/sales.jpg',
+    image: '',
     productCount: 28,
     href: '/catalog?category=акции',
     isSale: true,
@@ -136,7 +144,7 @@ export const services: Service[] = [
       'Авторский надзор',
     ],
     price: 'от 5 000 ₽/м²',
-    image: '/images/services/repair-full.jpg',
+    image: '',
   },
   {
     id: 2,
@@ -149,7 +157,7 @@ export const services: Service[] = [
       'Спальни и детские',
     ],
     price: 'от 15 000 ₽',
-    image: '/images/services/furniture-custom.jpg',
+    image: '',
   },
   {
     id: 3,
@@ -157,6 +165,6 @@ export const services: Service[] = [
     description: 'Создание индивидуального дизайн-проекта',
     features: ['3D-визуализация', 'Подбор материалов', 'Смета и планировка', 'Авторский надзор'],
     price: 'от 1 500 ₽/м²',
-    image: '/images/services/interior-design.jpg',
+    image: '',
   },
 ];

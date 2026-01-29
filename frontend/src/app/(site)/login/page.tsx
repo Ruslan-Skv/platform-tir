@@ -64,10 +64,28 @@ export default function LoginPage() {
     }
   };
 
+  const handleCancel = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/');
+    }
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.card}>
-        <h1 className={styles.title}>{isLogin ? 'Вход' : 'Регистрация'}</h1>
+        <div className={styles.header}>
+          <h1 className={styles.title}>{isLogin ? 'Вход в личный кабинет' : 'Регистрация'}</h1>
+          <button
+            type="button"
+            onClick={handleCancel}
+            className={styles.closeButton}
+            aria-label="Закрыть, передумал входить"
+          >
+            ×
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit} className={styles.form}>
           {!isLogin && (
@@ -170,6 +188,12 @@ export default function LoginPage() {
             className={styles.switchButton}
           >
             {isLogin ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти'}
+          </button>
+        </div>
+
+        <div className={styles.cancelBlock}>
+          <button type="button" onClick={handleCancel} className={styles.cancelButton}>
+            Передумал — вернуться на сайт
           </button>
         </div>
       </div>

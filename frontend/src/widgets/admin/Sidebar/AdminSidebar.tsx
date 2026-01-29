@@ -31,6 +31,7 @@ const navItems: NavItem[] = [
     icon: '👥',
     children: [
       { label: 'Клиенты', href: '/admin/crm/customers' },
+      { label: 'Чат поддержки', href: '/admin/support' },
       { label: 'Воронка продаж', href: '/admin/crm/funnel' },
       { label: 'Сделки', href: '/admin/crm/deals' },
       { label: 'Задачи', href: '/admin/crm/tasks' },
@@ -41,6 +42,8 @@ const navItems: NavItem[] = [
     href: '/admin/content',
     icon: '📝',
     children: [
+      { label: 'Hero-блок главной', href: '/admin/content/hero' },
+      { label: 'Наши направления', href: '/admin/content/directions' },
       { label: 'Страницы', href: '/admin/content/pages' },
       { label: 'Блог', href: '/admin/content/blog' },
       { label: 'Комментарии', href: '/admin/content/comments' },
@@ -83,6 +86,10 @@ const navItems: NavItem[] = [
     label: 'Настройки',
     href: '/admin/settings',
     icon: '⚙️',
+    children: [
+      { label: 'Роли', href: '/admin/settings' },
+      { label: 'Управление пользователями', href: '/admin/users' },
+    ],
   },
 ];
 

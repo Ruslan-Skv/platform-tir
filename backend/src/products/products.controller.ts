@@ -88,6 +88,14 @@ export class ProductsController {
     return this.productsService.findAllProducts();
   }
 
+  @Get('featured')
+  @ApiOperation({ summary: 'Популярные товары для главной страницы' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Количество товаров (по умолчанию 8)' })
+  findFeatured(@Query('limit') limit?: string) {
+    const limitNum = limit ? parseInt(limit, 10) : 8;
+    return this.productsService.findFeatured(limitNum);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Получить товар по ID' })
   findOne(@Param('id') id: string) {

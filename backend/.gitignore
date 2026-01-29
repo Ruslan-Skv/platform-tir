@@ -41,3 +41,6 @@ lerna-debug.log*
 
 # Prisma
 prisma/migrations/
+
+# Uploaded files (home directions images etc.)
+/uploads

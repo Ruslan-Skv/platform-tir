@@ -14,6 +14,9 @@ import { AdminModule } from './admin/admin.module';
 import { WishlistModule } from './wishlist/wishlist.module';
 import { CompareModule } from './compare/compare.module';
 import { CartModule } from './cart/cart.module';
+import { SupportChatModule } from './support-chat/support-chat.module';
+import { HomeDirectionsModule } from './home-directions/home-directions.module';
+import { HeroModule } from './hero/hero.module';
 
 @Module({
   imports: [
@@ -38,6 +41,9 @@ import { CartModule } from './cart/cart.module';
     WishlistModule,
     CompareModule,
     CartModule,
+    SupportChatModule,
+    HomeDirectionsModule,
+    HeroModule,
   ],
   controllers: [AppController],
   providers: [AppService],
