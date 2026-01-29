@@ -44,7 +44,12 @@ export class HeroService {
       })),
       features: features.map((f) => ({
         id: f.id,
-        icon: f.icon.startsWith('http') ? f.icon : prefix ? `${prefix}${f.icon}` : f.icon,
+        icon:
+          f.icon.startsWith('http') || !f.icon.startsWith('/')
+            ? f.icon
+            : prefix
+              ? `${prefix}${f.icon}`
+              : f.icon,
         title: f.title,
         sortOrder: f.sortOrder,
       })),

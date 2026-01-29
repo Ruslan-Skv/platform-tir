@@ -89,6 +89,9 @@ export function HeroSectionPage() {
     return `${UPLOADS_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
   };
 
+  const isIconImageUrl = (icon: string) =>
+    !!(icon && typeof icon === 'string' && icon.includes('/uploads/'));
+
   const handleSaveBlock = async () => {
     if (!data) return;
     setSaving(true);
@@ -99,7 +102,7 @@ export function HeroSectionPage() {
         body: JSON.stringify(data.block),
       });
       if (res.ok) {
-        showMessage('success', 'Текст сохранён');
+        showMessage('success', 'Изменения успешно сохранены');
       } else {
         showMessage('error', 'Ошибка сохранения');
       }
@@ -302,7 +305,9 @@ export function HeroSectionPage() {
       </header>
 
       {message && (
-        <div className={message.type === 'success' ? styles.success : styles.error}>
+        <div
+          className={`${message.type === 'success' ? styles.success : styles.error} ${styles.toast}`}
+        >
           {message.text}
         </div>
       )}
@@ -391,7 +396,7 @@ export function HeroSectionPage() {
               {editingFeature === f.id ? (
                 <>
                   <div className={styles.iconCell}>
-                    {f.icon.startsWith('http') || f.icon.startsWith('/') ? (
+                    {isIconImageUrl(f.icon) ? (
                       <div className={styles.iconPreview}>
                         <img src={imageUrl(f.icon)} alt="" />
                       </div>
@@ -463,7 +468,7 @@ export function HeroSectionPage() {
                 </>
               ) : (
                 <>
-                  {f.icon.startsWith('http') || f.icon.startsWith('/') ? (
+                  {isIconImageUrl(f.icon) ? (
                     <img src={imageUrl(f.icon)} alt="" className={styles.featureIconImg} />
                   ) : (
                     <span className={styles.featureIcon}>{f.icon}</span>
@@ -497,7 +502,7 @@ export function HeroSectionPage() {
             onChange={handleUploadFeatureIcon}
           />
           <div className={styles.iconCell}>
-            {newFeature.icon.startsWith('http') || newFeature.icon.startsWith('/') ? (
+            {isIconImageUrl(newFeature.icon) ? (
               <div className={styles.iconPreview}>
                 <img src={imageUrl(newFeature.icon)} alt="" />
               </div>

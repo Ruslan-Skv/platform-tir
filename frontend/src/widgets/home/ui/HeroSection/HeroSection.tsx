@@ -137,16 +137,22 @@ export const HeroSection: React.FC = () => {
               </button>
             </div>
             <div className={styles.features}>
-              {data.features.map((f) => (
-                <div key={f.id} className={styles.feature}>
-                  {f.icon.startsWith('http') || f.icon.startsWith('/') ? (
-                    <img src={imageUrl(f.icon)} alt="" className={styles.featureIconImg} />
-                  ) : (
-                    <span className={styles.featureIcon}>{f.icon}</span>
-                  )}
-                  <span>{f.title}</span>
-                </div>
-              ))}
+              {data.features.map((f) => {
+                const icon =
+                  f.icon?.startsWith('http') && !f.icon.includes('/uploads/')
+                    ? f.icon.replace(/^https?:\/\/[^/]+/, '')
+                    : f.icon;
+                return (
+                  <div key={f.id} className={styles.feature}>
+                    {icon && icon.includes('/uploads/') ? (
+                      <img src={imageUrl(icon)} alt="" className={styles.featureIconImg} />
+                    ) : icon ? (
+                      <span className={styles.featureIcon}>{icon}</span>
+                    ) : null}
+                    <span>{f.title}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
