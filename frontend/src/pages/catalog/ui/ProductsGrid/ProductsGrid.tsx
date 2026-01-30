@@ -7,6 +7,8 @@ import type { Product } from '@/entities/product/types';
 import { ProductCard } from './ProductCard';
 import styles from './ProductsGrid.module.css';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+
 interface ApiProduct {
   id: string;
   name: string;
@@ -19,6 +21,7 @@ interface ApiProduct {
   isActive: boolean;
   isNew: boolean;
   isFeatured: boolean;
+  isPartnerProduct?: boolean;
   images: string[];
   attributes: Record<string, unknown> | null;
   sortOrder?: number;
@@ -28,6 +31,14 @@ interface ApiProduct {
     name: string;
     slug: string;
   };
+  partner?: {
+    id: string;
+    name: string;
+    logoUrl: string | null;
+    showLogoOnCards?: boolean;
+    tooltipText?: string | null;
+    showTooltip?: boolean;
+  } | null;
 }
 
 interface CategoryResponse {
@@ -72,6 +83,10 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('default');
+  const [partnerSettings, setPartnerSettings] = useState<{
+    partnerLogoUrl: string | null;
+    showPartnerIconOnCards: boolean;
+  }>({ partnerLogoUrl: null, showPartnerIconOnCards: true });
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -84,12 +99,11 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
         setLoading(true);
         setError(null);
 
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
         // Для slug "all" используем специальный endpoint для всех товаров
         const endpoint =
           categorySlug === 'all'
-            ? `${apiUrl}/products/catalog/all`
-            : `${apiUrl}/products/category/${categorySlug}`;
+            ? `${API_URL}/products/catalog/all`
+            : `${API_URL}/products/category/${categorySlug}`;
         const response = await fetch(endpoint);
 
         if (!response.ok) {
@@ -115,6 +129,12 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
           rating: 4.5, // Пока захардкожено, позже можно добавить reviews
           isNew: p.isNew,
           isFeatured: p.isFeatured,
+          isPartnerProduct: p.isPartnerProduct ?? !!p.partner,
+          partnerLogoUrl: p.partner?.logoUrl ?? null,
+          partnerShowLogoOnCards: p.partner?.showLogoOnCards ?? true,
+          partnerName: p.partner?.name ?? null,
+          partnerTooltipText: p.partner?.tooltipText ?? null,
+          partnerShowTooltip: p.partner?.showTooltip ?? true,
           inStock: p.stock > 0,
           discount: p.comparePrice
             ? Math.round(
@@ -140,6 +160,24 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
     // Сбрасываем сортировку при изменении категории
     setSortBy('default');
   }, [categorySlug]);
+
+  useEffect(() => {
+    const fetchPartnerSettings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/home/partner-products`);
+        if (res.ok) {
+          const data = await res.json();
+          setPartnerSettings({
+            partnerLogoUrl: data.partnerLogoUrl ?? null,
+            showPartnerIconOnCards: data.showPartnerIconOnCards ?? true,
+          });
+        }
+      } catch {
+        // ignore
+      }
+    };
+    fetchPartnerSettings();
+  }, []);
 
   // Функция сортировки товаров
   const sortProducts = (productsToSort: Product[], sortOption: SortOption): Product[] => {
@@ -267,7 +305,12 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
 
       <div className={styles.grid}>
         {currentProducts.map((product) => (
-          <ProductCard key={product.id} product={product} />
+          <ProductCard
+            key={product.id}
+            product={product}
+            partnerLogoUrl={partnerSettings.partnerLogoUrl}
+            showPartnerIconOnCards={partnerSettings.showPartnerIconOnCards}
+          />
         ))}
       </div>
     </div>

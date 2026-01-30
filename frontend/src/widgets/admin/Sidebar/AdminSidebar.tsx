@@ -1,25 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import styles from './AdminSidebar.module.css';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+
 interface AdminSidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+}
+
+interface NavChild {
+  label: string;
+  href: string;
+  children?: NavChild[];
 }
 
 interface NavItem {
   label: string;
   href: string;
   icon: string;
-  children?: { label: string; href: string }[];
+  children?: NavChild[];
 }
 
-const navItems: NavItem[] = [
+interface CategoryTree {
+  id: string;
+  name: string;
+  slug: string;
+  children?: CategoryTree[];
+}
+
+const baseNavItems: NavItem[] = [
   {
     label: 'Дашборд',
     href: '/admin',
@@ -42,13 +57,21 @@ const navItems: NavItem[] = [
     href: '/admin/content',
     icon: '📝',
     children: [
-      { label: 'Hero-блок главной', href: '/admin/content/hero' },
-      { label: 'Почему выбирают нас', href: '/admin/content/advantages' },
-      { label: 'Комплексные решения', href: '/admin/content/services' },
-      { label: 'Наши направления', href: '/admin/content/directions' },
+      {
+        label: 'Главная страница',
+        href: '/admin/content/home',
+        children: [
+          { label: 'Первый блок', href: '/admin/content/hero' },
+          { label: 'Наши направления', href: '/admin/content/directions' },
+          { label: 'Почему выбирают нас', href: '/admin/content/advantages' },
+          { label: 'Комплексные решения', href: '/admin/content/services' },
+          { label: 'Популярные товары', href: '/admin/content/featured-products' },
+        ],
+      },
       { label: 'Страницы', href: '/admin/content/pages' },
       { label: 'Блог', href: '/admin/content/blog' },
       { label: 'Комментарии', href: '/admin/content/comments' },
+      { label: 'Футер', href: '/admin/content/footer' },
     ],
   },
   {
@@ -56,12 +79,25 @@ const navItems: NavItem[] = [
     href: '/admin/catalog',
     icon: '📦',
     children: [
-      { label: 'Товары', href: '/admin/catalog/products' },
+      // Товары с древовидной структурой по категориям — заполняется динамически
+      {
+        label: 'Товары',
+        href: '/admin/catalog/products',
+        children: [{ label: 'Все товары', href: '/admin/catalog/products' }],
+      },
       { label: 'Категории', href: '/admin/catalog/categories' },
-      { label: 'Производители', href: '/admin/catalog/manufacturers' },
       { label: 'Характеристики', href: '/admin/catalog/attributes' },
-      { label: 'Поставщики', href: '/admin/catalog/suppliers' },
     ],
+  },
+  {
+    label: 'Партнёры',
+    href: '/admin/partners',
+    icon: '🤝',
+  },
+  {
+    label: 'Поставщики',
+    href: '/admin/catalog/suppliers',
+    icon: '🚚',
   },
   {
     label: 'Заказы',
@@ -89,21 +125,114 @@ const navItems: NavItem[] = [
     href: '/admin/settings',
     icon: '⚙️',
     children: [
-      { label: 'Роли', href: '/admin/settings' },
+      { label: 'Шаблоны товаров', href: '/admin/settings/product-templates' },
+      { label: 'Товары партнёра', href: '/admin/settings/partner-products' },
+      { label: 'Роли', href: '/admin/settings/roles' },
       { label: 'Управление пользователями', href: '/admin/users' },
     ],
   },
 ];
 
+function categoryToNavChild(cat: CategoryTree): NavChild {
+  const hasChildren = cat.children && cat.children.length > 0;
+  return {
+    label: cat.name,
+    href: `/admin/catalog/products/category/${cat.id}`,
+    children: hasChildren ? cat.children!.map(categoryToNavChild) : undefined,
+  };
+}
+
 export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
   const pathname = usePathname();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [categories, setCategories] = useState<CategoryTree[]>([]);
 
-  const toggleExpand = (href: string) => {
-    setExpandedItems((prev) =>
-      prev.includes(href) ? prev.filter((item) => item !== href) : [...prev, href]
-    );
+  const fetchCategories = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/categories`);
+      if (response.ok) {
+        const data: CategoryTree[] = await response.json();
+        setCategories(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch categories for sidebar:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
+
+  const navItems = useMemo(() => {
+    const catalogItem = baseNavItems.find((item) => item.href === '/admin/catalog');
+    if (!catalogItem?.children) return baseNavItems;
+
+    const categoryNavChildren: NavChild[] = categories.flatMap(categoryToNavChild);
+    const productsChildren: NavChild[] = [
+      { label: 'Все товары', href: '/admin/catalog/products' },
+      ...categoryNavChildren,
+    ];
+
+    return baseNavItems.map((item) => {
+      if (item.href !== '/admin/catalog') return item;
+      return {
+        ...item,
+        children: catalogItem.children!.map((child) =>
+          child.label === 'Товары' ? { ...child, children: productsChildren } : child
+        ),
+      };
+    });
+  }, [categories]);
+
+  // Найти путь (предки + сам ключ) для раскрытия при клике
+  const getExpandBranch = useCallback(
+    (key: string): string[] => {
+      for (const item of navItems) {
+        if (item.href === key) return [key];
+        if (item.children) {
+          for (const child of item.children) {
+            if (child.href === key) return [item.href, key];
+            if (child.children) {
+              for (const nested of child.children) {
+                if (nested.href === key) return [item.href, child.href, key];
+              }
+            }
+          }
+        }
+      }
+      return [key];
+    },
+    [navItems]
+  );
+
+  const toggleExpand = (key: string) => {
+    setExpandedItems((prev) => {
+      const isExpanding = !prev.includes(key);
+      if (isExpanding) {
+        // Раскрываем только эту ветку, остальные сворачиваем
+        return getExpandBranch(key);
+      }
+      return prev.filter((item) => item !== key);
+    });
   };
+
+  const isNestedExpanded = (child: NavChild) => expandedItems.includes(child.href);
+
+  // При навигации раскрываем только активную ветку (accordion)
+  useEffect(() => {
+    const toExpand: string[] = [];
+    navItems.forEach((item) => {
+      if (item.children && (isActive(item.href) || isChildActive(item.children))) {
+        toExpand.push(item.href);
+        item.children.forEach((child) => {
+          if (child.children && isChildOrDescendantActive(child)) {
+            toExpand.push(child.href);
+          }
+        });
+      }
+    });
+    setExpandedItems(toExpand);
+  }, [pathname, navItems]);
 
   const isActive = (href: string) => {
     if (href === '/admin') {
@@ -112,10 +241,15 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
     return pathname?.startsWith(href) ?? false;
   };
 
-  const isChildActive = (item: NavItem) => {
-    if (!item.children) return false;
-    return item.children.some((child) => pathname === child.href);
+  const isChildActive = (children: NavChild[] | undefined): boolean => {
+    if (!children) return false;
+    return children.some(
+      (child) => pathname === child.href || (child.children ? isChildActive(child.children) : false)
+    );
   };
+
+  const isChildOrDescendantActive = (child: NavChild): boolean =>
+    pathname === child.href || (child.children ? isChildActive(child.children) : false);
 
   return (
     <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''}`}>
@@ -135,7 +269,7 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
               <>
                 <button
                   className={`${styles.navLink} ${
-                    isActive(item.href) || isChildActive(item) ? styles.active : ''
+                    isActive(item.href) || isChildActive(item.children) ? styles.active : ''
                   }`}
                   onClick={() => toggleExpand(item.href)}
                 >
@@ -155,17 +289,55 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
                 </button>
                 {!collapsed && expandedItems.includes(item.href) && (
                   <div className={styles.submenu}>
-                    {item.children.map((child) => (
-                      <Link
-                        key={child.href}
-                        href={child.href}
-                        className={`${styles.submenuLink} ${
-                          pathname === child.href ? styles.active : ''
-                        }`}
-                      >
-                        {child.label}
-                      </Link>
-                    ))}
+                    {item.children.map((child) =>
+                      child.children ? (
+                        <div key={child.label} className={styles.submenuGroup}>
+                          <button
+                            type="button"
+                            className={`${styles.submenuGroupRow} ${
+                              isChildOrDescendantActive(child) ? styles.active : ''
+                            }`}
+                            onClick={() => toggleExpand(child.href)}
+                            aria-expanded={isNestedExpanded(child)}
+                            aria-label={`${child.label}, ${isNestedExpanded(child) ? 'свернуть' : 'развернуть'}`}
+                          >
+                            <span className={styles.submenuGroupLink}>{child.label}</span>
+                            <span
+                              className={`${styles.arrow} ${
+                                isNestedExpanded(child) ? styles.expanded : ''
+                              }`}
+                            >
+                              ▼
+                            </span>
+                          </button>
+                          {isNestedExpanded(child) && (
+                            <div className={styles.submenuNested}>
+                              {child.children.map((nested) => (
+                                <Link
+                                  key={nested.href}
+                                  href={nested.href}
+                                  className={`${styles.submenuLink} ${
+                                    pathname === nested.href ? styles.active : ''
+                                  }`}
+                                >
+                                  {nested.label}
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <Link
+                          key={child.label}
+                          href={child.href}
+                          className={`${styles.submenuLink} ${
+                            pathname === child.href ? styles.active : ''
+                          }`}
+                        >
+                          {child.label}
+                        </Link>
+                      )
+                    )}
                   </div>
                 )}
               </>

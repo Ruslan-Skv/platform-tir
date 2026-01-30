@@ -27,6 +27,7 @@ interface Product {
   isActive: boolean;
   isFeatured: boolean;
   isNew: boolean;
+  isPartnerProduct?: boolean;
   sortOrder?: number;
   attributes?: Record<string, string | number | boolean | string[]> | null;
   images: string[];
@@ -62,6 +63,7 @@ const AVAILABLE_COLUMNS: ColumnConfig[] = [
   { key: 'isActive', title: 'Активен', editable: true, type: 'boolean' },
   { key: 'isFeatured', title: 'Хит', editable: true, type: 'boolean' },
   { key: 'isNew', title: 'Новинка', editable: true, type: 'boolean' },
+  { key: 'isPartnerProduct', title: 'Товар партнёра', editable: true, type: 'boolean' },
   { key: 'supplier', title: 'Поставщик', editable: true, type: 'text' },
 ];
 
@@ -76,7 +78,12 @@ interface CategoriesResponse {
   children?: CategoriesResponse[];
 }
 
-export function ProductsPage() {
+interface ProductsPageProps {
+  /** При указании — показываем только товары этой категории и подкатегорий */
+  categoryId?: string;
+}
+
+export function ProductsPage({ categoryId }: ProductsPageProps) {
   const { getAuthHeaders } = useAuth();
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<CategoriesResponse[]>([]);
@@ -89,7 +96,7 @@ export function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState(categoryId ?? '');
   const [stockFilter, setStockFilter] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const hasSelection = selectedIds.length > 0;
@@ -108,7 +115,9 @@ export function ProductsPage() {
   const [editMode, setEditMode] = useState(false);
   const [selectedColumns, setSelectedColumns] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('admin_products_columns');
+      const saved =
+        localStorage.getItem('admin_products_columns') ??
+        localStorage.getItem('admin_product_table_template_columns');
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -180,6 +189,13 @@ export function ProductsPage() {
     };
   }, []);
 
+  // Синхронизация фильтра категории при навигации по категориям
+  useEffect(() => {
+    if (categoryId) {
+      setCategoryFilter(categoryId);
+    }
+  }, [categoryId]);
+
   // Close column selector when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -231,37 +247,49 @@ export function ProductsPage() {
     fetchSuppliers();
   }, [getAuthHeaders]);
 
-  // Fetch category attributes for all categories
+  // Собираем ID категории и всех подкатегорий для загрузки атрибутов
+  const categoryIdsForAttributes = useMemo(() => {
+    const collectIds = (cats: CategoriesResponse[]): string[] => {
+      const ids: string[] = [];
+      for (const cat of cats) {
+        ids.push(cat.id);
+        if (cat.children?.length) {
+          ids.push(...collectIds(cat.children));
+        }
+      }
+      return ids;
+    };
+    if (categoryId) {
+      const findAndCollect = (cats: CategoriesResponse[], targetId: string): string[] => {
+        for (const cat of cats) {
+          if (cat.id === targetId) {
+            return [cat.id, ...collectIds(cat.children ?? [])];
+          }
+          if (cat.children?.length) {
+            const found = findAndCollect(cat.children, targetId);
+            if (found.length > 0) return found;
+          }
+        }
+        return [];
+      };
+      return findAndCollect(categories, categoryId);
+    }
+    return collectIds(categories);
+  }, [categories, categoryId]);
+
+  // Fetch category attributes — при categoryId только для этой категории, иначе для всех
   useEffect(() => {
-    const fetchAllCategoryAttributes = async () => {
-      if (categories.length === 0) return;
+    const fetchCategoryAttributes = async () => {
+      if (categoryIdsForAttributes.length === 0) return;
 
       const allAttrsMap = new Map<
         string,
         { id: string; name: string; slug: string; type: string }
       >();
 
-      // Функция для рекурсивного обхода категорий и сбора всех ID
-      const getAllCategoryIds = (cats: CategoriesResponse[]): string[] => {
-        const ids: string[] = [];
-        const collect = (categoryList: CategoriesResponse[]) => {
-          for (const cat of categoryList) {
-            ids.push(cat.id);
-            if (cat.children && cat.children.length > 0) {
-              collect(cat.children);
-            }
-          }
-        };
-        collect(cats);
-        return ids;
-      };
-
-      const categoryIds = getAllCategoryIds(categories);
-
-      // Загружаем атрибуты для всех категорий параллельно
-      const attrPromises = categoryIds.map(async (categoryId) => {
+      const attrPromises = categoryIdsForAttributes.map(async (catId) => {
         try {
-          const response = await fetch(`${API_URL}/categories/${categoryId}/attributes`);
+          const response = await fetch(`${API_URL}/categories/${catId}/attributes`);
           if (response.ok) {
             const attrs: Array<{
               id: string;
@@ -272,7 +300,7 @@ export function ProductsPage() {
           }
           return [];
         } catch (err) {
-          console.error(`Failed to fetch attributes for category ${categoryId}:`, err);
+          console.error(`Failed to fetch attributes for category ${catId}:`, err);
           return [];
         }
       });
@@ -294,10 +322,25 @@ export function ProductsPage() {
       setCategoryAttributes(Array.from(allAttrsMap.values()));
     };
 
-    fetchAllCategoryAttributes();
-  }, [categories]);
+    fetchCategoryAttributes();
+  }, [categoryIdsForAttributes]);
 
   // Flatten categories for select dropdown (with unique keys)
+  const currentCategoryName = useMemo(() => {
+    if (!categoryId) return null;
+    const findName = (cats: CategoriesResponse[], id: string): string | null => {
+      for (const cat of cats) {
+        if (cat.id === id) return cat.name;
+        if (cat.children?.length) {
+          const found = findName(cat.children, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    return findName(categories, categoryId);
+  }, [categories, categoryId]);
+
   const flatCategories = useMemo(() => {
     const flatten = (cats: CategoriesResponse[], prefix = ''): { id: string; name: string }[] => {
       const result: { id: string; name: string }[] = [];
@@ -639,6 +682,7 @@ export function ProductsPage() {
         'Активен',
         'Хит',
         'Новинка',
+        'Товар партнёра',
         'Изображения',
       ];
 
@@ -654,6 +698,7 @@ export function ProductsPage() {
         p.isActive ? 'Да' : 'Нет',
         p.isFeatured ? 'Да' : 'Нет',
         p.isNew ? 'Да' : 'Нет',
+        p.isPartnerProduct ? 'Да' : 'Нет',
         `"${(p.images || []).join(', ')}"`,
       ]);
 
@@ -710,6 +755,7 @@ export function ProductsPage() {
         'Активен',
         'Хит',
         'Новинка',
+        'Товар партнёра',
         'Изображения',
       ];
 
@@ -746,6 +792,7 @@ export function ProductsPage() {
         xml += `<Cell><Data ss:Type="String">${p.isActive ? 'Да' : 'Нет'}</Data></Cell>`;
         xml += `<Cell><Data ss:Type="String">${p.isFeatured ? 'Да' : 'Нет'}</Data></Cell>`;
         xml += `<Cell><Data ss:Type="String">${p.isNew ? 'Да' : 'Нет'}</Data></Cell>`;
+        xml += `<Cell><Data ss:Type="String">${p.isPartnerProduct ? 'Да' : 'Нет'}</Data></Cell>`;
         xml += `<Cell><Data ss:Type="String">${escapeXml((p.images || []).join(', '))}</Data></Cell>`;
         xml += '</Row>';
       });
@@ -1061,11 +1108,16 @@ export function ProductsPage() {
         </div>
       ),
     },
-    {
-      key: 'category',
-      title: 'Категория',
-      render: (product: Product) => product.category.name,
-    },
+    // Колонка «Категория» скрыта при просмотре по категории — все товары в одной категории
+    ...(categoryId
+      ? []
+      : [
+          {
+            key: 'category',
+            title: 'Категория',
+            render: (product: Product) => product.category.name,
+          },
+        ]),
   ];
 
   // Generate dynamic columns based on selection and edit mode
@@ -1200,7 +1252,10 @@ export function ProductsPage() {
           className={styles.actionButton}
           onClick={(e) => {
             e.stopPropagation();
-            window.location.href = `/admin/catalog/products/${product.id}/edit`;
+            const editUrl = categoryId
+              ? `/admin/catalog/products/${product.id}/edit?fromCategory=${categoryId}`
+              : `/admin/catalog/products/${product.id}/edit`;
+            window.location.href = editUrl;
           }}
           title="Редактировать"
         >
@@ -1216,7 +1271,9 @@ export function ProductsPage() {
     <div className={styles.page}>
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <h1 className={styles.title}>Товары</h1>
+          <h1 className={styles.title}>
+            {currentCategoryName ? `Товары: ${currentCategoryName}` : 'Товары'}
+          </h1>
           <span className={styles.count}>{totalProducts} товаров</span>
         </div>
         <div className={styles.headerActions}>
@@ -1479,7 +1536,12 @@ export function ProductsPage() {
           </button>
           <button
             className={styles.addButton}
-            onClick={() => (window.location.href = '/admin/catalog/products/new')}
+            onClick={() => {
+              const url = categoryId
+                ? `/admin/catalog/products/new?categoryId=${categoryId}`
+                : '/admin/catalog/products/new';
+              window.location.href = url;
+            }}
           >
             + Добавить товар
           </button>
@@ -1678,7 +1740,10 @@ export function ProductsPage() {
         columns={columns}
         keyExtractor={(product) => product.id}
         onRowClick={(product) => {
-          window.location.href = `/admin/catalog/products/${product.id}/edit`;
+          const editUrl = categoryId
+            ? `/admin/catalog/products/${product.id}/edit?fromCategory=${categoryId}`
+            : `/admin/catalog/products/${product.id}/edit`;
+          window.location.href = editUrl;
         }}
         selectable
         selectedIds={selectedIds}

@@ -15,6 +15,17 @@ export interface Product {
   reviewsCount?: number;
   isNew?: boolean;
   isFeatured?: boolean;
+  isPartnerProduct?: boolean;
+  /** URL логотипа партнёра (из Partner.logoUrl при привязке товара к партнёру) */
+  partnerLogoUrl?: string | null;
+  /** Показывать логотип партнёра на карточках (настройка конкретного партнёра) */
+  partnerShowLogoOnCards?: boolean;
+  /** Название партнёра (для подсказки по умолчанию) */
+  partnerName?: string | null;
+  /** Текст всплывающей подсказки (если пусто — "Товар Партнёра : название") */
+  partnerTooltipText?: string | null;
+  /** Показывать всплывающую подсказку при наведении на логотип */
+  partnerShowTooltip?: boolean;
   isSale?: boolean;
   discount?: number;
   inStock?: boolean;

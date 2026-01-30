@@ -131,6 +131,83 @@ model ServicesBlock {
   @@map("services_block")
 }
 
+model FeaturedProductsBlock {
+  id             String   @id @default("main")
+  title          String   @default("Популярные товары")
+  subtitle       String   @default("Товары, которые выбирают наши клиенты")
+  limit          Int      @default(8)
+  primaryFilter  String   @default("featured") // featured | new | featured_or_new | any
+  secondaryOrder String   @default("sort_order") // sort_order | created_desc
+  updatedAt      DateTime @updatedAt
+
+  @@map("featured_products_block")
+}
+
+model Partner {
+  id                 String   @id @default(cuid())
+  name               String   // Название партнёра
+  logoUrl            String?  // URL логотипа (для карточек товаров)
+  showLogoOnCards    Boolean  @default(true) // Показывать логотип на карточках товаров
+  tooltipText        String?  // Текст всплывающей подсказки при наведении на логотип (если пусто — "Товар Партнёра : название")
+  showTooltip        Boolean  @default(true) // Показывать всплывающую подсказку при наведении на логотип
+  website            String?
+  email              String?
+  phone              String[] @default([])
+  description        String?  @db.Text
+  isActive           Boolean  @default(true)
+  sortOrder          Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  products           Product[]
+
+  @@map("partners")
+}
+
+model PartnerProductsBlock {
+  id                    String   @id @default("main")
+  partnerLogoUrl        String?  // URL логотипа партнёра по умолчанию (в кружке на карточках)
+  showPartnerIconOnCards Boolean @default(true) // Показывать иконку партнёра на карточках товаров
+  updatedAt             DateTime @updatedAt
+
+  @@map("partner_products_block")
+}
+
+model FooterBlock {
+  id                    String   @id @default("main")
+  workingHoursWeekdays  String   @default("пн-пт: 11-19")
+  workingHoursSaturday  String   @default("сб: 12-16")
+  workingHoursSunday    String   @default("вс: выходной")
+  phone                 String   @default("8 (8152) 60-12-70")
+  email                 String   @default("skvirya@mail.ru")
+  developer             String   @default("ИП Сквиря Р.В.")
+  copyrightCompanyName  String   @default("Территория интерьерных решений")
+  vkHref                String   @default("https://vk.com/pskpobeda")
+  vkIcon                String   @default("/images/icons-vk.png")
+  updatedAt             DateTime @updatedAt
+
+  @@map("footer_block")
+}
+
+model FooterSection {
+  id        String   @id @default(cuid())
+  title     String
+  sortOrder Int      @default(0)
+  links     FooterSectionLink[]
+
+  @@map("footer_sections")
+}
+
+model FooterSectionLink {
+  id        String        @id @default(cuid())
+  sectionId String
+  name      String
+  href      String
+  sortOrder Int           @default(0)
+  section   FooterSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@map("footer_section_links")
+}
+
 model ServiceItem {
   id          String   @id @default(cuid())
   title       String
@@ -558,6 +635,8 @@ model Product {
   isActive         Boolean            @default(true)
   isFeatured       Boolean            @default(false)
   isNew            Boolean            @default(false)
+  isPartnerProduct Boolean            @default(false)
+  partnerId        String?
   sortOrder        Int                @default(0)
   categoryId       String
   images           String[]
@@ -583,6 +662,7 @@ model Product {
   suppliers        ProductSupplier[]
   category         Category           @relation(fields: [categoryId], references: [id])
   manufacturer     Manufacturer?      @relation(fields: [manufacturerId], references: [id])
+  partner          Partner?           @relation(fields: [partnerId], references: [id], onDelete: SetNull)
   reviews          Review[]
   wishlist         WishlistItem[]
   compareItems     CompareItem[]

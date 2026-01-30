@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
 
@@ -13,6 +13,31 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const CARD_SECTIONS_STORAGE_KEY = 'admin_product_card_template_sections';
+const DEFAULT_CARD_SECTIONS = [
+  'main',
+  'pricing',
+  'variants',
+  'seo',
+  'images',
+  'description',
+  'attributes',
+  'components',
+];
+
+function getCardSections(): string[] {
+  if (typeof window === 'undefined') return DEFAULT_CARD_SECTIONS;
+  try {
+    const saved = localStorage.getItem(CARD_SECTIONS_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {
+    // ignore
+  }
+  return DEFAULT_CARD_SECTIONS;
+}
 
 // Функция транслитерации для автогенерации slug
 function transliterate(text: string): string {
@@ -146,6 +171,8 @@ interface Product {
   isActive: boolean;
   isFeatured: boolean;
   isNew: boolean;
+  isPartnerProduct?: boolean;
+  partnerId?: string | null;
   sortOrder: number;
   images: string[];
   seoTitle: string | null;
@@ -197,7 +224,9 @@ interface ProductEditPageProps {
 
 export function ProductEditPage({ productId }: ProductEditPageProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { getAuthHeaders } = useAuth();
+  const fromCategory = searchParams.get('fromCategory') ?? '';
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [fetchingPrice, setFetchingPrice] = useState(false);
@@ -207,7 +236,9 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   const [suppliers, setSuppliers] = useState<
     Array<{ id: string; legalName: string; commercialName?: string | null }>
   >([]);
+  const [partners, setPartners] = useState<Array<{ id: string; name: string }>>([]);
   const [productNotFound, setProductNotFound] = useState(false);
+  const [cardSections, setCardSections] = useState<string[]>(DEFAULT_CARD_SECTIONS);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -221,6 +252,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     isActive: true,
     isFeatured: false,
     isNew: false,
+    partnerId: '',
     sortOrder: 0,
     seoTitle: '',
     seoDescription: '',
@@ -252,6 +284,12 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   const [uploadingImages, setUploadingImages] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+
+  useEffect(() => {
+    setCardSections(getCardSections());
+  }, []);
+
+  const showSection = (key: string) => cardSections.includes(key);
 
   // Fetch categories
   useEffect(() => {
@@ -285,6 +323,24 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
       }
     };
     fetchSuppliers();
+  }, [getAuthHeaders]);
+
+  // Fetch partners
+  useEffect(() => {
+    const fetchPartners = async () => {
+      try {
+        const response = await fetch(`${API_URL}/admin/partners?limit=1000`, {
+          headers: getAuthHeaders(),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setPartners(data.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch partners:', err);
+      }
+    };
+    fetchPartners();
   }, [getAuthHeaders]);
 
   // Fetch product
@@ -407,6 +463,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           isActive: product.isActive ?? true,
           isFeatured: product.isFeatured ?? false,
           isNew: product.isNew ?? false,
+          partnerId: product.partnerId || '',
           sortOrder: product.sortOrder ?? 0,
           seoTitle: product.seoTitle || '',
           seoDescription: product.seoDescription || '',
@@ -736,6 +793,8 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           isActive: formData.isActive,
           isFeatured: formData.isFeatured,
           isNew: formData.isNew,
+          isPartnerProduct: !!formData.partnerId,
+          partnerId: formData.partnerId || null,
           sortOrder: formData.sortOrder || 0,
           seoTitle: formData.seoTitle || null,
           seoDescription: formData.seoDescription || null,
@@ -800,7 +859,13 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <button
             className={styles.backButton}
-            onClick={() => router.push('/admin/catalog/products')}
+            onClick={() =>
+              router.push(
+                fromCategory
+                  ? `/admin/catalog/products/category/${fromCategory}`
+                  : '/admin/catalog/products'
+              )
+            }
           >
             ← Назад к списку
           </button>
@@ -824,758 +889,793 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
       <form ref={formRef} onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.formGrid}>
           {/* Main Info */}
-          <div className={styles.formSection}>
-            <h2 className={styles.sectionTitle}>Основная информация</h2>
+          {showSection('main') && (
+            <div className={styles.formSection}>
+              <h2 className={styles.sectionTitle}>Основная информация</h2>
 
-            <div className={styles.formGroup}>
-              <label htmlFor="name">Название *</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-                className={styles.input}
-              />
-            </div>
-
-            <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label htmlFor="slug">URL (slug) *</label>
-                <input
-                  type="text"
-                  id="slug"
-                  name="slug"
-                  value={formData.slug}
-                  onChange={handleSlugChange}
-                  required
-                  className={styles.input}
-                />
-                <p className={styles.hint}>Генерируется автоматически при изменении названия</p>
-              </div>
-              <div className={styles.formGroup}>
-                <label htmlFor="sku">Артикул (SKU)</label>
-                <input
-                  type="text"
-                  id="sku"
-                  name="sku"
-                  value={formData.sku}
-                  onChange={handleSkuChange}
-                  className={styles.input}
-                />
-                <p className={styles.hint}>Генерируется автоматически при изменении названия</p>
-              </div>
-            </div>
-
-            <div className={`${styles.formRow} ${styles.categorySupplierRow}`}>
-              <div className={styles.formGroup}>
-                <label htmlFor="categoryId">Категория *</label>
-                <select
-                  id="categoryId"
-                  name="categoryId"
-                  value={formData.categoryId}
-                  onChange={handleChange}
-                  required
-                  className={styles.select}
-                >
-                  <option value="">Выберите категорию</option>
-                  {flatCategories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
+              <div className={`${styles.formRow} ${styles.namePartnerRow}`}>
+                <div className={`${styles.formGroup} ${styles.nameGroup}`}>
+                  <label htmlFor="name">Название *</label>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                    className={styles.input}
+                  />
+                </div>
+                <div className={`${styles.formGroup} ${styles.partnerGroup}`}>
+                  <label htmlFor="partnerId">Партнёр</label>
+                  <select
+                    id="partnerId"
+                    name="partnerId"
+                    value={formData.partnerId}
+                    onChange={handleChange}
+                    className={styles.select}
+                  >
+                    <option value="">Не выбран</option>
+                    {partners.map((partner) => (
+                      <option key={partner.id} value={partner.id}>
+                        {partner.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              <div className={styles.formGroup}>
-                <label htmlFor="supplierId">Поставщик</label>
-                <select
-                  id="supplierId"
-                  name="supplierId"
-                  value={formData.supplierId}
-                  onChange={handleChange}
-                  className={styles.select}
-                >
-                  <option value="">Не выбран</option>
-                  {suppliers.map((supplier) => (
-                    <option key={supplier.id} value={supplier.id}>
-                      {supplier.commercialName || supplier.legalName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {formData.supplierId && (
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
-                  <label htmlFor="supplierProductUrl">Ссылка на товар поставщика</label>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <input
-                      type="url"
-                      id="supplierProductUrl"
-                      name="supplierProductUrl"
-                      value={formData.supplierProductUrl}
-                      onChange={handleChange}
-                      className={styles.input}
-                      placeholder="https://supplier.com/product/123"
-                    />
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (!formData.supplierProductUrl) {
-                          setError('Введите ссылку на товар поставщика');
-                          return;
-                        }
-                        try {
-                          setFetchingPrice(true);
-                          setError(null);
-                          const response = await fetch(
-                            `${API_URL}/products/scrape/price?url=${encodeURIComponent(formData.supplierProductUrl)}`,
-                            {
-                              headers: getAuthHeaders(),
-                            }
-                          );
-                          if (!response.ok) {
-                            const data = await response.json().catch(() => ({}));
-                            throw new Error(data.message || 'Ошибка получения цены');
-                          }
-                          const data = await response.json();
-                          setFormData((prev) => ({
-                            ...prev,
-                            supplierPrice: String(data.price),
-                          }));
-                          setSuccess(`Цена получена: ${data.price} ₽`);
-                          setTimeout(() => setSuccess(null), 3000);
-                        } catch (err) {
-                          setError(err instanceof Error ? err.message : 'Ошибка получения цены');
-                        } finally {
-                          setFetchingPrice(false);
-                        }
-                      }}
-                      disabled={fetchingPrice || !formData.supplierProductUrl}
-                      className={styles.button}
-                      style={{
-                        padding: '0.5rem 1rem',
-                        whiteSpace: 'nowrap',
-                        backgroundColor: '#3b82f6',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '0.375rem',
-                        cursor:
-                          fetchingPrice || !formData.supplierProductUrl ? 'not-allowed' : 'pointer',
-                        opacity: fetchingPrice || !formData.supplierProductUrl ? 0.5 : 1,
-                      }}
-                    >
-                      {fetchingPrice ? 'Загрузка...' : 'Получить цену'}
-                    </button>
-                  </div>
-                  <p className={styles.hint}>
-                    Введите ссылку на товар у поставщика и нажмите "Получить цену" для
-                    автоматического заполнения
-                  </p>
+                  <label htmlFor="slug">URL (slug) *</label>
+                  <input
+                    type="text"
+                    id="slug"
+                    name="slug"
+                    value={formData.slug}
+                    onChange={handleSlugChange}
+                    required
+                    className={styles.input}
+                  />
+                  <p className={styles.hint}>Генерируется автоматически при изменении названия</p>
                 </div>
                 <div className={styles.formGroup}>
-                  <label htmlFor="supplierPrice">Цена поставщика</label>
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      id="supplierPrice"
-                      name="supplierPrice"
-                      value={formData.supplierPrice}
-                      onChange={handlePriceChange}
-                      className={styles.input}
-                      placeholder="0.00"
-                      autoComplete="off"
-                      style={{ flex: 1 }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!formData.supplierPrice) {
-                          setError('Сначала укажите цену поставщика');
-                          return;
-                        }
-                        setFormData((prev) => ({
-                          ...prev,
-                          price: prev.supplierPrice,
-                        }));
-                        setSuccess('Цена товара обновлена на основе цены поставщика');
-                        setTimeout(() => setSuccess(null), 3000);
-                      }}
-                      disabled={!formData.supplierPrice}
-                      className={styles.button}
-                      style={{
-                        padding: '0.5rem 1rem',
-                        whiteSpace: 'nowrap',
-                        backgroundColor: '#10b981',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '0.375rem',
-                        cursor: !formData.supplierPrice ? 'not-allowed' : 'pointer',
-                        opacity: !formData.supplierPrice ? 0.5 : 1,
-                      }}
-                      title="Синхронизировать цену товара с ценой поставщика"
-                    >
-                      Синхронизировать
-                    </button>
-                  </div>
-                  <p className={styles.hint}>
-                    Цена товара у поставщика. Может быть заполнена автоматически по ссылке. Нажмите
-                    "Синхронизировать" чтобы обновить цену товара.
-                  </p>
+                  <label htmlFor="sku">Артикул (SKU)</label>
+                  <input
+                    type="text"
+                    id="sku"
+                    name="sku"
+                    value={formData.sku}
+                    onChange={handleSkuChange}
+                    className={styles.input}
+                  />
+                  <p className={styles.hint}>Генерируется автоматически при изменении названия</p>
                 </div>
               </div>
-            )}
-          </div>
 
-          {/* Pricing & Stock */}
-          <div className={styles.formSection}>
-            <h2 className={styles.sectionTitle}>Цена и наличие</h2>
+              <div className={`${styles.formRow} ${styles.categorySupplierRow}`}>
+                <div className={styles.formGroup}>
+                  <label htmlFor="categoryId">Категория *</label>
+                  <select
+                    id="categoryId"
+                    name="categoryId"
+                    value={formData.categoryId}
+                    onChange={handleChange}
+                    required
+                    className={styles.select}
+                  >
+                    <option value="">Выберите категорию</option>
+                    {flatCategories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label htmlFor="price">Цена *</label>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  id="price"
-                  name="price"
-                  value={formData.price}
-                  onChange={handlePriceChange}
-                  required
-                  className={styles.input}
-                  placeholder="0.00"
-                  autoComplete="off"
-                />
+                <div className={styles.formGroup}>
+                  <label htmlFor="supplierId">Поставщик</label>
+                  <select
+                    id="supplierId"
+                    name="supplierId"
+                    value={formData.supplierId}
+                    onChange={handleChange}
+                    className={styles.select}
+                  >
+                    <option value="">Не выбран</option>
+                    {suppliers.map((supplier) => (
+                      <option key={supplier.id} value={supplier.id}>
+                        {supplier.commercialName || supplier.legalName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div className={styles.formGroup}>
-                <label htmlFor="comparePrice">Старая цена</label>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  id="comparePrice"
-                  name="comparePrice"
-                  value={formData.comparePrice}
-                  onChange={handlePriceChange}
-                  className={styles.input}
-                  placeholder="0.00"
-                  autoComplete="off"
-                />
-              </div>
-            </div>
 
-            <div className={styles.formGroup}>
-              <label htmlFor="stock">Остаток на складе</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                id="stock"
-                name="stock"
-                value={formData.stock}
-                onChange={handleIntegerChange}
-                className={styles.input}
-                placeholder="0"
-                autoComplete="off"
-              />
-            </div>
-
-            <div className={styles.checkboxGroup}>
-              <label className={styles.checkbox}>
-                <input
-                  type="checkbox"
-                  name="isActive"
-                  checked={formData.isActive}
-                  onChange={handleChange}
-                />
-                <span>Активен (показывать на сайте)</span>
-              </label>
-              <label className={styles.checkbox}>
-                <input
-                  type="checkbox"
-                  name="isFeatured"
-                  checked={formData.isFeatured}
-                  onChange={handleChange}
-                />
-                <span>ХИТ</span>
-              </label>
-              <label className={styles.checkbox}>
-                <input
-                  type="checkbox"
-                  name="isNew"
-                  checked={formData.isNew}
-                  onChange={handleChange}
-                />
-                <span>Новинка</span>
-              </label>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="sortOrder">Сортировка</label>
-              <input
-                type="number"
-                id="sortOrder"
-                name="sortOrder"
-                value={formData.sortOrder}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    sortOrder: parseInt(e.target.value, 10) || 0,
-                  }))
-                }
-                className={styles.input}
-                placeholder="0"
-              />
-              <p className={styles.hint}>
-                Чем меньше число, тем выше товар в списке. Товары с одинаковым значением сортируются
-                по дате создания.
-              </p>
-            </div>
-          </div>
-
-          {/* Product Options */}
-          <div className={styles.formSection}>
-            <h2 className={styles.sectionTitle}>Варианты исполнения</h2>
-
-            <div className={styles.formGroup}>
-              <label>Размеры</label>
-              <div className={styles.attributesList}>
-                {(formData.sizes.length > 0 ? formData.sizes : ['']).map((size, index) => (
-                  <div key={`size-${index}`} className={styles.attributeRow}>
-                    <input
-                      type="text"
-                      value={size}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setFormData((prev) => {
-                          const nextSizes = prev.sizes.length > 0 ? [...prev.sizes] : [''];
-                          nextSizes[index] = value;
-                          return { ...prev, sizes: nextSizes };
-                        });
-                      }}
-                      className={styles.input}
-                      placeholder="60x200"
-                      aria-label={`Размер ${index + 1}`}
-                    />
-                    {formData.sizes.length > 1 && (
+              {formData.supplierId && (
+                <div className={styles.formRow}>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="supplierProductUrl">Ссылка на товар поставщика</label>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <input
+                        type="url"
+                        id="supplierProductUrl"
+                        name="supplierProductUrl"
+                        value={formData.supplierProductUrl}
+                        onChange={handleChange}
+                        className={styles.input}
+                        placeholder="https://supplier.com/product/123"
+                      />
                       <button
                         type="button"
-                        className={styles.removeAttrButton}
-                        onClick={() =>
+                        onClick={async () => {
+                          if (!formData.supplierProductUrl) {
+                            setError('Введите ссылку на товар поставщика');
+                            return;
+                          }
+                          try {
+                            setFetchingPrice(true);
+                            setError(null);
+                            const response = await fetch(
+                              `${API_URL}/products/scrape/price?url=${encodeURIComponent(formData.supplierProductUrl)}`,
+                              {
+                                headers: getAuthHeaders(),
+                              }
+                            );
+                            if (!response.ok) {
+                              const data = await response.json().catch(() => ({}));
+                              throw new Error(data.message || 'Ошибка получения цены');
+                            }
+                            const data = await response.json();
+                            setFormData((prev) => ({
+                              ...prev,
+                              supplierPrice: String(data.price),
+                            }));
+                            setSuccess(`Цена получена: ${data.price} ₽`);
+                            setTimeout(() => setSuccess(null), 3000);
+                          } catch (err) {
+                            setError(err instanceof Error ? err.message : 'Ошибка получения цены');
+                          } finally {
+                            setFetchingPrice(false);
+                          }
+                        }}
+                        disabled={fetchingPrice || !formData.supplierProductUrl}
+                        className={styles.button}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          whiteSpace: 'nowrap',
+                          backgroundColor: '#3b82f6',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '0.375rem',
+                          cursor:
+                            fetchingPrice || !formData.supplierProductUrl
+                              ? 'not-allowed'
+                              : 'pointer',
+                          opacity: fetchingPrice || !formData.supplierProductUrl ? 0.5 : 1,
+                        }}
+                      >
+                        {fetchingPrice ? 'Загрузка...' : 'Получить цену'}
+                      </button>
+                    </div>
+                    <p className={styles.hint}>
+                      Введите ссылку на товар у поставщика и нажмите "Получить цену" для
+                      автоматического заполнения
+                    </p>
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="supplierPrice">Цена поставщика</label>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        id="supplierPrice"
+                        name="supplierPrice"
+                        value={formData.supplierPrice}
+                        onChange={handlePriceChange}
+                        className={styles.input}
+                        placeholder="0.00"
+                        autoComplete="off"
+                        style={{ flex: 1 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!formData.supplierPrice) {
+                            setError('Сначала укажите цену поставщика');
+                            return;
+                          }
                           setFormData((prev) => ({
                             ...prev,
-                            sizes: prev.sizes.filter((_, i) => i !== index),
-                          }))
-                        }
-                        title="Удалить"
+                            price: prev.supplierPrice,
+                          }));
+                          setSuccess('Цена товара обновлена на основе цены поставщика');
+                          setTimeout(() => setSuccess(null), 3000);
+                        }}
+                        disabled={!formData.supplierPrice}
+                        className={styles.button}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          whiteSpace: 'nowrap',
+                          backgroundColor: '#10b981',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '0.375rem',
+                          cursor: !formData.supplierPrice ? 'not-allowed' : 'pointer',
+                          opacity: !formData.supplierPrice ? 0.5 : 1,
+                        }}
+                        title="Синхронизировать цену товара с ценой поставщика"
                       >
-                        🗑️
+                        Синхронизировать
                       </button>
-                    )}
+                    </div>
+                    <p className={styles.hint}>
+                      Цена товара у поставщика. Может быть заполнена автоматически по ссылке.
+                      Нажмите "Синхронизировать" чтобы обновить цену товара.
+                    </p>
                   </div>
-                ))}
-              </div>
-              <button
-                type="button"
-                className={styles.addAttrButton}
-                onClick={() =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    sizes: [...prev.sizes, ''],
-                  }))
-                }
-              >
-                + Добавить размер
-              </button>
-              <p className={styles.hint}>
-                Добавьте один или несколько размеров. Если не указано, параметр не будет
-                отображаться в публичке.
-              </p>
+                </div>
+              )}
             </div>
+          )}
 
-            <div className={styles.formGroup}>
-              <label htmlFor="openingSide">Сторона открывания</label>
+          {/* Pricing & Stock */}
+          {showSection('pricing') && (
+            <div className={styles.formSection}>
+              <h2 className={styles.sectionTitle}>Цена и наличие</h2>
+
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label htmlFor="price">Цена *</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    id="price"
+                    name="price"
+                    value={formData.price}
+                    onChange={handlePriceChange}
+                    required
+                    className={styles.input}
+                    placeholder="0.00"
+                    autoComplete="off"
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label htmlFor="comparePrice">Старая цена</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    id="comparePrice"
+                    name="comparePrice"
+                    value={formData.comparePrice}
+                    onChange={handlePriceChange}
+                    className={styles.input}
+                    placeholder="0.00"
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="stock">Остаток на складе</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  id="stock"
+                  name="stock"
+                  value={formData.stock}
+                  onChange={handleIntegerChange}
+                  className={styles.input}
+                  placeholder="0"
+                  autoComplete="off"
+                />
+              </div>
+
               <div className={styles.checkboxGroup}>
                 <label className={styles.checkbox}>
                   <input
                     type="checkbox"
-                    checked={formData.openingSide.includes('правое')}
-                    onChange={(e) => {
-                      setFormData((prev) => {
-                        const sides = e.target.checked
-                          ? [...prev.openingSide, 'правое']
-                          : prev.openingSide.filter((s) => s !== 'правое');
-                        return { ...prev, openingSide: sides };
-                      });
-                    }}
+                    name="isActive"
+                    checked={formData.isActive}
+                    onChange={handleChange}
                   />
-                  <span>Правое</span>
+                  <span>Активен (показывать на сайте)</span>
                 </label>
                 <label className={styles.checkbox}>
                   <input
                     type="checkbox"
-                    checked={formData.openingSide.includes('левое')}
-                    onChange={(e) => {
-                      setFormData((prev) => {
-                        const sides = e.target.checked
-                          ? [...prev.openingSide, 'левое']
-                          : prev.openingSide.filter((s) => s !== 'левое');
-                        return { ...prev, openingSide: sides };
-                      });
-                    }}
+                    name="isFeatured"
+                    checked={formData.isFeatured}
+                    onChange={handleChange}
                   />
-                  <span>Левое</span>
+                  <span>ХИТ</span>
+                </label>
+                <label className={styles.checkbox}>
+                  <input
+                    type="checkbox"
+                    name="isNew"
+                    checked={formData.isNew}
+                    onChange={handleChange}
+                  />
+                  <span>Новинка</span>
                 </label>
               </div>
-              <p className={styles.hint}>
-                Выберите доступные стороны открывания. Если ничего не выбрано, параметр не будет
-                отображаться в публичке.
-              </p>
-            </div>
-          </div>
 
-          {/* SEO */}
-          <div className={styles.formSection}>
-            <h2 className={styles.sectionTitle}>SEO</h2>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="seoTitle">SEO заголовок</label>
-              <input
-                type="text"
-                id="seoTitle"
-                name="seoTitle"
-                value={formData.seoTitle}
-                onChange={handleSeoTitleChange}
-                className={styles.input}
-                placeholder="Название товара - Категория | Сайт"
-                maxLength={70}
-              />
-              <p className={styles.hint}>
-                Генерируется автоматически при изменении названия. Рекомендуемая длина: до 70
-                символов ({formData.seoTitle.length}/70)
-              </p>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="seoDescription">SEO описание</label>
-              <textarea
-                id="seoDescription"
-                name="seoDescription"
-                value={formData.seoDescription}
-                onChange={handleSeoDescriptionChange}
-                rows={3}
-                className={styles.textarea}
-                placeholder="Купить [товар] в категории [категория]. Гарантия качества."
-                maxLength={160}
-              />
-              <p className={styles.hint}>
-                Генерируется автоматически при изменении названия/цены. Рекомендуемая длина: до 160
-                символов ({formData.seoDescription.length}/160)
-              </p>
-            </div>
-          </div>
-
-          {/* Images */}
-          <div className={`${styles.formSection} ${styles.formSectionFullWidth}`}>
-            <h2 className={styles.sectionTitle}>Изображения</h2>
-
-            {imageError && <div className={styles.imageError}>{imageError}</div>}
-
-            {/* Drag & Drop zone */}
-            <div
-              className={`${styles.dropZone} ${dragActive ? styles.dropZoneActive : ''}`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                multiple
-                onChange={(e) => handleImageUpload(e.target.files)}
-                className={styles.fileInput}
-              />
-              <div className={styles.dropZoneContent}>
-                <span className={styles.dropZoneIcon}>📷</span>
-                <p className={styles.dropZoneText}>
-                  Перетащите изображения сюда или{' '}
-                  <span className={styles.dropZoneLink}>выберите файлы</span>
+              <div className={styles.formGroup}>
+                <label htmlFor="sortOrder">Сортировка</label>
+                <input
+                  type="number"
+                  id="sortOrder"
+                  name="sortOrder"
+                  value={formData.sortOrder}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      sortOrder: parseInt(e.target.value, 10) || 0,
+                    }))
+                  }
+                  className={styles.input}
+                  placeholder="0"
+                />
+                <p className={styles.hint}>
+                  Чем меньше число, тем выше товар в списке. Товары с одинаковым значением
+                  сортируются по дате создания.
                 </p>
-                <p className={styles.dropZoneHint}>JPG, PNG, WebP, GIF до 5MB</p>
               </div>
             </div>
+          )}
 
-            {/* Add by URL */}
-            <button type="button" className={styles.addUrlButton} onClick={handleImageUrlAdd}>
-              🔗 Добавить по URL
-            </button>
+          {/* Product Options */}
+          {showSection('variants') && (
+            <div className={styles.formSection}>
+              <h2 className={styles.sectionTitle}>Варианты исполнения</h2>
 
-            {/* Images grid */}
-            {formData.images.length > 0 ? (
-              <div className={styles.imagesGrid}>
-                {formData.images.map((img, index) => (
-                  <div key={index} className={styles.imageItem}>
-                    <img src={img} alt={`Изображение ${index + 1}`} />
-                    {index === 0 && <span className={styles.mainImageBadge}>Главное</span>}
-                    <div className={styles.imageActions}>
-                      <button
-                        type="button"
-                        className={styles.imageActionBtn}
-                        onClick={() => moveImage(index, 'up')}
-                        disabled={index === 0}
-                        title="Переместить влево"
-                      >
-                        ←
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.imageActionBtn}
-                        onClick={() => moveImage(index, 'down')}
-                        disabled={index === formData.images.length - 1}
-                        title="Переместить вправо"
-                      >
-                        →
-                      </button>
-                      <button
-                        type="button"
-                        className={`${styles.imageActionBtn} ${styles.imageDeleteBtn}`}
-                        onClick={() => removeImage(index)}
-                        title="Удалить"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className={styles.noImages}>Изображения не добавлены</p>
-            )}
-          </div>
-
-          {/* Description */}
-          <div className={`${styles.formSection} ${styles.formSectionFullWidth}`}>
-            <h2 className={styles.sectionTitle}>Описание</h2>
-
-            <div className={styles.formGroup}>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows={8}
-                className={styles.textarea}
-                placeholder="Подробное описание товара..."
-              />
-            </div>
-          </div>
-
-          {/* Attributes / Characteristics */}
-          <div className={`${styles.formSection} ${styles.formSectionFullWidth}`}>
-            <h2 className={styles.sectionTitle}>Характеристики товара</h2>
-
-            <div className={styles.attributesGrid}>
-              {/* Category attributes */}
-              <div className={styles.attributesSection}>
-                <h3 className={styles.attributesSubtitle}>Атрибуты категории</h3>
-                {categoryAttributes.length > 0 ? (
-                  <div className={styles.attributesList}>
-                    {categoryAttributes.map((ca) => (
-                      <div key={ca.id} className={styles.attributeRow}>
-                        <label className={styles.attributeLabel}>
-                          {ca.attribute.name}
-                          {ca.isRequired && <span className={styles.required}>*</span>}
-                          {ca.attribute.unit && (
-                            <span className={styles.unit}>({ca.attribute.unit})</span>
-                          )}
-                        </label>
-                        <div className={styles.attributeInput}>
-                          {ca.attribute.type === 'BOOLEAN' ? (
-                            <select
-                              value={formData.attributes[ca.attribute.slug] || ''}
-                              onChange={(e) =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  attributes: {
-                                    ...prev.attributes,
-                                    [ca.attribute.slug]: e.target.value,
-                                  },
-                                }))
-                              }
-                              className={styles.select}
-                            >
-                              <option value="">Не указано</option>
-                              <option value="Да">Да</option>
-                              <option value="Нет">Нет</option>
-                            </select>
-                          ) : ca.attribute.type === 'SELECT' ? (
-                            <select
-                              value={formData.attributes[ca.attribute.slug] || ''}
-                              onChange={(e) =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  attributes: {
-                                    ...prev.attributes,
-                                    [ca.attribute.slug]: e.target.value,
-                                  },
-                                }))
-                              }
-                              className={styles.select}
-                            >
-                              <option value="">Выберите значение</option>
-                              {ca.attribute.values.map((v) => (
-                                <option key={v.id} value={v.value}>
-                                  {v.value}
-                                </option>
-                              ))}
-                            </select>
-                          ) : ca.attribute.type === 'NUMBER' ? (
-                            <input
-                              type="number"
-                              value={formData.attributes[ca.attribute.slug] || ''}
-                              onChange={(e) =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  attributes: {
-                                    ...prev.attributes,
-                                    [ca.attribute.slug]: e.target.value,
-                                  },
-                                }))
-                              }
-                              className={styles.input}
-                              step="any"
-                            />
-                          ) : (
-                            <input
-                              type="text"
-                              value={formData.attributes[ca.attribute.slug] || ''}
-                              onChange={(e) =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  attributes: {
-                                    ...prev.attributes,
-                                    [ca.attribute.slug]: e.target.value,
-                                  },
-                                }))
-                              }
-                              className={styles.input}
-                            />
-                          )}
-                          {formData.attributes[ca.attribute.slug] && (
-                            <button
-                              type="button"
-                              className={styles.clearAttrButton}
-                              onClick={() =>
-                                setFormData((prev) => {
-                                  const newAttrs = { ...prev.attributes };
-                                  delete newAttrs[ca.attribute.slug];
-                                  return { ...prev, attributes: newAttrs };
-                                })
-                              }
-                              title="Очистить"
-                            >
-                              ✕
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className={styles.noAttributes}>Нет атрибутов для выбранной категории</p>
-                )}
-              </div>
-
-              {/* Custom attributes */}
-              <div className={styles.attributesSection}>
-                <h3 className={styles.attributesSubtitle}>
-                  Дополнительные характеристики
-                  <span className={styles.customAttrHint}>(специфичные для этого товара)</span>
-                </h3>
-
-                {customAttributes.length > 0 && (
-                  <div className={styles.attributesList}>
-                    {customAttributes.map((attr, index) => (
-                      <div key={index} className={styles.attributeRow}>
-                        <input
-                          type="text"
-                          value={attr.key}
-                          onChange={(e) => {
-                            const newCustom = [...customAttributes];
-                            newCustom[index].key = e.target.value;
-                            setCustomAttributes(newCustom);
-                          }}
-                          className={styles.input}
-                          placeholder="Название"
-                        />
-                        <input
-                          type="text"
-                          value={attr.value}
-                          onChange={(e) => {
-                            const newCustom = [...customAttributes];
-                            newCustom[index].value = e.target.value;
-                            setCustomAttributes(newCustom);
-                          }}
-                          className={styles.input}
-                          placeholder="Значение"
-                        />
+              <div className={styles.formGroup}>
+                <label>Размеры</label>
+                <div className={styles.attributesList}>
+                  {(formData.sizes.length > 0 ? formData.sizes : ['']).map((size, index) => (
+                    <div key={`size-${index}`} className={styles.attributeRow}>
+                      <input
+                        type="text"
+                        value={size}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setFormData((prev) => {
+                            const nextSizes = prev.sizes.length > 0 ? [...prev.sizes] : [''];
+                            nextSizes[index] = value;
+                            return { ...prev, sizes: nextSizes };
+                          });
+                        }}
+                        className={styles.input}
+                        placeholder="60x200"
+                        aria-label={`Размер ${index + 1}`}
+                      />
+                      {formData.sizes.length > 1 && (
                         <button
                           type="button"
                           className={styles.removeAttrButton}
-                          onClick={() => {
-                            setCustomAttributes(customAttributes.filter((_, i) => i !== index));
-                          }}
+                          onClick={() =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              sizes: prev.sizes.filter((_, i) => i !== index),
+                            }))
+                          }
+                          title="Удалить"
+                        >
+                          🗑️
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className={styles.addAttrButton}
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      sizes: [...prev.sizes, ''],
+                    }))
+                  }
+                >
+                  + Добавить размер
+                </button>
+                <p className={styles.hint}>
+                  Добавьте один или несколько размеров. Если не указано, параметр не будет
+                  отображаться в публичке.
+                </p>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="openingSide">Сторона открывания</label>
+                <div className={styles.checkboxGroup}>
+                  <label className={styles.checkbox}>
+                    <input
+                      type="checkbox"
+                      checked={formData.openingSide.includes('правое')}
+                      onChange={(e) => {
+                        setFormData((prev) => {
+                          const sides = e.target.checked
+                            ? [...prev.openingSide, 'правое']
+                            : prev.openingSide.filter((s) => s !== 'правое');
+                          return { ...prev, openingSide: sides };
+                        });
+                      }}
+                    />
+                    <span>Правое</span>
+                  </label>
+                  <label className={styles.checkbox}>
+                    <input
+                      type="checkbox"
+                      checked={formData.openingSide.includes('левое')}
+                      onChange={(e) => {
+                        setFormData((prev) => {
+                          const sides = e.target.checked
+                            ? [...prev.openingSide, 'левое']
+                            : prev.openingSide.filter((s) => s !== 'левое');
+                          return { ...prev, openingSide: sides };
+                        });
+                      }}
+                    />
+                    <span>Левое</span>
+                  </label>
+                </div>
+                <p className={styles.hint}>
+                  Выберите доступные стороны открывания. Если ничего не выбрано, параметр не будет
+                  отображаться в публичке.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* SEO */}
+          {showSection('seo') && (
+            <div className={styles.formSection}>
+              <h2 className={styles.sectionTitle}>SEO</h2>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="seoTitle">SEO заголовок</label>
+                <input
+                  type="text"
+                  id="seoTitle"
+                  name="seoTitle"
+                  value={formData.seoTitle}
+                  onChange={handleSeoTitleChange}
+                  className={styles.input}
+                  placeholder="Название товара - Категория | Сайт"
+                  maxLength={70}
+                />
+                <p className={styles.hint}>
+                  Генерируется автоматически при изменении названия. Рекомендуемая длина: до 70
+                  символов ({formData.seoTitle.length}/70)
+                </p>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="seoDescription">SEO описание</label>
+                <textarea
+                  id="seoDescription"
+                  name="seoDescription"
+                  value={formData.seoDescription}
+                  onChange={handleSeoDescriptionChange}
+                  rows={3}
+                  className={styles.textarea}
+                  placeholder="Купить [товар] в категории [категория]. Гарантия качества."
+                  maxLength={160}
+                />
+                <p className={styles.hint}>
+                  Генерируется автоматически при изменении названия/цены. Рекомендуемая длина: до
+                  160 символов ({formData.seoDescription.length}/160)
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Images */}
+          {showSection('images') && (
+            <div className={`${styles.formSection} ${styles.formSectionFullWidth}`}>
+              <h2 className={styles.sectionTitle}>Изображения</h2>
+
+              {imageError && <div className={styles.imageError}>{imageError}</div>}
+
+              {/* Drag & Drop zone */}
+              <div
+                className={`${styles.dropZone} ${dragActive ? styles.dropZoneActive : ''}`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  multiple
+                  onChange={(e) => handleImageUpload(e.target.files)}
+                  className={styles.fileInput}
+                />
+                <div className={styles.dropZoneContent}>
+                  <span className={styles.dropZoneIcon}>📷</span>
+                  <p className={styles.dropZoneText}>
+                    Перетащите изображения сюда или{' '}
+                    <span className={styles.dropZoneLink}>выберите файлы</span>
+                  </p>
+                  <p className={styles.dropZoneHint}>JPG, PNG, WebP, GIF до 5MB</p>
+                </div>
+              </div>
+
+              {/* Add by URL */}
+              <button type="button" className={styles.addUrlButton} onClick={handleImageUrlAdd}>
+                🔗 Добавить по URL
+              </button>
+
+              {/* Images grid */}
+              {formData.images.length > 0 ? (
+                <div className={styles.imagesGrid}>
+                  {formData.images.map((img, index) => (
+                    <div key={index} className={styles.imageItem}>
+                      <img src={img} alt={`Изображение ${index + 1}`} />
+                      {index === 0 && <span className={styles.mainImageBadge}>Главное</span>}
+                      <div className={styles.imageActions}>
+                        <button
+                          type="button"
+                          className={styles.imageActionBtn}
+                          onClick={() => moveImage(index, 'up')}
+                          disabled={index === 0}
+                          title="Переместить влево"
+                        >
+                          ←
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.imageActionBtn}
+                          onClick={() => moveImage(index, 'down')}
+                          disabled={index === formData.images.length - 1}
+                          title="Переместить вправо"
+                        >
+                          →
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.imageActionBtn} ${styles.imageDeleteBtn}`}
+                          onClick={() => removeImage(index)}
                           title="Удалить"
                         >
                           🗑️
                         </button>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.noImages}>Изображения не добавлены</p>
+              )}
+            </div>
+          )}
 
-                {/* Add new custom attribute */}
-                <div className={styles.addAttrRow}>
-                  <input
-                    type="text"
-                    value={newAttrKey}
-                    onChange={(e) => setNewAttrKey(e.target.value)}
-                    className={styles.input}
-                    placeholder="Название характеристики"
-                  />
-                  <input
-                    type="text"
-                    value={newAttrValue}
-                    onChange={(e) => setNewAttrValue(e.target.value)}
-                    className={styles.input}
-                    placeholder="Значение"
-                  />
-                  <button
-                    type="button"
-                    className={styles.addAttrButton}
-                    onClick={() => {
-                      if (newAttrKey.trim()) {
-                        setCustomAttributes([
-                          ...customAttributes,
-                          { key: newAttrKey.trim(), value: newAttrValue },
-                        ]);
-                        setNewAttrKey('');
-                        setNewAttrValue('');
-                      }
-                    }}
-                    disabled={!newAttrKey.trim()}
-                  >
-                    + Добавить
-                  </button>
+          {/* Description */}
+          {showSection('description') && (
+            <div className={`${styles.formSection} ${styles.formSectionFullWidth}`}>
+              <h2 className={styles.sectionTitle}>Описание</h2>
+
+              <div className={styles.formGroup}>
+                <textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  rows={8}
+                  className={styles.textarea}
+                  placeholder="Подробное описание товара..."
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Attributes / Characteristics */}
+          {showSection('attributes') && (
+            <div className={`${styles.formSection} ${styles.formSectionFullWidth}`}>
+              <h2 className={styles.sectionTitle}>Характеристики товара</h2>
+
+              <div className={styles.attributesGrid}>
+                {/* Category attributes */}
+                <div className={styles.attributesSection}>
+                  <h3 className={styles.attributesSubtitle}>Атрибуты категории</h3>
+                  {categoryAttributes.length > 0 ? (
+                    <div className={styles.attributesList}>
+                      {categoryAttributes.map((ca) => (
+                        <div key={ca.id} className={styles.attributeRow}>
+                          <label className={styles.attributeLabel}>
+                            {ca.attribute.name}
+                            {ca.isRequired && <span className={styles.required}>*</span>}
+                            {ca.attribute.unit && (
+                              <span className={styles.unit}>({ca.attribute.unit})</span>
+                            )}
+                          </label>
+                          <div className={styles.attributeInput}>
+                            {ca.attribute.type === 'BOOLEAN' ? (
+                              <select
+                                value={formData.attributes[ca.attribute.slug] || ''}
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    attributes: {
+                                      ...prev.attributes,
+                                      [ca.attribute.slug]: e.target.value,
+                                    },
+                                  }))
+                                }
+                                className={styles.select}
+                              >
+                                <option value="">Не указано</option>
+                                <option value="Да">Да</option>
+                                <option value="Нет">Нет</option>
+                              </select>
+                            ) : ca.attribute.type === 'SELECT' ? (
+                              <select
+                                value={formData.attributes[ca.attribute.slug] || ''}
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    attributes: {
+                                      ...prev.attributes,
+                                      [ca.attribute.slug]: e.target.value,
+                                    },
+                                  }))
+                                }
+                                className={styles.select}
+                              >
+                                <option value="">Выберите значение</option>
+                                {ca.attribute.values.map((v) => (
+                                  <option key={v.id} value={v.value}>
+                                    {v.value}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : ca.attribute.type === 'NUMBER' ? (
+                              <input
+                                type="number"
+                                value={formData.attributes[ca.attribute.slug] || ''}
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    attributes: {
+                                      ...prev.attributes,
+                                      [ca.attribute.slug]: e.target.value,
+                                    },
+                                  }))
+                                }
+                                className={styles.input}
+                                step="any"
+                              />
+                            ) : (
+                              <input
+                                type="text"
+                                value={formData.attributes[ca.attribute.slug] || ''}
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    attributes: {
+                                      ...prev.attributes,
+                                      [ca.attribute.slug]: e.target.value,
+                                    },
+                                  }))
+                                }
+                                className={styles.input}
+                              />
+                            )}
+                            {formData.attributes[ca.attribute.slug] && (
+                              <button
+                                type="button"
+                                className={styles.clearAttrButton}
+                                onClick={() =>
+                                  setFormData((prev) => {
+                                    const newAttrs = { ...prev.attributes };
+                                    delete newAttrs[ca.attribute.slug];
+                                    return { ...prev, attributes: newAttrs };
+                                  })
+                                }
+                                title="Очистить"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className={styles.noAttributes}>Нет атрибутов для выбранной категории</p>
+                  )}
+                </div>
+
+                {/* Custom attributes */}
+                <div className={styles.attributesSection}>
+                  <h3 className={styles.attributesSubtitle}>
+                    Дополнительные характеристики
+                    <span className={styles.customAttrHint}>(специфичные для этого товара)</span>
+                  </h3>
+
+                  {customAttributes.length > 0 && (
+                    <div className={styles.attributesList}>
+                      {customAttributes.map((attr, index) => (
+                        <div key={index} className={styles.attributeRow}>
+                          <input
+                            type="text"
+                            value={attr.key}
+                            onChange={(e) => {
+                              const newCustom = [...customAttributes];
+                              newCustom[index].key = e.target.value;
+                              setCustomAttributes(newCustom);
+                            }}
+                            className={styles.input}
+                            placeholder="Название"
+                          />
+                          <input
+                            type="text"
+                            value={attr.value}
+                            onChange={(e) => {
+                              const newCustom = [...customAttributes];
+                              newCustom[index].value = e.target.value;
+                              setCustomAttributes(newCustom);
+                            }}
+                            className={styles.input}
+                            placeholder="Значение"
+                          />
+                          <button
+                            type="button"
+                            className={styles.removeAttrButton}
+                            onClick={() => {
+                              setCustomAttributes(customAttributes.filter((_, i) => i !== index));
+                            }}
+                            title="Удалить"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add new custom attribute */}
+                  <div className={styles.addAttrRow}>
+                    <input
+                      type="text"
+                      value={newAttrKey}
+                      onChange={(e) => setNewAttrKey(e.target.value)}
+                      className={styles.input}
+                      placeholder="Название характеристики"
+                    />
+                    <input
+                      type="text"
+                      value={newAttrValue}
+                      onChange={(e) => setNewAttrValue(e.target.value)}
+                      className={styles.input}
+                      placeholder="Значение"
+                    />
+                    <button
+                      type="button"
+                      className={styles.addAttrButton}
+                      onClick={() => {
+                        if (newAttrKey.trim()) {
+                          setCustomAttributes([
+                            ...customAttributes,
+                            { key: newAttrKey.trim(), value: newAttrValue },
+                          ]);
+                          setNewAttrKey('');
+                          setNewAttrValue('');
+                        }
+                      }}
+                      disabled={!newAttrKey.trim()}
+                    >
+                      + Добавить
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className={styles.formActions}>
@@ -1583,7 +1683,13 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
             <button
               type="button"
               className={styles.cancelButton}
-              onClick={() => router.push('/admin/catalog/products')}
+              onClick={() =>
+                router.push(
+                  fromCategory
+                    ? `/admin/catalog/products/category/${fromCategory}`
+                    : '/admin/catalog/products'
+                )
+              }
             >
               Отмена
             </button>
@@ -1596,14 +1702,20 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
 
       {/* Product Components Section */}
       {/* Вынесено за пределы основной формы, т.к. содержит свою форму */}
-      {productId && <ProductComponentsSection productId={productId} />}
+      {productId && showSection('components') && <ProductComponentsSection productId={productId} />}
 
       {/* Кнопка "Назад к списку" в самом низу */}
       <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
         <button
           type="button"
           className={styles.backButtonBottom}
-          onClick={() => router.push('/admin/catalog/products')}
+          onClick={() =>
+            router.push(
+              fromCategory
+                ? `/admin/catalog/products/category/${fromCategory}`
+                : '/admin/catalog/products'
+            )
+          }
         >
           ← Назад к списку
         </button>

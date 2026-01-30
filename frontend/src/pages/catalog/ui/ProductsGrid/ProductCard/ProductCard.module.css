@@ -140,6 +140,26 @@
   padding: 0.25rem 0.5rem;
 }
 
+.partnerBadge {
+  align-items: center;
+  background: #fff;
+  border: 2px solid #e5e7eb;
+  border-radius: 50%;
+  display: flex;
+  height: 2.25rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+  overflow: hidden;
+  width: 2.25rem;
+}
+
+.partnerLogo {
+  height: 100%;
+  object-fit: contain;
+  padding: 2px;
+  width: 100%;
+}
+
 .actionButtons {
   bottom: 0.75rem;
   display: flex;

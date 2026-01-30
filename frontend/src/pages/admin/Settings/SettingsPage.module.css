@@ -57,6 +57,7 @@
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 20px;
+  color: #111827;
   transition:
     box-shadow 0.2s,
     border-color 0.2s;
@@ -129,4 +130,62 @@
 
 .permissionsList li {
   margin-bottom: 2px;
+}
+
+/* Блок «Как это работает» — информационная панель */
+.infoBlock {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.infoBlockTitle {
+  margin: 0 0 12px 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.infoBlockList {
+  margin: 0;
+  padding-left: 24px;
+  line-height: 1.8;
+  font-size: 0.9375rem;
+  color: #334155;
+}
+
+.infoBlockList li {
+  margin-bottom: 6px;
+}
+
+.infoBlockLink {
+  color: #4f46e5;
+  text-decoration: underline;
+}
+
+.infoBlockLink:hover {
+  color: #4338ca;
+}
+
+/* Подписи к чекбоксам в шаблонах товаров */
+.templateCheckboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.9375rem;
+  color: #111827;
+  font-weight: 500;
+}
+
+.templateCheckboxLabelDisabled {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.templateCheckboxLabelRequired {
+  font-size: 0.75rem;
+  color: #6b7280;
 }

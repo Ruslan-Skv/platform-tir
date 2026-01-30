@@ -138,6 +138,69 @@
   background: rgba(99, 102, 241, 0.2);
 }
 
+.submenuGroup {
+  margin-bottom: 2px;
+}
+
+.submenuGroupRow {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px 6px 48px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8125rem;
+  width: 100%;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.submenuGroupRow:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.submenuGroupRow.active {
+  color: #fff;
+  background: rgba(99, 102, 241, 0.15);
+}
+
+.submenuGroupLink {
+  flex: 1;
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.submenuGroupLink:hover {
+  color: #fff;
+}
+
+.submenuExpandBtn {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 2px 6px;
+  display: flex;
+  align-items: center;
+  opacity: 0.7;
+}
+
+.submenuExpandBtn:hover {
+  opacity: 1;
+}
+
+.submenuNested {
+  padding-left: 24px;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.submenuNested .submenuLink {
+  padding-left: 36px;
+}
+
 .footer {
   padding: 12px 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);

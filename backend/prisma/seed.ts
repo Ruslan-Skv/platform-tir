@@ -122,7 +122,7 @@ async function main() {
       price: 45900,
       comparePrice: 52000,
       stock: 5,
-      images: ['/images/products/door-tt-xl-1.jpg'],
+      images: ['/images/products/door-classic.jpg'],
       attributes: {
         width: '960 мм',
         height: '2050 мм',
@@ -144,7 +144,7 @@ async function main() {
       price: 68500,
       comparePrice: 75000,
       stock: 3,
-      images: ['/images/products/door-tt-xxl-1.jpg'],
+      images: ['/images/products/door-classic.jpg'],
       attributes: {
         width: '1050 мм',
         height: '2200 мм',
@@ -166,7 +166,7 @@ async function main() {
       price: 32400,
       comparePrice: 38000,
       stock: 8,
-      images: ['/images/products/door-tt-xl-2.jpg'],
+      images: ['/images/products/door-classic.jpg'],
       attributes: {
         width: '960 мм',
         height: '2050 мм',
@@ -188,7 +188,7 @@ async function main() {
       price: 78900,
       comparePrice: 89000,
       stock: 4,
-      images: ['/images/products/door-tt-xxl-2.jpg'],
+      images: ['/images/products/door-classic.jpg'],
       attributes: {
         width: '1050 мм',
         height: '2200 мм',
@@ -210,7 +210,7 @@ async function main() {
       price: 54700,
       comparePrice: 62000,
       stock: 2,
-      images: ['/images/products/door-tt-xl-3.jpg'],
+      images: ['/images/products/door-classic.jpg'],
       attributes: {
         width: '960 мм',
         height: '2050 мм',
@@ -232,7 +232,7 @@ async function main() {
       price: 92000,
       comparePrice: 105000,
       stock: 1,
-      images: ['/images/products/door-tt-xxl-3.jpg'],
+      images: ['/images/products/door-classic.jpg'],
       attributes: {
         width: '1100 мм',
         height: '2300 мм',
@@ -283,7 +283,7 @@ async function main() {
       categoryId: windowsCategory.id,
       isActive: true,
       isFeatured: true,
-      images: ['/images/products/window.jpg'],
+      images: ['/images/okna.jpg'],
     },
   });
 
@@ -306,6 +306,91 @@ async function main() {
   });
 
   console.log('✅ Created other products');
+
+  // ============================================
+  // ФУТЕР
+  // ============================================
+  await prisma.footerBlock.upsert({
+    where: { id: 'main' },
+    update: {},
+    create: {
+      id: 'main',
+      workingHoursWeekdays: 'пн-пт: 11-19',
+      workingHoursSaturday: 'сб: 12-16',
+      workingHoursSunday: 'вс: выходной',
+      phone: '8 (8152) 60-12-70',
+      email: 'skvirya@mail.ru',
+      developer: 'ИП Сквиря Р.В.',
+      copyrightCompanyName: 'Территория интерьерных решений',
+      vkHref: 'https://vk.com/pskpobeda',
+      vkIcon: '/images/icons-vk.png',
+    },
+  });
+
+  let aboutSection = await prisma.footerSection.findFirst({
+    where: { title: 'О нас' },
+  });
+  if (!aboutSection) {
+    aboutSection = await prisma.footerSection.create({
+      data: { title: 'О нас', sortOrder: 0 },
+    });
+  }
+
+  let catalogSection = await prisma.footerSection.findFirst({
+    where: { title: 'Каталог' },
+  });
+  if (!catalogSection) {
+    catalogSection = await prisma.footerSection.create({
+      data: { title: 'Каталог', sortOrder: 1 },
+    });
+  }
+
+  const aboutLinks = [
+    { name: 'Контакты', href: '/contacts' },
+    { name: 'Наши работы', href: '/portfolio' },
+    { name: 'Вакансии', href: '/careers' },
+  ];
+  const catalogLinks = [
+    { name: 'Ремонт квартир', href: '/repair' },
+    { name: 'Двери', href: '/doors' },
+    { name: 'Окна', href: '/windows' },
+    { name: 'Потолки', href: '/ceilings' },
+    { name: 'Жалюзи', href: '/blinds' },
+    { name: 'Мебель', href: '/furniture' },
+    { name: 'Акции', href: '/sales' },
+  ];
+
+  for (let i = 0; i < aboutLinks.length; i++) {
+    const existing = await prisma.footerSectionLink.findFirst({
+      where: { sectionId: aboutSection.id, name: aboutLinks[i].name },
+    });
+    if (!existing) {
+      await prisma.footerSectionLink.create({
+        data: {
+          sectionId: aboutSection.id,
+          ...aboutLinks[i],
+          sortOrder: i,
+        },
+      });
+    }
+  }
+  for (let i = 0; i < catalogLinks.length; i++) {
+    const existing = await prisma.footerSectionLink.findFirst({
+      where: { sectionId: catalogSection.id, name: catalogLinks[i].name },
+    });
+    if (!existing) {
+      await prisma.footerSectionLink.create({
+        data: {
+          sectionId: catalogSection.id,
+          ...catalogLinks[i],
+          sortOrder: i,
+        },
+      });
+    }
+  }
+
+  console.log('✅ Footer seeded');
+
   console.log('🎉 Seeding completed!');
 }
 

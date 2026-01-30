@@ -91,9 +91,33 @@ export class ProductsController {
   @Get('featured')
   @ApiOperation({ summary: 'Популярные товары для главной страницы' })
   @ApiQuery({ name: 'limit', required: false, description: 'Количество товаров (по умолчанию 8)' })
-  findFeatured(@Query('limit') limit?: string) {
+  @ApiQuery({
+    name: 'primaryFilter',
+    required: false,
+    enum: ['featured', 'new', 'featured_or_new', 'any'],
+    description: 'Показывать первыми: featured (Хит), new (Новинка), featured_or_new, any',
+  })
+  @ApiQuery({
+    name: 'secondaryOrder',
+    required: false,
+    enum: ['sort_order', 'created_desc'],
+    description: 'Сортировка: sort_order (по порядку), created_desc (по дате)',
+  })
+  findFeatured(
+    @Query('limit') limit?: string,
+    @Query('primaryFilter') primaryFilter?: string,
+    @Query('secondaryOrder') secondaryOrder?: string,
+  ) {
     const limitNum = limit ? parseInt(limit, 10) : 8;
-    return this.productsService.findFeatured(limitNum);
+    const filter: 'featured' | 'new' | 'featured_or_new' | 'any' =
+      primaryFilter && ['featured', 'new', 'featured_or_new', 'any'].includes(primaryFilter)
+        ? (primaryFilter as 'featured' | 'new' | 'featured_or_new' | 'any')
+        : 'featured';
+    const order: 'sort_order' | 'created_desc' =
+      secondaryOrder && ['sort_order', 'created_desc'].includes(secondaryOrder)
+        ? (secondaryOrder as 'sort_order' | 'created_desc')
+        : 'sort_order';
+    return this.productsService.findFeatured(limitNum, filter, order);
   }
 
   @Get(':id')

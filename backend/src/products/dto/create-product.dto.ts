@@ -65,6 +65,24 @@ export class CreateProductDto {
   @IsBoolean()
   isNew?: boolean;
 
+  @ApiProperty({
+    example: false,
+    default: false,
+    description: 'Товар партнёра (устарело, используется partnerId)',
+  })
+  @IsOptional()
+  @IsBoolean()
+  isPartnerProduct?: boolean;
+
+  @ApiProperty({
+    example: 'partner-id',
+    required: false,
+    description: 'ID партнёра (если указан — товар считается товаром партнёра)',
+  })
+  @IsOptional()
+  @IsString()
+  partnerId?: string;
+
   @ApiProperty({ example: 0, default: 0, required: false })
   @IsOptional()
   @IsNumber()

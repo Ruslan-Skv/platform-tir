@@ -6,6 +6,7 @@ import { BlogModule } from './blog/blog.module';
 import { ManufacturersModule } from './catalog/manufacturers/manufacturers.module';
 import { AttributesModule } from './catalog/attributes/attributes.module';
 import { SuppliersModule } from './catalog/suppliers/suppliers.module';
+import { PartnersModule } from './partners/partners.module';
 import { AdminProductsModule } from './catalog/products/admin-products.module';
 import { AdminOrdersModule } from './orders/admin-orders.module';
 import { AnalyticsModule } from './analytics/analytics.module';
@@ -22,6 +23,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
     ManufacturersModule,
     AttributesModule,
     SuppliersModule,
+    PartnersModule,
     AdminProductsModule,
     // Orders
     AdminOrdersModule,
@@ -36,6 +38,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
     ManufacturersModule,
     AttributesModule,
     SuppliersModule,
+    PartnersModule,
     AdminProductsModule,
     AdminOrdersModule,
     AnalyticsModule,

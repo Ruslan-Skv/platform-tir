@@ -221,6 +221,13 @@
   grid-template-columns: 1fr 1fr;
 }
 
+/* Название (50%) + Партнёр (50%) в одной строке */
+.namePartnerRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
 .input,
 .select,
 .textarea {

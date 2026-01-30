@@ -13,12 +13,16 @@ interface ProductCardProps {
   product: Product;
   isCompareMode?: boolean; // Режим сравнения - скрыть кнопку сравнения, показать кнопку удаления
   onRemoveFromCompare?: () => void; // Callback после удаления из сравнения
+  partnerLogoUrl?: string | null; // URL логотипа партнёра для товаров партнёра
+  showPartnerIconOnCards?: boolean; // Показывать иконку партнёра на карточках
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   isCompareMode = false,
   onRemoveFromCompare,
+  partnerLogoUrl = null,
+  showPartnerIconOnCards = true,
 }) => {
   const { toggleWishlist, isInWishlist, checkInWishlist, wishlist } = useWishlist();
   const { toggleCompare, isInCompare, checkInCompare, compare, removeFromCompare } = useCompare();
@@ -235,6 +239,26 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {product.isFeatured && <span className={styles.hitBadge}>ХИТ</span>}
             {product.isNew && <span className={styles.newBadge}>Новинка</span>}
             {product.discount && <span className={styles.discountBadge}>-{product.discount}%</span>}
+            {product.isPartnerProduct &&
+              showPartnerIconOnCards &&
+              product.partnerShowLogoOnCards !== false &&
+              (product.partnerLogoUrl ?? partnerLogoUrl) && (
+                <div
+                  className={styles.partnerBadge}
+                  title={
+                    product.partnerShowTooltip !== false
+                      ? product.partnerTooltipText?.trim() ||
+                        `Товар Партнёра : ${product.partnerName || 'Партнёр'}`
+                      : undefined
+                  }
+                >
+                  <img
+                    src={product.partnerLogoUrl ?? partnerLogoUrl ?? ''}
+                    alt="Партнёр"
+                    className={styles.partnerLogo}
+                  />
+                </div>
+              )}
           </div>
 
           <div className={styles.actionButtons}>

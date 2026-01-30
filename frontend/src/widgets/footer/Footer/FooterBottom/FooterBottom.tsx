@@ -1,19 +1,29 @@
 import React from 'react';
 
-import { companyInfo } from '@/shared/constants/footer';
-
 import styles from './FooterBottom.module.css';
 
-export const FooterBottom: React.FC = () => {
+interface FooterBottomProps {
+  copyrightCompanyName: string;
+  developer: string;
+  email: string;
+}
+
+export const FooterBottom: React.FC<FooterBottomProps> = ({
+  copyrightCompanyName,
+  developer,
+  email,
+}) => {
   const currentYear = new Date().getFullYear();
 
   return (
     <div className={styles.bottom}>
       <div className={styles.container}>
         <div className={styles.content}>
-          <p className={styles.copyright}>{currentYear} «Территория интерьерных решений»</p>
+          <p className={styles.copyright}>
+            {currentYear} «{copyrightCompanyName}»
+          </p>
           <p className={styles.developer}>
-            Разработчик сайта: {companyInfo.developer} ({companyInfo.email})
+            Разработчик сайта: {developer} ({email})
           </p>
         </div>
       </div>

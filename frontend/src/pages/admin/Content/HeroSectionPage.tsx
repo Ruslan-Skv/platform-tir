@@ -298,7 +298,7 @@ export function HeroSectionPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Hero-блок главной страницы</h1>
+        <h1 className={styles.title}>Первый блок главной страницы</h1>
         <p className={styles.subtitle}>
           Управление текстом, слайд-шоу и преимуществами в блоке Hero на главной странице.
         </p>
@@ -566,7 +566,7 @@ export function HeroSectionPage() {
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <h3 className={styles.modalTitle}>Удалить фото?</h3>
             <p className={styles.modalText}>
-              Это фото будет удалено из слайд-шоу Hero-блока. Действие нельзя отменить.
+              Это фото будет удалено из слайд-шоу первого блока. Действие нельзя отменить.
             </p>
             <div className={styles.modalActions}>
               <button

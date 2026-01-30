@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
 
@@ -155,7 +155,9 @@ function generateSeoDescription(productName: string, categoryName: string): stri
 
 export function ProductCreatePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { getAuthHeaders } = useAuth();
+  const categoryIdFromUrl = searchParams.get('categoryId') ?? '';
   const [saving, setSaving] = useState(false);
   const [fetchingPrice, setFetchingPrice] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -164,6 +166,7 @@ export function ProductCreatePage() {
   const [suppliers, setSuppliers] = useState<
     Array<{ id: string; legalName: string; commercialName?: string | null }>
   >([]);
+  const [partners, setPartners] = useState<Array<{ id: string; name: string }>>([]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -177,6 +180,7 @@ export function ProductCreatePage() {
     isActive: true,
     isFeatured: false,
     isNew: true,
+    partnerId: '',
     sortOrder: 0,
     seoTitle: '',
     seoDescription: '',
@@ -204,6 +208,13 @@ export function ProductCreatePage() {
   const formRef = useRef<HTMLFormElement>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+
+  // Предзаполнение категории из URL
+  useEffect(() => {
+    if (categoryIdFromUrl) {
+      setFormData((prev) => ({ ...prev, categoryId: categoryIdFromUrl }));
+    }
+  }, [categoryIdFromUrl]);
 
   // Fetch categories
   useEffect(() => {
@@ -237,6 +248,24 @@ export function ProductCreatePage() {
       }
     };
     fetchSuppliers();
+  }, [getAuthHeaders]);
+
+  // Fetch partners
+  useEffect(() => {
+    const fetchPartners = async () => {
+      try {
+        const response = await fetch(`${API_URL}/admin/partners?limit=1000`, {
+          headers: getAuthHeaders(),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setPartners(data.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch partners:', err);
+      }
+    };
+    fetchPartners();
   }, [getAuthHeaders]);
 
   // Fetch category attributes when category changes
@@ -535,6 +564,8 @@ export function ProductCreatePage() {
         isActive: formData.isActive,
         isFeatured: formData.isFeatured,
         isNew: formData.isNew,
+        isPartnerProduct: !!formData.partnerId,
+        partnerId: formData.partnerId || undefined,
         sortOrder: formData.sortOrder || 0,
         seoTitle: formData.seoTitle || undefined,
         seoDescription: formData.seoDescription || undefined,
@@ -579,7 +610,13 @@ export function ProductCreatePage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <button
             className={styles.backButton}
-            onClick={() => router.push('/admin/catalog/products')}
+            onClick={() =>
+              router.push(
+                categoryIdFromUrl
+                  ? `/admin/catalog/products/category/${categoryIdFromUrl}`
+                  : '/admin/catalog/products'
+              )
+            }
           >
             ← Назад к списку
           </button>
@@ -606,18 +643,37 @@ export function ProductCreatePage() {
           <div className={styles.formSection}>
             <h2 className={styles.sectionTitle}>Основная информация</h2>
 
-            <div className={styles.formGroup}>
-              <label htmlFor="name">Название *</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-                className={styles.input}
-                placeholder="Введите название товара"
-              />
+            <div className={`${styles.formRow} ${styles.namePartnerRow}`}>
+              <div className={`${styles.formGroup} ${styles.nameGroup}`}>
+                <label htmlFor="name">Название *</label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  className={styles.input}
+                  placeholder="Введите название товара"
+                />
+              </div>
+              <div className={`${styles.formGroup} ${styles.partnerGroup}`}>
+                <label htmlFor="partnerId">Партнёр</label>
+                <select
+                  id="partnerId"
+                  name="partnerId"
+                  value={formData.partnerId}
+                  onChange={handleChange}
+                  className={styles.select}
+                >
+                  <option value="">Не выбран</option>
+                  {partners.map((partner) => (
+                    <option key={partner.id} value={partner.id}>
+                      {partner.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className={styles.formRow}>
@@ -1354,7 +1410,13 @@ export function ProductCreatePage() {
             <button
               type="button"
               className={styles.cancelButton}
-              onClick={() => router.push('/admin/catalog/products')}
+              onClick={() =>
+                router.push(
+                  categoryIdFromUrl
+                    ? `/admin/catalog/products/category/${categoryIdFromUrl}`
+                    : '/admin/catalog/products'
+                )
+              }
             >
               Отмена
             </button>
@@ -1370,7 +1432,13 @@ export function ProductCreatePage() {
         <button
           type="button"
           className={styles.backButtonBottom}
-          onClick={() => router.push('/admin/catalog/products')}
+          onClick={() =>
+            router.push(
+              categoryIdFromUrl
+                ? `/admin/catalog/products/category/${categoryIdFromUrl}`
+                : '/admin/catalog/products'
+            )
+          }
         >
           ← Назад к списку
         </button>

@@ -42,8 +42,8 @@ export class ProductsService {
   ) {}
 
   async create(createProductDto: CreateProductDto) {
-    // Поля поставщика хранятся в ProductSupplier — исключаем их из data для prisma.product.create
-    const { supplierId, supplierProductUrl, supplierPrice, categoryId, ...productData } =
+    // Поля поставщика и партнёра — исключаем из data для prisma.product.create
+    const { supplierId, supplierProductUrl, supplierPrice, categoryId, partnerId, ...productData } =
       createProductDto;
     const data: Prisma.ProductCreateInput = {
       ...productData,
@@ -58,6 +58,10 @@ export class ProductsService {
     }
     if (data.openingSide === null) {
       data.openingSide = [];
+    }
+    // partnerId → partner relation
+    if (partnerId && partnerId.trim()) {
+      data.partner = { connect: { id: partnerId } };
     }
 
     const product = await this.prisma.product.create({
@@ -228,6 +232,16 @@ export class ProductsService {
       },
       include: {
         category: true,
+        partner: {
+          select: {
+            id: true,
+            name: true,
+            logoUrl: true,
+            showLogoOnCards: true,
+            tooltipText: true,
+            showTooltip: true,
+          },
+        },
       },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
     });
@@ -263,6 +277,16 @@ export class ProductsService {
       },
       include: {
         category: true,
+        partner: {
+          select: {
+            id: true,
+            name: true,
+            logoUrl: true,
+            showLogoOnCards: true,
+            tooltipText: true,
+            showTooltip: true,
+          },
+        },
       },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
     });
@@ -279,38 +303,91 @@ export class ProductsService {
     };
   }
 
-  /** Популярные товары для главной страницы (isFeatured=true, isActive=true). Если меньше limit — добирает активные товары до limit. */
-  async findFeatured(limit = 8) {
-    const featured = await this.prisma.product.findMany({
-      where: {
-        isActive: true,
-        isFeatured: true,
+  /** Популярные товары для главной страницы. primaryFilter: featured | new | featured_or_new | any. secondaryOrder: sort_order | created_desc */
+  async findFeatured(
+    limit = 8,
+    primaryFilter: 'featured' | 'new' | 'featured_or_new' | 'any' = 'featured',
+    secondaryOrder: 'sort_order' | 'created_desc' = 'sort_order',
+  ) {
+    const orderBy: Prisma.ProductOrderByWithRelationInput[] =
+      secondaryOrder === 'created_desc'
+        ? [{ createdAt: Prisma.SortOrder.desc }, { sortOrder: Prisma.SortOrder.asc }]
+        : [{ sortOrder: Prisma.SortOrder.asc }, { createdAt: Prisma.SortOrder.desc }];
+
+    const baseWhere = { isActive: true };
+    let primaryWhere: { isActive: boolean; isFeatured?: boolean; isNew?: boolean; OR?: object[] };
+
+    switch (primaryFilter) {
+      case 'featured':
+        primaryWhere = { ...baseWhere, isFeatured: true };
+        break;
+      case 'new':
+        primaryWhere = { ...baseWhere, isNew: true };
+        break;
+      case 'featured_or_new':
+        primaryWhere = {
+          ...baseWhere,
+          OR: [{ isFeatured: true }, { isNew: true }],
+        };
+        break;
+      default:
+        // any — без приоритета, просто активные
+        const all = await this.prisma.product.findMany({
+          where: baseWhere,
+          include: {
+            category: true,
+            partner: {
+              select: {
+                id: true,
+                name: true,
+                logoUrl: true,
+                showLogoOnCards: true,
+                tooltipText: true,
+                showTooltip: true,
+              },
+            },
+          },
+          orderBy,
+          take: limit,
+        });
+        return { products: all };
+    }
+
+    const partnerInclude = {
+      partner: {
+        select: {
+          id: true,
+          name: true,
+          logoUrl: true,
+          showLogoOnCards: true,
+          tooltipText: true,
+          showTooltip: true,
+        },
       },
-      include: {
-        category: true,
-      },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+    };
+    const primary = await this.prisma.product.findMany({
+      where: primaryWhere,
+      include: { category: true, ...partnerInclude },
+      orderBy,
       take: limit,
     });
 
-    if (featured.length >= limit) {
-      return { products: featured };
+    if (primary.length >= limit) {
+      return { products: primary };
     }
 
-    const featuredIds = featured.map((p) => p.id);
+    const primaryIds = primary.map((p) => p.id);
     const additional = await this.prisma.product.findMany({
       where: {
-        isActive: true,
-        id: { notIn: featuredIds },
+        ...baseWhere,
+        id: { notIn: primaryIds },
       },
-      include: {
-        category: true,
-      },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-      take: limit - featured.length,
+      include: { category: true, ...partnerInclude },
+      orderBy,
+      take: limit - primary.length,
     });
 
-    return { products: [...featured, ...additional] };
+    return { products: [...primary, ...additional] };
   }
 
   async search(searchDto: SearchProductsDto) {
@@ -382,9 +459,8 @@ export class ProductsService {
   async update(id: string, updateProductDto: UpdateProductDto) {
     await this.findOne(id);
 
-    // Поля поставщика (supplierId, supplierProductUrl, supplierPrice) хранятся в ProductSupplier,
-    // а не в Product — исключаем их из data для prisma.product.update
-    const { supplierId, supplierProductUrl, supplierPrice, categoryId, ...productData } =
+    // Поля поставщика и партнёра — исключаем из data для prisma.product.update
+    const { supplierId, supplierProductUrl, supplierPrice, categoryId, partnerId, ...productData } =
       updateProductDto;
     const data: Prisma.ProductUpdateInput = { ...productData };
 
@@ -408,6 +484,11 @@ export class ProductsService {
     }
     if ('openingSide' in updateProductDto) {
       data.openingSide = updateProductDto.openingSide === null ? [] : updateProductDto.openingSide;
+    }
+    // partnerId → partner relation
+    if ('partnerId' in updateProductDto) {
+      data.partner =
+        partnerId && partnerId.trim() ? { connect: { id: partnerId } } : { disconnect: true };
     }
 
     const product = await this.prisma.product.update({

@@ -19,6 +19,9 @@ import { HomeDirectionsModule } from './home-directions/home-directions.module';
 import { HeroModule } from './hero/hero.module';
 import { AdvantagesModule } from './advantages/advantages.module';
 import { HomeServicesModule } from './home-services/home-services.module';
+import { FeaturedProductsModule } from './featured-products/featured-products.module';
+import { PartnerProductsModule } from './partner-products/partner-products.module';
+import { FooterModule } from './footer/footer.module';
 
 @Module({
   imports: [
@@ -48,6 +51,9 @@ import { HomeServicesModule } from './home-services/home-services.module';
     HeroModule,
     AdvantagesModule,
     HomeServicesModule,
+    FeaturedProductsModule,
+    PartnerProductsModule,
+    FooterModule,
   ],
   controllers: [AppController],
   providers: [AppService],
