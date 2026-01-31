@@ -17,6 +17,38 @@
   width: 70px;
 }
 
+.sidebar.resizing {
+  transition: none;
+}
+
+.resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: ew-resize;
+  z-index: 10;
+}
+
+.resizer:hover,
+.resizer:active {
+  background: rgba(99, 102, 241, 0.3);
+}
+
+.resizer::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
 .header {
   display: flex;
   align-items: center;

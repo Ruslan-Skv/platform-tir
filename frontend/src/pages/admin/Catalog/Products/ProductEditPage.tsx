@@ -8,6 +8,7 @@ import { useAuth } from '@/features/auth';
 
 import { ProductComponentsSection } from './ProductComponentsSection';
 import styles from './ProductEditPage.module.css';
+import { ProductReviewsSection } from './ProductReviewsSection';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -1703,6 +1704,9 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
       {/* Product Components Section */}
       {/* Вынесено за пределы основной формы, т.к. содержит свою форму */}
       {productId && showSection('components') && <ProductComponentsSection productId={productId} />}
+
+      {/* Product Reviews Section */}
+      {productId && <ProductReviewsSection productId={productId} />}
 
       {/* Кнопка "Назад к списку" в самом низу */}
       <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>

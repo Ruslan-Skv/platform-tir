@@ -35,6 +35,8 @@ interface ApiProduct {
   images: string[];
   sortOrder?: number;
   createdAt?: string;
+  rating?: number;
+  reviewsCount?: number;
   category: {
     id: string;
     name: string;
@@ -66,7 +68,8 @@ function mapApiProductToProduct(p: ApiProduct, index: number): Product {
     images: p.images,
     category: p.category.name,
     categoryId: parseInt(p.category.id, 10) || undefined,
-    rating: 4.5,
+    rating: p.rating ?? 0,
+    reviewsCount: p.reviewsCount ?? 0,
     isNew: p.isNew,
     isFeatured: p.isFeatured,
     isPartnerProduct: p.isPartnerProduct ?? !!p.partner,

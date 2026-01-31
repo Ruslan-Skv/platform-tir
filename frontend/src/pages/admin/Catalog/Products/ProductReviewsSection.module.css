@@ -1,0 +1,134 @@
+.section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 1rem 0;
+}
+
+.loading,
+.empty {
+  font-size: 0.9375rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.author {
+  font-weight: 500;
+  font-size: 0.9375rem;
+  color: #1f2937;
+}
+
+.date {
+  font-size: 0.8125rem;
+  color: #9ca3af;
+}
+
+.stars {
+  color: #f59e0b;
+  font-size: 0.875rem;
+  margin-bottom: 4px;
+}
+
+.comment {
+  margin: 8px 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: #374151;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.approveBtn {
+  padding: 6px 12px;
+  font-size: 0.875rem;
+  color: #059669;
+  background: rgb(5 150 105 / 10%);
+  border: 1px solid #059669;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.approveBtn:hover:not(:disabled) {
+  background: rgb(5 150 105 / 20%);
+}
+
+.deleteBtn {
+  padding: 6px 12px;
+  font-size: 0.875rem;
+  color: #dc2626;
+  background: rgb(220 38 38 / 10%);
+  border: 1px solid #dc2626;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.deleteBtn:hover:not(:disabled) {
+  background: rgb(220 38 38 / 20%);
+}
+
+.approveBtn:disabled,
+.deleteBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.pageBtn {
+  padding: 6px 14px;
+  font-size: 0.875rem;
+  color: #4f46e5;
+  background: transparent;
+  border: 1px solid #4f46e5;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.pageBtn:hover:not(:disabled) {
+  background: rgb(79 70 229 / 10%);
+}
+
+.pageBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pageInfo {
+  font-size: 0.875rem;
+  color: #6b7280;
+}

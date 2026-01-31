@@ -1,0 +1,212 @@
+.section {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgb(0 0 0 / 10%);
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.ratingStars {
+  color: #f59e0b;
+  font-size: 1.25rem;
+}
+
+.ratingValue {
+  font-size: 0.9375rem;
+  color: #6b7280;
+}
+
+.reviewsList {
+  margin-bottom: 2rem;
+}
+
+.loading,
+.empty {
+  color: #6b7280;
+  font-size: 0.9375rem;
+  margin: 0;
+}
+
+.reviewCard {
+  padding: 1rem 0;
+  border-bottom: 1px solid rgb(0 0 0 / 8%);
+}
+
+.reviewCard:last-of-type {
+  border-bottom: none;
+}
+
+.reviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.reviewAuthor {
+  font-weight: 500;
+  font-size: 0.9375rem;
+}
+
+.reviewDate {
+  font-size: 0.8125rem;
+  color: #9ca3af;
+}
+
+.reviewStars {
+  color: #f59e0b;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+.reviewComment {
+  margin: 0.5rem 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: #374151;
+}
+
+.loadMore {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: #2563eb;
+  background: transparent;
+  border: 1px solid #2563eb;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+.loadMore:hover:not(:disabled) {
+  background: #2563eb;
+  color: #fff;
+}
+
+.loadMore:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form {
+  max-width: 480px;
+  padding: 1.5rem;
+  background: rgb(0 0 0 / 3%);
+  border-radius: 0.75rem;
+}
+
+.formTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+}
+
+.formRow {
+  margin-bottom: 1rem;
+}
+
+.label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.starsInput {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.starButton {
+  padding: 0.25rem;
+  font-size: 1.5rem;
+  color: #f59e0b;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9375rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 4rem;
+}
+
+.formError {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin: 0 0 0.5rem;
+}
+
+.submitButton {
+  padding: 0.5rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #fff;
+  background: #2563eb;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.submitButton:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.submitButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.success {
+  padding: 1rem;
+  font-size: 0.9375rem;
+  color: #059669;
+  background: rgb(5 150 105 / 10%);
+  border-radius: 0.5rem;
+}
+
+html[data-theme='dark'] .section {
+  border-top-color: rgb(255 255 255 / 10%);
+}
+
+html[data-theme='dark'] .reviewCard {
+  border-bottom-color: rgb(255 255 255 / 8%);
+}
+
+html[data-theme='dark'] .reviewComment {
+  color: #e5e7eb;
+}
+
+html[data-theme='dark'] .form {
+  background: rgb(255 255 255 / 5%);
+}
+
+html[data-theme='dark'] .input,
+html[data-theme='dark'] .textarea {
+  border-color: #4b5563;
+  background: rgb(0 0 0 / 20%);
+  color: #f9fafb;
+}

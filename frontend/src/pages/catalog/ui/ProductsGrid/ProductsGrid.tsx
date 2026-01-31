@@ -26,6 +26,8 @@ interface ApiProduct {
   attributes: Record<string, unknown> | null;
   sortOrder?: number;
   createdAt?: string;
+  rating?: number;
+  reviewsCount?: number;
   category: {
     id: string;
     name: string;
@@ -126,7 +128,8 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
           images: p.images,
           category: p.category.name,
           categoryId: parseInt(p.category.id) || undefined,
-          rating: 4.5, // Пока захардкожено, позже можно добавить reviews
+          rating: p.rating ?? 0,
+          reviewsCount: p.reviewsCount ?? 0,
           isNew: p.isNew,
           isFeatured: p.isFeatured,
           isPartnerProduct: p.isPartnerProduct ?? !!p.partner,

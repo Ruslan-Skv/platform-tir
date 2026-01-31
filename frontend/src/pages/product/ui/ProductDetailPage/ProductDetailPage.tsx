@@ -6,10 +6,12 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 
 import { type ProductComponent, getProductComponents } from '@/shared/api/product-components';
+import type { Review } from '@/shared/api/reviews';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 
 import { ProductComponents } from './ProductComponents';
 import styles from './ProductDetailPage.module.css';
+import { ProductReviewsSection } from './ProductReviewsSection';
 
 interface ProductData {
   id: string;
@@ -37,6 +39,9 @@ interface ProductData {
       slug: string;
     } | null;
   };
+  rating?: number;
+  reviewsCount?: number;
+  reviews?: Review[];
 }
 
 interface ProductDetailPageProps {
@@ -1032,6 +1037,15 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
 
       {/* Комплектующие */}
       <ProductComponents productId={product.id} initialComponents={components} />
+
+      {/* Отзывы */}
+      <ProductReviewsSection
+        productId={product.id}
+        productName={product.name}
+        initialRating={product.rating}
+        initialReviewsCount={product.reviewsCount}
+        initialReviews={product.reviews}
+      />
 
       {/* Лайтбокс через Portal — рендерится в body, вне иерархии компонентов */}
       {isMounted &&

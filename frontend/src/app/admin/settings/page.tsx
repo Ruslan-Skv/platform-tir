@@ -27,6 +27,20 @@ export default function AdminSettingsPage() {
           Товары партнёра
         </Link>
         <Link
+          href="/admin/settings/reviews"
+          className={styles.subtitle}
+          style={{ color: '#4f46e5', textDecoration: 'underline' }}
+        >
+          Отзывы и оценки
+        </Link>
+        <Link
+          href="/admin/settings/notifications"
+          className={styles.subtitle}
+          style={{ color: '#4f46e5', textDecoration: 'underline' }}
+        >
+          Уведомления
+        </Link>
+        <Link
           href="/admin/settings/roles"
           className={styles.subtitle}
           style={{ color: '#4f46e5', textDecoration: 'underline' }}

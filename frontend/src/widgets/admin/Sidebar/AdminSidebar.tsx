@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -12,6 +12,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1
 interface AdminSidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  width: number;
+  onWidthChange: (width: number) => void;
+  onResizeStart?: () => void;
+  onResizeEnd?: () => void;
 }
 
 interface NavChild {
@@ -46,6 +50,7 @@ const baseNavItems: NavItem[] = [
     icon: '👥',
     children: [
       { label: 'Клиенты', href: '/admin/crm/customers' },
+      { label: 'Заявки с форм', href: '/admin/forms' },
       { label: 'Чат поддержки', href: '/admin/support' },
       { label: 'Воронка продаж', href: '/admin/crm/funnel' },
       { label: 'Сделки', href: '/admin/crm/deals' },
@@ -127,6 +132,8 @@ const baseNavItems: NavItem[] = [
     children: [
       { label: 'Шаблоны товаров', href: '/admin/settings/product-templates' },
       { label: 'Товары партнёра', href: '/admin/settings/partner-products' },
+      { label: 'Отзывы и оценки', href: '/admin/settings/reviews' },
+      { label: 'Уведомления', href: '/admin/settings/notifications' },
       { label: 'Роли', href: '/admin/settings/roles' },
       { label: 'Управление пользователями', href: '/admin/users' },
     ],
@@ -142,10 +149,47 @@ function categoryToNavChild(cat: CategoryTree): NavChild {
   };
 }
 
-export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
+export function AdminSidebar({
+  collapsed,
+  onToggle,
+  width,
+  onWidthChange,
+  onResizeStart,
+  onResizeEnd,
+}: AdminSidebarProps) {
   const pathname = usePathname();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [categories, setCategories] = useState<CategoryTree[]>([]);
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeStartX = useRef<number>(0);
+  const resizeStartWidth = useRef<number>(0);
+
+  const handleResizeStart = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      setIsResizing(true);
+      onResizeStart?.();
+      resizeStartX.current = e.clientX;
+      resizeStartWidth.current = width;
+      const onMouseMove = (moveEvent: MouseEvent) => {
+        const delta = moveEvent.clientX - resizeStartX.current;
+        onWidthChange(resizeStartWidth.current + delta);
+      };
+      const onMouseUp = () => {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        setIsResizing(false);
+        onResizeEnd?.();
+      };
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = 'ew-resize';
+      document.body.style.userSelect = 'none';
+    },
+    [width, onWidthChange, onResizeStart, onResizeEnd]
+  );
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -252,7 +296,19 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
     pathname === child.href || (child.children ? isChildActive(child.children) : false);
 
   return (
-    <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''}`}>
+    <aside
+      className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${isResizing ? styles.resizing : ''}`}
+      style={{ width: collapsed ? undefined : width }}
+    >
+      {!collapsed && (
+        <div
+          className={styles.resizer}
+          onMouseDown={handleResizeStart}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Изменить ширину сайдбара"
+        />
+      )}
       <div className={styles.header}>
         <Link href="/admin" className={styles.logo}>
           {collapsed ? 'T' : 'ТИР Админ'}

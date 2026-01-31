@@ -25,6 +25,8 @@ interface WishlistProduct {
   isNew?: boolean;
   isFeatured?: boolean;
   stock?: number;
+  rating?: number;
+  reviewsCount?: number;
 }
 
 export default function FavoritesPage() {
@@ -79,7 +81,8 @@ export default function FavoritesPage() {
       images: p.images || [],
       category: p.category.name,
       categoryId: parseInt(p.category.id) || undefined,
-      rating: 4.5, // Можно добавить реальный рейтинг позже
+      rating: p.rating ?? 0,
+      reviewsCount: p.reviewsCount ?? 0,
       isNew: p.isNew,
       isFeatured: p.isFeatured,
       inStock: (p.stock ?? 0) > 0,

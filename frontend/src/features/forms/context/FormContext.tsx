@@ -2,6 +2,8 @@
 
 import React, { createContext, useCallback, useContext, useState } from 'react';
 
+import { submitCallbackForm, submitMeasurementForm } from '@/shared/api/forms';
+
 import type {
   CallbackFormData,
   DirectorMessageFormData,
@@ -48,11 +50,19 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
-  const handleMeasurementSubmit = useCallback(async (_data: MeasurementFormData) => {
+  const handleMeasurementSubmit = useCallback(async (data: MeasurementFormData) => {
     setFormSubmission({ loading: true, success: false, error: null });
     try {
-      // TODO: Заменить на реальный API вызов
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await submitMeasurementForm({
+        name: data.name,
+        phone: data.phone,
+        email: data.email,
+        address: data.address,
+        preferredDate: data.preferredDate,
+        preferredTime: data.preferredTime,
+        productType: data.productType,
+        comments: data.comments,
+      });
       setFormSubmission({ loading: false, success: true, error: null });
     } catch (error) {
       setFormSubmission({
@@ -63,11 +73,16 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const handleCallbackSubmit = useCallback(async (_data: CallbackFormData) => {
+  const handleCallbackSubmit = useCallback(async (data: CallbackFormData) => {
     setFormSubmission({ loading: true, success: false, error: null });
     try {
-      // TODO: Заменить на реальный API вызов
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await submitCallbackForm({
+        name: data.name,
+        phone: data.phone,
+        email: data.email,
+        preferredTime: data.preferredTime,
+        comment: data.comment,
+      });
       setFormSubmission({ loading: false, success: true, error: null });
     } catch (error) {
       setFormSubmission({

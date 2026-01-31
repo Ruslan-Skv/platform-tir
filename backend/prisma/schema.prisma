@@ -807,14 +807,71 @@ model Review {
   productId  String
   userId     String?
   userName   String
+  userEmail  String?  // Для гостевых отзывов
   rating     Int      @db.SmallInt
-  comment    String?
+  comment    String?  @db.Text
   isApproved Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("reviews")
+}
+
+model ReviewsBlock {
+  id                 String   @id @default("main")
+  enabled             Boolean  @default(true) // Включить отзывы и оценки
+  showOnCards        Boolean  @default(true) // Показывать рейтинг на карточках товаров
+  requirePurchase    Boolean  @default(false) // Только покупатели могут оставлять отзывы
+  allowGuestReviews  Boolean  @default(true) // Разрешить гостям оставлять отзывы
+  requireModeration  Boolean  @default(true) // Требовать модерацию перед публикацией
+  updatedAt          DateTime @updatedAt
+
+  @@map("reviews_block")
+}
+
+model NotificationSound {
+  id        String   @id @default(cuid())
+  name      String   // Название звука
+  fileUrl   String   // URL файла (/uploads/notification-sounds/...)
+  createdAt DateTime @default(now())
+
+  @@map("notification_sounds")
+}
+
+model AdminNotificationsBlock {
+  id                     String   @id @default(cuid())
+  role                   String?  @unique // null = по умолчанию для всех, иначе роль (ADMIN, MODERATOR и т.д.)
+  soundEnabled           Boolean  @default(true) // Звук при событиях
+  soundVolume            Int      @default(70) // Громкость 0-100
+  soundType              String   @default("beep") // beep, ding, chime, bell или custom
+  customSoundUrl         String?  // URL загруженного звука (при soundType=custom)
+  desktopNotifications   Boolean  @default(false) // Браузерные уведомления
+  checkIntervalSeconds   Int      @default(60) // Интервал проверки (сек)
+  notifyOnReviews        Boolean  @default(true) // Уведомления о новых отзывах
+  notifyOnOrders         Boolean  @default(true) // Уведомления о новых заказах
+  notifyOnSupportChat    Boolean  @default(true) // Уведомления о сообщениях в чате
+  notifyOnMeasurementForm  Boolean @default(true) // Уведомления о записи на замер
+  notifyOnCallbackForm     Boolean @default(true) // Уведомления о заказе обратного звонка
+  updatedAt              DateTime @updatedAt
+
+  @@map("admin_notifications_block")
+}
+
+model FormSubmission {
+  id             String   @id @default(cuid())
+  type           String   // "measurement" | "callback"
+  name           String
+  phone          String
+  email          String?
+  address        String?
+  preferredDate  String?
+  preferredTime  String
+  productType    String?
+  comment        String?  @db.Text
+  createdAt      DateTime @default(now())
+
+  @@map("form_submissions")
 }
 
 enum ConversationStatus {

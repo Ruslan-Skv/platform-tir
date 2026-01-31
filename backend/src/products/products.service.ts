@@ -178,7 +178,8 @@ export class ProductsService {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
 
-    return product;
+    const [enriched] = await this.enrichProductsWithRating([product]);
+    return enriched ?? product;
   }
 
   async findBySlug(slug: string) {
@@ -201,7 +202,8 @@ export class ProductsService {
       throw new NotFoundException(`Product with slug ${slug} not found`);
     }
 
-    return product;
+    const [enriched] = await this.enrichProductsWithRating([product]);
+    return enriched ?? product;
   }
 
   async findByCategory(categorySlug: string) {
@@ -246,6 +248,7 @@ export class ProductsService {
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
     });
 
+    const enrichedProducts = await this.enrichProductsWithRating(products);
     return {
       category: {
         id: category.id,
@@ -253,9 +256,36 @@ export class ProductsService {
         slug: category.slug,
         description: category.description,
       },
-      products,
+      products: enrichedProducts,
       total: products.length,
     };
+  }
+
+  /** Обогащает товары средним рейтингом и количеством одобренных отзывов */
+  private async enrichProductsWithRating<T extends { id: string }>(
+    products: T[],
+  ): Promise<(T & { rating: number; reviewsCount: number })[]> {
+    if (products.length === 0) return [];
+    const productIds = products.map((p) => p.id);
+    const agg = await this.prisma.review.groupBy({
+      by: ['productId'],
+      where: { productId: { in: productIds }, isApproved: true },
+      _avg: { rating: true },
+      _count: { id: true },
+    });
+    const ratingMap = new Map(
+      agg.map((a) => [
+        a.productId,
+        {
+          rating: a._avg.rating ? Math.round(a._avg.rating * 10) / 10 : 0,
+          reviewsCount: a._count.id,
+        },
+      ]),
+    );
+    return products.map((p) => {
+      const r = ratingMap.get(p.id) ?? { rating: 0, reviewsCount: 0 };
+      return { ...p, rating: r.rating, reviewsCount: r.reviewsCount };
+    });
   }
 
   // Вспомогательный метод для рекурсивного сбора ID категорий
@@ -291,6 +321,7 @@ export class ProductsService {
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
     });
 
+    const enrichedProducts = await this.enrichProductsWithRating(products);
     return {
       category: {
         id: 'all',
@@ -298,7 +329,7 @@ export class ProductsService {
         slug: 'all',
         description: 'Все товары',
       },
-      products,
+      products: enrichedProducts,
       total: products.length,
     };
   }
@@ -350,7 +381,8 @@ export class ProductsService {
           orderBy,
           take: limit,
         });
-        return { products: all };
+        const enriched = await this.enrichProductsWithRating(all);
+        return { products: enriched };
     }
 
     const partnerInclude = {
@@ -373,7 +405,8 @@ export class ProductsService {
     });
 
     if (primary.length >= limit) {
-      return { products: primary };
+      const enriched = await this.enrichProductsWithRating(primary);
+      return { products: enriched };
     }
 
     const primaryIds = primary.map((p) => p.id);
@@ -387,7 +420,9 @@ export class ProductsService {
       take: limit - primary.length,
     });
 
-    return { products: [...primary, ...additional] };
+    const combined = [...primary, ...additional];
+    const enriched = await this.enrichProductsWithRating(combined);
+    return { products: enriched };
   }
 
   async search(searchDto: SearchProductsDto) {
@@ -446,9 +481,12 @@ export class ProductsService {
     // Preserve order from Elasticsearch
     const productMap = new Map(products.map((p) => [p.id, p]));
     const orderedProducts = productIds.map((id: string) => productMap.get(id)).filter(Boolean);
+    const enrichedProducts = await this.enrichProductsWithRating(
+      orderedProducts as (typeof products)[0][],
+    );
 
     return {
-      products: orderedProducts,
+      products: enrichedProducts,
       total: result.body.hits.total.value,
       page,
       limit,

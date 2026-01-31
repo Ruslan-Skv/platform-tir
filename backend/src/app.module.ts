@@ -22,6 +22,8 @@ import { HomeServicesModule } from './home-services/home-services.module';
 import { FeaturedProductsModule } from './featured-products/featured-products.module';
 import { PartnerProductsModule } from './partner-products/partner-products.module';
 import { FooterModule } from './footer/footer.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { FormsModule } from './forms/forms.module';
 
 @Module({
   imports: [
@@ -54,6 +56,8 @@ import { FooterModule } from './footer/footer.module';
     FeaturedProductsModule,
     PartnerProductsModule,
     FooterModule,
+    ReviewsModule,
+    FormsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -36,6 +36,44 @@ async function main() {
     console.log(`✅ ${u.role}: ${user.email}`);
   }
 
+  // AdminNotificationsBlock — настройки уведомлений админки (по умолчанию для всех ролей)
+  const defaultNotifications = await prisma.adminNotificationsBlock.findFirst({
+    where: { role: null },
+  });
+  if (!defaultNotifications) {
+    await prisma.adminNotificationsBlock.create({
+      data: {
+        role: null,
+        soundEnabled: true,
+        soundVolume: 70,
+        soundType: 'beep',
+        desktopNotifications: false,
+        checkIntervalSeconds: 60,
+        notifyOnReviews: true,
+        notifyOnOrders: true,
+        notifyOnSupportChat: true,
+        notifyOnMeasurementForm: true,
+        notifyOnCallbackForm: true,
+      },
+    });
+  }
+  console.log('✅ AdminNotificationsBlock: настройки уведомлений');
+
+  // ReviewsBlock — настройки отзывов и оценок
+  await prisma.reviewsBlock.upsert({
+    where: { id: 'main' },
+    update: {},
+    create: {
+      id: 'main',
+      enabled: true,
+      showOnCards: true,
+      requirePurchase: false,
+      allowGuestReviews: true,
+      requireModeration: true,
+    },
+  });
+  console.log('✅ ReviewsBlock: настройки отзывов');
+
   console.log(`\n📋 Пароль для всех тестовых пользователей: ${TEST_PASSWORD}`);
   console.log('   Вход в админку: admin@example.com, content_manager@example.com, moderator@example.com, support@example.com, partner@example.com');
   console.log('   Обычный пользователь: user@example.com. Гость: guest@example.com');

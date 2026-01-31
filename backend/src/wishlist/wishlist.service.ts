@@ -81,7 +81,34 @@ export class WishlistService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return items.map((item) => item.product);
+    const products = items.map((item) => item.product);
+    return this.enrichProductsWithRating(products);
+  }
+
+  private async enrichProductsWithRating<T extends { id: string }>(
+    products: T[],
+  ): Promise<(T & { rating: number; reviewsCount: number })[]> {
+    if (products.length === 0) return [];
+    const productIds = products.map((p) => p.id);
+    const agg = await this.prisma.review.groupBy({
+      by: ['productId'],
+      where: { productId: { in: productIds }, isApproved: true },
+      _avg: { rating: true },
+      _count: { id: true },
+    });
+    const ratingMap = new Map(
+      agg.map((a) => [
+        a.productId,
+        {
+          rating: a._avg.rating ? Math.round(a._avg.rating * 10) / 10 : 0,
+          reviewsCount: a._count.id,
+        },
+      ]),
+    );
+    return products.map((p) => {
+      const r = ratingMap.get(p.id) ?? { rating: 0, reviewsCount: 0 };
+      return { ...p, rating: r.rating, reviewsCount: r.reviewsCount };
+    });
   }
 
   async getWishlistCount(userId: string) {

@@ -88,6 +88,9 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.6.3"
   },
+  "prisma": {
+    "seed": "ts-node -r tsconfig-paths/register prisma/seed.ts"
+  },
   "config": {
     "commitizen": {
       "path": "cz-conventional-changelog"

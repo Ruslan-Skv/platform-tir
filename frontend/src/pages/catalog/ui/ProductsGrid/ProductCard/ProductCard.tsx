@@ -239,27 +239,29 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {product.isFeatured && <span className={styles.hitBadge}>ХИТ</span>}
             {product.isNew && <span className={styles.newBadge}>Новинка</span>}
             {product.discount && <span className={styles.discountBadge}>-{product.discount}%</span>}
-            {product.isPartnerProduct &&
-              showPartnerIconOnCards &&
-              product.partnerShowLogoOnCards !== false &&
-              (product.partnerLogoUrl ?? partnerLogoUrl) && (
-                <div
-                  className={styles.partnerBadge}
-                  title={
-                    product.partnerShowTooltip !== false
-                      ? product.partnerTooltipText?.trim() ||
-                        `Товар Партнёра : ${product.partnerName || 'Партнёр'}`
-                      : undefined
-                  }
-                >
-                  <img
-                    src={product.partnerLogoUrl ?? partnerLogoUrl ?? ''}
-                    alt="Партнёр"
-                    className={styles.partnerLogo}
-                  />
-                </div>
-              )}
           </div>
+
+          {/* Иконка партнёра — левый нижний угол картинки */}
+          {product.isPartnerProduct &&
+            showPartnerIconOnCards &&
+            product.partnerShowLogoOnCards !== false &&
+            (product.partnerLogoUrl ?? partnerLogoUrl) && (
+              <div
+                className={styles.partnerBadge}
+                title={
+                  product.partnerShowTooltip !== false
+                    ? product.partnerTooltipText?.trim() ||
+                      `Товар Партнёра : ${product.partnerName || 'Партнёр'}`
+                    : undefined
+                }
+              >
+                <img
+                  src={product.partnerLogoUrl ?? partnerLogoUrl ?? ''}
+                  alt="Партнёр"
+                  className={styles.partnerLogo}
+                />
+              </div>
+            )}
 
           <div className={styles.actionButtons}>
             {isCompareMode ? (
@@ -300,11 +302,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {product.sku && <p className={styles.sku}>Арт. {product.sku}</p>}
           <p className={styles.category}>{product.category}</p>
 
-          <div className={styles.rating}>
-            {'★'.repeat(Math.floor(product.rating))}
-            {'☆'.repeat(5 - Math.floor(product.rating))}
-            <span className={styles.ratingValue}>({product.rating})</span>
-          </div>
+          {(product.rating > 0 || (product.reviewsCount ?? 0) > 0) && (
+            <div className={styles.rating}>
+              {'★'.repeat(Math.floor(product.rating || 0))}
+              {'☆'.repeat(5 - Math.floor(product.rating || 0))}
+              <span className={styles.ratingValue}>
+                ({product.rating?.toFixed(1) ?? '0'})
+                {(product.reviewsCount ?? 0) > 0 && ` · ${product.reviewsCount}`}
+              </span>
+            </div>
+          )}
 
           <div className={styles.price}>
             {oldPrice && <span className={styles.oldPrice}>{oldPrice.toLocaleString()} ₽</span>}

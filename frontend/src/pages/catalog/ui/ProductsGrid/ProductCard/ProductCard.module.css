@@ -142,15 +142,18 @@
 
 .partnerBadge {
   align-items: center;
-  background: #fff;
-  border: 2px solid #e5e7eb;
+  background: rgb(255 255 255 / 90%);
+  border: none;
   border-radius: 50%;
+  bottom: 0.75rem;
   display: flex;
-  height: 2.25rem;
+  height: 1.75rem;
   justify-content: center;
-  margin-top: 0.5rem;
+  left: 0.75rem;
   overflow: hidden;
-  width: 2.25rem;
+  position: absolute;
+  width: 1.75rem;
+  z-index: 2;
 }
 
 .partnerLogo {
@@ -583,7 +586,8 @@ html[data-theme='dark'] .finalPrice {
 
 html[data-theme='dark'] .favoriteButton,
 html[data-theme='dark'] .compareButton,
-html[data-theme='dark'] .removeButton {
+html[data-theme='dark'] .removeButton,
+html[data-theme='dark'] .partnerBadge {
   background: rgb(55 65 81 / 90%);
   color: #d1d5db;
 }
