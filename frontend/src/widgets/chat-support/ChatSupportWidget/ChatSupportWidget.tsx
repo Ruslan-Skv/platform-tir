@@ -1,12 +1,19 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useUserAuth } from '@/features/auth';
+import {
+  checkNewSupportReplies,
+  getUserNotificationSettings,
+  updateUserNotificationSettings,
+} from '@/shared/api/user-notifications';
 
 import styles from './ChatSupportWidget.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const POLL_INTERVAL_MS = 60_000;
+const STORAGE_KEY_PREFIX = 'support_chat_last_check_';
 
 interface Conversation {
   id: string;
@@ -43,6 +50,9 @@ export function ChatSupportWidget() {
   const [loading, setLoading] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
+  const [notifyOnSupportReply, setNotifyOnSupportReply] = useState(true);
+  const [savingNotify, setSavingNotify] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchConversations = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -81,6 +91,85 @@ export function ChatSupportWidget() {
     },
     [getAuthHeaders]
   );
+
+  const loadNotificationSettings = useCallback(async () => {
+    if (!isAuthenticated || !user) return;
+    try {
+      const s = await getUserNotificationSettings();
+      setNotifyOnSupportReply(s.notifyOnSupportChatReply);
+    } catch {
+      setNotifyOnSupportReply(true);
+    }
+  }, [isAuthenticated, user]);
+
+  const handleNotifyToggle = useCallback(async (checked: boolean) => {
+    setNotifyOnSupportReply(checked);
+    setSavingNotify(true);
+    try {
+      await updateUserNotificationSettings({ notifyOnSupportChatReply: checked });
+      if (checked && typeof window !== 'undefined' && 'Notification' in window) {
+        if (Notification.permission === 'default') {
+          await Notification.requestPermission();
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      setNotifyOnSupportReply(!checked);
+    } finally {
+      setSavingNotify(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      loadNotificationSettings();
+    }
+  }, [isAuthenticated, user, loadNotificationSettings]);
+
+  const pollForNewReplies = useCallback(async () => {
+    if (!user?.id || !notifyOnSupportReply || typeof window === 'undefined') return;
+    const key = STORAGE_KEY_PREFIX + user.id;
+    const lastCheck = localStorage.getItem(key);
+    if (!lastCheck) {
+      localStorage.setItem(key, new Date().toISOString());
+      return;
+    }
+    try {
+      const { conversationIds } = await checkNewSupportReplies(lastCheck);
+      localStorage.setItem(key, new Date().toISOString());
+      if (conversationIds.length > 0 && 'Notification' in window) {
+        if (Notification.permission === 'granted') {
+          new Notification('Чат поддержки', {
+            body:
+              conversationIds.length === 1
+                ? 'Вам ответили в чате поддержки'
+                : `Новые ответы в ${conversationIds.length} диалогах`,
+            icon: '/favicon.svg',
+          });
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [user?.id, notifyOnSupportReply]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user || !notifyOnSupportReply) return;
+    pollForNewReplies();
+    pollRef.current = setInterval(pollForNewReplies, POLL_INTERVAL_MS);
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, [isAuthenticated, user, notifyOnSupportReply, pollForNewReplies]);
+
+  useEffect(() => {
+    if (open && currentConversation?.id && user?.id && typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY_PREFIX + user.id, new Date().toISOString());
+    }
+  }, [open, currentConversation?.id, user?.id]);
 
   useEffect(() => {
     if (open && isAuthenticated) {
@@ -192,6 +281,16 @@ export function ChatSupportWidget() {
                 <div className={styles.loading}>Загрузка диалогов...</div>
               ) : (
                 <>
+                  <div className={styles.notifyRow}>
+                    <input
+                      type="checkbox"
+                      id="notifySupportReply"
+                      checked={notifyOnSupportReply}
+                      onChange={(e) => handleNotifyToggle(e.target.checked)}
+                      disabled={savingNotify}
+                    />
+                    <label htmlFor="notifySupportReply">Уведомлять при ответе в чате</label>
+                  </div>
                   <button type="button" className={styles.startNew} onClick={startConversation}>
                     Начать новый диалог
                   </button>
@@ -240,6 +339,16 @@ export function ChatSupportWidget() {
                   })}
                 </div>
               )}
+              <div className={styles.notifyRow}>
+                <input
+                  type="checkbox"
+                  id="notifySupportReplyInChat"
+                  checked={notifyOnSupportReply}
+                  onChange={(e) => handleNotifyToggle(e.target.checked)}
+                  disabled={savingNotify}
+                />
+                <label htmlFor="notifySupportReplyInChat">Уведомлять при ответе</label>
+              </div>
               <div className={styles.inputRow}>
                 <input
                   type="text"

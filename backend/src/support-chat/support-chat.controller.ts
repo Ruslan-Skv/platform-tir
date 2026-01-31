@@ -29,6 +29,18 @@ export class SupportChatController {
     return this.supportChat.createConversation(req.user.id);
   }
 
+  @Get('conversations/check-new-replies')
+  @ApiOperation({ summary: 'Проверить диалоги с новыми ответами поддержки' })
+  checkNewReplies(@Request() req: RequestWithUser, @Query('since') since?: string) {
+    const sinceDate = since ? new Date(since) : new Date(0);
+    if (isNaN(sinceDate.getTime())) {
+      return { conversationIds: [] };
+    }
+    return this.supportChat
+      .getConversationsWithNewSupportReplies(req.user.id, sinceDate)
+      .then((conversationIds) => ({ conversationIds }));
+  }
+
   @Get('conversations')
   @ApiOperation({ summary: 'Мои диалоги или все диалоги (для поддержки)' })
   getConversations(

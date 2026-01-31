@@ -102,6 +102,32 @@ export class UsersService {
     });
   }
 
+  async getNotificationSettings(userId: string) {
+    const settings = await this.prisma.userNotificationSettings.findUnique({
+      where: { userId },
+    });
+    return (
+      settings ?? {
+        id: null,
+        userId,
+        notifyOnSupportChatReply: true,
+        createdAt: null,
+        updatedAt: null,
+      }
+    );
+  }
+
+  async updateNotificationSettings(userId: string, data: { notifyOnSupportChatReply?: boolean }) {
+    return this.prisma.userNotificationSettings.upsert({
+      where: { userId },
+      update: { ...data },
+      create: {
+        userId,
+        notifyOnSupportChatReply: data.notifyOnSupportChatReply ?? true,
+      },
+    });
+  }
+
   async changePassword(id: string, currentPassword: string, newPassword: string) {
     // Get user with password
     const user = await this.prisma.user.findUnique({

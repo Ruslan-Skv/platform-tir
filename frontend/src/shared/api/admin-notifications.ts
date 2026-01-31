@@ -5,6 +5,7 @@ export type NotificationSoundType = 'beep' | 'ding' | 'chime' | 'bell' | 'custom
 export interface AdminNotificationsSettings {
   id: string;
   role: string | null;
+  userId?: string;
   soundEnabled: boolean;
   soundVolume: number;
   soundType: NotificationSoundType;
@@ -45,6 +46,132 @@ export async function getAdminNotificationsSettingsByRole(
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить настройки');
+  return res.json();
+}
+
+export interface AdminNotificationUser {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  role: string;
+}
+
+export interface CustomerNotificationSettings {
+  id: string | null;
+  userId: string;
+  notifyOnSupportChatReply: boolean;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export async function getAdminNotificationCustomers(): Promise<AdminNotificationUser[]> {
+  const res = await fetch(`${API_URL}/admin/notifications/customers`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export async function getAdminCustomerNotificationSettings(
+  userId: string
+): Promise<CustomerNotificationSettings> {
+  const res = await fetch(`${API_URL}/admin/notifications/customers/${userId}/settings`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить настройки');
+  return res.json();
+}
+
+export async function updateAdminCustomerNotificationSettings(
+  userId: string,
+  data: { notifyOnSupportChatReply?: boolean }
+): Promise<CustomerNotificationSettings> {
+  const res = await fetch(`${API_URL}/admin/notifications/customers/${userId}/settings`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const message =
+      err?.message ||
+      (Array.isArray(err?.message) ? err.message.join(', ') : null) ||
+      'Не удалось сохранить настройки';
+    throw new Error(message);
+  }
+  return res.json();
+}
+
+export async function updateAllAdminCustomerNotificationSettings(data: {
+  notifyOnSupportChatReply?: boolean;
+}): Promise<{ updated: number }> {
+  const res = await fetch(`${API_URL}/admin/notifications/customers/bulk`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const message =
+      err?.message ||
+      (Array.isArray(err?.message) ? err.message.join(', ') : null) ||
+      'Не удалось сохранить настройки';
+    throw new Error(message);
+  }
+  return res.json();
+}
+
+export async function getAdminNotificationUsers(): Promise<AdminNotificationUser[]> {
+  const res = await fetch(`${API_URL}/admin/notifications/users`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export async function getAdminNotificationsSettingsByUser(
+  userId: string
+): Promise<AdminNotificationsSettings> {
+  const res = await fetch(`${API_URL}/admin/notifications/settings/by-user/${userId}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить настройки');
+  return res.json();
+}
+
+export async function updateAdminNotificationsSettingsByUser(
+  userId: string,
+  data: Omit<Partial<AdminNotificationsSettings>, 'role' | 'userId'>
+): Promise<AdminNotificationsSettings> {
+  const body = {
+    soundEnabled: data.soundEnabled,
+    soundVolume: data.soundVolume,
+    soundType: data.soundType,
+    customSoundUrl: data.customSoundUrl,
+    desktopNotifications: data.desktopNotifications,
+    checkIntervalSeconds: data.checkIntervalSeconds,
+    notifyOnReviews: data.notifyOnReviews,
+    notifyOnOrders: data.notifyOnOrders,
+    notifyOnSupportChat: data.notifyOnSupportChat,
+    notifyOnMeasurementForm: data.notifyOnMeasurementForm,
+    notifyOnCallbackForm: data.notifyOnCallbackForm,
+  };
+  const res = await fetch(`${API_URL}/admin/notifications/settings/by-user/${userId}`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const message =
+      err?.message ||
+      (Array.isArray(err?.message) ? err.message.join(', ') : null) ||
+      'Не удалось сохранить настройки';
+    throw new Error(message);
+  }
   return res.json();
 }
 

@@ -14,6 +14,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateNotificationSettingsDto } from './dto/update-notification-settings.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -25,6 +26,21 @@ import type { RequestWithUser } from '../common/types/request-with-user.types';
 @ApiBearerAuth()
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Get('me/notification-settings')
+  @ApiOperation({ summary: 'Настройки уведомлений текущего пользователя' })
+  getNotificationSettings(@Request() req: RequestWithUser) {
+    return this.usersService.getNotificationSettings(req.user.id);
+  }
+
+  @Patch('me/notification-settings')
+  @ApiOperation({ summary: 'Обновить настройки уведомлений' })
+  updateNotificationSettings(
+    @Request() req: RequestWithUser,
+    @Body() dto: UpdateNotificationSettingsDto,
+  ) {
+    return this.usersService.updateNotificationSettings(req.user.id, dto);
+  }
 
   @Post()
   @UseGuards(RolesGuard)

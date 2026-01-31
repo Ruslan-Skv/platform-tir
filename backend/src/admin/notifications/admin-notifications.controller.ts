@@ -22,7 +22,10 @@ import { extname } from 'path';
 import type { Request } from 'express';
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { PrismaService } from '../../database/prisma.service';
+import { UserRole } from '@prisma/client';
 import { UpdateAdminNotificationsDto } from './dto/update-admin-notifications.dto';
 
 /** Prisma findUnique/upsert не принимают role: null — используем findFirst для default. */
@@ -78,13 +81,209 @@ export class AdminNotificationsController {
   @Get('settings')
   @ApiOperation({ summary: 'Получить настройки уведомлений для текущего пользователя' })
   async getSettings(@Req() req: RequestWithUser) {
+    const userId = req.user?.id;
     const userRole = req.user?.role ?? null;
+    if (userId) {
+      const override = await this.prisma.userAdminNotificationOverride.findUnique({
+        where: { userId },
+      });
+      if (override) {
+        return { ...override, role: null };
+      }
+    }
     const block = userRole
       ? ((await findBlockByRole(this.prisma, userRole)) ??
         (await findBlockByRole(this.prisma, null)))
       : await findBlockByRole(this.prisma, null);
     if (!block) return this.getDefaultSettings();
     return block;
+  }
+
+  @Get('settings/by-user/:userId')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @ApiOperation({ summary: 'Получить настройки для пользователя (только супер-админ)' })
+  async getSettingsByUser(@Req() req: RequestWithUser, @Param('userId') userId: string) {
+    const override = await this.prisma.userAdminNotificationOverride.findUnique({
+      where: { userId },
+    });
+    if (override) {
+      const u = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      });
+      return { ...override, role: u?.role ?? null };
+    }
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    const role = user?.role ?? null;
+    const block = role
+      ? ((await findBlockByRole(this.prisma, role)) ?? (await findBlockByRole(this.prisma, null)))
+      : await findBlockByRole(this.prisma, null);
+    if (!block) return { ...this.getDefaultSettings(), userId, role };
+    return { ...block, userId };
+  }
+
+  @Patch('settings/by-user/:userId')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @ApiOperation({ summary: 'Обновить настройки для пользователя (только супер-админ)' })
+  async updateSettingsByUser(
+    @Req() req: RequestWithUser,
+    @Param('userId') userId: string,
+    @Body() dto: UpdateAdminNotificationsDto,
+  ) {
+    const data = {
+      soundEnabled: dto.soundEnabled,
+      soundVolume: dto.soundVolume,
+      soundType: dto.soundType,
+      customSoundUrl: dto.customSoundUrl,
+      desktopNotifications: dto.desktopNotifications,
+      checkIntervalSeconds: dto.checkIntervalSeconds,
+      notifyOnReviews: dto.notifyOnReviews,
+      notifyOnOrders: dto.notifyOnOrders,
+      notifyOnSupportChat: dto.notifyOnSupportChat,
+      notifyOnMeasurementForm: dto.notifyOnMeasurementForm,
+      notifyOnCallbackForm: dto.notifyOnCallbackForm,
+    };
+    const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
+    const createData = {
+      userId,
+      soundEnabled: dto.soundEnabled ?? true,
+      soundVolume: dto.soundVolume ?? 70,
+      soundType: dto.soundType ?? 'beep',
+      customSoundUrl: dto.customSoundUrl ?? null,
+      desktopNotifications: dto.desktopNotifications ?? false,
+      checkIntervalSeconds: dto.checkIntervalSeconds ?? 60,
+      notifyOnReviews: dto.notifyOnReviews ?? true,
+      notifyOnOrders: dto.notifyOnOrders ?? true,
+      notifyOnSupportChat: dto.notifyOnSupportChat ?? true,
+      notifyOnMeasurementForm: dto.notifyOnMeasurementForm ?? true,
+      notifyOnCallbackForm: dto.notifyOnCallbackForm ?? true,
+    };
+    return this.prisma.userAdminNotificationOverride.upsert({
+      where: { userId },
+      update: updateData,
+      create: createData,
+    });
+  }
+
+  @Get('customers')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @ApiOperation({ summary: 'Список покупателей (USER) для настройки уведомлений' })
+  async getCustomers() {
+    return this.prisma.user.findMany({
+      where: { role: 'USER' },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+      },
+      orderBy: [{ email: 'asc' }],
+    });
+  }
+
+  @Patch('customers/bulk')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @ApiOperation({ summary: 'Обновить настройки уведомлений для всех покупателей (USER)' })
+  async updateAllCustomersNotificationSettings(
+    @Body() body: { notifyOnSupportChatReply?: boolean },
+  ) {
+    const users = await this.prisma.user.findMany({
+      where: { role: 'USER' },
+      select: { id: true },
+    });
+    const value = body.notifyOnSupportChatReply ?? true;
+    const results = await Promise.all(
+      users.map((u) =>
+        this.prisma.userNotificationSettings.upsert({
+          where: { userId: u.id },
+          update: { notifyOnSupportChatReply: value },
+          create: {
+            userId: u.id,
+            notifyOnSupportChatReply: value,
+          },
+        }),
+      ),
+    );
+    return { updated: results.length };
+  }
+
+  @Get('customers/:userId/settings')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @ApiOperation({ summary: 'Настройки уведомлений покупателя (чат поддержки)' })
+  async getCustomerNotificationSettings(@Param('userId') userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId, role: 'USER' },
+    });
+    if (!user) throw new BadRequestException('Пользователь не найден');
+    const settings = await this.prisma.userNotificationSettings.findUnique({
+      where: { userId },
+    });
+    return (
+      settings ?? {
+        id: null,
+        userId,
+        notifyOnSupportChatReply: true,
+        createdAt: null,
+        updatedAt: null,
+      }
+    );
+  }
+
+  @Patch('customers/:userId/settings')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @ApiOperation({ summary: 'Обновить настройки уведомлений покупателя' })
+  async updateCustomerNotificationSettings(
+    @Param('userId') userId: string,
+    @Body() body: { notifyOnSupportChatReply?: boolean },
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId, role: 'USER' },
+    });
+    if (!user) throw new BadRequestException('Пользователь не найден');
+    return this.prisma.userNotificationSettings.upsert({
+      where: { userId },
+      update: { ...body },
+      create: {
+        userId,
+        notifyOnSupportChatReply: body.notifyOnSupportChatReply ?? true,
+      },
+    });
+  }
+
+  @Get('users')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @ApiOperation({ summary: 'Список пользователей админки для выбора (только супер-админ)' })
+  async getAdminUsers() {
+    const ADMIN_ROLES: UserRole[] = [
+      'SUPER_ADMIN',
+      'ADMIN',
+      'CONTENT_MANAGER',
+      'MODERATOR',
+      'SUPPORT',
+      'PARTNER',
+    ];
+    return this.prisma.user.findMany({
+      where: { role: { in: ADMIN_ROLES } },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+      },
+      orderBy: [{ role: 'asc' }, { email: 'asc' }],
+    });
   }
 
   @Get('settings/by-role')

@@ -26,6 +26,32 @@ export class SupportChatService {
     });
   }
 
+  async getConversationsWithNewSupportReplies(userId: string, since: Date): Promise<string[]> {
+    const convs = await this.prisma.supportConversation.findMany({
+      where: { userId },
+      include: {
+        messages: {
+          take: 1,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            sender: { select: { id: true, role: true } },
+          },
+        },
+      },
+    });
+    const ids: string[] = [];
+    for (const c of convs) {
+      const last = c.messages[0];
+      if (!last) continue;
+      const isFromSupport = this.isSupportRole(last.sender.role);
+      const isNew = new Date(last.createdAt) > since;
+      if (isFromSupport && isNew) {
+        ids.push(c.id);
+      }
+    }
+    return ids;
+  }
+
   async findMyConversations(userId: string) {
     return this.prisma.supportConversation.findMany({
       where: { userId },

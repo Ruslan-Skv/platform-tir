@@ -7,6 +7,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model UserNotificationSettings {
+  id                       String   @id @default(cuid())
+  userId                   String   @unique
+  notifyOnSupportChatReply Boolean  @default(true)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  user                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_notification_settings")
+}
+
 model User {
   id                String         @id @default(cuid())
   email             String         @unique
@@ -19,6 +30,8 @@ model User {
   updatedAt         DateTime       @updatedAt
   avatar            String?
   phone             String?
+  notificationSettings UserNotificationSettings?
+  adminNotificationOverride UserAdminNotificationOverride?
   addresses         Address[]
   blogPosts         BlogPost[]
   cartItems         CartItem[]
@@ -837,6 +850,26 @@ model NotificationSound {
   createdAt DateTime @default(now())
 
   @@map("notification_sounds")
+}
+
+model UserAdminNotificationOverride {
+  id                     String   @id @default(cuid())
+  userId                 String   @unique // Персональные настройки для пользователя (переопределяют роль)
+  soundEnabled           Boolean  @default(true)
+  soundVolume            Int      @default(70)
+  soundType              String   @default("beep")
+  customSoundUrl         String?
+  desktopNotifications   Boolean  @default(false)
+  checkIntervalSeconds   Int      @default(60)
+  notifyOnReviews        Boolean  @default(true)
+  notifyOnOrders         Boolean  @default(true)
+  notifyOnSupportChat    Boolean  @default(true)
+  notifyOnMeasurementForm Boolean  @default(true)
+  notifyOnCallbackForm   Boolean  @default(true)
+  updatedAt              DateTime @updatedAt
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_admin_notification_override")
 }
 
 model AdminNotificationsBlock {
