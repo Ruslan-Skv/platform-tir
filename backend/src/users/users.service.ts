@@ -117,6 +117,41 @@ export class UsersService {
     );
   }
 
+  async getNotificationHistory(userId: string, params?: { page?: number; limit?: number }) {
+    const page = params?.page ?? 1;
+    const limit = params?.limit ?? 50;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.userNotification.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.userNotification.count({ where: { userId } }),
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async createNotification(userId: string, data: { type: string; title: string; message: string }) {
+    return this.prisma.userNotification.create({
+      data: {
+        userId,
+        type: data.type,
+        title: data.title,
+        message: data.message,
+      },
+    });
+  }
+
   async updateNotificationSettings(userId: string, data: { notifyOnSupportChatReply?: boolean }) {
     return this.prisma.userNotificationSettings.upsert({
       where: { userId },

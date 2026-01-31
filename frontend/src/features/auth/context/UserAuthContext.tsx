@@ -20,6 +20,7 @@ export interface User {
   firstName: string | null;
   lastName: string | null;
   role: UserRole;
+  avatar?: string | null;
 }
 
 interface UserAuthContextType {
@@ -39,7 +40,9 @@ interface UserAuthContextType {
     firstName?: string;
     lastName?: string;
     email?: string;
+    avatar?: string | null;
   }) => Promise<{ success: boolean; error?: string }>;
+  uploadAvatar: (file: File) => Promise<{ success: boolean; error?: string }>;
   getAuthHeaders: () => { Authorization: string } | Record<string, string>;
 }
 
@@ -186,7 +189,12 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const updateProfile = useCallback(
-    async (data: { firstName?: string; lastName?: string; email?: string }) => {
+    async (data: {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      avatar?: string | null;
+    }) => {
       if (!token || !user) {
         return {
           success: false,
@@ -195,7 +203,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const response = await fetch(`${API_URL}/users/${user.id}`, {
+        const response = await fetch(`${API_URL}/users/me`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -230,6 +238,53 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     [token, user]
   );
 
+  const uploadAvatar = useCallback(
+    async (file: File) => {
+      if (!token || !user) {
+        return {
+          success: false,
+          error: 'Необходима авторизация',
+        };
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${API_URL}/users/me/avatar`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          return {
+            success: false,
+            error: error.message || 'Ошибка при загрузке аватарки',
+          };
+        }
+
+        const { user: updatedUser } = await response.json();
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { password: _password, ...userWithoutPassword } = updatedUser;
+        setUser(userWithoutPassword);
+        localStorage.setItem(USER_KEY, JSON.stringify(userWithoutPassword));
+
+        return { success: true };
+      } catch (error) {
+        console.error('Upload avatar error:', error);
+        return {
+          success: false,
+          error: 'Ошибка подключения к серверу',
+        };
+      }
+    },
+    [token, user]
+  );
+
   const getAuthHeaders = useCallback((): { Authorization: string } | Record<string, string> => {
     if (token) {
       return { Authorization: `Bearer ${token}` };
@@ -246,6 +301,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     register,
     logout,
     updateProfile,
+    uploadAvatar,
     getAuthHeaders,
   };
 

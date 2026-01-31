@@ -135,6 +135,7 @@ const baseNavItems: NavItem[] = [
       { label: 'Шаблоны товаров', href: '/admin/settings/product-templates' },
       { label: 'Товары партнёра', href: '/admin/settings/partner-products' },
       { label: 'Отзывы и оценки', href: '/admin/settings/reviews' },
+      { label: 'Личный кабинет', href: '/admin/settings/user-cabinet' },
       { label: 'Уведомления', href: '/admin/settings/notifications' },
       { label: 'Роли', href: '/admin/settings/roles' },
       { label: 'Управление пользователями', href: '/admin/users' },

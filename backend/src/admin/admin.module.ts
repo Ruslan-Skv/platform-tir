@@ -15,6 +15,7 @@ import { AdminNotificationsModule } from './notifications/admin-notifications.mo
 import { AdminFormsModule } from './forms/admin-forms.module';
 import { PhotoModule } from './photo/photo.module';
 import { PromotionModule } from './promotions/promotion.module';
+import { UserCabinetModule } from './user-cabinet/user-cabinet.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { PromotionModule } from './promotions/promotion.module';
     AdminFormsModule,
     PhotoModule,
     PromotionModule,
+    UserCabinetModule,
     // Analytics
     AnalyticsModule,
   ],
@@ -56,6 +58,7 @@ import { PromotionModule } from './promotions/promotion.module';
     AdminFormsModule,
     PhotoModule,
     PromotionModule,
+    UserCabinetModule,
     AnalyticsModule,
   ],
 })

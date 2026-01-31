@@ -45,6 +45,39 @@ export async function updateUserNotificationSettings(
   return res.json();
 }
 
+export interface UserNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface UserNotificationHistoryResponse {
+  data: UserNotification[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export async function getUserNotificationHistory(params?: {
+  page?: number;
+  limit?: number;
+}): Promise<UserNotificationHistoryResponse> {
+  const searchParams = new URLSearchParams();
+  if (params?.page != null) searchParams.set('page', String(params.page));
+  if (params?.limit != null) searchParams.set('limit', String(params.limit));
+  const query = searchParams.toString();
+  const url = `${API_URL}/users/me/notifications${query ? `?${query}` : ''}`;
+  const res = await fetch(url, {
+    headers: getUserAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить историю уведомлений');
+  return res.json();
+}
+
 export async function checkNewSupportReplies(
   since: string
 ): Promise<{ conversationIds: string[] }> {

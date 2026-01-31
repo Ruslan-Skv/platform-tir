@@ -19,13 +19,28 @@ import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 
 import styles from './TopBar.module.css';
 
+function getAvatarUrl(avatar: string | null | undefined): string | null {
+  if (!avatar) return null;
+  if (avatar.startsWith('http')) return avatar;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+  const base = apiUrl.replace(/\/api\/v1\/?$/, '');
+  return `${base}${avatar}`;
+}
+
+function getInitials(firstName: string | null, lastName: string | null, email: string): string {
+  if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
+  if (firstName) return firstName.slice(0, 2).toUpperCase();
+  if (email) return email.slice(0, 2).toUpperCase();
+  return '?';
+}
+
 export const TopBar: React.FC = () => {
   const { isDarkTheme, toggleTheme } = useTheme();
   const router = useRouter();
   const { count: wishlistCount } = useWishlist();
   const { count: compareCount } = useCompare();
   const { count: cartCount } = useCart();
-  const { isAuthenticated } = useUserAuth();
+  const { isAuthenticated, user } = useUserAuth();
 
   const handleCompareClick = () => {
     router.push('/compare');
@@ -70,8 +85,31 @@ export const TopBar: React.FC = () => {
 
           {/* Личный кабинет */}
           <button onClick={handleProfileClick} className={styles.utilityButton} type="button">
-            <UserIcon className={styles.icon} />
-            <span className={styles.utilityText}>Кабинет</span>
+            {isAuthenticated && user ? (
+              <>
+                {user.avatar ? (
+                  <img
+                    src={getAvatarUrl(user.avatar) ?? ''}
+                    alt=""
+                    className={styles.profileAvatar}
+                  />
+                ) : (
+                  <div className={styles.profileInitials}>
+                    {getInitials(user.firstName, user.lastName, user.email)}
+                  </div>
+                )}
+                <span className={styles.profileName}>
+                  {user.firstName || user.lastName
+                    ? [user.firstName, user.lastName].filter(Boolean).join(' ')
+                    : user.email}
+                </span>
+              </>
+            ) : (
+              <>
+                <UserIcon className={styles.icon} />
+                <span className={styles.utilityText}>Кабинет</span>
+              </>
+            )}
           </button>
 
           {/* Избранное */}

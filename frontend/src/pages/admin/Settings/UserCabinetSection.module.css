@@ -1,0 +1,113 @@
+.page {
+  max-width: 900px;
+}
+
+.loading,
+.accessDenied {
+  color: #6b7280;
+  font-size: 0.9375rem;
+  margin: 0;
+}
+
+.accessDenied {
+  color: rgb(185 28 28);
+}
+
+.section {
+  margin-bottom: 40px;
+}
+
+.sectionTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 8px 0;
+}
+
+.sectionDescription {
+  font-size: 0.9375rem;
+  color: #6b7280;
+  margin: 0 0 20px 0;
+  line-height: 1.5;
+}
+
+.form {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.toast {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9375rem;
+}
+
+.toast.success {
+  background: rgb(34 197 94 / 20%);
+  color: rgb(22 163 74);
+}
+
+.toast.error {
+  background: rgb(239 68 68 / 20%);
+  color: rgb(185 28 28);
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.checkboxRow input {
+  width: 18px;
+  height: 18px;
+}
+
+.checkboxRow label {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #1f2937;
+  cursor: pointer;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 20px;
+}
+
+.saveButton {
+  padding: 8px 20px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #fff;
+  background: #4f46e5;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: #4338ca;
+}
+
+.saveButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.previewLink {
+  font-size: 0.9375rem;
+  color: rgb(59 130 246);
+  text-decoration: none;
+}
+
+.previewLink:hover {
+  text-decoration: underline;
+}

@@ -18,6 +18,20 @@ model UserNotificationSettings {
   @@map("user_notification_settings")
 }
 
+model UserNotification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // support_chat | order_status | system
+  title     String
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_notifications")
+}
+
 model User {
   id                String         @id @default(cuid())
   email             String         @unique
@@ -31,6 +45,7 @@ model User {
   avatar            String?
   phone             String?
   notificationSettings UserNotificationSettings?
+  notificationHistory  UserNotification[]
   adminNotificationOverride UserAdminNotificationOverride?
   addresses         Address[]
   blogPosts         BlogPost[]
@@ -899,6 +914,19 @@ model Review {
   product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("reviews")
+}
+
+model UserCabinetBlock {
+  id                    String   @id @default("main")
+  showProfileSection    Boolean  @default(true) // Личные данные
+  showOrdersSection     Boolean  @default(true) // Мои заказы
+  showNotificationsSection Boolean @default(true) // Уведомления
+  showNotificationHistory Boolean @default(true) // История уведомлений (только чтение)
+  showPasswordSection   Boolean  @default(true) // Смена пароля
+  showQuickLinks       Boolean  @default(true) // Быстрые ссылки
+  updatedAt             DateTime @updatedAt
+
+  @@map("user_cabinet_block")
 }
 
 model ReviewsBlock {

@@ -50,7 +50,26 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
   const { isDarkTheme } = useTheme();
   const [isMounted, setIsMounted] = React.useState(false);
   const router = useRouter();
-  const { isAuthenticated } = useUserAuth();
+  const { isAuthenticated, user } = useUserAuth();
+
+  const getAvatarUrl = (avatar: string | null | undefined): string | null => {
+    if (!avatar) return null;
+    if (avatar.startsWith('http')) return avatar;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+    const base = apiUrl.replace(/\/api\/v1\/?$/, '');
+    return `${base}${avatar}`;
+  };
+
+  const getInitials = (
+    firstName: string | null,
+    lastName: string | null,
+    email: string
+  ): string => {
+    if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
+    if (firstName) return firstName.slice(0, 2).toUpperCase();
+    if (email) return email.slice(0, 2).toUpperCase();
+    return '?';
+  };
 
   // Избегаем hydration mismatch, используя тему только после монтирования
   React.useEffect(() => {
@@ -234,7 +253,28 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
               type="button"
               onClick={handleProfileClick}
             >
-              <UserIcon className={styles.icon} />
+              {isAuthenticated && user ? (
+                <>
+                  {user.avatar ? (
+                    <img
+                      src={getAvatarUrl(user.avatar) ?? ''}
+                      alt=""
+                      className={styles.profileAvatar}
+                    />
+                  ) : (
+                    <div className={styles.profileInitials}>
+                      {getInitials(user.firstName, user.lastName, user.email)}
+                    </div>
+                  )}
+                  <span className={styles.profileName}>
+                    {user.firstName || user.lastName
+                      ? [user.firstName, user.lastName].filter(Boolean).join(' ')
+                      : user.email}
+                  </span>
+                </>
+              ) : (
+                <UserIcon className={styles.icon} />
+              )}
             </button>
             <button className={styles.topBarIcon} aria-label="Избранное" type="button">
               <HeartIcon className={styles.icon} />

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { UsersService } from '../users/users.service';
 import { ConversationStatus } from '@prisma/client';
 import { SendMessageDto } from './dto/send-message.dto';
 import { UpdateConversationDto } from './dto/update-conversation.dto';
@@ -8,7 +9,10 @@ const SUPPORT_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MODERATOR', 'SUPPORT'];
 
 @Injectable()
 export class SupportChatService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private usersService: UsersService,
+  ) {}
 
   private isSupportRole(role: string): boolean {
     return SUPPORT_ROLES.includes(role);
@@ -154,6 +158,17 @@ export class SupportChatService {
         data: { updatedAt: new Date() },
       }),
     ]);
+
+    // Создаём уведомление в истории, если ответил сотрудник поддержки
+    if (isSupport && conv.userId !== senderId) {
+      const preview = dto.content.length > 100 ? `${dto.content.slice(0, 100)}...` : dto.content;
+      await this.usersService.createNotification(conv.userId, {
+        type: 'support_chat',
+        title: 'Новый ответ в чате поддержки',
+        message: preview,
+      });
+    }
+
     return message;
   }
 

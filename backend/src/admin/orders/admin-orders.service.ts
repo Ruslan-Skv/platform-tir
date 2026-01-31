@@ -1,10 +1,23 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { UsersService } from '../../users/users.service';
 import { Prisma } from '@prisma/client';
+
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Ожидает',
+  PROCESSING: 'В обработке',
+  SHIPPED: 'Отправлен',
+  DELIVERED: 'Доставлен',
+  CANCELLED: 'Отменён',
+  REFUNDED: 'Возврат',
+};
 
 @Injectable()
 export class AdminOrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private usersService: UsersService,
+  ) {}
 
   async findAll(params?: {
     status?: string;
@@ -198,7 +211,7 @@ export class AdminOrdersService {
         break;
     }
 
-    return this.prisma.order.update({
+    const updated = await this.prisma.order.update({
       where: { id },
       data: updateData,
       include: {
@@ -217,6 +230,15 @@ export class AdminOrdersService {
         },
       },
     });
+
+    // Уведомление в историю пользователя
+    await this.usersService.createNotification(order.userId, {
+      type: 'order_status',
+      title: `Статус заказа ${order.orderNumber} изменён`,
+      message: `Новый статус: ${ORDER_STATUS_LABELS[status] ?? status}`,
+    });
+
+    return updated;
   }
 
   async cancelOrder(id: string, reason?: string) {
@@ -229,7 +251,7 @@ export class AdminOrdersService {
     // Restore stock
     await this.restoreStock(order.items);
 
-    return this.prisma.order.update({
+    const updated = await this.prisma.order.update({
       where: { id },
       data: {
         status: 'CANCELLED',
@@ -237,6 +259,14 @@ export class AdminOrdersService {
         cancelReason: reason,
       },
     });
+
+    await this.usersService.createNotification(order.userId, {
+      type: 'order_status',
+      title: `Заказ ${order.orderNumber} отменён`,
+      message: reason ? `Причина: ${reason}` : 'Заказ отменён',
+    });
+
+    return updated;
   }
 
   async refundOrder(id: string, amount?: number, reason?: string) {
@@ -253,7 +283,7 @@ export class AdminOrdersService {
       await this.restoreStock(order.items);
     }
 
-    return this.prisma.order.update({
+    const updated = await this.prisma.order.update({
       where: { id },
       data: {
         status: 'REFUNDED',
@@ -263,6 +293,14 @@ export class AdminOrdersService {
         refundReason: reason,
       },
     });
+
+    await this.usersService.createNotification(order.userId, {
+      type: 'order_status',
+      title: `Возврат по заказу ${order.orderNumber}`,
+      message: reason ? `Причина: ${reason}` : 'Оформлен возврат средств',
+    });
+
+    return updated;
   }
 
   private async restoreStock(items: Array<{ productId: string; quantity: number }>) {

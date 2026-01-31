@@ -24,7 +24,12 @@ async function main() {
   for (const u of TEST_USERS) {
     const user = await prisma.user.upsert({
       where: { email: u.email },
-      update: { role: u.role, firstName: u.firstName, lastName: u.lastName },
+      update: {
+        password: hashedPassword,
+        role: u.role,
+        firstName: u.firstName,
+        lastName: u.lastName,
+      },
       create: {
         email: u.email,
         password: hashedPassword,
@@ -551,6 +556,21 @@ async function main() {
     });
   }
   console.log('✅ Promotions: акции созданы');
+
+  // UserCabinetBlock — настройки личного кабинета пользователя
+  await prisma.userCabinetBlock.upsert({
+    where: { id: 'main' },
+    update: {},
+    create: {
+      id: 'main',
+      showProfileSection: true,
+      showOrdersSection: true,
+      showNotificationsSection: true,
+      showPasswordSection: true,
+      showQuickLinks: true,
+    },
+  });
+  console.log('✅ UserCabinetBlock: настройки личного кабинета');
 
   console.log('🎉 Seeding completed!');
 }
