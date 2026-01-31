@@ -101,11 +101,11 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
         light: '/images/menu/light/07.png',
         dark: '/images/menu/dark/07.png',
       },
-      'ПОЛЕЗНЫЕ СТАТЬИ': {
+      БЛОГ: {
         light: '/images/menu/light/03.png',
         dark: '/images/menu/dark/03.png',
       },
-      'НАШИ РАБОТЫ': {
+      ФОТО: {
         light: '/images/menu/light/04.png',
         dark: '/images/menu/dark/04.png',
       },

@@ -1,0 +1,365 @@
+.blogPostPage {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--container-padding, 1rem);
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 3rem;
+  color: rgb(255 255 255 / 70%);
+}
+
+.error h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+}
+
+.error p {
+  margin: 0 0 1rem;
+}
+
+.breadcrumbs {
+  margin-bottom: 1rem;
+}
+
+.breadcrumbsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.875rem;
+  color: rgb(255 255 255 / 60%);
+}
+
+.breadcrumbsList a {
+  color: rgb(255 255 255 / 70%);
+  text-decoration: none;
+}
+
+.breadcrumbsList a:hover {
+  text-decoration: underline;
+}
+
+.separator {
+  margin: 0 0.5rem;
+  color: rgb(255 255 255 / 40%);
+}
+
+.current {
+  color: rgb(255 255 255 / 87%);
+}
+
+.article {
+  margin-bottom: 2rem;
+}
+
+.header {
+  margin-bottom: 1.5rem;
+}
+
+.category {
+  display: inline-block;
+  font-size: 0.8125rem;
+  color: rgb(255 255 255 / 60%);
+  text-decoration: none;
+  margin-bottom: 0.5rem;
+}
+
+.category:hover {
+  text-decoration: underline;
+  color: rgb(255 255 255 / 80%);
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+  line-height: 1.2;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: rgb(255 255 255 / 60%);
+}
+
+.featuredImage {
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgb(0 0 0 / 20%);
+}
+
+.featuredImage img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.content {
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.content :global(p) {
+  margin: 0 0 1rem;
+}
+
+.content :global(h2) {
+  font-size: 1.5rem;
+  margin: 2rem 0 1rem;
+}
+
+.content :global(h3) {
+  font-size: 1.25rem;
+  margin: 1.5rem 0 0.75rem;
+}
+
+.content :global(ul),
+.content :global(ol) {
+  margin: 0 0 1rem;
+  padding-left: 1.5rem;
+}
+
+.content :global(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.content :global(figure) {
+  margin: 1.5rem 0;
+}
+
+.content :global(figcaption) {
+  font-size: 0.875rem;
+  color: rgb(255 255 255 / 60%);
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+.content :global(blockquote) {
+  margin: 1rem 0;
+  padding: 0.5rem 1rem;
+  border-left: 4px solid rgb(255 255 255 / 30%);
+  color: rgb(255 255 255 / 80%);
+}
+
+.actionsBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding: 1rem 0;
+  border-top: 1px solid rgb(255 255 255 / 10%);
+}
+
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgb(255 255 255 / 10%);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 8px;
+  color: inherit;
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+.actionButton:hover:not(:disabled) {
+  background: rgb(255 255 255 / 15%);
+}
+
+.actionButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.actionButtonActive {
+  background: rgb(239 68 68 / 20%);
+  border-color: rgb(239 68 68 / 40%);
+}
+
+.actionIcon {
+  font-size: 1.125rem;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.tag {
+  padding: 0.25rem 0.75rem;
+  background: rgb(255 255 255 / 10%);
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  color: rgb(255 255 255 / 80%);
+}
+
+.footer {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgb(255 255 255 / 10%);
+}
+
+.backLink {
+  color: rgb(255 255 255 / 70%);
+  text-decoration: none;
+  font-size: 0.9375rem;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+  color: rgb(255 255 255);
+}
+
+.comments {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgb(255 255 255 / 10%);
+}
+
+.commentsTitle {
+  font-size: 1.25rem;
+  margin: 0 0 1rem;
+}
+
+.commentForm {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgb(255 255 255 / 5%);
+  border-radius: 8px;
+}
+
+.commentTextarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 6px;
+  background: rgb(0 0 0 / 20%);
+  color: inherit;
+  font-size: 0.9375rem;
+  resize: vertical;
+  margin-bottom: 0.75rem;
+}
+
+.commentTextarea::placeholder {
+  color: rgb(255 255 255 / 50%);
+}
+
+.commentFormRow {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.commentInput {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 6px;
+  background: rgb(0 0 0 / 20%);
+  color: inherit;
+  font-size: 0.9375rem;
+}
+
+.commentInput::placeholder {
+  color: rgb(255 255 255 / 50%);
+}
+
+.commentError {
+  color: rgb(239 68 68);
+  font-size: 0.875rem;
+  margin: 0 0 0.5rem;
+}
+
+.commentSuccess {
+  color: rgb(34 197 94);
+  font-size: 0.875rem;
+  margin: 0 0 0.5rem;
+}
+
+.commentSubmit {
+  padding: 0.5rem 1.25rem;
+  background: rgb(59 130 246);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+.commentSubmit:hover:not(:disabled) {
+  background: rgb(37 99 235);
+}
+
+.commentSubmit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.commentsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.comment {
+  padding: 1rem 0;
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
+}
+
+.comment:last-child {
+  border-bottom: none;
+}
+
+.commentHeader {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.commentAuthor {
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.commentDate {
+  font-size: 0.8125rem;
+  color: rgb(255 255 255 / 50%);
+}
+
+.commentContent {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: rgb(255 255 255 / 85%);
+}
+
+.replies {
+  list-style: none;
+  margin: 0.5rem 0 0 1.5rem;
+  padding: 0;
+  border-left: 2px solid rgb(255 255 255 / 15%);
+}
+
+.reply {
+  padding: 0.75rem 0 0.75rem 1rem;
+}
+
+.reply .commentHeader {
+  margin-bottom: 0.25rem;
+}
+
+.reply .commentContent {
+  font-size: 0.875rem;
+}

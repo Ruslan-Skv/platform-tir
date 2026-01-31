@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { BlogService } from './blog.service';
 import { CreateBlogPostDto } from './dto/create-blog-post.dto';
+import { ReplyCommentDto } from './dto/reply-comment.dto';
 import { UpdateBlogPostDto } from './dto/update-blog-post.dto';
 import { CreateBlogCategoryDto } from './dto/create-blog-category.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -125,6 +126,15 @@ export class BlogController {
   @Delete('comments/:id')
   removeComment(@Param('id') id: string) {
     return this.blogService.removeComment(id);
+  }
+
+  @Post('comments/:id/reply')
+  replyToComment(
+    @Param('id') id: string,
+    @Body() dto: ReplyCommentDto,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.blogService.replyToComment(id, dto.content, req.user.id);
   }
 
   // Stats

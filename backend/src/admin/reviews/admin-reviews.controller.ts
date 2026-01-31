@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { ReviewsService } from '../../reviews/reviews.service';
@@ -73,5 +73,21 @@ export class AdminReviewsController {
       limit,
       totalPages: Math.ceil(total / limit),
     };
+  }
+
+  @Patch(':id/reply')
+  @ApiOperation({ summary: 'Ответить на отзыв' })
+  async replyToReview(@Param('id') id: string, @Body() body: { adminReply: string }) {
+    const reply = (body.adminReply ?? '').trim();
+    return this.prisma.review.update({
+      where: { id },
+      data: {
+        adminReply: reply || null,
+        adminReplyAt: reply ? new Date() : null,
+      },
+      include: {
+        product: { select: { id: true, name: true, slug: true } },
+      },
+    });
   }
 }

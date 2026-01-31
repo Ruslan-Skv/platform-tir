@@ -1,0 +1,393 @@
+.photoPage {
+  max-width: var(--container-max-width, 1440px);
+  margin: 0 auto;
+  padding: var(--container-padding, 1rem);
+}
+
+.breadcrumbs {
+  margin-bottom: 1rem;
+}
+
+.breadcrumbsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.875rem;
+  color: rgb(255 255 255 / 60%);
+}
+
+.separator {
+  margin: 0 0.5rem;
+  color: rgb(255 255 255 / 40%);
+}
+
+.breadcrumbsList a {
+  color: rgb(255 255 255 / 70%);
+  text-decoration: none;
+}
+
+.breadcrumbsList a:hover {
+  text-decoration: underline;
+}
+
+.current {
+  color: rgb(255 255 255 / 87%);
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+}
+
+.subtitle {
+  margin: 0;
+  color: rgb(255 255 255 / 70%);
+  font-size: 1rem;
+}
+
+.content {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 2rem;
+}
+
+@media (max-width: 768px) {
+  .content {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.sidebarSection {
+  background: rgb(255 255 255 / 5%);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.sidebarTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+}
+
+.categoryList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.categoryItem {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0;
+  background: none;
+  border: none;
+  color: rgb(255 255 255 / 80%);
+  text-align: left;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 0.9375rem;
+}
+
+.categoryItem:hover {
+  color: rgb(255 255 255 / 95%);
+}
+
+.categoryItem.active {
+  color: #60a5fa;
+  font-weight: 500;
+}
+
+.categoryCount {
+  margin-left: 0.25rem;
+  color: rgb(255 255 255 / 50%);
+  font-size: 0.875rem;
+}
+
+.main {
+  min-height: 200px;
+}
+
+.loading,
+.empty {
+  text-align: center;
+  padding: 3rem;
+  color: rgb(255 255 255 / 70%);
+}
+
+.projectsList {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.projectCard {
+  background: rgb(255 255 255 / 5%);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.projectTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+  color: rgb(255 255 255 / 95%);
+}
+
+.projectDescription {
+  margin: 0 0 1rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: rgb(255 255 255 / 75%);
+}
+
+/* Grid display mode */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.gridItem {
+  aspect-ratio: 4/3;
+  overflow: hidden;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  background: rgb(0 0 0 / 20%);
+  transition: transform 0.2s;
+}
+
+.gridItem:hover {
+  transform: scale(1.02);
+}
+
+.gridItem img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Masonry display mode */
+.masonry {
+  column-count: 3;
+  column-gap: 1rem;
+}
+
+@media (max-width: 900px) {
+  .masonry {
+    column-count: 2;
+  }
+}
+
+@media (max-width: 600px) {
+  .masonry {
+    column-count: 1;
+  }
+}
+
+.masonryItem {
+  break-inside: avoid;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  background: rgb(0 0 0 / 20%);
+  transition: transform 0.2s;
+  display: block;
+}
+
+.masonryItem:hover {
+  transform: scale(1.02);
+}
+
+.masonryItem img {
+  width: 100%;
+  height: auto;
+  display: block;
+  vertical-align: top;
+}
+
+/* Slider display mode */
+.sliderWrapper {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgb(0 0 0 / 20%);
+}
+
+.slider {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.5rem 0;
+  scroll-snap-type: x mandatory;
+}
+
+.sliderPhoto {
+  flex: 0 0 280px;
+  aspect-ratio: 4/3;
+  overflow: hidden;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  scroll-snap-align: start;
+  transition: transform 0.2s;
+}
+
+.sliderPhoto:hover {
+  transform: scale(1.02);
+}
+
+.sliderPhoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sliderDots {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.sliderDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: rgb(255 255 255 / 30%);
+  cursor: pointer;
+  padding: 0;
+}
+
+.sliderDot.active {
+  background: #60a5fa;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding: 1rem;
+}
+
+.paginationButton {
+  padding: 0.5rem 1rem;
+  font-size: 0.9375rem;
+  background: rgb(255 255 255 / 10%);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 8px;
+  color: rgb(255 255 255 / 90%);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.paginationButton:hover:not(:disabled) {
+  background: rgb(255 255 255 / 15%);
+}
+
+.paginationButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.paginationInfo {
+  font-size: 0.875rem;
+  color: rgb(255 255 255 / 70%);
+}
+
+/* Lightbox */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 90%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.lightboxClose {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 48px;
+  height: 48px;
+  font-size: 2rem;
+  line-height: 1;
+  background: rgb(255 255 255 / 10%);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.lightboxClose:hover {
+  background: rgb(255 255 255 / 20%);
+}
+
+.lightboxContent {
+  max-width: 90vw;
+  max-height: 90vh;
+}
+
+.lightboxContent img {
+  max-width: 100%;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.lightboxNav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.lightboxNavBtn {
+  width: 48px;
+  height: 48px;
+  font-size: 1.5rem;
+  background: rgb(255 255 255 / 20%);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.lightboxNavBtn:hover {
+  background: rgb(255 255 255 / 30%);
+}
+
+.lightboxNavInfo {
+  color: white;
+  font-size: 0.9375rem;
+}

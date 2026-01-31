@@ -13,6 +13,8 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { AdminReviewsModule } from './reviews/admin-reviews.module';
 import { AdminNotificationsModule } from './notifications/admin-notifications.module';
 import { AdminFormsModule } from './forms/admin-forms.module';
+import { PhotoModule } from './photo/photo.module';
+import { PromotionModule } from './promotions/promotion.module';
 
 @Module({
   imports: [
@@ -33,6 +35,8 @@ import { AdminFormsModule } from './forms/admin-forms.module';
     AdminReviewsModule,
     AdminNotificationsModule,
     AdminFormsModule,
+    PhotoModule,
+    PromotionModule,
     // Analytics
     AnalyticsModule,
   ],
@@ -50,6 +54,8 @@ import { AdminFormsModule } from './forms/admin-forms.module';
     AdminReviewsModule,
     AdminNotificationsModule,
     AdminFormsModule,
+    PhotoModule,
+    PromotionModule,
     AnalyticsModule,
   ],
 })

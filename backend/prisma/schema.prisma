@@ -339,28 +339,41 @@ model Page {
 }
 
 model BlogPost {
-  id             String        @id @default(cuid())
+  id             String         @id @default(cuid())
   title          String
-  slug           String        @unique
+  slug           String         @unique
   content        String
   excerpt        String?
   featuredImage  String?
-  status         PageStatus    @default(DRAFT)
+  status         PageStatus     @default(DRAFT)
   publishedAt    DateTime?
   authorId       String
   categoryId     String?
   tags           String[]
-  viewCount      Int           @default(0)
+  viewCount      Int            @default(0)
   seoTitle       String?
   seoDescription String?
-  allowComments  Boolean       @default(true)
+  allowComments  Boolean        @default(true)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
-  author         User          @relation(fields: [authorId], references: [id])
-  category       BlogCategory? @relation(fields: [categoryId], references: [id])
+  author         User           @relation(fields: [authorId], references: [id])
+  category       BlogCategory?  @relation(fields: [categoryId], references: [id])
   comments       Comment[]
+  likes          BlogPostLike[]
 
   @@map("blog_posts")
+}
+
+model BlogPostLike {
+  id        String   @id @default(cuid())
+  postId    String
+  likerId   String   // userId или "g_" + guestUuid
+  createdAt DateTime @default(now())
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, likerId])
+  @@index([postId])
+  @@map("blog_post_likes")
 }
 
 model BlogCategory {
@@ -375,6 +388,61 @@ model BlogCategory {
   posts       BlogPost[]
 
   @@map("blog_categories")
+}
+
+model PhotoCategory {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  description String?
+  image       String?
+  order       Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  projects    PhotoProject[]
+
+  @@map("photo_categories")
+}
+
+model PhotoProject {
+  id          String        @id @default(cuid())
+  categoryId  String
+  title       String        // Название объекта (например "Квартира ул. Ленина 15")
+  description String?       @db.Text // Описание выполненных работ
+  displayMode String        @default("grid") // grid | masonry | slider
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  category    PhotoCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  photos      Photo[]
+
+  @@map("photo_projects")
+}
+
+model Photo {
+  id         String       @id @default(cuid())
+  projectId  String
+  imageUrl   String
+  sortOrder  Int          @default(0)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  project    PhotoProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("photos")
+}
+
+model Promotion {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  imageUrl    String
+  description String?  @db.Text
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("promotions")
 }
 
 model Comment {
@@ -816,17 +884,19 @@ model CompareItem {
 }
 
 model Review {
-  id         String   @id @default(cuid())
-  productId  String
-  userId     String?
-  userName   String
-  userEmail  String?  // Для гостевых отзывов
-  rating     Int      @db.SmallInt
-  comment    String?  @db.Text
-  isApproved Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id           String    @id @default(cuid())
+  productId    String
+  userId       String?
+  userName     String
+  userEmail    String?   // Для гостевых отзывов
+  rating       Int       @db.SmallInt
+  comment      String?   @db.Text
+  adminReply   String?   @db.Text // Ответ администратора
+  adminReplyAt DateTime? // Когда написан ответ
+  isApproved   Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("reviews")
 }

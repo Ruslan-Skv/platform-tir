@@ -385,7 +385,7 @@ async function main() {
 
   const aboutLinks = [
     { name: 'Контакты', href: '/contacts' },
-    { name: 'Наши работы', href: '/portfolio' },
+    { name: 'Фото', href: '/photo' },
     { name: 'Вакансии', href: '/careers' },
   ];
   const catalogLinks = [
@@ -395,7 +395,7 @@ async function main() {
     { name: 'Потолки', href: '/ceilings' },
     { name: 'Жалюзи', href: '/blinds' },
     { name: 'Мебель', href: '/furniture' },
-    { name: 'Акции', href: '/sales' },
+    { name: 'Акции', href: '/promotions' },
   ];
 
   for (let i = 0; i < aboutLinks.length; i++) {
@@ -428,6 +428,129 @@ async function main() {
   }
 
   console.log('✅ Footer seeded');
+
+  // ============================================
+  // БЛОГ: категория и тестовая статья
+  // ============================================
+
+  const adminUser = await prisma.user.findUnique({
+    where: { email: 'admin@example.com' },
+  });
+
+  if (adminUser) {
+    const blogCategory = await prisma.blogCategory.upsert({
+      where: { slug: 'sovety' },
+      update: {},
+      create: {
+        name: 'Советы по ремонту',
+        slug: 'sovety',
+        description: 'Полезные советы по ремонту и обустройству дома',
+        order: 0,
+      },
+    });
+
+    const testPostContent = `
+<p>Добро пожаловать в наш блог! Здесь мы делимся полезными советами по ремонту, выбору дверей, мебели и созданию уютного интерьера.</p>
+
+<h2>Как выбрать входную дверь</h2>
+<p>Входная дверь — это визитная карточка вашего дома. При выборе обратите внимание на материал, толщину полотна, качество фурнитуры и теплоизоляцию.</p>
+
+<figure>
+  <img src="/images/dveri.jpg" alt="Входные двери" style="max-width: 100%; height: auto; border-radius: 8px;" />
+  <figcaption>Качественные входные двери — надёжность и стиль</figcaption>
+</figure>
+
+<h2>Мягкая мебель для гостиной</h2>
+<p>Диван или кресло должны быть не только красивыми, но и удобными. Учитывайте размеры комнаты, стиль интерьера и практичность обивки.</p>
+
+<figure>
+  <img src="/images/mebel.jpg" alt="Мягкая мебель" style="max-width: 100%; height: auto; border-radius: 8px;" />
+  <figcaption>Мягкая мебель создаёт уют в доме</figcaption>
+</figure>
+
+<h2>Натяжные потолки</h2>
+<p>Натяжные потолки — современное решение для любого помещения. Они скрывают коммуникации, позволяют установить встроенное освещение и служат десятилетиями.</p>
+
+<figure>
+  <img src="/images/potolki.jpg" alt="Натяжные потолки" style="max-width: 100%; height: auto; border-radius: 8px;" />
+  <figcaption>Натяжные потолки — эстетика и практичность</figcaption>
+</figure>
+
+<p>Обращайтесь в «Территорию интерьерных решений» — мы поможем подобрать идеальные решения для вашего дома!</p>
+`.trim();
+
+    await prisma.blogPost.upsert({
+      where: { slug: 'kak-vybrat-dveri-i-mebel' },
+      update: {
+        content: testPostContent,
+        excerpt: 'Полезные советы по выбору входных дверей, мягкой мебели и натяжных потолков. Создайте уют в вашем доме с помощью профессионалов.',
+      },
+      create: {
+        title: 'Как выбрать входные двери и мебель для дома',
+        slug: 'kak-vybrat-dveri-i-mebel',
+        content: testPostContent,
+        excerpt:
+          'Полезные советы по выбору входных дверей, мягкой мебели и натяжных потолков. Создайте уют в вашем доме с помощью профессионалов.',
+        featuredImage: '/images/dveri.jpg',
+        status: 'PUBLISHED',
+        publishedAt: new Date(),
+        authorId: adminUser.id,
+        categoryId: blogCategory.id,
+        tags: ['двери', 'мебель', 'ремонт', 'советы'],
+        allowComments: true,
+      },
+    });
+    console.log('✅ Blog: тестовая статья создана');
+  }
+
+  // Photo categories (для раздела «Фото»)
+  const photoCategories = [
+    { name: 'Ремонт санузла', slug: 'bathroom-renovation', order: 0 },
+    { name: 'Ремонт квартиры', slug: 'apartment-renovation', order: 1 },
+    { name: 'Кухни', slug: 'kitchens', order: 2 },
+    { name: 'Гардеробные', slug: 'wardrobes', order: 3 },
+    { name: 'Шкафы-купе', slug: 'sliding-wardrobes', order: 4 },
+    { name: 'Двери', slug: 'doors', order: 5 },
+    { name: 'Окна', slug: 'windows', order: 6 },
+    { name: 'Потолки натяжные', slug: 'stretch-ceilings', order: 7 },
+    { name: 'Жалюзи', slug: 'blinds', order: 8 },
+  ];
+  for (const cat of photoCategories) {
+    await prisma.photoCategory.upsert({
+      where: { slug: cat.slug },
+      update: { name: cat.name, order: cat.order },
+      create: cat,
+    });
+  }
+  console.log('✅ Photo: категории созданы');
+
+  // Promotions (раздел «Акции»)
+  const promotions = [
+    {
+      title: 'Скидка 15% на входные двери',
+      slug: 'discount-entrance-doors',
+      imageUrl: '/images/akcii.jpg',
+      description:
+        'Специальное предложение на входные двери до конца месяца. Скидка 15% при заказе от 2 дверей.',
+      sortOrder: 0,
+    },
+    {
+      title: 'Бесплатный замер натяжных потолков',
+      slug: 'free-ceiling-measurement',
+      imageUrl: '/images/akcii1.jpg',
+      description:
+        'Закажите натяжные потолки и получите бесплатный замер. Акция действует при заказе от 20 м².',
+      sortOrder: 1,
+    },
+  ];
+  for (const p of promotions) {
+    await prisma.promotion.upsert({
+      where: { slug: p.slug },
+      update: { title: p.title, imageUrl: p.imageUrl, description: p.description, sortOrder: p.sortOrder },
+      create: { ...p, isActive: true },
+    });
+  }
+  console.log('✅ Promotions: акции созданы');
 
   console.log('🎉 Seeding completed!');
 }

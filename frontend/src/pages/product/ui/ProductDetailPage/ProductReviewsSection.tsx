@@ -149,6 +149,12 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
                   {'☆'.repeat(5 - r.rating)}
                 </div>
                 {r.comment && <p className={styles.reviewComment}>{r.comment}</p>}
+                {r.adminReply && (
+                  <div className={styles.adminReply}>
+                    <span className={styles.adminReplyLabel}>Ответ магазина:</span>
+                    <p className={styles.adminReplyContent}>{r.adminReply}</p>
+                  </div>
+                )}
               </article>
             ))}
             {total > page * 5 && (

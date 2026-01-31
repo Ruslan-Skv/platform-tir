@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useRouter } from 'next/navigation';
+
 import { useAuth } from '@/features/auth';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 
@@ -84,6 +86,7 @@ interface ProductsPageProps {
 }
 
 export function ProductsPage({ categoryId }: ProductsPageProps) {
+  const router = useRouter();
   const { getAuthHeaders } = useAuth();
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<CategoriesResponse[]>([]);
@@ -1255,7 +1258,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
             const editUrl = categoryId
               ? `/admin/catalog/products/${product.id}/edit?fromCategory=${categoryId}`
               : `/admin/catalog/products/${product.id}/edit`;
-            window.location.href = editUrl;
+            router.push(editUrl);
           }}
           title="Редактировать"
         >
@@ -1540,7 +1543,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
               const url = categoryId
                 ? `/admin/catalog/products/new?categoryId=${categoryId}`
                 : '/admin/catalog/products/new';
-              window.location.href = url;
+              router.push(url);
             }}
           >
             + Добавить товар
@@ -1743,7 +1746,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
           const editUrl = categoryId
             ? `/admin/catalog/products/${product.id}/edit?fromCategory=${categoryId}`
             : `/admin/catalog/products/${product.id}/edit`;
-          window.location.href = editUrl;
+          router.push(editUrl);
         }}
         selectable
         selectedIds={selectedIds}

@@ -1,0 +1,169 @@
+.page {
+  padding: 1.5rem;
+  max-width: 1200px;
+  color: #1f2937;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.headerActions {
+  display: flex;
+  gap: 1rem;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  color: #1f2937;
+}
+
+.createButton {
+  padding: 0.5rem 1rem;
+  background: rgb(59 130 246);
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+}
+
+.createButton:hover {
+  background: rgb(37 99 235);
+}
+
+.viewLink {
+  padding: 0.5rem 1rem;
+  color: rgb(59 130 246);
+  text-decoration: none;
+  font-size: 0.9375rem;
+}
+
+.viewLink:hover {
+  text-decoration: underline;
+}
+
+.message {
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.message.success {
+  background: rgb(34 197 94 / 20%);
+  color: rgb(34 197 94);
+}
+
+.message.error {
+  background: rgb(239 68 68 / 20%);
+  color: rgb(239 68 68);
+}
+
+.loading,
+.empty {
+  padding: 2rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.card {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.cardImage {
+  flex-shrink: 0;
+  width: 200px;
+  height: 140px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #f3f4f6;
+}
+
+.cardImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cardContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.cardTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+  color: #1f2937;
+}
+
+.cardDescription {
+  font-size: 0.9375rem;
+  color: #6b7280;
+  margin: 0 0 0.5rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cardSlug {
+  font-size: 0.8125rem;
+  color: #9ca3af;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.inactive {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: rgb(239 68 68 / 15%);
+  color: rgb(239 68 68);
+  font-size: 0.8125rem;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+}
+
+.cardActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.editLink {
+  color: rgb(59 130 246);
+  text-decoration: none;
+  font-size: 0.9375rem;
+}
+
+.editLink:hover {
+  text-decoration: underline;
+}
+
+.deleteButton {
+  padding: 0;
+  background: none;
+  border: none;
+  color: rgb(239 68 68);
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+.deleteButton:hover {
+  text-decoration: underline;
+}

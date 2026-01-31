@@ -263,7 +263,7 @@ export class BlogService {
     const { status, postId, page = 1, limit = 20 } = params || {};
     const skip = (page - 1) * limit;
 
-    const where: Prisma.CommentWhereInput = {};
+    const where: Prisma.CommentWhereInput = { parentId: null };
 
     if (status) {
       where.status = status as 'PENDING' | 'APPROVED' | 'REJECTED' | 'SPAM';
@@ -290,6 +290,18 @@ export class BlogService {
               firstName: true,
               lastName: true,
             },
+          },
+          replies: {
+            include: {
+              author: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
+            orderBy: { createdAt: 'asc' },
           },
         },
         skip,
@@ -332,6 +344,252 @@ export class BlogService {
   async removeComment(id: string) {
     return this.prisma.comment.delete({
       where: { id },
+    });
+  }
+
+  async replyToComment(commentId: string, content: string, authorId: string) {
+    const parent = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+      include: { post: true },
+    });
+    if (!parent) {
+      throw new NotFoundException('Комментарий не найден');
+    }
+    return this.prisma.comment.create({
+      data: {
+        postId: parent.postId,
+        content: content.trim(),
+        authorId,
+        parentId: commentId,
+        status: 'APPROVED',
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+  }
+
+  // Public API (published posts only)
+  async getPublishedPosts(params?: {
+    categorySlug?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const { categorySlug, search, page = 1, limit = 12 } = params || {};
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.BlogPostWhereInput = { status: 'PUBLISHED' };
+
+    if (categorySlug) {
+      where.category = { slug: categorySlug };
+    }
+
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { content: { contains: search, mode: 'insensitive' } },
+        { excerpt: { contains: search, mode: 'insensitive' } },
+        { tags: { has: search } },
+      ];
+    }
+
+    const [posts, total] = await Promise.all([
+      this.prisma.blogPost.findMany({
+        where,
+        include: {
+          author: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          category: true,
+        },
+        skip,
+        take: limit,
+        orderBy: { publishedAt: 'desc' },
+      }),
+      this.prisma.blogPost.count({ where }),
+    ]);
+
+    const postIds = posts.map((p) => p.id);
+    const likeCounts =
+      postIds.length > 0
+        ? await this.prisma.blogPostLike.groupBy({
+            by: ['postId'],
+            _count: true,
+            where: { postId: { in: postIds } },
+          })
+        : [];
+    const likeCountMap = Object.fromEntries(likeCounts.map((lc) => [lc.postId, lc._count]));
+
+    const postsWithLikeCount = posts.map((p) => ({
+      ...p,
+      likeCount: likeCountMap[p.id] ?? 0,
+    }));
+
+    return {
+      data: postsWithLikeCount,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async getPublishedPostBySlug(slug: string, likerId?: string) {
+    const post = await this.prisma.blogPost.findFirst({
+      where: { slug, status: 'PUBLISHED' },
+      include: {
+        author: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        category: true,
+        comments: {
+          where: { status: 'APPROVED', parentId: null },
+          include: {
+            author: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+            replies: {
+              where: { status: 'APPROVED' },
+              include: {
+                author: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                  },
+                },
+              },
+              orderBy: { createdAt: 'asc' },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+
+    if (!post) {
+      throw new NotFoundException(`Post with slug "${slug}" not found`);
+    }
+
+    // Increment view count
+    await this.prisma.blogPost.update({
+      where: { id: post.id },
+      data: { viewCount: { increment: 1 } },
+    });
+
+    let isLiked = false;
+    if (likerId) {
+      const like = await this.prisma.blogPostLike.findUnique({
+        where: {
+          postId_likerId: { postId: post.id, likerId },
+        },
+      });
+      isLiked = !!like;
+    }
+
+    const likeCount = await this.prisma.blogPostLike.count({
+      where: { postId: post.id },
+    });
+
+    const { comments, ...postData } = post;
+    return {
+      ...postData,
+      comments,
+      viewCount: post.viewCount + 1,
+      likeCount,
+      isLiked,
+    };
+  }
+
+  async toggleLike(postId: string, userId?: string, guestId?: string) {
+    const likerId = userId || (guestId ? `g_${guestId}` : null);
+    if (!likerId) {
+      throw new ConflictException('Требуется авторизация или guestId');
+    }
+
+    const post = await this.prisma.blogPost.findUnique({
+      where: { id: postId, status: 'PUBLISHED' },
+    });
+    if (!post) {
+      throw new NotFoundException('Пост не найден');
+    }
+
+    const existing = await this.prisma.blogPostLike.findUnique({
+      where: { postId_likerId: { postId, likerId } },
+    });
+
+    if (existing) {
+      await this.prisma.blogPostLike.delete({
+        where: { id: existing.id },
+      });
+      const count = await this.prisma.blogPostLike.count({ where: { postId } });
+      return { liked: false, likeCount: count };
+    } else {
+      await this.prisma.blogPostLike.create({
+        data: { postId, likerId },
+      });
+      const count = await this.prisma.blogPostLike.count({ where: { postId } });
+      return { liked: true, likeCount: count };
+    }
+  }
+
+  async createComment(
+    postId: string,
+    dto: { content: string; authorName?: string; authorEmail?: string; parentId?: string },
+    userId?: string,
+  ) {
+    const post = await this.prisma.blogPost.findUnique({
+      where: { id: postId, status: 'PUBLISHED' },
+    });
+    if (!post) {
+      throw new NotFoundException('Пост не найден');
+    }
+    if (!post.allowComments) {
+      throw new ConflictException('Комментарии отключены для этого поста');
+    }
+
+    return this.prisma.comment.create({
+      data: {
+        postId,
+        content: dto.content.trim(),
+        authorId: userId,
+        authorName: dto.authorName?.trim(),
+        authorEmail: dto.authorEmail?.trim(),
+        parentId: dto.parentId,
+        status: 'PENDING',
+      },
+    });
+  }
+
+  async getPublicCategories() {
+    return this.prisma.blogCategory.findMany({
+      include: {
+        _count: {
+          select: {
+            posts: true,
+          },
+        },
+      },
+      orderBy: { order: 'asc' },
     });
   }
 

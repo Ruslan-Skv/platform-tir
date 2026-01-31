@@ -104,3 +104,16 @@ export async function deleteReview(reviewId: string): Promise<void> {
   });
   if (!res.ok) throw new Error('Не удалось удалить отзыв');
 }
+
+export async function replyToReview(reviewId: string, adminReply: string): Promise<AdminReview> {
+  const res = await fetch(`${API_URL}/admin/reviews/${reviewId}/reply`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify({ adminReply }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось отправить ответ');
+  }
+  return res.json();
+}

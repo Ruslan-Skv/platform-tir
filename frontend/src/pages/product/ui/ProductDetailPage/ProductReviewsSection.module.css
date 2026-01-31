@@ -77,6 +77,29 @@
   color: #374151;
 }
 
+.adminReply {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: rgb(79 70 229 / 8%);
+  border-radius: 0.5rem;
+  border-left: 3px solid #4f46e5;
+}
+
+.adminReplyLabel {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4f46e5;
+  margin-bottom: 0.25rem;
+}
+
+.adminReplyContent {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #374151;
+}
+
 .loadMore {
   margin-top: 1rem;
   padding: 0.5rem 1rem;

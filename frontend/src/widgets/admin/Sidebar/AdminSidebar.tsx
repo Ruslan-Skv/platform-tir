@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 
 import styles from './AdminSidebar.module.css';
 
@@ -75,6 +75,8 @@ const baseNavItems: NavItem[] = [
       },
       { label: 'Страницы', href: '/admin/content/pages' },
       { label: 'Блог', href: '/admin/content/blog' },
+      { label: 'Акции', href: '/admin/content/promotions' },
+      { label: 'Фото', href: '/admin/content/photo' },
       { label: 'Комментарии', href: '/admin/content/comments' },
       { label: 'Футер', href: '/admin/content/footer' },
     ],
@@ -158,6 +160,7 @@ export function AdminSidebar({
   onResizeEnd,
 }: AdminSidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [categories, setCategories] = useState<CategoryTree[]>([]);
   const [isResizing, setIsResizing] = useState(false);
@@ -285,15 +288,27 @@ export function AdminSidebar({
     return pathname?.startsWith(href) ?? false;
   };
 
+  const fromCategory = searchParams.get('fromCategory');
+  const isProductEditPage = pathname?.match(/^\/admin\/catalog\/products\/[^/]+\/edit/);
+
+  const isPathActive = (href: string) => {
+    if (isProductEditPage && fromCategory) {
+      const categoryHref = `/admin/catalog/products/category/${fromCategory}`;
+      return href === categoryHref;
+    }
+    return pathname === href || (pathname?.startsWith(href + '/') ?? false);
+  };
+
   const isChildActive = (children: NavChild[] | undefined): boolean => {
     if (!children) return false;
     return children.some(
-      (child) => pathname === child.href || (child.children ? isChildActive(child.children) : false)
+      (child) =>
+        isPathActive(child.href) || (child.children ? isChildActive(child.children) : false)
     );
   };
 
   const isChildOrDescendantActive = (child: NavChild): boolean =>
-    pathname === child.href || (child.children ? isChildActive(child.children) : false);
+    isPathActive(child.href) || (child.children ? isChildActive(child.children) : false);
 
   return (
     <aside
@@ -373,7 +388,7 @@ export function AdminSidebar({
                                   key={nested.href}
                                   href={nested.href}
                                   className={`${styles.submenuLink} ${
-                                    pathname === nested.href ? styles.active : ''
+                                    isPathActive(nested.href) ? styles.active : ''
                                   }`}
                                 >
                                   {nested.label}
@@ -387,7 +402,7 @@ export function AdminSidebar({
                           key={child.label}
                           href={child.href}
                           className={`${styles.submenuLink} ${
-                            pathname === child.href ? styles.active : ''
+                            isPathActive(child.href) ? styles.active : ''
                           }`}
                         >
                           {child.label}
