@@ -108,23 +108,23 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
   // Функция для получения картинки в зависимости от темы
   const getImageForMenuItem = (itemName: string): string => {
     const imageMap: Record<string, { light: string; dark: string }> = {
-      'КАТАЛОГ ТОВАРОВ': {
+      Каталог: {
         light: '/images/menu/light/02.png',
         dark: '/images/menu/dark/02.png',
       },
-      'КАТАЛОГ УСЛУГ': {
+      'Каталог услуг': {
         light: '/images/menu/light/01.png',
         dark: '/images/menu/dark/01.png',
       },
-      АКЦИИ: {
+      Акции: {
         light: '/images/menu/light/07.png',
         dark: '/images/menu/dark/07.png',
       },
-      БЛОГ: {
+      Блог: {
         light: '/images/menu/light/03.png',
         dark: '/images/menu/dark/03.png',
       },
-      ФОТО: {
+      Фото: {
         light: '/images/menu/light/04.png',
         dark: '/images/menu/dark/04.png',
       },
@@ -201,8 +201,8 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
   const getActiveSubmenu = () => {
     if (!activeMenuItem) return null;
 
-    // Для "КАТАЛОГ ТОВАРОВ" используем динамические категории
-    if (activeMenuItem === 'КАТАЛОГ ТОВАРОВ' && navigationCategories.length > 0) {
+    // Для "Каталог" используем динамические категории
+    if (activeMenuItem === 'Каталог' && navigationCategories.length > 0) {
       return {
         category: 'products',
         items: navigationCategories.map((cat) => ({

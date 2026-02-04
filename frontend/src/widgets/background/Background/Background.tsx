@@ -9,10 +9,10 @@ import styles from './Background.module.css';
 export const Background: React.FC = () => {
   const { isDarkTheme } = useTheme();
 
-  // Для избежания mismatch, используем только темную тему на сервере
-  // На клиенте тема определится корректно после гидрации
-  // const backgroundImage = isDarkTheme ? "url('/images/dark-fon.jpg')" : "url('/images/fon.jpg')";
-  const backgroundImage = "url('/images/dark-fon.jpg')";
+  // Для светлой темы — отдельная картинка, для тёмной — dark-fon.jpg
+  const backgroundImage = isDarkTheme
+    ? "url('/images/dark-fon.jpg')"
+    : "url('/images/light-fon.png')";
 
   return (
     <div

@@ -9,10 +9,19 @@ import styles from './HeroSectionPage.module.css';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 const UPLOADS_BASE = API_URL.replace(/\/api\/v1\/?$/, '');
 
+export type HeroSlideShowMode = 'auto' | 'manual' | 'static';
+
+const HERO_SLIDE_SHOW_MODES: { value: HeroSlideShowMode; label: string }[] = [
+  { value: 'auto', label: 'Автоматическая смена по таймеру' },
+  { value: 'manual', label: 'Только вручную (точки под слайдами)' },
+  { value: 'static', label: 'Один слайд без переключения' },
+];
+
 interface HeroBlock {
   titleMain: string;
   titleAccent: string;
   subtitle: string;
+  slideShowMode?: HeroSlideShowMode;
 }
 
 interface HeroSlide {
@@ -113,7 +122,7 @@ export function HeroSectionPage() {
     }
   };
 
-  const handleBlockChange = (field: keyof HeroBlock, value: string) => {
+  const handleBlockChange = (field: keyof HeroBlock, value: string | HeroSlideShowMode) => {
     if (!data) return;
     setData({
       ...data,
@@ -350,6 +359,27 @@ export function HeroSectionPage() {
       {/* Слайд-шоу */}
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Слайд-шоу (фото готовых работ)</h2>
+        <div className={styles.formGroup}>
+          <label>Режим слайд-шоу</label>
+          <select
+            value={data.block.slideShowMode ?? 'auto'}
+            onChange={(e) =>
+              handleBlockChange('slideShowMode', e.target.value as HeroSlideShowMode)
+            }
+            className={styles.input}
+          >
+            {HERO_SLIDE_SHOW_MODES.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <p className={styles.hint}>
+            <strong>Авто</strong> — слайды меняются по таймеру. <strong>Вручную</strong> —
+            переключение только по клику на точки. <strong>Один слайд</strong> — показывается только
+            первый слайд без карусели.
+          </p>
+        </div>
         <p className={styles.hint}>
           Загружайте фотографии готовых работ. Они будут отображаться в режиме слайд-шоу вместо
           заглушки.

@@ -1,7 +1,6 @@
 import {
   BoltIcon,
   BuildingOfficeIcon,
-  ChevronDownIcon,
   CubeIcon,
   CubeTransparentIcon,
   DocumentTextIcon,
@@ -71,9 +70,9 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
   const hasDropdown = item.hasDropdown;
   const menuData = hasDropdown ? dropdownMenus[item.name] : null;
 
-  // Для "КАТАЛОГ ТОВАРОВ" используем динамические категории если они есть
+  // Для "Каталог" используем динамические категории если они есть
   const useDynamicMenu =
-    item.name === 'КАТАЛОГ ТОВАРОВ' && dynamicCategories && dynamicCategories.length > 0;
+    item.name === 'Каталог' && dynamicCategories && dynamicCategories.length > 0;
   const navItemRef = React.useRef<HTMLDivElement>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const [alignment, setAlignment] = React.useState<'left' | 'right' | 'center'>('left');
@@ -81,12 +80,12 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
   // Определяем тип выравнивания для выпадающего меню
   React.useEffect(() => {
     if (isActive) {
-      // Для "БЛОГ" и "ФОТО" - всегда выравнивание по правому краю
-      if (item.name === 'БЛОГ' || item.name === 'ФОТО') {
+      // Для "Блог" и "Фото" - всегда выравнивание по правому краю
+      if (item.name === 'Блог' || item.name === 'Фото') {
         setAlignment('right');
       }
-      // Для "АКЦИИ" - выравнивание по центру (с проверкой границ)
-      else if (item.name === 'АКЦИИ') {
+      // Для "Акции" - выравнивание по центру (с проверкой границ)
+      else if (item.name === 'Акции') {
         if (navItemRef.current && dropdownRef.current) {
           const updatePosition = () => {
             if (!navItemRef.current || !dropdownRef.current) return;
@@ -222,11 +221,6 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
     >
       <Button variant="link" size="sm" onClick={handleClick} className={styles.navButton}>
         <span className={styles.navText}>{item.name}</span>
-        {hasDropdown && (
-          <ChevronDownIcon
-            className={`${styles.chevron} ${isActive ? styles.chevronActive : ''}`}
-          />
-        )}
       </Button>
 
       {hasDropdown && isActive && (useDynamicMenu || menuData) && (
@@ -244,7 +238,7 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
         >
           <div className={styles.dropdownContent}>
             <div className={styles.dropdownGrid}>
-              {/* Динамические категории для "КАТАЛОГ ТОВАРОВ" */}
+              {/* Динамические категории для "Каталог" */}
               {useDynamicMenu &&
                 dynamicCategories!.map((category) => (
                   <div key={category.slug} className={styles.dropdownSection}>

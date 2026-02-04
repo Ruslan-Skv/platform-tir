@@ -23,8 +23,8 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   if (mobile) {
     return (
       <div className={styles.mobileButtons}>
-        <ActionButton variant="measurement" onClick={measurementModal.open} mobile />
         <ActionButton variant="callback" onClick={callbackModal.open} mobile />
+        <ActionButton variant="measurement" onClick={measurementModal.open} mobile />
       </div>
     );
   }
@@ -32,8 +32,8 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   return (
     <>
       <div className={styles.desktopButtons}>
-        <ActionButton variant="measurement" onClick={measurementModal.open} />
         <ActionButton variant="callback" onClick={callbackModal.open} />
+        <ActionButton variant="measurement" onClick={measurementModal.open} />
       </div>
 
       <div className={styles.mobileMenuButton}>

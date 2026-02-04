@@ -30,18 +30,20 @@ export const DesktopNavigation: React.FC<DesktopNavigationProps> = ({ onNavigati
     <div className={styles.desktopNavigation} ref={dropdownRef}>
       <div className={styles.container}>
         <div className={styles.navContainer}>
-          {navigation.map((item) => (
-            <NavigationItem
-              key={item.name}
-              item={item}
-              isActive={activeDropdown === item.name}
-              onMouseEnter={() => item.hasDropdown && openDropdown(item.name)}
-              onMouseLeave={closeDropdown}
-              onDropdownMouseEnter={handleDropdownMouseEnter}
-              onDropdownMouseLeave={handleDropdownMouseLeave}
-              onClick={onNavigationClick}
-              dynamicCategories={navigationCategories}
-            />
+          {navigation.map((item, index) => (
+            <React.Fragment key={item.name}>
+              {index > 0 && <div className={styles.separator} aria-hidden />}
+              <NavigationItem
+                item={item}
+                isActive={activeDropdown === item.name}
+                onMouseEnter={() => item.hasDropdown && openDropdown(item.name)}
+                onMouseLeave={closeDropdown}
+                onDropdownMouseEnter={handleDropdownMouseEnter}
+                onDropdownMouseLeave={handleDropdownMouseLeave}
+                onClick={onNavigationClick}
+                dynamicCategories={navigationCategories}
+              />
+            </React.Fragment>
           ))}
         </div>
       </div>

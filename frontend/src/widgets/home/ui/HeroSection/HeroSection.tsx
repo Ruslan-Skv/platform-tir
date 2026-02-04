@@ -8,8 +8,15 @@ import styles from './HeroSection.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
+export type HeroSlideShowMode = 'auto' | 'manual' | 'static';
+
 interface HeroData {
-  block: { titleMain: string; titleAccent: string; subtitle: string };
+  block: {
+    titleMain: string;
+    titleAccent: string;
+    subtitle: string;
+    slideShowMode?: HeroSlideShowMode;
+  };
   slides: { id: string; imageUrl: string; sortOrder: number }[];
   features: { id: string; icon: string; title: string; sortOrder: number }[];
 }
@@ -20,6 +27,7 @@ const DEFAULT_DATA: HeroData = {
     titleAccent: 'в Мурманске',
     subtitle:
       'Мебель на заказ, ремонт под ключ, двери входные и межкомнатные, натяжные потолки, жалюзи, мягкая мебель, кровати, матрасы .....',
+    slideShowMode: 'auto',
   },
   slides: [],
   features: [
@@ -40,9 +48,13 @@ export const HeroSection: React.FC = () => {
   const [noTransition, setNoTransition] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(0);
 
+  const mode: HeroSlideShowMode = data.block.slideShowMode ?? 'auto';
   const count = data.slides.length;
-  const displaySlides = count > 1 ? [...data.slides, data.slides[0]] : data.slides;
+  const isStatic = mode === 'static';
+  const isCarousel = count > 1 && !isStatic;
+  const displaySlides = isCarousel ? [...data.slides, data.slides[0]] : data.slides;
   const displayCount = displaySlides.length;
+  const showDots = count > 1 && (mode === 'auto' || mode === 'manual');
 
   useEffect(() => {
     fetch(`${API_URL}/home/hero`)
@@ -67,15 +79,15 @@ export const HeroSection: React.FC = () => {
   }, [data.slides.length]);
 
   const goNext = useCallback(() => {
-    if (count <= 1) return;
+    if (count <= 1 || isStatic) return;
     setSlideIndex((i) => (i + 1) % displayCount);
-  }, [count, displayCount]);
+  }, [count, displayCount, isStatic]);
 
   useEffect(() => {
-    if (count <= 1) return;
+    if (count <= 1 || mode !== 'auto' || isStatic) return;
     const timer = setInterval(goNext, SLIDE_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [count, goNext]);
+  }, [count, mode, isStatic, goNext]);
 
   const handleTransitionEnd = useCallback(() => {
     if (slideIndex === count) {
@@ -100,11 +112,13 @@ export const HeroSection: React.FC = () => {
   const hasSize = viewportWidth > 0;
   const slideWidthPx = hasSize ? viewportWidth * SLIDE_WIDTH_RATIO : 300;
   const slideStep = slideWidthPx - SLIDE_OVERLAP_PX;
-  const trackWidth =
-    count > 1 ? `${displayCount * slideWidthPx - (displayCount - 1) * SLIDE_OVERLAP_PX}px` : '100%';
-  const slideWidth = count > 1 ? `${slideWidthPx}px` : '100%';
+  const trackWidth = isCarousel
+    ? `${displayCount * slideWidthPx - (displayCount - 1) * SLIDE_OVERLAP_PX}px`
+    : '100%';
+  const slideWidth = isCarousel ? `${slideWidthPx}px` : '100%';
   const centerOffset = hasSize ? viewportWidth * 0.5 - slideWidthPx * 0.5 : 0;
-  const translatePx = count > 1 ? centerOffset - slideIndex * slideStep : 0;
+  const effectiveIndex = isStatic ? 0 : slideIndex;
+  const translatePx = isCarousel ? centerOffset - effectiveIndex * slideStep : 0;
   const translateOffset = `translateX(${translatePx}px)`;
 
   return (
@@ -170,17 +184,31 @@ export const HeroSection: React.FC = () => {
                 >
                   {displaySlides.map((slide, i) => (
                     <div
-                      key={i < count ? slide.id : `${slide.id}-clone`}
+                      key={isCarousel && i === count ? `${slide.id}-clone` : slide.id}
                       className={styles.slideshowSlide}
                       style={{
                         backgroundImage: `url(${imageUrl(slide.imageUrl)})`,
                         flex: `0 0 ${slideWidth}`,
                         marginRight:
-                          count > 1 && i < displayCount - 1 ? `-${SLIDE_OVERLAP_PX}px` : 0,
+                          isCarousel && i < displayCount - 1 ? `-${SLIDE_OVERLAP_PX}px` : 0,
                       }}
                     />
                   ))}
                 </div>
+                {showDots && (
+                  <div className={styles.slideDots} aria-label="Выбор слайда">
+                    {data.slides.map((_, i) => (
+                      <button
+                        key={data.slides[i].id}
+                        type="button"
+                        className={`${styles.slideDot} ${effectiveIndex % count === i ? styles.slideDotActive : ''}`}
+                        aria-label={`Слайд ${i + 1}`}
+                        aria-pressed={effectiveIndex % count === i}
+                        onClick={() => mode === 'manual' && setSlideIndex(i)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               <div className={styles.imagePlaceholder}>

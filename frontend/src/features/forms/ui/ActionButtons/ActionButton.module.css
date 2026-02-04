@@ -1,4 +1,5 @@
 .button {
+  text-transform: none; /* первая буква заглавная, остальные прописные */
   white-space: nowrap;
   width: 100%;
 }
@@ -18,17 +19,19 @@
 
 .button.measurement,
 .button.outline.measurement {
-  background-color: #ffffff80 !important;
+  background-color: #d90652 !important;
   border: none !important;
-  color: #000;
-  transition: color 0.3s ease;
+  color: #fff !important;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 .button.measurement:hover:not(.disabled),
 .button.outline.measurement:hover:not(.disabled) {
-  background-color: #ffffff80 !important;
+  background-color: #b80546 !important;
   box-shadow: none;
-  color: #d90652;
+  color: #fff !important;
 }
 
 /* Отключаем glow эффект для measurement */
@@ -40,16 +43,19 @@
 .button.callback,
 .button.outline.callback {
   background-color: #ffffff80 !important;
-  border: none !important;
-  color: #000;
-  transition: color 0.3s ease;
+  border: 1px solid rgb(81 81 81 / 25%) !important;
+  color: #515151 !important;
+  transition:
+    border-color 0.3s ease,
+    color 0.3s ease;
 }
 
 .button.callback:hover:not(.disabled),
 .button.outline.callback:hover:not(.disabled) {
   background-color: #ffffff80 !important;
+  border-color: rgb(81 81 81 / 25%) !important;
   box-shadow: none;
-  color: #d90652;
+  color: #515151 !important;
 }
 
 /* Отключаем glow эффект для callback */
@@ -58,53 +64,61 @@
   display: none;
 }
 
-/* Светлая тема - черный текст */
+/* Светлая тема */
 html[data-theme='light'] .button.measurement,
-html[data-theme='light'] .button.outline.measurement,
+html[data-theme='light'] .button.outline.measurement {
+  background-color: #d90652 !important;
+  border: none !important;
+  color: #fff !important;
+}
+
 html[data-theme='light'] .button.callback,
 html[data-theme='light'] .button.outline.callback {
   background-color: #ffffff80 !important;
-  border: none !important;
-  color: #000;
+  border: 1px solid rgb(81 81 81 / 25%) !important;
+  color: #515151 !important;
 }
 
-/* Темная тема */
+/* Темная тема - кнопка "Записаться на замер" */
 html[data-theme='dark'] .button.measurement,
 html[data-theme='dark'] .button.outline.measurement {
-  background-color: transparent !important;
-  border-color: #34d399;
-  color: #34d399;
+  background-color: #d90652 !important;
+  border: none !important;
+  color: #fff !important;
 }
 
 html[data-theme='dark'] .button.measurement:hover:not(.disabled),
 html[data-theme='dark'] .button.outline.measurement:hover:not(.disabled) {
-  background-color: transparent !important;
+  background-color: #b80546 !important;
   box-shadow: none;
-  color: #d90652;
+  color: #fff !important;
 }
 
 html[data-theme='dark'] .button.callback,
 html[data-theme='dark'] .button.outline.callback {
   background-color: transparent !important;
-  border-color: #60a5fa;
-  color: #60a5fa;
+  border: 1px solid rgb(81 81 81 / 25%) !important;
+  color: #515151 !important;
 }
 
 html[data-theme='dark'] .button.callback:hover:not(.disabled),
 html[data-theme='dark'] .button.outline.callback:hover:not(.disabled) {
   background-color: transparent !important;
+  border-color: rgb(81 81 81 / 25%) !important;
   box-shadow: none;
-  color: #d90652;
+  color: #515151 !important;
 }
 
 @media (width <= 480px) {
   .button.measurement,
   .button.outline.measurement {
-    background-color: #d90652;
+    background-color: #d90652 !important;
+    color: #fff !important;
   }
 
   html[data-theme='dark'] .button.measurement,
   html[data-theme='dark'] .button.outline.measurement {
-    background-color: transparent;
+    background-color: #d90652 !important;
+    color: #fff !important;
   }
 }

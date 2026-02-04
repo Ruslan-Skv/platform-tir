@@ -20,13 +20,13 @@
   transition: all 0.5s ease-in-out;
 }
 
-/* Светлая тема - осветляем темную картинку */
+/* Светлая тема — отдельная картинка light-fon.png, без оверлея */
 .background[data-theme='light'] {
-  filter: brightness(1.8) contrast(0.8) saturate(0.7);
+  filter: brightness(1) contrast(1) saturate(1);
 }
 
 .background[data-theme='light']::before {
-  background: rgb(255 255 255 / 30%);
+  background: rgb(255 255 255 / 0%);
 }
 
 /* Тёмная тема - оригинальная картинка */

@@ -163,6 +163,7 @@
   position: relative;
   text-align: left;
   text-shadow: 0 1px 2px rgb(0 0 0 / 60%);
+  text-transform: none;
   vertical-align: top;
   width: 100%;
 }
@@ -172,6 +173,7 @@
   font-size: 0.9rem;
   font-weight: 600;
   line-height: 1.2;
+  text-transform: none;
 }
 
 .buttonArrow {
@@ -198,6 +200,7 @@
   padding: 1rem 1.5rem;
   text-align: left;
   text-decoration: none;
+  text-transform: none;
   transition: background-color 0.2s;
   width: 100%;
 }
@@ -235,6 +238,7 @@
   gap: 0.5rem;
   margin-bottom: 1rem;
   padding: 0.5rem;
+  text-transform: none;
 }
 
 .backIcon {
@@ -299,6 +303,7 @@ html[data-theme='dark'] .subMenuItem:hover {
   font-size: 0.9rem;
   color: #6b7280;
   text-decoration: none;
+  text-transform: none;
   border-bottom: 1px solid #f3f4f6;
   transition: all 0.2s;
 }

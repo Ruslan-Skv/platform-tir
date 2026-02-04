@@ -22,12 +22,12 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
 }) => {
   const breadcrumbs: BreadcrumbItem[] = [{ label: 'Главная', href: '/' }];
 
-  // Если текущая категория - "Каталог товаров", не добавляем её дважды
-  const isAllProducts = categoryName === 'Каталог товаров';
+  // Если текущая категория - "Каталог", не добавляем её дважды
+  const isAllProducts = categoryName === 'Каталог';
 
   if (!isAllProducts) {
-    // Добавляем "Каталог товаров" как промежуточную ссылку
-    breadcrumbs.push({ label: 'Каталог товаров', href: '/catalog/products' });
+    // Добавляем "Каталог" как промежуточную ссылку
+    breadcrumbs.push({ label: 'Каталог', href: '/catalog/products' });
   }
 
   // Если есть родительская категория, добавляем её

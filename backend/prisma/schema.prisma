@@ -102,11 +102,12 @@ model HomeDirectionImage {
 }
 
 model HeroBlock {
-  id          String   @id @default("main")
-  titleMain   String   @default("Создаем интерьеры мечты")
-  titleAccent String   @default("в Мурманске")
-  subtitle    String   @default("Мебель на заказ, ремонт под ключ, двери входные и межкомнатные, натяжные потолки, жалюзи, мягкая мебель, кровати, матрасы .....") @db.Text
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default("main")
+  titleMain     String   @default("Создаем интерьеры мечты")
+  titleAccent   String   @default("в Мурманске")
+  subtitle      String   @default("Мебель на заказ, ремонт под ключ, двери входные и межкомнатные, натяжные потолки, жалюзи, мягкая мебель, кровати, матрасы .....") @db.Text
+  slideShowMode String   @default("auto") // auto | manual | static
+  updatedAt     DateTime @updatedAt
 
   @@map("hero_block")
 }

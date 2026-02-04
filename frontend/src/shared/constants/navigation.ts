@@ -2,31 +2,31 @@ import type { DropdownItem, DropdownMenus, NavigationItem } from '@/shared/types
 
 export const navigation: NavigationItem[] = [
   {
-    name: 'КАТАЛОГ ТОВАРОВ',
+    name: 'Каталог',
     href: '/catalog/products',
     hasDropdown: true,
     category: 'products',
   },
   {
-    name: 'КАТАЛОГ УСЛУГ',
+    name: 'Каталог услуг',
     href: '/catalog/services',
     hasDropdown: true,
     category: 'services',
   },
   {
-    name: 'АКЦИИ',
+    name: 'Акции',
     href: '/promotions',
     hasDropdown: true,
     category: 'promotions',
   },
   {
-    name: 'БЛОГ',
+    name: 'Блог',
     href: '/blog',
     hasDropdown: true,
     category: 'blog',
   },
   {
-    name: 'ФОТО',
+    name: 'Фото',
     href: '/photo',
     hasDropdown: true,
     category: 'photo',
@@ -34,7 +34,7 @@ export const navigation: NavigationItem[] = [
 ];
 
 export const dropdownMenus: DropdownMenus = {
-  'КАТАЛОГ ТОВАРОВ': {
+  Каталог: {
     category: 'products',
     image: '../images/catalog-products.jpg',
     items: [
@@ -124,7 +124,7 @@ export const dropdownMenus: DropdownMenus = {
       },
     ],
   },
-  'КАТАЛОГ УСЛУГ': {
+  'Каталог услуг': {
     category: 'services',
     image: '../images/catalog-services.jpg',
     items: [
@@ -190,7 +190,7 @@ export const dropdownMenus: DropdownMenus = {
       },
     ],
   },
-  АКЦИИ: {
+  Акции: {
     category: 'promotions',
     image: '../images/promotions.jpg',
     items: [
@@ -202,7 +202,7 @@ export const dropdownMenus: DropdownMenus = {
       },
     ],
   },
-  БЛОГ: {
+  Блог: {
     category: 'blog',
     image: '../images/blog.jpg',
     items: [
@@ -214,7 +214,7 @@ export const dropdownMenus: DropdownMenus = {
       },
     ],
   },
-  ФОТО: {
+  Фото: {
     category: 'photo',
     image: '../images/remont-kvartir.jpg',
     items: [

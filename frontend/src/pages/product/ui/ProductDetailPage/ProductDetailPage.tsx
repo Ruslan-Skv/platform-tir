@@ -373,7 +373,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
   // Формируем хлебные крошки
   const breadcrumbs = [
     { label: 'Главная', href: '/' },
-    { label: 'Каталог товаров', href: '/catalog/products' },
+    { label: 'Каталог', href: '/catalog/products' },
   ];
 
   if (product.category.parent) {

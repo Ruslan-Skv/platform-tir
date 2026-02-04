@@ -1,7 +1,7 @@
 /* ===== CSS ПЕРЕМЕННЫЕ ===== */
 :root {
   /* Брейкпойнты (для справки, CSS не поддерживает переменные в media queries) */
-  /* --breakpoint-desktop: 1440px */
+  /* --breakpoint-desktop: 1280px */
   /* --breakpoint-laptop: 1280px */
   /* --breakpoint-tablet-landscape: 1024px */
   /* --breakpoint-tablet: 768px */
@@ -9,7 +9,7 @@
   /* --breakpoint-mobile-small: 320px */
 
   /* Максимальная ширина контейнера */
-  --container-max-width: 1440px;
+  --container-max-width: 1280px;
   --container-padding: 1rem;
 }
 
@@ -261,7 +261,7 @@ button {
 /* ===== КОНТЕЙНЕР ===== */
 .container {
   width: 100%;
-  max-width: var(--container-max-width, 1440px);
+  max-width: var(--container-max-width, 1280px);
   margin: 0 auto;
   padding: 0 var(--container-padding, 1rem);
 }

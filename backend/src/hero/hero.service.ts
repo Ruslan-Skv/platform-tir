@@ -5,8 +5,15 @@ import * as fs from 'fs';
 
 const UPLOADS_DIR = path.join(process.cwd(), 'uploads', 'hero');
 
+export type HeroSlideShowMode = 'auto' | 'manual' | 'static';
+
 export interface HeroData {
-  block: { titleMain: string; titleAccent: string; subtitle: string };
+  block: {
+    titleMain: string;
+    titleAccent: string;
+    subtitle: string;
+    slideShowMode: HeroSlideShowMode;
+  };
   slides: { id: string; imageUrl: string; sortOrder: number }[];
   features: { id: string; icon: string; title: string; sortOrder: number }[];
 }
@@ -24,18 +31,24 @@ export class HeroService {
 
     const prefix = baseUrl ? baseUrl.replace(/\/$/, '') : '';
 
+    const rawMode = block?.slideShowMode;
+    const slideShowMode: HeroSlideShowMode =
+      rawMode === 'manual' || rawMode === 'static' ? rawMode : 'auto';
+
     return {
       block: block
         ? {
             titleMain: block.titleMain,
             titleAccent: block.titleAccent,
             subtitle: block.subtitle,
+            slideShowMode,
           }
         : {
             titleMain: 'Создаем интерьеры мечты',
             titleAccent: 'в Мурманске',
             subtitle:
               'Мебель на заказ, ремонт под ключ, двери входные и межкомнатные, натяжные потолки, жалюзи, мягкая мебель, кровати, матрасы .....',
+            slideShowMode: 'auto' as HeroSlideShowMode,
           },
       slides: slides.map((s) => ({
         id: s.id,
@@ -56,7 +69,12 @@ export class HeroService {
     };
   }
 
-  async updateBlock(data: { titleMain?: string; titleAccent?: string; subtitle?: string }) {
+  async updateBlock(data: {
+    titleMain?: string;
+    titleAccent?: string;
+    subtitle?: string;
+    slideShowMode?: HeroSlideShowMode;
+  }) {
     return this.prisma.heroBlock.upsert({
       where: { id: 'main' },
       create: {
@@ -64,11 +82,13 @@ export class HeroService {
         titleMain: data.titleMain ?? 'Создаем интерьеры мечты',
         titleAccent: data.titleAccent ?? 'в Мурманске',
         subtitle: data.subtitle ?? '',
+        slideShowMode: data.slideShowMode ?? 'auto',
       },
       update: {
         ...(data.titleMain !== undefined && { titleMain: data.titleMain }),
         ...(data.titleAccent !== undefined && { titleAccent: data.titleAccent }),
         ...(data.subtitle !== undefined && { subtitle: data.subtitle }),
+        ...(data.slideShowMode !== undefined && { slideShowMode: data.slideShowMode }),
       },
     });
   }
