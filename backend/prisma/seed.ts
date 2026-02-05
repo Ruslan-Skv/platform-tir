@@ -435,6 +435,50 @@ async function main() {
   console.log('✅ Footer seeded');
 
   // ============================================
+  // МЕНЮ НАВИГАЦИИ (кнопки в шапке сайта)
+  // Добавляем отсутствующие пункты по имени; у существующих обновляем ссылку и категорию.
+  // ============================================
+  const defaultNavItems = [
+    { name: 'Каталог', href: '/catalog/products', hasDropdown: true, category: 'products' },
+    { name: 'Каталог услуг', href: '/catalog/services', hasDropdown: true, category: 'services' },
+    { name: 'Акции', href: '/promotions', hasDropdown: true, category: 'promotions' },
+    { name: 'Блог', href: '/blog', hasDropdown: true, category: 'blog' },
+    { name: 'Фото', href: '/photo', hasDropdown: true, category: 'photo' },
+  ];
+  const existingNav = await prisma.navigationItem.findMany({ orderBy: { sortOrder: 'asc' } });
+  const byName = new Map(existingNav.map((n) => [n.name, n]));
+  let added = 0;
+  for (let i = 0; i < defaultNavItems.length; i++) {
+    const item = defaultNavItems[i];
+    const existing = byName.get(item.name);
+    if (existing) {
+      await prisma.navigationItem.update({
+        where: { id: existing.id },
+        data: { href: item.href, hasDropdown: item.hasDropdown, category: item.category },
+      });
+      continue;
+    }
+    const nextOrder = existingNav.length + added;
+    await prisma.navigationItem.create({
+      data: {
+        name: item.name,
+        href: item.href,
+        hasDropdown: item.hasDropdown,
+        category: item.category,
+        sortOrder: nextOrder,
+      },
+    });
+    added++;
+  }
+  if (added > 0) {
+    console.log(`✅ Navigation: добавлено пунктов меню: ${added}`);
+  }
+  const totalNav = await prisma.navigationItem.count();
+  if (totalNav > 0) {
+    console.log(`✅ Navigation: всего пунктов в меню: ${totalNav}`);
+  }
+
+  // ============================================
   // БЛОГ: категория и тестовая статья
   // ============================================
 

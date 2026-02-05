@@ -1,25 +1,9 @@
-.contact {
-  color: #374151;
-  font-family: play, oswald, arial, 'great vibes', Georgia, 'Times New Roman', Times, serif;
-  font-size: 1.8rem;
-  font-weight: 500;
-  transition: color 0.3s ease;
-}
-
-.contact:hover {
-  color: #d90652;
-}
-
-.contactMobile .contact {
-  display: flex;
-  font-size: 0.95rem;
-  font-weight: 500;
-  justify-content: center;
-  padding: 0 15px 0 0;
-}
-
 .topBar {
   background: #ffffff;
+}
+
+html[data-theme='dark'] .topBar {
+  background: #171717;
 }
 
 .container {
@@ -44,16 +28,56 @@
   }
 }
 
-.desktopContact {
-  display: none;
-  margin-left: 50px;
-}
-
 .utilities {
   align-items: center;
   display: flex;
   gap: 0.1rem;
   margin-left: auto;
+}
+
+/* Поиск — слева от иконки «Сравнить», скругление как у кнопок «Заказать обратный звонок» */
+.searchForm {
+  display: flex;
+  align-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #f9fafb;
+  margin-right: 0.5rem;
+}
+
+.searchInput {
+  width: 140px;
+  padding: 4px 8px 4px 10px;
+  border: none;
+  background: transparent;
+  color: #111827;
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: #6b7280;
+}
+
+.searchSubmit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border: none;
+  background: transparent;
+  color: #374151;
+  cursor: pointer;
+}
+
+.searchSubmit:hover {
+  color: #d90652;
+}
+
+.searchIcon {
+  height: 1rem;
+  width: 1rem;
 }
 
 .utilityButton {
@@ -76,6 +100,17 @@
   height: 1rem;
   margin-right: 0.25rem;
   width: 1rem;
+}
+
+/* Иконка «Сравнить» (⚖) — чуть светлее, чтобы визуально совпадать с контурными Heroicons */
+.iconCompare {
+  font-size: 1rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #4b5563;
+  font-weight: 400;
 }
 
 .profileAvatar,
@@ -152,20 +187,16 @@
 }
 
 /* Темная тема для TopBar */
-html[data-theme='dark'] .contact {
-  color: #d1d5db;
-}
-
-html[data-theme='dark'] .contact:hover {
-  color: #ec4899;
-}
-
 html[data-theme='dark'] .utilityButton {
   color: #d1d5db;
 }
 
 html[data-theme='dark'] .utilityButton:hover {
   color: #ec4899;
+}
+
+html[data-theme='dark'] .iconCompare {
+  color: #9ca3af;
 }
 
 html[data-theme='dark'] .mobileUtilityButton {
@@ -179,6 +210,27 @@ html[data-theme='dark'] .mobileUtilityButton:hover {
 html[data-theme='dark'] .profileInitials {
   background: #4b5563;
   color: #e5e7eb;
+}
+
+html[data-theme='dark'] .searchForm {
+  border-color: #4b5563;
+  background: rgb(31 41 55 / 50%);
+}
+
+html[data-theme='dark'] .searchInput {
+  color: #e5e7eb;
+}
+
+html[data-theme='dark'] .searchInput::placeholder {
+  color: #9ca3af;
+}
+
+html[data-theme='dark'] .searchSubmit {
+  color: #d1d5db;
+}
+
+html[data-theme='dark'] .searchSubmit:hover {
+  color: #ec4899;
 }
 
 /* Мобильная адаптация для текста кнопок */
@@ -204,14 +256,6 @@ html[data-theme='dark'] .profileInitials {
 }
 
 @media (width >= 950px) {
-  .contactMobile {
-    display: none;
-  }
-
-  .desktopContact {
-    display: flex;
-  }
-
   .mobileUtilityButton {
     display: none;
   }

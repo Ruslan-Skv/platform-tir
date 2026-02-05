@@ -19,7 +19,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
 }) => {
   const buttonText = {
     measurement: 'Записаться на замер',
-    callback: 'Заказать обратный звонок',
+    callback: 'Заказать звонок',
   }[variant];
 
   const buttonClass = `${styles.button} ${styles[variant]} ${mobile ? styles.mobile : ''} ${className}`;

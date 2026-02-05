@@ -20,9 +20,19 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
 }) => {
   const { measurementModal, callbackModal } = useFormContext();
 
+  const phoneBlock = (
+    <div className={styles.phoneBlock}>
+      <span className={styles.phoneLabel}>Наш телефон</span>
+      <a href="tel:+78152601270" className={styles.phone}>
+        8-(8152)-60-12-70
+      </a>
+    </div>
+  );
+
   if (mobile) {
     return (
       <div className={styles.mobileButtons}>
+        {phoneBlock}
         <ActionButton variant="callback" onClick={callbackModal.open} mobile />
         <ActionButton variant="measurement" onClick={measurementModal.open} mobile />
       </div>
@@ -32,6 +42,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   return (
     <>
       <div className={styles.desktopButtons}>
+        {phoneBlock}
         <ActionButton variant="callback" onClick={callbackModal.open} />
         <ActionButton variant="measurement" onClick={measurementModal.open} />
       </div>

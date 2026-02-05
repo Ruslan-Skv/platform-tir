@@ -96,17 +96,17 @@ html[data-theme='dark'] .button.outline.measurement:hover:not(.disabled) {
 
 html[data-theme='dark'] .button.callback,
 html[data-theme='dark'] .button.outline.callback {
-  background-color: transparent !important;
-  border: 1px solid rgb(81 81 81 / 25%) !important;
-  color: #515151 !important;
+  background-color: rgb(31 41 55 / 50%) !important;
+  border: 1px solid rgb(156 163 175 / 60%) !important;
+  color: #d1d5db !important;
 }
 
 html[data-theme='dark'] .button.callback:hover:not(.disabled),
 html[data-theme='dark'] .button.outline.callback:hover:not(.disabled) {
-  background-color: transparent !important;
-  border-color: rgb(81 81 81 / 25%) !important;
+  background-color: rgb(31 41 55 / 50%) !important;
+  border-color: rgb(156 163 175 / 60%) !important;
   box-shadow: none;
-  color: #515151 !important;
+  color: #d1d5db !important;
 }
 
 @media (width <= 480px) {

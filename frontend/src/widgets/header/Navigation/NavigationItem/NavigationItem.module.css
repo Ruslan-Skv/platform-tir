@@ -7,6 +7,7 @@
 .navButton {
   text-transform: none !important; /* первая буква заглавная, остальные прописные */
   width: 100%;
+  color: #515151;
 }
 
 .navText {
@@ -14,6 +15,7 @@
   font-size: 1rem;
   text-transform: none !important;
   white-space: nowrap;
+  color: #515151;
 }
 
 .chevron {
@@ -180,6 +182,12 @@
 }
 
 /* Темная тема для dropdown */
+/* Тёмная тема — цвет текста как у телефона (#d1d5db) */
+html[data-theme='dark'] .navButton,
+html[data-theme='dark'] .navText {
+  color: #d1d5db;
+}
+
 html[data-theme='dark'] .dropdown {
   background: #1f2937;
   border-color: #ec4899;

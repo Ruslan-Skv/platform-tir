@@ -78,6 +78,7 @@ const baseNavItems: NavItem[] = [
       { label: 'Акции', href: '/admin/content/promotions' },
       { label: 'Фото', href: '/admin/content/photo' },
       { label: 'Комментарии', href: '/admin/content/comments' },
+      { label: 'Меню навигации', href: '/admin/content/navigation' },
       { label: 'Футер', href: '/admin/content/footer' },
     ],
   },

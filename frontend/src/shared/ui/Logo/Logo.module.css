@@ -1,6 +1,9 @@
 .logoLink {
   display: inline-flex;
   text-decoration: none;
+  overflow: visible;
+  padding-right: 0.25rem; /* чтобы правый край логотипа не обрезался */
+  flex-shrink: 0;
 }
 
 .logo {
@@ -8,6 +11,8 @@
   height: 2.625rem; /* 70% от 3.75rem */
   max-width: clamp(8.75rem, 5.19rem + 15.81vw, 15.31rem); /* 70% от исходного clamp */
   transition: transform 0.3s ease;
+  overflow: visible;
+  display: block;
 }
 
 .logo:hover {

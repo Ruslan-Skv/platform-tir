@@ -22,6 +22,7 @@ import { HomeServicesModule } from './home-services/home-services.module';
 import { FeaturedProductsModule } from './featured-products/featured-products.module';
 import { PartnerProductsModule } from './partner-products/partner-products.module';
 import { FooterModule } from './footer/footer.module';
+import { NavigationModule } from './navigation/navigation.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { FormsModule } from './forms/forms.module';
 
@@ -56,6 +57,7 @@ import { FormsModule } from './forms/forms.module';
     FeaturedProductsModule,
     PartnerProductsModule,
     FooterModule,
+    NavigationModule,
     ReviewsModule,
     FormsModule,
   ],

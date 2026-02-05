@@ -35,69 +35,18 @@
   gap: 1rem;
   justify-content: space-between;
   padding: 0.5rem 0;
+  overflow: visible;
 }
 
-.searchContainer {
-  align-items: center;
-  display: flex;
-  flex: 1;
-  justify-content: center;
-  max-width: 600px;
-  position: relative;
+.logoSection > a:first-child {
+  overflow: visible;
 }
 
-.searchInput {
-  background-color: #ffffff80;
-  border: none;
-  border-radius: 6px;
-  color: #000;
-  font-family: play, oswald, arial, 'great vibes', Georgia, 'Times New Roman', Times, serif;
-  font-size: 16px;
-  font-weight: 500;
-  outline: none;
-  padding: 8px 40px 8px 16px;
-  transition: all 0.3s ease;
-  width: 100%;
+/* Тёмная тема — фон Header */
+html[data-theme='dark'] .header {
+  background: #171717;
 }
 
-.searchInput::placeholder {
-  color: #6b7280;
-}
-
-.searchInput:focus {
-  background-color: #ffffff90;
-}
-
-.searchIcon {
-  color: #374151;
-  height: 1.25rem;
-  pointer-events: none;
-  position: absolute;
-  right: 12px;
-  width: 1.25rem;
-}
-
-/* Темная тема для поиска */
-html[data-theme='dark'] .searchInput {
-  background-color: #ffffff80;
-  color: #d1d5db;
-}
-
-html[data-theme='dark'] .searchInput::placeholder {
-  color: #9ca3af;
-}
-
-html[data-theme='dark'] .searchInput:focus {
-  background-color: #ffffff90;
-}
-
-html[data-theme='dark'] .searchIcon {
-  color: #d1d5db;
-}
-
-/* Мобильная адаптация */
-@media (width < 767px) {
-  .searchContainer {
-    display: none;
-  }
+html[data-theme='dark'] .mainHeader {
+  background: #171717;
 }

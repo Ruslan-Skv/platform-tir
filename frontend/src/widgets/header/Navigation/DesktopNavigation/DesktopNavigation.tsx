@@ -2,8 +2,7 @@
 
 import React, { useRef } from 'react';
 
-import { navigation } from '@/shared/constants/navigation';
-import { useDropdown, useDynamicCategories } from '@/shared/lib/hooks';
+import { useDropdown, useDynamicCategories, useNavigationItems } from '@/shared/lib/hooks';
 
 import { NavigationItem } from '../NavigationItem';
 import styles from './DesktopNavigation.module.css';
@@ -23,14 +22,14 @@ export const DesktopNavigation: React.FC<DesktopNavigationProps> = ({ onNavigati
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Загружаем динамические категории из API
+  const navigationItems = useNavigationItems();
   const { navigationCategories } = useDynamicCategories();
 
   return (
     <div className={styles.desktopNavigation} ref={dropdownRef}>
       <div className={styles.container}>
         <div className={styles.navContainer}>
-          {navigation.map((item, index) => (
+          {navigationItems.map((item, index) => (
             <React.Fragment key={item.name}>
               {index > 0 && <div className={styles.separator} aria-hidden />}
               <NavigationItem

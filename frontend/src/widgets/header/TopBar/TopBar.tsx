@@ -1,15 +1,15 @@
 'use client';
 
 import {
-  ChartBarIcon,
   HeartIcon,
+  MagnifyingGlassIcon,
   MoonIcon,
   ShoppingCartIcon,
   SunIcon,
   UserIcon,
 } from '@heroicons/react/24/outline';
 
-import React from 'react';
+import React, { useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -37,10 +37,21 @@ function getInitials(firstName: string | null, lastName: string | null, email: s
 export const TopBar: React.FC = () => {
   const { isDarkTheme, toggleTheme } = useTheme();
   const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState('');
   const { count: wishlistCount } = useWishlist();
   const { count: compareCount } = useCompare();
   const { count: cartCount } = useCart();
   const { isAuthenticated, user } = useUserAuth();
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = searchQuery.trim();
+    if (q) {
+      router.push(`/catalog/products?search=${encodeURIComponent(q)}`);
+    } else {
+      router.push('/catalog/products');
+    }
+  };
 
   const handleCompareClick = () => {
     router.push('/compare');
@@ -56,31 +67,64 @@ export const TopBar: React.FC = () => {
 
   return (
     <div className={styles.topBar}>
-      {/* Мобильный телефон */}
-      {/* <div className={styles.contactMobile}>
-        <span className={styles.contact}>8-(8152)-60-12-70</span>
-      </div> */}
-
       <div className={styles.container}>
-        {/* Десктопный телефон */}
-        <div className={styles.desktopContact}>
-          <span className={styles.contact}>8-(8152)-60-12-70</span>
-        </div>
-
         {/* Утилиты */}
         <div className={styles.utilities}>
-          <div className={styles.contactMobile}>
-            <span className={styles.contact}>8-(8152)-60-12-70</span>
-          </div>
-          {/* Сравнение товаров */}
+          {/* Поиск — слева от иконки «Сравнить» */}
+          <form className={styles.searchForm} onSubmit={handleSearchSubmit} role="search">
+            <input
+              type="search"
+              className={styles.searchInput}
+              placeholder="Поиск..."
+              aria-label="Поиск"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <button type="submit" className={styles.searchSubmit} aria-label="Искать">
+              <MagnifyingGlassIcon className={styles.searchIcon} />
+            </button>
+          </form>
+          {/* Сравнение товаров (иконка как в карточках товаров) */}
           <button onClick={handleCompareClick} className={styles.utilityButton} type="button">
             <div className={styles.iconWrapper}>
-              <ChartBarIcon className={styles.icon} />
+              <span className={`${styles.icon} ${styles.iconCompare}`} aria-hidden>
+                ⚖
+              </span>
               {compareCount > 0 && (
                 <span className={styles.badge}>{compareCount > 99 ? '99+' : compareCount}</span>
               )}
             </div>
-            <span className={styles.utilityText}>Сравнение</span>
+            <span className={styles.utilityText}></span>
+          </button>
+
+          {/* Избранное */}
+          <button
+            onClick={() => router.push('/favorites')}
+            className={styles.utilityButton}
+            type="button"
+          >
+            <div className={styles.iconWrapper}>
+              <HeartIcon className={styles.icon} />
+              {wishlistCount > 0 && (
+                <span className={styles.badge}>{wishlistCount > 99 ? '99+' : wishlistCount}</span>
+              )}
+            </div>
+            <span className={styles.utilityText}></span>
+          </button>
+
+          {/* Корзина */}
+          <button
+            onClick={() => router.push('/cart')}
+            className={styles.utilityButton}
+            type="button"
+          >
+            <div className={styles.iconWrapper}>
+              <ShoppingCartIcon className={styles.icon} />
+              {cartCount > 0 && (
+                <span className={styles.badge}>{cartCount > 99 ? '99+' : cartCount}</span>
+              )}
+            </div>
+            <span className={styles.utilityText}></span>
           </button>
 
           {/* Личный кабинет */}
@@ -107,39 +151,9 @@ export const TopBar: React.FC = () => {
             ) : (
               <>
                 <UserIcon className={styles.icon} />
-                <span className={styles.utilityText}>Кабинет</span>
+                <span className={styles.utilityText}></span>
               </>
             )}
-          </button>
-
-          {/* Избранное */}
-          <button
-            onClick={() => router.push('/favorites')}
-            className={styles.utilityButton}
-            type="button"
-          >
-            <div className={styles.iconWrapper}>
-              <HeartIcon className={styles.icon} />
-              {wishlistCount > 0 && (
-                <span className={styles.badge}>{wishlistCount > 99 ? '99+' : wishlistCount}</span>
-              )}
-            </div>
-            <span className={styles.utilityText}>Избранное</span>
-          </button>
-
-          {/* Корзина */}
-          <button
-            onClick={() => router.push('/cart')}
-            className={styles.utilityButton}
-            type="button"
-          >
-            <div className={styles.iconWrapper}>
-              <ShoppingCartIcon className={styles.icon} />
-              {cartCount > 0 && (
-                <span className={styles.badge}>{cartCount > 99 ? '99+' : cartCount}</span>
-              )}
-            </div>
-            <span className={styles.utilityText}>Корзина</span>
           </button>
 
           {/* Переключение темы */}

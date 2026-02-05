@@ -16,8 +16,8 @@ import { useRouter } from 'next/navigation';
 
 import { useUserAuth } from '@/features/auth/context/UserAuthContext';
 import { useTheme } from '@/features/theme';
-import { dropdownMenus, navigation } from '@/shared/constants/navigation';
-import { useDynamicCategories } from '@/shared/lib/hooks';
+import { dropdownMenus } from '@/shared/constants/navigation';
+import { useDynamicCategories, useNavigationItems } from '@/shared/lib/hooks';
 import { Logo } from '@/shared/ui/Logo';
 import { ActionButtons } from '@/widgets/header/ActionButtons/ActionButtons';
 
@@ -51,6 +51,8 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
   const [isMounted, setIsMounted] = React.useState(false);
   const router = useRouter();
   const { isAuthenticated, user } = useUserAuth();
+  const navigationItems = useNavigationItems();
+  const { navigationCategories } = useDynamicCategories();
 
   const getAvatarUrl = (avatar: string | null | undefined): string | null => {
     if (!avatar) return null;
@@ -142,7 +144,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
   };
 
   // Преобразуем навигацию в формат для кнопок с изображениями
-  const menuButtons: MenuButton[] = navigation.map((item) => ({
+  const menuButtons: MenuButton[] = navigationItems.map((item) => ({
     name: item.name,
     hasDropdown: !!item.hasDropdown,
     imageLight: getImageForMenuItem(item.name),
@@ -193,9 +195,6 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
     }
     handleCloseMenu();
   };
-
-  // Загружаем динамические категории из API
-  const { navigationCategories } = useDynamicCategories();
 
   // Получаем данные для активного подменю
   const getActiveSubmenu = () => {

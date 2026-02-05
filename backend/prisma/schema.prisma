@@ -237,6 +237,17 @@ model FooterSectionLink {
   @@map("footer_section_links")
 }
 
+model NavigationItem {
+  id          String   @id @default(cuid())
+  name        String
+  href        String   @default("#")
+  sortOrder   Int      @default(0)
+  hasDropdown Boolean  @default(false)
+  category    String?  // для сопоставления с dropdownMenus: products, services, promotions, blog, photo
+
+  @@map("navigation_items")
+}
+
 model ServiceItem {
   id          String   @id @default(cuid())
   title       String

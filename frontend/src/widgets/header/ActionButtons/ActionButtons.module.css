@@ -2,9 +2,36 @@
   white-space: nowrap;
 }
 
+.phoneBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+}
+
+.phoneLabel {
+  font-size: 0.75rem;
+  color: #515151;
+  line-height: 1;
+}
+
+.phone {
+  color: #515151;
+  font-size: 1rem;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+
+.phone:hover {
+  color: #d90652;
+}
+
 .desktopButtons {
   display: none;
   flex-direction: row;
+  align-items: center;
   gap: 0.5rem;
 }
 
@@ -46,6 +73,18 @@ html[data-theme='dark'] .menuButton {
 
 html[data-theme='dark'] .menuButton:hover {
   color: #f9fafb;
+}
+
+html[data-theme='dark'] .phone {
+  color: #d1d5db;
+}
+
+html[data-theme='dark'] .phone:hover {
+  color: #ec4899;
+}
+
+html[data-theme='dark'] .phoneLabel {
+  color: #9ca3af;
 }
 
 @media (width >= 767px) {
