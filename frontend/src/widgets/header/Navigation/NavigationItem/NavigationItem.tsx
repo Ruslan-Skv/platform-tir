@@ -19,6 +19,8 @@ import {
 
 import React from 'react';
 
+import { usePathname } from 'next/navigation';
+
 import { dropdownMenus } from '@/shared/constants/navigation';
 import type { NavigationCategory } from '@/shared/lib/hooks';
 import type { NavigationItem as NavigationItemType } from '@/shared/types/navigation';
@@ -79,9 +81,14 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
     item.name === 'Каталог' &&
     dynamicCategories &&
     dynamicCategories.length > 0;
+  const pathname = usePathname();
   const navItemRef = React.useRef<HTMLDivElement>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const [alignment, setAlignment] = React.useState<'left' | 'right' | 'center'>('left');
+
+  // Текущая страница: подчёркивание снизу (по URL), не путать с isActive = открыто выпадающее меню
+  const isCurrentPage =
+    pathname === item.href || (item.href && item.href !== '/' && pathname.startsWith(item.href));
 
   // Определяем тип выравнивания для выпадающего меню
   React.useEffect(() => {
@@ -225,9 +232,12 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      <Button variant="link" size="sm" onClick={handleClick} className={styles.navButton}>
-        <span className={styles.navText}>{item.name}</span>
-      </Button>
+      <div className={styles.navButtonWrap}>
+        {isCurrentPage && <span className={styles.navButtonCurrentLine} aria-hidden />}
+        <Button variant="link" size="sm" onClick={handleClick} className={styles.navButton}>
+          <span className={styles.navText}>{item.name}</span>
+        </Button>
+      </div>
 
       {hasDropdown && isActive && (apiDropdownItems || useDynamicMenu || menuData) && (
         <div

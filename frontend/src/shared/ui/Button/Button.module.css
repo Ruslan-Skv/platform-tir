@@ -95,21 +95,22 @@
   transform: translateY(-2px);
 }
 
-/* Вариант для навигации - без границы и заливки, с анимированной нижней границей при ховере */
+/* Вариант для навигации - без границы и заливки, с анимированной верхней границей при ховере */
 .link {
   background-color: transparent;
   border: none;
   color: #000;
-  padding-bottom: 4px;
+  padding-top: 4px;
   position: relative;
+  overflow: visible; /* чтобы линия по ховеру (::after) не обрезалась и анимация была плавной у всех кнопок */
 }
 
 .link::after {
   background-color: #d90652;
-  bottom: 0;
+  top: 0;
+  left: 0;
   content: '';
   height: 2px;
-  left: 0;
   position: absolute;
   transform: scaleX(0);
   transform-origin: left;

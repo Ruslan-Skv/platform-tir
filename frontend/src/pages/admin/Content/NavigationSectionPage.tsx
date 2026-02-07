@@ -682,7 +682,7 @@ export function NavigationSectionPage() {
                     <span className={styles.itemBadge}>
                       {item.name === 'Каталог'
                         ? 'категории каталога'
-                        : `выпадающее меню (${item.dropdownItems?.length ?? 0} пунктов)`}
+                        : `выпадающее меню (${item.dropdownItems?.length ?? 0} разделов)`}
                     </span>
                   )}
                   <div className={styles.itemActions}>

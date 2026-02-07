@@ -4,6 +4,30 @@
   position: relative;
 }
 
+.navButtonWrap {
+  position: relative;
+  display: flex;
+  width: 100%;
+}
+
+/* Кнопка: z-index чтобы линия текущей страницы (снизу) не перекрывала клик */
+.navButtonWrap .navButton {
+  position: relative;
+  z-index: 0;
+}
+
+/* Подчёркивание снизу для кнопки текущей страницы (по URL) */
+.navButtonCurrentLine {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #d90652;
+  z-index: 1;
+  pointer-events: none;
+}
+
 .navButton {
   text-transform: none !important; /* первая буква заглавная, остальные прописные */
   width: 100%;
@@ -30,15 +54,18 @@
 }
 
 .dropdown {
-  background: rgb(211 211 211);
-  border: 1px solid #d90652;
-  border-radius: 0.375rem;
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 10%);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
   left: 0;
-  max-width: min(48rem, calc(100vw - 2rem));
+  max-width: min(22rem, calc(100vw - 2rem));
   position: absolute;
   top: 100%;
-  width: 48rem;
+  width: max-content;
+  min-width: 14rem;
   z-index: 50;
 }
 
@@ -64,13 +91,16 @@
 }
 
 .dropdownContent {
-  padding: 1rem;
+  padding: 1rem 1.25rem;
+  display: flex;
+  overflow: visible;
 }
 
 .dropdownGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 14rem;
 }
 
 .dropdownItem {
@@ -79,15 +109,17 @@
   display: flex;
   font-size: 0.875rem;
   gap: 0.5rem;
-  padding: 0.75rem;
+  padding: 0.625rem 0.75rem;
   text-decoration: none;
   text-transform: none;
-  transition: all 0.2s;
-  border-radius: 0.25rem;
+  transition:
+    background 0.2s,
+    color 0.2s;
+  border-radius: 0.375rem;
 }
 
 .dropdownItem:hover {
-  background: rgb(217 6 82 / 10%);
+  background: rgb(217 6 82 / 0.08);
   color: #d90652;
 }
 
@@ -114,18 +146,43 @@
   font-weight: 600;
 }
 
-/* Секция раздела с подразделами */
+/* Секция раздела — один столбец; overflow visible чтобы всплывающее окошко не обрезалось */
 .dropdownSection {
   display: flex;
   flex-direction: column;
+  position: relative;
+  overflow: visible;
 }
 
-/* Подменю (подразделы/серии) */
+/* Всплывающее окошко с подразделами — справа от раздела при наведении */
 .submenu {
-  display: flex;
+  display: none;
   flex-direction: column;
-  padding-left: 2rem;
-  margin-top: 0.25rem;
+  position: absolute;
+  left: 100%;
+  top: 0;
+  margin-left: 0.25rem;
+  min-width: 12rem;
+  padding: 0.5rem 0.25rem;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
+  z-index: 60;
+}
+
+.dropdownSection:hover .submenu {
+  display: flex;
+}
+
+/* Когда основное меню прижато к правому краю — всплывающее окошко слева от раздела */
+.dropdownRight .submenu {
+  left: auto;
+  right: 100%;
+  margin-left: 0;
+  margin-right: 0.25rem;
 }
 
 .submenuItem {
@@ -136,15 +193,17 @@
   padding: 0.375rem 0.75rem;
   text-decoration: none;
   text-transform: none;
-  transition: all 0.2s;
-  border-radius: 0.25rem;
+  transition:
+    background 0.2s,
+    color 0.2s;
+  border-radius: 0.375rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .submenuItem:hover {
-  background: rgb(217 6 82 / 10%);
+  background: rgb(217 6 82 / 0.08);
   color: #d90652;
 }
 
@@ -188,9 +247,17 @@ html[data-theme='dark'] .navText {
   color: #d1d5db;
 }
 
+html[data-theme='dark'] .navButtonCurrentLine {
+  background-color: #ec4899;
+}
+
+/* Тёмная тема выпадающего меню — в тон Header (#171717) */
 html[data-theme='dark'] .dropdown {
-  background: #1f2937;
-  border-color: #ec4899;
+  background: #171717;
+  border-color: rgba(236, 72, 153, 0.4);
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.3),
+    0 2px 4px -2px rgb(0 0 0 / 0.2);
 }
 
 html[data-theme='dark'] .dropdownItem {
@@ -198,7 +265,7 @@ html[data-theme='dark'] .dropdownItem {
 }
 
 html[data-theme='dark'] .dropdownItem:hover {
-  background: rgb(236 72 153 / 10%);
+  background: rgb(236 72 153 / 0.12);
   color: #ec4899;
 }
 
@@ -207,6 +274,14 @@ html[data-theme='dark'] .submenuItem {
 }
 
 html[data-theme='dark'] .submenuItem:hover {
-  background: rgb(236 72 153 / 10%);
+  background: rgb(236 72 153 / 0.12);
   color: #ec4899;
+}
+
+html[data-theme='dark'] .submenu {
+  background: #171717;
+  border-color: rgba(236, 72, 153, 0.4);
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.3),
+    0 2px 4px -2px rgb(0 0 0 / 0.2);
 }
