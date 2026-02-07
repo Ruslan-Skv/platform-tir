@@ -436,14 +436,15 @@ async function main() {
 
   // ============================================
   // МЕНЮ НАВИГАЦИИ (кнопки в шапке сайта)
-  // Добавляем отсутствующие пункты по имени; у существующих обновляем ссылку и категорию.
+  // Добавляем отсутствующие пункты по имени; у существующих обновляем ссылку и hasDropdown.
+  // Вложенное меню настраивается в админке для каждого пункта.
   // ============================================
   const defaultNavItems = [
-    { name: 'Каталог', href: '/catalog/products', hasDropdown: true, category: 'products' },
-    { name: 'Каталог услуг', href: '/catalog/services', hasDropdown: true, category: 'services' },
-    { name: 'Акции', href: '/promotions', hasDropdown: true, category: 'promotions' },
-    { name: 'Блог', href: '/blog', hasDropdown: true, category: 'blog' },
-    { name: 'Фото', href: '/photo', hasDropdown: true, category: 'photo' },
+    { name: 'Каталог', href: '/catalog/products', hasDropdown: true },
+    { name: 'Каталог услуг', href: '/catalog/services', hasDropdown: true },
+    { name: 'Акции', href: '/promotions', hasDropdown: true },
+    { name: 'Блог', href: '/blog', hasDropdown: true },
+    { name: 'Фото', href: '/photo', hasDropdown: true },
   ];
   const existingNav = await prisma.navigationItem.findMany({ orderBy: { sortOrder: 'asc' } });
   const byName = new Map(existingNav.map((n) => [n.name, n]));
@@ -454,7 +455,7 @@ async function main() {
     if (existing) {
       await prisma.navigationItem.update({
         where: { id: existing.id },
-        data: { href: item.href, hasDropdown: item.hasDropdown, category: item.category },
+        data: { href: item.href, hasDropdown: item.hasDropdown },
       });
       continue;
     }
@@ -464,7 +465,6 @@ async function main() {
         name: item.name,
         href: item.href,
         hasDropdown: item.hasDropdown,
-        category: item.category,
         sortOrder: nextOrder,
       },
     });
@@ -476,6 +476,81 @@ async function main() {
   const totalNav = await prisma.navigationItem.count();
   if (totalNav > 0) {
     console.log(`✅ Navigation: всего пунктов в меню: ${totalNav}`);
+  }
+
+  // Пункты выпадающего меню по умолчанию (для «Каталог услуг», «Акции», «Блог», «Фото»).
+  // «Каталог» заполняется из категорий каталога, здесь не трогаем.
+  const defaultDropdownByNavName: Record<
+    string,
+    { name: string; href: string; icon?: string; submenu?: { name: string; href: string }[] }[]
+  > = {
+    'Каталог услуг': [
+      { name: 'Малярные работы', href: '/catalog/services/painting', icon: 'PaintBrush' },
+      { name: 'Работы по электрике', href: '/catalog/services/electrical', icon: 'Bolt' },
+      { name: 'Работы по полам', href: '/catalog/services/floors', icon: 'Square3Stack3D' },
+      { name: 'Работы по потолкам', href: '/catalog/services/ceilings', icon: 'Cube' },
+      { name: 'Работы по сантехнике', href: '/catalog/services/plumbing', icon: 'WrenchScrewdriver' },
+      { name: 'Работы с кафелем', href: '/catalog/services/tiling', icon: 'Squares2X2' },
+      { name: 'Монтаж дверей', href: '/catalog/services/door-installation', icon: 'RectangleStack' },
+      { name: 'Монтаж окон', href: '/catalog/services/window-installation', icon: 'Squares2X2' },
+      {
+        name: 'Монтаж натяжных потолков',
+        href: '/catalog/services/stretch-ceiling-installation',
+        icon: 'Cube',
+      },
+      { name: 'Монтаж жалюзей', href: '/catalog/services/blinds-installation', icon: 'ViewColumns' },
+    ],
+    Акции: [{ name: 'Все акции', href: '/promotions', icon: 'Tag' }],
+    Блог: [{ name: 'Все записи', href: '/blog', icon: 'DocumentText' }],
+    Фото: [
+      { name: 'Ремонт санузла', href: '/photo/bathroom-renovation', icon: 'Home' },
+      { name: 'Ремонт квартиры', href: '/photo/apartment-renovation', icon: 'BuildingOffice' },
+      { name: 'Кухни', href: '/photo/kitchens', icon: 'Home' },
+      { name: 'Гардеробные', href: '/photo/wardrobes', icon: 'CubeTransparent' },
+      { name: 'Шкафы-купе', href: '/photo/sliding-wardrobes', icon: 'CubeTransparent' },
+      { name: 'Двери', href: '/photo/doors', icon: 'RectangleStack' },
+      { name: 'Окна', href: '/photo/windows', icon: 'Squares2X2' },
+      { name: 'Потолки натяжные', href: '/photo/stretch-ceilings', icon: 'Cube' },
+      { name: 'Жалюзи', href: '/photo/blinds', icon: 'ViewColumns' },
+    ],
+  };
+
+  const navItemsWithDropdown = await prisma.navigationItem.findMany({
+    where: { hasDropdown: true, name: { not: 'Каталог' } },
+    include: { _count: { select: { dropdownItems: true } } },
+  });
+  let seededDropdowns = 0;
+  for (const navItem of navItemsWithDropdown) {
+    const defaults = defaultDropdownByNavName[navItem.name];
+    if (!defaults || navItem._count.dropdownItems > 0) continue;
+    for (let i = 0; i < defaults.length; i++) {
+      const d = defaults[i];
+      const created = await prisma.navigationDropdownItem.create({
+        data: {
+          navItemId: navItem.id,
+          name: d.name,
+          href: d.href,
+          icon: d.icon ?? null,
+          sortOrder: i,
+        },
+      });
+      if (d.submenu?.length) {
+        for (let j = 0; j < d.submenu.length; j++) {
+          await prisma.navigationDropdownSubItem.create({
+            data: {
+              dropdownId: created.id,
+              name: d.submenu[j].name,
+              href: d.submenu[j].href,
+              sortOrder: j,
+            },
+          });
+        }
+      }
+      seededDropdowns++;
+    }
+  }
+  if (seededDropdowns > 0) {
+    console.log(`✅ Navigation: создано пунктов выпадающего меню: ${seededDropdowns}`);
   }
 
   // ============================================

@@ -17,11 +17,8 @@ export class CreateNavigationItemDto {
   @IsBoolean()
   hasDropdown?: boolean;
 
-  @ApiPropertyOptional({
-    description: 'Категория для выпадающего меню: products, services, promotions, blog, photo',
-  })
+  @ApiPropertyOptional({ description: 'Показывать в меню на сайте', default: true })
   @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  category?: string;
+  @IsBoolean()
+  isActive?: boolean;
 }

@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, MaxLength, IsBoolean, IsOptional, ValidateIf } from 'class-validator';
+import { IsString, MaxLength, IsBoolean, IsOptional } from 'class-validator';
 
 export class UpdateNavigationItemDto {
   @ApiPropertyOptional()
@@ -19,10 +19,8 @@ export class UpdateNavigationItemDto {
   @IsBoolean()
   hasDropdown?: boolean;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ description: 'Показывать в меню на сайте' })
   @IsOptional()
-  @ValidateIf((_o, v) => v != null && v !== '')
-  @IsString()
-  @MaxLength(50)
-  category?: string | null;
+  @IsBoolean()
+  isActive?: boolean;
 }

@@ -238,14 +238,39 @@ model FooterSectionLink {
 }
 
 model NavigationItem {
-  id          String   @id @default(cuid())
-  name        String
-  href        String   @default("#")
-  sortOrder   Int      @default(0)
-  hasDropdown Boolean  @default(false)
-  category    String?  // для сопоставления с dropdownMenus: products, services, promotions, blog, photo
+  id             String                    @id @default(cuid())
+  name           String
+  href           String                    @default("#")
+  sortOrder      Int                       @default(0)
+  hasDropdown    Boolean                   @default(false)
+  isActive       Boolean                   @default(true)
+  dropdownItems  NavigationDropdownItem[]
 
   @@map("navigation_items")
+}
+
+model NavigationDropdownItem {
+  id        String                         @id @default(cuid())
+  navItemId String
+  name      String
+  href      String                         @default("#")
+  sortOrder Int                            @default(0)
+  icon      String?                        // имя иконки heroicons или URL
+  navItem   NavigationItem                @relation(fields: [navItemId], references: [id], onDelete: Cascade)
+  submenu   NavigationDropdownSubItem[]
+
+  @@map("navigation_dropdown_items")
+}
+
+model NavigationDropdownSubItem {
+  id          String                  @id @default(cuid())
+  dropdownId  String
+  name        String
+  href        String                  @default("#")
+  sortOrder   Int                     @default(0)
+  dropdownItem NavigationDropdownItem @relation(fields: [dropdownId], references: [id], onDelete: Cascade)
+
+  @@map("navigation_dropdown_sub_items")
 }
 
 model ServiceItem {

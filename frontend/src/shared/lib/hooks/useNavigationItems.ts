@@ -13,15 +13,22 @@ interface NavItemFromApi {
   href: string;
   sortOrder: number;
   hasDropdown: boolean;
-  category: string | null;
+  dropdownItems?: Array<{
+    id: string;
+    name: string;
+    href: string;
+    sortOrder: number;
+    icon: string | null;
+    submenu: Array<{ id: string; name: string; href: string; sortOrder: number }>;
+  }>;
 }
 
 function mapApiItemToNavItem(item: NavItemFromApi): NavigationItem {
   return {
     name: item.name,
     href: item.href || '#',
-    hasDropdown: item.hasDropdown,
-    category: item.category ?? '',
+    hasDropdown: item.hasDropdown === true,
+    dropdownItems: item.dropdownItems?.length ? item.dropdownItems : undefined,
   };
 }
 
@@ -33,7 +40,7 @@ export function useNavigationItems(): NavigationItem[] {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_URL}/navigation`)
+    fetch(`${API_URL}/navigation`, { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error('Failed to fetch'))))
       .then((data: NavItemFromApi[]) => {
         if (cancelled) return;

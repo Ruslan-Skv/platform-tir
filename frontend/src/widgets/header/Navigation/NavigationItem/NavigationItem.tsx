@@ -68,11 +68,17 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
   dynamicCategories,
 }) => {
   const hasDropdown = item.hasDropdown;
-  const menuData = hasDropdown ? dropdownMenus[item.name] : null;
+  // Приоритет: данные из API (dropdownItems), затем для "Каталог" — динамические категории, иначе константы
+  const apiDropdownItems =
+    item.dropdownItems && item.dropdownItems.length > 0 ? item.dropdownItems : null;
+  const menuData = hasDropdown && !apiDropdownItems ? dropdownMenus[item.name] : null;
 
-  // Для "Каталог" используем динамические категории если они есть
+  // Для "Каталог" используем динамические категории если нет данных из API
   const useDynamicMenu =
-    item.name === 'Каталог' && dynamicCategories && dynamicCategories.length > 0;
+    !apiDropdownItems &&
+    item.name === 'Каталог' &&
+    dynamicCategories &&
+    dynamicCategories.length > 0;
   const navItemRef = React.useRef<HTMLDivElement>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const [alignment, setAlignment] = React.useState<'left' | 'right' | 'center'>('left');
@@ -223,7 +229,7 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
         <span className={styles.navText}>{item.name}</span>
       </Button>
 
-      {hasDropdown && isActive && (useDynamicMenu || menuData) && (
+      {hasDropdown && isActive && (apiDropdownItems || useDynamicMenu || menuData) && (
         <div
           ref={dropdownRef}
           className={`${styles.dropdown} ${
@@ -238,7 +244,44 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
         >
           <div className={styles.dropdownContent}>
             <div className={styles.dropdownGrid}>
-              {/* Динамические категории для "Каталог" */}
+              {/* Данные из API (полное управление в админке) */}
+              {apiDropdownItems &&
+                apiDropdownItems.map((dropdownItem) => (
+                  <div key={dropdownItem.id} className={styles.dropdownSection}>
+                    <a
+                      href={dropdownItem.href}
+                      onClick={() => handleDropdownItemClick(dropdownItem.name)}
+                      className={styles.dropdownItem}
+                      title={dropdownItem.name}
+                    >
+                      {dropdownItem.icon && (
+                        <span className={styles.dropdownItemIconWrapper}>
+                          {getIcon(dropdownItem.icon)}
+                        </span>
+                      )}
+                      <span className={`${styles.dropdownItemText} ${styles.dropdownItemTextBold}`}>
+                        {dropdownItem.name}
+                      </span>
+                    </a>
+                    {dropdownItem.submenu && dropdownItem.submenu.length > 0 && (
+                      <div className={styles.submenu}>
+                        {dropdownItem.submenu.map((subItem) => (
+                          <a
+                            key={subItem.id}
+                            href={subItem.href}
+                            onClick={() => handleDropdownItemClick(subItem.name)}
+                            className={styles.submenuItem}
+                            title={subItem.name}
+                          >
+                            {subItem.name}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+              {/* Динамические категории для "Каталог" (если нет данных из API) */}
               {useDynamicMenu &&
                 dynamicCategories!.map((category) => (
                   <div key={category.slug} className={styles.dropdownSection}>
