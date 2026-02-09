@@ -326,26 +326,26 @@ html[data-theme='dark'] .navText {
 
 html[data-theme='dark'] .navItem:hover .navButton,
 html[data-theme='dark'] .navItem:hover .navText {
-  color: #ec4899;
+  color: #d90652;
 }
 
 html[data-theme='dark'] .navItem .navButton:focus-visible {
-  color: #ec4899;
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+  color: #d90652;
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
 html[data-theme='dark'] .navItem .navButton:active:not(.disabled) .navText {
-  color: #ec4899;
+  color: #d90652;
 }
 
 html[data-theme='dark'] .navButtonCurrentLine {
-  background-color: #ec4899;
+  background-color: #d90652;
 }
 
 /* Тёмная тема выпадающего меню — в тон Header (#171717) */
 html[data-theme='dark'] .dropdown {
   background: #171717;
-  border-color: rgba(236, 72, 153, 0.4);
+  border-color: rgba(217, 6, 82, 0.4);
   box-shadow:
     0 4px 6px -1px rgb(0 0 0 / 0.3),
     0 2px 4px -2px rgb(0 0 0 / 0.2);
@@ -356,19 +356,19 @@ html[data-theme='dark'] .dropdownItem {
 }
 
 html[data-theme='dark'] .dropdownItem:hover {
-  background: rgb(236 72 153 / 0.12);
-  color: #ec4899;
+  background: rgb(217 6 82 / 0.12);
+  color: #d90652;
 }
 
 html[data-theme='dark'] .dropdownItem:focus-visible {
-  background: rgb(236 72 153 / 0.12);
-  color: #ec4899;
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+  background: rgb(217 6 82 / 0.12);
+  color: #d90652;
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
 html[data-theme='dark'] .dropdownItem:active {
-  background: rgb(236 72 153 / 0.18);
-  color: #ec4899;
+  background: rgb(217 6 82 / 0.18);
+  color: #d90652;
 }
 
 html[data-theme='dark'] .submenuItem {
@@ -376,24 +376,24 @@ html[data-theme='dark'] .submenuItem {
 }
 
 html[data-theme='dark'] .submenuItem:hover {
-  background: rgb(236 72 153 / 0.12);
-  color: #ec4899;
+  background: rgb(217 6 82 / 0.12);
+  color: #d90652;
 }
 
 html[data-theme='dark'] .submenuItem:focus-visible {
-  background: rgb(236 72 153 / 0.12);
-  color: #ec4899;
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+  background: rgb(217 6 82 / 0.12);
+  color: #d90652;
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
 html[data-theme='dark'] .submenuItem:active {
-  background: rgb(236 72 153 / 0.18);
-  color: #ec4899;
+  background: rgb(217 6 82 / 0.18);
+  color: #d90652;
 }
 
 html[data-theme='dark'] .submenu {
   background: #171717;
-  border-color: rgba(236, 72, 153, 0.4);
+  border-color: rgba(217, 6, 82, 0.4);
   box-shadow:
     0 4px 6px -1px rgb(0 0 0 / 0.3),
     0 2px 4px -2px rgb(0 0 0 / 0.2);

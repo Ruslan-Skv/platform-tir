@@ -31,7 +31,19 @@
 @media (width >= 768px) {
   .grid {
     gap: 2rem;
-    grid-template-columns: repeat(3, 1fr); /* 3 колонки на десктопе */
+    grid-template-columns: auto repeat(3, 1fr); /* логотип слева + 3 колонки на десктопе */
+  }
+}
+
+.logoColumn {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+@media (width >= 768px) {
+  .logoColumn {
+    justify-content: flex-start;
   }
 }
 

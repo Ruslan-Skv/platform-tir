@@ -187,10 +187,12 @@ model HomePageSectionsBlock {
 }
 
 model ContactFormBlock {
-  id        String   @id @default("main")
-  title     String   @default("Готовы начать проект?")
-  subtitle  String   @default("Оставьте заявку и получите бесплатную консультацию специалиста") @db.Text
-  updatedAt DateTime @updatedAt
+  id                 String   @id @default("main")
+  title              String   @default("Готовы начать проект?")
+  subtitle           String   @default("Оставьте заявку и получите бесплатную консультацию специалиста") @db.Text
+  backgroundImage    String?  // URL или путь к фоновой картинке
+  backgroundOpacity  Float?   // Прозрачность фона 0–1 (null = 0.5)
+  updatedAt          DateTime @updatedAt
 
   @@map("contact_form_block")
 }

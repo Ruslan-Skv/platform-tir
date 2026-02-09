@@ -45,13 +45,16 @@
 
 .advantageCard {
   background: white;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
   padding: 2rem;
   text-align: center;
-  transition: transform 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .advantageCard:hover {
+  border-color: #d90652;
+  box-shadow: 0 10px 25px rgb(0 0 0 / 10%);
   transform: translateY(-5px);
 }
 
@@ -89,7 +92,12 @@ html[data-theme='dark'] .subtitle {
 }
 
 html[data-theme='dark'] .advantageCard {
-  background: #2d3748;
+  background: rgb(31 41 55 / 50%);
+  border-color: #4a5568;
+}
+
+html[data-theme='dark'] .advantageCard:hover {
+  border-color: #d90652;
 }
 
 html[data-theme='dark'] .advantageTitle {

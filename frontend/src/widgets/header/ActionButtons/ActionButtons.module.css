@@ -96,7 +96,7 @@
 
 /* Темная тема для кнопки меню */
 html[data-theme='dark'] .menuButton {
-  border-color: #ec4899;
+  border-color: #d90652;
   color: #d1d5db;
 }
 
@@ -105,19 +105,19 @@ html[data-theme='dark'] .menuButton:hover {
 }
 
 html[data-theme='dark'] .menuButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
 html[data-theme='dark'] .menuButton:active {
-  color: #ec4899;
+  color: #d90652;
 }
 
 html[data-theme='dark'] .phone:focus-visible {
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
 html[data-theme='dark'] .phone:active {
-  color: #ec4899;
+  color: #d90652;
 }
 
 html[data-theme='dark'] .phone {
@@ -125,7 +125,7 @@ html[data-theme='dark'] .phone {
 }
 
 html[data-theme='dark'] .phone:hover {
-  color: #ec4899;
+  color: #d90652;
 }
 
 html[data-theme='dark'] .phoneLabel {

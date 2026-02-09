@@ -1,6 +1,7 @@
 import React from 'react';
 
 import type { CompanyInfo, SocialLinks } from '@/shared/constants/footer';
+import { Logo } from '@/shared/ui/Logo';
 
 import { ContactSection } from './ContactSection';
 import styles from './FooterSections.module.css';
@@ -51,6 +52,9 @@ export const FooterSections: React.FC<FooterSectionsProps> = ({
     <div className={styles.sections}>
       <div className={styles.container}>
         <div className={styles.grid}>
+          <div className={styles.logoColumn}>
+            <Logo />
+          </div>
           {sections.map((section) => (
             <LinkSection
               key={section.id || `section-${section.title}`}

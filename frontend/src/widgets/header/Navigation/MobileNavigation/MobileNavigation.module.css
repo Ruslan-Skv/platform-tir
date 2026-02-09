@@ -346,34 +346,34 @@ html[data-theme='dark'] .topBarIcon {
 
 html[data-theme='dark'] .topBarIcon:hover,
 html[data-theme='dark'] .topBarIcon:active {
-  color: #ec4899;
+  color: #d90652;
 }
 
 html[data-theme='dark'] .topBarIcon:focus-visible {
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
-  color: #ec4899;
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+  color: #d90652;
 }
 
 html[data-theme='dark'] .closeButton {
-  border-color: #ec4899;
+  border-color: #d90652;
   color: #d1d5db;
 }
 
 html[data-theme='dark'] .closeButton:hover,
 html[data-theme='dark'] .closeButton:active {
-  color: #ec4899;
+  color: #d90652;
 }
 
 html[data-theme='dark'] .closeButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
 html[data-theme='dark'] .menuGridButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.3);
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.3);
 }
 
 html[data-theme='dark'] .backButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
 html[data-theme='dark'] .subMenuItem {
@@ -383,18 +383,18 @@ html[data-theme='dark'] .subMenuItem {
 
 html[data-theme='dark'] .subMenuItem:hover {
   background: #374151;
-  color: #ec4899;
+  color: #d90652;
 }
 
 html[data-theme='dark'] .subMenuItem:focus-visible {
   background: #374151;
-  color: #ec4899;
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+  color: #d90652;
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
 html[data-theme='dark'] .subMenuItem:active {
   background: #4b5563;
-  color: #ec4899;
+  color: #d90652;
 }
 
 /* Подкатегории */
@@ -425,7 +425,7 @@ html[data-theme='dark'] .subMenuItem:active {
 
 .subSubMenuItem:hover {
   background: #f9fafb;
-  color: #ec4899;
+  color: #d90652;
 }
 
 .subSubMenuItem:focus {
@@ -480,22 +480,22 @@ html[data-theme='dark'] .subSubMenuItem {
 
 html[data-theme='dark'] .subSubMenuItem:hover {
   background: #374151;
-  color: #ec4899;
+  color: #d90652;
 }
 
 html[data-theme='dark'] .subSubMenuItem:focus-visible {
   background: #374151;
-  color: #ec4899;
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+  color: #d90652;
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
 html[data-theme='dark'] .subSubMenuItem:active {
   background: #4b5563;
-  color: #ec4899;
+  color: #d90652;
 }
 
 html[data-theme='dark'] .menuFooter {
-  border-top-color: rgb(236 72 153 / 20%);
+  border-top-color: rgb(217 6 82 / 20%);
 }
 
 /* Адаптация для разных размеров экранов */

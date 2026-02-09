@@ -56,6 +56,13 @@
 
 .buttons .heroButton {
   width: auto;
+  background: linear-gradient(135deg, #d90652 0%, #b80546 50%, #9a0432 100%) !important;
+  border: none !important;
+}
+
+.buttons .heroButton:hover:not(:disabled),
+.buttons .heroButton:active:not(:disabled) {
+  background: linear-gradient(135deg, #e61a5c 0%, #c80648 50%, #a8053a 100%) !important;
 }
 
 .features {

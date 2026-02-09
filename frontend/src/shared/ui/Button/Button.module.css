@@ -271,17 +271,17 @@ html[data-theme='dark'] .link {
 }
 
 html[data-theme='dark'] .link::after {
-  background-color: #ec4899;
+  background-color: #d90652;
 }
 
 html[data-theme='dark'] .link:focus-visible {
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
 html[data-theme='dark'] .base:focus-visible {
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
 html[data-theme='dark'] .outline:focus-visible {
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }

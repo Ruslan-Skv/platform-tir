@@ -1,6 +1,5 @@
 .bottom {
   align-self: end; /* Прижимаем к низу grid-ячейки */
-  border-top: 1px solid #d90652;
   padding: 1.5rem 0;
   width: 100%;
 }

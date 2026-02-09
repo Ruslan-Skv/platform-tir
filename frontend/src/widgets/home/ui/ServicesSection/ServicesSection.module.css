@@ -139,7 +139,7 @@ html[data-theme='dark'] .subtitle {
 }
 
 html[data-theme='dark'] .serviceCard {
-  background: #2d3748;
+  background: rgb(31 41 55 / 50%);
   border-color: #4a5568;
 }
 

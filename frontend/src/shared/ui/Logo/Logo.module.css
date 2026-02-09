@@ -142,18 +142,18 @@
   }
 }
 
-/* Темная тема — обводка фокуса */
+/* Темная тема — обводка фокуса (тот же красный, что в светлой) */
 html[data-theme='dark'] .logoLink:focus-visible {
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
-/* Темная тема для текста логотипа */
+/* Темная тема: текст логотипа — светло-серый, акценты — красный */
 html[data-theme='dark'] .color4 {
-  fill: #ec4899;
+  fill: #d1d5db;
 }
 
 html[data-theme='dark'] .color5 {
-  fill: #ec4899;
+  fill: #d90652;
 }
 
 /* Анимация для темной темы */
@@ -168,20 +168,20 @@ html[data-theme='dark'] .logo:hover .color5 {
 @keyframes colorPulse4Dark {
   0%,
   100% {
-    fill: #ec4899;
+    fill: #d1d5db;
   }
   50% {
-    fill: #f472b6;
+    fill: #e5e7eb;
   }
 }
 
 @keyframes colorPulse5Dark {
   0%,
   100% {
-    fill: #ec4899;
+    fill: #d90652;
   }
   50% {
-    fill: #f472b6;
+    fill: #ec4899;
   }
 }
 

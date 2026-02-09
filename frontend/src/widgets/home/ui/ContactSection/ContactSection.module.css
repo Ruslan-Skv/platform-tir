@@ -1,11 +1,31 @@
 .contact {
+  position: relative;
+  max-width: var(--container-max-width, 1280px);
+  margin-left: auto;
+  margin-right: auto;
   background: transparent;
+  border-radius: 20px;
   color: white;
-  padding: 5rem 1rem;
+  padding: 5rem var(--container-padding, 1rem);
   text-align: center;
 }
 
+.background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: var(--contact-bg-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: var(--contact-bg-opacity, 0.5);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
 .container {
+  position: relative;
+  z-index: 1;
   margin: 0 auto;
   max-width: 800px;
 }
@@ -22,18 +42,61 @@
   margin-bottom: 0.5rem;
 }
 
+.titleFirst {
+  color: #000;
+}
+
+.titleSecond {
+  color: #d90652;
+}
+
 .subtitle {
-  color: #cbd5e0;
+  color: #515151;
   font-size: 1.125rem;
   margin: 0 auto 2rem;
   max-width: 600px;
 }
 
-.buttons {
+.actions {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 1rem;
-  justify-content: center;
   margin-bottom: 3rem;
+}
+
+.measurementButtonWrap {
+  width: fit-content;
+}
+
+.measurementButtonWrap button {
+  background: linear-gradient(135deg, #d90652 0%, #b80546 50%, #9a0432 100%) !important;
+  border: none !important;
+}
+
+.measurementButtonWrap button:hover:not(:disabled),
+.measurementButtonWrap button:active:not(:disabled) {
+  background: linear-gradient(135deg, #e61a5c 0%, #c80648 50%, #a8053a 100%) !important;
+}
+
+.callbackLink {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: #d90652;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.callbackLink:hover {
+  opacity: 0.9;
+}
+
+.callbackLink:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
 }
 
 .contactInfo {
@@ -79,7 +142,7 @@ html[data-theme='light'] .infoLabel {
     font-size: 2rem;
   }
 
-  .buttons {
+  .actions {
     display: none;
   }
 

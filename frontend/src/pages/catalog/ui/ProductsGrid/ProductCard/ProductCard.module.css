@@ -1,18 +1,18 @@
 .productCard {
   background: rgb(255 255 255 / 50%);
+  border: 1px solid #e2e8f0;
   border-radius: 0.75rem;
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .productCard:hover {
+  border-color: #d90652;
   box-shadow: 0 10px 25px rgb(0 0 0 / 10%);
-  transform: translateY(-2px);
+  transform: translateY(-5px);
 }
 
 .cardLink {
@@ -593,9 +593,14 @@
   font-size: 0.75rem;
 }
 
-/* Темная тема */
+/* Темная тема — фон как у сайдбара каталога */
 html[data-theme='dark'] .productCard {
   background: rgb(31 41 55 / 50%);
+  border-color: #4a5568;
+}
+
+html[data-theme='dark'] .productCard:hover {
+  border-color: #d90652;
 }
 
 html[data-theme='dark'] .name {
@@ -615,7 +620,7 @@ html[data-theme='dark'] .ratingValue {
 }
 
 html[data-theme='dark'] .finalPrice {
-  color: #f9fafb;
+  color: #d90652;
 }
 
 html[data-theme='dark'] .favoriteButton,
@@ -636,11 +641,11 @@ html[data-theme='dark'] .removeButton:hover {
 }
 
 html[data-theme='dark'] .addToCartButton {
-  background: #ec4899;
+  background: #d90652;
 }
 
 html[data-theme='dark'] .addToCartButton:hover:not(:disabled) {
-  background: #db2777;
+  background: #b80546;
 }
 
 html[data-theme='dark'] .cartControls {

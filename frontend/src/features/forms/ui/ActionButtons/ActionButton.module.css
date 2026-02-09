@@ -123,12 +123,12 @@ html[data-theme='dark'] .button.outline.callback:active:not(.disabled) {
   background-color: rgb(55 65 81 / 60%) !important;
   border-color: rgb(156 163 175 / 80%) !important;
   box-shadow: none;
-  color: #ec4899 !important;
+  color: #d90652 !important;
 }
 
 html[data-theme='dark'] .button.callback:focus-visible,
 html[data-theme='dark'] .button.outline.callback:focus-visible {
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
 @media (width <= 480px) {

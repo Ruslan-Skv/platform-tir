@@ -42,6 +42,17 @@
   overflow: visible;
 }
 
+/* Градиент для кнопки «Записаться на замер» (как в секции контактной формы) */
+.header button[data-action-button='measurement'] {
+  background: linear-gradient(135deg, #d90652 0%, #b80546 50%, #9a0432 100%) !important;
+  border: none !important;
+}
+
+.header button[data-action-button='measurement']:hover:not(:disabled),
+.header button[data-action-button='measurement']:active:not(:disabled) {
+  background: linear-gradient(135deg, #e61a5c 0%, #c80648 50%, #a8053a 100%) !important;
+}
+
 /* Тёмная тема — фон Header */
 html[data-theme='dark'] .header {
   background: #171717;

@@ -1060,7 +1060,7 @@ html[data-theme='dark'] .variantItem {
 }
 
 html[data-theme='dark'] .cartControls {
-  background: #ec4899;
+  background: #d90652;
 }
 
 html[data-theme='dark'] .inCartLabel {
@@ -1420,15 +1420,15 @@ html[data-theme='dark'] .priceLabel {
 }
 
 html[data-theme='dark'] .price {
-  color: #ec4899;
+  color: #d90652;
 }
 
 html[data-theme='dark'] .addToCartButton {
-  background: #ec4899;
+  background: #d90652;
 }
 
 html[data-theme='dark'] .addToCartButton:hover {
-  background: #db2777;
+  background: #b80546;
 }
 
 html[data-theme='dark'] .addToCartButtonSuccess {
@@ -1446,22 +1446,22 @@ html[data-theme='dark'] .favoriteButton {
 }
 
 html[data-theme='dark'] .favoriteButton:hover {
-  border-color: #ec4899;
-  color: #ec4899;
+  border-color: #d90652;
+  color: #d90652;
 }
 
 html[data-theme='dark'] .favoriteButtonActive {
-  border-color: #ec4899;
-  color: #ec4899;
+  border-color: #d90652;
+  color: #d90652;
 }
 
 html[data-theme='dark'] .favoriteButtonActive:hover {
-  border-color: #db2777;
-  color: #db2777;
+  border-color: #b80546;
+  color: #b80546;
 }
 
 html[data-theme='dark'] .cartControls {
-  background: #ec4899;
+  background: #d90652;
 }
 
 html[data-theme='dark'] .inCartLabel {

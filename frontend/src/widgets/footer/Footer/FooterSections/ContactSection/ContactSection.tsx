@@ -3,6 +3,7 @@
 import React from 'react';
 
 import { useFormContext } from '@/features/forms';
+import actionButtonStyles from '@/features/forms/ui/ActionButtons/ActionButton.module.css';
 import type { CompanyInfo, SocialLinks } from '@/shared/constants/footer';
 import { Button } from '@/shared/ui/Button';
 
@@ -31,8 +32,13 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ companyInfo, soc
         <p className={styles.text}>{companyInfo.workingHours.saturday}</p>
         <p className={styles.text}>{companyInfo.workingHours.sunday}</p>
 
-        <Button variant="outline" onClick={handleDirectorMessage} className={styles.directorButton}>
-          ПИСЬМО ДИРЕКТОРУ
+        <Button
+          variant="outline"
+          onClick={handleDirectorMessage}
+          className={`${actionButtonStyles.button} ${actionButtonStyles.callback} ${styles.directorButton}`}
+          data-action-button="callback"
+        >
+          Письмо директору
         </Button>
       </div>
 

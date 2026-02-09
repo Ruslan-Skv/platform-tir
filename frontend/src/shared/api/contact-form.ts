@@ -13,6 +13,8 @@ function getAuthHeaders(): HeadersInit {
 export interface ContactFormBlock {
   title: string;
   subtitle: string;
+  backgroundImage?: string | null;
+  backgroundOpacity?: number | null;
 }
 
 export async function getContactFormBlock(): Promise<ContactFormBlock> {

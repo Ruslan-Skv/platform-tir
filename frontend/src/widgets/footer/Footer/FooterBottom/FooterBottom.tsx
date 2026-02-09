@@ -22,9 +22,9 @@ export const FooterBottom: React.FC<FooterBottomProps> = ({
           <p className={styles.copyright}>
             {currentYear} «{copyrightCompanyName}»
           </p>
-          <p className={styles.developer}>
+          {/* <p className={styles.developer}>
             Разработчик сайта: {developer} ({email})
-          </p>
+          </p> */}
         </div>
       </div>
     </div>

@@ -57,6 +57,76 @@
   box-sizing: border-box;
 }
 
+.hint {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  margin: 0 0 8px 0;
+}
+
+.inputRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.inputRow .input {
+  flex: 1;
+  min-width: 200px;
+}
+
+.fileInput {
+  display: none;
+}
+
+.uploadBtn {
+  padding: 8px 14px;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.uploadBtn:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.uploadBtn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.previewHint {
+  font-size: 0.8125rem;
+  color: #059669;
+  margin: 8px 0 0;
+}
+
+.sliderRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.range {
+  flex: 1;
+  min-width: 120px;
+  height: 8px;
+  accent-color: #6366f1;
+}
+
+.rangeValue {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  min-width: 3ch;
+}
+
 .saveBlock {
   margin-top: 24px;
   padding: 20px 0;
