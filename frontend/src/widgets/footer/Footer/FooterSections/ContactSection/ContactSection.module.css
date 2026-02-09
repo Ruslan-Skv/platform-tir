@@ -75,23 +75,23 @@
   width: 1.5rem;
 }
 
-html[data-theme='dark'] .title,
-html[data-theme='dark'] .subtitle {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subtitle {
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .text {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .text {
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .phone {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .phone {
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .socialLink {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .socialLink {
   background-color: #374151;
 }
 
-html[data-theme='dark'] .socialLink:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .socialLink:hover {
   background-color: #4b5563;
 }

@@ -594,127 +594,129 @@
 }
 
 /* Темная тема — фон как у сайдбара каталога */
-html[data-theme='dark'] .productCard {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productCard {
   background: rgb(31 41 55 / 50%);
   border-color: #4a5568;
 }
 
-html[data-theme='dark'] .productCard:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productCard:hover {
   border-color: #d90652;
 }
 
-html[data-theme='dark'] .name {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .name {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .sku {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sku {
   color: #6b7280;
 }
 
-html[data-theme='dark'] .category {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .category {
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .ratingValue {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .ratingValue {
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .finalPrice {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .finalPrice {
   color: #d90652;
 }
 
-html[data-theme='dark'] .favoriteButton,
-html[data-theme='dark'] .compareButton,
-html[data-theme='dark'] .removeButton,
-html[data-theme='dark'] .partnerBadge {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .favoriteButton,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .compareButton,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .removeButton,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .partnerBadge {
   background: rgb(55 65 81 / 90%);
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .removeButton {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .removeButton {
   color: #f87171;
 }
 
-html[data-theme='dark'] .removeButton:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .removeButton:hover {
   background: rgb(75 85 99 / 95%);
   color: #ef4444;
 }
 
-html[data-theme='dark'] .addToCartButton {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButton {
   background: #d90652;
 }
 
-html[data-theme='dark'] .addToCartButton:hover:not(:disabled) {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButton:hover:not(:disabled) {
   background: #b80546;
 }
 
-html[data-theme='dark'] .cartControls {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cartControls {
   background: #10b981;
 }
 
-html[data-theme='dark'] .cartControlsYellow {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cartControlsYellow {
   background: #fbbf24;
 }
 
-html[data-theme='dark'] .inCartLabel {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inCartLabel {
   color: white;
 }
 
-html[data-theme='dark'] .componentsBadge {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .componentsBadge {
   background-color: #fbbf24;
   color: white;
 }
 
-html[data-theme='dark'] .quantityControls {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantityControls {
   border-color: rgba(255, 255, 255, 0.3);
   background: rgba(255, 255, 255, 0.2);
 }
 
-html[data-theme='dark'] .quantityDisplay {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantityDisplay {
   border-color: rgba(255, 255, 255, 0.3);
   background: rgba(255, 255, 255, 0.2);
 }
 
-html[data-theme='dark'] .quantityControls .quantityButton {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantityControls .quantityButton {
   color: white;
 }
 
-html[data-theme='dark'] .quantityControls .quantityButton:hover:not(:disabled) {
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .quantityControls
+  .quantityButton:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.2);
 }
 
-html[data-theme='dark'] .quantityControls .quantityValue {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantityControls .quantityValue {
   color: white;
 }
 
-html[data-theme='dark'] .imageNavButton {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .imageNavButton {
   background: rgb(55 65 81 / 90%);
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .imageNavButton:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .imageNavButton:hover {
   background: rgb(75 85 99 / 95%);
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .favoriteButton:focus-visible,
-html[data-theme='dark'] .compareButton:focus-visible,
-html[data-theme='dark'] .removeButton:focus-visible,
-html[data-theme='dark'] .imageNavButton:focus-visible,
-html[data-theme='dark'] .addToCartButton:focus-visible {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .favoriteButton:focus-visible,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .compareButton:focus-visible,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .removeButton:focus-visible,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .imageNavButton:focus-visible,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButton:focus-visible {
   box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
 }
 
-html[data-theme='dark'] .imageDot {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .imageDot {
   background: rgb(55 65 81 / 60%);
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-html[data-theme='dark'] .imageDot:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .imageDot:hover {
   background: rgb(75 85 99 / 80%);
 }
 
-html[data-theme='dark'] .imageDotActive {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .imageDotActive {
   background: rgb(75 85 99);
   border-color: #d1d5db;
 }

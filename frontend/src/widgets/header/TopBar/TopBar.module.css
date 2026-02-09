@@ -2,7 +2,7 @@
   background: #ffffff;
 }
 
-html[data-theme='dark'] .topBar {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .topBar {
   background: #171717;
 }
 
@@ -237,71 +237,71 @@ html[data-theme='dark'] .topBar {
 }
 
 /* Темная тема для TopBar */
-html[data-theme='dark'] .utilityButton {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .utilityButton {
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .utilityButton:hover,
-html[data-theme='dark'] .utilityButton:active {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .utilityButton:hover,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .utilityButton:active {
   color: #d90652;
 }
 
-html[data-theme='dark'] .utilityButton:focus-visible {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .utilityButton:focus-visible {
   box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
-html[data-theme='dark'] .iconCompare {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .iconCompare {
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .utilityButton:hover .iconCompare {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .utilityButton:hover .iconCompare {
   color: #d90652;
 }
 
-html[data-theme='dark'] .mobileUtilityButton {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileUtilityButton {
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .mobileUtilityButton:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileUtilityButton:hover {
   color: #d90652;
 }
 
-html[data-theme='dark'] .profileInitials {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .profileInitials {
   background: #4b5563;
   color: #e5e7eb;
 }
 
-html[data-theme='dark'] .searchForm {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchForm {
   border-color: #4b5563;
   background: rgb(31 41 55 / 50%);
 }
 
-html[data-theme='dark'] .searchForm:focus-within {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchForm:focus-within {
   border-color: rgb(217 6 82 / 0.4);
 }
 
-html[data-theme='dark'] .searchInput {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput {
   color: #e5e7eb;
 }
 
-html[data-theme='dark'] .searchInput::placeholder {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput::placeholder {
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .searchSubmit {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchSubmit {
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .searchSubmit:hover,
-html[data-theme='dark'] .searchSubmit:active {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchSubmit:hover,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchSubmit:active {
   color: #d90652;
 }
 
-html[data-theme='dark'] .searchInput:focus-visible {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput:focus-visible {
   box-shadow: inset 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
-html[data-theme='dark'] .searchSubmit:focus-visible {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchSubmit:focus-visible {
   box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 

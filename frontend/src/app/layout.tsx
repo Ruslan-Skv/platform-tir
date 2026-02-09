@@ -21,8 +21,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru">
+    <html lang="ru" suppressHydrationWarning>
       <body>
+        {/* Тема на html до React — убирает мигание светлой темы при навигации в тёмном режиме */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var t=localStorage.getItem('theme');document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');})();`,
+          }}
+        />
         <StoreProvider>
           <ThemeInitializer>{children}</ThemeInitializer>
         </StoreProvider>

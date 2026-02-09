@@ -193,15 +193,15 @@
 }
 
 /* Темная тема */
-html[data-theme='dark'] .title {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
   color: #f7fafc;
 }
 
-html[data-theme='dark'] .subtitle {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subtitle {
   color: #cbd5e0;
 }
 
-html[data-theme='dark'] .feature {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .feature {
   color: #cbd5e0;
 }
 

@@ -13,7 +13,7 @@
   padding: 1rem;
 }
 
-html[data-theme='dark'] .error {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .error {
   background-color: #450a0a;
   border-color: #7f1d1d;
   color: #fca5a5;

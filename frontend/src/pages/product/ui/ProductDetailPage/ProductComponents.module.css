@@ -274,44 +274,46 @@
 }
 
 /* Темная тема */
-html[data-theme='dark'] .componentsTitle {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .componentsTitle {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .componentItem {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .componentItem {
   background: #1f2937;
   border-color: #374151;
 }
 
-html[data-theme='dark'] .componentName {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .componentName {
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .componentType {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .componentType {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .cartControls {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cartControls {
   background: #d90652;
 }
 
-html[data-theme='dark'] .inCartLabel {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inCartLabel {
   color: white;
 }
 
-html[data-theme='dark'] .quantityControls {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantityControls {
   border-color: rgba(255, 255, 255, 0.3);
   background: rgba(255, 255, 255, 0.2);
 }
 
-html[data-theme='dark'] .quantityControls button {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantityControls button {
   color: white;
 }
 
-html[data-theme='dark'] .quantityControls button:hover:not(:disabled) {
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .quantityControls
+  button:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.2);
 }
 
-html[data-theme='dark'] .quantityControls .quantityValue {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantityControls .quantityValue {
   color: white;
 }

@@ -83,28 +83,28 @@
 }
 
 /* Темная тема */
-html[data-theme='dark'] .title {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
   color: #f7fafc;
 }
 
-html[data-theme='dark'] .subtitle {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subtitle {
   color: #cbd5e0;
 }
 
-html[data-theme='dark'] .advantageCard {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .advantageCard {
   background: rgb(31 41 55 / 50%);
   border-color: #4a5568;
 }
 
-html[data-theme='dark'] .advantageCard:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .advantageCard:hover {
   border-color: #d90652;
 }
 
-html[data-theme='dark'] .advantageTitle {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .advantageTitle {
   color: #f7fafc;
 }
 
-html[data-theme='dark'] .advantageDescription {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .advantageDescription {
   color: #a0aec0;
 }
 

@@ -23,10 +23,10 @@
 }
 
 /* Темная тема */
-html[data-theme='dark'] .title {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
   color: #fff;
 }
 
-html[data-theme='dark'] .message {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .message {
   color: #9ca3af;
 }

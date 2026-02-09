@@ -3,18 +3,10 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 
 import type { ThemeState } from '../types/theme';
 
-// Функция для безопасного доступа к localStorage только на клиенте
-const getInitialThemeState = (): boolean => {
-  // Если это сервер (SSR), возвращаем значение по умолчанию
-  if (typeof window === 'undefined') {
-    return false; // светлая тема по умолчанию для SSR
-  }
-
-  // Если это клиент, проверяем localStorage
-  const savedTheme = localStorage.getItem('theme');
-
-  // Для избежания mismatch, используем только светлую тему на сервере
-  return savedTheme === 'dark';
+// Всегда светлая тема в начальном состоянии, чтобы совпадал SSR и первый рендер на клиенте
+// (избегаем hydration mismatch). Реальная тема из localStorage применяется в ThemeInitializer.
+const initialState: ThemeState = {
+  isDarkTheme: false,
 };
 
 // Функция для безопасного применения темы к DOM
@@ -28,10 +20,6 @@ const applyThemeToDOM = (isDark: boolean) => {
     document.documentElement.setAttribute('data-theme', 'light');
     localStorage.setItem('theme', 'light');
   }
-};
-
-const initialState: ThemeState = {
-  isDarkTheme: getInitialThemeState(),
 };
 
 const themeSlice = createSlice({

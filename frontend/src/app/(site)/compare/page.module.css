@@ -260,13 +260,13 @@
 }
 
 /* Темная тема для кнопок прокрутки */
-html[data-theme='dark'] .scrollButton {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .scrollButton {
   background: var(--background, #1f2937);
   border-color: var(--border, #374151);
   color: var(--text-primary, #f9fafb);
 }
 
-html[data-theme='dark'] .scrollButton:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .scrollButton:hover {
   background: var(--background-hover, #374151);
   border-color: var(--text-secondary, #6b7280);
 }

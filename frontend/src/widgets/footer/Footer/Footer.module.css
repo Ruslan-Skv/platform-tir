@@ -9,6 +9,6 @@
   position: relative;
 }
 
-html[data-theme='dark'] .footer {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .footer {
   color: #fff;
 }

@@ -130,28 +130,28 @@
 }
 
 /* Темная тема */
-html[data-theme='dark'] .title {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
   color: #f7fafc;
 }
 
-html[data-theme='dark'] .subtitle {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subtitle {
   color: #cbd5e0;
 }
 
-html[data-theme='dark'] .serviceCard {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .serviceCard {
   background: rgb(31 41 55 / 50%);
   border-color: #4a5568;
 }
 
-html[data-theme='dark'] .serviceTitle {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .serviceTitle {
   color: #f7fafc;
 }
 
-html[data-theme='dark'] .serviceDescription {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .serviceDescription {
   color: #a0aec0;
 }
 
-html[data-theme='dark'] .feature {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .feature {
   background: #4a5568;
   color: #cbd5e0;
 }

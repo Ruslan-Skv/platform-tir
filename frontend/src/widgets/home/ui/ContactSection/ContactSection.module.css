@@ -127,8 +127,29 @@
   font-weight: 600;
 }
 
-/* Темная тема - уже темная, меняем только для светлой */
-html[data-theme='light'] .infoLabel {
+/* Тёмная тема — светлый текст */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .titleFirst {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subtitle {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .callbackLink {
+  color: #d90652;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .infoLabel {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .infoValue {
+  color: #f9fafb;
+}
+
+/* Светлая тема — тёмный текст на светлом фоне секции */
+:where(html[data-theme='light'], [data-app-theme='light']) .infoLabel {
   color: rgb(255 255 255 / 80%);
 }
 

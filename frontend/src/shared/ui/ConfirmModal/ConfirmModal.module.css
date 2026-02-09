@@ -64,16 +64,16 @@
 }
 
 /* Темная тема */
-html[data-theme='dark'] .message {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .message {
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .cancelButton {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton {
   border-color: #374151;
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .cancelButton:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton:hover {
   border-color: #4b5563;
   background: #374151;
   color: #d1d5db;

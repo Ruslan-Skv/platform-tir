@@ -136,55 +136,55 @@
 }
 
 /* Темная тема */
-html[data-theme='dark'] .label {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .label {
   color: #e5e7eb;
 }
 
-html[data-theme='dark'] .input {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input {
   background: #374151;
   border-color: #4b5563;
   color: #fff;
 }
 
-html[data-theme='dark'] .input:focus-visible,
-html[data-theme='dark'] .select:focus-visible,
-html[data-theme='dark'] .textarea:focus-visible {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input:focus-visible,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select:focus-visible,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .textarea:focus-visible {
   border-color: rgb(236 72 153 / 0.5);
   box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
 }
 
-html[data-theme='dark'] .select {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select {
   background: #374151;
   border-color: #4b5563;
   color: #fff;
 }
 
-html[data-theme='dark'] .textarea {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .textarea {
   background: #374151;
   border-color: #4b5563;
   color: #fff;
 }
 
-html[data-theme='dark'] .fileInput {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fileInput {
   background: #374151;
   border-color: #4b5563;
   color: #fff;
 }
 
-html[data-theme='dark'] .fileHint {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fileHint {
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .info {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .info {
   background: rgb(146 64 14 / 20%);
   border-color: #92400e;
 }
 
-html[data-theme='dark'] .infoText {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .infoText {
   color: #fbbf24;
 }
 
-html[data-theme='dark'] .infoSvg {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .infoSvg {
   color: #f59e0b;
 }
 

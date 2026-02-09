@@ -390,107 +390,107 @@
 }
 
 /* Темная тема */
-html[data-theme='dark'] .title {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .subtitle {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subtitle {
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .empty h2 {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .empty h2 {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .empty p {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .empty p {
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .cartItem {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cartItem {
   background: #1f2937;
   border-color: #374151;
 }
 
-html[data-theme='dark'] .itemName {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemName {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .itemName:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemName:hover {
   color: #ec4899;
 }
 
-html[data-theme='dark'] .itemCategory,
-html[data-theme='dark'] .itemPrice {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemCategory,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemPrice {
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .outOfStockBadge {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .outOfStockBadge {
   color: #fbbf24;
   background: #78350f;
 }
 
-html[data-theme='dark'] .itemQuantity {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemQuantity {
   border-color: #374151;
 }
 
-html[data-theme='dark'] .quantityButton {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantityButton {
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .quantityButton:hover:not(:disabled) {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantityButton:hover:not(:disabled) {
   background: #374151;
 }
 
-html[data-theme='dark'] .quantityValue {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantityValue {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .totalPrice {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .totalPrice {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .removeButton {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .removeButton {
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .removeButton:hover:not(:disabled) {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .removeButton:hover:not(:disabled) {
   color: #ef4444;
   background: #7f1d1d;
 }
 
-html[data-theme='dark'] .clearButton {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .clearButton {
   border-color: #ef4444;
   color: #6b7280;
 }
 
-html[data-theme='dark'] .clearButton:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .clearButton:hover {
   border-color: #ef4444;
   color: #ef4444;
   background: #7f1d1d;
 }
 
-html[data-theme='dark'] .summaryContent {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .summaryContent {
   background: #1f2937;
   border-color: #374151;
 }
 
-html[data-theme='dark'] .summaryTitle {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .summaryTitle {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .summaryRow {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .summaryRow {
   border-color: #374151;
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .summaryRow:last-of-type {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .summaryRow:last-of-type {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .continueShopping {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .continueShopping {
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .continueShopping:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .continueShopping:hover {
   color: #ec4899;
 }

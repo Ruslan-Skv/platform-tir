@@ -67,7 +67,7 @@
   align-items: stretch;
   display: grid;
   gap: 1.5rem;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   padding: 0 0.5rem;
 }
 
@@ -122,39 +122,39 @@
 }
 
 /* Темная тема */
-html[data-theme='dark'] .title {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .loading,
-html[data-theme='dark'] .empty {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loading,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .empty {
   background: #1f2937;
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .error {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .error {
   background: #450a0a;
   color: #fca5a5;
 }
 
-html[data-theme='dark'] .sortSelect {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sortSelect {
   background: #ffffff80;
   border: none;
   color: #000;
 }
 
-html[data-theme='dark'] .sortSelect:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sortSelect:hover {
   background: #ffffff90;
 }
 
-html[data-theme='dark'] .sortSelect:focus {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sortSelect:focus {
   background: #ffffff90;
 }
 
-html[data-theme='dark'] .totalCount {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .totalCount {
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .sortLabel {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sortLabel {
   color: #d1d5db;
 }

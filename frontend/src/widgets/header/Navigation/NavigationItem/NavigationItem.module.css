@@ -319,31 +319,34 @@
 
 /* Темная тема для dropdown */
 /* Тёмная тема — цвет текста как у телефона (#d1d5db) */
-html[data-theme='dark'] .navButton,
-html[data-theme='dark'] .navText {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .navButton,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .navText {
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .navItem:hover .navButton,
-html[data-theme='dark'] .navItem:hover .navText {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .navItem:hover .navButton,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .navItem:hover .navText {
   color: #d90652;
 }
 
-html[data-theme='dark'] .navItem .navButton:focus-visible {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .navItem .navButton:focus-visible {
   color: #d90652;
   box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
-html[data-theme='dark'] .navItem .navButton:active:not(.disabled) .navText {
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .navItem
+  .navButton:active:not(.disabled)
+  .navText {
   color: #d90652;
 }
 
-html[data-theme='dark'] .navButtonCurrentLine {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .navButtonCurrentLine {
   background-color: #d90652;
 }
 
 /* Тёмная тема выпадающего меню — в тон Header (#171717) */
-html[data-theme='dark'] .dropdown {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdown {
   background: #171717;
   border-color: rgba(217, 6, 82, 0.4);
   box-shadow:
@@ -351,47 +354,47 @@ html[data-theme='dark'] .dropdown {
     0 2px 4px -2px rgb(0 0 0 / 0.2);
 }
 
-html[data-theme='dark'] .dropdownItem {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownItem {
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .dropdownItem:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownItem:hover {
   background: rgb(217 6 82 / 0.12);
   color: #d90652;
 }
 
-html[data-theme='dark'] .dropdownItem:focus-visible {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownItem:focus-visible {
   background: rgb(217 6 82 / 0.12);
   color: #d90652;
   box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
-html[data-theme='dark'] .dropdownItem:active {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownItem:active {
   background: rgb(217 6 82 / 0.18);
   color: #d90652;
 }
 
-html[data-theme='dark'] .submenuItem {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .submenuItem {
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .submenuItem:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .submenuItem:hover {
   background: rgb(217 6 82 / 0.12);
   color: #d90652;
 }
 
-html[data-theme='dark'] .submenuItem:focus-visible {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .submenuItem:focus-visible {
   background: rgb(217 6 82 / 0.12);
   color: #d90652;
   box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
-html[data-theme='dark'] .submenuItem:active {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .submenuItem:active {
   background: rgb(217 6 82 / 0.18);
   color: #d90652;
 }
 
-html[data-theme='dark'] .submenu {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .submenu {
   background: #171717;
   border-color: rgba(217, 6, 82, 0.4);
   box-shadow:

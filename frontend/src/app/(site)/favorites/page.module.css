@@ -105,27 +105,27 @@
 }
 
 /* Темная тема */
-html[data-theme='dark'] .title {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .subtitle {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subtitle {
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .empty h2 {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .empty h2 {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .empty p {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .empty p {
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .error h1 {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .error h1 {
   color: #f87171;
 }
 
-html[data-theme='dark'] .error p {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .error p {
   color: #9ca3af;
 }
 

@@ -10,7 +10,7 @@
   transition: opacity 0.3s;
 }
 
-html[data-theme='dark'] .backdrop {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backdrop {
   background: rgb(0 0 0 / 70%);
 }
 
@@ -103,20 +103,20 @@ html[data-theme='dark'] .backdrop {
 }
 
 /* Темная тема для Modal */
-html[data-theme='dark'] .panel {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .panel {
   background: #1f2937;
   border: 1px solid #374151;
 }
 
-html[data-theme='dark'] .title {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .closeButton {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .closeButton {
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .closeButton:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .closeButton:hover {
   background: #374151;
   color: #d1d5db;
 }

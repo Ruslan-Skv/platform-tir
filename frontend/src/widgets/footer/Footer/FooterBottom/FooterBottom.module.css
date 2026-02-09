@@ -38,7 +38,7 @@
   margin: 0.25rem 0 0;
 }
 
-html[data-theme='dark'] .copyright,
-html[data-theme='dark'] .developer {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .copyright,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .developer {
   color: #9ca3af;
 }

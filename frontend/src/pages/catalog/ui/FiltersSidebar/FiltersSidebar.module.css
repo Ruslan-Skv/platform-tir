@@ -95,27 +95,27 @@
 }
 
 /* Темная тема */
-html[data-theme='dark'] .filtersSidebar {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .filtersSidebar {
   background: rgb(31 41 55 / 50%);
 }
 
-html[data-theme='dark'] .title {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .sectionTitle {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
   color: #d1d5db;
 }
 
 /* stylelint-disable-next-line no-descending-specificity */
-html[data-theme='dark'] .optionText {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .optionText {
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .option:hover .optionText {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .option:hover .optionText {
   color: #e5e7eb;
 }
 
-html[data-theme='dark'] .rangeValues {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .rangeValues {
   color: #9ca3af;
 }

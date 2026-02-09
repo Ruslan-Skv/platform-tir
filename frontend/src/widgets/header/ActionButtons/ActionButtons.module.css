@@ -95,40 +95,40 @@
 }
 
 /* Темная тема для кнопки меню */
-html[data-theme='dark'] .menuButton {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .menuButton {
   border-color: #d90652;
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .menuButton:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .menuButton:hover {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .menuButton:focus-visible {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .menuButton:focus-visible {
   box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
-html[data-theme='dark'] .menuButton:active {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .menuButton:active {
   color: #d90652;
 }
 
-html[data-theme='dark'] .phone:focus-visible {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .phone:focus-visible {
   box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
-html[data-theme='dark'] .phone:active {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .phone:active {
   color: #d90652;
 }
 
-html[data-theme='dark'] .phone {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .phone {
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .phone:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .phone:hover {
   color: #d90652;
 }
 
-html[data-theme='dark'] .phoneLabel {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .phoneLabel {
   color: #9ca3af;
 }
 

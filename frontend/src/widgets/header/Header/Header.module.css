@@ -54,10 +54,10 @@
 }
 
 /* Тёмная тема — фон Header */
-html[data-theme='dark'] .header {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .header {
   background: #171717;
 }
 
-html[data-theme='dark'] .mainHeader {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mainHeader {
   background: #171717;
 }

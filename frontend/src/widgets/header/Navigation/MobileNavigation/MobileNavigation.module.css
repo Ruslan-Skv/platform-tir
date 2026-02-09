@@ -328,71 +328,71 @@
 }
 
 /* Темная тема */
-html[data-theme='dark'] .buttonText {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .buttonText {
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .mobileMenu {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileMenu {
   background: rgb(28 28 28);
 }
 
-html[data-theme='dark'] .phone {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .phone {
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .topBarIcon {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .topBarIcon {
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .topBarIcon:hover,
-html[data-theme='dark'] .topBarIcon:active {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .topBarIcon:hover,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .topBarIcon:active {
   color: #d90652;
 }
 
-html[data-theme='dark'] .topBarIcon:focus-visible {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .topBarIcon:focus-visible {
   box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
   color: #d90652;
 }
 
-html[data-theme='dark'] .closeButton {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .closeButton {
   border-color: #d90652;
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .closeButton:hover,
-html[data-theme='dark'] .closeButton:active {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .closeButton:hover,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .closeButton:active {
   color: #d90652;
 }
 
-html[data-theme='dark'] .closeButton:focus-visible {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .closeButton:focus-visible {
   box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
-html[data-theme='dark'] .menuGridButton:focus-visible {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .menuGridButton:focus-visible {
   box-shadow: 0 0 0 2px rgb(217 6 82 / 0.3);
 }
 
-html[data-theme='dark'] .backButton:focus-visible {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backButton:focus-visible {
   box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
-html[data-theme='dark'] .subMenuItem {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subMenuItem {
   border-bottom-color: #374151;
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .subMenuItem:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subMenuItem:hover {
   background: #374151;
   color: #d90652;
 }
 
-html[data-theme='dark'] .subMenuItem:focus-visible {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subMenuItem:focus-visible {
   background: #374151;
   color: #d90652;
   box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
-html[data-theme='dark'] .subMenuItem:active {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subMenuItem:active {
   background: #4b5563;
   color: #d90652;
 }
@@ -473,28 +473,28 @@ html[data-theme='dark'] .subMenuItem:active {
   margin-right: 0.5rem;
 }
 
-html[data-theme='dark'] .subSubMenuItem {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subSubMenuItem {
   color: #9ca3af;
   border-bottom-color: #374151;
 }
 
-html[data-theme='dark'] .subSubMenuItem:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subSubMenuItem:hover {
   background: #374151;
   color: #d90652;
 }
 
-html[data-theme='dark'] .subSubMenuItem:focus-visible {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subSubMenuItem:focus-visible {
   background: #374151;
   color: #d90652;
   box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
-html[data-theme='dark'] .subSubMenuItem:active {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subSubMenuItem:active {
   background: #4b5563;
   color: #d90652;
 }
 
-html[data-theme='dark'] .menuFooter {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .menuFooter {
   border-top-color: rgb(217 6 82 / 20%);
 }
 

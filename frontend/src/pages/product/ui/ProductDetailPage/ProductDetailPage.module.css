@@ -1046,41 +1046,43 @@
 }
 
 /* Темная тема для вариантов исполнения */
-html[data-theme='dark'] .variantsSection {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .variantsSection {
   border-color: #374151;
 }
 
-html[data-theme='dark'] .variantsTitle {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .variantsTitle {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .variantItem {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .variantItem {
   background: #1f2937;
   border-color: #374151;
 }
 
-html[data-theme='dark'] .cartControls {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cartControls {
   background: #d90652;
 }
 
-html[data-theme='dark'] .inCartLabel {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inCartLabel {
   color: white;
 }
 
-html[data-theme='dark'] .quantityControls {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantityControls {
   border-color: rgba(255, 255, 255, 0.3);
   background: rgba(255, 255, 255, 0.2);
 }
 
-html[data-theme='dark'] .quantityControls button {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantityControls button {
   color: white;
 }
 
-html[data-theme='dark'] .quantityControls button:hover:not(:disabled) {
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .quantityControls
+  button:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.2);
 }
 
-html[data-theme='dark'] .quantityControls .quantityValue {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantityControls .quantityValue {
   color: white;
 }
 
@@ -1334,11 +1336,11 @@ html[data-theme='dark'] .quantityControls .quantityValue {
 }
 
 /* Темная тема */
-html[data-theme='dark'] .container {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .container {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .variantNotification {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .variantNotification {
   background: #374151;
   color: #f9fafb;
   box-shadow:
@@ -1346,64 +1348,64 @@ html[data-theme='dark'] .variantNotification {
     0 0 0 1px #4b5563;
 }
 
-html[data-theme='dark'] .variantNotificationIcon {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .variantNotificationIcon {
   background: #f59e0b;
   color: #1f2937;
 }
 
-html[data-theme='dark'] .variantNotificationClose {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .variantNotificationClose {
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .variantNotificationClose:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .variantNotificationClose:hover {
   color: #f9fafb;
   background: rgba(255, 255, 255, 0.1);
 }
 
-html[data-theme='dark'] .breadcrumbLink {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbLink {
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .breadcrumbLink:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbLink:hover {
   color: #ec4899;
 }
 
-html[data-theme='dark'] .breadcrumbCurrent {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbCurrent {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .mainImage {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mainImage {
   background: transparent;
   border-color: #374151;
 }
 
-html[data-theme='dark'] .thumbnail {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .thumbnail {
   background: transparent;
   border-color: #374151;
 }
 
-html[data-theme='dark'] .thumbnail:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .thumbnail:hover {
   border-color: #4b5563;
 }
 
-html[data-theme='dark'] .thumbnailActive {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .thumbnailActive {
   border-color: #ec4899;
 }
 
-html[data-theme='dark'] .title {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .sku {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sku {
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .priceBox {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .priceBox {
   background: #374151;
   border-color: #4b5563;
 }
 
-html[data-theme='dark'] .priceBoxTooltip::after {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .priceBoxTooltip::after {
   background: #6b7280;
   color: #f9fafb;
   box-shadow:
@@ -1411,118 +1413,118 @@ html[data-theme='dark'] .priceBoxTooltip::after {
     0 0 0 1px #9ca3af;
 }
 
-html[data-theme='dark'] .priceBoxTooltip::before {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .priceBoxTooltip::before {
   border-right-color: #6b7280;
 }
 
-html[data-theme='dark'] .priceLabel {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .priceLabel {
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .price {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .price {
   color: #d90652;
 }
 
-html[data-theme='dark'] .addToCartButton {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButton {
   background: #d90652;
 }
 
-html[data-theme='dark'] .addToCartButton:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButton:hover {
   background: #b80546;
 }
 
-html[data-theme='dark'] .addToCartButtonSuccess {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButtonSuccess {
   background: #10b981 !important;
 }
 
-html[data-theme='dark'] .addToCartButtonSuccess:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButtonSuccess:hover {
   background: #059669 !important;
 }
 
-html[data-theme='dark'] .favoriteButton {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .favoriteButton {
   background: #374151;
   border-color: #4b5563;
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .favoriteButton:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .favoriteButton:hover {
   border-color: #d90652;
   color: #d90652;
 }
 
-html[data-theme='dark'] .favoriteButtonActive {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .favoriteButtonActive {
   border-color: #d90652;
   color: #d90652;
 }
 
-html[data-theme='dark'] .favoriteButtonActive:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .favoriteButtonActive:hover {
   border-color: #b80546;
   color: #b80546;
 }
 
-html[data-theme='dark'] .cartControls {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cartControls {
   background: #d90652;
 }
 
-html[data-theme='dark'] .inCartLabel {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inCartLabel {
   color: white;
 }
 
-html[data-theme='dark'] .quantityControls {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantityControls {
   border-color: rgba(255, 255, 255, 0.3);
   background: rgba(255, 255, 255, 0.2);
 }
 
-html[data-theme='dark'] .quantityButton {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantityButton {
   color: white;
 }
 
-html[data-theme='dark'] .quantityButton:hover:not(:disabled) {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantityButton:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.2);
 }
 
-html[data-theme='dark'] .quantityValue {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantityValue {
   color: white;
 }
 
-html[data-theme='dark'] .attributes {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributes {
   border-color: #374151;
 }
 
-html[data-theme='dark'] .attributesTitle {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributesTitle {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .attributesList dt {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributesList dt {
   color: #9ca3af;
 }
 
-html[data-theme='dark'] .attributesList dd {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributesList dd {
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .description {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .description {
   border-color: #374151;
 }
 
-html[data-theme='dark'] .descriptionTitle {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .descriptionTitle {
   color: #f9fafb;
 }
 
-html[data-theme='dark'] .descriptionText {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .descriptionText {
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .loading,
-html[data-theme='dark'] .error {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loading,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .error {
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .error h1 {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .error h1 {
   color: #f87171;
 }
 
-html[data-theme='dark'] .backLink {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backLink {
   color: #ec4899;
 }
 

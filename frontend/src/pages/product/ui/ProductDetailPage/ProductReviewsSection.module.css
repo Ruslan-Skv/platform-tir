@@ -211,24 +211,24 @@
   border-radius: 0.5rem;
 }
 
-html[data-theme='dark'] .section {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .section {
   border-top-color: rgb(255 255 255 / 10%);
 }
 
-html[data-theme='dark'] .reviewCard {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .reviewCard {
   border-bottom-color: rgb(255 255 255 / 8%);
 }
 
-html[data-theme='dark'] .reviewComment {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .reviewComment {
   color: #e5e7eb;
 }
 
-html[data-theme='dark'] .form {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .form {
   background: rgb(255 255 255 / 5%);
 }
 
-html[data-theme='dark'] .input,
-html[data-theme='dark'] .textarea {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .textarea {
   border-color: #4b5563;
   background: rgb(0 0 0 / 20%);
   color: #f9fafb;

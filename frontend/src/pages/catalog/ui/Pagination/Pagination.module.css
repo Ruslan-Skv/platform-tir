@@ -72,41 +72,41 @@
 
 /* Темная тема */
 /* stylelint-disable-next-line no-descending-specificity */
-html[data-theme='dark'] .prevButton,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .prevButton,
 /* stylelint-disable-next-line no-descending-specificity */
-html[data-theme='dark'] .nextButton {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .nextButton {
   background: #374151;
   border-color: #4b5563;
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .prevButton:disabled,
-html[data-theme='dark'] .nextButton:disabled {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .prevButton:disabled,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .nextButton:disabled {
   background: #1f2937;
   border-color: #374151;
   color: #6b7280;
 }
 
-html[data-theme='dark'] .prevButton:hover:not(:disabled),
-html[data-theme='dark'] .nextButton:hover:not(:disabled) {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .prevButton:hover:not(:disabled),
+:where(html[data-theme='dark'], [data-app-theme='dark']) .nextButton:hover:not(:disabled) {
   background: #4b5563;
   border-color: #6b7280;
 }
 
 /* stylelint-disable-next-line no-descending-specificity */
-html[data-theme='dark'] .pageButton {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pageButton {
   background: #374151;
   border-color: #4b5563;
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .pageButton.active {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pageButton.active {
   background: #d90652;
   border-color: #d90652;
   color: white;
 }
 
-html[data-theme='dark'] .pageButton:hover:not(.active) {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pageButton:hover:not(.active) {
   background: #4b5563;
   border-color: #6b7280;
 }

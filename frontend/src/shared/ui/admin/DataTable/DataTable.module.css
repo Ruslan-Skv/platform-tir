@@ -82,29 +82,29 @@
 }
 
 /* Темная тема для стрелок */
-html[data-theme='dark'] .scrollArrow {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .scrollArrow {
   background: linear-gradient(to right, rgba(31, 41, 55, 0.95), rgba(31, 41, 55, 0.8));
   color: #d1d5db;
 }
 
-html[data-theme='dark'] .scrollArrow:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .scrollArrow:hover {
   background: linear-gradient(to right, rgba(55, 65, 81, 0.95), rgba(55, 65, 81, 0.8));
   color: #ec4899;
 }
 
-html[data-theme='dark'] .scrollArrowLeft {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .scrollArrowLeft {
   background: linear-gradient(to right, rgba(31, 41, 55, 0.95), rgba(31, 41, 55, 0.8));
 }
 
-html[data-theme='dark'] .scrollArrowLeft:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .scrollArrowLeft:hover {
   background: linear-gradient(to right, rgba(55, 65, 81, 0.95), rgba(55, 65, 81, 0.8));
 }
 
-html[data-theme='dark'] .scrollArrowRight {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .scrollArrowRight {
   background: linear-gradient(to left, rgba(31, 41, 55, 0.95), rgba(31, 41, 55, 0.8));
 }
 
-html[data-theme='dark'] .scrollArrowRight:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .scrollArrowRight:hover {
   background: linear-gradient(to left, rgba(55, 65, 81, 0.95), rgba(55, 65, 81, 0.8));
 }
 

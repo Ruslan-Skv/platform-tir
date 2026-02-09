@@ -204,12 +204,12 @@ select:focus-visible {
 }
 
 /* Тёмная тема — обводка фокуса */
-html[data-theme='dark'] a:focus-visible,
-html[data-theme='dark'] button:focus-visible,
-html[data-theme='dark'] input:focus-visible,
-html[data-theme='dark'] textarea:focus-visible,
-html[data-theme='dark'] select:focus-visible,
-html[data-theme='dark'] [role='button']:focus-visible {
+:where(html[data-theme='dark'], [data-app-theme='dark']) a:focus-visible,
+:where(html[data-theme='dark'], [data-app-theme='dark']) button:focus-visible,
+:where(html[data-theme='dark'], [data-app-theme='dark']) input:focus-visible,
+:where(html[data-theme='dark'], [data-app-theme='dark']) textarea:focus-visible,
+:where(html[data-theme='dark'], [data-app-theme='dark']) select:focus-visible,
+:where(html[data-theme='dark'], [data-app-theme='dark']) [role='button']:focus-visible {
   box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
 }
 

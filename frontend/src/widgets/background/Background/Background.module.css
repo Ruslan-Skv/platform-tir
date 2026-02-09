@@ -1,5 +1,6 @@
 .background {
   background-attachment: fixed;
+  background-image: url('/images/light-fon.png');
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
@@ -20,16 +21,21 @@
   transition: all 0.5s ease-in-out;
 }
 
-/* Светлая тема — отдельная картинка light-fon.png, без оверлея */
-.background[data-theme='light'] {
+/* Светлая тема — light-fon.png (значение по умолчанию выше), без оверлея */
+html[data-theme='light'] .background {
   filter: brightness(1) contrast(1) saturate(1);
 }
 
-.background[data-theme='light']::before {
+html[data-theme='light'] .background::before {
   background: rgb(255 255 255 / 0%);
 }
 
-/* Тёмная тема - оригинальная картинка */
-.background[data-theme='dark'] {
+/* Тёмная тема — dark-fon.jpg, задаётся через html[data-theme] (скрипт до React) — без мигания при загрузке/навигации */
+html[data-theme='dark'] .background {
+  background-image: url('/images/dark-fon.jpg');
   filter: none;
+}
+
+html[data-theme='dark'] .background::before {
+  background: rgb(255 255 255 / 0%);
 }
