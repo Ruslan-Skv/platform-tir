@@ -23,6 +23,7 @@ interface HeroBlock {
   titleAccent: string;
   subtitle: string;
   slideShowMode?: HeroSlideShowMode;
+  slideGap?: number;
 }
 
 interface HeroSlide {
@@ -123,7 +124,10 @@ export function HeroSectionPage() {
     }
   };
 
-  const handleBlockChange = (field: keyof HeroBlock, value: string | HeroSlideShowMode) => {
+  const handleBlockChange = (
+    field: keyof HeroBlock,
+    value: string | number | HeroSlideShowMode
+  ) => {
     if (!data) return;
     setData({
       ...data,
@@ -382,6 +386,22 @@ export function HeroSectionPage() {
             переключение только по клику на точки. <strong>Один слайд</strong> — показывается только
             первый слайд без карусели.
           </p>
+        </div>
+        <div className={styles.formGroup}>
+          <label>Зазор между фотографиями (px)</label>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={data.block.slideGap ?? 16}
+            onChange={(e) => {
+              const v = parseInt(e.target.value, 10);
+              handleBlockChange('slideGap', Number.isNaN(v) ? 16 : Math.max(0, Math.min(100, v)));
+            }}
+            className={styles.input}
+            style={{ maxWidth: 100 }}
+          />
+          <p className={styles.hint}>От 0 до 100 пикселей. По умолчанию 16.</p>
         </div>
         <p className={styles.hint}>
           Загружайте фотографии готовых работ. Они будут отображаться в режиме слайд-шоу вместо

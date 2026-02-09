@@ -107,6 +107,7 @@ model HeroBlock {
   titleAccent   String   @default("в Мурманске")
   subtitle      String   @default("Мебель на заказ, ремонт под ключ, двери входные и межкомнатные, натяжные потолки, жалюзи, мягкая мебель, кровати, матрасы .....") @db.Text
   slideShowMode String   @default("auto") // auto | manual | static
+  slideGap      Int      @default(16) // зазор между фотографиями в слайдере (px)
   updatedAt     DateTime @updatedAt
 
   @@map("hero_block")

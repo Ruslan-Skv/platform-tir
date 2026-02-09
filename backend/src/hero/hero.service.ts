@@ -13,6 +13,7 @@ export interface HeroData {
     titleAccent: string;
     subtitle: string;
     slideShowMode: HeroSlideShowMode;
+    slideGap: number;
   };
   slides: { id: string; imageUrl: string; sortOrder: number }[];
   features: { id: string; icon: string; title: string; sortOrder: number }[];
@@ -35,6 +36,8 @@ export class HeroService {
     const slideShowMode: HeroSlideShowMode =
       rawMode === 'manual' || rawMode === 'static' ? rawMode : 'auto';
 
+    const slideGap = block?.slideGap ?? 16;
+
     return {
       block: block
         ? {
@@ -42,6 +45,7 @@ export class HeroService {
             titleAccent: block.titleAccent,
             subtitle: block.subtitle,
             slideShowMode,
+            slideGap,
           }
         : {
             titleMain: 'Создаем интерьеры мечты',
@@ -49,6 +53,7 @@ export class HeroService {
             subtitle:
               'Мебель на заказ, ремонт под ключ, двери входные и межкомнатные, натяжные потолки, жалюзи, мягкая мебель, кровати, матрасы .....',
             slideShowMode: 'auto' as HeroSlideShowMode,
+            slideGap: 16,
           },
       slides: slides.map((s) => ({
         id: s.id,
@@ -74,6 +79,7 @@ export class HeroService {
     titleAccent?: string;
     subtitle?: string;
     slideShowMode?: HeroSlideShowMode;
+    slideGap?: number;
   }) {
     return this.prisma.heroBlock.upsert({
       where: { id: 'main' },
@@ -83,12 +89,14 @@ export class HeroService {
         titleAccent: data.titleAccent ?? 'в Мурманске',
         subtitle: data.subtitle ?? '',
         slideShowMode: data.slideShowMode ?? 'auto',
+        slideGap: data.slideGap ?? 16,
       },
       update: {
         ...(data.titleMain !== undefined && { titleMain: data.titleMain }),
         ...(data.titleAccent !== undefined && { titleAccent: data.titleAccent }),
         ...(data.subtitle !== undefined && { subtitle: data.subtitle }),
         ...(data.slideShowMode !== undefined && { slideShowMode: data.slideShowMode }),
+        ...(data.slideGap !== undefined && { slideGap: data.slideGap }),
       },
     });
   }
