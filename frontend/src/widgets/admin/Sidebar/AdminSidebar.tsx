@@ -66,11 +66,13 @@ const baseNavItems: NavItem[] = [
         label: 'Главная страница',
         href: '/admin/content/home',
         children: [
+          { label: 'Обзор', href: '/admin/content/home' },
           { label: 'Первый блок', href: '/admin/content/hero' },
           { label: 'Наши направления', href: '/admin/content/directions' },
           { label: 'Почему выбирают нас', href: '/admin/content/advantages' },
           { label: 'Комплексные решения', href: '/admin/content/services' },
           { label: 'Популярные товары', href: '/admin/content/featured-products' },
+          { label: 'Контактная форма', href: '/admin/content/contact-form' },
         ],
       },
       { label: 'Страницы', href: '/admin/content/pages' },

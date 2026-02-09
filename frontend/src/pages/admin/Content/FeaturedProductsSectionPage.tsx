@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/features/auth';
 
 import styles from './FeaturedProductsSectionPage.module.css';
+import { SectionVisibilityCheckbox } from './SectionVisibilityCheckbox';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -105,6 +106,11 @@ export function FeaturedProductsSectionPage() {
           показывать первыми и как сортировать остальные.
         </p>
       </header>
+
+      <SectionVisibilityCheckbox
+        sectionKey="featuredProductsVisible"
+        sectionLabel="Популярные товары"
+      />
 
       {message && (
         <div

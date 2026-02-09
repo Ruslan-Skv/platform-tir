@@ -25,6 +25,8 @@ import { FooterModule } from './footer/footer.module';
 import { NavigationModule } from './navigation/navigation.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { FormsModule } from './forms/forms.module';
+import { HomeSectionsModule } from './home-sections/home-sections.module';
+import { ContactFormModule } from './contact-form/contact-form.module';
 
 @Module({
   imports: [
@@ -60,6 +62,8 @@ import { FormsModule } from './forms/forms.module';
     NavigationModule,
     ReviewsModule,
     FormsModule,
+    HomeSectionsModule,
+    ContactFormModule,
   ],
   controllers: [AppController],
   providers: [AppService],

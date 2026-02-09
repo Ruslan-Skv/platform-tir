@@ -154,7 +154,22 @@
   overflow: visible;
 }
 
-/* Всплывающее окошко с подразделами — справа от раздела при наведении */
+/* Обёртка раздела + подменю: hover на ней держит подменю открытым при переходе мыши в подменю */
+.dropdownSectionInner {
+  position: relative;
+}
+
+/* Невидимый «мостик» между разделом и подменю — курсор не теряет hover при переходе */
+.dropdownSectionInner::after {
+  content: '';
+  position: absolute;
+  left: 100%;
+  top: 0;
+  bottom: 0;
+  width: 0.5rem;
+}
+
+/* Всплывающее окошко с подразделами — справа от раздела при наведении на обёртку */
 .submenu {
   display: none;
   flex-direction: column;
@@ -173,7 +188,7 @@
   z-index: 60;
 }
 
-.dropdownSection:hover .submenu {
+.dropdownSectionInner:hover .submenu {
   display: flex;
 }
 
@@ -183,6 +198,13 @@
   right: 100%;
   margin-left: 0;
   margin-right: 0.25rem;
+}
+
+/* Мостик для правого выравнивания: подменю слева, мостик тоже слева */
+.dropdownRight .dropdownSectionInner::after {
+  left: auto;
+  right: 100%;
+  width: 0.5rem;
 }
 
 .submenuItem {

@@ -4,6 +4,12 @@ const nextConfig = {
   sassOptions: {
     includePaths: ['./src/shared/styles'],
   },
+  async rewrites() {
+    return [
+      // Браузер по умолчанию запрашивает /favicon.ico — отдаём favicon.svg
+      { source: '/favicon.ico', destination: '/favicon.svg' },
+    ];
+  },
   images: {
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],

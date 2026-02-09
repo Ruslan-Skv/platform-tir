@@ -6,6 +6,7 @@ import { useAuth } from '@/features/auth';
 import { categories } from '@/widgets/home/lib/constants';
 
 import styles from './HomeDirectionsPage.module.css';
+import { SectionVisibilityCheckbox } from './SectionVisibilityCheckbox';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 const UPLOADS_BASE = API_URL.replace(/\/api\/v1\/?$/, '');
@@ -85,6 +86,9 @@ export function HomeDirectionsPage() {
           Допустимые форматы: JPG, PNG, WebP, GIF. Размер до 5 МБ.
         </p>
       </header>
+
+      <SectionVisibilityCheckbox sectionKey="directionsVisible" sectionLabel="Наши направления" />
+
       {loading ? (
         <p>Загрузка...</p>
       ) : (

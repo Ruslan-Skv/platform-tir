@@ -258,36 +258,38 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
               {apiDropdownItems &&
                 apiDropdownItems.map((dropdownItem) => (
                   <div key={dropdownItem.id} className={styles.dropdownSection}>
-                    <a
-                      href={dropdownItem.href}
-                      onClick={() => handleDropdownItemClick(dropdownItem.name)}
-                      className={styles.dropdownItem}
-                      title={dropdownItem.name}
-                    >
-                      {dropdownItem.icon && (
-                        <span className={styles.dropdownItemIconWrapper}>
-                          {getIcon(dropdownItem.icon)}
+                    <div className={styles.dropdownSectionInner}>
+                      <a
+                        href={dropdownItem.href}
+                        onClick={() => handleDropdownItemClick(dropdownItem.name)}
+                        className={styles.dropdownItem}
+                      >
+                        {dropdownItem.icon && (
+                          <span className={styles.dropdownItemIconWrapper}>
+                            {getIcon(dropdownItem.icon)}
+                          </span>
+                        )}
+                        <span
+                          className={`${styles.dropdownItemText} ${styles.dropdownItemTextBold}`}
+                        >
+                          {dropdownItem.name}
                         </span>
+                      </a>
+                      {dropdownItem.submenu && dropdownItem.submenu.length > 0 && (
+                        <div className={styles.submenu}>
+                          {dropdownItem.submenu.map((subItem) => (
+                            <a
+                              key={subItem.id}
+                              href={subItem.href}
+                              onClick={() => handleDropdownItemClick(subItem.name)}
+                              className={styles.submenuItem}
+                            >
+                              {subItem.name}
+                            </a>
+                          ))}
+                        </div>
                       )}
-                      <span className={`${styles.dropdownItemText} ${styles.dropdownItemTextBold}`}>
-                        {dropdownItem.name}
-                      </span>
-                    </a>
-                    {dropdownItem.submenu && dropdownItem.submenu.length > 0 && (
-                      <div className={styles.submenu}>
-                        {dropdownItem.submenu.map((subItem) => (
-                          <a
-                            key={subItem.id}
-                            href={subItem.href}
-                            onClick={() => handleDropdownItemClick(subItem.name)}
-                            className={styles.submenuItem}
-                            title={subItem.name}
-                          >
-                            {subItem.name}
-                          </a>
-                        ))}
-                      </div>
-                    )}
+                    </div>
                   </div>
                 ))}
 
@@ -295,45 +297,51 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
               {useDynamicMenu &&
                 dynamicCategories!.map((category) => (
                   <div key={category.slug} className={styles.dropdownSection}>
-                    <a
-                      href={category.href}
-                      onClick={() => handleDropdownItemClick(category.name)}
-                      className={styles.dropdownItem}
-                      title={category.name}
-                    >
-                      <span className={styles.dropdownItemIconWrapper}>
-                        {category.image ? (
-                          <img src={category.image} alt="" className={styles.categoryImage} />
-                        ) : category.icon ? (
-                          <span className={styles.categoryIcon}>{category.icon}</span>
-                        ) : (
-                          <RectangleStackIcon className={styles.dropdownItemIcon} />
-                        )}
-                      </span>
-                      <span className={`${styles.dropdownItemText} ${styles.dropdownItemTextBold}`}>
-                        {category.name}
-                      </span>
-                    </a>
-                    {category.hasSubmenu && category.submenu.length > 0 && (
-                      <div className={styles.submenu}>
-                        {category.submenu.map((subItem) => (
-                          <a
-                            key={subItem.slug}
-                            href={subItem.href}
-                            onClick={() => handleDropdownItemClick(subItem.name)}
-                            className={styles.submenuItem}
-                            title={subItem.name}
-                          >
-                            {subItem.image ? (
-                              <img src={subItem.image} alt="" className={styles.submenuItemImage} />
-                            ) : subItem.icon ? (
-                              <span className={styles.submenuItemIcon}>{subItem.icon}</span>
-                            ) : null}
-                            <span>{subItem.name}</span>
-                          </a>
-                        ))}
-                      </div>
-                    )}
+                    <div className={styles.dropdownSectionInner}>
+                      <a
+                        href={category.href}
+                        onClick={() => handleDropdownItemClick(category.name)}
+                        className={styles.dropdownItem}
+                      >
+                        <span className={styles.dropdownItemIconWrapper}>
+                          {category.image ? (
+                            <img src={category.image} alt="" className={styles.categoryImage} />
+                          ) : category.icon ? (
+                            <span className={styles.categoryIcon}>{category.icon}</span>
+                          ) : (
+                            <RectangleStackIcon className={styles.dropdownItemIcon} />
+                          )}
+                        </span>
+                        <span
+                          className={`${styles.dropdownItemText} ${styles.dropdownItemTextBold}`}
+                        >
+                          {category.name}
+                        </span>
+                      </a>
+                      {category.hasSubmenu && category.submenu.length > 0 && (
+                        <div className={styles.submenu}>
+                          {category.submenu.map((subItem) => (
+                            <a
+                              key={subItem.slug}
+                              href={subItem.href}
+                              onClick={() => handleDropdownItemClick(subItem.name)}
+                              className={styles.submenuItem}
+                            >
+                              {subItem.image ? (
+                                <img
+                                  src={subItem.image}
+                                  alt=""
+                                  className={styles.submenuItemImage}
+                                />
+                              ) : subItem.icon ? (
+                                <span className={styles.submenuItemIcon}>{subItem.icon}</span>
+                              ) : null}
+                              <span>{subItem.name}</span>
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
 
@@ -342,38 +350,38 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
                 menuData &&
                 menuData.items.map((dropdownItem) => (
                   <div key={dropdownItem.name} className={styles.dropdownSection}>
-                    {/* Название раздела (жирным) */}
-                    <a
-                      href={dropdownItem.href}
-                      onClick={() => handleDropdownItemClick(dropdownItem.name)}
-                      className={styles.dropdownItem}
-                      title={dropdownItem.name}
-                    >
-                      {dropdownItem.icon && (
-                        <span className={styles.dropdownItemIconWrapper}>
-                          {getIcon(dropdownItem.icon)}
+                    <div className={styles.dropdownSectionInner}>
+                      <a
+                        href={dropdownItem.href}
+                        onClick={() => handleDropdownItemClick(dropdownItem.name)}
+                        className={styles.dropdownItem}
+                      >
+                        {dropdownItem.icon && (
+                          <span className={styles.dropdownItemIconWrapper}>
+                            {getIcon(dropdownItem.icon)}
+                          </span>
+                        )}
+                        <span
+                          className={`${styles.dropdownItemText} ${styles.dropdownItemTextBold}`}
+                        >
+                          {dropdownItem.name}
                         </span>
+                      </a>
+                      {dropdownItem.hasSubmenu && dropdownItem.submenu && (
+                        <div className={styles.submenu}>
+                          {dropdownItem.submenu.map((subItem) => (
+                            <a
+                              key={subItem.name}
+                              href={subItem.href}
+                              onClick={() => handleDropdownItemClick(subItem.name)}
+                              className={styles.submenuItem}
+                            >
+                              {subItem.name}
+                            </a>
+                          ))}
+                        </div>
                       )}
-                      <span className={`${styles.dropdownItemText} ${styles.dropdownItemTextBold}`}>
-                        {dropdownItem.name}
-                      </span>
-                    </a>
-                    {/* Подразделы (серии) */}
-                    {dropdownItem.hasSubmenu && dropdownItem.submenu && (
-                      <div className={styles.submenu}>
-                        {dropdownItem.submenu.map((subItem) => (
-                          <a
-                            key={subItem.name}
-                            href={subItem.href}
-                            onClick={() => handleDropdownItemClick(subItem.name)}
-                            className={styles.submenuItem}
-                            title={subItem.name}
-                          >
-                            {subItem.name}
-                          </a>
-                        ))}
-                      </div>
-                    )}
+                    </div>
                   </div>
                 ))}
             </div>

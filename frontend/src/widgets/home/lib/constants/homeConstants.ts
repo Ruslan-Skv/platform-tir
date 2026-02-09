@@ -25,13 +25,28 @@ export interface Service {
   image: string;
 }
 
+/**
+ * Картинки по умолчанию для раздела «Наши направления» (первая загрузка без бэкенда).
+ * Файлы лежат в public/images/; при работе бэкенда подменяются из API (админка).
+ * Используются при недоступности бэкенда, чтобы не запрашивать URL с localhost:3001.
+ */
+export const DEFAULT_DIRECTION_IMAGES: Record<string, string> = {
+  furniture: '/images/mebel.jpg',
+  repair: '/images/remont-kvartir.jpg',
+  doors: '/images/dveri.jpg',
+  windows: '/images/okna.jpg',
+  ceilings: '/images/potolki.jpg',
+  blinds: '/images/zhalyuzi.jpg',
+  sales: '/images/akcii.jpg',
+};
+
 export const categories: Category[] = [
   {
     id: 1,
     slug: 'furniture',
     name: 'Мебель на заказ',
     description: 'Кухни, шкафы, гостиные по индивидуальным размерам',
-    image: '',
+    image: DEFAULT_DIRECTION_IMAGES.furniture ?? '',
     productCount: 156,
     href: '/catalog?category=мебель',
   },
@@ -40,7 +55,7 @@ export const categories: Category[] = [
     slug: 'repair',
     name: 'Ремонт квартир',
     description: 'Ремонт под ключ и отделочные работы',
-    image: '',
+    image: DEFAULT_DIRECTION_IMAGES.repair ?? '',
     productCount: 42,
     href: '/catalog?category=ремонт',
   },
@@ -49,7 +64,7 @@ export const categories: Category[] = [
     slug: 'doors',
     name: 'Двери',
     description: 'Межкомнатные и входные двери',
-    image: '',
+    image: DEFAULT_DIRECTION_IMAGES.doors ?? '',
     productCount: 89,
     href: '/catalog?category=двери',
   },
@@ -58,7 +73,7 @@ export const categories: Category[] = [
     slug: 'windows',
     name: 'Окна',
     description: 'Пластиковые и алюминиевые окна',
-    image: '',
+    image: DEFAULT_DIRECTION_IMAGES.windows ?? '',
     productCount: 67,
     href: '/catalog?category=окна',
   },
@@ -67,7 +82,7 @@ export const categories: Category[] = [
     slug: 'ceilings',
     name: 'Потолки',
     description: 'Натяжные и гипсокартонные потолки',
-    image: '',
+    image: DEFAULT_DIRECTION_IMAGES.ceilings ?? '',
     productCount: 54,
     href: '/catalog?category=потолки',
   },
@@ -76,7 +91,7 @@ export const categories: Category[] = [
     slug: 'blinds',
     name: 'Жалюзи',
     description: 'Горизонтальные, вертикальные, рулонные',
-    image: '',
+    image: DEFAULT_DIRECTION_IMAGES.blinds ?? '',
     productCount: 73,
     href: '/catalog?category=жалюзи',
   },
@@ -85,7 +100,7 @@ export const categories: Category[] = [
     slug: 'sales',
     name: 'Акции',
     description: 'Специальные предложения и скидки',
-    image: '',
+    image: DEFAULT_DIRECTION_IMAGES.sales ?? '',
     productCount: 28,
     href: '/catalog?category=акции',
     isSale: true,

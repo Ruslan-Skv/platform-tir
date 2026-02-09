@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 
+import { SectionVisibilityCheckbox } from './SectionVisibilityCheckbox';
 import styles from './ServicesSectionPage.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
@@ -271,6 +272,8 @@ export function ServicesSectionPage() {
           Управление заголовком и услугами в секции «Комплексные решения» на главной странице.
         </p>
       </header>
+
+      <SectionVisibilityCheckbox sectionKey="servicesVisible" sectionLabel="Комплексные решения" />
 
       {message && (
         <div

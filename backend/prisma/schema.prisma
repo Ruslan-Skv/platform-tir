@@ -172,6 +172,28 @@ model FeaturedProductsBlock {
   @@map("featured_products_block")
 }
 
+model HomePageSectionsBlock {
+  id                    String   @id @default("main")
+  heroVisible           Boolean  @default(true)
+  directionsVisible     Boolean  @default(true)
+  advantagesVisible     Boolean  @default(true)
+  servicesVisible       Boolean  @default(true)
+  featuredProductsVisible Boolean @default(true)
+  contactFormVisible    Boolean  @default(true)
+  updatedAt             DateTime @updatedAt
+
+  @@map("home_page_sections_block")
+}
+
+model ContactFormBlock {
+  id        String   @id @default("main")
+  title     String   @default("Готовы начать проект?")
+  subtitle  String   @default("Оставьте заявку и получите бесплатную консультацию специалиста") @db.Text
+  updatedAt DateTime @updatedAt
+
+  @@map("contact_form_block")
+}
+
 model Partner {
   id                 String   @id @default(cuid())
   name               String   // Название партнёра

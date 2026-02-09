@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/features/auth';
 
 import styles from './HeroSectionPage.module.css';
+import { SectionVisibilityCheckbox } from './SectionVisibilityCheckbox';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 const UPLOADS_BASE = API_URL.replace(/\/api\/v1\/?$/, '');
@@ -244,6 +245,11 @@ export function AdvantagesSectionPage() {
           Управление заголовком и преимуществами в секции «Почему выбирают нас» на главной странице.
         </p>
       </header>
+
+      <SectionVisibilityCheckbox
+        sectionKey="advantagesVisible"
+        sectionLabel="Почему выбирают нас"
+      />
 
       {message && (
         <div

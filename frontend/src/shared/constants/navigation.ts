@@ -1,5 +1,10 @@
 import type { DropdownItem, DropdownMenus, NavigationItem } from '@/shared/types/navigation';
 
+/**
+ * Меню навигации по умолчанию (используется при недоступности бэкенда).
+ * Должно содержать полный набор пунктов, чтобы сайт работал без API.
+ */
+/** Порядок пунктов совпадает с порядком по умолчанию на бэкенде (sortOrder), чтобы меню не отличалось при остановленном API. */
 export const navigation: NavigationItem[] = [
   {
     name: 'Каталог',
@@ -12,6 +17,16 @@ export const navigation: NavigationItem[] = [
     href: '/catalog/services',
     hasDropdown: true,
     category: 'services',
+  },
+  {
+    name: 'Мебель на заказ',
+    href: '/catalog/products/custom-furniture',
+    hasDropdown: false,
+  },
+  {
+    name: 'Натяжные потолки',
+    href: '/catalog/products/stretch-ceilings',
+    hasDropdown: false,
   },
   {
     name: 'Акции',
