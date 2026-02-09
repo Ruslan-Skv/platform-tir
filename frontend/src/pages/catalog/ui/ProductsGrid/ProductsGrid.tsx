@@ -41,6 +41,16 @@ interface ApiProduct {
     tooltipText?: string | null;
     showTooltip?: boolean;
   } | null;
+  cardVariants?: Array<{
+    id: string;
+    name: string;
+    price: string | number;
+    image?: string | null;
+    size?: string | null;
+    color?: string | null;
+    extraOption?: string | null;
+    sortOrder?: number;
+  }>;
 }
 
 interface CategoryResponse {
@@ -148,6 +158,16 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
           // Сохраняем дополнительные данные для сортировки
           sortOrder: p.sortOrder ?? 0,
           createdAt: p.createdAt ? new Date(p.createdAt).getTime() : Date.now(),
+          cardVariants: p.cardVariants?.map((v) => ({
+            id: v.id,
+            name: v.name,
+            price: typeof v.price === 'string' ? parseFloat(v.price) : v.price,
+            image: v.image ?? undefined,
+            size: v.size ?? undefined,
+            color: v.color ?? undefined,
+            extraOption: v.extraOption ?? undefined,
+            sortOrder: v.sortOrder,
+          })),
         }));
 
         setOriginalProducts(mappedProducts);

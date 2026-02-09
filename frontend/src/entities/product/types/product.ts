@@ -33,6 +33,19 @@ export interface Product {
   // Дополнительные поля для сортировки
   sortOrder?: number;
   createdAt?: number;
+  /** Схожие товары в одной карточке (до 5): выбор варианта по цене, размеру, фото, названию, цвету, доп. опции */
+  cardVariants?: ProductCardVariant[];
+}
+
+export interface ProductCardVariant {
+  id: string;
+  name: string;
+  price: number;
+  image?: string | null;
+  size?: string | null;
+  color?: string | null;
+  extraOption?: string | null;
+  sortOrder?: number;
 }
 
 export interface ProductCharacteristic {

@@ -19,6 +19,7 @@ const DEFAULT_CARD_SECTIONS = [
   'main',
   'pricing',
   'variants',
+  'cardVariants',
   'seo',
   'images',
   'description',
@@ -193,6 +194,17 @@ interface Product {
       commercialName?: string | null;
     };
   }>;
+  /** Схожие товары в одной карточке (до 5): цена, размер, фото, наименование, цвет, доп. опция */
+  cardVariants?: Array<{
+    id?: string;
+    name: string;
+    price: string | number;
+    image?: string | null;
+    size?: string | null;
+    color?: string | null;
+    extraOption?: string | null;
+    sortOrder?: number;
+  }>;
 }
 
 interface AttributeValue {
@@ -264,6 +276,15 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     supplierId: '',
     supplierProductUrl: '',
     supplierPrice: '',
+    cardVariants: [] as Array<{
+      name: string;
+      price: string;
+      image: string;
+      size: string;
+      color: string;
+      extraOption: string;
+      sortOrder: number;
+    }>,
   });
 
   // Атрибуты категории и товара
@@ -448,6 +469,16 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         const supplierProductUrl = mainSupplier?.supplierProductUrl || '';
         const supplierPrice = mainSupplier?.supplierPrice ? String(mainSupplier.supplierPrice) : '';
 
+        const cardVariantsForm = (product.cardVariants || []).map((v) => ({
+          name: v.name || '',
+          price: String(v.price ?? ''),
+          image: v.image || '',
+          size: v.size || '',
+          color: v.color || '',
+          extraOption: v.extraOption || '',
+          sortOrder: typeof v.sortOrder === 'number' ? v.sortOrder : 0,
+        }));
+
         setFormData({
           name: product.name || '',
           slug: product.slug || '',
@@ -472,6 +503,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           attributes: categoryAttrsOnly,
           sizes: product.sizes || [],
           openingSide: product.openingSide || [],
+          cardVariants: cardVariantsForm,
         });
 
         // Сохраняем начальное название для отслеживания изменений
@@ -806,6 +838,18 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           supplierId: formData.supplierId || null,
           supplierProductUrl: formData.supplierProductUrl || null,
           supplierPrice: formData.supplierPrice ? parseFloat(formData.supplierPrice) : undefined,
+          cardVariants: formData.cardVariants
+            .filter((v) => v.name.trim() && !Number.isNaN(parseFloat(v.price)))
+            .slice(0, 5)
+            .map((v) => ({
+              name: v.name.trim(),
+              price: parseFloat(v.price),
+              image: v.image.trim() || undefined,
+              size: v.size.trim() || undefined,
+              color: v.color.trim() || undefined,
+              extraOption: v.extraOption.trim() || undefined,
+              sortOrder: v.sortOrder,
+            })),
         }),
       });
 
@@ -1326,6 +1370,239 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                   отображаться в публичке.
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* Схожие товары в карточке (до 5) */}
+          {showSection('cardVariants') && (
+            <div className={styles.formSection}>
+              <h2 className={styles.sectionTitle}>Схожие товары в карточке</h2>
+              <p className={styles.hint} style={{ marginBottom: '1rem' }}>
+                До 5 вариантов в одной карточке (как на Wildberries/Озон): отличаются ценой,
+                размером, фото, наименованием, цветом, доп. опцией. Пользователь выбирает нужный
+                вариант прямо в карточке.
+              </p>
+              {(formData.cardVariants.length > 0
+                ? formData.cardVariants
+                : [
+                    {
+                      name: '',
+                      price: '',
+                      image: '',
+                      size: '',
+                      color: '',
+                      extraOption: '',
+                      sortOrder: 0,
+                    },
+                  ]
+              ).map((variant, index) => (
+                <div key={`card-variant-${index}`} className={styles.cardVariantBlock}>
+                  <h3 className={styles.cardVariantBlockTitle}>Вариант {index + 1}</h3>
+                  <div className={styles.formRow}>
+                    <div className={styles.formGroup} style={{ flex: 2 }}>
+                      <label>Наименование *</label>
+                      <input
+                        type="text"
+                        value={variant.name}
+                        onChange={(e) => {
+                          const next = [...formData.cardVariants];
+                          if (next[index] === undefined) {
+                            next[index] = {
+                              name: '',
+                              price: '',
+                              image: '',
+                              size: '',
+                              color: '',
+                              extraOption: '',
+                              sortOrder: index,
+                            };
+                          }
+                          next[index] = { ...next[index], name: e.target.value };
+                          setFormData((prev) => ({ ...prev, cardVariants: next }));
+                        }}
+                        className={styles.input}
+                        placeholder="Например: Дверь белая 60×200"
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Цена *</label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={variant.price}
+                        onChange={(e) => {
+                          const v = e.target.value
+                            .replace(/[^0-9.]/g, '')
+                            .replace(/(\..*)\./g, '$1');
+                          const next = [...formData.cardVariants];
+                          if (next[index] === undefined)
+                            next[index] = {
+                              name: '',
+                              price: '',
+                              image: '',
+                              size: '',
+                              color: '',
+                              extraOption: '',
+                              sortOrder: index,
+                            };
+                          next[index] = { ...next[index], price: v };
+                          setFormData((prev) => ({ ...prev, cardVariants: next }));
+                        }}
+                        className={styles.input}
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label>Фото (URL или base64)</label>
+                    <input
+                      type="text"
+                      value={variant.image}
+                      onChange={(e) => {
+                        const next = [...formData.cardVariants];
+                        if (next[index] === undefined)
+                          next[index] = {
+                            name: '',
+                            price: '',
+                            image: '',
+                            size: '',
+                            color: '',
+                            extraOption: '',
+                            sortOrder: index,
+                          };
+                        next[index] = { ...next[index], image: e.target.value };
+                        setFormData((prev) => ({ ...prev, cardVariants: next }));
+                      }}
+                      className={styles.input}
+                      placeholder="https://... или вставьте base64"
+                    />
+                    {variant.image && (
+                      <div style={{ marginTop: '0.5rem' }}>
+                        <img
+                          src={variant.image}
+                          alt=""
+                          style={{ maxHeight: 80, objectFit: 'contain' }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div className={styles.formRow}>
+                    <div className={styles.formGroup}>
+                      <label>Размер</label>
+                      <input
+                        type="text"
+                        value={variant.size}
+                        onChange={(e) => {
+                          const next = [...formData.cardVariants];
+                          if (next[index] === undefined)
+                            next[index] = {
+                              name: '',
+                              price: '',
+                              image: '',
+                              size: '',
+                              color: '',
+                              extraOption: '',
+                              sortOrder: index,
+                            };
+                          next[index] = { ...next[index], size: e.target.value };
+                          setFormData((prev) => ({ ...prev, cardVariants: next }));
+                        }}
+                        className={styles.input}
+                        placeholder="60×200"
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Цвет</label>
+                      <input
+                        type="text"
+                        value={variant.color}
+                        onChange={(e) => {
+                          const next = [...formData.cardVariants];
+                          if (next[index] === undefined)
+                            next[index] = {
+                              name: '',
+                              price: '',
+                              image: '',
+                              size: '',
+                              color: '',
+                              extraOption: '',
+                              sortOrder: index,
+                            };
+                          next[index] = { ...next[index], color: e.target.value };
+                          setFormData((prev) => ({ ...prev, cardVariants: next }));
+                        }}
+                        className={styles.input}
+                        placeholder="Белый"
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Доп. опция</label>
+                      <input
+                        type="text"
+                        value={variant.extraOption}
+                        onChange={(e) => {
+                          const next = [...formData.cardVariants];
+                          if (next[index] === undefined)
+                            next[index] = {
+                              name: '',
+                              price: '',
+                              image: '',
+                              size: '',
+                              color: '',
+                              extraOption: '',
+                              sortOrder: index,
+                            };
+                          next[index] = { ...next[index], extraOption: e.target.value };
+                          setFormData((prev) => ({ ...prev, cardVariants: next }));
+                        }}
+                        className={styles.input}
+                        placeholder="С подсветкой"
+                      />
+                    </div>
+                  </div>
+                  {formData.cardVariants.length > 0 && (
+                    <button
+                      type="button"
+                      className={styles.removeAttrButton}
+                      style={{ marginTop: '0.5rem' }}
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          cardVariants: prev.cardVariants.filter((_, i) => i !== index),
+                        }))
+                      }
+                      title="Удалить вариант"
+                    >
+                      🗑️ Удалить вариант
+                    </button>
+                  )}
+                </div>
+              ))}
+              {formData.cardVariants.length < 5 && (
+                <button
+                  type="button"
+                  className={styles.addAttrButton}
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      cardVariants: [
+                        ...prev.cardVariants,
+                        {
+                          name: '',
+                          price: '',
+                          image: '',
+                          size: '',
+                          color: '',
+                          extraOption: '',
+                          sortOrder: prev.cardVariants.length,
+                        },
+                      ],
+                    }))
+                  }
+                >
+                  + Добавить вариант (макс. 5)
+                </button>
+              )}
             </div>
           )}
 

@@ -13,7 +13,8 @@ interface CartContextValue {
     productId: string,
     quantity?: number,
     size?: string,
-    openingSide?: string
+    openingSide?: string,
+    cardVariantId?: string
   ) => Promise<void>;
   addComponentToCart: (componentId: string, quantity?: number) => Promise<void>;
   updateQuantity: (productId: string, quantity: number) => Promise<void>;
@@ -71,27 +72,36 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [refreshCart]);
 
   const addToCart = useCallback(
-    async (productId: string, quantity: number = 1, size?: string, openingSide?: string) => {
+    async (
+      productId: string,
+      quantity: number = 1,
+      size?: string,
+      openingSide?: string,
+      cardVariantId?: string
+    ) => {
       try {
-        const newItem = await cartApi.addToCart(productId, quantity, size, openingSide);
+        const newItem = await cartApi.addToCart(
+          productId,
+          quantity,
+          size,
+          openingSide,
+          cardVariantId
+        );
         setCart((prev) => {
-          // Ищем среди товаров (где productId не null и совпадает, а componentId null или undefined)
-          // Также проверяем совпадение size и openingSide
           const existingIndex = prev.findIndex(
             (item) =>
               item.productId != null &&
               item.componentId == null &&
               String(item.productId) === String(productId) &&
               item.size === (size || null) &&
-              item.openingSide === (openingSide || null)
+              item.openingSide === (openingSide || null) &&
+              (item.cardVariantId ?? null) === (cardVariantId ?? null)
           );
           if (existingIndex >= 0) {
-            // Обновляем существующий элемент
             const updated = [...prev];
             updated[existingIndex] = newItem;
             return updated;
           }
-          // Добавляем новый элемент
           return [...prev, newItem];
         });
         // Обновляем корзину с сервера для синхронизации

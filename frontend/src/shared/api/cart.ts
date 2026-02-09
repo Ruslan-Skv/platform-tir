@@ -5,6 +5,7 @@ export interface CartItem {
   userId: string;
   productId: string | null;
   componentId: string | null;
+  cardVariantId: string | null;
   quantity: number;
   size: string | null;
   openingSide: string | null;
@@ -23,6 +24,15 @@ export interface CartItem {
       name: string;
       slug: string;
     };
+  } | null;
+  cardVariant?: {
+    id: string;
+    name: string;
+    price: number;
+    image?: string | null;
+    size?: string | null;
+    color?: string | null;
+    extraOption?: string | null;
   } | null;
   component: {
     id: string;
@@ -92,12 +102,13 @@ export async function addToCart(
   productId: string,
   quantity: number = 1,
   size?: string,
-  openingSide?: string
+  openingSide?: string,
+  cardVariantId?: string
 ): Promise<CartItem> {
   const response = await fetch(`${API_URL}/cart/${productId}`, {
     method: 'POST',
     headers: getAuthHeaders(),
-    body: JSON.stringify({ quantity, size, openingSide }),
+    body: JSON.stringify({ quantity, size, openingSide, cardVariantId }),
   });
 
   if (!response.ok) {

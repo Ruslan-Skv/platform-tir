@@ -7,8 +7,10 @@ import {
   IsBoolean,
   IsArray,
   Min,
+  ArrayMaxSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ProductCardVariantDto } from './product-card-variant.dto';
 
 export class CreateProductDto {
   @ApiProperty({ example: 'Дверь входная металлическая' })
@@ -142,4 +144,12 @@ export class CreateProductDto {
   @Min(0)
   @Type(() => Number)
   supplierPrice?: number;
+
+  /** Схожие товары в одной карточке (до 5): цена, размер, фото, наименование, цвет, доп. опция */
+  @ApiProperty({ type: [ProductCardVariantDto], required: false, maxItems: 5 })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(5)
+  @Type(() => ProductCardVariantDto)
+  cardVariants?: ProductCardVariantDto[];
 }

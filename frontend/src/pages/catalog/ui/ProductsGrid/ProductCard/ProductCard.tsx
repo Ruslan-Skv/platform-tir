@@ -26,20 +26,34 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 }) => {
   const { toggleWishlist, isInWishlist, checkInWishlist, wishlist } = useWishlist();
   const { toggleCompare, isInCompare, checkInCompare, compare, removeFromCompare } = useCompare();
-  const { cart, addToCart, updateQuantity } = useCart();
+  const { cart, addToCart, updateQuantity, updateCartItemQuantityById } = useCart();
   const [isLoading, setIsLoading] = useState(false);
   const [isCompareLoading, setIsCompareLoading] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
 
-  // Получаем массив изображений: используем images если есть, иначе [image]
+  const cardVariants =
+    product.cardVariants && product.cardVariants.length > 0 ? product.cardVariants : [];
+  const selectedVariant = cardVariants[selectedVariantIndex] ?? null;
+
+  // Отображаемые данные: при выбранном варианте — из варианта, иначе из основного товара
+  const displayName = selectedVariant ? selectedVariant.name : product.name;
+  const displayPrice = selectedVariant ? selectedVariant.price : product.price;
+  const displayOldPrice = selectedVariant ? undefined : product.oldPrice;
+  const displayImage = selectedVariant?.image || (product.images?.[0] ?? product.image);
+
   const productImages =
-    product.images && product.images.length > 0
-      ? product.images
-      : product.image
-        ? [product.image]
-        : [];
-  const hasMultipleImages = productImages.length > 1;
+    cardVariants.length > 0
+      ? (cardVariants.map((v) => v.image || product.image).filter(Boolean) as string[])
+      : product.images && product.images.length > 0
+        ? product.images
+        : product.image
+          ? [product.image]
+          : [];
+  const effectiveImages =
+    productImages.length > 0 ? productImages : ([product.image].filter(Boolean) as string[]);
+  const hasMultipleImages = effectiveImages.length > 1;
 
   // Сбрасываем индекс изображения при смене товара
   useEffect(() => {
@@ -79,9 +93,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     });
   }, [product.id, productId, checkInCompare]); // Проверяем только при смене товара
 
-  // price - актуальная цена товара, oldPrice - старая цена (если есть скидка)
-  const finalPrice = product.price;
-  const oldPrice = product.oldPrice;
+  const finalPrice = displayPrice;
+  const oldPrice = displayOldPrice;
 
   const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -154,10 +167,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     e.stopPropagation();
 
     const productId = getProductId();
+    const cardVariantId = selectedVariant?.id;
 
     try {
       setIsAddingToCart(true);
-      await addToCart(productId, 1);
+      await addToCart(productId, 1, undefined, undefined, cardVariantId);
       // Можно показать уведомление об успешном добавлении
     } catch (error) {
       if (error instanceof Error) {
@@ -173,13 +187,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const handlePreviousImage = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev === 0 ? productImages.length - 1 : prev - 1));
+    setCurrentImageIndex((prev) => (prev === 0 ? effectiveImages.length - 1 : prev - 1));
+    if (cardVariants.length > 0)
+      setSelectedVariantIndex((prev) => (prev === 0 ? cardVariants.length - 1 : prev - 1));
   };
 
   const handleNextImage = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev === productImages.length - 1 ? 0 : prev + 1));
+    setCurrentImageIndex((prev) => (prev === effectiveImages.length - 1 ? 0 : prev + 1));
+    if (cardVariants.length > 0)
+      setSelectedVariantIndex((prev) => (prev === cardVariants.length - 1 ? 0 : prev + 1));
   };
 
   const handleImageDotClick = (e: React.MouseEvent, index: number) => {
@@ -193,8 +211,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       <Link href={`/product/${product.slug}`} className={styles.cardLink}>
         <div className={styles.imageContainer}>
           <img
-            src={productImages[currentImageIndex] || product.image}
-            alt={product.name}
+            src={
+              cardVariants.length > 0
+                ? displayImage || product.image
+                : effectiveImages[currentImageIndex] || product.image
+            }
+            alt={displayName}
             className={styles.image}
             loading="lazy"
           />
@@ -221,7 +243,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 ›
               </button>
               <div className={styles.imageDots}>
-                {productImages.map((_, index) => (
+                {effectiveImages.map((_, index) => (
                   <button
                     key={index}
                     type="button"
@@ -298,7 +320,31 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         <div className={styles.content}>
-          <h3 className={styles.name}>{product.name}</h3>
+          {cardVariants.length > 0 && (
+            <div className={styles.cardVariantsSelector} onClick={(e) => e.stopPropagation()}>
+              {cardVariants.map((v, i) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  className={`${styles.cardVariantChip} ${i === selectedVariantIndex ? styles.cardVariantChipActive : ''}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedVariantIndex(i);
+                    setCurrentImageIndex(i);
+                  }}
+                  title={v.name}
+                >
+                  {v.image ? (
+                    <img src={v.image} alt="" className={styles.cardVariantChipImg} />
+                  ) : (
+                    <span>{v.color || v.size || `${i + 1}`}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+          <h3 className={styles.name}>{displayName}</h3>
           {product.sku && <p className={styles.sku}>Арт. {product.sku}</p>}
           <p className={styles.category}>{product.category}</p>
 
@@ -319,12 +365,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </div>
 
           {(() => {
-            // Проверяем основной товар в корзине
+            const selectedVariantId = selectedVariant?.id ?? null;
             const cartItem = cart.find(
               (item) =>
                 item.productId !== null &&
                 item.componentId === null &&
-                String(item.productId) === String(productId)
+                String(item.productId) === String(productId) &&
+                (item.cardVariantId ?? null) === selectedVariantId
             );
             const quantity = cartItem ? Number(cartItem.quantity) : 0;
             const isInCart = quantity > 0;
@@ -383,7 +430,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                         try {
                           const newQuantity = Number(quantity) - 1;
                           if (newQuantity < 0) return;
-                          await updateQuantity(productId, newQuantity);
+                          if (cartItem?.id && selectedVariantId !== undefined) {
+                            await updateCartItemQuantityById(cartItem.id, newQuantity);
+                          } else {
+                            await updateQuantity(productId, newQuantity);
+                          }
                         } catch (error) {
                           if (error instanceof Error) {
                             alert(error.message);
@@ -410,7 +461,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                         if (isAddingToCart) return;
                         try {
                           const newQuantity = Number(quantity) + 1;
-                          await updateQuantity(productId, newQuantity);
+                          if (cartItem?.id && selectedVariantId !== undefined) {
+                            await updateCartItemQuantityById(cartItem.id, newQuantity);
+                          } else {
+                            await updateQuantity(productId, newQuantity);
+                          }
                         } catch (error) {
                           if (error instanceof Error) {
                             alert(error.message);

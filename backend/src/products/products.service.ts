@@ -41,10 +41,21 @@ export class ProductsService {
     private priceScraper: PriceScraperService,
   ) {}
 
+  private readonly cardVariantsInclude = {
+    cardVariants: { orderBy: { sortOrder: 'asc' as const } },
+  };
+
   async create(createProductDto: CreateProductDto) {
-    // Поля поставщика и партнёра — исключаем из data для prisma.product.create
-    const { supplierId, supplierProductUrl, supplierPrice, categoryId, partnerId, ...productData } =
-      createProductDto;
+    // Поля поставщика, партнёра и cardVariants — исключаем из data для prisma.product.create
+    const {
+      supplierId,
+      supplierProductUrl,
+      supplierPrice,
+      categoryId,
+      partnerId,
+      cardVariants,
+      ...productData
+    } = createProductDto;
     const data: Prisma.ProductCreateInput = {
       ...productData,
       category: {
@@ -68,8 +79,29 @@ export class ProductsService {
       data,
       include: {
         category: true,
+        ...this.cardVariantsInclude,
       },
     });
+
+    // Схожие товары в карточке (до 5)
+    if (cardVariants && cardVariants.length > 0) {
+      const toCreate = cardVariants.slice(0, 5).map((v, i) => ({
+        productId: product.id,
+        name: v.name,
+        price: new Prisma.Decimal(v.price),
+        image: v.image ?? null,
+        size: v.size ?? null,
+        color: v.color ?? null,
+        extraOption: v.extraOption ?? null,
+        sortOrder: v.sortOrder ?? i,
+      }));
+      await this.prisma.productCardVariant.createMany({ data: toCreate });
+      const withVariants = await this.prisma.product.findUnique({
+        where: { id: product.id },
+        include: { category: true, ...this.cardVariantsInclude },
+      });
+      if (withVariants) await this.indexProduct(withVariants);
+    }
 
     // Если указан поставщик, создаем связь ProductSupplier
     if (supplierId) {
@@ -171,6 +203,7 @@ export class ProductsService {
             },
           },
         },
+        ...this.cardVariantsInclude,
       },
     });
 
@@ -195,6 +228,7 @@ export class ProductsService {
           where: { isApproved: true },
           orderBy: { createdAt: 'desc' },
         },
+        ...this.cardVariantsInclude,
       },
     });
 
@@ -244,6 +278,7 @@ export class ProductsService {
             showTooltip: true,
           },
         },
+        ...this.cardVariantsInclude,
       },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
     });
@@ -317,6 +352,7 @@ export class ProductsService {
             showTooltip: true,
           },
         },
+        ...this.cardVariantsInclude,
       },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
     });
@@ -377,6 +413,7 @@ export class ProductsService {
                 showTooltip: true,
               },
             },
+            ...this.cardVariantsInclude,
           },
           orderBy,
           take: limit,
@@ -396,6 +433,7 @@ export class ProductsService {
           showTooltip: true,
         },
       },
+      ...this.cardVariantsInclude,
     };
     const primary = await this.prisma.product.findMany({
       where: primaryWhere,
@@ -497,9 +535,16 @@ export class ProductsService {
   async update(id: string, updateProductDto: UpdateProductDto) {
     await this.findOne(id);
 
-    // Поля поставщика и партнёра — исключаем из data для prisma.product.update
-    const { supplierId, supplierProductUrl, supplierPrice, categoryId, partnerId, ...productData } =
-      updateProductDto;
+    // Поля поставщика, партнёра и cardVariants — исключаем из data для prisma.product.update
+    const {
+      supplierId,
+      supplierProductUrl,
+      supplierPrice,
+      categoryId,
+      partnerId,
+      cardVariants,
+      ...productData
+    } = updateProductDto;
     const data: Prisma.ProductUpdateInput = { ...productData };
 
     // Преобразуем categoryId в связь category, если он передан
@@ -534,8 +579,28 @@ export class ProductsService {
       data,
       include: {
         category: true,
+        ...this.cardVariantsInclude,
       },
     });
+
+    // Схожие товары в карточке (до 5): полная замена списка
+    if ('cardVariants' in updateProductDto) {
+      await this.prisma.productCardVariant.deleteMany({ where: { productId: id } });
+      const list = cardVariants ?? [];
+      if (list.length > 0) {
+        const toCreate = list.slice(0, 5).map((v, i) => ({
+          productId: id,
+          name: v.name,
+          price: new Prisma.Decimal(v.price),
+          image: v.image ?? null,
+          size: v.size ?? null,
+          color: v.color ?? null,
+          extraOption: v.extraOption ?? null,
+          sortOrder: v.sortOrder ?? i,
+        }));
+        await this.prisma.productCardVariant.createMany({ data: toCreate });
+      }
+    }
 
     // Обработка поставщика
     if (
@@ -612,10 +677,16 @@ export class ProductsService {
       }
     }
 
-    // Update in Elasticsearch
-    await this.indexProduct(product);
-
-    return product;
+    // Update in Elasticsearch (product уже с cardVariants из include или после sync)
+    const toReturn =
+      'cardVariants' in updateProductDto
+        ? await this.prisma.product.findUnique({
+            where: { id },
+            include: { category: true, ...this.cardVariantsInclude },
+          })
+        : product;
+    if (toReturn) await this.indexProduct(toReturn);
+    return toReturn ?? product;
   }
 
   async remove(id: string) {

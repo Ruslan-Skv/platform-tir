@@ -348,6 +348,50 @@
   color: #dc2626;
 }
 
+.cardVariantsSelector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-bottom: 0.5rem;
+}
+
+.cardVariantChip {
+  align-items: center;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0;
+  transition: all 0.2s ease;
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.cardVariantChip:hover {
+  border-color: #d90652;
+  background: #fff;
+}
+
+.cardVariantChipActive {
+  border-color: #d90652;
+  background: rgb(217 6 82 / 0.08);
+  box-shadow: 0 0 0 1px #d90652;
+}
+
+.cardVariantChipImg {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.cardVariantChip span {
+  font-size: 0.65rem;
+  color: #374151;
+}
+
 .content {
   display: flex;
   flex: 1;

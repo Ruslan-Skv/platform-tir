@@ -42,6 +42,16 @@ interface ProductData {
   rating?: number;
   reviewsCount?: number;
   reviews?: Review[];
+  cardVariants?: Array<{
+    id: string;
+    name: string;
+    price: number | string;
+    image?: string | null;
+    size?: string | null;
+    color?: string | null;
+    extraOption?: string | null;
+    sortOrder?: number;
+  }>;
 }
 
 interface ProductDetailPageProps {
@@ -83,6 +93,19 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
   const [addingToCart, setAddingToCart] = useState<Record<string, boolean>>({});
   const [components, setComponents] = useState<ProductComponent[]>([]);
   const [variantNotification, setVariantNotification] = useState<string | null>(null);
+  const [selectedCardVariantIndex, setSelectedCardVariantIndex] = useState(0);
+
+  const cardVariants =
+    product?.cardVariants && product.cardVariants.length > 0 ? product.cardVariants : [];
+  const selectedCardVariant = cardVariants[selectedCardVariantIndex] ?? null;
+  const displayPrice = selectedCardVariant
+    ? typeof selectedCardVariant.price === 'string'
+      ? parseFloat(selectedCardVariant.price)
+      : selectedCardVariant.price
+    : product
+      ? parseFloat(product.price)
+      : 0;
+  const displayName = selectedCardVariant ? selectedCardVariant.name : (product?.name ?? '');
 
   // Получаем информацию о варианте в корзине
   const getCartItemForVariant = useCallback(
@@ -309,7 +332,12 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
   // Стоимость комплекта по подсказке: полотно 1шт., стойка коробки 2,5шт., наличники 5шт.
   const kitPrice = useMemo(() => {
     if (!product || components.length === 0) return null;
-    const canvasPrice = parseFloat(product.price);
+    const canvasPrice =
+      selectedCardVariant != null
+        ? typeof selectedCardVariant.price === 'string'
+          ? parseFloat(selectedCardVariant.price)
+          : selectedCardVariant.price
+        : parseFloat(product.price);
     // Стойка коробки — 2,5 шт. (название/тип содержит «стойк» и «коробк»: «стойка коробки» или «стойки коробки»)
     const stoikaKorobka = components.find(
       (c) =>
@@ -322,7 +350,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     if (stoikaKorobka) total += 2.5 * parseFloat(stoikaKorobka.price);
     if (nalichnik) total += 5 * parseFloat(nalichnik.price);
     return Math.round(total);
-  }, [product, components]);
+  }, [product, components, selectedCardVariant]);
 
   if (loading) {
     return (
@@ -346,8 +374,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     );
   }
 
-  const price = parseFloat(product.price);
-  const comparePrice = product.comparePrice ? parseFloat(product.comparePrice) : null;
+  const price = displayPrice;
+  const comparePrice =
+    !selectedCardVariant && product.comparePrice ? parseFloat(product.comparePrice) : null;
   const discount = comparePrice ? Math.round(((comparePrice - price) / comparePrice) * 100) : null;
 
   // Атрибуты могут быть в двух форматах:
@@ -493,6 +522,32 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
           </div>
 
           {product.sku && <p className={styles.sku}>Артикул: {product.sku}</p>}
+
+          {cardVariants.length > 0 && (
+            <div className={styles.cardVariantsSection}>
+              <span className={styles.cardVariantsLabel}>Вариант:</span>
+              <div className={styles.cardVariantsChips}>
+                {cardVariants.map((v, i) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    className={`${styles.cardVariantChip} ${i === selectedCardVariantIndex ? styles.cardVariantChipActive : ''}`}
+                    onClick={() => setSelectedCardVariantIndex(i)}
+                    title={v.name}
+                  >
+                    {v.image ? (
+                      <img src={v.image} alt="" className={styles.cardVariantChipImg} />
+                    ) : (
+                      <span>{v.color || v.size || v.name || `${i + 1}`}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              {selectedCardVariant && (
+                <p className={styles.cardVariantName}>{selectedCardVariant.name}</p>
+              )}
+            </div>
+          )}
 
           <div className={styles.priceBlock}>
             <div className={styles.pricesRow}>
@@ -894,12 +949,14 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                 );
               }
 
-              // Интерфейс для товаров без вариантов
+              // Интерфейс для товаров без вариантов (или с выбором «схожего» варианта)
+              const selectedCardVariantId = selectedCardVariant?.id ?? null;
               const cartItem = cart.find(
                 (item) =>
                   item.productId !== null &&
                   String(item.productId) === productId &&
                   item.componentId === null &&
+                  (item.cardVariantId ?? null) === selectedCardVariantId &&
                   item.size === null &&
                   item.openingSide === null
               );
@@ -921,7 +978,11 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                           try {
                             const newQuantity = Number(quantity) - 1;
                             if (newQuantity < 0) return;
-                            await updateQuantity(productId, newQuantity);
+                            if (cartItem?.id && selectedCardVariantId !== undefined) {
+                              await updateCartItemQuantityById(cartItem.id, newQuantity);
+                            } else {
+                              await updateQuantity(productId, newQuantity);
+                            }
                           } catch (error) {
                             if (error instanceof Error) {
                               alert(error.message);
@@ -948,7 +1009,11 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                           if (isAddingToCart) return;
                           try {
                             const newQuantity = Number(quantity) + 1;
-                            await updateQuantity(productId, newQuantity);
+                            if (cartItem?.id && selectedCardVariantId !== undefined) {
+                              await updateCartItemQuantityById(cartItem.id, newQuantity);
+                            } else {
+                              await updateQuantity(productId, newQuantity);
+                            }
                           } catch (error) {
                             if (error instanceof Error) {
                               alert(error.message);
@@ -979,7 +1044,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
 
                     try {
                       setIsAddingToCart(true);
-                      await addToCart(productId, 1);
+                      await addToCart(productId, 1, undefined, undefined, selectedCardVariant?.id);
                     } catch (error) {
                       if (error instanceof Error) {
                         alert(error.message);

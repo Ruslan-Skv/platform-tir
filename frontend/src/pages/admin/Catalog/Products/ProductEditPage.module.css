@@ -593,6 +593,21 @@
   margin-bottom: 10px;
 }
 
+.cardVariantBlock {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.cardVariantBlockTitle {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #475569;
+  margin: 0 0 0.75rem;
+}
+
 .attributeRow {
   display: grid;
   grid-template-columns: 200px 1fr auto;

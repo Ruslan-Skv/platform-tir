@@ -825,8 +825,28 @@ model Product {
   wishlist         WishlistItem[]
   compareItems     CompareItem[]
   components       ProductComponent[]
+  cardVariants     ProductCardVariant[]
 
   @@map("products")
+}
+
+/// Схожие товары в одной карточке (до 5): отличаются ценой, размером, фото, наименованием, цветом, доп. опцией (как на Wildberries/Озон).
+model ProductCardVariant {
+  id          String     @id @default(cuid())
+  productId   String
+  name        String     // Наименование варианта
+  price       Decimal    @db.Decimal(10, 2)
+  image       String?    // URL или base64
+  size        String?    // Размер
+  color       String?    // Цвет
+  extraOption String?    // Доп. опция
+  sortOrder   Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  product     Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartItems   CartItem[]
+
+  @@map("product_card_variants")
 }
 
 model ProductComponent {
@@ -882,16 +902,17 @@ model Order {
 }
 
 model OrderItem {
-  id          String   @id @default(cuid())
-  orderId     String
-  productId   String
-  quantity    Int
-  price       Decimal  @db.Decimal(10, 2)
-  size        String?
-  openingSide String?
-  createdAt   DateTime @default(now())
-  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product     Product  @relation(fields: [productId], references: [id])
+  id             String   @id @default(cuid())
+  orderId        String
+  productId      String
+  cardVariantId  String?  // Вариант из «схожих товаров в карточке» (для истории)
+  quantity       Int
+  price          Decimal  @db.Decimal(10, 2)
+  size           String?
+  openingSide    String?
+  createdAt      DateTime @default(now())
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product        Product  @relation(fields: [productId], references: [id])
 
   @@map("order_items")
 }
@@ -918,18 +939,20 @@ model Address {
 }
 
 model CartItem {
-  id          String            @id @default(cuid())
-  userId      String
-  productId   String?
-  componentId String?
-  quantity    Float             // Float для поддержки половинок (например, 2,5 стойки коробки)
-  size        String?
-  openingSide String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  product     Product?          @relation(fields: [productId], references: [id], onDelete: Cascade)
-  component   ProductComponent? @relation(fields: [componentId], references: [id], onDelete: Cascade)
-  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String               @id @default(cuid())
+  userId         String
+  productId      String?
+  componentId    String?
+  cardVariantId  String?              // Вариант из «схожих товаров в карточке»
+  quantity       Float                // Float для поддержки половинок
+  size           String?
+  openingSide    String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  product        Product?             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  component      ProductComponent?    @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  cardVariant    ProductCardVariant?   @relation(fields: [cardVariantId], references: [id], onDelete: SetNull)
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, productId])
   @@index([userId, componentId])

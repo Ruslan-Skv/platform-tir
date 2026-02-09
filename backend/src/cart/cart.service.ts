@@ -11,8 +11,8 @@ export class CartService {
     quantity: number = 1,
     size?: string,
     openingSide?: string,
+    cardVariantId?: string,
   ) {
-    // Проверяем, существует ли товар
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
     });
@@ -21,19 +21,27 @@ export class CartService {
       throw new NotFoundException(`Product with ID ${productId} not found`);
     }
 
-    // Проверяем, есть ли уже товар в корзине с теми же параметрами
+    if (cardVariantId) {
+      const variant = await this.prisma.productCardVariant.findFirst({
+        where: { id: cardVariantId, productId },
+      });
+      if (!variant) {
+        throw new NotFoundException(`Card variant ${cardVariantId} not found for this product`);
+      }
+    }
+
     const existingItem = await this.prisma.cartItem.findFirst({
       where: {
         userId,
         productId,
         componentId: null,
+        cardVariantId: cardVariantId || null,
         size: size || null,
         openingSide: openingSide || null,
       },
     });
 
     if (existingItem) {
-      // Если товар уже в корзине с теми же параметрами, увеличиваем количество
       return this.prisma.cartItem.update({
         where: { id: existingItem.id },
         data: {
@@ -46,11 +54,11 @@ export class CartService {
             },
           },
           component: true,
+          cardVariant: true,
         },
       });
     }
 
-    // Если товара нет в корзине, создаем новый элемент
     return this.prisma.cartItem.create({
       data: {
         userId,
@@ -58,6 +66,7 @@ export class CartService {
         quantity,
         size: size || null,
         openingSide: openingSide || null,
+        cardVariantId: cardVariantId || null,
       },
       include: {
         product: {
@@ -66,6 +75,7 @@ export class CartService {
           },
         },
         component: true,
+        cardVariant: true,
       },
     });
   }
@@ -316,6 +326,7 @@ export class CartService {
             },
           },
         },
+        cardVariant: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -360,6 +371,7 @@ export class CartService {
             },
           },
         },
+        cardVariant: true,
       },
       orderBy: { createdAt: 'desc' },
     });

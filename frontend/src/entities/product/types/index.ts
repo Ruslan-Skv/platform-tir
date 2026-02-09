@@ -1,1 +1,6 @@
-export type { Product, ProductCharacteristic, ProductCategory } from './product';
+export type {
+  Product,
+  ProductCardVariant,
+  ProductCharacteristic,
+  ProductCategory,
+} from './product';

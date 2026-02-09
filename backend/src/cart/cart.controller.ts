@@ -54,7 +54,8 @@ export class CartController {
   addToCart(
     @Request() req: RequestWithUser,
     @Param('productId') productId: string,
-    @Body() body?: { quantity?: number; size?: string; openingSide?: string },
+    @Body()
+    body?: { quantity?: number; size?: string; openingSide?: string; cardVariantId?: string },
   ) {
     const quantity = body?.quantity || 1;
     return this.cartService.addToCart(
@@ -63,6 +64,7 @@ export class CartController {
       quantity,
       body?.size,
       body?.openingSide,
+      body?.cardVariantId,
     );
   }
 
