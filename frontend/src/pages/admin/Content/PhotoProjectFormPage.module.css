@@ -179,3 +179,54 @@
   color: #6b7280;
   font-size: 0.9375rem;
 }
+
+/* Тёмная тема — форма проекта фото */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .page {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backLink {
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .label {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .textarea {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .uploadButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .uploadButton:hover:not(:disabled) {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .photoItem {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveButton {
+  background: #059669;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveButton:hover:not(:disabled) {
+  background: #047857;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelLink:hover {
+  color: #e5e7eb;
+}

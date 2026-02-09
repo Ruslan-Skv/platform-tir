@@ -141,3 +141,48 @@
 .cancelLink:hover {
   color: #374151;
 }
+
+/* Тёмная тема — форма поста блога */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .blogPostFormPage {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backLink {
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .label {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .textarea,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .checkboxLabel {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .submitButton {
+  background: #6366f1;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .submitButton:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelLink:hover {
+  color: #e5e7eb;
+}

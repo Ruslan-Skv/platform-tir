@@ -85,6 +85,12 @@
   opacity: 0.9;
 }
 
+.themeIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
 .userButton:focus {
   outline: none;
 }
@@ -338,4 +344,128 @@
   .userArrow {
     display: none;
   }
+}
+
+/* Тёмная тема — шапка админки */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .header {
+  background: #1f2937;
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput::placeholder {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput:focus-visible {
+  background: #4b5563;
+  border-color: rgb(217 6 82 / 0.5);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchIcon {
+  opacity: 0.7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .iconButton {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .iconButton:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .themeIcon {
+  color: inherit;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .userButton {
+  background: #374151;
+  color: #f3f4f6;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .userButton:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .userName {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .userRole,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .userArrow {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdown {
+  background: #1f2937;
+  border-color: #374151;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownHeader {
+  border-bottom-color: #374151;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .notificationItem {
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .notificationItem:hover {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .notificationItem.unread {
+  background: rgb(99 102 241 / 0.15);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .notificationItem.unread:hover {
+  background: rgb(99 102 241 / 0.25);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .notificationText {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .notificationTime {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownFooter {
+  border-top-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownFooter a,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownFooter a:visited {
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownFooterSep {
+  color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownItem {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownItem:hover {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownDivider {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownUserInfo strong {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownUserInfo span {
+  color: #9ca3af;
 }

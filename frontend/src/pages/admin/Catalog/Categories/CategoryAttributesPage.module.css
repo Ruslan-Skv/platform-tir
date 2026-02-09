@@ -552,3 +552,211 @@
   opacity: 0.7;
   cursor: not-allowed;
 }
+
+/* Тёмная тема — атрибуты категории */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backButton {
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backButton:hover {
+  color: #818cf8;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .spinner {
+  border-color: #374151;
+  border-top-color: #6366f1;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .success {
+  background: rgb(34 197 94 / 0.2);
+  border-color: #059669;
+  color: #6ee7b7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .error {
+  background: rgb(239 68 68 / 0.2);
+  border-color: #dc2626;
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .section {
+  background: #1f2937;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionHeader {
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionHeader h2 {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addButton {
+  background: rgb(5 150 105 / 0.2);
+  border-color: #059669;
+  color: #6ee7b7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addButton:hover {
+  background: rgb(5 150 105 / 0.3);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inheritButton {
+  background: rgb(245 158 11 / 0.2);
+  border-color: #d97706;
+  color: #fcd34d;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inheritButton:hover:not(:disabled) {
+  background: rgb(245 158 11 / 0.3);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributeCard {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributeName {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributeSlug {
+  color: #9ca3af;
+  background: #1f2937;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributeType {
+  color: #a5b4fc;
+  background: rgb(99 102 241 / 0.25);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .valueTag {
+  background: #1f2937;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .moreValues {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .defaultValueInput {
+  background: #1f2937;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .defaultValueInput label {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributeFooter {
+  border-top-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .requiredToggle {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editButton {
+  background: rgb(2 132 199 / 0.25);
+  border-color: #0284c7;
+  color: #7dd3fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editButton:hover {
+  background: rgb(2 132 199 / 0.35);
+  border-color: #0ea5e9;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .removeButton {
+  color: #fcd34d;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton {
+  background: rgb(239 68 68 / 0.2);
+  border-color: #dc2626;
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton:hover {
+  background: rgb(239 68 68 / 0.35);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .empty {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .applySection {
+  border-top-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .applyHint {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modal {
+  background: #1f2937;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modal h3 {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributeSelectItem {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributeSelectItem:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attrName {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attrType {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .emptyModal p {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formGroup label {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .textarea {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .checkboxLabel {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveButton:hover:not(:disabled) {
+  background: #4f46e5;
+}

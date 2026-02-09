@@ -265,3 +265,106 @@
     opacity: 1;
   }
 }
+
+/* Тёмная тема — отзывы и оценки */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loading,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .empty {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionDescription {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .form {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .checkboxRow label {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveButton {
+  background: #6366f1;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveButton:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .reviewCard {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .reviewAuthor {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .reviewDate {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .reviewStars {
+  color: #fbbf24;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .reviewComment {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .reviewProduct {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productLink {
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .approveButton {
+  color: #6ee7b7;
+  background: rgb(5 150 105 / 0.25);
+  border-color: #059669;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .approveButton:hover:not(:disabled) {
+  background: rgb(5 150 105 / 0.35);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton {
+  color: #fca5a5;
+  background: rgb(220 38 38 / 0.25);
+  border-color: #dc2626;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton:hover:not(:disabled) {
+  background: rgb(220 38 38 / 0.35);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pageButton {
+  color: #a5b4fc;
+  border-color: #6366f1;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pageButton:hover:not(:disabled) {
+  background: rgb(99 102 241 / 0.2);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pageInfo {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .toastSuccess {
+  background: #065f46;
+  color: white;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .toastError {
+  background: #991b1b;
+  color: white;
+}

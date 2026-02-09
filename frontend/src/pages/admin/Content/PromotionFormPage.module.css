@@ -187,3 +187,77 @@
 .cancelLink:hover {
   color: #374151;
 }
+
+/* Тёмная тема — форма акции */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .page {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backLink {
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .form {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .label {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .textarea {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .imagePreview img {
+  border-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .changeImageBtn {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .changeImageBtn:hover:not(:disabled) {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .uploadBtn {
+  background: #374151;
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .uploadBtn:hover:not(:disabled) {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .checkboxLabel {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .actions {
+  border-top-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveButton {
+  background: #6366f1;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveButton:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelLink:hover {
+  color: #e5e7eb;
+}

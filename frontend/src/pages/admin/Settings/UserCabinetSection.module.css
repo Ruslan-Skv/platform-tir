@@ -111,3 +111,55 @@
 .previewLink:hover {
   text-decoration: underline;
 }
+
+/* Тёмная тема — личный кабинет */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .accessDenied {
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionDescription {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .form {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .toast.success {
+  background: rgb(34 197 94 / 0.25);
+  color: #6ee7b7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .toast.error {
+  background: rgb(239 68 68 / 0.25);
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .checkboxRow label {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveButton {
+  background: #6366f1;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveButton:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .previewLink {
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .previewLink:hover {
+  color: #60a5fa;
+}

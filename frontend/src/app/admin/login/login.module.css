@@ -134,3 +134,53 @@
 .backLink:hover {
   color: #3b82f6;
 }
+
+/* Тёмная тема — форма входа */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loginCard {
+  background: #1f2937;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .logo h1 {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .logo p {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .error {
+  background: rgb(239 68 68 / 0.2);
+  border-color: #dc2626;
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formGroup label {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input::placeholder {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .footer {
+  border-top-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backLink {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backLink:hover {
+  color: #93c5fd;
+}

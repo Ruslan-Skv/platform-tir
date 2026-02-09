@@ -1231,3 +1231,119 @@
     opacity: 1;
   }
 }
+
+/* Тёмная тема — товары */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .count {
+  background: #374151;
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryButton {
+  background: #374151;
+  color: #e5e7eb;
+  border-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryButton:hover:not(:disabled) {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .filterToggleButton {
+  background: #374151;
+  color: #e5e7eb;
+  border-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .filterToggleButton:hover,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .filterToggleButton.active {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .filterGroup label {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .filterSelect,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .filterInput {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .resetFiltersButton {
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .bulkActions {
+  background: rgb(99 102 241 / 0.2);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .bulkActions span {
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .bulkButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productName {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productSku {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .price,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .comparePrice {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .noImage {
+  background: #374151;
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .errorBanner {
+  background: rgb(239 68 68 / 0.2);
+  border-color: #dc2626;
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modal {
+  background: #1f2937;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modalTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formGroup label {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .textarea {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}

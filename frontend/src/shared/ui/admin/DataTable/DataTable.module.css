@@ -274,3 +274,86 @@
   border-color: #6366f1;
   color: #fff;
 }
+
+/* Тёмная тема — таблица в админке */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tableContainer {
+  background: #1f2937;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .scrollContainer::-webkit-scrollbar-track {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .scrollContainer::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .scrollContainer::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .stickyHeader {
+  background: #111827;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .table th,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .table td {
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .table th {
+  background: #111827;
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .table td {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sortable:hover {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .row:hover {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .row.selected {
+  background: rgb(99 102 241 / 0.25);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .row.selected:hover {
+  background: rgb(99 102 241 / 0.35);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loadingCell,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .emptyCell {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pagination {
+  border-top-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paginationInfo {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pageButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pageButton:hover:not(:disabled) {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pageButton.active {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: #fff;
+}

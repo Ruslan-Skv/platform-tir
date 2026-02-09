@@ -390,3 +390,136 @@
   flex: 0 0 140px;
   color: #374151;
 }
+
+/* Тёмная тема — меню навигации */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .page {
+  background: #111827;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subtitle {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .section {
+  background: #1f2937;
+  border-color: #374151;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemRow {
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemName {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemHref {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemBadge {
+  background: #374151;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemBadgeInactive {
+  background: rgb(245 158 11 / 0.25);
+  color: #fcd34d;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addForm {
+  border-top-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .btnSecondary {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .btnSecondary:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .success {
+  background: rgb(34 197 94 / 0.2);
+  color: #6ee7b7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .error {
+  background: rgb(239 68 68 / 0.2);
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modal {
+  background: #1f2937;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modalTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modalMessage {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modalWarning {
+  background: rgb(245 158 11 / 0.2);
+  color: #fcd34d;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .checkboxLabel {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownBlock {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownBlockTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownBlockNote {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownItemRow {
+  border-bottom-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownItemName {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subList {
+  border-left-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subItemName {
+  color: #d1d5db;
+}

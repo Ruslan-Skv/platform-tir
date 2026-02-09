@@ -746,3 +746,234 @@
     width: 100%;
   }
 }
+
+/* Тёмная тема — форма редактирования/добавления товара */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backButton {
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .spinner {
+  border-color: #374151;
+  border-top-color: #6366f1;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .notFound {
+  background: #1f2937;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .notFound h2 {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .notFound p {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .error {
+  background: rgb(239 68 68 / 0.2);
+  border-color: #dc2626;
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .success {
+  background: rgb(16 185 129 / 0.2);
+  border-color: #059669;
+  color: #6ee7b7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .form {
+  background: #1f2937;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formSection {
+  background: #111827;
+  border-radius: 8px;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
+  color: #f9fafb;
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formGroup label {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .textarea {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .textarea::placeholder,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input::placeholder {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .checkbox span {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .imageError {
+  background: rgb(239 68 68 / 0.2);
+  border-color: #dc2626;
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropZone {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropZone:hover {
+  border-color: #6366f1;
+  background: rgb(99 102 241 / 0.15);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropZoneActive {
+  border-color: #6366f1;
+  background: rgb(99 102 241 / 0.2);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropZoneText {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropZoneLink {
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dropZoneHint {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addUrlButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addUrlButton:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .imageItem {
+  background: #374151;
+  border-color: transparent;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .imageItem:first-child {
+  border-color: #6366f1;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .imageActionBtn {
+  background: rgba(55, 65, 81, 0.95);
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .imageActionBtn:hover:not(:disabled) {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .noImages {
+  background: #374151;
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .hint {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formActions {
+  border-top-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backButtonBottom {
+  background: #374151;
+  border-color: #4b5563;
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backButtonBottom:hover {
+  background: #4b5563;
+  border-color: #6366f1;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributesSubtitle {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customAttrHint {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributeRow {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributeLabel {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .unit {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .clearAttrButton {
+  background: #4b5563;
+  border-color: #6b7280;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .clearAttrButton:hover {
+  background: rgb(239 68 68 / 0.3);
+  border-color: #dc2626;
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addAttrRow {
+  background: rgb(16 185 129 / 0.15);
+  border-color: #059669;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .removeAttrButton {
+  background: rgb(239 68 68 / 0.2);
+  border-color: #dc2626;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .removeAttrButton:hover {
+  background: rgb(239 68 68 / 0.35);
+  border-color: #b91c1c;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .noAttributes {
+  background: #374151;
+  border-color: #4b5563;
+  color: #9ca3af;
+}

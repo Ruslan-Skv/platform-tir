@@ -1,11 +1,14 @@
 'use client';
 
+import { MoonIcon, SunIcon } from '@heroicons/react/24/outline';
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
+import { useTheme } from '@/features/theme';
 import { getAdminFormSubmissions } from '@/shared/api/admin-forms';
 import type { AdminFormSubmission } from '@/shared/api/admin-forms';
 import { getAdminNotificationsSettings } from '@/shared/api/admin-notifications';
@@ -50,6 +53,7 @@ type NotificationItem =
 export function AdminHeader() {
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { isDarkTheme, toggleTheme } = useTheme();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [reviewNotifications, setReviewNotifications] = useState<AdminReview[]>([]);
@@ -294,6 +298,20 @@ export function AdminHeader() {
       </div>
 
       <div className={styles.actions}>
+        <button
+          type="button"
+          className={styles.iconButton}
+          onClick={toggleTheme}
+          title={isDarkTheme ? 'Светлая тема' : 'Тёмная тема'}
+          aria-label={isDarkTheme ? 'Светлая тема' : 'Тёмная тема'}
+        >
+          {isDarkTheme ? (
+            <SunIcon className={styles.themeIcon} />
+          ) : (
+            <MoonIcon className={styles.themeIcon} />
+          )}
+        </button>
+
         <div className={styles.notificationWrapper} ref={notificationRef}>
           <button
             className={styles.iconButton}

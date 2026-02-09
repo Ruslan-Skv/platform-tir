@@ -601,3 +601,253 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Тёмная тема — партнёры */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .spinner {
+  border-color: #374151;
+  border-top-color: #6366f1;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .empty {
+  background: #1f2937;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .empty p {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tableWrapper {
+  background: #1f2937;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .table thead {
+  background: #111827;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .table th {
+  color: #e5e7eb;
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .table td {
+  border-bottom-color: #374151;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody tr:hover {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .partnerName {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .logoPreview {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .websiteLink,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .emailLink {
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .phoneLink {
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .phoneLink:hover {
+  color: #818cf8;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productCount {
+  background: rgb(99 102 241 / 0.3);
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .activeBadge {
+  background: rgb(34 197 94 / 0.3);
+  color: #6ee7b7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inactiveBadge {
+  background: rgb(245 158 11 / 0.3);
+  color: #fcd34d;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editButton {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editButton:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton {
+  background: rgb(239 68 68 / 0.2);
+  border-color: #dc2626;
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton:hover {
+  background: rgb(239 68 68 / 0.35);
+  border-color: #b91c1c;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryButton:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryButton.active {
+  background: rgb(99 102 241 / 0.25);
+  border-color: #6366f1;
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .columnSelectorDropdown {
+  background: #1f2937;
+  border-color: #374151;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .columnSelectorHeader {
+  color: #9ca3af;
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .selectedColumnsSection,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .availableColumnsSection {
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionLabel {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .columnItem:hover {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .columnItem.selected {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .columnItem.dragging {
+  background: rgb(99 102 241 / 0.25);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .columnTitle {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dragHandle {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dragHandle:hover {
+  background: #374151;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .orderButton {
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .orderButton:hover:not(:disabled) {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .textValue {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .disabledHint {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modal {
+  background: #1f2937;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modalHeader {
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modalTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modalClose {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modalClose:hover {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .warningBox {
+  background: rgb(245 158 11 / 0.2);
+  border-color: #d97706;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .warningText {
+  color: #fcd34d;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .partnerToDelete {
+  color: #f9fafb;
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .warningSubtext {
+  color: #fbbf24;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .errorMessage {
+  background: rgb(239 68 68 / 0.2);
+  border-color: #dc2626;
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modalActions {
+  border-top-color: #374151;
+  background: #111827;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton:hover:not(:disabled) {
+  background: #4b5563;
+  border-color: #6b7280;
+}

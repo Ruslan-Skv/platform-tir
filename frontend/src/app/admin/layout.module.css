@@ -50,3 +50,36 @@
     margin-left: 0 !important;
   }
 }
+
+/* Тёмная тема админки */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .adminLayout {
+  background-color: #111827;
+  color: #f3f4f6;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loadingContainer {
+  background-color: #111827;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
+  color: #9ca3af;
+}
+
+/* Общие стили контента админки в тёмной теме (заголовки, ссылки, текст) */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .content {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .content h1,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .content h2,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .content h3 {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .content a:not([class]) {
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .content a:not([class]):hover {
+  color: #c7d2fe;
+}

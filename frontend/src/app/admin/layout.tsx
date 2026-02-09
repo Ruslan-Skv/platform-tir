@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Provider } from 'react-redux';
 
 import { usePathname, useRouter } from 'next/navigation';
 
 import { AuthProvider, useAuth } from '@/features/auth';
+import { getOrCreateStore } from '@/shared/lib/redux/store';
 import { AdminHeader } from '@/widgets/admin/Header/AdminHeader';
 import { AdminSidebar } from '@/widgets/admin/Sidebar/AdminSidebar';
 
@@ -105,9 +107,13 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const store = getOrCreateStore();
+
   return (
-    <AuthProvider>
-      <AdminLayoutContent>{children}</AdminLayoutContent>
-    </AuthProvider>
+    <Provider store={store}>
+      <AuthProvider>
+        <AdminLayoutContent>{children}</AdminLayoutContent>
+      </AuthProvider>
+    </Provider>
   );
 }

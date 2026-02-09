@@ -294,3 +294,99 @@
     opacity: 1;
   }
 }
+
+/* Тёмная тема — уведомления */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionDescription {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subsectionTitle {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .permissionButton,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .testButton {
+  color: #a5b4fc;
+  background: rgb(99 102 241 / 0.2);
+  border-color: #6366f1;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .permissionButton:hover,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .testButton:hover {
+  background: rgb(99 102 241 / 0.35);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .permissionOk {
+  color: #6ee7b7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .uploading {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .soundItem {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteSoundBtn {
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteSoundBtn:hover {
+  color: #f87171;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .form {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .checkboxRow label {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .radioRow label {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .label {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .hint {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveButton {
+  background: #6366f1;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveButton:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .toastSuccess {
+  background: #065f46;
+  color: white;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .toastError {
+  background: #991b1b;
+  color: white;
+}

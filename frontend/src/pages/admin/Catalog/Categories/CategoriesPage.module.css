@@ -708,3 +708,263 @@
   font-weight: 500;
   color: #1f2937;
 }
+
+/* Тёмная тема — категории каталога */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .spinner {
+  border-color: #374151;
+  border-top-color: #6366f1;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoriesTree {
+  background: #1f2937;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryItem {
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryRow:hover {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .expandButton {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .expandButton:hover {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryName {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categorySlug {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productCount {
+  background: rgb(99 102 241 / 0.3);
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .ownProductCount {
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inactiveBadge {
+  background: rgb(245 158 11 / 0.3);
+  color: #fcd34d;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributesButton {
+  background: rgb(5 150 105 / 0.2);
+  color: #6ee7b7;
+  border-color: #059669;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributesButton:hover {
+  background: rgb(5 150 105 / 0.3);
+  border-color: #10b981;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editButton {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editButton:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton {
+  background: rgb(239 68 68 / 0.2);
+  border-color: #dc2626;
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton:hover {
+  background: rgb(239 68 68 / 0.35);
+  border-color: #b91c1c;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .children {
+  background: #111827;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .empty {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modal {
+  background: #1f2937;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modalHeader {
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modalTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modalClose {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modalClose:hover {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .warningBox {
+  background: rgb(245 158 11 / 0.2);
+  border-color: #d97706;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .warningText {
+  color: #fcd34d;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryToDelete {
+  color: #f9fafb;
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .warningSubtext {
+  color: #fbbf24;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dangerText {
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .errorMessage {
+  background: rgb(239 68 68 / 0.2);
+  border-color: #dc2626;
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modalActions {
+  border-top-color: #374151;
+  background: #111827;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton:hover:not(:disabled) {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .label {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .textarea {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .messageBox.success {
+  background: rgb(34 197 94 / 0.2);
+  border-color: #059669;
+  color: #6ee7b7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .messageBox.error {
+  background: rgb(239 68 68 / 0.2);
+  border-color: #dc2626;
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .iconButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .iconButton:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .iconPicker {
+  background: #1f2937;
+  border-color: #374151;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .iconOption:hover {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .iconOption.iconSelected {
+  border-color: #6366f1;
+  background: rgb(99 102 241 / 0.25);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .clearIconButton {
+  background: rgb(239 68 68 / 0.2);
+  border-color: #dc2626;
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .clearIconButton:hover {
+  background: rgb(239 68 68 / 0.35);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .orDivider {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .uploadButton {
+  background: rgb(5 150 105 / 0.2);
+  border-color: #059669;
+  color: #6ee7b7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .uploadButton:hover {
+  background: rgb(5 150 105 / 0.3);
+  border-color: #10b981;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .previewSection {
+  background: #374151;
+  border-radius: 8px;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .previewLabel {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .preview {
+  background: #1f2937;
+  border-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .previewName {
+  color: #f9fafb;
+}
