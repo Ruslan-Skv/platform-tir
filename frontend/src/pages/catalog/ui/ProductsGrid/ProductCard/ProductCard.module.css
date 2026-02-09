@@ -64,6 +64,15 @@
   transform: translateY(-50%) scale(1.1);
 }
 
+.imageNavButton:focus {
+  outline: none;
+}
+
+.imageNavButton:focus-visible {
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+  transition: box-shadow 0.35s ease;
+}
+
 .imageNavButton:active {
   transform: translateY(-50%) scale(0.95);
 }
@@ -88,6 +97,14 @@
   padding: 0;
   transition: all 0.2s ease;
   width: 0.5rem;
+}
+
+.imageDot:focus {
+  outline: none;
+}
+
+.imageDot:focus-visible {
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
 .imageDot:hover {
@@ -200,16 +217,22 @@
 .compareButton:focus,
 .removeButton:focus {
   outline: none;
-  box-shadow: none;
+}
+
+.favoriteButton:focus-visible,
+.compareButton:focus-visible,
+.removeButton:focus-visible {
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+  transition: box-shadow 0.35s ease;
 }
 
 .favoriteButton:active,
 .compareButton:active,
 .removeButton:active {
   outline: none;
-  box-shadow: none;
   transform: scale(0.95);
   background: rgb(255 255 255 / 90%);
+  transition: transform 0.2s ease;
 }
 
 .compareButton:active {
@@ -280,7 +303,6 @@
 .compareButtonActive:focus {
   color: #0070f3;
   outline: none;
-  box-shadow: none;
 }
 
 .compareButtonLoading {
@@ -413,6 +435,18 @@
 
 .addToCartButton:hover:not(:disabled) {
   background: #b80545;
+}
+
+.addToCartButton:focus {
+  outline: none;
+}
+
+.addToCartButton:focus-visible {
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+}
+
+.addToCartButton:active:not(:disabled) {
+  opacity: 0.95;
 }
 
 .addToCartButton:disabled {
@@ -656,6 +690,14 @@ html[data-theme='dark'] .imageNavButton {
 html[data-theme='dark'] .imageNavButton:hover {
   background: rgb(75 85 99 / 95%);
   color: #f9fafb;
+}
+
+html[data-theme='dark'] .favoriteButton:focus-visible,
+html[data-theme='dark'] .compareButton:focus-visible,
+html[data-theme='dark'] .removeButton:focus-visible,
+html[data-theme='dark'] .imageNavButton:focus-visible,
+html[data-theme='dark'] .addToCartButton:focus-visible {
+  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
 }
 
 html[data-theme='dark'] .imageDot {

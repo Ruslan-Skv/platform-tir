@@ -21,10 +21,25 @@
   font-weight: 500;
   text-decoration: none;
   white-space: nowrap;
-  transition: color 0.2s;
+  border-radius: 0.25rem;
+  transition:
+    color 0.35s ease,
+    box-shadow 0.35s ease;
 }
 
 .phone:hover {
+  color: #d90652;
+}
+
+.phone:focus {
+  outline: none;
+}
+
+.phone:focus-visible {
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+}
+
+.phone:active {
   color: #d90652;
 }
 
@@ -49,11 +64,25 @@
   border-radius: 0.375rem;
   color: #374151;
   padding: 0.5rem;
-  transition: color 0.2s;
+  transition:
+    color 0.35s ease,
+    box-shadow 0.35s ease;
 }
 
 .menuButton:hover {
   color: #111827;
+}
+
+.menuButton:focus {
+  outline: none;
+}
+
+.menuButton:focus-visible {
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+}
+
+.menuButton:active {
+  color: #d90652;
 }
 
 .menuIcon {
@@ -73,6 +102,22 @@ html[data-theme='dark'] .menuButton {
 
 html[data-theme='dark'] .menuButton:hover {
   color: #f9fafb;
+}
+
+html[data-theme='dark'] .menuButton:focus-visible {
+  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+}
+
+html[data-theme='dark'] .menuButton:active {
+  color: #ec4899;
+}
+
+html[data-theme='dark'] .phone:focus-visible {
+  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+}
+
+html[data-theme='dark'] .phone:active {
+  color: #ec4899;
 }
 
 html[data-theme='dark'] .phone {

@@ -23,14 +23,20 @@
   border-radius: 8px;
   font-size: 0.8125rem;
   background: #f9fafb;
-  transition: all 0.2s;
+  transition:
+    border-color 0.35s ease,
+    box-shadow 0.35s ease,
+    background 0.2s;
 }
 
 .searchInput:focus {
   outline: none;
-  border-color: #6366f1;
+}
+
+.searchInput:focus-visible {
+  border-color: rgb(217 6 82 / 0.5);
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
 }
 
 .searchIcon {
@@ -65,6 +71,39 @@
 
 .iconButton:hover {
   background: #e5e7eb;
+}
+
+.iconButton:focus {
+  outline: none;
+}
+
+.iconButton:focus-visible {
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+}
+
+.iconButton:active {
+  opacity: 0.9;
+}
+
+.userButton:focus {
+  outline: none;
+}
+
+.userButton:focus-visible {
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+}
+
+.userButton:active {
+  opacity: 0.95;
+}
+
+.markAllRead:focus {
+  outline: none;
+}
+
+.markAllRead:focus-visible {
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  border-radius: 0.25rem;
 }
 
 .badge {

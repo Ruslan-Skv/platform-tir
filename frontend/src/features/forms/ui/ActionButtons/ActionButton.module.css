@@ -28,10 +28,17 @@
 }
 
 .button.measurement:hover:not(.disabled),
-.button.outline.measurement:hover:not(.disabled) {
+.button.measurement:active:not(.disabled),
+.button.outline.measurement:hover:not(.disabled),
+.button.outline.measurement:active:not(.disabled) {
   background-color: #b80546 !important;
   box-shadow: none;
   color: #fff !important;
+}
+
+.button.measurement:focus-visible,
+.button.outline.measurement:focus-visible {
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
 /* Отключаем glow эффект для measurement */
@@ -46,16 +53,24 @@
   border: 1px solid rgb(81 81 81 / 25%) !important;
   color: #515151 !important;
   transition:
-    border-color 0.3s ease,
-    color 0.3s ease;
+    background-color 0.35s ease,
+    border-color 0.35s ease,
+    color 0.35s ease;
 }
 
 .button.callback:hover:not(.disabled),
-.button.outline.callback:hover:not(.disabled) {
-  background-color: #ffffff80 !important;
-  border-color: rgb(81 81 81 / 25%) !important;
+.button.callback:active:not(.disabled),
+.button.outline.callback:hover:not(.disabled),
+.button.outline.callback:active:not(.disabled) {
+  background-color: #f9fafb !important;
+  border-color: rgb(81 81 81 / 45%) !important;
   box-shadow: none;
-  color: #515151 !important;
+  color: #d90652 !important;
+}
+
+.button.callback:focus-visible,
+.button.outline.callback:focus-visible {
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
 }
 
 /* Отключаем glow эффект для callback */
@@ -102,11 +117,18 @@ html[data-theme='dark'] .button.outline.callback {
 }
 
 html[data-theme='dark'] .button.callback:hover:not(.disabled),
-html[data-theme='dark'] .button.outline.callback:hover:not(.disabled) {
-  background-color: rgb(31 41 55 / 50%) !important;
-  border-color: rgb(156 163 175 / 60%) !important;
+html[data-theme='dark'] .button.callback:active:not(.disabled),
+html[data-theme='dark'] .button.outline.callback:hover:not(.disabled),
+html[data-theme='dark'] .button.outline.callback:active:not(.disabled) {
+  background-color: rgb(55 65 81 / 60%) !important;
+  border-color: rgb(156 163 175 / 80%) !important;
   box-shadow: none;
-  color: #d1d5db !important;
+  color: #ec4899 !important;
+}
+
+html[data-theme='dark'] .button.callback:focus-visible,
+html[data-theme='dark'] .button.outline.callback:focus-visible {
+  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
 }
 
 @media (width <= 480px) {

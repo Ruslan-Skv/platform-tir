@@ -31,12 +31,18 @@
   color: #111827;
   padding: 0.5rem 0.75rem;
   width: 100%;
+  transition:
+    border-color 0.35s ease,
+    box-shadow 0.35s ease;
 }
 
 .input:focus {
-  border-color: #d90652;
-  box-shadow: 0 0 0 3px rgb(217 6 82 / 10%);
   outline: none;
+}
+
+.input:focus-visible {
+  border-color: rgb(217 6 82 / 0.5);
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
 }
 
 .select {
@@ -46,12 +52,18 @@
   color: #111827;
   padding: 0.5rem 0.75rem;
   width: 100%;
+  transition:
+    border-color 0.35s ease,
+    box-shadow 0.35s ease;
 }
 
 .select:focus {
-  border-color: #d90652;
-  box-shadow: 0 0 0 3px rgb(217 6 82 / 10%);
   outline: none;
+}
+
+.select:focus-visible {
+  border-color: rgb(217 6 82 / 0.5);
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
 }
 
 .textarea {
@@ -61,12 +73,18 @@
   color: #111827;
   padding: 0.5rem 0.75rem;
   width: 100%;
+  transition:
+    border-color 0.35s ease,
+    box-shadow 0.35s ease;
 }
 
 .textarea:focus {
-  border-color: #d90652;
-  box-shadow: 0 0 0 3px rgb(217 6 82 / 10%);
   outline: none;
+}
+
+.textarea:focus-visible {
+  border-color: rgb(217 6 82 / 0.5);
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
 }
 
 .info {
@@ -117,6 +135,13 @@ html[data-theme='dark'] .input {
   background: #374151;
   border-color: #4b5563;
   color: #fff;
+}
+
+html[data-theme='dark'] .input:focus-visible,
+html[data-theme='dark'] .select:focus-visible,
+html[data-theme='dark'] .textarea:focus-visible {
+  border-color: rgb(236 72 153 / 0.5);
+  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
 }
 
 html[data-theme='dark'] .select {

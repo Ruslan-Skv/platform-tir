@@ -32,6 +32,7 @@
   text-transform: none !important; /* первая буква заглавная, остальные прописные */
   width: 100%;
   color: #515151;
+  transition: color 0.35s ease;
 }
 
 .navText {
@@ -40,6 +41,28 @@
   text-transform: none !important;
   white-space: nowrap;
   color: #515151;
+  transition: color 0.35s ease;
+}
+
+.navItem:hover .navButton,
+.navItem:hover .navText {
+  color: #d90652;
+}
+
+.navButton:focus {
+  outline: none;
+}
+
+.navItem .navButton:focus-visible {
+  color: #d90652;
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  transition:
+    box-shadow 0.35s ease,
+    color 0.35s ease;
+}
+
+.navItem .navButton:active:not(.disabled) .navText {
+  color: #d90652;
 }
 
 .chevron {
@@ -113,13 +136,29 @@
   text-decoration: none;
   text-transform: none;
   transition:
-    background 0.2s,
-    color 0.2s;
+    background 0.35s ease,
+    color 0.35s ease,
+    box-shadow 0.35s ease;
   border-radius: 0.375rem;
 }
 
 .dropdownItem:hover {
   background: rgb(217 6 82 / 0.08);
+  color: #d90652;
+}
+
+.dropdownItem:focus {
+  outline: none;
+}
+
+.dropdownItem:focus-visible {
+  background: rgb(217 6 82 / 0.08);
+  color: #d90652;
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+}
+
+.dropdownItem:active {
+  background: rgb(217 6 82 / 0.12);
   color: #d90652;
 }
 
@@ -216,8 +255,9 @@
   text-decoration: none;
   text-transform: none;
   transition:
-    background 0.2s,
-    color 0.2s;
+    background 0.35s ease,
+    color 0.35s ease,
+    box-shadow 0.35s ease;
   border-radius: 0.375rem;
   white-space: nowrap;
   overflow: hidden;
@@ -226,6 +266,21 @@
 
 .submenuItem:hover {
   background: rgb(217 6 82 / 0.08);
+  color: #d90652;
+}
+
+.submenuItem:focus {
+  outline: none;
+}
+
+.submenuItem:focus-visible {
+  background: rgb(217 6 82 / 0.08);
+  color: #d90652;
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+}
+
+.submenuItem:active {
+  background: rgb(217 6 82 / 0.12);
   color: #d90652;
 }
 
@@ -269,6 +324,20 @@ html[data-theme='dark'] .navText {
   color: #d1d5db;
 }
 
+html[data-theme='dark'] .navItem:hover .navButton,
+html[data-theme='dark'] .navItem:hover .navText {
+  color: #ec4899;
+}
+
+html[data-theme='dark'] .navItem .navButton:focus-visible {
+  color: #ec4899;
+  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+}
+
+html[data-theme='dark'] .navItem .navButton:active:not(.disabled) .navText {
+  color: #ec4899;
+}
+
 html[data-theme='dark'] .navButtonCurrentLine {
   background-color: #ec4899;
 }
@@ -291,12 +360,34 @@ html[data-theme='dark'] .dropdownItem:hover {
   color: #ec4899;
 }
 
+html[data-theme='dark'] .dropdownItem:focus-visible {
+  background: rgb(236 72 153 / 0.12);
+  color: #ec4899;
+  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+}
+
+html[data-theme='dark'] .dropdownItem:active {
+  background: rgb(236 72 153 / 0.18);
+  color: #ec4899;
+}
+
 html[data-theme='dark'] .submenuItem {
   color: #9ca3af;
 }
 
 html[data-theme='dark'] .submenuItem:hover {
   background: rgb(236 72 153 / 0.12);
+  color: #ec4899;
+}
+
+html[data-theme='dark'] .submenuItem:focus-visible {
+  background: rgb(236 72 153 / 0.12);
+  color: #ec4899;
+  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+}
+
+html[data-theme='dark'] .submenuItem:active {
+  background: rgb(236 72 153 / 0.18);
   color: #ec4899;
 }
 

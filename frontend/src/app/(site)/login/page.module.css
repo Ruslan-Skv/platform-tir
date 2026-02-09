@@ -55,6 +55,18 @@
   background: var(--bg-tertiary, #f0f0f0);
 }
 
+.closeButton:focus {
+  outline: none;
+}
+
+.closeButton:focus-visible {
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+}
+
+.closeButton:active {
+  opacity: 0.9;
+}
+
 .form {
   display: flex;
   flex-direction: column;
@@ -78,14 +90,20 @@
   border: 1px solid var(--border-color, #ddd);
   border-radius: 8px;
   font-size: 1rem;
-  transition: border-color 0.2s;
+  transition:
+    border-color 0.35s ease,
+    box-shadow 0.35s ease;
   background: var(--bg-primary, #fff);
   color: var(--text-primary, #1a1a1a);
 }
 
 .input:focus {
   outline: none;
-  border-color: var(--accent-color, #007bff);
+}
+
+.input:focus-visible {
+  border-color: rgb(217 6 82 / 0.4);
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
 }
 
 .error {
@@ -114,6 +132,18 @@
   background: var(--accent-hover, #0056b3);
 }
 
+.submitButton:focus {
+  outline: none;
+}
+
+.submitButton:focus-visible {
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+}
+
+.submitButton:active:not(:disabled) {
+  opacity: 0.95;
+}
+
 .submitButton:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -136,6 +166,32 @@
 
 .switchButton:hover {
   color: var(--accent-hover, #0056b3);
+}
+
+.switchButton:focus {
+  outline: none;
+}
+
+.switchButton:focus-visible {
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  border-radius: 0.25rem;
+}
+
+.switchButton:active {
+  opacity: 0.95;
+}
+
+.cancelButton:focus {
+  outline: none;
+}
+
+.cancelButton:focus-visible {
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  border-radius: 0.25rem;
+}
+
+.cancelButton:active {
+  opacity: 0.95;
 }
 
 .cancelBlock {

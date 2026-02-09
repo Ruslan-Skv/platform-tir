@@ -18,15 +18,26 @@
   outline: none;
 }
 
+.base:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+}
+
+.base:active:not(.disabled) {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.35s ease;
+}
+
 /* Variants */
 .primary {
   background-color: #d90652;
   color: white;
 }
 
-.primary:focus {
+.primary:focus-visible {
   background-color: #d90652;
-  box-shadow: 0 0 0 4px rgb(217 6 82 / 25%);
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
 .primary:hover:not(.disabled) {
@@ -39,9 +50,9 @@
   color: white;
 }
 
-.secondary:focus {
+.secondary:focus-visible {
   background-color: #6b7280;
-  box-shadow: 0 0 0 4px rgb(107 114 128 / 25%);
+  box-shadow: 0 0 0 2px rgb(107 114 128 / 0.25);
 }
 
 .secondary:hover:not(.disabled) {
@@ -55,8 +66,10 @@
   color: #000;
 }
 
-.outline:focus {
-  box-shadow: 0 0 0 4px rgb(217 6 82 / 25%);
+.outline:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  transition: box-shadow 0.35s ease;
 }
 
 .outline:hover:not(.disabled) {
@@ -75,6 +88,12 @@
   box-shadow: none;
 }
 
+.outline[data-action-button='measurement']:focus-visible,
+.outline[data-action-button='callback']:focus-visible {
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  transition: box-shadow 0.35s ease;
+}
+
 /* Новый вариант для мобильного меню */
 .menu {
   background-color: rgb(217 6 82 / 10%);
@@ -85,8 +104,9 @@
   text-transform: none;
 }
 
-.menu:focus {
-  box-shadow: 0 0 0 4px rgb(217 6 82 / 25%);
+.menu:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
 .menu:hover:not(.disabled) {
@@ -126,8 +146,16 @@
   outline: none;
 }
 
-.link:focus::after {
-  transform: scaleX(1);
+.link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  transition: box-shadow 0.35s ease;
+}
+
+/* Подчёркивание только по ховеру, не по фокусу */
+.link:active:not(.disabled) {
+  opacity: 0.95;
+  transition: opacity 0.2s ease;
 }
 
 /* Sizes */
@@ -241,6 +269,19 @@ html[data-theme='dark'] .menu:not(.disabled):hover .glow {
 html[data-theme='dark'] .link {
   color: #d1d5db;
 }
+
 html[data-theme='dark'] .link::after {
   background-color: #ec4899;
+}
+
+html[data-theme='dark'] .link:focus-visible {
+  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+}
+
+html[data-theme='dark'] .base:focus-visible {
+  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+}
+
+html[data-theme='dark'] .outline:focus-visible {
+  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
 }
