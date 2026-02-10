@@ -4,7 +4,19 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
-type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | 'CONTENT_MANAGER' | 'MODERATOR' | 'SUPPORT' | 'PARTNER';
+type AdminRole =
+  | 'SUPER_ADMIN'
+  | 'ADMIN'
+  | 'CONTENT_MANAGER'
+  | 'MODERATOR'
+  | 'SUPPORT'
+  | 'PARTNER'
+  | 'BRIGADIER'
+  | 'LEAD_SPECIALIST_FURNITURE'
+  | 'LEAD_SPECIALIST_WINDOWS_DOORS'
+  | 'SURVEYOR'
+  | 'DRIVER'
+  | 'INSTALLER';
 
 interface User {
   id: string;
@@ -100,6 +112,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         'MODERATOR',
         'SUPPORT',
         'PARTNER',
+        'BRIGADIER',
+        'LEAD_SPECIALIST_FURNITURE',
+        'LEAD_SPECIALIST_WINDOWS_DOORS',
+        'SURVEYOR',
+        'DRIVER',
+        'INSTALLER',
       ];
       if (!allowedRoles.includes(data.user.role)) {
         return {
@@ -150,6 +168,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       'MODERATOR',
       'SUPPORT',
       'PARTNER',
+      'BRIGADIER',
+      'LEAD_SPECIALIST_FURNITURE',
+      'LEAD_SPECIALIST_WINDOWS_DOORS',
+      'SURVEYOR',
+      'DRIVER',
+      'INSTALLER',
     ].includes(user?.role ?? ''),
     login,
     logout,

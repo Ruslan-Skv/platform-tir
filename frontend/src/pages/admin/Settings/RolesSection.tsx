@@ -9,8 +9,8 @@ export function RolesSection() {
     <section className={styles.section}>
       <h2 className={styles.sectionTitle}>Роли пользователей</h2>
       <p className={styles.sectionDescription}>
-        В системе используются восемь ролей с иерархией доступа. Доступ к разделам админки задаётся
-        на бэкенде через декоратор <code>@Roles()</code> в контроллерах. Супер-администратор имеет
+        В системе используются роли с иерархией доступа. Доступ к разделам админки задаётся на
+        бэкенде через декоратор <code>@Roles()</code> в контроллерах. Супер-администратор имеет
         полный доступ ко всем маршрутам.
       </p>
       <div className={styles.rolesGrid}>

@@ -10,6 +10,12 @@ export type BackendRole =
   | 'MODERATOR'
   | 'SUPPORT'
   | 'PARTNER'
+  | 'BRIGADIER'
+  | 'LEAD_SPECIALIST_FURNITURE'
+  | 'LEAD_SPECIALIST_WINDOWS_DOORS'
+  | 'SURVEYOR'
+  | 'DRIVER'
+  | 'INSTALLER'
   | 'USER'
   | 'GUEST';
 
@@ -88,6 +94,42 @@ export const ROLES_CONFIG: RoleConfig[] = [
     label: 'Партнёр',
     description: 'Управление собственными товарами/услугами.',
     permissions: ['Каталог: управление собственными товарами'],
+  },
+  {
+    id: 'BRIGADIER',
+    label: 'Бригадир',
+    description: 'Руководитель бригады. Доступ к CRM: замеры, договоры, оплаты.',
+    permissions: ['CRM: замеры, договоры, оплаты', 'Просмотр клиентов'],
+  },
+  {
+    id: 'LEAD_SPECIALIST_FURNITURE',
+    label: 'Ведущий специалист по мебели',
+    description: 'Работа с заказами по направлению «Мебель». Доступ к CRM.',
+    permissions: ['CRM: замеры, договоры, оплаты по мебели', 'Клиенты'],
+  },
+  {
+    id: 'LEAD_SPECIALIST_WINDOWS_DOORS',
+    label: 'Ведущий специалист по Окнам, Дверям, Потолкам, Жалюзям',
+    description: 'Работа с заказами по направлениям: окна, двери, потолки, жалюзи. Доступ к CRM.',
+    permissions: ['CRM: замеры, договоры, оплаты по направлениям', 'Клиенты'],
+  },
+  {
+    id: 'SURVEYOR',
+    label: 'Замерщик',
+    description: 'Выполнение замеров. Просмотр и обновление своих замеров.',
+    permissions: ['CRM: замеры (свои)', 'Просмотр клиентов'],
+  },
+  {
+    id: 'DRIVER',
+    label: 'Водитель (доставщик)',
+    description: 'Доставка заказов. Просмотр информации о доставках.',
+    permissions: ['CRM: просмотр договоров, даты доставки'],
+  },
+  {
+    id: 'INSTALLER',
+    label: 'Монтажник',
+    description: 'Выполнение монтажных работ. Просмотр своих назначений.',
+    permissions: ['CRM: просмотр договоров, даты монтажа'],
   },
   {
     id: 'USER',

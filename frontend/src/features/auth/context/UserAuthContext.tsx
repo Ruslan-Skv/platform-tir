@@ -11,6 +11,12 @@ export type UserRole =
   | 'MODERATOR'
   | 'SUPPORT'
   | 'PARTNER'
+  | 'BRIGADIER'
+  | 'LEAD_SPECIALIST_FURNITURE'
+  | 'LEAD_SPECIALIST_WINDOWS_DOORS'
+  | 'SURVEYOR'
+  | 'DRIVER'
+  | 'INSTALLER'
   | 'USER'
   | 'GUEST';
 

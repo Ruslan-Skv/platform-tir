@@ -19,9 +19,22 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RequestWithUser } from '../../common/types/request-with-user.types';
 
+const CRM_ROLES = [
+  'SUPER_ADMIN',
+  'ADMIN',
+  'MODERATOR',
+  'SUPPORT',
+  'BRIGADIER',
+  'LEAD_SPECIALIST_FURNITURE',
+  'LEAD_SPECIALIST_WINDOWS_DOORS',
+  'SURVEYOR',
+  'DRIVER',
+  'INSTALLER',
+] as const;
+
 @Controller('admin/customers')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'MODERATOR', 'SUPPORT')
+@Roles(...CRM_ROLES)
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 

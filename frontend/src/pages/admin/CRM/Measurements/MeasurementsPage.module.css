@@ -1,0 +1,458 @@
+.page {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.count {
+  background: #e5e7eb;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.addButton {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  text-decoration: none;
+}
+
+.addButton:hover {
+  background: #4f46e5;
+  color: #fff;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.secondaryButton {
+  padding: 6px 12px;
+  background: #fff;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.secondaryButton:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.secondaryButton.active {
+  background: #eef2ff;
+  border-color: #6366f1;
+  color: #4338ca;
+}
+
+.saveMessage {
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+
+.saveMessageSuccess {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.saveMessageError {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Edit Mode Bar */
+.editModeBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.editModeInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.editModeIcon {
+  font-size: 1.1rem;
+}
+
+.editModeInfo > span:nth-child(2) {
+  font-weight: 600;
+  color: #4338ca;
+  font-size: 0.9rem;
+}
+
+.editCount {
+  padding: 4px 10px;
+  background: #6366f1;
+  color: #fff;
+  border-radius: 16px;
+  font-size: 0.8rem;
+}
+
+.editCount strong {
+  font-weight: 600;
+}
+
+.editModeActions {
+  display: flex;
+  gap: 8px;
+}
+
+.editCancelButton {
+  padding: 6px 12px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  color: #374151;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.editCancelButton:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.editSaveButton {
+  padding: 6px 12px;
+  background: #6366f1;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.editSaveButton:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.editSaveButton:disabled,
+.editCancelButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.actionButton {
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  opacity: 0.7;
+}
+
+.actionButton:hover {
+  opacity: 1;
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.editedIndicator {
+  color: #f59e0b;
+  font-size: 0.75rem;
+  margin-right: 2px;
+}
+
+.editableInput {
+  width: 100%;
+  min-width: 100px;
+  max-width: 180px;
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  background: #fff;
+}
+
+.editableInput:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.editableInput.edited {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.editableSelect {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23374151' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 160px;
+  max-width: 260px;
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.select {
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+  min-width: 120px;
+}
+
+.dateLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dateLabelText {
+  font-size: 13px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.dateInput {
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.statusNEW {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.statusASSIGNED {
+  background: #fce7f3;
+  color: #9d174d;
+}
+
+.statusIN_PROGRESS {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusCOMPLETED {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.statusCANCELLED {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.statusCONVERTED {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+@media (max-width: 768px) {
+  .filters {
+    flex-direction: column;
+  }
+
+  .searchInput {
+    max-width: none;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+}
+
+/* Тёмная тема */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .count {
+  background: #374151;
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addButton:hover {
+  background: #818cf8;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput::placeholder {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput:focus {
+  border-color: #6366f1;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dateLabelText {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dateInput {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusNEW {
+  background: rgb(67 56 202 / 0.3);
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusASSIGNED {
+  background: rgb(157 23 77 / 0.3);
+  color: #f9a8d4;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusIN_PROGRESS {
+  background: rgb(146 64 14 / 0.3);
+  color: #fcd34d;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusCOMPLETED {
+  background: rgb(6 95 70 / 0.3);
+  color: #6ee7b7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusCANCELLED {
+  background: rgb(153 27 27 / 0.3);
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusCONVERTED {
+  background: rgb(30 64 175 / 0.3);
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryButton:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryButton.active {
+  background: rgb(67 56 202 / 0.4);
+  border-color: #6366f1;
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editModeBar {
+  background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+  border-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editModeInfo > span:nth-child(2) {
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editCancelButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editCancelButton:hover:not(:disabled) {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editableInput {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editableInput.edited {
+  border-color: #f59e0b;
+  background: rgb(245 158 11 / 0.15);
+}

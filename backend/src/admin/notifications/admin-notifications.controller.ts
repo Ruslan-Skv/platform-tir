@@ -272,6 +272,12 @@ export class AdminNotificationsController {
       'MODERATOR',
       'SUPPORT',
       'PARTNER',
+      'BRIGADIER',
+      'LEAD_SPECIALIST_FURNITURE',
+      'LEAD_SPECIALIST_WINDOWS_DOORS',
+      'SURVEYOR',
+      'DRIVER',
+      'INSTALLER',
     ];
     return this.prisma.user.findMany({
       where: { role: { in: ADMIN_ROLES } },

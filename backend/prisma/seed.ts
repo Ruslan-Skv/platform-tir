@@ -691,6 +691,24 @@ async function main() {
   });
   console.log('✅ UserCabinetBlock: настройки личного кабинета');
 
+  // CRM: направления по умолчанию
+  const crmDirections = [
+    { name: 'Двери', slug: 'doors', sortOrder: 1 },
+    { name: 'Окна', slug: 'windows', sortOrder: 2 },
+    { name: 'Натяжные потолки', slug: 'stretch-ceilings', sortOrder: 3 },
+    { name: 'Жалюзи', slug: 'blinds', sortOrder: 4 },
+    { name: 'Мебель', slug: 'furniture', sortOrder: 5 },
+    { name: 'Ремонт', slug: 'repair', sortOrder: 6 },
+  ];
+  for (const d of crmDirections) {
+    await prisma.crmDirection.upsert({
+      where: { slug: d.slug },
+      update: { name: d.name, sortOrder: d.sortOrder },
+      create: { ...d, isActive: true },
+    });
+  }
+  console.log('✅ CrmDirection: направления CRM созданы');
+
   console.log('🎉 Seeding completed!');
 }
 
