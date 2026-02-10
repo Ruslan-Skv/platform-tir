@@ -1147,6 +1147,65 @@
   color: white;
 }
 
+/* Тёмная тема для компактного блока вариантов (размер, тип, открывание) */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .variantItemCompact {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .variantLabelCompact {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .optionSelectCompact {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .optionSelectCompact:hover {
+  border-color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .optionSelectCompact:focus {
+  border-color: #d90652;
+  box-shadow: 0 0 0 2px rgba(217, 6, 82, 0.25);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantitySelectorCompact {
+  border-color: #4b5563;
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantityButtonCompact {
+  background: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .quantityButtonCompact:hover:not(:disabled) {
+  background: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantityValueCompact {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addVariantButtonCompact {
+  background: #374151;
+  color: #e5e7eb;
+  border-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addVariantButtonCompact:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addVariantButtonCompact:active {
+  background: #6b7280;
+}
+
 .actions {
   display: flex;
   gap: 0.75rem;
@@ -1521,6 +1580,28 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .favoriteButtonActive:hover {
   border-color: #b80546;
   color: #b80546;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .compareButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .compareButton:hover:not(:disabled) {
+  border-color: #6b7280;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .compareButtonActive {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  background: rgb(59 130 246 / 0.15);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .compareButtonActive:hover:not(:disabled) {
+  border-color: #60a5fa;
+  color: #60a5fa;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cartControls {

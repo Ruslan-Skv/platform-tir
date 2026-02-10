@@ -303,6 +303,8 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   // Загрузка изображений
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const cardVariantFileInputRef = useRef<HTMLInputElement>(null);
+  const [cardVariantUploadIndex, setCardVariantUploadIndex] = useState<number | null>(null);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -705,6 +707,44 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
       reader.onload = () => resolve(reader.result as string);
       reader.onerror = (error) => reject(error);
     });
+  };
+
+  const handleCardVariantImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length || cardVariantUploadIndex === null) return;
+    const file = files[0];
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setImageError('Разрешены форматы: JPG, PNG, WebP, GIF');
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      setImageError('Размер файла не более 5MB');
+      return;
+    }
+    try {
+      const base64 = await fileToBase64(file);
+      setFormData((prev) => {
+        const next = [...prev.cardVariants];
+        if (next[cardVariantUploadIndex] === undefined) {
+          next[cardVariantUploadIndex] = {
+            name: '',
+            price: '',
+            image: '',
+            size: '',
+            color: '',
+            extraOption: '',
+            sortOrder: cardVariantUploadIndex,
+          };
+        }
+        next[cardVariantUploadIndex] = { ...next[cardVariantUploadIndex], image: base64 };
+        return { ...prev, cardVariants: next };
+      });
+      setImageError(null);
+    } catch {
+      setImageError('Ошибка загрузки файла');
+    }
+    setCardVariantUploadIndex(null);
+    e.target.value = '';
   };
 
   const handleImageUrlAdd = () => {
@@ -1201,19 +1241,39 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                 </div>
               </div>
 
-              <div className={styles.formGroup}>
-                <label htmlFor="stock">Остаток на складе</label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  id="stock"
-                  name="stock"
-                  value={formData.stock}
-                  onChange={handleIntegerChange}
-                  className={styles.input}
-                  placeholder="0"
-                  autoComplete="off"
-                />
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label htmlFor="stock">Остаток на складе</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    id="stock"
+                    name="stock"
+                    value={formData.stock}
+                    onChange={handleIntegerChange}
+                    className={styles.input}
+                    placeholder="0"
+                    autoComplete="off"
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label htmlFor="sortOrder">Сортировка</label>
+                  <input
+                    type="number"
+                    id="sortOrder"
+                    name="sortOrder"
+                    value={formData.sortOrder}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        sortOrder: parseInt(e.target.value, 10) || 0,
+                      }))
+                    }
+                    className={styles.input}
+                    placeholder="0"
+                  />
+                  <p className={styles.hint}>Чем меньше число, тем выше в списке.</p>
+                </div>
               </div>
 
               <div className={styles.checkboxGroup}>
@@ -1245,28 +1305,6 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                   <span>Новинка</span>
                 </label>
               </div>
-
-              <div className={styles.formGroup}>
-                <label htmlFor="sortOrder">Сортировка</label>
-                <input
-                  type="number"
-                  id="sortOrder"
-                  name="sortOrder"
-                  value={formData.sortOrder}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      sortOrder: parseInt(e.target.value, 10) || 0,
-                    }))
-                  }
-                  className={styles.input}
-                  placeholder="0"
-                />
-                <p className={styles.hint}>
-                  Чем меньше число, тем выше товар в списке. Товары с одинаковым значением
-                  сортируются по дате создания.
-                </p>
-              </div>
             </div>
           )}
 
@@ -1277,7 +1315,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
 
               <div className={styles.formGroup}>
                 <label>Размеры</label>
-                <div className={styles.attributesList}>
+                <div className={`${styles.attributesList} ${styles.sizesListTwoCol}`}>
                   {(formData.sizes.length > 0 ? formData.sizes : ['']).map((size, index) => (
                     <div key={`size-${index}`} className={styles.attributeRow}>
                       <input
@@ -1333,7 +1371,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
 
               <div className={styles.formGroup}>
                 <label htmlFor="openingSide">Сторона открывания</label>
-                <div className={styles.checkboxGroup}>
+                <div className={`${styles.checkboxGroup} ${styles.checkboxGroupRow}`}>
                   <label className={styles.checkbox}>
                     <input
                       type="checkbox"
@@ -1376,6 +1414,14 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           {/* Схожие товары в карточке (до 5) */}
           {showSection('cardVariants') && (
             <div className={styles.formSection}>
+              <input
+                ref={cardVariantFileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className={styles.fileInput}
+                style={{ display: 'none' }}
+                onChange={handleCardVariantImageUpload}
+              />
               <h2 className={styles.sectionTitle}>Схожие товары в карточке</h2>
               <p className={styles.hint} style={{ marginBottom: '1rem' }}>
                 До 5 вариантов в одной карточке (как на Wildberries/Озон): отличаются ценой,
@@ -1454,35 +1500,43 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                     </div>
                   </div>
                   <div className={styles.formGroup}>
-                    <label>Фото (URL или base64)</label>
-                    <input
-                      type="text"
-                      value={variant.image}
-                      onChange={(e) => {
-                        const next = [...formData.cardVariants];
-                        if (next[index] === undefined)
-                          next[index] = {
-                            name: '',
-                            price: '',
-                            image: '',
-                            size: '',
-                            color: '',
-                            extraOption: '',
-                            sortOrder: index,
-                          };
-                        next[index] = { ...next[index], image: e.target.value };
-                        setFormData((prev) => ({ ...prev, cardVariants: next }));
-                      }}
-                      className={styles.input}
-                      placeholder="https://... или вставьте base64"
-                    />
+                    <label>Фото</label>
+                    <div className={styles.cardVariantImageRow}>
+                      <input
+                        type="text"
+                        value={variant.image}
+                        onChange={(e) => {
+                          const next = [...formData.cardVariants];
+                          if (next[index] === undefined)
+                            next[index] = {
+                              name: '',
+                              price: '',
+                              image: '',
+                              size: '',
+                              color: '',
+                              extraOption: '',
+                              sortOrder: index,
+                            };
+                          next[index] = { ...next[index], image: e.target.value };
+                          setFormData((prev) => ({ ...prev, cardVariants: next }));
+                        }}
+                        className={styles.input}
+                        placeholder="URL или загрузите файл"
+                      />
+                      <button
+                        type="button"
+                        className={styles.cardVariantUploadBtn}
+                        onClick={() => {
+                          setCardVariantUploadIndex(index);
+                          cardVariantFileInputRef.current?.click();
+                        }}
+                      >
+                        Загрузить фото
+                      </button>
+                    </div>
                     {variant.image && (
-                      <div style={{ marginTop: '0.5rem' }}>
-                        <img
-                          src={variant.image}
-                          alt=""
-                          style={{ maxHeight: 80, objectFit: 'contain' }}
-                        />
+                      <div className={styles.cardVariantImagePreview}>
+                        <img src={variant.image} alt="" />
                       </div>
                     )}
                   </div>
@@ -1563,8 +1617,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                   {formData.cardVariants.length > 0 && (
                     <button
                       type="button"
-                      className={styles.removeAttrButton}
-                      style={{ marginTop: '0.5rem' }}
+                      className={styles.cardVariantRemoveButton}
                       onClick={() =>
                         setFormData((prev) => ({
                           ...prev,
@@ -1572,8 +1625,9 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                         }))
                       }
                       title="Удалить вариант"
+                      aria-label="Удалить вариант"
                     >
-                      🗑️ Удалить вариант
+                      🗑️
                     </button>
                   )}
                 </div>
@@ -1761,7 +1815,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                 <div className={styles.attributesSection}>
                   <h3 className={styles.attributesSubtitle}>Атрибуты категории</h3>
                   {categoryAttributes.length > 0 ? (
-                    <div className={styles.attributesList}>
+                    <div className={`${styles.attributesList} ${styles.attributesListTwoCol}`}>
                       {categoryAttributes.map((ca) => (
                         <div key={ca.id} className={styles.attributeRow}>
                           <label className={styles.attributeLabel}>
@@ -1876,7 +1930,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                   </h3>
 
                   {customAttributes.length > 0 && (
-                    <div className={styles.attributesList}>
+                    <div className={`${styles.attributesList} ${styles.attributesListTwoCol}`}>
                       {customAttributes.map((attr, index) => (
                         <div key={index} className={styles.attributeRow}>
                           <input
@@ -1955,27 +2009,6 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
             </div>
           )}
         </div>
-
-        <div className={styles.formActions}>
-          <div className={styles.formActionsRight}>
-            <button
-              type="button"
-              className={styles.cancelButton}
-              onClick={() =>
-                router.push(
-                  fromCategory
-                    ? `/admin/catalog/products/category/${fromCategory}`
-                    : '/admin/catalog/products'
-                )
-              }
-            >
-              Отмена
-            </button>
-            <button type="submit" className={styles.saveButton} disabled={saving}>
-              {saving ? 'Сохранение...' : 'Сохранить изменения'}
-            </button>
-          </div>
-        </div>
       </form>
 
       {/* Product Components Section */}
@@ -1985,8 +2018,11 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
       {/* Product Reviews Section */}
       {productId && <ProductReviewsSection productId={productId} />}
 
-      {/* Кнопка "Назад к списку" в самом низу */}
-      <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
+      {/* Нижняя строка: слева "Назад к списку", справа "Отмена" и "Сохранить изменения" */}
+      <div
+        className={styles.formActions}
+        style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}
+      >
         <button
           type="button"
           className={styles.backButtonBottom}
@@ -2000,6 +2036,34 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         >
           ← Назад к списку
         </button>
+        <div className={styles.formActionsRight}>
+          <button
+            type="button"
+            className={styles.cancelButton}
+            onClick={() =>
+              router.push(
+                fromCategory
+                  ? `/admin/catalog/products/category/${fromCategory}`
+                  : '/admin/catalog/products'
+              )
+            }
+          >
+            Отмена
+          </button>
+          <button
+            type="button"
+            className={styles.saveButton}
+            disabled={saving}
+            onClick={(e) => {
+              e.preventDefault();
+              if (formRef.current) {
+                formRef.current.requestSubmit();
+              }
+            }}
+          >
+            {saving ? 'Сохранение...' : 'Сохранить изменения'}
+          </button>
+        </div>
       </div>
 
       {/* Toast notifications */}

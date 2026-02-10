@@ -4,7 +4,7 @@
 }
 
 .header {
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 .backButton {
@@ -14,7 +14,7 @@
   cursor: pointer;
   font-size: 0.875rem;
   padding: 0;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -33,13 +33,13 @@
 
 .loading {
   text-align: center;
-  padding: 60px 20px;
+  padding: 32px 16px;
   color: #6b7280;
   font-size: 1.1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
 }
 
 .spinner {
@@ -59,7 +59,7 @@
 
 .notFound {
   text-align: center;
-  padding: 60px 20px;
+  padding: 32px 16px;
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -68,30 +68,30 @@
 .notFound h2 {
   font-size: 1.5rem;
   color: #374151;
-  margin: 0 0 12px;
+  margin: 0 0 8px;
 }
 
 .notFound p {
   color: #6b7280;
-  margin: 0 0 24px;
+  margin: 0 0 16px;
 }
 
 .error {
-  padding: 12px 16px;
+  padding: 8px 12px;
   background: #fee2e2;
   border: 1px solid #fca5a5;
-  border-radius: 8px;
+  border-radius: 6px;
   color: #991b1b;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .success {
-  padding: 12px 16px;
+  padding: 8px 12px;
   background: #d1fae5;
   border: 1px solid #6ee7b7;
-  border-radius: 8px;
+  border-radius: 6px;
   color: #065f46;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 /* Toast notification - fixed at bottom of screen */
@@ -159,21 +159,46 @@
 
 .form {
   background: #fff;
-  border-radius: 12px;
+  border-radius: 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 16px;
+  padding: 10px;
+  font-size: 13px;
+}
+
+.form .sectionTitle,
+.form .formGroup label,
+.form .attributesSubtitle,
+.form .attributeLabel,
+.form .cardVariantBlockTitle,
+.form .hint,
+.form .input,
+.form .select,
+.form .textarea,
+.form .addAttrButton,
+.form .saveButton,
+.form .cancelButton,
+.form .backButtonBottom,
+.form .addUrlButton,
+.form .dropZoneText,
+.form .dropZoneHint,
+.form .noImages,
+.form .noAttributes,
+.form .customAttrHint,
+.form .unit,
+.form .imageError {
+  font-size: 1em;
 }
 
 .formGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 10px;
 }
 
 .formSection {
   background: #f9fafb;
-  border-radius: 8px;
-  padding: 12px;
+  border-radius: 6px;
+  padding: 8px;
 }
 
 .formSection:first-child {
@@ -187,34 +212,34 @@
 .attributesGrid {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .sectionTitle {
-  font-size: 1rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: #1f2937;
-  margin: 0 0 10px;
-  padding-bottom: 8px;
+  margin: 0 0 6px;
+  padding-bottom: 6px;
   border-bottom: 1px solid #e5e7eb;
 }
 
 .formGroup {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .formGroup label {
   display: block;
   font-weight: 500;
   color: #374151;
-  margin-bottom: 4px;
-  font-size: 0.875rem;
+  margin-bottom: 2px;
+  font-size: 0.8125rem;
 }
 
 .formRow {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 8px;
 }
 
 .categorySupplierRow {
@@ -225,17 +250,17 @@
 .namePartnerRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 8px;
 }
 
 .input,
 .select,
 .textarea {
   width: 100%;
-  padding: 8px 12px;
+  padding: 6px 10px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
@@ -252,20 +277,25 @@
 
 .textarea {
   resize: vertical;
-  min-height: 80px;
+  min-height: 64px;
 }
 
 .checkboxGroup {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 10px;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.checkboxGroupRow {
+  flex-direction: row;
+  flex-wrap: wrap;
 }
 
 .checkbox {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   cursor: pointer;
 }
 
@@ -278,29 +308,29 @@
 
 .checkbox span {
   color: #374151;
-  font-size: 0.95rem;
+  font-size: 1em;
 }
 
 /* Image upload section */
 .imageError {
-  padding: 8px 12px;
+  padding: 4px 8px;
   background: #fee2e2;
   border: 1px solid #fca5a5;
-  border-radius: 6px;
+  border-radius: 4px;
   color: #991b1b;
-  margin-bottom: 10px;
-  font-size: 0.875rem;
+  margin-bottom: 4px;
+  font-size: 1em;
 }
 
 .dropZone {
-  border: 2px dashed #d1d5db;
-  border-radius: 8px;
-  padding: 20px 16px;
+  border: 1px dashed #d1d5db;
+  border-radius: 4px;
+  padding: 6px 8px;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s;
   background: #fff;
-  margin-bottom: 10px;
+  margin-bottom: 4px;
 }
 
 .dropZone:hover {
@@ -319,15 +349,15 @@
 }
 
 .dropZoneIcon {
-  font-size: 2rem;
+  font-size: 1.125rem;
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 2px;
 }
 
 .dropZoneText {
   color: #374151;
-  font-size: 0.875rem;
-  margin: 0 0 3px;
+  font-size: 1em;
+  margin: 0 0 1px;
 }
 
 .dropZoneLink {
@@ -337,7 +367,7 @@
 
 .dropZoneHint {
   color: #9ca3af;
-  font-size: 0.85rem;
+  font-size: 0.9em;
   margin: 0;
 }
 
@@ -346,15 +376,15 @@
 }
 
 .addUrlButton {
-  padding: 6px 12px;
+  padding: 4px 8px;
   background: #f3f4f6;
   border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border-radius: 4px;
   color: #374151;
-  font-size: 0.875rem;
+  font-size: 1em;
   cursor: pointer;
   transition: all 0.15s;
-  margin-bottom: 10px;
+  margin-bottom: 4px;
 }
 
 .addUrlButton:hover {
@@ -365,17 +395,19 @@
 .imagesGrid {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
-  gap: 10px;
-  margin-top: 12px;
+  gap: 6px;
+  margin-top: 4px;
+  max-width: 720px;
 }
 
 .imageItem {
   position: relative;
   aspect-ratio: 1;
-  border-radius: 8px;
+  max-width: 112px;
+  border-radius: 4px;
   overflow: hidden;
   background: #e5e7eb;
-  border: 2px solid transparent;
+  border: 1px solid transparent;
 }
 
 .imageItem:first-child {
@@ -390,14 +422,14 @@
 
 .mainImageBadge {
   position: absolute;
-  top: 6px;
-  left: 6px;
+  top: 2px;
+  left: 2px;
   background: #6366f1;
   color: white;
-  font-size: 0.7rem;
+  font-size: 0.55rem;
   font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 1px 3px;
+  border-radius: 2px;
   text-transform: uppercase;
 }
 
@@ -408,8 +440,8 @@
   right: 0;
   display: flex;
   justify-content: center;
-  gap: 4px;
-  padding: 6px;
+  gap: 1px;
+  padding: 2px;
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
   opacity: 0;
   transition: opacity 0.2s;
@@ -420,14 +452,14 @@
 }
 
 .imageActionBtn {
-  width: 28px;
-  height: 28px;
+  width: 20px;
+  height: 20px;
   border: none;
-  border-radius: 4px;
+  border-radius: 3px;
   background: rgba(255, 255, 255, 0.9);
   color: #374151;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -452,12 +484,12 @@
   color: #6b7280;
   font-style: italic;
   text-align: center;
-  padding: 12px;
+  padding: 6px 8px;
   background: #fff;
   border: 1px dashed #d1d5db;
-  border-radius: 6px;
-  margin-top: 10px;
-  font-size: 0.875rem;
+  border-radius: 4px;
+  margin-top: 4px;
+  font-size: 1em;
 }
 
 .hint {
@@ -470,19 +502,19 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
-  margin-top: 16px;
-  padding-top: 12px;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 8px;
   border-top: 1px solid #e5e7eb;
 }
 
 .formActionsRight {
   display: flex;
-  gap: 12px;
+  gap: 8px;
 }
 
 .backButtonBottom {
-  padding: 8px 16px;
+  padding: 6px 12px;
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
@@ -499,13 +531,13 @@
 }
 
 .cancelButton {
-  padding: 8px 16px;
+  padding: 6px 12px;
   background: #fff;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   color: #374151;
   font-weight: 500;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -516,7 +548,7 @@
 }
 
 .saveButton {
-  padding: 6px 12px;
+  padding: 5px 10px;
   background: #6366f1;
   border: none;
   border-radius: 6px;
@@ -567,17 +599,17 @@
 
 /* Attributes / Characteristics section */
 .attributesSection {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .attributesSubtitle {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: #374151;
-  margin: 0 0 8px;
+  margin: 0 0 4px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .customAttrHint {
@@ -589,31 +621,122 @@
 .attributesList {
   display: flex;
   flex-direction: column;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+/* Две колонки в блоке характеристик — по 2 поля в ряд */
+.attributesListTwoCol {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+}
+
+.attributesListTwoCol .attributeRow {
+  grid-template-columns: 100px 1fr auto;
+  min-width: 0;
+}
+
+.attributesListTwoCol .attributeRow .input,
+.attributesListTwoCol .attributeRow .select {
+  min-width: 0;
+}
+
+/* Размеры — по 2 в строке */
+.sizesListTwoCol {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.sizesListTwoCol .attributeRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  grid-template-columns: unset;
+}
+
+.sizesListTwoCol .attributeRow .input {
+  flex: 1;
+  min-width: 0;
 }
 
 .cardVariantBlock {
-  padding: 1rem;
-  margin-bottom: 1rem;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .cardVariantBlockTitle {
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: #475569;
-  margin: 0 0 0.75rem;
+  margin: 0 0 0.5rem;
+}
+
+.cardVariantImageRow {
+  display: flex;
+  gap: 0.375rem;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.cardVariantImageRow .input {
+  flex: 1;
+}
+
+.cardVariantUploadBtn {
+  flex-shrink: 0;
+  padding: 0.375rem 0.5rem;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cardVariantUploadBtn:hover {
+  background: #2563eb;
+}
+
+.cardVariantImagePreview {
+  margin-top: 0.375rem;
+}
+
+.cardVariantImagePreview img {
+  max-height: 64px;
+  object-fit: contain;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+}
+
+.cardVariantRemoveButton {
+  margin-top: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.375rem;
+  color: #dc2626;
+  cursor: pointer;
+  font-size: 0.875rem;
+  line-height: 1;
+}
+
+.cardVariantRemoveButton:hover {
+  background: #fee2e2;
 }
 
 .attributeRow {
   display: grid;
   grid-template-columns: 200px 1fr auto;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
-  padding: 8px 10px;
+  padding: 6px 8px;
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
@@ -680,8 +803,8 @@
 .addAttrRow {
   display: grid;
   grid-template-columns: 200px 1fr auto;
-  gap: 10px;
-  padding: 8px 10px;
+  gap: 8px;
+  padding: 6px 8px;
   background: #f0fdf4;
   border: 1px dashed #86efac;
   border-radius: 6px;
@@ -696,13 +819,13 @@
 }
 
 .addAttrButton {
-  padding: 6px 12px;
+  padding: 5px 10px;
   background: #16a34a;
   color: white;
   border: none;
   border-radius: 6px;
   font-weight: 500;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
@@ -718,8 +841,8 @@
 }
 
 .removeAttrButton {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -739,14 +862,22 @@
   color: #6b7280;
   font-style: italic;
   text-align: center;
-  padding: 12px;
+  padding: 8px;
   background: #fff;
   border: 1px dashed #d1d5db;
   border-radius: 6px;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 @media (max-width: 768px) {
+  .attributesListTwoCol {
+    grid-template-columns: 1fr;
+  }
+
+  .sizesListTwoCol {
+    grid-template-columns: 1fr;
+  }
+
   .attributeRow {
     grid-template-columns: 1fr;
     gap: 8px;
