@@ -311,6 +311,35 @@ export async function deleteContract(id: string): Promise<void> {
   if (!res.ok) throw new Error('Не удалось удалить договор');
 }
 
+export interface ContractHistoryEntry {
+  id: string;
+  action: 'UPDATE' | 'ROLLBACK';
+  changedAt: string;
+  changedBy: { id: string; firstName: string | null; lastName: string | null; email: string };
+  changedFields: string[];
+  snapshot: Record<string, unknown>;
+}
+
+export async function getContractHistory(contractId: string): Promise<ContractHistoryEntry[]> {
+  const res = await fetch(`${API_URL}/admin/contracts/${contractId}/history`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить историю');
+  return res.json();
+}
+
+export async function rollbackContract(contractId: string, historyId: string): Promise<Contract> {
+  const res = await fetch(`${API_URL}/admin/contracts/${contractId}/rollback/${historyId}`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err.message || 'Не удалось откатить изменения');
+  }
+  return res.json();
+}
+
 // --- Contract Advances ---
 export interface ContractAdvance {
   id: string;

@@ -19,11 +19,31 @@
   color: #6366f1;
 }
 
+.headerTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .title {
   font-size: 1.2rem;
   font-weight: 700;
   color: #1f2937;
   margin: 0;
+}
+
+.historyButton {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.historyButton:hover {
+  background: #e5e7eb;
 }
 
 .loading {

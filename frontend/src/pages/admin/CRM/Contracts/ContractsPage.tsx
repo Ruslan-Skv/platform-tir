@@ -16,6 +16,7 @@ import {
 } from '@/shared/api/admin-crm';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 
+import { ContractHistoryModal } from './ContractHistoryModal';
 import styles from './ContractsPage.module.css';
 
 const STATUS_LABELS: Record<string, string> = {
@@ -118,6 +119,7 @@ export function ContractsPage() {
   const [savingEdits, setSavingEdits] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [saveMessageType, setSaveMessageType] = useState<'success' | 'error'>('success');
+  const [historyContractId, setHistoryContractId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -413,6 +415,13 @@ export function ContractsPage() {
           )}
           <button
             className={styles.actionButton}
+            onClick={() => setHistoryContractId(c.id)}
+            title="История изменений"
+          >
+            📋
+          </button>
+          <button
+            className={styles.actionButton}
             onClick={() => router.push(`/admin/crm/contracts/${c.id}`)}
             title="Редактировать"
           >
@@ -571,6 +580,17 @@ export function ContractsPage() {
           onPageChange: setPage,
         }}
       />
+
+      {historyContractId && (
+        <ContractHistoryModal
+          contractId={historyContractId}
+          contractNumber={data.find((c) => c.id === historyContractId)?.contractNumber}
+          users={users}
+          directions={directions}
+          onClose={() => setHistoryContractId(null)}
+          onRollback={() => fetchData()}
+        />
+      )}
     </div>
   );
 }

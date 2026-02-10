@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Query,
+  Req,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -26,6 +27,7 @@ import { UpdateContractAmendmentDto } from './dto/update-contract-amendment.dto'
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import type { RequestWithUser } from '../../common/types/request-with-user.types';
 
 const actsDir = path.join(process.cwd(), 'uploads', 'contracts', 'acts');
 
@@ -76,14 +78,32 @@ export class ContractsController {
     });
   }
 
+  @Get(':id/history')
+  getHistory(@Param('id') id: string) {
+    return this.contractsService.getHistory(id);
+  }
+
+  @Post(':id/rollback/:historyId')
+  rollback(
+    @Param('id') id: string,
+    @Param('historyId') historyId: string,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.contractsService.rollback(id, historyId, req.user.id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.contractsService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateContractDto: UpdateContractDto) {
-    return this.contractsService.update(id, updateContractDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateContractDto: UpdateContractDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.contractsService.update(id, updateContractDto, req.user?.id);
   }
 
   @Delete(':id')

@@ -28,6 +28,7 @@ import {
 import { Modal } from '@/shared/ui/Modal';
 
 import styles from './ContractFormPage.module.css';
+import { ContractHistoryModal } from './ContractHistoryModal';
 
 const STATUS_OPTIONS = [
   { value: 'DRAFT', label: 'Черновик' },
@@ -183,6 +184,7 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
   const [directions, setDirections] = useState<CrmDirection[]>([]);
   const [users, setUsers] = useState<CrmUser[]>([]);
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   const clearFieldError = useCallback((field: FieldKey) => {
     setFieldErrors((prev) => {
@@ -693,7 +695,21 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
         <Link href="/admin/crm/contracts" className={styles.backLink}>
           ← К списку договоров
         </Link>
-        <h1 className={styles.title}>{contractId ? 'Редактирование договора' : 'Новый договор'}</h1>
+        <div className={styles.headerTitleRow}>
+          <h1 className={styles.title}>
+            {contractId ? 'Редактирование договора' : 'Новый договор'}
+          </h1>
+          {contractId && (
+            <button
+              type="button"
+              className={styles.historyButton}
+              onClick={() => setShowHistoryModal(true)}
+              title="История изменений"
+            >
+              📋 История
+            </button>
+          )}
+        </div>
       </div>
 
       {message && (
@@ -1675,6 +1691,17 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
             </div>
           </div>
         </Modal>
+      )}
+
+      {contractId && showHistoryModal && (
+        <ContractHistoryModal
+          contractId={contractId}
+          contractNumber={contractNumber}
+          users={users}
+          directions={directions}
+          onClose={() => setShowHistoryModal(false)}
+          onRollback={() => loadContract()}
+        />
       )}
     </div>
   );
