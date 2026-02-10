@@ -20,9 +20,12 @@ import {
   getCrmDirections,
   getCrmUsers,
   getMeasurements,
+  removeContractAmendment,
   updateContract,
+  updateContractAmendment,
   uploadContractActImage,
 } from '@/shared/api/admin-crm';
+import { Modal } from '@/shared/ui/Modal';
 
 import styles from './ContractFormPage.module.css';
 
@@ -105,6 +108,7 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
   const searchParams = useSearchParams();
   const { user } = useAuth();
   const canDeletePayments = user?.role === 'SUPER_ADMIN';
+  const canEditAmendments = user?.role === 'SUPER_ADMIN';
   const [contractNumber, setContractNumber] = useState('');
   const [contractDate, setContractDate] = useState(formatDateForInput(new Date().toISOString()));
   const [contractDurationDays, setContractDurationDays] = useState<string>('');
@@ -117,8 +121,8 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
   const [customerName, setCustomerName] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [discountRubles, setDiscountRubles] = useState('0');
-  const [discountPercent, setDiscountPercent] = useState('0');
+  const [discountValue, setDiscountValue] = useState('0');
+  const [discountType, setDiscountType] = useState<'RUBLES' | 'PERCENT'>('RUBLES');
   const [totalAmount, setTotalAmount] = useState('');
   const [payments, setPayments] = useState<
     Array<{
@@ -139,6 +143,7 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
   );
   const [newPaymentType, setNewPaymentType] = useState<string>('PREPAYMENT');
   const [installationDate, setInstallationDate] = useState('');
+  const [installationDurationDays, setInstallationDurationDays] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
   const [actWorkStartDate, setActWorkStartDate] = useState('');
   const [actWorkEndDate, setActWorkEndDate] = useState('');
@@ -158,7 +163,18 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
   const [newAmendmentDurationType, setNewAmendmentDurationType] = useState<'CALENDAR' | 'WORKING'>(
     'CALENDAR'
   );
+  const [newAmendmentNotes, setNewAmendmentNotes] = useState('');
   const [notes, setNotes] = useState('');
+  const [editingAmendment, setEditingAmendment] = useState<ContractAmendment | null>(null);
+  const [amendmentToDelete, setAmendmentToDelete] = useState<ContractAmendment | null>(null);
+  const [editAmendmentForm, setEditAmendmentForm] = useState<{
+    amount: string;
+    discount: string;
+    date: string;
+    durationDays: string;
+    durationType: 'CALENDAR' | 'WORKING';
+    notes: string;
+  } | null>(null);
   const [measurementId, setMeasurementId] = useState('');
   const [loading, setLoading] = useState(!!contractId);
   const [saving, setSaving] = useState(false);
@@ -216,8 +232,8 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
       const total = Number(data.totalAmount ?? 0);
       const disc = Number(data.discount ?? 0);
       setTotalAmount(String(data.totalAmount ?? ''));
-      setDiscountRubles(String(disc));
-      setDiscountPercent(total > 0 ? String(((disc / total) * 100).toFixed(2)) : '0');
+      setDiscountValue(String(disc));
+      setDiscountType('RUBLES');
       const loadedPayments = (data as Contract).payments ?? [];
       setPayments(
         loadedPayments.map((p) => ({
@@ -230,6 +246,9 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
         }))
       );
       setInstallationDate(formatDateForInput(data.installationDate));
+      const instDur = (data as Contract & { installationDurationDays?: number | null })
+        .installationDurationDays;
+      setInstallationDurationDays(instDur != null ? String(instDur) : '');
       setDeliveryDate(formatDateForInput(data.deliveryDate));
       setActWorkStartDate(formatDateForInput((data as Contract).actWorkStartDate));
       setActWorkEndDate(formatDateForInput((data as Contract).actWorkEndDate));
@@ -308,13 +327,20 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
         status,
         customerName: customerName.trim(),
         totalAmount: parseFloat(totalAmount),
-        discount: parseFloat(discountRubles) || 0,
+        discount:
+          discountType === 'RUBLES'
+            ? parseFloat(discountValue) || 0
+            : (parseFloat(totalAmount) || 0) * ((parseFloat(discountValue) || 0) / 100),
         advanceAmount: 0,
         ...(directionId && { directionId }),
         ...(managerId && { managerId }),
         ...(customerAddress.trim() && { customerAddress: customerAddress.trim() }),
         customerPhone: customerPhone.trim(),
         ...(installationDate && { installationDate }),
+        installationDurationDays:
+          installationDurationDays.trim() !== '' && parseInt(installationDurationDays, 10) >= 0
+            ? parseInt(installationDurationDays, 10)
+            : null,
         ...(deliveryDate && { deliveryDate }),
         ...(actWorkStartDate && { actWorkStartDate }),
         ...(actWorkEndDate && { actWorkEndDate }),
@@ -373,7 +399,10 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
 
   const totalPaid = payments.reduce((s, p) => s + Number(p.amount), 0);
   const total = parseFloat(totalAmount) || 0;
-  const discount = parseFloat(discountRubles) || 0;
+  const discount =
+    discountType === 'RUBLES'
+      ? parseFloat(discountValue) || 0
+      : total * ((parseFloat(discountValue) || 0) / 100);
   const amendmentsTotal = amendments.reduce(
     (s, a) => s + Number(a.amount) - Number(a.discount ?? 0),
     0
@@ -527,6 +556,9 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
       payload.durationAdditionDays = durationDays;
       payload.durationAdditionType = newAmendmentDurationType;
     }
+    if (newAmendmentNotes.trim()) {
+      (payload as { notes?: string }).notes = newAmendmentNotes.trim();
+    }
     try {
       const created = await addContractAmendment(contractId, payload);
       setAmendments((prev) => [...prev, created].sort((a, b) => (a.number ?? 0) - (b.number ?? 0)));
@@ -534,11 +566,85 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
       setNewAmendmentDiscount('0');
       setNewAmendmentDiscountType('RUBLES');
       setNewAmendmentDurationDays('');
+      setNewAmendmentNotes('');
       showMessage('success', 'Доп. соглашение добавлено');
     } catch (err) {
       showMessage(
         'error',
         err instanceof Error ? err.message : 'Ошибка добавления доп. соглашения'
+      );
+    }
+  };
+
+  const handleDeleteAmendment = async () => {
+    if (!contractId || !amendmentToDelete) return;
+    const amendmentId = amendmentToDelete.id;
+    setAmendmentToDelete(null);
+    try {
+      await removeContractAmendment(contractId, amendmentId);
+      setAmendments((prev) => prev.filter((a) => a.id !== amendmentId));
+      showMessage('success', 'Доп. соглашение удалено');
+    } catch (err) {
+      showMessage('error', err instanceof Error ? err.message : 'Ошибка удаления доп. соглашения');
+    }
+  };
+
+  const openEditAmendment = (a: ContractAmendment) => {
+    setEditingAmendment(a);
+    setEditAmendmentForm({
+      amount: String(a.amount),
+      discount: String(a.discount ?? 0),
+      date: a.date ? formatDateForInput(a.date) : '',
+      durationDays: String(a.durationAdditionDays ?? ''),
+      durationType: (a.durationAdditionType as 'CALENDAR' | 'WORKING') ?? 'CALENDAR',
+      notes: a.notes ?? '',
+    });
+  };
+
+  const closeEditAmendment = () => {
+    setEditingAmendment(null);
+    setEditAmendmentForm(null);
+  };
+
+  const handleSaveAmendmentEdit = async () => {
+    if (!contractId || !editingAmendment || !editAmendmentForm) return;
+    const amt = parseFloat(editAmendmentForm.amount);
+    const discountVal = parseFloat(editAmendmentForm.discount) || 0;
+    const dateStr = editAmendmentForm.date;
+    if (!dateStr || isNaN(amt)) {
+      showMessage('error', 'Укажите дату и сумму');
+      return;
+    }
+    const payload: {
+      amount: number;
+      date: string;
+      discount?: number;
+      durationAdditionDays?: number | null;
+      durationAdditionType?: string | null;
+      notes?: string | null;
+    } = {
+      amount: amt,
+      date: new Date(dateStr + 'T12:00:00').toISOString(),
+      discount: discountVal > 0 ? discountVal : undefined,
+      notes: editAmendmentForm.notes.trim() || undefined,
+    };
+    const dur = parseInt(editAmendmentForm.durationDays, 10);
+    if (!isNaN(dur) && dur > 0) {
+      payload.durationAdditionDays = dur;
+      payload.durationAdditionType = editAmendmentForm.durationType;
+    } else {
+      payload.durationAdditionDays = null;
+      payload.durationAdditionType = null;
+    }
+    try {
+      const updated = await updateContractAmendment(contractId, editingAmendment.id, payload);
+      setAmendments((prev) => prev.map((a) => (a.id === editingAmendment.id ? updated : a)));
+      closeEditAmendment();
+      showMessage('success', 'Доп. соглашение обновлено');
+    } catch (err) {
+      showMessage(
+        'error',
+        err instanceof Error ? err.message : 'Ошибка обновления доп. соглашения'
       );
     }
   };
@@ -787,7 +893,7 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
             </select>
           </div>
 
-          <div className={styles.rowFull}>
+          <div className={styles.rowHalf}>
             <label className={styles.label} htmlFor="customerName">
               ФИО заказчика <span className={styles.required}>*</span>
             </label>
@@ -808,7 +914,7 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
             )}
           </div>
 
-          <div className={styles.row}>
+          <div className={styles.rowHalf}>
             <label className={styles.label}>Адрес</label>
             <input
               type="text"
@@ -840,7 +946,55 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
             )}
           </div>
 
-          {parseFloat(discountRubles || '0') > 0 ? (
+          <div className={styles.row}>
+            <label className={styles.label}>Скидка</label>
+            <div className={styles.advanceAddInline}>
+              <input
+                type="number"
+                min={0}
+                step={discountType === 'PERCENT' ? '0.01' : '0.01'}
+                max={discountType === 'PERCENT' ? 100 : undefined}
+                placeholder="0"
+                value={discountValue}
+                onChange={(e) => setDiscountValue(e.target.value)}
+                className={styles.input}
+              />
+              <select
+                value={discountType}
+                onChange={(e) => {
+                  const newType = e.target.value as 'RUBLES' | 'PERCENT';
+                  const tot = parseFloat(totalAmount) || 0;
+                  const val = parseFloat(discountValue) || 0;
+                  if (newType === 'PERCENT' && discountType === 'RUBLES' && tot > 0 && val > 0) {
+                    setDiscountValue(((val / tot) * 100).toFixed(2));
+                  } else if (
+                    newType === 'RUBLES' &&
+                    discountType === 'PERCENT' &&
+                    tot > 0 &&
+                    val > 0
+                  ) {
+                    setDiscountValue((tot * (val / 100)).toFixed(2));
+                  }
+                  setDiscountType(newType);
+                }}
+                className={styles.select}
+              >
+                <option value="RUBLES">₽</option>
+                <option value="PERCENT">%</option>
+              </select>
+            </div>
+            {discountType === 'PERCENT' && total > 0 && parseFloat(discountValue || '0') > 0 && (
+              <span className={styles.discountHint}>
+                =
+                {(total * (parseFloat(discountValue) / 100)).toLocaleString('ru-RU', {
+                  maximumFractionDigits: 0,
+                })}{' '}
+                ₽
+              </span>
+            )}
+          </div>
+
+          {discount > 0 ? (
             <>
               <div className={styles.row}>
                 <label className={styles.label} htmlFor="totalAmount">
@@ -853,14 +1007,8 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
                   step="0.01"
                   value={totalAmount}
                   onChange={(e) => {
-                    const val = e.target.value;
-                    setTotalAmount(val);
+                    setTotalAmount(e.target.value);
                     clearFieldError('totalAmount');
-                    const total = parseFloat(val);
-                    if (total > 0) {
-                      const rubles = parseFloat(discountRubles) || 0;
-                      setDiscountPercent(((rubles / total) * 100).toFixed(2));
-                    }
                   }}
                   className={`${styles.input} ${fieldErrors.totalAmount ? styles.inputError : ''}`}
                   placeholder="0"
@@ -874,10 +1022,9 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
                 <label className={styles.label}>Стоимость со скидкой (₽)</label>
                 <input
                   type="text"
-                  value={Math.max(
-                    0,
-                    (parseFloat(totalAmount) || 0) - (parseFloat(discountRubles) || 0)
-                  ).toLocaleString('ru-RU', { maximumFractionDigits: 2 })}
+                  value={Math.max(0, total - discount).toLocaleString('ru-RU', {
+                    maximumFractionDigits: 2,
+                  })}
                   readOnly
                   className={`${styles.input} ${styles.inputReadOnly}`}
                   tabIndex={-1}
@@ -897,14 +1044,8 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
                 step="0.01"
                 value={totalAmount}
                 onChange={(e) => {
-                  const val = e.target.value;
-                  setTotalAmount(val);
+                  setTotalAmount(e.target.value);
                   clearFieldError('totalAmount');
-                  const total = parseFloat(val);
-                  if (total > 0) {
-                    const rubles = parseFloat(discountRubles) || 0;
-                    setDiscountPercent(((rubles / total) * 100).toFixed(2));
-                  }
                 }}
                 className={`${styles.input} ${fieldErrors.totalAmount ? styles.inputError : ''}`}
                 placeholder="0"
@@ -915,47 +1056,6 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
               )}
             </div>
           )}
-
-          <div className={styles.row}>
-            <label className={styles.label}>Скидка (₽)</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={discountRubles}
-              onChange={(e) => {
-                const rubles = e.target.value;
-                setDiscountRubles(rubles);
-                const total = parseFloat(totalAmount);
-                if (total > 0) {
-                  const val = parseFloat(rubles) || 0;
-                  setDiscountPercent(((val / total) * 100).toFixed(2));
-                }
-              }}
-              className={styles.input}
-            />
-          </div>
-
-          <div className={styles.row}>
-            <label className={styles.label}>Скидка (%)</label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              step="0.01"
-              value={discountPercent}
-              onChange={(e) => {
-                const pct = e.target.value;
-                setDiscountPercent(pct);
-                const total = parseFloat(totalAmount);
-                if (total > 0) {
-                  const val = (parseFloat(pct) || 0) / 100;
-                  setDiscountRubles((total * val).toFixed(2));
-                }
-              }}
-              className={styles.input}
-            />
-          </div>
 
           <div className={`${styles.row} ${styles.rowFull}`}>
             <label className={styles.label}>Оплаты</label>
@@ -1116,6 +1216,31 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
                           {a.durationAdditionType === 'WORKING' ? 'раб.' : 'кал.'} дн.
                         </span>
                       )}
+                      {a.notes && (
+                        <span className={styles.advanceNotes} title={a.notes}>
+                          {a.notes}
+                        </span>
+                      )}
+                      {canEditAmendments && (
+                        <div className={styles.advanceActions} onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            className={styles.advanceActionBtn}
+                            onClick={() => openEditAmendment(a)}
+                            title="Редактировать"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.advanceActionBtn} ${styles.advanceActionBtnDanger}`}
+                            onClick={() => setAmendmentToDelete(a)}
+                            title="Удалить"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1214,6 +1339,16 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
                         </select>
                       </div>
                     </div>
+                    <div className={styles.advanceAddNotes}>
+                      <label className={styles.advanceAddLabel}>Примечание</label>
+                      <input
+                        type="text"
+                        placeholder="Опционально"
+                        value={newAmendmentNotes}
+                        onChange={(e) => setNewAmendmentNotes(e.target.value)}
+                        className={styles.input}
+                      />
+                    </div>
                     <button
                       type="button"
                       className={styles.advanceAddBtn}
@@ -1236,111 +1371,124 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
             </div>
           )}
 
-          <div className={styles.row}>
-            <label className={styles.label}>Дата монтажа</label>
-            <input
-              type="date"
-              value={installationDate}
-              onChange={(e) => setInstallationDate(e.target.value)}
-              className={styles.input}
-            />
-          </div>
-
-          <div className={styles.row}>
-            <label className={styles.label}>Дата доставки</label>
-            <input
-              type="date"
-              value={deliveryDate}
-              onChange={(e) => setDeliveryDate(e.target.value)}
-              className={styles.input}
-            />
-          </div>
-
-          <div className={styles.row}>
-            <label className={styles.label}>Дата начала работ</label>
-            <input
-              type="date"
-              value={actWorkStartDate}
-              onChange={(e) => setActWorkStartDate(e.target.value)}
-              className={styles.input}
-            />
-          </div>
-
           <div className={`${styles.row} ${styles.rowFull}`}>
-            <label className={styles.label}>Фото акта начала работ</label>
-            <div className={styles.actImagesBlock}>
-              <div className={styles.actImagesList}>
-                {actWorkStartImages.map((url) => (
-                  <div key={url} className={styles.actImageThumb}>
-                    <img src={actImageUrl(url)} alt="" />
-                    {canDeletePayments && (
-                      <button
-                        type="button"
-                        className={styles.actImageRemove}
-                        onClick={() => handleRemoveActImage('start', url)}
-                        title="Удалить"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                ))}
+            <div className={styles.installationRow}>
+              <div className={styles.installationDateCol}>
+                <label className={styles.label}>Дата монтажа</label>
+                <input
+                  type="date"
+                  value={installationDate}
+                  onChange={(e) => setInstallationDate(e.target.value)}
+                  className={styles.input}
+                />
               </div>
-              {contractId && (
-                <label className={styles.actImageUploadBtn}>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    onChange={(e) => handleActImageUpload(e, 'start')}
-                    disabled={!!uploadingActImage}
-                  />
-                  {uploadingActImage === 'start' ? 'Загрузка...' : '+ Добавить фото'}
-                </label>
-              )}
+              <div className={styles.installationDurationCol}>
+                <label className={styles.label}>Продолжительность монтажа (дн.)</label>
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="0"
+                  value={installationDurationDays}
+                  onChange={(e) => setInstallationDurationDays(e.target.value.replace(/\D/g, ''))}
+                  className={styles.input}
+                />
+              </div>
+              <div className={styles.installationDateCol}>
+                <label className={styles.label}>Дата доставки</label>
+                <input
+                  type="date"
+                  value={deliveryDate}
+                  onChange={(e) => setDeliveryDate(e.target.value)}
+                  className={styles.input}
+                />
+              </div>
             </div>
           </div>
 
-          <div className={styles.row}>
-            <label className={styles.label}>Дата окончания работ</label>
-            <input
-              type="date"
-              value={actWorkEndDate}
-              onChange={(e) => setActWorkEndDate(e.target.value)}
-              className={styles.input}
-            />
-          </div>
-
-          <div className={`${styles.row} ${styles.rowFull}`}>
-            <label className={styles.label}>Фото акта окончания работ</label>
-            <div className={styles.actImagesBlock}>
-              <div className={styles.actImagesList}>
-                {actWorkEndImages.map((url) => (
-                  <div key={url} className={styles.actImageThumb}>
-                    <img src={actImageUrl(url)} alt="" />
-                    {canDeletePayments && (
-                      <button
-                        type="button"
-                        className={styles.actImageRemove}
-                        onClick={() => handleRemoveActImage('end', url)}
-                        title="Удалить"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                ))}
+          <div className={`${styles.rowFull} ${styles.actDatePhotoRow}`}>
+            <div className={styles.actDateCol}>
+              <label className={styles.label}>Дата начала работ</label>
+              <input
+                type="date"
+                value={actWorkStartDate}
+                onChange={(e) => setActWorkStartDate(e.target.value)}
+                className={styles.input}
+              />
+            </div>
+            <div className={styles.actPhotosCol}>
+              <label className={styles.label}>Фото акта начала работ</label>
+              <div className={styles.actImagesBlock}>
+                <div className={styles.actImagesList}>
+                  {actWorkStartImages.map((url) => (
+                    <div key={url} className={styles.actImageThumb}>
+                      <img src={actImageUrl(url)} alt="" />
+                      {canDeletePayments && (
+                        <button
+                          type="button"
+                          className={styles.actImageRemove}
+                          onClick={() => handleRemoveActImage('start', url)}
+                          title="Удалить"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {contractId && (
+                  <label className={styles.actImageUploadBtn}>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      onChange={(e) => handleActImageUpload(e, 'start')}
+                      disabled={!!uploadingActImage}
+                    />
+                    {uploadingActImage === 'start' ? 'Загрузка...' : '+ Добавить фото'}
+                  </label>
+                )}
               </div>
-              {contractId && (
-                <label className={styles.actImageUploadBtn}>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    onChange={(e) => handleActImageUpload(e, 'end')}
-                    disabled={!!uploadingActImage}
-                  />
-                  {uploadingActImage === 'end' ? 'Загрузка...' : '+ Добавить фото'}
-                </label>
-              )}
+            </div>
+            <div className={styles.actDateCol}>
+              <label className={styles.label}>Дата окончания работ</label>
+              <input
+                type="date"
+                value={actWorkEndDate}
+                onChange={(e) => setActWorkEndDate(e.target.value)}
+                className={styles.input}
+              />
+            </div>
+            <div className={styles.actPhotosCol}>
+              <label className={styles.label}>Фото акта окончания работ</label>
+              <div className={styles.actImagesBlock}>
+                <div className={styles.actImagesList}>
+                  {actWorkEndImages.map((url) => (
+                    <div key={url} className={styles.actImageThumb}>
+                      <img src={actImageUrl(url)} alt="" />
+                      {canDeletePayments && (
+                        <button
+                          type="button"
+                          className={styles.actImageRemove}
+                          onClick={() => handleRemoveActImage('end', url)}
+                          title="Удалить"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {contractId && (
+                  <label className={styles.actImageUploadBtn}>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      onChange={(e) => handleActImageUpload(e, 'end')}
+                      disabled={!!uploadingActImage}
+                    />
+                    {uploadingActImage === 'end' ? 'Загрузка...' : '+ Добавить фото'}
+                  </label>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1370,12 +1518,12 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
         </div>
 
         <div className={styles.row}>
-          <label className={styles.label}>Примечания</label>
+          <label className={styles.label}>Примечание</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className={styles.textarea}
-            rows={3}
+            rows={2}
             placeholder="Дополнительная информация..."
           />
         </div>
@@ -1389,6 +1537,145 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
           </Link>
         </div>
       </form>
+
+      {editingAmendment && editAmendmentForm && (
+        <Modal
+          isOpen={!!editingAmendment}
+          onClose={closeEditAmendment}
+          title={`Редактировать доп. соглашение №${editingAmendment.number ?? ''}`}
+          size="md"
+        >
+          <div className={styles.editAmendmentForm}>
+            <div>
+              <label className={styles.advanceAddLabel}>Стоимость д/с</label>
+              <input
+                type="number"
+                step="0.01"
+                value={editAmendmentForm.amount}
+                onChange={(e) =>
+                  setEditAmendmentForm((prev) =>
+                    prev ? { ...prev, amount: e.target.value } : prev
+                  )
+                }
+                className={styles.input}
+              />
+            </div>
+            <div>
+              <label className={styles.advanceAddLabel}>Скидка д/с (₽)</label>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={editAmendmentForm.discount}
+                onChange={(e) =>
+                  setEditAmendmentForm((prev) =>
+                    prev ? { ...prev, discount: e.target.value } : prev
+                  )
+                }
+                className={styles.input}
+              />
+            </div>
+            <div>
+              <label className={styles.advanceAddLabel}>Дата подписания</label>
+              <input
+                type="date"
+                value={editAmendmentForm.date}
+                onChange={(e) =>
+                  setEditAmendmentForm((prev) => (prev ? { ...prev, date: e.target.value } : prev))
+                }
+                className={styles.input}
+              />
+            </div>
+            <div>
+              <label className={styles.advanceAddLabel}>Увеличение срока (дней)</label>
+              <div className={styles.advanceAddInline}>
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="0"
+                  value={editAmendmentForm.durationDays}
+                  onChange={(e) =>
+                    setEditAmendmentForm((prev) =>
+                      prev ? { ...prev, durationDays: e.target.value.replace(/\D/g, '') } : prev
+                    )
+                  }
+                  className={styles.input}
+                />
+                <select
+                  value={editAmendmentForm.durationType}
+                  onChange={(e) =>
+                    setEditAmendmentForm((prev) =>
+                      prev
+                        ? { ...prev, durationType: e.target.value as 'CALENDAR' | 'WORKING' }
+                        : prev
+                    )
+                  }
+                  className={styles.select}
+                >
+                  <option value="CALENDAR">кал. дни</option>
+                  <option value="WORKING">раб. дни</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className={styles.advanceAddLabel}>Примечание</label>
+              <input
+                type="text"
+                value={editAmendmentForm.notes}
+                onChange={(e) =>
+                  setEditAmendmentForm((prev) => (prev ? { ...prev, notes: e.target.value } : prev))
+                }
+                className={styles.input}
+              />
+            </div>
+            <div className={styles.editAmendmentActions}>
+              <button type="button" className={styles.cancelLink} onClick={closeEditAmendment}>
+                Отмена
+              </button>
+              <button
+                type="button"
+                className={styles.submitButton}
+                onClick={handleSaveAmendmentEdit}
+              >
+                Сохранить
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {amendmentToDelete && (
+        <Modal
+          isOpen={!!amendmentToDelete}
+          onClose={() => setAmendmentToDelete(null)}
+          title="Удалить доп. соглашение?"
+          size="sm"
+        >
+          <div className={styles.deleteConfirm}>
+            <p>
+              Доп. соглашение №{amendmentToDelete.number ?? ''} от{' '}
+              {new Date(amendmentToDelete.date).toLocaleDateString('ru-RU')} будет удалено. Это
+              действие нельзя отменить.
+            </p>
+            <div className={styles.deleteConfirmActions}>
+              <button
+                type="button"
+                className={styles.cancelLink}
+                onClick={() => setAmendmentToDelete(null)}
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                className={`${styles.submitButton} ${styles.deleteConfirmBtn}`}
+                onClick={handleDeleteAmendment}
+              >
+                Удалить
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

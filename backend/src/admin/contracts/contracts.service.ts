@@ -6,6 +6,7 @@ import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
 import { CreateContractAdvanceDto } from './dto/create-contract-advance.dto';
 import { CreateContractAmendmentDto } from './dto/create-contract-amendment.dto';
+import { UpdateContractAmendmentDto } from './dto/update-contract-amendment.dto';
 
 @Injectable()
 export class ContractsService {
@@ -30,6 +31,7 @@ export class ContractsService {
         installationDate: createContractDto.installationDate
           ? new Date(createContractDto.installationDate)
           : null,
+        installationDurationDays: createContractDto.installationDurationDays ?? null,
         deliveryDate: createContractDto.deliveryDate
           ? new Date(createContractDto.deliveryDate)
           : null,
@@ -186,6 +188,8 @@ export class ContractsService {
       data.installationDate = updateContractDto.installationDate
         ? new Date(updateContractDto.installationDate)
         : null;
+    if (updateContractDto.installationDurationDays !== undefined)
+      data.installationDurationDays = updateContractDto.installationDurationDays ?? null;
     if (updateContractDto.deliveryDate !== undefined)
       data.deliveryDate = updateContractDto.deliveryDate
         ? new Date(updateContractDto.deliveryDate)
@@ -305,7 +309,30 @@ export class ContractsService {
       where: { id: amendmentId, contractId: _contractId },
     });
     if (!amendment) throw new NotFoundException('Amendment not found');
-    throw new BadRequestException('Удаление оформленных доп. соглашений запрещено');
+    await this.prisma.contractAmendment.delete({
+      where: { id: amendmentId },
+    });
+    return { success: true };
+  }
+
+  async updateAmendment(contractId: string, amendmentId: string, dto: UpdateContractAmendmentDto) {
+    const amendment = await this.prisma.contractAmendment.findFirst({
+      where: { id: amendmentId, contractId },
+    });
+    if (!amendment) throw new NotFoundException('Amendment not found');
+    const data: Parameters<typeof this.prisma.contractAmendment.update>[0]['data'] = {};
+    if (dto.amount !== undefined) data.amount = new Prisma.Decimal(dto.amount);
+    if (dto.discount !== undefined) data.discount = new Prisma.Decimal(dto.discount);
+    if (dto.date !== undefined) data.date = new Date(dto.date);
+    if (dto.durationAdditionDays !== undefined)
+      data.durationAdditionDays = dto.durationAdditionDays > 0 ? dto.durationAdditionDays : null;
+    if (dto.durationAdditionType !== undefined)
+      data.durationAdditionType = dto.durationAdditionType ?? null;
+    if (dto.notes !== undefined) data.notes = dto.notes ?? null;
+    return this.prisma.contractAmendment.update({
+      where: { id: amendmentId },
+      data,
+    });
   }
 
   async uploadActImage(

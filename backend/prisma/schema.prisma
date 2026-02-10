@@ -1175,6 +1175,7 @@ model Contract {
   contractDurationDays Int?           // Срок договора (число дней)
   contractDurationType String?       // CALENDAR | WORKING — календарные или рабочие дни
   installationDate     DateTime?      @db.Date
+  installationDurationDays Int?      // Продолжительность монтажа в днях
   deliveryDate         DateTime?      @db.Date
   customerName         String
   customerAddress      String?        @db.Text

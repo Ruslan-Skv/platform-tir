@@ -22,6 +22,7 @@ import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
 import { CreateContractAdvanceDto } from './dto/create-contract-advance.dto';
 import { CreateContractAmendmentDto } from './dto/create-contract-amendment.dto';
+import { UpdateContractAmendmentDto } from './dto/update-contract-amendment.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -139,7 +140,18 @@ export class ContractsController {
     return this.contractsService.removeAdvance(id, advanceId);
   }
 
+  @Patch(':id/amendments/:amendmentId')
+  @Roles('SUPER_ADMIN')
+  updateAmendment(
+    @Param('id') id: string,
+    @Param('amendmentId') amendmentId: string,
+    @Body() dto: UpdateContractAmendmentDto,
+  ) {
+    return this.contractsService.updateAmendment(id, amendmentId, dto);
+  }
+
   @Delete(':id/amendments/:amendmentId')
+  @Roles('SUPER_ADMIN')
   removeAmendment(@Param('id') id: string, @Param('amendmentId') amendmentId: string) {
     return this.contractsService.removeAmendment(id, amendmentId);
   }

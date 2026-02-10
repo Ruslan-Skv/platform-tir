@@ -73,6 +73,12 @@ export class CreateContractDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  installationDurationDays?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsDateString()
   deliveryDate?: string;
 

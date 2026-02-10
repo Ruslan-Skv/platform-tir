@@ -12,6 +12,7 @@ import {
   getContracts,
   getCrmDirections,
   getCrmUsers,
+  updateContract,
 } from '@/shared/api/admin-crm';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 
@@ -26,9 +27,49 @@ const STATUS_LABELS: Record<string, string> = {
   CANCELLED: 'Отменён',
 };
 
+type EditableFieldKey =
+  | 'contractNumber'
+  | 'contractDate'
+  | 'status'
+  | 'directionId'
+  | 'managerId'
+  | 'customerName'
+  | 'customerAddress'
+  | 'customerPhone'
+  | 'installationDate'
+  | 'deliveryDate';
+
+type ContractEdits = Partial<Record<EditableFieldKey, string | null>>;
+
+interface EditableColumnConfig {
+  key: EditableFieldKey;
+  title: string;
+  type: 'text' | 'date' | 'select';
+  optionsKey?: 'managers' | 'directions' | 'status';
+}
+
+const EDITABLE_COLUMNS: EditableColumnConfig[] = [
+  { key: 'contractNumber', title: '№ договора', type: 'text' },
+  { key: 'contractDate', title: 'Дата заключения', type: 'date' },
+  { key: 'status', title: 'Статус', type: 'select', optionsKey: 'status' },
+  { key: 'directionId', title: 'Направление', type: 'select', optionsKey: 'directions' },
+  { key: 'managerId', title: 'Менеджер', type: 'select', optionsKey: 'managers' },
+  { key: 'customerName', title: 'ФИО заказчика', type: 'text' },
+  { key: 'customerAddress', title: 'Адрес', type: 'text' },
+  { key: 'installationDate', title: 'Дата монтажа', type: 'date' },
+  { key: 'deliveryDate', title: 'Дата доставки', type: 'date' },
+];
+
+const STATUS_OPTIONS = Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label }));
+
 function formatDate(s: string | null | undefined) {
   if (!s) return '—';
   return new Date(s).toLocaleDateString('ru-RU');
+}
+
+function formatDateForInput(s: string | null | undefined): string {
+  if (!s) return '';
+  return new Date(s).toISOString().slice(0, 10);
 }
 
 function formatMoney(v: string | number | null | undefined) {
@@ -71,6 +112,12 @@ export function ContractsPage() {
   const [search, setSearch] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [editMode, setEditMode] = useState(false);
+  const [editedContracts, setEditedContracts] = useState<Record<string, ContractEdits>>({});
+  const [savingEdits, setSavingEdits] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [saveMessageType, setSaveMessageType] = useState<'success' | 'error'>('success');
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -109,30 +156,211 @@ export function ContractsPage() {
       .catch(() => setUsers([]));
   }, []);
 
-  const columns = [
-    { key: 'contractNumber', title: '№ договора' },
-    {
-      key: 'contractDate',
-      title: 'Дата заключения',
-      render: (c: Contract) => formatDate(c.contractDate),
+  const handleInlineEdit = (contractId: string, field: EditableFieldKey, value: string | null) => {
+    setEditedContracts((prev) => ({
+      ...prev,
+      [contractId]: {
+        ...prev[contractId],
+        [field]: value,
+      },
+    }));
+  };
+
+  const getCurrentValue = (c: Contract, field: EditableFieldKey): string | null => {
+    if (editedContracts[c.id]?.[field] !== undefined) {
+      return editedContracts[c.id][field] ?? null;
+    }
+    switch (field) {
+      case 'managerId':
+        return c.managerId ?? (c.manager as { id?: string })?.id ?? null;
+      case 'directionId':
+        return c.directionId ?? (c.direction as { id?: string })?.id ?? null;
+      case 'contractDate':
+        return c.contractDate ? formatDateForInput(c.contractDate) : null;
+      case 'installationDate':
+        return c.installationDate ? formatDateForInput(c.installationDate) : null;
+      case 'deliveryDate':
+        return c.deliveryDate ? formatDateForInput(c.deliveryDate) : null;
+      default:
+        return (c[field] as string) ?? null;
+    }
+  };
+
+  const hasEdits = (contractId: string): boolean =>
+    Object.keys(editedContracts[contractId] || {}).length > 0;
+
+  const saveAllEdits = async () => {
+    const idsToSave = Object.keys(editedContracts).filter((id) => hasEdits(id));
+    if (idsToSave.length === 0) return;
+
+    setSavingEdits(true);
+    setSaveMessage(null);
+    try {
+      for (const id of idsToSave) {
+        const edits = { ...editedContracts[id] } as Record<string, string | null>;
+        const optionalKeys: EditableFieldKey[] = [
+          'directionId',
+          'managerId',
+          'customerAddress',
+          'customerPhone',
+          'installationDate',
+          'deliveryDate',
+        ];
+        const payload: Record<string, string | null | undefined> = {};
+        for (const [k, v] of Object.entries(edits)) {
+          const key = k as EditableFieldKey;
+          if (v === null || v === '') {
+            if (optionalKeys.includes(key)) {
+              payload[k] = null;
+            }
+          } else {
+            payload[k] = v;
+          }
+        }
+        await updateContract(id, payload);
+      }
+      setEditedContracts({});
+      setSaveMessageType('success');
+      setSaveMessage(`Сохранено договоров: ${idsToSave.length}`);
+      setTimeout(() => setSaveMessage(null), 3000);
+      fetchData();
+    } catch (err) {
+      setSaveMessageType('error');
+      setSaveMessage(err instanceof Error ? err.message : 'Ошибка сохранения');
+      setTimeout(() => setSaveMessage(null), 5000);
+    } finally {
+      setSavingEdits(false);
+    }
+  };
+
+  const cancelEdits = () => {
+    setEditedContracts({});
+    setEditMode(false);
+  };
+
+  const totalEditsCount = Object.keys(editedContracts).filter((id) => hasEdits(id)).length;
+
+  const renderEditableCell = (c: Contract, col: EditableColumnConfig) => {
+    const currentValue = getCurrentValue(c, col.key);
+    const isEdited = editedContracts[c.id]?.[col.key] !== undefined;
+
+    if (col.type === 'date') {
+      return (
+        <input
+          type="date"
+          className={`${styles.editableInput} ${isEdited ? styles.edited : ''}`}
+          value={currentValue ?? ''}
+          onChange={(e) => {
+            e.stopPropagation();
+            const v = e.target.value || null;
+            handleInlineEdit(c.id, col.key, v);
+          }}
+          onClick={(e) => e.stopPropagation()}
+        />
+      );
+    }
+
+    if (col.type === 'select') {
+      const options =
+        col.optionsKey === 'status'
+          ? STATUS_OPTIONS
+          : col.optionsKey === 'managers'
+            ? users
+            : directions;
+      const optionList =
+        col.optionsKey === 'status'
+          ? (options as { value: string; label: string }[])
+          : (options as {
+              id: string;
+              name?: string;
+              firstName?: string | null;
+              lastName?: string | null;
+            }[]);
+
+      return (
+        <select
+          className={`${styles.editableInput} ${styles.editableSelect} ${isEdited ? styles.edited : ''}`}
+          value={currentValue ?? ''}
+          onChange={(e) => {
+            e.stopPropagation();
+            handleInlineEdit(c.id, col.key, e.target.value || null);
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {(col.key === 'directionId' || col.key === 'managerId') && <option value="">—</option>}
+          {col.optionsKey === 'status'
+            ? (optionList as { value: string; label: string }[]).map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))
+            : (
+                optionList as {
+                  id: string;
+                  name?: string;
+                  firstName?: string | null;
+                  lastName?: string | null;
+                }[]
+              ).map((o) => (
+                <option key={o.id} value={o.id}>
+                  {'name' in o ? o.name : [o.firstName, o.lastName].filter(Boolean).join(' ')}
+                </option>
+              ))}
+        </select>
+      );
+    }
+
+    return (
+      <input
+        type="text"
+        className={`${styles.editableInput} ${isEdited ? styles.edited : ''}`}
+        value={currentValue ?? ''}
+        onChange={(e) => {
+          e.stopPropagation();
+          handleInlineEdit(c.id, col.key, e.target.value || null);
+        }}
+        onClick={(e) => e.stopPropagation()}
+      />
+    );
+  };
+
+  const editableColumns = EDITABLE_COLUMNS.map((col) => ({
+    key: col.key,
+    title: col.title,
+    render: (c: Contract) => {
+      if (editMode && selectedIds.includes(c.id)) {
+        return renderEditableCell(c, col);
+      }
+      switch (col.key) {
+        case 'contractNumber':
+          return c.contractNumber;
+        case 'contractDate':
+          return formatDate(c.contractDate);
+        case 'status':
+          return (
+            <span className={`${styles.badge} ${styles[`status${c.status}`] ?? ''}`}>
+              {STATUS_LABELS[c.status] ?? c.status}
+            </span>
+          );
+        case 'directionId':
+          return c.direction?.name ?? '—';
+        case 'managerId':
+          return formatUser(c.manager);
+        case 'customerName':
+          return c.customerName;
+        case 'customerAddress':
+          return c.customerAddress || '—';
+        case 'installationDate':
+          return formatDate(c.installationDate);
+        case 'deliveryDate':
+          return formatDate(c.deliveryDate);
+        default:
+          return (c[col.key] as string) ?? '—';
+      }
     },
-    {
-      key: 'status',
-      title: 'Статус',
-      render: (c: Contract) => (
-        <span className={`${styles.badge} ${styles[`status${c.status}`] ?? ''}`}>
-          {STATUS_LABELS[c.status] ?? c.status}
-        </span>
-      ),
-    },
-    {
-      key: 'direction',
-      title: 'Направление',
-      render: (c: Contract) => c.direction?.name ?? '—',
-    },
-    { key: 'manager', title: 'Менеджер', render: (c: Contract) => formatUser(c.manager) },
-    { key: 'customerName', title: 'ФИО заказчика' },
-    { key: 'customerAddress', title: 'Адрес', render: (c: Contract) => c.customerAddress || '—' },
+  }));
+
+  const displayOnlyColumns = [
     {
       key: 'totalAmount',
       title: 'Стоимость',
@@ -167,15 +395,31 @@ export function ContractsPage() {
         return `${formatMoney(remain)} (${pct}%)`;
       },
     },
+  ];
+
+  const columnsWithActions = [
+    ...editableColumns,
+    ...displayOnlyColumns,
     {
-      key: 'installationDate',
-      title: 'Дата монтажа',
-      render: (c: Contract) => formatDate(c.installationDate),
-    },
-    {
-      key: 'deliveryDate',
-      title: 'Дата доставки',
-      render: (c: Contract) => formatDate(c.deliveryDate),
+      key: 'actions',
+      title: '',
+      width: '90px',
+      render: (c: Contract) => (
+        <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
+          {editMode && hasEdits(c.id) && (
+            <span className={styles.editedIndicator} title="Есть изменения">
+              ●
+            </span>
+          )}
+          <button
+            className={styles.actionButton}
+            onClick={() => router.push(`/admin/crm/contracts/${c.id}`)}
+            title="Редактировать"
+          >
+            ✏️
+          </button>
+        </div>
+      ),
     },
   ];
 
@@ -186,10 +430,65 @@ export function ContractsPage() {
           <h1 className={styles.title}>Договоры</h1>
           <span className={styles.count}>{total} договоров</span>
         </div>
-        <Link href="/admin/crm/contracts/new" className={styles.addButton}>
-          + Добавить договор
-        </Link>
+        <div className={styles.headerActions}>
+          <button
+            className={`${styles.secondaryButton} ${editMode ? styles.active : ''}`}
+            onClick={() => {
+              if (editMode && totalEditsCount > 0) {
+                if (confirm('Есть несохранённые изменения. Выйти без сохранения?')) cancelEdits();
+              } else {
+                setEditMode(!editMode);
+                setEditedContracts({});
+              }
+            }}
+          >
+            {editMode ? '✕ Выйти из редактирования' : '✏️ Быстрое редактирование'}
+          </button>
+          <Link href="/admin/crm/contracts/new" className={styles.addButton}>
+            + Добавить договор
+          </Link>
+        </div>
       </div>
+
+      {saveMessage && (
+        <div
+          className={`${styles.saveMessage} ${
+            saveMessageType === 'success' ? styles.saveMessageSuccess : styles.saveMessageError
+          }`}
+        >
+          {saveMessage}
+        </div>
+      )}
+
+      {editMode && (
+        <div className={styles.editModeBar}>
+          <div className={styles.editModeInfo}>
+            <span className={styles.editModeIcon}>✏️</span>
+            <span>Режим быстрого редактирования</span>
+            {totalEditsCount > 0 && (
+              <span className={styles.editCount}>
+                Изменено договоров: <strong>{totalEditsCount}</strong>
+              </span>
+            )}
+          </div>
+          <div className={styles.editModeActions}>
+            <button
+              className={styles.editCancelButton}
+              onClick={cancelEdits}
+              disabled={savingEdits}
+            >
+              Отмена
+            </button>
+            <button
+              className={styles.editSaveButton}
+              onClick={saveAllEdits}
+              disabled={savingEdits || totalEditsCount === 0}
+            >
+              {savingEdits ? 'Сохранение...' : `Сохранить изменения (${totalEditsCount})`}
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className={styles.filters}>
         <input
@@ -257,9 +556,12 @@ export function ContractsPage() {
 
       <DataTable
         data={data}
-        columns={columns}
+        columns={columnsWithActions}
         keyExtractor={(c) => c.id}
         onRowClick={(c) => router.push(`/admin/crm/contracts/${c.id}`)}
+        selectable
+        selectedIds={selectedIds}
+        onSelectionChange={setSelectedIds}
         loading={loading}
         emptyMessage="Нет договоров"
         pagination={{

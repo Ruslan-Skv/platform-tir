@@ -219,6 +219,7 @@ export interface Contract {
   totalAmount: string | number;
   advanceAmount: string | number;
   installationDate: string | null;
+  installationDurationDays?: number | null;
   deliveryDate: string | null;
   actWorkStartDate: string | null;
   actWorkEndDate: string | null;
@@ -391,6 +392,31 @@ export async function addContractAmendment(
     const err = (await res.json().catch(() => ({}))) as { message?: string | string[] };
     const msg = Array.isArray(err.message) ? err.message.join(', ') : err.message;
     throw new Error(msg || 'Не удалось добавить доп. соглашение');
+  }
+  return res.json();
+}
+
+export async function updateContractAmendment(
+  contractId: string,
+  amendmentId: string,
+  data: {
+    amount?: number;
+    date?: string;
+    discount?: number;
+    durationAdditionDays?: number | null;
+    durationAdditionType?: string | null;
+    notes?: string | null;
+  }
+): Promise<ContractAmendment> {
+  const res = await fetch(`${API_URL}/admin/contracts/${contractId}/amendments/${amendmentId}`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string | string[] };
+    const msg = Array.isArray(err.message) ? err.message.join(', ') : err.message;
+    throw new Error(msg || 'Не удалось обновить доп. соглашение');
   }
   return res.json();
 }
