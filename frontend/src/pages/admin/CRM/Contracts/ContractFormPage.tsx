@@ -194,6 +194,7 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
   const [offices, setOffices] = useState<Office[]>([]);
   const [officeId, setOfficeId] = useState('');
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showTimelineModal, setShowTimelineModal] = useState(false);
   // Комплексный объект
   const [complexObjectId, setComplexObjectId] = useState('');
   const [complexObject, setComplexObject] = useState<ComplexObject | null>(null);
@@ -946,6 +947,18 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
                   title="Добавить договор по этому же объекту"
                 >
                   +
+                </button>
+              )}
+
+              {/* Кнопка План-график (только для комплексных объектов) */}
+              {complexObjectId && (
+                <button
+                  type="button"
+                  className={styles.timelineButton}
+                  onClick={() => setShowTimelineModal(true)}
+                  title="Показать план-график по объекту"
+                >
+                  📊 План-график
                 </button>
               )}
             </div>
@@ -2138,6 +2151,204 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
           onClose={() => setShowHistoryModal(false)}
           onRollback={() => loadContract()}
         />
+      )}
+
+      {/* Модальное окно План-график */}
+      {showTimelineModal && complexObjectId && (
+        <Modal
+          isOpen={showTimelineModal}
+          onClose={() => setShowTimelineModal(false)}
+          size="xl"
+          showCloseButton={false}
+        >
+          <div className={styles.timelineModal}>
+            <div className={styles.timelineHeader}>
+              <h2 className={styles.timelineTitle}>
+                📊 План-график: {complexObject?.name || 'Объект'}
+              </h2>
+              <button
+                type="button"
+                className={styles.timelineCloseBtn}
+                onClick={() => setShowTimelineModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className={styles.timelineContent}>
+              {(() => {
+                // Собираем все события из всех договоров
+                const allContracts = [...relatedContracts];
+                // Добавляем текущий договор если он есть
+                if (contractId && contractNumber) {
+                  const currentContractData = {
+                    id: contractId,
+                    contractNumber,
+                    contractDate,
+                    direction: directions.find((d) => d.id === directionId) || null,
+                    installationDate,
+                    installationDurationDays,
+                    status,
+                  };
+                  // Проверяем, есть ли уже этот договор в списке
+                  if (!allContracts.find((c) => c.id === contractId)) {
+                    allContracts.push(currentContractData as Contract);
+                  }
+                }
+
+                // Собираем все события
+                type TimelineEvent = {
+                  date: Date;
+                  type:
+                    | 'contract'
+                    | 'installation_start'
+                    | 'installation_end'
+                    | 'payment'
+                    | 'amendment';
+                  label: string;
+                  contractNumber: string;
+                  direction: string;
+                  color: string;
+                };
+
+                const events: TimelineEvent[] = [];
+
+                allContracts.forEach((c) => {
+                  const dirName = c.direction?.name || 'Договор';
+
+                  // Дата заключения договора
+                  if (c.contractDate) {
+                    events.push({
+                      date: new Date(c.contractDate),
+                      type: 'contract',
+                      label: `Заключение договора №${c.contractNumber}`,
+                      contractNumber: c.contractNumber,
+                      direction: dirName,
+                      color: '#6366f1',
+                    });
+                  }
+
+                  // Дата начала монтажа
+                  if ((c as Contract & { installationDate?: string }).installationDate) {
+                    events.push({
+                      date: new Date(
+                        (c as Contract & { installationDate?: string }).installationDate!
+                      ),
+                      type: 'installation_start',
+                      label: `Начало монтажа №${c.contractNumber}`,
+                      contractNumber: c.contractNumber,
+                      direction: dirName,
+                      color: '#10b981',
+                    });
+                  }
+
+                  // Дата окончания монтажа (расчётная: дата начала + срок)
+                  const instDate = (c as Contract & { installationDate?: string }).installationDate;
+                  const instDays = (c as Contract & { installationDurationDays?: number })
+                    .installationDurationDays;
+                  if (instDate && instDays && instDays > 0) {
+                    const endDate = new Date(instDate);
+                    endDate.setDate(endDate.getDate() + instDays);
+                    events.push({
+                      date: endDate,
+                      type: 'installation_end',
+                      label: `Окончание монтажа №${c.contractNumber}`,
+                      contractNumber: c.contractNumber,
+                      direction: dirName,
+                      color: '#059669',
+                    });
+                  }
+                });
+
+                // Сортируем по дате
+                events.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+                if (events.length === 0) {
+                  return <div className={styles.timelineEmpty}>Нет событий для отображения</div>;
+                }
+
+                // Определяем диапазон дат
+                const minDate = events[0].date;
+                const maxDate = events[events.length - 1].date;
+                const totalDays = Math.max(
+                  1,
+                  Math.ceil((maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+                );
+
+                return (
+                  <div className={styles.timeline}>
+                    {/* Шкала времени */}
+                    <div className={styles.timelineScale}>
+                      <div className={styles.timelineScaleStart}>
+                        {minDate.toLocaleDateString('ru-RU', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </div>
+                      <div className={styles.timelineScaleLine} />
+                      <div className={styles.timelineScaleEnd}>
+                        {maxDate.toLocaleDateString('ru-RU', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </div>
+                    </div>
+
+                    {/* События на шкале */}
+                    <div className={styles.timelineTrack}>
+                      {events.map((event, idx) => {
+                        const position =
+                          totalDays > 1
+                            ? ((event.date.getTime() - minDate.getTime()) /
+                                (maxDate.getTime() - minDate.getTime())) *
+                              100
+                            : 50;
+                        return (
+                          <div
+                            key={idx}
+                            className={styles.timelineEvent}
+                            style={{ left: `${position}%` }}
+                            title={`${event.label}\n${event.date.toLocaleDateString('ru-RU')}`}
+                          >
+                            <div
+                              className={styles.timelineEventDot}
+                              style={{ backgroundColor: event.color }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Список событий */}
+                    <div className={styles.timelineList}>
+                      {events.map((event, idx) => (
+                        <div key={idx} className={styles.timelineItem}>
+                          <div
+                            className={styles.timelineItemDot}
+                            style={{ backgroundColor: event.color }}
+                          />
+                          <div className={styles.timelineItemContent}>
+                            <div className={styles.timelineItemDate}>
+                              {event.date.toLocaleDateString('ru-RU', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric',
+                              })}
+                            </div>
+                            <div className={styles.timelineItemLabel}>{event.label}</div>
+                            <div className={styles.timelineItemDirection}>{event.direction}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );
