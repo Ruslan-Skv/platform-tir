@@ -47,6 +47,16 @@ export class CreateContractDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsString()
+  officeId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  complexObjectId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsDateString()
   validityStart?: string;
 

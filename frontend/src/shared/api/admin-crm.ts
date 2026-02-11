@@ -43,6 +43,181 @@ export async function getCrmUsers(): Promise<CrmUser[]> {
   return res.json();
 }
 
+// --- Complex Objects (Комплексные объекты) ---
+export interface ComplexObjectContract {
+  id: string;
+  contractNumber: string;
+  status: string;
+  totalAmount: string | number;
+  direction: { id: string; name: string } | null;
+}
+
+export interface ComplexObject {
+  id: string;
+  name: string;
+  customerName: string | null;
+  customerPhones: string[];
+  address: string | null;
+  notes: string | null;
+  hasElevator: boolean | null;
+  floor: number | null;
+  officeId: string | null;
+  managerId: string | null;
+  office?: { id: string; name: string; address: string | null } | null;
+  manager?: { id: string; firstName: string | null; lastName: string | null } | null;
+  contracts: ComplexObjectContract[];
+}
+
+export async function getComplexObjects(): Promise<ComplexObject[]> {
+  const res = await fetch(`${API_URL}/admin/complex-objects`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить комплексные объекты');
+  return res.json();
+}
+
+export async function getComplexObject(id: string): Promise<ComplexObject> {
+  const res = await fetch(`${API_URL}/admin/complex-objects/${id}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить комплексный объект');
+  return res.json();
+}
+
+export async function createComplexObject(data: {
+  name: string;
+  customerName?: string;
+  customerPhones?: string[];
+  address?: string;
+  notes?: string;
+  officeId?: string;
+  managerId?: string;
+}): Promise<ComplexObject> {
+  const res = await fetch(`${API_URL}/admin/complex-objects`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось создать комплексный объект');
+  }
+  return res.json();
+}
+
+export async function updateComplexObject(
+  id: string,
+  data: Partial<{
+    name: string;
+    customerName: string | null;
+    customerPhones: string[];
+    address: string | null;
+    notes: string | null;
+    officeId: string | null;
+    managerId: string | null;
+  }>
+): Promise<ComplexObject> {
+  const res = await fetch(`${API_URL}/admin/complex-objects/${id}`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Не удалось обновить комплексный объект');
+  return res.json();
+}
+
+export async function deleteComplexObject(id: string): Promise<void> {
+  const res = await fetch(`${API_URL}/admin/complex-objects/${id}`, {
+    method: 'DELETE',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось удалить комплексный объект');
+}
+
+export async function getComplexObjectContracts(id: string): Promise<Contract[]> {
+  const res = await fetch(`${API_URL}/admin/complex-objects/${id}/contracts`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить договоры объекта');
+  return res.json();
+}
+
+// --- Offices ---
+export interface Office {
+  id: string;
+  name: string;
+  prefix: string | null;
+  address: string | null;
+  phone: string | null;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export async function getOffices(includeInactive = false): Promise<Office[]> {
+  const params = includeInactive ? '?includeInactive=true' : '';
+  const res = await fetch(`${API_URL}/admin/offices${params}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить офисы');
+  return res.json();
+}
+
+export async function getOffice(id: string): Promise<Office> {
+  const res = await fetch(`${API_URL}/admin/offices/${id}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить офис');
+  return res.json();
+}
+
+export async function createOffice(data: {
+  name: string;
+  prefix?: string;
+  address?: string;
+  phone?: string;
+  isActive?: boolean;
+  sortOrder?: number;
+}): Promise<Office> {
+  const res = await fetch(`${API_URL}/admin/offices`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось создать офис');
+  }
+  return res.json();
+}
+
+export async function updateOffice(
+  id: string,
+  data: Partial<{
+    name: string;
+    prefix: string | null;
+    address: string | null;
+    phone: string | null;
+    isActive: boolean;
+    sortOrder: number;
+  }>
+): Promise<Office> {
+  const res = await fetch(`${API_URL}/admin/offices/${id}`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Не удалось обновить офис');
+  return res.json();
+}
+
+export async function deleteOffice(id: string): Promise<void> {
+  const res = await fetch(`${API_URL}/admin/offices/${id}`, {
+    method: 'DELETE',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось удалить офис');
+}
+
 export async function createCrmDirection(data: {
   name: string;
   slug: string;
@@ -212,6 +387,8 @@ export interface Contract {
   status: string;
   directionId: string | null;
   managerId: string | null;
+  officeId: string | null;
+  complexObjectId: string | null;
   customerName: string;
   customerAddress: string | null;
   customerPhone: string | null;
@@ -228,6 +405,13 @@ export interface Contract {
   manager?: { id: string; firstName: string | null; lastName: string | null } | null;
   surveyor?: { id: string; firstName: string | null; lastName: string | null } | null;
   direction?: { id: string; name: string; slug: string } | null;
+  office?: { id: string; name: string; address: string | null } | null;
+  complexObject?: {
+    id: string;
+    name: string;
+    customerName: string | null;
+    address: string | null;
+  } | null;
   advances?: Array<{ id: string; amount: string | number; paidAt: string }>;
   amendments?: ContractAmendment[];
   payments?: Array<{

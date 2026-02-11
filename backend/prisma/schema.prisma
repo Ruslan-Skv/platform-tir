@@ -68,7 +68,8 @@ model User {
   surveyedContracts     Contract[]    @relation("ContractSurveyor")
   contractPayments      ContractPayment[]
   measurementHistory    MeasurementHistory[] @relation("MeasurementHistoryChangedBy")
-  contractHistory     ContractHistory[]    @relation("ContractHistoryChangedBy")
+  contractHistory       ContractHistory[]    @relation("ContractHistoryChangedBy")
+  managedComplexObjects ComplexObject[]      @relation("ComplexObjectManager")
 
   @@map("users")
 }
@@ -1162,6 +1163,30 @@ model MeasurementHistory {
 }
 
 // --- CRM: Договоры ---
+// --- Комплексные объекты (группы договоров) ---
+model ComplexObject {
+  id             String   @id @default(cuid())
+  name           String   // Название объекта (например, адрес или имя клиента)
+  customerName   String?  // ФИО заказчика
+  customerPhones String[] @default([]) // Телефоны заказчика (может быть несколько)
+  address        String?  @db.Text // Адрес объекта
+  notes          String?  @db.Text
+  hasElevator    Boolean? // Есть ли лифт
+  floor          Int?     // Этаж
+  officeId       String?
+  managerId      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  office    Office? @relation(fields: [officeId], references: [id], onDelete: SetNull)
+  manager   User?   @relation("ComplexObjectManager", fields: [managerId], references: [id], onDelete: SetNull)
+  contracts Contract[]
+
+  @@index([officeId])
+  @@index([managerId])
+  @@map("complex_objects")
+}
+
 model Contract {
   id                   String         @id @default(cuid())
   contractNumber       String         @unique
@@ -1171,6 +1196,8 @@ model Contract {
   managerId            String?
   deliveryId           String?
   surveyorId           String?
+  officeId             String?
+  complexObjectId      String?
   validityStart        DateTime?      @db.Date
   validityEnd          DateTime?      @db.Date
   contractDurationDays Int?           // Срок договора (число дней)
@@ -1198,19 +1225,23 @@ model Contract {
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
 
-  direction    CrmDirection?     @relation(fields: [directionId], references: [id], onDelete: SetNull)
-  manager      User?             @relation("ContractManager", fields: [managerId], references: [id], onDelete: SetNull)
-  surveyor     User?             @relation("ContractSurveyor", fields: [surveyorId], references: [id], onDelete: SetNull)
-  customer     Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  measurement  Measurement?      @relation("MeasurementToContract", fields: [measurementId], references: [id], onDelete: SetNull)
-  advances     ContractAdvance[]
-  amendments   ContractAmendment[]
-  payments     ContractPayment[]
-  history      ContractHistory[]
+  direction     CrmDirection?     @relation(fields: [directionId], references: [id], onDelete: SetNull)
+  manager       User?             @relation("ContractManager", fields: [managerId], references: [id], onDelete: SetNull)
+  surveyor      User?             @relation("ContractSurveyor", fields: [surveyorId], references: [id], onDelete: SetNull)
+  customer      Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  measurement   Measurement?      @relation("MeasurementToContract", fields: [measurementId], references: [id], onDelete: SetNull)
+  office        Office?           @relation(fields: [officeId], references: [id], onDelete: SetNull)
+  complexObject ComplexObject?    @relation(fields: [complexObjectId], references: [id], onDelete: SetNull)
+  advances      ContractAdvance[]
+  amendments    ContractAmendment[]
+  payments      ContractPayment[]
+  history       ContractHistory[]
 
   @@index([managerId])
   @@index([status])
   @@index([contractDate])
+  @@index([officeId])
+  @@index([complexObjectId])
   @@map("contracts")
 }
 
@@ -1441,4 +1472,23 @@ enum PaymentStatus {
 enum AddressType {
   SHIPPING
   BILLING
+}
+
+// --- Офисы ---
+model Office {
+  id        String   @id @default(cuid())
+  name      String   // Название офиса (например, "Главный офис", "Офис на Ленина")
+  prefix    String?  // Префикс офиса (для нумерации договоров и т.п.)
+  address   String?  @db.Text // Адрес офиса
+  phone     String?  // Телефон офиса
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contracts       Contract[]
+  complexObjects  ComplexObject[]
+
+  @@index([isActive])
+  @@map("offices")
 }

@@ -16,6 +16,8 @@ const CONTRACT_SNAPSHOT_FIELDS = {
   managerId: true,
   deliveryId: true,
   surveyorId: true,
+  officeId: true,
+  complexObjectId: true,
   validityStart: true,
   validityEnd: true,
   contractDurationDays: true,
@@ -56,6 +58,8 @@ export class ContractsService {
         managerId: createContractDto.managerId ?? null,
         deliveryId: createContractDto.deliveryId ?? null,
         surveyorId: createContractDto.surveyorId ?? null,
+        officeId: createContractDto.officeId ?? null,
+        complexObjectId: createContractDto.complexObjectId ?? null,
         validityStart: createContractDto.validityStart
           ? new Date(createContractDto.validityStart)
           : null,
@@ -102,6 +106,8 @@ export class ContractsService {
       manager: { select: { id: true, firstName: true, lastName: true } },
       surveyor: { select: { id: true, firstName: true, lastName: true } },
       direction: { select: { id: true, name: true, slug: true } },
+      office: { select: { id: true, name: true, address: true } },
+      complexObject: { select: { id: true, name: true, customerName: true, address: true } },
       measurement: { select: { id: true, customerName: true, receptionDate: true } },
       advances: true,
       amendments: {
@@ -212,6 +218,10 @@ export class ContractsService {
       data.deliveryId = updateContractDto.deliveryId ?? null;
     if (updateContractDto.surveyorId !== undefined)
       data.surveyorId = updateContractDto.surveyorId ?? null;
+    if (updateContractDto.officeId !== undefined)
+      data.officeId = updateContractDto.officeId ?? null;
+    if (updateContractDto.complexObjectId !== undefined)
+      data.complexObjectId = updateContractDto.complexObjectId ?? null;
     if (updateContractDto.validityStart !== undefined)
       data.validityStart = updateContractDto.validityStart
         ? new Date(updateContractDto.validityStart)

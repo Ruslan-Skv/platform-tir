@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -9,9 +9,11 @@ import {
   type Contract,
   type CrmDirection,
   type CrmUser,
+  type Office,
   getContracts,
   getCrmDirections,
   getCrmUsers,
+  getOffices,
   updateContract,
 } from '@/shared/api/admin-crm';
 import { DataTable } from '@/shared/ui/admin/DataTable';
@@ -34,6 +36,7 @@ type EditableFieldKey =
   | 'status'
   | 'directionId'
   | 'managerId'
+  | 'officeId'
   | 'customerName'
   | 'customerAddress'
   | 'customerPhone'
@@ -46,7 +49,7 @@ interface EditableColumnConfig {
   key: EditableFieldKey;
   title: string;
   type: 'text' | 'date' | 'select';
-  optionsKey?: 'managers' | 'directions' | 'status';
+  optionsKey?: 'managers' | 'directions' | 'status' | 'offices';
 }
 
 const EDITABLE_COLUMNS: EditableColumnConfig[] = [
@@ -55,10 +58,58 @@ const EDITABLE_COLUMNS: EditableColumnConfig[] = [
   { key: 'status', title: 'Статус', type: 'select', optionsKey: 'status' },
   { key: 'directionId', title: 'Направление', type: 'select', optionsKey: 'directions' },
   { key: 'managerId', title: 'Менеджер', type: 'select', optionsKey: 'managers' },
+  { key: 'officeId', title: 'Офис', type: 'select', optionsKey: 'offices' },
   { key: 'customerName', title: 'ФИО заказчика', type: 'text' },
   { key: 'customerAddress', title: 'Адрес', type: 'text' },
   { key: 'installationDate', title: 'Дата монтажа', type: 'date' },
   { key: 'deliveryDate', title: 'Дата доставки', type: 'date' },
+];
+
+// Все доступные колонки для управления
+type ColumnKey =
+  | 'contractNumber'
+  | 'contractDate'
+  | 'status'
+  | 'directionId'
+  | 'managerId'
+  | 'officeId'
+  | 'customerName'
+  | 'customerAddress'
+  | 'installationDate'
+  | 'deliveryDate'
+  | 'totalAmount'
+  | 'paidAmount'
+  | 'remaining';
+
+interface ColumnConfig {
+  key: ColumnKey;
+  title: string;
+  editable: boolean;
+}
+
+const AVAILABLE_COLUMNS: ColumnConfig[] = [
+  { key: 'contractNumber', title: '№ договора', editable: true },
+  { key: 'contractDate', title: 'Дата заключения', editable: true },
+  { key: 'status', title: 'Статус', editable: true },
+  { key: 'directionId', title: 'Направление', editable: true },
+  { key: 'managerId', title: 'Менеджер', editable: true },
+  { key: 'officeId', title: 'Офис', editable: true },
+  { key: 'customerName', title: 'ФИО заказчика', editable: true },
+  { key: 'customerAddress', title: 'Адрес', editable: true },
+  { key: 'installationDate', title: 'Дата монтажа', editable: true },
+  { key: 'deliveryDate', title: 'Дата доставки', editable: true },
+  { key: 'totalAmount', title: 'Стоимость', editable: false },
+  { key: 'paidAmount', title: 'Оплачено', editable: false },
+  { key: 'remaining', title: 'Остаток', editable: false },
+];
+
+const DEFAULT_COLUMNS: ColumnKey[] = [
+  'contractNumber',
+  'contractDate',
+  'status',
+  'customerName',
+  'totalAmount',
+  'paidAmount',
 ];
 
 const STATUS_OPTIONS = Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label }));
@@ -107,6 +158,7 @@ export function ContractsPage() {
   const [loading, setLoading] = useState(true);
   const [directions, setDirections] = useState<CrmDirection[]>([]);
   const [users, setUsers] = useState<CrmUser[]>([]);
+  const [offices, setOffices] = useState<Office[]>([]);
   const [statusFilter, setStatusFilter] = useState('');
   const [managerFilter, setManagerFilter] = useState('');
   const [directionFilter, setDirectionFilter] = useState('');
@@ -120,6 +172,27 @@ export function ContractsPage() {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [saveMessageType, setSaveMessageType] = useState<'success' | 'error'>('success');
   const [historyContractId, setHistoryContractId] = useState<string | null>(null);
+
+  // Управление колонками
+  const [selectedColumns, setSelectedColumns] = useState<ColumnKey[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('admin_contracts_columns');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed as ColumnKey[];
+          }
+        } catch {
+          // ignore parse errors
+        }
+      }
+    }
+    return DEFAULT_COLUMNS;
+  });
+  const [showColumnSelector, setShowColumnSelector] = useState(false);
+  const [draggedColumn, setDraggedColumn] = useState<ColumnKey | null>(null);
+  const columnSelectorRef = useRef<HTMLDivElement>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -156,7 +229,95 @@ export function ContractsPage() {
     getCrmUsers()
       .then(setUsers)
       .catch(() => setUsers([]));
+    getOffices()
+      .then(setOffices)
+      .catch(() => setOffices([]));
   }, []);
+
+  // Закрытие dropdown при клике вне
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (columnSelectorRef.current && !columnSelectorRef.current.contains(event.target as Node)) {
+        setShowColumnSelector(false);
+      }
+    };
+
+    if (showColumnSelector) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showColumnSelector]);
+
+  // Функции управления колонками
+  const toggleColumn = (columnKey: ColumnKey) => {
+    setSelectedColumns((prev) => {
+      const newColumns = prev.includes(columnKey)
+        ? prev.filter((k) => k !== columnKey)
+        : [...prev, columnKey];
+      localStorage.setItem('admin_contracts_columns', JSON.stringify(newColumns));
+      return newColumns;
+    });
+  };
+
+  const handleDragStart = (e: React.DragEvent, columnKey: ColumnKey) => {
+    setDraggedColumn(columnKey);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', columnKey);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, targetKey: ColumnKey) => {
+    e.preventDefault();
+    if (!draggedColumn || draggedColumn === targetKey) {
+      setDraggedColumn(null);
+      return;
+    }
+
+    setSelectedColumns((prev) => {
+      const newColumns = [...prev];
+      const draggedIndex = newColumns.indexOf(draggedColumn);
+      const targetIndex = newColumns.indexOf(targetKey);
+
+      if (draggedIndex === -1 || targetIndex === -1) {
+        return prev;
+      }
+
+      newColumns.splice(draggedIndex, 1);
+      newColumns.splice(targetIndex, 0, draggedColumn);
+
+      localStorage.setItem('admin_contracts_columns', JSON.stringify(newColumns));
+      return newColumns;
+    });
+
+    setDraggedColumn(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedColumn(null);
+  };
+
+  const moveColumn = (columnKey: ColumnKey, direction: 'up' | 'down') => {
+    setSelectedColumns((prev) => {
+      const index = prev.indexOf(columnKey);
+      if (index === -1) return prev;
+      if (direction === 'up' && index === 0) return prev;
+      if (direction === 'down' && index === prev.length - 1) return prev;
+
+      const newColumns = [...prev];
+      const newIndex = direction === 'up' ? index - 1 : index + 1;
+      [newColumns[index], newColumns[newIndex]] = [newColumns[newIndex], newColumns[index]];
+
+      localStorage.setItem('admin_contracts_columns', JSON.stringify(newColumns));
+      return newColumns;
+    });
+  };
 
   const handleInlineEdit = (contractId: string, field: EditableFieldKey, value: string | null) => {
     setEditedContracts((prev) => ({
@@ -268,7 +429,9 @@ export function ContractsPage() {
           ? STATUS_OPTIONS
           : col.optionsKey === 'managers'
             ? users
-            : directions;
+            : col.optionsKey === 'offices'
+              ? offices
+              : directions;
       const optionList =
         col.optionsKey === 'status'
           ? (options as { value: string; label: string }[])
@@ -326,52 +489,43 @@ export function ContractsPage() {
     );
   };
 
-  const editableColumns = EDITABLE_COLUMNS.map((col) => ({
-    key: col.key,
-    title: col.title,
-    render: (c: Contract) => {
-      if (editMode && selectedIds.includes(c.id)) {
-        return renderEditableCell(c, col);
-      }
-      switch (col.key) {
-        case 'contractNumber':
-          return c.contractNumber;
-        case 'contractDate':
-          return formatDate(c.contractDate);
-        case 'status':
-          return (
-            <span className={`${styles.badge} ${styles[`status${c.status}`] ?? ''}`}>
-              {STATUS_LABELS[c.status] ?? c.status}
-            </span>
-          );
-        case 'directionId':
-          return c.direction?.name ?? '—';
-        case 'managerId':
-          return formatUser(c.manager);
-        case 'customerName':
-          return c.customerName;
-        case 'customerAddress':
-          return c.customerAddress || '—';
-        case 'installationDate':
-          return formatDate(c.installationDate);
-        case 'deliveryDate':
-          return formatDate(c.deliveryDate);
-        default:
-          return (c[col.key] as string) ?? '—';
-      }
-    },
-  }));
+  // Рендер ячейки колонки
+  const renderColumnCell = (c: Contract, columnKey: ColumnKey) => {
+    const editableCol = EDITABLE_COLUMNS.find((col) => col.key === columnKey);
 
-  const displayOnlyColumns = [
-    {
-      key: 'totalAmount',
-      title: 'Стоимость',
-      render: (c: Contract) => formatMoney(getEffectiveAmount(c)),
-    },
-    {
-      key: 'paidAmount',
-      title: 'Оплачено',
-      render: (c: Contract) => {
+    // Если колонка редактируемая и включён режим редактирования
+    if (editableCol && editMode && selectedIds.includes(c.id)) {
+      return renderEditableCell(c, editableCol);
+    }
+
+    switch (columnKey) {
+      case 'contractNumber':
+        return c.contractNumber;
+      case 'contractDate':
+        return formatDate(c.contractDate);
+      case 'status':
+        return (
+          <span className={`${styles.badge} ${styles[`status${c.status}`] ?? ''}`}>
+            {STATUS_LABELS[c.status] ?? c.status}
+          </span>
+        );
+      case 'directionId':
+        return c.direction?.name ?? '—';
+      case 'managerId':
+        return formatUser(c.manager);
+      case 'officeId':
+        return c.office?.name ?? '—';
+      case 'customerName':
+        return c.customerName;
+      case 'customerAddress':
+        return c.customerAddress || '—';
+      case 'installationDate':
+        return formatDate(c.installationDate);
+      case 'deliveryDate':
+        return formatDate(c.deliveryDate);
+      case 'totalAmount':
+        return formatMoney(getEffectiveAmount(c));
+      case 'paidAmount': {
         const effectiveAmount = getEffectiveAmount(c);
         const paid =
           (c as Contract & { payments?: Array<{ amount: string | number }> }).payments?.reduce(
@@ -380,12 +534,8 @@ export function ContractsPage() {
           ) ?? Number(c.advanceAmount);
         const pct = effectiveAmount > 0 ? ((paid / effectiveAmount) * 100).toFixed(1) : '—';
         return `${formatMoney(paid)} (${pct}%)`;
-      },
-    },
-    {
-      key: 'remaining',
-      title: 'Остаток',
-      render: (c: Contract) => {
+      }
+      case 'remaining': {
         const effectiveAmount = getEffectiveAmount(c);
         const paid =
           (c as Contract & { payments?: Array<{ amount: string | number }> }).payments?.reduce(
@@ -395,13 +545,32 @@ export function ContractsPage() {
         const remain = Math.max(0, effectiveAmount - paid);
         const pct = effectiveAmount > 0 ? ((remain / effectiveAmount) * 100).toFixed(1) : '—';
         return `${formatMoney(remain)} (${pct}%)`;
-      },
-    },
-  ];
+      }
+      default:
+        return '—';
+    }
+  };
+
+  // Формирование видимых колонок на основе selectedColumns
+  const visibleColumns = selectedColumns
+    .map((columnKey) => {
+      const columnConfig = AVAILABLE_COLUMNS.find((c) => c.key === columnKey);
+      if (!columnConfig) return null;
+
+      return {
+        key: columnConfig.key,
+        title: columnConfig.title,
+        render: (c: Contract) => renderColumnCell(c, columnKey),
+      };
+    })
+    .filter(Boolean) as Array<{
+    key: string;
+    title: string;
+    render: (c: Contract) => React.ReactNode;
+  }>;
 
   const columnsWithActions = [
-    ...editableColumns,
-    ...displayOnlyColumns,
+    ...visibleColumns,
     {
       key: 'actions',
       title: '',
@@ -436,10 +605,102 @@ export function ContractsPage() {
     <div className={styles.page}>
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <h1 className={styles.title}>Договоры</h1>
-          <span className={styles.count}>{total} договоров</span>
+          <h1 className={styles.title}>Объекты</h1>
+          <span className={styles.count}>{total} объектов</span>
         </div>
         <div className={styles.headerActions}>
+          <div className={styles.columnSelectorWrapper} ref={columnSelectorRef}>
+            <button
+              className={`${styles.secondaryButton} ${showColumnSelector ? styles.active : ''}`}
+              onClick={() => setShowColumnSelector(!showColumnSelector)}
+            >
+              ⚙️ Колонки
+            </button>
+            {showColumnSelector && (
+              <div className={styles.columnSelectorDropdown}>
+                <div className={styles.columnSelectorHeader}>
+                  <span>Выберите и упорядочьте колонки:</span>
+                </div>
+                <div className={styles.columnsList}>
+                  {/* Выбранные колонки — можно перетаскивать */}
+                  {selectedColumns.length > 0 && (
+                    <div className={styles.selectedColumnsSection}>
+                      <div className={styles.sectionLabel}>
+                        Отображаемые (перетащите для сортировки):
+                      </div>
+                      {selectedColumns.map((colKey, index) => {
+                        const col = AVAILABLE_COLUMNS.find((c) => c.key === colKey);
+                        if (!col) return null;
+                        return (
+                          <div
+                            key={colKey}
+                            className={`${styles.columnItem} ${styles.selected} ${draggedColumn === colKey ? styles.dragging : ''}`}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, colKey)}
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDrop(e, colKey)}
+                            onDragEnd={handleDragEnd}
+                          >
+                            <span className={styles.dragHandle}>⋮⋮</span>
+                            <input
+                              type="checkbox"
+                              checked={true}
+                              onChange={() => toggleColumn(colKey)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <span className={styles.columnTitle}>{col.title}</span>
+                            <div className={styles.columnOrderButtons}>
+                              <button
+                                className={styles.orderButton}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  moveColumn(colKey, 'up');
+                                }}
+                                disabled={index === 0}
+                                title="Переместить вверх"
+                              >
+                                ↑
+                              </button>
+                              <button
+                                className={styles.orderButton}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  moveColumn(colKey, 'down');
+                                }}
+                                disabled={index === selectedColumns.length - 1}
+                                title="Переместить вниз"
+                              >
+                                ↓
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {/* Доступные колонки — не выбранные */}
+                  {AVAILABLE_COLUMNS.filter((col) => !selectedColumns.includes(col.key)).length >
+                    0 && (
+                    <div className={styles.availableColumnsSection}>
+                      <div className={styles.sectionLabel}>Доступные колонки:</div>
+                      {AVAILABLE_COLUMNS.filter((col) => !selectedColumns.includes(col.key)).map(
+                        (col) => (
+                          <div key={col.key} className={styles.columnItem}>
+                            <input
+                              type="checkbox"
+                              checked={false}
+                              onChange={() => toggleColumn(col.key)}
+                            />
+                            <span className={styles.columnTitle}>{col.title}</span>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
           <button
             className={`${styles.secondaryButton} ${editMode ? styles.active : ''}`}
             onClick={() => {
@@ -454,7 +715,7 @@ export function ContractsPage() {
             {editMode ? '✕ Выйти из редактирования' : '✏️ Быстрое редактирование'}
           </button>
           <Link href="/admin/crm/contracts/new" className={styles.addButton}>
-            + Добавить договор
+            + Добавить объект
           </Link>
         </div>
       </div>

@@ -50,8 +50,9 @@ const baseNavItems: NavItem[] = [
     icon: '👥',
     children: [
       { label: 'Замеры', href: '/admin/crm/measurements' },
-      { label: 'Договоры', href: '/admin/crm/contracts' },
+      { label: 'Объекты', href: '/admin/crm/contracts' },
       { label: 'Оплаты по договорам', href: '/admin/crm/contract-payments' },
+      { label: 'Офисы', href: '/admin/crm/offices' },
       { label: 'Клиенты', href: '/admin/crm/customers' },
       { label: 'Заявки с форм', href: '/admin/forms' },
       { label: 'Чат поддержки', href: '/admin/support' },

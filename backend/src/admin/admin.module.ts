@@ -4,6 +4,8 @@ import { CrmDirectionsModule } from './crm-directions/crm-directions.module';
 import { MeasurementsModule } from './measurements/measurements.module';
 import { ContractsModule } from './contracts/contracts.module';
 import { ContractPaymentsModule } from './contract-payments/contract-payments.module';
+import { OfficesModule } from './offices/offices.module';
+import { ComplexObjectsModule } from './complex-objects/complex-objects.module';
 import { TasksModule } from './tasks/tasks.module';
 import { PagesModule } from './pages/pages.module';
 import { BlogModule } from './blog/blog.module';
@@ -29,6 +31,8 @@ import { UserCabinetModule } from './user-cabinet/user-cabinet.module';
     MeasurementsModule,
     ContractsModule,
     ContractPaymentsModule,
+    OfficesModule,
+    ComplexObjectsModule,
     TasksModule,
     // CMS
     PagesModule,
@@ -56,6 +60,8 @@ import { UserCabinetModule } from './user-cabinet/user-cabinet.module';
     MeasurementsModule,
     ContractsModule,
     ContractPaymentsModule,
+    OfficesModule,
+    ComplexObjectsModule,
     TasksModule,
     PagesModule,
     BlogModule,

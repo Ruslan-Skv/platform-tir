@@ -320,6 +320,139 @@
   color: #b91c1c;
 }
 
+/* Управление колонками */
+.columnSelectorWrapper {
+  position: relative;
+}
+
+.columnSelectorDropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  min-width: 280px;
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.columnSelectorHeader {
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 4px;
+}
+
+.columnsList {
+  padding: 8px 0;
+}
+
+.selectedColumnsSection,
+.availableColumnsSection {
+  margin-bottom: 8px;
+}
+
+.sectionLabel {
+  padding: 4px 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+}
+
+.columnItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+  user-select: none;
+}
+
+.columnItem:hover {
+  background: #f3f4f6;
+}
+
+.columnItem.selected {
+  background: #f8fafc;
+}
+
+.columnItem.dragging {
+  opacity: 0.5;
+  background: #e0e7ff;
+}
+
+.columnItem input {
+  width: 16px;
+  height: 16px;
+  accent-color: #6366f1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.columnTitle {
+  flex: 1;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.dragHandle {
+  cursor: grab;
+  color: #9ca3af;
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.dragHandle:hover {
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.columnOrderButtons {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.orderButton {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: #fff;
+  color: #6b7280;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.orderButton:hover:not(:disabled) {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.orderButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 @media (max-width: 768px) {
   .filters {
     flex-direction: column;
@@ -420,4 +553,53 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .editableInput.edited {
   border-color: #f59e0b;
   background: rgb(245 158 11 / 0.15);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .columnSelectorDropdown {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .columnSelectorHeader {
+  color: #9ca3af;
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionLabel {
+  color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .columnItem:hover {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .columnItem.selected {
+  background: #1f2937;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .columnItem.dragging {
+  background: rgb(99 102 241 / 0.2);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .columnTitle {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dragHandle {
+  color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dragHandle:hover {
+  background: #374151;
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .orderButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .orderButton:hover:not(:disabled) {
+  background: #4b5563;
 }
