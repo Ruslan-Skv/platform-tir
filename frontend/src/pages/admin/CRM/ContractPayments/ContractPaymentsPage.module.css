@@ -7,17 +7,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: 14px;
 }
 
 .headerLeft {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .title {
-  font-size: 1.75rem;
+  font-size: 1.35rem;
   font-weight: 700;
   color: #1f2937;
   margin: 0;
@@ -29,6 +30,213 @@
   border-radius: 20px;
   font-size: 0.9rem;
   color: #6b7280;
+}
+
+.syncNote {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: -8px 0 16px 0;
+  line-height: 1.45;
+}
+
+.officeSelect {
+  padding: 5px 10px;
+  font-size: 0.8125rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  min-width: 160px;
+}
+
+.periodLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  color: #374151;
+}
+
+.periodInput {
+  padding: 4px 8px;
+  font-size: 0.8125rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  width: 120px;
+}
+
+.tableFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.filterInput {
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  min-width: 80px;
+  max-width: 115px;
+}
+
+.filterInput::placeholder {
+  color: #9ca3af;
+}
+
+.filterSelectPlaceholder {
+  color: #9ca3af;
+}
+
+.filteredSum {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-left: auto;
+}
+
+.summaryCard {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.summaryTitle {
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+}
+
+.summaryItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.summaryLabel {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.summaryValue {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.summaryValueHighlight {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f766e;
+}
+
+.section {
+  margin-bottom: 18px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.emptyText {
+  margin: 0;
+  padding: 16px;
+  color: #6b7280;
+  font-size: 0.9375rem;
+}
+
+.simpleTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.simpleTable th,
+.simpleTable td {
+  padding: 6px 10px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.simpleTable th {
+  font-weight: 600;
+  color: #6b7280;
+  background: #f9fafb;
+}
+
+.smallBtn {
+  padding: 4px 10px;
+  font-size: 0.8125rem;
+  color: #dc2626;
+  background: none;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.smallBtn:hover {
+  background: #fef2f2;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 280px;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.form .input {
+  padding: 5px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.formHint {
+  margin: 0 0 4px 0;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 .filters {
@@ -52,6 +260,155 @@
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   font-size: 0.95rem;
+}
+
+.addBtn {
+  padding: 5px 12px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #fff;
+  background: #6366f1;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.addBtn:hover {
+  background: #4f46e5;
+}
+
+.editableCell {
+  display: block;
+  width: 100%;
+  padding: 4px 8px;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.editableCell:hover {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+}
+
+.inlineInput {
+  width: 100%;
+  min-width: 80px;
+  padding: 4px 8px;
+  font-size: inherit;
+  border: 1px solid #6366f1;
+  border-radius: 4px;
+}
+
+.addForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 360px;
+}
+
+.addForm label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.addForm .input,
+.addForm .select {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+}
+
+.addError {
+  margin: 0;
+  padding: 8px 12px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.875rem;
+  border-radius: 8px;
+}
+
+.contractList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.contractItem,
+.contractItemActive {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  background: #fff;
+  border: none;
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+.contractItem:hover,
+.contractItemActive {
+  background: #f3f4f6;
+}
+
+.contractItemActive {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.addFormActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.cancelBtn {
+  padding: 5px 12px;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+.submitBtn {
+  padding: 5px 12px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #fff;
+  background: #6366f1;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.submitBtn:disabled,
+.cancelBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 @media (max-width: 768px) {

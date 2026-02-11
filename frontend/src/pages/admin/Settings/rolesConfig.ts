@@ -10,6 +10,8 @@ export type BackendRole =
   | 'MODERATOR'
   | 'SUPPORT'
   | 'PARTNER'
+  | 'MANAGER'
+  | 'TECHNOLOGIST'
   | 'BRIGADIER'
   | 'LEAD_SPECIALIST_FURNITURE'
   | 'LEAD_SPECIALIST_WINDOWS_DOORS'
@@ -87,6 +89,24 @@ export const ROLES_CONFIG: RoleConfig[] = [
       'Заказы: просмотр',
       'CRM: клиенты, задачи',
       'Аналитика: просмотр дашборда и отчётов',
+    ],
+  },
+  {
+    id: 'MANAGER',
+    label: 'Менеджер',
+    description: 'Работа в CRM: клиенты, замеры, договоры, оплаты, задачи.',
+    permissions: [
+      'CRM: клиенты, замеры, договоры, оплаты, задачи',
+      'Просмотр офисов и направлений CRM',
+    ],
+  },
+  {
+    id: 'TECHNOLOGIST',
+    label: 'Технолог',
+    description: 'Работа в CRM: замеры, объекты, договоры, оплаты.',
+    permissions: [
+      'CRM: замеры, объекты, договоры, оплаты',
+      'Просмотр клиентов, офисов и направлений CRM',
     ],
   },
   {

@@ -668,7 +668,15 @@ export interface ContractPayment {
     contractNumber: string;
     customerName: string;
     totalAmount?: string | number;
+    office?: { id: string; name: string } | null;
+    manager?: { id: string; firstName: string | null; lastName: string | null } | null;
+    complexObject?: {
+      officeId: string | null;
+      office?: { id: string; name: string } | null;
+      manager?: { id: string; firstName: string | null; lastName: string | null } | null;
+    } | null;
   };
+  /** Менеджер, оформивший оплату (запись в кассе) */
   manager?: { id: string; firstName: string | null; lastName: string | null } | null;
   /** Сумма всех оплат по договору (для расчёта %) */
   contractTotalPaid?: number;
@@ -676,6 +684,7 @@ export interface ContractPayment {
 
 export async function getContractPayments(params?: {
   contractId?: string;
+  officeId?: string;
   managerId?: string;
   paymentForm?: string;
   paymentType?: string;
@@ -692,6 +701,7 @@ export async function getContractPayments(params?: {
 }> {
   const searchParams = new URLSearchParams();
   if (params?.contractId) searchParams.set('contractId', params.contractId);
+  if (params?.officeId) searchParams.set('officeId', params.officeId);
   if (params?.managerId) searchParams.set('managerId', params.managerId);
   if (params?.paymentForm) searchParams.set('paymentForm', params.paymentForm);
   if (params?.paymentType) searchParams.set('paymentType', params.paymentType);
@@ -711,7 +721,7 @@ export async function createContractPayment(data: {
   contractId: string;
   paymentDate: string;
   amount: number;
-  paymentForm: 'CASH' | 'TERMINAL' | 'QR' | 'INVOICE';
+  paymentForm: 'CASH' | 'TERMINAL' | 'QR' | 'INVOICE' | 'LC_TRANSFER';
   paymentType: 'PREPAYMENT' | 'ADVANCE' | 'FINAL' | 'AMENDMENT';
   managerId?: string;
   notes?: string;
@@ -734,4 +744,137 @@ export async function deleteContractPayment(id: string): Promise<void> {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось удалить оплату');
+}
+
+// --- Office cash (касса по офисам) ---
+export interface OfficeCashSummary {
+  officeId: string;
+  officeName: string;
+  receivedFromClients: number;
+  receivedByTerminal: number;
+  receivedByQr: number;
+  receivedByInvoice: number;
+  receivedByLcTransfer: number;
+  otherExpensesTotal: number;
+  incassationsTotal: number;
+  balanceInCash: number;
+  balanceToIncassate: number;
+}
+
+export interface OfficeOtherExpenseItem {
+  id: string;
+  officeId: string;
+  amount: string | number;
+  expenseDate: string;
+  description: string | null;
+  createdById: string | null;
+  createdAt: string;
+  office?: { id: string; name: string };
+  createdBy?: { id: string; firstName: string | null; lastName: string | null } | null;
+}
+
+export interface OfficeIncassationItem {
+  id: string;
+  officeId: string;
+  amount: string | number;
+  incassationDate: string;
+  notes: string | null;
+  createdById: string | null;
+  createdAt: string;
+  office?: { id: string; name: string };
+  createdBy?: { id: string; firstName: string | null; lastName: string | null } | null;
+}
+
+export async function getOfficeCashSummary(
+  officeId: string,
+  params?: { dateFrom?: string; dateTo?: string }
+): Promise<OfficeCashSummary> {
+  const search = new URLSearchParams({ officeId });
+  if (params?.dateFrom) search.set('dateFrom', params.dateFrom);
+  if (params?.dateTo) search.set('dateTo', params.dateTo);
+  const res = await fetch(`${API_URL}/admin/office-cash/summary?${search}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить сводку по кассе');
+  return res.json();
+}
+
+export async function getOfficeOtherExpenses(
+  officeId: string,
+  params?: { dateFrom?: string; dateTo?: string }
+): Promise<OfficeOtherExpenseItem[]> {
+  const search = new URLSearchParams({ officeId });
+  if (params?.dateFrom) search.set('dateFrom', params.dateFrom);
+  if (params?.dateTo) search.set('dateTo', params.dateTo);
+  const res = await fetch(`${API_URL}/admin/office-cash/other-expenses?${search}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить прочие расходы');
+  return res.json();
+}
+
+export async function createOfficeOtherExpense(data: {
+  officeId: string;
+  amount: number;
+  expenseDate: string;
+  description?: string;
+}): Promise<OfficeOtherExpenseItem> {
+  const res = await fetch(`${API_URL}/admin/office-cash/other-expenses`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message || 'Не удалось добавить расход');
+  }
+  return res.json();
+}
+
+export async function deleteOfficeOtherExpense(id: string): Promise<void> {
+  const res = await fetch(`${API_URL}/admin/office-cash/other-expenses/${id}`, {
+    method: 'DELETE',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось удалить расход');
+}
+
+export async function getOfficeIncassations(
+  officeId: string,
+  params?: { dateFrom?: string; dateTo?: string }
+): Promise<OfficeIncassationItem[]> {
+  const search = new URLSearchParams({ officeId });
+  if (params?.dateFrom) search.set('dateFrom', params.dateFrom);
+  if (params?.dateTo) search.set('dateTo', params.dateTo);
+  const res = await fetch(`${API_URL}/admin/office-cash/incassations?${search}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить инкассации');
+  return res.json();
+}
+
+export async function createOfficeIncassation(data: {
+  officeId: string;
+  amount: number;
+  incassationDate: string;
+  notes?: string;
+}): Promise<OfficeIncassationItem> {
+  const res = await fetch(`${API_URL}/admin/office-cash/incassations`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message || 'Не удалось зафиксировать инкассацию');
+  }
+  return res.json();
+}
+
+export async function deleteOfficeIncassation(id: string): Promise<void> {
+  const res = await fetch(`${API_URL}/admin/office-cash/incassations/${id}`, {
+    method: 'DELETE',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось удалить запись об инкассации');
 }

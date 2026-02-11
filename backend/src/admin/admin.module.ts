@@ -22,9 +22,13 @@ import { AdminFormsModule } from './forms/admin-forms.module';
 import { PhotoModule } from './photo/photo.module';
 import { PromotionModule } from './promotions/promotion.module';
 import { UserCabinetModule } from './user-cabinet/user-cabinet.module';
+import { AdminAccessModule } from './admin-access/admin-access.module';
+import { OfficeCashModule } from './office-cash/office-cash.module';
 
 @Module({
   imports: [
+    AdminAccessModule,
+    OfficeCashModule,
     // CRM
     CustomersModule,
     CrmDirectionsModule,
@@ -55,6 +59,8 @@ import { UserCabinetModule } from './user-cabinet/user-cabinet.module';
     AnalyticsModule,
   ],
   exports: [
+    AdminAccessModule,
+    OfficeCashModule,
     CustomersModule,
     CrmDirectionsModule,
     MeasurementsModule,

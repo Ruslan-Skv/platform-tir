@@ -271,6 +271,8 @@ export class AdminNotificationsController {
       'CONTENT_MANAGER',
       'MODERATOR',
       'SUPPORT',
+      'MANAGER',
+      'TECHNOLOGIST',
       'PARTNER',
       'BRIGADIER',
       'LEAD_SPECIALIST_FURNITURE',

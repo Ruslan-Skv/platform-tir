@@ -27,6 +27,7 @@ export class ContractPaymentsService {
 
   async findAll(params?: {
     contractId?: string;
+    officeId?: string;
     managerId?: string;
     paymentForm?: string;
     paymentType?: string;
@@ -37,6 +38,7 @@ export class ContractPaymentsService {
   }) {
     const {
       contractId,
+      officeId,
       managerId,
       paymentForm,
       paymentType,
@@ -50,6 +52,18 @@ export class ContractPaymentsService {
     const where: Prisma.ContractPaymentWhereInput = {};
 
     if (contractId) where.contractId = contractId;
+    // Офис может быть указан у договора или у привязанного объекта (ComplexObject)
+    if (officeId) {
+      where.OR = [
+        { contract: { officeId } },
+        {
+          contract: {
+            complexObjectId: { not: null },
+            complexObject: { officeId },
+          },
+        },
+      ];
+    }
     if (managerId) where.managerId = managerId;
     if (paymentForm) where.paymentForm = paymentForm as Prisma.EnumPaymentFormFilter;
     if (paymentType) where.paymentType = paymentType as Prisma.EnumPaymentTypeFilter;
@@ -65,7 +79,22 @@ export class ContractPaymentsService {
         where,
         include: {
           contract: {
-            select: { id: true, contractNumber: true, customerName: true, totalAmount: true },
+            select: {
+              id: true,
+              contractNumber: true,
+              customerName: true,
+              totalAmount: true,
+              officeId: true,
+              office: { select: { id: true, name: true } },
+              manager: { select: { id: true, firstName: true, lastName: true } },
+              complexObject: {
+                select: {
+                  officeId: true,
+                  office: { select: { id: true, name: true } },
+                  manager: { select: { id: true, firstName: true, lastName: true } },
+                },
+              },
+            },
           },
           manager: { select: { id: true, firstName: true, lastName: true } },
         },

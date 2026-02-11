@@ -48,17 +48,46 @@ const CONTRACT_SNAPSHOT_FIELDS = {
 export class ContractsService {
   constructor(private prisma: PrismaService) {}
 
-  create(createContractDto: CreateContractDto) {
+  async create(createContractDto: CreateContractDto) {
+    // Если есть комплексный объект и нет customerName, берём из объекта
+    let customerName = createContractDto.customerName ?? null;
+    let customerAddress = createContractDto.customerAddress ?? null;
+    let customerPhone = createContractDto.customerPhone ?? null;
+    let managerId = createContractDto.managerId ?? null;
+    let officeId = createContractDto.officeId ?? null;
+
+    if (createContractDto.complexObjectId) {
+      const complexObject = await this.prisma.complexObject.findUnique({
+        where: { id: createContractDto.complexObjectId },
+        select: {
+          customerName: true,
+          address: true,
+          customerPhones: true,
+          managerId: true,
+          officeId: true,
+        },
+      });
+      if (complexObject) {
+        if (!customerName) customerName = complexObject.customerName;
+        if (!customerAddress) customerAddress = complexObject.address;
+        if (!customerPhone && complexObject.customerPhones?.length) {
+          customerPhone = complexObject.customerPhones[0];
+        }
+        if (!managerId) managerId = complexObject.managerId;
+        if (!officeId) officeId = complexObject.officeId;
+      }
+    }
+
     return this.prisma.contract.create({
       data: {
         contractNumber: createContractDto.contractNumber,
         contractDate: new Date(createContractDto.contractDate),
         status: (createContractDto.status as ContractStatus) ?? 'DRAFT',
         directionId: createContractDto.directionId ?? null,
-        managerId: createContractDto.managerId ?? null,
+        managerId,
         deliveryId: createContractDto.deliveryId ?? null,
         surveyorId: createContractDto.surveyorId ?? null,
-        officeId: createContractDto.officeId ?? null,
+        officeId,
         complexObjectId: createContractDto.complexObjectId ?? null,
         validityStart: createContractDto.validityStart
           ? new Date(createContractDto.validityStart)
@@ -73,9 +102,9 @@ export class ContractsService {
         deliveryDate: createContractDto.deliveryDate
           ? new Date(createContractDto.deliveryDate)
           : null,
-        customerName: createContractDto.customerName,
-        customerAddress: createContractDto.customerAddress ?? null,
-        customerPhone: createContractDto.customerPhone ?? null,
+        customerName,
+        customerAddress,
+        customerPhone,
         customerId: createContractDto.customerId ?? null,
         discount: new Prisma.Decimal(createContractDto.discount ?? 0),
         totalAmount: new Prisma.Decimal(createContractDto.totalAmount),

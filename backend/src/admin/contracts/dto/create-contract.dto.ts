@@ -92,9 +92,10 @@ export class CreateContractDto {
   @IsDateString()
   deliveryDate?: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
-  customerName: string;
+  customerName?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

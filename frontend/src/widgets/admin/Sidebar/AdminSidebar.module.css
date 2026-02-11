@@ -117,6 +117,18 @@
   margin-bottom: 4px;
 }
 
+.navLinkRow {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.navLinkRow .navLink {
+  flex: 1;
+  min-width: 0;
+}
+
 .navLink {
   display: flex;
   align-items: center;
@@ -130,6 +142,71 @@
   cursor: pointer;
   font-size: 0.8125rem;
   text-align: left;
+}
+
+.accessIcon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  font-size: 0.875rem;
+  border-radius: 4px;
+  transition:
+    color 0.2s,
+    background 0.2s;
+}
+
+.accessIcon:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.accessIconSubmenu {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  transition:
+    color 0.2s,
+    background 0.2s;
+}
+
+.accessIconSubmenu:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.submenuGroupRowWrap,
+.submenuLinkRow {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.submenuGroupRowWrap .submenuGroupRow {
+  flex: 1;
+  min-width: 0;
+}
+
+.submenuLinkRow .submenuLink {
+  flex: 1;
+  min-width: 0;
 }
 
 .navLink:hover {

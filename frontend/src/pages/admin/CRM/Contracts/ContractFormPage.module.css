@@ -1,6 +1,8 @@
 .page {
+  position: relative;
   max-width: 1100px;
   margin: 0 auto;
+  min-height: 100vh;
 }
 
 .header {
@@ -50,6 +52,31 @@
   padding: 32px;
   text-align: center;
   color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.loadingOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  min-height: 100%;
+  background: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 200px;
+  z-index: 100;
+  pointer-events: all;
+}
+
+.loadingSpinner {
+  padding: 16px 32px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  color: #374151;
   font-size: 0.9rem;
 }
 
@@ -572,8 +599,28 @@
   color: #f9fafb;
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .historyButton {
+  background: #374151;
+  color: #e5e7eb;
+  border-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .historyButton:hover {
+  background: #4b5563;
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
   color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loadingOverlay {
+  background: rgba(17, 24, 39, 0.7);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loadingSpinner {
+  background: #1f2937;
+  color: #f9fafb;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .messageerror {
@@ -736,13 +783,17 @@
   padding: 4px 8px;
   background: #f3f4f6;
   border: 1px solid #e5e7eb;
-  border-bottom: none;
+  border-bottom: 2px solid transparent;
   border-radius: 4px 4px 0 0;
   text-decoration: none;
   color: #6b7280;
   font-size: 0.75rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -756,9 +807,7 @@
   background: #fff;
   color: #1f2937;
   border-color: #6366f1;
-  border-bottom: 2px solid #fff;
-  margin-bottom: -1px;
-  font-weight: 500;
+  border-bottom-color: #fff;
 }
 
 .tabDirection {
@@ -824,6 +873,7 @@
   background: #1f2937;
   color: #f9fafb;
   border-color: #6366f1;
+  border-bottom-color: #1f2937;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .tabDirection {

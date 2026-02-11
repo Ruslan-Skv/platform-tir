@@ -10,6 +10,8 @@ const CRM_ROLES = [
   'ADMIN',
   'MODERATOR',
   'SUPPORT',
+  'MANAGER',
+  'TECHNOLOGIST',
   'BRIGADIER',
   'LEAD_SPECIALIST_FURNITURE',
   'LEAD_SPECIALIST_WINDOWS_DOORS',
@@ -32,6 +34,7 @@ export class ContractPaymentsController {
   @Get()
   findAll(
     @Query('contractId') contractId?: string,
+    @Query('officeId') officeId?: string,
     @Query('managerId') managerId?: string,
     @Query('paymentForm') paymentForm?: string,
     @Query('paymentType') paymentType?: string,
@@ -42,6 +45,7 @@ export class ContractPaymentsController {
   ) {
     return this.contractPaymentsService.findAll({
       contractId,
+      officeId,
       managerId,
       paymentForm,
       paymentType,

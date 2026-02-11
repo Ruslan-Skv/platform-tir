@@ -70,8 +70,25 @@ model User {
   measurementHistory    MeasurementHistory[] @relation("MeasurementHistoryChangedBy")
   contractHistory       ContractHistory[]    @relation("ContractHistoryChangedBy")
   managedComplexObjects ComplexObject[]      @relation("ComplexObjectManager")
+  adminResourcePermissions AdminResourcePermission[]
+  officeOtherExpensesCreated OfficeOtherExpense[]
+  officeIncassationsCreated  OfficeIncassation[]
 
   @@map("users")
+}
+
+model AdminResourcePermission {
+  id         String   @id @default(cuid())
+  resourceId String
+  userId     String
+  permission String   // VIEW | EDIT
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceId, userId])
+  @@index([resourceId])
+  @@index([userId])
+  @@map("admin_resource_permissions")
 }
 
 model SupportConversation {
@@ -1205,7 +1222,7 @@ model Contract {
   installationDate     DateTime?      @db.Date
   installationDurationDays Int?      // Продолжительность монтажа в днях
   deliveryDate         DateTime?      @db.Date
-  customerName         String
+  customerName         String?
   customerAddress      String?        @db.Text
   customerPhone        String?
   customerId           String?
@@ -1331,6 +1348,7 @@ enum PaymentForm {
   TERMINAL
   QR
   INVOICE
+  LC_TRANSFER  // Переводы на личный счёт (ЛК)
 }
 
 enum PaymentType {
@@ -1353,6 +1371,8 @@ enum UserRole {
   MODERATOR
   SUPPORT
   PARTNER
+  MANAGER
+  TECHNOLOGIST
   BRIGADIER
   LEAD_SPECIALIST_FURNITURE
   LEAD_SPECIALIST_WINDOWS_DOORS
@@ -1486,9 +1506,45 @@ model Office {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  contracts       Contract[]
-  complexObjects  ComplexObject[]
+  contracts         Contract[]
+  complexObjects    ComplexObject[]
+  otherExpenses     OfficeOtherExpense[]
+  incassations      OfficeIncassation[]
 
   @@index([isActive])
   @@map("offices")
+}
+
+model OfficeOtherExpense {
+  id          String   @id @default(cuid())
+  officeId    String
+  amount      Decimal  @db.Decimal(12, 2)
+  expenseDate DateTime @db.Date
+  description String?  @db.Text
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  office    Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  createdBy User?  @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([officeId])
+  @@index([expenseDate])
+  @@map("office_other_expenses")
+}
+
+model OfficeIncassation {
+  id              String   @id @default(cuid())
+  officeId        String
+  amount          Decimal  @db.Decimal(12, 2)
+  incassationDate DateTime @db.Date
+  notes           String?  @db.Text
+  createdById     String?
+  createdAt       DateTime @default(now())
+
+  office    Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  createdBy User?  @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([officeId])
+  @@index([incassationDate])
+  @@map("office_incassations")
 }

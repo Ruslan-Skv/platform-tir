@@ -7,6 +7,7 @@ export enum PaymentFormDto {
   TERMINAL = 'TERMINAL',
   QR = 'QR',
   INVOICE = 'INVOICE',
+  LC_TRANSFER = 'LC_TRANSFER',
 }
 
 export enum PaymentTypeDto {

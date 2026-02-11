@@ -20,7 +20,7 @@ import { RequestWithUser } from '../../common/types/request-with-user.types';
 
 @Controller('admin/tasks')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'MODERATOR', 'SUPPORT')
+@Roles('ADMIN', 'MODERATOR', 'SUPPORT', 'MANAGER', 'TECHNOLOGIST')
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 

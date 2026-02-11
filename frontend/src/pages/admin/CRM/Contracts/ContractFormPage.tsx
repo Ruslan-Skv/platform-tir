@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -46,11 +46,15 @@ const STATUS_OPTIONS = [
   { value: 'CANCELLED', label: 'Отменён' },
 ];
 
-const PAYMENT_FORM_OPTIONS: { value: 'CASH' | 'TERMINAL' | 'QR' | 'INVOICE'; label: string }[] = [
+const PAYMENT_FORM_OPTIONS: {
+  value: 'CASH' | 'TERMINAL' | 'QR' | 'INVOICE' | 'LC_TRANSFER';
+  label: string;
+}[] = [
   { value: 'CASH', label: 'Наличные' },
   { value: 'TERMINAL', label: 'Терминал' },
   { value: 'QR', label: 'QR-код' },
   { value: 'INVOICE', label: 'По счёту' },
+  { value: 'LC_TRANSFER', label: 'Переводы на ЛК' },
 ];
 
 const PAYMENT_TYPE_LABELS: Record<string, string> = {
@@ -65,6 +69,7 @@ const PAYMENT_FORM_LABELS: Record<string, string> = {
   TERMINAL: 'Терминал',
   QR: 'QR-код',
   INVOICE: 'По счёту',
+  LC_TRANSFER: 'Переводы на ЛК',
 };
 
 function formatDateForInput(s: string | null | undefined): string {
@@ -111,12 +116,26 @@ interface ContractFormPageProps {
   contractId?: string | null;
 }
 
-export function ContractFormPage({ contractId }: ContractFormPageProps) {
+export function ContractFormPage({ contractId: initialContractId }: ContractFormPageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
+  // Удалять оплаты (записи Кассы) может только супер-админ
   const canDeletePayments = user?.role === 'SUPER_ADMIN';
   const canEditAmendments = user?.role === 'SUPER_ADMIN';
+
+  // Используем внутреннее состояние для текущего договора,
+  // чтобы переключение между договорами не вызывало перемонтирование
+  const [currentContractId, setCurrentContractId] = useState(initialContractId);
+
+  // Синхронизируем с prop при первоначальной загрузке или переходе извне
+  useEffect(() => {
+    setCurrentContractId(initialContractId);
+  }, [initialContractId]);
+
+  // Используем currentContractId вместо contractId
+  const contractId = currentContractId;
+
   const [contractNumber, setContractNumber] = useState('');
   const [contractDate, setContractDate] = useState(formatDateForInput(new Date().toISOString()));
   const [contractDurationDays, setContractDurationDays] = useState<string>('');
@@ -146,9 +165,9 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
   const [newPaymentDate, setNewPaymentDate] = useState(
     formatDateForInput(new Date().toISOString())
   );
-  const [newPaymentForm, setNewPaymentForm] = useState<'CASH' | 'TERMINAL' | 'QR' | 'INVOICE'>(
-    'CASH'
-  );
+  const [newPaymentForm, setNewPaymentForm] = useState<
+    'CASH' | 'TERMINAL' | 'QR' | 'INVOICE' | 'LC_TRANSFER'
+  >('CASH');
   const [newPaymentType, setNewPaymentType] = useState<string>('PREPAYMENT');
   const [installationDate, setInstallationDate] = useState('');
   const [installationDurationDays, setInstallationDurationDays] = useState('');
@@ -225,99 +244,126 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
     setTimeout(() => setMessage(null), 3000);
   }, []);
 
-  const loadContract = useCallback(async () => {
-    if (!contractId) return;
-    setLoading(true);
-    try {
-      const data = await getContract(contractId);
-      setContractNumber(data.contractNumber);
-      setContractDate(formatDateForInput(data.contractDate));
-      const type =
-        (data as Contract & { contractDurationType?: string }).contractDurationType ?? 'CALENDAR';
-      setContractDurationType(type === 'WORKING' ? 'WORKING' : 'CALENDAR');
-      const dur = (data as Contract).contractDurationDays ?? null;
-      const vEnd = (data as Contract).validityEnd
-        ? new Date((data as Contract).validityEnd!)
-        : null;
-      const cDate = data.contractDate ? new Date(data.contractDate) : null;
-      if (dur != null) {
-        setContractDurationDays(String(dur));
-      } else if (vEnd && cDate) {
-        const calDays = Math.round((vEnd.getTime() - cDate.getTime()) / (24 * 60 * 60 * 1000));
-        const workDays = getWorkingDaysBetween(cDate, vEnd);
-        setContractDurationDays(
-          type === 'WORKING' ? String(workDays) : String(calDays > 0 ? calDays : '')
+  const loadContractById = useCallback(
+    async (id: string, silent = false) => {
+      if (!silent) setLoading(true);
+      try {
+        const data = await getContract(id);
+        setContractNumber(data.contractNumber);
+        setContractDate(formatDateForInput(data.contractDate));
+        const type =
+          (data as Contract & { contractDurationType?: string }).contractDurationType ?? 'CALENDAR';
+        setContractDurationType(type === 'WORKING' ? 'WORKING' : 'CALENDAR');
+        const dur = (data as Contract).contractDurationDays ?? null;
+        const vEnd = (data as Contract).validityEnd
+          ? new Date((data as Contract).validityEnd!)
+          : null;
+        const cDate = data.contractDate ? new Date(data.contractDate) : null;
+        if (dur != null) {
+          setContractDurationDays(String(dur));
+        } else if (vEnd && cDate) {
+          const calDays = Math.round((vEnd.getTime() - cDate.getTime()) / (24 * 60 * 60 * 1000));
+          const workDays = getWorkingDaysBetween(cDate, vEnd);
+          setContractDurationDays(
+            type === 'WORKING' ? String(workDays) : String(calDays > 0 ? calDays : '')
+          );
+        } else {
+          setContractDurationDays('');
+        }
+        setStatus(data.status);
+        setDirectionId(data.directionId ?? '');
+        setManagerId(data.managerId ?? '');
+        setOfficeId(data.officeId ?? '');
+        setComplexObjectId(data.complexObjectId ?? '');
+        // Если есть комплексный объект, загружаем его договоры
+        if (data.complexObjectId) {
+          getComplexObject(data.complexObjectId)
+            .then((obj) => {
+              setComplexObject(obj);
+              // Заполняем форму общей информации
+              setObjName(obj.name);
+              setObjCustomerName(obj.customerName ?? '');
+              setObjCustomerPhones(obj.customerPhones.length > 0 ? obj.customerPhones : ['']);
+              setObjAddress(obj.address ?? '');
+              setObjNotes(obj.notes ?? '');
+              setObjHasElevator(obj.hasElevator);
+              setObjFloor(obj.floor != null ? String(obj.floor) : '');
+              setObjOfficeId(obj.officeId ?? '');
+              setObjManagerId(obj.managerId ?? '');
+            })
+            .catch(() => setComplexObject(null));
+          getComplexObjectContracts(data.complexObjectId)
+            .then((contracts) => setRelatedContracts(contracts))
+            .catch(() => setRelatedContracts([]));
+        }
+        setCustomerName(data.customerName);
+        setCustomerAddress(data.customerAddress ?? '');
+        setCustomerPhone(data.customerPhone ?? '');
+        const total = Number(data.totalAmount ?? 0);
+        const disc = Number(data.discount ?? 0);
+        setTotalAmount(String(data.totalAmount ?? ''));
+        setDiscountValue(String(disc));
+        setDiscountType('RUBLES');
+        const loadedPayments = (data as Contract).payments ?? [];
+        setPayments(
+          loadedPayments.map((p) => ({
+            id: p.id,
+            amount: p.amount,
+            paymentDate: p.paymentDate,
+            paymentForm: p.paymentForm,
+            paymentType: p.paymentType,
+            notes: (p as { notes?: string | null }).notes,
+          }))
         );
-      } else {
-        setContractDurationDays('');
+        setInstallationDate(formatDateForInput(data.installationDate));
+        const instDur = (data as Contract & { installationDurationDays?: number | null })
+          .installationDurationDays;
+        setInstallationDurationDays(instDur != null ? String(instDur) : '');
+        setDeliveryDate(formatDateForInput(data.deliveryDate));
+        setActWorkStartDate(formatDateForInput((data as Contract).actWorkStartDate));
+        setActWorkEndDate(formatDateForInput((data as Contract).actWorkEndDate));
+        setActWorkStartImages((data as Contract).actWorkStartImages ?? []);
+        setActWorkEndImages((data as Contract).actWorkEndImages ?? []);
+        setAmendments((data as Contract).amendments ?? []);
+        setNotes(data.notes ?? '');
+        setMeasurementId((data as Contract & { measurementId?: string }).measurementId ?? '');
+      } catch {
+        showMessage('error', 'Ошибка загрузки договора');
+      } finally {
+        if (!silent) setLoading(false);
       }
-      setStatus(data.status);
-      setDirectionId(data.directionId ?? '');
-      setManagerId(data.managerId ?? '');
-      setOfficeId(data.officeId ?? '');
-      setComplexObjectId(data.complexObjectId ?? '');
-      // Если есть комплексный объект, загружаем его договоры
-      if (data.complexObjectId) {
-        getComplexObject(data.complexObjectId)
-          .then((obj) => {
-            setComplexObject(obj);
-            // Заполняем форму общей информации
-            setObjName(obj.name);
-            setObjCustomerName(obj.customerName ?? '');
-            setObjCustomerPhones(obj.customerPhones.length > 0 ? obj.customerPhones : ['']);
-            setObjAddress(obj.address ?? '');
-            setObjNotes(obj.notes ?? '');
-            setObjHasElevator(obj.hasElevator);
-            setObjFloor(obj.floor != null ? String(obj.floor) : '');
-            setObjOfficeId(obj.officeId ?? '');
-            setObjManagerId(obj.managerId ?? '');
-          })
-          .catch(() => setComplexObject(null));
-        getComplexObjectContracts(data.complexObjectId)
-          .then((contracts) => setRelatedContracts(contracts.filter((c) => c.id !== data.id)))
-          .catch(() => setRelatedContracts([]));
-      }
-      setCustomerName(data.customerName);
-      setCustomerAddress(data.customerAddress ?? '');
-      setCustomerPhone(data.customerPhone ?? '');
-      const total = Number(data.totalAmount ?? 0);
-      const disc = Number(data.discount ?? 0);
-      setTotalAmount(String(data.totalAmount ?? ''));
-      setDiscountValue(String(disc));
-      setDiscountType('RUBLES');
-      const loadedPayments = (data as Contract).payments ?? [];
-      setPayments(
-        loadedPayments.map((p) => ({
-          id: p.id,
-          amount: p.amount,
-          paymentDate: p.paymentDate,
-          paymentForm: p.paymentForm,
-          paymentType: p.paymentType,
-          notes: (p as { notes?: string | null }).notes,
-        }))
-      );
-      setInstallationDate(formatDateForInput(data.installationDate));
-      const instDur = (data as Contract & { installationDurationDays?: number | null })
-        .installationDurationDays;
-      setInstallationDurationDays(instDur != null ? String(instDur) : '');
-      setDeliveryDate(formatDateForInput(data.deliveryDate));
-      setActWorkStartDate(formatDateForInput((data as Contract).actWorkStartDate));
-      setActWorkEndDate(formatDateForInput((data as Contract).actWorkEndDate));
-      setActWorkStartImages((data as Contract).actWorkStartImages ?? []);
-      setActWorkEndImages((data as Contract).actWorkEndImages ?? []);
-      setAmendments((data as Contract).amendments ?? []);
-      setNotes(data.notes ?? '');
-      setMeasurementId((data as Contract & { measurementId?: string }).measurementId ?? '');
-    } catch {
-      showMessage('error', 'Ошибка загрузки договора');
-    } finally {
-      setLoading(false);
-    }
-  }, [contractId, showMessage]);
+    },
+    [showMessage]
+  );
+
+  // Ref для отслеживания внутреннего переключения (чтобы не делать двойную загрузку)
+  const isInternalSwitch = useRef(false);
+
+  // Функция переключения между договорами без перезагрузки страницы
+  const switchToContract = useCallback(
+    (id: string) => {
+      if (id === contractId) return;
+      isInternalSwitch.current = true;
+      setCurrentContractId(id);
+      // Обновляем URL без полной навигации
+      window.history.pushState(null, '', `/admin/crm/contracts/${id}`);
+      // Тихая загрузка без оверлея — чтобы вёрстка не дёргалась
+      loadContractById(id, true);
+      setActiveTab('contract');
+    },
+    [contractId, loadContractById]
+  );
 
   useEffect(() => {
-    loadContract();
-  }, [loadContract]);
+    // Пропускаем если это внутреннее переключение (уже загружено в switchToContract)
+    if (isInternalSwitch.current) {
+      isInternalSwitch.current = false;
+      return;
+    }
+    if (contractId) {
+      loadContractById(contractId);
+    }
+  }, [contractId, loadContractById]);
 
   useEffect(() => {
     if (contractId && searchParams.get('created') === '1') {
@@ -419,11 +465,9 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
         contractNumber: contractNumber.trim(),
         contractDate,
         status,
-        // Если есть комплексный объект, берём данные из него
-        customerName:
-          complexObjectId && complexObject
-            ? complexObject.customerName || customerName.trim()
-            : customerName.trim(),
+        // customerName, customerAddress, customerPhone, managerId, officeId
+        // будут взяты из комплексного объекта на бэкенде, если не переданы
+        ...(customerName.trim() && { customerName: customerName.trim() }),
         totalAmount: parseFloat(totalAmount),
         discount:
           discountType === 'RUBLES'
@@ -431,22 +475,11 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
             : (parseFloat(totalAmount) || 0) * ((parseFloat(discountValue) || 0) / 100),
         advanceAmount: 0,
         ...(directionId && { directionId }),
-        // Если есть комплексный объект, используем его менеджера и офис
-        ...(complexObjectId && complexObject?.managerId
-          ? { managerId: complexObject.managerId }
-          : managerId && { managerId }),
-        ...(complexObjectId && complexObject?.officeId
-          ? { officeId: complexObject.officeId }
-          : officeId && { officeId }),
+        ...(managerId && { managerId }),
+        ...(officeId && { officeId }),
         ...(complexObjectId && { complexObjectId }),
-        // Адрес и телефон из комплексного объекта или из формы
-        ...(complexObjectId && complexObject?.address
-          ? { customerAddress: complexObject.address }
-          : customerAddress.trim() && { customerAddress: customerAddress.trim() }),
-        customerPhone:
-          complexObjectId && complexObject?.customerPhones?.length
-            ? complexObject.customerPhones[0]
-            : customerPhone.trim(),
+        ...(customerAddress.trim() && { customerAddress: customerAddress.trim() }),
+        ...(customerPhone.trim() && { customerPhone: customerPhone.trim() }),
         ...(installationDate && { installationDate }),
         installationDurationDays:
           installationDurationDays.trim() !== '' && parseInt(installationDurationDays, 10) >= 0
@@ -641,7 +674,7 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
         },
       ]);
       setNewPaymentAmount('');
-      showMessage('success', 'Оплата добавлена');
+      showMessage('success', 'Оплата добавлена и отражена в Кассе');
     } catch (err) {
       showMessage('error', err instanceof Error ? err.message : 'Ошибка добавления оплаты');
     }
@@ -864,16 +897,15 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
     return end;
   })();
 
-  if (loading) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.loading}>Загрузка...</div>
-      </div>
-    );
-  }
-
   return (
     <div className={styles.page}>
+      {/* Оверлей загрузки поверх контента */}
+      {loading && (
+        <div className={styles.loadingOverlay}>
+          <div className={styles.loadingSpinner}>Загрузка...</div>
+        </div>
+      )}
+
       <div className={styles.header}>
         <Link href="/admin/crm/contracts" className={styles.backLink}>
           ← К списку договоров
@@ -904,39 +936,42 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
                   type="button"
                   className={`${styles.tab} ${styles.tabInfo} ${activeTab === 'info' ? styles.tabActive : ''}`}
                   onClick={() => setActiveTab('info')}
+                  title="Общая информация объекта"
                 >
-                  <span className={styles.tabDirection}>Общая информация</span>
-                  <span className={styles.tabNumber}>🏠 Объект</span>
+                  🏠
                 </button>
               )}
 
-              {/* Связанные договоры (при создании нового - все) */}
+              {/* Все договоры объекта */}
               {relatedContracts.map((rc) => (
-                <Link
+                <button
                   key={rc.id}
-                  href={`/admin/crm/contracts/${rc.id}`}
-                  className={styles.tab}
-                  onClick={() => setActiveTab('contract')}
+                  type="button"
+                  className={`${styles.tab} ${rc.id === contractId && activeTab === 'contract' ? styles.tabActive : ''}`}
+                  onClick={() => {
+                    if (rc.id === contractId) {
+                      setActiveTab('contract');
+                    } else {
+                      switchToContract(rc.id);
+                    }
+                  }}
+                  title={rc.direction?.name || 'Договор'}
                 >
-                  <span className={styles.tabDirection}>{rc.direction?.name || 'Договор'}</span>
-                  <span className={styles.tabNumber}>№{rc.contractNumber}</span>
-                </Link>
+                  {rc.contractNumber}
+                </button>
               ))}
 
-              {/* Текущий договор (активная вкладка при просмотре договора) */}
-              <button
-                type="button"
-                className={`${styles.tab} ${activeTab === 'contract' ? styles.tabActive : ''}`}
-                onClick={() => setActiveTab('contract')}
-              >
-                <span className={styles.tabDirection}>
-                  {directions.find((d) => d.id === directionId)?.name ||
-                    (contractId ? 'Договор' : 'Новый')}
-                </span>
-                <span className={styles.tabNumber}>
-                  {contractId ? `№${contractNumber}` : 'Новый договор'}
-                </span>
-              </button>
+              {/* Вкладка "Новый договор" - только при создании нового */}
+              {!contractId && (
+                <button
+                  type="button"
+                  className={`${styles.tab} ${activeTab === 'contract' ? styles.tabActive : ''}`}
+                  onClick={() => setActiveTab('contract')}
+                  title="Новый договор"
+                >
+                  +
+                </button>
+              )}
 
               {/* Кнопка добавления нового договора (только для существующих договоров) */}
               {contractId && (
@@ -1597,7 +1632,7 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
                         value={newPaymentForm}
                         onChange={(e) =>
                           setNewPaymentForm(
-                            e.target.value as 'CASH' | 'TERMINAL' | 'QR' | 'INVOICE'
+                            e.target.value as 'CASH' | 'TERMINAL' | 'QR' | 'INVOICE' | 'LC_TRANSFER'
                           )
                         }
                         className={styles.select}
@@ -1620,7 +1655,7 @@ export function ContractFormPage({ contractId }: ContractFormPageProps) {
                       </button>
                     </div>
                     <p className={styles.advancesHint}>
-                      Данные синхронизированы с таблицей «Оплаты по договорам»
+                      Данные синхронизированы с таблицей «Движ. ден. средст»
                     </p>
                   </>
                 )}

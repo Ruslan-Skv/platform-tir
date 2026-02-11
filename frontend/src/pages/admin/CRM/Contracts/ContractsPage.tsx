@@ -1,15 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import {
+  type ComplexObject,
   type Contract,
   type CrmDirection,
   type CrmUser,
   type Office,
+  getComplexObjects,
   getContracts,
   getCrmDirections,
   getCrmUsers,
@@ -173,6 +175,10 @@ export function ContractsPage() {
   const [saveMessageType, setSaveMessageType] = useState<'success' | 'error'>('success');
   const [historyContractId, setHistoryContractId] = useState<string | null>(null);
 
+  // Комплексные объекты и иерархическое отображение
+  const [complexObjects, setComplexObjects] = useState<ComplexObject[]>([]);
+  const [expandedObjects, setExpandedObjects] = useState<Set<string>>(new Set());
+
   // Управление колонками
   const [selectedColumns, setSelectedColumns] = useState<ColumnKey[]>(() => {
     if (typeof window !== 'undefined') {
@@ -232,6 +238,9 @@ export function ContractsPage() {
     getOffices()
       .then(setOffices)
       .catch(() => setOffices([]));
+    getComplexObjects()
+      .then(setComplexObjects)
+      .catch(() => setComplexObjects([]));
   }, []);
 
   // Закрытие dropdown при клике вне
@@ -250,6 +259,54 @@ export function ContractsPage() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showColumnSelector]);
+
+  // Переключение развернутости объекта
+  const toggleObjectExpand = (objectId: string) => {
+    setExpandedObjects((prev) => {
+      const next = new Set(prev);
+      if (next.has(objectId)) {
+        next.delete(objectId);
+      } else {
+        next.add(objectId);
+      }
+      return next;
+    });
+  };
+
+  // Группировка договоров по объектам
+  type GroupedData =
+    | {
+        type: 'object';
+        object: ComplexObject;
+        contracts: Contract[];
+      }
+    | {
+        type: 'contract';
+        contract: Contract;
+      };
+
+  const groupedData: GroupedData[] = (() => {
+    const result: GroupedData[] = [];
+    const usedContractIds = new Set<string>();
+
+    // Сначала добавляем объекты с договорами
+    complexObjects.forEach((obj) => {
+      const objContracts = data.filter((c) => c.complexObjectId === obj.id);
+      if (objContracts.length > 0) {
+        result.push({ type: 'object', object: obj, contracts: objContracts });
+        objContracts.forEach((c) => usedContractIds.add(c.id));
+      }
+    });
+
+    // Затем добавляем договоры без объекта
+    data.forEach((c) => {
+      if (!usedContractIds.has(c.id)) {
+        result.push({ type: 'contract', contract: c });
+      }
+    });
+
+    return result;
+  })();
 
   // Функции управления колонками
   const toggleColumn = (columnKey: ColumnKey) => {
@@ -824,23 +881,255 @@ export function ContractsPage() {
         </label>
       </div>
 
-      <DataTable
-        data={data}
-        columns={columnsWithActions}
-        keyExtractor={(c) => c.id}
-        onRowClick={(c) => router.push(`/admin/crm/contracts/${c.id}`)}
-        selectable
-        selectedIds={selectedIds}
-        onSelectionChange={setSelectedIds}
-        loading={loading}
-        emptyMessage="Нет договоров"
-        pagination={{
-          page,
-          limit,
-          total,
-          onPageChange: setPage,
-        }}
-      />
+      {/* Иерархическая таблица объектов и договоров */}
+      <div className={styles.tableWrapper}>
+        {loading ? (
+          <div className={styles.loading}>Загрузка...</div>
+        ) : groupedData.length === 0 ? (
+          <div className={styles.empty}>Нет объектов</div>
+        ) : (
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th className={styles.expandColumn}></th>
+                <th className={styles.checkboxColumn}>
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.length === data.length && data.length > 0}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedIds(data.map((c) => c.id));
+                      } else {
+                        setSelectedIds([]);
+                      }
+                    }}
+                  />
+                </th>
+                {visibleColumns.map((col) => (
+                  <th key={col.key}>{col.title}</th>
+                ))}
+                <th className={styles.actionsColumn}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {groupedData.map((item) => {
+                if (item.type === 'object') {
+                  const isExpanded = expandedObjects.has(item.object.id);
+                  const hasMultiple = item.contracts.length > 1;
+                  return (
+                    <React.Fragment key={`obj-${item.object.id}`}>
+                      {/* Строка объекта */}
+                      <tr
+                        className={`${styles.objectRow} ${isExpanded ? styles.expanded : ''}`}
+                        onClick={() => hasMultiple && toggleObjectExpand(item.object.id)}
+                      >
+                        <td className={styles.expandCell}>
+                          {hasMultiple && (
+                            <button
+                              className={styles.expandButton}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleObjectExpand(item.object.id);
+                              }}
+                            >
+                              {isExpanded ? '−' : '+'}
+                            </button>
+                          )}
+                        </td>
+                        <td className={styles.checkboxCell}>
+                          <input
+                            type="checkbox"
+                            checked={item.contracts.every((c) => selectedIds.includes(c.id))}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              if (e.target.checked) {
+                                setSelectedIds((prev) => [
+                                  ...prev,
+                                  ...item.contracts
+                                    .map((c) => c.id)
+                                    .filter((id) => !prev.includes(id)),
+                                ]);
+                              } else {
+                                setSelectedIds((prev) =>
+                                  prev.filter((id) => !item.contracts.some((c) => c.id === id))
+                                );
+                              }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </td>
+                        <td colSpan={visibleColumns.length} className={styles.objectNameCell}>
+                          <div className={styles.objectInfo}>
+                            <span className={styles.objectIcon}>🏠</span>
+                            <span className={styles.objectName}>{item.object.name}</span>
+                            <span className={styles.objectMeta}>
+                              {item.object.customerName && <span>{item.object.customerName}</span>}
+                              <span className={styles.contractCount}>
+                                {item.contracts.length} договор
+                                {item.contracts.length === 1
+                                  ? ''
+                                  : item.contracts.length < 5
+                                    ? 'а'
+                                    : 'ов'}
+                              </span>
+                            </span>
+                          </div>
+                        </td>
+                        <td className={styles.actionsCell}>
+                          <button
+                            className={styles.actionButton}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/admin/crm/contracts/${item.contracts[0].id}`);
+                            }}
+                            title="Открыть объект"
+                          >
+                            ➜
+                          </button>
+                        </td>
+                      </tr>
+                      {/* Вложенные договоры */}
+                      {(isExpanded || !hasMultiple) &&
+                        item.contracts.map((c, idx) => (
+                          <tr
+                            key={c.id}
+                            className={`${styles.contractRow} ${hasMultiple ? styles.nested : ''} ${selectedIds.includes(c.id) ? styles.selected : ''}`}
+                            onClick={() => router.push(`/admin/crm/contracts/${c.id}`)}
+                          >
+                            <td className={styles.expandCell}>
+                              {hasMultiple && (
+                                <span className={styles.nestLine}>
+                                  {idx === item.contracts.length - 1 ? '└' : '├'}
+                                </span>
+                              )}
+                            </td>
+                            <td className={styles.checkboxCell}>
+                              <input
+                                type="checkbox"
+                                checked={selectedIds.includes(c.id)}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  if (e.target.checked) {
+                                    setSelectedIds((prev) => [...prev, c.id]);
+                                  } else {
+                                    setSelectedIds((prev) => prev.filter((id) => id !== c.id));
+                                  }
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </td>
+                            {visibleColumns.map((col) => (
+                              <td key={col.key}>{col.render(c)}</td>
+                            ))}
+                            <td className={styles.actionsCell}>
+                              <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
+                                {editMode && hasEdits(c.id) && (
+                                  <span className={styles.editedIndicator} title="Есть изменения">
+                                    ●
+                                  </span>
+                                )}
+                                <button
+                                  className={styles.actionButton}
+                                  onClick={() => setHistoryContractId(c.id)}
+                                  title="История изменений"
+                                >
+                                  📋
+                                </button>
+                                <button
+                                  className={styles.actionButton}
+                                  onClick={() => router.push(`/admin/crm/contracts/${c.id}`)}
+                                  title="Редактировать"
+                                >
+                                  ✏️
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                    </React.Fragment>
+                  );
+                } else {
+                  // Одиночный договор без объекта
+                  const c = item.contract;
+                  return (
+                    <tr
+                      key={c.id}
+                      className={`${styles.contractRow} ${selectedIds.includes(c.id) ? styles.selected : ''}`}
+                      onClick={() => router.push(`/admin/crm/contracts/${c.id}`)}
+                    >
+                      <td className={styles.expandCell}></td>
+                      <td className={styles.checkboxCell}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(c.id)}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            if (e.target.checked) {
+                              setSelectedIds((prev) => [...prev, c.id]);
+                            } else {
+                              setSelectedIds((prev) => prev.filter((id) => id !== c.id));
+                            }
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </td>
+                      {visibleColumns.map((col) => (
+                        <td key={col.key}>{col.render(c)}</td>
+                      ))}
+                      <td className={styles.actionsCell}>
+                        <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
+                          {editMode && hasEdits(c.id) && (
+                            <span className={styles.editedIndicator} title="Есть изменения">
+                              ●
+                            </span>
+                          )}
+                          <button
+                            className={styles.actionButton}
+                            onClick={() => setHistoryContractId(c.id)}
+                            title="История изменений"
+                          >
+                            📋
+                          </button>
+                          <button
+                            className={styles.actionButton}
+                            onClick={() => router.push(`/admin/crm/contracts/${c.id}`)}
+                            title="Редактировать"
+                          >
+                            ✏️
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Пагинация */}
+      {total > limit && (
+        <div className={styles.pagination}>
+          <button
+            disabled={page === 1}
+            onClick={() => setPage(page - 1)}
+            className={styles.paginationButton}
+          >
+            ← Назад
+          </button>
+          <span className={styles.paginationInfo}>
+            Страница {page} из {Math.ceil(total / limit)}
+          </span>
+          <button
+            disabled={page >= Math.ceil(total / limit)}
+            onClick={() => setPage(page + 1)}
+            className={styles.paginationButton}
+          >
+            Вперёд →
+          </button>
+        </div>
+      )}
 
       {historyContractId && (
         <ContractHistoryModal

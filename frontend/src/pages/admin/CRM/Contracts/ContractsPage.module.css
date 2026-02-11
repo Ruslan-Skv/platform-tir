@@ -603,3 +603,294 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .orderButton:hover:not(:disabled) {
   background: #4b5563;
 }
+
+/* --- Иерархическая таблица объектов --- */
+.tableWrapper {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.table th {
+  background: #f9fafb;
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+
+.expandColumn {
+  width: 32px;
+}
+
+.checkboxColumn {
+  width: 40px;
+}
+
+.actionsColumn {
+  width: 80px;
+}
+
+.expandCell {
+  text-align: center;
+}
+
+.expandButton {
+  width: 20px;
+  height: 20px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.expandButton:hover {
+  background: #f3f4f6;
+  border-color: #6366f1;
+  color: #6366f1;
+}
+
+.checkboxCell {
+  text-align: center;
+}
+
+.actionsCell {
+  text-align: right;
+}
+
+/* Строка объекта */
+.objectRow {
+  background: #f0f4ff;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.objectRow:hover {
+  background: #e0e7ff;
+}
+
+.objectRow.expanded {
+  background: #dbeafe;
+}
+
+.objectNameCell {
+  padding: 10px 12px !important;
+}
+
+.objectInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.objectIcon {
+  font-size: 1.1rem;
+}
+
+.objectName {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.objectMeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.contractCount {
+  background: #e0e7ff;
+  color: #4f46e5;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+/* Строка договора */
+.contractRow {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.contractRow:hover {
+  background: #f9fafb;
+}
+
+.contractRow.selected {
+  background: #eff6ff;
+}
+
+.contractRow.nested {
+  background: #fafbfc;
+}
+
+.contractRow.nested:hover {
+  background: #f3f4f6;
+}
+
+.nestLine {
+  color: #d1d5db;
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.loading,
+.empty {
+  padding: 40px;
+  text-align: center;
+  color: #6b7280;
+}
+
+/* Пагинация */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.paginationButton {
+  padding: 6px 12px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.paginationButton:hover:not(:disabled) {
+  background: #f3f4f6;
+  border-color: #6366f1;
+}
+
+.paginationButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.paginationInfo {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+/* Dark theme для иерархической таблицы */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tableWrapper {
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .table th {
+  background: #1f2937;
+  color: #e5e7eb;
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .table td {
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .expandButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .expandButton:hover {
+  background: #4b5563;
+  border-color: #6366f1;
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .objectRow {
+  background: rgb(99 102 241 / 0.1);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .objectRow:hover {
+  background: rgb(99 102 241 / 0.15);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .objectRow.expanded {
+  background: rgb(99 102 241 / 0.2);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .objectName {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .objectMeta {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCount {
+  background: rgb(99 102 241 / 0.2);
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractRow:hover {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractRow.selected {
+  background: rgb(99 102 241 / 0.1);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractRow.nested {
+  background: #1a1f2e;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractRow.nested:hover {
+  background: #242b3d;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .nestLine {
+  color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loading,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .empty {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pagination {
+  border-top-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paginationButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paginationButton:hover:not(:disabled) {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paginationInfo {
+  color: #9ca3af;
+}
