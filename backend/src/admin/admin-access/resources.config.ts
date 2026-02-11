@@ -25,7 +25,6 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   { id: 'admin.forms', label: 'Заявки с форм', path: '/admin/forms' },
   { id: 'admin.support', label: 'Чат поддержки', path: '/admin/support' },
   { id: 'admin.crm.funnel', label: 'Воронка продаж', path: '/admin/crm/funnel' },
-  { id: 'admin.crm.deals', label: 'Сделки', path: '/admin/crm/deals' },
   { id: 'admin.crm.tasks', label: 'Задачи', path: '/admin/crm/tasks' },
   { id: 'admin.content', label: 'Контент', path: '/admin/content' },
   { id: 'admin.content.home', label: 'Главная страница', path: '/admin/content/home' },

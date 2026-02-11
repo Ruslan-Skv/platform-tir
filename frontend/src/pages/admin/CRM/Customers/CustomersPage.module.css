@@ -68,6 +68,28 @@
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
+.searchButton {
+  padding: 10px 20px;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.searchButton:hover {
+  background: #4f46e5;
+}
+
+.errorText {
+  color: #dc2626;
+  margin-bottom: 16px;
+  font-size: 0.95rem;
+}
+
 .select {
   padding: 10px 16px;
   border: 1px solid #e5e7eb;

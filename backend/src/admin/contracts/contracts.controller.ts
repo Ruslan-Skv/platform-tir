@@ -80,6 +80,11 @@ export class ContractsController {
     });
   }
 
+  @Get('customers')
+  getCustomersFromContracts(@Query('search') search?: string) {
+    return this.contractsService.getCustomersFromContracts(search ?? undefined);
+  }
+
   @Get(':id/history')
   getHistory(@Param('id') id: string) {
     return this.contractsService.getHistory(id);

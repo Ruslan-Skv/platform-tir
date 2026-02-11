@@ -495,6 +495,28 @@ export async function deleteContract(id: string): Promise<void> {
   if (!res.ok) throw new Error('Не удалось удалить договор');
 }
 
+export interface ContractCustomer {
+  customerName: string;
+  customerPhone: string;
+  customerAddress: string | null;
+  contractCount: number;
+  totalAmount: number;
+  lastContractDate: string | null;
+  lastContractId: string | null;
+  lastContractNumber: string | null;
+  manager: { id: string; firstName: string | null; lastName: string | null } | null;
+}
+
+export async function getContractCustomers(
+  search?: string
+): Promise<{ customers: ContractCustomer[] }> {
+  const url = new URL(`${API_URL}/admin/contracts/customers`);
+  if (search?.trim()) url.searchParams.set('search', search.trim());
+  const res = await fetch(String(url), { headers: getAdminAuthHeaders() });
+  if (!res.ok) throw new Error('Не удалось загрузить клиентов');
+  return res.json();
+}
+
 export interface ContractHistoryEntry {
   id: string;
   action: 'UPDATE' | 'ROLLBACK';

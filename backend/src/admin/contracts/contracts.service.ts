@@ -203,6 +203,101 @@ export class ContractsService {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
+  async getCustomersFromContracts(search?: string) {
+    const where: Prisma.ContractWhereInput = {
+      OR: [
+        { customerName: { not: null, notIn: [''] } },
+        { customerPhone: { not: null, notIn: [''] } },
+      ],
+    };
+    if (search?.trim()) {
+      const term = search.trim();
+      where.AND = [
+        {
+          OR: [
+            { customerName: { contains: term, mode: 'insensitive' } },
+            { customerPhone: { contains: term } },
+            { customerAddress: { contains: term, mode: 'insensitive' } },
+          ],
+        },
+      ];
+    }
+    const contracts = await this.prisma.contract.findMany({
+      where,
+      select: {
+        id: true,
+        customerName: true,
+        customerPhone: true,
+        customerAddress: true,
+        totalAmount: true,
+        contractDate: true,
+        contractNumber: true,
+        manager: { select: { id: true, firstName: true, lastName: true } },
+      },
+      orderBy: { contractDate: 'desc' },
+    });
+
+    const key = (name: string | null, phone: string | null) =>
+      `${(name ?? '').trim()}|${(phone ?? '').trim()}`;
+
+    const map = new Map<
+      string,
+      {
+        customerName: string | null;
+        customerPhone: string | null;
+        customerAddress: string | null;
+        contractCount: number;
+        totalAmount: number;
+        lastContractDate: Date | null;
+        lastContractId: string | null;
+        lastContractNumber: string | null;
+        manager: { id: string; firstName: string | null; lastName: string | null } | null;
+      }
+    >();
+
+    for (const c of contracts) {
+      const k = key(c.customerName, c.customerPhone);
+      const existing = map.get(k);
+      const totalAmount = Number(c.totalAmount ?? 0);
+      if (!existing) {
+        map.set(k, {
+          customerName: c.customerName,
+          customerPhone: c.customerPhone,
+          customerAddress: c.customerAddress,
+          contractCount: 1,
+          totalAmount,
+          lastContractDate: c.contractDate,
+          lastContractId: c.id,
+          lastContractNumber: c.contractNumber,
+          manager: c.manager,
+        });
+      } else {
+        existing.contractCount += 1;
+        existing.totalAmount += totalAmount;
+      }
+    }
+
+    const customers = Array.from(map.values()).map((v) => ({
+      customerName: v.customerName ?? '—',
+      customerPhone: v.customerPhone ?? '—',
+      customerAddress: v.customerAddress ?? null,
+      contractCount: v.contractCount,
+      totalAmount: v.totalAmount,
+      lastContractDate: v.lastContractDate?.toISOString().slice(0, 10) ?? null,
+      lastContractId: v.lastContractId,
+      lastContractNumber: v.lastContractNumber,
+      manager: v.manager
+        ? {
+            id: v.manager.id,
+            firstName: v.manager.firstName,
+            lastName: v.manager.lastName,
+          }
+        : null,
+    }));
+
+    return { customers };
+  }
+
   async findOne(id: string) {
     const c = await this.prisma.contract.findUnique({
       where: { id },
