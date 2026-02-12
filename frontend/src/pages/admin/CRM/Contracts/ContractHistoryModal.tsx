@@ -38,7 +38,7 @@ const FIELD_LABELS: Record<string, string> = {
   preferredExecutorId: 'Предпочитаемый исполнитель',
   measurementId: 'Замер',
   actWorkStartDate: 'Дата начала работ',
-  actWorkEndDate: 'Дата окончания работ',
+  actWorkEndDate: 'Дата сдачи работ',
   goodsTransferDate: 'Дата передачи товара',
   installers: 'Монтажники',
 };

@@ -73,6 +73,12 @@ const PAYMENT_FORM_LABELS: Record<string, string> = {
   LC_TRANSFER: 'Переводы на ЛК',
 };
 
+/** Максимальное количество доп. соглашений (д/с) по одному договору */
+const MAX_AMENDMENTS_PER_CONTRACT = 5;
+
+/** Максимальное количество оплат по одному договору (предоплата, част. оплата, ок. расчёт, оплата д/с) */
+const MAX_PAYMENTS_PER_CONTRACT = 7;
+
 function formatDateForInput(s: string | null | undefined): string {
   if (!s) return '';
   return new Date(s).toISOString().slice(0, 10);
@@ -489,7 +495,11 @@ export function ContractFormPage({ contractId: initialContractId }: ContractForm
             : null,
         ...(deliveryDate && { deliveryDate }),
         ...(actWorkStartDate && { actWorkStartDate }),
-        ...(actWorkEndDate && { actWorkEndDate }),
+        ...(contractId
+          ? { actWorkEndDate: actWorkEndDate || null }
+          : actWorkEndDate
+            ? { actWorkEndDate }
+            : {}),
         ...(contractDurationDays.trim() !== ''
           ? (() => {
               const n = parseInt(contractDurationDays, 10);
@@ -641,10 +651,11 @@ export function ContractFormPage({ contractId: initialContractId }: ContractForm
   const canAddFinal = finalCount < 1;
   const isAmendmentPayment = newPaymentType.startsWith('AMENDMENT_');
   const canAddPayment =
-    (newPaymentType === 'PREPAYMENT' && canAddPrepayment) ||
-    (newPaymentType === 'ADVANCE' && canAddAdvance) ||
-    (newPaymentType === 'FINAL' && canAddFinal) ||
-    isAmendmentPayment;
+    payments.length < MAX_PAYMENTS_PER_CONTRACT &&
+    ((newPaymentType === 'PREPAYMENT' && canAddPrepayment) ||
+      (newPaymentType === 'ADVANCE' && canAddAdvance) ||
+      (newPaymentType === 'FINAL' && canAddFinal) ||
+      isAmendmentPayment);
 
   const handleAddPayment = async () => {
     if (!contractId || !canAddPayment) return;
@@ -1571,7 +1582,16 @@ export function ContractFormPage({ contractId: initialContractId }: ContractForm
             )}
 
             <div className={`${styles.row} ${styles.rowFull}`}>
-              <label className={`${styles.label} ${styles.labelBold}`}>Оплаты</label>
+              <label className={`${styles.label} ${styles.labelBold}`}>
+                Оплаты
+                {payments.length >= MAX_PAYMENTS_PER_CONTRACT && (
+                  <span className={styles.durationHint}>
+                    {' '}
+                    (макс. {MAX_PAYMENTS_PER_CONTRACT} оплат: предоплата, част. оплата, ок. расчёт,
+                    оплата д/с)
+                  </span>
+                )}
+              </label>
               <div className={styles.advancesBlock}>
                 <div className={styles.advancesSummary}>
                   {amendments.length > 0 && (
@@ -1615,68 +1635,80 @@ export function ContractFormPage({ contractId: initialContractId }: ContractForm
                         </div>
                       ))}
                     </div>
-                    <div className={styles.advanceAdd}>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="Сумма"
-                        value={newPaymentAmount}
-                        onChange={(e) => setNewPaymentAmount(e.target.value)}
-                        className={styles.input}
-                      />
-                      <input
-                        type="date"
-                        value={newPaymentDate}
-                        onChange={(e) => setNewPaymentDate(e.target.value)}
-                        className={styles.input}
-                      />
-                      <select
-                        value={newPaymentType}
-                        onChange={(e) => setNewPaymentType(e.target.value)}
-                        className={styles.select}
-                      >
-                        <option value="PREPAYMENT" disabled={!canAddPrepayment}>
-                          Предоплата {!canAddPrepayment && '(уже есть)'}
-                        </option>
-                        <option value="ADVANCE" disabled={!canAddAdvance}>
-                          Частичная оплата ({advanceCount}/5)
-                        </option>
-                        <option value="FINAL" disabled={!canAddFinal}>
-                          Окончательный расчёт {!canAddFinal && '(уже есть)'}
-                        </option>
-                        {amendments.map((a, idx) => (
-                          <option key={a.id} value={`AMENDMENT_${a.number ?? idx + 1}`}>
-                            Оплата доп. соглашения №{a.number ?? idx + 1}
+                    {payments.length < MAX_PAYMENTS_PER_CONTRACT ? (
+                      <div className={styles.advanceAdd}>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="Сумма"
+                          value={newPaymentAmount}
+                          onChange={(e) => setNewPaymentAmount(e.target.value)}
+                          className={styles.input}
+                        />
+                        <input
+                          type="date"
+                          value={newPaymentDate}
+                          onChange={(e) => setNewPaymentDate(e.target.value)}
+                          className={styles.input}
+                        />
+                        <select
+                          value={newPaymentType}
+                          onChange={(e) => setNewPaymentType(e.target.value)}
+                          className={styles.select}
+                        >
+                          <option value="PREPAYMENT" disabled={!canAddPrepayment}>
+                            Предоплата {!canAddPrepayment && '(уже есть)'}
                           </option>
-                        ))}
-                      </select>
-                      <select
-                        value={newPaymentForm}
-                        onChange={(e) =>
-                          setNewPaymentForm(
-                            e.target.value as 'CASH' | 'TERMINAL' | 'QR' | 'INVOICE' | 'LC_TRANSFER'
-                          )
-                        }
-                        className={styles.select}
-                      >
-                        {PAYMENT_FORM_OPTIONS.map((o) => (
-                          <option key={o.value} value={o.value}>
-                            {o.label}
+                          <option value="ADVANCE" disabled={!canAddAdvance}>
+                            Частичная оплата ({advanceCount}/5)
                           </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        className={styles.advanceAddBtn}
-                        onClick={handleAddPayment}
-                        disabled={
-                          !canAddPayment || !newPaymentAmount || parseFloat(newPaymentAmount) <= 0
-                        }
-                      >
-                        + Добавить оплату
-                      </button>
-                    </div>
+                          <option value="FINAL" disabled={!canAddFinal}>
+                            Окончательный расчёт {!canAddFinal && '(уже есть)'}
+                          </option>
+                          {amendments.map((a, idx) => (
+                            <option key={a.id} value={`AMENDMENT_${a.number ?? idx + 1}`}>
+                              Оплата доп. соглашения №{a.number ?? idx + 1}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          value={newPaymentForm}
+                          onChange={(e) =>
+                            setNewPaymentForm(
+                              e.target.value as
+                                | 'CASH'
+                                | 'TERMINAL'
+                                | 'QR'
+                                | 'INVOICE'
+                                | 'LC_TRANSFER'
+                            )
+                          }
+                          className={styles.select}
+                        >
+                          {PAYMENT_FORM_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>
+                              {o.label}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          className={styles.advanceAddBtn}
+                          onClick={handleAddPayment}
+                          disabled={
+                            !canAddPayment || !newPaymentAmount || parseFloat(newPaymentAmount) <= 0
+                          }
+                        >
+                          + Добавить оплату
+                        </button>
+                      </div>
+                    ) : (
+                      <p className={styles.durationHint}>
+                        Достигнут лимит: не более {MAX_PAYMENTS_PER_CONTRACT} оплат по договору
+                        (предоплата, частичная оплата, окончательный расчёт, оплата д/с).
+                      </p>
+                    )}
                     <p className={styles.advancesHint}>
                       Данные синхронизированы с таблицей «Движ. ден. средст»
                     </p>
@@ -1694,6 +1726,12 @@ export function ContractFormPage({ contractId: initialContractId }: ContractForm
               <div className={`${styles.row} ${styles.rowFull}`}>
                 <label className={`${styles.label} ${styles.labelBold}`}>
                   Дополнительные соглашения
+                  {amendments.length >= MAX_AMENDMENTS_PER_CONTRACT && (
+                    <span className={styles.durationHint}>
+                      {' '}
+                      (макс. {MAX_AMENDMENTS_PER_CONTRACT} д/с по договору)
+                    </span>
+                  )}
                 </label>
                 <div className={styles.advancesBlock}>
                   <div className={styles.advancesList}>
@@ -1766,7 +1804,7 @@ export function ContractFormPage({ contractId: initialContractId }: ContractForm
                       </div>
                     ))}
                   </div>
-                  {amendments.length < 5 && (
+                  {amendments.length < MAX_AMENDMENTS_PER_CONTRACT && (
                     <div className={styles.advanceAdd}>
                       <div>
                         <label className={styles.advanceAddLabel}>
@@ -1971,16 +2009,29 @@ export function ContractFormPage({ contractId: initialContractId }: ContractForm
                 </div>
               </div>
               <div className={styles.actDateCol}>
-                <label className={styles.label}>Дата окончания работ</label>
-                <input
-                  type="date"
-                  value={actWorkEndDate}
-                  onChange={(e) => setActWorkEndDate(e.target.value)}
-                  className={styles.input}
-                />
+                <label className={styles.label}>Дата сдачи работ</label>
+                <div className={styles.dateInputWithClear}>
+                  <input
+                    type="date"
+                    value={actWorkEndDate}
+                    onChange={(e) => setActWorkEndDate(e.target.value)}
+                    className={styles.input}
+                  />
+                  {actWorkEndDate && (
+                    <button
+                      type="button"
+                      className={styles.dateClearBtn}
+                      onClick={() => setActWorkEndDate('')}
+                      title="Удалить дату"
+                      aria-label="Удалить дату"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
               </div>
               <div className={styles.actPhotosCol}>
-                <label className={styles.label}>Фото акта окончания работ</label>
+                <label className={styles.label}>Фото акта сдачи работ</label>
                 <div className={styles.actImagesBlock}>
                   <div className={styles.actImagesList}>
                     {actWorkEndImages.map((url) => (

@@ -44,6 +44,9 @@ const CONTRACT_SNAPSHOT_FIELDS = {
   actWorkEndImages: true,
 } as const;
 
+/** Максимальное количество доп. соглашений (д/с) по одному договору */
+const MAX_AMENDMENTS_PER_CONTRACT = 5;
+
 @Injectable()
 export class ContractsService {
   constructor(private prisma: PrismaService) {}
@@ -142,7 +145,10 @@ export class ContractsService {
       amendments: {
         orderBy: { number: { sort: 'asc' as const, nulls: 'first' as const } },
       },
-      payments: { select: { id: true, amount: true } },
+      payments: {
+        select: { id: true, amount: true, paymentDate: true },
+        orderBy: { paymentDate: 'asc' as const },
+      },
     };
   }
 
@@ -585,8 +591,10 @@ export class ContractsService {
   async addAmendment(contractId: string, dto: CreateContractAmendmentDto) {
     const contract = await this.findOne(contractId);
     const count = contract.amendments.length;
-    if (count >= 5) {
-      throw new BadRequestException('Maximum 5 amendments per contract');
+    if (count >= MAX_AMENDMENTS_PER_CONTRACT) {
+      throw new BadRequestException(
+        `К одному договору можно привязать не более ${MAX_AMENDMENTS_PER_CONTRACT} доп. соглашений (д/с).`,
+      );
     }
     const amendmentsWithNumber = contract.amendments as Array<{ number?: number | null }>;
     const maxNumber =

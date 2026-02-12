@@ -1,13 +1,24 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PaymentForm, PaymentType, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateContractPaymentDto } from './dto/create-contract-payment.dto';
+
+/** Максимальное количество оплат по одному договору (предоплата, част. оплата, ок. расчёт, оплата д/с) */
+const MAX_PAYMENTS_PER_CONTRACT = 7;
 
 @Injectable()
 export class ContractPaymentsService {
   constructor(private prisma: PrismaService) {}
 
-  create(dto: CreateContractPaymentDto) {
+  async create(dto: CreateContractPaymentDto) {
+    const count = await this.prisma.contractPayment.count({
+      where: { contractId: dto.contractId },
+    });
+    if (count >= MAX_PAYMENTS_PER_CONTRACT) {
+      throw new BadRequestException(
+        `По договору допускается не более ${MAX_PAYMENTS_PER_CONTRACT} оплат (предоплата, частичная оплата, окончательный расчёт, оплата д/с).`,
+      );
+    }
     return this.prisma.contractPayment.create({
       data: {
         contractId: dto.contractId,

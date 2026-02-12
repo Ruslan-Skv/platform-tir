@@ -387,6 +387,37 @@
   min-width: 0;
 }
 
+.dateInputWithClear {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dateInputWithClear .input {
+  flex: 1;
+  min-width: 0;
+}
+
+.dateClearBtn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.dateClearBtn:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
 .actImagesBlock {
   display: flex;
   flex-direction: column;
@@ -653,6 +684,18 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input::placeholder,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .textarea::placeholder {
   color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dateClearBtn {
+  background: #374151;
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dateClearBtn:hover {
+  background: rgb(239 68 68 / 0.2);
+  border-color: #dc2626;
+  color: #fca5a5;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input:focus,
