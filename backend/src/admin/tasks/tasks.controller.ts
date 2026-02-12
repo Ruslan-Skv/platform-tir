@@ -62,14 +62,32 @@ export class TasksController {
     return this.tasksService.getStats(assigneeId);
   }
 
+  @Get(':id/history')
+  getHistory(@Param('id') id: string) {
+    return this.tasksService.getHistory(id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.tasksService.findOne(id);
   }
 
+  @Post(':id/rollback/:historyId')
+  rollback(
+    @Param('id') id: string,
+    @Param('historyId') historyId: string,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.tasksService.rollback(id, historyId, req.user.id);
+  }
+
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTaskDto: UpdateTaskDto) {
-    return this.tasksService.update(id, updateTaskDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateTaskDto: UpdateTaskDto,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.tasksService.update(id, updateTaskDto, req.user?.id);
   }
 
   @Patch(':id/complete')

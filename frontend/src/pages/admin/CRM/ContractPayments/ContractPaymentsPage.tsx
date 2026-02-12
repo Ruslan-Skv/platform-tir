@@ -10,8 +10,6 @@ import {
   type OfficeOtherExpenseItem,
   createOfficeIncassation,
   createOfficeOtherExpense,
-  deleteOfficeIncassation,
-  deleteOfficeOtherExpense,
   getContractPayments,
   getOfficeCashSummary,
   getOfficeIncassations,
@@ -102,6 +100,7 @@ export function ContractPaymentsPage() {
   const [incassationDate, setIncassationDate] = useState(() =>
     new Date().toISOString().slice(0, 10)
   );
+  const [incassationIncassator, setIncassationIncassator] = useState('');
   const [incassationNotes, setIncassationNotes] = useState('Инкассация за неделю');
   const [incassationSaving, setIncassationSaving] = useState(false);
 
@@ -238,16 +237,25 @@ export function ContractPaymentsPage() {
         officeId: selectedOfficeId,
         amount,
         incassationDate: incassationDate,
+        incassator: incassationIncassator.trim() || undefined,
         notes: incassationNotes.trim() || undefined,
       });
       setIncassationModalOpen(false);
       setIncassationAmount('');
+      setIncassationIncassator('');
       setIncassationNotes('Инкассация за неделю');
       loadOfficeData();
     } finally {
       setIncassationSaving(false);
     }
-  }, [selectedOfficeId, incassationAmount, incassationDate, incassationNotes, loadOfficeData]);
+  }, [
+    selectedOfficeId,
+    incassationAmount,
+    incassationDate,
+    incassationIncassator,
+    incassationNotes,
+    loadOfficeData,
+  ]);
 
   const isAllOffices = selectedOfficeId === ALL_OFFICES_ID;
   const getOfficeName = (officeId: string) => offices.find((o) => o.id === officeId)?.name ?? '—';
@@ -537,7 +545,6 @@ export function ContractPaymentsPage() {
                     <th>Дата</th>
                     <th>Сумма</th>
                     <th>Назначение</th>
-                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -547,20 +554,6 @@ export function ContractPaymentsPage() {
                       <td>{formatDate(e.expenseDate)}</td>
                       <td>{formatMoney(e.amount)}</td>
                       <td>{e.description ?? '—'}</td>
-                      <td>
-                        <button
-                          type="button"
-                          className={styles.smallBtn}
-                          onClick={async () => {
-                            if (confirm('Удалить запись?')) {
-                              await deleteOfficeOtherExpense(e.id);
-                              loadOfficeData();
-                            }
-                          }}
-                        >
-                          Удалить
-                        </button>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -577,7 +570,7 @@ export function ContractPaymentsPage() {
                   className={styles.addBtn}
                   onClick={() => setIncassationModalOpen(true)}
                 >
-                  Зафиксировать инкассацию
+                  Инкассация
                 </button>
               )}
             </div>
@@ -590,8 +583,8 @@ export function ContractPaymentsPage() {
                     {isAllOffices && <th>Офис</th>}
                     <th>Дата</th>
                     <th>Сумма</th>
+                    <th>Инкассатор</th>
                     <th>Примечание</th>
-                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -600,21 +593,8 @@ export function ContractPaymentsPage() {
                       {isAllOffices && <td>{i.office?.name ?? getOfficeName(i.officeId)}</td>}
                       <td>{formatDate(i.incassationDate)}</td>
                       <td>{formatMoney(i.amount)}</td>
+                      <td>{i.incassator ?? '—'}</td>
                       <td>{i.notes ?? '—'}</td>
-                      <td>
-                        <button
-                          type="button"
-                          className={styles.smallBtn}
-                          onClick={async () => {
-                            if (confirm('Удалить запись об инкассации?')) {
-                              await deleteOfficeIncassation(i.id);
-                              loadOfficeData();
-                            }
-                          }}
-                        >
-                          Удалить
-                        </button>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -683,7 +663,7 @@ export function ContractPaymentsPage() {
       <Modal
         isOpen={incassationModalOpen}
         onClose={() => !incassationSaving && setIncassationModalOpen(false)}
-        title="Зафиксировать инкассацию"
+        title="Инкассация"
       >
         <div className={styles.form}>
           <p className={styles.formHint}>
@@ -706,6 +686,16 @@ export function ContractPaymentsPage() {
               className={styles.input}
               value={incassationDate}
               onChange={(e) => setIncassationDate(e.target.value)}
+            />
+          </label>
+          <label>
+            Инкассатор
+            <input
+              type="text"
+              className={styles.input}
+              value={incassationIncassator}
+              onChange={(e) => setIncassationIncassator(e.target.value)}
+              placeholder="ФИО или данные того, кто произвёл инкассацию"
             />
           </label>
           <label>

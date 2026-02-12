@@ -411,6 +411,180 @@
   cursor: not-allowed;
 }
 
+/* Dark theme */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .count {
+  background: #374151;
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .syncNote {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .officeSelect {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .periodLabel {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .periodInput {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .filterInput {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .filterInput::placeholder {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .filterSelectPlaceholder {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .filteredSum {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .summaryCard {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .summaryTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .summaryLabel {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .summaryValue {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .summaryValueHighlight {
+  color: #34d399;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .emptyText {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .simpleTable th,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .simpleTable td {
+  border-bottom-color: #374151;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .simpleTable th {
+  color: #9ca3af;
+  background: #1f2937;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .smallBtn {
+  color: #fca5a5;
+  border-color: #dc2626;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .smallBtn:hover {
+  background: rgb(239 68 68 / 0.2);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .form label {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .form .input {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formHint {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dateInput {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editableCell:hover {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inlineInput {
+  background: #374151;
+  border-color: #6366f1;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addForm label {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addForm .input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addForm .select {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addError {
+  background: rgb(239 68 68 / 0.2);
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractList {
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractItem,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractItemActive {
+  background: #1f2937;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractItem:hover {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractItemActive {
+  background: #4338ca;
+  color: #e0e7ff;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelBtn {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelBtn:hover:not(:disabled) {
+  background: #4b5563;
+}
+
 @media (max-width: 768px) {
   .filters {
     flex-direction: column;

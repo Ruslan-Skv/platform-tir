@@ -1,0 +1,391 @@
+.page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.count {
+  background: #e5e7eb;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.addButton {
+  padding: 8px 16px;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.addButton:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.addButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.statCard {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.statLabel {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.statCard.overdue .statValue {
+  color: #dc2626;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.filterInput,
+.filterSelect {
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.filterSelect {
+  min-width: 140px;
+  background: #fff;
+}
+
+.filterLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.message {
+  padding: 10px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+.messageSuccess {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.messageError {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.badgePENDING {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+.badgeIN_PROGRESS {
+  background: #fef3c7;
+  color: #92400e;
+}
+.badgeCOMPLETED {
+  background: #d1fae5;
+  color: #065f46;
+}
+.badgeCANCELLED {
+  background: #e5e7eb;
+  color: #6b7280;
+}
+.badgeLOW {
+  background: #f3f4f6;
+  color: #374151;
+}
+.badgeMEDIUM {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.badgeHIGH {
+  background: #fef3c7;
+  color: #92400e;
+}
+.badgeURGENT {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.rowActions {
+  display: flex;
+  gap: 6px;
+}
+
+.smallBtn {
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  color: #374151;
+}
+
+.smallBtn:hover {
+  background: #f3f4f6;
+}
+
+.smallBtn.primary {
+  background: #6366f1;
+  color: #fff;
+  border-color: #6366f1;
+}
+
+.smallBtn.primary:hover {
+  background: #4f46e5;
+}
+
+.smallBtn.danger {
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+.smallBtn.danger:hover {
+  background: #fee2e2;
+}
+
+.form {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formRow label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.formInput,
+.formSelect,
+.formTextarea {
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.formTextarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.formActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 8px;
+}
+
+.cancelBtn {
+  padding: 8px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.submitBtn {
+  padding: 8px 16px;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.submitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.taskTitle {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.taskDescription {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+/* Тёмная тема */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .count {
+  background: #374151;
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statCard {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statLabel {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statValue {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statCard.overdue .statValue {
+  color: #f87171;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .filterInput,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .filterSelect {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .filterLabel {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .messageSuccess {
+  background: rgb(34 197 94 / 0.2);
+  color: #86efac;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .messageError {
+  background: rgb(239 68 68 / 0.2);
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .smallBtn {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .smallBtn:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .smallBtn.danger {
+  border-color: #f87171;
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .smallBtn.danger:hover {
+  background: rgb(239 68 68 / 0.2);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formRow label {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formInput,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formSelect,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formTextarea {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formInput::placeholder,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formTextarea::placeholder {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelBtn {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelBtn:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .taskTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .taskDescription {
+  color: #9ca3af;
+}

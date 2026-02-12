@@ -1,8 +1,20 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { CreateTaskDto, TaskStatus } from './dto/create-task.dto';
+import { CreateTaskDto, TaskPriority, TaskStatus, TaskType } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { Prisma } from '@prisma/client';
+
+const TASK_SNAPSHOT_FIELDS = {
+  title: true,
+  description: true,
+  type: true,
+  priority: true,
+  status: true,
+  dueDate: true,
+  completedAt: true,
+  customerId: true,
+  assigneeId: true,
+} as const;
 
 @Injectable()
 export class TasksService {
@@ -172,22 +184,114 @@ export class TasksService {
     return task;
   }
 
-  async update(id: string, updateTaskDto: UpdateTaskDto) {
-    await this.findOne(id);
-
-    const data: Prisma.TaskUpdateInput = { ...updateTaskDto };
-
-    if (updateTaskDto.dueDate) {
-      data.dueDate = new Date(updateTaskDto.dueDate);
+  async update(id: string, updateTaskDto: UpdateTaskDto, changedById?: string) {
+    const current = await this.prisma.task.findUnique({
+      where: { id },
+      select: TASK_SNAPSHOT_FIELDS,
+    });
+    if (!current) {
+      throw new NotFoundException(`Task with ID ${id} not found`);
     }
 
+    const data: Prisma.TaskUncheckedUpdateInput = { ...updateTaskDto };
+    if (updateTaskDto.dueDate !== undefined) {
+      data.dueDate = updateTaskDto.dueDate ? new Date(updateTaskDto.dueDate) : null;
+    }
     if (updateTaskDto.status === TaskStatus.COMPLETED) {
       data.completedAt = new Date();
+    }
+
+    if (changedById && Object.keys(updateTaskDto).length > 0) {
+      const snapshot = {
+        ...current,
+        dueDate: current.dueDate?.toISOString().slice(0, 10) ?? null,
+        completedAt: current.completedAt?.toISOString() ?? null,
+      };
+      await this.prisma.taskHistory.create({
+        data: {
+          taskId: id,
+          snapshot: snapshot as object,
+          changedFields: Object.keys(updateTaskDto) as string[],
+          action: 'UPDATE',
+          changedById,
+        },
+      });
     }
 
     return this.prisma.task.update({
       where: { id },
       data,
+      include: {
+        customer: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        assignee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+  }
+
+  async getHistory(taskId: string) {
+    await this.findOne(taskId);
+    const history = await this.prisma.taskHistory.findMany({
+      where: { taskId },
+      include: {
+        changedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
+      },
+      orderBy: { changedAt: 'desc' },
+    });
+    return history.map((h) => ({
+      id: h.id,
+      action: h.action,
+      changedAt: h.changedAt,
+      changedBy: h.changedBy,
+      changedFields: h.changedFields,
+      snapshot: h.snapshot,
+    }));
+  }
+
+  async rollback(taskId: string, historyId: string, userId: string) {
+    await this.findOne(taskId);
+    const historyEntry = await this.prisma.taskHistory.findFirst({
+      where: { id: historyId, taskId },
+    });
+    if (!historyEntry) {
+      throw new NotFoundException(`History entry ${historyId} not found for task ${taskId}`);
+    }
+    const snapshot = historyEntry.snapshot as Record<string, unknown>;
+    await this.prisma.taskHistory.create({
+      data: {
+        taskId,
+        snapshot: historyEntry.snapshot as object,
+        changedFields: [],
+        action: 'ROLLBACK',
+        changedById: userId,
+      },
+    });
+    const updateData: Prisma.TaskUncheckedUpdateInput = {
+      title: snapshot.title as string,
+      description: (snapshot.description as string) ?? null,
+      type: snapshot.type as TaskType,
+      priority: snapshot.priority as TaskPriority,
+      status: snapshot.status as TaskStatus,
+      dueDate: snapshot.dueDate ? new Date(snapshot.dueDate as string) : null,
+      completedAt: snapshot.completedAt ? new Date(snapshot.completedAt as string) : null,
+      customerId: (snapshot.customerId as string) ?? null,
+      assigneeId: (snapshot.assigneeId as string) ?? null,
+    };
+    return this.prisma.task.update({
+      where: { id: taskId },
+      data: updateData,
       include: {
         customer: {
           select: {

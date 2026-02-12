@@ -146,12 +146,6 @@ export class OfficeCashService {
     });
   }
 
-  async deleteOtherExpense(id: string) {
-    const e = await this.prisma.officeOtherExpense.findUnique({ where: { id } });
-    if (!e) throw new NotFoundException('Расход не найден');
-    return this.prisma.officeOtherExpense.delete({ where: { id } });
-  }
-
   async getIncassations(officeId: string, dateFrom?: string, dateTo?: string) {
     const where: Prisma.OfficeIncassationWhereInput = { officeId };
     if (dateFrom || dateTo) {
@@ -169,11 +163,14 @@ export class OfficeCashService {
   }
 
   async createIncassation(dto: CreateOfficeIncassationDto, createdById?: string) {
+    const incassatorValue =
+      typeof dto.incassator === 'string' && dto.incassator.trim() ? dto.incassator.trim() : null;
     return this.prisma.officeIncassation.create({
       data: {
         officeId: dto.officeId,
         amount: new Prisma.Decimal(dto.amount),
         incassationDate: new Date(dto.incassationDate),
+        incassator: incassatorValue,
         notes: dto.notes ?? null,
         createdById: createdById ?? null,
       },
@@ -182,11 +179,5 @@ export class OfficeCashService {
         createdBy: { select: { id: true, firstName: true, lastName: true } },
       },
     });
-  }
-
-  async deleteIncassation(id: string) {
-    const i = await this.prisma.officeIncassation.findUnique({ where: { id } });
-    if (!i) throw new NotFoundException('Запись об инкассации не найдена');
-    return this.prisma.officeIncassation.delete({ where: { id } });
   }
 }

@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Delete,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-  Request,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards, Request } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -69,12 +59,6 @@ export class OfficeCashController {
     return this.service.createOtherExpense(dto, req.user?.id);
   }
 
-  @Delete('other-expenses/:id')
-  @ApiOperation({ summary: 'Удалить прочий расход' })
-  deleteOtherExpense(@Param('id') id: string) {
-    return this.service.deleteOtherExpense(id);
-  }
-
   @Get('incassations')
   @ApiOperation({ summary: 'Инкассации по офису' })
   getIncassations(
@@ -89,11 +73,5 @@ export class OfficeCashController {
   @ApiOperation({ summary: 'Зафиксировать инкассацию (изъятие наличных)' })
   createIncassation(@Body() dto: CreateOfficeIncassationDto, @Request() req: RequestWithUser) {
     return this.service.createIncassation(dto, req.user?.id);
-  }
-
-  @Delete('incassations/:id')
-  @ApiOperation({ summary: 'Удалить запись об инкассации' })
-  deleteIncassation(@Param('id') id: string) {
-    return this.service.deleteIncassation(id);
   }
 }

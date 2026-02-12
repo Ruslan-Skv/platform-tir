@@ -26,6 +26,12 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   { id: 'admin.support', label: 'Чат поддержки', path: '/admin/support' },
   { id: 'admin.crm.funnel', label: 'Воронка продаж', path: '/admin/crm/funnel' },
   { id: 'admin.crm.tasks', label: 'Задачи', path: '/admin/crm/tasks' },
+  { id: 'admin.crm.payroll', label: 'Расчёт з/п', path: '/admin/crm/payroll' },
+  {
+    id: 'admin.crm.payroll.management',
+    label: 'Расчёт з/п — Управление',
+    path: '/admin/crm/payroll/management',
+  },
   { id: 'admin.content', label: 'Контент', path: '/admin/content' },
   { id: 'admin.content.home', label: 'Главная страница', path: '/admin/content/home' },
   { id: 'admin.content.hero', label: 'Первый блок', path: '/admin/content/hero' },

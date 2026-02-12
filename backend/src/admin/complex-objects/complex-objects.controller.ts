@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
 import { ComplexObjectsService } from './complex-objects.service';
 import { CreateComplexObjectDto } from './dto/create-complex-object.dto';
 import { UpdateComplexObjectDto } from './dto/update-complex-object.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import type { RequestWithUser } from '../../common/types/request-with-user.types';
 
 const CRM_ROLES = [
   'SUPER_ADMIN',
@@ -37,19 +38,37 @@ export class ComplexObjectsController {
     return this.service.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
-  }
-
   @Get(':id/contracts')
   getContracts(@Param('id') id: string) {
     return this.service.getContracts(id);
   }
 
+  @Get(':id/history')
+  getHistory(@Param('id') id: string) {
+    return this.service.getHistory(id);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.service.findOne(id);
+  }
+
+  @Post(':id/rollback/:historyId')
+  rollback(
+    @Param('id') id: string,
+    @Param('historyId') historyId: string,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.service.rollback(id, historyId, req.user.id);
+  }
+
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateComplexObjectDto) {
-    return this.service.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateComplexObjectDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.service.update(id, dto, req.user?.id);
   }
 
   @Delete(':id')

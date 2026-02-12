@@ -34,6 +34,7 @@ import {
 } from '@/shared/api/admin-crm';
 import { Modal } from '@/shared/ui/Modal';
 
+import { ComplexObjectHistoryModal } from './ComplexObjectHistoryModal';
 import styles from './ContractFormPage.module.css';
 import { ContractHistoryModal } from './ContractHistoryModal';
 
@@ -213,6 +214,7 @@ export function ContractFormPage({ contractId: initialContractId }: ContractForm
   const [offices, setOffices] = useState<Office[]>([]);
   const [officeId, setOfficeId] = useState('');
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showComplexObjectHistoryModal, setShowComplexObjectHistoryModal] = useState(false);
   const [showTimelineModal, setShowTimelineModal] = useState(false);
   // Комплексный объект
   const [complexObjectId, setComplexObjectId] = useState('');
@@ -1154,6 +1156,14 @@ export function ContractFormPage({ contractId: initialContractId }: ContractForm
           <div className={styles.formActions}>
             <button
               type="button"
+              className={styles.historyButton}
+              onClick={() => setShowComplexObjectHistoryModal(true)}
+              title="История изменений объекта"
+            >
+              История
+            </button>
+            <button
+              type="button"
               className={styles.submitButton}
               onClick={handleSaveObjectInfo}
               disabled={savingObjectInfo}
@@ -1162,6 +1172,19 @@ export function ContractFormPage({ contractId: initialContractId }: ContractForm
             </button>
           </div>
         </div>
+      )}
+
+      {showComplexObjectHistoryModal && complexObjectId && (
+        <ComplexObjectHistoryModal
+          complexObjectId={complexObjectId}
+          objectName={complexObject?.name}
+          users={managers}
+          onClose={() => setShowComplexObjectHistoryModal(false)}
+          onRollback={() => {
+            getComplexObject(complexObjectId).then(setComplexObject);
+            setShowComplexObjectHistoryModal(false);
+          }}
+        />
       )}
 
       {/* Форма договора */}

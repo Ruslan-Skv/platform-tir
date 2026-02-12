@@ -248,6 +248,132 @@
   color: #991b1b;
 }
 
+/* Dark theme */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .count {
+  background: #374151;
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput::placeholder {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .errorText {
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .bulkActions {
+  background: rgb(59 130 246 / 0.15);
+  border: 1px solid #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .bulkActions span {
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .bulkButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .bulkButton:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .bulkButton.danger {
+  border-color: #f87171;
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .bulkButton.danger:hover {
+  background: rgb(239 68 68 / 0.2);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerName {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerEmail {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusLEAD {
+  background: rgb(245 158 11 / 0.25);
+  color: #fcd34d;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusPROSPECT {
+  background: rgb(59 130 246 / 0.25);
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusCUSTOMER {
+  background: rgb(34 197 94 / 0.25);
+  color: #86efac;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusINACTIVE {
+  background: #4b5563;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusCHURNED {
+  background: rgb(239 68 68 / 0.25);
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .stageNEW {
+  background: rgb(99 102 241 / 0.25);
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .stageCONTACTED {
+  background: rgb(236 72 153 / 0.25);
+  color: #f9a8d4;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .stageQUALIFIED {
+  background: rgb(6 182 212 / 0.25);
+  color: #67e8f9;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .stagePROPOSAL {
+  background: rgb(245 158 11 / 0.25);
+  color: #fcd34d;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .stageNEGOTIATION {
+  background: rgb(192 132 252 / 0.25);
+  color: #e9d5ff;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .stageWON {
+  background: rgb(34 197 94 / 0.25);
+  color: #86efac;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .stageLOST {
+  background: rgb(239 68 68 / 0.25);
+  color: #fca5a5;
+}
+
 @media (max-width: 768px) {
   .filters {
     flex-direction: column;

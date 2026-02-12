@@ -16,6 +16,11 @@ export class CreateOfficeIncassationDto {
   @IsDateString()
   incassationDate: string;
 
+  @ApiPropertyOptional({ description: 'ФИО или данные того, кто произвёл инкассацию' })
+  @IsOptional()
+  @IsString()
+  incassator?: string;
+
   @ApiPropertyOptional({ description: 'Например: Инкассация за неделю' })
   @IsOptional()
   @IsString()

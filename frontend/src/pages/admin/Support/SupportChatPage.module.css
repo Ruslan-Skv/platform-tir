@@ -242,6 +242,107 @@
   color: #4b5563;
 }
 
+/* Dark theme */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subtitle {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationList {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationListHeader {
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationListHeader select {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationItem {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationItem:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationItem.active {
+  background: #5b21b6;
+  color: #ede9fe;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationUser {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationMeta,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationPreview {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .chatArea {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .chatHeader {
+  background: #374151;
+  border-bottom-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .chatMessage.theirs {
+  background: #374151;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .chatMessageMeta {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .chatInputRow {
+  border-top-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .chatInputRow input {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .chatInputRow input::placeholder {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .emptyState,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusOPEN {
+  background: rgb(34 197 94 / 0.25);
+  color: #86efac;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusIN_PROGRESS {
+  background: rgb(59 130 246 / 0.25);
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusCLOSED {
+  background: #4b5563;
+  color: #d1d5db;
+}
+
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;

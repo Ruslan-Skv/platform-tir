@@ -65,6 +65,18 @@ const baseNavItems: NavItem[] = [
       { label: 'Чат поддержки', href: '/admin/support', resourceId: 'admin.support' },
       { label: 'Воронка продаж', href: '/admin/crm/funnel', resourceId: 'admin.crm.funnel' },
       { label: 'Задачи', href: '/admin/crm/tasks', resourceId: 'admin.crm.tasks' },
+      {
+        label: 'Расчёт з/п',
+        href: '/admin/crm/payroll',
+        resourceId: 'admin.crm.payroll',
+        children: [
+          {
+            label: 'Управление',
+            href: '/admin/crm/payroll/management',
+            resourceId: 'admin.crm.payroll.management',
+          },
+        ],
+      },
     ],
   },
   {

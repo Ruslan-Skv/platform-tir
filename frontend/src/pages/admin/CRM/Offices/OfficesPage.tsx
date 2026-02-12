@@ -10,6 +10,7 @@ import {
   updateOffice,
 } from '@/shared/api/admin-crm';
 
+import { OfficeHistoryModal } from './OfficeHistoryModal';
 import styles from './OfficesPage.module.css';
 
 interface OfficeFormData {
@@ -41,6 +42,7 @@ export function OfficesPage() {
   const [newForm, setNewForm] = useState<OfficeFormData>(emptyForm);
   const [showInactive, setShowInactive] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [historyOfficeId, setHistoryOfficeId] = useState<string | null>(null);
 
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
@@ -327,6 +329,14 @@ export function OfficesPage() {
                       <td>
                         <div className={styles.rowActions}>
                           <button
+                            type="button"
+                            className={styles.historyButton}
+                            onClick={() => setHistoryOfficeId(office.id)}
+                            title="История изменений"
+                          >
+                            История
+                          </button>
+                          <button
                             className={styles.saveButton}
                             onClick={handleSaveEdit}
                             disabled={saving}
@@ -403,6 +413,18 @@ export function OfficesPage() {
           </tbody>
         </table>
       </div>
+
+      {historyOfficeId && (
+        <OfficeHistoryModal
+          officeId={historyOfficeId}
+          officeName={offices.find((o) => o.id === historyOfficeId)?.name}
+          onClose={() => setHistoryOfficeId(null)}
+          onRollback={() => {
+            loadOffices();
+            setHistoryOfficeId(null);
+          }}
+        />
+      )}
     </div>
   );
 }
