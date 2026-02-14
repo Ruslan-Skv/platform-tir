@@ -17,6 +17,23 @@
   margin: 0;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settlementsLink {
+  font-size: 0.875rem;
+  color: #6366f1;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.settlementsLink:hover {
+  text-decoration: underline;
+}
+
 .backButton {
   padding: 8px 16px;
   background: white;

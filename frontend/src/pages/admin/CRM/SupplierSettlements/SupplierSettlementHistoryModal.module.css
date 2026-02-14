@@ -1,0 +1,209 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  max-width: 560px;
+  width: 100%;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.closeButton {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6b7280;
+  line-height: 1;
+  border-radius: 6px;
+}
+
+.closeButton:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.loading,
+.empty,
+.error {
+  padding: 32px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.error {
+  color: #dc2626;
+}
+
+.list {
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.entry {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.entry:last-child {
+  margin-bottom: 0;
+}
+
+.entryHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  background: #fafafa;
+}
+
+.entryHeader:hover {
+  background: #f3f4f6;
+}
+
+.entryMeta {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.entryDate {
+  font-weight: 500;
+  color: #374151;
+}
+
+.entryUser {
+  color: #6b7280;
+}
+
+.entryAction {
+  padding: 2px 8px;
+  background: #e0e7ff;
+  color: #4338ca;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.actionRollback {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.entryFields {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.rollbackButton {
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.rollbackButton:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.rollbackButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.expandIcon {
+  font-size: 0.7rem;
+  color: #9ca3af;
+}
+
+.entryDetails {
+  padding: 12px 14px;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+}
+
+.snapshotTable {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 0.85rem;
+}
+
+.snapshotBlock {
+  padding: 10px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.snapshotBlockTitle {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.snapshotRow {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.snapshotRow:last-child {
+  margin-bottom: 0;
+}
+
+.snapshotLabel {
+  color: #6b7280;
+  min-width: 100px;
+}
+
+.snapshotValue {
+  color: #1f2937;
+  word-break: break-word;
+}
+
+.snapshotEmpty {
+  color: #9ca3af;
+  font-style: italic;
+}

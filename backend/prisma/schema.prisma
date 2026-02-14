@@ -67,11 +67,12 @@ model User {
   managedContracts      Contract[]    @relation("ContractManager")
   surveyedContracts     Contract[]    @relation("ContractSurveyor")
   contractPayments      ContractPayment[]
-  measurementHistory    MeasurementHistory[] @relation("MeasurementHistoryChangedBy")
-  contractHistory       ContractHistory[]    @relation("ContractHistoryChangedBy")
-  complexObjectHistory  ComplexObjectHistory[] @relation("ComplexObjectHistoryChangedBy")
-  officeHistory         OfficeHistory[]      @relation("OfficeHistoryChangedBy")
-  taskHistory           TaskHistory[]       @relation("TaskHistoryChangedBy")
+  measurementHistory       MeasurementHistory[] @relation("MeasurementHistoryChangedBy")
+  contractHistory          ContractHistory[]    @relation("ContractHistoryChangedBy")
+  complexObjectHistory     ComplexObjectHistory[] @relation("ComplexObjectHistoryChangedBy")
+  officeHistory            OfficeHistory[]      @relation("OfficeHistoryChangedBy")
+  supplierSettlementHistory SupplierSettlementHistory[] @relation("SupplierSettlementHistoryChangedBy")
+  taskHistory              TaskHistory[]       @relation("TaskHistoryChangedBy")
   managedComplexObjects ComplexObject[]      @relation("ComplexObjectManager")
   adminResourcePermissions AdminResourcePermission[]
   officeOtherExpensesCreated OfficeOtherExpense[]
@@ -657,10 +658,45 @@ model Supplier {
   lastSyncAt      DateTime?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
-  products        ProductSupplier[]
-  syncLogs        SupplierSyncLog[]
+  products          ProductSupplier[]
+  syncLogs          SupplierSyncLog[]
+  settlementRows    SupplierSettlementRow[]
+  settlementHistory SupplierSettlementHistory[]
 
   @@map("suppliers")
+}
+
+model SupplierSettlementRow {
+  id          String    @id @default(cuid())
+  supplierId  String
+  date        String?   // YYYY-MM-DD
+  invoice     String?
+  amount      Decimal?  @db.Decimal(12, 2)
+  payment     Decimal?  @db.Decimal(12, 2)
+  note        String?   @db.Text
+  sortOrder   Int       @default(0)
+
+  supplier    Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@index([supplierId])
+  @@map("supplier_settlement_rows")
+}
+
+model SupplierSettlementHistory {
+  id            String   @id @default(cuid())
+  supplierId    String
+  snapshot      Json     // Массив строк { rows: [...] }
+  changedFields String[] @default([])
+  action        String   // UPDATE | ROLLBACK
+  changedById   String
+  changedAt     DateTime @default(now())
+
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  changedBy  User     @relation("SupplierSettlementHistoryChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
+
+  @@index([supplierId])
+  @@index([changedAt])
+  @@map("supplier_settlement_history")
 }
 
 model ProductSupplier {

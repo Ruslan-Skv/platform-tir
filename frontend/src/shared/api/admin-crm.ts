@@ -296,6 +296,95 @@ export async function rollbackOffice(officeId: string, historyId: string): Promi
   return res.json();
 }
 
+// --- Supplier Settlements (расчёты с поставщиками) ---
+export interface SupplierSettlementRowApi {
+  id: string;
+  date: string;
+  invoice: string;
+  amount: number | null;
+  payment: number | null;
+  note: string;
+  sortOrder: number;
+}
+
+export interface SupplierSettlementHistoryEntry {
+  id: string;
+  action: 'UPDATE' | 'ROLLBACK';
+  changedAt: string;
+  changedBy: { id: string; firstName: string | null; lastName: string | null; email: string };
+  changedFields: string[];
+  snapshot: { rows: Array<Record<string, unknown>> };
+}
+
+export async function getSupplierSettlementTotals(): Promise<
+  Record<string, { amountSum: number; paymentSum: number; total: number }>
+> {
+  const res = await fetch(`${API_URL}/admin/catalog/suppliers/settlement-totals`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить итоги расчётов');
+  return res.json();
+}
+
+export async function getSupplierSettlements(
+  supplierId: string
+): Promise<SupplierSettlementRowApi[]> {
+  const res = await fetch(`${API_URL}/admin/catalog/suppliers/${supplierId}/settlements`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить расчёты');
+  return res.json();
+}
+
+export async function saveSupplierSettlements(
+  supplierId: string,
+  rows: Array<{
+    id?: string;
+    date?: string;
+    invoice?: string;
+    amount?: number | null;
+    payment?: number | null;
+    note?: string;
+    sortOrder?: number;
+  }>
+): Promise<SupplierSettlementRowApi[]> {
+  const res = await fetch(`${API_URL}/admin/catalog/suppliers/${supplierId}/settlements`, {
+    method: 'PUT',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify({ rows }),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err.message || 'Не удалось сохранить расчёты');
+  }
+  return res.json();
+}
+
+export async function getSupplierSettlementHistory(
+  supplierId: string
+): Promise<SupplierSettlementHistoryEntry[]> {
+  const res = await fetch(`${API_URL}/admin/catalog/suppliers/${supplierId}/settlements/history`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить историю');
+  return res.json();
+}
+
+export async function rollbackSupplierSettlement(
+  supplierId: string,
+  historyId: string
+): Promise<SupplierSettlementRowApi[]> {
+  const res = await fetch(
+    `${API_URL}/admin/catalog/suppliers/${supplierId}/settlements/rollback/${historyId}`,
+    { method: 'POST', headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err.message || 'Не удалось откатить изменения');
+  }
+  return res.json();
+}
+
 // --- Tasks ---
 export interface Task {
   id: string;

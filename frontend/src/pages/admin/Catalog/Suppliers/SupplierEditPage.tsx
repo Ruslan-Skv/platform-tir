@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
@@ -228,12 +229,22 @@ export function SupplierEditPage({ supplierId }: SupplierEditPageProps) {
         <h1 className={styles.title}>
           {isEditMode ? 'Редактирование поставщика' : 'Создание поставщика'}
         </h1>
-        <button
-          className={styles.backButton}
-          onClick={() => router.push('/admin/catalog/suppliers')}
-        >
-          ← Назад к списку
-        </button>
+        <div className={styles.headerActions}>
+          {isEditMode && supplierId && (
+            <Link
+              href={`/admin/crm/supplier-settlements/${supplierId}`}
+              className={styles.settlementsLink}
+            >
+              Расчёты с поставщиком →
+            </Link>
+          )}
+          <button
+            className={styles.backButton}
+            onClick={() => router.push('/admin/catalog/suppliers')}
+          >
+            ← Назад к списку
+          </button>
+        </div>
       </div>
 
       {error && <div className={styles.errorMessage}>{error}</div>}

@@ -2,18 +2,22 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Body,
   Patch,
   Param,
   Delete,
   Query,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { SuppliersService } from './suppliers.service';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
+import { SaveSettlementsDto } from './dto/save-settlements.dto';
 import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
+import type { RequestWithUser } from '../../../common/types/request-with-user.types';
 
 @Controller('admin/catalog/suppliers')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -41,6 +45,39 @@ export class SuppliersController {
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 20,
     });
+  }
+
+  @Get('settlement-totals')
+  getSettlementTotals() {
+    return this.suppliersService.getSettlementTotals();
+  }
+
+  @Get(':id/settlements')
+  getSettlements(@Param('id') id: string) {
+    return this.suppliersService.getSettlements(id);
+  }
+
+  @Put(':id/settlements')
+  saveSettlements(
+    @Param('id') id: string,
+    @Body() dto: SaveSettlementsDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.suppliersService.saveSettlements(id, dto.rows, req.user?.id);
+  }
+
+  @Get(':id/settlements/history')
+  getSettlementHistory(@Param('id') id: string) {
+    return this.suppliersService.getSettlementHistory(id);
+  }
+
+  @Post(':id/settlements/rollback/:historyId')
+  rollbackSettlement(
+    @Param('id') id: string,
+    @Param('historyId') historyId: string,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.suppliersService.rollbackSettlement(id, historyId, req.user.id);
   }
 
   @Get(':id')

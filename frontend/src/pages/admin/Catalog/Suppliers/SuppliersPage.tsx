@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
@@ -226,6 +227,13 @@ export function SuppliersPage() {
         defaultVisible: true,
         render: (supplier) => (
           <div className={styles.actions}>
+            <Link
+              href={`/admin/crm/supplier-settlements/${supplier.id}`}
+              className={styles.settlementsButton}
+              title="Расчёты с поставщиком"
+            >
+              💰
+            </Link>
             <button
               className={styles.editButton}
               onClick={() => router.push(`/admin/catalog/suppliers/${supplier.id}/edit`)}

@@ -59,6 +59,11 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.crm.contract-payments',
       },
       { label: 'Касса', href: '/admin/crm/cash-register', resourceId: 'admin.crm.cash-register' },
+      {
+        label: 'Расчёты с поставщиками',
+        href: '/admin/crm/supplier-settlements',
+        resourceId: 'admin.crm.supplier-settlements',
+      },
       { label: 'Офисы', href: '/admin/crm/offices', resourceId: 'admin.crm.offices' },
       { label: 'Менеджеры', href: '/admin/crm/managers', resourceId: 'admin.crm.managers' },
       { label: 'Клиенты', href: '/admin/crm/customers', resourceId: 'admin.crm.customers' },

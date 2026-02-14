@@ -116,6 +116,33 @@
   margin-left: auto;
 }
 
+.visibleRowsLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.visibleRowsSelect {
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fff;
+  color: #1e293b;
+  cursor: pointer;
+}
+
+.visibleRowsSelect:hover {
+  border-color: #cbd5e1;
+}
+
+.visibleRowsSelect:focus {
+  outline: none;
+  border-color: #0d9488;
+}
+
 .undoBtn {
   display: flex;
   align-items: center;
@@ -173,11 +200,13 @@
   max-width: 100%;
   position: relative;
   background: #fff;
+  scroll-padding-top: 70px;
 }
 
 .tableResizeContainer {
   position: relative;
   display: inline-block;
+  padding-top: 2px;
 }
 
 .tableResizeHandle {
@@ -220,6 +249,15 @@
   font-size: 0.8125rem;
 }
 
+.table thead tr {
+  line-height: 1;
+}
+
+.table thead th {
+  padding: 0;
+  vertical-align: middle;
+}
+
 .th {
   text-align: center;
   padding: 0;
@@ -227,11 +265,12 @@
   border-bottom: 2px solid #e2e8f0;
   color: #475569;
   font-weight: 600;
+  position: sticky;
+  z-index: 3;
   white-space: nowrap;
 }
 
 .thResizable {
-  position: relative;
   padding-right: 6px;
 }
 
@@ -269,11 +308,15 @@
 }
 
 .diffRow .thDiff {
+  top: 0;
+  height: 22px;
   font-weight: 600;
   font-size: 0.8rem;
   color: #475569;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: none;
   background: #f1f5f9;
+  line-height: 1;
+  box-shadow: 0 22px 0 0 #f1f5f9;
 }
 
 .diffRow .thDiff[colspan='2'] {
@@ -281,13 +324,40 @@
 }
 
 .totalsRow .thTotals {
+  top: 22px;
+  height: 22px;
   font-weight: 700;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: none;
   text-align: right;
+  line-height: 1;
+  box-shadow: 0 22px 0 0 #f8fafc;
 }
 
 .totalsRow .thTotals:nth-child(2) {
   text-align: left;
+}
+
+.totalsRow .thGreen {
+  box-shadow: 0 22px 0 0 #dcfce7;
+}
+
+.totalsRow .thRed {
+  box-shadow: 0 22px 0 0 #fee2e2;
+}
+
+.headerRow th {
+  top: 44px;
+  height: 22px;
+  line-height: 1;
+  box-shadow: 0 4px 6px -2px rgba(0, 0, 0, 0.06);
+}
+
+.headerRow .thGreen {
+  box-shadow: 0 4px 6px -2px rgba(0, 0, 0, 0.06);
+}
+
+.headerRow .thRed {
+  box-shadow: 0 4px 6px -2px rgba(0, 0, 0, 0.06);
 }
 
 .thGreen {
@@ -471,6 +541,16 @@
   background: #0d9488;
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .visibleRowsLabel {
+  color: var(--cash-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .visibleRowsSelect {
+  background: var(--cash-input-bg);
+  border-color: var(--cash-border);
+  color: var(--cash-text);
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .undoBtn {
   background: var(--cash-bg-soft);
   border-color: var(--cash-border);
@@ -501,6 +581,19 @@
   background: var(--cash-bg);
   border-bottom-color: var(--cash-border);
   color: var(--cash-text-muted);
+  box-shadow: 0 22px 0 0 var(--cash-bg);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .totalsRow .thTotals {
+  box-shadow: 0 22px 0 0 var(--cash-bg-soft);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .totalsRow .thGreen {
+  box-shadow: 0 22px 0 0 var(--cash-green);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .totalsRow .thRed {
+  box-shadow: 0 22px 0 0 var(--cash-red);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .thGreen {
