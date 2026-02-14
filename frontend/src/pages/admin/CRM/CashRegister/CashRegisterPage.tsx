@@ -61,10 +61,13 @@ function getInitialRows(): CashRegisterRow[] {
   return Array.from({ length: 10 }, () => createEmptyRow());
 }
 
+type ColumnKey = keyof CashRegisterRow | '_index' | '_action';
+type ColumnType = 'date' | 'number' | 'index' | 'action';
+
 const COLUMNS: {
-  key: keyof CashRegisterRow | '_index';
+  key: ColumnKey;
   title: string;
-  type: 'date' | 'number' | 'index';
+  type: ColumnType;
 }[] = [
   { key: '_index', title: '№ п/п', type: 'index' },
   { key: 'date', title: 'Дата', type: 'date' },
@@ -136,7 +139,7 @@ interface SelectionRange {
   maxCol: number;
 }
 
-const UNDO_MAX_STEPS = 10;
+const UNDO_MAX_STEPS = 20;
 
 interface CashRegisterSnapshot {
   data: CashRegisterRow[];
@@ -162,6 +165,7 @@ export function CashRegisterPage() {
     startLastCol: number;
     restSum: number;
   } | null>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
 
   const handleColumnResizeStart = useCallback(
     (colIndex: number, e: React.MouseEvent) => {
@@ -210,7 +214,6 @@ export function CashRegisterPage() {
         if (!ref) return;
         const delta = moveEvent.clientX - ref.startX;
         const newLastCol = Math.max(MIN_COL_WIDTH, ref.startLastCol + delta);
-        const newTotal = ref.restSum + newLastCol;
         setColumnWidths((prev) => {
           const next = [...prev];
           next[next.length - 1] = newLastCol;
@@ -238,9 +241,10 @@ export function CashRegisterPage() {
 
   const totals = useMemo(() => {
     const acc: Record<string, number> = {};
-    for (const key of SUM_COLUMN_KEYS) {
+    // Используем Array.from для итерации Set
+    Array.from(SUM_COLUMN_KEYS).forEach((key) => {
       acc[key] = data.reduce((sum, row) => sum + (Number(row[key]) || 0), 0);
-    }
+    });
     return acc;
   }, [data]);
 
@@ -335,8 +339,6 @@ export function CashRegisterPage() {
   const clearRange = useCallback(
     (minRow: number, minCol: number, maxRow: number, maxCol: number) => {
       pushHistory();
-      const emptyValue = (key: keyof CashRegisterRow) =>
-        key === 'date' ? '' : (null as number | null);
       setData((prev) =>
         prev.map((row, ri) => {
           if (ri < minRow || ri > maxRow) return row;
@@ -344,7 +346,12 @@ export function CashRegisterPage() {
           for (let ci = minCol; ci <= maxCol; ci++) {
             const key = COLUMNS[ci].key;
             if (key === '_index' || key === '_action') continue;
-            updates[key] = emptyValue(key);
+            // Используем type assertion для безопасного присвоения
+            if (key === 'date') {
+              (updates as any)[key] = '';
+            } else {
+              (updates as any)[key] = null;
+            }
           }
           return { ...row, ...updates };
         })
@@ -352,8 +359,6 @@ export function CashRegisterPage() {
     },
     [pushHistory]
   );
-
-  const tableRef = useRef<HTMLTableElement>(null);
 
   const handleTableClick = useCallback(
     (e: React.MouseEvent<HTMLTableElement>) => {
@@ -364,7 +369,9 @@ export function CashRegisterPage() {
       const tbody = tr.parentElement;
       if (!tbody || tbody.tagName !== 'TBODY') return;
 
-      const rowIndex = Array.from(tbody.rows).indexOf(tr as HTMLTableRowElement);
+      // Приводим к правильному типу
+      const tbodyElement = tbody as HTMLTableSectionElement;
+      const rowIndex = Array.from(tbodyElement.rows).indexOf(tr as HTMLTableRowElement);
       const colIndex = Array.from(tr.cells).indexOf(target as HTMLTableCellElement);
 
       if (e.shiftKey && anchor !== null) {
@@ -398,9 +405,11 @@ export function CashRegisterPage() {
       const tbody = tr.parentElement;
       if (!tbody || tbody.tagName !== 'TBODY') return;
 
-      const rowIndex = Array.from(tbody.rows).indexOf(tr as HTMLTableRowElement);
+      // Приводим к правильному типу
+      const tbodyElement = tbody as HTMLTableSectionElement;
+      const rowIndex = Array.from(tbodyElement.rows).indexOf(tr as HTMLTableRowElement);
       const colIndex = Array.from(tr.cells).indexOf(td as HTMLTableCellElement);
-      const rowCount = tbody.rows.length;
+      const rowCount = tbodyElement.rows.length;
       const colCount = COLUMNS.length;
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -413,7 +422,7 @@ export function CashRegisterPage() {
         setSelectionRange({ minRow, minCol, maxRow, maxCol });
         setAnchor({ row: minRow, col: minCol });
         const firstInput =
-          tbody.rows[minRow]?.cells[minCol]?.querySelector<HTMLInputElement>('input');
+          tbodyElement.rows[minRow]?.cells[minCol]?.querySelector<HTMLInputElement>('input');
         firstInput?.focus();
         return;
       }
@@ -432,7 +441,7 @@ export function CashRegisterPage() {
 
       if (nextRow === rowIndex && nextCol === colIndex) return;
 
-      const nextCell = tbody.rows[nextRow]?.cells[nextCol];
+      const nextCell = tbodyElement.rows[nextRow]?.cells[nextCol];
       const nextInput = nextCell?.querySelector<HTMLInputElement>('input');
       if (nextInput) {
         e.preventDefault();
@@ -595,53 +604,76 @@ export function CashRegisterPage() {
                   })}
                 </tr>
                 <tr className={styles.totalsRow}>
-                  {COLUMNS.map((col) => (
-                    <th
-                      key={col.key}
-                      className={
-                        GREEN_COLUMN_KEYS.has(col.key as keyof CashRegisterRow)
-                          ? `${styles.th} ${styles.thTotals} ${styles.thGreen}`
-                          : RED_COLUMN_KEYS.has(col.key as keyof CashRegisterRow)
-                            ? `${styles.th} ${styles.thTotals} ${styles.thRed}`
-                            : `${styles.th} ${styles.thTotals}`
-                      }
-                    >
-                      {col.key === '_index'
-                        ? ''
-                        : col.key === 'date'
-                          ? 'Итого'
-                          : SUM_COLUMN_KEYS.has(col.key as keyof CashRegisterRow)
-                            ? formatSum(totals[col.key] ?? 0)
-                            : ''}
-                    </th>
-                  ))}
+                  {COLUMNS.map((col) => {
+                    const isGreen =
+                      col.key !== '_index' &&
+                      col.key !== '_action' &&
+                      GREEN_COLUMN_KEYS.has(col.key as keyof CashRegisterRow);
+                    const isRed =
+                      col.key !== '_index' &&
+                      col.key !== '_action' &&
+                      RED_COLUMN_KEYS.has(col.key as keyof CashRegisterRow);
+
+                    return (
+                      <th
+                        key={col.key}
+                        className={
+                          isGreen
+                            ? `${styles.th} ${styles.thTotals} ${styles.thGreen}`
+                            : isRed
+                              ? `${styles.th} ${styles.thTotals} ${styles.thRed}`
+                              : `${styles.th} ${styles.thTotals}`
+                        }
+                      >
+                        {col.key === '_index'
+                          ? ''
+                          : col.key === 'date'
+                            ? 'Итого'
+                            : col.key !== '_action' &&
+                                SUM_COLUMN_KEYS.has(col.key as keyof CashRegisterRow)
+                              ? formatSum(totals[col.key] ?? 0)
+                              : ''}
+                      </th>
+                    );
+                  })}
                 </tr>
                 <tr>
-                  {COLUMNS.map((col, colIndex) => (
-                    <th
-                      key={col.key}
-                      className={
-                        col.key === '_action'
-                          ? styles.th
-                          : GREEN_COLUMN_KEYS.has(col.key as keyof CashRegisterRow)
-                            ? `${styles.th} ${styles.thGreen} ${styles.thResizable}`
-                            : RED_COLUMN_KEYS.has(col.key as keyof CashRegisterRow)
-                              ? `${styles.th} ${styles.thRed} ${styles.thResizable}`
-                              : `${styles.th} ${styles.thResizable}`
-                      }
-                    >
-                      {col.title}
-                      {col.key !== '_action' && (
-                        <span
-                          className={styles.resizeHandle}
-                          onMouseDown={(e) => handleColumnResizeStart(colIndex, e)}
-                          role="separator"
-                          aria-orientation="vertical"
-                          aria-label={`Изменить ширину колонки ${col.title}`}
-                        />
-                      )}
-                    </th>
-                  ))}
+                  {COLUMNS.map((col, colIndex) => {
+                    const isGreen =
+                      col.key !== '_index' &&
+                      col.key !== '_action' &&
+                      GREEN_COLUMN_KEYS.has(col.key as keyof CashRegisterRow);
+                    const isRed =
+                      col.key !== '_index' &&
+                      col.key !== '_action' &&
+                      RED_COLUMN_KEYS.has(col.key as keyof CashRegisterRow);
+
+                    return (
+                      <th
+                        key={col.key}
+                        className={
+                          col.key === '_action'
+                            ? styles.th
+                            : isGreen
+                              ? `${styles.th} ${styles.thGreen} ${styles.thResizable}`
+                              : isRed
+                                ? `${styles.th} ${styles.thRed} ${styles.thResizable}`
+                                : `${styles.th} ${styles.thResizable}`
+                        }
+                      >
+                        {col.title}
+                        {col.key !== '_action' && (
+                          <span
+                            className={styles.resizeHandle}
+                            onMouseDown={(e) => handleColumnResizeStart(colIndex, e)}
+                            role="separator"
+                            aria-orientation="vertical"
+                            aria-label={`Изменить ширину колонки ${col.title}`}
+                          />
+                        )}
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
@@ -654,19 +686,23 @@ export function CashRegisterPage() {
                         rowIndex <= selectionRange.maxRow &&
                         colIndex >= selectionRange.minCol &&
                         colIndex <= selectionRange.maxCol;
+
+                      const isGreen =
+                        col.key !== '_index' &&
+                        col.key !== '_action' &&
+                        GREEN_COLUMN_KEYS.has(col.key as keyof CashRegisterRow);
+                      const isRed =
+                        col.key !== '_index' &&
+                        col.key !== '_action' &&
+                        RED_COLUMN_KEYS.has(col.key as keyof CashRegisterRow);
+
                       return (
                         <td
                           key={col.key}
                           className={[
                             styles.td,
-                            col.key !== '_index' &&
-                              col.key !== '_action' &&
-                              GREEN_COLUMN_KEYS.has(col.key as keyof CashRegisterRow) &&
-                              styles.tdGreen,
-                            col.key !== '_index' &&
-                              col.key !== '_action' &&
-                              RED_COLUMN_KEYS.has(col.key as keyof CashRegisterRow) &&
-                              styles.tdRed,
+                            isGreen && styles.tdGreen,
+                            isRed && styles.tdRed,
                             isSelected && styles.tdSelected,
                             col.type === 'index' && styles.tdIndex,
                             col.type === 'action' && styles.tdAction,
