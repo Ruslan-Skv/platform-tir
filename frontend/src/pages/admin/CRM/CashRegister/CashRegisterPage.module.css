@@ -1,6 +1,7 @@
 .page {
-  max-width: 1400px;
-  margin: 0 auto;
+  max-width: none;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .header {
@@ -108,8 +109,42 @@
   line-height: 1.25;
 }
 
-.addRowBtn {
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin-left: auto;
+}
+
+.undoBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    border-color 0.2s;
+}
+
+.undoBtn:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.undoBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.addRowBtn {
   padding: 6px 14px;
   font-size: 0.85rem;
   font-weight: 500;
@@ -135,22 +170,102 @@
 .tableWrap {
   overflow: auto;
   min-height: 200px;
+  max-width: 100%;
+  position: relative;
+  background: #fff;
+}
+
+.tableResizeContainer {
+  position: relative;
+  display: inline-block;
+}
+
+.tableResizeHandle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 12px;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 10;
+}
+
+.tableResizeHandle:hover {
+  background: rgba(13, 148, 136, 0.2);
+}
+
+.tableResizeHandle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 24px;
+  background: #cbd5e1;
+  border-radius: 1px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.tableResizeHandle:hover::after {
+  opacity: 1;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
+  border-spacing: 0;
   font-size: 0.8125rem;
 }
 
 .th {
   text-align: center;
-  padding: 5px 6px;
+  padding: 0;
   background: #f8fafc;
   border-bottom: 2px solid #e2e8f0;
   color: #475569;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.thResizable {
+  position: relative;
+  padding-right: 6px;
+}
+
+.resizeHandle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 5;
+}
+
+.resizeHandle:hover {
+  background: rgba(13, 148, 136, 0.15);
+}
+
+.resizeHandle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 1px;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 16px;
+  background: #94a3b8;
+  border-radius: 1px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.resizeHandle:hover::after {
+  opacity: 1;
 }
 
 .diffRow .thDiff {
@@ -208,7 +323,7 @@
 }
 
 .td {
-  padding: 2px;
+  padding: 0;
   vertical-align: middle;
 }
 
@@ -225,6 +340,12 @@
   text-align: center;
 }
 
+.tdAction {
+  width: 1%;
+  text-align: center;
+  vertical-align: middle;
+}
+
 .indexCell {
   display: block;
   font-size: 0.8125rem;
@@ -232,13 +353,35 @@
   font-variant-numeric: tabular-nums;
 }
 
+.deleteRowBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 28px;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    background 0.15s;
+}
+
+.deleteRowBtn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
 .input {
   width: 100%;
-  min-width: 64px;
-  padding: 3px 6px;
+  min-width: 0;
+  padding: 2px 4px;
   font-size: 0.8125rem;
   border: 1px solid #e2e8f0;
-  border-radius: 4px;
+  border-radius: 2px;
   background: #fff;
   color: #1e293b;
   box-sizing: border-box;
@@ -256,7 +399,7 @@
 }
 
 .input[type='date'] {
-  min-width: 110px;
+  min-width: 0;
 }
 
 .input[type='number'] {
@@ -328,9 +471,24 @@
   background: #0d9488;
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .undoBtn {
+  background: var(--cash-bg-soft);
+  border-color: var(--cash-border);
+  color: var(--cash-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .undoBtn:hover:not(:disabled) {
+  background: var(--cash-border);
+  color: var(--cash-text);
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .content {
   background: var(--cash-bg-card);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tableWrap {
+  background: var(--cash-bg-card);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .th {
@@ -398,7 +556,21 @@
   color: var(--cash-text-muted);
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteRowBtn {
+  color: var(--cash-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteRowBtn:hover {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.15);
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .tdSelected {
   background: rgba(20, 184, 166, 0.25) !important;
   outline-color: var(--cash-accent);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .resizeHandle::after,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tableResizeHandle::after {
+  background: var(--cash-text-muted);
 }

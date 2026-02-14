@@ -26,6 +26,7 @@
   flex: 1;
   padding: 12px 12px 12px 4px;
   overflow-x: hidden;
+  background-color: var(--admin-bg, #f5f7fa);
 }
 
 .loadingContainer {
@@ -67,6 +68,7 @@
 
 /* Общие стили контента админки в тёмной теме (заголовки, ссылки, текст) */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .content {
+  background-color: #111827;
   color: #e5e7eb;
 }
 

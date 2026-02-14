@@ -1,5 +1,7 @@
 'use client';
 
+import { Trash2, Undo2 } from 'lucide-react';
+
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import styles from './CashRegisterPage.module.css';
@@ -78,11 +80,39 @@ const COLUMNS: {
   { key: 'sp', title: 'Сп', type: 'number' },
   { key: 'sr', title: 'Ср', type: 'number' },
   { key: 'lk', title: 'Лк', type: 'number' },
+  { key: '_action', title: '', type: 'action' },
 ];
 
 const GREEN_COLUMN_KEYS = new Set<keyof CashRegisterRow>(['kp', 'ap', 'sp', 'lk']);
 const RED_COLUMN_KEYS = new Set<keyof CashRegisterRow>(['kr', 'ar', 'sr']);
 const SUM_COLUMN_KEYS = new Set<keyof CashRegisterRow>(['kp', 'kr', 'ap', 'ar', 'sp', 'sr', 'lk']);
+
+const DEFAULT_COLUMN_WIDTHS = [36, 110, 70, 90, 90, 55, 55, 55, 55, 55, 55, 55, 55, 55, 36];
+const MIN_COL_WIDTH = 28;
+const MAX_COL_WIDTH = 400;
+
+const COL_WIDTH_STORAGE_KEY = 'cash-register-column-widths';
+
+function loadColumnWidths(): number[] {
+  if (typeof window === 'undefined') return [...DEFAULT_COLUMN_WIDTHS];
+  try {
+    const s = window.localStorage.getItem(COL_WIDTH_STORAGE_KEY);
+    if (!s) return [...DEFAULT_COLUMN_WIDTHS];
+    const parsed = JSON.parse(s) as number[];
+    if (Array.isArray(parsed) && parsed.length === COLUMNS.length) {
+      return parsed.map((w) => Math.max(MIN_COL_WIDTH, Math.min(MAX_COL_WIDTH, w)));
+    }
+  } catch {
+    /* ignore */
+  }
+  return [...DEFAULT_COLUMN_WIDTHS];
+}
+
+function saveColumnWidths(widths: number[]) {
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(COL_WIDTH_STORAGE_KEY, JSON.stringify(widths));
+  }
+}
 
 function formatSum(value: number): string {
   if (value === 0) return '0';
@@ -106,6 +136,15 @@ interface SelectionRange {
   maxCol: number;
 }
 
+const UNDO_MAX_STEPS = 10;
+
+interface CashRegisterSnapshot {
+  data: CashRegisterRow[];
+  openingBalance: number | null;
+  openingBalanceAlpha: number | null;
+  openingBalanceSber: number | null;
+}
+
 export function CashRegisterPage() {
   const [data, setData] = useState<CashRegisterRow[]>(getInitialRows);
   const [openingBalance, setOpeningBalance] = useState<number | null>(null);
@@ -113,6 +152,89 @@ export function CashRegisterPage() {
   const [openingBalanceSber, setOpeningBalanceSber] = useState<number | null>(null);
   const [selectionRange, setSelectionRange] = useState<SelectionRange | null>(null);
   const [anchor, setAnchor] = useState<{ row: number; col: number } | null>(null);
+  const [columnWidths, setColumnWidths] = useState<number[]>(loadColumnWidths);
+  const [history, setHistory] = useState<CashRegisterSnapshot[]>([]);
+  const isUndoRef = useRef(false);
+  const resizeRef = useRef<{ colIndex: number; startX: number; startWidth: number } | null>(null);
+  const tableResizeRef = useRef<{
+    startX: number;
+    startTotal: number;
+    startLastCol: number;
+    restSum: number;
+  } | null>(null);
+
+  const handleColumnResizeStart = useCallback(
+    (colIndex: number, e: React.MouseEvent) => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startWidth = columnWidths[colIndex];
+      resizeRef.current = { colIndex, startX, startWidth };
+
+      const onMove = (moveEvent: MouseEvent) => {
+        const delta = moveEvent.clientX - startX;
+        const newWidth = Math.max(MIN_COL_WIDTH, Math.min(MAX_COL_WIDTH, startWidth + delta));
+        setColumnWidths((prev) => {
+          const next = [...prev];
+          next[colIndex] = newWidth;
+          return next;
+        });
+      };
+      const onUp = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        setColumnWidths((prev) => {
+          saveColumnWidths(prev);
+          return prev;
+        });
+        resizeRef.current = null;
+      };
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    },
+    [columnWidths]
+  );
+
+  const handleTableResizeStart = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      const startTotal = columnWidths.reduce((a, b) => a + b, 0);
+      const restSum = columnWidths.slice(0, -1).reduce((a, b) => a + b, 0);
+      const startLastCol = columnWidths[columnWidths.length - 1] ?? 0;
+      tableResizeRef.current = { startX: e.clientX, startTotal, startLastCol, restSum };
+      const onMove = (moveEvent: MouseEvent) => {
+        const ref = tableResizeRef.current;
+        if (!ref) return;
+        const delta = moveEvent.clientX - ref.startX;
+        const newLastCol = Math.max(MIN_COL_WIDTH, ref.startLastCol + delta);
+        const newTotal = ref.restSum + newLastCol;
+        setColumnWidths((prev) => {
+          const next = [...prev];
+          next[next.length - 1] = newLastCol;
+          return next;
+        });
+      };
+      const onUp = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        setColumnWidths((prev) => {
+          saveColumnWidths(prev);
+          return prev;
+        });
+        tableResizeRef.current = null;
+      };
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    },
+    [columnWidths]
+  );
 
   const totals = useMemo(() => {
     const acc: Record<string, number> = {};
@@ -142,12 +264,57 @@ export function CashRegisterPage() {
     [closingBalance, closingBalanceAlpha, closingBalanceSber]
   );
 
-  const addRow = useCallback(() => {
-    setData((prev) => [...prev, createEmptyRow()]);
+  const pushHistory = useCallback(() => {
+    if (isUndoRef.current) return;
+    setHistory((prev) => {
+      const snap: CashRegisterSnapshot = {
+        data: data.map((r) => ({ ...r })),
+        openingBalance,
+        openingBalanceAlpha,
+        openingBalanceSber,
+      };
+      const next = [...prev, snap].slice(-UNDO_MAX_STEPS);
+      return next;
+    });
+  }, [data, openingBalance, openingBalanceAlpha, openingBalanceSber]);
+
+  const undo = useCallback(() => {
+    setHistory((prev) => {
+      if (prev.length === 0) return prev;
+      const next = [...prev];
+      const snap = next.pop()!;
+      isUndoRef.current = true;
+      setData(snap.data.map((r) => ({ ...r })));
+      setOpeningBalance(snap.openingBalance);
+      setOpeningBalanceAlpha(snap.openingBalanceAlpha);
+      setOpeningBalanceSber(snap.openingBalanceSber);
+      setSelectionRange(null);
+      setAnchor(null);
+      setTimeout(() => {
+        isUndoRef.current = false;
+      }, 0);
+      return next;
+    });
   }, []);
+
+  const addRow = useCallback(() => {
+    pushHistory();
+    setData((prev) => [...prev, createEmptyRow()]);
+  }, [pushHistory]);
+
+  const deleteRow = useCallback(
+    (rowId: string) => {
+      pushHistory();
+      setData((prev) => prev.filter((row) => row.id !== rowId));
+      setSelectionRange(null);
+      setAnchor(null);
+    },
+    [pushHistory]
+  );
 
   const updateCell = useCallback(
     (rowId: string, field: keyof CashRegisterRow, value: string | number) => {
+      pushHistory();
       setData((prev) =>
         prev.map((row) => {
           if (row.id !== rowId) return row;
@@ -162,11 +329,12 @@ export function CashRegisterPage() {
         })
       );
     },
-    []
+    [pushHistory]
   );
 
   const clearRange = useCallback(
     (minRow: number, minCol: number, maxRow: number, maxCol: number) => {
+      pushHistory();
       const emptyValue = (key: keyof CashRegisterRow) =>
         key === 'date' ? '' : (null as number | null);
       setData((prev) =>
@@ -175,14 +343,14 @@ export function CashRegisterPage() {
           const updates: Partial<CashRegisterRow> = {};
           for (let ci = minCol; ci <= maxCol; ci++) {
             const key = COLUMNS[ci].key;
-            if (key === '_index') continue;
+            if (key === '_index' || key === '_action') continue;
             updates[key] = emptyValue(key);
           }
           return { ...row, ...updates };
         })
       );
     },
-    []
+    [pushHistory]
   );
 
   const tableRef = useRef<HTMLTableElement>(null);
@@ -293,6 +461,7 @@ export function CashRegisterPage() {
               step="any"
               value={openingBalance ?? ''}
               onChange={(e) => {
+                pushHistory();
                 const v = e.target.value.trim();
                 setOpeningBalance(v === '' ? null : Number(v) || null);
               }}
@@ -313,6 +482,7 @@ export function CashRegisterPage() {
               step="any"
               value={openingBalanceAlpha ?? ''}
               onChange={(e) => {
+                pushHistory();
                 const v = e.target.value.trim();
                 setOpeningBalanceAlpha(v === '' ? null : Number(v) || null);
               }}
@@ -331,6 +501,7 @@ export function CashRegisterPage() {
               step="any"
               value={openingBalanceSber ?? ''}
               onChange={(e) => {
+                pushHistory();
                 const v = e.target.value.trim();
                 setOpeningBalanceSber(v === '' ? null : Number(v) || null);
               }}
@@ -341,164 +512,223 @@ export function CashRegisterPage() {
           </div>
           <span className={styles.totalCellSpacer} aria-hidden />
         </div>
-        <button type="button" className={styles.addRowBtn} onClick={addRow}>
-          + Добавить строку
-        </button>
+        <div className={styles.headerActions}>
+          <button
+            type="button"
+            className={styles.undoBtn}
+            onClick={undo}
+            disabled={history.length === 0}
+            title={`Отменить (осталось ${history.length} из ${UNDO_MAX_STEPS})`}
+          >
+            <Undo2 size={18} />
+            Отменить
+          </button>
+          <button type="button" className={styles.addRowBtn} onClick={addRow}>
+            + Добавить строку
+          </button>
+        </div>
       </div>
       <div className={styles.content}>
         <div className={styles.tableWrap}>
-          <table
-            ref={tableRef}
-            className={styles.table}
-            onKeyDown={handleTableKeyDown}
-            onClick={handleTableClick}
+          <div
+            className={styles.tableResizeContainer}
+            style={{ width: columnWidths.reduce((a, b) => a + b, 0) }}
           >
-            <thead>
-              <tr className={styles.diffRow}>
-                {COLUMNS.map((col, idx) => {
-                  if (idx === 7) {
-                    const diff = (totals.kp ?? 0) - (totals.kr ?? 0);
-                    return (
-                      <th
-                        key="kp-kr-diff"
-                        colSpan={2}
-                        className={`${styles.th} ${styles.thDiff}`}
-                        title="Кп − Кр"
-                      >
-                        Кп − Кр: {formatSum(diff)}
-                      </th>
-                    );
-                  }
-                  if (idx === 9) {
-                    const diff = (totals.ap ?? 0) - (totals.ar ?? 0);
-                    return (
-                      <th
-                        key="ap-ar-diff"
-                        colSpan={2}
-                        className={`${styles.th} ${styles.thDiff}`}
-                        title="Ап − Ар"
-                      >
-                        Ап − Ар: {formatSum(diff)}
-                      </th>
-                    );
-                  }
-                  if (idx === 11) {
-                    const diff = (totals.sp ?? 0) - (totals.sr ?? 0);
-                    return (
-                      <th
-                        key="sp-sr-diff"
-                        colSpan={2}
-                        className={`${styles.th} ${styles.thDiff}`}
-                        title="Сп − Ср"
-                      >
-                        Сп − Ср: {formatSum(diff)}
-                      </th>
-                    );
-                  }
-                  if (idx === 8 || idx === 10 || idx === 12) return null;
-                  return <th key={col.key} className={`${styles.th} ${styles.thDiff}`} />;
-                })}
-              </tr>
-              <tr className={styles.totalsRow}>
-                {COLUMNS.map((col) => (
-                  <th
-                    key={col.key}
-                    className={
-                      GREEN_COLUMN_KEYS.has(col.key as keyof CashRegisterRow)
-                        ? `${styles.th} ${styles.thTotals} ${styles.thGreen}`
-                        : RED_COLUMN_KEYS.has(col.key as keyof CashRegisterRow)
-                          ? `${styles.th} ${styles.thTotals} ${styles.thRed}`
-                          : `${styles.th} ${styles.thTotals}`
-                    }
-                  >
-                    {col.key === '_index'
-                      ? ''
-                      : col.key === 'date'
-                        ? 'Итого'
-                        : SUM_COLUMN_KEYS.has(col.key as keyof CashRegisterRow)
-                          ? formatSum(totals[col.key] ?? 0)
-                          : ''}
-                  </th>
+            <table
+              ref={tableRef}
+              className={styles.table}
+              style={{ tableLayout: 'fixed' }}
+              onKeyDown={handleTableKeyDown}
+              onClick={handleTableClick}
+            >
+              <colgroup>
+                {COLUMNS.map((col, i) => (
+                  <col key={col.key} style={{ width: columnWidths[i] }} />
                 ))}
-              </tr>
-              <tr>
-                {COLUMNS.map((col) => (
-                  <th
-                    key={col.key}
-                    className={
-                      GREEN_COLUMN_KEYS.has(col.key as keyof CashRegisterRow)
-                        ? `${styles.th} ${styles.thGreen}`
-                        : RED_COLUMN_KEYS.has(col.key as keyof CashRegisterRow)
-                          ? `${styles.th} ${styles.thRed}`
-                          : styles.th
+              </colgroup>
+              <thead>
+                <tr className={styles.diffRow}>
+                  {COLUMNS.map((col, idx) => {
+                    if (idx === 7) {
+                      const diff = (totals.kp ?? 0) - (totals.kr ?? 0);
+                      return (
+                        <th
+                          key="kp-kr-diff"
+                          colSpan={2}
+                          className={`${styles.th} ${styles.thDiff}`}
+                          title="Кп − Кр"
+                        >
+                          Кп − Кр: {formatSum(diff)}
+                        </th>
+                      );
                     }
-                  >
-                    {col.title}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((row, rowIndex) => (
-                <tr key={row.id} className={styles.tr}>
-                  {COLUMNS.map((col, colIndex) => {
-                    const isSelected =
-                      selectionRange &&
-                      rowIndex >= selectionRange.minRow &&
-                      rowIndex <= selectionRange.maxRow &&
-                      colIndex >= selectionRange.minCol &&
-                      colIndex <= selectionRange.maxCol;
-                    return (
-                      <td
-                        key={col.key}
-                        className={[
-                          styles.td,
-                          col.key !== '_index' &&
-                            GREEN_COLUMN_KEYS.has(col.key as keyof CashRegisterRow) &&
-                            styles.tdGreen,
-                          col.key !== '_index' &&
-                            RED_COLUMN_KEYS.has(col.key as keyof CashRegisterRow) &&
-                            styles.tdRed,
-                          isSelected && styles.tdSelected,
-                          col.type === 'index' && styles.tdIndex,
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
-                      >
-                        {col.type === 'index' ? (
-                          <span className={styles.indexCell}>{rowIndex + 1}</span>
-                        ) : col.type === 'date' ? (
-                          <input
-                            type="date"
-                            className={styles.input}
-                            value={row.date}
-                            onChange={(e) => updateCell(row.id, 'date', e.target.value)}
-                            aria-label={col.title}
-                          />
-                        ) : (
-                          <input
-                            type="number"
-                            className={styles.input}
-                            inputMode="decimal"
-                            step="any"
-                            value={row[col.key as keyof CashRegisterRow] ?? ''}
-                            onChange={(e) =>
-                              updateCell(
-                                row.id,
-                                col.key as keyof CashRegisterRow,
-                                e.target.value === '' ? '' : e.target.value
-                              )
-                            }
-                            aria-label={col.title}
-                          />
-                        )}
-                      </td>
-                    );
+                    if (idx === 9) {
+                      const diff = (totals.ap ?? 0) - (totals.ar ?? 0);
+                      return (
+                        <th
+                          key="ap-ar-diff"
+                          colSpan={2}
+                          className={`${styles.th} ${styles.thDiff}`}
+                          title="Ап − Ар"
+                        >
+                          Ап − Ар: {formatSum(diff)}
+                        </th>
+                      );
+                    }
+                    if (idx === 11) {
+                      const diff = (totals.sp ?? 0) - (totals.sr ?? 0);
+                      return (
+                        <th
+                          key="sp-sr-diff"
+                          colSpan={2}
+                          className={`${styles.th} ${styles.thDiff}`}
+                          title="Сп − Ср"
+                        >
+                          Сп − Ср: {formatSum(diff)}
+                        </th>
+                      );
+                    }
+                    if (idx === 8 || idx === 10 || idx === 12) return null;
+                    if (col.key === '_action')
+                      return <th key="_action" className={`${styles.th} ${styles.thDiff}`} />;
+                    return <th key={col.key} className={`${styles.th} ${styles.thDiff}`} />;
                   })}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+                <tr className={styles.totalsRow}>
+                  {COLUMNS.map((col) => (
+                    <th
+                      key={col.key}
+                      className={
+                        GREEN_COLUMN_KEYS.has(col.key as keyof CashRegisterRow)
+                          ? `${styles.th} ${styles.thTotals} ${styles.thGreen}`
+                          : RED_COLUMN_KEYS.has(col.key as keyof CashRegisterRow)
+                            ? `${styles.th} ${styles.thTotals} ${styles.thRed}`
+                            : `${styles.th} ${styles.thTotals}`
+                      }
+                    >
+                      {col.key === '_index'
+                        ? ''
+                        : col.key === 'date'
+                          ? 'Итого'
+                          : SUM_COLUMN_KEYS.has(col.key as keyof CashRegisterRow)
+                            ? formatSum(totals[col.key] ?? 0)
+                            : ''}
+                    </th>
+                  ))}
+                </tr>
+                <tr>
+                  {COLUMNS.map((col, colIndex) => (
+                    <th
+                      key={col.key}
+                      className={
+                        col.key === '_action'
+                          ? styles.th
+                          : GREEN_COLUMN_KEYS.has(col.key as keyof CashRegisterRow)
+                            ? `${styles.th} ${styles.thGreen} ${styles.thResizable}`
+                            : RED_COLUMN_KEYS.has(col.key as keyof CashRegisterRow)
+                              ? `${styles.th} ${styles.thRed} ${styles.thResizable}`
+                              : `${styles.th} ${styles.thResizable}`
+                      }
+                    >
+                      {col.title}
+                      {col.key !== '_action' && (
+                        <span
+                          className={styles.resizeHandle}
+                          onMouseDown={(e) => handleColumnResizeStart(colIndex, e)}
+                          role="separator"
+                          aria-orientation="vertical"
+                          aria-label={`Изменить ширину колонки ${col.title}`}
+                        />
+                      )}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((row, rowIndex) => (
+                  <tr key={row.id} className={styles.tr}>
+                    {COLUMNS.map((col, colIndex) => {
+                      const isSelected =
+                        selectionRange &&
+                        rowIndex >= selectionRange.minRow &&
+                        rowIndex <= selectionRange.maxRow &&
+                        colIndex >= selectionRange.minCol &&
+                        colIndex <= selectionRange.maxCol;
+                      return (
+                        <td
+                          key={col.key}
+                          className={[
+                            styles.td,
+                            col.key !== '_index' &&
+                              col.key !== '_action' &&
+                              GREEN_COLUMN_KEYS.has(col.key as keyof CashRegisterRow) &&
+                              styles.tdGreen,
+                            col.key !== '_index' &&
+                              col.key !== '_action' &&
+                              RED_COLUMN_KEYS.has(col.key as keyof CashRegisterRow) &&
+                              styles.tdRed,
+                            isSelected && styles.tdSelected,
+                            col.type === 'index' && styles.tdIndex,
+                            col.type === 'action' && styles.tdAction,
+                          ]
+                            .filter(Boolean)
+                            .join(' ')}
+                        >
+                          {col.type === 'index' ? (
+                            <span className={styles.indexCell}>{rowIndex + 1}</span>
+                          ) : col.type === 'action' ? (
+                            <button
+                              type="button"
+                              className={styles.deleteRowBtn}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteRow(row.id);
+                              }}
+                              title="Удалить строку"
+                              aria-label="Удалить строку"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          ) : col.type === 'date' ? (
+                            <input
+                              type="date"
+                              className={styles.input}
+                              value={row.date}
+                              onChange={(e) => updateCell(row.id, 'date', e.target.value)}
+                              aria-label={col.title}
+                            />
+                          ) : (
+                            <input
+                              type="number"
+                              className={styles.input}
+                              inputMode="decimal"
+                              step="any"
+                              value={row[col.key as keyof CashRegisterRow] ?? ''}
+                              onChange={(e) =>
+                                updateCell(
+                                  row.id,
+                                  col.key as keyof CashRegisterRow,
+                                  e.target.value === '' ? '' : e.target.value
+                                )
+                              }
+                              aria-label={col.title}
+                            />
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div
+              className={styles.tableResizeHandle}
+              onMouseDown={handleTableResizeStart}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Изменить ширину таблицы"
+            />
+          </div>
         </div>
       </div>
     </div>
