@@ -4,6 +4,8 @@ export interface UserNotificationSettings {
   id: string | null;
   userId: string;
   notifyOnSupportChatReply: boolean;
+  /** 1 | 2 — кол-во карточек в строке на мобильном; null = по умолчанию сайта */
+  mobileCatalogColumns: 1 | 2 | null;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -27,7 +29,7 @@ export async function getUserNotificationSettings(): Promise<UserNotificationSet
 }
 
 export async function updateUserNotificationSettings(
-  data: Partial<Pick<UserNotificationSettings, 'notifyOnSupportChatReply'>>
+  data: Partial<Pick<UserNotificationSettings, 'notifyOnSupportChatReply' | 'mobileCatalogColumns'>>
 ): Promise<UserNotificationSettings> {
   const res = await fetch(`${API_URL}/users/me/notification-settings`, {
     method: 'PATCH',

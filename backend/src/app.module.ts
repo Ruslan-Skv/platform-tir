@@ -24,6 +24,7 @@ import { PartnerProductsModule } from './partner-products/partner-products.modul
 import { FooterModule } from './footer/footer.module';
 import { NavigationModule } from './navigation/navigation.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { CatalogBlockModule } from './catalog-block/catalog-block.module';
 import { FormsModule } from './forms/forms.module';
 import { HomeSectionsModule } from './home-sections/home-sections.module';
 import { ContactFormModule } from './contact-form/contact-form.module';
@@ -61,6 +62,7 @@ import { ContactFormModule } from './contact-form/contact-form.module';
     FooterModule,
     NavigationModule,
     ReviewsModule,
+    CatalogBlockModule,
     FormsModule,
     HomeSectionsModule,
     ContactFormModule,

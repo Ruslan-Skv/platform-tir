@@ -148,7 +148,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
               {activeSubmenu &&
                 activeSubmenu.items.map((subItem) => (
                   <Link
-                    key={subItem.name}
+                    key={subItem.href}
                     href={subItem.href}
                     onClick={() => handleSubMenuItemClick(subItem.name)}
                     className={styles.subMenuItem}

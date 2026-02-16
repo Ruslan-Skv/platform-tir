@@ -34,6 +34,13 @@ export default function AdminSettingsPage() {
           Отзывы и оценки
         </Link>
         <Link
+          href="/admin/settings/catalog"
+          className={styles.subtitle}
+          style={{ color: '#4f46e5', textDecoration: 'underline' }}
+        >
+          Каталог
+        </Link>
+        <Link
           href="/admin/settings/notifications"
           className={styles.subtitle}
           style={{ color: '#4f46e5', textDecoration: 'underline' }}

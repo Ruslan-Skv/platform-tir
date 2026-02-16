@@ -1,3 +1,5 @@
+import { XMarkIcon } from '@heroicons/react/24/outline';
+
 import React from 'react';
 
 import styles from './FiltersSidebar.module.css';
@@ -8,7 +10,14 @@ interface FilterSection {
   options: string[];
 }
 
-export const FiltersSidebar: React.FC = () => {
+export interface FiltersSidebarProps {
+  /** На мобильных: открыта ли панель (оверлей) */
+  mobileOpen?: boolean;
+  /** Закрыть панель фильтров (для мобильных) */
+  onClose?: () => void;
+}
+
+export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({ mobileOpen, onClose }) => {
   const filterSections: FilterSection[] = [
     {
       title: 'Цена',
@@ -33,12 +42,26 @@ export const FiltersSidebar: React.FC = () => {
   ];
 
   return (
-    <div className={styles.filtersSidebar}>
+    <div
+      className={`${styles.filtersSidebar} ${mobileOpen ? styles.filtersSidebarMobileOpen : ''}`}
+    >
       <div className={styles.header}>
         <h2 className={styles.title}>Фильтры</h2>
-        <button type="button" className={styles.clearButton}>
-          Сбросить
-        </button>
+        <div className={styles.headerActions}>
+          <button type="button" className={styles.clearButton}>
+            Сбросить
+          </button>
+          {onClose && (
+            <button
+              type="button"
+              className={styles.closeButton}
+              onClick={onClose}
+              aria-label="Закрыть фильтры"
+            >
+              <XMarkIcon className={styles.closeIcon} />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className={styles.sections}>

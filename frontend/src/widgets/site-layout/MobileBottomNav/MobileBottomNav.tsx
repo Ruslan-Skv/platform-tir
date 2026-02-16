@@ -2,7 +2,7 @@
 
 import {
   HeartIcon,
-  HomeIcon,
+  RectangleGroupIcon,
   ShoppingCartIcon,
   Squares2X2Icon,
   UserIcon,
@@ -24,7 +24,7 @@ const navItems: Array<{
   Icon: React.ComponentType<{ className?: string }>;
   authHref?: string;
 }> = [
-  { href: '/', label: 'Главная', Icon: HomeIcon },
+  { href: '/catalog/products', label: 'Каталог', Icon: RectangleGroupIcon },
   { href: '/compare', label: 'Сравнить', Icon: Squares2X2Icon },
   { href: '/cart', label: 'Корзина', Icon: ShoppingCartIcon },
   { href: '/favorites', label: 'Избранное', Icon: HeartIcon },
@@ -51,9 +51,9 @@ export function MobileBottomNav() {
         {navItems.map(({ href, label, Icon, authHref }) => {
           const linkHref = authHref && !isAuthenticated ? authHref : href;
           const isActive =
-            href === '/'
-              ? pathname === '/'
-              : pathname === href || (href !== '/' && pathname.startsWith(href));
+            href === '/catalog/products'
+              ? pathname.startsWith('/catalog')
+              : pathname === href || pathname.startsWith(href + '/');
           const count = getCount(href);
           const showCount = count > 0;
 

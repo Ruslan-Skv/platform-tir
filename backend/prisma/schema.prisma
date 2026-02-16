@@ -11,6 +11,7 @@ model UserNotificationSettings {
   id                       String   @id @default(cuid())
   userId                   String   @unique
   notifyOnSupportChatReply Boolean  @default(true)
+  mobileCatalogColumns     Int?     // 1 или 2 — кол-во карточек в строке на мобильном (null = по умолчанию сайта)
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
   user                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1108,6 +1109,14 @@ model ReviewsBlock {
   updatedAt          DateTime @updatedAt
 
   @@map("reviews_block")
+}
+
+model CatalogBlock {
+  id                      String   @id @default("main")
+  defaultMobileCatalogColumns Int  @default(1) // 1 или 2 карточки в строке на мобильном (по умолчанию для сайта)
+  updatedAt               DateTime @updatedAt
+
+  @@map("catalog_block")
 }
 
 model NotificationSound {

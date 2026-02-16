@@ -90,6 +90,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   },
   { id: 'admin.settings.reviews', label: 'Отзывы и оценки', path: '/admin/settings/reviews' },
   {
+    id: 'admin.settings.catalog',
+    label: 'Каталог',
+    path: '/admin/settings/catalog',
+  },
+  {
     id: 'admin.settings.user-cabinet',
     label: 'Личный кабинет',
     path: '/admin/settings/user-cabinet',

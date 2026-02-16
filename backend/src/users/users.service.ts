@@ -111,6 +111,7 @@ export class UsersService {
         id: null,
         userId,
         notifyOnSupportChatReply: true,
+        mobileCatalogColumns: null,
         createdAt: null,
         updatedAt: null,
       }
@@ -152,13 +153,24 @@ export class UsersService {
     });
   }
 
-  async updateNotificationSettings(userId: string, data: { notifyOnSupportChatReply?: boolean }) {
+  async updateNotificationSettings(
+    userId: string,
+    data: { notifyOnSupportChatReply?: boolean; mobileCatalogColumns?: 1 | 2 | null },
+  ) {
     return this.prisma.userNotificationSettings.upsert({
       where: { userId },
-      update: { ...data },
+      update: {
+        ...(data.notifyOnSupportChatReply !== undefined && {
+          notifyOnSupportChatReply: data.notifyOnSupportChatReply,
+        }),
+        ...(data.mobileCatalogColumns !== undefined && {
+          mobileCatalogColumns: data.mobileCatalogColumns,
+        }),
+      },
       create: {
         userId,
         notifyOnSupportChatReply: data.notifyOnSupportChatReply ?? true,
+        mobileCatalogColumns: data.mobileCatalogColumns ?? undefined,
       },
     });
   }

@@ -78,7 +78,7 @@
   color: #374151;
   cursor: pointer;
   display: flex;
-  padding: 0.5rem;
+  padding: 0.375rem;
   transition: color 0.2s;
 }
 
@@ -107,8 +107,8 @@
 }
 
 .mobileHeaderIconSvg {
-  height: 1.5rem;
-  width: 1.5rem;
+  height: 1.25rem;
+  width: 1.25rem;
 }
 
 .mobileSearchForm {

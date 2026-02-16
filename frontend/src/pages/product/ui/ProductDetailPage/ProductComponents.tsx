@@ -127,137 +127,139 @@ export const ProductComponents: React.FC<ProductComponentsProps> = ({
 
           return (
             <div key={component.id} className={styles.componentItem}>
-              {component.image && (
-                <div className={styles.componentImage}>
-                  <img src={component.image} alt={component.type} />
-                </div>
-              )}
-              <div className={styles.componentInfo}>
-                <div className={styles.componentInfoRow}>
+              <div className={styles.componentLeft}>
+                {component.image && (
+                  <div className={styles.componentImage}>
+                    <img src={component.image} alt={component.type} />
+                  </div>
+                )}
+                <div className={styles.componentInfo}>
                   <span className={styles.componentName}>{component.name}</span>
                   <span className={styles.componentType}>{component.type}</span>
-                  <span className={styles.componentPrice}>{price.toLocaleString()} ₽ / шт.</span>
                 </div>
               </div>
-              <div className={styles.componentActions}>
-                {(() => {
-                  const cartItem = cart.find(
-                    (item) =>
-                      item.componentId !== null &&
-                      item.productId === null &&
-                      String(item.componentId) === String(component.id)
-                  );
-                  const cartQuantity = cartItem ? Number(cartItem.quantity) : 0;
-                  const isInCart = cartQuantity > 0;
+              <div className={styles.componentRight}>
+                <span className={styles.componentPrice}>{price.toLocaleString()} ₽ / шт.</span>
+                <div className={styles.componentActions}>
+                  {(() => {
+                    const cartItem = cart.find(
+                      (item) =>
+                        item.componentId !== null &&
+                        item.productId === null &&
+                        String(item.componentId) === String(component.id)
+                    );
+                    const cartQuantity = cartItem ? Number(cartItem.quantity) : 0;
+                    const isInCart = cartQuantity > 0;
 
-                  if (isInCart) {
-                    const cartStep = getQuantityStep(component);
-                    const cartMin = getMinQuantity(component);
-                    const cartQtyNum = Number(cartQuantity);
+                    if (isInCart) {
+                      const cartStep = getQuantityStep(component);
+                      const cartMin = getMinQuantity(component);
+                      const cartQtyNum = Number(cartQuantity);
+                      return (
+                        <div className={styles.cartControls}>
+                          <span className={styles.inCartLabel}>В корзине</span>
+                          <div
+                            className={styles.quantityControls}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              type="button"
+                              className={styles.quantityButton}
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (isAdding) return;
+                                try {
+                                  const newQuantity = Math.round((cartQtyNum - cartStep) * 2) / 2;
+                                  if (newQuantity < cartMin) {
+                                    await removeComponentFromCart(component.id);
+                                    return;
+                                  }
+                                  await updateComponentQuantity(component.id, newQuantity);
+                                } catch (error) {
+                                  if (error instanceof Error) {
+                                    alert(error.message);
+                                  } else {
+                                    alert('Произошла ошибка при обновлении количества');
+                                  }
+                                }
+                              }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }}
+                              disabled={isAdding}
+                            >
+                              −
+                            </button>
+                            <span className={styles.quantityValue}>
+                              {cartStep === 0.5 && cartQtyNum % 1 !== 0
+                                ? cartQtyNum.toFixed(1)
+                                : cartQuantity}
+                            </span>
+                            <button
+                              type="button"
+                              className={styles.quantityButton}
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (isAdding) return;
+                                try {
+                                  const newQuantity = Math.round((cartQtyNum + cartStep) * 2) / 2;
+                                  await updateComponentQuantity(component.id, newQuantity);
+                                } catch (error) {
+                                  if (error instanceof Error) {
+                                    alert(error.message);
+                                  } else {
+                                    alert('Произошла ошибка при обновлении количества');
+                                  }
+                                }
+                              }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }}
+                              disabled={isAdding}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+
                     return (
-                      <div className={styles.cartControls}>
-                        <span className={styles.inCartLabel}>В корзине</span>
-                        <div
-                          className={styles.quantityControls}
-                          onClick={(e) => e.stopPropagation()}
-                        >
+                      <>
+                        <div className={styles.quantitySelector}>
                           <button
                             type="button"
                             className={styles.quantityButton}
-                            onClick={async (e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              if (isAdding) return;
-                              try {
-                                const newQuantity = Math.round((cartQtyNum - cartStep) * 2) / 2;
-                                if (newQuantity < cartMin) {
-                                  await removeComponentFromCart(component.id);
-                                  return;
-                                }
-                                await updateComponentQuantity(component.id, newQuantity);
-                              } catch (error) {
-                                if (error instanceof Error) {
-                                  alert(error.message);
-                                } else {
-                                  alert('Произошла ошибка при обновлении количества');
-                                }
-                              }
-                            }}
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                            }}
-                            disabled={isAdding}
+                            onClick={() => handleQuantityChange(component.id, -1, step)}
+                            disabled={quantity <= minQty}
                           >
                             −
                           </button>
-                          <span className={styles.quantityValue}>
-                            {cartStep === 0.5 && cartQtyNum % 1 !== 0
-                              ? cartQtyNum.toFixed(1)
-                              : cartQuantity}
-                          </span>
+                          <span className={styles.quantityValue}>{formatQty(quantity)}</span>
                           <button
                             type="button"
                             className={styles.quantityButton}
-                            onClick={async (e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              if (isAdding) return;
-                              try {
-                                const newQuantity = Math.round((cartQtyNum + cartStep) * 2) / 2;
-                                await updateComponentQuantity(component.id, newQuantity);
-                              } catch (error) {
-                                if (error instanceof Error) {
-                                  alert(error.message);
-                                } else {
-                                  alert('Произошла ошибка при обновлении количества');
-                                }
-                              }
-                            }}
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                            }}
-                            disabled={isAdding}
+                            onClick={() => handleQuantityChange(component.id, 1, step)}
                           >
                             +
                           </button>
                         </div>
-                      </div>
+                        <button
+                          type="button"
+                          className={styles.addToCartButton}
+                          onClick={() => handleAddToCart(component)}
+                          disabled={isAdding}
+                        >
+                          {isAdding ? 'Добавление...' : 'В корзину'}
+                        </button>
+                      </>
                     );
-                  }
-
-                  return (
-                    <>
-                      <div className={styles.quantitySelector}>
-                        <button
-                          type="button"
-                          className={styles.quantityButton}
-                          onClick={() => handleQuantityChange(component.id, -1, step)}
-                          disabled={quantity <= minQty}
-                        >
-                          −
-                        </button>
-                        <span className={styles.quantityValue}>{formatQty(quantity)}</span>
-                        <button
-                          type="button"
-                          className={styles.quantityButton}
-                          onClick={() => handleQuantityChange(component.id, 1, step)}
-                        >
-                          +
-                        </button>
-                      </div>
-                      <button
-                        type="button"
-                        className={styles.addToCartButton}
-                        onClick={() => handleAddToCart(component)}
-                        disabled={isAdding}
-                      >
-                        {isAdding ? 'Добавление...' : 'В корзину'}
-                      </button>
-                    </>
-                  );
-                })()}
+                  })()}
+                </div>
               </div>
             </div>
           );

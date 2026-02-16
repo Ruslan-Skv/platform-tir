@@ -349,7 +349,7 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
               {!useDynamicMenu &&
                 menuData &&
                 menuData.items.map((dropdownItem) => (
-                  <div key={dropdownItem.name} className={styles.dropdownSection}>
+                  <div key={dropdownItem.href} className={styles.dropdownSection}>
                     <div className={styles.dropdownSectionInner}>
                       <a
                         href={dropdownItem.href}
@@ -371,7 +371,7 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
                         <div className={styles.submenu}>
                           {dropdownItem.submenu.map((subItem) => (
                             <a
-                              key={subItem.name}
+                              key={subItem.href}
                               href={subItem.href}
                               onClick={() => handleDropdownItemClick(subItem.name)}
                               className={styles.submenuItem}

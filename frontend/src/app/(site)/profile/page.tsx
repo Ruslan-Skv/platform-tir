@@ -97,6 +97,7 @@ export default function ProfilePage() {
   const [notifLoading, setNotifLoading] = useState(false);
   const [notifSaving, setNotifSaving] = useState(false);
   const [notifNotifyChat, setNotifNotifyChat] = useState(true);
+  const [notifMobileCatalogColumns, setNotifMobileCatalogColumns] = useState<1 | 2 | null>(null);
 
   // Password
   const [currentPassword, setCurrentPassword] = useState('');
@@ -155,6 +156,7 @@ export default function ProfilePage() {
       const data = await getUserNotificationSettings();
       setNotifSettings(data);
       setNotifNotifyChat(data.notifyOnSupportChatReply);
+      setNotifMobileCatalogColumns(data.mobileCatalogColumns ?? null);
     } catch {
       setNotifSettings(null);
     } finally {
@@ -267,9 +269,18 @@ export default function ProfilePage() {
   const handleSaveNotif = async () => {
     setNotifSaving(true);
     try {
-      await updateUserNotificationSettings({ notifyOnSupportChatReply: notifNotifyChat });
+      await updateUserNotificationSettings({
+        notifyOnSupportChatReply: notifNotifyChat,
+        mobileCatalogColumns: notifMobileCatalogColumns,
+      });
       setNotifSettings((prev) =>
-        prev ? { ...prev, notifyOnSupportChatReply: notifNotifyChat } : null
+        prev
+          ? {
+              ...prev,
+              notifyOnSupportChatReply: notifNotifyChat,
+              mobileCatalogColumns: notifMobileCatalogColumns,
+            }
+          : null
       );
     } catch {
       // ignore
@@ -587,6 +598,22 @@ export default function ProfilePage() {
                       />
                       Уведомлять при ответе в чате поддержки
                     </label>
+                  </div>
+                  <div className={styles.field}>
+                    <label className={styles.label}>Режим просмотра каталога на мобильном</label>
+                    <select
+                      value={notifMobileCatalogColumns ?? ''}
+                      onChange={(e) =>
+                        setNotifMobileCatalogColumns(
+                          e.target.value === '' ? null : (Number(e.target.value) as 1 | 2)
+                        )
+                      }
+                      className={styles.input}
+                    >
+                      <option value="">По умолчанию (настройка сайта)</option>
+                      <option value={1}>1 карточка в строке</option>
+                      <option value={2}>2 карточки в строке</option>
+                    </select>
                   </div>
                   <button
                     onClick={handleSaveNotif}

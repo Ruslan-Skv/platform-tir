@@ -1,5 +1,7 @@
 'use client';
 
+import { FunnelIcon } from '@heroicons/react/24/outline';
+
 import React, { useState } from 'react';
 
 import { Breadcrumbs } from '../Breadcrumbs';
@@ -21,10 +23,10 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   parentCategoryName,
   parentCategorySlug,
 }) => {
-  // Если categoryName не передан, используем categorySlug как fallback
   const displayCategoryName = categoryName || categorySlug || 'Каталог';
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -33,23 +35,51 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
 
   return (
     <div className={styles.catalogPage}>
-      {/* 1. Верхний ряд - хлебные крошки */}
-      <div className={styles.breadcrumbsSection}>
-        <Breadcrumbs
-          categoryName={displayCategoryName}
-          parentCategoryName={parentCategoryName}
-          parentCategorySlug={parentCategorySlug}
-        />
+      {/* 1. Верхний блок: крошки + кнопка «Фильтры» (рядом на мобильных) */}
+      <div className={styles.topSection}>
+        <div className={styles.breadcrumbsSection}>
+          <Breadcrumbs
+            categoryName={displayCategoryName}
+            parentCategoryName={parentCategoryName}
+            parentCategorySlug={parentCategorySlug}
+          />
+        </div>
+        <div className={styles.mobileFiltersRow}>
+          <button
+            type="button"
+            className={styles.mobileFiltersButton}
+            onClick={() => setMobileFiltersOpen(true)}
+            aria-label="Открыть фильтры"
+          >
+            <FunnelIcon className={styles.mobileFiltersButtonIcon} />
+            Фильтры
+          </button>
+        </div>
       </div>
 
       {/* 2. Основной контент - фильтры и товары */}
       <div className={styles.mainContent}>
-        {/* Левая колонка - фильтры */}
+        {/* Десктоп: боковая панель фильтров */}
         <aside className={styles.filtersSidebar}>
           <FiltersSidebar />
         </aside>
 
-        {/* Правая колонка - товары */}
+        {/* Мобильные: оверлей с фильтрами (панель снизу) */}
+        <div
+          className={styles.filtersOverlay}
+          data-open={mobileFiltersOpen}
+          aria-hidden={!mobileFiltersOpen}
+        >
+          <div className={styles.filtersBackdrop} onClick={() => setMobileFiltersOpen(false)} />
+          <div className={styles.filtersDrawer}>
+            <FiltersSidebar
+              mobileOpen={mobileFiltersOpen}
+              onClose={() => setMobileFiltersOpen(false)}
+            />
+          </div>
+        </div>
+
+        {/* Колонка с товарами */}
         <main className={styles.productsSection}>
           <ProductsGrid
             categorySlug={categorySlug}

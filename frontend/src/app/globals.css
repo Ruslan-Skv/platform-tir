@@ -355,7 +355,7 @@ select:focus-visible {
 /* Отступы под мобильную шапку (фиксированная) и нижнюю навигацию */
 @media (width <= 768px) {
   .mainContent {
-    padding-top: 6.5rem;
+    padding-top: 6rem;
     padding-bottom: 5.5rem;
   }
 }

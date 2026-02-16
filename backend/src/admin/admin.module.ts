@@ -22,6 +22,7 @@ import { AdminFormsModule } from './forms/admin-forms.module';
 import { PhotoModule } from './photo/photo.module';
 import { PromotionModule } from './promotions/promotion.module';
 import { UserCabinetModule } from './user-cabinet/user-cabinet.module';
+import { AdminCatalogBlockModule } from './catalog-block/admin-catalog-block.module';
 import { AdminAccessModule } from './admin-access/admin-access.module';
 import { OfficeCashModule } from './office-cash/office-cash.module';
 
@@ -55,6 +56,7 @@ import { OfficeCashModule } from './office-cash/office-cash.module';
     PhotoModule,
     PromotionModule,
     UserCabinetModule,
+    AdminCatalogBlockModule,
     // Analytics
     AnalyticsModule,
   ],
@@ -83,6 +85,7 @@ import { OfficeCashModule } from './office-cash/office-cash.module';
     PhotoModule,
     PromotionModule,
     UserCabinetModule,
+    AdminCatalogBlockModule,
     AnalyticsModule,
   ],
 })

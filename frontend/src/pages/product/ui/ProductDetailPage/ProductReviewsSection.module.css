@@ -8,6 +8,7 @@
   font-size: 1.25rem;
   font-weight: 600;
   margin: 0 0 1rem;
+  color: #111827;
 }
 
 .summary {
@@ -24,7 +25,7 @@
 
 .ratingValue {
   font-size: 0.9375rem;
-  color: #6b7280;
+  color: #4b5563;
 }
 
 .reviewsList {
@@ -33,7 +34,7 @@
 
 .loading,
 .empty {
-  color: #6b7280;
+  color: #4b5563;
   font-size: 0.9375rem;
   margin: 0;
 }
@@ -57,11 +58,12 @@
 .reviewAuthor {
   font-weight: 500;
   font-size: 0.9375rem;
+  color: #111827;
 }
 
 .reviewDate {
   font-size: 0.8125rem;
-  color: #9ca3af;
+  color: #6b7280;
 }
 
 .reviewStars {
@@ -80,7 +82,7 @@
 .adminReply {
   margin-top: 0.75rem;
   padding: 0.75rem;
-  background: rgb(79 70 229 / 8%);
+  background: #eef2ff;
   border-radius: 0.5rem;
   border-left: 3px solid #4f46e5;
 }
@@ -97,7 +99,7 @@
   margin: 0;
   font-size: 0.875rem;
   line-height: 1.5;
-  color: #374151;
+  color: #1f2937;
 }
 
 .loadMore {
@@ -127,14 +129,16 @@
 .form {
   max-width: 480px;
   padding: 1.5rem;
-  background: rgb(0 0 0 / 3%);
+  background: #f9fafb;
   border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
 }
 
 .formTitle {
   font-size: 1rem;
   font-weight: 600;
   margin: 0 0 1rem;
+  color: #111827;
 }
 
 .formRow {
@@ -146,6 +150,7 @@
   font-size: 0.875rem;
   font-weight: 500;
   margin-bottom: 0.25rem;
+  color: #374151;
 }
 
 .starsInput {
@@ -169,6 +174,8 @@
   font-size: 0.9375rem;
   border: 1px solid #d1d5db;
   border-radius: 0.375rem;
+  background: #fff;
+  color: #111827;
 }
 
 .textarea {
@@ -183,11 +190,11 @@
 }
 
 .submitButton {
-  padding: 0.5rem 1.25rem;
+  padding: 0.625rem 1.25rem;
   font-size: 0.9375rem;
-  font-weight: 500;
+  font-weight: 600;
   color: #fff;
-  background: #2563eb;
+  background: #d90652;
   border: none;
   border-radius: 0.375rem;
   cursor: pointer;
@@ -195,7 +202,7 @@
 }
 
 .submitButton:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: #b80545;
 }
 
 .submitButton:disabled {
@@ -225,6 +232,12 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .form {
   background: rgb(255 255 255 / 5%);
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .label {
+  color: #e5e7eb;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input,
@@ -232,4 +245,75 @@
   border-color: #4b5563;
   background: rgb(0 0 0 / 20%);
   color: #f9fafb;
+}
+
+/* Мобильная вёрстка */
+@media (width <= 768px) {
+  .section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+  }
+
+  .title {
+    font-size: 1.125rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .summary {
+    margin-bottom: 1rem;
+  }
+
+  .ratingStars {
+    font-size: 1.125rem;
+  }
+
+  .ratingValue {
+    font-size: 0.875rem;
+  }
+
+  .reviewCard {
+    padding: 0.75rem 0;
+  }
+
+  .reviewHeader {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .reviewAuthor {
+    font-size: 0.875rem;
+  }
+
+  .reviewDate {
+    font-size: 0.75rem;
+  }
+
+  .reviewComment {
+    font-size: 0.875rem;
+  }
+
+  .form {
+    max-width: 100%;
+    padding: 1rem;
+  }
+
+  .formTitle {
+    font-size: 0.9375rem;
+    margin-bottom: 0.75rem;
+  }
+}
+
+@media (width <= 480px) {
+  .section {
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+  }
+
+  .reviewCard {
+    padding: 0.5rem 0;
+  }
+
+  .form {
+    padding: 0.75rem;
+  }
 }

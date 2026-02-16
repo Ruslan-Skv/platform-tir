@@ -240,6 +240,11 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.settings.reviews',
       },
       {
+        label: 'Каталог',
+        href: '/admin/settings/catalog',
+        resourceId: 'admin.settings.catalog',
+      },
+      {
         label: 'Личный кабинет',
         href: '/admin/settings/user-cabinet',
         resourceId: 'admin.settings.user-cabinet',

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 
 import type { Product } from '@/entities/product/types';
+import { useMobileCatalogColumns } from '@/shared/lib/hooks';
 
 import { ProductCard } from './ProductCard';
 import styles from './ProductsGrid.module.css';
@@ -95,6 +96,7 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('default');
+  const mobileCatalogColumns = useMobileCatalogColumns();
   const [partnerSettings, setPartnerSettings] = useState<{
     partnerLogoUrl: string | null;
     showPartnerIconOnCards: boolean;
@@ -326,7 +328,7 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
         </div>
       </div>
 
-      <div className={styles.grid}>
+      <div className={`${styles.grid} ${mobileCatalogColumns === 2 ? styles.gridMobile2 : ''}`}>
         {currentProducts.map((product) => (
           <ProductCard
             key={product.id}

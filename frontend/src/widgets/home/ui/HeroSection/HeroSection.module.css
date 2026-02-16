@@ -232,12 +232,14 @@
   }
 
   .leftPart {
-    order: 1;
+    order: 2;
     text-align: center;
+    padding-left: 0;
+    align-items: center;
   }
 
   .imageWrapper {
-    order: 2;
+    order: 1;
   }
 
   .title {

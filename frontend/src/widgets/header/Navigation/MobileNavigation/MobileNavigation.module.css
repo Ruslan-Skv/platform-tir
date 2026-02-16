@@ -1,6 +1,6 @@
 /* Высота шапки на мобильных — без зазора между шапкой и меню */
 :root {
-  --mobile-header-height: 6.5rem;
+  --mobile-header-height: 6rem;
 }
 
 .mobileMenu {
@@ -107,26 +107,21 @@ button.menuItemField {
 
 .backButton {
   align-items: center;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: transparent;
+  border: none;
   border-radius: 0.5rem;
-  color: #374151;
+  color: #6b7280;
   display: flex;
   font-size: 0.9375rem;
   font-weight: 500;
   gap: 0.5rem;
   margin-bottom: 0.25rem;
-  padding: 0.625rem 1rem;
-  transition:
-    border-color 0.2s,
-    background-color 0.2s,
-    color 0.2s;
-  width: 100%;
+  padding: 0.5rem 0;
+  transition: color 0.2s;
+  width: auto;
 }
 
 .backButton:hover {
-  background: #f3f4f6;
-  border-color: rgb(217 6 82 / 0.35);
   color: #d90652;
 }
 
@@ -135,7 +130,6 @@ button.menuItemField {
 }
 
 .backButton:focus-visible {
-  border-color: rgb(217 6 82 / 0.5);
   box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
 }
 
@@ -279,14 +273,12 @@ button.menuItemField {
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .backButton {
-  background: rgb(31 41 55 / 50%);
-  border-color: #4b5563;
-  color: #d1d5db;
+  background: transparent;
+  border: none;
+  color: #9ca3af;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .backButton:hover {
-  background: #374151;
-  border-color: rgb(217 6 82 / 0.4);
   color: #d90652;
 }
 
