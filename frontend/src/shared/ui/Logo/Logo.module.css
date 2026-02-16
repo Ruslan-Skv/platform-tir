@@ -18,8 +18,8 @@
 
 .logo {
   cursor: pointer;
-  height: 2.625rem; /* 70% от 3.75rem */
-  max-width: clamp(8.75rem, 5.19rem + 15.81vw, 15.31rem); /* 70% от исходного clamp */
+  height: 2.875rem;
+  max-width: clamp(9.5rem, 5.7rem + 17vw, 16.75rem);
   transition: transform 0.3s ease;
   overflow: visible;
   display: block;
@@ -187,6 +187,6 @@
 
 @media (width <= 1023px) {
   .logo {
-    height: 1.575rem; /* 70% от 2.25rem */
+    height: 1.75rem;
   }
 }

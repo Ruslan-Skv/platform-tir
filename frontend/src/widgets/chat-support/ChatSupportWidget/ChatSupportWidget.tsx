@@ -9,6 +9,7 @@ import {
   updateUserNotificationSettings,
 } from '@/shared/api/user-notifications';
 
+import { useChatSupportOpen } from '../context/ChatSupportOpenContext';
 import styles from './ChatSupportWidget.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
@@ -42,7 +43,11 @@ interface Message {
 
 export function ChatSupportWidget() {
   const { isAuthenticated, getAuthHeaders, user } = useUserAuth();
-  const [open, setOpen] = useState(false);
+  const chatContext = useChatSupportOpen();
+  const [localOpen, setLocalOpen] = useState(false);
+
+  const open = chatContext ? chatContext.open : localOpen;
+  const setOpen = chatContext ? chatContext.setOpen : setLocalOpen;
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);

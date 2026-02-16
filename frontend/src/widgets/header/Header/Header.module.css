@@ -11,6 +11,15 @@
   background: #ffffff;
 }
 
+@media (width <= 768px) {
+  .header {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+  }
+}
+
 .container {
   margin: 0 auto;
   max-width: 1280px;
@@ -40,6 +49,176 @@
 
 .logoSection > a:first-child {
   overflow: visible;
+}
+
+/* Мобильная шапка: по умолчанию скрыта */
+.mobileHeader {
+  display: none;
+}
+
+.mobileHeaderRow {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  width: 100%;
+}
+
+.mobileHeaderRow > a:first-child {
+  flex-shrink: 0;
+  margin-right: auto;
+}
+
+.mobileHeaderIcon {
+  align-items: center;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  padding: 0.5rem;
+  transition: color 0.2s;
+}
+
+.mobileHeaderIcon:hover {
+  color: #d90652;
+}
+
+.mobileHeaderIconBurger {
+  background: #d90652;
+  border-color: #d90652;
+  color: #fff;
+}
+
+.mobileHeaderIconBurger:hover {
+  background: #b80546;
+  border-color: #b80546;
+  color: #fff;
+}
+
+.mobileHeaderIcon:focus {
+  outline: none;
+}
+
+.mobileHeaderIcon:focus-visible {
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+}
+
+.mobileHeaderIconSvg {
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+.mobileSearchForm {
+  align-items: center;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  display: flex;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  width: 100%;
+}
+
+.mobileSearchForm:focus-within {
+  border-color: rgb(217 6 82 / 0.35);
+}
+
+.mobileSearchInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #111827;
+  font-size: 0.9375rem;
+  min-width: 0;
+  padding: 0.5rem 0.75rem 0.5rem 1rem;
+  outline: none;
+}
+
+.mobileSearchInput::placeholder {
+  color: #6b7280;
+}
+
+.mobileSearchSubmit {
+  align-items: center;
+  background: none;
+  border: none;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  padding: 0.5rem 0.75rem;
+  transition: color 0.2s;
+}
+
+.mobileSearchSubmit:hover {
+  color: #d90652;
+}
+
+.mobileSearchIcon {
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileHeaderIcon {
+  background: rgb(31 41 55 / 50%);
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileHeaderIcon:hover {
+  color: #d90652;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileHeaderIconBurger {
+  background: #d90652;
+  border-color: #d90652;
+  color: #fff;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileHeaderIconBurger:hover {
+  background: #b80546;
+  border-color: #b80546;
+  color: #fff;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileSearchForm {
+  background: rgb(31 41 55 / 50%);
+  border-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileSearchForm:focus-within {
+  border-color: rgb(217 6 82 / 0.4);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileSearchInput {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileSearchInput::placeholder {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileSearchSubmit {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileSearchSubmit:hover {
+  color: #d90652;
+}
+
+/* Мобильная вёрстка: показываем мобильную шапку, скрываем десктопную */
+@media (width <= 768px) {
+  .logoSection {
+    display: none;
+  }
+
+  .mobileHeader {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
 }
 
 /* Градиент для кнопки «Записаться на замер» (как в секции контактной формы) */

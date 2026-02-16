@@ -351,3 +351,11 @@ select:focus-visible {
   position: relative;
   z-index: 30;
 }
+
+/* Отступы под мобильную шапку (фиксированная) и нижнюю навигацию */
+@media (width <= 768px) {
+  .mainContent {
+    padding-top: 6.5rem;
+    padding-bottom: 5.5rem;
+  }
+}

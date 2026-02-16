@@ -1,25 +1,16 @@
 'use client';
 
-import {
-  ChartBarIcon,
-  ChevronLeftIcon,
-  HeartIcon,
-  MagnifyingGlassIcon,
-  ShoppingCartIcon,
-  UserIcon,
-  XMarkIcon,
-} from '@heroicons/react/24/outline';
+import { ChevronLeftIcon } from '@heroicons/react/24/outline';
 
 import React from 'react';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { useUserAuth } from '@/features/auth/context/UserAuthContext';
-import { useTheme } from '@/features/theme';
+import { ActionButton } from '@/features/forms';
+import { useFormContext } from '@/features/forms';
 import { dropdownMenus } from '@/shared/constants/navigation';
 import { useDynamicCategories, useNavigationItems } from '@/shared/lib/hooks';
-import { Logo } from '@/shared/ui/Logo';
-import { ActionButtons } from '@/widgets/header/ActionButtons/ActionButtons';
 
 import styles from './MobileNavigation.module.css';
 
@@ -31,12 +22,9 @@ export interface MobileNavigationProps {
 
 type MenuState = 'main' | 'submenu';
 
-// Интерфейс для кнопок меню с изображениями
 interface MenuButton {
   name: string;
   hasDropdown: boolean;
-  imageLight?: string;
-  imageDark?: string;
   href?: string;
 }
 
@@ -47,108 +35,14 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
 }) => {
   const [currentMenu, setCurrentMenu] = React.useState<MenuState>('main');
   const [activeMenuItem, setActiveMenuItem] = React.useState<string | null>(null);
-  const { isDarkTheme } = useTheme();
-  const [isMounted, setIsMounted] = React.useState(false);
   const router = useRouter();
-  const { isAuthenticated, user } = useUserAuth();
   const navigationItems = useNavigationItems();
   const { navigationCategories } = useDynamicCategories();
+  const { measurementModal, callbackModal } = useFormContext();
 
-  const getAvatarUrl = (avatar: string | null | undefined): string | null => {
-    if (!avatar) return null;
-    if (avatar.startsWith('http')) return avatar;
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-    const base = apiUrl.replace(/\/api\/v1\/?$/, '');
-    return `${base}${avatar}`;
-  };
-
-  const getInitials = (
-    firstName: string | null,
-    lastName: string | null,
-    email: string
-  ): string => {
-    if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
-    if (firstName) return firstName.slice(0, 2).toUpperCase();
-    if (email) return email.slice(0, 2).toUpperCase();
-    return '?';
-  };
-
-  // Избегаем hydration mismatch, используя тему только после монтирования
-  React.useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  // Предзагрузка изображений при монтировании компонента
-  React.useEffect(() => {
-    const preloadMenuImages = () => {
-      const imagePaths = [
-        '/images/menu/light/01.png',
-        '/images/menu/light/02.png',
-        '/images/menu/light/03.png',
-        '/images/menu/light/04.png',
-        '/images/menu/light/05.png',
-        '/images/menu/light/06.png',
-        '/images/menu/light/07.png',
-        '/images/menu/dark/01.png',
-        '/images/menu/dark/02.png',
-        '/images/menu/dark/03.png',
-        '/images/menu/dark/04.png',
-        '/images/menu/dark/05.png',
-        '/images/menu/dark/06.png',
-        '/images/menu/dark/07.png',
-      ];
-
-      imagePaths.forEach((path) => {
-        const img = new Image();
-        img.src = path;
-      });
-    };
-
-    preloadMenuImages();
-  }, []);
-
-  // Функция для получения картинки в зависимости от темы
-  const getImageForMenuItem = (itemName: string): string => {
-    const imageMap: Record<string, { light: string; dark: string }> = {
-      Каталог: {
-        light: '/images/menu/light/02.png',
-        dark: '/images/menu/dark/02.png',
-      },
-      'Каталог услуг': {
-        light: '/images/menu/light/01.png',
-        dark: '/images/menu/dark/01.png',
-      },
-      Акции: {
-        light: '/images/menu/light/07.png',
-        dark: '/images/menu/dark/07.png',
-      },
-      Блог: {
-        light: '/images/menu/light/03.png',
-        dark: '/images/menu/dark/03.png',
-      },
-      Фото: {
-        light: '/images/menu/light/04.png',
-        dark: '/images/menu/dark/04.png',
-      },
-    };
-
-    const itemImages = imageMap[itemName];
-    // На сервере и до монтирования используем светлую тему для избежания mismatch
-    const theme = isMounted ? (isDarkTheme ? 'dark' : 'light') : 'light';
-
-    if (itemImages) {
-      return theme === 'dark' ? itemImages.dark : itemImages.light;
-    }
-
-    return theme === 'dark' ? '/images/menu/dark/default.jpg' : '/images/menu/light/default.jpg';
-  };
-
-  // Преобразуем навигацию в формат для кнопок с изображениями
   const menuButtons: MenuButton[] = navigationItems.map((item) => ({
     name: item.name,
     hasDropdown: !!item.hasDropdown,
-    imageLight: getImageForMenuItem(item.name),
-    imageDark: getImageForMenuItem(item.name),
     href: item.href,
   }));
 
@@ -158,19 +52,17 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
       setTimeout(() => {
         setCurrentMenu('main');
         setActiveMenuItem(null);
-      }, 300);
+      }, 200);
     }
   };
 
-  const handleMenuItemClick = (itemName: string, hasDropdown: boolean) => {
+  const handleMenuItemClick = (itemName: string, hasDropdown: boolean, href?: string) => {
     if (hasDropdown) {
       setActiveMenuItem(itemName);
       setCurrentMenu('submenu');
-      if (onNavigationClick) {
-        onNavigationClick(itemName);
-      }
-    } else {
-      // Закрываем меню при переходе по ссылке
+      if (onNavigationClick) onNavigationClick(itemName);
+    } else if (href) {
+      router.push(href);
       handleCloseMenu();
     }
   };
@@ -181,26 +73,13 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
   };
 
   const handleSubMenuItemClick = (itemName: string) => {
-    if (onNavigationClick) {
-      onNavigationClick(itemName);
-    }
+    if (onNavigationClick) onNavigationClick(itemName);
     handleCloseMenu();
   };
 
-  const handleProfileClick = () => {
-    if (isAuthenticated) {
-      router.push('/profile');
-    } else {
-      router.push('/login');
-    }
-    handleCloseMenu();
-  };
-
-  // Получаем данные для активного подменю
   const getActiveSubmenu = () => {
     if (!activeMenuItem) return null;
 
-    // Для "Каталог" используем динамические категории
     if (activeMenuItem === 'Каталог' && navigationCategories.length > 0) {
       return {
         category: 'products',
@@ -229,100 +108,38 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
 
   return (
     <>
-      {/* Мобильное меню */}
       <div className={`${styles.mobileMenu} ${mobileMenuOpen ? styles.mobileMenuOpen : ''}`}>
-        {/* Верхняя часть с телефоном и иконками из TopBar в одну строку */}
-        <div className={styles.topSection}>
-          {/* Телефон */}
-          <div className={styles.phoneSection}>
-            <span className={styles.phone}>8-(8152)-60-12-70</span>
-          </div>
-
-          {/* Иконки из TopBar */}
-          <div className={styles.topBarIcons}>
-            <button className={styles.topBarIcon} aria-label="Поиск" type="button">
-              <MagnifyingGlassIcon className={styles.icon} />
-            </button>
-            <button className={styles.topBarIcon} aria-label="Сравнение" type="button">
-              <ChartBarIcon className={styles.icon} />
-            </button>
-            <button
-              className={styles.topBarIcon}
-              aria-label="Личный кабинет"
-              type="button"
-              onClick={handleProfileClick}
-            >
-              {isAuthenticated && user ? (
-                <>
-                  {user.avatar ? (
-                    <img
-                      src={getAvatarUrl(user.avatar) ?? ''}
-                      alt=""
-                      className={styles.profileAvatar}
-                    />
-                  ) : (
-                    <div className={styles.profileInitials}>
-                      {getInitials(user.firstName, user.lastName, user.email)}
-                    </div>
-                  )}
-                  <span className={styles.profileName}>
-                    {user.firstName || user.lastName
-                      ? [user.firstName, user.lastName].filter(Boolean).join(' ')
-                      : user.email}
-                  </span>
-                </>
-              ) : (
-                <UserIcon className={styles.icon} />
-              )}
-            </button>
-            <button className={styles.topBarIcon} aria-label="Избранное" type="button">
-              <HeartIcon className={styles.icon} />
-            </button>
-            <button className={styles.topBarIcon} aria-label="Корзина" type="button">
-              <ShoppingCartIcon className={styles.icon} />
-            </button>
-          </div>
-        </div>
-
-        {/* Заголовок меню с логотипом и кнопкой закрытия */}
-        <div className={styles.menuHeader}>
-          <div className={styles.logoSection}>
-            <Logo />
-          </div>
-
-          <button
-            onClick={handleCloseMenu}
-            className={styles.closeButton}
-            aria-label="Закрыть меню"
-            type="button"
-          >
-            <XMarkIcon className={styles.closeIcon} />
-          </button>
-        </div>
-
-        {/* Контент меню */}
         <div className={styles.menuContent}>
           {currentMenu === 'main' ? (
-            /* Главное меню в виде сетки кнопок */
-            <div className={styles.menuGrid}>
-              {menuButtons.map((button) => (
-                <button
-                  key={button.name}
-                  type="button"
-                  onClick={() => handleMenuItemClick(button.name, button.hasDropdown)}
-                  className={styles.menuGridButton}
-                  style={{
-                    backgroundImage: `url(${getImageForMenuItem(button.name)})`,
-                  }}
-                  suppressHydrationWarning
-                >
-                  <span className={styles.buttonText}>{button.name}</span>
-                  {/* {button.hasDropdown && <span className={styles.buttonArrow}>›</span>} */}
-                </button>
-              ))}
+            <div className={styles.menuItemsList}>
+              {menuButtons.map((button) =>
+                button.hasDropdown ? (
+                  <button
+                    key={button.name}
+                    type="button"
+                    onClick={() =>
+                      handleMenuItemClick(button.name, button.hasDropdown, button.href)
+                    }
+                    className={styles.menuItemField}
+                  >
+                    <span>{button.name}</span>
+                    <span className={styles.menuItemFieldArrow} aria-hidden>
+                      ›
+                    </span>
+                  </button>
+                ) : (
+                  <Link
+                    key={button.name}
+                    href={button.href || '#'}
+                    className={styles.menuItemField}
+                    onClick={handleCloseMenu}
+                  >
+                    <span>{button.name}</span>
+                  </Link>
+                )
+              )}
             </div>
           ) : (
-            /* Подменю */
             <div className={styles.subMenu}>
               <button onClick={handleBackToMainMenu} className={styles.backButton} type="button">
                 <ChevronLeftIcon className={styles.backIcon} />
@@ -330,64 +147,42 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
               </button>
               {activeSubmenu &&
                 activeSubmenu.items.map((subItem) => (
-                  <div key={subItem.name} className={styles.subMenuSection}>
-                    <a
-                      href={subItem.href}
-                      onClick={() => handleSubMenuItemClick(subItem.name)}
-                      className={styles.subMenuItem}
-                    >
-                      {subItem.image ? (
-                        <img src={subItem.image} alt="" className={styles.subMenuItemImage} />
-                      ) : subItem.icon ? (
-                        <span className={styles.subMenuItemIcon}>{subItem.icon}</span>
-                      ) : null}
-                      <span>{subItem.name}</span>
-                    </a>
-                    {/* Показываем подкатегории если есть */}
-                    {subItem.hasSubmenu && subItem.submenu && subItem.submenu.length > 0 && (
-                      <div className={styles.subSubMenu}>
-                        {subItem.submenu.map(
-                          (subSubItem: {
-                            name: string;
-                            href: string;
-                            icon?: string | null;
-                            image?: string | null;
-                          }) => (
-                            <a
-                              key={subSubItem.name}
-                              href={subSubItem.href}
-                              onClick={() => handleSubMenuItemClick(subSubItem.name)}
-                              className={styles.subSubMenuItem}
-                            >
-                              {subSubItem.image ? (
-                                <img
-                                  src={subSubItem.image}
-                                  alt=""
-                                  className={styles.subSubMenuItemImage}
-                                />
-                              ) : subSubItem.icon ? (
-                                <span className={styles.subSubMenuItemIcon}>{subSubItem.icon}</span>
-                              ) : null}
-                              <span>{subSubItem.name}</span>
-                            </a>
-                          )
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  <Link
+                    key={subItem.name}
+                    href={subItem.href}
+                    onClick={() => handleSubMenuItemClick(subItem.name)}
+                    className={styles.subMenuItem}
+                  >
+                    {subItem.image ? (
+                      <img src={subItem.image} alt="" className={styles.subMenuItemImage} />
+                    ) : subItem.icon ? (
+                      <span className={styles.subMenuItemIcon}>{subItem.icon}</span>
+                    ) : null}
+                    <span>{subItem.name}</span>
+                  </Link>
                 ))}
             </div>
           )}
         </div>
 
-        {/* Футер меню с кнопками действий */}
         <div className={styles.menuFooter}>
-          <ActionButtons mobile />
+          <div className={styles.menuFooterButtons}>
+            <ActionButton variant="measurement" onClick={measurementModal.open} />
+            <ActionButton variant="callback" onClick={callbackModal.open} />
+          </div>
         </div>
       </div>
 
-      {/* Overlay для закрытия меню */}
-      {mobileMenuOpen && <div className={styles.overlay} onClick={handleCloseMenu} />}
+      {mobileMenuOpen && (
+        <div
+          className={styles.overlay}
+          onClick={handleCloseMenu}
+          onKeyDown={(e) => e.key === 'Escape' && handleCloseMenu()}
+          role="button"
+          tabIndex={-1}
+          aria-label="Закрыть меню"
+        />
+      )}
     </>
   );
 };

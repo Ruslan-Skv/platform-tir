@@ -205,6 +205,10 @@
   color: #cbd5e0;
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .slideshow {
+  background-color: #1f293780;
+}
+
 /* Адаптация */
 @media (width <= 1024px) {
   .container {
