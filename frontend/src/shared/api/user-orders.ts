@@ -50,15 +50,124 @@ export interface UserOrder {
   shippedAt: string | null;
   deliveredAt: string | null;
   trackingNumber: string | null;
+  approvedAt: string | null;
   items: OrderItem[];
   shippingAddress?: OrderAddress | null;
+  deliveryType?: string | null;
+  deliveryFloor?: number | null;
+  deliveryHasElevator?: boolean | null;
+}
+
+/** Время действия статуса «Заказ проверен» (минуты). */
+export const APPROVAL_VALID_MINUTES = 60;
+
+export function getApprovalRemainingMs(approvedAt: string | null | undefined): number {
+  if (!approvedAt) return 0;
+  const validUntil = new Date(approvedAt).getTime() + APPROVAL_VALID_MINUTES * 60 * 1000;
+  return Math.max(0, validUntil - Date.now());
+}
+
+export function formatApprovalCountdown(remainingMs: number): string {
+  const totalSeconds = Math.floor(remainingMs / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+export interface ShippingMethod {
+  id: string;
+  name: string;
+  code: string;
+  description: string | null;
+  price: string | number;
+  freeFromAmount: string | number | null;
+  minDeliveryDays: number | null;
+  maxDeliveryDays: number | null;
+  isActive: boolean;
+  order: number;
+}
+
+/** Список способов доставки для корзины. */
+export async function getShippingMethods(): Promise<ShippingMethod[]> {
+  const res = await fetch(`${API_URL}/orders/shipping-methods`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить способы доставки');
+  return res.json();
+}
+
+export type DeliveryType = 'TO_ENTRANCE' | 'TO_APARTMENT';
+
+export interface DeliveryAddressForm {
+  street: string;
+  city: string;
+  postalCode?: string;
+  region?: string;
+  country?: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+}
+
+export interface CalculateDeliveryResult {
+  deliveryCost: number;
+  carryCost: number;
+  totalShippingCost: number;
+}
+
+/** Рассчитать стоимость доставки и подъёма. */
+export async function calculateDelivery(params: {
+  subtotal: number;
+  city: string;
+  distanceKm?: number;
+  deliveryType: DeliveryType;
+  deliveryFloor?: number;
+  deliveryHasElevator?: boolean;
+}): Promise<CalculateDeliveryResult> {
+  const res = await fetch(`${API_URL}/orders/calculate-delivery`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      subtotal: params.subtotal,
+      city: params.city.trim(),
+      distanceKm: params.distanceKm,
+      deliveryType: params.deliveryType,
+      deliveryFloor: params.deliveryFloor,
+      deliveryHasElevator: params.deliveryHasElevator,
+    }),
+  });
+  if (!res.ok) throw new Error('Не удалось рассчитать доставку');
+  return res.json();
+}
+
+export interface SubmitFromCartDeliveryPayload {
+  deliveryAddress: DeliveryAddressForm;
+  deliveryType: DeliveryType;
+  deliveryFloor?: number;
+  deliveryHasElevator?: boolean;
+  distanceKm?: number;
 }
 
 /** Отправить заказ из корзины на проверку менеджеру (статус «На проверке»). */
-export async function submitOrderFromCart(): Promise<UserOrder> {
+export async function submitOrderFromCart(
+  payload?: { shippingMethodId?: string } | SubmitFromCartDeliveryPayload
+): Promise<UserOrder> {
+  const body =
+    payload && 'deliveryAddress' in payload && payload.deliveryAddress
+      ? {
+          deliveryAddress: payload.deliveryAddress,
+          deliveryType: payload.deliveryType,
+          deliveryFloor: payload.deliveryFloor,
+          deliveryHasElevator: payload.deliveryHasElevator,
+          distanceKm: payload.distanceKm,
+        }
+      : payload && 'shippingMethodId' in payload && payload.shippingMethodId
+        ? { shippingMethodId: payload.shippingMethodId }
+        : {};
   const res = await fetch(`${API_URL}/orders/submit-from-cart`, {
     method: 'POST',
     headers: getAuthHeaders(),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -76,6 +185,20 @@ export async function cancelOrderByCustomer(orderId: string): Promise<UserOrder>
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err?.message || 'Не удалось отменить проверку');
+  }
+  return res.json();
+}
+
+/** Добавить позицию из корзины в заказ на проверке. Позиция удаляется из корзины. */
+export async function addCartItemToOrder(orderId: string, cartItemId: string): Promise<UserOrder> {
+  const res = await fetch(`${API_URL}/orders/${orderId}/add-cart-item`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ cartItemId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.message || 'Не удалось добавить товар в заказ');
   }
   return res.json();
 }

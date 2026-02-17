@@ -3,16 +3,19 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
+import { useAuth } from '@/features/auth';
 import {
   type AdminOrderSummary,
+  deleteAdminOrder,
   getAdminOrder,
   getProductsForReplacement,
   sendBackOrderToCustomer,
   updateAdminOrderItem,
   updateAdminOrderStatus,
 } from '@/shared/api/admin-orders';
+import { formatApprovalCountdown, getApprovalRemainingMs } from '@/shared/api/user-orders';
 
 import styles from './page.module.css';
 
@@ -20,7 +23,7 @@ const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'PENDING', label: 'Ожидает' },
   { value: 'PENDING_REVIEW', label: 'На проверке' },
   { value: 'RETURNED_FOR_CORRECTION', label: 'На доработке у покупателя' },
-  { value: 'APPROVED', label: 'Проверен' },
+  { value: 'APPROVED', label: 'Заказ проверен' },
   { value: 'PROCESSING', label: 'В обработке' },
   { value: 'SHIPPED', label: 'Отправлен' },
   { value: 'DELIVERED', label: 'Доставлен' },
@@ -66,13 +69,32 @@ type ShippingAddress = {
 type OrderDetail = AdminOrderSummary & {
   items?: OrderItemDetail[];
   shippingAddress?: ShippingAddress | null;
+  shippingCost?: string | number;
+  deliveryType?: string | null;
+  deliveryFloor?: number | null;
+  deliveryHasElevator?: boolean | null;
   returnedForCorrectionAt?: string | null;
   returnedForCorrectionComment?: string | null;
+  approvedAt?: string | null;
+  submittedForReviewAt?: string | null;
   user?: { id: string; email: string; firstName?: string; lastName?: string; phone?: string };
 };
 
+function formatReviewDuration(ms: number): string {
+  if (ms < 0) return '—';
+  const totalMinutes = Math.floor(ms / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const parts: string[] = [];
+  if (hours > 0) parts.push(`${hours} ч`);
+  if (minutes > 0 || parts.length === 0) parts.push(`${minutes} мин`);
+  return parts.join(' ');
+}
+
 export default function AdminOrderDetailPage() {
   const params = useParams();
+  const router = useRouter();
+  const { user } = useAuth();
   const id = params?.id as string;
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -83,6 +105,9 @@ export default function AdminOrderDetailPage() {
   const [sendBackSubmitting, setSendBackSubmitting] = useState(false);
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
   const [approvedNotice, setApprovedNotice] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [, setTick] = useState(0);
   const [productsForReplacement, setProductsForReplacement] = useState<
     Awaited<ReturnType<typeof getProductsForReplacement>>
   >([]);
@@ -117,13 +142,26 @@ export default function AdminOrderDetailPage() {
       .catch(() => setProductsForReplacement([]));
   }, []);
 
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+
   const handleStatusChange = async (newStatus: string) => {
     if (!id || !order) return;
     setApprovedNotice(false);
     setStatusUpdating(true);
     try {
       const updated = await updateAdminOrderStatus(id, newStatus);
-      setOrder((prev) => (prev ? { ...prev, status: updated.status } : null));
+      setOrder((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: updated.status,
+              approvedAt: updated.approvedAt ?? prev.approvedAt,
+            }
+          : null
+      );
       if (newStatus === 'APPROVED') {
         setApprovedNotice(true);
         setTimeout(() => setApprovedNotice(false), 8000);
@@ -185,6 +223,20 @@ export default function AdminOrderDetailPage() {
     }
   };
 
+  const handleDeleteOrder = async () => {
+    if (!id) return;
+    setDeleteSubmitting(true);
+    try {
+      await deleteAdminOrder(id);
+      setDeleteConfirmOpen(false);
+      router.push('/admin/orders');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Не удалось удалить заказ');
+    } finally {
+      setDeleteSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className={styles.page}>
@@ -218,14 +270,78 @@ export default function AdminOrderDetailPage() {
     order.status === 'APPROVED' ||
     order.status === 'RETURNED_FOR_CORRECTION';
 
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <Link href="/admin/orders" className={styles.backLink}>
-          ← К списку заказов
-        </Link>
+        <div className={styles.headerRow}>
+          <Link href="/admin/orders" className={styles.backLink}>
+            ← К списку заказов
+          </Link>
+          {isSuperAdmin && (
+            <button
+              type="button"
+              className={styles.deleteButton}
+              onClick={() => setDeleteConfirmOpen(true)}
+              disabled={deleteSubmitting}
+            >
+              {deleteSubmitting ? 'Удаление…' : 'Удалить заказ'}
+            </button>
+          )}
+        </div>
         <h1 className={styles.title}>Заказ {order.orderNumber}</h1>
       </div>
+
+      {deleteConfirmOpen && (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => !deleteSubmitting && setDeleteConfirmOpen(false)}
+        >
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <p className={styles.modalText}>
+              Удалить заказ <strong>{order.orderNumber}</strong>? Это действие нельзя отменить.
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                type="button"
+                className={styles.modalCancel}
+                onClick={() => setDeleteConfirmOpen(false)}
+                disabled={deleteSubmitting}
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                className={styles.modalConfirmDelete}
+                onClick={handleDeleteOrder}
+                disabled={deleteSubmitting}
+              >
+                {deleteSubmitting ? 'Удаление…' : 'Удалить'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {canSendBack && (
+        <div className={styles.sendBackSection}>
+          <button
+            type="button"
+            className={styles.sendBackButton}
+            onClick={
+              order.status === 'RETURNED_FOR_CORRECTION'
+                ? undefined
+                : () => setSendBackModalOpen(true)
+            }
+            disabled={order.status === 'RETURNED_FOR_CORRECTION'}
+          >
+            {order.status === 'RETURNED_FOR_CORRECTION'
+              ? 'Заказ на доработке'
+              : 'Отправить на доработку покупателю'}
+          </button>
+        </div>
+      )}
 
       <div className={styles.topGrid}>
         <section className={styles.section}>
@@ -248,6 +364,14 @@ export default function AdminOrderDetailPage() {
               Покупатель может продолжить оформление заказа
             </p>
           )}
+          {order.status === 'APPROVED' && order.approvedAt && (
+            <p className={styles.approvalCountdown}>
+              Осталось для оформления покупателем:{' '}
+              <span className={styles.approvalCountdownTime}>
+                {formatApprovalCountdown(getApprovalRemainingMs(order.approvedAt))}
+              </span>
+            </p>
+          )}
         </section>
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Клиент</h2>
@@ -258,6 +382,51 @@ export default function AdminOrderDetailPage() {
           {order.user?.phone && <p className={styles.email}>Телефон: {order.user.phone}</p>}
         </section>
       </div>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Проверка заказа</h2>
+        <div className={styles.reviewTimeline}>
+          <div className={styles.reviewTimelineRow}>
+            <span className={styles.reviewTimelineLabel}>Принят на проверку:</span>
+            <span className={styles.reviewTimelineValue}>
+              {order.submittedForReviewAt || order.createdAt
+                ? new Date(order.submittedForReviewAt || order.createdAt).toLocaleString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : '—'}
+            </span>
+          </div>
+          <div className={styles.reviewTimelineRow}>
+            <span className={styles.reviewTimelineLabel}>Проверка выполнена:</span>
+            <span className={styles.reviewTimelineValue}>
+              {order.approvedAt
+                ? new Date(order.approvedAt).toLocaleString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : '—'}
+            </span>
+          </div>
+          <div className={styles.reviewTimelineRow}>
+            <span className={styles.reviewTimelineLabel}>Продолжительность проверки:</span>
+            <span className={styles.reviewTimelineValue}>
+              {order.approvedAt && (order.submittedForReviewAt || order.createdAt)
+                ? formatReviewDuration(
+                    new Date(order.approvedAt).getTime() -
+                      new Date(order.submittedForReviewAt || order.createdAt).getTime()
+                  )
+                : '—'}
+            </span>
+          </div>
+        </div>
+      </section>
 
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Состав заказа</h2>
@@ -372,17 +541,6 @@ export default function AdminOrderDetailPage() {
           </tbody>
         </table>
         <p className={styles.total}>Итого: {formatPrice(total)}</p>
-        {canSendBack && (
-          <div className={styles.sendBackSection}>
-            <button
-              type="button"
-              className={styles.sendBackButton}
-              onClick={() => setSendBackModalOpen(true)}
-            >
-              Отправить на доработку покупателю
-            </button>
-          </div>
-        )}
       </section>
 
       {sendBackModalOpen && (
@@ -424,25 +582,47 @@ export default function AdminOrderDetailPage() {
         </div>
       )}
 
-      {order.shippingAddress && (
+      {(order.shippingAddress || order.deliveryType || order.shippingCost != null) && (
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Адрес доставки</h2>
-          <p>
-            {order.shippingAddress.firstName} {order.shippingAddress.lastName}
-          </p>
-          <p className={styles.email}>{order.shippingAddress.phone}</p>
-          <p className={styles.address}>
-            {order.shippingAddress.street}, {order.shippingAddress.city}
-            {order.shippingAddress.region ? `, ${order.shippingAddress.region}` : ''},{' '}
-            {order.shippingAddress.postalCode}, {order.shippingAddress.country}
-          </p>
-        </section>
-      )}
-
-      {!order.shippingAddress && (
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Адрес доставки</h2>
-          <p className={styles.muted}>Не указан (заказ на проверке)</p>
+          <h2 className={styles.sectionTitle}>Доставка</h2>
+          {order.shippingAddress ? (
+            <>
+              <p>
+                {order.shippingAddress.firstName} {order.shippingAddress.lastName}
+              </p>
+              <p className={styles.email}>{order.shippingAddress.phone}</p>
+              <p className={styles.address}>
+                {order.shippingAddress.street}, {order.shippingAddress.city}
+                {order.shippingAddress.region ? `, ${order.shippingAddress.region}` : ''},{' '}
+                {order.shippingAddress.postalCode}, {order.shippingAddress.country}
+              </p>
+            </>
+          ) : (
+            <p className={styles.muted}>Адрес не указан</p>
+          )}
+          {(order.deliveryType || order.shippingCost != null) && (
+            <div className={styles.deliveryDetails}>
+              {order.deliveryType && (
+                <p>
+                  Тип доставки:{' '}
+                  {order.deliveryType === 'TO_APARTMENT' ? 'до квартиры' : 'до подъезда'}
+                </p>
+              )}
+              {order.deliveryType === 'TO_APARTMENT' && (
+                <>
+                  {order.deliveryFloor != null && <p>Этаж: {order.deliveryFloor}</p>}
+                  {order.deliveryHasElevator != null && (
+                    <p>Лифт: {order.deliveryHasElevator ? 'да' : 'нет'}</p>
+                  )}
+                </>
+              )}
+              {order.shippingCost != null && Number(order.shippingCost) > 0 && (
+                <p className={styles.deliveryCost}>
+                  Стоимость доставки: {formatPrice(order.shippingCost)} (уже включена в итог заказа)
+                </p>
+              )}
+            </div>
+          )}
         </section>
       )}
 

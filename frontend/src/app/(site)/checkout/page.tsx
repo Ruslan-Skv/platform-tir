@@ -5,7 +5,12 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
-import { type UserOrder, getUserOrder } from '@/shared/api/user-orders';
+import {
+  type UserOrder,
+  formatApprovalCountdown,
+  getApprovalRemainingMs,
+  getUserOrder,
+} from '@/shared/api/user-orders';
 
 import styles from './page.module.css';
 
@@ -15,6 +20,12 @@ export default function CheckoutPage() {
   const [order, setOrder] = useState<UserOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     if (!orderId) {
@@ -68,11 +79,33 @@ export default function CheckoutPage() {
   }
 
   const total = typeof order.total === 'string' ? parseFloat(order.total) : Number(order.total);
+  const approvalRemainingMs = getApprovalRemainingMs(order.approvedAt ?? null);
+  const approvalExpired = approvalRemainingMs <= 0;
+
+  if (approvalExpired) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.error}>
+          <h1 className={styles.title}>Оформление заказа</h1>
+          <p>Время действия заказа истекло (60 минут). Заказ снова на проверке.</p>
+          <Link href="/cart" className={styles.link}>
+            Вернуться в корзину
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Оформление заказа</h1>
       <p className={styles.orderNumber}>Заказ {order.orderNumber}</p>
+      <p className={styles.approvalCountdown}>
+        Оформить в течение:{' '}
+        <span className={styles.approvalCountdownTime}>
+          {formatApprovalCountdown(approvalRemainingMs)}
+        </span>
+      </p>
       <div className={styles.summary}>
         <div className={styles.summaryRow}>
           <span>Товаров:</span>

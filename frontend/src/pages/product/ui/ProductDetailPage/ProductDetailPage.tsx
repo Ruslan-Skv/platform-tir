@@ -7,6 +7,7 @@ import Link from 'next/link';
 
 import { type ProductComponent, getProductComponents } from '@/shared/api/product-components';
 import type { Review } from '@/shared/api/reviews';
+import { useApprovedOrderGuard } from '@/shared/lib/contexts/ApprovedOrderGuardContext';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 
 import { ProductComponents } from './ProductComponents';
@@ -67,6 +68,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     updateCartItemQuantityById,
     removeCartItemById,
   } = useCart();
+  const guard = useApprovedOrderGuard();
   const { toggleWishlist, isInWishlist, checkInWishlist, wishlist } = useWishlist();
   const { toggleCompare, isInCompare, checkInCompare, compare } = useCompare();
   const [product, setProduct] = useState<ProductData | null>(null);
@@ -870,50 +872,59 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                                           return;
                                         }
 
-                                        try {
+                                        const doAdd = async () => {
                                           setAddingToCart((prev) => ({
                                             ...prev,
                                             [variant.id]: true,
                                           }));
-                                          await addToCart(
-                                            productId,
-                                            variant.quantity,
-                                            variant.size && variant.size.trim()
-                                              ? variant.size
-                                              : undefined,
-                                            variant.openingSide && variant.openingSide.trim()
-                                              ? variant.openingSide
-                                              : undefined
-                                          );
-                                          if (
-                                            variant.deliveryType === 'komplekt' &&
-                                            kitComponentsForCart
-                                          ) {
-                                            const qty = variant.quantity;
-                                            await addComponentToCart(
-                                              kitComponentsForCart.stoikaKorobka.id,
-                                              2.5 * qty
+                                          try {
+                                            await addToCart(
+                                              productId,
+                                              variant.quantity,
+                                              variant.size && variant.size.trim()
+                                                ? variant.size
+                                                : undefined,
+                                              variant.openingSide && variant.openingSide.trim()
+                                                ? variant.openingSide
+                                                : undefined
                                             );
-                                            await addComponentToCart(
-                                              kitComponentsForCart.nalichnik.id,
-                                              5 * qty
+                                            if (
+                                              variant.deliveryType === 'komplekt' &&
+                                              kitComponentsForCart
+                                            ) {
+                                              const qty = variant.quantity;
+                                              await addComponentToCart(
+                                                kitComponentsForCart.stoikaKorobka.id,
+                                                2.5 * qty
+                                              );
+                                              await addComponentToCart(
+                                                kitComponentsForCart.nalichnik.id,
+                                                5 * qty
+                                              );
+                                            }
+                                            await new Promise((resolve) =>
+                                              setTimeout(resolve, 100)
                                             );
+                                          } catch (error) {
+                                            if (error instanceof Error) {
+                                              alert(error.message);
+                                            } else {
+                                              alert(
+                                                'Произошла ошибка при добавлении товара в корзину'
+                                              );
+                                            }
+                                          } finally {
+                                            setAddingToCart((prev) => ({
+                                              ...prev,
+                                              [variant.id]: false,
+                                            }));
                                           }
-                                          await new Promise((resolve) => setTimeout(resolve, 100));
-                                        } catch (error) {
-                                          if (error instanceof Error) {
-                                            alert(error.message);
-                                          } else {
-                                            alert(
-                                              'Произошла ошибка при добавлении товара в корзину'
-                                            );
-                                          }
-                                        } finally {
-                                          setAddingToCart((prev) => ({
-                                            ...prev,
-                                            [variant.id]: false,
-                                          }));
-                                        }
+                                        };
+                                        const ok = await guard.confirmBeforeCartChange(
+                                          doAdd,
+                                          guard.hasApprovedOrder
+                                        );
+                                        if (!ok) return;
                                       }}
                                       disabled={isAdding}
                                     >
@@ -1042,18 +1053,27 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                   onClick={async () => {
                     if (!product) return;
 
-                    try {
-                      setIsAddingToCart(true);
-                      await addToCart(productId, 1, undefined, undefined, selectedCardVariant?.id);
-                    } catch (error) {
-                      if (error instanceof Error) {
-                        alert(error.message);
-                      } else {
-                        alert('Произошла ошибка при добавлении товара в корзину');
+                    const ok = await guard.confirmBeforeCartChange(async () => {
+                      try {
+                        setIsAddingToCart(true);
+                        await addToCart(
+                          productId,
+                          1,
+                          undefined,
+                          undefined,
+                          selectedCardVariant?.id
+                        );
+                      } catch (error) {
+                        if (error instanceof Error) {
+                          alert(error.message);
+                        } else {
+                          alert('Произошла ошибка при добавлении товара в корзину');
+                        }
+                      } finally {
+                        setIsAddingToCart(false);
                       }
-                    } finally {
-                      setIsAddingToCart(false);
-                    }
+                    }, guard.hasApprovedOrder);
+                    if (!ok) return;
                   }}
                   disabled={isAddingToCart || !product}
                 >

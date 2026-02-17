@@ -1,5 +1,7 @@
 'use client';
 
+import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useUserAuth } from '@/features/auth';
@@ -257,7 +259,7 @@ export function ChatSupportWidget() {
         onClick={() => setOpen((o) => !o)}
         aria-label="Чат поддержки"
       >
-        💬
+        <ChatBubbleLeftRightIcon className={styles.fabIcon} />
       </button>
       {open && (
         <div className={styles.panel}>
@@ -355,12 +357,19 @@ export function ChatSupportWidget() {
                 <label htmlFor="notifySupportReplyInChat">Уведомлять при ответе</label>
               </div>
               <div className={styles.inputRow}>
-                <input
-                  type="text"
+                <textarea
+                  className={styles.inputField}
                   placeholder="Введите сообщение..."
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage();
+                    }
+                  }}
+                  rows={2}
+                  aria-label="Сообщение"
                 />
                 <button type="button" onClick={sendMessage} disabled={sending || !input.trim()}>
                   Отправить

@@ -338,6 +338,308 @@
   color: #111827;
 }
 
+.deliverySection {
+  margin: 1rem 0;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.deliveryTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.5rem;
+}
+
+.deliveryOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.deliveryOption {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9375rem;
+}
+
+.deliveryOption input {
+  accent-color: #d90652;
+}
+
+.deliveryPrice {
+  margin-left: auto;
+  font-weight: 500;
+  color: #374151;
+}
+
+.deliveryCheckboxWrap {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.deliveryCheckboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+.deliveryCheckbox {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: #d90652;
+}
+
+.deliveryCheckboxHint {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  margin: 0.5rem 0 0 1.75rem;
+  max-width: 420px;
+}
+
+.deliveryFormBlock {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+}
+
+/* Компактная строка доставки (как карточка товара) при статусе «Заказ проверен» */
+.deliveryCompactRow {
+  display: grid;
+  grid-template-columns: 88px 1fr auto;
+  gap: 0.65rem;
+  padding: 0.6rem 0.75rem;
+  background: #ffffff80;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  align-items: center;
+}
+
+.deliveryCompactIcon {
+  width: 88px;
+  height: 88px;
+  border-radius: 0.3rem;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+}
+
+.deliveryCompactIcon svg,
+.deliveryCompactIconSvg {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.deliveryCompactInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.deliveryCompactTitle {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: #111827;
+}
+
+.deliveryCompactDetails {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  line-height: 1.35;
+}
+
+/* Как кнопка «Удалить товар» в карточках (removeButton), без position — тот же размер */
+.deliveryBasketButton {
+  width: 1.75rem;
+  height: 1.75rem;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    color 0.2s,
+    background 0.2s;
+  border-radius: 0.2rem;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.deliveryBasketButton:hover {
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+/* Иконка корзины в блоке доставки — меньше, как в карточках товаров */
+.deliveryBasketButtonIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.deliveryFormTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.deliveryFormTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.deliveryFormGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.deliveryFormField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.deliveryFormField label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.deliveryFormField input {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  background: #fff;
+  color: #111827;
+}
+
+.deliveryFormField input:focus {
+  outline: none;
+  border-color: #d90652;
+  box-shadow: 0 0 0 2px rgba(217, 6, 82, 0.2);
+}
+
+.deliveryFormRadios {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.deliveryFormLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.deliveryRadioLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9375rem;
+  color: #111827;
+}
+
+.deliveryRadioLabel input {
+  accent-color: #d90652;
+}
+
+.deliveryFormLift {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.deliveryFormLift .deliveryFormField {
+  max-width: 6rem;
+}
+
+.deliveryFormCheckbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9375rem;
+  color: #111827;
+}
+
+.deliveryFormCheckbox input {
+  accent-color: #d90652;
+}
+
+.deliveryFormTotal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+  font-size: 0.9375rem;
+  color: #374151;
+}
+
+.deliveryFormTotal strong {
+  color: #111827;
+}
+
+.deliveryCostLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.deliveryCostLabel {
+  font-weight: 600;
+  color: #111827;
+}
+
+.deliveryCostValue {
+  font-size: 1.125rem;
+  color: #111827;
+}
+
+.deliveryCostLoading {
+  font-size: 0.9375rem;
+  color: #6b7280;
+}
+
+.deliveryCostError {
+  font-size: 0.9375rem;
+  color: #dc2626;
+}
+
 .checkoutButton {
   display: block;
   width: 100%;
@@ -372,6 +674,57 @@
   gap: 0.5rem;
 }
 
+.itemActionsColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.itemInOrderBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+}
+
+.reviewProgressIconSmall {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
+.doubleCheckIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  color: #16a34a;
+}
+
+.addToOrderButton {
+  font-size: 0.6875rem;
+  padding: 0.25rem 0.4rem;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.addToOrderButton:hover:not(:disabled) {
+  background: #fde68a;
+  color: #78350f;
+}
+
+.addToOrderButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .reviewProgressIcon {
   width: 1.25rem;
   height: 1.25rem;
@@ -395,6 +748,18 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.approvalCountdown {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  color: #166534;
+  text-align: center;
+}
+
+.approvalCountdownTime {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .checkoutHint {
@@ -450,6 +815,18 @@
 
 /* Мобильная адаптация */
 @media (width <= 768px) {
+  .header {
+    margin-bottom: 1.25rem;
+  }
+
+  .title {
+    font-size: 1.375rem;
+  }
+
+  .subtitle {
+    font-size: 0.875rem;
+  }
+
   .content {
     grid-template-columns: 1fr;
   }
@@ -481,6 +858,21 @@
     right: 0.5rem;
   }
 
+  .deliveryCompactRow {
+    grid-template-columns: 72px 1fr auto;
+    padding: 0.5rem 0.6rem;
+  }
+
+  .deliveryCompactIcon {
+    width: 72px;
+    height: 72px;
+  }
+
+  .deliveryCompactIcon svg {
+    width: 1.875rem;
+    height: 1.875rem;
+  }
+
   .summary {
     position: static;
   }
@@ -501,6 +893,37 @@
 
   .summaryRow:last-of-type {
     font-size: 0.9375rem;
+  }
+
+  .deliverySection {
+    margin: 0.5rem 0;
+    padding: 0.5rem 0;
+  }
+
+  .deliveryTitle {
+    font-size: 0.9375rem;
+  }
+
+  .deliveryOption {
+    font-size: 0.875rem;
+  }
+
+  .deliveryCheckboxWrap {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+  }
+
+  .deliveryFormBlock {
+    padding: 0.75rem;
+    margin-top: 0.75rem;
+  }
+
+  .deliveryFormGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .deliveryFormTotal {
+    font-size: 0.875rem;
   }
 
   .checkoutButton {
@@ -548,6 +971,33 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cartItem {
   background: #1f2937;
   border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCompactRow {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCompactIcon {
+  background: #374151;
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCompactTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCompactDetails {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryBasketButton {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryBasketButton:hover {
+  color: #ef4444;
+  background: #7f1d1d;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .itemName {
@@ -637,6 +1087,89 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .summaryRow:last-of-type {
   color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliverySection {
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryOption {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryPrice {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCheckboxWrap {
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCheckboxLabel {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCheckboxHint {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryFormBlock {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryFormTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryFormField label,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryFormLabel {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryFormField input {
+  background: #111827;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryFormField input:focus {
+  border-color: #d90652;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryRadioLabel,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryFormCheckbox {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryFormTotal {
+  border-color: #374151;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryFormTotal strong {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostLine {
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostLabel,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostValue {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostLoading {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostError {
+  color: #f87171;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .continueShopping {

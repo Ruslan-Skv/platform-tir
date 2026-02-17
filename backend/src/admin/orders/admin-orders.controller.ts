@@ -64,9 +64,37 @@ export class AdminOrdersController {
     );
   }
 
+  @Get('delivery-config')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  getDeliveryConfig() {
+    return this.adminOrdersService.getDeliveryConfig();
+  }
+
+  @Patch('delivery-config')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  updateDeliveryConfig(
+    @Body()
+    body: {
+      deliveryPriceMurmansk?: number;
+      deliveryPricePerKmOutside?: number;
+      moversPriceMurmansk?: number;
+      moversPriceOutside?: number;
+      moversKgPerPerson?: number;
+      moversVolumePerPerson?: number | null;
+    },
+  ) {
+    return this.adminOrdersService.updateDeliveryConfig(body);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.adminOrdersService.findOne(id);
+  }
+
+  @Delete(':id')
+  @Roles('SUPER_ADMIN')
+  removeOrder(@Param('id') id: string) {
+    return this.adminOrdersService.deleteOrder(id);
   }
 
   @Patch(':id/status')

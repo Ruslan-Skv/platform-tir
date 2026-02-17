@@ -70,7 +70,7 @@ export function OrdersPage() {
       PENDING: 'Ожидает',
       PENDING_REVIEW: 'На проверке',
       RETURNED_FOR_CORRECTION: 'На доработке у покупателя',
-      APPROVED: 'Проверен',
+      APPROVED: 'Заказ проверен',
       PROCESSING: 'В обработке',
       SHIPPED: 'Отправлен',
       DELIVERED: 'Доставлен',
@@ -188,7 +188,7 @@ export function OrdersPage() {
         >
           <option value="">Все статусы</option>
           <option value="PENDING_REVIEW">На проверке</option>
-          <option value="APPROVED">Проверен</option>
+          <option value="APPROVED">Заказ проверен</option>
           <option value="RETURNED_FOR_CORRECTION">На доработке</option>
           <option value="PENDING">Ожидают</option>
           <option value="PROCESSING">В обработке</option>

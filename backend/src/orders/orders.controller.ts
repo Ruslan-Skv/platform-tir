@@ -13,6 +13,9 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { AddCartItemToOrderDto } from './dto/add-cart-item-to-order.dto';
+import { SubmitFromCartDto } from './dto/submit-from-cart.dto';
+import { CalculateDeliveryDto } from './dto/calculate-delivery.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { RequestWithUser } from '../common/types/request-with-user.types';
 
@@ -29,10 +32,22 @@ export class OrdersController {
     return this.ordersService.create(req.user.id, createOrderDto);
   }
 
+  @Get('shipping-methods')
+  @ApiOperation({ summary: 'Список способов доставки для корзины' })
+  getShippingMethods() {
+    return this.ordersService.getShippingMethods();
+  }
+
   @Post('submit-from-cart')
   @ApiOperation({ summary: 'Отправить заказ из корзины на проверку менеджеру' })
-  submitFromCart(@Request() req: RequestWithUser) {
-    return this.ordersService.submitFromCart(req.user.id);
+  submitFromCart(@Request() req: RequestWithUser, @Body() body?: SubmitFromCartDto) {
+    return this.ordersService.submitFromCart(req.user.id, body);
+  }
+
+  @Post('calculate-delivery')
+  @ApiOperation({ summary: 'Рассчитать стоимость доставки и подъёма' })
+  calculateDelivery(@Request() req: RequestWithUser, @Body() dto: CalculateDeliveryDto) {
+    return this.ordersService.calculateDelivery(req.user.id, dto);
   }
 
   @Get()
@@ -45,6 +60,16 @@ export class OrdersController {
   @ApiOperation({ summary: 'Отменить проверку заказа (покупатель)' })
   cancelByCustomer(@Request() req: RequestWithUser, @Param('id') id: string) {
     return this.ordersService.cancelByCustomer(id, req.user.id);
+  }
+
+  @Post(':id/add-cart-item')
+  @ApiOperation({ summary: 'Добавить позицию из корзины в заказ на проверке' })
+  addCartItemToOrder(
+    @Request() req: RequestWithUser,
+    @Param('id') id: string,
+    @Body() dto: AddCartItemToOrderDto,
+  ) {
+    return this.ordersService.addCartItemToOrder(id, dto.cartItemId, req.user.id);
   }
 
   @Get(':id')

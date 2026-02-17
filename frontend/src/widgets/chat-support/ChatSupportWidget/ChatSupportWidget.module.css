@@ -5,10 +5,10 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: #d90652;
   color: #fff;
   border: none;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 14px rgba(217, 6, 82, 0.35);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -17,12 +17,50 @@
   z-index: 9998;
   transition:
     transform 0.2s,
+    background-color 0.2s,
     box-shadow 0.2s;
+}
+
+.fabIcon {
+  width: 28px;
+  height: 28px;
+}
+
+@media (width <= 768px) {
+  .fab {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .panel {
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-width: none;
+  }
+
+  .inputRow {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .inputField {
+    min-height: 48px;
+    padding: 6px 10px;
+    font-size: 0.875rem;
+  }
+
+  .inputRow button {
+    padding: 5px 12px;
+    font-size: 0.75rem;
+  }
 }
 
 .fab:hover {
   transform: scale(1.05);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+  background: #b80545;
+  box-shadow: 0 6px 20px rgba(217, 6, 82, 0.45);
 }
 
 .fab:focus {
@@ -56,7 +94,7 @@
 }
 
 .conversationItem:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.35);
 }
 
 .conversationItem:active {
@@ -72,8 +110,9 @@
   height: 500px;
   max-height: calc(100vh - 120px);
   background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   z-index: 9999;
@@ -81,8 +120,8 @@
 }
 
 .header {
-  padding: 14px 16px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  padding: 12px 1rem;
+  background: #d90652;
   color: #fff;
   font-weight: 600;
   font-size: 1rem;
@@ -113,7 +152,7 @@
   padding: 12px;
   text-align: left;
   border: none;
-  border-radius: 10px;
+  border-radius: 0.375rem;
   background: #f9fafb;
   margin-bottom: 6px;
   cursor: pointer;
@@ -125,8 +164,9 @@
 }
 
 .conversationItem.active {
-  background: #ede9fe;
-  color: #5b21b6;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
 }
 
 .lastMessage {
@@ -150,7 +190,7 @@
 .notifyRow input {
   width: 16px;
   height: 16px;
-  accent-color: #6366f1;
+  accent-color: #d90652;
 }
 
 .notifyRow label {
@@ -161,17 +201,17 @@
 .startNew {
   padding: 12px 16px;
   margin: 8px;
-  background: #6366f1;
+  background: #d90652;
   color: #fff;
   border: none;
-  border-radius: 10px;
+  border-radius: 0.375rem;
   font-weight: 500;
   cursor: pointer;
   font-size: 0.875rem;
 }
 
 .startNew:hover {
-  background: #4f46e5;
+  background: #b80545;
 }
 
 .messagesArea {
@@ -200,7 +240,7 @@
 
 .message.mine {
   align-self: flex-end;
-  background: #6366f1;
+  background: #d90652;
   color: #fff;
 }
 
@@ -223,35 +263,43 @@
   padding: 12px;
   border-top: 1px solid #e5e7eb;
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+  min-width: 0;
 }
 
-.inputRow input {
-  flex: 1;
-  padding: 10px 14px;
+.inputField {
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 12px;
   border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  border-radius: 0.375rem;
   font-size: 0.9375rem;
+  font-family: inherit;
+  resize: vertical;
+  box-sizing: border-box;
 }
 
-.inputRow input:focus {
+.inputField:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: #d90652;
 }
 
 .inputRow button {
-  padding: 10px 16px;
-  background: #6366f1;
+  align-self: flex-end;
+  padding: 6px 14px;
+  background: #d90652;
   color: #fff;
   border: none;
-  border-radius: 10px;
+  border-radius: 0.375rem;
   font-weight: 500;
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 .inputRow button:hover {
-  background: #4f46e5;
+  background: #b80545;
 }
 
 .inputRow button:disabled {
@@ -287,4 +335,85 @@
   justify-content: center;
   color: #6b7280;
   font-size: 0.875rem;
+}
+
+/* Тёмная тема */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fab {
+  background: #d90652;
+  box-shadow: 0 4px 14px rgba(217, 6, 82, 0.4);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fab:hover {
+  background: #e6175f;
+  box-shadow: 0 6px 20px rgba(217, 6, 82, 0.5);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .panel {
+  background: #1f2937;
+  border-color: #374151;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .header {
+  background: #d90652;
+  color: #fff;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationItem {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationItem:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationItem.active {
+  background: #7f1d1d;
+  color: #fecaca;
+  border-color: #991b1b;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .lastMessage {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .notifyRow {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .message.theirs {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .messageMeta {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .message.theirs .messageMeta {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inputRow {
+  border-top-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inputField {
+  background: #111827;
+  border-color: #374151;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inputField::placeholder {
+  color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inputField:focus {
+  border-color: #d90652;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .empty,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
+  color: #9ca3af;
 }

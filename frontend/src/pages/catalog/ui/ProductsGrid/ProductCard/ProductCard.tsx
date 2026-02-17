@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import type { Product } from '@/entities/product';
+import { useApprovedOrderGuard } from '@/shared/lib/contexts/ApprovedOrderGuardContext';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 
 import styles from './ProductCard.module.css';
@@ -27,6 +28,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const { toggleWishlist, isInWishlist, checkInWishlist, wishlist } = useWishlist();
   const { toggleCompare, isInCompare, checkInCompare, compare, removeFromCompare } = useCompare();
   const { cart, addToCart, updateQuantity, updateCartItemQuantityById } = useCart();
+  const guard = useApprovedOrderGuard();
   const [isLoading, setIsLoading] = useState(false);
   const [isCompareLoading, setIsCompareLoading] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
@@ -169,19 +171,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     const productId = getProductId();
     const cardVariantId = selectedVariant?.id;
 
-    try {
-      setIsAddingToCart(true);
-      await addToCart(productId, 1, undefined, undefined, cardVariantId);
-      // Можно показать уведомление об успешном добавлении
-    } catch (error) {
-      if (error instanceof Error) {
-        alert(error.message);
-      } else {
-        alert('Произошла ошибка при добавлении в корзину');
+    const ok = await guard.confirmBeforeCartChange(async () => {
+      try {
+        setIsAddingToCart(true);
+        await addToCart(productId, 1, undefined, undefined, cardVariantId);
+      } catch (error) {
+        if (error instanceof Error) {
+          alert(error.message);
+        } else {
+          alert('Произошла ошибка при добавлении в корзину');
+        }
+      } finally {
+        setIsAddingToCart(false);
       }
-    } finally {
-      setIsAddingToCart(false);
-    }
+    }, guard.hasApprovedOrder);
+    if (!ok) return;
   };
 
   const handlePreviousImage = (e: React.MouseEvent) => {

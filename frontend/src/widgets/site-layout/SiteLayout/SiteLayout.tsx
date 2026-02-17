@@ -5,6 +5,7 @@ import React from 'react';
 import { UserAuthProvider } from '@/features/auth/context/UserAuthContext';
 import { FormModals, FormProvider } from '@/features/forms';
 import { useTheme } from '@/features/theme';
+import { ApprovedOrderGuardProvider } from '@/shared/lib/contexts/ApprovedOrderGuardContext';
 import { Background } from '@/widgets/background';
 import { ChatSupportOpenProvider, ChatSupportWidget } from '@/widgets/chat-support';
 import { Footer } from '@/widgets/footer';
@@ -21,25 +22,27 @@ export const SiteLayout: React.FC<SiteLayoutProps> = ({ children }) => {
 
   return (
     <UserAuthProvider>
-      <FormProvider>
-        <ChatSupportOpenProvider>
-          <div
-            className="App"
-            data-app-theme={isDarkTheme ? 'dark' : 'light'}
-            suppressHydrationWarning
-          >
-            <Background />
-            <Header />
+      <ApprovedOrderGuardProvider>
+        <FormProvider>
+          <ChatSupportOpenProvider>
+            <div
+              className="App"
+              data-app-theme={isDarkTheme ? 'dark' : 'light'}
+              suppressHydrationWarning
+            >
+              <Background />
+              <Header />
 
-            <div className="mainContent">{children}</div>
+              <div className="mainContent">{children}</div>
 
-            <Footer />
-            <MobileBottomNav />
-            <ChatSupportWidget />
-            <FormModals />
-          </div>
-        </ChatSupportOpenProvider>
-      </FormProvider>
+              <Footer />
+              <MobileBottomNav />
+              <ChatSupportWidget />
+              <FormModals />
+            </div>
+          </ChatSupportOpenProvider>
+        </FormProvider>
+      </ApprovedOrderGuardProvider>
     </UserAuthProvider>
   );
 };

@@ -15,6 +15,8 @@ const ORDER_STATUS_LABELS: Record<string, string> = {
   REFUNDED: 'Возврат',
 };
 
+const APPROVAL_VALID_MS = 60 * 60 * 1000; // 60 минут действия статуса «Заказ проверен»
+
 @Injectable()
 export class AdminOrdersService {
   constructor(
@@ -145,7 +147,7 @@ export class AdminOrdersService {
   }
 
   async findOne(id: string) {
-    const order = await this.prisma.order.findUnique({
+    let order = await this.prisma.order.findUnique({
       where: { id },
       include: {
         user: {
@@ -192,7 +194,86 @@ export class AdminOrdersService {
       throw new NotFoundException(`Order with ID ${id} not found`);
     }
 
+    if (
+      order.status === 'APPROVED' &&
+      order.approvedAt &&
+      Date.now() - new Date(order.approvedAt).getTime() > APPROVAL_VALID_MS
+    ) {
+      await this.restoreStock(
+        order.items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+      );
+      order = await this.prisma.order.update({
+        where: { id },
+        data: {
+          status: 'CANCELLED',
+          cancelledAt: new Date(),
+          cancelReason: 'Время на оформление заказа истекло (60 мин). Товары остаются в корзине.',
+          approvedAt: null,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              phone: true,
+            },
+          },
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                  sku: true,
+                  images: true,
+                },
+              },
+              replacedFromProduct: {
+                select: {
+                  id: true,
+                  name: true,
+                  sku: true,
+                },
+              },
+            },
+          },
+          shippingAddress: true,
+          shippingMethod: true,
+          payments: {
+            include: { method: true },
+            orderBy: { createdAt: 'desc' },
+          },
+        },
+      });
+    }
+
     return order;
+  }
+
+  /** Вернуть остатки на склад при отмене заказа (истечение 60 мин или отмена покупателем). */
+  private async restoreStock(items: Array<{ productId: string; quantity: number }>) {
+    if (items.length === 0) return;
+    await this.prisma.$transaction(
+      items.map((item) =>
+        this.prisma.product.update({
+          where: { id: item.productId },
+          data: { stock: { increment: item.quantity } },
+        }),
+      ),
+    );
+  }
+
+  /** Удалить заказ (только для супер-админа). Каскадно удаляются позиции и платежи. */
+  async deleteOrder(id: string): Promise<{ id: string }> {
+    const order = await this.prisma.order.findUnique({ where: { id } });
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${id} not found`);
+    }
+    await this.prisma.order.delete({ where: { id } });
+    return { id };
   }
 
   /** Обновить пункт заказа: комментарий менеджера и/или замена товара (с пометкой для покупателя). */
@@ -306,6 +387,52 @@ export class AdminOrdersService {
     });
   }
 
+  /** Настройки расчёта доставки (Мурманск / за городом, грузчики). */
+  async getDeliveryConfig() {
+    let config = await this.prisma.deliveryConfig.findFirst();
+    if (!config) {
+      config = await this.prisma.deliveryConfig.create({
+        data: {
+          deliveryPriceMurmansk: 500,
+          deliveryPricePerKmOutside: 50,
+          moversPriceMurmansk: 300,
+          moversPriceOutside: 400,
+          moversKgPerPerson: 50,
+          moversVolumePerPerson: 0.5,
+        },
+      });
+    }
+    return config;
+  }
+
+  /** Обновить настройки расчёта доставки. */
+  async updateDeliveryConfig(data: {
+    deliveryPriceMurmansk?: number;
+    deliveryPricePerKmOutside?: number;
+    moversPriceMurmansk?: number;
+    moversPriceOutside?: number;
+    moversKgPerPerson?: number;
+    moversVolumePerPerson?: number | null;
+  }) {
+    const config = await this.getDeliveryConfig();
+    const updateData: Prisma.DeliveryConfigUpdateInput = {};
+    if (data.deliveryPriceMurmansk !== undefined)
+      updateData.deliveryPriceMurmansk = data.deliveryPriceMurmansk;
+    if (data.deliveryPricePerKmOutside !== undefined)
+      updateData.deliveryPricePerKmOutside = data.deliveryPricePerKmOutside;
+    if (data.moversPriceMurmansk !== undefined)
+      updateData.moversPriceMurmansk = data.moversPriceMurmansk;
+    if (data.moversPriceOutside !== undefined)
+      updateData.moversPriceOutside = data.moversPriceOutside;
+    if (data.moversKgPerPerson !== undefined) updateData.moversKgPerPerson = data.moversKgPerPerson;
+    if (data.moversVolumePerPerson !== undefined)
+      updateData.moversVolumePerPerson = data.moversVolumePerPerson;
+    return this.prisma.deliveryConfig.update({
+      where: { id: config.id },
+      data: updateData,
+    });
+  }
+
   async updateStatus(id: string, status: string) {
     const order = await this.findOne(id);
 
@@ -322,6 +449,9 @@ export class AdminOrdersService {
     const updateData: Prisma.OrderUpdateInput = { status: status as OrderStatus };
 
     switch (status) {
+      case 'APPROVED':
+        updateData.approvedAt = new Date();
+        break;
       case 'SHIPPED':
         updateData.shippedAt = new Date();
         break;
@@ -333,6 +463,9 @@ export class AdminOrdersService {
         // Restore stock
         await this.restoreStock(order.items);
         break;
+    }
+    if (status !== 'APPROVED' && order.status === 'APPROVED') {
+      updateData.approvedAt = null;
     }
 
     const updated = await this.prisma.order.update({
@@ -425,17 +558,6 @@ export class AdminOrdersService {
     });
 
     return updated;
-  }
-
-  private async restoreStock(items: Array<{ productId: string; quantity: number }>) {
-    await this.prisma.$transaction(
-      items.map((item) =>
-        this.prisma.product.update({
-          where: { id: item.productId },
-          data: { stock: { increment: item.quantity } },
-        }),
-      ),
-    );
   }
 
   async updateTracking(id: string, trackingNumber: string) {

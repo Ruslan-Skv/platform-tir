@@ -8,6 +8,35 @@
   margin-bottom: 1rem;
 }
 
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.deleteButton {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.875rem;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.deleteButton:hover:not(:disabled) {
+  background: #fee2e2;
+  border-color: #f87171;
+}
+
+.deleteButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .topGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -72,6 +101,39 @@
   border: 1px solid #a7f3d0;
 }
 
+.approvalCountdown {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.875rem;
+  color: #166534;
+}
+
+.approvalCountdownTime {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.reviewTimeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.reviewTimelineRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+}
+
+.reviewTimelineLabel {
+  color: #6b7280;
+  min-width: 12rem;
+}
+
+.reviewTimelineValue {
+  font-variant-numeric: tabular-nums;
+}
+
 .email {
   color: #6b7280;
   font-size: 0.9375rem;
@@ -131,6 +193,19 @@
 .address {
   margin: 0.25rem 0 0 0;
   color: #374151;
+}
+
+.deliveryDetails {
+  margin-top: 0.75rem;
+}
+
+.deliveryDetails p {
+  margin: 0.25rem 0 0 0;
+}
+
+.deliveryCost {
+  margin-top: 0.5rem;
+  font-weight: 600;
 }
 
 .loading,
@@ -239,9 +314,8 @@
 }
 
 .sendBackSection {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
 }
 
 .sendBackButton {
@@ -258,9 +332,15 @@
     box-shadow 0.2s;
 }
 
-.sendBackButton:hover {
+.sendBackButton:hover:not(:disabled) {
   background: linear-gradient(135deg, #4f46e5, #4338ca);
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+}
+
+.sendBackButton:disabled {
+  background: #9ca3af;
+  cursor: default;
+  box-shadow: none;
 }
 
 .modalOverlay {
@@ -289,6 +369,32 @@
   font-weight: 600;
   margin: 0 0 0.75rem 0;
   color: #111827;
+}
+
+.modalText {
+  margin: 0 0 1rem 0;
+  font-size: 0.9375rem;
+  color: #374151;
+}
+
+.modalConfirmDelete {
+  padding: 0.5rem 1rem;
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.modalConfirmDelete:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.modalConfirmDelete:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .modalTextarea {
@@ -437,7 +543,7 @@
   background: linear-gradient(135deg, #6366f1, #4f46e5);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .sendBackButton:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sendBackButton:hover:not(:disabled) {
   background: linear-gradient(135deg, #4f46e5, #4338ca);
 }
 

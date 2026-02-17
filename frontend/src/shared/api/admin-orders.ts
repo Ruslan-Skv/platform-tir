@@ -7,6 +7,8 @@ export interface AdminOrderSummary {
   paymentStatus?: string;
   total: string | number;
   createdAt: string;
+  approvedAt?: string | null;
+  submittedForReviewAt?: string | null;
   user?: { firstName?: string; lastName?: string; email?: string };
   items?: unknown[];
 }
@@ -48,6 +50,18 @@ export async function getAdminOrder(
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить заказ');
+  return res.json();
+}
+
+export async function deleteAdminOrder(id: string): Promise<{ id: string }> {
+  const res = await fetch(`${API_URL}/admin/orders/${id}`, {
+    method: 'DELETE',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message ?? 'Не удалось удалить заказ');
+  }
   return res.json();
 }
 
@@ -116,5 +130,40 @@ export async function getProductsForReplacement(search?: string): Promise<Produc
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить список товаров');
+  return res.json();
+}
+
+export interface DeliveryConfigDto {
+  id: string;
+  deliveryPriceMurmansk: string | number;
+  deliveryPricePerKmOutside: string | number;
+  moversPriceMurmansk: string | number;
+  moversPriceOutside: string | number;
+  moversKgPerPerson: string | number;
+  moversVolumePerPerson: string | number | null;
+}
+
+export async function getDeliveryConfig(): Promise<DeliveryConfigDto> {
+  const res = await fetch(`${API_URL}/admin/orders/delivery-config`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить настройки доставки');
+  return res.json();
+}
+
+export async function updateDeliveryConfig(data: {
+  deliveryPriceMurmansk?: number;
+  deliveryPricePerKmOutside?: number;
+  moversPriceMurmansk?: number;
+  moversPriceOutside?: number;
+  moversKgPerPerson?: number;
+  moversVolumePerPerson?: number | null;
+}): Promise<DeliveryConfigDto> {
+  const res = await fetch(`${API_URL}/admin/orders/delivery-config`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Не удалось сохранить настройки доставки');
   return res.json();
 }

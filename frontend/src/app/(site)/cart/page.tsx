@@ -1,6 +1,6 @@
 'use client';
 
-import { TrashIcon } from '@heroicons/react/24/outline';
+import { TrashIcon, TruckIcon } from '@heroicons/react/24/outline';
 
 import React, { useEffect, useMemo, useState } from 'react';
 
@@ -10,13 +10,20 @@ import Link from 'next/link';
 import * as cartApi from '@/shared/api/cart';
 import type { CartItem } from '@/shared/api/cart';
 import {
+  type CalculateDeliveryResult,
+  type DeliveryAddressForm,
+  type DeliveryType,
   type UserOrder,
+  addCartItemToOrder,
+  calculateDelivery,
   cancelOrderByCustomer,
+  formatApprovalCountdown,
+  getApprovalRemainingMs,
   getUserOrders,
   submitOrderFromCart,
 } from '@/shared/api/user-orders';
+import { useApprovedOrderGuard } from '@/shared/lib/contexts/ApprovedOrderGuardContext';
 import { useCart } from '@/shared/lib/hooks';
-import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
 import styles from './page.module.css';
 
@@ -31,16 +38,43 @@ export default function CartPage() {
     removeFromCart,
     removeCartItemById,
     removeComponentFromCart,
-    clearCart,
     getTotalPrice,
   } = useCart();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
-  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [userOrders, setUserOrders] = useState<UserOrder[] | null>(null);
   const [submitInProgress, setSubmitInProgress] = useState(false);
   const [cancelInProgress, setCancelInProgress] = useState(false);
+  const [addToOrderInProgress, setAddToOrderInProgress] = useState<Set<string>>(new Set());
+  const [, setTick] = useState(0);
+  const guard = useApprovedOrderGuard();
+  const [wantDelivery, setWantDelivery] = useState(false);
+  const [deliveryForm, setDeliveryForm] = useState<{
+    street: string;
+    city: string;
+    distanceKm: string;
+    deliveryType: DeliveryType;
+    deliveryFloor: string;
+    deliveryHasElevator: boolean;
+  }>({
+    street: '',
+    city: '',
+    distanceKm: '',
+    deliveryType: 'TO_ENTRANCE',
+    deliveryFloor: '',
+    deliveryHasElevator: false,
+  });
+  const [calculatedDelivery, setCalculatedDelivery] = useState<CalculateDeliveryResult | null>(
+    null
+  );
+  const [deliveryCalculationLoading, setDeliveryCalculationLoading] = useState(false);
+  const [deliveryCalculationError, setDeliveryCalculationError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     const loadCart = async () => {
@@ -87,11 +121,178 @@ export default function CartPage() {
   }, [userOrders]);
   const pendingReviewOrder = sortedOrders.find((o) => o.status === 'PENDING_REVIEW') ?? null;
   const approvedOrder = sortedOrders.find((o) => o.status === 'APPROVED') ?? null;
+  const approvalRemainingMs = approvedOrder
+    ? getApprovalRemainingMs(approvedOrder.approvedAt ?? null)
+    : 0;
+  const approvalExpired = approvedOrder && approvalRemainingMs <= 0;
+
+  /** Есть ли у заказа на проверке доставка (адрес или тип) — показываем блок доставки заполненным и с бейджем. */
+  const pendingOrderHasDelivery =
+    !!pendingReviewOrder &&
+    (!!pendingReviewOrder.shippingAddress || !!pendingReviewOrder.deliveryType);
+
+  /** Есть ли у проверенного заказа доставка — блок доставки остаётся заполненным и с бейджем «Проверено». */
+  const approvedOrderHasDelivery =
+    !!approvedOrder &&
+    !approvalExpired &&
+    (!!approvedOrder.shippingAddress || !!approvedOrder.deliveryType);
+
+  /** Заказ, из которого подставляем доставку (сначала на проверке, иначе проверенный). */
+  const orderWithDelivery =
+    pendingReviewOrder?.id && pendingOrderHasDelivery
+      ? pendingReviewOrder
+      : approvedOrderHasDelivery
+        ? approvedOrder!
+        : null;
+
+  useEffect(() => {
+    if (approvalExpired && userOrders) {
+      getUserOrders().then(setUserOrders);
+    }
+  }, [approvalExpired]);
+
+  /** Синхронизация блока доставки из заказа (на проверке или проверенного): не обнулять, показывать заполненным. */
+  useEffect(() => {
+    if (!orderWithDelivery) return;
+    setWantDelivery(true);
+    const addr = orderWithDelivery.shippingAddress;
+    setDeliveryForm((f) => ({
+      ...f,
+      street: addr?.street ?? '',
+      city: addr?.city ?? '',
+      deliveryType:
+        orderWithDelivery.deliveryType === 'TO_APARTMENT' ? 'TO_APARTMENT' : 'TO_ENTRANCE',
+      deliveryFloor:
+        orderWithDelivery.deliveryFloor != null ? String(orderWithDelivery.deliveryFloor) : '',
+      deliveryHasElevator: orderWithDelivery.deliveryHasElevator ?? false,
+    }));
+    const cost = Number(orderWithDelivery.shippingCost) || 0;
+    setCalculatedDelivery({ deliveryCost: cost, carryCost: 0, totalShippingCost: cost });
+  }, [orderWithDelivery?.id, !!orderWithDelivery]);
+
+  /** ID позиций корзины, которые уже в заказе на проверке (для иконки «в заказе»). */
+  const cartItemIdsInOrder = useMemo(() => {
+    if (!pendingReviewOrder?.items?.length || !cart.length) return new Set<string>();
+    const orderItems = [...pendingReviewOrder.items];
+    const usedOrderIndices = new Set<number>();
+    const ids = new Set<string>();
+    for (const cartItem of cart) {
+      const cProductId = cartItem.product?.id ?? cartItem.component?.productId;
+      if (!cProductId) continue;
+      const cQty = Math.round(Number(cartItem.quantity));
+      const cSize = cartItem.size ?? null;
+      const cOpening = cartItem.openingSide ?? null;
+      for (let i = 0; i < orderItems.length; i++) {
+        if (usedOrderIndices.has(i)) continue;
+        const o = orderItems[i];
+        const oSize = o.size ?? null;
+        const oOpening = o.openingSide ?? null;
+        if (
+          o.productId === cProductId &&
+          o.quantity === cQty &&
+          oSize === cSize &&
+          oOpening === cOpening
+        ) {
+          usedOrderIndices.add(i);
+          ids.add(cartItem.id);
+          break;
+        }
+      }
+    }
+    return ids;
+  }, [pendingReviewOrder, cart]);
+
+  /** ID позиций корзины, которые в заказе со статусом «Проверен» (для иконки двойной галочки). */
+  const cartItemIdsInApprovedOrder = useMemo(() => {
+    if (!approvedOrder?.items?.length || !cart.length) return new Set<string>();
+    const orderItems = [...approvedOrder.items];
+    const usedOrderIndices = new Set<number>();
+    const ids = new Set<string>();
+    for (const cartItem of cart) {
+      const cProductId = cartItem.product?.id ?? cartItem.component?.productId;
+      if (!cProductId) continue;
+      const cQty = Math.round(Number(cartItem.quantity));
+      const cSize = cartItem.size ?? null;
+      const cOpening = cartItem.openingSide ?? null;
+      for (let i = 0; i < orderItems.length; i++) {
+        if (usedOrderIndices.has(i)) continue;
+        const o = orderItems[i];
+        const oSize = o.size ?? null;
+        const oOpening = o.openingSide ?? null;
+        if (
+          o.productId === cProductId &&
+          o.quantity === cQty &&
+          oSize === cSize &&
+          oOpening === cOpening
+        ) {
+          usedOrderIndices.add(i);
+          ids.add(cartItem.id);
+          break;
+        }
+      }
+    }
+    return ids;
+  }, [approvedOrder, cart]);
+
+  const handleAddToOrder = async (cartItemId: string) => {
+    if (!pendingReviewOrder) return;
+    setAddToOrderInProgress((prev) => new Set(prev).add(cartItemId));
+    try {
+      await addCartItemToOrder(pendingReviewOrder.id, cartItemId);
+      await refreshCart();
+      const orders = await getUserOrders();
+      setUserOrders(orders);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Не удалось добавить товар в заказ');
+    } finally {
+      setAddToOrderInProgress((prev) => {
+        const next = new Set(prev);
+        next.delete(cartItemId);
+        return next;
+      });
+    }
+  };
+
+  const buildDeliveryPayload = (): {
+    deliveryAddress: DeliveryAddressForm;
+    deliveryType: DeliveryType;
+    deliveryFloor?: number;
+    deliveryHasElevator?: boolean;
+    distanceKm?: number;
+  } | null => {
+    if (!wantDelivery || !deliveryFormValid || !calculatedDelivery) return null;
+    const payload = {
+      deliveryAddress: {
+        street: deliveryForm.street.trim(),
+        city: deliveryForm.city.trim(),
+      },
+      deliveryType: deliveryForm.deliveryType,
+    } as {
+      deliveryAddress: DeliveryAddressForm;
+      deliveryType: DeliveryType;
+      deliveryFloor?: number;
+      deliveryHasElevator?: boolean;
+      distanceKm?: number;
+    };
+    if (deliveryForm.deliveryType === 'TO_APARTMENT') {
+      const floor = parseInt(deliveryForm.deliveryFloor, 10);
+      if (!isNaN(floor) && floor >= 1) {
+        payload.deliveryFloor = floor;
+        payload.deliveryHasElevator = deliveryForm.deliveryHasElevator;
+      }
+    }
+    const dist = parseFloat(deliveryForm.distanceKm);
+    if (deliveryForm.distanceKm.trim() !== '' && !isNaN(dist) && dist >= 0) {
+      payload.distanceKm = dist;
+    }
+    return payload;
+  };
 
   const handleSubmitForReview = async () => {
     setSubmitInProgress(true);
     try {
-      await submitOrderFromCart();
+      const payload = buildDeliveryPayload();
+      await submitOrderFromCart(payload ?? undefined);
       const orders = await getUserOrders();
       setUserOrders(orders);
     } catch (err) {
@@ -99,6 +300,25 @@ export default function CartPage() {
     } finally {
       setSubmitInProgress(false);
     }
+  };
+
+  const handleDeliveryCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked;
+    if (!checked) {
+      setWantDelivery(false);
+      return;
+    }
+    if (guard.hasApprovedOrder) {
+      guard
+        .confirmBeforeCartChange(async () => {
+          setWantDelivery(true);
+          const orders = await getUserOrders();
+          setUserOrders(orders);
+        }, true)
+        .then(() => {});
+      return;
+    }
+    setWantDelivery(true);
   };
 
   const handleCancelReview = async () => {
@@ -168,60 +388,127 @@ export default function CartPage() {
   };
 
   const handleRemoveItem = async (itemId: string) => {
-    const itemKey = `item-${itemId}`;
-    setUpdatingItems((prev) => new Set(prev).add(itemKey));
-    try {
-      await removeCartItemById(itemId);
-    } catch (err) {
-      if (err instanceof Error) {
-        alert(err.message);
-      } else {
-        alert('Произошла ошибка при удалении товара');
+    const item = cart.find((c) => c.id === itemId);
+    const needConfirm = item
+      ? guard.hasApprovedOrder && guard.isCartItemInApprovedOrder(item)
+      : false;
+    const ok = await guard.confirmBeforeCartChange(async () => {
+      const itemKey = `item-${itemId}`;
+      setUpdatingItems((prev) => new Set(prev).add(itemKey));
+      try {
+        await removeCartItemById(itemId);
+      } catch (err) {
+        if (err instanceof Error) alert(err.message);
+        else alert('Произошла ошибка при удалении товара');
+      } finally {
+        setUpdatingItems((prev) => {
+          const next = new Set(prev);
+          next.delete(itemKey);
+          return next;
+        });
       }
-    } finally {
-      setUpdatingItems((prev) => {
-        const next = new Set(prev);
-        next.delete(itemKey);
-        return next;
-      });
-    }
+    }, needConfirm);
+    if (!ok && needConfirm) return;
   };
 
   const handleRemoveComponent = async (componentId: string) => {
-    const itemKey = `component-${componentId}`;
-    setUpdatingItems((prev) => new Set(prev).add(itemKey));
-    try {
-      await removeComponentFromCart(componentId);
-    } catch (err) {
-      if (err instanceof Error) {
-        alert(err.message);
-      } else {
-        alert('Произошла ошибка при удалении комплектующего');
+    const item = cart.find((c) => c.componentId === componentId);
+    const needConfirm = item
+      ? guard.hasApprovedOrder && guard.isCartItemInApprovedOrder(item)
+      : false;
+    const ok = await guard.confirmBeforeCartChange(async () => {
+      const itemKey = `component-${componentId}`;
+      setUpdatingItems((prev) => new Set(prev).add(itemKey));
+      try {
+        await removeComponentFromCart(componentId);
+      } catch (err) {
+        if (err instanceof Error) alert(err.message);
+        else alert('Произошла ошибка при удалении комплектующего');
+      } finally {
+        setUpdatingItems((prev) => {
+          const next = new Set(prev);
+          next.delete(itemKey);
+          return next;
+        });
       }
-    } finally {
-      setUpdatingItems((prev) => {
-        const next = new Set(prev);
-        next.delete(itemKey);
-        return next;
+    }, needConfirm);
+    if (!ok && needConfirm) return;
+  };
+
+  const totalPrice = getTotalPrice();
+  const totalItems = cart.reduce((sum, item) => {
+    if (item.product || item.component) {
+      return sum + item.quantity;
+    }
+    return sum;
+  }, 0);
+
+  const deliveryFormValid =
+    wantDelivery &&
+    deliveryForm.street.trim() !== '' &&
+    deliveryForm.city.trim() !== '' &&
+    (deliveryForm.deliveryType === 'TO_ENTRANCE' ||
+      (deliveryForm.deliveryType === 'TO_APARTMENT' &&
+        deliveryForm.deliveryFloor.trim() !== '' &&
+        parseInt(deliveryForm.deliveryFloor, 10) >= 1));
+
+  useEffect(() => {
+    if (!wantDelivery || !deliveryFormValid) {
+      setCalculatedDelivery(null);
+      setDeliveryCalculationError(null);
+      return;
+    }
+    const floorNum =
+      deliveryForm.deliveryType === 'TO_APARTMENT' && deliveryForm.deliveryFloor.trim() !== ''
+        ? parseInt(deliveryForm.deliveryFloor, 10)
+        : undefined;
+    const distanceKmNum =
+      deliveryForm.distanceKm.trim() !== '' ? parseFloat(deliveryForm.distanceKm) : undefined;
+    let cancelled = false;
+    setDeliveryCalculationLoading(true);
+    setDeliveryCalculationError(null);
+    calculateDelivery({
+      subtotal: totalPrice,
+      city: deliveryForm.city.trim(),
+      distanceKm: distanceKmNum != null && !isNaN(distanceKmNum) ? distanceKmNum : undefined,
+      deliveryType: deliveryForm.deliveryType,
+      deliveryFloor: floorNum,
+      deliveryHasElevator:
+        deliveryForm.deliveryType === 'TO_APARTMENT' ? deliveryForm.deliveryHasElevator : undefined,
+    })
+      .then((res) => {
+        if (!cancelled) {
+          setCalculatedDelivery(res);
+          setDeliveryCalculationError(null);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setCalculatedDelivery(null);
+          setDeliveryCalculationError(
+            err instanceof Error ? err.message : 'Не удалось рассчитать доставку'
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDeliveryCalculationLoading(false);
       });
-    }
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    wantDelivery,
+    deliveryFormValid,
+    totalPrice,
+    deliveryForm.city,
+    deliveryForm.distanceKm,
+    deliveryForm.deliveryType,
+    deliveryForm.deliveryFloor,
+    deliveryForm.deliveryHasElevator,
+  ]);
 
-  const handleClearCartClick = () => {
-    setIsClearModalOpen(true);
-  };
-
-  const handleClearCartConfirm = async () => {
-    try {
-      await clearCart();
-    } catch (err) {
-      if (err instanceof Error) {
-        alert(err.message);
-      } else {
-        alert('Произошла ошибка при очистке корзины');
-      }
-    }
-  };
+  const shippingCost = calculatedDelivery?.totalShippingCost ?? 0;
+  const totalWithShipping = totalPrice + shippingCost;
 
   if (loading) {
     return (
@@ -244,14 +531,6 @@ export default function CartPage() {
       </div>
     );
   }
-
-  const totalPrice = getTotalPrice();
-  const totalItems = cart.reduce((sum, item) => {
-    if (item.product || item.component) {
-      return sum + item.quantity;
-    }
-    return sum;
-  }, 0);
 
   return (
     <div className={styles.container}>
@@ -368,15 +647,76 @@ export default function CartPage() {
                       <span className={styles.totalPrice}>{itemTotal.toLocaleString()} ₽</span>
                     </div>
 
-                    <button
-                      type="button"
-                      className={styles.removeButton}
-                      onClick={() => handleRemoveItem(item.id)}
-                      disabled={isUpdating}
-                      aria-label="Удалить товар"
-                    >
-                      <TrashIcon className={styles.removeButtonIcon} />
-                    </button>
+                    <div className={styles.itemActionsColumn}>
+                      {cartItemIdsInApprovedOrder.has(item.id) ? (
+                        <span className={styles.itemInOrderBadge} title="Проверено" aria-hidden>
+                          <svg
+                            className={styles.doubleCheckIcon}
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={2.5}
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M5 12l3 3 7-7" />
+                            <path d="M9 15l2 2 5-5" />
+                          </svg>
+                        </span>
+                      ) : cartItemIdsInOrder.has(item.id) ? (
+                        <span
+                          className={styles.itemInOrderBadge}
+                          title="В заказе на проверке"
+                          aria-hidden
+                        >
+                          <svg
+                            className={styles.reviewProgressIconSmall}
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={2}
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <g className={styles.reviewProgressSpinnerArc}>
+                              <path
+                                strokeDasharray="28 56"
+                                d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18z"
+                              />
+                            </g>
+                            <path className={styles.reviewProgressCheck} d="M7 12l3.5 3.5L17 9" />
+                          </svg>
+                        </span>
+                      ) : pendingReviewOrder ? (
+                        <button
+                          type="button"
+                          className={styles.addToOrderButton}
+                          onClick={() => handleAddToOrder(item.id)}
+                          disabled={addToOrderInProgress.has(item.id)}
+                          aria-label="Проверить"
+                        >
+                          {addToOrderInProgress.has(item.id) ? '…' : 'Проверить'}
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        className={styles.removeButton}
+                        onClick={() => handleRemoveItem(item.id)}
+                        disabled={isUpdating || cartItemIdsInOrder.has(item.id)}
+                        title={
+                          cartItemIdsInApprovedOrder.has(item.id)
+                            ? 'Удалить (заказ будет переоформлен)'
+                            : cartItemIdsInOrder.has(item.id)
+                              ? 'Нельзя удалить: товар в заказе на проверке'
+                              : 'Удалить товар'
+                        }
+                        aria-label="Удалить товар"
+                      >
+                        <TrashIcon className={styles.removeButtonIcon} />
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -477,24 +817,309 @@ export default function CartPage() {
                       <span className={styles.totalPrice}>{itemTotal.toLocaleString()} ₽</span>
                     </div>
 
-                    <button
-                      type="button"
-                      className={styles.removeButton}
-                      onClick={() => handleRemoveComponent(item.componentId!)}
-                      disabled={isUpdating}
-                      aria-label="Удалить комплектующее"
-                    >
-                      <TrashIcon className={styles.removeButtonIcon} />
-                    </button>
+                    <div className={styles.itemActionsColumn}>
+                      {cartItemIdsInApprovedOrder.has(item.id) ? (
+                        <span className={styles.itemInOrderBadge} title="Проверено" aria-hidden>
+                          <svg
+                            className={styles.doubleCheckIcon}
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={2.5}
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M5 12l3 3 7-7" />
+                            <path d="M9 15l2 2 5-5" />
+                          </svg>
+                        </span>
+                      ) : cartItemIdsInOrder.has(item.id) ? (
+                        <span
+                          className={styles.itemInOrderBadge}
+                          title="В заказе на проверке"
+                          aria-hidden
+                        >
+                          <svg
+                            className={styles.reviewProgressIconSmall}
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={2}
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <g className={styles.reviewProgressSpinnerArc}>
+                              <path
+                                strokeDasharray="28 56"
+                                d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18z"
+                              />
+                            </g>
+                            <path className={styles.reviewProgressCheck} d="M7 12l3.5 3.5L17 9" />
+                          </svg>
+                        </span>
+                      ) : pendingReviewOrder ? (
+                        <button
+                          type="button"
+                          className={styles.addToOrderButton}
+                          onClick={() => handleAddToOrder(item.id)}
+                          disabled={addToOrderInProgress.has(item.id)}
+                          aria-label="Проверить"
+                        >
+                          {addToOrderInProgress.has(item.id) ? '…' : 'Проверить'}
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        className={styles.removeButton}
+                        onClick={() => handleRemoveComponent(item.componentId!)}
+                        disabled={isUpdating || cartItemIdsInOrder.has(item.id)}
+                        title={
+                          cartItemIdsInApprovedOrder.has(item.id)
+                            ? 'Удалить (заказ будет переоформлен)'
+                            : cartItemIdsInOrder.has(item.id)
+                              ? 'Нельзя удалить: товар в заказе на проверке'
+                              : 'Удалить комплектующее'
+                        }
+                        aria-label="Удалить комплектующее"
+                      >
+                        <TrashIcon className={styles.removeButtonIcon} />
+                      </button>
+                    </div>
                   </div>
                 );
               })}
 
-            <div className={styles.cartActions}>
-              <button type="button" className={styles.clearButton} onClick={handleClearCartClick}>
-                Очистить корзину
-              </button>
-            </div>
+            {!orderWithDelivery && (
+              <div className={styles.deliveryCheckboxWrap}>
+                <label className={styles.deliveryCheckboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={wantDelivery}
+                    onChange={handleDeliveryCheckboxChange}
+                    className={styles.deliveryCheckbox}
+                  />
+                  <span>Оформить доставку</span>
+                </label>
+                <p className={styles.deliveryCheckboxHint}>
+                  Заполните адрес и условия доставки — они отправятся на проверку вместе с заказом
+                  по кнопке «Отправить на проверку».
+                </p>
+              </div>
+            )}
+
+            {orderWithDelivery && (
+              <div className={styles.deliveryCompactRow}>
+                <div className={styles.deliveryCompactIcon} aria-hidden>
+                  <TruckIcon className={styles.deliveryCompactIconSvg} />
+                </div>
+                <div className={styles.deliveryCompactInfo}>
+                  <span className={styles.deliveryCompactTitle}>Доставка</span>
+                  <span className={styles.deliveryCompactDetails}>
+                    {[
+                      orderWithDelivery.shippingAddress?.street,
+                      orderWithDelivery.shippingAddress?.city,
+                    ]
+                      .filter(Boolean)
+                      .join(', ') || 'Адрес указан'}
+                    {' · '}
+                    {orderWithDelivery.deliveryType === 'TO_APARTMENT'
+                      ? 'до квартиры'
+                      : 'до подъезда'}
+                    {orderWithDelivery.deliveryType === 'TO_APARTMENT' &&
+                      orderWithDelivery.deliveryFloor != null &&
+                      `, ${orderWithDelivery.deliveryFloor} этаж`}
+                    {' · '}
+                    {(Number(orderWithDelivery.shippingCost) || 0).toLocaleString()} ₽
+                  </span>
+                </div>
+                <div className={styles.itemActionsColumn}>
+                  {pendingOrderHasDelivery ? (
+                    <span
+                      className={styles.itemInOrderBadge}
+                      title="В заказе на проверке"
+                      aria-hidden
+                    >
+                      <svg
+                        className={styles.reviewProgressIconSmall}
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={2}
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <g className={styles.reviewProgressSpinnerArc}>
+                          <path strokeDasharray="28 56" d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18z" />
+                        </g>
+                        <path className={styles.reviewProgressCheck} d="M7 12l3.5 3.5L17 9" />
+                      </svg>
+                    </span>
+                  ) : (
+                    <>
+                      <span className={styles.itemInOrderBadge} title="Проверено" aria-hidden>
+                        <svg
+                          className={styles.doubleCheckIcon}
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2.5}
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M5 12l3 3 7-7" />
+                          <path d="M9 15l2 2 5-5" />
+                        </svg>
+                      </span>
+                      {approvedOrder && approvalRemainingMs > 0 && (
+                        <Link
+                          href={`/checkout?orderId=${approvedOrder.id}`}
+                          className={styles.deliveryBasketButton}
+                          title="Корзинка — перейти к оформлению"
+                          aria-label="Корзинка — перейти к оформлению"
+                        >
+                          <TrashIcon className={styles.deliveryBasketButtonIcon} />
+                        </Link>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {wantDelivery && !orderWithDelivery && (
+              <div className={styles.deliveryFormBlock}>
+                <div className={styles.deliveryFormTitleRow}>
+                  <h3 className={styles.deliveryFormTitle}>Адрес и условия доставки</h3>
+                </div>
+                <div className={styles.deliveryFormGrid}>
+                  <div className={styles.deliveryFormField}>
+                    <label htmlFor="delivery-street">Улица, дом, квартира *</label>
+                    <input
+                      id="delivery-street"
+                      type="text"
+                      value={deliveryForm.street}
+                      onChange={(e) => setDeliveryForm((f) => ({ ...f, street: e.target.value }))}
+                      placeholder="ул. Примерная, д. 1, кв. 1"
+                    />
+                  </div>
+                  <div className={styles.deliveryFormField}>
+                    <label htmlFor="delivery-city">Город *</label>
+                    <input
+                      id="delivery-city"
+                      type="text"
+                      value={deliveryForm.city}
+                      onChange={(e) => setDeliveryForm((f) => ({ ...f, city: e.target.value }))}
+                      placeholder="Мурманск"
+                    />
+                  </div>
+                  {deliveryForm.city.trim() &&
+                    !deliveryForm.city.trim().toLowerCase().includes('мурманск') && (
+                      <div className={styles.deliveryFormField}>
+                        <label htmlFor="delivery-distance">Расстояние от Мурманска, км</label>
+                        <input
+                          id="delivery-distance"
+                          type="number"
+                          min={0}
+                          step={1}
+                          value={deliveryForm.distanceKm}
+                          onChange={(e) =>
+                            setDeliveryForm((f) => ({ ...f, distanceKm: e.target.value }))
+                          }
+                          placeholder="0"
+                        />
+                      </div>
+                    )}
+                </div>
+                <div className={styles.deliveryFormRadios}>
+                  <label className={styles.deliveryRadioLabel}>
+                    <input
+                      type="radio"
+                      name="deliveryType"
+                      checked={deliveryForm.deliveryType === 'TO_ENTRANCE'}
+                      onChange={() =>
+                        setDeliveryForm((f) => ({ ...f, deliveryType: 'TO_ENTRANCE' }))
+                      }
+                    />
+                    <span>Доставка до подъезда</span>
+                  </label>
+                  <label className={styles.deliveryRadioLabel}>
+                    <input
+                      type="radio"
+                      name="deliveryType"
+                      checked={deliveryForm.deliveryType === 'TO_APARTMENT'}
+                      onChange={() =>
+                        setDeliveryForm((f) => ({ ...f, deliveryType: 'TO_APARTMENT' }))
+                      }
+                    />
+                    <span>Доставка до квартиры</span>
+                  </label>
+                </div>
+                {deliveryForm.deliveryType === 'TO_APARTMENT' && (
+                  <div className={styles.deliveryFormLift}>
+                    <div className={styles.deliveryFormField}>
+                      <label htmlFor="delivery-floor">Этаж *</label>
+                      <input
+                        id="delivery-floor"
+                        type="number"
+                        min={1}
+                        value={deliveryForm.deliveryFloor}
+                        onChange={(e) =>
+                          setDeliveryForm((f) => ({ ...f, deliveryFloor: e.target.value }))
+                        }
+                        placeholder="1"
+                      />
+                    </div>
+                    <label className={styles.deliveryFormCheckbox}>
+                      <input
+                        type="checkbox"
+                        checked={deliveryForm.deliveryHasElevator}
+                        onChange={(e) =>
+                          setDeliveryForm((f) => ({ ...f, deliveryHasElevator: e.target.checked }))
+                        }
+                      />
+                      <span>Есть лифт</span>
+                    </label>
+                  </div>
+                )}
+                {deliveryFormValid && (
+                  <div className={styles.deliveryFormTotal}>
+                    {deliveryCalculationLoading && (
+                      <div className={styles.deliveryCostLine}>
+                        <span className={styles.deliveryCostLabel}>Стоимость доставки:</span>
+                        <span className={styles.deliveryCostLoading}>Рассчитываем…</span>
+                      </div>
+                    )}
+                    {!deliveryCalculationLoading && deliveryCalculationError && (
+                      <div className={styles.deliveryCostLine}>
+                        <span className={styles.deliveryCostError}>{deliveryCalculationError}</span>
+                      </div>
+                    )}
+                    {!deliveryCalculationLoading &&
+                      calculatedDelivery &&
+                      !deliveryCalculationError && (
+                        <>
+                          <span>
+                            Доставка: {calculatedDelivery.deliveryCost.toLocaleString()} ₽
+                          </span>
+                          {calculatedDelivery.carryCost > 0 && (
+                            <span>Подъём: {calculatedDelivery.carryCost.toLocaleString()} ₽</span>
+                          )}
+                          <div className={styles.deliveryCostLine}>
+                            <span className={styles.deliveryCostLabel}>Стоимость доставки:</span>
+                            <strong className={styles.deliveryCostValue}>
+                              {calculatedDelivery.totalShippingCost.toLocaleString()} ₽
+                            </strong>
+                          </div>
+                        </>
+                      )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className={styles.summary}>
@@ -505,16 +1130,48 @@ export default function CartPage() {
                 <span>{totalItems}</span>
               </div>
               <div className={styles.summaryRow}>
-                <span>Сумма:</span>
-                <span className={styles.totalPrice}>{totalPrice.toLocaleString()} ₽</span>
+                <span>Сумма товаров:</span>
+                <span>{totalPrice.toLocaleString()} ₽</span>
               </div>
-              {approvedOrder ? (
-                <Link
-                  href={`/checkout?orderId=${approvedOrder.id}`}
-                  className={styles.checkoutButton}
-                >
-                  Оформить заказ
-                </Link>
+
+              {wantDelivery && calculatedDelivery != null && (
+                <>
+                  <div className={styles.summaryRow}>
+                    <span>Доставка:</span>
+                    <span>{calculatedDelivery.totalShippingCost.toLocaleString()} ₽</span>
+                  </div>
+                  <div className={styles.summaryRow}>
+                    <span>Итого:</span>
+                    <span className={styles.totalPrice}>
+                      {totalWithShipping.toLocaleString()} ₽
+                    </span>
+                  </div>
+                </>
+              )}
+              {(!wantDelivery || calculatedDelivery == null) && (
+                <div className={styles.summaryRow}>
+                  <span>Итого:</span>
+                  <span className={styles.totalPrice}>{totalPrice.toLocaleString()} ₽</span>
+                </div>
+              )}
+
+              {approvedOrder && approvalRemainingMs > 0 ? (
+                <>
+                  <p className={styles.approvalCountdown}>
+                    Заказ проверен. Оформить в течение:{' '}
+                    <span className={styles.approvalCountdownTime}>
+                      {formatApprovalCountdown(approvalRemainingMs)}
+                    </span>
+                  </p>
+                  <Link
+                    href={`/checkout?orderId=${approvedOrder.id}`}
+                    className={styles.checkoutButton}
+                  >
+                    Оформить заказ
+                  </Link>
+                </>
+              ) : approvedOrder && approvalRemainingMs <= 0 ? (
+                <p className={styles.checkoutHint}>Время действия заказа истекло. Обновляю…</p>
               ) : pendingReviewOrder ? (
                 <>
                   <button type="button" className={styles.checkoutButton} disabled>
@@ -572,17 +1229,6 @@ export default function CartPage() {
           </div>
         </div>
       )}
-
-      <ConfirmModal
-        isOpen={isClearModalOpen}
-        onClose={() => setIsClearModalOpen(false)}
-        onConfirm={handleClearCartConfirm}
-        title="Очистить корзину"
-        message="Вы уверены, что хотите очистить корзину? Все товары будут удалены."
-        confirmText="Очистить"
-        cancelText="Отмена"
-        variant="danger"
-      />
     </div>
   );
 }
