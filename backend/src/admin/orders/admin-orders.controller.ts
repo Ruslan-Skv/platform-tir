@@ -16,7 +16,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 
 @Controller('admin/orders')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'CONTENT_MANAGER', 'MODERATOR', 'SUPPORT')
+@Roles('ADMIN', 'CONTENT_MANAGER', 'MODERATOR', 'SUPPORT', 'MANAGER')
 export class AdminOrdersController {
   constructor(private readonly adminOrdersService: AdminOrdersService) {}
 
@@ -56,6 +56,14 @@ export class AdminOrdersController {
     return this.adminOrdersService.getStats(dateFrom, dateTo);
   }
 
+  @Get('products-for-replacement')
+  getProductsForReplacement(@Query('search') search?: string, @Query('limit') limit?: string) {
+    return this.adminOrdersService.getProductsForReplacement(
+      search,
+      limit ? parseInt(limit, 10) : 50,
+    );
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.adminOrdersService.findOne(id);
@@ -64,6 +72,26 @@ export class AdminOrdersController {
   @Patch(':id/status')
   updateStatus(@Param('id') id: string, @Body() body: { status: string }) {
     return this.adminOrdersService.updateStatus(id, body.status);
+  }
+
+  @Patch(':id/items/:itemId')
+  updateOrderItem(
+    @Param('id') id: string,
+    @Param('itemId') itemId: string,
+    @Body()
+    body: {
+      managerComment?: string | null;
+      productId?: string;
+      quantity?: number;
+      replacementNote?: string | null;
+    },
+  ) {
+    return this.adminOrdersService.updateOrderItem(id, itemId, body);
+  }
+
+  @Post(':id/send-back')
+  sendBackToCustomer(@Param('id') id: string, @Body() body: { comment?: string }) {
+    return this.adminOrdersService.sendBackToCustomer(id, body.comment);
   }
 
   @Post(':id/cancel')

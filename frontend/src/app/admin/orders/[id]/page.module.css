@@ -1,0 +1,474 @@
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem;
+}
+
+.header {
+  margin-bottom: 1rem;
+}
+
+.topGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  color: #6b7280;
+  text-decoration: none;
+  font-size: 0.9375rem;
+}
+
+.backLink:hover {
+  color: #111827;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.section {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.sectionTitle {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 0 0 0.35rem 0;
+}
+
+.select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  min-width: 200px;
+}
+
+.saving {
+  margin-left: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.approvedNotice {
+  margin: 0.5rem 0 0 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: #065f46;
+  background: #d1fae5;
+  border-radius: 6px;
+  border: 1px solid #a7f3d0;
+}
+
+.email {
+  color: #6b7280;
+  font-size: 0.9375rem;
+  margin: 0.25rem 0 0 0;
+}
+
+.total {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.muted {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0.25rem 0 0 0;
+}
+
+.itemsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.th {
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid #e5e7eb;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: #374151;
+}
+
+.tr {
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.td {
+  padding: 0.4rem 0.6rem;
+  vertical-align: top;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.productName {
+  display: block;
+  font-weight: 500;
+}
+
+.itemMeta {
+  display: block;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  margin-top: 0.125rem;
+}
+
+.address {
+  margin: 0.25rem 0 0 0;
+  color: #374151;
+}
+
+.loading,
+.error {
+  padding: 2rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+.error {
+  color: #dc2626;
+}
+
+/* Комментарий и замена по пункту — компактно в одну строку */
+.itemRow {
+  vertical-align: top;
+}
+
+.itemActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 1rem;
+  margin-top: 0.35rem;
+  align-items: start;
+}
+
+.commentBlock,
+.replacementBlock {
+  min-width: 0;
+}
+
+.commentLabel {
+  font-size: 0.7rem;
+  color: #6b7280;
+  display: block;
+  margin-bottom: 0.15rem;
+}
+
+.commentInput {
+  width: 100%;
+  min-height: 36px;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.commentInput:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.replaceSelect {
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.replacementNoteInput {
+  width: 100%;
+  min-height: 32px;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  box-sizing: border-box;
+  margin-bottom: 0.25rem;
+}
+
+.replacedBadge {
+  display: inline-block;
+  font-size: 0.75rem;
+  color: #92400e;
+  background: #fef3c7;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  margin-top: 0.25rem;
+}
+
+.btnSmall {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  color: #374151;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+
+.btnSmall:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.btnSmall:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sendBackSection {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.sendBackButton {
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
+}
+
+.sendBackButton:hover {
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.25rem;
+  max-width: 420px;
+  width: 90%;
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.modalTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+  color: #111827;
+}
+
+.modalTextarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  resize: vertical;
+  box-sizing: border-box;
+  margin-bottom: 1rem;
+}
+
+.modalActions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.modalCancel {
+  padding: 0.5rem 1rem;
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.modalConfirm {
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.modalConfirm:hover {
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+}
+
+/* Тёмная тема — страница заказа */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .page {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backLink {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backLink:hover {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .section {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saving,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .email,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .muted {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .approvedNotice {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+  border-color: #059669;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .total,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .address {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .th {
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tr {
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .td {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemMeta {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .commentInput,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .replacementNoteInput,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modalTextarea {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .replaceSelect {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .btnSmall {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .btnSmall:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .replacedBadge {
+  background: #78350f;
+  color: #fcd34d;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sendBackSection {
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sendBackButton {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sendBackButton:hover {
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modalConfirm {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modalConfirm:hover {
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modal {
+  background: #1f2937;
+  border: 1px solid #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modalTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .modalCancel {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+@media (max-width: 768px) {
+  .topGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .itemActions {
+    grid-template-columns: 1fr;
+  }
+}

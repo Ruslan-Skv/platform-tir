@@ -3,6 +3,12 @@
   margin: 0 auto;
 }
 
+.loading {
+  padding: 2rem;
+  text-align: center;
+  color: #6b7280;
+}
+
 .header {
   display: flex;
   align-items: center;
@@ -177,6 +183,21 @@
 }
 
 .statusPENDING {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusPENDING_REVIEW {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.statusAPPROVED {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.statusRETURNED_FOR_CORRECTION {
   background: #fef3c7;
   color: #92400e;
 }

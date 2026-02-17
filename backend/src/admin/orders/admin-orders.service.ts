@@ -5,6 +5,9 @@ import { Prisma } from '@prisma/client';
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
   PENDING: 'Ожидает',
+  PENDING_REVIEW: 'На проверке',
+  RETURNED_FOR_CORRECTION: 'На доработке у покупателя',
+  APPROVED: 'Проверен',
   PROCESSING: 'В обработке',
   SHIPPED: 'Отправлен',
   DELIVERED: 'Доставлен',
@@ -165,6 +168,13 @@ export class AdminOrdersService {
                 images: true,
               },
             },
+            replacedFromProduct: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+              },
+            },
           },
         },
         shippingAddress: true,
@@ -185,11 +195,125 @@ export class AdminOrdersService {
     return order;
   }
 
+  /** Обновить пункт заказа: комментарий менеджера и/или замена товара (с пометкой для покупателя). */
+  async updateOrderItem(
+    orderId: string,
+    itemId: string,
+    data: {
+      managerComment?: string | null;
+      productId?: string;
+      quantity?: number;
+      replacementNote?: string | null;
+    },
+  ) {
+    const order = await this.findOne(orderId);
+    const item = order.items.find((i) => i.id === itemId);
+    if (!item) {
+      throw new NotFoundException('Пункт заказа не найден');
+    }
+
+    const updateData: Prisma.OrderItemUpdateInput = {};
+    if (data.managerComment !== undefined) {
+      updateData.managerComment = data.managerComment || null;
+    }
+    if (data.replacementNote !== undefined) {
+      updateData.replacementNote = data.replacementNote || null;
+    }
+    if (data.quantity !== undefined && data.quantity >= 1) {
+      updateData.quantity = data.quantity;
+    }
+
+    if (data.productId && data.productId !== item.productId) {
+      const newProduct = await this.prisma.product.findUnique({
+        where: { id: data.productId },
+      });
+      if (!newProduct) {
+        throw new BadRequestException('Товар не найден');
+      }
+      updateData.replacedFromProduct = { connect: { id: item.productId } };
+      updateData.product = { connect: { id: data.productId } };
+      updateData.price = newProduct.price;
+      if (!updateData.replacementNote && typeof data.replacementNote !== 'string') {
+        updateData.replacementNote = `Менеджер заменил товар на: ${newProduct.name}`;
+      }
+    }
+
+    await this.prisma.orderItem.update({
+      where: { id: itemId },
+      data: updateData,
+    });
+
+    await this.recalculateOrderTotals(orderId);
+    return this.findOne(orderId);
+  }
+
+  /** Пересчитать итоги заказа по текущим пунктам. */
+  private async recalculateOrderTotals(orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+    if (!order) return;
+
+    const subtotal = order.items.reduce((sum, i) => sum + Number(i.price) * i.quantity, 0);
+    const tax = 0;
+    const shippingCost = Number(order.shippingCost);
+    const total = subtotal + shippingCost - Number(order.discount);
+
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        subtotal,
+        tax,
+        total,
+      },
+    });
+  }
+
+  /** Отправить заказ на доработку покупателю (с комментариями менеджера). */
+  async sendBackToCustomer(orderId: string, comment?: string) {
+    const order = await this.findOne(orderId);
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: 'RETURNED_FOR_CORRECTION',
+        returnedForCorrectionAt: new Date(),
+        returnedForCorrectionComment: comment || null,
+      },
+    });
+    await this.usersService.createNotification(order.userId, {
+      type: 'order_status',
+      title: `Заказ ${order.orderNumber} отправлен на доработку`,
+      message: comment || 'Менеджер оставил комментарии по заказу. Пожалуйста, внесите правки.',
+    });
+    return this.findOne(orderId);
+  }
+
+  /** Список товаров для подстановки при замене в заказе (поиск по имени/SKU). */
+  async getProductsForReplacement(search?: string, limit = 50) {
+    const where: Prisma.ProductWhereInput = { isActive: true };
+    if (search && search.trim()) {
+      where.OR = [
+        { name: { contains: search.trim(), mode: 'insensitive' } },
+        { sku: { contains: search.trim(), mode: 'insensitive' } },
+      ];
+    }
+    return this.prisma.product.findMany({
+      where,
+      select: { id: true, name: true, sku: true, price: true },
+      take: limit,
+      orderBy: { name: 'asc' },
+    });
+  }
+
   async updateStatus(id: string, status: string) {
     const order = await this.findOne(id);
 
     type OrderStatus =
       | 'PENDING'
+      | 'PENDING_REVIEW'
+      | 'RETURNED_FOR_CORRECTION'
+      | 'APPROVED'
       | 'PROCESSING'
       | 'SHIPPED'
       | 'DELIVERED'

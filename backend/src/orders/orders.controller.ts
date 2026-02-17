@@ -29,10 +29,22 @@ export class OrdersController {
     return this.ordersService.create(req.user.id, createOrderDto);
   }
 
+  @Post('submit-from-cart')
+  @ApiOperation({ summary: 'Отправить заказ из корзины на проверку менеджеру' })
+  submitFromCart(@Request() req: RequestWithUser) {
+    return this.ordersService.submitFromCart(req.user.id);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Получить все заказы' })
   findAll(@Request() req: RequestWithUser) {
     return this.ordersService.findAll(req.user.id, req.user.role);
+  }
+
+  @Post(':id/cancel-by-customer')
+  @ApiOperation({ summary: 'Отменить проверку заказа (покупатель)' })
+  cancelByCustomer(@Request() req: RequestWithUser, @Param('id') id: string) {
+    return this.ordersService.cancelByCustomer(id, req.user.id);
   }
 
   @Get(':id')

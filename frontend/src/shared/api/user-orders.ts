@@ -51,7 +51,33 @@ export interface UserOrder {
   deliveredAt: string | null;
   trackingNumber: string | null;
   items: OrderItem[];
-  shippingAddress: OrderAddress;
+  shippingAddress?: OrderAddress | null;
+}
+
+/** Отправить заказ из корзины на проверку менеджеру (статус «На проверке»). */
+export async function submitOrderFromCart(): Promise<UserOrder> {
+  const res = await fetch(`${API_URL}/orders/submit-from-cart`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.message || 'Не удалось отправить заказ на проверку');
+  }
+  return res.json();
+}
+
+/** Отменить проверку заказа (покупатель). Заказ переходит в «Отменён», можно снова отправить корзину или продолжить покупки. */
+export async function cancelOrderByCustomer(orderId: string): Promise<UserOrder> {
+  const res = await fetch(`${API_URL}/orders/${orderId}/cancel-by-customer`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.message || 'Не удалось отменить проверку');
+  }
+  return res.json();
 }
 
 export async function getUserOrders(): Promise<UserOrder[]> {

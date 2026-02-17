@@ -1,72 +1,51 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
+import { type AdminOrderSummary, getAdminOrders } from '@/shared/api/admin-orders';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 
 import styles from './OrdersPage.module.css';
 
-interface Order {
-  id: string;
-  orderNumber: string;
-  user: { firstName: string; lastName: string; email: string };
-  status: string;
-  paymentStatus: string;
-  total: number;
+type Order = AdminOrderSummary & {
   itemsCount: number;
-  createdAt: string;
-}
-
-// Mock data
-const mockOrders: Order[] = [
-  {
-    id: '1',
-    orderNumber: '#12345',
-    user: { firstName: 'Иван', lastName: 'Петров', email: 'ivan@mail.ru' },
-    status: 'PENDING',
-    paymentStatus: 'PENDING',
-    total: 125000,
-    itemsCount: 3,
-    createdAt: '2026-01-19T10:30:00',
-  },
-  {
-    id: '2',
-    orderNumber: '#12344',
-    user: { firstName: 'Мария', lastName: 'Сидорова', email: 'maria@mail.ru' },
-    status: 'PROCESSING',
-    paymentStatus: 'PAID',
-    total: 78500,
-    itemsCount: 2,
-    createdAt: '2026-01-19T09:15:00',
-  },
-  {
-    id: '3',
-    orderNumber: '#12343',
-    user: { firstName: 'Сергей', lastName: 'Козлов', email: 'sergey@mail.ru' },
-    status: 'SHIPPED',
-    paymentStatus: 'PAID',
-    total: 234000,
-    itemsCount: 5,
-    createdAt: '2026-01-18T16:45:00',
-  },
-  {
-    id: '4',
-    orderNumber: '#12342',
-    user: { firstName: 'Анна', lastName: 'Николаева', email: 'anna@mail.ru' },
-    status: 'DELIVERED',
-    paymentStatus: 'PAID',
-    total: 45000,
-    itemsCount: 1,
-    createdAt: '2026-01-17T14:20:00',
-  },
-];
+};
 
 export function OrdersPage() {
-  const [orders] = useState<Order[]>(mockOrders);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const limit = 20;
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    getAdminOrders(page, limit, statusFilter || undefined)
+      .then((res) => {
+        if (cancelled) return;
+        setTotal(res.total);
+        setOrders(
+          res.data.map((o) => ({
+            ...o,
+            itemsCount: Array.isArray(o.items) ? o.items.length : 0,
+          }))
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setOrders([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [page, statusFilter]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('ru-RU', {
@@ -89,6 +68,9 @@ export function OrdersPage() {
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
       PENDING: 'Ожидает',
+      PENDING_REVIEW: 'На проверке',
+      RETURNED_FOR_CORRECTION: 'На доработке у покупателя',
+      APPROVED: 'Проверен',
       PROCESSING: 'В обработке',
       SHIPPED: 'Отправлен',
       DELIVERED: 'Доставлен',
@@ -121,9 +103,9 @@ export function OrdersPage() {
       render: (order: Order) => (
         <div className={styles.customerCell}>
           <span className={styles.customerName}>
-            {order.user.firstName} {order.user.lastName}
+            {order.user?.firstName} {order.user?.lastName}
           </span>
-          <span className={styles.customerEmail}>{order.user.email}</span>
+          <span className={styles.customerEmail}>{order.user?.email}</span>
         </div>
       ),
     },
@@ -140,8 +122,10 @@ export function OrdersPage() {
       key: 'payment',
       title: 'Оплата',
       render: (order: Order) => (
-        <span className={`${styles.paymentBadge} ${styles[`payment${order.paymentStatus}`]}`}>
-          {getPaymentLabel(order.paymentStatus)}
+        <span
+          className={`${styles.paymentBadge} ${styles[`payment${order.paymentStatus ?? 'PENDING'}`]}`}
+        >
+          {getPaymentLabel(order.paymentStatus ?? 'PENDING')}
         </span>
       ),
     },
@@ -151,7 +135,7 @@ export function OrdersPage() {
       sortable: true,
       render: (order: Order) => (
         <div className={styles.totalCell}>
-          <span className={styles.totalAmount}>{formatCurrency(order.total)}</span>
+          <span className={styles.totalAmount}>{formatCurrency(Number(order.total))}</span>
           <span className={styles.itemsCount}>{order.itemsCount} позиций</span>
         </div>
       ),
@@ -185,26 +169,7 @@ export function OrdersPage() {
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <h1 className={styles.title}>Заказы</h1>
-          <span className={styles.count}>{orders.length} заказов</span>
-        </div>
-      </div>
-
-      <div className={styles.stats}>
-        <div className={styles.statCard}>
-          <span className={styles.statValue}>8</span>
-          <span className={styles.statLabel}>Ожидают обработки</span>
-        </div>
-        <div className={styles.statCard}>
-          <span className={styles.statValue}>5</span>
-          <span className={styles.statLabel}>В обработке</span>
-        </div>
-        <div className={styles.statCard}>
-          <span className={styles.statValue}>3</span>
-          <span className={styles.statLabel}>Отправлены</span>
-        </div>
-        <div className={styles.statCard}>
-          <span className={styles.statValue}>{formatCurrency(482500)}</span>
-          <span className={styles.statLabel}>Сумма за сегодня</span>
+          <span className={styles.count}>{total} заказов</span>
         </div>
       </div>
 
@@ -222,6 +187,9 @@ export function OrdersPage() {
           className={styles.select}
         >
           <option value="">Все статусы</option>
+          <option value="PENDING_REVIEW">На проверке</option>
+          <option value="APPROVED">Проверен</option>
+          <option value="RETURNED_FOR_CORRECTION">На доработке</option>
           <option value="PENDING">Ожидают</option>
           <option value="PROCESSING">В обработке</option>
           <option value="SHIPPED">Отправлены</option>
@@ -250,22 +218,26 @@ export function OrdersPage() {
         </div>
       )}
 
-      <DataTable
-        data={orders}
-        columns={columns}
-        keyExtractor={(order) => order.id}
-        onRowClick={(order) => {
-          window.location.href = `/admin/orders/${order.id}`;
-        }}
-        selectable
-        onSelectionChange={setSelectedIds}
-        pagination={{
-          page: 1,
-          limit: 20,
-          total: orders.length,
-          onPageChange: (page) => console.log('Page:', page),
-        }}
-      />
+      {loading ? (
+        <div className={styles.loading}>Загрузка заказов...</div>
+      ) : (
+        <DataTable
+          data={orders}
+          columns={columns}
+          keyExtractor={(order) => order.id}
+          onRowClick={(order) => {
+            window.location.href = `/admin/orders/${order.id}`;
+          }}
+          selectable
+          onSelectionChange={setSelectedIds}
+          pagination={{
+            page,
+            limit,
+            total,
+            onPageChange: setPage,
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -1,0 +1,68 @@
+.container {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.orderNumber {
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+}
+
+.summary {
+  background: #f9fafb;
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+  color: #374151;
+}
+
+.totalPrice {
+  font-weight: 600;
+  color: #111827;
+}
+
+.hint {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.backLink {
+  color: #d90652;
+  text-decoration: none;
+  font-size: 0.9375rem;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 2rem;
+}
+
+.error .link {
+  display: inline-block;
+  margin-top: 1rem;
+  color: #d90652;
+  text-decoration: none;
+}
+
+.error .link:hover {
+  text-decoration: underline;
+}

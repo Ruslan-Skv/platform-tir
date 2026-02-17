@@ -1,12 +1,20 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { TrashIcon } from '@heroicons/react/24/outline';
+
+import React, { useEffect, useMemo, useState } from 'react';
 
 import Image from 'next/image';
 import Link from 'next/link';
 
 import * as cartApi from '@/shared/api/cart';
 import type { CartItem } from '@/shared/api/cart';
+import {
+  type UserOrder,
+  cancelOrderByCustomer,
+  getUserOrders,
+  submitOrderFromCart,
+} from '@/shared/api/user-orders';
 import { useCart } from '@/shared/lib/hooks';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
@@ -30,6 +38,9 @@ export default function CartPage() {
   const [error, setError] = useState<string | null>(null);
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+  const [userOrders, setUserOrders] = useState<UserOrder[] | null>(null);
+  const [submitInProgress, setSubmitInProgress] = useState(false);
+  const [cancelInProgress, setCancelInProgress] = useState(false);
 
   useEffect(() => {
     const loadCart = async () => {
@@ -54,6 +65,55 @@ export default function CartPage() {
 
     loadCart();
   }, [refreshCart]);
+
+  useEffect(() => {
+    if (cart.length === 0) return;
+    const loadOrders = async () => {
+      try {
+        const orders = await getUserOrders();
+        setUserOrders(orders);
+      } catch {
+        setUserOrders([]);
+      }
+    };
+    loadOrders();
+  }, [cart.length]);
+
+  const sortedOrders = useMemo(() => {
+    if (!userOrders?.length) return [];
+    return [...userOrders].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [userOrders]);
+  const pendingReviewOrder = sortedOrders.find((o) => o.status === 'PENDING_REVIEW') ?? null;
+  const approvedOrder = sortedOrders.find((o) => o.status === 'APPROVED') ?? null;
+
+  const handleSubmitForReview = async () => {
+    setSubmitInProgress(true);
+    try {
+      await submitOrderFromCart();
+      const orders = await getUserOrders();
+      setUserOrders(orders);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Не удалось отправить заказ на проверку');
+    } finally {
+      setSubmitInProgress(false);
+    }
+  };
+
+  const handleCancelReview = async () => {
+    if (!pendingReviewOrder) return;
+    setCancelInProgress(true);
+    try {
+      await cancelOrderByCustomer(pendingReviewOrder.id);
+      const orders = await getUserOrders();
+      setUserOrders(orders);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Не удалось отменить проверку');
+    } finally {
+      setCancelInProgress(false);
+    }
+  };
 
   const handleQuantityChange = async (itemId: string, newQuantity: number) => {
     // Если количество становится 0 или меньше, удаляем товар из корзины
@@ -187,7 +247,6 @@ export default function CartPage() {
 
   const totalPrice = getTotalPrice();
   const totalItems = cart.reduce((sum, item) => {
-    // Учитываем товары и комплектующие с валидными данными
     if (item.product || item.component) {
       return sum + item.quantity;
     }
@@ -247,8 +306,8 @@ export default function CartPage() {
                       <Image
                         src={item.product.images?.[0] || '/images/products/door-placeholder.jpg'}
                         alt={item.product.name}
-                        width={120}
-                        height={120}
+                        width={88}
+                        height={88}
                         className={styles.image}
                       />
                     </Link>
@@ -261,46 +320,51 @@ export default function CartPage() {
                       <p className={styles.itemPrice}>
                         {item.product.price.toLocaleString()} ₽ за шт.
                       </p>
-                      {(item.size || item.openingSide) && (
-                        <div className={styles.itemOptions}>
-                          {item.size && (
-                            <span className={styles.itemOption}>Размер: {item.size}</span>
+                      {(item.size ||
+                        item.openingSide ||
+                        (item.product.stock !== undefined && item.product.stock === 0)) && (
+                        <div className={styles.itemOptionsRow}>
+                          {(item.size || item.openingSide) && (
+                            <div className={styles.itemOptions}>
+                              {item.size && (
+                                <span className={styles.itemOption}>Размер: {item.size}</span>
+                              )}
+                              {item.openingSide && (
+                                <span className={styles.itemOption}>
+                                  Сторона открывания: {item.openingSide}
+                                </span>
+                              )}
+                            </div>
                           )}
-                          {item.openingSide && (
-                            <span className={styles.itemOption}>
-                              Сторона открывания: {item.openingSide}
-                            </span>
+                          {item.product.stock !== undefined && item.product.stock === 0 && (
+                            <span className={styles.outOfStockBadge}>Под заказ</span>
                           )}
                         </div>
                       )}
-                      {item.product.stock !== undefined && item.product.stock === 0 && (
-                        <span className={styles.outOfStockBadge}>Под заказ</span>
-                      )}
                     </div>
 
-                    <div className={styles.itemQuantity}>
-                      <button
-                        type="button"
-                        className={styles.quantityButton}
-                        onClick={() => handleQuantityChange(item.id, quantity - 1)}
-                        disabled={isUpdating}
-                        aria-label="Уменьшить количество"
-                      >
-                        −
-                      </button>
-                      <span className={styles.quantityValue}>{quantity}</span>
-                      <button
-                        type="button"
-                        className={styles.quantityButton}
-                        onClick={() => handleQuantityChange(item.id, quantity + 1)}
-                        disabled={isUpdating}
-                        aria-label="Увеличить количество"
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    <div className={styles.itemTotal}>
+                    <div className={styles.itemQuantityAndTotal}>
+                      <div className={styles.itemQuantity}>
+                        <button
+                          type="button"
+                          className={styles.quantityButton}
+                          onClick={() => handleQuantityChange(item.id, quantity - 1)}
+                          disabled={isUpdating}
+                          aria-label="Уменьшить количество"
+                        >
+                          −
+                        </button>
+                        <span className={styles.quantityValue}>{quantity}</span>
+                        <button
+                          type="button"
+                          className={styles.quantityButton}
+                          onClick={() => handleQuantityChange(item.id, quantity + 1)}
+                          disabled={isUpdating}
+                          aria-label="Увеличить количество"
+                        >
+                          +
+                        </button>
+                      </div>
                       <span className={styles.totalPrice}>{itemTotal.toLocaleString()} ₽</span>
                     </div>
 
@@ -311,7 +375,7 @@ export default function CartPage() {
                       disabled={isUpdating}
                       aria-label="Удалить товар"
                     >
-                      ×
+                      <TrashIcon className={styles.removeButtonIcon} />
                     </button>
                   </div>
                 );
@@ -361,8 +425,8 @@ export default function CartPage() {
                       <Image
                         src={item.component.image || '/images/products/door-placeholder.jpg'}
                         alt={item.component.name}
-                        width={120}
-                        height={120}
+                        width={88}
+                        height={88}
                         className={styles.image}
                       />
                     </Link>
@@ -382,35 +446,34 @@ export default function CartPage() {
                       </p>
                     </div>
 
-                    <div className={styles.itemQuantity}>
-                      <button
-                        type="button"
-                        className={styles.quantityButton}
-                        onClick={async () => {
-                          if (newQtyDown < minQty) {
-                            await handleRemoveComponent(item.componentId!);
-                          } else {
-                            await handleComponentQuantityChange(item.componentId!, newQtyDown);
-                          }
-                        }}
-                        disabled={isUpdating}
-                        aria-label="Уменьшить количество"
-                      >
-                        −
-                      </button>
-                      <span className={styles.quantityValue}>{displayQty}</span>
-                      <button
-                        type="button"
-                        className={styles.quantityButton}
-                        onClick={() => handleComponentQuantityChange(item.componentId!, newQtyUp)}
-                        disabled={isUpdating}
-                        aria-label="Увеличить количество"
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    <div className={styles.itemTotal}>
+                    <div className={styles.itemQuantityAndTotal}>
+                      <div className={styles.itemQuantity}>
+                        <button
+                          type="button"
+                          className={styles.quantityButton}
+                          onClick={async () => {
+                            if (newQtyDown < minQty) {
+                              await handleRemoveComponent(item.componentId!);
+                            } else {
+                              await handleComponentQuantityChange(item.componentId!, newQtyDown);
+                            }
+                          }}
+                          disabled={isUpdating}
+                          aria-label="Уменьшить количество"
+                        >
+                          −
+                        </button>
+                        <span className={styles.quantityValue}>{displayQty}</span>
+                        <button
+                          type="button"
+                          className={styles.quantityButton}
+                          onClick={() => handleComponentQuantityChange(item.componentId!, newQtyUp)}
+                          disabled={isUpdating}
+                          aria-label="Увеличить количество"
+                        >
+                          +
+                        </button>
+                      </div>
                       <span className={styles.totalPrice}>{itemTotal.toLocaleString()} ₽</span>
                     </div>
 
@@ -421,7 +484,7 @@ export default function CartPage() {
                       disabled={isUpdating}
                       aria-label="Удалить комплектующее"
                     >
-                      ×
+                      <TrashIcon className={styles.removeButtonIcon} />
                     </button>
                   </div>
                 );
@@ -445,9 +508,63 @@ export default function CartPage() {
                 <span>Сумма:</span>
                 <span className={styles.totalPrice}>{totalPrice.toLocaleString()} ₽</span>
               </div>
-              <button type="button" className={styles.checkoutButton}>
-                Оформить заказ
-              </button>
+              {approvedOrder ? (
+                <Link
+                  href={`/checkout?orderId=${approvedOrder.id}`}
+                  className={styles.checkoutButton}
+                >
+                  Оформить заказ
+                </Link>
+              ) : pendingReviewOrder ? (
+                <>
+                  <button type="button" className={styles.checkoutButton} disabled>
+                    <span className={styles.checkoutButtonContent}>
+                      <svg
+                        className={styles.reviewProgressIcon}
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={2}
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                      >
+                        <g className={styles.reviewProgressSpinnerArc}>
+                          <path strokeDasharray="28 56" d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18z" />
+                        </g>
+                        <path className={styles.reviewProgressCheck} d="M7 12l3.5 3.5L17 9" />
+                      </svg>
+                      Заказ на проверке
+                    </span>
+                  </button>
+                  <p className={`${styles.checkoutHint} ${styles.checkoutHintPink}`}>
+                    Обычно проверка длится около 15 минут
+                  </p>
+                  <div className={styles.cancelReviewWrap}>
+                    <button
+                      type="button"
+                      className={styles.cancelReviewLink}
+                      onClick={handleCancelReview}
+                      disabled={cancelInProgress}
+                    >
+                      {cancelInProgress ? 'Отмена…' : 'Отменить проверку'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className={styles.checkoutButton}
+                    onClick={handleSubmitForReview}
+                    disabled={submitInProgress}
+                  >
+                    {submitInProgress ? 'Отправка...' : 'Отправить на проверку'}
+                  </button>
+                  <p className={styles.checkoutHint}>Обычно проверка длится около 15 минут</p>
+                </>
+              )}
               <Link href="/catalog/products" className={styles.continueShopping}>
                 Продолжить покупки
               </Link>

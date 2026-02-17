@@ -900,9 +900,10 @@ model Product {
   width            Decimal?           @db.Decimal(8, 2)
   sizes            String[]
   openingSide      String[]
-  cartItems        CartItem[]
-  orderItems       OrderItem[]
-  suppliers        ProductSupplier[]
+  cartItems              CartItem[]
+  orderItems             OrderItem[]
+  orderItemsReplacedFrom OrderItem[]  @relation("OrderItemReplacedFrom")
+  suppliers              ProductSupplier[]
   category         Category           @relation(fields: [categoryId], references: [id])
   manufacturer     Manufacturer?      @relation(fields: [manufacturerId], references: [id])
   partner          Partner?           @relation(fields: [partnerId], references: [id], onDelete: SetNull)
@@ -959,7 +960,7 @@ model Order {
   total             Decimal         @db.Decimal(10, 2)
   subtotal          Decimal         @db.Decimal(10, 2)
   tax               Decimal         @db.Decimal(10, 2)
-  shippingAddressId String
+  shippingAddressId String?         // Опционально для заказов «на проверке» (до согласования)
   paymentStatus     PaymentStatus   @default(PENDING)
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
@@ -969,35 +970,41 @@ model Order {
   customerNotes     String?
   deliveredAt       DateTime?
   discount          Decimal         @default(0) @db.Decimal(10, 2)
-  orderNumber       String          @unique
-  refundAmount      Decimal?        @db.Decimal(10, 2)
-  refundReason      String?
-  refundedAt        DateTime?
-  shippedAt         DateTime?
-  shippingCost      Decimal         @db.Decimal(10, 2)
-  shippingMethodId  String?
-  trackingNumber    String?
-  items             OrderItem[]
-  shippingAddress   Address         @relation(fields: [shippingAddressId], references: [id])
-  shippingMethod    ShippingMethod? @relation(fields: [shippingMethodId], references: [id])
-  user              User            @relation(fields: [userId], references: [id])
-  payments          Payment[]
+  orderNumber                 String          @unique
+  refundAmount                Decimal?        @db.Decimal(10, 2)
+  refundReason                String?
+  refundedAt                  DateTime?
+  shippedAt                   DateTime?
+  shippingCost                Decimal         @db.Decimal(10, 2)
+  shippingMethodId            String?
+  trackingNumber              String?
+  returnedForCorrectionAt     DateTime?       // Когда менеджер отправил заказ на доработку покупателю
+  returnedForCorrectionComment String?        @db.Text // Комментарий при отправке на доработку
+  items                       OrderItem[]
+  shippingAddress             Address?        @relation(fields: [shippingAddressId], references: [id])
+  shippingMethod              ShippingMethod? @relation(fields: [shippingMethodId], references: [id])
+  user                        User            @relation(fields: [userId], references: [id])
+  payments                    Payment[]
 
   @@map("orders")
 }
 
 model OrderItem {
-  id             String   @id @default(cuid())
-  orderId        String
-  productId      String
-  cardVariantId  String?  // Вариант из «схожих товаров в карточке» (для истории)
-  quantity       Int
-  price          Decimal  @db.Decimal(10, 2)
-  size           String?
-  openingSide    String?
-  createdAt      DateTime @default(now())
-  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product        Product  @relation(fields: [productId], references: [id])
+  id                    String    @id @default(cuid())
+  orderId               String
+  productId             String
+  cardVariantId         String?   // Вариант из «схожих товаров в карточке» (для истории)
+  quantity              Int
+  price                 Decimal   @db.Decimal(10, 2)
+  size                  String?
+  openingSide           String?
+  managerComment        String?   @db.Text // Комментарий менеджера по пункту (для доработки покупателем)
+  replacedFromProductId String?   // Если менеджер заменил товар — ID исходного товара (для пометки покупателю)
+  replacementNote       String?   @db.Text // Пометка о замене для покупателя
+  createdAt             DateTime  @default(now())
+  order                 Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product               Product   @relation(fields: [productId], references: [id])
+  replacedFromProduct   Product?  @relation("OrderItemReplacedFrom", fields: [replacedFromProductId], references: [id])
 
   @@map("order_items")
 }
@@ -1559,6 +1566,9 @@ enum SyncStatus {
 
 enum OrderStatus {
   PENDING
+  PENDING_REVIEW           // На проверке (отправлен из корзины)
+  RETURNED_FOR_CORRECTION  // Отправлен на доработку покупателю (есть комментарии менеджера)
+  APPROVED                 // Проверен менеджером — можно переходить к оформлению и оплате
   PROCESSING
   SHIPPED
   DELIVERED
