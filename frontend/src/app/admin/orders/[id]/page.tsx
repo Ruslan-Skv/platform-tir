@@ -10,8 +10,8 @@ import {
   type AdminOrderSummary,
   deleteAdminOrder,
   getAdminOrder,
-  getProductsForReplacement,
   sendBackOrderToCustomer,
+  updateAdminOrderDelivery,
   updateAdminOrderItem,
   updateAdminOrderStatus,
 } from '@/shared/api/admin-orders';
@@ -70,9 +70,13 @@ type OrderDetail = AdminOrderSummary & {
   items?: OrderItemDetail[];
   shippingAddress?: ShippingAddress | null;
   shippingCost?: string | number;
+  carryCost?: string | number | null;
+  moversCount?: number | null;
+  plannedDeliveryDate?: string | null;
   deliveryType?: string | null;
   deliveryFloor?: number | null;
   deliveryHasElevator?: boolean | null;
+  preferredDeliveryTime?: string | null;
   returnedForCorrectionAt?: string | null;
   returnedForCorrectionComment?: string | null;
   approvedAt?: string | null;
@@ -107,10 +111,12 @@ export default function AdminOrderDetailPage() {
   const [approvedNotice, setApprovedNotice] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [deliveryShippingCost, setDeliveryShippingCost] = useState('');
+  const [deliveryCarryCost, setDeliveryCarryCost] = useState('');
+  const [deliveryMoversCount, setDeliveryMoversCount] = useState('');
+  const [deliveryPlannedDate, setDeliveryPlannedDate] = useState('');
+  const [deliverySaving, setDeliverySaving] = useState(false);
   const [, setTick] = useState(0);
-  const [productsForReplacement, setProductsForReplacement] = useState<
-    Awaited<ReturnType<typeof getProductsForReplacement>>
-  >([]);
 
   const loadOrder = useCallback(() => {
     if (!id) return;
@@ -137,10 +143,24 @@ export default function AdminOrderDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    getProductsForReplacement()
-      .then(setProductsForReplacement)
-      .catch(() => setProductsForReplacement([]));
-  }, []);
+    if (!order) return;
+    setDeliveryShippingCost(order.shippingCost != null ? String(order.shippingCost) : '');
+    setDeliveryCarryCost(
+      order.carryCost != null && order.carryCost !== '' ? String(order.carryCost) : ''
+    );
+    setDeliveryMoversCount(order.moversCount != null ? String(order.moversCount) : '');
+    setDeliveryPlannedDate(
+      order.plannedDeliveryDate
+        ? new Date(order.plannedDeliveryDate).toISOString().slice(0, 10)
+        : ''
+    );
+  }, [
+    order?.id,
+    order?.shippingCost,
+    order?.carryCost,
+    order?.moversCount,
+    order?.plannedDeliveryDate,
+  ]);
 
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 1000);
@@ -183,26 +203,6 @@ export default function AdminOrderDetailPage() {
       setOrder(updated as OrderDetail);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Не удалось сохранить комментарий');
-    } finally {
-      setUpdatingItemId(null);
-    }
-  };
-
-  const handleReplaceProduct = async (
-    itemId: string,
-    productId: string,
-    replacementNote: string
-  ) => {
-    if (!id) return;
-    setUpdatingItemId(itemId);
-    try {
-      const updated = await updateAdminOrderItem(id, itemId, {
-        productId,
-        replacementNote: replacementNote || undefined,
-      });
-      setOrder(updated as OrderDetail);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Не удалось заменить товар');
     } finally {
       setUpdatingItemId(null);
     }
@@ -433,7 +433,7 @@ export default function AdminOrderDetailPage() {
         <table className={styles.itemsTable}>
           <thead>
             <tr>
-              <th className={styles.th}>Товар / комментарий и замена</th>
+              <th className={styles.th}>Товар / комментарий менеджера</th>
               <th className={styles.th}>Артикул</th>
               <th className={styles.th}>Кол-во</th>
               <th className={styles.th}>Цена</th>
@@ -446,7 +446,7 @@ export default function AdminOrderDetailPage() {
               const lineTotal = price * item.quantity;
               const isUpdating = updatingItemId === item.id;
               return (
-                <tr key={`${item.id}-${item.product?.id ?? ''}`} className={styles.tr}>
+                <tr key={item.id} className={styles.tr}>
                   <td className={`${styles.td} ${styles.itemRow}`}>
                     <span className={styles.productName}>{item.product?.name ?? '—'}</span>
                     {(item.size || item.openingSide) && (
@@ -454,23 +454,17 @@ export default function AdminOrderDetailPage() {
                         {[item.size, item.openingSide].filter(Boolean).join(', ')}
                       </span>
                     )}
-                    {item.replacedFromProduct && (
-                      <span className={styles.replacedBadge}>
-                        Заменён с: {item.replacedFromProduct.name}
-                        {item.replacementNote ? ` — ${item.replacementNote}` : ''}
-                      </span>
-                    )}
                     <div className={styles.itemActions}>
                       <div className={styles.commentBlock}>
                         <label className={styles.commentLabel} htmlFor={`comment-${item.id}`}>
-                          Комментарий для покупателя:
+                          Рекомендации для покупателя (замена, количество и т.п.):
                         </label>
                         <textarea
                           id={`comment-${item.id}`}
                           className={styles.commentInput}
                           defaultValue={item.managerComment ?? ''}
-                          placeholder="Размер, цвет и т.п."
-                          rows={1}
+                          placeholder="Например: рекомендуем заменить на… или изменить количество на…"
+                          rows={2}
                         />
                         <button
                           type="button"
@@ -480,53 +474,10 @@ export default function AdminOrderDetailPage() {
                             const el = document.getElementById(
                               `comment-${item.id}`
                             ) as HTMLTextAreaElement | null;
-                            if (el) handleSaveComment(item.id, el.value);
+                            if (el) handleSaveComment(item.id, el.value.trim());
                           }}
                         >
                           {isUpdating ? '…' : 'Сохранить'}
-                        </button>
-                      </div>
-                      <div className={styles.replacementBlock}>
-                        <span className={styles.commentLabel}>Заменить товар:</span>
-                        <select
-                          id={`replace-${item.id}`}
-                          className={styles.replaceSelect}
-                          aria-label="Выберите товар для замены"
-                        >
-                          <option value="">— не менять —</option>
-                          {productsForReplacement
-                            .filter((p) => p.id !== item.product?.id)
-                            .map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.name} {p.sku ? `(${p.sku})` : ''} —{' '}
-                                {Number(p.price).toLocaleString()} ₽
-                              </option>
-                            ))}
-                        </select>
-                        <input
-                          type="text"
-                          id={`replacement-note-${item.id}`}
-                          className={styles.replacementNoteInput}
-                          placeholder="Пометка для покупателя"
-                        />
-                        <button
-                          type="button"
-                          className={styles.btnSmall}
-                          disabled={isUpdating}
-                          onClick={() => {
-                            const sel = document.getElementById(
-                              `replace-${item.id}`
-                            ) as HTMLSelectElement | null;
-                            const noteEl = document.getElementById(
-                              `replacement-note-${item.id}`
-                            ) as HTMLInputElement | null;
-                            const productId = sel?.value;
-                            if (productId) {
-                              handleReplaceProduct(item.id, productId, noteEl?.value ?? '');
-                            }
-                          }}
-                        >
-                          {isUpdating ? '…' : 'Заменить'}
                         </button>
                       </div>
                     </div>
@@ -616,11 +567,143 @@ export default function AdminOrderDetailPage() {
                   )}
                 </>
               )}
-              {order.shippingCost != null && Number(order.shippingCost) > 0 && (
-                <p className={styles.deliveryCost}>
-                  Стоимость доставки: {formatPrice(order.shippingCost)} (уже включена в итог заказа)
+              {order.preferredDeliveryTime && (
+                <p>Удобная дата доставки (покупатель): {order.preferredDeliveryTime}</p>
+              )}
+              {order.moversCount != null && <p>Количество грузчиков: {order.moversCount}</p>}
+              {order.plannedDeliveryDate && (
+                <p>
+                  Планируемая дата доставки:{' '}
+                  {new Date(order.plannedDeliveryDate).toLocaleDateString('ru-RU')}
                 </p>
               )}
+              {(order.shippingCost != null || order.carryCost != null) && (
+                <div className={styles.deliveryCostSummary}>
+                  <p className={styles.deliveryCostSummaryTitle}>Итоговая стоимость доставки</p>
+                  <p className={styles.deliveryCostSummaryLine}>
+                    Доставка: {formatPrice(order.shippingCost ?? 0)}
+                  </p>
+                  {order.carryCost != null && Number(order.carryCost) > 0 && (
+                    <p className={styles.deliveryCostSummaryLine}>
+                      {order.moversCount != null && order.moversCount > 0
+                        ? `${order.moversCount} грузчик${order.moversCount === 1 ? '' : order.moversCount < 5 ? 'а' : 'ов'}: `
+                        : 'Грузчики: '}
+                      {formatPrice(order.carryCost)}
+                    </p>
+                  )}
+                  <p className={styles.deliveryCostSummaryTotal}>
+                    Итого стоимость доставки:{' '}
+                    {(
+                      Number(order.shippingCost ?? 0) + Number(order.carryCost ?? 0)
+                    ).toLocaleString('ru-RU')}{' '}
+                    ₽
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          {(order.shippingAddress || order.deliveryType != null || order.shippingCost != null) && (
+            <div className={styles.deliveryCostEdit}>
+              <p className={styles.deliveryCostEditTitle}>
+                Стоимость и параметры доставки (редактирование)
+              </p>
+              <div className={styles.deliveryCostEditRow}>
+                <label className={styles.deliveryCostEditLabel}>
+                  Стоимость доставки, ₽
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={deliveryShippingCost}
+                    onChange={(e) => setDeliveryShippingCost(e.target.value)}
+                    className={styles.deliveryCostInput}
+                  />
+                </label>
+              </div>
+              <div className={styles.deliveryCostEditRow}>
+                <label className={styles.deliveryCostEditLabel}>
+                  Стоимость грузчиков, ₽
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={deliveryCarryCost}
+                    onChange={(e) => setDeliveryCarryCost(e.target.value)}
+                    placeholder="0 или пусто"
+                    className={styles.deliveryCostInput}
+                  />
+                </label>
+              </div>
+              <div className={styles.deliveryCostEditRow}>
+                <label className={styles.deliveryCostEditLabel}>
+                  Количество грузчиков
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={deliveryMoversCount}
+                    onChange={(e) => setDeliveryMoversCount(e.target.value)}
+                    placeholder="0 или пусто"
+                    className={styles.deliveryCostInput}
+                  />
+                </label>
+              </div>
+              <div className={styles.deliveryCostEditRow}>
+                <label className={styles.deliveryCostEditLabel}>
+                  Планируемая дата доставки
+                  <input
+                    type="date"
+                    value={deliveryPlannedDate}
+                    onChange={(e) => setDeliveryPlannedDate(e.target.value)}
+                    className={styles.deliveryCostInput}
+                  />
+                </label>
+              </div>
+              <button
+                type="button"
+                className={styles.deliveryCostSaveBtn}
+                disabled={deliverySaving}
+                onClick={async () => {
+                  const shippingNum =
+                    deliveryShippingCost.trim() === ''
+                      ? Number(order.shippingCost ?? 0)
+                      : parseFloat(deliveryShippingCost);
+                  const carryNum =
+                    deliveryCarryCost.trim() === '' ? null : parseFloat(deliveryCarryCost);
+                  if (isNaN(shippingNum) || shippingNum < 0) {
+                    alert('Укажите корректную стоимость доставки');
+                    return;
+                  }
+                  if (carryNum !== null && (isNaN(carryNum) || carryNum < 0)) {
+                    alert('Укажите корректную стоимость грузчиков');
+                    return;
+                  }
+                  const moversCountNum =
+                    deliveryMoversCount.trim() === '' ? null : parseInt(deliveryMoversCount, 10);
+                  if (moversCountNum !== null && (isNaN(moversCountNum) || moversCountNum < 0)) {
+                    alert('Укажите корректное количество грузчиков');
+                    return;
+                  }
+                  setDeliverySaving(true);
+                  try {
+                    const updated = await updateAdminOrderDelivery(id, {
+                      shippingCost: shippingNum,
+                      carryCost: carryNum,
+                      moversCount: moversCountNum,
+                      plannedDeliveryDate: deliveryPlannedDate.trim()
+                        ? deliveryPlannedDate.trim()
+                        : null,
+                    });
+                    setOrder(updated as OrderDetail);
+                  } catch (err) {
+                    alert(err instanceof Error ? err.message : 'Не удалось сохранить');
+                  } finally {
+                    setDeliverySaving(false);
+                  }
+                }}
+              >
+                {deliverySaving ? 'Сохранение…' : 'Сохранить'}
+              </button>
             </div>
           )}
         </section>

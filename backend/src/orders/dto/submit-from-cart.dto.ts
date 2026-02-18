@@ -48,4 +48,11 @@ export class SubmitFromCartDto {
   @IsNumber()
   @Min(0)
   distanceKm?: number;
+
+  @ApiPropertyOptional({
+    description: 'Когда покупателю удобно принять заказ (произвольный текст)',
+  })
+  @IsOptional()
+  @IsString()
+  preferredDeliveryTime?: string;
 }

@@ -99,6 +99,11 @@ export default function CheckoutPage() {
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Оформление заказа</h1>
+      {order.adminEditedAt && (
+        <p className={styles.editedBadge} role="status">
+          Изменено!
+        </p>
+      )}
       <p className={styles.orderNumber}>Заказ {order.orderNumber}</p>
       <p className={styles.approvalCountdown}>
         Оформить в течение:{' '}
@@ -115,6 +120,47 @@ export default function CheckoutPage() {
           <span>Сумма:</span>
           <span className={styles.totalPrice}>{total.toLocaleString()} ₽</span>
         </div>
+        {(Number(order.shippingCost ?? 0) > 0 || Number(order.carryCost ?? 0) > 0) && (
+          <div className={styles.deliveryBreakdown}>
+            <div className={styles.deliveryBreakdownTitle}>
+              Стоимость доставки
+              {order.deliveryPaymentMode === 'ON_SITE' && (
+                <span className={styles.deliveryPayOnSiteBadge} role="status">
+                  Оплатить водителю!
+                </span>
+              )}
+            </div>
+            <div className={styles.deliveryBreakdownRow}>
+              <span>Доставка:</span>
+              <span>{Number(order.shippingCost ?? 0).toLocaleString('ru-RU')} ₽</span>
+            </div>
+            {order.carryCost != null && Number(order.carryCost) > 0 && (
+              <div className={styles.deliveryBreakdownRow}>
+                <span>
+                  {order.moversCount != null && order.moversCount > 0
+                    ? `${order.moversCount} грузчик${order.moversCount === 1 ? '' : order.moversCount < 5 ? 'а' : 'ов'}:`
+                    : 'Грузчики:'}
+                </span>
+                <span>{Number(order.carryCost).toLocaleString('ru-RU')} ₽</span>
+              </div>
+            )}
+            <div className={styles.deliveryBreakdownTotal}>
+              <span>Итого стоимость доставки:</span>
+              <span>
+                {(Number(order.shippingCost ?? 0) + Number(order.carryCost ?? 0)).toLocaleString(
+                  'ru-RU'
+                )}{' '}
+                ₽
+              </span>
+            </div>
+          </div>
+        )}
+        {order.plannedDeliveryDate && (
+          <div className={styles.summaryRow}>
+            <span>Планируемая дата доставки:</span>
+            <span>{new Date(order.plannedDeliveryDate).toLocaleDateString('ru-RU')}</span>
+          </div>
+        )}
       </div>
       <p className={styles.hint}>
         Укажите адрес доставки и способ оплаты. Раздел оплаты можно подключить позже.

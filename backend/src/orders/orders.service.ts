@@ -19,9 +19,6 @@ import { Prisma } from '@prisma/client';
 const APPROVAL_VALID_MINUTES = 60;
 const APPROVAL_VALID_MS = APPROVAL_VALID_MINUTES * 60 * 1000;
 
-/** Город для сравнения (доставка «по Мурманску»). */
-const MURMANSK_CITY_LOWER = 'мурманск';
-
 @Injectable()
 export class OrdersService {
   constructor(
@@ -91,6 +88,24 @@ export class OrdersService {
   }
 
   /**
+   * Список населённых пунктов и режим оплаты доставки (для корзины).
+   */
+  async getDeliverySettlements(): Promise<{
+    settlements: Array<{ name: string; price: number }>;
+    deliveryPaymentMode: 'WITH_ORDER' | 'ON_SITE';
+  }> {
+    const config = await this.getDeliveryConfig();
+    const mode = config.deliveryPaymentMode === 'ON_SITE' ? 'ON_SITE' : 'WITH_ORDER';
+    return {
+      settlements: (config.settlements ?? []).map((s) => ({
+        name: s.name,
+        price: Number(s.price),
+      })),
+      deliveryPaymentMode: mode,
+    };
+  }
+
+  /**
    * Список активных способов доставки (для выбора в корзине).
    */
   async getShippingMethods() {
@@ -104,7 +119,9 @@ export class OrdersService {
    * Конфиг расчёта доставки (одна запись). Если нет — создаём с дефолтами.
    */
   private async getDeliveryConfig() {
-    let config = await this.prisma.deliveryConfig.findFirst();
+    let config = await this.prisma.deliveryConfig.findFirst({
+      include: { settlements: { orderBy: { order: 'asc' } } },
+    });
     if (!config) {
       config = await this.prisma.deliveryConfig.create({
         data: {
@@ -115,6 +132,7 @@ export class OrdersService {
           moversKgPerPerson: 50,
           moversVolumePerPerson: 0.5,
         },
+        include: { settlements: { orderBy: { order: 'asc' } } },
       });
     }
     return config;
@@ -138,7 +156,7 @@ export class OrdersService {
   }
 
   /**
-   * Расчёт стоимости доставки по конфигу: Мурманск / за км, грузчики по массе и габаритам корзины.
+   * Расчёт стоимости доставки по конфигу: lookup по населённому пункту, иначе за км; грузчики по массе и габаритам.
    */
   async calculateDelivery(
     userId: string,
@@ -146,10 +164,13 @@ export class OrdersService {
   ): Promise<{ deliveryCost: number; carryCost: number; totalShippingCost: number }> {
     const config = await this.getDeliveryConfig();
     const cityNorm = (dto.city || '').trim().toLowerCase();
-    const isMurmansk = cityNorm.includes(MURMANSK_CITY_LOWER);
 
-    const deliveryCost = isMurmansk
-      ? Number(config.deliveryPriceMurmansk)
+    const settlement = config.settlements?.find(
+      (s) => cityNorm && cityNorm.includes((s.name || '').trim().toLowerCase()),
+    );
+    const isInSettlementsList = !!settlement;
+    const deliveryCost = settlement
+      ? Number(settlement.price)
       : Math.max(0, dto.distanceKm ?? 0) * Number(config.deliveryPricePerKmOutside);
 
     let carryCost = 0;
@@ -191,7 +212,7 @@ export class OrdersService {
       const byVolume =
         volPerPerson != null && volPerPerson > 0 ? Math.ceil(totalVolume / volPerPerson) : 0;
       const moversCount = Math.max(1, byWeight, byVolume);
-      const moversPrice = isMurmansk
+      const moversPrice = isInSettlementsList
         ? Number(config.moversPriceMurmansk)
         : Number(config.moversPriceOutside);
       carryCost = moversCount * moversPrice;
@@ -257,11 +278,13 @@ export class OrdersService {
     }
 
     let shippingCost = 0;
+    let carryCostFromCalc: number | undefined;
     let shippingMethodId: string | null = null;
     let shippingAddressId: string | null = null;
     let deliveryType: string | null = null;
     let deliveryFloor: number | null = null;
     let deliveryHasElevator: boolean | null = null;
+    let preferredDeliveryTime: string | null = null;
 
     if (dto?.deliveryAddress && dto?.deliveryType != null) {
       const user = await this.prisma.user.findUnique({
@@ -292,12 +315,14 @@ export class OrdersService {
         deliveryFloor: dto.deliveryFloor,
         deliveryHasElevator: dto.deliveryHasElevator,
       });
-      shippingCost = calc.totalShippingCost;
+      shippingCost = calc.deliveryCost;
+      carryCostFromCalc = calc.carryCost;
       const base = await this.getBaseDeliveryCost(subtotal);
       shippingMethodId = base.methodId;
       deliveryType = dto.deliveryType;
       deliveryFloor = dto.deliveryFloor ?? null;
       deliveryHasElevator = dto.deliveryHasElevator ?? null;
+      preferredDeliveryTime = dto.preferredDeliveryTime?.trim() || null;
     } else if (dto?.shippingMethodId) {
       const method = await this.prisma.shippingMethod.findFirst({
         where: { id: dto.shippingMethodId, isActive: true },
@@ -310,8 +335,12 @@ export class OrdersService {
       }
     }
 
+    const config = await this.getDeliveryConfig();
     const tax = 0;
-    const total = subtotal + shippingCost;
+    const carryCost =
+      shippingAddressId != null && typeof carryCostFromCalc === 'number' ? carryCostFromCalc : 0;
+    const total =
+      config.deliveryPaymentMode === 'ON_SITE' ? subtotal : subtotal + shippingCost + carryCost;
     const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
 
     const order = await this.prisma.order.create({
@@ -324,10 +353,12 @@ export class OrdersService {
         deliveryType,
         deliveryFloor,
         deliveryHasElevator,
+        preferredDeliveryTime,
         submittedForReviewAt: new Date(),
         subtotal,
         tax,
         shippingCost,
+        carryCost: carryCost > 0 ? carryCost : null,
         total,
         items: {
           create: orderItems.map((oi) => ({
@@ -360,15 +391,21 @@ export class OrdersService {
     });
     const title = 'Новый заказ на проверку';
     const message = `Заказ ${order.orderNumber} ожидает проверки.`;
-    await Promise.all(
-      admins.map((a) =>
+    await Promise.all([
+      ...admins.map((a) =>
         this.usersService.createNotification(a.id, {
           type: 'new_order',
           title,
           message,
         }),
       ),
-    );
+      this.usersService.createNotification(order.userId, {
+        type: 'order_status',
+        title: `Заказ ${order.orderNumber} отправлен на проверку`,
+        message:
+          'Заказ принят на проверку. Обычно проверка занимает около 15 минут. Вы получите уведомление, когда менеджер проверит заказ.',
+      }),
+    ]);
 
     return order;
   }
@@ -460,10 +497,15 @@ export class OrdersService {
     });
     if (!order) return;
 
+    const config = await this.getDeliveryConfig();
     const subtotal = order.items.reduce((sum, i) => sum + Number(i.price) * i.quantity, 0);
     const shippingCost = Number(order.shippingCost);
+    const carryCost = order.carryCost != null ? Number(order.carryCost) : 0;
     const discount = Number(order.discount);
-    const total = subtotal + shippingCost - discount;
+    const total =
+      config.deliveryPaymentMode === 'ON_SITE'
+        ? subtotal - discount
+        : subtotal + shippingCost + carryCost - discount;
 
     await this.prisma.order.update({
       where: { id: orderId },
@@ -528,7 +570,15 @@ export class OrdersService {
         (order as { approvedAt: Date | null }).approvedAt = null;
       }
     }
-    return orders;
+    const deliveryConfig = await this.getDeliveryConfig();
+    const paymentMode = deliveryConfig.deliveryPaymentMode === 'ON_SITE' ? 'ON_SITE' : 'WITH_ORDER';
+    return orders.map((order) => ({
+      ...order,
+      deliveryPaymentMode: paymentMode,
+      ...(paymentMode === 'ON_SITE'
+        ? { total: Number(order.subtotal) - Number(order.discount) }
+        : {}),
+    }));
   }
 
   async findOne(id: string, userId?: string, role?: string) {
@@ -592,7 +642,15 @@ export class OrdersService {
       });
     }
 
-    return order;
+    const deliveryConfig = await this.getDeliveryConfig();
+    const paymentMode = deliveryConfig.deliveryPaymentMode === 'ON_SITE' ? 'ON_SITE' : 'WITH_ORDER';
+    return {
+      ...order,
+      deliveryPaymentMode: paymentMode,
+      ...(paymentMode === 'ON_SITE'
+        ? { total: Number(order.subtotal) - Number(order.discount) }
+        : {}),
+    };
   }
 
   async update(id: string, updateOrderDto: UpdateOrderDto) {

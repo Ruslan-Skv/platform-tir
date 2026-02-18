@@ -26,7 +26,8 @@ function getAdminAuthHeaders(): HeadersInit {
 export async function getAdminOrders(
   page = 1,
   limit = 10,
-  status?: string
+  status?: string,
+  options?: { hasDelivery?: boolean }
 ): Promise<{
   data: AdminOrderSummary[];
   total: number;
@@ -36,6 +37,7 @@ export async function getAdminOrders(
 }> {
   const params = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (status) params.set('status', status);
+  if (options?.hasDelivery) params.set('hasDelivery', 'true');
   const res = await fetch(`${API_URL}/admin/orders?${params}`, {
     headers: getAdminAuthHeaders(),
   });
@@ -80,9 +82,6 @@ export async function updateAdminOrderStatus(
 
 export interface UpdateOrderItemBody {
   managerComment?: string | null;
-  productId?: string;
-  quantity?: number;
-  replacementNote?: string | null;
 }
 
 export async function updateAdminOrderItem(
@@ -115,6 +114,29 @@ export async function sendBackOrderToCustomer(
   return res.json();
 }
 
+export async function updateAdminOrderDelivery(
+  orderId: string,
+  data: {
+    shippingCost?: number;
+    carryCost?: number | null;
+    moversCount?: number | null;
+    plannedDeliveryDate?: string | null;
+  }
+): Promise<AdminOrderSummary & { items?: unknown[] }> {
+  const res = await fetch(`${API_URL}/admin/orders/${orderId}/delivery`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      (err as { message?: string }).message ?? 'Не удалось обновить стоимость доставки'
+    );
+  }
+  return res.json();
+}
+
 export interface ProductForReplacement {
   id: string;
   name: string;
@@ -133,14 +155,24 @@ export async function getProductsForReplacement(search?: string): Promise<Produc
   return res.json();
 }
 
+export interface DeliverySettlementDto {
+  id: string;
+  name: string;
+  price: string | number;
+  order: number;
+}
+
+export type DeliveryPaymentMode = 'WITH_ORDER' | 'ON_SITE';
+
 export interface DeliveryConfigDto {
   id: string;
-  deliveryPriceMurmansk: string | number;
   deliveryPricePerKmOutside: string | number;
+  deliveryPaymentMode: DeliveryPaymentMode | string | null;
   moversPriceMurmansk: string | number;
   moversPriceOutside: string | number;
   moversKgPerPerson: string | number;
   moversVolumePerPerson: string | number | null;
+  settlements: DeliverySettlementDto[];
 }
 
 export async function getDeliveryConfig(): Promise<DeliveryConfigDto> {
@@ -152,12 +184,13 @@ export async function getDeliveryConfig(): Promise<DeliveryConfigDto> {
 }
 
 export async function updateDeliveryConfig(data: {
-  deliveryPriceMurmansk?: number;
   deliveryPricePerKmOutside?: number;
+  deliveryPaymentMode?: DeliveryPaymentMode;
   moversPriceMurmansk?: number;
   moversPriceOutside?: number;
   moversKgPerPerson?: number;
   moversVolumePerPerson?: number | null;
+  settlements?: Array<{ id?: string; name: string; price: number; order?: number }>;
 }): Promise<DeliveryConfigDto> {
   const res = await fetch(`${API_URL}/admin/orders/delivery-config`, {
     method: 'PATCH',

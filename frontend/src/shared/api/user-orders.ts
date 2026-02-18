@@ -17,6 +17,12 @@ export interface OrderItem {
   price: string | number;
   size: string | null;
   openingSide: string | null;
+  /** Рекомендации менеджера по позиции (замена, количество и т.п.). */
+  managerComment?: string | null;
+  /** @deprecated Пометка о замене товара (не используется — только комментарий). */
+  replacementNote?: string | null;
+  /** @deprecated ID товара, который был заменён (не используется). */
+  replacedFromProductId?: string | null;
   product?: {
     id: string;
     name: string;
@@ -45,6 +51,8 @@ export interface UserOrder {
   subtotal: string | number;
   tax: string | number;
   shippingCost: string | number;
+  carryCost?: string | number | null;
+  moversCount?: number | null;
   paymentStatus: string;
   createdAt: string;
   shippedAt: string | null;
@@ -56,6 +64,11 @@ export interface UserOrder {
   deliveryType?: string | null;
   deliveryFloor?: number | null;
   deliveryHasElevator?: boolean | null;
+  preferredDeliveryTime?: string | null;
+  plannedDeliveryDate?: string | null;
+  adminEditedAt?: string | null;
+  /** Режим оплаты доставки из настроек (WITH_ORDER | ON_SITE). Приходит с API при запросе заказа. */
+  deliveryPaymentMode?: 'WITH_ORDER' | 'ON_SITE';
 }
 
 /** Время действия статуса «Заказ проверен» (минуты). */
@@ -85,6 +98,27 @@ export interface ShippingMethod {
   maxDeliveryDays: number | null;
   isActive: boolean;
   order: number;
+}
+
+export interface DeliverySettlementOption {
+  name: string;
+  price: number;
+}
+
+export type DeliveryPaymentMode = 'WITH_ORDER' | 'ON_SITE';
+
+export interface DeliverySettlementsResponse {
+  settlements: DeliverySettlementOption[];
+  deliveryPaymentMode: DeliveryPaymentMode;
+}
+
+/** Список населённых пунктов и режим оплаты доставки для корзины. */
+export async function getDeliverySettlements(): Promise<DeliverySettlementsResponse> {
+  const res = await fetch(`${API_URL}/orders/delivery-settlements`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить список городов');
+  return res.json();
 }
 
 /** Список способов доставки для корзины. */
@@ -146,6 +180,7 @@ export interface SubmitFromCartDeliveryPayload {
   deliveryFloor?: number;
   deliveryHasElevator?: boolean;
   distanceKm?: number;
+  preferredDeliveryTime?: string;
 }
 
 /** Отправить заказ из корзины на проверку менеджеру (статус «На проверке»). */
@@ -160,6 +195,7 @@ export async function submitOrderFromCart(
           deliveryFloor: payload.deliveryFloor,
           deliveryHasElevator: payload.deliveryHasElevator,
           distanceKm: payload.distanceKm,
+          preferredDeliveryTime: payload.preferredDeliveryTime,
         }
       : payload && 'shippingMethodId' in payload && payload.shippingMethodId
         ? { shippingMethodId: payload.shippingMethodId }

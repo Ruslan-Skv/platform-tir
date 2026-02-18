@@ -254,6 +254,11 @@ const baseNavItems: NavItem[] = [
         href: '/admin/settings/notifications',
         resourceId: 'admin.settings.notifications',
       },
+      {
+        label: 'Доставка',
+        href: '/admin/settings/delivery',
+        resourceId: 'admin.settings.delivery',
+      },
       { label: 'Роли', href: '/admin/settings/roles', resourceId: 'admin.settings.roles' },
       { label: 'Управление пользователями', href: '/admin/users', resourceId: 'admin.users' },
     ],

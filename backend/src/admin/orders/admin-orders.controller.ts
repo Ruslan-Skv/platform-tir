@@ -30,6 +30,7 @@ export class AdminOrdersController {
     @Query('dateTo') dateTo?: string,
     @Query('minTotal') minTotal?: string,
     @Query('maxTotal') maxTotal?: string,
+    @Query('hasDelivery') hasDelivery?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('sortBy') sortBy?: string,
@@ -44,6 +45,7 @@ export class AdminOrdersController {
       dateTo,
       minTotal: minTotal ? parseFloat(minTotal) : undefined,
       maxTotal: maxTotal ? parseFloat(maxTotal) : undefined,
+      hasDelivery: hasDelivery === 'true' || hasDelivery === '1',
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 20,
       sortBy,
@@ -75,12 +77,13 @@ export class AdminOrdersController {
   updateDeliveryConfig(
     @Body()
     body: {
-      deliveryPriceMurmansk?: number;
       deliveryPricePerKmOutside?: number;
+      deliveryPaymentMode?: 'WITH_ORDER' | 'ON_SITE';
       moversPriceMurmansk?: number;
       moversPriceOutside?: number;
       moversKgPerPerson?: number;
       moversVolumePerPerson?: number | null;
+      settlements?: Array<{ id?: string; name: string; price: number; order?: number }>;
     },
   ) {
     return this.adminOrdersService.updateDeliveryConfig(body);
@@ -102,17 +105,25 @@ export class AdminOrdersController {
     return this.adminOrdersService.updateStatus(id, body.status);
   }
 
+  @Patch(':id/delivery')
+  updateOrderDelivery(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      shippingCost?: number;
+      carryCost?: number | null;
+      moversCount?: number | null;
+      plannedDeliveryDate?: string | null;
+    },
+  ) {
+    return this.adminOrdersService.updateOrderDelivery(id, body);
+  }
+
   @Patch(':id/items/:itemId')
   updateOrderItem(
     @Param('id') id: string,
     @Param('itemId') itemId: string,
-    @Body()
-    body: {
-      managerComment?: string | null;
-      productId?: string;
-      quantity?: number;
-      replacementNote?: string | null;
-    },
+    @Body() body: { managerComment?: string | null },
   ) {
     return this.adminOrdersService.updateOrderItem(id, itemId, body);
   }

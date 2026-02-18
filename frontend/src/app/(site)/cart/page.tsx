@@ -1,6 +1,6 @@
 'use client';
 
-import { TrashIcon, TruckIcon } from '@heroicons/react/24/outline';
+import { TrashIcon, TruckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 import React, { useEffect, useMemo, useState } from 'react';
 
@@ -12,6 +12,7 @@ import type { CartItem } from '@/shared/api/cart';
 import {
   type CalculateDeliveryResult,
   type DeliveryAddressForm,
+  type DeliverySettlementOption,
   type DeliveryType,
   type UserOrder,
   addCartItemToOrder,
@@ -19,6 +20,7 @@ import {
   cancelOrderByCustomer,
   formatApprovalCountdown,
   getApprovalRemainingMs,
+  getDeliverySettlements,
   getUserOrders,
   submitOrderFromCart,
 } from '@/shared/api/user-orders';
@@ -57,6 +59,7 @@ export default function CartPage() {
     deliveryType: DeliveryType;
     deliveryFloor: string;
     deliveryHasElevator: boolean;
+    preferredDeliveryTime: string;
   }>({
     street: '',
     city: '',
@@ -64,16 +67,34 @@ export default function CartPage() {
     deliveryType: 'TO_ENTRANCE',
     deliveryFloor: '',
     deliveryHasElevator: false,
+    preferredDeliveryTime: '',
   });
   const [calculatedDelivery, setCalculatedDelivery] = useState<CalculateDeliveryResult | null>(
     null
   );
   const [deliveryCalculationLoading, setDeliveryCalculationLoading] = useState(false);
   const [deliveryCalculationError, setDeliveryCalculationError] = useState<string | null>(null);
+  const [deliverySettlements, setDeliverySettlements] = useState<DeliverySettlementOption[]>([]);
+  const [deliveryPaymentMode, setDeliveryPaymentMode] = useState<'WITH_ORDER' | 'ON_SITE'>(
+    'WITH_ORDER'
+  );
+  /** Id позиций корзины, для которых пользователь закрыл блок «Рекомендации менеджера». */
+  const [dismissedManagerCommentIds, setDismissedManagerCommentIds] = useState<Set<string>>(
+    new Set()
+  );
 
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    getDeliverySettlements()
+      .then((data) => {
+        setDeliverySettlements(data.settlements ?? []);
+        setDeliveryPaymentMode(data.deliveryPaymentMode ?? 'WITH_ORDER');
+      })
+      .catch(() => setDeliverySettlements([]));
   }, []);
 
   useEffect(() => {
@@ -165,6 +186,7 @@ export default function CartPage() {
       deliveryFloor:
         orderWithDelivery.deliveryFloor != null ? String(orderWithDelivery.deliveryFloor) : '',
       deliveryHasElevator: orderWithDelivery.deliveryHasElevator ?? false,
+      preferredDeliveryTime: orderWithDelivery.preferredDeliveryTime ?? '',
     }));
     const cost = Number(orderWithDelivery.shippingCost) || 0;
     setCalculatedDelivery({ deliveryCost: cost, carryCost: 0, totalShippingCost: cost });
@@ -177,7 +199,7 @@ export default function CartPage() {
     const usedOrderIndices = new Set<number>();
     const ids = new Set<string>();
     for (const cartItem of cart) {
-      const cProductId = cartItem.product?.id ?? cartItem.component?.productId;
+      const cProductId = cartItem.product?.id ?? cartItem.component?.product?.id;
       if (!cProductId) continue;
       const cQty = Math.round(Number(cartItem.quantity));
       const cSize = cartItem.size ?? null;
@@ -209,7 +231,7 @@ export default function CartPage() {
     const usedOrderIndices = new Set<number>();
     const ids = new Set<string>();
     for (const cartItem of cart) {
-      const cProductId = cartItem.product?.id ?? cartItem.component?.productId;
+      const cProductId = cartItem.product?.id ?? cartItem.component?.product?.id;
       if (!cProductId) continue;
       const cQty = Math.round(Number(cartItem.quantity));
       const cSize = cartItem.size ?? null;
@@ -233,6 +255,31 @@ export default function CartPage() {
     }
     return ids;
   }, [approvedOrder, cart]);
+
+  /** Комментарий менеджера по позиции заказа — показываем на карточке товара в корзине (по совпадению productId, size, openingSide). */
+  const managerCommentByCartItemId = useMemo(() => {
+    const map = new Map<string, string>();
+    const order = approvedOrder ?? pendingReviewOrder;
+    if (!order?.items?.length || !cart.length) return map;
+    for (const o of order.items) {
+      const comment =
+        typeof o.managerComment === 'string' && o.managerComment.trim()
+          ? o.managerComment.trim()
+          : null;
+      if (!comment) continue;
+      const productId = o.productId ?? o.product?.id ?? null;
+      const size = o.size ?? null;
+      const openingSide = o.openingSide ?? null;
+      for (const c of cart) {
+        const cProductId = c.product?.id ?? null;
+        if (cProductId !== productId) continue;
+        if ((c.size ?? null) !== size) continue;
+        if ((c.openingSide ?? null) !== openingSide) continue;
+        map.set(c.id, comment);
+      }
+    }
+    return map;
+  }, [approvedOrder, pendingReviewOrder, cart]);
 
   const handleAddToOrder = async (cartItemId: string) => {
     if (!pendingReviewOrder) return;
@@ -259,6 +306,7 @@ export default function CartPage() {
     deliveryFloor?: number;
     deliveryHasElevator?: boolean;
     distanceKm?: number;
+    preferredDeliveryTime?: string;
   } | null => {
     if (!wantDelivery || !deliveryFormValid || !calculatedDelivery) return null;
     const payload = {
@@ -273,6 +321,7 @@ export default function CartPage() {
       deliveryFloor?: number;
       deliveryHasElevator?: boolean;
       distanceKm?: number;
+      preferredDeliveryTime?: string;
     };
     if (deliveryForm.deliveryType === 'TO_APARTMENT') {
       const floor = parseInt(deliveryForm.deliveryFloor, 10);
@@ -280,6 +329,9 @@ export default function CartPage() {
         payload.deliveryFloor = floor;
         payload.deliveryHasElevator = deliveryForm.deliveryHasElevator;
       }
+    }
+    if (deliveryForm.preferredDeliveryTime.trim()) {
+      payload.preferredDeliveryTime = deliveryForm.preferredDeliveryTime.trim();
     }
     const dist = parseFloat(deliveryForm.distanceKm);
     if (deliveryForm.distanceKm.trim() !== '' && !isNaN(dist) && dist >= 0) {
@@ -443,17 +495,23 @@ export default function CartPage() {
     return sum;
   }, 0);
 
-  const deliveryFormValid =
+  /** Достаточно для расчёта стоимости — город и улица. Этаж не обязателен. */
+  const deliveryFormValidForCalculation =
     wantDelivery &&
     deliveryForm.street.trim() !== '' &&
     deliveryForm.city.trim() !== '' &&
+    deliveryForm.city !== '__OTHER__';
+
+  /** Достаточно для отправки заказа — для TO_APARTMENT нужен этаж. */
+  const deliveryFormValid =
+    deliveryFormValidForCalculation &&
     (deliveryForm.deliveryType === 'TO_ENTRANCE' ||
       (deliveryForm.deliveryType === 'TO_APARTMENT' &&
         deliveryForm.deliveryFloor.trim() !== '' &&
         parseInt(deliveryForm.deliveryFloor, 10) >= 1));
 
   useEffect(() => {
-    if (!wantDelivery || !deliveryFormValid) {
+    if (!wantDelivery || !deliveryFormValidForCalculation) {
       setCalculatedDelivery(null);
       setDeliveryCalculationError(null);
       return;
@@ -498,7 +556,7 @@ export default function CartPage() {
     };
   }, [
     wantDelivery,
-    deliveryFormValid,
+    deliveryFormValidForCalculation,
     totalPrice,
     deliveryForm.city,
     deliveryForm.distanceKm,
@@ -578,6 +636,7 @@ export default function CartPage() {
                   quantity = 1;
                 }
                 const itemTotal = item.product.price * quantity;
+                const managerComment = managerCommentByCartItemId.get(item.id);
 
                 return (
                   <div key={item.id} className={styles.cartItem}>
@@ -618,6 +677,25 @@ export default function CartPage() {
                           {item.product.stock !== undefined && item.product.stock === 0 && (
                             <span className={styles.outOfStockBadge}>Под заказ</span>
                           )}
+                        </div>
+                      )}
+                      {managerComment && !dismissedManagerCommentIds.has(item.id) && (
+                        <div className={styles.itemManagerComment}>
+                          <button
+                            type="button"
+                            className={styles.itemManagerCommentClose}
+                            onClick={() =>
+                              setDismissedManagerCommentIds((prev) => new Set(prev).add(item.id))
+                            }
+                            aria-label="Закрыть рекомендации менеджера"
+                            title="Закрыть"
+                          >
+                            <XMarkIcon className={styles.itemManagerCommentCloseIcon} />
+                          </button>
+                          <span className={styles.itemManagerCommentLabel}>
+                            Рекомендации менеджера:
+                          </span>
+                          <span className={styles.itemManagerCommentText}>{managerComment}</span>
                         </div>
                       )}
                     </div>
@@ -910,82 +988,135 @@ export default function CartPage() {
             )}
 
             {orderWithDelivery && (
-              <div className={styles.deliveryCompactRow}>
-                <div className={styles.deliveryCompactIcon} aria-hidden>
-                  <TruckIcon className={styles.deliveryCompactIconSvg} />
-                </div>
-                <div className={styles.deliveryCompactInfo}>
-                  <span className={styles.deliveryCompactTitle}>Доставка</span>
-                  <span className={styles.deliveryCompactDetails}>
-                    {[
-                      orderWithDelivery.shippingAddress?.street,
-                      orderWithDelivery.shippingAddress?.city,
-                    ]
-                      .filter(Boolean)
-                      .join(', ') || 'Адрес указан'}
-                    {' · '}
-                    {orderWithDelivery.deliveryType === 'TO_APARTMENT'
-                      ? 'до квартиры'
-                      : 'до подъезда'}
-                    {orderWithDelivery.deliveryType === 'TO_APARTMENT' &&
-                      orderWithDelivery.deliveryFloor != null &&
-                      `, ${orderWithDelivery.deliveryFloor} этаж`}
-                    {' · '}
-                    {(Number(orderWithDelivery.shippingCost) || 0).toLocaleString()} ₽
-                  </span>
-                </div>
-                <div className={styles.itemActionsColumn}>
-                  {pendingOrderHasDelivery ? (
-                    <span
-                      className={styles.itemInOrderBadge}
-                      title="В заказе на проверке"
-                      aria-hidden
-                    >
-                      <svg
-                        className={styles.reviewProgressIconSmall}
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth={2}
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <g className={styles.reviewProgressSpinnerArc}>
-                          <path strokeDasharray="28 56" d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18z" />
-                        </g>
-                        <path className={styles.reviewProgressCheck} d="M7 12l3.5 3.5L17 9" />
-                      </svg>
+              <div className={styles.deliveryCompactWrap}>
+                <div className={styles.deliveryCompactRow}>
+                  <div className={styles.deliveryCompactIcon} aria-hidden>
+                    <TruckIcon className={styles.deliveryCompactIconSvg} />
+                  </div>
+                  <div className={styles.deliveryCompactInfo}>
+                    <span className={styles.deliveryCompactTitle}>
+                      Доставка
+                      {deliveryPaymentMode === 'ON_SITE' && (
+                        <span className={styles.deliveryPayOnSiteBadge} role="status">
+                          Оплатить водителю!
+                        </span>
+                      )}
                     </span>
-                  ) : (
-                    <>
-                      <span className={styles.itemInOrderBadge} title="Проверено" aria-hidden>
+                    <span className={styles.deliveryCompactDetails}>
+                      {[
+                        orderWithDelivery.shippingAddress?.street,
+                        orderWithDelivery.shippingAddress?.city,
+                      ]
+                        .filter(Boolean)
+                        .join(', ') || 'Адрес указан'}
+                      {' · '}
+                      {orderWithDelivery.deliveryType === 'TO_APARTMENT'
+                        ? 'до квартиры'
+                        : 'до подъезда'}
+                      {orderWithDelivery.deliveryType === 'TO_APARTMENT' &&
+                        orderWithDelivery.deliveryFloor != null &&
+                        `, ${orderWithDelivery.deliveryFloor} этаж`}
+                    </span>
+                    {(Number(orderWithDelivery.shippingCost ?? 0) > 0 ||
+                      Number(orderWithDelivery.carryCost ?? 0) > 0) && (
+                      <div className={styles.deliveryCompactCostBreakdown}>
+                        <div className={styles.deliveryCompactCostLine}>
+                          <span>
+                            Доставка:{' '}
+                            {(Number(orderWithDelivery.shippingCost) || 0).toLocaleString('ru-RU')}{' '}
+                            ₽
+                          </span>
+                          {orderWithDelivery.carryCost != null &&
+                            Number(orderWithDelivery.carryCost) > 0 && (
+                              <span>
+                                {orderWithDelivery.moversCount != null &&
+                                orderWithDelivery.moversCount > 0
+                                  ? `${orderWithDelivery.moversCount} грузчик${orderWithDelivery.moversCount === 1 ? '' : orderWithDelivery.moversCount < 5 ? 'а' : 'ов'}: `
+                                  : 'Грузчики: '}
+                                {Number(orderWithDelivery.carryCost).toLocaleString('ru-RU')} ₽
+                              </span>
+                            )}
+                        </div>
+                        <span className={styles.deliveryCompactCostTotal}>
+                          Итого стоимость доставки:{' '}
+                          {(
+                            Number(orderWithDelivery.shippingCost ?? 0) +
+                            Number(orderWithDelivery.carryCost ?? 0)
+                          ).toLocaleString('ru-RU')}{' '}
+                          ₽
+                        </span>
+                      </div>
+                    )}
+                    {orderWithDelivery.plannedDeliveryDate && (
+                      <span className={styles.deliveryCompactDate}>
+                        Дата доставки:{' '}
+                        {new Date(orderWithDelivery.plannedDeliveryDate).toLocaleDateString(
+                          'ru-RU'
+                        )}
+                      </span>
+                    )}
+                  </div>
+                  <div className={styles.itemActionsColumn}>
+                    {orderWithDelivery.adminEditedAt && (
+                      <span className={styles.deliveryEditedBadge} role="status">
+                        Изменено!
+                      </span>
+                    )}
+                    {pendingOrderHasDelivery ? (
+                      <span
+                        className={styles.itemInOrderBadge}
+                        title="В заказе на проверке"
+                        aria-hidden
+                      >
                         <svg
-                          className={styles.doubleCheckIcon}
+                          className={styles.reviewProgressIconSmall}
                           xmlns="http://www.w3.org/2000/svg"
                           fill="none"
                           viewBox="0 0 24 24"
-                          strokeWidth={2.5}
+                          strokeWidth={2}
                           stroke="currentColor"
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         >
-                          <path d="M5 12l3 3 7-7" />
-                          <path d="M9 15l2 2 5-5" />
+                          <g className={styles.reviewProgressSpinnerArc}>
+                            <path
+                              strokeDasharray="28 56"
+                              d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18z"
+                            />
+                          </g>
+                          <path className={styles.reviewProgressCheck} d="M7 12l3.5 3.5L17 9" />
                         </svg>
                       </span>
-                      {approvedOrder && approvalRemainingMs > 0 && (
-                        <Link
-                          href={`/checkout?orderId=${approvedOrder.id}`}
-                          className={styles.deliveryBasketButton}
-                          title="Корзинка — перейти к оформлению"
-                          aria-label="Корзинка — перейти к оформлению"
-                        >
-                          <TrashIcon className={styles.deliveryBasketButtonIcon} />
-                        </Link>
-                      )}
-                    </>
-                  )}
+                    ) : (
+                      <>
+                        <span className={styles.itemInOrderBadge} title="Проверено" aria-hidden>
+                          <svg
+                            className={styles.doubleCheckIcon}
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={2.5}
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M5 12l3 3 7-7" />
+                            <path d="M9 15l2 2 5-5" />
+                          </svg>
+                        </span>
+                        {approvedOrder && approvalRemainingMs > 0 && (
+                          <Link
+                            href={`/checkout?orderId=${approvedOrder.id}`}
+                            className={styles.deliveryBasketButton}
+                            title="Корзинка — перейти к оформлению"
+                            aria-label="Корзинка — перейти к оформлению"
+                          >
+                            <TrashIcon className={styles.deliveryBasketButtonIcon} />
+                          </Link>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -994,6 +1125,12 @@ export default function CartPage() {
               <div className={styles.deliveryFormBlock}>
                 <div className={styles.deliveryFormTitleRow}>
                   <h3 className={styles.deliveryFormTitle}>Адрес и условия доставки</h3>
+                  {deliveryPaymentMode === 'ON_SITE' && (
+                    <p className={styles.deliveryFormPaymentNote}>
+                      Оплата доставки не включается в стоимость заказа, а производится водителю
+                      после доставки товара.
+                    </p>
+                  )}
                 </div>
                 <div className={styles.deliveryFormGrid}>
                   <div className={styles.deliveryFormField}>
@@ -1008,31 +1145,103 @@ export default function CartPage() {
                   </div>
                   <div className={styles.deliveryFormField}>
                     <label htmlFor="delivery-city">Город *</label>
-                    <input
-                      id="delivery-city"
-                      type="text"
-                      value={deliveryForm.city}
-                      onChange={(e) => setDeliveryForm((f) => ({ ...f, city: e.target.value }))}
-                      placeholder="Мурманск"
-                    />
-                  </div>
-                  {deliveryForm.city.trim() &&
-                    !deliveryForm.city.trim().toLowerCase().includes('мурманск') && (
-                      <div className={styles.deliveryFormField}>
-                        <label htmlFor="delivery-distance">Расстояние от Мурманска, км</label>
-                        <input
-                          id="delivery-distance"
-                          type="number"
-                          min={0}
-                          step={1}
-                          value={deliveryForm.distanceKm}
-                          onChange={(e) =>
-                            setDeliveryForm((f) => ({ ...f, distanceKm: e.target.value }))
+                    {deliverySettlements.length > 0 ? (
+                      <>
+                        <select
+                          id="delivery-city"
+                          value={
+                            deliveryForm.city === '__OTHER__' ||
+                            (deliveryForm.city.trim() !== '' &&
+                              !deliverySettlements.some(
+                                (s) =>
+                                  s.name.trim().toLowerCase() ===
+                                  deliveryForm.city.trim().toLowerCase()
+                              ))
+                              ? '__OTHER__'
+                              : deliverySettlements.some(
+                                    (s) =>
+                                      s.name.trim().toLowerCase() ===
+                                      deliveryForm.city.trim().toLowerCase()
+                                  )
+                                ? deliveryForm.city.trim()
+                                : '__SELECT__'
                           }
-                          placeholder="0"
-                        />
-                      </div>
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === '__SELECT__') {
+                              setDeliveryForm((f) => ({ ...f, city: '', distanceKm: '' }));
+                            } else if (v === '__OTHER__') {
+                              setDeliveryForm((f) => ({
+                                ...f,
+                                city: '__OTHER__',
+                                distanceKm: f.distanceKm,
+                              }));
+                            } else {
+                              setDeliveryForm((f) => ({ ...f, city: v, distanceKm: '' }));
+                            }
+                          }}
+                        >
+                          <option value="__SELECT__">Выберите город</option>
+                          {deliverySettlements.map((s) => (
+                            <option key={s.name} value={s.name}>
+                              {s.name} — {s.price.toLocaleString()} ₽
+                            </option>
+                          ))}
+                          <option value="__OTHER__">Другой населённый пункт</option>
+                        </select>
+                        {(deliveryForm.city === '__OTHER__' ||
+                          (deliveryForm.city.trim() !== '' &&
+                            !deliverySettlements.some(
+                              (s) =>
+                                s.name.trim().toLowerCase() ===
+                                deliveryForm.city.trim().toLowerCase()
+                            ))) && (
+                          <input
+                            type="text"
+                            className={styles.deliveryFormOtherCity}
+                            value={deliveryForm.city === '__OTHER__' ? '' : deliveryForm.city}
+                            onChange={(e) =>
+                              setDeliveryForm((f) => ({ ...f, city: e.target.value }))
+                            }
+                            placeholder="Укажите населённый пункт"
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <input
+                        id="delivery-city"
+                        type="text"
+                        value={deliveryForm.city}
+                        onChange={(e) => setDeliveryForm((f) => ({ ...f, city: e.target.value }))}
+                        placeholder="Мурманск"
+                      />
                     )}
+                  </div>
+                  {(deliverySettlements.length > 0
+                    ? (deliveryForm.city === '__OTHER__' ||
+                        (deliveryForm.city.trim() !== '' &&
+                          !deliverySettlements.some(
+                            (s) =>
+                              s.name.trim().toLowerCase() === deliveryForm.city.trim().toLowerCase()
+                          ))) &&
+                      deliveryForm.city !== '__OTHER__'
+                    : deliveryForm.city.trim() &&
+                      !deliveryForm.city.trim().toLowerCase().includes('мурманск')) && (
+                    <div className={styles.deliveryFormField}>
+                      <label htmlFor="delivery-distance">Расстояние от Мурманска, км</label>
+                      <input
+                        id="delivery-distance"
+                        type="number"
+                        min={0}
+                        step={1}
+                        value={deliveryForm.distanceKm}
+                        onChange={(e) =>
+                          setDeliveryForm((f) => ({ ...f, distanceKm: e.target.value }))
+                        }
+                        placeholder="0"
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className={styles.deliveryFormRadios}>
                   <label className={styles.deliveryRadioLabel}>
@@ -1083,8 +1292,33 @@ export default function CartPage() {
                       />
                       <span>Есть лифт</span>
                     </label>
+                    <p className={styles.deliveryFormMoversNote}>
+                      Стоимость работы одного грузчика производится из расчёта = 1000 руб/час.
+                    </p>
                   </div>
                 )}
+                <div className={`${styles.deliveryFormField} ${styles.deliveryFormDateField}`}>
+                  <label htmlFor="delivery-preferred-date">
+                    Выберите удобный для вас день для осуществления доставки (мы постараемся
+                    организовать доставку в выбранный вами день)
+                  </label>
+                  <input
+                    id="delivery-preferred-date"
+                    type="date"
+                    value={
+                      /^\d{4}-\d{2}-\d{2}$/.test(deliveryForm.preferredDeliveryTime)
+                        ? deliveryForm.preferredDeliveryTime
+                        : ''
+                    }
+                    min={new Date().toISOString().slice(0, 10)}
+                    onChange={(e) =>
+                      setDeliveryForm((f) => ({
+                        ...f,
+                        preferredDeliveryTime: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
                 {deliveryFormValid && (
                   <div className={styles.deliveryFormTotal}>
                     {deliveryCalculationLoading && (
@@ -1101,20 +1335,15 @@ export default function CartPage() {
                     {!deliveryCalculationLoading &&
                       calculatedDelivery &&
                       !deliveryCalculationError && (
-                        <>
-                          <span>
-                            Доставка: {calculatedDelivery.deliveryCost.toLocaleString()} ₽
+                        <div className={styles.deliveryCostLine}>
+                          <span className={styles.deliveryCostLabel}>
+                            Предварительный расчёт доставки (стоимость работы грузчиков не входит в
+                            расчёт):
                           </span>
-                          {calculatedDelivery.carryCost > 0 && (
-                            <span>Подъём: {calculatedDelivery.carryCost.toLocaleString()} ₽</span>
-                          )}
-                          <div className={styles.deliveryCostLine}>
-                            <span className={styles.deliveryCostLabel}>Стоимость доставки:</span>
-                            <strong className={styles.deliveryCostValue}>
-                              {calculatedDelivery.totalShippingCost.toLocaleString()} ₽
-                            </strong>
-                          </div>
-                        </>
+                          <strong className={styles.deliveryCostValue}>
+                            {calculatedDelivery.totalShippingCost.toLocaleString()} ₽
+                          </strong>
+                        </div>
                       )}
                   </div>
                 )}
@@ -1140,10 +1369,17 @@ export default function CartPage() {
                     <span>Доставка:</span>
                     <span>{calculatedDelivery.totalShippingCost.toLocaleString()} ₽</span>
                   </div>
+                  {deliveryPaymentMode === 'ON_SITE' && (
+                    <p className={styles.summaryPayOnSiteNote}>Оплатить водителю!</p>
+                  )}
                   <div className={styles.summaryRow}>
                     <span>Итого:</span>
                     <span className={styles.totalPrice}>
-                      {totalWithShipping.toLocaleString()} ₽
+                      {(deliveryPaymentMode === 'ON_SITE'
+                        ? totalPrice
+                        : totalWithShipping
+                      ).toLocaleString()}{' '}
+                      ₽
                     </span>
                   </div>
                 </>
@@ -1157,6 +1393,11 @@ export default function CartPage() {
 
               {approvedOrder && approvalRemainingMs > 0 ? (
                 <>
+                  {approvedOrder.adminEditedAt && (
+                    <span className={styles.summaryEditedBadge} role="status">
+                      Изменено!
+                    </span>
+                  )}
                   <p className={styles.approvalCountdown}>
                     Заказ проверен. Оформить в течение:{' '}
                     <span className={styles.approvalCountdownTime}>

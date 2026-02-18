@@ -753,19 +753,35 @@ model ShippingMethod {
   @@map("shipping_methods")
 }
 
-/// Настройки расчёта доставки: Мурманск / за городом, грузчики по массе и габаритам.
+/// Настройки расчёта доставки: населённые пункты с фикс. стоимостью, грузчики по массе и габаритам.
 model DeliveryConfig {
-  id                      String   @id @default(cuid())
-  deliveryPriceMurmansk   Decimal  @db.Decimal(10, 2) // Стоимость доставки по г. Мурманск, руб
-  deliveryPricePerKmOutside Decimal @db.Decimal(10, 2) // Стоимость доставки за 1 км за пределами Мурманска, руб
-  moversPriceMurmansk     Decimal  @db.Decimal(10, 2) // Стоимость грузчиков в Мурманске (за 1 чел), руб
-  moversPriceOutside      Decimal  @db.Decimal(10, 2) // Стоимость грузчиков за пределами города (за 1 чел), руб
-  moversKgPerPerson       Decimal  @db.Decimal(10, 2) // Кг на одного грузчика (кол-во грузчиков = ceil(суммарная масса / это значение))
-  moversVolumePerPerson   Decimal? @db.Decimal(10, 4) // м³ на одного грузчика (опционально)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  id                        String   @id @default(cuid())
+  deliveryPriceMurmansk     Decimal  @db.Decimal(10, 2) // Deprecated: используется deliverySettlements
+  deliveryPricePerKmOutside Decimal  @db.Decimal(10, 2) // Стоимость за 1 км для адресов вне списка, руб
+  deliveryPaymentMode       String?  @default("WITH_ORDER") // WITH_ORDER = оплата с заказом, ON_SITE = оплата по месту
+  moversPriceMurmansk       Decimal  @db.Decimal(10, 2) // Стоимость грузчиков в населённом пункте из списка (за 1 чел), руб
+  moversPriceOutside        Decimal  @db.Decimal(10, 2) // Стоимость грузчиков за пределами списка (за 1 чел), руб
+  moversKgPerPerson         Decimal  @db.Decimal(10, 2) // Кг на одного грузчика
+  moversVolumePerPerson     Decimal? @db.Decimal(10, 4) // м³ на одного грузчика (опционально)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  settlements               DeliverySettlement[]
 
   @@map("delivery_config")
+}
+
+/// Населённый пункт с фиксированной стоимостью доставки.
+model DeliverySettlement {
+  id        String   @id @default(cuid())
+  configId  String
+  config    DeliveryConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+  name      String   // Название населённого пункта
+  price     Decimal  @db.Decimal(10, 2) // Стоимость доставки, руб
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("delivery_settlements")
 }
 
 model PaymentMethod {
@@ -991,15 +1007,20 @@ model Order {
   refundedAt                  DateTime?
   shippedAt                   DateTime?
   shippingCost                Decimal         @db.Decimal(10, 2)
+  carryCost                   Decimal?        @db.Decimal(10, 2) // Стоимость грузчиков (оплата по месту и т.п.)
+  moversCount                 Int?            // Количество грузчиков (указывает админ)
+  plannedDeliveryDate         DateTime?       @db.Date // Планируемая дата доставки (указывает админ)
   shippingMethodId            String?
   trackingNumber              String?
   returnedForCorrectionAt     DateTime?       // Когда менеджер отправил заказ на доработку покупателю
   returnedForCorrectionComment String?        @db.Text // Комментарий при отправке на доработку
   approvedAt                  DateTime?      // Когда заказ переведён в «Проверен»; действие 60 мин
+  adminEditedAt               DateTime?      // Когда админ вносил изменения (пометка «Отредактировано!» у покупателя)
   submittedForReviewAt        DateTime?      // Дата и время приёма заказа на проверку (из корзины)
   deliveryType                 String?        // TO_ENTRANCE | TO_APARTMENT — до подъезда или подъём в квартиру
   deliveryFloor                Int?           // Этаж (при подъёме в квартиру)
   deliveryHasElevator          Boolean?       // Есть лифт (при подъёме в квартиру)
+  preferredDeliveryTime        String?        @db.Text // Когда покупателю удобно принять заказ
   items                       OrderItem[]
   shippingAddress             Address?        @relation(fields: [shippingAddressId], references: [id])
   shippingMethod              ShippingMethod? @relation(fields: [shippingMethodId], references: [id])

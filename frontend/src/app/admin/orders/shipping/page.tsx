@@ -1,198 +1,208 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import {
-  type DeliveryConfigDto,
-  getDeliveryConfig,
-  updateDeliveryConfig,
-} from '@/shared/api/admin-orders';
+import Link from 'next/link';
 
-import styles from './page.module.css';
+import styles from '@/pages/admin/Orders/OrdersPage.module.css';
+import { type AdminOrderSummary, getAdminOrders } from '@/shared/api/admin-orders';
+import { DataTable } from '@/shared/ui/admin/DataTable';
 
-function toNum(v: string | number): number {
-  return typeof v === 'string' ? parseFloat(v) || 0 : v;
-}
+type OrderWithDelivery = AdminOrderSummary & {
+  shippingAddress?: {
+    street?: string;
+    city?: string;
+    region?: string | null;
+    postalCode?: string;
+    country?: string;
+  } | null;
+  shippingCost?: string | number;
+  itemsCount?: number;
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Ожидает',
+  PENDING_REVIEW: 'На проверке',
+  RETURNED_FOR_CORRECTION: 'На доработке у покупателя',
+  APPROVED: 'Заказ проверен',
+  PROCESSING: 'В обработке',
+  SHIPPED: 'Отправлен',
+  DELIVERED: 'Доставлен',
+  CANCELLED: 'Отменён',
+  REFUNDED: 'Возврат',
+};
 
 export default function AdminOrdersShippingPage() {
-  const [config, setConfig] = useState<DeliveryConfigDto | null>(null);
+  const [orders, setOrders] = useState<OrderWithDelivery[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
-
-  const load = useCallback(async () => {
-    try {
-      const data = await getDeliveryConfig();
-      setConfig(data);
-    } catch {
-      setConfig(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const limit = 20;
+  const [statusFilter, setStatusFilter] = useState('');
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+    setLoading(true);
+    getAdminOrders(page, limit, statusFilter || undefined, { hasDelivery: true })
+      .then((res) => {
+        if (cancelled) return;
+        setTotal(res.total);
+        setOrders(
+          res.data.map((o) => ({
+            ...o,
+            itemsCount: Array.isArray(o.items) ? o.items.length : 0,
+          })) as OrderWithDelivery[]
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setOrders([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [page, statusFilter]);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!config) return;
-    setSaving(true);
-    setMessage(null);
-    try {
-      await updateDeliveryConfig({
-        deliveryPriceMurmansk: toNum(config.deliveryPriceMurmansk),
-        deliveryPricePerKmOutside: toNum(config.deliveryPricePerKmOutside),
-        moversPriceMurmansk: toNum(config.moversPriceMurmansk),
-        moversPriceOutside: toNum(config.moversPriceOutside),
-        moversKgPerPerson: toNum(config.moversKgPerPerson),
-        moversVolumePerPerson:
-          config.moversVolumePerPerson === '' || config.moversVolumePerPerson == null
-            ? null
-            : toNum(config.moversVolumePerPerson),
-      });
-      setMessage({ text: 'Настройки доставки сохранены' });
-    } catch (err) {
-      setMessage({
-        text: err instanceof Error ? err.message : 'Ошибка сохранения',
-        error: true,
-      });
-    } finally {
-      setSaving(false);
-    }
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('ru-RU', {
+      style: 'currency',
+      currency: 'RUB',
+      maximumFractionDigits: 0,
+    }).format(value);
+
+  const formatDate = (dateString: string) =>
+    new Intl.DateTimeFormat('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(dateString));
+
+  const formatAddress = (order: OrderWithDelivery) => {
+    const addr = order.shippingAddress;
+    if (!addr) return '—';
+    const parts = [addr.street, addr.city].filter(Boolean);
+    return parts.length ? parts.join(', ') : '—';
   };
 
-  const update = (key: keyof DeliveryConfigDto, value: string | number | null) => {
-    if (!config) return;
-    setConfig({ ...config, [key]: value });
-  };
-
-  if (loading) {
-    return (
-      <div className={styles.page}>
-        <p className={styles.loading}>Загрузка настроек доставки...</p>
-      </div>
-    );
-  }
-
-  if (!config) {
-    return (
-      <div className={styles.page}>
-        <p className={styles.error}>Не удалось загрузить настройки доставки</p>
-      </div>
-    );
-  }
+  const columns = [
+    {
+      key: 'orderNumber',
+      title: 'Заказ',
+      render: (order: OrderWithDelivery) => (
+        <span className={styles.orderNumber}>{order.orderNumber}</span>
+      ),
+    },
+    {
+      key: 'customer',
+      title: 'Клиент',
+      render: (order: OrderWithDelivery) => (
+        <div className={styles.customerCell}>
+          <span className={styles.customerName}>
+            {order.user?.firstName} {order.user?.lastName}
+          </span>
+          <span className={styles.customerEmail}>{order.user?.email}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'address',
+      title: 'Адрес доставки',
+      render: (order: OrderWithDelivery) => (
+        <span className={styles.addressCell}>{formatAddress(order)}</span>
+      ),
+    },
+    {
+      key: 'shippingCost',
+      title: 'Стоимость доставки',
+      render: (order: OrderWithDelivery) =>
+        order.shippingCost != null ? formatCurrency(Number(order.shippingCost)) : '—',
+    },
+    {
+      key: 'status',
+      title: 'Статус',
+      render: (order: OrderWithDelivery) => (
+        <span className={`${styles.statusBadge} ${styles[`status${order.status}`] ?? ''}`}>
+          {STATUS_LABELS[order.status] ?? order.status}
+        </span>
+      ),
+    },
+    {
+      key: 'createdAt',
+      title: 'Дата',
+      render: (order: OrderWithDelivery) => formatDate(order.createdAt),
+    },
+    {
+      key: 'actions',
+      title: '',
+      width: '80px',
+      render: (order: OrderWithDelivery) => (
+        <Link href={`/admin/orders/${order.id}`} className={styles.viewButton}>
+          Открыть
+        </Link>
+      ),
+    },
+  ];
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Доставка</h1>
-        <p className={styles.subtitle}>
-          Управление расчётом стоимости доставки и грузчиков по г. Мурманск и за его пределами.
-        </p>
-      </header>
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <h1 className={styles.title}>Заказы по доставке</h1>
+          <span className={styles.count}>{total} заказов</span>
+        </div>
+      </div>
 
-      <form onSubmit={handleSubmit} className={styles.form}>
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Стоимость доставки</h2>
-          <div className={styles.grid}>
-            <div className={styles.field}>
-              <label htmlFor="deliveryPriceMurmansk">Стоимость доставки по г. Мурманск, ₽</label>
-              <input
-                id="deliveryPriceMurmansk"
-                type="number"
-                min={0}
-                step={1}
-                value={config.deliveryPriceMurmansk}
-                onChange={(e) => update('deliveryPriceMurmansk', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="deliveryPricePerKmOutside">
-                Стоимость доставки за 1 км за пределами Мурманска, ₽
-              </label>
-              <input
-                id="deliveryPricePerKmOutside"
-                type="number"
-                min={0}
-                step={0.01}
-                value={config.deliveryPricePerKmOutside}
-                onChange={(e) => update('deliveryPricePerKmOutside', e.target.value)}
-              />
-            </div>
-          </div>
-        </section>
+      <p className={styles.subtitle} style={{ marginBottom: 16 }}>
+        Все заказы, в которых оформлена доставка. Настройки расчёта доставки — в разделе{' '}
+        <Link
+          href="/admin/settings/delivery"
+          style={{ color: '#4f46e5', textDecoration: 'underline' }}
+        >
+          Настройки → Доставка
+        </Link>
+        .
+      </p>
 
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Грузчики</h2>
-          <div className={styles.grid}>
-            <div className={styles.field}>
-              <label htmlFor="moversPriceMurmansk">
-                Стоимость грузчиков в Мурманске (за 1 чел.), ₽
-              </label>
-              <input
-                id="moversPriceMurmansk"
-                type="number"
-                min={0}
-                step={1}
-                value={config.moversPriceMurmansk}
-                onChange={(e) => update('moversPriceMurmansk', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="moversPriceOutside">
-                Стоимость грузчиков за пределами города (за 1 чел.), ₽
-              </label>
-              <input
-                id="moversPriceOutside"
-                type="number"
-                min={0}
-                step={1}
-                value={config.moversPriceOutside}
-                onChange={(e) => update('moversPriceOutside', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="moversKgPerPerson">
-                Кг на одного грузчика (кол-во грузчиков = суммарная масса ÷ это значение)
-              </label>
-              <input
-                id="moversKgPerPerson"
-                type="number"
-                min={1}
-                step={1}
-                value={config.moversKgPerPerson}
-                onChange={(e) => update('moversKgPerPerson', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="moversVolumePerPerson">
-                м³ на одного грузчика (опционально, для расчёта по габаритам)
-              </label>
-              <input
-                id="moversVolumePerPerson"
-                type="number"
-                min={0}
-                step={0.01}
-                value={config.moversVolumePerPerson ?? ''}
-                onChange={(e) =>
-                  update('moversVolumePerPerson', e.target.value === '' ? null : e.target.value)
-                }
-                placeholder="0.5"
-              />
-            </div>
-          </div>
-        </section>
+      <div className={styles.filters}>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className={styles.select}
+        >
+          <option value="">Все статусы</option>
+          <option value="PENDING_REVIEW">На проверке</option>
+          <option value="APPROVED">Заказ проверен</option>
+          <option value="RETURNED_FOR_CORRECTION">На доработке</option>
+          <option value="PENDING">Ожидают</option>
+          <option value="PROCESSING">В обработке</option>
+          <option value="SHIPPED">Отправлены</option>
+          <option value="DELIVERED">Доставлены</option>
+          <option value="CANCELLED">Отменены</option>
+        </select>
+      </div>
 
-        {message && (
-          <p className={message.error ? styles.msgError : styles.msgSuccess}>{message.text}</p>
-        )}
-
-        <button type="submit" className={styles.submit} disabled={saving}>
-          {saving ? 'Сохранение…' : 'Сохранить'}
-        </button>
-      </form>
+      {loading ? (
+        <div className={styles.loading}>Загрузка заказов...</div>
+      ) : (
+        <DataTable
+          data={orders}
+          columns={columns}
+          keyExtractor={(order) => order.id}
+          onRowClick={(order) => {
+            window.location.href = `/admin/orders/${order.id}`;
+          }}
+          pagination={{
+            page,
+            limit,
+            total,
+            onPageChange: setPage,
+          }}
+        />
+      )}
     </div>
   );
 }

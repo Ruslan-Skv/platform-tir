@@ -32,6 +32,12 @@ export class OrdersController {
     return this.ordersService.create(req.user.id, createOrderDto);
   }
 
+  @Get('delivery-settlements')
+  @ApiOperation({ summary: 'Список населённых пунктов для выбора города доставки' })
+  getDeliverySettlements() {
+    return this.ordersService.getDeliverySettlements();
+  }
+
   @Get('shipping-methods')
   @ApiOperation({ summary: 'Список способов доставки для корзины' })
   getShippingMethods() {

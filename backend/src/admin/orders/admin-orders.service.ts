@@ -33,6 +33,7 @@ export class AdminOrdersService {
     dateTo?: string;
     minTotal?: number;
     maxTotal?: number;
+    hasDelivery?: boolean;
     page?: number;
     limit?: number;
     sortBy?: string;
@@ -47,6 +48,7 @@ export class AdminOrdersService {
       dateTo,
       minTotal,
       maxTotal,
+      hasDelivery,
       page = 1,
       limit = 20,
       sortBy = 'createdAt',
@@ -54,7 +56,7 @@ export class AdminOrdersService {
     } = params || {};
 
     const skip = (page - 1) * limit;
-    const where: Prisma.OrderWhereInput = {};
+    let where: Prisma.OrderWhereInput = {};
 
     if (status) {
       where.status = status as Prisma.EnumOrderStatusFilter;
@@ -95,6 +97,13 @@ export class AdminOrdersService {
       if (maxTotal !== undefined) {
         where.total.lte = new Prisma.Decimal(maxTotal);
       }
+    }
+
+    if (hasDelivery) {
+      const deliveryOr = {
+        OR: [{ shippingAddressId: { not: null } }, { shippingCost: { gt: 0 } }],
+      };
+      where = Object.keys(where).length > 0 ? { AND: [where, deliveryOr] } : deliveryOr;
     }
 
     const [orders, total] = await Promise.all([
@@ -276,55 +285,40 @@ export class AdminOrdersService {
     return { id };
   }
 
-  /** Обновить пункт заказа: комментарий менеджера и/или замена товара (с пометкой для покупателя). */
-  async updateOrderItem(
-    orderId: string,
-    itemId: string,
-    data: {
-      managerComment?: string | null;
-      productId?: string;
-      quantity?: number;
-      replacementNote?: string | null;
-    },
-  ) {
+  /** Обновить только комментарий менеджера к пункту заказа (рекомендации по замене/количеству для покупателя). */
+  async updateOrderItem(orderId: string, itemId: string, data: { managerComment?: string | null }) {
     const order = await this.findOne(orderId);
     const item = order.items.find((i) => i.id === itemId);
     if (!item) {
       throw new NotFoundException('Пункт заказа не найден');
     }
 
-    const updateData: Prisma.OrderItemUpdateInput = {};
-    if (data.managerComment !== undefined) {
-      updateData.managerComment = data.managerComment || null;
-    }
-    if (data.replacementNote !== undefined) {
-      updateData.replacementNote = data.replacementNote || null;
-    }
-    if (data.quantity !== undefined && data.quantity >= 1) {
-      updateData.quantity = data.quantity;
-    }
-
-    if (data.productId && data.productId !== item.productId) {
-      const newProduct = await this.prisma.product.findUnique({
-        where: { id: data.productId },
-      });
-      if (!newProduct) {
-        throw new BadRequestException('Товар не найден');
-      }
-      updateData.replacedFromProduct = { connect: { id: item.productId } };
-      updateData.product = { connect: { id: data.productId } };
-      updateData.price = newProduct.price;
-      if (!updateData.replacementNote && typeof data.replacementNote !== 'string') {
-        updateData.replacementNote = `Менеджер заменил товар на: ${newProduct.name}`;
-      }
+    const managerComment =
+      data.managerComment !== undefined ? data.managerComment || null : undefined;
+    if (managerComment === undefined) {
+      return this.findOne(orderId);
     }
 
     await this.prisma.orderItem.update({
       where: { id: itemId },
-      data: updateData,
+      data: { managerComment },
     });
 
-    await this.recalculateOrderTotals(orderId);
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: { adminEditedAt: new Date() },
+    });
+
+    const orderUserId = order.userId;
+    if (orderUserId) {
+      const productName = item.product?.name ?? 'товар';
+      await this.usersService.createNotification(orderUserId, {
+        type: 'order_comment',
+        title: `Рекомендации по заказу ${order.orderNumber}`,
+        message: `Менеджер оставил рекомендации по позиции «${productName}». Откройте корзину, чтобы ознакомиться и при необходимости внести изменения.`,
+      });
+    }
+
     return this.findOne(orderId);
   }
 
@@ -336,10 +330,16 @@ export class AdminOrdersService {
     });
     if (!order) return;
 
+    const config = await this.getDeliveryConfig();
     const subtotal = order.items.reduce((sum, i) => sum + Number(i.price) * i.quantity, 0);
     const tax = 0;
     const shippingCost = Number(order.shippingCost);
-    const total = subtotal + shippingCost - Number(order.discount);
+    const carryCost = order.carryCost != null ? Number(order.carryCost) : 0;
+    const discount = Number(order.discount);
+    const total =
+      config.deliveryPaymentMode === 'ON_SITE'
+        ? subtotal - discount
+        : subtotal + shippingCost + carryCost - discount;
 
     await this.prisma.order.update({
       where: { id: orderId },
@@ -349,6 +349,45 @@ export class AdminOrdersService {
         total,
       },
     });
+  }
+
+  /** Обновить стоимость доставки, грузчиков, количество грузчиков и планируемую дату доставки (админ). */
+  async updateOrderDelivery(
+    orderId: string,
+    data: {
+      shippingCost?: number;
+      carryCost?: number | null;
+      moversCount?: number | null;
+      plannedDeliveryDate?: string | null;
+    },
+  ) {
+    await this.findOne(orderId);
+    const updateData: Prisma.OrderUpdateInput = {};
+    if (data.shippingCost !== undefined) {
+      updateData.shippingCost = data.shippingCost;
+    }
+    if (data.carryCost !== undefined) {
+      updateData.carryCost = data.carryCost;
+    }
+    if (data.moversCount !== undefined) {
+      updateData.moversCount = data.moversCount;
+    }
+    if (data.plannedDeliveryDate !== undefined) {
+      updateData.plannedDeliveryDate =
+        data.plannedDeliveryDate && data.plannedDeliveryDate.trim()
+          ? new Date(data.plannedDeliveryDate.trim())
+          : null;
+    }
+    if (Object.keys(updateData).length === 0) {
+      return this.findOne(orderId);
+    }
+    updateData.adminEditedAt = new Date();
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: updateData,
+    });
+    await this.recalculateOrderTotals(orderId);
+    return this.findOne(orderId);
   }
 
   /** Отправить заказ на доработку покупателю (с комментариями менеджера). */
@@ -387,18 +426,26 @@ export class AdminOrdersService {
     });
   }
 
-  /** Настройки расчёта доставки (Мурманск / за городом, грузчики). */
+  /** Настройки расчёта доставки (населённые пункты, грузчики). */
   async getDeliveryConfig() {
-    let config = await this.prisma.deliveryConfig.findFirst();
+    let config = await this.prisma.deliveryConfig.findFirst({
+      include: {
+        settlements: { orderBy: { order: 'asc' } },
+      },
+    });
     if (!config) {
       config = await this.prisma.deliveryConfig.create({
         data: {
           deliveryPriceMurmansk: 500,
           deliveryPricePerKmOutside: 50,
+          deliveryPaymentMode: 'WITH_ORDER',
           moversPriceMurmansk: 300,
           moversPriceOutside: 400,
           moversKgPerPerson: 50,
           moversVolumePerPerson: 0.5,
+        },
+        include: {
+          settlements: { orderBy: { order: 'asc' } },
         },
       });
     }
@@ -407,19 +454,20 @@ export class AdminOrdersService {
 
   /** Обновить настройки расчёта доставки. */
   async updateDeliveryConfig(data: {
-    deliveryPriceMurmansk?: number;
     deliveryPricePerKmOutside?: number;
+    deliveryPaymentMode?: 'WITH_ORDER' | 'ON_SITE';
     moversPriceMurmansk?: number;
     moversPriceOutside?: number;
     moversKgPerPerson?: number;
     moversVolumePerPerson?: number | null;
+    settlements?: Array<{ id?: string; name: string; price: number; order?: number }>;
   }) {
     const config = await this.getDeliveryConfig();
     const updateData: Prisma.DeliveryConfigUpdateInput = {};
-    if (data.deliveryPriceMurmansk !== undefined)
-      updateData.deliveryPriceMurmansk = data.deliveryPriceMurmansk;
     if (data.deliveryPricePerKmOutside !== undefined)
       updateData.deliveryPricePerKmOutside = data.deliveryPricePerKmOutside;
+    if (data.deliveryPaymentMode !== undefined)
+      updateData.deliveryPaymentMode = data.deliveryPaymentMode;
     if (data.moversPriceMurmansk !== undefined)
       updateData.moversPriceMurmansk = data.moversPriceMurmansk;
     if (data.moversPriceOutside !== undefined)
@@ -427,9 +475,31 @@ export class AdminOrdersService {
     if (data.moversKgPerPerson !== undefined) updateData.moversKgPerPerson = data.moversKgPerPerson;
     if (data.moversVolumePerPerson !== undefined)
       updateData.moversVolumePerPerson = data.moversVolumePerPerson;
-    return this.prisma.deliveryConfig.update({
+
+    if (data.settlements !== undefined) {
+      await this.prisma.deliverySettlement.deleteMany({ where: { configId: config.id } });
+      if (data.settlements.length > 0) {
+        await this.prisma.deliverySettlement.createMany({
+          data: data.settlements.map((s, i) => ({
+            configId: config.id,
+            name: s.name.trim(),
+            price: s.price,
+            order: s.order ?? i,
+          })),
+        });
+      }
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      await this.prisma.deliveryConfig.update({
+        where: { id: config.id },
+        data: updateData,
+      });
+    }
+
+    return this.prisma.deliveryConfig.findFirstOrThrow({
       where: { id: config.id },
-      data: updateData,
+      include: { settlements: { orderBy: { order: 'asc' } } },
     });
   }
 
@@ -488,11 +558,49 @@ export class AdminOrdersService {
       },
     });
 
-    // Уведомление в историю пользователя
-    await this.usersService.createNotification(order.userId, {
-      type: 'order_status',
+    // Уведомление покупателю о этапе заказа
+    const statusMessages: Record<string, { title: string; message: string }> = {
+      APPROVED: {
+        title: `Заказ ${order.orderNumber} проверен`,
+        message:
+          'Менеджер проверил заказ. Перейдите в корзину и оформите заказ в течение 60 минут.',
+      },
+      RETURNED_FOR_CORRECTION: {
+        title: `Заказ ${order.orderNumber} отправлен на доработку`,
+        message:
+          'Менеджер оставил комментарии. Внесите изменения в корзине и снова отправьте заказ на проверку.',
+      },
+      PROCESSING: {
+        title: `Заказ ${order.orderNumber} принят в обработку`,
+        message: 'Заказ передан в обработку. Ожидайте подтверждения или связи с менеджером.',
+      },
+      SHIPPED: {
+        title: `Заказ ${order.orderNumber} отправлен`,
+        message: (updated as { trackingNumber?: string | null }).trackingNumber
+          ? `Заказ передан в доставку. Трек-номер: ${(updated as { trackingNumber: string }).trackingNumber}`
+          : 'Заказ передан в доставку.',
+      },
+      DELIVERED: {
+        title: `Заказ ${order.orderNumber} доставлен`,
+        message: 'Заказ доставлен. Спасибо за покупку!',
+      },
+      CANCELLED: {
+        title: `Заказ ${order.orderNumber} отменён`,
+        message: `Статус заказа: ${ORDER_STATUS_LABELS[status] ?? status}`,
+      },
+      REFUNDED: {
+        title: `По заказу ${order.orderNumber} оформлен возврат`,
+        message: `Статус заказа: ${ORDER_STATUS_LABELS[status] ?? status}`,
+      },
+    };
+    const notification = statusMessages[status] ?? {
       title: `Статус заказа ${order.orderNumber} изменён`,
       message: `Новый статус: ${ORDER_STATUS_LABELS[status] ?? status}`,
+    };
+    await this.usersService.createNotification(order.userId, {
+      type: 'order_status',
+      title: notification.title,
+      message: notification.message,
     });
 
     return updated;

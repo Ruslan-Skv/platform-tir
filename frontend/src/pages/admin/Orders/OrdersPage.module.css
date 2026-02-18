@@ -172,6 +172,21 @@
   color: #6b7280;
 }
 
+.addressCell {
+  font-size: 0.8125rem;
+  color: #374151;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtitle {
+  font-size: 0.9375rem;
+  color: #6b7280;
+  margin: 0;
+}
+
 /* Status Badge */
 .statusBadge,
 .paymentBadge {
@@ -266,6 +281,7 @@
 
 /* View Button */
 .viewButton {
+  display: inline-block;
   padding: 4px 8px;
   background: #f3f4f6;
   border: none;
@@ -274,6 +290,7 @@
   font-size: 0.75rem;
   cursor: pointer;
   transition: background 0.2s;
+  text-decoration: none;
 }
 
 .viewButton:hover {
