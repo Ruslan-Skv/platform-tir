@@ -69,6 +69,10 @@ export interface UserOrder {
   adminEditedAt?: string | null;
   /** Режим оплаты доставки из настроек (WITH_ORDER | ON_SITE). Приходит с API при запросе заказа. */
   deliveryPaymentMode?: 'WITH_ORDER' | 'ON_SITE';
+  /** Когда заказ отправлен на доработку покупателю. */
+  returnedForCorrectionAt?: string | null;
+  /** Комментарий менеджера при отправке на доработку. */
+  returnedForCorrectionComment?: string | null;
 }
 
 /** Время действия статуса «Заказ проверен» (минуты). */

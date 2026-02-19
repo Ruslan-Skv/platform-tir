@@ -142,6 +142,9 @@ export default function CartPage() {
   }, [userOrders]);
   const pendingReviewOrder = sortedOrders.find((o) => o.status === 'PENDING_REVIEW') ?? null;
   const approvedOrder = sortedOrders.find((o) => o.status === 'APPROVED') ?? null;
+  /** Заказ, отправленный менеджером на доработку — один активный заказ на пользователя. */
+  const returnedForCorrectionOrder =
+    sortedOrders.find((o) => o.status === 'RETURNED_FOR_CORRECTION') ?? null;
   const approvalRemainingMs = approvedOrder
     ? getApprovalRemainingMs(approvedOrder.approvedAt ?? null)
     : 0;
@@ -158,13 +161,18 @@ export default function CartPage() {
     !approvalExpired &&
     (!!approvedOrder.shippingAddress || !!approvedOrder.deliveryType);
 
-  /** Заказ, из которого подставляем доставку (сначала на проверке, иначе проверенный). */
+  /** Заказ, из которого подставляем доставку (на проверке → проверенный → на доработке). */
+  const returnedOrderHasDelivery =
+    !!returnedForCorrectionOrder &&
+    (!!returnedForCorrectionOrder.shippingAddress || !!returnedForCorrectionOrder.deliveryType);
   const orderWithDelivery =
     pendingReviewOrder?.id && pendingOrderHasDelivery
       ? pendingReviewOrder
       : approvedOrderHasDelivery
         ? approvedOrder!
-        : null;
+        : returnedOrderHasDelivery
+          ? returnedForCorrectionOrder!
+          : null;
 
   useEffect(() => {
     if (approvalExpired && userOrders) {
@@ -172,7 +180,7 @@ export default function CartPage() {
     }
   }, [approvalExpired]);
 
-  /** Синхронизация блока доставки из заказа (на проверке или проверенного): не обнулять, показывать заполненным. */
+  /** Синхронизация формы доставки из заказа (на проверке или проверенного): не обнулять, показывать заполненным. */
   useEffect(() => {
     if (!orderWithDelivery) return;
     setWantDelivery(true);
@@ -188,8 +196,7 @@ export default function CartPage() {
       deliveryHasElevator: orderWithDelivery.deliveryHasElevator ?? false,
       preferredDeliveryTime: orderWithDelivery.preferredDeliveryTime ?? '',
     }));
-    const cost = Number(orderWithDelivery.shippingCost) || 0;
-    setCalculatedDelivery({ deliveryCost: cost, carryCost: 0, totalShippingCost: cost });
+    // Не подставляем данные заказа в calculatedDelivery — расчёт и блок «Итого» всегда берут актуальную стоимость из API (текущий конфиг доставки).
   }, [orderWithDelivery?.id, !!orderWithDelivery]);
 
   /** ID позиций корзины, которые уже в заказе на проверке (для иконки «в заказе»). */
@@ -256,10 +263,10 @@ export default function CartPage() {
     return ids;
   }, [approvedOrder, cart]);
 
-  /** Комментарий менеджера по позиции заказа — показываем на карточке товара в корзине (по совпадению productId, size, openingSide). */
+  /** Комментарий менеджера по позиции заказа — показываем на карточке товара в корзине (по совпадению productId, size, openingSide). Учитываем заказ на проверке, проверенный и на доработке. */
   const managerCommentByCartItemId = useMemo(() => {
     const map = new Map<string, string>();
-    const order = approvedOrder ?? pendingReviewOrder;
+    const order = approvedOrder ?? pendingReviewOrder ?? returnedForCorrectionOrder ?? null;
     if (!order?.items?.length || !cart.length) return map;
     for (const o of order.items) {
       const comment =
@@ -279,7 +286,7 @@ export default function CartPage() {
       }
     }
     return map;
-  }, [approvedOrder, pendingReviewOrder, cart]);
+  }, [approvedOrder, pendingReviewOrder, returnedForCorrectionOrder, cart]);
 
   const handleAddToOrder = async (cartItemId: string) => {
     if (!pendingReviewOrder) return;
@@ -373,15 +380,16 @@ export default function CartPage() {
     setWantDelivery(true);
   };
 
+  const orderToCancel = pendingReviewOrder ?? returnedForCorrectionOrder;
   const handleCancelReview = async () => {
-    if (!pendingReviewOrder) return;
+    if (!orderToCancel) return;
     setCancelInProgress(true);
     try {
-      await cancelOrderByCustomer(pendingReviewOrder.id);
+      await cancelOrderByCustomer(orderToCancel.id);
       const orders = await getUserOrders();
       setUserOrders(orders);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Не удалось отменить проверку');
+      alert(err instanceof Error ? err.message : 'Не удалось отменить заказ');
     } finally {
       setCancelInProgress(false);
     }
@@ -565,8 +573,12 @@ export default function CartPage() {
     deliveryForm.deliveryHasElevator,
   ]);
 
-  const shippingCost = calculatedDelivery?.totalShippingCost ?? 0;
-  const totalWithShipping = totalPrice + shippingCost;
+  /** Стоимость доставки: при заказе с доставкой — из заказа (с учётом правок менеджера), иначе — из предварительного расчёта. */
+  const deliveryTotal =
+    orderWithDelivery != null
+      ? Number(orderWithDelivery.shippingCost ?? 0) + Number(orderWithDelivery.carryCost ?? 0)
+      : (calculatedDelivery?.totalShippingCost ?? 0);
+  const totalWithShipping = totalPrice + deliveryTotal;
 
   if (loading) {
     return (
@@ -1337,8 +1349,7 @@ export default function CartPage() {
                       !deliveryCalculationError && (
                         <div className={styles.deliveryCostLine}>
                           <span className={styles.deliveryCostLabel}>
-                            Предварительный расчёт доставки (стоимость работы грузчиков не входит в
-                            расчёт):
+                            Предварительный расчёт доставки:
                           </span>
                           <strong className={styles.deliveryCostValue}>
                             {calculatedDelivery.totalShippingCost.toLocaleString()} ₽
@@ -1363,11 +1374,11 @@ export default function CartPage() {
                 <span>{totalPrice.toLocaleString()} ₽</span>
               </div>
 
-              {wantDelivery && calculatedDelivery != null && (
+              {wantDelivery && (orderWithDelivery != null || calculatedDelivery != null) && (
                 <>
                   <div className={styles.summaryRow}>
                     <span>Доставка:</span>
-                    <span>{calculatedDelivery.totalShippingCost.toLocaleString()} ₽</span>
+                    <span>{deliveryTotal.toLocaleString()} ₽</span>
                   </div>
                   {deliveryPaymentMode === 'ON_SITE' && (
                     <p className={styles.summaryPayOnSiteNote}>Оплатить водителю!</p>
@@ -1384,13 +1395,34 @@ export default function CartPage() {
                   </div>
                 </>
               )}
-              {(!wantDelivery || calculatedDelivery == null) && (
+              {(!wantDelivery || (orderWithDelivery == null && calculatedDelivery == null)) && (
                 <div className={styles.summaryRow}>
                   <span>Итого:</span>
                   <span className={styles.totalPrice}>{totalPrice.toLocaleString()} ₽</span>
                 </div>
               )}
 
+              {returnedForCorrectionOrder && (
+                <div className={styles.returnedForCorrectionBanner} role="alert">
+                  <p className={styles.returnedForCorrectionTitle}>
+                    Заказ {returnedForCorrectionOrder.orderNumber} отправлен на доработку
+                  </p>
+                  <p className={styles.returnedForCorrectionHint}>
+                    Менеджер оставил комментарии. Внесите изменения в корзину и нажмите кнопку ниже,
+                    чтобы снова отправить заказ на проверку.
+                  </p>
+                  {returnedForCorrectionOrder.returnedForCorrectionComment && (
+                    <div className={styles.returnedForCorrectionComment}>
+                      <span className={styles.returnedForCorrectionCommentLabel}>
+                        Комментарий менеджера:
+                      </span>
+                      <span className={styles.returnedForCorrectionCommentText}>
+                        {returnedForCorrectionOrder.returnedForCorrectionComment}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
               {approvedOrder && approvalRemainingMs > 0 ? (
                 <>
                   {approvedOrder.adminEditedAt && (
@@ -1447,6 +1479,30 @@ export default function CartPage() {
                       disabled={cancelInProgress}
                     >
                       {cancelInProgress ? 'Отмена…' : 'Отменить проверку'}
+                    </button>
+                  </div>
+                </>
+              ) : returnedForCorrectionOrder ? (
+                <>
+                  <button
+                    type="button"
+                    className={styles.checkoutButton}
+                    onClick={handleSubmitForReview}
+                    disabled={submitInProgress}
+                  >
+                    {submitInProgress ? 'Отправка...' : 'Отправить на проверку повторно'}
+                  </button>
+                  <p className={styles.checkoutHint}>
+                    Внесите изменения в корзину при необходимости и нажмите кнопку выше
+                  </p>
+                  <div className={styles.cancelReviewWrap}>
+                    <button
+                      type="button"
+                      className={styles.cancelReviewLink}
+                      onClick={handleCancelReview}
+                      disabled={cancelInProgress}
+                    >
+                      {cancelInProgress ? 'Отмена…' : 'Отменить заказ'}
                     </button>
                   </div>
                 </>

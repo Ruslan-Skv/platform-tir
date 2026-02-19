@@ -341,6 +341,98 @@ export class OrdersService {
       shippingAddressId != null && typeof carryCostFromCalc === 'number' ? carryCostFromCalc : 0;
     const total =
       config.deliveryPaymentMode === 'ON_SITE' ? subtotal : subtotal + shippingCost + carryCost;
+
+    const activeOrders = await this.prisma.order.findMany({
+      where: {
+        userId,
+        status: { in: ['PENDING_REVIEW', 'RETURNED_FOR_CORRECTION'] },
+      },
+    });
+    const approvedNotExpired = await this.prisma.order.findFirst({
+      where: {
+        userId,
+        status: 'APPROVED',
+        approvedAt: { not: null },
+      },
+    });
+    const approvedValid =
+      approvedNotExpired?.approvedAt &&
+      Date.now() - new Date(approvedNotExpired.approvedAt).getTime() < APPROVAL_VALID_MS;
+
+    if (activeOrders.some((o) => o.status === 'PENDING_REVIEW') || approvedValid) {
+      throw new BadRequestException(
+        'У вас уже есть активный заказ (на проверке или проверенный). Отмените его в корзине или дождитесь обработки.',
+      );
+    }
+
+    const returnedOrder = activeOrders.find((o) => o.status === 'RETURNED_FOR_CORRECTION');
+    if (returnedOrder) {
+      await this.prisma.$transaction([
+        this.prisma.orderItem.deleteMany({ where: { orderId: returnedOrder.id } }),
+        this.prisma.order.update({
+          where: { id: returnedOrder.id },
+          data: {
+            status: 'PENDING_REVIEW',
+            submittedForReviewAt: new Date(),
+            returnedForCorrectionAt: null,
+            returnedForCorrectionComment: null,
+            shippingAddressId,
+            shippingMethodId,
+            deliveryType,
+            deliveryFloor,
+            deliveryHasElevator,
+            preferredDeliveryTime,
+            subtotal,
+            tax,
+            shippingCost,
+            carryCost: carryCost > 0 ? carryCost : null,
+            total,
+          },
+        }),
+      ]);
+      await this.prisma.orderItem.createMany({
+        data: orderItems.map((oi) => ({
+          orderId: returnedOrder.id,
+          productId: oi.productId,
+          quantity: oi.quantity,
+          price: oi.price,
+          size: oi.size,
+          openingSide: oi.openingSide,
+          cardVariantId: oi.cardVariantId,
+        })),
+      });
+      const adminRoles: UserRole[] = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'];
+      const admins = await this.prisma.user.findMany({
+        where: { role: { in: adminRoles }, isActive: true },
+        select: { id: true },
+      });
+      await Promise.all([
+        ...admins.map((a) =>
+          this.usersService.createNotification(a.id, {
+            type: 'new_order',
+            title: 'Заказ повторно отправлен на проверку',
+            message: `Заказ ${returnedOrder.orderNumber} повторно отправлен на проверку после доработки.`,
+          }),
+        ),
+        this.usersService.createNotification(userId, {
+          type: 'order_status',
+          title: `Заказ ${returnedOrder.orderNumber} повторно отправлен на проверку`,
+          message:
+            'Заказ после доработки принят на проверку. Обычно проверка занимает около 15 минут.',
+        }),
+      ]);
+      const order = await this.prisma.order.findUnique({
+        where: { id: returnedOrder.id },
+        include: {
+          items: { include: { product: true } },
+          user: {
+            select: { id: true, email: true, firstName: true, lastName: true },
+          },
+        },
+      });
+      return order!;
+    }
+
     const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
 
     const order = await this.prisma.order.create({

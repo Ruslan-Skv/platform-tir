@@ -81,10 +81,21 @@ type OrderDetail = AdminOrderSummary & {
   returnedForCorrectionComment?: string | null;
   approvedAt?: string | null;
   submittedForReviewAt?: string | null;
+  cancelledAt?: string | null;
+  shippedAt?: string | null;
+  deliveredAt?: string | null;
+  refundedAt?: string | null;
   user?: { id: string; email: string; firstName?: string; lastName?: string; phone?: string };
 };
 
-function formatReviewDuration(ms: number): string {
+type OrderHistoryEvent = {
+  at: string;
+  label: string;
+  author: string;
+  duration?: string;
+};
+
+function formatDuration(ms: number): string {
   if (ms < 0) return '—';
   const totalMinutes = Math.floor(ms / 60000);
   const hours = Math.floor(totalMinutes / 60);
@@ -93,6 +104,47 @@ function formatReviewDuration(ms: number): string {
   if (hours > 0) parts.push(`${hours} ч`);
   if (minutes > 0 || parts.length === 0) parts.push(`${minutes} мин`);
   return parts.join(' ');
+}
+
+/** Формат для счётчика проверки: минуты:секунды (например 12:35). */
+function formatDurationMinutesSeconds(ms: number): string {
+  if (ms < 0) return '0:00';
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+function buildOrderHistory(order: OrderDetail): OrderHistoryEvent[] {
+  const events: OrderHistoryEvent[] = [];
+  const push = (at: string | null | undefined, label: string, author: string) => {
+    if (at) events.push({ at, label, author });
+  };
+  push(order.createdAt, 'Заказ создан', 'Покупатель');
+  push(order.submittedForReviewAt, 'Отправлен на проверку', 'Покупатель');
+  push(order.approvedAt, 'Заказ проверен', 'Менеджер');
+  push(order.returnedForCorrectionAt, 'Отправлен на доработку', 'Менеджер');
+  push(order.cancelledAt, 'Заказ отменён', 'Менеджер');
+  push(order.shippedAt, 'Заказ отправлен', 'Менеджер');
+  push(order.deliveredAt, 'Заказ доставлен', 'Менеджер');
+  push(order.refundedAt, 'Оформлен возврат', 'Менеджер');
+  events.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+  for (let i = 1; i < events.length; i++) {
+    const prev = new Date(events[i - 1].at).getTime();
+    const curr = new Date(events[i].at).getTime();
+    events[i].duration = formatDuration(curr - prev);
+  }
+  return events;
+}
+
+function formatEventDateTime(iso: string): string {
+  return new Date(iso).toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 export default function AdminOrderDetailPage() {
@@ -107,16 +159,18 @@ export default function AdminOrderDetailPage() {
   const [sendBackModalOpen, setSendBackModalOpen] = useState(false);
   const [sendBackComment, setSendBackComment] = useState('');
   const [sendBackSubmitting, setSendBackSubmitting] = useState(false);
-  const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
   const [approvedNotice, setApprovedNotice] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [cancelOrderConfirmOpen, setCancelOrderConfirmOpen] = useState(false);
   const [deliveryShippingCost, setDeliveryShippingCost] = useState('');
   const [deliveryCarryCost, setDeliveryCarryCost] = useState('');
   const [deliveryMoversCount, setDeliveryMoversCount] = useState('');
   const [deliveryPlannedDate, setDeliveryPlannedDate] = useState('');
   const [deliverySaving, setDeliverySaving] = useState(false);
   const [, setTick] = useState(0);
+  /** Черновики рекомендаций по позициям (чтобы кнопка «На доработку» учитывала несохранённый ввод). */
+  const [commentDraftByItemId, setCommentDraftByItemId] = useState<Record<string, string>>({});
 
   const loadOrder = useCallback(() => {
     if (!id) return;
@@ -141,6 +195,17 @@ export default function AdminOrderDetailPage() {
       cancelled = true;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (!order?.items?.length) return;
+    setCommentDraftByItemId((prev) => {
+      const next = { ...prev };
+      for (const item of order.items) {
+        next[item.id] = item.managerComment ?? '';
+      }
+      return next;
+    });
+  }, [order?.id, order?.items]);
 
   useEffect(() => {
     if (!order) return;
@@ -193,25 +258,24 @@ export default function AdminOrderDetailPage() {
     }
   };
 
-  const handleSaveComment = async (itemId: string, managerComment: string) => {
-    if (!id) return;
-    setUpdatingItemId(itemId);
-    try {
-      const updated = await updateAdminOrderItem(id, itemId, {
-        managerComment: managerComment || null,
-      });
-      setOrder(updated as OrderDetail);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Не удалось сохранить комментарий');
-    } finally {
-      setUpdatingItemId(null);
-    }
-  };
-
   const handleSendBack = async () => {
-    if (!id) return;
+    if (!id || !order?.items?.length) return;
     setSendBackSubmitting(true);
     try {
+      const items = order.items;
+      const toSave = items.filter((item) => {
+        const draft = (commentDraftByItemId[item.id] ?? item.managerComment ?? '').trim();
+        const saved = (item.managerComment ?? '').trim();
+        return draft !== saved;
+      });
+      await Promise.all(
+        toSave.map((item) =>
+          updateAdminOrderItem(id, item.id, {
+            managerComment:
+              (commentDraftByItemId[item.id] ?? item.managerComment ?? '').trim() || null,
+          })
+        )
+      );
       const updated = await sendBackOrderToCustomer(id, sendBackComment || undefined);
       setOrder(updated as OrderDetail);
       setSendBackModalOpen(false);
@@ -291,6 +355,28 @@ export default function AdminOrderDetailPage() {
           )}
         </div>
         <h1 className={styles.title}>Заказ {order.orderNumber}</h1>
+        <p className={styles.currentStatus}>
+          Статус:{' '}
+          {order.status === 'PENDING_REVIEW' ? (
+            <>
+              <span className={styles.currentStatusHighlight}>
+                {STATUS_OPTIONS.find((o) => o.value === order.status)?.label ?? order.status}
+              </span>
+              {order.submittedForReviewAt && (
+                <>
+                  {' · '}
+                  <span className={styles.currentStatusHighlight}>
+                    {formatDurationMinutesSeconds(
+                      Date.now() - new Date(order.submittedForReviewAt).getTime()
+                    )}
+                  </span>
+                </>
+              )}
+            </>
+          ) : (
+            (STATUS_OPTIONS.find((o) => o.value === order.status)?.label ?? order.status)
+          )}
+        </p>
       </div>
 
       {deleteConfirmOpen && (
@@ -324,55 +410,105 @@ export default function AdminOrderDetailPage() {
         </div>
       )}
 
-      {canSendBack && (
-        <div className={styles.sendBackSection}>
-          <button
-            type="button"
-            className={styles.sendBackButton}
-            onClick={
-              order.status === 'RETURNED_FOR_CORRECTION'
-                ? undefined
-                : () => setSendBackModalOpen(true)
-            }
-            disabled={order.status === 'RETURNED_FOR_CORRECTION'}
-          >
-            {order.status === 'RETURNED_FOR_CORRECTION'
-              ? 'Заказ на доработке'
-              : 'Отправить на доработку покупателю'}
-          </button>
+      {cancelOrderConfirmOpen && (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => !statusUpdating && setCancelOrderConfirmOpen(false)}
+        >
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <p className={styles.modalText}>
+              Отменить заказ <strong>{order.orderNumber}</strong>? Покупатель сможет оформить заказ
+              заново из корзины.
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                type="button"
+                className={styles.modalCancel}
+                onClick={() => setCancelOrderConfirmOpen(false)}
+                disabled={statusUpdating}
+              >
+                Нет
+              </button>
+              <button
+                type="button"
+                className={styles.modalConfirmDelete}
+                onClick={async () => {
+                  await handleStatusChange('CANCELLED');
+                  setCancelOrderConfirmOpen(false);
+                }}
+                disabled={statusUpdating}
+              >
+                {statusUpdating ? 'Отмена…' : 'Да, отменить заказ'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
-      <div className={styles.topGrid}>
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Статус</h2>
-          <select
-            value={order.status}
-            onChange={(e) => handleStatusChange(e.target.value)}
+      <div className={styles.actionsRow}>
+        {canSendBack &&
+          (() => {
+            const hasCommentsForCustomer = (order.items ?? []).some((item) => {
+              const value = commentDraftByItemId[item.id] ?? item.managerComment ?? '';
+              return typeof value === 'string' && value.trim().length > 0;
+            });
+            const sendBackDisabled =
+              order.status === 'RETURNED_FOR_CORRECTION' || !hasCommentsForCustomer;
+            return (
+              <button
+                type="button"
+                className={styles.sendBackButton}
+                onClick={sendBackDisabled ? undefined : () => setSendBackModalOpen(true)}
+                disabled={sendBackDisabled}
+                title={
+                  !hasCommentsForCustomer
+                    ? 'Сначала оставьте рекомендации для покупателя в составе заказа (комментарии к позициям)'
+                    : undefined
+                }
+              >
+                {order.status === 'RETURNED_FOR_CORRECTION'
+                  ? 'Заказ на доработке'
+                  : 'Отправить на доработку покупателю'}
+              </button>
+            );
+          })()}
+        {order.status === 'PENDING_REVIEW' && (
+          <button
+            type="button"
+            className={styles.approveButton}
+            onClick={() => handleStatusChange('APPROVED')}
             disabled={statusUpdating}
-            className={styles.select}
           >
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          {statusUpdating && <span className={styles.saving}>Сохранение...</span>}
-          {approvedNotice && (
-            <p className={styles.approvedNotice} role="status">
-              Покупатель может продолжить оформление заказа
-            </p>
-          )}
-          {order.status === 'APPROVED' && order.approvedAt && (
-            <p className={styles.approvalCountdown}>
-              Осталось для оформления покупателем:{' '}
-              <span className={styles.approvalCountdownTime}>
-                {formatApprovalCountdown(getApprovalRemainingMs(order.approvedAt))}
-              </span>
-            </p>
-          )}
-        </section>
+            {statusUpdating ? 'Сохранение…' : 'Заказ проверен'}
+          </button>
+        )}
+        {!['CANCELLED', 'DELIVERED', 'REFUNDED'].includes(order.status) && (
+          <button
+            type="button"
+            className={styles.cancelOrderButton}
+            onClick={() => setCancelOrderConfirmOpen(true)}
+            disabled={statusUpdating}
+          >
+            {statusUpdating ? '…' : 'Отменить заказ'}
+          </button>
+        )}
+      </div>
+      {statusUpdating && <span className={styles.saving}>Сохранение...</span>}
+      {approvedNotice && (
+        <p className={styles.approvedNotice} role="status">
+          Покупатель может продолжить оформление заказа
+        </p>
+      )}
+      {order.status === 'APPROVED' && order.approvedAt && (
+        <p className={styles.approvalCountdown}>
+          Осталось для оформления покупателем:{' '}
+          <span className={styles.approvalCountdownTime}>
+            {formatApprovalCountdown(getApprovalRemainingMs(order.approvedAt))}
+          </span>
+        </p>
+      )}
+
+      <div className={styles.topGrid}>
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Клиент</h2>
           <p>
@@ -384,47 +520,30 @@ export default function AdminOrderDetailPage() {
       </div>
 
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Проверка заказа</h2>
-        <div className={styles.reviewTimeline}>
-          <div className={styles.reviewTimelineRow}>
-            <span className={styles.reviewTimelineLabel}>Принят на проверку:</span>
-            <span className={styles.reviewTimelineValue}>
-              {order.submittedForReviewAt || order.createdAt
-                ? new Date(order.submittedForReviewAt || order.createdAt).toLocaleString('ru-RU', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })
-                : '—'}
-            </span>
-          </div>
-          <div className={styles.reviewTimelineRow}>
-            <span className={styles.reviewTimelineLabel}>Проверка выполнена:</span>
-            <span className={styles.reviewTimelineValue}>
-              {order.approvedAt
-                ? new Date(order.approvedAt).toLocaleString('ru-RU', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })
-                : '—'}
-            </span>
-          </div>
-          <div className={styles.reviewTimelineRow}>
-            <span className={styles.reviewTimelineLabel}>Продолжительность проверки:</span>
-            <span className={styles.reviewTimelineValue}>
-              {order.approvedAt && (order.submittedForReviewAt || order.createdAt)
-                ? formatReviewDuration(
-                    new Date(order.approvedAt).getTime() -
-                      new Date(order.submittedForReviewAt || order.createdAt).getTime()
-                  )
-                : '—'}
-            </span>
-          </div>
+        <h2 className={styles.sectionTitle}>История заказа</h2>
+        <div className={styles.orderHistory}>
+          {buildOrderHistory(order).length === 0 ? (
+            <p className={styles.orderHistoryEmpty}>Нет событий</p>
+          ) : (
+            <>
+              <div className={styles.orderHistoryHeader}>
+                <span className={styles.orderHistoryTime}>Дата и время</span>
+                <span className={styles.orderHistoryLabel}>Событие</span>
+                <span className={styles.orderHistoryDuration}>Продолжительность</span>
+                <span className={styles.orderHistoryAuthor}>Автор</span>
+              </div>
+              <ul className={styles.orderHistoryList}>
+                {buildOrderHistory(order).map((event) => (
+                  <li key={`${event.at}-${event.label}`} className={styles.orderHistoryItem}>
+                    <span className={styles.orderHistoryTime}>{formatEventDateTime(event.at)}</span>
+                    <span className={styles.orderHistoryLabel}>{event.label}</span>
+                    <span className={styles.orderHistoryDuration}>{event.duration ?? '—'}</span>
+                    <span className={styles.orderHistoryAuthor}>{event.author}</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       </section>
 
@@ -444,7 +563,6 @@ export default function AdminOrderDetailPage() {
             {items.map((item) => {
               const price = Number(item.price);
               const lineTotal = price * item.quantity;
-              const isUpdating = updatingItemId === item.id;
               return (
                 <tr key={item.id} className={styles.tr}>
                   <td className={`${styles.td} ${styles.itemRow}`}>
@@ -462,23 +580,16 @@ export default function AdminOrderDetailPage() {
                         <textarea
                           id={`comment-${item.id}`}
                           className={styles.commentInput}
-                          defaultValue={item.managerComment ?? ''}
+                          value={commentDraftByItemId[item.id] ?? item.managerComment ?? ''}
+                          onChange={(e) =>
+                            setCommentDraftByItemId((prev) => ({
+                              ...prev,
+                              [item.id]: e.target.value,
+                            }))
+                          }
                           placeholder="Например: рекомендуем заменить на… или изменить количество на…"
                           rows={2}
                         />
-                        <button
-                          type="button"
-                          className={styles.btnSmall}
-                          disabled={isUpdating}
-                          onClick={() => {
-                            const el = document.getElementById(
-                              `comment-${item.id}`
-                            ) as HTMLTextAreaElement | null;
-                            if (el) handleSaveComment(item.id, el.value.trim());
-                          }}
-                        >
-                          {isUpdating ? '…' : 'Сохранить'}
-                        </button>
                       </div>
                     </div>
                   </td>
@@ -536,76 +647,73 @@ export default function AdminOrderDetailPage() {
       {(order.shippingAddress || order.deliveryType || order.shippingCost != null) && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Доставка</h2>
-          {order.shippingAddress ? (
-            <>
-              <p>
-                {order.shippingAddress.firstName} {order.shippingAddress.lastName}
-              </p>
-              <p className={styles.email}>{order.shippingAddress.phone}</p>
-              <p className={styles.address}>
-                {order.shippingAddress.street}, {order.shippingAddress.city}
-                {order.shippingAddress.region ? `, ${order.shippingAddress.region}` : ''},{' '}
-                {order.shippingAddress.postalCode}, {order.shippingAddress.country}
-              </p>
-            </>
-          ) : (
-            <p className={styles.muted}>Адрес не указан</p>
-          )}
-          {(order.deliveryType || order.shippingCost != null) && (
-            <div className={styles.deliveryDetails}>
-              {order.deliveryType && (
-                <p>
-                  Тип доставки:{' '}
-                  {order.deliveryType === 'TO_APARTMENT' ? 'до квартиры' : 'до подъезда'}
-                </p>
-              )}
-              {order.deliveryType === 'TO_APARTMENT' && (
+          <div className={styles.deliveryCompact}>
+            <div className={styles.deliveryCompactLeft}>
+              {order.shippingAddress ? (
                 <>
-                  {order.deliveryFloor != null && <p>Этаж: {order.deliveryFloor}</p>}
-                  {order.deliveryHasElevator != null && (
-                    <p>Лифт: {order.deliveryHasElevator ? 'да' : 'нет'}</p>
-                  )}
+                  <p>
+                    {order.shippingAddress.firstName} {order.shippingAddress.lastName}
+                    {order.shippingAddress.phone && ` · ${order.shippingAddress.phone}`}
+                  </p>
+                  <p className={styles.address}>
+                    {order.shippingAddress.street}, {order.shippingAddress.city}
+                    {order.shippingAddress.region ? `, ${order.shippingAddress.region}` : ''},{' '}
+                    {order.shippingAddress.postalCode}
+                  </p>
                 </>
+              ) : (
+                <p className={styles.muted}>Адрес не указан</p>
               )}
-              {order.preferredDeliveryTime && (
-                <p>Удобная дата доставки (покупатель): {order.preferredDeliveryTime}</p>
+              {(order.deliveryType || order.shippingCost != null) && (
+                <div className={styles.deliveryDetails}>
+                  {order.deliveryType && (
+                    <p>
+                      {order.deliveryType === 'TO_APARTMENT' ? 'До квартиры' : 'До подъезда'}
+                      {order.deliveryType === 'TO_APARTMENT' &&
+                        order.deliveryFloor != null &&
+                        `, ${order.deliveryFloor} эт.`}
+                      {order.deliveryHasElevator != null &&
+                        `, лифт: ${order.deliveryHasElevator ? 'да' : 'нет'}`}
+                    </p>
+                  )}
+                  {order.preferredDeliveryTime && <p>Удобно: {order.preferredDeliveryTime}</p>}
+                  {order.moversCount != null && <p>Грузчиков: {order.moversCount}</p>}
+                  {order.plannedDeliveryDate && (
+                    <p>План: {new Date(order.plannedDeliveryDate).toLocaleDateString('ru-RU')}</p>
+                  )}
+                </div>
               )}
-              {order.moversCount != null && <p>Количество грузчиков: {order.moversCount}</p>}
-              {order.plannedDeliveryDate && (
-                <p>
-                  Планируемая дата доставки:{' '}
-                  {new Date(order.plannedDeliveryDate).toLocaleDateString('ru-RU')}
-                </p>
-              )}
-              {(order.shippingCost != null || order.carryCost != null) && (
+            </div>
+            {(order.shippingCost != null || order.carryCost != null) && (
+              <div className={styles.deliveryCompactRight}>
                 <div className={styles.deliveryCostSummary}>
-                  <p className={styles.deliveryCostSummaryTitle}>Итоговая стоимость доставки</p>
+                  <p className={styles.deliveryCostSummaryTitle}>Стоимость доставки</p>
                   <p className={styles.deliveryCostSummaryLine}>
                     Доставка: {formatPrice(order.shippingCost ?? 0)}
                   </p>
                   {order.carryCost != null && Number(order.carryCost) > 0 && (
                     <p className={styles.deliveryCostSummaryLine}>
                       {order.moversCount != null && order.moversCount > 0
-                        ? `${order.moversCount} грузчик${order.moversCount === 1 ? '' : order.moversCount < 5 ? 'а' : 'ов'}: `
+                        ? `${order.moversCount} грузч.: `
                         : 'Грузчики: '}
                       {formatPrice(order.carryCost)}
                     </p>
                   )}
                   <p className={styles.deliveryCostSummaryTotal}>
-                    Итого стоимость доставки:{' '}
+                    Итого:{' '}
                     {(
                       Number(order.shippingCost ?? 0) + Number(order.carryCost ?? 0)
                     ).toLocaleString('ru-RU')}{' '}
                     ₽
                   </p>
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
           {(order.shippingAddress || order.deliveryType != null || order.shippingCost != null) && (
             <div className={styles.deliveryCostEdit}>
               <p className={styles.deliveryCostEditTitle}>
-                Стоимость и параметры доставки (редактирование)
+                Редактирование стоимости и даты доставки
               </p>
               <div className={styles.deliveryCostEditRow}>
                 <label className={styles.deliveryCostEditLabel}>
