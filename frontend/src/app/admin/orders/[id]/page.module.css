@@ -74,6 +74,60 @@
   font-weight: 700;
 }
 
+/* Status Badge — цветные фоны как в списке заказов */
+.statusBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.statusPENDING {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusPENDING_REVIEW {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.statusAPPROVED {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.statusRETURNED_FOR_CORRECTION {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusPROCESSING {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.statusSHIPPED {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.statusDELIVERED {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.statusCANCELLED {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.statusREFUNDED {
+  background: #fae8ff;
+  color: #86198f;
+}
+
 .actionsRow {
   display: flex;
   align-items: center;
@@ -909,6 +963,56 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .orderHistoryEmpty {
   color: #9ca3af;
+}
+
+/* Блок проверки доставки — тёмная тема */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCompactLeft p,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCompactRight p {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostEdit {
+  border-top-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostEditTitle {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostEditLabel {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostInput {
+  background: #111827;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostInput:focus {
+  border-color: #d90652;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostInput::placeholder {
+  color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostSummary {
+  background: #064e3b;
+  border-color: #047857;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostSummaryTitle {
+  color: #6ee7b7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostSummaryLine {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostSummaryTotal {
+  color: #f9fafb;
+  border-top-color: #047857;
 }
 
 @media (max-width: 768px) {

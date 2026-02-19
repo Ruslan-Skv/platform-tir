@@ -235,3 +235,100 @@
   opacity: 0.7;
   cursor: not-allowed;
 }
+
+/* Тёмная тема */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subtitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .error {
+  color: #f87171;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .section {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .hint {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .radioLabel {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .settlementName,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .settlementPrice {
+  background: #111827;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .settlementName:focus,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .settlementPrice:focus {
+  border-color: #d90652;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .settlementName::placeholder,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .settlementPrice::placeholder {
+  color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .removeBtn {
+  background: #374151;
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .removeBtn:hover:not(:disabled) {
+  background: #7f1d1d;
+  color: #f87171;
+  border-color: #991b1b;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addBtn {
+  background: #374151;
+  border-color: #4b5563;
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addBtn:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .field label {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .field input {
+  background: #111827;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .field input:focus {
+  border-color: #d90652;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .field input::placeholder {
+  color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .msgSuccess {
+  color: #34d399;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .msgError {
+  color: #f87171;
+}

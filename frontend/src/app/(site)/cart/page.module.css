@@ -1309,6 +1309,15 @@
   color: #9ca3af;
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCompactCostBreakdown,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCompactCostLine {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCompactCostTotal {
+  color: #f9fafb;
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCompactDate {
   color: #9ca3af;
 }
@@ -1448,6 +1457,10 @@
   color: #f9fafb;
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryFormPaymentNote {
+  color: #9ca3af;
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryFormField label,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryFormLabel {
   color: #d1d5db;
@@ -1461,6 +1474,20 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryFormField input:focus {
   border-color: #d90652;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryFormField select {
+  background: #111827;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryFormField select:focus {
+  border-color: #d90652;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryFormMoversNote {
+  color: #9ca3af;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryRadioLabel,

@@ -357,24 +357,18 @@ export default function AdminOrderDetailPage() {
         <h1 className={styles.title}>Заказ {order.orderNumber}</h1>
         <p className={styles.currentStatus}>
           Статус:{' '}
-          {order.status === 'PENDING_REVIEW' ? (
+          <span className={`${styles.statusBadge} ${styles[`status${order.status}`] ?? ''}`}>
+            {STATUS_OPTIONS.find((o) => o.value === order.status)?.label ?? order.status}
+          </span>
+          {order.status === 'PENDING_REVIEW' && order.submittedForReviewAt && (
             <>
+              {' · '}
               <span className={styles.currentStatusHighlight}>
-                {STATUS_OPTIONS.find((o) => o.value === order.status)?.label ?? order.status}
+                {formatDurationMinutesSeconds(
+                  Date.now() - new Date(order.submittedForReviewAt).getTime()
+                )}
               </span>
-              {order.submittedForReviewAt && (
-                <>
-                  {' · '}
-                  <span className={styles.currentStatusHighlight}>
-                    {formatDurationMinutesSeconds(
-                      Date.now() - new Date(order.submittedForReviewAt).getTime()
-                    )}
-                  </span>
-                </>
-              )}
             </>
-          ) : (
-            (STATUS_OPTIONS.find((o) => o.value === order.status)?.label ?? order.status)
           )}
         </p>
       </div>
