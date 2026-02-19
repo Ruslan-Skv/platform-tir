@@ -13,6 +13,7 @@ import styles from './ProductCard.module.css';
 interface ProductCardProps {
   product: Product;
   isCompareMode?: boolean; // Режим сравнения - скрыть кнопку сравнения, показать кнопку удаления
+  compact?: boolean; // Компактный режим для страницы сравнения на мобильных
   onRemoveFromCompare?: () => void; // Callback после удаления из сравнения
   partnerLogoUrl?: string | null; // URL логотипа партнёра для товаров партнёра
   showPartnerIconOnCards?: boolean; // Показывать иконку партнёра на карточках
@@ -21,6 +22,7 @@ interface ProductCardProps {
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   isCompareMode = false,
+  compact = false,
   onRemoveFromCompare,
   partnerLogoUrl = null,
   showPartnerIconOnCards = true,
@@ -211,7 +213,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   return (
-    <div className={styles.productCard}>
+    <div
+      className={`${styles.productCard} ${compact ? styles.productCardCompact : ''} ${isCompareMode ? styles.productCardCompare : ''}`}
+    >
       <Link href={`/product/${product.slug}`} className={styles.cardLink}>
         <div className={styles.imageContainer}>
           <img

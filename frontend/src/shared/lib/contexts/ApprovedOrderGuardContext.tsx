@@ -29,7 +29,7 @@ const ApprovedOrderGuardContext = createContext<ApprovedOrderGuardContextValue |
 );
 
 const WARNING_TEXT =
-  'При изменении состава заказа производится полное переоформление заказа. При этом все незавершённые заказы будут отменены! Продолжить?';
+  'Завершите оформление заказа. При изменении состава заказа производится полное переоформление заказа. При этом все незавершённые заказы будут отменены! Продолжить?';
 
 export function ApprovedOrderGuardProvider({ children }: { children: React.ReactNode }) {
   const [userOrders, setUserOrders] = useState<UserOrder[] | null>(null);

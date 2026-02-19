@@ -15,6 +15,111 @@
   transform: translateY(-5px);
 }
 
+/* Компактный режим карточки — только на мобильных */
+@media (max-width: 768px) {
+  .productCardCompact .imageContainer {
+    max-height: 90px;
+  }
+
+  .productCardCompact .image {
+    max-height: 90px;
+    object-fit: contain;
+  }
+
+  .productCardCompact .name {
+    font-size: 0.6875rem;
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .productCardCompact .sku,
+  .productCardCompact .category {
+    font-size: 0.5625rem;
+    display: none;
+  }
+
+  .productCardCompact .content {
+    padding: 0.25rem;
+  }
+
+  .productCardCompact .actionButtons {
+    bottom: 0.25rem;
+    right: 0.25rem;
+    gap: 0.2rem;
+  }
+
+  .productCardCompact .removeButton,
+  .productCardCompact .favoriteButton {
+    height: 1.25rem;
+    width: 1.25rem;
+    font-size: 0.625rem;
+  }
+
+  .productCardCompact:hover {
+    transform: none;
+  }
+
+  .productCardCompact .price {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.0625rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .productCardCompact .price .oldPrice {
+    font-size: 0.5rem;
+    white-space: nowrap;
+  }
+
+  .productCardCompact .price .finalPrice {
+    font-size: 0.5625rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .productCardCompact .badges {
+    left: 0.2rem;
+    top: 0.2rem;
+  }
+
+  .productCardCompact .hitBadge,
+  .productCardCompact .newBadge,
+  .productCardCompact .discountBadge {
+    font-size: 0.4375rem;
+    padding: 0.05rem 0.125rem;
+    margin-bottom: 0.1rem;
+    border-radius: 0.1rem;
+  }
+
+  .productCardCompact .imageDots {
+    border-radius: 6px;
+    bottom: 0.2rem;
+    gap: 3px;
+    min-height: 6px;
+    padding: 3px 6px;
+  }
+
+  .productCardCompact .imageDot {
+    width: 4px;
+    height: 4px;
+    border-width: 1px;
+  }
+
+  .productCardCompact .imageDotActive {
+    width: 6px;
+    height: 6px;
+    border-width: 1px;
+  }
+}
+
+/* Режим сравнения — единая высота карточек (блок цены фиксированной высоты) */
+.productCardCompare .price {
+  min-height: 2.6em;
+}
+
 .cardLink {
   color: inherit;
   display: flex;

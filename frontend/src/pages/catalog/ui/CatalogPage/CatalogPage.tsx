@@ -2,7 +2,7 @@
 
 import { FunnelIcon } from '@heroicons/react/24/outline';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { Breadcrumbs } from '../Breadcrumbs';
 import { FiltersSidebar } from '../FiltersSidebar';
@@ -27,6 +27,16 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  useEffect(() => {
+    if (mobileFiltersOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prev;
+      };
+    }
+  }, [mobileFiltersOpen]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
