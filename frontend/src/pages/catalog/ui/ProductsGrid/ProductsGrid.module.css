@@ -45,7 +45,7 @@
 
 .sortSelect {
   background: #ffffff80;
-  border: none;
+  border: 1px solid #e5e7eb;
   border-radius: 0.375rem;
   color: #374151;
   cursor: pointer;
@@ -169,17 +169,17 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sortSelect {
-  background: #ffffff80;
+  background: #1f293780;
   border: none;
-  color: #000;
+  color: #f9fafb;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sortSelect:hover {
-  background: #ffffff90;
+  background: #1f2937b3;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sortSelect:focus {
-  background: #ffffff90;
+  background: #1f2937b3;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .totalCount {

@@ -9,39 +9,30 @@ import {
   UserIcon,
 } from '@heroicons/react/24/outline';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
 import { useUserAuth } from '@/features/auth/context/UserAuthContext';
 import { useTheme } from '@/features/theme';
+import { getAvatarUrl, getInitials } from '@/shared/lib/avatar';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 
 import styles from './TopBar.module.css';
-
-function getAvatarUrl(avatar: string | null | undefined): string | null {
-  if (!avatar) return null;
-  if (avatar.startsWith('http')) return avatar;
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-  const base = apiUrl.replace(/\/api\/v1\/?$/, '');
-  return `${base}${avatar}`;
-}
-
-function getInitials(firstName: string | null, lastName: string | null, email: string): string {
-  if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
-  if (firstName) return firstName.slice(0, 2).toUpperCase();
-  if (email) return email.slice(0, 2).toUpperCase();
-  return '?';
-}
 
 export const TopBar: React.FC = () => {
   const { isDarkTheme, toggleTheme } = useTheme();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
+  const { isAuthenticated, user } = useUserAuth();
   const { count: wishlistCount } = useWishlist();
   const { count: compareCount } = useCompare();
   const { count: cartCount } = useCart();
-  const { isAuthenticated, user } = useUserAuth();
+
+  useEffect(() => {
+    setAvatarLoadError(false);
+  }, [user?.avatar]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,11 +122,12 @@ export const TopBar: React.FC = () => {
           <button onClick={handleProfileClick} className={styles.utilityButton} type="button">
             {isAuthenticated && user ? (
               <>
-                {user.avatar ? (
+                {user.avatar && !avatarLoadError ? (
                   <img
                     src={getAvatarUrl(user.avatar) ?? ''}
                     alt=""
                     className={styles.profileAvatar}
+                    onError={() => setAvatarLoadError(true)}
                   />
                 ) : (
                   <div className={styles.profileInitials}>

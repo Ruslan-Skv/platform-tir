@@ -222,7 +222,7 @@ export default function ComparePage() {
         </div>
         <div className={styles.compareTable} ref={scrollContainerRef}>
           <div className={styles.tableHeader}>
-            <div className={styles.headerCell}>Характеристика</div>
+            <div className={styles.headerCell}></div>
             {mappedProducts.map((product) => (
               <div key={product.originalId || product.slug} className={styles.headerCell}>
                 <ProductCard

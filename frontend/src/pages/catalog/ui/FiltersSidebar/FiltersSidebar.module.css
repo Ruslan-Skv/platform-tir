@@ -1,5 +1,6 @@
 .filtersSidebar {
   background: rgb(255 255 255 / 50%);
+  border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
   padding: 1.5rem;
 }
@@ -131,6 +132,7 @@
 /* Темная тема */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .filtersSidebar {
   background: rgb(31 41 55 / 50%);
+  border-color: rgb(55 65 81);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {

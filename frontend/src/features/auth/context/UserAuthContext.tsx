@@ -42,6 +42,7 @@ interface UserAuthContextType {
     lastName?: string
   ) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   updateProfile: (data: {
     firstName?: string;
     lastName?: string;
@@ -118,6 +119,23 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       return false;
     }
   };
+
+  const refreshUser = useCallback(async () => {
+    const savedToken = localStorage.getItem(TOKEN_KEY);
+    if (!savedToken) return;
+    try {
+      const response = await fetch(`${API_URL}/auth/profile`, {
+        headers: { Authorization: `Bearer ${savedToken}` },
+      });
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+        localStorage.setItem(USER_KEY, JSON.stringify(userData));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     try {
@@ -306,6 +324,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     login,
     register,
     logout,
+    refreshUser,
     updateProfile,
     uploadAvatar,
     getAuthHeaders,

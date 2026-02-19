@@ -19,6 +19,7 @@ import type {
   UserNotificationSettings,
 } from '@/shared/api/user-notifications';
 import { type UserOrder, getUserOrders } from '@/shared/api/user-orders';
+import { getAvatarUrl, getInitials } from '@/shared/lib/avatar';
 
 import styles from './page.module.css';
 
@@ -61,23 +62,9 @@ function formatPrice(value: string | number) {
   }).format(num);
 }
 
-function getAvatarUrl(avatar: string | null | undefined): string | null {
-  if (!avatar) return null;
-  if (avatar.startsWith('http')) return avatar;
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-  const base = apiUrl.replace(/\/api\/v1\/?$/, '');
-  return `${base}${avatar}`;
-}
-
-function getInitials(firstName: string | null, lastName: string | null, email: string): string {
-  if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
-  if (firstName) return firstName.slice(0, 2).toUpperCase();
-  if (email) return email.slice(0, 2).toUpperCase();
-  return '?';
-}
-
 export default function ProfilePage() {
-  const { user, isAuthenticated, isLoading, logout, updateProfile, uploadAvatar } = useUserAuth();
+  const { user, isAuthenticated, isLoading, logout, refreshUser, updateProfile, uploadAvatar } =
+    useUserAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>('profile');
   const [cabinetSettings, setCabinetSettings] = useState<UserCabinetSettings | null>(null);
@@ -109,6 +96,7 @@ export default function ProfilePage() {
 
   // Avatar
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
   const avatarInputRef = React.useRef<HTMLInputElement>(null);
 
   // Notification history
@@ -121,6 +109,13 @@ export default function ProfilePage() {
       router.push('/login');
     }
   }, [isLoading, isAuthenticated, router]);
+
+  // Обновить данные пользователя при загрузке страницы профиля (актуальные аватарка и др.)
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      refreshUser();
+    }
+  }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps -- только при монтировании
 
   useEffect(() => {
     getUserCabinetSettings()
@@ -135,6 +130,7 @@ export default function ProfilePage() {
         firstName: user.firstName || '',
         lastName: user.lastName || '',
       });
+      setAvatarLoadError(false);
     }
   }, [user]);
 
@@ -215,6 +211,7 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file || !uploadAvatar) return;
     setAvatarUploading(true);
+    setAvatarLoadError(false);
     setProfileError('');
     setProfileSuccess('');
     try {
@@ -412,11 +409,12 @@ export default function ProfilePage() {
 
               <div className={styles.avatarBlock}>
                 <div className={styles.avatarWrapper}>
-                  {user.avatar ? (
+                  {user.avatar && !avatarLoadError ? (
                     <img
                       src={getAvatarUrl(user.avatar) ?? ''}
                       alt="Аватар"
                       className={styles.avatarImage}
+                      onError={() => setAvatarLoadError(true)}
                     />
                   ) : (
                     <div className={styles.avatarPlaceholder}>
