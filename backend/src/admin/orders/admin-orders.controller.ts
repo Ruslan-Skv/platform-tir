@@ -8,17 +8,24 @@ import {
   Delete,
   Query,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { AdminOrdersService } from './admin-orders.service';
+import { OrdersService } from '../../orders/orders.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { SubmitFromCartForCustomerDto } from '../../orders/dto/submit-from-cart-for-customer.dto';
+import type { RequestWithUser } from '../../common/types/request-with-user.types';
 
 @Controller('admin/orders')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN', 'CONTENT_MANAGER', 'MODERATOR', 'SUPPORT', 'MANAGER')
 export class AdminOrdersController {
-  constructor(private readonly adminOrdersService: AdminOrdersService) {}
+  constructor(
+    private readonly adminOrdersService: AdminOrdersService,
+    private readonly ordersService: OrdersService,
+  ) {}
 
   @Get()
   findAll(
@@ -64,6 +71,15 @@ export class AdminOrdersController {
       search,
       limit ? parseInt(limit, 10) : 50,
     );
+  }
+
+  @Post('submit-from-cart-for-customer')
+  @Roles('ADMIN', 'SUPER_ADMIN', 'MANAGER')
+  submitFromCartForCustomer(
+    @Request() req: RequestWithUser,
+    @Body() dto: SubmitFromCartForCustomerDto,
+  ) {
+    return this.ordersService.submitFromCartForCustomer(req.user.id, req.user.role, dto);
   }
 
   @Get('delivery-config')
@@ -131,6 +147,12 @@ export class AdminOrdersController {
   @Post(':id/send-back')
   sendBackToCustomer(@Param('id') id: string, @Body() body: { comment?: string }) {
     return this.adminOrdersService.sendBackToCustomer(id, body.comment);
+  }
+
+  @Post(':id/send-to-email')
+  @Roles('ADMIN', 'SUPER_ADMIN', 'MANAGER')
+  sendOrderToCustomerEmail(@Param('id') id: string) {
+    return this.adminOrdersService.sendOrderToCustomerEmail(id);
   }
 
   @Post(':id/cancel')

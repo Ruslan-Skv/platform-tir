@@ -11,6 +11,7 @@ import {
   deleteAdminOrder,
   getAdminOrder,
   sendBackOrderToCustomer,
+  sendOrderToCustomerEmail,
   updateAdminOrderDelivery,
   updateAdminOrderItem,
   updateAdminOrderStatus,
@@ -80,6 +81,8 @@ type OrderDetail = AdminOrderSummary & {
   returnedForCorrectionAt?: string | null;
   returnedForCorrectionComment?: string | null;
   approvedAt?: string | null;
+  sentToEmailAt?: string | null;
+  customerEmail?: string | null;
   submittedForReviewAt?: string | null;
   cancelledAt?: string | null;
   shippedAt?: string | null;
@@ -163,6 +166,7 @@ export default function AdminOrderDetailPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const [cancelOrderConfirmOpen, setCancelOrderConfirmOpen] = useState(false);
+  const [sendToEmailInProgress, setSendToEmailInProgress] = useState(false);
   const [deliveryShippingCost, setDeliveryShippingCost] = useState('');
   const [deliveryCarryCost, setDeliveryCarryCost] = useState('');
   const [deliveryMoversCount, setDeliveryMoversCount] = useState('');
@@ -301,6 +305,23 @@ export default function AdminOrderDetailPage() {
     }
   };
 
+  const handleSendToEmail = async () => {
+    if (!id) return;
+    setSendToEmailInProgress(true);
+    try {
+      const result = await sendOrderToCustomerEmail(id);
+      if (result.sent) {
+        loadOrder();
+      } else {
+        alert(result.error ?? 'Не удалось отправить');
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Не удалось отправить');
+    } finally {
+      setSendToEmailInProgress(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className={styles.page}>
@@ -334,6 +355,11 @@ export default function AdminOrderDetailPage() {
     order.status === 'APPROVED' ||
     order.status === 'RETURNED_FOR_CORRECTION';
 
+  const canSendToEmail =
+    order.status === 'APPROVED' &&
+    !order.sentToEmailAt &&
+    (order.user?.email || order.customerEmail);
+  const isManagerRole = ['ADMIN', 'SUPER_ADMIN', 'MANAGER'].includes(user?.role ?? '');
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
   return (
@@ -476,6 +502,22 @@ export default function AdminOrderDetailPage() {
             {statusUpdating ? 'Сохранение…' : 'Заказ проверен'}
           </button>
         )}
+        {canSendToEmail && isManagerRole && (
+          <button
+            type="button"
+            className={styles.approveButton}
+            onClick={handleSendToEmail}
+            disabled={sendToEmailInProgress}
+            title="Отправить заказ на email покупателя для ознакомления и оплаты"
+          >
+            {sendToEmailInProgress ? 'Отправка…' : 'Отправить на email покупателя'}
+          </button>
+        )}
+        {order.sentToEmailAt && (
+          <span className={styles.sentToEmailBadge} role="status">
+            Отправлено на email {new Date(order.sentToEmailAt).toLocaleString('ru-RU')}
+          </span>
+        )}
         {!['CANCELLED', 'DELIVERED', 'REFUNDED'].includes(order.status) && (
           <button
             type="button"
@@ -508,7 +550,7 @@ export default function AdminOrderDetailPage() {
           <p>
             {order.user?.firstName} {order.user?.lastName}
           </p>
-          <p className={styles.email}>{order.user?.email}</p>
+          <p className={styles.email}>{order.user?.email ?? order.customerEmail}</p>
           {order.user?.phone && <p className={styles.email}>Телефон: {order.user.phone}</p>}
         </section>
       </div>

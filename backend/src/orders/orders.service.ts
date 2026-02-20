@@ -13,6 +13,8 @@ import { UserRole } from '@prisma/client';
 import type { CalculateDeliveryDto } from './dto/calculate-delivery.dto';
 import { DeliveryType } from './dto/calculate-delivery.dto';
 import type { SubmitFromCartDto } from './dto/submit-from-cart.dto';
+import type { SubmitFromCartForCustomerDto } from './dto/submit-from-cart-for-customer.dto';
+import { OrderMailService } from './order-mail.service';
 import { Prisma } from '@prisma/client';
 
 /** Время действия статуса «Заказ проверен» (минуты). После истечения заказ возвращается в «На проверке». */
@@ -25,6 +27,7 @@ export class OrdersService {
     private prisma: PrismaService,
     private cartService: CartService,
     private usersService: UsersService,
+    private orderMailService: OrderMailService,
   ) {}
 
   async create(userId: string, createOrderDto: CreateOrderDto) {
@@ -503,6 +506,209 @@ export class OrdersService {
   }
 
   /**
+   * Менеджер: оформить заказ из своей корзины для покупателя по email.
+   * Создаёт заказ на проверке, привязанный к покупателю (существующему пользователю или гостю).
+   */
+  async submitFromCartForCustomer(
+    managerId: string,
+    managerRole: string,
+    dto: SubmitFromCartForCustomerDto,
+  ) {
+    const managerRoles: UserRole[] = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'];
+    if (!managerRoles.includes(managerRole as UserRole)) {
+      throw new ForbiddenException('Только менеджер может оформить заказ для покупателя');
+    }
+
+    const cartItems = await this.cartService.getCartItems(managerId);
+    if (!cartItems.length) {
+      throw new BadRequestException('Корзина пуста');
+    }
+
+    const orderItems: Array<{
+      productId: string;
+      quantity: number;
+      price: number;
+      size: string | null;
+      openingSide: string | null;
+      cardVariantId: string | null;
+    }> = [];
+    let subtotal = 0;
+
+    for (const item of cartItems) {
+      const qty = Math.max(1, Math.round(Number(item.quantity)));
+      if (item.productId && item.product) {
+        const price = parseFloat(item.product.price.toString());
+        orderItems.push({
+          productId: item.product.id,
+          quantity: qty,
+          price,
+          size: item.size ?? null,
+          openingSide: item.openingSide ?? null,
+          cardVariantId: item.cardVariantId ?? null,
+        });
+        subtotal += price * qty;
+      } else if (item.componentId && item.component) {
+        const price = parseFloat(item.component.price.toString());
+        orderItems.push({
+          productId: item.component.productId,
+          quantity: qty,
+          price,
+          size: null,
+          openingSide: null,
+          cardVariantId: null,
+        });
+        subtotal += price * qty;
+      }
+    }
+
+    if (orderItems.length === 0) {
+      throw new BadRequestException('В корзине нет позиций для заказа');
+    }
+
+    let customerUser = await this.usersService.findByEmail(dto.customerEmail);
+    if (customerUser && (customerUser as { isGuest?: boolean }).isGuest) {
+      // Гость уже есть — используем
+    } else if (customerUser && !(customerUser as { isGuest?: boolean }).isGuest) {
+      // Покупатель зарегистрирован — используем
+    } else if (!customerUser) {
+      customerUser = await this.usersService.createGuestUser(
+        dto.customerEmail,
+        dto.customerFirstName,
+        dto.customerLastName,
+      );
+    }
+
+    const customerId = customerUser.id;
+    const customerEmail = dto.customerEmail.trim().toLowerCase();
+
+    let shippingCost = 0;
+    let carryCostFromCalc: number | undefined;
+    let shippingMethodId: string | null = null;
+    let shippingAddressId: string | null = null;
+    let deliveryType: string | null = null;
+    let deliveryFloor: number | null = null;
+    let deliveryHasElevator: boolean | null = null;
+    let preferredDeliveryTime: string | null = null;
+
+    if (dto?.deliveryAddress && dto?.deliveryType != null) {
+      const addr = dto.deliveryAddress;
+      const addressRecord = await this.prisma.address.create({
+        data: {
+          userId: customerId,
+          street: addr.street,
+          city: addr.city,
+          postalCode: (addr.postalCode?.trim() || '—').slice(0, 20),
+          region: addr.region ?? null,
+          country: addr.country ?? 'RU',
+          firstName: addr.firstName ?? dto.customerFirstName ?? customerUser.firstName ?? '',
+          lastName: addr.lastName ?? dto.customerLastName ?? customerUser.lastName ?? '',
+          phone: (addr.phone ?? '').trim() || 'не указан',
+        },
+      });
+      shippingAddressId = addressRecord.id;
+      const calc = await this.calculateDelivery(managerId, {
+        subtotal,
+        city: addr.city,
+        distanceKm: dto.distanceKm,
+        deliveryType: dto.deliveryType,
+        deliveryFloor: dto.deliveryFloor,
+        deliveryHasElevator: dto.deliveryHasElevator,
+      });
+      shippingCost = calc.deliveryCost;
+      carryCostFromCalc = calc.carryCost;
+      const base = await this.getBaseDeliveryCost(subtotal);
+      shippingMethodId = base.methodId;
+      deliveryType = dto.deliveryType;
+      deliveryFloor = dto.deliveryFloor ?? null;
+      deliveryHasElevator = dto.deliveryHasElevator ?? null;
+      preferredDeliveryTime = dto.preferredDeliveryTime?.trim() || null;
+    } else if (dto?.shippingMethodId) {
+      const method = await this.prisma.shippingMethod.findFirst({
+        where: { id: dto.shippingMethodId, isActive: true },
+      });
+      if (method) {
+        shippingMethodId = method.id;
+        const price = Number(method.price);
+        const freeFrom = method.freeFromAmount != null ? Number(method.freeFromAmount) : null;
+        shippingCost = freeFrom != null && subtotal >= freeFrom ? 0 : price;
+      }
+    }
+
+    const config = await this.getDeliveryConfig();
+    const tax = 0;
+    const carryCost =
+      shippingAddressId != null && typeof carryCostFromCalc === 'number' ? carryCostFromCalc : 0;
+    const total =
+      config.deliveryPaymentMode === 'ON_SITE' ? subtotal : subtotal + shippingCost + carryCost;
+
+    const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+
+    const order = await this.prisma.order.create({
+      data: {
+        orderNumber,
+        userId: customerId,
+        createdByManagerId: managerId,
+        customerEmail,
+        status: 'PENDING_REVIEW',
+        shippingAddressId,
+        shippingMethodId,
+        deliveryType,
+        deliveryFloor,
+        deliveryHasElevator,
+        preferredDeliveryTime,
+        submittedForReviewAt: new Date(),
+        subtotal,
+        tax,
+        shippingCost,
+        carryCost: carryCost > 0 ? carryCost : null,
+        total,
+        items: {
+          create: orderItems.map((oi) => ({
+            productId: oi.productId,
+            quantity: oi.quantity,
+            price: oi.price,
+            size: oi.size,
+            openingSide: oi.openingSide,
+            cardVariantId: oi.cardVariantId,
+          })),
+        },
+      },
+      include: {
+        items: { include: { product: true } },
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    await this.cartService.clearCart(managerId);
+
+    const adminRoles: UserRole[] = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'];
+    const admins = await this.prisma.user.findMany({
+      where: { role: { in: adminRoles }, isActive: true },
+      select: { id: true },
+    });
+    const title = 'Новый заказ на проверку (оформлен менеджером для покупателя)';
+    const message = `Заказ ${order.orderNumber} для ${customerEmail} ожидает проверки.`;
+    await Promise.all(
+      admins.map((a) =>
+        this.usersService.createNotification(a.id, {
+          type: 'new_order',
+          title,
+          message,
+        }),
+      ),
+    );
+
+    return order;
+  }
+
+  /**
    * Добавить позицию из корзины в заказ на проверке (пока проверка не завершена).
    * Позиция удаляется из корзины. Админам уходит уведомление «В заказ добавлен новый товар».
    */
@@ -671,6 +877,48 @@ export class OrdersService {
         ? { total: Number(order.subtotal) - Number(order.discount) }
         : {}),
     }));
+  }
+
+  /** Получить заказ по токену из письма (публичный доступ). */
+  async findOneByViewToken(token: string) {
+    const payload = this.orderMailService.verifyOrderViewToken(token);
+    if (!payload) {
+      throw new NotFoundException('Ссылка недействительна или истекла');
+    }
+    const order = await this.prisma.order.findUnique({
+      where: { id: payload.orderId },
+      include: {
+        items: { include: { product: true } },
+        shippingAddress: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+    if (!order) {
+      throw new NotFoundException('Заказ не найден');
+    }
+    const orderEmail =
+      (order.user?.email ?? '').toLowerCase() ||
+      ((order as { customerEmail?: string }).customerEmail ?? '').toLowerCase();
+    const payloadEmail = payload.email.toLowerCase();
+    if (orderEmail !== payloadEmail) {
+      throw new ForbiddenException('Ссылка не соответствует заказу');
+    }
+    const deliveryConfig = await this.getDeliveryConfig();
+    const paymentMode = deliveryConfig.deliveryPaymentMode === 'ON_SITE' ? 'ON_SITE' : 'WITH_ORDER';
+    return {
+      ...order,
+      deliveryPaymentMode: paymentMode,
+      ...(paymentMode === 'ON_SITE'
+        ? { total: Number(order.subtotal) - Number(order.discount) }
+        : {}),
+    };
   }
 
   async findOne(id: string, userId?: string, role?: string) {

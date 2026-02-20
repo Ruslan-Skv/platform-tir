@@ -186,6 +186,11 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.orders',
     children: [
       { label: 'Все заказы', href: '/admin/orders', resourceId: 'admin.orders' },
+      {
+        label: 'Оформить для покупателя',
+        href: '/admin/orders/create-for-customer',
+        resourceId: 'admin.orders.create-for-customer',
+      },
       { label: 'Доставка', href: '/admin/orders/shipping', resourceId: 'admin.orders.shipping' },
       { label: 'Оплаты', href: '/admin/orders/payments', resourceId: 'admin.orders.payments' },
     ],

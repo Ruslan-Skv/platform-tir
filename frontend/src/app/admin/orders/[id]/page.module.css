@@ -239,6 +239,16 @@
   border: 1px solid #a7f3d0;
 }
 
+.sentToEmailBadge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
 .approvalCountdown {
   margin: 0.5rem 0 0 0;
   font-size: 0.875rem;

@@ -62,7 +62,7 @@ export function ApprovedOrderGuardProvider({ children }: { children: React.React
   const isCartItemInApprovedOrder = useCallback(
     (item: CartItem): boolean => {
       if (!approvedOrder?.items?.length) return false;
-      const productId = item.product?.id ?? item.component?.productId ?? item.productId;
+      const productId = item.product?.id ?? item.component?.product?.id ?? item.productId;
       if (!productId) return false;
       const qty = Math.round(Number(item.quantity));
       const size = item.size ?? null;

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { MailerModule } from '@nestjs-modules/mailer';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
@@ -41,6 +42,22 @@ import { ContactFormModule } from './contact-form/contact-form.module';
         limit: parseInt(process.env.THROTTLE_LIMIT || '100', 10),
       },
     ]),
+    MailerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        transport: {
+          host: config.get('SMTP_HOST', 'localhost'),
+          port: config.get('SMTP_PORT', 1025),
+          secure: false,
+          auth:
+            config.get('SMTP_USER') && config.get('SMTP_PASS')
+              ? { user: config.get('SMTP_USER'), pass: config.get('SMTP_PASS') }
+              : undefined,
+        },
+        defaults: { from: config.get('MAIL_FROM', 'noreply@example.com') },
+      }),
+    }),
     DatabaseModule,
     ElasticsearchModule,
     AuthModule,

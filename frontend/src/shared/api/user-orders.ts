@@ -258,3 +258,13 @@ export async function getUserOrder(id: string): Promise<UserOrder> {
   if (!res.ok) throw new Error('Не удалось загрузить заказ');
   return res.json();
 }
+
+/** Получить заказ по токену из письма (публично, без авторизации). */
+export async function getUserOrderByToken(token: string): Promise<UserOrder> {
+  const res = await fetch(`${API_URL}/orders/view-by-token?token=${encodeURIComponent(token)}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message ?? 'Не удалось загрузить заказ');
+  }
+  return res.json();
+}

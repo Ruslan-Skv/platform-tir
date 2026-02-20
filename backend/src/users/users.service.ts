@@ -53,6 +53,7 @@ export class UsersService {
         lastName: true,
         role: true,
         isActive: true,
+        isGuest: true,
         avatar: true,
         createdAt: true,
         updatedAt: true,
@@ -67,8 +68,71 @@ export class UsersService {
   }
 
   async findByEmail(email: string) {
-    return this.prisma.user.findUnique({
-      where: { email },
+    const normalized = email.trim().toLowerCase();
+    return this.prisma.user.findFirst({
+      where: { email: { equals: normalized, mode: 'insensitive' } },
+    });
+  }
+
+  /** Создать гостевого пользователя (для заказа от менеджера, до регистрации покупателя). */
+  async createGuestUser(email: string, firstName?: string, lastName?: string) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const existing = await this.prisma.user.findFirst({
+      where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
+    });
+    if (existing) {
+      return existing; // Используем существующего пользователя (гость или зарегистрированный)
+    }
+    const randomPassword = await bcrypt.hash(
+      `guest_${Date.now()}_${Math.random().toString(36)}`,
+      10,
+    );
+    return this.prisma.user.create({
+      data: {
+        email: normalizedEmail,
+        password: randomPassword,
+        firstName: firstName?.trim() || null,
+        lastName: lastName?.trim() || null,
+        role: 'USER',
+        isGuest: true,
+      },
+    });
+  }
+
+  /** Завершить регистрацию гостя: обновить пароль и isGuest. */
+  async completeGuestRegistration(
+    email: string,
+    password: string,
+    firstName?: string,
+    lastName?: string,
+  ) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+    if (!user || !user.isGuest) {
+      return null;
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    return this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        isGuest: false,
+        firstName: firstName?.trim() || user.firstName,
+        lastName: lastName?.trim() || user.lastName,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        isActive: true,
+        avatar: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
   }
 

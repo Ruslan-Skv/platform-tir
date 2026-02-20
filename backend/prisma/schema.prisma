@@ -41,6 +41,7 @@ model User {
   lastName          String?
   role              UserRole       @default(USER)
   isActive          Boolean        @default(true)
+  isGuest           Boolean        @default(false) // Для заказов от менеджера: гость до регистрации
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
   avatar            String?
@@ -55,6 +56,7 @@ model User {
   assignedCustomers Customer[]     @relation("ManagerCustomers")
   interactions      Interaction[]
   orders            Order[]
+  ordersCreatedForCustomers Order[] @relation("OrdersCreatedByManager")
   salesMetrics      SalesMetric[]
   tasks             Task[]         @relation("AssignedTasks")
   createdTasks      Task[]         @relation("CreatedTasks")
@@ -987,6 +989,10 @@ model ProductComponent {
 model Order {
   id                String          @id @default(cuid())
   userId            String
+  createdByManagerId String?        // Менеджер оформил заказ для покупателя
+  customerEmail     String?         // Email получателя (дублирует user.email для поиска)
+  sentToEmailAt     DateTime?       // Когда заказ отправлен на email покупателя
+  orderViewToken    String?         @unique // Подписанный токен для просмотра по ссылке из письма
   status            OrderStatus     @default(PENDING)
   total             Decimal         @db.Decimal(10, 2)
   subtotal          Decimal         @db.Decimal(10, 2)
@@ -1025,6 +1031,7 @@ model Order {
   shippingAddress             Address?        @relation(fields: [shippingAddressId], references: [id])
   shippingMethod              ShippingMethod? @relation(fields: [shippingMethodId], references: [id])
   user                        User            @relation(fields: [userId], references: [id])
+  createdByManager            User?           @relation("OrdersCreatedByManager", fields: [createdByManagerId], references: [id])
   payments                    Payment[]
 
   @@map("orders")

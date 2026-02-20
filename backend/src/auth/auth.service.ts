@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
@@ -22,12 +22,12 @@ export class AuthService {
 
   async validateUser(email: string, password: string): Promise<UserWithoutPassword | null> {
     const user = await this.usersService.findByEmail(email);
-    if (user && (await bcrypt.compare(password, user.password))) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password: _password, ...result } = user;
-      return result;
-    }
-    return null;
+    if (!user) return null;
+    if ((user as { isGuest?: boolean }).isGuest) return null; // Гость не может войти
+    if (!(await bcrypt.compare(password, user.password))) return null;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: _password, ...result } = user;
+    return result;
   }
 
   async login(user: UserPayload) {
@@ -46,14 +46,27 @@ export class AuthService {
   }
 
   async register(email: string, password: string, firstName?: string, lastName?: string) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const completed = await this.usersService.completeGuestRegistration(
+      normalizedEmail,
+      password,
+      firstName,
+      lastName,
+    );
+    if (completed) {
+      return this.login(completed);
+    }
+    const existing = await this.usersService.findByEmail(normalizedEmail);
+    if (existing && !(existing as { isGuest?: boolean }).isGuest) {
+      throw new ConflictException('Пользователь с таким email уже зарегистрирован');
+    }
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await this.usersService.create({
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       firstName,
       lastName,
     });
-
     return this.login(user);
   }
 }

@@ -101,6 +101,57 @@ export async function updateAdminOrderItem(
   return res.json();
 }
 
+export interface SubmitFromCartForCustomerDto {
+  customerEmail: string;
+  customerFirstName?: string;
+  customerLastName?: string;
+  shippingMethodId?: string;
+  deliveryAddress?: {
+    street: string;
+    city: string;
+    postalCode?: string;
+    region?: string;
+    country?: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+  };
+  deliveryType?: 'TO_ENTRANCE' | 'TO_APARTMENT';
+  deliveryFloor?: number;
+  deliveryHasElevator?: boolean;
+  distanceKm?: number;
+  preferredDeliveryTime?: string;
+}
+
+export async function submitOrderFromCartForCustomer(
+  dto: SubmitFromCartForCustomerDto
+): Promise<AdminOrderSummary & { items?: unknown[] }> {
+  const res = await fetch(`${API_URL}/admin/orders/submit-from-cart-for-customer`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(dto),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message ?? 'Не удалось оформить заказ');
+  }
+  return res.json();
+}
+
+export async function sendOrderToCustomerEmail(
+  orderId: string
+): Promise<{ sent: boolean; error?: string }> {
+  const res = await fetch(`${API_URL}/admin/orders/${orderId}/send-to-email`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message ?? 'Не удалось отправить');
+  }
+  return res.json();
+}
+
 export async function sendBackOrderToCustomer(
   orderId: string,
   comment?: string

@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
 import { UsersService } from '../../users/users.service';
+import { OrderMailService } from '../../orders/order-mail.service';
 import { Prisma } from '@prisma/client';
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
@@ -22,6 +24,8 @@ export class AdminOrdersService {
   constructor(
     private prisma: PrismaService,
     private usersService: UsersService,
+    private orderMailService: OrderMailService,
+    private configService: ConfigService,
   ) {}
 
   async findAll(params?: {
@@ -407,6 +411,43 @@ export class AdminOrdersService {
       message: comment || 'Менеджер оставил комментарии по заказу. Пожалуйста, внесите правки.',
     });
     return this.findOne(orderId);
+  }
+
+  /** Отправить заказ на email покупателя (после проверки). Генерирует ссылку для просмотра и оплаты. */
+  async sendOrderToCustomerEmail(orderId: string): Promise<{ sent: boolean; error?: string }> {
+    const order = await this.findOne(orderId);
+    const email = order.user?.email || (order as { customerEmail?: string | null }).customerEmail;
+    if (!email) {
+      return { sent: false, error: 'У заказа не указан email покупателя' };
+    }
+    if (order.status !== 'APPROVED') {
+      return { sent: false, error: 'Отправить можно только проверенный заказ (статус «Проверен»)' };
+    }
+    if ((order as { sentToEmailAt?: Date }).sentToEmailAt) {
+      return { sent: false, error: 'Заказ уже был отправлен на email' };
+    }
+    const siteUrl = this.configService.get<string>('SITE_URL', 'http://localhost:3000');
+    const token = this.orderMailService.generateOrderViewToken(orderId, email);
+    const viewOrderUrl = `${siteUrl}/order/view?token=${token}`;
+    const total = typeof order.total === 'string' ? parseFloat(order.total) : Number(order.total);
+    const sent = await this.orderMailService.sendOrderToCustomer({
+      orderNumber: order.orderNumber,
+      customerEmail: email,
+      total,
+      itemsCount: order.items.length,
+      viewOrderUrl,
+    });
+    if (!sent) {
+      return { sent: false, error: 'Не удалось отправить письмо. Проверьте настройки SMTP.' };
+    }
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        sentToEmailAt: new Date(),
+        orderViewToken: token,
+      },
+    });
+    return { sent: true };
   }
 
   /** Список товаров для подстановки при замене в заказе (поиск по имени/SKU). */

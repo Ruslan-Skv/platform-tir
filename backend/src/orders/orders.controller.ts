@@ -8,9 +8,11 @@ import {
   Delete,
   UseGuards,
   Request,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
+import { Public } from '../common/decorators/public.decorator';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { AddCartItemToOrderDto } from './dto/add-cart-item-to-order.dto';
@@ -30,6 +32,13 @@ export class OrdersController {
   @ApiOperation({ summary: 'Создать заказ' })
   create(@Request() req: RequestWithUser, @Body() createOrderDto: CreateOrderDto) {
     return this.ordersService.create(req.user.id, createOrderDto);
+  }
+
+  @Get('view-by-token')
+  @Public()
+  @ApiOperation({ summary: 'Получить заказ по токену из письма (публично)' })
+  findOneByViewToken(@Query('token') token: string) {
+    return this.ordersService.findOneByViewToken(token);
   }
 
   @Get('delivery-settlements')
