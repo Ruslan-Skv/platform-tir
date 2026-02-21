@@ -9,6 +9,11 @@ export interface AdminOrderSummary {
   createdAt: string;
   approvedAt?: string | null;
   submittedForReviewAt?: string | null;
+  createdByManagerId?: string | null;
+  customerEmail?: string | null;
+  customerFirstName?: string | null;
+  customerLastName?: string | null;
+  processedByManager?: { id: string; email: string; firstName?: string; lastName?: string };
   user?: { firstName?: string; lastName?: string; email?: string };
   items?: unknown[];
 }
@@ -27,7 +32,13 @@ export async function getAdminOrders(
   page = 1,
   limit = 10,
   status?: string,
-  options?: { hasDelivery?: boolean }
+  options?: {
+    hasDelivery?: boolean;
+    paymentStatus?: string;
+    orderNumber?: string;
+    customer?: string;
+    manager?: string;
+  }
 ): Promise<{
   data: AdminOrderSummary[];
   total: number;
@@ -37,6 +48,10 @@ export async function getAdminOrders(
 }> {
   const params = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (status) params.set('status', status);
+  if (options?.orderNumber) params.set('orderNumber', options.orderNumber);
+  if (options?.customer) params.set('customer', options.customer);
+  if (options?.manager) params.set('manager', options.manager);
+  if (options?.paymentStatus) params.set('paymentStatus', options.paymentStatus);
   if (options?.hasDelivery) params.set('hasDelivery', 'true');
   const res = await fetch(`${API_URL}/admin/orders?${params}`, {
     headers: getAdminAuthHeaders(),
@@ -148,6 +163,26 @@ export async function sendOrderToCustomerEmail(
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as { message?: string }).message ?? 'Не удалось отправить');
+  }
+  return res.json();
+}
+
+export async function updateAdminOrderCustomer(
+  orderId: string,
+  data: {
+    customerEmail?: string | null;
+    customerFirstName?: string | null;
+    customerLastName?: string | null;
+  }
+): Promise<AdminOrderSummary & { items?: unknown[] }> {
+  const res = await fetch(`${API_URL}/admin/orders/${orderId}/customer`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message ?? 'Не удалось обновить покупателя');
   }
   return res.json();
 }

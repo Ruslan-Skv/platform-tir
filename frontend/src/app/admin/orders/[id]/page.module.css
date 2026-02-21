@@ -39,9 +39,62 @@
 
 .topGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.5rem;
   margin-bottom: 0.75rem;
+}
+
+.compactSection {
+  padding: 0.35rem 0.6rem;
+}
+
+.inputRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-bottom: 0.35rem;
+}
+
+.inputLabel {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.input {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+}
+
+.saveButton {
+  margin-top: 0.25rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #dbeafe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.saveButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.inlineSuccess {
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.mutedText {
+  color: #6b7280;
+  font-size: 0.8125rem;
 }
 
 .backLink {
@@ -140,20 +193,20 @@
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
-  padding: 0.5rem 0.75rem;
+  padding: 0.4rem 0.6rem;
   margin-bottom: 0.5rem;
 }
 
 .sectionTitle {
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: #6b7280;
-  margin: 0 0 0.25rem 0;
+  margin: 0 0 0.2rem 0;
 }
 
 .section > p {
-  margin: 0.15rem 0 0 0;
-  font-size: 0.875rem;
+  margin: 0.1rem 0 0 0;
+  font-size: 0.8125rem;
 }
 
 .section > p:first-of-type {
@@ -283,7 +336,7 @@
 }
 
 .orderHistory {
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
 }
 
 .orderHistoryEmpty {
@@ -293,12 +346,12 @@
 
 .orderHistoryHeader {
   display: grid;
-  grid-template-columns: 11rem 1fr 9rem 4.5rem;
+  grid-template-columns: 10rem 1fr 10rem 8rem;
   align-items: baseline;
-  gap: 0.75rem;
-  padding: 0 0 0.35rem 0;
-  margin-bottom: 0.25rem;
-  font-size: 0.8125rem;
+  gap: 0.5rem;
+  padding: 0 0 0.25rem 0;
+  margin-bottom: 0.2rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: #6b7280;
   border-bottom: 1px solid #e5e7eb;
@@ -315,15 +368,15 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.35rem;
 }
 
 .orderHistoryItem {
   display: grid;
-  grid-template-columns: 11rem 1fr 9rem 4.5rem;
+  grid-template-columns: 10rem 1fr 6.5rem 8rem;
   align-items: baseline;
-  gap: 0.75rem;
-  padding: 0.35rem 0;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
   border-bottom: 1px solid #f3f4f6;
 }
 
@@ -344,18 +397,18 @@
 .orderHistoryDuration {
   font-variant-numeric: tabular-nums;
   color: #6b7280;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 .orderHistoryAuthor {
   color: #6b7280;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 .email {
   color: #6b7280;
-  font-size: 0.875rem;
-  margin: 0.15rem 0 0 0;
+  font-size: 0.8125rem;
+  margin: 0.1rem 0 0 0;
 }
 
 .total {
@@ -809,6 +862,30 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
   color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inputLabel {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input {
+  background: #111827;
+  border-color: #374151;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input::placeholder {
+  color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveButton {
+  background: rgba(37, 99, 235, 0.15);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inlineSuccess {
+  color: #6ee7b7;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select {

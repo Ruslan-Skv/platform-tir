@@ -33,6 +33,9 @@ export class AdminOrdersService {
     paymentStatus?: string;
     userId?: string;
     search?: string;
+    orderNumber?: string;
+    customer?: string;
+    manager?: string;
     dateFrom?: string;
     dateTo?: string;
     minTotal?: number;
@@ -48,6 +51,9 @@ export class AdminOrdersService {
       paymentStatus,
       userId,
       search,
+      orderNumber,
+      customer,
+      manager,
       dateFrom,
       dateTo,
       minTotal,
@@ -74,13 +80,60 @@ export class AdminOrdersService {
       where.userId = userId;
     }
 
+    const searchOr: Prisma.OrderWhereInput[] = [];
     if (search) {
-      where.OR = [
+      searchOr.push(
         { orderNumber: { contains: search, mode: 'insensitive' } },
         { user: { email: { contains: search, mode: 'insensitive' } } },
         { user: { firstName: { contains: search, mode: 'insensitive' } } },
         { user: { lastName: { contains: search, mode: 'insensitive' } } },
-      ];
+        { customerEmail: { contains: search, mode: 'insensitive' } },
+        { customerFirstName: { contains: search, mode: 'insensitive' } },
+        { customerLastName: { contains: search, mode: 'insensitive' } },
+        { processedByManager: { email: { contains: search, mode: 'insensitive' } } },
+        { processedByManager: { firstName: { contains: search, mode: 'insensitive' } } },
+        { processedByManager: { lastName: { contains: search, mode: 'insensitive' } } },
+      );
+    }
+
+    const andFilters: Prisma.OrderWhereInput[] = [];
+    if (orderNumber) {
+      andFilters.push({
+        orderNumber: { contains: orderNumber.trim(), mode: 'insensitive' },
+      });
+    }
+    if (customer) {
+      andFilters.push({
+        OR: [
+          { customerEmail: { contains: customer.trim(), mode: 'insensitive' } },
+          { customerFirstName: { contains: customer.trim(), mode: 'insensitive' } },
+          { customerLastName: { contains: customer.trim(), mode: 'insensitive' } },
+          { user: { email: { contains: customer.trim(), mode: 'insensitive' } } },
+          { user: { firstName: { contains: customer.trim(), mode: 'insensitive' } } },
+          { user: { lastName: { contains: customer.trim(), mode: 'insensitive' } } },
+        ],
+      });
+    }
+    if (manager) {
+      andFilters.push({
+        OR: [
+          { processedByManager: { email: { contains: manager.trim(), mode: 'insensitive' } } },
+          { processedByManager: { firstName: { contains: manager.trim(), mode: 'insensitive' } } },
+          { processedByManager: { lastName: { contains: manager.trim(), mode: 'insensitive' } } },
+        ],
+      });
+    }
+
+    if (searchOr.length > 0) {
+      andFilters.push({ OR: searchOr });
+    }
+
+    if (andFilters.length > 0) {
+      where = Object.keys(where).length > 0 ? { AND: [where, ...andFilters] } : { AND: andFilters };
+    } else {
+      if (searchOr.length > 0) {
+        where.OR = searchOr;
+      }
     }
 
     if (dateFrom || dateTo) {
@@ -121,6 +174,14 @@ export class AdminOrdersService {
               firstName: true,
               lastName: true,
               phone: true,
+            },
+          },
+          processedByManager: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
             },
           },
           items: {
@@ -170,6 +231,14 @@ export class AdminOrdersService {
             firstName: true,
             lastName: true,
             phone: true,
+          },
+        },
+        processedByManager: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
           },
         },
         items: {
@@ -231,6 +300,14 @@ export class AdminOrdersService {
               firstName: true,
               lastName: true,
               phone: true,
+            },
+          },
+          processedByManager: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
             },
           },
           items: {
@@ -395,7 +472,7 @@ export class AdminOrdersService {
   }
 
   /** Отправить заказ на доработку покупателю (с комментариями менеджера). */
-  async sendBackToCustomer(orderId: string, comment?: string) {
+  async sendBackToCustomer(orderId: string, comment?: string, managerId?: string) {
     const order = await this.findOne(orderId);
     await this.prisma.order.update({
       where: { id: orderId },
@@ -403,6 +480,7 @@ export class AdminOrdersService {
         status: 'RETURNED_FOR_CORRECTION',
         returnedForCorrectionAt: new Date(),
         returnedForCorrectionComment: comment || null,
+        ...(managerId ? { processedByManager: { connect: { id: managerId } } } : {}),
       },
     });
     await this.usersService.createNotification(order.userId, {
@@ -414,9 +492,13 @@ export class AdminOrdersService {
   }
 
   /** Отправить заказ на email покупателя (после проверки). Генерирует ссылку для просмотра и оплаты. */
-  async sendOrderToCustomerEmail(orderId: string): Promise<{ sent: boolean; error?: string }> {
+  async sendOrderToCustomerEmail(
+    orderId: string,
+    managerId: string,
+  ): Promise<{ sent: boolean; error?: string }> {
     const order = await this.findOne(orderId);
-    const email = order.user?.email || (order as { customerEmail?: string | null }).customerEmail;
+    const customerEmail = (order as { customerEmail?: string | null }).customerEmail;
+    const email = order.createdByManagerId ? customerEmail : order.user?.email || customerEmail;
     if (!email) {
       return { sent: false, error: 'У заказа не указан email покупателя' };
     }
@@ -445,9 +527,40 @@ export class AdminOrdersService {
       data: {
         sentToEmailAt: new Date(),
         orderViewToken: token,
+        processedByManager: { connect: { id: managerId } },
       },
     });
     return { sent: true };
+  }
+
+  /** Обновить данные покупателя (email/имя/фамилия) для заказа. */
+  async updateOrderCustomer(
+    orderId: string,
+    data: {
+      customerEmail?: string | null;
+      customerFirstName?: string | null;
+      customerLastName?: string | null;
+    },
+  ) {
+    await this.findOne(orderId);
+    const updateData: Prisma.OrderUpdateInput = {};
+    if (data.customerEmail !== undefined) {
+      updateData.customerEmail = data.customerEmail?.trim().toLowerCase() || null;
+    }
+    if (data.customerFirstName !== undefined) {
+      updateData.customerFirstName = data.customerFirstName?.trim() || null;
+    }
+    if (data.customerLastName !== undefined) {
+      updateData.customerLastName = data.customerLastName?.trim() || null;
+    }
+    if (Object.keys(updateData).length === 0) {
+      return this.findOne(orderId);
+    }
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: updateData,
+    });
+    return this.findOne(orderId);
   }
 
   /** Список товаров для подстановки при замене в заказе (поиск по имени/SKU). */
@@ -544,7 +657,7 @@ export class AdminOrdersService {
     });
   }
 
-  async updateStatus(id: string, status: string) {
+  async updateStatus(id: string, status: string, managerId?: string) {
     const order = await this.findOne(id);
 
     type OrderStatus =
@@ -562,6 +675,9 @@ export class AdminOrdersService {
     switch (status) {
       case 'APPROVED':
         updateData.approvedAt = new Date();
+        if (managerId) {
+          updateData.processedByManager = { connect: { id: managerId } };
+        }
         break;
       case 'SHIPPED':
         updateData.shippedAt = new Date();

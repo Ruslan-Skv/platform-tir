@@ -57,6 +57,7 @@ model User {
   interactions      Interaction[]
   orders            Order[]
   ordersCreatedForCustomers Order[] @relation("OrdersCreatedByManager")
+  ordersProcessedByManagers Order[] @relation("OrdersProcessedByManager")
   salesMetrics      SalesMetric[]
   tasks             Task[]         @relation("AssignedTasks")
   createdTasks      Task[]         @relation("CreatedTasks")
@@ -991,6 +992,9 @@ model Order {
   userId            String
   createdByManagerId String?        // Менеджер оформил заказ для покупателя
   customerEmail     String?         // Email получателя (дублирует user.email для поиска)
+  customerFirstName String?         // Имя покупателя (для заказов менеджера)
+  customerLastName  String?         // Фамилия покупателя (для заказов менеджера)
+  processedByManagerId String?      // Менеджер, который обработал заказ
   sentToEmailAt     DateTime?       // Когда заказ отправлен на email покупателя
   orderViewToken    String?         @unique // Подписанный токен для просмотра по ссылке из письма
   status            OrderStatus     @default(PENDING)
@@ -1032,6 +1036,7 @@ model Order {
   shippingMethod              ShippingMethod? @relation(fields: [shippingMethodId], references: [id])
   user                        User            @relation(fields: [userId], references: [id])
   createdByManager            User?           @relation("OrdersCreatedByManager", fields: [createdByManagerId], references: [id])
+  processedByManager          User?           @relation("OrdersProcessedByManager", fields: [processedByManagerId], references: [id])
   payments                    Payment[]
 
   @@map("orders")

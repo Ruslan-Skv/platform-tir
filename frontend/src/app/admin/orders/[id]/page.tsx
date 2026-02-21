@@ -12,6 +12,7 @@ import {
   getAdminOrder,
   sendBackOrderToCustomer,
   sendOrderToCustomerEmail,
+  updateAdminOrderCustomer,
   updateAdminOrderDelivery,
   updateAdminOrderItem,
   updateAdminOrderStatus,
@@ -67,7 +68,7 @@ type ShippingAddress = {
   country: string;
 };
 
-type OrderDetail = AdminOrderSummary & {
+type OrderDetail = Omit<AdminOrderSummary, 'items'> & {
   items?: OrderItemDetail[];
   shippingAddress?: ShippingAddress | null;
   shippingCost?: string | number;
@@ -89,6 +90,7 @@ type OrderDetail = AdminOrderSummary & {
   deliveredAt?: string | null;
   refundedAt?: string | null;
   user?: { id: string; email: string; firstName?: string; lastName?: string; phone?: string };
+  processedByManager?: { id: string; email: string; firstName?: string; lastName?: string };
 };
 
 type OrderHistoryEvent = {
@@ -123,14 +125,25 @@ function buildOrderHistory(order: OrderDetail): OrderHistoryEvent[] {
   const push = (at: string | null | undefined, label: string, author: string) => {
     if (at) events.push({ at, label, author });
   };
-  push(order.createdAt, 'Заказ создан', 'Покупатель');
-  push(order.submittedForReviewAt, 'Отправлен на проверку', 'Покупатель');
-  push(order.approvedAt, 'Заказ проверен', 'Менеджер');
-  push(order.returnedForCorrectionAt, 'Отправлен на доработку', 'Менеджер');
-  push(order.cancelledAt, 'Заказ отменён', 'Менеджер');
-  push(order.shippedAt, 'Заказ отправлен', 'Менеджер');
-  push(order.deliveredAt, 'Заказ доставлен', 'Менеджер');
-  push(order.refundedAt, 'Оформлен возврат', 'Менеджер');
+  const managerName = order.processedByManager
+    ? `${order.processedByManager.firstName ?? ''} ${order.processedByManager.lastName ?? ''}`.trim() ||
+      order.processedByManager.email
+    : 'Менеджер';
+  const customerName = `${order.customerFirstName ?? order.user?.firstName ?? ''} ${
+    order.customerLastName ?? order.user?.lastName ?? ''
+  }`.trim();
+  const customerLabel = customerName || order.customerEmail || order.user?.email || 'Покупатель';
+
+  const creatorLabel = order.createdByManagerId ? managerName : customerLabel;
+
+  push(order.createdAt, 'Заказ создан', creatorLabel);
+  push(order.submittedForReviewAt, 'Отправлен на проверку', creatorLabel);
+  push(order.approvedAt, 'Заказ проверен', managerName);
+  push(order.returnedForCorrectionAt, 'Отправлен на доработку', managerName);
+  push(order.cancelledAt, 'Заказ отменён', managerName);
+  push(order.shippedAt, 'Заказ отправлен', managerName);
+  push(order.deliveredAt, 'Заказ доставлен', managerName);
+  push(order.refundedAt, 'Оформлен возврат', managerName);
   events.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
   for (let i = 1; i < events.length; i++) {
     const prev = new Date(events[i - 1].at).getTime();
@@ -172,14 +185,26 @@ export default function AdminOrderDetailPage() {
   const [deliveryMoversCount, setDeliveryMoversCount] = useState('');
   const [deliveryPlannedDate, setDeliveryPlannedDate] = useState('');
   const [deliverySaving, setDeliverySaving] = useState(false);
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerFirstName, setCustomerFirstName] = useState('');
+  const [customerLastName, setCustomerLastName] = useState('');
+  const [customerSaving, setCustomerSaving] = useState(false);
+  const [customerSaveSuccess, setCustomerSaveSuccess] = useState(false);
   const [, setTick] = useState(0);
   /** Черновики рекомендаций по позициям (чтобы кнопка «На доработку» учитывала несохранённый ввод). */
   const [commentDraftByItemId, setCommentDraftByItemId] = useState<Record<string, string>>({});
 
+  const normalizeOrder = useCallback((data: AdminOrderSummary & { items?: unknown[] }) => {
+    return {
+      ...(data as OrderDetail),
+      items: Array.isArray(data.items) ? (data.items as OrderItemDetail[]) : [],
+    } satisfies OrderDetail;
+  }, []);
+
   const loadOrder = useCallback(() => {
     if (!id) return;
-    getAdminOrder(id).then((data) => setOrder(data as OrderDetail));
-  }, [id]);
+    getAdminOrder(id).then((data) => setOrder(normalizeOrder(data)));
+  }, [id, normalizeOrder]);
 
   useEffect(() => {
     if (!id) return;
@@ -187,7 +212,8 @@ export default function AdminOrderDetailPage() {
     setLoading(true);
     getAdminOrder(id)
       .then((data) => {
-        if (!cancelled) setOrder(data as OrderDetail);
+        if (cancelled) return;
+        setOrder(normalizeOrder(data));
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Ошибка загрузки');
@@ -201,10 +227,12 @@ export default function AdminOrderDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    if (!order?.items?.length) return;
+    if (!order) return;
+    const items = order.items ?? [];
+    if (items.length === 0) return;
     setCommentDraftByItemId((prev) => {
       const next = { ...prev };
-      for (const item of order.items) {
+      for (const item of items) {
         next[item.id] = item.managerComment ?? '';
       }
       return next;
@@ -223,12 +251,33 @@ export default function AdminOrderDetailPage() {
         ? new Date(order.plannedDeliveryDate).toISOString().slice(0, 10)
         : ''
     );
+    setCustomerEmail(
+      order.createdByManagerId
+        ? (order.customerEmail ?? '')
+        : (order.customerEmail ?? order.user?.email ?? '')
+    );
+    setCustomerFirstName(
+      order.createdByManagerId
+        ? (order.customerFirstName ?? '')
+        : (order.customerFirstName ?? order.user?.firstName ?? '')
+    );
+    setCustomerLastName(
+      order.createdByManagerId
+        ? (order.customerLastName ?? '')
+        : (order.customerLastName ?? order.user?.lastName ?? '')
+    );
   }, [
     order?.id,
     order?.shippingCost,
     order?.carryCost,
     order?.moversCount,
     order?.plannedDeliveryDate,
+    order?.customerEmail,
+    order?.customerFirstName,
+    order?.customerLastName,
+    order?.user?.email,
+    order?.user?.firstName,
+    order?.user?.lastName,
   ]);
 
   useEffect(() => {
@@ -263,10 +312,11 @@ export default function AdminOrderDetailPage() {
   };
 
   const handleSendBack = async () => {
-    if (!id || !order?.items?.length) return;
+    if (!id || !order) return;
+    const items = order.items ?? [];
+    if (items.length === 0) return;
     setSendBackSubmitting(true);
     try {
-      const items = order.items;
       const toSave = items.filter((item) => {
         const draft = (commentDraftByItemId[item.id] ?? item.managerComment ?? '').trim();
         const saved = (item.managerComment ?? '').trim();
@@ -281,7 +331,7 @@ export default function AdminOrderDetailPage() {
         )
       );
       const updated = await sendBackOrderToCustomer(id, sendBackComment || undefined);
-      setOrder(updated as OrderDetail);
+      setOrder(normalizeOrder(updated));
       setSendBackModalOpen(false);
       setSendBackComment('');
     } catch (err) {
@@ -322,6 +372,26 @@ export default function AdminOrderDetailPage() {
     }
   };
 
+  const handleSaveCustomer = async () => {
+    if (!id) return;
+    setCustomerSaving(true);
+    setCustomerSaveSuccess(false);
+    try {
+      const updated = await updateAdminOrderCustomer(id, {
+        customerEmail: customerEmail.trim() || null,
+        customerFirstName: customerFirstName.trim() || null,
+        customerLastName: customerLastName.trim() || null,
+      });
+      setOrder(normalizeOrder(updated));
+      setCustomerSaveSuccess(true);
+      window.setTimeout(() => setCustomerSaveSuccess(false), 2000);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Не удалось обновить данные покупателя');
+    } finally {
+      setCustomerSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className={styles.page}>
@@ -358,7 +428,7 @@ export default function AdminOrderDetailPage() {
   const canSendToEmail =
     order.status === 'APPROVED' &&
     !order.sentToEmailAt &&
-    (order.user?.email || order.customerEmail);
+    (order.createdByManagerId ? order.customerEmail : order.user?.email || order.customerEmail);
   const isManagerRole = ['ADMIN', 'SUPER_ADMIN', 'MANAGER'].includes(user?.role ?? '');
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
@@ -545,13 +615,63 @@ export default function AdminOrderDetailPage() {
       )}
 
       <div className={styles.topGrid}>
-        <section className={styles.section}>
+        <section className={`${styles.section} ${styles.compactSection}`}>
           <h2 className={styles.sectionTitle}>Клиент</h2>
-          <p>
-            {order.user?.firstName} {order.user?.lastName}
-          </p>
-          <p className={styles.email}>{order.user?.email ?? order.customerEmail}</p>
+          <div className={styles.inputRow}>
+            <label className={styles.inputLabel}>Email покупателя</label>
+            <input
+              type="email"
+              value={customerEmail}
+              onChange={(e) => setCustomerEmail(e.target.value)}
+              className={styles.input}
+              placeholder="customer@example.com"
+            />
+          </div>
+          <div className={styles.inputRow}>
+            <label className={styles.inputLabel}>Имя</label>
+            <input
+              type="text"
+              value={customerFirstName}
+              onChange={(e) => setCustomerFirstName(e.target.value)}
+              className={styles.input}
+            />
+          </div>
+          <div className={styles.inputRow}>
+            <label className={styles.inputLabel}>Фамилия</label>
+            <input
+              type="text"
+              value={customerLastName}
+              onChange={(e) => setCustomerLastName(e.target.value)}
+              className={styles.input}
+            />
+          </div>
+          <button
+            type="button"
+            className={styles.saveButton}
+            onClick={handleSaveCustomer}
+            disabled={customerSaving}
+          >
+            {customerSaving ? 'Сохранение…' : 'Сохранить данные покупателя'}
+          </button>
+          {customerSaveSuccess && (
+            <span className={styles.inlineSuccess} role="status">
+              Сохранено
+            </span>
+          )}
           {order.user?.phone && <p className={styles.email}>Телефон: {order.user.phone}</p>}
+        </section>
+        <section className={`${styles.section} ${styles.compactSection}`}>
+          <h2 className={styles.sectionTitle}>Менеджер</h2>
+          {order.processedByManager ? (
+            <>
+              <p>
+                {order.processedByManager.firstName} {order.processedByManager.lastName}
+              </p>
+              <p className={styles.email}>{order.processedByManager.email}</p>
+            </>
+          ) : (
+            <p className={styles.mutedText}>Менеджер ещё не назначен</p>
+          )}
         </section>
       </div>
 
@@ -838,7 +958,7 @@ export default function AdminOrderDetailPage() {
                         ? deliveryPlannedDate.trim()
                         : null,
                     });
-                    setOrder(updated as OrderDetail);
+                    setOrder(normalizeOrder(updated));
                   } catch (err) {
                     alert(err instanceof Error ? err.message : 'Не удалось сохранить');
                   } finally {

@@ -17,7 +17,9 @@ export function OrdersPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const limit = 20;
-  const [searchQuery, setSearchQuery] = useState('');
+  const [orderNumberQuery, setOrderNumberQuery] = useState('');
+  const [customerQuery, setCustomerQuery] = useState('');
+  const [managerQuery, setManagerQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -25,7 +27,12 @@ export function OrdersPage() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    getAdminOrders(page, limit, statusFilter || undefined)
+    getAdminOrders(page, limit, statusFilter || undefined, {
+      orderNumber: orderNumberQuery.trim() || undefined,
+      customer: customerQuery.trim() || undefined,
+      manager: managerQuery.trim() || undefined,
+      paymentStatus: paymentFilter || undefined,
+    })
       .then((res) => {
         if (cancelled) return;
         setTotal(res.total);
@@ -45,7 +52,7 @@ export function OrdersPage() {
     return () => {
       cancelled = true;
     };
-  }, [page, statusFilter]);
+  }, [page, statusFilter, orderNumberQuery, customerQuery, managerQuery, paymentFilter]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('ru-RU', {
@@ -98,14 +105,38 @@ export function OrdersPage() {
       render: (order: Order) => <span className={styles.orderNumber}>{order.orderNumber}</span>,
     },
     {
+      key: 'manager',
+      title: 'Менеджер',
+      render: (order: Order) =>
+        order.processedByManager ? (
+          <div className={styles.customerCell}>
+            <span className={styles.customerName}>
+              {order.processedByManager.firstName} {order.processedByManager.lastName}
+            </span>
+            <span className={styles.customerEmail}>{order.processedByManager.email}</span>
+          </div>
+        ) : (
+          <span className={styles.customerEmail}>—</span>
+        ),
+    },
+    {
       key: 'customer',
       title: 'Клиент',
       render: (order: Order) => (
         <div className={styles.customerCell}>
           <span className={styles.customerName}>
-            {order.user?.firstName} {order.user?.lastName}
+            {(order.createdByManagerId
+              ? order.customerFirstName
+              : (order.customerFirstName ?? order.user?.firstName)) || ''}{' '}
+            {(order.createdByManagerId
+              ? order.customerLastName
+              : (order.customerLastName ?? order.user?.lastName)) || ''}
           </span>
-          <span className={styles.customerEmail}>{order.user?.email}</span>
+          <span className={styles.customerEmail}>
+            {order.createdByManagerId
+              ? order.customerEmail
+              : (order.customerEmail ?? order.user?.email)}
+          </span>
         </div>
       ),
     },
@@ -176,9 +207,23 @@ export function OrdersPage() {
       <div className={styles.filters}>
         <input
           type="search"
-          placeholder="Поиск по номеру, клиенту..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Номер заказа"
+          value={orderNumberQuery}
+          onChange={(e) => setOrderNumberQuery(e.target.value)}
+          className={styles.searchInput}
+        />
+        <input
+          type="search"
+          placeholder="Клиент"
+          value={customerQuery}
+          onChange={(e) => setCustomerQuery(e.target.value)}
+          className={styles.searchInput}
+        />
+        <input
+          type="search"
+          placeholder="Менеджер"
+          value={managerQuery}
+          onChange={(e) => setManagerQuery(e.target.value)}
           className={styles.searchInput}
         />
         <select

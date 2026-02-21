@@ -131,6 +131,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(data.user);
       localStorage.setItem(TOKEN_KEY, data.access_token);
       localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      // Если был активен пользовательский токен — очищаем, чтобы корзина не смешивалась
+      localStorage.removeItem('user_token');
+      localStorage.removeItem('user_data');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('auth-token-changed'));
+      }
 
       return { success: true };
     } catch (error) {
@@ -147,6 +153,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('auth-token-changed'));
+    }
   }, []);
 
   const getAuthHeaders = useCallback((): { Authorization: string } | Record<string, string> => {

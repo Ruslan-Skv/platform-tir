@@ -33,6 +33,9 @@ export class AdminOrdersController {
     @Query('paymentStatus') paymentStatus?: string,
     @Query('userId') userId?: string,
     @Query('search') search?: string,
+    @Query('orderNumber') orderNumber?: string,
+    @Query('customer') customer?: string,
+    @Query('manager') manager?: string,
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
     @Query('minTotal') minTotal?: string,
@@ -48,6 +51,9 @@ export class AdminOrdersController {
       paymentStatus,
       userId,
       search,
+      orderNumber,
+      customer,
+      manager,
       dateFrom,
       dateTo,
       minTotal: minTotal ? parseFloat(minTotal) : undefined,
@@ -117,8 +123,26 @@ export class AdminOrdersController {
   }
 
   @Patch(':id/status')
-  updateStatus(@Param('id') id: string, @Body() body: { status: string }) {
-    return this.adminOrdersService.updateStatus(id, body.status);
+  updateStatus(
+    @Request() req: RequestWithUser,
+    @Param('id') id: string,
+    @Body() body: { status: string },
+  ) {
+    return this.adminOrdersService.updateStatus(id, body.status, req.user.id);
+  }
+
+  @Patch(':id/customer')
+  @Roles('ADMIN', 'SUPER_ADMIN', 'MANAGER')
+  updateOrderCustomer(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      customerEmail?: string | null;
+      customerFirstName?: string | null;
+      customerLastName?: string | null;
+    },
+  ) {
+    return this.adminOrdersService.updateOrderCustomer(id, body);
   }
 
   @Patch(':id/delivery')
@@ -145,14 +169,18 @@ export class AdminOrdersController {
   }
 
   @Post(':id/send-back')
-  sendBackToCustomer(@Param('id') id: string, @Body() body: { comment?: string }) {
-    return this.adminOrdersService.sendBackToCustomer(id, body.comment);
+  sendBackToCustomer(
+    @Request() req: RequestWithUser,
+    @Param('id') id: string,
+    @Body() body: { comment?: string },
+  ) {
+    return this.adminOrdersService.sendBackToCustomer(id, body.comment, req.user.id);
   }
 
   @Post(':id/send-to-email')
   @Roles('ADMIN', 'SUPER_ADMIN', 'MANAGER')
-  sendOrderToCustomerEmail(@Param('id') id: string) {
-    return this.adminOrdersService.sendOrderToCustomerEmail(id);
+  sendOrderToCustomerEmail(@Request() req: RequestWithUser, @Param('id') id: string) {
+    return this.adminOrdersService.sendOrderToCustomerEmail(id, req.user.id);
   }
 
   @Post(':id/cancel')

@@ -233,7 +233,7 @@ export class OrdersService {
    * При передаче deliveryAddress + deliveryType: создаётся адрес, считается доставка и подъём.
    * Иначе при указании shippingMethodId стоимость доставки включается по старой схеме (учёт freeFromAmount).
    */
-  async submitFromCart(userId: string, dto?: SubmitFromCartDto) {
+  async submitFromCart(userId: string, dto?: SubmitFromCartDto, role?: string) {
     const cartItems = await this.cartService.getCartItems(userId);
     if (!cartItems.length) {
       throw new BadRequestException('Корзина пуста');
@@ -438,10 +438,21 @@ export class OrdersService {
 
     const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
 
+    const isManagerRole = [
+      'SUPER_ADMIN',
+      'ADMIN',
+      'MANAGER',
+      'CONTENT_MANAGER',
+      'MODERATOR',
+      'SUPPORT',
+    ].includes((role ?? '') as UserRole);
+
     const order = await this.prisma.order.create({
       data: {
         orderNumber,
         userId,
+        createdByManagerId: isManagerRole ? userId : null,
+        processedByManagerId: isManagerRole ? userId : null,
         status: 'PENDING_REVIEW',
         shippingAddressId,
         shippingMethodId,
@@ -486,6 +497,7 @@ export class OrdersService {
     });
     const title = 'Новый заказ на проверку';
     const message = `Заказ ${order.orderNumber} ожидает проверки.`;
+    const notifyCustomer = !isManagerRole;
     await Promise.all([
       ...admins.map((a) =>
         this.usersService.createNotification(a.id, {
@@ -494,12 +506,16 @@ export class OrdersService {
           message,
         }),
       ),
-      this.usersService.createNotification(order.userId, {
-        type: 'order_status',
-        title: `Заказ ${order.orderNumber} отправлен на проверку`,
-        message:
-          'Заказ принят на проверку. Обычно проверка занимает около 15 минут. Вы получите уведомление, когда менеджер проверит заказ.',
-      }),
+      ...(notifyCustomer
+        ? [
+            this.usersService.createNotification(order.userId, {
+              type: 'order_status',
+              title: `Заказ ${order.orderNumber} отправлен на проверку`,
+              message:
+                'Заказ принят на проверку. Обычно проверка занимает около 15 минут. Вы получите уведомление, когда менеджер проверит заказ.',
+            }),
+          ]
+        : []),
     ]);
 
     return order;
@@ -648,7 +664,10 @@ export class OrdersService {
         orderNumber,
         userId: customerId,
         createdByManagerId: managerId,
+        processedByManagerId: managerId,
         customerEmail,
+        customerFirstName: dto.customerFirstName?.trim() || null,
+        customerLastName: dto.customerLastName?.trim() || null,
         status: 'PENDING_REVIEW',
         shippingAddressId,
         shippingMethodId,
@@ -903,9 +922,10 @@ export class OrdersService {
     if (!order) {
       throw new NotFoundException('Заказ не найден');
     }
-    const orderEmail =
-      (order.user?.email ?? '').toLowerCase() ||
-      ((order as { customerEmail?: string }).customerEmail ?? '').toLowerCase();
+    const customerEmail = (order as { customerEmail?: string | null }).customerEmail ?? '';
+    const orderEmail = order.createdByManagerId
+      ? customerEmail.toLowerCase()
+      : (order.user?.email ?? customerEmail).toLowerCase();
     const payloadEmail = payload.email.toLowerCase();
     if (orderEmail !== payloadEmail) {
       throw new ForbiddenException('Ссылка не соответствует заказу');

@@ -34,6 +34,12 @@ const CartContext = createContext<CartContextValue | undefined>(undefined);
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const lastTokenRef = React.useRef<string | null>(null);
+
+  const getAuthToken = useCallback(() => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('user_token') || localStorage.getItem('admin_token');
+  }, []);
 
   const refreshCart = useCallback(async () => {
     try {
@@ -64,12 +70,32 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     await refreshCart();
   }, [refreshCart]);
 
-  // Загружаем количество товаров в корзине при монтировании
+  // Синхронизация корзины при смене токена (логин/логаут/смена аккаунта)
   useEffect(() => {
-    refreshCart().catch(() => {
-      // Игнорируем ошибки при загрузке (пользователь может быть не авторизован)
-    });
-  }, [refreshCart]);
+    const syncCart = async () => {
+      const token = getAuthToken();
+      if (!token) {
+        setCart([]);
+        lastTokenRef.current = null;
+        return;
+      }
+      if (lastTokenRef.current && lastTokenRef.current !== token) {
+        setCart([]);
+      }
+      lastTokenRef.current = token;
+      await refreshCart();
+    };
+
+    const handler = () => {
+      syncCart().catch(() => {
+        // Игнорируем ошибки при загрузке (пользователь может быть не авторизован)
+      });
+    };
+
+    handler();
+    window.addEventListener('auth-token-changed', handler);
+    return () => window.removeEventListener('auth-token-changed', handler);
+  }, [getAuthToken, refreshCart]);
 
   const addToCart = useCallback(
     async (

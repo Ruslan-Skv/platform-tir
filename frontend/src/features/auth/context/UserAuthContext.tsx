@@ -68,6 +68,9 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('auth-token-changed'));
+    }
   }, []);
 
   // Load auth state from localStorage on mount
@@ -162,6 +165,12 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       setUser(data.user);
       localStorage.setItem(TOKEN_KEY, data.access_token);
       localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      // Если был активен админ-токен — очищаем, чтобы корзина не смешивалась
+      localStorage.removeItem('admin_token');
+      localStorage.removeItem('admin_user');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('auth-token-changed'));
+      }
 
       return { success: true };
     } catch (error) {
@@ -199,6 +208,11 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         setUser(data.user);
         localStorage.setItem(TOKEN_KEY, data.access_token);
         localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('admin_user');
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('auth-token-changed'));
+        }
 
         return { success: true };
       } catch (error) {

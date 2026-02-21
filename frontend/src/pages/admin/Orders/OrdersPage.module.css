@@ -69,19 +69,21 @@
 /* Filters */
 .filters {
   display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
 }
 
 .searchInput {
-  flex: 1;
-  min-width: 250px;
-  max-width: 400px;
-  padding: 10px 16px;
+  flex: 0 0 auto;
+  width: 180px;
+  min-width: 160px;
+  max-width: 220px;
+  padding: 6px 10px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  font-size: 0.95rem;
+  font-size: 0.8rem;
 }
 
 .searchInput:focus {
@@ -91,12 +93,12 @@
 }
 
 .select {
-  padding: 10px 16px;
+  padding: 6px 10px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   background: #fff;
-  min-width: 150px;
+  min-width: 130px;
 }
 
 .select:focus {
@@ -105,11 +107,12 @@
 }
 
 .dateInput {
-  padding: 10px 16px;
+  padding: 6px 10px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   background: #fff;
+  width: 120px;
 }
 
 .dateInput:focus {

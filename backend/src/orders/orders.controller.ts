@@ -56,7 +56,7 @@ export class OrdersController {
   @Post('submit-from-cart')
   @ApiOperation({ summary: 'Отправить заказ из корзины на проверку менеджеру' })
   submitFromCart(@Request() req: RequestWithUser, @Body() body?: SubmitFromCartDto) {
-    return this.ordersService.submitFromCart(req.user.id, body);
+    return this.ordersService.submitFromCart(req.user.id, body, req.user.role);
   }
 
   @Post('calculate-delivery')
