@@ -80,7 +80,22 @@ export class AdminOrdersController {
   }
 
   @Post('submit-from-cart-for-customer')
-  @Roles('ADMIN', 'SUPER_ADMIN', 'MANAGER')
+  @Roles(
+    'SUPER_ADMIN',
+    'ADMIN',
+    'CONTENT_MANAGER',
+    'MODERATOR',
+    'SUPPORT',
+    'PARTNER',
+    'MANAGER',
+    'TECHNOLOGIST',
+    'BRIGADIER',
+    'LEAD_SPECIALIST_FURNITURE',
+    'LEAD_SPECIALIST_WINDOWS_DOORS',
+    'SURVEYOR',
+    'DRIVER',
+    'INSTALLER',
+  )
   submitFromCartForCustomer(
     @Request() req: RequestWithUser,
     @Body() dto: SubmitFromCartForCustomerDto,
@@ -97,6 +112,7 @@ export class AdminOrdersController {
   @Patch('delivery-config')
   @Roles('ADMIN', 'SUPER_ADMIN')
   updateDeliveryConfig(
+    @Request() req: RequestWithUser,
     @Body()
     body: {
       deliveryPricePerKmOutside?: number;
@@ -106,9 +122,10 @@ export class AdminOrdersController {
       moversKgPerPerson?: number;
       moversVolumePerPerson?: number | null;
       settlements?: Array<{ id?: string; name: string; price: number; order?: number }>;
+      rolesAllowedOrderForCustomer?: string[] | null;
     },
   ) {
-    return this.adminOrdersService.updateDeliveryConfig(body);
+    return this.adminOrdersService.updateDeliveryConfig(body, req.user.role);
   }
 
   @Get(':id')
@@ -134,6 +151,7 @@ export class AdminOrdersController {
   @Patch(':id/customer')
   @Roles('ADMIN', 'SUPER_ADMIN', 'MANAGER')
   updateOrderCustomer(
+    @Request() req: RequestWithUser,
     @Param('id') id: string,
     @Body()
     body: {
@@ -142,11 +160,12 @@ export class AdminOrdersController {
       customerLastName?: string | null;
     },
   ) {
-    return this.adminOrdersService.updateOrderCustomer(id, body);
+    return this.adminOrdersService.updateOrderCustomer(id, body, req.user.id);
   }
 
   @Patch(':id/delivery')
   updateOrderDelivery(
+    @Request() req: RequestWithUser,
     @Param('id') id: string,
     @Body()
     body: {
@@ -156,16 +175,17 @@ export class AdminOrdersController {
       plannedDeliveryDate?: string | null;
     },
   ) {
-    return this.adminOrdersService.updateOrderDelivery(id, body);
+    return this.adminOrdersService.updateOrderDelivery(id, body, req.user.id);
   }
 
   @Patch(':id/items/:itemId')
   updateOrderItem(
+    @Request() req: RequestWithUser,
     @Param('id') id: string,
     @Param('itemId') itemId: string,
     @Body() body: { managerComment?: string | null },
   ) {
-    return this.adminOrdersService.updateOrderItem(id, itemId, body);
+    return this.adminOrdersService.updateOrderItem(id, itemId, body, req.user.id);
   }
 
   @Post(':id/send-back')

@@ -70,6 +70,7 @@ type ShippingAddress = {
 
 type OrderDetail = Omit<AdminOrderSummary, 'items'> & {
   items?: OrderItemDetail[];
+  shippingAddressId?: string | null;
   shippingAddress?: ShippingAddress | null;
   shippingCost?: string | number;
   carryCost?: string | number | null;
@@ -91,6 +92,30 @@ type OrderDetail = Omit<AdminOrderSummary, 'items'> & {
   refundedAt?: string | null;
   user?: { id: string; email: string; firstName?: string; lastName?: string; phone?: string };
   processedByManager?: { id: string; email: string; firstName?: string; lastName?: string };
+  orderEvents?: Array<{
+    id: string;
+    createdAt: string;
+    type: string;
+    actor: string;
+    user?: { id: string; email: string; firstName?: string; lastName?: string } | null;
+  }>;
+};
+
+const ORDER_EVENT_LABELS: Record<string, string> = {
+  created: 'Заказ создан',
+  submitted_for_review: 'Отправлен на проверку',
+  add_to_review: 'Добавлены товары к заказу на проверке',
+  add_to_approved: 'Добавлены товары к проверенному заказу',
+  approved: 'Заказ проверен',
+  returned_for_correction: 'Отправлен на доработку',
+  cancelled: 'Заказ отменён',
+  shipped: 'Заказ отправлен',
+  delivered: 'Заказ доставлен',
+  refunded: 'Оформлен возврат',
+  delivery_edited: 'Изменены стоимость или дата доставки',
+  customer_edited: 'Изменены данные покупателя',
+  item_comment_edited: 'Изменены рекомендации по позиции',
+  sent_to_email: 'Заказ отправлен на email покупателю',
 };
 
 type OrderHistoryEvent = {
@@ -121,10 +146,6 @@ function formatDurationMinutesSeconds(ms: number): string {
 }
 
 function buildOrderHistory(order: OrderDetail): OrderHistoryEvent[] {
-  const events: OrderHistoryEvent[] = [];
-  const push = (at: string | null | undefined, label: string, author: string) => {
-    if (at) events.push({ at, label, author });
-  };
   const managerName = order.processedByManager
     ? `${order.processedByManager.firstName ?? ''} ${order.processedByManager.lastName ?? ''}`.trim() ||
       order.processedByManager.email
@@ -134,6 +155,68 @@ function buildOrderHistory(order: OrderDetail): OrderHistoryEvent[] {
   }`.trim();
   const customerLabel = customerName || order.customerEmail || order.user?.email || 'Покупатель';
 
+  if (order.orderEvents && order.orderEvents.length > 0) {
+    const fromEvents: OrderHistoryEvent[] = order.orderEvents.map((e) => {
+      const author =
+        e.actor === 'manager' && e.user
+          ? `${e.user.firstName ?? ''} ${e.user.lastName ?? ''}`.trim() ||
+            e.user.email ||
+            'Менеджер'
+          : e.actor === 'customer'
+            ? customerLabel
+            : e.user
+              ? `${e.user.firstName ?? ''} ${e.user.lastName ?? ''}`.trim() || e.user.email || '—'
+              : '—';
+      return {
+        at: e.createdAt,
+        label: ORDER_EVENT_LABELS[e.type] ?? e.type,
+        author,
+      };
+    });
+    const firstEventAt =
+      fromEvents.length > 0 ? Math.min(...fromEvents.map((e) => new Date(e.at).getTime())) : 0;
+    const creatorLabel = order.createdByManagerId ? managerName : customerLabel;
+    const legacy: OrderHistoryEvent[] = [];
+    if (order.createdAt && new Date(order.createdAt).getTime() < firstEventAt) {
+      legacy.push({ at: order.createdAt, label: 'Заказ создан', author: creatorLabel });
+    }
+    if (
+      order.submittedForReviewAt &&
+      new Date(order.submittedForReviewAt).getTime() < firstEventAt
+    ) {
+      legacy.push({
+        at: order.submittedForReviewAt,
+        label: 'Отправлен на проверку',
+        author: creatorLabel,
+      });
+    }
+    if (order.approvedAt && new Date(order.approvedAt).getTime() < firstEventAt) {
+      legacy.push({ at: order.approvedAt, label: 'Заказ проверен', author: managerName });
+    }
+    if (
+      order.returnedForCorrectionAt &&
+      new Date(order.returnedForCorrectionAt).getTime() < firstEventAt
+    ) {
+      legacy.push({
+        at: order.returnedForCorrectionAt,
+        label: 'Отправлен на доработку',
+        author: managerName,
+      });
+    }
+    const events = [...legacy, ...fromEvents];
+    events.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+    for (let i = 1; i < events.length; i++) {
+      const prev = new Date(events[i - 1].at).getTime();
+      const curr = new Date(events[i].at).getTime();
+      events[i].duration = formatDuration(curr - prev);
+    }
+    return events;
+  }
+
+  const events: OrderHistoryEvent[] = [];
+  const push = (at: string | null | undefined, label: string, author: string) => {
+    if (at) events.push({ at, label, author });
+  };
   const creatorLabel = order.createdByManagerId ? managerName : customerLabel;
 
   push(order.createdAt, 'Заказ создан', creatorLabel);
@@ -191,6 +274,8 @@ export default function AdminOrderDetailPage() {
   const [customerSaving, setCustomerSaving] = useState(false);
   const [customerSaveSuccess, setCustomerSaveSuccess] = useState(false);
   const [, setTick] = useState(0);
+  const [showOrderHistoryModal, setShowOrderHistoryModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   /** Черновики рекомендаций по позициям (чтобы кнопка «На доработку» учитывала несохранённый ввод). */
   const [commentDraftByItemId, setCommentDraftByItemId] = useState<Record<string, string>>({});
 
@@ -204,6 +289,15 @@ export default function AdminOrderDetailPage() {
   const loadOrder = useCallback(() => {
     if (!id) return;
     getAdminOrder(id).then((data) => setOrder(normalizeOrder(data)));
+  }, [id, normalizeOrder]);
+
+  const handleRefresh = useCallback(() => {
+    if (!id) return;
+    setRefreshing(true);
+    getAdminOrder(id)
+      .then((data) => setOrder(normalizeOrder(data)))
+      .catch((err) => setError(err instanceof Error ? err.message : 'Ошибка загрузки'))
+      .finally(() => setRefreshing(false));
   }, [id, normalizeOrder]);
 
   useEffect(() => {
@@ -284,6 +378,30 @@ export default function AdminOrderDetailPage() {
     const id = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
   }, []);
+
+  // Периодическое обновление заказа, чтобы видеть изменения со стороны покупателя (публичка)
+  const POLL_INTERVAL_MS = 15000;
+  useEffect(() => {
+    if (!id || !order || loading) return;
+    const intervalId = setInterval(() => {
+      getAdminOrder(id)
+        .then((data) => setOrder(normalizeOrder(data)))
+        .catch(() => {});
+    }, POLL_INTERVAL_MS);
+    return () => clearInterval(intervalId);
+  }, [id, order?.id, loading, normalizeOrder]);
+
+  // Обновить при возврате на вкладку (например, после действий в публичке)
+  useEffect(() => {
+    if (!id || !order) return;
+    const onFocus = () => {
+      getAdminOrder(id)
+        .then((data) => setOrder(normalizeOrder(data)))
+        .catch(() => {});
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [id, order?.id, normalizeOrder]);
 
   const handleStatusChange = async (newStatus: string) => {
     if (!id || !order) return;
@@ -439,18 +557,50 @@ export default function AdminOrderDetailPage() {
           <Link href="/admin/orders" className={styles.backLink}>
             ← К списку заказов
           </Link>
-          {isSuperAdmin && (
+          <div className={styles.headerActions}>
             <button
               type="button"
-              className={styles.deleteButton}
-              onClick={() => setDeleteConfirmOpen(true)}
-              disabled={deleteSubmitting}
+              className={styles.refreshButton}
+              onClick={handleRefresh}
+              disabled={refreshing}
+              title="Обновить данные заказа"
             >
-              {deleteSubmitting ? 'Удаление…' : 'Удалить заказ'}
+              {refreshing ? 'Обновление…' : 'Обновить'}
             </button>
-          )}
+            {isSuperAdmin && (
+              <button
+                type="button"
+                className={styles.deleteButton}
+                onClick={() => setDeleteConfirmOpen(true)}
+                disabled={deleteSubmitting}
+              >
+                {deleteSubmitting ? 'Удаление…' : 'Удалить заказ'}
+              </button>
+            )}
+          </div>
         </div>
-        <h1 className={styles.title}>Заказ {order.orderNumber}</h1>
+        <div className={styles.titleRow}>
+          <h1 className={styles.title}>Заказ {order.orderNumber}</h1>
+          <span className={styles.managerInline}>
+            {order.processedByManager ? (
+              <>
+                Менеджер: {order.processedByManager.firstName} {order.processedByManager.lastName}
+                {order.processedByManager.email && <> · {order.processedByManager.email}</>}
+              </>
+            ) : (
+              <span className={styles.mutedText}>Менеджер ещё не назначен</span>
+            )}
+          </span>
+          <button
+            type="button"
+            className={styles.historyActionButton}
+            onClick={() => setShowOrderHistoryModal(true)}
+            title="История заказа"
+            aria-label="История заказа"
+          >
+            📋 История
+          </button>
+        </div>
         <p className={styles.currentStatus}>
           Статус:{' '}
           <span className={`${styles.statusBadge} ${styles[`status${order.status}`] ?? ''}`}>
@@ -614,11 +764,11 @@ export default function AdminOrderDetailPage() {
         </p>
       )}
 
-      <div className={styles.topGrid}>
-        <section className={`${styles.section} ${styles.compactSection}`}>
-          <h2 className={styles.sectionTitle}>Клиент</h2>
-          <div className={styles.inputRow}>
-            <label className={styles.inputLabel}>Email покупателя</label>
+      <section className={`${styles.section} ${styles.clientSection}`}>
+        <h2 className={styles.sectionTitle}>Клиент</h2>
+        <div className={styles.clientRow}>
+          <div className={styles.clientField}>
+            <label className={styles.inputLabel}>Email</label>
             <input
               type="email"
               value={customerEmail}
@@ -627,8 +777,8 @@ export default function AdminOrderDetailPage() {
               placeholder="customer@example.com"
             />
           </div>
-          <div className={styles.inputRow}>
-            <label className={styles.inputLabel}>Имя</label>
+          <div className={styles.clientField}>
+            <label className={styles.inputLabel}>Фамилия</label>
             <input
               type="text"
               value={customerFirstName}
@@ -636,8 +786,8 @@ export default function AdminOrderDetailPage() {
               className={styles.input}
             />
           </div>
-          <div className={styles.inputRow}>
-            <label className={styles.inputLabel}>Фамилия</label>
+          <div className={styles.clientField}>
+            <label className={styles.inputLabel}>Имя</label>
             <input
               type="text"
               value={customerLastName}
@@ -645,61 +795,36 @@ export default function AdminOrderDetailPage() {
               className={styles.input}
             />
           </div>
-          <button
-            type="button"
-            className={styles.saveButton}
-            onClick={handleSaveCustomer}
-            disabled={customerSaving}
-          >
-            {customerSaving ? 'Сохранение…' : 'Сохранить данные покупателя'}
-          </button>
-          {customerSaveSuccess && (
-            <span className={styles.inlineSuccess} role="status">
-              Сохранено
-            </span>
+          <div className={styles.clientField}>
+            <label className={styles.inputLabel}>Отчество</label>
+            <input
+              type="text"
+              value={customerLastName}
+              onChange={(e) => setCustomerLastName(e.target.value)}
+              className={styles.input}
+            />
+          </div>
+          {order.user?.phone && (
+            <div className={styles.clientField}>
+              <span className={styles.inputLabel}>Телефон</span>
+              <span className={styles.clientPhone}>{order.user.phone}</span>
+            </div>
           )}
-          {order.user?.phone && <p className={styles.email}>Телефон: {order.user.phone}</p>}
-        </section>
-        <section className={`${styles.section} ${styles.compactSection}`}>
-          <h2 className={styles.sectionTitle}>Менеджер</h2>
-          {order.processedByManager ? (
-            <>
-              <p>
-                {order.processedByManager.firstName} {order.processedByManager.lastName}
-              </p>
-              <p className={styles.email}>{order.processedByManager.email}</p>
-            </>
-          ) : (
-            <p className={styles.mutedText}>Менеджер ещё не назначен</p>
-          )}
-        </section>
-      </div>
-
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>История заказа</h2>
-        <div className={styles.orderHistory}>
-          {buildOrderHistory(order).length === 0 ? (
-            <p className={styles.orderHistoryEmpty}>Нет событий</p>
-          ) : (
-            <>
-              <div className={styles.orderHistoryHeader}>
-                <span className={styles.orderHistoryTime}>Дата и время</span>
-                <span className={styles.orderHistoryLabel}>Событие</span>
-                <span className={styles.orderHistoryDuration}>Продолжительность</span>
-                <span className={styles.orderHistoryAuthor}>Автор</span>
-              </div>
-              <ul className={styles.orderHistoryList}>
-                {buildOrderHistory(order).map((event) => (
-                  <li key={`${event.at}-${event.label}`} className={styles.orderHistoryItem}>
-                    <span className={styles.orderHistoryTime}>{formatEventDateTime(event.at)}</span>
-                    <span className={styles.orderHistoryLabel}>{event.label}</span>
-                    <span className={styles.orderHistoryDuration}>{event.duration ?? '—'}</span>
-                    <span className={styles.orderHistoryAuthor}>{event.author}</span>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
+          <div className={styles.clientActions}>
+            <button
+              type="button"
+              className={styles.saveButton}
+              onClick={handleSaveCustomer}
+              disabled={customerSaving}
+            >
+              {customerSaving ? 'Сохранение…' : 'Сохранить'}
+            </button>
+            {customerSaveSuccess && (
+              <span className={styles.inlineSuccess} role="status">
+                Сохранено
+              </span>
+            )}
+          </div>
         </div>
       </section>
 
@@ -800,7 +925,54 @@ export default function AdminOrderDetailPage() {
         </div>
       )}
 
-      {(order.shippingAddress || order.deliveryType || order.shippingCost != null) && (
+      {showOrderHistoryModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowOrderHistoryModal(false)}>
+          <div className={styles.historyModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.historyModalHeader}>
+              <h3 className={styles.historyModalTitle}>История заказа {order.orderNumber}</h3>
+              <button
+                type="button"
+                className={styles.historyModalClose}
+                onClick={() => setShowOrderHistoryModal(false)}
+                aria-label="Закрыть"
+              >
+                ×
+              </button>
+            </div>
+            <div className={styles.orderHistory}>
+              {buildOrderHistory(order).length === 0 ? (
+                <p className={styles.orderHistoryEmpty}>Нет событий</p>
+              ) : (
+                <>
+                  <div className={styles.orderHistoryHeader}>
+                    <span className={styles.orderHistoryTime}>Дата и время</span>
+                    <span className={styles.orderHistoryLabel}>Событие</span>
+                    <span className={styles.orderHistoryDuration}>Продолжительность</span>
+                    <span className={styles.orderHistoryAuthor}>Автор</span>
+                  </div>
+                  <ul className={styles.orderHistoryList}>
+                    {buildOrderHistory(order).map((event) => (
+                      <li key={`${event.at}-${event.label}`} className={styles.orderHistoryItem}>
+                        <span className={styles.orderHistoryTime}>
+                          {formatEventDateTime(event.at)}
+                        </span>
+                        <span className={styles.orderHistoryLabel}>{event.label}</span>
+                        <span className={styles.orderHistoryDuration}>{event.duration ?? '—'}</span>
+                        <span className={styles.orderHistoryAuthor}>{event.author}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {(order.shippingAddressId ||
+        order.shippingAddress ||
+        order.deliveryType ||
+        order.shippingCost != null) && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Доставка</h2>
           <div className={styles.deliveryCompact}>
@@ -866,7 +1038,10 @@ export default function AdminOrderDetailPage() {
               </div>
             )}
           </div>
-          {(order.shippingAddress || order.deliveryType != null || order.shippingCost != null) && (
+          {(order.shippingAddressId ||
+            order.shippingAddress ||
+            order.deliveryType != null ||
+            order.shippingCost != null) && (
             <div className={styles.deliveryCostEdit}>
               <p className={styles.deliveryCostEditTitle}>
                 Редактирование стоимости и даты доставки

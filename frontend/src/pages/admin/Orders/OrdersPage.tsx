@@ -152,13 +152,17 @@ export function OrdersPage() {
     {
       key: 'payment',
       title: 'Оплата',
-      render: (order: Order) => (
-        <span
-          className={`${styles.paymentBadge} ${styles[`payment${order.paymentStatus ?? 'PENDING'}`]}`}
-        >
-          {getPaymentLabel(order.paymentStatus ?? 'PENDING')}
-        </span>
-      ),
+      render: (order: Order) => {
+        if (order.status === 'CANCELLED') {
+          return <span className={styles.paymentMuted}>—</span>;
+        }
+        const paymentStatus = order.paymentStatus ?? 'PENDING';
+        return (
+          <span className={`${styles.paymentBadge} ${styles[`payment${paymentStatus}`]}`}>
+            {getPaymentLabel(paymentStatus)}
+          </span>
+        );
+      },
     },
     {
       key: 'total',

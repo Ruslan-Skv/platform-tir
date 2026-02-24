@@ -81,6 +81,7 @@ model User {
   adminResourcePermissions AdminResourcePermission[]
   officeOtherExpensesCreated OfficeOtherExpense[]
   officeIncassationsCreated  OfficeIncassation[]
+  orderEventsAsActor         OrderEvent[]     @relation("OrderEventActor")
 
   @@map("users")
 }
@@ -766,6 +767,8 @@ model DeliveryConfig {
   moversPriceOutside        Decimal  @db.Decimal(10, 2) // Стоимость грузчиков за пределами списка (за 1 чел), руб
   moversKgPerPerson         Decimal  @db.Decimal(10, 2) // Кг на одного грузчика
   moversVolumePerPerson     Decimal? @db.Decimal(10, 4) // м³ на одного грузчика (опционально)
+  /// Роли, которым разрешено оформлять заказ для клиента (массив строк, напр. ["SUPER_ADMIN","ADMIN","MANAGER"]). null = по умолчанию все три.
+  rolesAllowedOrderForCustomer Json?
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
   settlements               DeliverySettlement[]
@@ -1038,8 +1041,24 @@ model Order {
   createdByManager            User?           @relation("OrdersCreatedByManager", fields: [createdByManagerId], references: [id])
   processedByManager          User?           @relation("OrdersProcessedByManager", fields: [processedByManagerId], references: [id])
   payments                    Payment[]
+  orderEvents                 OrderEvent[]
 
   @@map("orders")
+}
+
+/// События истории заказа (действия покупателя и менеджера) для блока «История заказа».
+model OrderEvent {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  type      String   // created, submitted_for_review, approved, returned_for_correction, cancelled, shipped, delivered, refunded, delivery_edited, customer_edited, item_comment_edited, sent_to_email, add_to_review, add_to_approved
+  actor     String   // customer | manager
+  userId    String?  // ID пользователя (менеджера или покупателя), если известен
+  user      User?    @relation("OrderEventActor", fields: [userId], references: [id])
+
+  @@index([orderId])
+  @@map("order_events")
 }
 
 model OrderItem {

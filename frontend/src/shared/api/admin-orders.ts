@@ -259,6 +259,8 @@ export interface DeliveryConfigDto {
   moversKgPerPerson: string | number;
   moversVolumePerPerson: string | number | null;
   settlements: DeliverySettlementDto[];
+  /** Роли, которым разрешено оформлять заказ для клиента. Только для супер-админа. Может отсутствовать до миграции. */
+  rolesAllowedOrderForCustomer?: string[];
 }
 
 export async function getDeliveryConfig(): Promise<DeliveryConfigDto> {
@@ -277,6 +279,8 @@ export async function updateDeliveryConfig(data: {
   moversKgPerPerson?: number;
   moversVolumePerPerson?: number | null;
   settlements?: Array<{ id?: string; name: string; price: number; order?: number }>;
+  /** Только супер-админ может передавать. Роли, которым разрешено оформлять заказ для клиента. */
+  rolesAllowedOrderForCustomer?: string[] | null;
 }): Promise<DeliveryConfigDto> {
   const res = await fetch(`${API_URL}/admin/orders/delivery-config`, {
     method: 'PATCH',

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -14,6 +14,8 @@ import {
 
 import styles from './page.module.css';
 
+const POLL_INTERVAL_MS = 15000;
+
 export default function OrderViewByTokenPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -21,6 +23,13 @@ export default function OrderViewByTokenPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [, setTick] = useState(0);
+
+  const loadOrder = useCallback(() => {
+    if (!token) return;
+    getUserOrderByToken(token)
+      .then(setOrder)
+      .catch(() => {});
+  }, [token]);
 
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 1000);
@@ -34,6 +43,8 @@ export default function OrderViewByTokenPage() {
       return;
     }
     let cancelled = false;
+    setLoading(true);
+    setError(null);
     getUserOrderByToken(token)
       .then((data) => {
         if (!cancelled) setOrder(data);
@@ -50,6 +61,21 @@ export default function OrderViewByTokenPage() {
       cancelled = true;
     };
   }, [token]);
+
+  // Периодическое обновление заказа, чтобы видеть изменения со стороны менеджера (админка)
+  useEffect(() => {
+    if (!token || !order || loading) return;
+    const intervalId = setInterval(loadOrder, POLL_INTERVAL_MS);
+    return () => clearInterval(intervalId);
+  }, [token, order?.id, loading, loadOrder]);
+
+  // Обновить при возврате на вкладку (например, после правок в админке)
+  useEffect(() => {
+    if (!token || !order) return;
+    const onFocus = loadOrder;
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [token, order?.id, loadOrder]);
 
   if (loading) {
     return (

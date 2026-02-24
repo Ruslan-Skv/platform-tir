@@ -7,7 +7,6 @@ import Link from 'next/link';
 
 import { type ProductComponent, getProductComponents } from '@/shared/api/product-components';
 import type { Review } from '@/shared/api/reviews';
-import { useApprovedOrderGuard } from '@/shared/lib/contexts/ApprovedOrderGuardContext';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 
 import { ProductComponents } from './ProductComponents';
@@ -68,7 +67,6 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     updateCartItemQuantityById,
     removeCartItemById,
   } = useCart();
-  const guard = useApprovedOrderGuard();
   const { toggleWishlist, isInWishlist, checkInWishlist, wishlist } = useWishlist();
   const { toggleCompare, isInCompare, checkInCompare, compare } = useCompare();
   const [product, setProduct] = useState<ProductData | null>(null);
@@ -920,11 +918,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                                             }));
                                           }
                                         };
-                                        const ok = await guard.confirmBeforeCartChange(
-                                          doAdd,
-                                          guard.hasApprovedOrder
-                                        );
-                                        if (!ok) return;
+                                        await doAdd();
                                       }}
                                       disabled={isAdding}
                                     >
@@ -1053,27 +1047,18 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                   onClick={async () => {
                     if (!product) return;
 
-                    const ok = await guard.confirmBeforeCartChange(async () => {
-                      try {
-                        setIsAddingToCart(true);
-                        await addToCart(
-                          productId,
-                          1,
-                          undefined,
-                          undefined,
-                          selectedCardVariant?.id
-                        );
-                      } catch (error) {
-                        if (error instanceof Error) {
-                          alert(error.message);
-                        } else {
-                          alert('Произошла ошибка при добавлении товара в корзину');
-                        }
-                      } finally {
-                        setIsAddingToCart(false);
+                    try {
+                      setIsAddingToCart(true);
+                      await addToCart(productId, 1, undefined, undefined, selectedCardVariant?.id);
+                    } catch (error) {
+                      if (error instanceof Error) {
+                        alert(error.message);
+                      } else {
+                        alert('Произошла ошибка при добавлении товара в корзину');
                       }
-                    }, guard.hasApprovedOrder);
-                    if (!ok) return;
+                    } finally {
+                      setIsAddingToCart(false);
+                    }
                   }}
                   disabled={isAddingToCart || !product}
                 >

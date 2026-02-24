@@ -56,6 +56,27 @@
   margin: 0 0 0.75rem;
 }
 
+.rolesCheckboxList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+}
+
+.roleCheckboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  color: #374151;
+  cursor: pointer;
+}
+
+.roleCheckboxLabel input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #4f46e5;
+}
+
 .radioGroup {
   display: flex;
   flex-direction: column;

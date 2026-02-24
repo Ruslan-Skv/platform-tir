@@ -2,6 +2,8 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 
+import { useAuth } from '@/features/auth';
+import { ROLES_CONFIG } from '@/pages/admin/Settings/rolesConfig';
 import {
   type DeliveryConfigDto,
   type DeliverySettlementDto,
@@ -11,11 +13,18 @@ import {
 
 import styles from './page.module.css';
 
+/** Все роли кроме Пользователь и Гость — их можно допустить к оформлению заказа для клиента. */
+const ROLES_ORDER_FOR_CUSTOMER: string[] = ROLES_CONFIG.filter(
+  (r) => r.id !== 'USER' && r.id !== 'GUEST'
+).map((r) => r.id);
+
 function toNum(v: string | number): number {
   return typeof v === 'string' ? parseFloat(v) || 0 : v;
 }
 
 export default function AdminSettingsDeliveryPage() {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [config, setConfig] = useState<DeliveryConfigDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -24,7 +33,14 @@ export default function AdminSettingsDeliveryPage() {
   const load = useCallback(async () => {
     try {
       const data = await getDeliveryConfig();
-      setConfig(data);
+      setConfig({
+        ...data,
+        rolesAllowedOrderForCustomer:
+          Array.isArray(data.rolesAllowedOrderForCustomer) &&
+          data.rolesAllowedOrderForCustomer.length > 0
+            ? data.rolesAllowedOrderForCustomer
+            : ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
+      });
     } catch {
       setConfig(null);
     } finally {
@@ -42,7 +58,7 @@ export default function AdminSettingsDeliveryPage() {
     setSaving(true);
     setMessage(null);
     try {
-      await updateDeliveryConfig({
+      const payload: Parameters<typeof updateDeliveryConfig>[0] = {
         deliveryPricePerKmOutside: toNum(config.deliveryPricePerKmOutside),
         deliveryPaymentMode: config.deliveryPaymentMode === 'ON_SITE' ? 'ON_SITE' : 'WITH_ORDER',
         moversPriceMurmansk: toNum(config.moversPriceMurmansk),
@@ -60,7 +76,11 @@ export default function AdminSettingsDeliveryPage() {
             order: i,
           }))
           .filter((s) => s.name.length > 0),
-      });
+      };
+      if (isSuperAdmin && config.rolesAllowedOrderForCustomer) {
+        payload.rolesAllowedOrderForCustomer = config.rolesAllowedOrderForCustomer;
+      }
+      await updateDeliveryConfig(payload);
       setMessage({ text: 'Настройки доставки сохранены' });
       await load();
     } catch (err) {
@@ -74,11 +94,18 @@ export default function AdminSettingsDeliveryPage() {
   };
 
   const update = (
-    key: keyof Omit<DeliveryConfigDto, 'settlements'>,
+    key: keyof Omit<DeliveryConfigDto, 'settlements' | 'rolesAllowedOrderForCustomer'>,
     value: string | number | null
   ) => {
     if (!config) return;
     setConfig({ ...config, [key]: value });
+  };
+
+  const setRolesAllowedOrderForCustomer = (roleId: string, checked: boolean) => {
+    if (!config) return;
+    const current = config.rolesAllowedOrderForCustomer ?? [];
+    const next = checked ? [...current, roleId] : current.filter((r) => r !== roleId);
+    setConfig({ ...config, rolesAllowedOrderForCustomer: next });
   };
 
   const settlements = config?.settlements ?? [];
@@ -132,6 +159,33 @@ export default function AdminSettingsDeliveryPage() {
       </header>
 
       <form onSubmit={handleSubmit} className={styles.form}>
+        {isSuperAdmin && (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Оформление заказов для клиентов</h2>
+            <p className={styles.hint}>
+              Выберите роли, которым разрешено оформлять заказ за клиента (корзина менеджера → заказ
+              на email клиента). Остальные не смогут использовать эту функцию.
+            </p>
+            <div className={styles.rolesCheckboxList}>
+              {ROLES_ORDER_FOR_CUSTOMER.map((roleId) => {
+                const roleConfig = ROLES_CONFIG.find((r) => r.id === roleId);
+                const label = roleConfig?.label ?? roleId;
+                const checked = (config.rolesAllowedOrderForCustomer ?? []).includes(roleId);
+                return (
+                  <label key={roleId} className={styles.roleCheckboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => setRolesAllowedOrderForCustomer(roleId, e.target.checked)}
+                    />
+                    <span>{label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Оплата доставки</h2>
           <p className={styles.hint}>

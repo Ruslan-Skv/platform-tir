@@ -160,10 +160,12 @@ export class OrdersService {
 
   /**
    * Расчёт стоимости доставки по конфигу: lookup по населённому пункту, иначе за км; грузчики по массе и габаритам.
+   * @param optionalCartItems — при указании используются эти позиции вместо корзины (для расчёта при submit с cartItemIds).
    */
   async calculateDelivery(
     userId: string,
     dto: CalculateDeliveryDto,
+    optionalCartItems?: Awaited<ReturnType<CartService['getCartItems']>>,
   ): Promise<{ deliveryCost: number; carryCost: number; totalShippingCost: number }> {
     const config = await this.getDeliveryConfig();
     const cityNorm = (dto.city || '').trim().toLowerCase();
@@ -177,8 +179,10 @@ export class OrdersService {
       : Math.max(0, dto.distanceKm ?? 0) * Number(config.deliveryPricePerKmOutside);
 
     let carryCost = 0;
+    // Доставка «до квартиры»: добавляется стоимость подъёма (грузчики) по конфигу (moversPriceMurmansk / moversPriceOutside).
+    // Итоговая надбавка = moversCount * цена за грузчика; при настройке 3000 ₽ за грузчика и одном грузчике получается +3000 ₽.
     if (dto.deliveryType === DeliveryType.TO_APARTMENT) {
-      const cartItems = await this.cartService.getCartItems(userId);
+      const cartItems = optionalCartItems ?? (await this.cartService.getCartItems(userId));
       const productIds = [
         ...new Set([
           ...cartItems.filter((i) => i.productId).map((i) => i.productId as string),
@@ -234,9 +238,17 @@ export class OrdersService {
    * Иначе при указании shippingMethodId стоимость доставки включается по старой схеме (учёт freeFromAmount).
    */
   async submitFromCart(userId: string, dto?: SubmitFromCartDto, role?: string) {
-    const cartItems = await this.cartService.getCartItems(userId);
+    let cartItems = await this.cartService.getCartItems(userId);
     if (!cartItems.length) {
       throw new BadRequestException('Корзина пуста');
+    }
+
+    if (dto?.cartItemIds?.length) {
+      const idsSet = new Set(dto.cartItemIds);
+      cartItems = cartItems.filter((item) => idsSet.has(item.id));
+      if (!cartItems.length) {
+        throw new BadRequestException('Указанные позиции не найдены в корзине');
+      }
     }
 
     const orderItems: Array<{
@@ -310,14 +322,18 @@ export class OrdersService {
         },
       });
       shippingAddressId = addressRecord.id;
-      const calc = await this.calculateDelivery(userId, {
-        subtotal,
-        city: addr.city,
-        distanceKm: dto.distanceKm,
-        deliveryType: dto.deliveryType,
-        deliveryFloor: dto.deliveryFloor,
-        deliveryHasElevator: dto.deliveryHasElevator,
-      });
+      const calc = await this.calculateDelivery(
+        userId,
+        {
+          subtotal,
+          city: addr.city,
+          distanceKm: dto.distanceKm,
+          deliveryType: dto.deliveryType,
+          deliveryFloor: dto.deliveryFloor,
+          deliveryHasElevator: dto.deliveryHasElevator,
+        },
+        cartItems,
+      );
       shippingCost = calc.deliveryCost;
       carryCostFromCalc = calc.carryCost;
       const base = await this.getBaseDeliveryCost(subtotal);
@@ -362,9 +378,291 @@ export class OrdersService {
       approvedNotExpired?.approvedAt &&
       Date.now() - new Date(approvedNotExpired.approvedAt).getTime() < APPROVAL_VALID_MS;
 
-    if (activeOrders.some((o) => o.status === 'PENDING_REVIEW') || approvedValid) {
+    const pendingReviewOrder = activeOrders.find((o) => o.status === 'PENDING_REVIEW');
+
+    // Добавить новые товары к заказу, который уже на проверке (addToPendingReview + cartItemIds).
+    // Объединяем с существующими позициями по (productId, size, openingSide), чтобы не дублировать строки.
+    if (pendingReviewOrder && dto?.addToPendingReview === true && dto?.cartItemIds?.length) {
+      const existingSubtotal = parseFloat(pendingReviewOrder.subtotal.toString());
+      const existingShipping = parseFloat(pendingReviewOrder.shippingCost.toString());
+      const existingCarry = pendingReviewOrder.carryCost
+        ? parseFloat(pendingReviewOrder.carryCost.toString())
+        : 0;
+
+      const existingItems = await this.prisma.orderItem.findMany({
+        where: { orderId: pendingReviewOrder.id },
+      });
+
+      const key = (oi: { productId: string; size: string | null; openingSide: string | null }) =>
+        `${oi.productId}|${oi.size ?? ''}|${oi.openingSide ?? ''}`;
+      type Group = {
+        productId: string;
+        quantity: number;
+        price: number;
+        size: string | null;
+        openingSide: string | null;
+        cardVariantId: string | null;
+      };
+      const grouped = new Map<string, Group>();
+      for (const oi of orderItems) {
+        const k = key(oi);
+        const cur = grouped.get(k);
+        if (!cur) {
+          grouped.set(k, {
+            productId: oi.productId,
+            quantity: oi.quantity,
+            price: oi.price,
+            size: oi.size,
+            openingSide: oi.openingSide,
+            cardVariantId: oi.cardVariantId,
+          });
+        } else {
+          const totalQty = cur.quantity + oi.quantity;
+          cur.price = (cur.price * cur.quantity + oi.price * oi.quantity) / totalQty;
+          cur.quantity = totalQty;
+        }
+      }
+
+      const usedExistingIds = new Set<string>();
+      for (const [k, g] of grouped) {
+        const [productId] = k.split('|');
+        const existing = existingItems.find(
+          (e) =>
+            !usedExistingIds.has(e.id) &&
+            e.productId === productId &&
+            (e.size ?? '') === (g.size ?? '') &&
+            (e.openingSide ?? '') === (g.openingSide ?? ''),
+        );
+        if (existing) {
+          const oldQty = existing.quantity;
+          const newQty = oldQty + g.quantity;
+          const newPrice =
+            (parseFloat(existing.price.toString()) * oldQty + g.price * g.quantity) / newQty;
+          await this.prisma.orderItem.update({
+            where: { id: existing.id },
+            data: { quantity: newQty, price: newPrice },
+          });
+          usedExistingIds.add(existing.id);
+        } else {
+          await this.prisma.orderItem.create({
+            data: {
+              orderId: pendingReviewOrder.id,
+              productId: g.productId,
+              quantity: g.quantity,
+              price: g.price,
+              size: g.size,
+              openingSide: g.openingSide,
+              cardVariantId: g.cardVariantId,
+            },
+          });
+        }
+      }
+
+      const newSubtotal = existingSubtotal + subtotal;
+      const newTotal = newSubtotal + existingShipping + existingCarry;
+
+      await this.prisma.order.update({
+        where: { id: pendingReviewOrder.id },
+        data: {
+          submittedForReviewAt: new Date(),
+          subtotal: newSubtotal,
+          total: newTotal,
+        },
+      });
+
+      const adminRoles: UserRole[] = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'];
+      const admins = await this.prisma.user.findMany({
+        where: { role: { in: adminRoles }, isActive: true },
+        select: { id: true },
+      });
+      await Promise.all([
+        ...admins.map((a) =>
+          this.usersService.createNotification(a.id, {
+            type: 'new_order',
+            title: 'В заказ на проверке добавлены новые товары',
+            message: `В заказ ${pendingReviewOrder.orderNumber} покупатель добавил новые товары. Заказ обновлён и снова ожидает проверки.`,
+          }),
+        ),
+        this.usersService.createNotification(userId, {
+          type: 'order_status',
+          title: `Заказ ${pendingReviewOrder.orderNumber} обновлён`,
+          message:
+            'Новые товары добавлены к заказу на проверке. Менеджер проверит обновлённый список.',
+        }),
+      ]);
+
+      await this.prisma.orderEvent.create({
+        data: {
+          orderId: pendingReviewOrder.id,
+          type: 'add_to_review',
+          actor: 'customer',
+          userId,
+        },
+      });
+
+      const order = await this.prisma.order.findUnique({
+        where: { id: pendingReviewOrder.id },
+        include: {
+          items: { include: { product: true } },
+          shippingAddress: true,
+          user: {
+            select: { id: true, email: true, firstName: true, lastName: true },
+          },
+        },
+      });
+      return order!;
+    }
+
+    if (pendingReviewOrder) {
       throw new BadRequestException(
-        'У вас уже есть активный заказ (на проверке или проверенный). Отмените его в корзине или дождитесь обработки.',
+        'У вас уже есть заказ на проверке. Дождитесь обработки или отмените его в корзине.',
+      );
+    }
+
+    // Добавить новые товары к проверенному заказу (addToApproved или cartItemIds).
+    // Объединяем с существующими позициями по (productId, size, openingSide).
+    const wantsAddToApproved =
+      dto?.addToApproved === true || (dto?.cartItemIds && dto.cartItemIds.length > 0);
+    if (approvedValid && approvedNotExpired && wantsAddToApproved) {
+      if (!dto?.cartItemIds?.length) {
+        throw new BadRequestException(
+          'Для добавления к проверенному заказу необходимо указать позиции корзины (cartItemIds).',
+        );
+      }
+      const approvedOrder = approvedNotExpired;
+      const existingSubtotal = parseFloat(approvedOrder.subtotal.toString());
+      const existingShipping = parseFloat(approvedOrder.shippingCost.toString());
+      const existingCarry = approvedOrder.carryCost
+        ? parseFloat(approvedOrder.carryCost.toString())
+        : 0;
+
+      const existingItems = await this.prisma.orderItem.findMany({
+        where: { orderId: approvedOrder.id },
+      });
+      const key = (oi: { productId: string; size: string | null; openingSide: string | null }) =>
+        `${oi.productId}|${oi.size ?? ''}|${oi.openingSide ?? ''}`;
+      type Group = {
+        productId: string;
+        quantity: number;
+        price: number;
+        size: string | null;
+        openingSide: string | null;
+        cardVariantId: string | null;
+      };
+      const grouped = new Map<string, Group>();
+      for (const oi of orderItems) {
+        const k = key(oi);
+        const cur = grouped.get(k);
+        if (!cur) {
+          grouped.set(k, {
+            productId: oi.productId,
+            quantity: oi.quantity,
+            price: oi.price,
+            size: oi.size,
+            openingSide: oi.openingSide,
+            cardVariantId: oi.cardVariantId,
+          });
+        } else {
+          const totalQty = cur.quantity + oi.quantity;
+          cur.price = (cur.price * cur.quantity + oi.price * oi.quantity) / totalQty;
+          cur.quantity = totalQty;
+        }
+      }
+      const usedExistingIds = new Set<string>();
+      for (const [k, g] of grouped) {
+        const [productId] = k.split('|');
+        const existing = existingItems.find(
+          (e) =>
+            !usedExistingIds.has(e.id) &&
+            e.productId === productId &&
+            (e.size ?? '') === (g.size ?? '') &&
+            (e.openingSide ?? '') === (g.openingSide ?? ''),
+        );
+        if (existing) {
+          const oldQty = existing.quantity;
+          const newQty = oldQty + g.quantity;
+          const newPrice =
+            (parseFloat(existing.price.toString()) * oldQty + g.price * g.quantity) / newQty;
+          await this.prisma.orderItem.update({
+            where: { id: existing.id },
+            data: { quantity: newQty, price: newPrice },
+          });
+          usedExistingIds.add(existing.id);
+        } else {
+          await this.prisma.orderItem.create({
+            data: {
+              orderId: approvedOrder.id,
+              productId: g.productId,
+              quantity: g.quantity,
+              price: g.price,
+              size: g.size,
+              openingSide: g.openingSide,
+              cardVariantId: g.cardVariantId,
+            },
+          });
+        }
+      }
+
+      const newSubtotal = existingSubtotal + subtotal;
+      const newTotal = newSubtotal + existingShipping + existingCarry;
+
+      await this.prisma.order.update({
+        where: { id: approvedOrder.id },
+        data: {
+          status: 'PENDING_REVIEW',
+          approvedAt: null,
+          submittedForReviewAt: new Date(),
+          subtotal: newSubtotal,
+          total: newTotal,
+        },
+      });
+
+      const adminRoles: UserRole[] = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'];
+      const admins = await this.prisma.user.findMany({
+        where: { role: { in: adminRoles }, isActive: true },
+        select: { id: true },
+      });
+      await Promise.all([
+        ...admins.map((a) =>
+          this.usersService.createNotification(a.id, {
+            type: 'new_order',
+            title: 'В проверенный заказ добавлены новые товары',
+            message: `В заказ ${approvedOrder.orderNumber} покупатель добавил новые товары. Заказ снова на проверке.`,
+          }),
+        ),
+        this.usersService.createNotification(userId, {
+          type: 'order_status',
+          title: `Новые товары добавлены к заказу ${approvedOrder.orderNumber}`,
+          message:
+            'Новые товары добавлены к вашему заказу. Заказ снова отправлен на проверку менеджеру.',
+        }),
+      ]);
+
+      await this.prisma.orderEvent.create({
+        data: {
+          orderId: approvedOrder.id,
+          type: 'add_to_approved',
+          actor: 'customer',
+          userId,
+        },
+      });
+
+      const order = await this.prisma.order.findUnique({
+        where: { id: approvedOrder.id },
+        include: {
+          items: { include: { product: true } },
+          shippingAddress: true,
+          user: {
+            select: { id: true, email: true, firstName: true, lastName: true },
+          },
+        },
+      });
+      return order!;
+    }
+
+    if (approvedValid) {
+      throw new BadRequestException(
+        'У вас уже есть проверенный заказ. Оформите его или отмените в корзине, чтобы отправить новые товары отдельно.',
       );
     }
 
@@ -424,10 +722,21 @@ export class OrdersService {
             'Заказ после доработки принят на проверку. Обычно проверка занимает около 15 минут.',
         }),
       ]);
+
+      await this.prisma.orderEvent.create({
+        data: {
+          orderId: returnedOrder.id,
+          type: 'submitted_for_review',
+          actor: 'customer',
+          userId,
+        },
+      });
+
       const order = await this.prisma.order.findUnique({
         where: { id: returnedOrder.id },
         include: {
           items: { include: { product: true } },
+          shippingAddress: true,
           user: {
             select: { id: true, email: true, firstName: true, lastName: true },
           },
@@ -479,6 +788,7 @@ export class OrdersService {
       },
       include: {
         items: { include: { product: true } },
+        shippingAddress: true,
         user: {
           select: {
             id: true,
@@ -518,6 +828,15 @@ export class OrdersService {
         : []),
     ]);
 
+    await this.prisma.orderEvent.create({
+      data: {
+        orderId: order.id,
+        type: 'submitted_for_review',
+        actor: isManagerRole ? 'manager' : 'customer',
+        userId: isManagerRole ? userId : order.userId,
+      },
+    });
+
     return order;
   }
 
@@ -530,9 +849,16 @@ export class OrdersService {
     managerRole: string,
     dto: SubmitFromCartForCustomerDto,
   ) {
-    const managerRoles: UserRole[] = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'];
-    if (!managerRoles.includes(managerRole as UserRole)) {
-      throw new ForbiddenException('Только менеджер может оформить заказ для покупателя');
+    const deliveryConfig = await this.getDeliveryConfig();
+    const raw = deliveryConfig as unknown as { rolesAllowedOrderForCustomer?: unknown };
+    const allowedRoles: string[] =
+      Array.isArray(raw.rolesAllowedOrderForCustomer) && raw.rolesAllowedOrderForCustomer.length > 0
+        ? (raw.rolesAllowedOrderForCustomer as string[])
+        : ['SUPER_ADMIN', 'ADMIN', 'MANAGER'];
+    if (!allowedRoles.includes(managerRole)) {
+      throw new ForbiddenException(
+        'Вашей роли не разрешено оформлять заказ для клиента. Обратитесь к администратору.',
+      );
     }
 
     const cartItems = await this.cartService.getCartItems(managerId);
@@ -702,6 +1028,15 @@ export class OrdersService {
             lastName: true,
           },
         },
+      },
+    });
+
+    await this.prisma.orderEvent.create({
+      data: {
+        orderId: order.id,
+        type: 'submitted_for_review',
+        actor: 'manager',
+        userId: managerId,
       },
     });
 
@@ -1078,6 +1413,15 @@ export class OrdersService {
             lastName: true,
           },
         },
+      },
+    });
+
+    await this.prisma.orderEvent.create({
+      data: {
+        orderId,
+        type: 'cancelled',
+        actor: 'customer',
+        userId,
       },
     });
 

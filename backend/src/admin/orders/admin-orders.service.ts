@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
 import { UsersService } from '../../users/users.service';
@@ -269,6 +274,19 @@ export class AdminOrdersService {
           },
           orderBy: { createdAt: 'desc' },
         },
+        orderEvents: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -336,11 +354,41 @@ export class AdminOrdersService {
             include: { method: true },
             orderBy: { createdAt: 'desc' },
           },
+          orderEvents: {
+            orderBy: { createdAt: 'asc' },
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  email: true,
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
         },
       });
     }
 
     return order;
+  }
+
+  /** Записать событие в историю заказа. */
+  private async recordOrderEvent(
+    orderId: string,
+    type: string,
+    actor: 'customer' | 'manager',
+    userId?: string | null,
+  ): Promise<void> {
+    await this.prisma.orderEvent.create({
+      data: {
+        orderId,
+        type,
+        actor,
+        userId: userId ?? null,
+      },
+    });
   }
 
   /** Вернуть остатки на склад при отмене заказа (истечение 60 мин или отмена покупателем). */
@@ -367,7 +415,12 @@ export class AdminOrdersService {
   }
 
   /** Обновить только комментарий менеджера к пункту заказа (рекомендации по замене/количеству для покупателя). */
-  async updateOrderItem(orderId: string, itemId: string, data: { managerComment?: string | null }) {
+  async updateOrderItem(
+    orderId: string,
+    itemId: string,
+    data: { managerComment?: string | null },
+    managerId?: string,
+  ) {
     const order = await this.findOne(orderId);
     const item = order.items.find((i) => i.id === itemId);
     if (!item) {
@@ -389,6 +442,8 @@ export class AdminOrdersService {
       where: { id: orderId },
       data: { adminEditedAt: new Date() },
     });
+
+    await this.recordOrderEvent(orderId, 'item_comment_edited', 'manager', managerId);
 
     const orderUserId = order.userId;
     if (orderUserId) {
@@ -441,6 +496,7 @@ export class AdminOrdersService {
       moversCount?: number | null;
       plannedDeliveryDate?: string | null;
     },
+    managerId?: string,
   ) {
     await this.findOne(orderId);
     const updateData: Prisma.OrderUpdateInput = {};
@@ -467,6 +523,7 @@ export class AdminOrdersService {
       where: { id: orderId },
       data: updateData,
     });
+    await this.recordOrderEvent(orderId, 'delivery_edited', 'manager', managerId);
     await this.recalculateOrderTotals(orderId);
     return this.findOne(orderId);
   }
@@ -483,6 +540,7 @@ export class AdminOrdersService {
         ...(managerId ? { processedByManager: { connect: { id: managerId } } } : {}),
       },
     });
+    await this.recordOrderEvent(orderId, 'returned_for_correction', 'manager', managerId);
     await this.usersService.createNotification(order.userId, {
       type: 'order_status',
       title: `Заказ ${order.orderNumber} отправлен на доработку`,
@@ -530,6 +588,7 @@ export class AdminOrdersService {
         processedByManager: { connect: { id: managerId } },
       },
     });
+    await this.recordOrderEvent(orderId, 'sent_to_email', 'manager', managerId);
     return { sent: true };
   }
 
@@ -541,6 +600,7 @@ export class AdminOrdersService {
       customerFirstName?: string | null;
       customerLastName?: string | null;
     },
+    managerId?: string,
   ) {
     await this.findOne(orderId);
     const updateData: Prisma.OrderUpdateInput = {};
@@ -560,6 +620,7 @@ export class AdminOrdersService {
       where: { id: orderId },
       data: updateData,
     });
+    await this.recordOrderEvent(orderId, 'customer_edited', 'manager', managerId);
     return this.findOne(orderId);
   }
 
@@ -603,19 +664,28 @@ export class AdminOrdersService {
         },
       });
     }
-    return config;
+    const raw = config as unknown as { rolesAllowedOrderForCustomer?: unknown };
+    const rolesAllowed =
+      Array.isArray(raw.rolesAllowedOrderForCustomer) && raw.rolesAllowedOrderForCustomer.length > 0
+        ? (raw.rolesAllowedOrderForCustomer as string[])
+        : ['SUPER_ADMIN', 'ADMIN', 'MANAGER'];
+    return { ...config, rolesAllowedOrderForCustomer: rolesAllowed };
   }
 
-  /** Обновить настройки расчёта доставки. */
-  async updateDeliveryConfig(data: {
-    deliveryPricePerKmOutside?: number;
-    deliveryPaymentMode?: 'WITH_ORDER' | 'ON_SITE';
-    moversPriceMurmansk?: number;
-    moversPriceOutside?: number;
-    moversKgPerPerson?: number;
-    moversVolumePerPerson?: number | null;
-    settlements?: Array<{ id?: string; name: string; price: number; order?: number }>;
-  }) {
+  /** Обновить настройки расчёта доставки. Только супер-админ может менять rolesAllowedOrderForCustomer. */
+  async updateDeliveryConfig(
+    data: {
+      deliveryPricePerKmOutside?: number;
+      deliveryPaymentMode?: 'WITH_ORDER' | 'ON_SITE';
+      moversPriceMurmansk?: number;
+      moversPriceOutside?: number;
+      moversKgPerPerson?: number;
+      moversVolumePerPerson?: number | null;
+      settlements?: Array<{ id?: string; name: string; price: number; order?: number }>;
+      rolesAllowedOrderForCustomer?: string[] | null;
+    },
+    currentUserRole?: string,
+  ) {
     const config = await this.getDeliveryConfig();
     const updateData: Prisma.DeliveryConfigUpdateInput = {};
     if (data.deliveryPricePerKmOutside !== undefined)
@@ -629,6 +699,18 @@ export class AdminOrdersService {
     if (data.moversKgPerPerson !== undefined) updateData.moversKgPerPerson = data.moversKgPerPerson;
     if (data.moversVolumePerPerson !== undefined)
       updateData.moversVolumePerPerson = data.moversVolumePerPerson;
+
+    if (data.rolesAllowedOrderForCustomer !== undefined) {
+      if (currentUserRole !== 'SUPER_ADMIN') {
+        throw new ForbiddenException(
+          'Только супер-администратор может изменять список ролей для оформления заказов за клиента',
+        );
+      }
+      updateData.rolesAllowedOrderForCustomer =
+        data.rolesAllowedOrderForCustomer == null || data.rolesAllowedOrderForCustomer.length === 0
+          ? Prisma.JsonNull
+          : (data.rolesAllowedOrderForCustomer as unknown as Prisma.InputJsonValue);
+    }
 
     if (data.settlements !== undefined) {
       await this.prisma.deliverySettlement.deleteMany({ where: { configId: config.id } });
@@ -651,10 +733,16 @@ export class AdminOrdersService {
       });
     }
 
-    return this.prisma.deliveryConfig.findFirstOrThrow({
+    const updated = await this.prisma.deliveryConfig.findFirstOrThrow({
       where: { id: config.id },
       include: { settlements: { orderBy: { order: 'asc' } } },
     });
+    const raw = updated as unknown as { rolesAllowedOrderForCustomer?: unknown };
+    const rolesAllowed =
+      Array.isArray(raw.rolesAllowedOrderForCustomer) && raw.rolesAllowedOrderForCustomer.length > 0
+        ? (raw.rolesAllowedOrderForCustomer as string[])
+        : ['SUPER_ADMIN', 'ADMIN', 'MANAGER'];
+    return { ...updated, rolesAllowedOrderForCustomer: rolesAllowed };
   }
 
   async updateStatus(id: string, status: string, managerId?: string) {
@@ -714,6 +802,16 @@ export class AdminOrdersService {
         },
       },
     });
+
+    const statusEventType: Record<string, string> = {
+      APPROVED: 'approved',
+      SHIPPED: 'shipped',
+      DELIVERED: 'delivered',
+      CANCELLED: 'cancelled',
+    };
+    if (statusEventType[status]) {
+      await this.recordOrderEvent(id, statusEventType[status], 'manager', managerId);
+    }
 
     // Уведомление покупателю о этапе заказа
     const statusMessages: Record<string, { title: string; message: string }> = {
@@ -782,6 +880,8 @@ export class AdminOrdersService {
       },
     });
 
+    await this.recordOrderEvent(id, 'cancelled', 'manager', undefined);
+
     await this.usersService.createNotification(order.userId, {
       type: 'order_status',
       title: `Заказ ${order.orderNumber} отменён`,
@@ -815,6 +915,8 @@ export class AdminOrdersService {
         refundReason: reason,
       },
     });
+
+    await this.recordOrderEvent(id, 'refunded', 'manager', undefined);
 
     await this.usersService.createNotification(order.userId, {
       type: 'order_status',

@@ -265,6 +265,11 @@
   color: #86198f;
 }
 
+.paymentMuted {
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
 /* Total Cell */
 .totalCell {
   display: flex;

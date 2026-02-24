@@ -187,11 +187,23 @@ export interface SubmitFromCartDeliveryPayload {
   preferredDeliveryTime?: string;
 }
 
+export interface SubmitFromCartPayload {
+  /** Добавить новые товары к проверенному заказу (вместо создания нового). */
+  addToApproved?: boolean;
+  /** Добавить новые товары к заказу на проверке (объединить и отправить заново). */
+  addToPendingReview?: boolean;
+  /** ID позиций корзины для отправки. Обязателен при addToApproved / addToPendingReview. */
+  cartItemIds?: string[];
+  shippingMethodId?: string;
+}
+
+export type SubmitFromCartFullPayload =
+  | (SubmitFromCartPayload & SubmitFromCartDeliveryPayload)
+  | (SubmitFromCartPayload & { shippingMethodId?: string });
+
 /** Отправить заказ из корзины на проверку менеджеру (статус «На проверке»). */
-export async function submitOrderFromCart(
-  payload?: { shippingMethodId?: string } | SubmitFromCartDeliveryPayload
-): Promise<UserOrder> {
-  const body =
+export async function submitOrderFromCart(payload?: SubmitFromCartFullPayload): Promise<UserOrder> {
+  const basePayload =
     payload && 'deliveryAddress' in payload && payload.deliveryAddress
       ? {
           deliveryAddress: payload.deliveryAddress,
@@ -204,6 +216,18 @@ export async function submitOrderFromCart(
       : payload && 'shippingMethodId' in payload && payload.shippingMethodId
         ? { shippingMethodId: payload.shippingMethodId }
         : {};
+  const body: Record<string, unknown> = {
+    ...basePayload,
+  };
+  if (payload?.cartItemIds && payload.cartItemIds.length > 0) {
+    body.cartItemIds = payload.cartItemIds;
+  }
+  if (payload?.addToApproved === true) {
+    body.addToApproved = true;
+  }
+  if (payload?.addToPendingReview === true) {
+    body.addToPendingReview = true;
+  }
   const res = await fetch(`${API_URL}/orders/submit-from-cart`, {
     method: 'POST',
     headers: getAuthHeaders(),
