@@ -23,6 +23,8 @@ interface ProductData {
   comparePrice: string | null;
   stock: number;
   images: string[];
+  videoUrl?: string | null;
+  weight?: number | null;
   isNew: boolean;
   isFeatured: boolean;
   // Атрибуты могут быть массивом (новый формат) или объектом (старый формат)
@@ -56,6 +58,55 @@ interface ProductData {
 
 interface ProductDetailPageProps {
   slug: string;
+}
+
+/** Плеер для YouTube, Vimeo или прямого URL видео */
+function ProductVideoPlayer({ url }: { url: string }) {
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+
+  // YouTube: watch?v=ID или youtu.be/ID
+  const ytMatch =
+    trimmed.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/) ||
+    trimmed.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/);
+  if (ytMatch) {
+    const embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}?rel=0`;
+    return (
+      <div className={styles.videoWrapper}>
+        <iframe
+          src={embedUrl}
+          title="Видео о товаре"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          className={styles.videoIframe}
+        />
+      </div>
+    );
+  }
+
+  // Vimeo: vimeo.com/123456
+  const vimeoMatch = trimmed.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  if (vimeoMatch) {
+    const embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+    return (
+      <div className={styles.videoWrapper}>
+        <iframe
+          src={embedUrl}
+          title="Видео о товаре"
+          allow="fullscreen; picture-in-picture"
+          allowFullScreen
+          className={styles.videoIframe}
+        />
+      </div>
+    );
+  }
+
+  // Прямая ссылка на видеофайл
+  return (
+    <div className={styles.videoWrapper}>
+      <video src={trimmed} controls className={styles.videoNative} />
+    </div>
+  );
 }
 
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) => {
@@ -1073,10 +1124,18 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
           </div>
 
           {/* Характеристики */}
-          {attributesArray.length > 0 && (
+          {(attributesArray.length > 0 || (product.weight != null && product.weight !== '')) && (
             <div className={styles.attributes}>
               <h2 className={styles.attributesTitle}>Характеристики</h2>
               <dl className={styles.attributesList}>
+                {product.weight != null &&
+                  product.weight !== '' &&
+                  !Number.isNaN(Number(product.weight)) && (
+                    <>
+                      <dt>Масса</dt>
+                      <dd>{`${Number(product.weight)} кг`}</dd>
+                    </>
+                  )}
                 {attributesArray.map((attr, index) => {
                   // Пропускаем пустые значения
                   if (!attr.value) return null;
@@ -1102,6 +1161,14 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
             className={styles.descriptionText}
             dangerouslySetInnerHTML={{ __html: product.description.replace(/\n/g, '<br />') }}
           />
+        </div>
+      )}
+
+      {/* Видео о товаре */}
+      {product.videoUrl && (
+        <div className={styles.productVideo}>
+          <h2 className={styles.descriptionTitle}>Видео о товаре</h2>
+          <ProductVideoPlayer url={product.videoUrl} />
         </div>
       )}
 

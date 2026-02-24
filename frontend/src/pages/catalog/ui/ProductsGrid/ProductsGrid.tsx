@@ -24,6 +24,7 @@ interface ApiProduct {
   isFeatured: boolean;
   isPartnerProduct?: boolean;
   images: string[];
+  videoUrl?: string | null;
   attributes: Record<string, unknown> | null;
   sortOrder?: number;
   createdAt?: string;
@@ -160,6 +161,7 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
           // Сохраняем дополнительные данные для сортировки
           sortOrder: p.sortOrder ?? 0,
           createdAt: p.createdAt ? new Date(p.createdAt).getTime() : Date.now(),
+          videoUrl: p.videoUrl ?? undefined,
           cardVariants: p.cardVariants?.map((v) => ({
             id: v.id,
             name: v.name,

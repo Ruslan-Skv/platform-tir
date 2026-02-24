@@ -35,6 +35,10 @@ export interface Product {
   createdAt?: number;
   /** Схожие товары в одной карточке (до 5): выбор варианта по цене, размеру, фото, названию, цвету, доп. опции */
   cardVariants?: ProductCardVariant[];
+  /** URL видеоролика о товаре (YouTube, Vimeo или свой хостинг) */
+  videoUrl?: string | null;
+  /** Масса товара, кг */
+  weight?: number | null;
 }
 
 export interface ProductCardVariant {

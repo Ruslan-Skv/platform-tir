@@ -33,6 +33,7 @@ interface ApiProduct {
   isFeatured: boolean;
   isPartnerProduct?: boolean;
   images: string[];
+  videoUrl?: string | null;
   sortOrder?: number;
   createdAt?: string;
   rating?: number;
@@ -85,6 +86,7 @@ function mapApiProductToProduct(p: ApiProduct, index: number): Product {
         : undefined,
     sortOrder: p.sortOrder ?? 0,
     createdAt: p.createdAt ? new Date(p.createdAt).getTime() : Date.now(),
+    videoUrl: p.videoUrl ?? undefined,
   };
 }
 

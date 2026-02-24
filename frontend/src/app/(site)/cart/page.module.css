@@ -1466,11 +1466,11 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .checkoutHint {
-  color: #9ca3af;
+  color: #d90652;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .checkoutHintPink {
-  color: #f9a8d4;
+  color: #d90652;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cancelReviewLink {

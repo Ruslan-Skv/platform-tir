@@ -22,6 +22,7 @@ const DEFAULT_CARD_SECTIONS = [
   'cardVariants',
   'seo',
   'images',
+  'video',
   'description',
   'attributes',
   'components',
@@ -177,6 +178,8 @@ interface Product {
   partnerId?: string | null;
   sortOrder: number;
   images: string[];
+  videoUrl?: string | null;
+  weight?: number | null;
   seoTitle: string | null;
   seoDescription: string | null;
   attributes: Record<string, string> | null;
@@ -270,6 +273,8 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     seoTitle: '',
     seoDescription: '',
     images: [] as string[],
+    videoUrl: '',
+    weight: '',
     attributes: {} as Record<string, string>,
     sizes: [] as string[],
     openingSide: [] as string[],
@@ -502,6 +507,8 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           seoTitle: product.seoTitle || '',
           seoDescription: product.seoDescription || '',
           images: product.images || [],
+          videoUrl: product.videoUrl || '',
+          weight: product.weight != null ? String(product.weight) : '',
           attributes: categoryAttrsOnly,
           sizes: product.sizes || [],
           openingSide: product.openingSide || [],
@@ -873,6 +880,8 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           seoDescription: formData.seoDescription || null,
           attributes: attributesArray, // Теперь массив с гарантированным порядком
           images: formData.images,
+          videoUrl: formData.videoUrl?.trim() || null,
+          weight: formData.weight ? parseFloat(formData.weight) : null,
           sizes: hasSizes ? cleanedSizes : null,
           openingSide: hasOpeningSide ? formData.openingSide : null,
           supplierId: formData.supplierId || null,
@@ -1251,6 +1260,25 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                     name="stock"
                     value={formData.stock}
                     onChange={handleIntegerChange}
+                    className={styles.input}
+                    placeholder="0"
+                    autoComplete="off"
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label htmlFor="weight">Масса, кг</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    id="weight"
+                    name="weight"
+                    value={formData.weight}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        weight: e.target.value.replace(',', '.'),
+                      }))
+                    }
                     className={styles.input}
                     placeholder="0"
                     autoComplete="off"
@@ -1783,6 +1811,31 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
               ) : (
                 <p className={styles.noImages}>Изображения не добавлены</p>
               )}
+            </div>
+          )}
+
+          {/* Video */}
+          {showSection('video') && (
+            <div className={`${styles.formSection} ${styles.formSectionFullWidth}`}>
+              <h2 className={styles.sectionTitle}>Видеоролик о товаре</h2>
+              <p className={styles.dropZoneHint}>
+                Укажите ссылку на видео (YouTube, Vimeo или прямой URL на файл). На карточке товара
+                будет отображаться кнопка просмотра.
+              </p>
+              <div className={styles.formGroup}>
+                <label htmlFor="videoUrl" className={styles.label}>
+                  URL видеоролика
+                </label>
+                <input
+                  id="videoUrl"
+                  name="videoUrl"
+                  type="url"
+                  value={formData.videoUrl}
+                  onChange={handleChange}
+                  className={styles.input}
+                  placeholder="https://www.youtube.com/watch?v=... или https://..."
+                />
+              </div>
             </div>
           )}
 

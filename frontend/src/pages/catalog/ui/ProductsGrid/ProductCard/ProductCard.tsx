@@ -264,6 +264,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {product.isFeatured && <span className={styles.hitBadge}>ХИТ</span>}
             {product.isNew && <span className={styles.newBadge}>Новинка</span>}
             {product.discount && <span className={styles.discountBadge}>-{product.discount}%</span>}
+            {product.videoUrl && (
+              <span className={styles.videoBadge} title="Есть видео о товаре">
+                ▶ Видео
+              </span>
+            )}
           </div>
 
           {/* Иконка партнёра — левый нижний угол картинки */}

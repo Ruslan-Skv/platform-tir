@@ -52,6 +52,17 @@ export class CreateProductDto {
   @Type(() => Number)
   stock?: number;
 
+  @ApiProperty({
+    example: 25.5,
+    required: false,
+    description: 'Масса товара, кг',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  weight?: number;
+
   @ApiProperty({ example: true, default: true })
   @IsOptional()
   @IsBoolean()
@@ -101,6 +112,15 @@ export class CreateProductDto {
   @IsArray()
   @IsString({ each: true })
   images?: string[];
+
+  @ApiProperty({
+    example: 'https://www.youtube.com/watch?v=...',
+    required: false,
+    description: 'URL видеоролика о товаре (YouTube, Vimeo или свой хостинг)',
+  })
+  @IsOptional()
+  @IsString()
+  videoUrl?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()

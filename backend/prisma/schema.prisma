@@ -920,6 +920,7 @@ model Product {
   sortOrder        Int                @default(0)
   categoryId       String
   images           String[]
+  videoUrl         String?   // URL видеоролика о товаре (YouTube, Vimeo или свой хостинг)
   attributes       Json?
   seoTitle         String?
   seoDescription   String?
