@@ -1,0 +1,146 @@
+/* Аналогично каталогу товаров */
+.page {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-rows: auto 1fr;
+  margin: 0 auto;
+  max-width: 1280px;
+  min-height: 60vh;
+  padding: 1rem;
+}
+
+@media (width <= 1280px) {
+  .page {
+    max-width: 1200px;
+  }
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.breadcrumbLink {
+  color: #6b7280;
+  text-decoration: none;
+}
+
+.breadcrumbLink:hover {
+  color: #d90652;
+}
+
+.breadcrumbSep {
+  color: #9ca3af;
+}
+
+.breadcrumbCurrent {
+  color: #374151;
+  font-weight: 500;
+}
+
+.mainContent {
+  grid-row: 2;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem;
+  color: #111827;
+}
+
+.grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  align-items: stretch;
+}
+
+.categoryCard {
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.categoryCard:hover {
+  border-color: rgb(217 6 82 / 0.4);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.06);
+}
+
+.categoryCardIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+  background: #f3f4f6;
+  border-radius: 10px;
+}
+
+.categoryCardIconSvg {
+  width: 24px;
+  height: 24px;
+  color: #6b7280;
+}
+
+.categoryCardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.categoryCard:hover .categoryCardIconSvg {
+  color: #d90652;
+}
+
+.categoryCardTitle {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+  color: #111827;
+}
+
+.categoryCardDescription {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0 0 auto;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.categoryCardCount {
+  font-size: 0.8125rem;
+  color: #9ca3af;
+  margin-top: 0.75rem;
+}
+
+.loading,
+.empty {
+  color: #6b7280;
+  font-size: 1rem;
+  margin: 0;
+}
+
+@media (width <= 768px) {
+  .page {
+    padding: 0.75rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -709,6 +709,39 @@ async function main() {
   }
   console.log('✅ CrmDirection: направления CRM созданы');
 
+  // ============================================
+  // КАТАЛОГ УСЛУГ: блок и категории
+  // ============================================
+  await prisma.serviceCatalogBlock.upsert({
+    where: { id: 'main' },
+    update: {},
+    create: {
+      id: 'main',
+      title: 'Каталог услуг',
+      showPricesInPublic: true,
+    },
+  });
+  const serviceCategories = [
+    { name: 'Малярные работы', slug: 'painting', icon: 'PaintBrush', sortOrder: 0 },
+    { name: 'Работы по электрике', slug: 'electrical', icon: 'Bolt', sortOrder: 1 },
+    { name: 'Работы по полам', slug: 'floors', icon: 'Square3Stack3D', sortOrder: 2 },
+    { name: 'Работы по потолкам', slug: 'ceilings', icon: 'Cube', sortOrder: 3 },
+    { name: 'Работы по сантехнике', slug: 'plumbing', icon: 'WrenchScrewdriver', sortOrder: 4 },
+    { name: 'Работы с кафелем', slug: 'tiling', icon: 'Squares2X2', sortOrder: 5 },
+    { name: 'Монтаж дверей', slug: 'door-installation', icon: 'RectangleStack', sortOrder: 6 },
+    { name: 'Монтаж окон', slug: 'window-installation', icon: 'Squares2X2', sortOrder: 7 },
+    { name: 'Монтаж натяжных потолков', slug: 'stretch-ceiling-installation', icon: 'Cube', sortOrder: 8 },
+    { name: 'Монтаж жалюзей', slug: 'blinds-installation', icon: 'ViewColumns', sortOrder: 9 },
+  ];
+  for (const c of serviceCategories) {
+    await prisma.serviceCatalogCategory.upsert({
+      where: { slug: c.slug },
+      update: { name: c.name, icon: c.icon, sortOrder: c.sortOrder },
+      create: { ...c, isActive: true },
+    });
+  }
+  console.log('✅ ServiceCatalog: блок и категории созданы');
+
   console.log('🎉 Seeding completed!');
 }
 

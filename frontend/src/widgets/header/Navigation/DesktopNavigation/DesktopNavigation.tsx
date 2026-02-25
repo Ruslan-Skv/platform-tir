@@ -2,7 +2,12 @@
 
 import React, { useRef } from 'react';
 
-import { useDropdown, useDynamicCategories, useNavigationItems } from '@/shared/lib/hooks';
+import {
+  useDropdown,
+  useDynamicCategories,
+  useDynamicServiceCategories,
+  useNavigationItems,
+} from '@/shared/lib/hooks';
 
 import { NavigationItem } from '../NavigationItem';
 import styles from './DesktopNavigation.module.css';
@@ -24,6 +29,7 @@ export const DesktopNavigation: React.FC<DesktopNavigationProps> = ({ onNavigati
 
   const navigationItems = useNavigationItems();
   const { navigationCategories } = useDynamicCategories();
+  const { serviceCategories } = useDynamicServiceCategories();
 
   return (
     <div className={styles.desktopNavigation} ref={dropdownRef}>
@@ -41,6 +47,7 @@ export const DesktopNavigation: React.FC<DesktopNavigationProps> = ({ onNavigati
                 onDropdownMouseLeave={handleDropdownMouseLeave}
                 onClick={onNavigationClick}
                 dynamicCategories={navigationCategories}
+                dynamicServiceCategories={serviceCategories}
               />
             </React.Fragment>
           ))}

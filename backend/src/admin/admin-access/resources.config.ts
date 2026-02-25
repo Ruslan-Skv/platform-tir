@@ -68,6 +68,17 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   { id: 'admin.catalog.products', label: 'Товары', path: '/admin/catalog/products' },
   { id: 'admin.catalog.categories', label: 'Категории', path: '/admin/catalog/categories' },
   { id: 'admin.catalog.attributes', label: 'Характеристики', path: '/admin/catalog/attributes' },
+  { id: 'admin.service-catalog', label: 'Каталог услуг', path: '/admin/service-catalog' },
+  {
+    id: 'admin.service-catalog.items',
+    label: 'Каталог услуг — Виды работ',
+    path: '/admin/service-catalog/items',
+  },
+  {
+    id: 'admin.service-catalog.settings',
+    label: 'Каталог услуг — Настройки',
+    path: '/admin/service-catalog/settings',
+  },
   { id: 'admin.partners', label: 'Партнёры', path: '/admin/partners' },
   { id: 'admin.catalog.suppliers', label: 'Поставщики', path: '/admin/catalog/suppliers' },
   { id: 'admin.orders', label: 'Заказы', path: '/admin/orders' },

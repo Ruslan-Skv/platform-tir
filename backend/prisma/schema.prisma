@@ -345,6 +345,49 @@ model ServiceItem {
   @@map("service_items")
 }
 
+// --- Каталог услуг (виды работ с ценами) ---
+model ServiceCatalogBlock {
+  id                  String   @id @default("main")
+  title               String   @default("Каталог услуг")
+  showPricesInPublic  Boolean  @default(true) // Показывать стоимость в публичной части
+  updatedAt           DateTime @updatedAt
+
+  @@map("service_catalog_block")
+}
+
+model ServiceCatalogCategory {
+  id          String                @id @default(cuid())
+  name        String
+  slug        String                @unique
+  description String?               @db.Text
+  icon        String?               // Имя иконки heroicons (PaintBrush, Bolt и т.д.)
+  image       String?               // URL или base64 — при наличии показывается вместо иконки
+  sortOrder   Int                   @default(0)
+  isActive    Boolean               @default(true)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  items       ServiceCatalogItem[]
+
+  @@map("service_catalog_categories")
+}
+
+model ServiceCatalogItem {
+  id          String                 @id @default(cuid())
+  categoryId  String
+  name        String                 // Вид работ (например "Шпатлёвка стен")
+  description String?                @db.Text
+  price       Decimal                @db.Decimal(12, 2) // Стоимость за единицу
+  unit        String                 @default("м²") // Единица измерения: м², шт, п.м. и т.д.
+  sortOrder   Int                    @default(0)
+  isActive    Boolean                @default(true)
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  category    ServiceCatalogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
+  @@map("service_catalog_items")
+}
+
 model Customer {
   id            String         @id @default(cuid())
   email         String         @unique

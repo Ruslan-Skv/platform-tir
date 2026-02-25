@@ -173,6 +173,29 @@ const baseNavItems: NavItem[] = [
       },
     ],
   },
+  {
+    label: 'Каталог услуг',
+    href: '/admin/service-catalog',
+    icon: '🔧',
+    resourceId: 'admin.service-catalog',
+    children: [
+      {
+        label: 'Категории',
+        href: '/admin/service-catalog',
+        resourceId: 'admin.service-catalog',
+      },
+      {
+        label: 'Виды работ',
+        href: '/admin/service-catalog/items',
+        resourceId: 'admin.service-catalog.items',
+      },
+      {
+        label: 'Настройки',
+        href: '/admin/service-catalog/settings',
+        resourceId: 'admin.service-catalog.settings',
+      },
+    ],
+  },
   { label: 'Партнёры', href: '/admin/partners', icon: '🤝', resourceId: 'admin.partners' },
   {
     label: 'Поставщики',

@@ -10,7 +10,11 @@ import { useRouter } from 'next/navigation';
 import { ActionButton } from '@/features/forms';
 import { useFormContext } from '@/features/forms';
 import { dropdownMenus } from '@/shared/constants/navigation';
-import { useDynamicCategories, useNavigationItems } from '@/shared/lib/hooks';
+import {
+  useDynamicCategories,
+  useDynamicServiceCategories,
+  useNavigationItems,
+} from '@/shared/lib/hooks';
 import { getSafeHref } from '@/shared/lib/sanitize';
 
 import styles from './MobileNavigation.module.css';
@@ -39,6 +43,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
   const router = useRouter();
   const navigationItems = useNavigationItems();
   const { navigationCategories } = useDynamicCategories();
+  const { serviceCategories } = useDynamicServiceCategories();
   const { measurementModal, callbackModal } = useFormContext();
 
   const menuButtons: MenuButton[] = navigationItems.map((item) => ({
@@ -98,6 +103,18 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
             icon: sub.icon,
             image: sub.image,
           })),
+        })),
+      };
+    }
+
+    if (activeMenuItem === 'Каталог услуг') {
+      return {
+        category: 'services',
+        items: serviceCategories.map((cat) => ({
+          name: cat.name,
+          href: cat.href,
+          productType: cat.slug,
+          icon: cat.icon,
         })),
       };
     }

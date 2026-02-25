@@ -25,6 +25,7 @@ import { UserCabinetModule } from './user-cabinet/user-cabinet.module';
 import { AdminCatalogBlockModule } from './catalog-block/admin-catalog-block.module';
 import { AdminAccessModule } from './admin-access/admin-access.module';
 import { OfficeCashModule } from './office-cash/office-cash.module';
+import { ServiceCatalogModule } from './service-catalog/service-catalog.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { OfficeCashModule } from './office-cash/office-cash.module';
     PromotionModule,
     UserCabinetModule,
     AdminCatalogBlockModule,
+    ServiceCatalogModule,
     // Analytics
     AnalyticsModule,
   ],
@@ -86,6 +88,7 @@ import { OfficeCashModule } from './office-cash/office-cash.module';
     PromotionModule,
     UserCabinetModule,
     AdminCatalogBlockModule,
+    ServiceCatalogModule,
     AnalyticsModule,
   ],
 })
