@@ -32,6 +32,9 @@ interface ImportProductDto {
   isActive?: boolean;
 }
 
+const MAX_BULK_IDS = 1000;
+const MAX_IMPORT_PRODUCTS = 500;
+
 @Injectable()
 export class AdminProductsService {
   constructor(private prisma: PrismaService) {}
@@ -197,6 +200,9 @@ export class AdminProductsService {
     if (!ids.length) {
       throw new BadRequestException('No product IDs provided');
     }
+    if (ids.length > MAX_BULK_IDS) {
+      throw new BadRequestException(`Maximum ${MAX_BULK_IDS} products per request`);
+    }
 
     const updateData: Prisma.ProductUpdateManyMutationInput = {};
 
@@ -234,6 +240,9 @@ export class AdminProductsService {
     if (!ids.length) {
       throw new BadRequestException('No product IDs provided');
     }
+    if (ids.length > MAX_BULK_IDS) {
+      throw new BadRequestException(`Maximum ${MAX_BULK_IDS} products per request`);
+    }
 
     // Явно удаляем связи с поставщиками перед удалением товаров
     // Это гарантирует, что счетчики обновятся корректно
@@ -252,6 +261,9 @@ export class AdminProductsService {
   }
 
   async bulkActivate(ids: string[], isActive: boolean) {
+    if (ids.length > MAX_BULK_IDS) {
+      throw new BadRequestException(`Maximum ${MAX_BULK_IDS} products per request`);
+    }
     const result = await this.prisma.product.updateMany({
       where: { id: { in: ids } },
       data: { isActive },
@@ -264,6 +276,9 @@ export class AdminProductsService {
   }
 
   async bulkUpdatePrices(updates: { id: string; price?: number; comparePrice?: number }[]) {
+    if (updates.length > MAX_BULK_IDS) {
+      throw new BadRequestException(`Maximum ${MAX_BULK_IDS} updates per request`);
+    }
     const results = await this.prisma.$transaction(
       updates.map((update) =>
         this.prisma.product.update({
@@ -286,6 +301,9 @@ export class AdminProductsService {
   }
 
   async bulkUpdateStock(updates: { id: string; stock: number }[]) {
+    if (updates.length > MAX_BULK_IDS) {
+      throw new BadRequestException(`Maximum ${MAX_BULK_IDS} updates per request`);
+    }
     const results = await this.prisma.$transaction(
       updates.map((update) =>
         this.prisma.product.update({
@@ -303,6 +321,9 @@ export class AdminProductsService {
 
   // Import/Export
   async importProducts(products: ImportProductDto[]) {
+    if (products.length > MAX_IMPORT_PRODUCTS) {
+      throw new BadRequestException(`Maximum ${MAX_IMPORT_PRODUCTS} products per import`);
+    }
     const results = {
       created: 0,
       updated: 0,
@@ -568,6 +589,55 @@ export class AdminProductsService {
     return results;
   }
 
+  /**
+   * Удаляет HTML-теги без ReDoS (безопасная замена /<[^>]*>/g).
+   */
+  private stripHtmlTags(s: string): string {
+    let result = '';
+    let i = 0;
+    while (i < s.length) {
+      const lt = s.indexOf('<', i);
+      if (lt === -1) {
+        result += s.slice(i);
+        break;
+      }
+      result += s.slice(i, lt) + ' ';
+      const gt = s.indexOf('>', lt + 1);
+      i = gt === -1 ? s.length : gt + 1;
+    }
+    return result;
+  }
+
+  /**
+   * Извлекает содержимое ячеек <td>...</td> без ReDoS.
+   */
+  private extractTableCellContents(row: string): string[] {
+    const cells: string[] = [];
+    let pos = 0;
+    const lowerRow = row.toLowerCase();
+    while (pos < row.length) {
+      const tdOpen = lowerRow.indexOf('<td', pos);
+      if (tdOpen === -1) break;
+      const gt = row.indexOf('>', tdOpen + 3);
+      if (gt === -1) break;
+      const tdClose = lowerRow.indexOf('</td>', gt + 1);
+      if (tdClose === -1) break;
+      const content = row.slice(gt + 1, tdClose);
+      cells.push(
+        this.stripHtmlTags(content)
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/\s+/g, ' ')
+          .trim(),
+      );
+      pos = tdClose + 5;
+    }
+    return cells;
+  }
+
   // Parse HTML table from Bitrix export
   private parseHtmlTable(html: string, skuPrefix: string) {
     interface ParsedProduct {
@@ -588,22 +658,7 @@ export class AdminProductsService {
       const row = rows[i];
       if (!row.includes('<td>') && !row.includes('<td ')) continue;
 
-      const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
-      const cells: string[] = [];
-      let match;
-
-      while ((match = cellRegex.exec(row)) !== null) {
-        const value = match[1]
-          .replace(/<[^>]*>/g, '')
-          .replace(/&nbsp;/g, ' ')
-          .replace(/&amp;/g, '&')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&quot;/g, '"')
-          .replace(/\s+/g, ' ')
-          .trim();
-        cells.push(value);
-      }
+      const cells = this.extractTableCellContents(row);
 
       if (cells.length < 10) continue;
       if (cells[0] === 'Название' || cells[0] === 'ID' || cells[0] === '') continue;

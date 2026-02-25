@@ -93,12 +93,31 @@ export function getSafeHref(href: string | null | undefined, fallback = '#'): st
 }
 
 /**
+ * Удаляет HTML-теги без ReDoS (безопасная замена /<[^>]*>/g).
+ * Использует индексный поиск вместо regex для избежания катастрофического backtracking.
+ */
+function stripHtmlTags(s: string): string {
+  let result = '';
+  let i = 0;
+  while (i < s.length) {
+    const lt = s.indexOf('<', i);
+    if (lt === -1) {
+      result += s.slice(i);
+      break;
+    }
+    result += s.slice(i, lt) + ' ';
+    const gt = s.indexOf('>', lt + 1);
+    i = gt === -1 ? s.length : gt + 1;
+  }
+  return result;
+}
+
+/**
  * Извлекает только текст из HTML (для speech synthesis и т.п.).
- * Безопасно: не использует innerHTML для разбора, работает на сервере и клиенте.
+ * Безопасно от ReDoS: не использует уязвимые regex для тегов.
  */
 export function stripHtmlToText(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, ' ')
+  return stripHtmlTags(html)
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')

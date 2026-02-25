@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { OriginGuard } from '../common/guards/origin.guard';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
@@ -24,11 +25,12 @@ export class ReviewsController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const pageNum = page ? parseInt(page, 10) : 1;
-    const limitNum = limit ? parseInt(limit, 10) : 10;
+    const pageNum = Math.min(Math.max(1, parseInt(page || '1', 10) || 1), 500);
+    const limitNum = Math.min(Math.max(1, parseInt(limit || '10', 10) || 10), 50);
     return this.reviewsService.getProductReviews(productId, pageNum, limitNum);
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('product/:productId')
   @UseGuards(OriginGuard, OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Создать отзыв на товар (опционально авторизован)' })

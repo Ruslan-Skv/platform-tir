@@ -12,9 +12,10 @@ async function bootstrap() {
   // Раздача загруженных файлов (картинки «Наши направления» и др.)
   app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
-  // Увеличиваем лимит размера body для загрузки изображений (base64)
-  app.use(json({ limit: '50mb' }));
-  app.use(urlencoded({ limit: '50mb', extended: true }));
+  // Лимит body: 20MB (защита от переполнения памяти при разборе JSON)
+  // Для base64-изображений в JSON; увеличение — только при явной необходимости
+  app.use(json({ limit: '20mb' }));
+  app.use(urlencoded({ limit: '20mb', extended: true }));
 
   // Global prefix
   const apiPrefix = process.env.API_PREFIX || 'api/v1';

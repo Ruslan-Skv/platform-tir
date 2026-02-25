@@ -35,7 +35,8 @@ export class AnalyticsController {
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
   ) {
-    return this.analyticsService.getTopProducts(limit ? parseInt(limit, 10) : 10, dateFrom, dateTo);
+    const limitNum = limit ? Math.min(100, Math.max(1, parseInt(limit, 10) || 10)) : 10;
+    return this.analyticsService.getTopProducts(limitNum, dateFrom, dateTo);
   }
 
   @Get('categories/top')
@@ -44,11 +45,8 @@ export class AnalyticsController {
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
   ) {
-    return this.analyticsService.getTopCategories(
-      limit ? parseInt(limit, 10) : 10,
-      dateFrom,
-      dateTo,
-    );
+    const limitNum = limit ? Math.min(100, Math.max(1, parseInt(limit, 10) || 10)) : 10;
+    return this.analyticsService.getTopCategories(limitNum, dateFrom, dateTo);
   }
 
   @Get('customers')

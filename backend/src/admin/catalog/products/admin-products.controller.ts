@@ -142,7 +142,11 @@ export class AdminProductsController {
   }
 
   @Post('import/file')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+    }),
+  )
   async importFromFile(
     @UploadedFile() file: Express.Multer.File,
     @Body('categoryId') categoryId: string,
