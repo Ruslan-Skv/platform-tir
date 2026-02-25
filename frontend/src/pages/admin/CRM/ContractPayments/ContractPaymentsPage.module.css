@@ -98,6 +98,20 @@
   margin-left: auto;
 }
 
+.collectionInput {
+  padding: 4px 8px;
+  font-size: 0.8125rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  min-width: 80px;
+  max-width: 100px;
+}
+
+.rowDiscrepancy {
+  background: #fef2f2 !important;
+}
+
 .summaryCard {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -457,6 +471,30 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .filteredSum {
   color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .collectionInput {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .collectionInput::placeholder {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .collectionInput:focus {
+  border-color: #6366f1;
+  outline: none;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .collectionInput:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .rowDiscrepancy {
+  background: rgb(127 29 29 / 0.35) !important;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .summaryCard {

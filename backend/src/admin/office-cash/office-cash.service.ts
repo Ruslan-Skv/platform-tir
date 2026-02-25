@@ -130,6 +130,24 @@ export class OfficeCashService {
     });
   }
 
+  async updateOtherExpenseCollectionAmount(id: string, collectionAmount: number | null) {
+    const existing = await this.prisma.officeOtherExpense.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) throw new NotFoundException('Расход не найден');
+    return this.prisma.officeOtherExpense.update({
+      where: { id },
+      data: {
+        collectionAmount: collectionAmount != null ? new Prisma.Decimal(collectionAmount) : null,
+      },
+      include: {
+        office: { select: { id: true, name: true } },
+        createdBy: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
+  }
+
   async createOtherExpense(dto: CreateOfficeOtherExpenseDto, createdById?: string) {
     return this.prisma.officeOtherExpense.create({
       data: {

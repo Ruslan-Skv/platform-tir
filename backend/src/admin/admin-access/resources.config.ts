@@ -19,6 +19,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     label: 'Движ. ден. средст',
     path: '/admin/crm/contract-payments',
   },
+  {
+    id: 'admin.crm.contract-payments.incassation',
+    label: 'Инкассация по оплатам (редактирование)',
+    path: '/admin/crm/contract-payments',
+  },
   { id: 'admin.crm.offices', label: 'Офисы', path: '/admin/crm/offices' },
   { id: 'admin.crm.managers', label: 'Менеджеры', path: '/admin/crm/managers' },
   { id: 'admin.crm.customers', label: 'Клиенты', path: '/admin/crm/customers' },

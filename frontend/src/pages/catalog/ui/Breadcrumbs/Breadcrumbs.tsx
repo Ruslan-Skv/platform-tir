@@ -2,6 +2,8 @@ import React from 'react';
 
 import Link from 'next/link';
 
+import { getSafeHref } from '@/shared/lib/sanitize';
+
 import styles from './Breadcrumbs.module.css';
 
 interface BreadcrumbItem {
@@ -47,7 +49,7 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
         {breadcrumbs.map((item, index) => (
           <li key={index} className={styles.item}>
             {item.href ? (
-              <Link href={item.href} className={styles.link}>
+              <Link href={getSafeHref(item.href, '/')} className={styles.link}>
                 {item.label}
               </Link>
             ) : (

@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { footerSections } from '@/shared/constants/footer';
+import { getSafeHref } from '@/shared/lib/sanitize';
 
 import styles from './CatalogSection.module.css';
 
@@ -15,7 +16,7 @@ export const CatalogSection: React.FC = () => {
       <ul className={styles.list}>
         {catalogSection.links.map((link) => (
           <li key={link.name}>
-            <a href={link.href} className={styles.link}>
+            <a href={getSafeHref(link.href)} className={styles.link}>
               {link.name}
             </a>
           </li>

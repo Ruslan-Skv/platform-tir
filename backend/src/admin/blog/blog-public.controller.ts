@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { OriginGuard } from '../../common/guards/origin.guard';
 import { BlogService } from './blog.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { ToggleLikeDto } from './dto/toggle-like.dto';
@@ -41,7 +42,7 @@ export class BlogPublicController {
   }
 
   @Post('posts/:postId/like')
-  @UseGuards(OptionalJwtAuthGuard)
+  @UseGuards(OriginGuard, OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Поставить/снять лайк посту' })
   toggleLike(
     @Param('postId') postId: string,
@@ -53,7 +54,7 @@ export class BlogPublicController {
   }
 
   @Post('posts/:postId/comments')
-  @UseGuards(OptionalJwtAuthGuard)
+  @UseGuards(OriginGuard, OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Добавить комментарий к посту' })
   createComment(
     @Param('postId') postId: string,

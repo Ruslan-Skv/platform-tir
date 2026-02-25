@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { type ProductComponent, getProductComponents } from '@/shared/api/product-components';
 import type { Review } from '@/shared/api/reviews';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
+import { escapeHtmlAndPreserveNewlines, getSafeHref } from '@/shared/lib/sanitize';
 
 import { ProductComponents } from './ProductComponents';
 import styles from './ProductDetailPage.module.css';
@@ -503,7 +504,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
       <nav className={styles.breadcrumbs}>
         {breadcrumbs.map((item, index) => (
           <span key={index}>
-            <Link href={item.href} className={styles.breadcrumbLink}>
+            <Link href={getSafeHref(item.href, '/')} className={styles.breadcrumbLink}>
               {item.label}
             </Link>
             {index < breadcrumbs.length - 1 && (
@@ -1159,7 +1160,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
           <h2 className={styles.descriptionTitle}>Описание</h2>
           <div
             className={styles.descriptionText}
-            dangerouslySetInnerHTML={{ __html: product.description.replace(/\n/g, '<br />') }}
+            dangerouslySetInnerHTML={{ __html: escapeHtmlAndPreserveNewlines(product.description) }}
           />
         </div>
       )}

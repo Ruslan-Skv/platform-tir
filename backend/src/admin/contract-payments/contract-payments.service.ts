@@ -155,4 +155,18 @@ export class ContractPaymentsService {
     await this.findOne(id);
     return this.prisma.contractPayment.delete({ where: { id } });
   }
+
+  async updateCollectionAmount(id: string, collectionAmount: number | null) {
+    await this.findOne(id);
+    return this.prisma.contractPayment.update({
+      where: { id },
+      data: {
+        collectionAmount: collectionAmount != null ? new Prisma.Decimal(collectionAmount) : null,
+      },
+      include: {
+        contract: { select: { id: true, contractNumber: true, customerName: true } },
+        manager: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
+  }
 }

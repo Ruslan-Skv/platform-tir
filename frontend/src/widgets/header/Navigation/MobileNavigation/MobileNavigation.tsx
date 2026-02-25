@@ -11,6 +11,7 @@ import { ActionButton } from '@/features/forms';
 import { useFormContext } from '@/features/forms';
 import { dropdownMenus } from '@/shared/constants/navigation';
 import { useDynamicCategories, useNavigationItems } from '@/shared/lib/hooks';
+import { getSafeHref } from '@/shared/lib/sanitize';
 
 import styles from './MobileNavigation.module.css';
 
@@ -130,7 +131,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
                 ) : (
                   <Link
                     key={button.name}
-                    href={button.href || '#'}
+                    href={getSafeHref(button.href, '#')}
                     className={styles.menuItemField}
                     onClick={handleCloseMenu}
                   >
@@ -149,7 +150,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
                 activeSubmenu.items.map((subItem) => (
                   <Link
                     key={subItem.href}
-                    href={subItem.href}
+                    href={getSafeHref(subItem.href)}
                     onClick={() => handleSubMenuItemClick(subItem.name)}
                     className={styles.subMenuItem}
                   >

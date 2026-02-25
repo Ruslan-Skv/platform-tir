@@ -10,6 +10,7 @@ import {
   getBlogPostBySlug,
   toggleBlogPostLike,
 } from '@/shared/api/blog';
+import { sanitizeHtml, stripHtmlToText } from '@/shared/lib/sanitize';
 
 import styles from './BlogPostPage.module.css';
 
@@ -17,16 +18,9 @@ interface BlogPostPageProps {
   slug: string;
 }
 
+/** Извлекает только текст из HTML (безопасно, без innerHTML) */
 function stripHtml(html: string): string {
-  if (typeof document === 'undefined') {
-    return html
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-  }
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  return div.textContent || div.innerText || '';
+  return stripHtmlToText(html);
 }
 
 export const BlogPostPage: React.FC<BlogPostPageProps> = ({ slug }) => {
@@ -245,7 +239,10 @@ export const BlogPostPage: React.FC<BlogPostPageProps> = ({ slug }) => {
           </div>
         )}
 
-        <div className={styles.content} dangerouslySetInnerHTML={{ __html: post.content }} />
+        <div
+          className={styles.content}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }}
+        />
 
         <div className={styles.actionsBar}>
           <button

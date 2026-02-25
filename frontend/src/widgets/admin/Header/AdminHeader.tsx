@@ -20,6 +20,7 @@ import type { AdminReview } from '@/shared/api/admin-reviews';
 import { getAdminSupportConversations } from '@/shared/api/admin-support';
 import type { AdminSupportConversation } from '@/shared/api/admin-support';
 import { type NotificationSoundType, playNotificationSound } from '@/shared/lib/notification-sound';
+import { getSafeHref } from '@/shared/lib/sanitize';
 
 import styles from './AdminHeader.module.css';
 
@@ -342,7 +343,7 @@ export function AdminHeader() {
                   notificationItems.map((item) => (
                     <Link
                       key={`${item.type}-${item.id}`}
-                      href={item.link}
+                      href={getSafeHref(item.link, '#')}
                       className={`${styles.notificationItem} ${styles.unread}`}
                       onClick={() => setShowNotifications(false)}
                     >

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
+import { getSafeHref } from '@/shared/lib/sanitize';
 
 import { AccessModal } from './AccessModal';
 import styles from './AdminSidebar.module.css';
@@ -417,7 +418,7 @@ export function AdminSidebar({
     return pathname?.startsWith(href) ?? false;
   };
 
-  const fromCategory = searchParams.get('fromCategory');
+  const fromCategory = searchParams?.get('fromCategory');
   const isProductEditPage = pathname?.match(/^\/admin\/catalog\/products\/[^/]+\/edit/);
 
   const isPathActive = (href: string) => {
@@ -552,7 +553,7 @@ export function AdminSidebar({
                               {child.children.map((nested) => (
                                 <div key={nested.href} className={styles.submenuLinkRow}>
                                   <Link
-                                    href={nested.href}
+                                    href={getSafeHref(nested.href, '/')}
                                     className={`${styles.submenuLink} ${
                                       isPathActive(nested.href) ? styles.active : ''
                                     }`}
@@ -585,7 +586,7 @@ export function AdminSidebar({
                       ) : (
                         <div key={child.label} className={styles.submenuLinkRow}>
                           <Link
-                            href={child.href}
+                            href={getSafeHref(child.href, '/')}
                             className={`${styles.submenuLink} ${
                               isPathActive(child.href) ? styles.active : ''
                             }`}
@@ -619,7 +620,7 @@ export function AdminSidebar({
             ) : (
               <div className={styles.navLinkRow}>
                 <Link
-                  href={item.href}
+                  href={getSafeHref(item.href, '/')}
                   className={`${styles.navLink} ${isActive(item.href) ? styles.active : ''}`}
                 >
                   <span className={styles.icon}>{item.icon}</span>

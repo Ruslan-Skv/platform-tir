@@ -8,6 +8,7 @@ import {
   type OfficeCashSummary,
   type OfficeIncassationItem,
   type OfficeOtherExpenseItem,
+  canEditContractPaymentIncassation,
   createOfficeIncassation,
   createOfficeOtherExpense,
   getContractPayments,
@@ -15,6 +16,8 @@ import {
   getOfficeIncassations,
   getOfficeOtherExpenses,
   getOffices,
+  updateContractPaymentCollection,
+  updateOfficeOtherExpenseCollection,
 } from '@/shared/api/admin-crm';
 import { Modal } from '@/shared/ui/Modal';
 import { DataTable } from '@/shared/ui/admin/DataTable';
@@ -67,6 +70,8 @@ function formatUser(u: { firstName?: string | null; lastName?: string | null } |
 }
 
 export function ContractPaymentsPage() {
+  const [canEditIncassation, setCanEditIncassation] = useState(false);
+
   const [offices, setOffices] = useState<Office[]>([]);
   const [selectedOfficeId, setSelectedOfficeId] = useState(ALL_OFFICES_ID);
   const [period, setPeriod] = useState(getDefaultPeriod);
@@ -95,6 +100,10 @@ export function ContractPaymentsPage() {
   const [otherExpenseDescription, setOtherExpenseDescription] = useState('');
   const [otherExpenseSaving, setOtherExpenseSaving] = useState(false);
 
+  const [collectionSavingId, setCollectionSavingId] = useState<string | null>(null);
+  const [otherExpenseCollectionSavingId, setOtherExpenseCollectionSavingId] = useState<
+    string | null
+  >(null);
   const [incassationModalOpen, setIncassationModalOpen] = useState(false);
   const [incassationAmount, setIncassationAmount] = useState('');
   const [incassationDate, setIncassationDate] = useState(() =>
@@ -195,6 +204,12 @@ export function ContractPaymentsPage() {
   }, [loadOffices]);
 
   useEffect(() => {
+    canEditContractPaymentIncassation()
+      .then((r) => setCanEditIncassation(r.canEdit))
+      .catch(() => setCanEditIncassation(false));
+  }, []);
+
+  useEffect(() => {
     loadOfficeData();
   }, [loadOfficeData]);
 
@@ -225,6 +240,50 @@ export function ContractPaymentsPage() {
     otherExpenseDescription,
     loadOfficeData,
   ]);
+
+  const handleUpdateCollectionAmount = useCallback(
+    async (payment: ContractPayment, value: string) => {
+      const trimmed = value.trim();
+      const num: number | null =
+        trimmed === '' ? null : parseFloat(trimmed.replace(/\s/g, '').replace(',', '.'));
+      if (trimmed !== '' && (num === null || Number.isNaN(num) || num < 0)) return;
+      const current = payment.collectionAmount;
+      const currentNum = current == null || current === '' ? null : Number(current);
+      if (num === currentNum) return;
+      setCollectionSavingId(payment.id);
+      try {
+        await updateContractPaymentCollection(payment.id, num);
+        loadOfficeData();
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setCollectionSavingId(null);
+      }
+    },
+    [loadOfficeData]
+  );
+
+  const handleUpdateOtherExpenseCollection = useCallback(
+    async (expense: OfficeOtherExpenseItem, value: string) => {
+      const trimmed = value.trim();
+      const num: number | null =
+        trimmed === '' ? null : parseFloat(trimmed.replace(/\s/g, '').replace(',', '.'));
+      if (trimmed !== '' && (num === null || Number.isNaN(num) || num < 0)) return;
+      const current = expense.collectionAmount;
+      const currentNum = current == null || current === '' ? null : Number(current);
+      if (num === currentNum) return;
+      setOtherExpenseCollectionSavingId(expense.id);
+      try {
+        await updateOfficeOtherExpenseCollection(expense.id, num);
+        loadOfficeData();
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setOtherExpenseCollectionSavingId(null);
+      }
+    },
+    [loadOfficeData]
+  );
 
   const handleAddIncassation = useCallback(async () => {
     if (!selectedOfficeId) return;
@@ -299,6 +358,18 @@ export function ContractPaymentsPage() {
     [filteredPayments]
   );
 
+  const paymentsWithDiscrepancy = useMemo(() => {
+    return filteredPayments
+      .filter((p) => {
+        const coll = p.collectionAmount;
+        if (coll == null || coll === '') return false;
+        const amountNum = Number(p.amount ?? 0);
+        const collNum = Number(coll);
+        return Math.abs(amountNum - collNum) > 0.001;
+      })
+      .map((p) => p.id);
+  }, [filteredPayments]);
+
   const paymentColumns = [
     ...(isAllOffices
       ? [
@@ -347,6 +418,35 @@ export function ContractPaymentsPage() {
         formatUser(p.contract?.manager ?? p.contract?.complexObject?.manager ?? p.manager),
     },
     { key: 'notes', title: 'Примечание', render: (p: ContractPayment) => p.notes ?? '—' },
+    {
+      key: 'collectionAmount',
+      title: 'Инкассация',
+      render: (p: ContractPayment) => {
+        const val = p.collectionAmount;
+        const displayVal =
+          val == null || val === '' ? '' : typeof val === 'number' ? String(val) : String(val);
+        if (canEditIncassation) {
+          return (
+            <input
+              key={`coll-${p.id}-${displayVal}`}
+              type="text"
+              className={styles.collectionInput}
+              defaultValue={displayVal}
+              onBlur={(e) => handleUpdateCollectionAmount(p, e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              onClick={(e) => e.stopPropagation()}
+              placeholder="—"
+              disabled={collectionSavingId === p.id}
+            />
+          );
+        }
+        return formatMoney(val);
+      },
+    },
   ];
 
   return (
@@ -519,6 +619,8 @@ export function ContractPaymentsPage() {
               keyExtractor={(p) => p.id}
               loading={loading}
               emptyMessage="Нет оплат по договорам"
+              highlightedIds={paymentsWithDiscrepancy}
+              highlightedRowClassName={styles.rowDiscrepancy}
             />
           </section>
 
@@ -545,17 +647,52 @@ export function ContractPaymentsPage() {
                     <th>Дата</th>
                     <th>Сумма</th>
                     <th>Назначение</th>
+                    <th>Инкассация</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {otherExpenses.map((e) => (
-                    <tr key={e.id}>
-                      {isAllOffices && <td>{e.office?.name ?? getOfficeName(e.officeId)}</td>}
-                      <td>{formatDate(e.expenseDate)}</td>
-                      <td>{formatMoney(e.amount)}</td>
-                      <td>{e.description ?? '—'}</td>
-                    </tr>
-                  ))}
+                  {otherExpenses.map((e) => {
+                    const amountNum = Number(e.amount ?? 0);
+                    const coll = e.collectionAmount;
+                    const collNum = coll == null || coll === '' ? null : Number(coll);
+                    const hasDiscrepancy = collNum != null && Math.abs(amountNum - collNum) > 0.001;
+                    const displayVal =
+                      coll == null || coll === ''
+                        ? ''
+                        : typeof coll === 'number'
+                          ? String(coll)
+                          : String(coll);
+                    return (
+                      <tr key={e.id} className={hasDiscrepancy ? styles.rowDiscrepancy : ''}>
+                        {isAllOffices && <td>{e.office?.name ?? getOfficeName(e.officeId)}</td>}
+                        <td>{formatDate(e.expenseDate)}</td>
+                        <td>{formatMoney(e.amount)}</td>
+                        <td>{e.description ?? '—'}</td>
+                        <td>
+                          {canEditIncassation ? (
+                            <input
+                              key={`oe-coll-${e.id}-${displayVal}`}
+                              type="text"
+                              className={styles.collectionInput}
+                              defaultValue={displayVal}
+                              onBlur={(ev) =>
+                                handleUpdateOtherExpenseCollection(e, ev.target.value)
+                              }
+                              onKeyDown={(ev) => {
+                                if (ev.key === 'Enter') {
+                                  (ev.target as HTMLInputElement).blur();
+                                }
+                              }}
+                              placeholder="—"
+                              disabled={otherExpenseCollectionSavingId === e.id}
+                            />
+                          ) : (
+                            formatMoney(coll)
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}

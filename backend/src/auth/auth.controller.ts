@@ -1,5 +1,6 @@
 import { Controller, Post, Body, UseGuards, Request, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { OriginGuard } from '../common/guards/origin.guard';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -12,7 +13,7 @@ import type { RequestWithUser } from '../common/types/request-with-user.types';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @UseGuards(LocalAuthGuard)
+  @UseGuards(OriginGuard, LocalAuthGuard)
   @Post('login')
   @ApiOperation({ summary: 'Вход в систему' })
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -20,6 +21,7 @@ export class AuthController {
     return this.authService.login(req.user);
   }
 
+  @UseGuards(OriginGuard)
   @Post('register')
   @ApiOperation({ summary: 'Регистрация нового пользователя' })
   async register(@Body() registerDto: RegisterDto) {

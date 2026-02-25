@@ -374,7 +374,7 @@ export function ContractFormPage({ contractId: initialContractId }: ContractForm
   }, [contractId, loadContractById]);
 
   useEffect(() => {
-    if (contractId && searchParams.get('created') === '1') {
+    if (contractId && searchParams?.get('created') === '1') {
       showMessage('success', 'Договор создан');
       router.replace(`/admin/crm/contracts/${contractId}`, { scroll: false });
     }
@@ -383,7 +383,7 @@ export function ContractFormPage({ contractId: initialContractId }: ContractForm
   // Обработка входящих параметров из URL при создании нового договора в рамках комплексного объекта
   useEffect(() => {
     if (!contractId) {
-      const incomingComplexObjectId = searchParams.get('complexObjectId');
+      const incomingComplexObjectId = searchParams?.get('complexObjectId');
 
       if (incomingComplexObjectId) {
         setComplexObjectId(incomingComplexObjectId);
@@ -2258,7 +2258,7 @@ export function ContractFormPage({ contractId: initialContractId }: ContractForm
           users={users}
           directions={directions}
           onClose={() => setShowHistoryModal(false)}
-          onRollback={() => loadContract()}
+          onRollback={() => contractId && loadContractById(contractId)}
         />
       )}
 
@@ -2301,7 +2301,7 @@ export function ContractFormPage({ contractId: initialContractId }: ContractForm
                   };
                   // Проверяем, есть ли уже этот договор в списке
                   if (!allContracts.find((c) => c.id === contractId)) {
-                    allContracts.push(currentContractData as Contract);
+                    allContracts.push(currentContractData as unknown as Contract);
                   }
                 }
 

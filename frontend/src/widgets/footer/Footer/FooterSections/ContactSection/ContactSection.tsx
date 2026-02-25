@@ -5,6 +5,7 @@ import React from 'react';
 import { useFormContext } from '@/features/forms';
 import actionButtonStyles from '@/features/forms/ui/ActionButtons/ActionButton.module.css';
 import type { CompanyInfo, SocialLinks } from '@/shared/constants/footer';
+import { getSafeHref } from '@/shared/lib/sanitize';
 import { Button } from '@/shared/ui/Button';
 
 import styles from './ContactSection.module.css';
@@ -45,7 +46,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ companyInfo, soc
       <div className={styles.social}>
         <p className={styles.socialText}>Мы в соцсетях:</p>
         <a
-          href={socialLinks.vk.href}
+          href={getSafeHref(socialLinks.vk.href)}
           target="_blank"
           rel="noopener noreferrer"
           className={styles.socialLink}

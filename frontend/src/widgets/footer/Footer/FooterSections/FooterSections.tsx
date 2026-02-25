@@ -1,6 +1,7 @@
 import React from 'react';
 
 import type { CompanyInfo, SocialLinks } from '@/shared/constants/footer';
+import { getSafeHref } from '@/shared/lib/sanitize';
 import { Logo } from '@/shared/ui/Logo';
 
 import { ContactSection } from './ContactSection';
@@ -33,7 +34,7 @@ function LinkSection({ title, links }: { title: string; links: FooterLink[] }) {
       <ul className={styles.list}>
         {links.map((link) => (
           <li key={link.id}>
-            <a href={link.href} className={styles.link}>
+            <a href={getSafeHref(link.href)} className={styles.link}>
               {link.name}
             </a>
           </li>

@@ -1471,15 +1471,16 @@ model ContractAmendment {
 }
 
 model ContractPayment {
-  id          String       @id @default(cuid())
-  contractId  String
-  paymentDate DateTime     @db.Date
-  amount      Decimal      @db.Decimal(12, 2)
-  paymentForm PaymentForm
-  paymentType PaymentType
-  managerId   String?
-  notes       String?      @db.Text
-  createdAt   DateTime     @default(now())
+  id               String       @id @default(cuid())
+  contractId       String
+  paymentDate      DateTime     @db.Date
+  amount           Decimal      @db.Decimal(12, 2)
+  collectionAmount Decimal?     @db.Decimal(12, 2)
+  paymentForm      PaymentForm
+  paymentType      PaymentType
+  managerId        String?
+  notes            String?      @db.Text
+  createdAt        DateTime     @default(now())
 
   contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
   manager  User?    @relation(fields: [managerId], references: [id], onDelete: SetNull)
@@ -1701,10 +1702,11 @@ model OfficeHistory {
 }
 
 model OfficeOtherExpense {
-  id          String   @id @default(cuid())
-  officeId    String
-  amount      Decimal  @db.Decimal(12, 2)
-  expenseDate DateTime @db.Date
+  id               String    @id @default(cuid())
+  officeId         String
+  amount           Decimal   @db.Decimal(12, 2)
+  collectionAmount Decimal?   @db.Decimal(12, 2)
+  expenseDate      DateTime  @db.Date
   description String?  @db.Text
   createdById String?
   createdAt   DateTime @default(now())

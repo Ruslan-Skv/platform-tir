@@ -1,11 +1,13 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { OriginGuard } from '../common/guards/origin.guard';
 import { FormsService } from './forms.service';
 import { SubmitCallbackDto } from './dto/submit-callback.dto';
 import { SubmitMeasurementDto } from './dto/submit-measurement.dto';
 
 @ApiTags('forms')
 @Controller('forms')
+@UseGuards(OriginGuard)
 export class FormsController {
   constructor(private readonly formsService: FormsService) {}
 

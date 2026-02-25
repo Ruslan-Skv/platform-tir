@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { OriginGuard } from '../common/guards/origin.guard';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
@@ -29,7 +30,7 @@ export class ReviewsController {
   }
 
   @Post('product/:productId')
-  @UseGuards(OptionalJwtAuthGuard)
+  @UseGuards(OriginGuard, OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Создать отзыв на товар (опционально авторизован)' })
   createReview(
     @Param('productId') productId: string,

@@ -20,6 +20,7 @@ import type {
 } from '@/shared/api/user-notifications';
 import { type UserOrder, getUserOrders } from '@/shared/api/user-orders';
 import { getAvatarUrl, getInitials } from '@/shared/lib/avatar';
+import { getSafeHref } from '@/shared/lib/sanitize';
 
 import styles from './page.module.css';
 
@@ -382,7 +383,7 @@ export default function ProfilePage() {
         {(!cabinetSettings || cabinetSettings.showQuickLinks) && (
           <div className={styles.quickLinks}>
             {quickLinks.map((link) => (
-              <Link key={link.href} href={link.href} className={styles.quickLink}>
+              <Link key={link.href} href={getSafeHref(link.href)} className={styles.quickLink}>
                 {link.label}
               </Link>
             ))}

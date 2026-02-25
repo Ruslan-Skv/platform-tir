@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
+import { getSafeHref } from '@/shared/lib/sanitize';
 
 import styles from './SuppliersPage.module.css';
 
@@ -163,7 +164,7 @@ export function SuppliersPage() {
         render: (supplier) =>
           supplier.website ? (
             <a
-              href={supplier.website}
+              href={getSafeHref(supplier.website)}
               target="_blank"
               rel="noopener noreferrer"
               className={styles.websiteLink}

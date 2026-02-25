@@ -123,11 +123,13 @@ export async function createComplexObject(data: {
 export async function updateComplexObject(
   id: string,
   data: Partial<{
-    name: string;
+    name: string | null;
     customerName: string | null;
     customerPhones: string[];
     address: string | null;
     notes: string | null;
+    hasElevator: boolean | null;
+    floor: number | null;
     officeId: string | null;
     managerId: string | null;
   }>
@@ -753,6 +755,7 @@ export interface Contract {
   } | null;
   advances?: Array<{ id: string; amount: string | number; paidAt: string }>;
   amendments?: ContractAmendment[];
+  notes?: string | null;
   payments?: Array<{
     id: string;
     amount: string | number;
@@ -1020,6 +1023,8 @@ export interface ContractPayment {
   contractId: string;
   paymentDate: string;
   amount: string | number;
+  /** Сумма инкассации (заполняет суперадмин после проверки) */
+  collectionAmount?: string | number | null;
   paymentForm: string;
   paymentType: string;
   managerId: string | null;
@@ -1041,6 +1046,14 @@ export interface ContractPayment {
   manager?: { id: string; firstName: string | null; lastName: string | null } | null;
   /** Сумма всех оплат по договору (для расчёта %) */
   contractTotalPaid?: number;
+}
+
+export async function canEditContractPaymentIncassation(): Promise<{ canEdit: boolean }> {
+  const res = await fetch(`${API_URL}/admin/contract-payments/can-edit-incassation`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) return { canEdit: false };
+  return res.json();
 }
 
 export async function getContractPayments(params?: {
@@ -1099,6 +1112,22 @@ export async function createContractPayment(data: {
   return res.json();
 }
 
+export async function updateContractPaymentCollection(
+  id: string,
+  collectionAmount: number | null
+): Promise<ContractPayment> {
+  const res = await fetch(`${API_URL}/admin/contract-payments/${id}/collection-amount`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify({ collectionAmount }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось обновить инкассацию');
+  }
+  return res.json();
+}
+
 export async function deleteContractPayment(id: string): Promise<void> {
   const res = await fetch(`${API_URL}/admin/contract-payments/${id}`, {
     method: 'DELETE',
@@ -1126,6 +1155,8 @@ export interface OfficeOtherExpenseItem {
   id: string;
   officeId: string;
   amount: string | number;
+  /** Сумма инкассации (заполняет суперадмин после проверки) */
+  collectionAmount?: string | number | null;
   expenseDate: string;
   description: string | null;
   createdById: string | null;
@@ -1172,6 +1203,22 @@ export async function getOfficeOtherExpenses(
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить прочие расходы');
+  return res.json();
+}
+
+export async function updateOfficeOtherExpenseCollection(
+  id: string,
+  collectionAmount: number | null
+): Promise<OfficeOtherExpenseItem> {
+  const res = await fetch(`${API_URL}/admin/office-cash/other-expenses/${id}/collection-amount`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify({ collectionAmount }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message || 'Не удалось обновить инкассацию');
+  }
   return res.json();
 }
 

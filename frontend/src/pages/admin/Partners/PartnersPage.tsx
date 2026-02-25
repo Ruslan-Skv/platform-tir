@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
+import { getSafeHref } from '@/shared/lib/sanitize';
 
 import styles from './PartnersPage.module.css';
 
@@ -105,7 +106,7 @@ export function PartnersPage() {
         render: (partner) =>
           partner.website ? (
             <a
-              href={partner.website}
+              href={getSafeHref(partner.website)}
               target="_blank"
               rel="noopener noreferrer"
               className={styles.websiteLink}
