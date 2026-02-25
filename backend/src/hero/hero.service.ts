@@ -133,8 +133,15 @@ export class HeroService {
     if (!slide) {
       throw new NotFoundException('Слайд не найден');
     }
-    const filePath = path.join(process.cwd(), slide.imageUrl);
-    if (fs.existsSync(filePath)) {
+    const baseDir = path.resolve(process.cwd(), 'uploads', 'hero');
+    const filePath = path.resolve(
+      process.cwd(),
+      slide.imageUrl.replace(/^\//, '').replace(/^\\/, ''),
+    );
+    if (
+      (filePath.startsWith(baseDir + path.sep) || filePath === baseDir) &&
+      fs.existsSync(filePath)
+    ) {
       fs.unlinkSync(filePath);
     }
     await this.prisma.heroSlide.delete({ where: { id } });

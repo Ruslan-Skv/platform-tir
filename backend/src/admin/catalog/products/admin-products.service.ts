@@ -777,14 +777,25 @@ export class AdminProductsService {
     }
 
     if (filePath) {
-      const fullPath = path.join(importDir, filePath);
-      if (fs.existsSync(fullPath)) {
-        const content = fs.readFileSync(fullPath, 'utf-8');
+      // Path Traversal protection: reject path separators and parent refs
+      if (filePath.includes('..') || filePath.includes('/') || filePath.includes('\\')) {
+        throw new BadRequestException('Invalid file path');
+      }
+      const importDirResolved = path.resolve(importDir);
+      const fullPathResolved = path.resolve(importDir, filePath);
+      if (
+        !fullPathResolved.startsWith(importDirResolved + path.sep) &&
+        fullPathResolved !== importDirResolved
+      ) {
+        throw new BadRequestException('Invalid file path');
+      }
+      if (fs.existsSync(fullPathResolved)) {
+        const content = fs.readFileSync(fullPathResolved, 'utf-8');
         const products = this.parseHtmlTable(content, 'PREVIEW');
         return {
           files,
           preview: {
-            file: filePath,
+            file: path.basename(filePath),
             totalProducts: products.length,
             samples: products.slice(0, 5).map((p) => ({
               name: p.name,

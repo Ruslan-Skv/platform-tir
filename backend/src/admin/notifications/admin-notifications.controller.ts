@@ -441,11 +441,17 @@ export class AdminNotificationsController {
     } catch {
       // fileUrl может быть относительным путём
     }
-    const filePath = path.join(process.cwd(), relativePath.replace(/^\//, ''));
-    const normalizedPath = path.normalize(filePath);
-    if (normalizedPath.startsWith(path.join(process.cwd(), 'uploads'))) {
+    const baseDir = path.resolve(process.cwd(), 'uploads');
+    const resolvedPath = path.resolve(
+      process.cwd(),
+      relativePath.replace(/^\//, '').replace(/^\\/, ''),
+    );
+    if (
+      (resolvedPath.startsWith(baseDir + path.sep) || resolvedPath === baseDir) &&
+      !resolvedPath.includes('..')
+    ) {
       try {
-        fs.unlinkSync(normalizedPath);
+        fs.unlinkSync(resolvedPath);
       } catch {
         // Игнорируем ошибки удаления файла
       }
