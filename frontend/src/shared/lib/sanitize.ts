@@ -1,8 +1,8 @@
 /**
  * Утилиты для защиты от XSS (межсайтового скриптинга).
- * Используют isomorphic-dompurify для санитизации на сервере и клиенте.
+ * sanitizeHtml использует dompurify только на клиенте; на сервере — лёгкий fallback
+ * (избегает isomorphic-dompurify/jsdom, вызывающего ENOENT в Next.js Turbopack).
  */
-import DOMPurify from 'isomorphic-dompurify';
 
 /** Разрешённые теги для контента статей блога (rich text) */
 const ALLOWED_BLOG_TAGS = [
@@ -39,11 +39,41 @@ const ALLOWED_BLOG_TAGS = [
 const ALLOWED_ATTR = ['href', 'src', 'alt', 'title', 'class'];
 
 /**
+ * Лёгкая санитизация на сервере (без jsdom, без ReDoS).
+ * Удаляет script/iframe/object целиком и атрибуты on*.
+ */
+function sanitizeHtmlServer(html: string): string {
+  const tags = ['script', 'iframe', 'object', 'embed'];
+  let out = html;
+  for (const tag of tags) {
+    for (;;) {
+      const lower = out.toLowerCase();
+      const i = lower.indexOf(`<${tag}`);
+      if (i === -1) break;
+      const endTag = `</${tag}>`;
+      const endIdx = lower.indexOf(endTag, i);
+      const end = endIdx === -1 ? out.indexOf('>', i) + 1 : endIdx + endTag.length;
+      if (end <= 0) break;
+      out = out.slice(0, i) + out.slice(end);
+    }
+  }
+  // Удаляем on* атрибуты
+  out = out.replace(/\s+on\w+\s*=\s*["'][^"']*["']/gi, '');
+  out = out.replace(/\s+on\w+\s*=\s*[^\s>]+/gi, '');
+  return out;
+}
+
+/**
  * Санитизирует HTML-контент статей (блог, rich text).
- * Удаляет опасные теги (script, iframe, object, etc.) и атрибуты (onclick, etc.).
- * Работает на сервере и клиенте (isomorphic-dompurify).
+ * На клиенте использует dompurify; на сервере — лёгкий fallback без jsdom.
  */
 export function sanitizeHtml(html: string): string {
+  if (typeof window === 'undefined') {
+    return sanitizeHtmlServer(html);
+  }
+  // Клиент: dompurify (только в браузере)
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const DOMPurify = require('dompurify');
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: ALLOWED_BLOG_TAGS,
     ALLOWED_ATTR: ALLOWED_ATTR,
