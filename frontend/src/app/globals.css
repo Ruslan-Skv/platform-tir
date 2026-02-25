@@ -354,8 +354,13 @@ select:focus-visible {
 
 /* Отступы под мобильную шапку (фиксированная) и нижнюю навигацию */
 @media (width <= 768px) {
+  .App {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0));
+  }
+
   .mainContent {
     padding-top: 6rem;
-    padding-bottom: 5.5rem;
+    /* padding-bottom: зазор между контентом страницы и футером (уменьшен для мобильных) */
+    padding-bottom: 1.5rem;
   }
 }

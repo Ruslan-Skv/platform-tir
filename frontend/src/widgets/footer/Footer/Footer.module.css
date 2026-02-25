@@ -12,3 +12,9 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .footer {
   color: #fff;
 }
+
+@media (width <= 768px) {
+  .footer {
+    min-height: 180px;
+  }
+}

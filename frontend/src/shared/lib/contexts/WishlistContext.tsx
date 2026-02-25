@@ -34,8 +34,19 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Загружаем полный список избранного при инициализации (1 запрос вместо N проверок на карточках)
   useEffect(() => {
-    refreshCount().catch(() => {});
+    wishlistApi
+      .getWishlist()
+      .then((products) => {
+        const ids = products.map((p) => p.id);
+        setWishlist(ids);
+        setCount(ids.length);
+      })
+      .catch(() => {
+        setWishlist([]);
+        refreshCount().catch(() => {});
+      });
   }, [refreshCount]);
 
   const addToWishlist = useCallback(async (productId: string) => {

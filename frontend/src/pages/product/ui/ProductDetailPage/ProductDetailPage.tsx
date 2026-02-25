@@ -119,8 +119,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     updateCartItemQuantityById,
     removeCartItemById,
   } = useCart();
-  const { toggleWishlist, isInWishlist, checkInWishlist, wishlist } = useWishlist();
-  const { toggleCompare, isInCompare, checkInCompare, compare } = useCompare();
+  const { toggleWishlist, isInWishlist, wishlist } = useWishlist();
+  const { toggleCompare, isInCompare, compare } = useCompare();
   const [product, setProduct] = useState<ProductData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -288,22 +288,6 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     () => (productId ? isInCompare(productId) : false),
     [isInCompare, productId, compare]
   );
-
-  // Проверяем, находится ли товар в избранном при загрузке продукта
-  useEffect(() => {
-    if (!productId) return;
-    checkInWishlist(productId).catch(() => {
-      // Игнорируем ошибки (пользователь может быть не авторизован)
-    });
-  }, [productId, checkInWishlist]);
-
-  // Проверяем, находится ли товар в сравнении при загрузке продукта
-  useEffect(() => {
-    if (!productId) return;
-    checkInCompare(productId).catch(() => {
-      // Игнорируем ошибки (пользователь может быть не авторизован)
-    });
-  }, [productId, checkInCompare]);
 
   const handleFavoriteClick = async () => {
     if (!productId) return;

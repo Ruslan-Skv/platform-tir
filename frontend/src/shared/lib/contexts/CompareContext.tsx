@@ -34,8 +34,19 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Загружаем полный список сравнения при инициализации (1 запрос вместо N проверок на карточках)
   useEffect(() => {
-    refreshCount().catch(() => {});
+    compareApi
+      .getCompare()
+      .then((products) => {
+        const ids = products.map((p) => p.id);
+        setCompare(ids);
+        setCount(ids.length);
+      })
+      .catch(() => {
+        setCompare([]);
+        refreshCount().catch(() => {});
+      });
   }, [refreshCount]);
 
   const addToCompare = useCallback(

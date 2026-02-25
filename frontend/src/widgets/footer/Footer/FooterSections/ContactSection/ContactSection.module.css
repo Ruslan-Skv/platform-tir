@@ -95,3 +95,40 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .socialLink:hover {
   background-color: #4b5563;
 }
+
+@media (width <= 768px) {
+  .section {
+    gap: 0.75rem;
+  }
+
+  .title {
+    font-size: 0.9375rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .subtitle {
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .contactInfo {
+    gap: 0.25rem;
+  }
+
+  .text {
+    font-size: 0.8125rem;
+  }
+
+  .phone {
+    font-size: 1.25rem;
+    margin: 0.5rem 0;
+  }
+
+  .social {
+    gap: 0.5rem;
+  }
+
+  .socialText {
+    font-size: 0.8125rem;
+  }
+}

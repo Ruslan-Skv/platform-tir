@@ -42,3 +42,22 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .developer {
   color: #9ca3af;
 }
+
+@media (width <= 768px) {
+  .bottom {
+    padding: 0.75rem 0;
+  }
+
+  .container {
+    padding: 0 1rem;
+  }
+
+  .copyright,
+  .developer {
+    font-size: 0.75rem;
+  }
+
+  .developer {
+    margin-top: 0.125rem;
+  }
+}

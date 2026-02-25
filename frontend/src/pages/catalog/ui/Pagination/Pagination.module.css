@@ -66,21 +66,35 @@
 /* Мобильные устройства */
 @media (width <= 768px) {
   .pagination {
-    flex-wrap: wrap;
-    gap: 0.5rem;
+    flex-wrap: nowrap;
+    gap: 0.2rem;
     justify-content: center;
-    padding: 0.5rem 0;
+    padding: 0.5rem 0.25rem;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .prevButton,
   .nextButton {
-    padding: 0.5rem 0.75rem;
-    min-height: 2.5rem;
+    font-size: 0.625rem;
+    padding: 0.2rem 0.3rem;
+    min-height: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .pages {
+    gap: 0.125rem;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
   }
 
   .pageButton {
-    min-width: 2.25rem;
-    height: 2.25rem;
+    min-width: 1.375rem;
+    width: 1.375rem;
+    height: 1.5rem;
+    font-size: 0.625rem;
+    flex-shrink: 0;
   }
 }
 

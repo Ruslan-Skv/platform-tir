@@ -210,6 +210,7 @@
 
   .mobileFiltersButton {
     display: flex;
+    font-size: 0.8125rem;
   }
 }
 
@@ -222,6 +223,11 @@
 
   .breadcrumbsSection {
     padding-right: 0;
+  }
+
+  .mobileFiltersButton {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
   }
 }
 

@@ -39,3 +39,13 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .link:hover {
   color: #d90652;
 }
+
+@media (width <= 768px) {
+  .title {
+    font-size: 0.9375rem;
+  }
+
+  .link {
+    font-size: 0.8125rem;
+  }
+}

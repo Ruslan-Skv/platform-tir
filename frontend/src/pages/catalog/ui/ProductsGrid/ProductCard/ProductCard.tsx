@@ -1,5 +1,7 @@
 'use client';
 
+import { Wallet } from 'lucide-react';
+
 import React, { useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
@@ -26,8 +28,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   partnerLogoUrl = null,
   showPartnerIconOnCards = true,
 }) => {
-  const { toggleWishlist, isInWishlist, checkInWishlist, wishlist } = useWishlist();
-  const { toggleCompare, isInCompare, checkInCompare, compare, removeFromCompare } = useCompare();
+  const { toggleWishlist, isInWishlist, wishlist } = useWishlist();
+  const { toggleCompare, isInCompare, compare, removeFromCompare } = useCompare();
   const { cart, addToCart, updateQuantity, updateCartItemQuantityById } = useCart();
   const [isLoading, setIsLoading] = useState(false);
   const [isCompareLoading, setIsCompareLoading] = useState(false);
@@ -78,22 +80,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   // Используем глобальное состояние напрямую - автоматически обновляется при изменении wishlist/compare
   const isFavorite = useMemo(() => isInWishlist(productId), [isInWishlist, productId, wishlist]);
   const isInCompareState = useMemo(() => isInCompare(productId), [isInCompare, productId, compare]);
-
-  // Проверяем, находится ли товар в избранном при монтировании
-  useEffect(() => {
-    // Проверяем на сервере при монтировании или смене товара
-    checkInWishlist(productId).catch(() => {
-      // Игнорируем ошибки (пользователь может быть не авторизован)
-    });
-  }, [product.id, productId, checkInWishlist]); // Проверяем только при смене товара
-
-  // Проверяем, находится ли товар в сравнении при монтировании
-  useEffect(() => {
-    // Проверяем на сервере при монтировании или смене товара
-    checkInCompare(productId).catch(() => {
-      // Игнорируем ошибки (пользователь может быть не авторизован)
-    });
-  }, [product.id, productId, checkInCompare]); // Проверяем только при смене товара
 
   const finalPrice = displayPrice;
   const oldPrice = displayOldPrice;
@@ -212,118 +198,122 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       className={`${styles.productCard} ${compact ? styles.productCardCompact : ''} ${isCompareMode ? styles.productCardCompare : ''}`}
     >
       <Link href={`/product/${product.slug}`} className={styles.cardLink}>
-        <div className={styles.imageContainer}>
-          <img
-            src={
-              cardVariants.length > 0
-                ? displayImage || product.image
-                : effectiveImages[currentImageIndex] || product.image
-            }
-            alt={displayName}
-            className={styles.image}
-            loading="lazy"
-          />
-
-          {/* Навигация по изображениям */}
-          {hasMultipleImages && (
-            <>
-              <button
-                type="button"
-                className={styles.imageNavButton}
-                style={{ left: '0.5rem' }}
-                onClick={handlePreviousImage}
-                aria-label="Предыдущее изображение"
-              >
-                ‹
-              </button>
-              <button
-                type="button"
-                className={styles.imageNavButton}
-                style={{ right: '0.5rem' }}
-                onClick={handleNextImage}
-                aria-label="Следующее изображение"
-              >
-                ›
-              </button>
-              <div className={styles.imageDots}>
-                {effectiveImages.map((_, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    className={`${styles.imageDot} ${index === currentImageIndex ? styles.imageDotActive : ''}`}
-                    onClick={(e) => handleImageDotClick(e, index)}
-                    aria-label={`Изображение ${index + 1}`}
+        <div className={styles.nameBlock}>
+          <h3 className={styles.name}>{displayName}</h3>
+        </div>
+        <div className={styles.imageSection}>
+          <div className={styles.imageSideLeft}>
+            <div className={styles.badges}>
+              {product.isFeatured && <span className={styles.hitBadge}>ХИТ</span>}
+              {product.isNew && <span className={styles.newBadge}>Новинка</span>}
+              {product.discount && (
+                <span className={styles.discountBadge}>-{product.discount}%</span>
+              )}
+              {product.videoUrl && (
+                <span className={styles.videoBadge} title="Есть видео о товаре">
+                  ▶ Видео
+                </span>
+              )}
+            </div>
+            {product.isPartnerProduct &&
+              showPartnerIconOnCards &&
+              product.partnerShowLogoOnCards !== false &&
+              (product.partnerLogoUrl ?? partnerLogoUrl) && (
+                <div
+                  className={styles.partnerBadge}
+                  title={
+                    product.partnerShowTooltip !== false
+                      ? product.partnerTooltipText?.trim() ||
+                        `Товар Партнёра : ${product.partnerName || 'Партнёр'}`
+                      : undefined
+                  }
+                >
+                  <img
+                    src={product.partnerLogoUrl ?? partnerLogoUrl ?? ''}
+                    alt="Партнёр"
+                    className={styles.partnerLogo}
                   />
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* Бейджи */}
-          <div className={styles.badges}>
-            {product.isFeatured && <span className={styles.hitBadge}>ХИТ</span>}
-            {product.isNew && <span className={styles.newBadge}>Новинка</span>}
-            {product.discount && <span className={styles.discountBadge}>-{product.discount}%</span>}
-            {product.videoUrl && (
-              <span className={styles.videoBadge} title="Есть видео о товаре">
-                ▶ Видео
-              </span>
+                </div>
+              )}
+          </div>
+          <div className={styles.imageContainer}>
+            <img
+              src={
+                cardVariants.length > 0
+                  ? displayImage || product.image
+                  : effectiveImages[currentImageIndex] || product.image
+              }
+              alt={displayName}
+              className={styles.image}
+              loading="lazy"
+            />
+            {hasMultipleImages && (
+              <>
+                <button
+                  type="button"
+                  className={styles.imageNavButton}
+                  style={{ left: '0.5rem' }}
+                  onClick={handlePreviousImage}
+                  aria-label="Предыдущее изображение"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  className={styles.imageNavButton}
+                  style={{ right: '0.5rem' }}
+                  onClick={handleNextImage}
+                  aria-label="Следующее изображение"
+                >
+                  ›
+                </button>
+                <div className={styles.imageDots}>
+                  {effectiveImages.map((_, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      className={`${styles.imageDot} ${index === currentImageIndex ? styles.imageDotActive : ''}`}
+                      onClick={(e) => handleImageDotClick(e, index)}
+                      aria-label={`Изображение ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              </>
             )}
           </div>
-
-          {/* Иконка партнёра — левый нижний угол картинки */}
-          {product.isPartnerProduct &&
-            showPartnerIconOnCards &&
-            product.partnerShowLogoOnCards !== false &&
-            (product.partnerLogoUrl ?? partnerLogoUrl) && (
-              <div
-                className={styles.partnerBadge}
-                title={
-                  product.partnerShowTooltip !== false
-                    ? product.partnerTooltipText?.trim() ||
-                      `Товар Партнёра : ${product.partnerName || 'Партнёр'}`
-                    : undefined
-                }
-              >
-                <img
-                  src={product.partnerLogoUrl ?? partnerLogoUrl ?? ''}
-                  alt="Партнёр"
-                  className={styles.partnerLogo}
-                />
-              </div>
-            )}
-
-          <div className={styles.actionButtons}>
-            {isCompareMode ? (
+          <div className={styles.imageSideRight}>
+            <div className={styles.actionButtons}>
+              {isCompareMode ? (
+                <button
+                  type="button"
+                  className={`${styles.removeButton} ${isCompareLoading ? styles.compareButtonLoading : ''}`}
+                  aria-label="Удалить из сравнения"
+                  onClick={handleRemoveFromCompare}
+                  style={{ pointerEvents: isCompareLoading ? 'none' : 'auto' }}
+                >
+                  🗑
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className={`${styles.compareButton} ${isInCompareState ? styles.compareButtonActive : ''} ${isCompareLoading ? styles.compareButtonLoading : ''}`}
+                  aria-label={isInCompareState ? 'Удалить из сравнения' : 'Добавить в сравнение'}
+                  onClick={handleCompareClick}
+                  style={{ pointerEvents: isCompareLoading ? 'none' : 'auto' }}
+                >
+                  ⚖
+                </button>
+              )}
               <button
                 type="button"
-                className={`${styles.removeButton} ${isCompareLoading ? styles.compareButtonLoading : ''}`}
-                aria-label="Удалить из сравнения"
-                onClick={handleRemoveFromCompare}
-                style={{ pointerEvents: isCompareLoading ? 'none' : 'auto' }}
+                className={`${styles.favoriteButton} ${isFavorite ? styles.favoriteButtonActive : ''}`}
+                aria-label={isFavorite ? 'Удалить из избранного' : 'Добавить в избранное'}
+                onClick={handleFavoriteClick}
+                disabled={isLoading}
               >
-                🗑
+                {isFavorite ? '♥' : '♡'}
               </button>
-            ) : (
-              <button
-                type="button"
-                className={`${styles.compareButton} ${isInCompareState ? styles.compareButtonActive : ''} ${isCompareLoading ? styles.compareButtonLoading : ''}`}
-                aria-label={isInCompareState ? 'Удалить из сравнения' : 'Добавить в сравнение'}
-                onClick={handleCompareClick}
-                style={{ pointerEvents: isCompareLoading ? 'none' : 'auto' }}
-              >
-                ⚖
-              </button>
-            )}
-            <button
-              type="button"
-              className={`${styles.favoriteButton} ${isFavorite ? styles.favoriteButtonActive : ''}`}
-              aria-label={isFavorite ? 'Удалить из избранного' : 'Добавить в избранное'}
-              onClick={handleFavoriteClick}
-              disabled={isLoading}
-            >
-              {isFavorite ? '♥' : '♡'}
-            </button>
+            </div>
           </div>
         </div>
 
@@ -352,7 +342,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               ))}
             </div>
           )}
-          <h3 className={styles.name}>{displayName}</h3>
+          <h3 className={`${styles.name} ${styles.nameInContent}`}>{displayName}</h3>
           {product.sku && <p className={styles.sku}>Арт. {product.sku}</p>}
           <p className={styles.category}>{product.category}</p>
 
@@ -368,6 +358,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           )}
 
           <div className={styles.price}>
+            <span className={styles.priceLabel}>Стоимость:</span>
+            <span className={styles.priceIcon} aria-hidden>
+              <Wallet size={18} strokeWidth={2} />
+            </span>
             {oldPrice && <span className={styles.oldPrice}>{oldPrice.toLocaleString()} ₽</span>}
             <span className={styles.finalPrice}>{finalPrice.toLocaleString()} ₽</span>
           </div>

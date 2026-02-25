@@ -107,3 +107,35 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .link:focus-visible {
   box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
 }
+
+@media (width <= 768px) {
+  .sections {
+    padding: 1rem 0;
+  }
+
+  .container {
+    padding: 0 1rem;
+  }
+
+  .grid {
+    gap: 1rem;
+  }
+
+  .logoColumn svg {
+    max-height: 2rem;
+    width: auto;
+  }
+
+  .sectionTitle {
+    font-size: 0.9375rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .list {
+    gap: 0.25rem;
+  }
+
+  .link {
+    font-size: 0.8125rem;
+  }
+}
