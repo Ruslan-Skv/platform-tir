@@ -31,7 +31,7 @@ interface ServiceCatalogCategory {
 }
 
 interface CatalogData {
-  block: { title: string; showPricesInPublic: boolean };
+  block: { title: string };
   categories: ServiceCatalogCategory[];
 }
 

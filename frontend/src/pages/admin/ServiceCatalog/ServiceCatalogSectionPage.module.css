@@ -602,3 +602,233 @@
   font-size: 0.9375rem;
   margin: 0;
 }
+
+/* Тёмная тема */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .page {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .viewLink {
+  color: #60a5fa;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .viewLink:hover {
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .section {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formGroup label {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input::placeholder {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input:focus {
+  border-color: #6366f1;
+  outline: none;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .checkbox {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoriesTree {
+  background: #1f2937;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryItem {
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryRow:hover {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryName {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryName:hover {
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categorySlug {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemsCount {
+  background: rgb(99 102 241 / 0.3);
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .iconButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .iconButton:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .iconButtonSvg {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .iconPicker {
+  background: #1f2937;
+  border-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .iconOption:hover {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .iconOption.iconSelected {
+  border-color: #6366f1;
+  background: rgb(99 102 241 / 0.2);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .iconOptionSvg {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .iconOption.iconSelected .iconOptionSvg {
+  color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .clearIconButton {
+  background: rgb(239 68 68 / 0.2);
+  border-color: #7f1d1d;
+  color: #f87171;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .clearIconButton:hover {
+  background: rgb(239 68 68 / 0.3);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .orDivider {
+  color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .uploadButton {
+  background: rgb(34 197 94 / 0.15);
+  border-color: #065f46;
+  color: #34d399;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .uploadButton:hover {
+  background: rgb(34 197 94 / 0.25);
+  border-color: #047857;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editButton {
+  background: #374151;
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editButton:hover {
+  background: #4b5563;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton {
+  background: rgb(239 68 68 / 0.2);
+  border-color: #7f1d1d;
+  color: #f87171;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton:hover {
+  background: rgb(239 68 68 / 0.3);
+  border-color: #991b1b;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryBlock {
+  background: #171717;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryBlockTitle {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryBlockIconSvg {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemsTable th {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemsTable th,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemsTable td {
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemsTable td {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .smallButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .smallButton:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addItemButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addItemButton:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .emptyList {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .empty {
+  color: #9ca3af;
+}

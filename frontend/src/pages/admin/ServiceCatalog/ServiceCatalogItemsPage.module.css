@@ -78,11 +78,58 @@
   border-radius: 8px;
 }
 
+.categoryBlockHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.categoryBlock:not(:has(.itemsTable)) .categoryBlockHeader {
+  margin-bottom: 0;
+}
+
+.categoryBlock:has(.itemsTable) .categoryBlockHeader {
+  margin-bottom: 0.75rem;
+}
+
+.expandButton {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: #e5e7eb;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1;
+  color: #374151;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+
+.expandButton:hover {
+  background: #d1d5db;
+  border-color: #9ca3af;
+}
+
+.categoryBlockCount {
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 0.9375rem;
+}
+
 .categoryBlockTitle {
   font-size: 1rem;
   font-weight: 600;
-  margin: 0 0 0.75rem;
+  margin: 0;
   color: #374151;
+  flex: 1;
 }
 
 .categoryBlockIcon {
@@ -109,6 +156,7 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9375rem;
+  table-layout: fixed;
 }
 
 .itemsTable th,
@@ -123,12 +171,52 @@
   color: #6b7280;
 }
 
+.nameColumn {
+  width: 360px;
+}
+
+.priceColumn {
+  width: 130px;
+}
+
+.unitColumn {
+  width: 90px;
+}
+
+.actionsColumn {
+  width: 180px;
+}
+
+.nameCell {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  vertical-align: middle;
+}
+
 .input {
   padding: 0.5rem 0.75rem;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 0.9375rem;
   min-width: 120px;
+}
+
+.nameTextarea {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.nameTextarea:focus {
+  outline: none;
+  border-color: rgb(59 130 246);
 }
 
 .saveButton {
@@ -215,12 +303,15 @@
   border-color: #fca5a5;
 }
 
-.addItemForm {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-  margin-top: 0.75rem;
+.addItemRow td {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  vertical-align: middle;
+}
+
+.addItemRow .input {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .addItemButton {
@@ -235,4 +326,143 @@
 
 .addItemButton:hover {
   background: #d1d5db;
+}
+
+/* Тёмная тема */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .page {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .viewLink {
+  color: #60a5fa;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .viewLink:hover {
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .section {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryBlock {
+  background: #171717;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .expandButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .expandButton:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryBlockCount {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryBlockTitle {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryBlockIconSvg {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemsTable th {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemsTable th,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemsTable td {
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemsTable td {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .nameTextarea {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input::placeholder,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .nameTextarea::placeholder {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input:focus,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .nameTextarea:focus {
+  border-color: #60a5fa;
+  outline: none;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .smallButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .smallButton:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editButton {
+  background: #374151;
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editButton:hover {
+  background: #4b5563;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton {
+  background: rgb(239 68 68 / 0.2);
+  border-color: #7f1d1d;
+  color: #f87171;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton:hover {
+  background: rgb(239 68 68 / 0.3);
+  border-color: #991b1b;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addItemButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addItemButton:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .empty {
+  color: #9ca3af;
 }

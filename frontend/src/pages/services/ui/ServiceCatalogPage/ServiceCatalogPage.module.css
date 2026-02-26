@@ -144,3 +144,64 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Тёмная тема */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbLink {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbLink:hover {
+  color: #d90652;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbSep {
+  color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbCurrent {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCard {
+  background: #171717;
+  border-color: #374151;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCard:hover {
+  border-color: rgb(217 6 82 / 0.5);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.3);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardIcon {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardIconSvg {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCard:hover .categoryCardIconSvg {
+  color: #d90652;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardTitle {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardDescription {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardCount {
+  color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loading,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .empty {
+  color: #9ca3af;
+}

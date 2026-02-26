@@ -74,11 +74,6 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     label: 'Каталог услуг — Виды работ',
     path: '/admin/service-catalog/items',
   },
-  {
-    id: 'admin.service-catalog.settings',
-    label: 'Каталог услуг — Настройки',
-    path: '/admin/service-catalog/settings',
-  },
   { id: 'admin.partners', label: 'Партнёры', path: '/admin/partners' },
   { id: 'admin.catalog.suppliers', label: 'Поставщики', path: '/admin/catalog/suppliers' },
   { id: 'admin.orders', label: 'Заказы', path: '/admin/orders' },

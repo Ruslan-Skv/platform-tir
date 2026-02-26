@@ -10,6 +10,7 @@ export interface ServiceCategoryForNav {
   slug: string;
   href: string;
   icon?: string | null;
+  image?: string | null;
 }
 
 export function useDynamicServiceCategories() {
@@ -22,13 +23,22 @@ export function useDynamicServiceCategories() {
       const data = await res.json();
       const categories = data?.categories ?? [];
       setServiceCategories(
-        categories.map((cat: { id: string; name: string; slug: string; icon?: string | null }) => ({
-          id: cat.id,
-          name: cat.name,
-          slug: cat.slug,
-          href: `/catalog/services/${cat.slug}`,
-          icon: cat.icon ?? null,
-        }))
+        categories.map(
+          (cat: {
+            id: string;
+            name: string;
+            slug: string;
+            icon?: string | null;
+            image?: string | null;
+          }) => ({
+            id: cat.id,
+            name: cat.name,
+            slug: cat.slug,
+            href: `/catalog/services/${cat.slug}`,
+            icon: cat.icon ?? null,
+            image: cat.image ?? null,
+          })
+        )
       );
     } catch {
       setServiceCategories([]);

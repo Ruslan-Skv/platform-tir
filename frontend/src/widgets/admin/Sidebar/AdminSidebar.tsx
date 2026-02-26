@@ -189,11 +189,6 @@ const baseNavItems: NavItem[] = [
         href: '/admin/service-catalog/items',
         resourceId: 'admin.service-catalog.items',
       },
-      {
-        label: 'Настройки',
-        href: '/admin/service-catalog/settings',
-        resourceId: 'admin.service-catalog.settings',
-      },
     ],
   },
   { label: 'Партнёры', href: '/admin/partners', icon: '🤝', resourceId: 'admin.partners' },

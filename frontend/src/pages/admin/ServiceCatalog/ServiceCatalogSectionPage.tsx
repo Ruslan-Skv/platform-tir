@@ -31,6 +31,7 @@ interface ServiceCatalogCategory {
   description: string | null;
   icon: string | null;
   image: string | null;
+  showPricesInPublic: boolean;
   sortOrder: number;
   isActive: boolean;
   items?: ServiceCatalogItem[];
@@ -98,6 +99,7 @@ export function ServiceCatalogSectionPage() {
   const [newCategorySlug, setNewCategorySlug] = useState('');
   const [newCategoryIcon, setNewCategoryIcon] = useState('');
   const [newCategoryImage, setNewCategoryImage] = useState('');
+  const [newCategoryShowPrices, setNewCategoryShowPrices] = useState(true);
   const [showNewIconPicker, setShowNewIconPicker] = useState(false);
   const newCategoryFileInputRef = useRef<HTMLInputElement>(null);
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
@@ -107,6 +109,7 @@ export function ServiceCatalogSectionPage() {
     slug: string;
     icon: string;
     image: string;
+    showPricesInPublic: boolean;
   } | null>(null);
   const editCategoryFileInputRef = useRef<HTMLInputElement>(null);
   const showMessage = (type: 'success' | 'error', text: string) => {
@@ -178,6 +181,7 @@ export function ServiceCatalogSectionPage() {
           slug: newCategorySlug.trim(),
           icon: newCategoryIcon || undefined,
           image: newCategoryImage.trim() || undefined,
+          showPricesInPublic: newCategoryShowPrices,
         }),
       });
       if (res.ok) {
@@ -186,6 +190,7 @@ export function ServiceCatalogSectionPage() {
         setNewCategorySlug('');
         setNewCategoryIcon('');
         setNewCategoryImage('');
+        setNewCategoryShowPrices(true);
         clearNewCategoryImage();
         setShowNewCategory(false);
         load();
@@ -206,6 +211,7 @@ export function ServiceCatalogSectionPage() {
         slug: editCategoryData.slug,
         icon: editCategoryData.icon || undefined,
         image: editCategoryData.image?.trim() || null,
+        showPricesInPublic: editCategoryData.showPricesInPublic,
       };
       const res = await fetch(`${API_URL}/admin/service-catalog/categories/${id}`, {
         method: 'PATCH',
@@ -260,22 +266,15 @@ export function ServiceCatalogSectionPage() {
     <div className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Категории каталога услуг</h1>
-        <div className={styles.headerActions}>
-          <Link href="/admin/service-catalog/items" className={styles.viewLink}>
-            Виды работ
-          </Link>
-          <Link href="/admin/service-catalog/settings" className={styles.viewLink}>
-            Настройки
-          </Link>
-          <Link
-            href="/catalog/services"
-            target="_blank"
-            rel="noreferrer"
-            className={styles.viewLink}
+        {!showNewCategory && (
+          <button
+            type="button"
+            className={styles.addButton}
+            onClick={() => setShowNewCategory(true)}
           >
-            Просмотр на сайте
-          </Link>
-        </div>
+            + Добавить категорию
+          </button>
+        )}
       </div>
 
       {message && <div className={`${styles.message} ${styles[message.type]}`}>{message.text}</div>}
@@ -403,6 +402,18 @@ export function ServiceCatalogSectionPage() {
                           ) : null}
                         </div>
                       )}
+                      <label className={styles.checkbox}>
+                        <input
+                          type="checkbox"
+                          checked={editCategoryData.showPricesInPublic}
+                          onChange={(e) =>
+                            setEditCategoryData((p) =>
+                              p ? { ...p, showPricesInPublic: e.target.checked } : p
+                            )
+                          }
+                        />
+                        Показывать цены на сайте
+                      </label>
                       <button
                         type="button"
                         className={styles.saveButton}
@@ -459,6 +470,7 @@ export function ServiceCatalogSectionPage() {
                               slug: cat.slug,
                               icon: cat.icon || '',
                               image: cat.image || '',
+                              showPricesInPublic: cat.showPricesInPublic ?? true,
                             });
                           }}
                           title="Редактировать"
@@ -485,8 +497,8 @@ export function ServiceCatalogSectionPage() {
             <div className={styles.emptyList}>Категории не найдены</div>
           )}
         </div>
-        <div className={styles.addCategoryRow}>
-          {showNewCategory ? (
+        {showNewCategory && (
+          <div className={styles.addCategoryRow}>
             <div className={styles.addForm}>
               <input
                 type="text"
@@ -592,6 +604,14 @@ export function ServiceCatalogSectionPage() {
                   ) : null}
                 </div>
               )}
+              <label className={styles.checkbox}>
+                <input
+                  type="checkbox"
+                  checked={newCategoryShowPrices}
+                  onChange={(e) => setNewCategoryShowPrices(e.target.checked)}
+                />
+                Показывать цены на сайте
+              </label>
               <button type="button" className={styles.saveButton} onClick={handleAddCategory}>
                 Создать
               </button>
@@ -604,22 +624,15 @@ export function ServiceCatalogSectionPage() {
                   setNewCategorySlug('');
                   setNewCategoryIcon('');
                   setNewCategoryImage('');
+                  setNewCategoryShowPrices(true);
                   setShowNewIconPicker(false);
                 }}
               >
                 Отмена
               </button>
             </div>
-          ) : (
-            <button
-              type="button"
-              className={styles.addButton}
-              onClick={() => setShowNewCategory(true)}
-            >
-              + Добавить категорию
-            </button>
-          )}
-        </div>
+          </div>
+        )}
       </section>
 
       <ConfirmModal

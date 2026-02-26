@@ -21,6 +21,10 @@ export class CreateServiceCatalogCategoryDto {
   @IsOptional()
   image?: string;
 
+  @IsBoolean()
+  @IsOptional()
+  showPricesInPublic?: boolean;
+
   @IsNumber()
   @IsOptional()
   sortOrder?: number;

@@ -1,5 +1,8 @@
 'use client';
 
+import { CheckCircleIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/react/24/solid';
+
 import { useCallback, useEffect, useState } from 'react';
 
 import Link from 'next/link';
@@ -198,15 +201,26 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
                       <td>{item.price !== undefined ? formatPrice(item.price) : '—'}</td>
                       <td>{item.unit}</td>
                       <td>
-                        {item.price !== undefined && (
-                          <button
-                            type="button"
-                            className={styles.addButton}
-                            onClick={() => addToCalculator(item)}
-                          >
-                            В расчёт
-                          </button>
-                        )}
+                        {item.price !== undefined &&
+                          (() => {
+                            const isInCalc = calcLines.some((l) => l.itemId === item.id);
+                            return (
+                              <button
+                                type="button"
+                                className={`${styles.addButton} ${isInCalc ? styles.addButtonSelected : ''}`}
+                                onClick={() => addToCalculator(item)}
+                                title={
+                                  isInCalc ? 'В расчёте (нажмите, чтобы добавить ещё)' : 'В расчёт'
+                                }
+                              >
+                                {isInCalc ? (
+                                  <CheckCircleIconSolid className={styles.addButtonIcon} />
+                                ) : (
+                                  <PlusCircleIcon className={styles.addButtonIcon} />
+                                )}
+                              </button>
+                            );
+                          })()}
                       </td>
                     </>
                   )}

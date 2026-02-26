@@ -2,8 +2,6 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 
-import Link from 'next/link';
-
 import { useAuth } from '@/features/auth';
 import { serviceCatalogIconMap } from '@/shared/lib/serviceCatalogIcons';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
@@ -59,6 +57,19 @@ export function ServiceCatalogItemsPage() {
   });
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [editItemData, setEditItemData] = useState<Partial<ServiceCatalogItem>>({});
+  const [collapsedCategoryIds, setCollapsedCategoryIds] = useState<Set<string>>(new Set());
+
+  const toggleCategory = (categoryId: string) => {
+    setCollapsedCategoryIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryId)) {
+        next.delete(categoryId);
+      } else {
+        next.add(categoryId);
+      }
+      return next;
+    });
+  };
 
   const showMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
@@ -184,22 +195,6 @@ export function ServiceCatalogItemsPage() {
     <div className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Виды работ</h1>
-        <div className={styles.headerActions}>
-          <Link href="/admin/service-catalog" className={styles.viewLink}>
-            Категории
-          </Link>
-          <Link href="/admin/service-catalog/settings" className={styles.viewLink}>
-            Настройки
-          </Link>
-          <Link
-            href="/catalog/services"
-            target="_blank"
-            rel="noreferrer"
-            className={styles.viewLink}
-          >
-            Просмотр на сайте
-          </Link>
-        </div>
       </div>
 
       {message && <div className={`${styles.message} ${styles[message.type]}`}>{message.text}</div>}
@@ -211,192 +206,239 @@ export function ServiceCatalogItemsPage() {
             Создайте категории в разделе «Категории», затем добавляйте виды работ.
           </p>
         ) : (
-          categories.map((cat) => (
-            <div key={cat.id} className={styles.categoryBlock}>
-              <h3 className={styles.categoryBlockTitle}>
-                {cat.image ? (
-                  <img src={cat.image} alt="" className={styles.categoryBlockImage} />
-                ) : cat.icon && serviceCatalogIconMap[cat.icon] ? (
-                  <span className={styles.categoryBlockIcon}>
-                    {React.createElement(serviceCatalogIconMap[cat.icon], {
-                      className: styles.categoryBlockIconSvg,
-                    })}
-                  </span>
-                ) : null}
-                {cat.name}
-              </h3>
-              <table className={styles.itemsTable}>
-                <thead>
-                  <tr>
-                    <th>Название</th>
-                    <th>Цена за ед.</th>
-                    <th>Ед. изм.</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(cat.items ?? []).map((item) => (
-                    <tr key={item.id}>
-                      <td>
-                        {editingItem === item.id ? (
-                          <input
-                            type="text"
-                            value={editItemData.name ?? item.name}
-                            onChange={(e) =>
-                              setEditItemData((p) => ({ ...p, name: e.target.value }))
-                            }
-                            className={styles.input}
-                          />
-                        ) : (
-                          item.name
-                        )}
-                      </td>
-                      <td>
-                        {editingItem === item.id ? (
-                          <input
-                            type="text"
-                            value={
-                              editItemData.price !== undefined
-                                ? String(editItemData.price)
-                                : String(item.price)
-                            }
-                            onChange={(e) =>
-                              setEditItemData((p) => ({
-                                ...p,
-                                price: parseFloat(e.target.value.replace(',', '.')) || 0,
-                              }))
-                            }
-                            className={styles.input}
-                            style={{ width: 100 }}
-                          />
-                        ) : (
-                          formatPrice(item.price)
-                        )}
-                      </td>
-                      <td>
-                        {editingItem === item.id ? (
-                          <input
-                            type="text"
-                            value={editItemData.unit ?? item.unit}
-                            onChange={(e) =>
-                              setEditItemData((p) => ({ ...p, unit: e.target.value }))
-                            }
-                            className={styles.input}
-                            style={{ width: 60 }}
-                          />
-                        ) : (
-                          item.unit
-                        )}
-                      </td>
-                      <td>
-                        {editingItem === item.id ? (
-                          <>
-                            <button
-                              type="button"
-                              className={styles.smallButton}
-                              onClick={() => handleUpdateItem(item.id)}
-                            >
-                              Сохранить
-                            </button>
-                            <button
-                              type="button"
-                              className={styles.smallButton}
-                              onClick={() => {
-                                setEditingItem(null);
-                                setEditItemData({});
-                              }}
-                            >
-                              Отмена
-                            </button>
-                          </>
-                        ) : (
-                          <span className={styles.cellActions}>
-                            <button
-                              type="button"
-                              className={styles.editButton}
-                              onClick={() => {
-                                setEditingItem(item.id);
-                                setEditItemData({
-                                  name: item.name,
-                                  price: item.price,
-                                  unit: item.unit,
-                                });
-                              }}
-                              title="Редактировать"
-                            >
-                              ✏️
-                            </button>
-                            <button
-                              type="button"
-                              className={styles.deleteButton}
-                              onClick={() =>
-                                setDeleteTarget({ type: 'item', id: item.id, name: item.name })
-                              }
-                              title="Удалить"
-                            >
-                              🗑️
-                            </button>
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {showNewItem === cat.id ? (
-                <div className={styles.addItemForm}>
-                  <input
-                    type="text"
-                    value={newItem.name}
-                    onChange={(e) => setNewItem((p) => ({ ...p, name: e.target.value }))}
-                    placeholder="Название"
-                    className={styles.input}
-                  />
-                  <input
-                    type="text"
-                    value={newItem.price}
-                    onChange={(e) => setNewItem((p) => ({ ...p, price: e.target.value }))}
-                    placeholder="Цена"
-                    className={styles.input}
-                    style={{ width: 100 }}
-                  />
-                  <input
-                    type="text"
-                    value={newItem.unit}
-                    onChange={(e) => setNewItem((p) => ({ ...p, unit: e.target.value }))}
-                    placeholder="м²"
-                    className={styles.input}
-                    style={{ width: 60 }}
-                  />
+          categories.map((cat) => {
+            const isCollapsed = collapsedCategoryIds.has(cat.id);
+            const itemsCount = cat.items?.length ?? 0;
+            return (
+              <div key={cat.id} className={styles.categoryBlock}>
+                <div className={styles.categoryBlockHeader}>
                   <button
                     type="button"
-                    className={styles.saveButton}
-                    onClick={() => handleAddItem(cat.id)}
+                    className={styles.expandButton}
+                    onClick={() => toggleCategory(cat.id)}
+                    title={isCollapsed ? 'Развернуть' : 'Свернуть'}
+                    aria-expanded={!isCollapsed}
                   >
-                    Добавить
+                    {isCollapsed ? '+' : '−'}
                   </button>
-                  <button
-                    type="button"
-                    className={styles.cancelButton}
-                    onClick={() => {
-                      setShowNewItem(null);
-                      setNewItem({ name: '', description: '', price: '', unit: 'м²' });
-                    }}
-                  >
-                    Отмена
-                  </button>
+                  <h3 className={styles.categoryBlockTitle}>
+                    {cat.image ? (
+                      <img src={cat.image} alt="" className={styles.categoryBlockImage} />
+                    ) : cat.icon && serviceCatalogIconMap[cat.icon] ? (
+                      <span className={styles.categoryBlockIcon}>
+                        {React.createElement(serviceCatalogIconMap[cat.icon], {
+                          className: styles.categoryBlockIconSvg,
+                        })}
+                      </span>
+                    ) : null}
+                    {cat.name}
+                    {itemsCount > 0 && (
+                      <span className={styles.categoryBlockCount}> ({itemsCount})</span>
+                    )}
+                  </h3>
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  className={styles.addItemButton}
-                  onClick={() => setShowNewItem(cat.id)}
-                >
-                  + Добавить вид работ
-                </button>
-              )}
-            </div>
-          ))
+                {!isCollapsed && (
+                  <>
+                    <table className={styles.itemsTable}>
+                      <colgroup>
+                        <col className={styles.nameColumn} />
+                        <col className={styles.priceColumn} />
+                        <col className={styles.unitColumn} />
+                        <col className={styles.actionsColumn} />
+                      </colgroup>
+                      <thead>
+                        <tr>
+                          <th>Название</th>
+                          <th>Цена за ед.</th>
+                          <th>Ед. изм.</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(cat.items ?? []).map((item) => (
+                          <tr key={item.id}>
+                            <td className={styles.nameCell}>
+                              {editingItem === item.id ? (
+                                <textarea
+                                  value={editItemData.name ?? item.name}
+                                  onChange={(e) =>
+                                    setEditItemData((p) => ({ ...p, name: e.target.value }))
+                                  }
+                                  className={styles.nameTextarea}
+                                  rows={2}
+                                />
+                              ) : (
+                                item.name
+                              )}
+                            </td>
+                            <td>
+                              {editingItem === item.id ? (
+                                <input
+                                  type="text"
+                                  value={
+                                    editItemData.price !== undefined
+                                      ? String(editItemData.price)
+                                      : String(item.price)
+                                  }
+                                  onChange={(e) =>
+                                    setEditItemData((p) => ({
+                                      ...p,
+                                      price: parseFloat(e.target.value.replace(',', '.')) || 0,
+                                    }))
+                                  }
+                                  className={styles.input}
+                                  style={{ width: 100 }}
+                                />
+                              ) : (
+                                formatPrice(item.price)
+                              )}
+                            </td>
+                            <td>
+                              {editingItem === item.id ? (
+                                <input
+                                  type="text"
+                                  value={editItemData.unit ?? item.unit}
+                                  onChange={(e) =>
+                                    setEditItemData((p) => ({ ...p, unit: e.target.value }))
+                                  }
+                                  className={styles.input}
+                                  style={{ width: 60 }}
+                                />
+                              ) : (
+                                item.unit
+                              )}
+                            </td>
+                            <td>
+                              {editingItem === item.id ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    className={styles.smallButton}
+                                    onClick={() => handleUpdateItem(item.id)}
+                                  >
+                                    Сохранить
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className={styles.smallButton}
+                                    onClick={() => {
+                                      setEditingItem(null);
+                                      setEditItemData({});
+                                    }}
+                                  >
+                                    Отмена
+                                  </button>
+                                </>
+                              ) : (
+                                <span className={styles.cellActions}>
+                                  <button
+                                    type="button"
+                                    className={styles.editButton}
+                                    onClick={() => {
+                                      setEditingItem(item.id);
+                                      setEditItemData({
+                                        name: item.name,
+                                        price: item.price,
+                                        unit: item.unit,
+                                      });
+                                    }}
+                                    title="Редактировать"
+                                  >
+                                    ✏️
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className={styles.deleteButton}
+                                    onClick={() =>
+                                      setDeleteTarget({
+                                        type: 'item',
+                                        id: item.id,
+                                        name: item.name,
+                                      })
+                                    }
+                                    title="Удалить"
+                                  >
+                                    🗑️
+                                  </button>
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                        {showNewItem === cat.id && (
+                          <tr className={styles.addItemRow}>
+                            <td className={styles.nameCell}>
+                              <textarea
+                                value={newItem.name}
+                                onChange={(e) =>
+                                  setNewItem((p) => ({ ...p, name: e.target.value }))
+                                }
+                                placeholder="Название"
+                                className={styles.nameTextarea}
+                                rows={2}
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="text"
+                                value={newItem.price}
+                                onChange={(e) =>
+                                  setNewItem((p) => ({ ...p, price: e.target.value }))
+                                }
+                                placeholder="Цена"
+                                className={styles.input}
+                                style={{ width: '100%', boxSizing: 'border-box' }}
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="text"
+                                value={newItem.unit}
+                                onChange={(e) =>
+                                  setNewItem((p) => ({ ...p, unit: e.target.value }))
+                                }
+                                placeholder="м²"
+                                className={styles.input}
+                                style={{ width: '100%', boxSizing: 'border-box' }}
+                              />
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className={styles.saveButton}
+                                onClick={() => handleAddItem(cat.id)}
+                              >
+                                Добавить
+                              </button>
+                              <button
+                                type="button"
+                                className={styles.cancelButton}
+                                onClick={() => {
+                                  setShowNewItem(null);
+                                  setNewItem({ name: '', description: '', price: '', unit: 'м²' });
+                                }}
+                              >
+                                Отмена
+                              </button>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                    {showNewItem !== cat.id && (
+                      <button
+                        type="button"
+                        className={styles.addItemButton}
+                        onClick={() => setShowNewItem(cat.id)}
+                      >
+                        + Добавить вид работ
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })
         )}
       </section>
 

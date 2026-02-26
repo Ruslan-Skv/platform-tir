@@ -56,6 +56,7 @@ export class ServiceCatalogService {
         description: dto.description,
         icon: dto.icon ?? null,
         image: dto.image ?? null,
+        showPricesInPublic: dto.showPricesInPublic ?? true,
         sortOrder: dto.sortOrder ?? 0,
         isActive: dto.isActive ?? true,
       },
@@ -228,46 +229,32 @@ export class ServiceCatalogService {
       orderBy: { sortOrder: 'asc' },
     });
 
-    // Если цены скрыты — убираем price из items
-    if (!block.showPricesInPublic) {
-      return {
-        block: {
-          id: block.id,
-          title: block.title,
-          showPricesInPublic: false,
-        },
-        categories: categories.map((c) => ({
-          ...c,
-          items: c.items.map((item) => ({
+    return {
+      block: {
+        id: block.id,
+        title: block.title,
+      },
+      categories: categories.map((c) => ({
+        ...c,
+        showPricesInPublic: c.showPricesInPublic,
+        items: c.items.map((item) => {
+          const base = {
             id: item.id,
             name: item.name,
             description: item.description,
             unit: item.unit,
             sortOrder: item.sortOrder,
-            // price не передаём
-          })),
-        })),
-      };
-    }
-
-    return {
-      block: {
-        id: block.id,
-        title: block.title,
-        showPricesInPublic: block.showPricesInPublic,
-      },
-      categories: categories.map((c) => ({
-        ...c,
-        items: c.items.map((item) => ({
-          ...item,
-          price: Number(item.price),
-        })),
+          };
+          if (c.showPricesInPublic) {
+            return { ...base, price: Number(item.price) };
+          }
+          return base;
+        }),
       })),
     };
   }
 
   async getPublicCategoryBySlug(slug: string) {
-    const block = await this.getBlock();
     const category = await this.findCategoryBySlug(slug);
     const items = category.items.map((item) => {
       const base = {
@@ -277,7 +264,7 @@ export class ServiceCatalogService {
         unit: item.unit,
         sortOrder: item.sortOrder,
       };
-      if (block.showPricesInPublic) {
+      if (category.showPricesInPublic) {
         return { ...base, price: Number(item.price) };
       }
       return base;
@@ -285,7 +272,7 @@ export class ServiceCatalogService {
     return {
       ...category,
       items,
-      showPricesInPublic: block.showPricesInPublic,
+      showPricesInPublic: category.showPricesInPublic,
     };
   }
 
@@ -295,12 +282,11 @@ export class ServiceCatalogService {
       return { total: 0, lines: [], showPricesInPublic: false };
     }
 
-    const block = await this.getBlock();
     const ids = items.map((i) => i.itemId);
     const dbItems = await this.prisma.serviceCatalogItem.findMany({
       where: { id: { in: ids }, isActive: true },
       include: {
-        category: { select: { name: true, slug: true } },
+        category: { select: { name: true, slug: true, showPricesInPublic: true } },
       },
     });
 
@@ -315,11 +301,15 @@ export class ServiceCatalogService {
       amount: number;
     }[] = [];
     let total = 0;
+    let anyCategoryShowsPrices = false;
 
     for (const { itemId, quantity } of items) {
       const item = idToItem.get(itemId);
       if (!item) {
         throw new BadRequestException(`Вид работ с id "${itemId}" не найден`);
+      }
+      if (item.category.showPricesInPublic) {
+        anyCategoryShowsPrices = true;
       }
       const price = Number(item.price);
       const amount = price * quantity;
@@ -338,7 +328,7 @@ export class ServiceCatalogService {
     return {
       total,
       lines,
-      showPricesInPublic: block.showPricesInPublic,
+      showPricesInPublic: anyCategoryShowsPrices,
     };
   }
 }

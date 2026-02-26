@@ -2,6 +2,7 @@
   max-width: 1100px;
   margin: 0 auto;
   padding: 2rem 1rem;
+  color: #1f2937;
 }
 
 .breadcrumb {
@@ -94,18 +95,38 @@
   color: #6b7280;
 }
 
+.table td {
+  color: #1f2937;
+}
+
 .addButton {
-  padding: 0.35rem 0.75rem;
-  font-size: 0.8125rem;
-  background: #2563eb;
-  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem;
+  background: transparent;
+  color: #6b7280;
   border: none;
   border-radius: 6px;
   cursor: pointer;
+  transition: color 0.2s;
 }
 
 .addButton:hover {
-  background: #1d4ed8;
+  color: #2563eb;
+}
+
+.addButtonSelected {
+  color: #059669;
+}
+
+.addButtonSelected:hover {
+  color: #047857;
+}
+
+.addButtonIcon {
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .calculator {
@@ -239,4 +260,139 @@
 
 .calcResultLine {
   padding: 0.25rem 0;
+}
+
+/* Тёмная тема */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .container {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumb {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumb a {
+  color: #60a5fa;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumb a:hover {
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backLink {
+  color: #60a5fa;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backLink:hover {
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .description {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .table th {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .table th,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .table td {
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .table td {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addButton {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addButton:hover {
+  color: #60a5fa;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addButtonSelected {
+  color: #10b981;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addButtonSelected:hover {
+  color: #34d399;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calculator {
+  background: #171717;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcEmpty {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcLine {
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcLineName {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcLinePrice {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantityInput {
+  background: #262626;
+  border-color: #525252;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .quantityInput:focus {
+  border-color: #60a5fa;
+  outline: none;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .removeButton {
+  color: #f87171;
+  border-color: #7f1d1d;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .removeButton:hover {
+  background: rgb(127 29 29 / 0.3);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcButton {
+  background: #059669;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcButton:hover:not(:disabled) {
+  background: #10b981;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcResult {
+  border-top-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcTotal {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcTotal strong {
+  color: #10b981;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcResultLines {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
+  color: #9ca3af;
 }

@@ -64,6 +64,7 @@ export interface NavigationItemProps {
     slug: string;
     href: string;
     icon?: string | null;
+    image?: string | null;
   }[];
 }
 
@@ -91,9 +92,8 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
     dynamicCategories &&
     dynamicCategories.length > 0;
 
-  // Для "Каталог услуг" используем категории из админки
+  // Для "Каталог услуг" всегда используем категории из админки каталога услуг (игнорируем dropdownItems из меню навигации)
   const useDynamicServiceMenu =
-    !apiDropdownItems &&
     item.name === 'Каталог услуг' &&
     dynamicServiceCategories &&
     dynamicServiceCategories.length > 0;
@@ -272,8 +272,9 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
           >
             <div className={styles.dropdownContent}>
               <div className={styles.dropdownGrid}>
-                {/* Данные из API (полное управление в админке) */}
+                {/* Данные из API (полное управление в админке), для "Каталог услуг" используем категории из каталога услуг */}
                 {apiDropdownItems &&
+                  !useDynamicServiceMenu &&
                   apiDropdownItems.map((dropdownItem) => (
                     <div key={dropdownItem.id} className={styles.dropdownSection}>
                       <div className={styles.dropdownSectionInner}>
@@ -321,11 +322,13 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
                           onClick={() => handleDropdownItemClick(cat.name)}
                           className={styles.dropdownItem}
                         >
-                          {cat.icon && (
-                            <span className={styles.dropdownItemIconWrapper}>
-                              {getIcon(cat.icon)}
-                            </span>
-                          )}
+                          <span className={styles.dropdownItemIconWrapper}>
+                            {cat.image ? (
+                              <img src={cat.image} alt="" className={styles.categoryImage} />
+                            ) : cat.icon ? (
+                              getIcon(cat.icon)
+                            ) : null}
+                          </span>
                           <span
                             className={`${styles.dropdownItemText} ${styles.dropdownItemTextBold}`}
                           >
