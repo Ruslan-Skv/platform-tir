@@ -2,13 +2,26 @@
 
 import { useEffect, useState } from 'react';
 
-import { type AdminOrderSummary, getAdminOrders } from '@/shared/api/admin-orders';
+import Link from 'next/link';
+
+import {
+  type AdminOrderSummary,
+  type ServiceOrderSummary,
+  getAdminOrders,
+  getServiceOrders,
+} from '@/shared/api/admin-orders';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 
 import styles from './OrdersPage.module.css';
 
-type Order = AdminOrderSummary & {
-  itemsCount: number;
+type Order =
+  | (AdminOrderSummary & { itemsCount: number; orderType?: 'product' })
+  | (ServiceOrderSummary & { itemsCount: number; orderType: 'service' });
+
+const SERVICE_STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Ожидает',
+  CONFIRMED: 'Подтверждён',
+  CANCELLED: 'Отменён',
 };
 
 export function OrdersPage() {
@@ -27,21 +40,38 @@ export function OrdersPage() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    getAdminOrders(page, limit, statusFilter || undefined, {
-      orderNumber: orderNumberQuery.trim() || undefined,
-      customer: customerQuery.trim() || undefined,
-      manager: managerQuery.trim() || undefined,
-      paymentStatus: paymentFilter || undefined,
-    })
-      .then((res) => {
+    Promise.all([
+      getAdminOrders(page, limit, statusFilter || undefined, {
+        orderNumber: orderNumberQuery.trim() || undefined,
+        customer: customerQuery.trim() || undefined,
+        manager: managerQuery.trim() || undefined,
+        paymentStatus: paymentFilter || undefined,
+      }),
+      getServiceOrders({ page: 1, limit: 100 }),
+    ])
+      .then(([ordersRes, serviceRes]) => {
         if (cancelled) return;
-        setTotal(res.total);
-        setOrders(
-          res.data.map((o) => ({
+        const productOrders: Order[] = ordersRes.data.map((o) => {
+          const items = Array.isArray(o.items) ? o.items.length : 0;
+          const services = Array.isArray((o as { orderServiceItems?: unknown[] }).orderServiceItems)
+            ? (o as { orderServiceItems: unknown[] }).orderServiceItems.length
+            : 0;
+          return {
             ...o,
-            itemsCount: Array.isArray(o.items) ? o.items.length : 0,
-          }))
+            itemsCount: items + services,
+            orderType: 'product' as const,
+          };
+        });
+        const serviceOrders: Order[] = serviceRes.items.map((o) => ({
+          ...o,
+          itemsCount: Array.isArray(o.items) ? o.items.length : 0,
+          orderType: 'service' as const,
+        }));
+        const merged = [...productOrders, ...serviceOrders].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
+        setTotal(ordersRes.total + serviceRes.total);
+        setOrders(merged.slice(0, limit));
       })
       .catch(() => {
         if (!cancelled) setOrders([]);
@@ -97,27 +127,46 @@ export function OrdersPage() {
     return labels[status] || status;
   };
 
+  const isServiceOrder = (
+    o: Order
+  ): o is ServiceOrderSummary & { itemsCount: number; orderType: 'service' } =>
+    (o as { orderType?: string }).orderType === 'service';
+
   const columns = [
     {
       key: 'orderNumber',
       title: 'Заказ',
       sortable: true,
-      render: (order: Order) => <span className={styles.orderNumber}>{order.orderNumber}</span>,
+      render: (order: Order) => (
+        <span className={styles.orderNumber}>
+          {order.orderNumber}
+          {isServiceOrder(order) && (
+            <span className={styles.serviceOrderBadge} title="Заказ услуг">
+              {' '}
+              (услуги)
+            </span>
+          )}
+        </span>
+      ),
     },
     {
       key: 'manager',
       title: 'Менеджер',
-      render: (order: Order) =>
-        order.processedByManager ? (
+      render: (order: Order) => {
+        const mgr = isServiceOrder(order)
+          ? order.createdByManager
+          : (order as AdminOrderSummary).processedByManager;
+        return mgr ? (
           <div className={styles.customerCell}>
             <span className={styles.customerName}>
-              {order.processedByManager.firstName} {order.processedByManager.lastName}
+              {mgr.firstName} {mgr.lastName}
             </span>
-            <span className={styles.customerEmail}>{order.processedByManager.email}</span>
+            <span className={styles.customerEmail}>{mgr.email}</span>
           </div>
         ) : (
           <span className={styles.customerEmail}>—</span>
-        ),
+        );
+      },
     },
     {
       key: 'customer',
@@ -125,17 +174,11 @@ export function OrdersPage() {
       render: (order: Order) => (
         <div className={styles.customerCell}>
           <span className={styles.customerName}>
-            {(order.createdByManagerId
-              ? order.customerFirstName
-              : (order.customerFirstName ?? order.user?.firstName)) || ''}{' '}
-            {(order.createdByManagerId
-              ? order.customerLastName
-              : (order.customerLastName ?? order.user?.lastName)) || ''}
+            {order.customerFirstName ?? (order as AdminOrderSummary).user?.firstName ?? ''}{' '}
+            {order.customerLastName ?? (order as AdminOrderSummary).user?.lastName ?? ''}
           </span>
           <span className={styles.customerEmail}>
-            {order.createdByManagerId
-              ? order.customerEmail
-              : (order.customerEmail ?? order.user?.email)}
+            {order.customerEmail ?? (order as AdminOrderSummary).user?.email ?? '—'}
           </span>
         </div>
       ),
@@ -145,7 +188,9 @@ export function OrdersPage() {
       title: 'Статус',
       render: (order: Order) => (
         <span className={`${styles.statusBadge} ${styles[`status${order.status}`]}`}>
-          {getStatusLabel(order.status)}
+          {isServiceOrder(order)
+            ? (SERVICE_STATUS_LABELS[order.status] ?? order.status)
+            : getStatusLabel(order.status)}
         </span>
       ),
     },
@@ -153,10 +198,10 @@ export function OrdersPage() {
       key: 'payment',
       title: 'Оплата',
       render: (order: Order) => {
-        if (order.status === 'CANCELLED') {
+        if (isServiceOrder(order) || order.status === 'CANCELLED') {
           return <span className={styles.paymentMuted}>—</span>;
         }
-        const paymentStatus = order.paymentStatus ?? 'PENDING';
+        const paymentStatus = (order as AdminOrderSummary).paymentStatus ?? 'PENDING';
         return (
           <span className={`${styles.paymentBadge} ${styles[`payment${paymentStatus}`]}`}>
             {getPaymentLabel(paymentStatus)}
@@ -190,7 +235,9 @@ export function OrdersPage() {
           className={styles.viewButton}
           onClick={(e) => {
             e.stopPropagation();
-            window.location.href = `/admin/orders/${order.id}`;
+            window.location.href = isServiceOrder(order)
+              ? `/admin/orders/service-orders/${order.id}`
+              : `/admin/orders/${order.id}`;
           }}
         >
           Открыть
@@ -205,6 +252,9 @@ export function OrdersPage() {
         <div className={styles.headerLeft}>
           <h1 className={styles.title}>Заказы</h1>
           <span className={styles.count}>{total} заказов</span>
+          <Link href="/admin/orders/service-orders" className={styles.serviceOrdersLink}>
+            Заказы на услуги
+          </Link>
         </div>
       </div>
 
@@ -275,7 +325,9 @@ export function OrdersPage() {
           columns={columns}
           keyExtractor={(order) => order.id}
           onRowClick={(order) => {
-            window.location.href = `/admin/orders/${order.id}`;
+            window.location.href = isServiceOrder(order)
+              ? `/admin/orders/service-orders/${order.id}`
+              : `/admin/orders/${order.id}`;
           }}
           selectable
           onSelectionChange={setSelectedIds}

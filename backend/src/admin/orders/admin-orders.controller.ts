@@ -16,6 +16,8 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { SubmitFromCartForCustomerDto } from '../../orders/dto/submit-from-cart-for-customer.dto';
+import { CreateServiceOrderDto } from '../../orders/dto/create-service-order.dto';
+import { UpdateServiceOrderCustomerDto } from '../../orders/dto/update-service-order-customer.dto';
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
 
 @Controller('admin/orders')
@@ -79,6 +81,27 @@ export class AdminOrdersController {
     );
   }
 
+  @Post('service-order')
+  @Roles(
+    'SUPER_ADMIN',
+    'ADMIN',
+    'CONTENT_MANAGER',
+    'MODERATOR',
+    'SUPPORT',
+    'PARTNER',
+    'MANAGER',
+    'TECHNOLOGIST',
+    'BRIGADIER',
+    'LEAD_SPECIALIST_FURNITURE',
+    'LEAD_SPECIALIST_WINDOWS_DOORS',
+    'SURVEYOR',
+    'DRIVER',
+    'INSTALLER',
+  )
+  createServiceOrder(@Request() req: RequestWithUser, @Body() dto: CreateServiceOrderDto) {
+    return this.ordersService.createServiceOrder(req.user.id, req.user.role, dto);
+  }
+
   @Post('submit-from-cart-for-customer')
   @Roles(
     'SUPER_ADMIN',
@@ -101,6 +124,32 @@ export class AdminOrdersController {
     @Body() dto: SubmitFromCartForCustomerDto,
   ) {
     return this.ordersService.submitFromCartForCustomer(req.user.id, req.user.role, dto);
+  }
+
+  @Get('service-orders')
+  @Roles('ADMIN', 'SUPER_ADMIN', 'MANAGER')
+  getServiceOrders(
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.adminOrdersService.getServiceOrders({
+      status,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 20,
+    });
+  }
+
+  @Get('service-order/:id')
+  @Roles('ADMIN', 'SUPER_ADMIN', 'MANAGER')
+  getServiceOrder(@Param('id') id: string) {
+    return this.adminOrdersService.getServiceOrder(id);
+  }
+
+  @Patch('service-order/:id/customer')
+  @Roles('ADMIN', 'SUPER_ADMIN', 'MANAGER')
+  updateServiceOrderCustomer(@Param('id') id: string, @Body() dto: UpdateServiceOrderCustomerDto) {
+    return this.ordersService.updateServiceOrderCustomer(id, dto);
   }
 
   @Get('delivery-config')

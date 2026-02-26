@@ -201,6 +201,7 @@ export class AdminOrdersService {
               },
             },
           },
+          orderServiceItems: true,
           shippingAddress: true,
           shippingMethod: true,
           payments: {
@@ -223,6 +224,51 @@ export class AdminOrdersService {
       limit,
       totalPages: Math.ceil(total / limit),
     };
+  }
+
+  async getServiceOrders(params?: { status?: string; page?: number; limit?: number }) {
+    const { status, page = 1, limit = 20 } = params || {};
+    const skip = (page - 1) * limit;
+    const where: Prisma.ServiceOrderWhereInput = {};
+    if (status) {
+      where.status = status as 'PENDING' | 'CONFIRMED' | 'CANCELLED';
+    }
+    const [items, total] = await Promise.all([
+      this.prisma.serviceOrder.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { id: true, email: true, firstName: true, lastName: true } },
+          createdByManager: { select: { id: true, email: true, firstName: true, lastName: true } },
+          items: true,
+        },
+      }),
+      this.prisma.serviceOrder.count({ where }),
+    ]);
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async getServiceOrder(id: string) {
+    const order = await this.prisma.serviceOrder.findUnique({
+      where: { id },
+      include: {
+        user: { select: { id: true, email: true, firstName: true, lastName: true, phone: true } },
+        createdByManager: { select: { id: true, email: true, firstName: true, lastName: true } },
+        items: true,
+      },
+    });
+    if (!order) {
+      throw new NotFoundException('Заказ на услуги не найден');
+    }
+    return order;
   }
 
   async findOne(id: string) {
@@ -266,6 +312,7 @@ export class AdminOrdersService {
             },
           },
         },
+        orderServiceItems: true,
         shippingAddress: true,
         shippingMethod: true,
         payments: {
@@ -348,6 +395,7 @@ export class AdminOrdersService {
               },
             },
           },
+          orderServiceItems: true,
           shippingAddress: true,
           shippingMethod: true,
           payments: {
@@ -371,7 +419,7 @@ export class AdminOrdersService {
       });
     }
 
-    return order;
+    return order!;
   }
 
   /** Записать событие в историю заказа. */
@@ -462,12 +510,17 @@ export class AdminOrdersService {
   private async recalculateOrderTotals(orderId: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
-      include: { items: true },
+      include: { items: true, orderServiceItems: true },
     });
     if (!order) return;
 
     const config = await this.getDeliveryConfig();
-    const subtotal = order.items.reduce((sum, i) => sum + Number(i.price) * i.quantity, 0);
+    const itemsSubtotal = order.items.reduce((sum, i) => sum + Number(i.price) * i.quantity, 0);
+    const servicesSubtotal = (order.orderServiceItems ?? []).reduce(
+      (sum, i) => sum + Number(i.amount),
+      0,
+    );
+    const subtotal = itemsSubtotal + servicesSubtotal;
     const tax = 0;
     const shippingCost = Number(order.shippingCost);
     const carryCost = order.carryCost != null ? Number(order.carryCost) : 0;
@@ -574,7 +627,11 @@ export class AdminOrdersService {
       orderNumber: order.orderNumber,
       customerEmail: email,
       total,
-      itemsCount: order.items.length,
+      itemsCount:
+        order.items.length +
+        (Array.isArray((order as { orderServiceItems?: unknown[] }).orderServiceItems)
+          ? (order as { orderServiceItems: unknown[] }).orderServiceItems.length
+          : 0),
       viewOrderUrl,
     });
     if (!sent) {

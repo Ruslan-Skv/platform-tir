@@ -531,6 +531,20 @@ export default function AdminOrderDetailPage() {
 
   const total = Number(order.total);
   const items = order.items ?? [];
+  const orderServiceItems =
+    (
+      order as {
+        orderServiceItems?: Array<{
+          id: string;
+          name: string;
+          categoryName: string;
+          unit: string;
+          quantity: number;
+          price: string | number;
+          amount: string | number;
+        }>;
+      }
+    ).orderServiceItems ?? [];
   const formatPrice = (value: string | number) =>
     Number(value).toLocaleString('ru-RU', {
       style: 'currency',
@@ -688,12 +702,14 @@ export default function AdminOrderDetailPage() {
       <div className={styles.actionsRow}>
         {canSendBack &&
           (() => {
-            const hasCommentsForCustomer = (order.items ?? []).some((item) => {
+            const hasProductItems = (order.items ?? []).length > 0;
+            const hasCommentsForProductItems = (order.items ?? []).some((item) => {
               const value = commentDraftByItemId[item.id] ?? item.managerComment ?? '';
               return typeof value === 'string' && value.trim().length > 0;
             });
             const sendBackDisabled =
-              order.status === 'RETURNED_FOR_CORRECTION' || !hasCommentsForCustomer;
+              order.status === 'RETURNED_FOR_CORRECTION' ||
+              (hasProductItems && !hasCommentsForProductItems);
             return (
               <button
                 type="button"
@@ -701,7 +717,7 @@ export default function AdminOrderDetailPage() {
                 onClick={sendBackDisabled ? undefined : () => setSendBackModalOpen(true)}
                 disabled={sendBackDisabled}
                 title={
-                  !hasCommentsForCustomer
+                  hasProductItems && !hasCommentsForProductItems
                     ? 'Сначала оставьте рекомендации для покупателя в составе заказа (комментарии к позициям)'
                     : undefined
                 }
@@ -881,6 +897,22 @@ export default function AdminOrderDetailPage() {
                 </tr>
               );
             })}
+            {orderServiceItems.map((svc) => (
+              <tr key={svc.id} className={styles.tr}>
+                <td className={`${styles.td} ${styles.itemRow}`}>
+                  <span className={styles.productName}>{svc.name}</span>
+                  <span className={styles.itemMeta}>
+                    {svc.categoryName} · {svc.unit}
+                  </span>
+                </td>
+                <td className={styles.td}>—</td>
+                <td className={styles.td}>
+                  {svc.quantity} {svc.unit}
+                </td>
+                <td className={styles.td}>{formatPrice(svc.price)}</td>
+                <td className={styles.td}>{formatPrice(svc.amount)}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
         <p className={styles.total}>Итого: {formatPrice(total)}</p>

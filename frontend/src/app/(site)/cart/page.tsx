@@ -33,6 +33,7 @@ import styles from './page.module.css';
 export default function CartPage() {
   const {
     cart,
+    cartServiceItems,
     count,
     refreshCart,
     updateQuantity,
@@ -41,6 +42,7 @@ export default function CartPage() {
     removeFromCart,
     removeCartItemById,
     removeComponentFromCart,
+    removeCartServiceItemById,
     getTotalPrice,
   } = useCart();
   const [loading, setLoading] = useState(true);
@@ -288,6 +290,45 @@ export default function CartPage() {
   /** ID позиций для секции 3: в проверенном заказе. */
   const section3ItemIds = cartItemIdsInApprovedOrder;
 
+  /** Группировка услуг заказа по категории для отображения карточек. */
+  type OrderServiceGroup = {
+    categoryName: string;
+    categorySlug: string;
+    items: Array<{ itemId: string; name: string; quantity: number; unit: string; amount: number }>;
+    total: number;
+  };
+  const groupOrderServiceItems = (items: UserOrder['orderServiceItems']): OrderServiceGroup[] => {
+    if (!items?.length) return [];
+    const byCategory = new Map<string, { slug: string; items: OrderServiceGroup['items'] }>();
+    for (const o of items) {
+      const cat = o.categoryName || 'Услуги';
+      const slug = o.serviceCatalogItem?.category?.slug ?? '';
+      const entry = byCategory.get(cat);
+      const amount = typeof o.amount === 'string' ? parseFloat(o.amount) : Number(o.amount);
+      const line = {
+        itemId: o.serviceCatalogItemId,
+        name: o.name,
+        quantity: o.quantity,
+        unit: o.unit,
+        amount,
+      };
+      if (entry) {
+        entry.items.push(line);
+        if (slug && !entry.slug) entry.slug = slug;
+      } else {
+        byCategory.set(cat, { slug, items: [line] });
+      }
+    }
+    return Array.from(byCategory.entries()).map(([categoryName, { slug, items: list }]) => {
+      const total = list.reduce((s, i) => s + i.amount, 0);
+      return { categoryName, categorySlug: slug, items: list, total };
+    });
+  };
+
+  /** Строка preset для URL: itemId1:qty1,itemId2:qty2 (значение целиком кодируется при подстановке в query) */
+  const buildPresetQuery = (items: Array<{ itemId: string; quantity: number }>) =>
+    items.map((i) => `${i.itemId}:${i.quantity}`).join(',');
+
   /** Секции корзины для отображения (1: не отправлены, 2: на проверке, 3: проверено). */
   const cartSections = useMemo(() => {
     type ProductItem = CartItem & { product: NonNullable<CartItem['product']> };
@@ -329,13 +370,25 @@ export default function CartPage() {
         else if (section3ItemIds.has(item.id)) s3Components.push(c);
       }
     }
+    const reviewOrder = pendingReviewOrder ?? returnedForCorrectionOrder ?? null;
+    const s2ServiceGroups = groupOrderServiceItems(reviewOrder?.orderServiceItems);
+    const s3ServiceGroups = groupOrderServiceItems(approvedOrder?.orderServiceItems);
+    const s1ServiceTotal = cartServiceItems.reduce(
+      (s, i) => s + (i.total != null && i.total > 0 ? i.total : 0),
+      0
+    );
+    const s2ServiceTotal = s2ServiceGroups.reduce((s, g) => s + g.total, 0);
+    const s3ServiceTotal = s3ServiceGroups.reduce((s, g) => s + g.total, 0);
+    const s2ServiceCount = reviewOrder?.orderServiceItems?.length ?? 0;
+    const s3ServiceCount = approvedOrder?.orderServiceItems?.length ?? 0;
     return [
       {
         id: 'section1' as const,
         title: 'Товары для отправки на проверку',
         products: s1Products,
         components: s1Components,
-        total: sumItems(s1Products, s1Components),
+        orderServiceGroups: [] as OrderServiceGroup[],
+        total: sumItems(s1Products, s1Components) + s1ServiceTotal,
         itemCount: countItems(s1Products, s1Components),
       },
       {
@@ -343,19 +396,30 @@ export default function CartPage() {
         title: 'На проверке у менеджера',
         products: s2Products,
         components: s2Components,
-        total: sumItems(s2Products, s2Components),
-        itemCount: countItems(s2Products, s2Components),
+        orderServiceGroups: s2ServiceGroups,
+        total: sumItems(s2Products, s2Components) + s2ServiceTotal,
+        itemCount: countItems(s2Products, s2Components) + s2ServiceCount,
       },
       {
         id: 'section3' as const,
         title: 'Проверено — готово к оформлению',
         products: s3Products,
         components: s3Components,
-        total: sumItems(s3Products, s3Components),
-        itemCount: countItems(s3Products, s3Components),
+        orderServiceGroups: s3ServiceGroups,
+        total: sumItems(s3Products, s3Components) + s3ServiceTotal,
+        itemCount: countItems(s3Products, s3Components) + s3ServiceCount,
       },
     ];
-  }, [cart, section1ItemIds, section2ItemIds, section3ItemIds]);
+  }, [
+    cart,
+    cartServiceItems,
+    section1ItemIds,
+    section2ItemIds,
+    section3ItemIds,
+    pendingReviewOrder,
+    returnedForCorrectionOrder,
+    approvedOrder,
+  ]);
 
   /** Комментарий менеджера по позиции заказа — показываем на карточке товара в корзине (по совпадению productId, size, openingSide). Учитываем заказ на проверке, проверенный и на доработке. */
   const managerCommentByCartItemId = useMemo(() => {
@@ -441,9 +505,10 @@ export default function CartPage() {
     return payload;
   };
 
+  const hasServiceItems = cartServiceItems.length > 0;
   const canSubmitForReview = returnedForCorrectionOrder
-    ? section2ItemIds.size > 0
-    : section1ItemIds.size > 0;
+    ? section2ItemIds.size > 0 || hasServiceItems
+    : section1ItemIds.size > 0 || hasServiceItems;
 
   const needsAddToApprovedConfirm =
     !!approvedOrder &&
@@ -479,6 +544,7 @@ export default function CartPage() {
       const returnedOrder = await submitOrderFromCart(fullPayload);
       setShowAddToApprovedModal(false);
       setShowAddToPendingReviewModal(false);
+      await refreshCart();
       setUserOrders((prev) => {
         const list = prev ?? [];
         const idx = list.findIndex((o) => o.id === returnedOrder.id);
@@ -635,12 +701,14 @@ export default function CartPage() {
   };
 
   const totalPrice = getTotalPrice();
-  const totalItems = cart.reduce((sum, item) => {
-    if (item.product || item.component) {
-      return sum + item.quantity;
-    }
-    return sum;
-  }, 0);
+  /** Суммарные данные по всем секциям (включая заказы) — для заголовка при наличии заказов. */
+  const allSectionsTotal = useMemo(() => {
+    const total = cartSections.reduce((s, sec) => s + sec.total, 0);
+    const items = cartSections.reduce((s, sec) => s + sec.itemCount, 0) + cartServiceItems.length;
+    return { total, items };
+  }, [cartSections, cartServiceItems.length]);
+  const hasAnyContent =
+    cart.length > 0 || cartServiceItems.length > 0 || allSectionsTotal.items > 0;
 
   /** Достаточно для расчёта стоимости — город и улица. Этаж не обязателен. */
   const deliveryFormValidForCalculation =
@@ -738,18 +806,23 @@ export default function CartPage() {
     <div className={styles.container}>
       <div className={styles.header}>
         <h1 className={styles.title}>Корзина</h1>
-        {count > 0 && (
+        {hasAnyContent && (
           <p className={styles.subtitle}>
-            {totalItems} {totalItems === 1 ? 'товар' : totalItems < 5 ? 'товара' : 'товаров'} на
-            сумму {totalPrice.toLocaleString()} ₽
+            {allSectionsTotal.items}{' '}
+            {allSectionsTotal.items === 1
+              ? 'позиция'
+              : allSectionsTotal.items < 5
+                ? 'позиции'
+                : 'позиций'}{' '}
+            на сумму {allSectionsTotal.total.toLocaleString('ru-RU')} ₽
           </p>
         )}
       </div>
 
-      {cart.length === 0 ? (
+      {!hasAnyContent ? (
         <div className={styles.empty}>
           <h2>Ваша корзина пуста</h2>
-          <p>Добавьте товары в корзину, чтобы оформить заказ</p>
+          <p>Добавьте товары или услуги в корзину, чтобы оформить заказ</p>
           <Link href="/catalog/products" className={styles.link}>
             Перейти в каталог
           </Link>
@@ -761,6 +834,8 @@ export default function CartPage() {
               (section) =>
                 (section.products.length > 0 ||
                   section.components.length > 0 ||
+                  section.orderServiceGroups.length > 0 ||
+                  (section.id === 'section1' && cartServiceItems.length > 0) ||
                   (section.id === 'section1' &&
                     returnedForCorrectionOrder &&
                     canSubmitForReview)) && (
@@ -1152,6 +1227,193 @@ export default function CartPage() {
                           </div>
                         );
                       })}
+                      {section.id === 'section1' &&
+                        cartServiceItems.map((item) => {
+                          const presetItems = (item.itemsWithDetails ?? item.items ?? []).map(
+                            (i) => ({ itemId: i.itemId, quantity: i.quantity })
+                          );
+                          const serviceHref = item.category?.slug
+                            ? `/catalog/services/${item.category.slug}${
+                                presetItems.length > 0
+                                  ? `?preset=${encodeURIComponent(buildPresetQuery(presetItems))}`
+                                  : ''
+                              }`
+                            : '/catalog/services';
+                          const serviceTotal =
+                            item.total != null && item.total > 0 ? item.total : 0;
+                          const serviceContent = (
+                            <>
+                              <div className={styles.serviceItemIcon} aria-hidden>
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  strokeWidth={1.5}
+                                  stroke="currentColor"
+                                  width={40}
+                                  height={40}
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
+                                  />
+                                </svg>
+                              </div>
+                              <div className={styles.itemInfo}>
+                                <span className={styles.itemName}>{item.category.name}</span>
+                                <ul className={styles.serviceItemLines}>
+                                  {(item.itemsWithDetails && item.itemsWithDetails.length > 0
+                                    ? item.itemsWithDetails
+                                    : (item.items || []).map((i) => ({
+                                        itemId: i.itemId,
+                                        quantity: i.quantity,
+                                        name: '—',
+                                        unit: '—',
+                                      }))
+                                  ).map((line) => (
+                                    <li key={line.itemId} className={styles.serviceItemLine}>
+                                      {line.name} — {line.quantity} {line.unit}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </>
+                          );
+                          return (
+                            <div key={`svc-${item.id}`} className={styles.cartItem}>
+                              <Link href={serviceHref} className={styles.serviceItemLink}>
+                                {serviceContent}
+                              </Link>
+                              <div className={styles.itemQuantityAndTotal}>
+                                <span className={styles.totalPrice}>
+                                  {serviceTotal.toLocaleString('ru-RU')} ₽
+                                </span>
+                              </div>
+                              <div className={styles.itemActionsColumn}>
+                                <button
+                                  type="button"
+                                  className={styles.removeButton}
+                                  onClick={() => removeCartServiceItemById(item.id)}
+                                  title="Удалить услуги из корзины"
+                                  aria-label="Удалить услуги"
+                                >
+                                  <TrashIcon className={styles.removeButtonIcon} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      {(section.id === 'section2' || section.id === 'section3') &&
+                        section.orderServiceGroups.map((group, idx) => {
+                          const presetItems = group.items.map((i) => ({
+                            itemId: i.itemId,
+                            quantity: i.quantity,
+                          }));
+                          const orderServiceHref = group.categorySlug
+                            ? `/catalog/services/${group.categorySlug}${
+                                presetItems.length > 0
+                                  ? `?preset=${encodeURIComponent(buildPresetQuery(presetItems))}`
+                                  : ''
+                              }`
+                            : '/catalog/services';
+                          const orderServiceContent = (
+                            <>
+                              <div className={styles.serviceItemIcon} aria-hidden>
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  strokeWidth={1.5}
+                                  stroke="currentColor"
+                                  width={40}
+                                  height={40}
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
+                                  />
+                                </svg>
+                              </div>
+                              <div className={styles.itemInfo}>
+                                <span className={styles.itemName}>{group.categoryName}</span>
+                                <ul className={styles.serviceItemLines}>
+                                  {group.items.map((line, i) => (
+                                    <li key={i} className={styles.serviceItemLine}>
+                                      {line.name} — {line.quantity} {line.unit}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </>
+                          );
+                          const orderServiceStatusIcon =
+                            section.id === 'section3' ? (
+                              <span
+                                className={styles.itemInOrderBadge}
+                                title="Проверено"
+                                aria-hidden
+                              >
+                                <svg
+                                  className={styles.doubleCheckIcon}
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  strokeWidth={2.5}
+                                  stroke="currentColor"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M5 12l3 3 7-7" />
+                                  <path d="M9 15l2 2 5-5" />
+                                </svg>
+                              </span>
+                            ) : (
+                              <span
+                                className={styles.itemInOrderBadge}
+                                title="В заказе на проверке"
+                                aria-hidden
+                              >
+                                <svg
+                                  className={styles.reviewProgressIconSmall}
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  strokeWidth={2}
+                                  stroke="currentColor"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <g className={styles.reviewProgressSpinnerArc}>
+                                    <path
+                                      strokeDasharray="28 56"
+                                      d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18z"
+                                    />
+                                  </g>
+                                  <path
+                                    className={styles.reviewProgressCheck}
+                                    d="M7 12l3.5 3.5L17 9"
+                                  />
+                                </svg>
+                              </span>
+                            );
+                          return (
+                            <div key={`order-svc-${section.id}-${idx}`} className={styles.cartItem}>
+                              <Link href={orderServiceHref} className={styles.serviceItemLink}>
+                                {orderServiceContent}
+                              </Link>
+                              <div className={styles.itemQuantityAndTotal}>
+                                <span className={styles.totalPrice}>
+                                  {group.total.toLocaleString('ru-RU')} ₽
+                                </span>
+                              </div>
+                              <div className={styles.itemActionsColumn}>
+                                {orderServiceStatusIcon}
+                              </div>
+                            </div>
+                          );
+                        })}
                     </div>
 
                     {section.id === 'section1' && !orderWithDelivery && (
@@ -1581,10 +1843,18 @@ export default function CartPage() {
                             section.components.length === 0
                               ? (cartSections[1]?.itemCount ?? 0)
                               : section.itemCount}
+                            {section.id === 'section1' &&
+                              cartServiceItems.length > 0 &&
+                              ` + ${cartServiceItems.length} ${cartServiceItems.length === 1 ? 'услуга' : 'услуг'}`}
                           </span>
                         </div>
                         <div className={styles.cartSectionSummaryRow}>
-                          <span className={styles.cartSectionSummaryLabel}>Сумма товаров:</span>
+                          <span className={styles.cartSectionSummaryLabel}>
+                            {section.orderServiceGroups.length > 0 ||
+                            (section.id === 'section1' && cartServiceItems.length > 0)
+                              ? 'Сумма:'
+                              : 'Сумма товаров:'}
+                          </span>
                           <span>
                             {section.id === 'section1' &&
                             returnedForCorrectionOrder &&

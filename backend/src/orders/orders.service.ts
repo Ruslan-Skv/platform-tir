@@ -14,6 +14,7 @@ import type { CalculateDeliveryDto } from './dto/calculate-delivery.dto';
 import { DeliveryType } from './dto/calculate-delivery.dto';
 import type { SubmitFromCartDto } from './dto/submit-from-cart.dto';
 import type { SubmitFromCartForCustomerDto } from './dto/submit-from-cart-for-customer.dto';
+import type { CreateServiceOrderDto } from './dto/create-service-order.dto';
 import { OrderMailService } from './order-mail.service';
 import { Prisma } from '@prisma/client';
 
@@ -233,22 +234,202 @@ export class OrdersService {
   }
 
   /**
+   * Построить позиции услуг из корзины и очистить корзину услуг.
+   * Возвращает строки для добавления в Order (orderServiceItems).
+   */
+  private async buildServiceLinesFromCartAndClear(
+    cartServiceItems: Awaited<ReturnType<CartService['getCartServiceItems']>>,
+  ): Promise<{
+    lines: Array<{
+      serviceCatalogItemId: string;
+      name: string;
+      categoryName: string;
+      unit: string;
+      quantity: number;
+      price: number;
+      amount: number;
+    }>;
+    subtotal: number;
+  }> {
+    if (!cartServiceItems.length) return { lines: [], subtotal: 0 };
+
+    type LineItem = { itemId: string; quantity: number };
+    const allLines: { itemId: string; quantity: number }[] = [];
+    for (const csi of cartServiceItems) {
+      const items = csi.items as unknown as LineItem[];
+      if (Array.isArray(items)) {
+        for (const li of items) {
+          if (li?.itemId && typeof li.quantity === 'number' && li.quantity > 0) {
+            allLines.push({ itemId: li.itemId, quantity: li.quantity });
+          }
+        }
+      }
+    }
+    if (!allLines.length) return { lines: [], subtotal: 0 };
+
+    const itemIds = [...new Set(allLines.map((l) => l.itemId))];
+    const dbItems = await this.prisma.serviceCatalogItem.findMany({
+      where: { id: { in: itemIds }, isActive: true },
+      include: { category: { select: { name: true } } },
+    });
+    const idToItem = new Map(dbItems.map((i) => [i.id, i]));
+
+    const lines: Array<{
+      serviceCatalogItemId: string;
+      name: string;
+      categoryName: string;
+      unit: string;
+      quantity: number;
+      price: number;
+      amount: number;
+    }> = [];
+    let subtotal = 0;
+
+    for (const line of allLines) {
+      const item = idToItem.get(line.itemId);
+      if (!item) continue;
+      const qty = Math.max(0.01, Number(line.quantity));
+      const price = parseFloat(item.price.toString());
+      const amount = price * qty;
+      subtotal += amount;
+      lines.push({
+        serviceCatalogItemId: item.id,
+        name: item.name,
+        categoryName: item.category.name,
+        unit: item.unit,
+        quantity: qty,
+        price,
+        amount,
+      });
+    }
+
+    for (const csi of cartServiceItems) {
+      await this.prisma.cartServiceItem.delete({ where: { id: csi.id } }).catch(() => {});
+    }
+    return { lines, subtotal };
+  }
+
+  /**
+   * Создать заказ на услуги из позиций корзины услуг и удалить их из корзины.
+   * @deprecated Используется только для submitFromCartForCustomer (только услуги). Для корзины — Order + orderServiceItems.
+   */
+  private async createServiceOrderFromCartServiceItems(
+    cartServiceItems: Awaited<ReturnType<CartService['getCartServiceItems']>>,
+    customerUserId: string,
+    customerEmail: string,
+    customerFirstName?: string | null,
+    customerLastName?: string | null,
+    customerPhone?: string | null,
+    createdByManagerId?: string | null,
+  ) {
+    if (!cartServiceItems.length) return null;
+
+    type LineItem = { itemId: string; quantity: number };
+    const allLines: { itemId: string; quantity: number }[] = [];
+    for (const csi of cartServiceItems) {
+      const items = csi.items as unknown as LineItem[];
+      if (Array.isArray(items)) {
+        for (const li of items) {
+          if (li?.itemId && typeof li.quantity === 'number' && li.quantity > 0) {
+            allLines.push({ itemId: li.itemId, quantity: li.quantity });
+          }
+        }
+      }
+    }
+    if (!allLines.length) return null;
+
+    const itemIds = [...new Set(allLines.map((l) => l.itemId))];
+    const dbItems = await this.prisma.serviceCatalogItem.findMany({
+      where: { id: { in: itemIds }, isActive: true },
+      include: { category: { select: { name: true } } },
+    });
+    const idToItem = new Map(dbItems.map((i) => [i.id, i]));
+
+    let total = 0;
+    const orderLines: Array<{
+      serviceCatalogItemId: string;
+      name: string;
+      categoryName: string;
+      unit: string;
+      quantity: number;
+      price: number;
+      amount: number;
+    }> = [];
+
+    for (const line of allLines) {
+      const item = idToItem.get(line.itemId);
+      if (!item) continue;
+      const qty = Math.max(0.01, Number(line.quantity));
+      const price = parseFloat(item.price.toString());
+      const amount = price * qty;
+      total += amount;
+      orderLines.push({
+        serviceCatalogItemId: item.id,
+        name: item.name,
+        categoryName: item.category.name,
+        unit: item.unit,
+        quantity: qty,
+        price,
+        amount,
+      });
+    }
+    if (!orderLines.length) return null;
+
+    const orderNumber = `SRV-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+    const so = await this.prisma.serviceOrder.create({
+      data: {
+        orderNumber,
+        userId: customerUserId,
+        createdByManagerId: createdByManagerId ?? null,
+        customerEmail: customerEmail.trim().toLowerCase(),
+        customerFirstName: customerFirstName?.trim() || null,
+        customerLastName: customerLastName?.trim() || null,
+        customerPhone: customerPhone?.trim() || null,
+        total,
+        status: 'PENDING',
+        items: {
+          create: orderLines.map((l) => ({
+            serviceCatalogItemId: l.serviceCatalogItemId,
+            name: l.name,
+            categoryName: l.categoryName,
+            unit: l.unit,
+            quantity: l.quantity,
+            price: l.price,
+            amount: l.amount,
+          })),
+        },
+      },
+      include: {
+        items: true,
+        user: { select: { id: true, email: true, firstName: true, lastName: true } },
+      },
+    });
+
+    for (const csi of cartServiceItems) {
+      await this.prisma.cartServiceItem.delete({ where: { id: csi.id } }).catch(() => {});
+    }
+    return so;
+  }
+
+  /**
    * Создать заказ из текущей корзины со статусом «На проверке».
    * При передаче deliveryAddress + deliveryType: создаётся адрес, считается доставка и подъём.
    * Иначе при указании shippingMethodId стоимость доставки включается по старой схеме (учёт freeFromAmount).
+   * Услуги из корзины оформляются в отдельный ServiceOrder.
    */
-  async submitFromCart(userId: string, dto?: SubmitFromCartDto, role?: string) {
-    let cartItems = await this.cartService.getCartItems(userId);
-    if (!cartItems.length) {
+  async submitFromCart(userId: string, dto?: SubmitFromCartDto, role?: string): Promise<object> {
+    const [cartItemsRaw, cartServiceItems] = await Promise.all([
+      this.cartService.getCartItems(userId),
+      this.cartService.getCartServiceItems(userId),
+    ]);
+    if (!cartItemsRaw.length && !cartServiceItems.length) {
       throw new BadRequestException('Корзина пуста');
     }
 
+    let cartItems = cartItemsRaw;
     if (dto?.cartItemIds?.length) {
       const idsSet = new Set(dto.cartItemIds);
       cartItems = cartItems.filter((item) => idsSet.has(item.id));
-      if (!cartItems.length) {
-        throw new BadRequestException('Указанные позиции не найдены в корзине');
-      }
     }
 
     const orderItems: Array<{
@@ -288,8 +469,116 @@ export class OrdersService {
       }
     }
 
-    if (orderItems.length === 0) {
+    const hasProductItems = orderItems.length > 0;
+    const hasServiceItems = cartServiceItems.length > 0;
+    if (!hasProductItems && !hasServiceItems) {
       throw new BadRequestException('В корзине нет позиций для заказа');
+    }
+
+    let serviceLines: Array<{
+      serviceCatalogItemId: string;
+      name: string;
+      categoryName: string;
+      unit: string;
+      quantity: number;
+      price: number;
+      amount: number;
+    }> = [];
+    let servicesSubtotal = 0;
+    if (hasServiceItems) {
+      const built = await this.buildServiceLinesFromCartAndClear(cartServiceItems);
+      serviceLines = built.lines;
+      servicesSubtotal = built.subtotal;
+      subtotal += servicesSubtotal;
+    }
+
+    // Только услуги — создаём один Order с orderServiceItems (как и товары+услуги)
+    if (!hasProductItems && hasServiceItems) {
+      if (!serviceLines.length)
+        throw new BadRequestException('Не удалось сформировать позиции услуг');
+
+      const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+      const isManagerRole = [
+        'SUPER_ADMIN',
+        'ADMIN',
+        'MANAGER',
+        'CONTENT_MANAGER',
+        'MODERATOR',
+        'SUPPORT',
+      ].includes((role ?? '') as UserRole);
+
+      const order = await this.prisma.order.create({
+        data: {
+          orderNumber,
+          userId,
+          createdByManagerId: isManagerRole ? userId : null,
+          processedByManagerId: isManagerRole ? userId : null,
+          status: 'PENDING_REVIEW',
+          subtotal: servicesSubtotal,
+          tax: 0,
+          shippingCost: 0,
+          carryCost: null,
+          total: servicesSubtotal,
+          submittedForReviewAt: new Date(),
+          orderServiceItems: {
+            create: serviceLines.map((l) => ({
+              serviceCatalogItemId: l.serviceCatalogItemId,
+              name: l.name,
+              categoryName: l.categoryName,
+              unit: l.unit,
+              quantity: l.quantity,
+              price: l.price,
+              amount: l.amount,
+            })),
+          },
+        },
+        include: {
+          items: { include: { product: true } },
+          orderServiceItems: {
+            include: {
+              serviceCatalogItem: {
+                select: {
+                  id: true,
+                  category: { select: { slug: true } },
+                },
+              },
+            },
+          },
+          shippingAddress: true,
+          user: { select: { id: true, email: true, firstName: true, lastName: true } },
+        },
+      });
+
+      const adminRoles: UserRole[] = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'];
+      const admins = await this.prisma.user.findMany({
+        where: { role: { in: adminRoles }, isActive: true },
+        select: { id: true },
+      });
+      await Promise.all(
+        admins.map((a) =>
+          this.usersService.createNotification(a.id, {
+            type: 'new_order',
+            title: 'Новый заказ на проверку',
+            message: `Заказ ${order.orderNumber} ожидает проверки.`,
+          }),
+        ),
+      );
+      if (!isManagerRole) {
+        await this.usersService.createNotification(userId, {
+          type: 'order_status',
+          title: `Заказ ${order.orderNumber} отправлен на проверку`,
+          message: 'Заказ принят на проверку. Обычно проверка занимает около 15 минут.',
+        });
+      }
+      await this.prisma.orderEvent.create({
+        data: {
+          orderId: order.id,
+          type: 'submitted_for_review',
+          actor: isManagerRole ? 'manager' : 'customer',
+          userId: isManagerRole ? userId : order.userId,
+        },
+      });
+      return order;
     }
 
     let shippingCost = 0;
@@ -458,6 +747,21 @@ export class OrdersService {
         }
       }
 
+      if (serviceLines.length > 0) {
+        await this.prisma.orderServiceItem.createMany({
+          data: serviceLines.map((l) => ({
+            orderId: pendingReviewOrder.id,
+            serviceCatalogItemId: l.serviceCatalogItemId,
+            name: l.name,
+            categoryName: l.categoryName,
+            unit: l.unit,
+            quantity: l.quantity,
+            price: l.price,
+            amount: l.amount,
+          })),
+        });
+      }
+
       const newSubtotal = existingSubtotal + subtotal;
       const newTotal = newSubtotal + existingShipping + existingCarry;
 
@@ -504,6 +808,16 @@ export class OrdersService {
         where: { id: pendingReviewOrder.id },
         include: {
           items: { include: { product: true } },
+          orderServiceItems: {
+            include: {
+              serviceCatalogItem: {
+                select: {
+                  id: true,
+                  category: { select: { slug: true } },
+                },
+              },
+            },
+          },
           shippingAddress: true,
           user: {
             select: { id: true, email: true, firstName: true, lastName: true },
@@ -603,6 +917,21 @@ export class OrdersService {
         }
       }
 
+      if (serviceLines.length > 0) {
+        await this.prisma.orderServiceItem.createMany({
+          data: serviceLines.map((l) => ({
+            orderId: approvedOrder.id,
+            serviceCatalogItemId: l.serviceCatalogItemId,
+            name: l.name,
+            categoryName: l.categoryName,
+            unit: l.unit,
+            quantity: l.quantity,
+            price: l.price,
+            amount: l.amount,
+          })),
+        });
+      }
+
       const newSubtotal = existingSubtotal + subtotal;
       const newTotal = newSubtotal + existingShipping + existingCarry;
 
@@ -651,6 +980,16 @@ export class OrdersService {
         where: { id: approvedOrder.id },
         include: {
           items: { include: { product: true } },
+          orderServiceItems: {
+            include: {
+              serviceCatalogItem: {
+                select: {
+                  id: true,
+                  category: { select: { slug: true } },
+                },
+              },
+            },
+          },
           shippingAddress: true,
           user: {
             select: { id: true, email: true, firstName: true, lastName: true },
@@ -670,6 +1009,7 @@ export class OrdersService {
     if (returnedOrder) {
       await this.prisma.$transaction([
         this.prisma.orderItem.deleteMany({ where: { orderId: returnedOrder.id } }),
+        this.prisma.orderServiceItem.deleteMany({ where: { orderId: returnedOrder.id } }),
         this.prisma.order.update({
           where: { id: returnedOrder.id },
           data: {
@@ -702,6 +1042,20 @@ export class OrdersService {
           cardVariantId: oi.cardVariantId,
         })),
       });
+      if (serviceLines.length > 0) {
+        await this.prisma.orderServiceItem.createMany({
+          data: serviceLines.map((l) => ({
+            orderId: returnedOrder.id,
+            serviceCatalogItemId: l.serviceCatalogItemId,
+            name: l.name,
+            categoryName: l.categoryName,
+            unit: l.unit,
+            quantity: l.quantity,
+            price: l.price,
+            amount: l.amount,
+          })),
+        });
+      }
       const adminRoles: UserRole[] = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'];
       const admins = await this.prisma.user.findMany({
         where: { role: { in: adminRoles }, isActive: true },
@@ -736,6 +1090,16 @@ export class OrdersService {
         where: { id: returnedOrder.id },
         include: {
           items: { include: { product: true } },
+          orderServiceItems: {
+            include: {
+              serviceCatalogItem: {
+                select: {
+                  id: true,
+                  category: { select: { slug: true } },
+                },
+              },
+            },
+          },
           shippingAddress: true,
           user: {
             select: { id: true, email: true, firstName: true, lastName: true },
@@ -785,9 +1149,32 @@ export class OrdersService {
             cardVariantId: oi.cardVariantId,
           })),
         },
+        ...(serviceLines.length > 0 && {
+          orderServiceItems: {
+            create: serviceLines.map((l) => ({
+              serviceCatalogItemId: l.serviceCatalogItemId,
+              name: l.name,
+              categoryName: l.categoryName,
+              unit: l.unit,
+              quantity: l.quantity,
+              price: l.price,
+              amount: l.amount,
+            })),
+          },
+        }),
       },
       include: {
         items: { include: { product: true } },
+        orderServiceItems: {
+          include: {
+            serviceCatalogItem: {
+              select: {
+                id: true,
+                category: { select: { slug: true } },
+              },
+            },
+          },
+        },
         shippingAddress: true,
         user: {
           select: {
@@ -848,7 +1235,7 @@ export class OrdersService {
     managerId: string,
     managerRole: string,
     dto: SubmitFromCartForCustomerDto,
-  ) {
+  ): Promise<object> {
     const deliveryConfig = await this.getDeliveryConfig();
     const raw = deliveryConfig as unknown as { rolesAllowedOrderForCustomer?: unknown };
     const allowedRoles: string[] =
@@ -861,8 +1248,11 @@ export class OrdersService {
       );
     }
 
-    const cartItems = await this.cartService.getCartItems(managerId);
-    if (!cartItems.length) {
+    const [cartItems, cartServiceItems] = await Promise.all([
+      this.cartService.getCartItems(managerId),
+      this.cartService.getCartServiceItems(managerId),
+    ]);
+    if (!cartItems.length && !cartServiceItems.length) {
       throw new BadRequestException('Корзина пуста');
     }
 
@@ -903,8 +1293,86 @@ export class OrdersService {
       }
     }
 
-    if (orderItems.length === 0) {
+    const hasProductItems = orderItems.length > 0;
+    const hasServiceItems = cartServiceItems.length > 0;
+    if (!hasProductItems && !hasServiceItems) {
       throw new BadRequestException('В корзине нет позиций для заказа');
+    }
+
+    let serviceLines: Array<{
+      serviceCatalogItemId: string;
+      name: string;
+      categoryName: string;
+      unit: string;
+      quantity: number;
+      price: number;
+      amount: number;
+    }> = [];
+    let servicesSubtotal = 0;
+    if (hasServiceItems) {
+      const built = await this.buildServiceLinesFromCartAndClear(cartServiceItems);
+      serviceLines = built.lines;
+      servicesSubtotal = built.subtotal;
+      subtotal += servicesSubtotal;
+    }
+
+    // Только услуги — создаём Order с orderServiceItems для клиента
+    if (!hasProductItems && hasServiceItems) {
+      let customerUser = await this.usersService.findByEmail(dto.customerEmail);
+      if (!customerUser) {
+        customerUser = await this.usersService.createGuestUser(
+          dto.customerEmail,
+          dto.customerFirstName,
+          dto.customerLastName,
+        );
+      }
+      if (!serviceLines.length) throw new BadRequestException('Не удалось создать заказ на услуги');
+
+      const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+      const order = await this.prisma.order.create({
+        data: {
+          orderNumber,
+          userId: customerUser.id,
+          createdByManagerId: managerId,
+          customerEmail: dto.customerEmail.trim().toLowerCase(),
+          customerFirstName: dto.customerFirstName?.trim() || null,
+          customerLastName: dto.customerLastName?.trim() || null,
+          status: 'PENDING_REVIEW',
+          subtotal: servicesSubtotal,
+          tax: 0,
+          shippingCost: 0,
+          carryCost: null,
+          total: servicesSubtotal,
+          submittedForReviewAt: new Date(),
+          orderServiceItems: {
+            create: serviceLines.map((l) => ({
+              serviceCatalogItemId: l.serviceCatalogItemId,
+              name: l.name,
+              categoryName: l.categoryName,
+              unit: l.unit,
+              quantity: l.quantity,
+              price: l.price,
+              amount: l.amount,
+            })),
+          },
+        },
+        include: {
+          items: { include: { product: true } },
+          orderServiceItems: {
+            include: {
+              serviceCatalogItem: {
+                select: {
+                  id: true,
+                  category: { select: { slug: true } },
+                },
+              },
+            },
+          },
+          shippingAddress: true,
+          user: { select: { id: true, email: true, firstName: true, lastName: true } },
+        },
+      });
+      return order;
     }
 
     let customerUser = await this.usersService.findByEmail(dto.customerEmail);
@@ -1017,9 +1485,32 @@ export class OrdersService {
             cardVariantId: oi.cardVariantId,
           })),
         },
+        ...(serviceLines.length > 0 && {
+          orderServiceItems: {
+            create: serviceLines.map((l) => ({
+              serviceCatalogItemId: l.serviceCatalogItemId,
+              name: l.name,
+              categoryName: l.categoryName,
+              unit: l.unit,
+              quantity: l.quantity,
+              price: l.price,
+              amount: l.amount,
+            })),
+          },
+        }),
       },
       include: {
         items: { include: { product: true } },
+        orderServiceItems: {
+          include: {
+            serviceCatalogItem: {
+              select: {
+                id: true,
+                category: { select: { slug: true } },
+              },
+            },
+          },
+        },
         user: {
           select: {
             id: true,
@@ -1184,6 +1675,16 @@ export class OrdersService {
             product: true,
           },
         },
+        orderServiceItems: {
+          include: {
+            serviceCatalogItem: {
+              select: {
+                id: true,
+                category: { select: { slug: true } },
+              },
+            },
+          },
+        },
         shippingAddress: true,
         user: {
           select: {
@@ -1243,6 +1744,16 @@ export class OrdersService {
       where: { id: payload.orderId },
       include: {
         items: { include: { product: true } },
+        orderServiceItems: {
+          include: {
+            serviceCatalogItem: {
+              select: {
+                id: true,
+                category: { select: { slug: true } },
+              },
+            },
+          },
+        },
         shippingAddress: true,
         user: {
           select: {
@@ -1285,6 +1796,16 @@ export class OrdersService {
             product: true,
           },
         },
+        orderServiceItems: {
+          include: {
+            serviceCatalogItem: {
+              select: {
+                id: true,
+                category: { select: { slug: true } },
+              },
+            },
+          },
+        },
         shippingAddress: true,
         user: {
           select: {
@@ -1324,6 +1845,16 @@ export class OrdersService {
         },
         include: {
           items: { include: { product: true } },
+          orderServiceItems: {
+            include: {
+              serviceCatalogItem: {
+                select: {
+                  id: true,
+                  category: { select: { slug: true } },
+                },
+              },
+            },
+          },
           shippingAddress: true,
           user: {
             select: {
@@ -1346,6 +1877,156 @@ export class OrdersService {
         ? { total: Number(order.subtotal) - Number(order.discount) }
         : {}),
     };
+  }
+
+  /**
+   * Проверить, может ли пользователь с данной ролью оформлять заказ услуг для клиента.
+   * Использует rolesAllowedOrderForCustomer из DeliveryConfig (те же роли, что и для заказов товаров).
+   */
+  async canPlaceServiceOrder(role: string): Promise<boolean> {
+    const deliveryConfig = await this.getDeliveryConfig();
+    const raw = deliveryConfig as unknown as { rolesAllowedOrderForCustomer?: unknown };
+    const allowedRoles: string[] =
+      Array.isArray(raw.rolesAllowedOrderForCustomer) && raw.rolesAllowedOrderForCustomer.length > 0
+        ? (raw.rolesAllowedOrderForCustomer as string[])
+        : ['SUPER_ADMIN', 'ADMIN', 'MANAGER'];
+    return allowedRoles.includes(role);
+  }
+
+  /**
+   * Создать заказ на услуги (менеджер для клиента).
+   */
+  async createServiceOrder(managerId: string, managerRole: string, dto: CreateServiceOrderDto) {
+    const canPlace = await this.canPlaceServiceOrder(managerRole);
+    if (!canPlace) {
+      throw new ForbiddenException(
+        'Вашей роли не разрешено оформлять заказ услуг для клиента. Обратитесь к администратору.',
+      );
+    }
+
+    if (!dto.items?.length) {
+      throw new BadRequestException('Добавьте позиции для оформления заказа');
+    }
+
+    const itemIds = dto.items.map((i) => i.itemId);
+    const dbItems = await this.prisma.serviceCatalogItem.findMany({
+      where: { id: { in: itemIds }, isActive: true },
+      include: { category: { select: { name: true } } },
+    });
+
+    const idToItem = new Map(dbItems.map((i) => [i.id, i]));
+    let total = 0;
+    const orderLines: Array<{
+      serviceCatalogItemId: string;
+      name: string;
+      categoryName: string;
+      unit: string;
+      quantity: number;
+      price: number;
+      amount: number;
+    }> = [];
+
+    for (const line of dto.items) {
+      const item = idToItem.get(line.itemId);
+      if (!item) {
+        throw new BadRequestException(`Вид работ с ID ${line.itemId} не найден`);
+      }
+      const qty = Math.max(0.01, Number(line.quantity));
+      const price = parseFloat(item.price.toString());
+      const amount = price * qty;
+      total += amount;
+      orderLines.push({
+        serviceCatalogItemId: item.id,
+        name: item.name,
+        categoryName: item.category.name,
+        unit: item.unit,
+        quantity: qty,
+        price,
+        amount,
+      });
+    }
+
+    let customerUser = await this.usersService.findByEmail(dto.customerEmail);
+    if (!customerUser) {
+      customerUser = await this.usersService.createGuestUser(
+        dto.customerEmail,
+        dto.customerFirstName,
+        dto.customerLastName,
+      );
+    }
+
+    const orderNumber = `SRV-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+
+    return this.prisma.serviceOrder.create({
+      data: {
+        orderNumber,
+        userId: customerUser.id,
+        createdByManagerId: managerId,
+        customerEmail: dto.customerEmail.trim().toLowerCase(),
+        customerFirstName: dto.customerFirstName?.trim() || null,
+        customerLastName: dto.customerLastName?.trim() || null,
+        customerPhone: dto.customerPhone?.trim() || null,
+        total,
+        status: 'PENDING',
+        customerNotes: dto.customerNotes?.trim() || null,
+        items: {
+          create: orderLines.map((l) => ({
+            serviceCatalogItemId: l.serviceCatalogItemId,
+            name: l.name,
+            categoryName: l.categoryName,
+            unit: l.unit,
+            quantity: l.quantity,
+            price: l.price,
+            amount: l.amount,
+          })),
+        },
+      },
+      include: {
+        items: true,
+        user: { select: { id: true, email: true, firstName: true, lastName: true } },
+        createdByManager: { select: { id: true, email: true, firstName: true, lastName: true } },
+      },
+    });
+  }
+
+  async updateServiceOrderCustomer(
+    serviceOrderId: string,
+    data: {
+      customerEmail?: string | null;
+      customerFirstName?: string | null;
+      customerLastName?: string | null;
+      customerPhone?: string | null;
+    },
+  ) {
+    const existing = await this.prisma.serviceOrder.findUnique({
+      where: { id: serviceOrderId },
+    });
+    if (!existing) {
+      throw new NotFoundException('Заказ на услуги не найден');
+    }
+    const updateData: Record<string, unknown> = {};
+    if (data.customerEmail !== undefined) {
+      updateData.customerEmail = data.customerEmail?.trim()?.toLowerCase() || null;
+    }
+    if (data.customerFirstName !== undefined) {
+      updateData.customerFirstName = data.customerFirstName?.trim() || null;
+    }
+    if (data.customerLastName !== undefined) {
+      updateData.customerLastName = data.customerLastName?.trim() || null;
+    }
+    if (data.customerPhone !== undefined) {
+      updateData.customerPhone = data.customerPhone?.trim() || null;
+    }
+    if (Object.keys(updateData).length === 0) return existing;
+    return this.prisma.serviceOrder.update({
+      where: { id: serviceOrderId },
+      data: updateData,
+      include: {
+        items: true,
+        user: { select: { id: true, email: true, firstName: true, lastName: true } },
+        createdByManager: { select: { id: true, email: true, firstName: true, lastName: true } },
+      },
+    });
   }
 
   async update(id: string, updateOrderDto: UpdateOrderDto) {
@@ -1381,13 +2062,13 @@ export class OrdersService {
       throw new ForbiddenException('Нельзя отменить чужой заказ');
     }
     const allowedStatuses = ['PENDING_REVIEW', 'RETURNED_FOR_CORRECTION', 'APPROVED'];
-    if (!allowedStatuses.includes(order.status)) {
+    if (!allowedStatuses.includes(order.status ?? '')) {
       throw new BadRequestException(
         'Отменить можно только заказ в статусе «На проверке», «На доработке» или «Заказ проверен»',
       );
     }
     await this.restoreStock(
-      order.items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+      (order.items ?? []).map((i) => ({ productId: i.productId, quantity: i.quantity })),
     );
 
     const cancelReason =

@@ -1,11 +1,14 @@
 'use client';
 
-import { CheckCircleIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, PlusCircleIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/react/24/solid';
 
 import { useCallback, useEffect, useState } from 'react';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+
+import { useCart } from '@/shared/lib/hooks';
 
 import styles from './ServiceCategoryPage.module.css';
 
@@ -57,12 +60,32 @@ interface CalculateResult {
   showPricesInPublic: boolean;
 }
 
+/** Парсинг query-параметра preset: "itemId1:qty1,itemId2:qty2" */
+function parsePresetParam(preset: string | null): Array<{ itemId: string; quantity: number }> {
+  if (!preset || typeof preset !== 'string') return [];
+  const result: Array<{ itemId: string; quantity: number }> = [];
+  for (const part of preset.split(',')) {
+    const sep = part.indexOf(':');
+    if (sep < 0) continue;
+    const itemId = part.slice(0, sep).trim();
+    const qty = parseFloat(part.slice(sep + 1));
+    if (itemId && !isNaN(qty) && qty > 0) {
+      result.push({ itemId, quantity: qty });
+    }
+  }
+  return result;
+}
+
 export function ServiceCategoryPage({ slug }: { slug: string }) {
+  const searchParams = useSearchParams();
+  const { addServiceToCart, refreshCart, cartServiceItems } = useCart();
   const [data, setData] = useState<CategoryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [calcLines, setCalcLines] = useState<CalculatorLine[]>([]);
   const [calcResult, setCalcResult] = useState<CalculateResult | null>(null);
   const [calcLoading, setCalcLoading] = useState(false);
+  const [addToCartLoading, setAddToCartLoading] = useState(false);
+  const [addToCartError, setAddToCartError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -84,6 +107,30 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  /** Предустановка позиций из query-параметра ?preset=itemId1:qty1,itemId2:qty2 (после загрузки категории). */
+  const presetRaw = searchParams.get('preset');
+  useEffect(() => {
+    const presetItems = parsePresetParam(presetRaw);
+    if (!data || presetItems.length === 0) return;
+    const idToItem = new Map(data.items.map((i) => [i.id, i]));
+    const lines: CalculatorLine[] = [];
+    for (const { itemId, quantity } of presetItems) {
+      const item = idToItem.get(itemId);
+      if (item && item.price !== undefined) {
+        lines.push({
+          itemId: item.id,
+          name: item.name,
+          unit: item.unit,
+          price: item.price,
+          quantity,
+        });
+      }
+    }
+    if (lines.length > 0) {
+      setCalcLines(lines);
+    }
+  }, [data, presetRaw]);
 
   const addToCalculator = (item: ServiceCatalogItem) => {
     if (item.price === undefined) return;
@@ -145,6 +192,31 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
   };
 
   const showPrices = data?.showPricesInPublic ?? true;
+  const isInCart =
+    !!data &&
+    cartServiceItems.some(
+      (item) => item.serviceCatalogCategoryId === data.id || item.category?.id === data.id
+    );
+
+  const handleAddToCart = async () => {
+    if (!calcResult || !data) return;
+    setAddToCartLoading(true);
+    setAddToCartError(null);
+    try {
+      await addServiceToCart(
+        data.id,
+        calcResult.lines.map((l) => ({
+          itemId: l.itemId,
+          quantity: Number(l.quantity) || 1,
+        }))
+      );
+      await refreshCart();
+    } catch (err) {
+      setAddToCartError(err instanceof Error ? err.message : 'Ошибка добавления в корзину');
+    } finally {
+      setAddToCartLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -294,6 +366,29 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
                         ))}
                       </ul>
                     )}
+                    <button
+                      type="button"
+                      className={`${styles.addToCartButton} ${isInCart ? styles.addToCartButtonSuccess : ''}`}
+                      onClick={handleAddToCart}
+                      disabled={addToCartLoading || isInCart}
+                      title={
+                        isInCart
+                          ? 'Уже в корзине'
+                          : 'Добавить перечень работ в корзину (1 позиция = 1 категория)'
+                      }
+                    >
+                      {isInCart ? (
+                        <CheckCircleIconSolid className={styles.addToCartIcon} />
+                      ) : (
+                        <ShoppingCartIcon className={styles.addToCartIcon} />
+                      )}
+                      {addToCartLoading ? 'Добавление...' : isInCart ? 'В корзине' : 'В корзину'}
+                    </button>
+                    {addToCartError && <p className={styles.orderError}>{addToCartError}</p>}
+                    <p className={styles.cartHint}>
+                      Добавьте услуги в корзину, затем оформите заказ в корзине аналогично товарам.
+                      Данные покупателя заполняются в админке.
+                    </p>
                   </div>
                 )}
               </>

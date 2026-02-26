@@ -10,11 +10,34 @@ import {
   Request,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiProperty } from '@nestjs/swagger';
-import { IsNumber, Min } from 'class-validator';
+import { IsArray, IsNumber, IsString, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CartService } from './cart.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { RequestWithUser } from '../common/types/request-with-user.types';
+
+class ServiceCartItemDto {
+  @ApiProperty()
+  @IsString()
+  itemId: string;
+
+  @ApiProperty()
+  @IsNumber()
+  @Min(0.01)
+  @Type(() => Number)
+  quantity: number;
+}
+
+class AddServiceToCartDto {
+  @ApiProperty({ description: 'ID категории каталога услуг' })
+  @IsString()
+  categoryId: string;
+  @ApiProperty({ type: [ServiceCartItemDto], description: 'Позиции услуг' })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ServiceCartItemDto)
+  items: { itemId: string; quantity: number }[];
+}
 
 class UpdateCartItemDto {
   @ApiProperty({ example: 1, description: 'Количество товара' })
@@ -47,6 +70,24 @@ export class CartController {
   @ApiOperation({ summary: 'Получить список элементов корзины с метаданными' })
   getCartItems(@Request() req: RequestWithUser) {
     return this.cartService.getCartItems(req.user.id);
+  }
+
+  @Get('service-items')
+  @ApiOperation({ summary: 'Получить услуги в корзине' })
+  getCartServiceItems(@Request() req: RequestWithUser) {
+    return this.cartService.getCartServiceItems(req.user.id);
+  }
+
+  @Post('service')
+  @ApiOperation({ summary: 'Добавить выбранные услуги категории в корзину' })
+  addServiceToCart(@Request() req: RequestWithUser, @Body() body: AddServiceToCartDto) {
+    return this.cartService.addServiceSelectionToCart(req.user.id, body.categoryId, body.items);
+  }
+
+  @Delete('service/:itemId')
+  @ApiOperation({ summary: 'Удалить услуги категории из корзины' })
+  removeCartServiceItem(@Request() req: RequestWithUser, @Param('itemId') itemId: string) {
+    return this.cartService.removeCartServiceItemById(req.user.id, itemId);
   }
 
   @Post(':productId')

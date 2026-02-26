@@ -3,12 +3,18 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import * as cartApi from '@/shared/api/cart';
-import type { CartItem } from '@/shared/api/cart';
+import type { CartItem, CartServiceItem } from '@/shared/api/cart';
 
 interface CartContextValue {
   cart: CartItem[];
+  cartServiceItems: CartServiceItem[];
   count: number;
   isLoading: boolean;
+  addServiceToCart: (
+    categoryId: string,
+    items: { itemId: string; quantity: number }[]
+  ) => Promise<void>;
+  removeCartServiceItemById: (itemId: string) => Promise<void>;
   addToCart: (
     productId: string,
     quantity?: number,
@@ -33,6 +39,7 @@ const CartContext = createContext<CartContextValue | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [cartServiceItems, setCartServiceItems] = useState<CartServiceItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const lastTokenRef = React.useRef<string | null>(null);
 
@@ -44,26 +51,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const refreshCart = useCallback(async () => {
     try {
       setIsLoading(true);
-      const items = await cartApi.getCart();
+      const [items, serviceItems] = await Promise.all([
+        cartApi.getCart(),
+        cartApi.getCartServiceItems().catch(() => []),
+      ]);
       setCart(items);
+      setCartServiceItems(serviceItems);
     } catch (error) {
-      // Если пользователь не авторизован, очищаем корзину
       setCart([]);
+      setCartServiceItems([]);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Вычисляем счетчик на основе корзины (товары и комплектующие с валидными данными)
+  // Счётчик: товары/комплектующие + каждая категория услуг (1 за категорию)
   const count = useMemo(() => {
-    return cart.reduce((sum, item) => {
-      // Учитываем товары и комплектующие с валидными данными
-      if (item.product || item.component) {
-        return sum + item.quantity;
-      }
+    const productCount = cart.reduce((sum, item) => {
+      if (item.product || item.component) return sum + item.quantity;
       return sum;
     }, 0);
-  }, [cart]);
+    return Math.round(productCount) + cartServiceItems.length;
+  }, [cart, cartServiceItems]);
 
   const refreshCount = useCallback(async () => {
     // Обновляем корзину, счетчик обновится автоматически
@@ -94,7 +103,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     handler();
     window.addEventListener('auth-token-changed', handler);
-    return () => window.removeEventListener('auth-token-changed', handler);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && getAuthToken()) {
+        refreshCart().catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      window.removeEventListener('auth-token-changed', handler);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [getAuthToken, refreshCart]);
 
   const addToCart = useCallback(
@@ -135,6 +153,36 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         if (error instanceof Error && error.message === 'Необходима авторизация') {
           throw new Error('Войдите в систему, чтобы добавить товар в корзину');
+        }
+        throw error;
+      }
+    },
+    [refreshCart]
+  );
+
+  const addServiceToCart = useCallback(
+    async (categoryId: string, items: { itemId: string; quantity: number }[]) => {
+      try {
+        await cartApi.addServiceToCart(categoryId, items);
+        await refreshCart();
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Необходима авторизация') {
+          throw new Error('Войдите в систему, чтобы добавить услуги в корзину');
+        }
+        throw error;
+      }
+    },
+    [refreshCart]
+  );
+
+  const removeCartServiceItemById = useCallback(
+    async (itemId: string) => {
+      try {
+        await cartApi.removeCartServiceItemById(itemId);
+        await refreshCart();
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Необходима авторизация') {
+          throw new Error('Войдите в систему');
         }
         throw error;
       }
@@ -329,6 +377,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       await cartApi.clearCart();
       setCart([]);
+      setCartServiceItems([]);
     } catch (error) {
       if (error instanceof Error && error.message === 'Необходима авторизация') {
         throw new Error('Войдите в систему, чтобы очистить корзину');
@@ -338,7 +387,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const getTotalPrice = useCallback((): number => {
-    return cart.reduce((total, item) => {
+    const productTotal = cart.reduce((total, item) => {
       if (item.product) {
         return total + item.product.price * item.quantity;
       }
@@ -347,12 +396,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       return total;
     }, 0);
-  }, [cart]);
+    const serviceTotal = cartServiceItems.reduce(
+      (sum, item) => sum + (item.total != null && item.total > 0 ? item.total : 0),
+      0
+    );
+    return productTotal + serviceTotal;
+  }, [cart, cartServiceItems]);
 
   const value: CartContextValue = {
     cart,
+    cartServiceItems,
     count,
     isLoading,
+    addServiceToCart,
+    removeCartServiceItemById,
     addToCart,
     addComponentToCart,
     updateQuantity,

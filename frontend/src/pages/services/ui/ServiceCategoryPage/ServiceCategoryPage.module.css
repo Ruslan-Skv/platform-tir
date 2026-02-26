@@ -262,6 +262,152 @@
   padding: 0.25rem 0;
 }
 
+/* Форма оформления заказа (только для менеджеров) */
+.orderForm {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.orderFormTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+  color: #374151;
+}
+
+.orderFormRow {
+  margin-bottom: 0.75rem;
+}
+
+.orderFormLabel {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.required {
+  color: #dc2626;
+}
+
+.orderFormInput,
+.orderFormTextarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  box-sizing: border-box;
+}
+
+.orderFormTextarea {
+  resize: vertical;
+  min-height: 2.5rem;
+}
+
+.orderFormInput:focus,
+.orderFormTextarea:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.orderError {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin: 0 0 0.75rem;
+}
+
+.orderSuccess {
+  color: #059669;
+  font-size: 0.9375rem;
+  margin: 0;
+}
+
+.orderSubmitButton {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.orderSubmitButton:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.orderSubmitButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.addToCartButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  justify-content: center;
+  padding: 0.5rem 0.75rem;
+  margin-top: 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  background: #d90652;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  height: 36px;
+  box-sizing: border-box;
+}
+
+.addToCartButton:hover:not(:disabled) {
+  background: #b80545;
+}
+
+.addToCartButton:focus {
+  outline: none;
+}
+
+.addToCartButton:focus-visible {
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+}
+
+.addToCartButton:active:not(:disabled) {
+  opacity: 0.95;
+}
+
+.addToCartButton:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.addToCartButtonSuccess,
+.addToCartButtonSuccess:hover,
+.addToCartButtonSuccess:disabled {
+  background: #10b981;
+  cursor: default;
+  opacity: 1;
+}
+
+.addToCartIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.cartHint {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  margin: 0.75rem 0 0;
+  line-height: 1.4;
+}
+
 /* Тёмная тема */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .container {
   color: #d1d5db;
@@ -394,5 +540,64 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .orderForm {
+  border-top-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .orderFormTitle {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .orderFormLabel {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .orderFormInput,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .orderFormTextarea {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .orderFormInput::placeholder,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .orderFormTextarea::placeholder {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .orderFormInput:focus,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .orderFormTextarea:focus {
+  border-color: #60a5fa;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .orderSubmitButton {
+  background: #2563eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .orderSubmitButton:hover:not(:disabled) {
+  background: #3b82f6;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .orderSuccess {
+  color: #34d399;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButton {
+  background: #d90652;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButton:hover:not(:disabled) {
+  background: #b80545;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButtonSuccess,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButtonSuccess:hover,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButtonSuccess:disabled {
+  background: #10b981;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cartHint {
   color: #9ca3af;
 }

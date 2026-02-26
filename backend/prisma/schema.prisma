@@ -52,6 +52,7 @@ model User {
   addresses         Address[]
   blogPosts         BlogPost[]
   cartItems         CartItem[]
+  cartServiceItems  CartServiceItem[]
   comments          Comment[]
   assignedCustomers Customer[]     @relation("ManagerCustomers")
   interactions      Interaction[]
@@ -82,6 +83,8 @@ model User {
   officeOtherExpensesCreated OfficeOtherExpense[]
   officeIncassationsCreated  OfficeIncassation[]
   orderEventsAsActor         OrderEvent[]     @relation("OrderEventActor")
+  serviceOrders              ServiceOrder[]   @relation
+  serviceOrdersCreated       ServiceOrder[]   @relation("ServiceOrdersCreatedByManager")
 
   @@map("users")
 }
@@ -368,6 +371,7 @@ model ServiceCatalogCategory {
   createdAt   DateTime              @default(now())
   updatedAt   DateTime              @updatedAt
   items       ServiceCatalogItem[]
+  cartServiceItems     CartServiceItem[]
 
   @@map("service_catalog_categories")
 }
@@ -384,9 +388,53 @@ model ServiceCatalogItem {
   createdAt   DateTime               @default(now())
   updatedAt   DateTime               @updatedAt
   category    ServiceCatalogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  serviceOrderItems   ServiceOrderItem[]
+  orderServiceItems   OrderServiceItem[]
 
   @@index([categoryId])
   @@map("service_catalog_items")
+}
+
+/// Заказ на услуги (оформляет менеджер для клиента).
+model ServiceOrder {
+  id                 String            @id @default(cuid())
+  orderNumber        String            @unique
+  userId             String            // Покупатель (существующий или гость)
+  createdByManagerId String?           // Менеджер, оформивший заказ
+  customerEmail      String            // Email получателя
+  customerFirstName  String?
+  customerLastName   String?
+  customerPhone      String?           // Телефон покупателя
+  total              Decimal           @db.Decimal(12, 2)
+  status             ServiceOrderStatus @default(PENDING)
+  customerNotes      String?           @db.Text
+  adminNotes         String?           @db.Text
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  user               User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  createdByManager   User?             @relation("ServiceOrdersCreatedByManager", fields: [createdByManagerId], references: [id], onDelete: SetNull)
+  items              ServiceOrderItem[]
+
+  @@map("service_orders")
+}
+
+model ServiceOrderItem {
+  id                   String           @id @default(cuid())
+  serviceOrderId       String
+  serviceCatalogItemId String
+  name                 String           // Название вида работ (денормализация)
+  categoryName         String           // Название категории (денормализация)
+  unit                 String           // Ед. изм.
+  quantity             Decimal          @db.Decimal(12, 2)
+  price                Decimal          @db.Decimal(12, 2)
+  amount               Decimal          @db.Decimal(12, 2)
+  createdAt            DateTime         @default(now())
+  serviceOrder         ServiceOrder     @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  serviceCatalogItem   ServiceCatalogItem @relation(fields: [serviceCatalogItemId], references: [id], onDelete: Restrict)
+
+  @@index([serviceOrderId])
+  @@index([serviceCatalogItemId])
+  @@map("service_order_items")
 }
 
 model Customer {
@@ -1080,6 +1128,7 @@ model Order {
   deliveryHasElevator          Boolean?       // Есть лифт (при подъёме в квартиру)
   preferredDeliveryTime        String?        @db.Text // Когда покупателю удобно принять заказ
   items                       OrderItem[]
+  orderServiceItems           OrderServiceItem[]
   shippingAddress             Address?        @relation(fields: [shippingAddressId], references: [id])
   shippingMethod              ShippingMethod? @relation(fields: [shippingMethodId], references: [id])
   user                        User            @relation(fields: [userId], references: [id])
@@ -1126,6 +1175,26 @@ model OrderItem {
   @@map("order_items")
 }
 
+/// Позиция услуг в заказе (Order). Услуги из корзины добавляются в тот же Order, что и товары.
+model OrderServiceItem {
+  id                   String    @id @default(cuid())
+  orderId              String
+  serviceCatalogItemId String
+  name                 String    // Название вида работ (денормализация)
+  categoryName         String    // Название категории (денормализация)
+  unit                 String    // Ед. изм.
+  quantity             Decimal   @db.Decimal(12, 2)
+  price                Decimal   @db.Decimal(12, 2)
+  amount               Decimal   @db.Decimal(12, 2)
+  createdAt            DateTime  @default(now())
+  order                Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  serviceCatalogItem   ServiceCatalogItem @relation(fields: [serviceCatalogItemId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([serviceCatalogItemId])
+  @@map("order_service_items")
+}
+
 model Address {
   id         String      @id @default(cuid())
   userId     String
@@ -1166,6 +1235,23 @@ model CartItem {
   @@index([userId, productId])
   @@index([userId, componentId])
   @@map("cart_items")
+}
+
+/// Элемент корзины — выбранные услуги из категории каталога услуг.
+/// 1 CartServiceItem = 1 категория; счётчик корзины +1 за каждую категорию.
+model CartServiceItem {
+  id                     String   @id @default(cuid())
+  userId                 String
+  serviceCatalogCategoryId String
+  items                  Json     // [{ itemId: string, quantity: number }]
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category               ServiceCatalogCategory @relation(fields: [serviceCatalogCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, serviceCatalogCategoryId])
+  @@index([userId])
+  @@map("cart_service_items")
 }
 
 model WishlistItem {
@@ -1692,6 +1778,14 @@ enum OrderStatus {
   DELIVERED
   CANCELLED
   REFUNDED
+}
+
+enum ServiceOrderStatus {
+  PENDING    // Ожидает подтверждения
+  CONFIRMED  // Подтверждён
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
 }
 
 enum PaymentStatus {

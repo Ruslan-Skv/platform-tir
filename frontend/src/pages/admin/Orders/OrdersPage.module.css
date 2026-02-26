@@ -37,6 +37,22 @@
   color: #6b7280;
 }
 
+.serviceOrdersLink {
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.serviceOrdersLink:hover {
+  text-decoration: underline;
+}
+
+.serviceOrderBadge {
+  color: #6b7280;
+  font-weight: 400;
+  font-size: 0.85em;
+}
+
 /* Stats */
 .stats {
   display: grid;
@@ -238,6 +254,11 @@
 .statusCANCELLED {
   background: #fee2e2;
   color: #991b1b;
+}
+
+.statusCONFIRMED {
+  background: #d1fae5;
+  color: #065f46;
 }
 
 .statusREFUNDED {

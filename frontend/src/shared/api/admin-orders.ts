@@ -16,6 +16,15 @@ export interface AdminOrderSummary {
   processedByManager?: { id: string; email: string; firstName?: string; lastName?: string };
   user?: { firstName?: string; lastName?: string; email?: string };
   items?: unknown[];
+  orderServiceItems?: Array<{
+    id: string;
+    name: string;
+    categoryName: string;
+    unit: string;
+    quantity: number;
+    price: string | number;
+    amount: string | number;
+  }>;
 }
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -163,6 +172,81 @@ export async function sendOrderToCustomerEmail(
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as { message?: string }).message ?? 'Не удалось отправить');
+  }
+  return res.json();
+}
+
+export interface ServiceOrderSummary {
+  id: string;
+  orderNumber: string;
+  status: string;
+  total: string | number;
+  customerEmail: string;
+  customerFirstName?: string | null;
+  customerLastName?: string | null;
+  customerPhone?: string | null;
+  createdAt: string;
+  createdByManager?: { id: string; email: string; firstName?: string; lastName?: string } | null;
+  items: Array<{
+    id: string;
+    name: string;
+    categoryName: string;
+    unit: string;
+    quantity: number;
+    price: string | number;
+    amount: string | number;
+  }>;
+}
+
+export async function getServiceOrders(params?: {
+  status?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{
+  items: ServiceOrderSummary[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}> {
+  const q = new URLSearchParams();
+  if (params?.status) q.set('status', params.status);
+  if (params?.page) q.set('page', String(params.page));
+  if (params?.limit) q.set('limit', String(params.limit));
+  const res = await fetch(`${API_URL}/admin/orders/service-orders?${q}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить заказы на услуги');
+  return res.json();
+}
+
+export async function getServiceOrder(id: string): Promise<ServiceOrderSummary> {
+  const res = await fetch(`${API_URL}/admin/orders/service-order/${id}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Заказ на услуги не найден');
+  return res.json();
+}
+
+export async function updateServiceOrderCustomer(
+  id: string,
+  data: {
+    customerEmail?: string | null;
+    customerFirstName?: string | null;
+    customerLastName?: string | null;
+    customerPhone?: string | null;
+  }
+): Promise<ServiceOrderSummary> {
+  const res = await fetch(`${API_URL}/admin/orders/service-order/${id}/customer`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      (err as { message?: string }).message ?? 'Не удалось обновить данные покупателя'
+    );
   }
   return res.json();
 }

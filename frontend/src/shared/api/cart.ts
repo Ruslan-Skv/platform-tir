@@ -264,6 +264,75 @@ export async function updateComponentQuantity(
   return response.json();
 }
 
+export interface CartServiceItem {
+  id: string;
+  userId: string;
+  serviceCatalogCategoryId: string;
+  items: { itemId: string; quantity: number }[];
+  itemsWithDetails?: {
+    itemId: string;
+    quantity: number;
+    name: string;
+    unit: string;
+    price?: number;
+    amount?: number;
+  }[];
+  total?: number;
+  createdAt: string;
+  updatedAt: string;
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+}
+
+export async function getCartServiceItems(): Promise<CartServiceItem[]> {
+  const response = await fetch(`${API_URL}/cart/service-items`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    if (response.status === 401) return [];
+    throw new Error('Ошибка при загрузке услуг в корзине');
+  }
+  return response.json();
+}
+
+export async function addServiceToCart(
+  categoryId: string,
+  items: { itemId: string; quantity: number }[]
+): Promise<CartServiceItem> {
+  const response = await fetch(`${API_URL}/cart/service`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ categoryId, items }),
+  });
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Необходима авторизация');
+    }
+    const err = await response.json().catch(() => ({}));
+    const msg = (err as { message?: string | string[] }).message;
+    const text = Array.isArray(msg) ? msg.join('; ') : msg || 'Ошибка при добавлении в корзину';
+    throw new Error(text);
+  }
+  return response.json();
+}
+
+export async function removeCartServiceItemById(itemId: string): Promise<void> {
+  const response = await fetch(`${API_URL}/cart/service/${itemId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Необходима авторизация');
+    }
+    throw new Error('Ошибка при удалении из корзины');
+  }
+}
+
 export async function removeComponentFromCart(componentId: string): Promise<void> {
   const response = await fetch(`${API_URL}/cart/component/${componentId}`, {
     method: 'DELETE',

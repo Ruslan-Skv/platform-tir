@@ -334,21 +334,115 @@ export class CartService {
     return items;
   }
 
-  async getCartCount(userId: string) {
-    const result = await this.prisma.cartItem.aggregate({
+  async getCartServiceItems(userId: string) {
+    const rows = await this.prisma.cartServiceItem.findMany({
       where: { userId },
-      _sum: {
-        quantity: true,
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            items: { select: { id: true, name: true, unit: true, price: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return rows.map((r) => {
+      const rawItems = (r.items as { itemId?: string; item_id?: string; quantity: number }[]) || [];
+      const catalogMap = new Map((r.category.items ?? []).map((c) => [c.id, c]));
+      let total = 0;
+      const itemsWithDetails = rawItems
+        .filter((i) => (i.itemId ?? i.item_id) != null)
+        .map((i) => {
+          const itemId = String(i.itemId ?? i.item_id);
+          const cat = catalogMap.get(itemId);
+          const quantity = Math.max(0, Number(i.quantity) || 0);
+          const price = cat?.price != null ? Number(cat.price) : 0;
+          const amount = price * quantity;
+          total += amount;
+          return {
+            itemId,
+            quantity,
+            name: cat?.name ?? '—',
+            unit: cat?.unit ?? '—',
+            price,
+            amount,
+          };
+        })
+        .filter((i) => i.quantity > 0);
+      const { category, ...rest } = r;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- items excluded from category
+      const { items, ...categorySafe } = category;
+      return { ...rest, category: categorySafe, itemsWithDetails, total };
+    });
+  }
+
+  async addServiceSelectionToCart(
+    userId: string,
+    serviceCatalogCategoryId: string,
+    items: { itemId: string; quantity: number }[],
+  ) {
+    const category = await this.prisma.serviceCatalogCategory.findUnique({
+      where: { id: serviceCatalogCategoryId },
+    });
+    if (!category) {
+      throw new NotFoundException(
+        `Service catalog category with ID ${serviceCatalogCategoryId} not found`,
+      );
+    }
+    if (!items.length) {
+      throw new NotFoundException('Добавьте хотя бы одну позицию услуг');
+    }
+
+    return this.prisma.cartServiceItem.upsert({
+      where: {
+        userId_serviceCatalogCategoryId: { userId, serviceCatalogCategoryId },
+      },
+      create: {
+        userId,
+        serviceCatalogCategoryId,
+        items: items as unknown as object,
+      },
+      update: {
+        items: items as unknown as object,
+      },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
       },
     });
+  }
 
-    return result._sum.quantity || 0;
+  async removeCartServiceItemById(userId: string, itemId: string) {
+    const item = await this.prisma.cartServiceItem.findFirst({
+      where: { id: itemId, userId },
+    });
+    if (!item) {
+      throw new NotFoundException('Cart service item not found');
+    }
+    return this.prisma.cartServiceItem.delete({
+      where: { id: itemId },
+    });
+  }
+
+  async getCartCount(userId: string) {
+    const [productResult, serviceCount] = await Promise.all([
+      this.prisma.cartItem.aggregate({
+        where: { userId },
+        _sum: { quantity: true },
+      }),
+      this.prisma.cartServiceItem.count({ where: { userId } }),
+    ]);
+    const productQty = productResult._sum.quantity || 0;
+    return Math.round(productQty) + serviceCount;
   }
 
   async clearCart(userId: string) {
-    return this.prisma.cartItem.deleteMany({
-      where: { userId },
-    });
+    await Promise.all([
+      this.prisma.cartItem.deleteMany({ where: { userId } }),
+      this.prisma.cartServiceItem.deleteMany({ where: { userId } }),
+    ]);
   }
 
   async getCartItems(userId: string) {

@@ -60,6 +60,20 @@ export interface UserOrder {
   trackingNumber: string | null;
   approvedAt: string | null;
   items: OrderItem[];
+  orderServiceItems?: Array<{
+    id: string;
+    serviceCatalogItemId: string;
+    name: string;
+    categoryName: string;
+    unit: string;
+    quantity: number;
+    price: string | number;
+    amount: string | number;
+    serviceCatalogItem?: {
+      id: string;
+      category?: { slug: string };
+    };
+  }>;
   shippingAddress?: OrderAddress | null;
   deliveryType?: string | null;
   deliveryFloor?: number | null;

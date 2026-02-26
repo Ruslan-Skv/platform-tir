@@ -41,6 +41,13 @@ export class OrdersController {
     return this.ordersService.findOneByViewToken(token);
   }
 
+  @Get('can-place-service-order')
+  @ApiOperation({ summary: 'Может ли текущий пользователь оформлять заказ услуг для клиента' })
+  async canPlaceServiceOrder(@Request() req: RequestWithUser) {
+    const canPlace = await this.ordersService.canPlaceServiceOrder(req.user.role);
+    return { canPlace };
+  }
+
   @Get('delivery-settlements')
   @ApiOperation({ summary: 'Список населённых пунктов для выбора города доставки' })
   getDeliverySettlements() {
