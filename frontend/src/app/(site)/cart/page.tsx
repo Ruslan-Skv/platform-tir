@@ -290,20 +290,33 @@ export default function CartPage() {
   /** ID позиций для секции 3: в проверенном заказе. */
   const section3ItemIds = cartItemIdsInApprovedOrder;
 
-  /** Группировка услуг заказа по категории для отображения карточек. */
+  /** Группировка услуг заказа по категориям и помещениям для отображения карточек. */
   type OrderServiceGroup = {
     categoryName: string;
     categorySlug: string;
-    items: Array<{ itemId: string; name: string; quantity: number; unit: string; amount: number }>;
+    rooms: Array<{
+      roomName: string;
+      items: Array<{
+        itemId: string;
+        name: string;
+        quantity: number;
+        unit: string;
+        amount: number;
+      }>;
+      total: number;
+    }>;
     total: number;
   };
   const groupOrderServiceItems = (items: UserOrder['orderServiceItems']): OrderServiceGroup[] => {
     if (!items?.length) return [];
-    const byCategory = new Map<string, { slug: string; items: OrderServiceGroup['items'] }>();
+    const byCategory = new Map<
+      string,
+      { slug: string; rooms: Map<string, OrderServiceGroup['rooms'][number]['items']> }
+    >();
     for (const o of items) {
       const cat = o.categoryName || 'Услуги';
       const slug = o.serviceCatalogItem?.category?.slug ?? '';
-      const entry = byCategory.get(cat);
+      const roomName = o.roomName || 'Помещение';
       const amount = typeof o.amount === 'string' ? parseFloat(o.amount) : Number(o.amount);
       const line = {
         itemId: o.serviceCatalogItemId,
@@ -312,22 +325,43 @@ export default function CartPage() {
         unit: o.unit,
         amount,
       };
+      const entry = byCategory.get(cat);
       if (entry) {
-        entry.items.push(line);
+        const room = entry.rooms.get(roomName);
+        if (room) {
+          room.push(line);
+        } else {
+          entry.rooms.set(roomName, [line]);
+        }
         if (slug && !entry.slug) entry.slug = slug;
       } else {
-        byCategory.set(cat, { slug, items: [line] });
+        const rooms = new Map<string, OrderServiceGroup['rooms'][number]['items']>();
+        rooms.set(roomName, [line]);
+        byCategory.set(cat, { slug, rooms });
       }
     }
-    return Array.from(byCategory.entries()).map(([categoryName, { slug, items: list }]) => {
-      const total = list.reduce((s, i) => s + i.amount, 0);
-      return { categoryName, categorySlug: slug, items: list, total };
+    return Array.from(byCategory.entries()).map(([categoryName, { slug, rooms }]) => {
+      const roomsList = Array.from(rooms.entries()).map(([roomName, list]) => {
+        const total = list.reduce((s, i) => s + i.amount, 0);
+        return { roomName, items: list, total };
+      });
+      const total = roomsList.reduce((s, r) => s + r.total, 0);
+      return { categoryName, categorySlug: slug, rooms: roomsList, total };
     });
   };
 
   /** Строка preset для URL: itemId1:qty1,itemId2:qty2 (значение целиком кодируется при подстановке в query) */
   const buildPresetQuery = (items: Array<{ itemId: string; quantity: number }>) =>
     items.map((i) => `${i.itemId}:${i.quantity}`).join(',');
+
+  const encodeBase64 = (value: string) => {
+    const utf8 = encodeURIComponent(value);
+    return btoa(utf8);
+  };
+
+  const buildRoomsParam = (
+    rooms: Array<{ name: string; items: { itemId: string; quantity: number }[] }>
+  ) => encodeBase64(JSON.stringify(rooms));
 
   /** Секции корзины для отображения (1: не отправлены, 2: на проверке, 3: проверено). */
   const cartSections = useMemo(() => {
@@ -379,8 +413,12 @@ export default function CartPage() {
     );
     const s2ServiceTotal = s2ServiceGroups.reduce((s, g) => s + g.total, 0);
     const s3ServiceTotal = s3ServiceGroups.reduce((s, g) => s + g.total, 0);
-    const s2ServiceCount = reviewOrder?.orderServiceItems?.length ?? 0;
-    const s3ServiceCount = approvedOrder?.orderServiceItems?.length ?? 0;
+    const s1ProductCount = countItems(s1Products, s1Components);
+    const s2ProductCount = countItems(s2Products, s2Components);
+    const s3ProductCount = countItems(s3Products, s3Components);
+    const s1ServiceCategoryCount = cartServiceItems.length;
+    const s2ServiceCategoryCount = s2ServiceGroups.length;
+    const s3ServiceCategoryCount = s3ServiceGroups.length;
     return [
       {
         id: 'section1' as const,
@@ -388,8 +426,12 @@ export default function CartPage() {
         products: s1Products,
         components: s1Components,
         orderServiceGroups: [] as OrderServiceGroup[],
+        productTotal: sumItems(s1Products, s1Components),
+        serviceTotal: s1ServiceTotal,
         total: sumItems(s1Products, s1Components) + s1ServiceTotal,
-        itemCount: countItems(s1Products, s1Components),
+        itemCount: s1ProductCount + s1ServiceCategoryCount,
+        productCount: s1ProductCount,
+        serviceCategoryCount: s1ServiceCategoryCount,
       },
       {
         id: 'section2' as const,
@@ -397,8 +439,12 @@ export default function CartPage() {
         products: s2Products,
         components: s2Components,
         orderServiceGroups: s2ServiceGroups,
+        productTotal: sumItems(s2Products, s2Components),
+        serviceTotal: s2ServiceTotal,
         total: sumItems(s2Products, s2Components) + s2ServiceTotal,
-        itemCount: countItems(s2Products, s2Components) + s2ServiceCount,
+        itemCount: s2ProductCount + s2ServiceCategoryCount,
+        productCount: s2ProductCount,
+        serviceCategoryCount: s2ServiceCategoryCount,
       },
       {
         id: 'section3' as const,
@@ -406,8 +452,12 @@ export default function CartPage() {
         products: s3Products,
         components: s3Components,
         orderServiceGroups: s3ServiceGroups,
+        productTotal: sumItems(s3Products, s3Components),
+        serviceTotal: s3ServiceTotal,
         total: sumItems(s3Products, s3Components) + s3ServiceTotal,
-        itemCount: countItems(s3Products, s3Components) + s3ServiceCount,
+        itemCount: s3ProductCount + s3ServiceCategoryCount,
+        productCount: s3ProductCount,
+        serviceCategoryCount: s3ServiceCategoryCount,
       },
     ];
   }, [
@@ -704,9 +754,9 @@ export default function CartPage() {
   /** Суммарные данные по всем секциям (включая заказы) — для заголовка при наличии заказов. */
   const allSectionsTotal = useMemo(() => {
     const total = cartSections.reduce((s, sec) => s + sec.total, 0);
-    const items = cartSections.reduce((s, sec) => s + sec.itemCount, 0) + cartServiceItems.length;
+    const items = cartSections.reduce((s, sec) => s + sec.itemCount, 0);
     return { total, items };
-  }, [cartSections, cartServiceItems.length]);
+  }, [cartSections]);
   const hasAnyContent =
     cart.length > 0 || cartServiceItems.length > 0 || allSectionsTotal.items > 0;
 
@@ -780,6 +830,14 @@ export default function CartPage() {
     deliveryForm.deliveryHasElevator,
   ]);
 
+  const pluralizeRu = (count: number, one: string, few: string, many: string) => {
+    const mod10 = count % 10;
+    const mod100 = count % 100;
+    if (mod10 === 1 && mod100 !== 11) return one;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+    return many;
+  };
+
   if (loading) {
     return (
       <div className={styles.container}>
@@ -809,12 +867,8 @@ export default function CartPage() {
         {hasAnyContent && (
           <p className={styles.subtitle}>
             {allSectionsTotal.items}{' '}
-            {allSectionsTotal.items === 1
-              ? 'позиция'
-              : allSectionsTotal.items < 5
-                ? 'позиции'
-                : 'позиций'}{' '}
-            на сумму {allSectionsTotal.total.toLocaleString('ru-RU')} ₽
+            {pluralizeRu(allSectionsTotal.items, 'позиция', 'позиции', 'позиций')} на сумму{' '}
+            {allSectionsTotal.total.toLocaleString('ru-RU')} ₽
           </p>
         )}
       </div>
@@ -1229,14 +1283,48 @@ export default function CartPage() {
                       })}
                       {section.id === 'section1' &&
                         cartServiceItems.map((item) => {
-                          const presetItems = (item.itemsWithDetails ?? item.items ?? []).map(
-                            (i) => ({ itemId: i.itemId, quantity: i.quantity })
+                          const legacyItems = Array.isArray(item.items) ? item.items : [];
+                          const roomsForPreset =
+                            item.rooms && item.rooms.length > 0
+                              ? item.rooms
+                              : [
+                                  {
+                                    name: 'Помещение',
+                                    items: (item.itemsWithDetails ?? legacyItems).map((i) => ({
+                                      itemId: i.itemId,
+                                      quantity: i.quantity,
+                                    })),
+                                  },
+                                ];
+                          const displayRooms =
+                            item.roomsWithDetails && item.roomsWithDetails.length > 0
+                              ? item.roomsWithDetails
+                              : [
+                                  {
+                                    name: 'Помещение',
+                                    items:
+                                      item.itemsWithDetails && item.itemsWithDetails.length > 0
+                                        ? item.itemsWithDetails
+                                        : legacyItems.map((i) => ({
+                                            itemId: i.itemId,
+                                            quantity: i.quantity,
+                                            name: '—',
+                                            unit: '—',
+                                            price: 0,
+                                            amount: 0,
+                                          })),
+                                    total: item.total ?? 0,
+                                  },
+                                ];
+                          const totalPositions = displayRooms.reduce(
+                            (sum, room) => sum + room.items.length,
+                            0
                           );
+                          const roomsParam =
+                            roomsForPreset.length > 0 ? buildRoomsParam(roomsForPreset) : '';
                           const serviceHref = item.category?.slug
                             ? `/catalog/services/${item.category.slug}${
-                                presetItems.length > 0
-                                  ? `?preset=${encodeURIComponent(buildPresetQuery(presetItems))}`
-                                  : ''
+                                roomsParam ? `?rooms=${encodeURIComponent(roomsParam)}` : ''
                               }`
                             : '/catalog/services';
                           const serviceTotal =
@@ -1261,19 +1349,22 @@ export default function CartPage() {
                                 </svg>
                               </div>
                               <div className={styles.itemInfo}>
-                                <span className={styles.itemName}>{item.category.name}</span>
+                                <span className={styles.itemName}>
+                                  {item.category.name} ({totalPositions})
+                                </span>
                                 <ul className={styles.serviceItemLines}>
-                                  {(item.itemsWithDetails && item.itemsWithDetails.length > 0
-                                    ? item.itemsWithDetails
-                                    : (item.items || []).map((i) => ({
-                                        itemId: i.itemId,
-                                        quantity: i.quantity,
-                                        name: '—',
-                                        unit: '—',
-                                      }))
-                                  ).map((line) => (
-                                    <li key={line.itemId} className={styles.serviceItemLine}>
-                                      {line.name} — {line.quantity} {line.unit}
+                                  {displayRooms.map((room, roomIndex) => (
+                                    <li key={`${item.id}-room-${roomIndex}`}>
+                                      <div className={styles.serviceRoomTitle}>
+                                        {room.name} ({room.items.length})
+                                      </div>
+                                      <ul className={styles.serviceRoomList}>
+                                        {room.items.map((line) => (
+                                          <li key={line.itemId} className={styles.serviceItemLine}>
+                                            {line.name} — {line.quantity} {line.unit}
+                                          </li>
+                                        ))}
+                                      </ul>
                                     </li>
                                   ))}
                                 </ul>
@@ -1306,14 +1397,17 @@ export default function CartPage() {
                         })}
                       {(section.id === 'section2' || section.id === 'section3') &&
                         section.orderServiceGroups.map((group, idx) => {
-                          const presetItems = group.items.map((i) => ({
-                            itemId: i.itemId,
-                            quantity: i.quantity,
+                          const roomsForPreset = group.rooms.map((room) => ({
+                            name: room.roomName,
+                            items: room.items.map((i) => ({
+                              itemId: i.itemId,
+                              quantity: i.quantity,
+                            })),
                           }));
                           const orderServiceHref = group.categorySlug
                             ? `/catalog/services/${group.categorySlug}${
-                                presetItems.length > 0
-                                  ? `?preset=${encodeURIComponent(buildPresetQuery(presetItems))}`
+                                roomsForPreset.length > 0
+                                  ? `?rooms=${encodeURIComponent(buildRoomsParam(roomsForPreset))}`
                                   : ''
                               }`
                             : '/catalog/services';
@@ -1337,11 +1431,23 @@ export default function CartPage() {
                                 </svg>
                               </div>
                               <div className={styles.itemInfo}>
-                                <span className={styles.itemName}>{group.categoryName}</span>
+                                <span className={styles.itemName}>
+                                  {group.categoryName} (
+                                  {group.rooms.reduce((sum, room) => sum + room.items.length, 0)})
+                                </span>
                                 <ul className={styles.serviceItemLines}>
-                                  {group.items.map((line, i) => (
-                                    <li key={i} className={styles.serviceItemLine}>
-                                      {line.name} — {line.quantity} {line.unit}
+                                  {group.rooms.map((room, roomIndex) => (
+                                    <li key={`${group.categoryName}-${roomIndex}`}>
+                                      <div className={styles.serviceRoomTitle}>
+                                        {room.roomName} ({room.items.length})
+                                      </div>
+                                      <ul className={styles.serviceRoomList}>
+                                        {room.items.map((line) => (
+                                          <li key={line.itemId} className={styles.serviceItemLine}>
+                                            {line.name} — {line.quantity} {line.unit}
+                                          </li>
+                                        ))}
+                                      </ul>
                                     </li>
                                   ))}
                                 </ul>
@@ -1834,37 +1940,45 @@ export default function CartPage() {
 
                     <div className={styles.cartSectionSummary}>
                       <div className={styles.cartSectionSummaryRows}>
-                        <div className={styles.cartSectionSummaryRow}>
-                          <span className={styles.cartSectionSummaryLabel}>Товаров:</span>
-                          <span>
-                            {section.id === 'section1' &&
+                        {(() => {
+                          const fallbackToReview =
+                            section.id === 'section1' &&
                             returnedForCorrectionOrder &&
                             section.products.length === 0 &&
-                            section.components.length === 0
-                              ? (cartSections[1]?.itemCount ?? 0)
-                              : section.itemCount}
-                            {section.id === 'section1' &&
-                              cartServiceItems.length > 0 &&
-                              ` + ${cartServiceItems.length} ${cartServiceItems.length === 1 ? 'услуга' : 'услуг'}`}
-                          </span>
-                        </div>
-                        <div className={styles.cartSectionSummaryRow}>
-                          <span className={styles.cartSectionSummaryLabel}>
-                            {section.orderServiceGroups.length > 0 ||
-                            (section.id === 'section1' && cartServiceItems.length > 0)
-                              ? 'Сумма:'
-                              : 'Сумма товаров:'}
-                          </span>
-                          <span>
-                            {section.id === 'section1' &&
-                            returnedForCorrectionOrder &&
-                            section.products.length === 0 &&
-                            section.components.length === 0
-                              ? (cartSections[1]?.total ?? 0).toLocaleString()
-                              : section.total.toLocaleString()}{' '}
-                            ₽
-                          </span>
-                        </div>
+                            section.components.length === 0 &&
+                            cartServiceItems.length === 0;
+                          const displaySection = fallbackToReview ? cartSections[1] : section;
+                          const productLabel = pluralizeRu(
+                            displaySection.productCount,
+                            'товар',
+                            'товара',
+                            'товаров'
+                          );
+                          const serviceLabel = pluralizeRu(
+                            displaySection.serviceCategoryCount,
+                            'услуга',
+                            'услуги',
+                            'услуг'
+                          );
+                          return (
+                            <>
+                              <div className={styles.cartSectionSummaryRow}>
+                                <span className={styles.cartSectionSummaryLabel}>Товары:</span>
+                                <span>
+                                  {displaySection.productCount} {productLabel} ·{' '}
+                                  {displaySection.productTotal.toLocaleString('ru-RU')} ₽
+                                </span>
+                              </div>
+                              <div className={styles.cartSectionSummaryRow}>
+                                <span className={styles.cartSectionSummaryLabel}>Услуги:</span>
+                                <span>
+                                  {displaySection.serviceCategoryCount} {serviceLabel} ·{' '}
+                                  {displaySection.serviceTotal.toLocaleString('ru-RU')} ₽
+                                </span>
+                              </div>
+                            </>
+                          );
+                        })()}
                         {(section.id === 'section1' &&
                           wantDelivery &&
                           !orderWithDelivery &&
@@ -1908,13 +2022,15 @@ export default function CartPage() {
                           <span className={styles.cartSectionTotalLabel}>Итого:</span>
                           <span className={styles.cartSectionTotal}>
                             {(() => {
-                              const baseTotal =
+                              const fallbackToReview =
                                 section.id === 'section1' &&
                                 returnedForCorrectionOrder &&
                                 section.products.length === 0 &&
-                                section.components.length === 0
-                                  ? (cartSections[1]?.total ?? 0)
-                                  : section.total;
+                                section.components.length === 0 &&
+                                cartServiceItems.length === 0;
+                              const baseTotal = fallbackToReview
+                                ? (cartSections[1]?.total ?? 0)
+                                : section.total;
                               const hasDelivery =
                                 (section.id === 'section1' &&
                                   wantDelivery &&

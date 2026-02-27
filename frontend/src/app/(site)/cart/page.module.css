@@ -297,6 +297,19 @@
   line-height: 1.5;
 }
 
+.serviceRoomTitle {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 0.4rem 0 0.15rem;
+}
+
+.serviceRoomList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
 .serviceItemLine {
   margin: 0.2rem 0;
   padding: 0;

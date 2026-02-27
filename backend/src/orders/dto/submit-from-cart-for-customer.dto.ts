@@ -23,6 +23,11 @@ export class SubmitFromCartForCustomerDto {
   @IsString()
   customerFirstName?: string;
 
+  @ApiPropertyOptional({ description: 'Отчество покупателя' })
+  @IsOptional()
+  @IsString()
+  customerMiddleName?: string;
+
   @ApiPropertyOptional({ description: 'Фамилия покупателя' })
   @IsOptional()
   @IsString()

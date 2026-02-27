@@ -350,32 +350,62 @@ export class CartService {
       orderBy: { createdAt: 'desc' },
     });
     return rows.map((r) => {
-      const rawItems = (r.items as { itemId?: string; item_id?: string; quantity: number }[]) || [];
+      const raw = r.items as
+        | { itemId?: string; item_id?: string; quantity: number }[]
+        | {
+            rooms?: Array<{
+              name?: string;
+              items: { itemId?: string; item_id?: string; quantity: number }[];
+            }>;
+          }
+        | null;
+      const rawRooms = Array.isArray(raw)
+        ? [{ name: 'Помещение', items: raw }]
+        : (raw?.rooms ?? []).map((room) => ({
+            name: room.name ?? 'Помещение',
+            items: Array.isArray(room.items) ? room.items : [],
+          }));
       const catalogMap = new Map((r.category.items ?? []).map((c) => [c.id, c]));
       let total = 0;
-      const itemsWithDetails = rawItems
-        .filter((i) => (i.itemId ?? i.item_id) != null)
-        .map((i) => {
-          const itemId = String(i.itemId ?? i.item_id);
-          const cat = catalogMap.get(itemId);
-          const quantity = Math.max(0, Number(i.quantity) || 0);
-          const price = cat?.price != null ? Number(cat.price) : 0;
-          const amount = price * quantity;
-          total += amount;
-          return {
-            itemId,
-            quantity,
-            name: cat?.name ?? '—',
-            unit: cat?.unit ?? '—',
-            price,
-            amount,
-          };
-        })
-        .filter((i) => i.quantity > 0);
+      const roomsWithDetails = rawRooms.map((room) => {
+        let roomTotal = 0;
+        const itemsWithDetails = (room.items ?? [])
+          .filter((i) => (i.itemId ?? i.item_id) != null)
+          .map((i) => {
+            const itemId = String(i.itemId ?? i.item_id);
+            const cat = catalogMap.get(itemId);
+            const quantity = Math.max(0, Number(i.quantity) || 0);
+            const price = cat?.price != null ? Number(cat.price) : 0;
+            const amount = price * quantity;
+            roomTotal += amount;
+            total += amount;
+            return {
+              itemId,
+              quantity,
+              name: cat?.name ?? '—',
+              unit: cat?.unit ?? '—',
+              price,
+              amount,
+            };
+          })
+          .filter((i) => i.quantity > 0);
+        return { name: room.name || 'Помещение', items: itemsWithDetails, total: roomTotal };
+      });
+      const itemsWithDetails = roomsWithDetails.flatMap((room) => room.items);
       const { category, ...rest } = r;
       // eslint-disable-next-line @typescript-eslint/no-unused-vars -- items excluded from category
       const { items, ...categorySafe } = category;
-      return { ...rest, category: categorySafe, itemsWithDetails, total };
+      return {
+        ...rest,
+        category: categorySafe,
+        itemsWithDetails,
+        rooms: rawRooms.map((room) => ({
+          name: room.name || 'Помещение',
+          items: room.items,
+        })),
+        roomsWithDetails,
+        total,
+      };
     });
   }
 
@@ -383,6 +413,7 @@ export class CartService {
     userId: string,
     serviceCatalogCategoryId: string,
     items: { itemId: string; quantity: number }[],
+    rooms?: { name: string; items: { itemId: string; quantity: number }[] }[],
   ) {
     const category = await this.prisma.serviceCatalogCategory.findUnique({
       where: { id: serviceCatalogCategoryId },
@@ -392,10 +423,12 @@ export class CartService {
         `Service catalog category with ID ${serviceCatalogCategoryId} not found`,
       );
     }
-    if (!items.length) {
+    const hasRooms = Array.isArray(rooms) && rooms.length > 0;
+    if (!items.length && !hasRooms) {
       throw new NotFoundException('Добавьте хотя бы одну позицию услуг');
     }
 
+    const payload = hasRooms ? { rooms } : (items as unknown as object);
     return this.prisma.cartServiceItem.upsert({
       where: {
         userId_serviceCatalogCategoryId: { userId, serviceCatalogCategoryId },
@@ -403,10 +436,10 @@ export class CartService {
       create: {
         userId,
         serviceCatalogCategoryId,
-        items: items as unknown as object,
+        items: payload as unknown as object,
       },
       update: {
-        items: items as unknown as object,
+        items: payload as unknown as object,
       },
       include: {
         category: { select: { id: true, name: true, slug: true } },

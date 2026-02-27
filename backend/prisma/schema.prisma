@@ -1089,6 +1089,7 @@ model Order {
   createdByManagerId String?        // Менеджер оформил заказ для покупателя
   customerEmail     String?         // Email получателя (дублирует user.email для поиска)
   customerFirstName String?         // Имя покупателя (для заказов менеджера)
+  customerMiddleName String?        // Отчество покупателя (для заказов менеджера)
   customerLastName  String?         // Фамилия покупателя (для заказов менеджера)
   processedByManagerId String?      // Менеджер, который обработал заказ
   sentToEmailAt     DateTime?       // Когда заказ отправлен на email покупателя
@@ -1182,6 +1183,7 @@ model OrderServiceItem {
   serviceCatalogItemId String
   name                 String    // Название вида работ (денормализация)
   categoryName         String    // Название категории (денормализация)
+  roomName             String?   // Название помещения (если расчёт делали по помещениям)
   unit                 String    // Ед. изм.
   quantity             Decimal   @db.Decimal(12, 2)
   price                Decimal   @db.Decimal(12, 2)

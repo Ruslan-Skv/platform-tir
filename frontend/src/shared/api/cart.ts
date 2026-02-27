@@ -268,7 +268,10 @@ export interface CartServiceItem {
   id: string;
   userId: string;
   serviceCatalogCategoryId: string;
-  items: { itemId: string; quantity: number }[];
+  items:
+    | { itemId: string; quantity: number }[]
+    | { rooms: { name: string; items: { itemId: string; quantity: number }[] }[] };
+  rooms?: { name: string; items: { itemId: string; quantity: number }[] }[];
   itemsWithDetails?: {
     itemId: string;
     quantity: number;
@@ -276,6 +279,18 @@ export interface CartServiceItem {
     unit: string;
     price?: number;
     amount?: number;
+  }[];
+  roomsWithDetails?: {
+    name: string;
+    items: {
+      itemId: string;
+      quantity: number;
+      name: string;
+      unit: string;
+      price?: number;
+      amount?: number;
+    }[];
+    total: number;
   }[];
   total?: number;
   createdAt: string;
@@ -301,12 +316,14 @@ export async function getCartServiceItems(): Promise<CartServiceItem[]> {
 
 export async function addServiceToCart(
   categoryId: string,
-  items: { itemId: string; quantity: number }[]
+  payload:
+    | { items: { itemId: string; quantity: number }[] }
+    | { rooms: { name: string; items: { itemId: string; quantity: number }[] }[] }
 ): Promise<CartServiceItem> {
   const response = await fetch(`${API_URL}/cart/service`, {
     method: 'POST',
     headers: getAuthHeaders(),
-    body: JSON.stringify({ categoryId, items }),
+    body: JSON.stringify({ categoryId, ...payload }),
   });
   if (!response.ok) {
     if (response.status === 401) {

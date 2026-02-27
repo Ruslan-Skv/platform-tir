@@ -1,14 +1,22 @@
 'use client';
 
-import { CheckCircleIcon, PlusCircleIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
+import {
+  CheckCircleIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  PlusCircleIcon,
+  ShoppingCartIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/react/24/solid';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
 import { useCart } from '@/shared/lib/hooks';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal/ConfirmModal';
 
 import styles from './ServiceCategoryPage.module.css';
 
@@ -60,6 +68,15 @@ interface CalculateResult {
   showPricesInPublic: boolean;
 }
 
+type CalculatorDraft = {
+  id: string;
+  name: string;
+  lines: CalculatorLine[];
+  result: CalculateResult | null;
+  loading: boolean;
+  collapsed: boolean;
+};
+
 /** Парсинг query-параметра preset: "itemId1:qty1,itemId2:qty2" */
 function parsePresetParam(preset: string | null): Array<{ itemId: string; quantity: number }> {
   if (!preset || typeof preset !== 'string') return [];
@@ -76,16 +93,59 @@ function parsePresetParam(preset: string | null): Array<{ itemId: string; quanti
   return result;
 }
 
+type RoomPreset = { name: string; items: Array<{ itemId: string; quantity: number }> };
+
+const decodeBase64 = (value: string) => {
+  const decoded = atob(value);
+  return decodeURIComponent(decoded);
+};
+
+const decodeRoomsParam = (value: string | null): RoomPreset[] => {
+  if (!value) return [];
+  try {
+    const json = decodeBase64(value);
+    const parsed = JSON.parse(json);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((room) => ({
+        name: typeof room?.name === 'string' ? room.name : 'Помещение',
+        items: Array.isArray(room?.items) ? room.items : [],
+      }))
+      .filter((room) => room.items.length > 0);
+  } catch {
+    return [];
+  }
+};
+
 export function ServiceCategoryPage({ slug }: { slug: string }) {
   const searchParams = useSearchParams();
-  const { addServiceToCart, refreshCart, cartServiceItems } = useCart();
+  const roomsParam = searchParams.get('rooms');
+  const { addServiceToCart, refreshCart, cartServiceItems, removeCartServiceItemById } = useCart();
   const [data, setData] = useState<CategoryData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [calcLines, setCalcLines] = useState<CalculatorLine[]>([]);
-  const [calcResult, setCalcResult] = useState<CalculateResult | null>(null);
-  const [calcLoading, setCalcLoading] = useState(false);
+  const createCalcId = () => `calc-${Math.random().toString(36).slice(2, 10)}`;
+  const [calculations, setCalculations] = useState<CalculatorDraft[]>(() => [
+    {
+      id: createCalcId(),
+      name: 'Помещение 1',
+      lines: [],
+      result: null,
+      loading: false,
+      collapsed: false,
+    },
+  ]);
+  const [activeCalcId, setActiveCalcId] = useState<string>(calculations[0]?.id ?? '');
   const [addToCartLoading, setAddToCartLoading] = useState(false);
   const [addToCartError, setAddToCartError] = useState<string | null>(null);
+  const [detachedFromCart, setDetachedFromCart] = useState(false);
+  const [lastAddedTotal, setLastAddedTotal] = useState<number | null>(null);
+  const [detachConfirmOpen, setDetachConfirmOpen] = useState(false);
+  const detachResolverRef = useRef<((value: boolean) => void) | null>(null);
+
+  useEffect(() => {
+    setDetachedFromCart(false);
+    setLastAddedTotal(null);
+  }, [slug, roomsParam]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -111,8 +171,41 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
   /** Предустановка позиций из query-параметра ?preset=itemId1:qty1,itemId2:qty2 (после загрузки категории). */
   const presetRaw = searchParams.get('preset');
   useEffect(() => {
+    if (!data) return;
+    const roomPresets = decodeRoomsParam(roomsParam);
+    if (roomPresets.length > 0) {
+      const idToItem = new Map(data.items.map((i) => [i.id, i]));
+      const nextCalculations = roomPresets.map((room, idx) => {
+        const lines: CalculatorLine[] = [];
+        for (const { itemId, quantity } of room.items) {
+          const item = idToItem.get(itemId);
+          if (item && item.price !== undefined) {
+            lines.push({
+              itemId: item.id,
+              name: item.name,
+              unit: item.unit,
+              price: item.price,
+              quantity,
+            });
+          }
+        }
+        return {
+          id: createCalcId(),
+          name: room.name || `Помещение ${idx + 1}`,
+          lines,
+          result: null,
+          loading: false,
+          collapsed: false,
+        };
+      });
+      if (nextCalculations.length > 0) {
+        setCalculations(nextCalculations);
+        setActiveCalcId(nextCalculations[0].id);
+      }
+      return;
+    }
     const presetItems = parsePresetParam(presetRaw);
-    if (!data || presetItems.length === 0) return;
+    if (presetItems.length === 0) return;
     const idToItem = new Map(data.items.map((i) => [i.id, i]));
     const lines: CalculatorLine[] = [];
     for (const { itemId, quantity } of presetItems) {
@@ -128,70 +221,235 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
       }
     }
     if (lines.length > 0) {
-      setCalcLines(lines);
-    }
-  }, [data, presetRaw]);
-
-  const addToCalculator = (item: ServiceCatalogItem) => {
-    if (item.price === undefined) return;
-    const existing = calcLines.find((l) => l.itemId === item.id);
-    if (existing) {
-      setCalcLines((prev) =>
-        prev.map((l) => (l.itemId === item.id ? { ...l, quantity: l.quantity + 1 } : l))
-      );
-    } else {
-      setCalcLines((prev) => [
-        ...prev,
-        {
-          itemId: item.id,
-          name: item.name,
-          unit: item.unit,
-          price: item.price!,
-          quantity: 1,
-        },
-      ]);
-    }
-    setCalcResult(null);
-  };
-
-  const updateQuantity = (itemId: string, quantity: number) => {
-    if (quantity <= 0) {
-      setCalcLines((prev) => prev.filter((l) => l.itemId !== itemId));
-    } else {
-      setCalcLines((prev) => prev.map((l) => (l.itemId === itemId ? { ...l, quantity } : l)));
-    }
-    setCalcResult(null);
-  };
-
-  const removeFromCalculator = (itemId: string) => {
-    setCalcLines((prev) => prev.filter((l) => l.itemId !== itemId));
-    setCalcResult(null);
-  };
-
-  const calculate = async () => {
-    if (calcLines.length === 0) return;
-    setCalcLoading(true);
-    setCalcResult(null);
-    try {
-      const res = await fetch(`${API_URL}/service-catalog/calculate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items: calcLines.map((l) => ({ itemId: l.itemId, quantity: l.quantity })),
-        }),
+      setCalculations((prev) => {
+        if (prev.length === 0) {
+          const id = createCalcId();
+          setActiveCalcId(id);
+          return [
+            {
+              id,
+              name: 'Помещение 1',
+              lines,
+              result: null,
+              loading: false,
+              collapsed: false,
+            },
+          ];
+        }
+        return prev.map((calc, index) => (index === 0 ? { ...calc, lines, result: null } : calc));
       });
-      if (res.ok) {
-        const result = await res.json();
-        setCalcResult(result);
-      }
-    } catch {
-      /* error */
-    } finally {
-      setCalcLoading(false);
+    }
+  }, [data, presetRaw, roomsParam]);
+
+  useEffect(() => {
+    if (!activeCalcId && calculations.length > 0) {
+      setActiveCalcId(calculations[0].id);
+    }
+  }, [activeCalcId, calculations]);
+
+  const requireDetachFromCart = async () => {
+    if (!data || detachedFromCart) return true;
+    const cartItem = cartServiceItems.find(
+      (item) => item.serviceCatalogCategoryId === data.id || item.category?.id === data.id
+    );
+    if (!cartItem) return true;
+    const ok = await new Promise<boolean>((resolve) => {
+      detachResolverRef.current = resolve;
+      setDetachConfirmOpen(true);
+    });
+    if (!ok) return false;
+    try {
+      await removeCartServiceItemById(cartItem.id);
+      await refreshCart();
+      setDetachedFromCart(true);
+      setLastAddedTotal(null);
+      return true;
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Не удалось удалить расчёт из корзины');
+      return false;
     }
   };
+
+  const addToCalculator = async (item: ServiceCatalogItem) => {
+    if (item.price === undefined) return;
+    const canEdit = await requireDetachFromCart();
+    if (!canEdit) return;
+    const targetId = activeCalcId || calculations[0]?.id;
+    if (!targetId) return;
+    setCalculations((prev) =>
+      prev.map((calc) => {
+        if (calc.id !== targetId) return calc;
+        const existing = calc.lines.find((l) => l.itemId === item.id);
+        if (existing) {
+          return {
+            ...calc,
+            lines: calc.lines.map((l) =>
+              l.itemId === item.id ? { ...l, quantity: l.quantity + 1 } : l
+            ),
+            result: null,
+          };
+        }
+        return {
+          ...calc,
+          lines: [
+            ...calc.lines,
+            {
+              itemId: item.id,
+              name: item.name,
+              unit: item.unit,
+              price: item.price!,
+              quantity: 1,
+            },
+          ],
+          result: null,
+        };
+      })
+    );
+  };
+
+  const updateQuantity = async (calcId: string, itemId: string, quantity: number) => {
+    const canEdit = await requireDetachFromCart();
+    if (!canEdit) return;
+    setCalculations((prev) =>
+      prev.map((calc) => {
+        if (calc.id !== calcId) return calc;
+        const nextLines =
+          quantity <= 0
+            ? calc.lines.filter((l) => l.itemId !== itemId)
+            : calc.lines.map((l) => (l.itemId === itemId ? { ...l, quantity } : l));
+        return { ...calc, lines: nextLines, result: null };
+      })
+    );
+  };
+
+  const removeFromCalculator = async (calcId: string, itemId: string) => {
+    const canEdit = await requireDetachFromCart();
+    if (!canEdit) return;
+    setCalculations((prev) =>
+      prev.map((calc) =>
+        calc.id === calcId
+          ? { ...calc, lines: calc.lines.filter((l) => l.itemId !== itemId), result: null }
+          : calc
+      )
+    );
+  };
+
+  const calculateForLines = async (lines: CalculatorLine[]) => {
+    const res = await fetch(`${API_URL}/service-catalog/calculate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: lines.map((l) => ({ itemId: l.itemId, quantity: l.quantity })),
+      }),
+    });
+    if (!res.ok) throw new Error('Не удалось рассчитать стоимость');
+    return res.json() as Promise<CalculateResult>;
+  };
+
+  const addCalculation = async () => {
+    const canEdit = await requireDetachFromCart();
+    if (!canEdit) return;
+    const id = createCalcId();
+    setCalculations((prev) => [
+      ...prev,
+      {
+        id,
+        name: `Помещение ${prev.length + 1}`,
+        lines: [],
+        result: null,
+        loading: false,
+        collapsed: false,
+      },
+    ]);
+    setActiveCalcId(id);
+  };
+
+  const removeCalculation = async (calcId: string) => {
+    const canEdit = await requireDetachFromCart();
+    if (!canEdit) return;
+    setCalculations((prev) => {
+      const next = prev.filter((calc) => calc.id !== calcId);
+      if (next.length === 0) {
+        const id = createCalcId();
+        setActiveCalcId(id);
+        return [
+          {
+            id,
+            name: 'Помещение 1',
+            lines: [],
+            result: null,
+            loading: false,
+            collapsed: false,
+          },
+        ];
+      }
+      if (activeCalcId === calcId) {
+        setActiveCalcId(next[0].id);
+      }
+      return next;
+    });
+  };
+
+  const toggleCollapsed = (calcId: string) => {
+    setCalculations((prev) =>
+      prev.map((calc) => (calc.id === calcId ? { ...calc, collapsed: !calc.collapsed } : calc))
+    );
+  };
+
+  const updateCalcName = async (calcId: string, name: string) => {
+    const canEdit = await requireDetachFromCart();
+    if (!canEdit) return;
+    setCalculations((prev) => prev.map((calc) => (calc.id === calcId ? { ...calc, name } : calc)));
+  };
+
+  const lastCalcSignature = useRef(new Map<string, string>());
+  const calcTimers = useRef(new Map<string, number>());
+  const calcSignature = (lines: CalculatorLine[]) =>
+    lines
+      .map((l) => `${l.itemId}:${l.quantity}`)
+      .sort()
+      .join('|');
+
+  useEffect(() => {
+    for (const calc of calculations) {
+      const signature = calcSignature(calc.lines);
+      const prevSignature = lastCalcSignature.current.get(calc.id);
+      if (calc.lines.length === 0) {
+        if (calc.result || calc.loading) {
+          setCalculations((prev) =>
+            prev.map((c) => (c.id === calc.id ? { ...c, result: null, loading: false } : c))
+          );
+        }
+        lastCalcSignature.current.set(calc.id, signature);
+        continue;
+      }
+      if (signature === prevSignature) continue;
+      lastCalcSignature.current.set(calc.id, signature);
+      const prevTimer = calcTimers.current.get(calc.id);
+      if (prevTimer) window.clearTimeout(prevTimer);
+      const timerId = window.setTimeout(async () => {
+        setCalculations((prev) =>
+          prev.map((c) => (c.id === calc.id ? { ...c, loading: true } : c))
+        );
+        try {
+          const result = await calculateForLines(calc.lines);
+          setCalculations((prev) =>
+            prev.map((c) => (c.id === calc.id ? { ...c, result, loading: false } : c))
+          );
+        } catch {
+          setCalculations((prev) =>
+            prev.map((c) => (c.id === calc.id ? { ...c, loading: false } : c))
+          );
+        }
+      }, 400);
+      calcTimers.current.set(calc.id, timerId);
+    }
+  }, [calculations]);
 
   const showPrices = data?.showPricesInPublic ?? true;
+  const activeCalc = calculations.find((calc) => calc.id === activeCalcId) ?? calculations[0];
+  const activeCalcLines = activeCalc?.lines ?? [];
+  const hasAnyCalcLines = calculations.some((calc) => calc.lines.length > 0);
   const isInCart =
     !!data &&
     cartServiceItems.some(
@@ -199,18 +457,29 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
     );
 
   const handleAddToCart = async () => {
-    if (!calcResult || !data) return;
+    if (!data) return;
+    const drafts = calculations.filter((calc) => calc.lines.length > 0);
+    if (drafts.length === 0) return;
     setAddToCartLoading(true);
     setAddToCartError(null);
     try {
-      await addServiceToCart(
-        data.id,
-        calcResult.lines.map((l) => ({
-          itemId: l.itemId,
-          quantity: Number(l.quantity) || 1,
-        }))
+      const total = drafts.reduce(
+        (sum, calc) =>
+          sum + calc.lines.reduce((roomSum, line) => roomSum + line.price * line.quantity, 0),
+        0
       );
+      await addServiceToCart(data.id, {
+        rooms: drafts.map((calc) => ({
+          name: calc.name || 'Помещение',
+          items: calc.lines.map((line) => ({
+            itemId: line.itemId,
+            quantity: Number(line.quantity) || 1,
+          })),
+        })),
+      });
       await refreshCart();
+      setLastAddedTotal(total);
+      setDetachedFromCart(false);
     } catch (err) {
       setAddToCartError(err instanceof Error ? err.message : 'Ошибка добавления в корзину');
     } finally {
@@ -275,12 +544,12 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
                       <td>
                         {item.price !== undefined &&
                           (() => {
-                            const isInCalc = calcLines.some((l) => l.itemId === item.id);
+                            const isInCalc = activeCalcLines.some((l) => l.itemId === item.id);
                             return (
                               <button
                                 type="button"
                                 className={`${styles.addButton} ${isInCalc ? styles.addButtonSelected : ''}`}
-                                onClick={() => addToCalculator(item)}
+                                onClick={() => void addToCalculator(item)}
                                 title={
                                   isInCalc ? 'В расчёте (нажмите, чтобы добавить ещё)' : 'В расчёт'
                                 }
@@ -304,98 +573,175 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
 
         {showPrices && (
           <aside className={styles.calculator}>
-            <h2 className={styles.sectionTitle}>Расчёт стоимости</h2>
-            {calcLines.length === 0 ? (
-              <p className={styles.calcEmpty}>
-                Добавьте виды работ из таблицы, укажите количество и нажмите «Рассчитать».
-              </p>
-            ) : (
-              <>
-                <ul className={styles.calcList}>
-                  {calcLines.map((line) => (
-                    <li key={line.itemId} className={styles.calcLine}>
-                      <div className={styles.calcLineInfo}>
-                        <span className={styles.calcLineName}>{line.name}</span>
-                        <span className={styles.calcLinePrice}>
-                          {formatPrice(line.price)} / {line.unit}
-                        </span>
-                      </div>
-                      <div className={styles.calcLineControls}>
-                        <input
-                          type="number"
-                          min={0.01}
-                          step={0.1}
-                          value={line.quantity}
-                          onChange={(e) =>
-                            updateQuantity(line.itemId, parseFloat(e.target.value) || 0)
-                          }
-                          className={styles.quantityInput}
-                        />
-                        <button
-                          type="button"
-                          className={styles.removeButton}
-                          onClick={() => removeFromCalculator(line.itemId)}
-                          title="Убрать"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  type="button"
-                  className={styles.calcButton}
-                  onClick={calculate}
-                  disabled={calcLoading}
+            <div className={styles.calcHeaderRow}>
+              <h2 className={styles.sectionTitle}>Расчёты по помещениям</h2>
+              <button
+                type="button"
+                className={styles.addCalcButton}
+                onClick={() => void addCalculation()}
+                title="Добавить помещение"
+                aria-label="Добавить помещение"
+              >
+                <PlusCircleIcon className={styles.addCalcButtonIcon} />
+              </button>
+            </div>
+            <div className={styles.calcCards}>
+              {calculations.map((calc) => (
+                <div
+                  key={calc.id}
+                  className={`${styles.calcCard} ${calc.id === activeCalcId ? styles.calcCardActive : ''}`}
                 >
-                  {calcLoading ? 'Расчёт...' : 'Рассчитать стоимость'}
-                </button>
-                {calcResult && (
-                  <div className={styles.calcResult}>
-                    <div className={styles.calcTotal}>
-                      Итого: <strong>{formatPrice(calcResult.total)}</strong>
-                    </div>
-                    {calcResult.lines.length > 0 && (
-                      <ul className={styles.calcResultLines}>
-                        {calcResult.lines.map((l, i) => (
-                          <li key={i} className={styles.calcResultLine}>
-                            {l.name} — {l.quantity} {l.unit} × {formatPrice(l.price)} ={' '}
-                            {formatPrice(l.amount)}
-                          </li>
-                        ))}
-                      </ul>
+                  <div
+                    className={styles.calcCardHeader}
+                    onClick={() => setActiveCalcId(calc.id)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setActiveCalcId(calc.id);
+                      }
+                    }}
+                  >
+                    <input
+                      value={calc.name}
+                      onChange={(e) => void updateCalcName(calc.id, e.target.value)}
+                      onFocus={() => setActiveCalcId(calc.id)}
+                      className={styles.calcNameInput}
+                      placeholder="Название помещения"
+                    />
+                    {calc.result && (
+                      <span className={styles.calcSummaryTotal}>
+                        {formatPrice(calc.result.total)}
+                      </span>
                     )}
                     <button
                       type="button"
-                      className={`${styles.addToCartButton} ${isInCart ? styles.addToCartButtonSuccess : ''}`}
-                      onClick={handleAddToCart}
-                      disabled={addToCartLoading || isInCart}
-                      title={
-                        isInCart
-                          ? 'Уже в корзине'
-                          : 'Добавить перечень работ в корзину (1 позиция = 1 категория)'
-                      }
+                      className={styles.calcCollapseButton}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleCollapsed(calc.id);
+                      }}
+                      aria-label={calc.collapsed ? 'Развернуть' : 'Свернуть'}
                     >
-                      {isInCart ? (
-                        <CheckCircleIconSolid className={styles.addToCartIcon} />
+                      {calc.collapsed ? (
+                        <ChevronDownIcon className={styles.calcCollapseIcon} />
                       ) : (
-                        <ShoppingCartIcon className={styles.addToCartIcon} />
+                        <ChevronUpIcon className={styles.calcCollapseIcon} />
                       )}
-                      {addToCartLoading ? 'Добавление...' : isInCart ? 'В корзине' : 'В корзину'}
                     </button>
-                    {addToCartError && <p className={styles.orderError}>{addToCartError}</p>}
-                    <p className={styles.cartHint}>
-                      Добавьте услуги в корзину, затем оформите заказ в корзине аналогично товарам.
-                      Данные покупателя заполняются в админке.
-                    </p>
+                    <button
+                      type="button"
+                      className={styles.calcRemoveButton}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void removeCalculation(calc.id);
+                      }}
+                      aria-label="Удалить помещение"
+                    >
+                      <XMarkIcon className={styles.calcRemoveIcon} />
+                    </button>
                   </div>
-                )}
-              </>
-            )}
+                  {!calc.collapsed && (
+                    <div className={styles.calcCardBody}>
+                      {calc.lines.length === 0 ? (
+                        <p className={styles.calcEmpty}>
+                          Добавьте виды работ из таблицы и укажите количество.
+                        </p>
+                      ) : (
+                        <>
+                          <ul className={styles.calcList}>
+                            {calc.lines.map((line) => (
+                              <li key={line.itemId} className={styles.calcLine}>
+                                <div className={styles.calcLineInfo}>
+                                  <span className={styles.calcLineName}>{line.name}</span>
+                                  <span className={styles.calcLinePrice}>
+                                    {formatPrice(line.price)} / {line.unit}
+                                  </span>
+                                </div>
+                                <div className={styles.calcLineControls}>
+                                  <input
+                                    type="number"
+                                    min={0.01}
+                                    step={0.1}
+                                    value={line.quantity}
+                                    onChange={(e) =>
+                                      void updateQuantity(
+                                        calc.id,
+                                        line.itemId,
+                                        parseFloat(e.target.value) || 0
+                                      )
+                                    }
+                                    className={styles.quantityInput}
+                                  />
+                                  <button
+                                    type="button"
+                                    className={styles.removeButton}
+                                    onClick={() => void removeFromCalculator(calc.id, line.itemId)}
+                                    title="Убрать"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                          {calc.loading && <div className={styles.calcLoading}>Расчёт...</div>}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              className={`${styles.addToCartButton} ${isInCart ? styles.addToCartButtonSuccess : ''}`}
+              onClick={handleAddToCart}
+              disabled={addToCartLoading || isInCart || !hasAnyCalcLines}
+              title={
+                isInCart
+                  ? 'Уже в корзине'
+                  : 'Добавить перечень работ в корзину (1 позиция = 1 категория)'
+              }
+            >
+              {isInCart ? (
+                <CheckCircleIconSolid className={styles.addToCartIcon} />
+              ) : (
+                <ShoppingCartIcon className={styles.addToCartIcon} />
+              )}
+              {addToCartLoading
+                ? 'Добавление...'
+                : isInCart
+                  ? `В корзине${lastAddedTotal != null ? ` · ${formatPrice(lastAddedTotal)}` : ''}`
+                  : 'В корзину'}
+            </button>
+            {addToCartError && <p className={styles.orderError}>{addToCartError}</p>}
+            <p className={styles.cartHint}>
+              Добавьте услуги в корзину, затем оформите заказ в корзине аналогично товарам. Данные
+              покупателя заполняются в админке.
+            </p>
           </aside>
         )}
       </div>
+      <ConfirmModal
+        isOpen={detachConfirmOpen}
+        onClose={() => {
+          setDetachConfirmOpen(false);
+          detachResolverRef.current?.(false);
+          detachResolverRef.current = null;
+        }}
+        onConfirm={() => {
+          setDetachConfirmOpen(false);
+          detachResolverRef.current?.(true);
+          detachResolverRef.current = null;
+        }}
+        title="Удалить расчёт из корзины?"
+        message="Любые изменения расчёта (включая добавление помещения) удалят его из корзины. После редактирования можно снова отправить в корзину."
+        confirmText="Удалить и продолжить"
+        cancelText="Отмена"
+        variant="danger"
+      />
     </div>
   );
 }

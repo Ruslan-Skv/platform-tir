@@ -12,6 +12,7 @@ export interface AdminOrderSummary {
   createdByManagerId?: string | null;
   customerEmail?: string | null;
   customerFirstName?: string | null;
+  customerMiddleName?: string | null;
   customerLastName?: string | null;
   processedByManager?: { id: string; email: string; firstName?: string; lastName?: string };
   user?: { firstName?: string; lastName?: string; email?: string };
@@ -128,6 +129,7 @@ export async function updateAdminOrderItem(
 export interface SubmitFromCartForCustomerDto {
   customerEmail: string;
   customerFirstName?: string;
+  customerMiddleName?: string;
   customerLastName?: string;
   shippingMethodId?: string;
   deliveryAddress?: {
@@ -256,6 +258,7 @@ export async function updateAdminOrderCustomer(
   data: {
     customerEmail?: string | null;
     customerFirstName?: string | null;
+    customerMiddleName?: string | null;
     customerLastName?: string | null;
   }
 ): Promise<AdminOrderSummary & { items?: unknown[] }> {

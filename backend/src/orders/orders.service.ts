@@ -244,6 +244,7 @@ export class OrdersService {
       serviceCatalogItemId: string;
       name: string;
       categoryName: string;
+      roomName?: string | null;
       unit: string;
       quantity: number;
       price: number;
@@ -253,14 +254,28 @@ export class OrdersService {
   }> {
     if (!cartServiceItems.length) return { lines: [], subtotal: 0 };
 
-    type LineItem = { itemId: string; quantity: number };
-    const allLines: { itemId: string; quantity: number }[] = [];
+    type LineItem = { itemId: string; quantity: number; roomName?: string | null };
+    const allLines: { itemId: string; quantity: number; roomName?: string | null }[] = [];
     for (const csi of cartServiceItems) {
-      const items = csi.items as unknown as LineItem[];
-      if (Array.isArray(items)) {
+      const raw = csi.items as
+        | LineItem[]
+        | { rooms?: Array<{ name?: string; items: LineItem[] }> }
+        | null;
+      const rooms = Array.isArray(raw)
+        ? [{ name: null, items: raw }]
+        : (raw?.rooms ?? []).map((room) => ({
+            name: room?.name ?? null,
+            items: Array.isArray(room.items) ? room.items : [],
+          }));
+      for (const room of rooms) {
+        const items = Array.isArray(room.items) ? room.items : [];
         for (const li of items) {
           if (li?.itemId && typeof li.quantity === 'number' && li.quantity > 0) {
-            allLines.push({ itemId: li.itemId, quantity: li.quantity });
+            allLines.push({
+              itemId: li.itemId,
+              quantity: li.quantity,
+              roomName: room.name ?? li.roomName ?? null,
+            });
           }
         }
       }
@@ -278,6 +293,7 @@ export class OrdersService {
       serviceCatalogItemId: string;
       name: string;
       categoryName: string;
+      roomName?: string | null;
       unit: string;
       quantity: number;
       price: number;
@@ -296,6 +312,7 @@ export class OrdersService {
         serviceCatalogItemId: item.id,
         name: item.name,
         categoryName: item.category.name,
+        roomName: line.roomName ?? null,
         unit: item.unit,
         quantity: qty,
         price,
@@ -479,6 +496,7 @@ export class OrdersService {
       serviceCatalogItemId: string;
       name: string;
       categoryName: string;
+      roomName?: string | null;
       unit: string;
       quantity: number;
       price: number;
@@ -525,6 +543,7 @@ export class OrdersService {
               serviceCatalogItemId: l.serviceCatalogItemId,
               name: l.name,
               categoryName: l.categoryName,
+              roomName: l.roomName ?? null,
               unit: l.unit,
               quantity: l.quantity,
               price: l.price,
@@ -754,6 +773,7 @@ export class OrdersService {
             serviceCatalogItemId: l.serviceCatalogItemId,
             name: l.name,
             categoryName: l.categoryName,
+            roomName: l.roomName ?? null,
             unit: l.unit,
             quantity: l.quantity,
             price: l.price,
@@ -924,6 +944,7 @@ export class OrdersService {
             serviceCatalogItemId: l.serviceCatalogItemId,
             name: l.name,
             categoryName: l.categoryName,
+            roomName: l.roomName ?? null,
             unit: l.unit,
             quantity: l.quantity,
             price: l.price,
@@ -1049,6 +1070,7 @@ export class OrdersService {
             serviceCatalogItemId: l.serviceCatalogItemId,
             name: l.name,
             categoryName: l.categoryName,
+            roomName: l.roomName ?? null,
             unit: l.unit,
             quantity: l.quantity,
             price: l.price,
@@ -1155,6 +1177,7 @@ export class OrdersService {
               serviceCatalogItemId: l.serviceCatalogItemId,
               name: l.name,
               categoryName: l.categoryName,
+              roomName: l.roomName ?? null,
               unit: l.unit,
               quantity: l.quantity,
               price: l.price,
@@ -1303,6 +1326,7 @@ export class OrdersService {
       serviceCatalogItemId: string;
       name: string;
       categoryName: string;
+      roomName?: string | null;
       unit: string;
       quantity: number;
       price: number;
@@ -1336,6 +1360,7 @@ export class OrdersService {
           createdByManagerId: managerId,
           customerEmail: dto.customerEmail.trim().toLowerCase(),
           customerFirstName: dto.customerFirstName?.trim() || null,
+          customerMiddleName: dto.customerMiddleName?.trim() || null,
           customerLastName: dto.customerLastName?.trim() || null,
           status: 'PENDING_REVIEW',
           subtotal: servicesSubtotal,
@@ -1349,6 +1374,7 @@ export class OrdersService {
               serviceCatalogItemId: l.serviceCatalogItemId,
               name: l.name,
               categoryName: l.categoryName,
+              roomName: l.roomName ?? null,
               unit: l.unit,
               quantity: l.quantity,
               price: l.price,
@@ -1461,6 +1487,7 @@ export class OrdersService {
         processedByManagerId: managerId,
         customerEmail,
         customerFirstName: dto.customerFirstName?.trim() || null,
+        customerMiddleName: dto.customerMiddleName?.trim() || null,
         customerLastName: dto.customerLastName?.trim() || null,
         status: 'PENDING_REVIEW',
         shippingAddressId,
@@ -1491,6 +1518,7 @@ export class OrdersService {
               serviceCatalogItemId: l.serviceCatalogItemId,
               name: l.name,
               categoryName: l.categoryName,
+              roomName: l.roomName ?? null,
               unit: l.unit,
               quantity: l.quantity,
               price: l.price,

@@ -206,6 +206,7 @@ export class AdminOrdersController {
     body: {
       customerEmail?: string | null;
       customerFirstName?: string | null;
+      customerMiddleName?: string | null;
       customerLastName?: string | null;
     },
   ) {

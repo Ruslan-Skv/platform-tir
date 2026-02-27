@@ -10,7 +10,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNumber, IsString, Min, ValidateNested } from 'class-validator';
+import { IsArray, IsNumber, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CartService } from './cart.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -28,15 +28,36 @@ class ServiceCartItemDto {
   quantity: number;
 }
 
-class AddServiceToCartDto {
-  @ApiProperty({ description: 'ID категории каталога услуг' })
+class ServiceCartRoomDto {
+  @ApiProperty({ description: 'Название помещения' })
   @IsString()
-  categoryId: string;
-  @ApiProperty({ type: [ServiceCartItemDto], description: 'Позиции услуг' })
+  name: string;
+
+  @ApiProperty({ type: [ServiceCartItemDto], description: 'Позиции услуг помещения' })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ServiceCartItemDto)
   items: { itemId: string; quantity: number }[];
+}
+
+class AddServiceToCartDto {
+  @ApiProperty({ description: 'ID категории каталога услуг' })
+  @IsString()
+  categoryId: string;
+
+  @ApiProperty({ type: [ServiceCartItemDto], description: 'Позиции услуг (устаревший формат)' })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ServiceCartItemDto)
+  items?: { itemId: string; quantity: number }[];
+
+  @ApiProperty({ type: [ServiceCartRoomDto], description: 'Расчёты по помещениям' })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ServiceCartRoomDto)
+  rooms?: { name: string; items: { itemId: string; quantity: number }[] }[];
 }
 
 class UpdateCartItemDto {
@@ -81,7 +102,12 @@ export class CartController {
   @Post('service')
   @ApiOperation({ summary: 'Добавить выбранные услуги категории в корзину' })
   addServiceToCart(@Request() req: RequestWithUser, @Body() body: AddServiceToCartDto) {
-    return this.cartService.addServiceSelectionToCart(req.user.id, body.categoryId, body.items);
+    return this.cartService.addServiceSelectionToCart(
+      req.user.id,
+      body.categoryId,
+      body.items ?? [],
+      body.rooms,
+    );
   }
 
   @Delete('service/:itemId')

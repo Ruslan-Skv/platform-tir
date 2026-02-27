@@ -56,7 +56,7 @@
 
 .content {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr 420px;
   gap: 2rem;
 }
 
@@ -137,6 +137,122 @@
   background: #f9fafb;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
+}
+
+.calcHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.addCalcButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  color: #2563eb;
+  cursor: pointer;
+}
+
+.addCalcButton:hover {
+  background: #eff6ff;
+}
+
+.addCalcButtonIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.calcCards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.calcCard {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: white;
+}
+
+.calcCardActive {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.calcCardHeader {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0.75rem 0.5rem;
+  cursor: pointer;
+}
+
+.calcNameInput {
+  border: none;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1f2937;
+  background: transparent;
+  padding: 0.15rem 0.25rem;
+}
+
+.calcNameInput:focus {
+  outline: 2px solid rgba(59, 130, 246, 0.3);
+  border-radius: 6px;
+}
+
+.calcSummaryTotal {
+  font-size: 0.8125rem;
+  color: #059669;
+  font-weight: 600;
+}
+
+.calcCollapseButton {
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.calcCollapseIcon {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.calcRemoveButton {
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.calcRemoveButton:hover {
+  color: #dc2626;
+}
+
+.calcRemoveIcon {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.calcLoading {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  margin-top: 0.5rem;
+}
+
+.calcCardBody {
+  padding: 0 0.75rem 0.75rem;
 }
 
 .calcEmpty {

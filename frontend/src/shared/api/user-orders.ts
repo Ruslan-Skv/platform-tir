@@ -65,6 +65,7 @@ export interface UserOrder {
     serviceCatalogItemId: string;
     name: string;
     categoryName: string;
+    roomName?: string | null;
     unit: string;
     quantity: number;
     price: string | number;

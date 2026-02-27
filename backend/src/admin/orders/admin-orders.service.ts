@@ -655,6 +655,7 @@ export class AdminOrdersService {
     data: {
       customerEmail?: string | null;
       customerFirstName?: string | null;
+      customerMiddleName?: string | null;
       customerLastName?: string | null;
     },
     managerId?: string,
@@ -666,6 +667,9 @@ export class AdminOrdersService {
     }
     if (data.customerFirstName !== undefined) {
       updateData.customerFirstName = data.customerFirstName?.trim() || null;
+    }
+    if (data.customerMiddleName !== undefined) {
+      updateData.customerMiddleName = data.customerMiddleName?.trim() || null;
     }
     if (data.customerLastName !== undefined) {
       updateData.customerLastName = data.customerLastName?.trim() || null;

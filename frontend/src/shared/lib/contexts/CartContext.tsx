@@ -12,7 +12,9 @@ interface CartContextValue {
   isLoading: boolean;
   addServiceToCart: (
     categoryId: string,
-    items: { itemId: string; quantity: number }[]
+    payload:
+      | { items: { itemId: string; quantity: number }[] }
+      | { rooms: { name: string; items: { itemId: string; quantity: number }[] }[] }
   ) => Promise<void>;
   removeCartServiceItemById: (itemId: string) => Promise<void>;
   addToCart: (
@@ -161,9 +163,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 
   const addServiceToCart = useCallback(
-    async (categoryId: string, items: { itemId: string; quantity: number }[]) => {
+    async (
+      categoryId: string,
+      payload:
+        | { items: { itemId: string; quantity: number }[] }
+        | { rooms: { name: string; items: { itemId: string; quantity: number }[] }[] }
+    ) => {
       try {
-        await cartApi.addServiceToCart(categoryId, items);
+        await cartApi.addServiceToCart(categoryId, payload);
         await refreshCart();
       } catch (error) {
         if (error instanceof Error && error.message === 'Необходима авторизация') {

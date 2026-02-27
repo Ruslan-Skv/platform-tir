@@ -99,14 +99,19 @@ export default function AdminOrdersShippingPage() {
     {
       key: 'customer',
       title: 'Клиент',
-      render: (order: OrderWithDelivery) => (
-        <div className={styles.customerCell}>
-          <span className={styles.customerName}>
-            {order.user?.firstName} {order.user?.lastName}
-          </span>
-          <span className={styles.customerEmail}>{order.user?.email}</span>
-        </div>
-      ),
+      render: (order: OrderWithDelivery) => {
+        const isManagerCreated = Boolean(order.createdByManagerId);
+        const name = isManagerCreated
+          ? `${order.customerFirstName ?? ''} ${order.customerLastName ?? ''}`.trim()
+          : `${order.user?.firstName ?? ''} ${order.user?.lastName ?? ''}`.trim();
+        const email = isManagerCreated ? (order.customerEmail ?? '—') : (order.user?.email ?? '—');
+        return (
+          <div className={styles.customerCell}>
+            <span className={styles.customerName}>{name || '—'}</span>
+            <span className={styles.customerEmail}>{email}</span>
+          </div>
+        );
+      },
     },
     {
       key: 'address',

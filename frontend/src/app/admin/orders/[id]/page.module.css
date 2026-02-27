@@ -612,6 +612,30 @@
   margin-top: 0.125rem;
 }
 
+.serviceCategoryRow {
+  background: #f9fafb;
+}
+
+.serviceCategoryCell {
+  padding: 0.45rem 0.6rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.serviceRoomRow {
+  background: #f3f4f6;
+}
+
+.serviceRoomCell {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4b5563;
+  border-bottom: 1px solid #e5e7eb;
+}
+
 .address {
   margin: 0.15rem 0 0 0;
   font-size: 0.875rem;

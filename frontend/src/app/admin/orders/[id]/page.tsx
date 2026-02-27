@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -150,10 +150,20 @@ function buildOrderHistory(order: OrderDetail): OrderHistoryEvent[] {
     ? `${order.processedByManager.firstName ?? ''} ${order.processedByManager.lastName ?? ''}`.trim() ||
       order.processedByManager.email
     : 'Менеджер';
-  const customerName = `${order.customerFirstName ?? order.user?.firstName ?? ''} ${
-    order.customerLastName ?? order.user?.lastName ?? ''
-  }`.trim();
-  const customerLabel = customerName || order.customerEmail || order.user?.email || 'Покупатель';
+  const isManagerCreated = Boolean(order.createdByManagerId);
+  const customerName = isManagerCreated
+    ? `${order.customerFirstName ?? ''} ${order.customerMiddleName ?? ''} ${
+        order.customerLastName ?? ''
+      }`
+        .replace(/\s+/g, ' ')
+        .trim()
+    : `${order.customerFirstName ?? order.user?.firstName ?? ''} ${
+        order.customerLastName ?? order.user?.lastName ?? ''
+      }`.trim();
+  const customerLabel =
+    customerName ||
+    (isManagerCreated ? order.customerEmail : order.customerEmail || order.user?.email) ||
+    'Покупатель';
 
   if (order.orderEvents && order.orderEvents.length > 0) {
     const fromEvents: OrderHistoryEvent[] = order.orderEvents.map((e) => {
@@ -270,6 +280,7 @@ export default function AdminOrderDetailPage() {
   const [deliverySaving, setDeliverySaving] = useState(false);
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerFirstName, setCustomerFirstName] = useState('');
+  const [customerMiddleName, setCustomerMiddleName] = useState('');
   const [customerLastName, setCustomerLastName] = useState('');
   const [customerSaving, setCustomerSaving] = useState(false);
   const [customerSaveSuccess, setCustomerSaveSuccess] = useState(false);
@@ -335,6 +346,8 @@ export default function AdminOrderDetailPage() {
 
   useEffect(() => {
     if (!order) return;
+    const managerCreated = Boolean(order.createdByManagerId);
+    const managerIsCustomer = managerCreated && order.user?.id === order.createdByManagerId;
     setDeliveryShippingCost(order.shippingCost != null ? String(order.shippingCost) : '');
     setDeliveryCarryCost(
       order.carryCost != null && order.carryCost !== '' ? String(order.carryCost) : ''
@@ -346,19 +359,26 @@ export default function AdminOrderDetailPage() {
         : ''
     );
     setCustomerEmail(
-      order.createdByManagerId
-        ? (order.customerEmail ?? '')
-        : (order.customerEmail ?? order.user?.email ?? '')
+      managerIsCustomer
+        ? ''
+        : managerCreated
+          ? (order.customerEmail ?? '')
+          : (order.customerEmail ?? order.user?.email ?? '')
     );
     setCustomerFirstName(
-      order.createdByManagerId
-        ? (order.customerFirstName ?? '')
-        : (order.customerFirstName ?? order.user?.firstName ?? '')
+      managerIsCustomer
+        ? ''
+        : managerCreated
+          ? (order.customerFirstName ?? '')
+          : (order.customerFirstName ?? order.user?.firstName ?? '')
     );
+    setCustomerMiddleName(managerIsCustomer ? '' : (order.customerMiddleName ?? ''));
     setCustomerLastName(
-      order.createdByManagerId
-        ? (order.customerLastName ?? '')
-        : (order.customerLastName ?? order.user?.lastName ?? '')
+      managerIsCustomer
+        ? ''
+        : managerCreated
+          ? (order.customerLastName ?? '')
+          : (order.customerLastName ?? order.user?.lastName ?? '')
     );
   }, [
     order?.id,
@@ -368,10 +388,13 @@ export default function AdminOrderDetailPage() {
     order?.plannedDeliveryDate,
     order?.customerEmail,
     order?.customerFirstName,
+    order?.customerMiddleName,
     order?.customerLastName,
     order?.user?.email,
     order?.user?.firstName,
     order?.user?.lastName,
+    order?.user?.id,
+    order?.createdByManagerId,
   ]);
 
   useEffect(() => {
@@ -498,6 +521,7 @@ export default function AdminOrderDetailPage() {
       const updated = await updateAdminOrderCustomer(id, {
         customerEmail: customerEmail.trim() || null,
         customerFirstName: customerFirstName.trim() || null,
+        customerMiddleName: customerMiddleName.trim() || null,
         customerLastName: customerLastName.trim() || null,
       });
       setOrder(normalizeOrder(updated));
@@ -538,6 +562,7 @@ export default function AdminOrderDetailPage() {
           id: string;
           name: string;
           categoryName: string;
+          roomName?: string | null;
           unit: string;
           quantity: number;
           price: string | number;
@@ -545,6 +570,36 @@ export default function AdminOrderDetailPage() {
         }>;
       }
     ).orderServiceItems ?? [];
+  const orderServiceGroups = (() => {
+    const groups: Array<{
+      categoryName: string;
+      rooms: Array<{ roomName: string; items: typeof orderServiceItems }>;
+    }> = [];
+    const byCategory = new Map<string, Map<string, typeof orderServiceItems>>();
+    for (const svc of orderServiceItems) {
+      const categoryKey = svc.categoryName || 'Услуги';
+      const roomKey = svc.roomName || 'Помещение';
+      let roomsMap = byCategory.get(categoryKey);
+      if (!roomsMap) {
+        roomsMap = new Map<string, typeof orderServiceItems>();
+        byCategory.set(categoryKey, roomsMap);
+      }
+      const list = roomsMap.get(roomKey);
+      if (list) {
+        list.push(svc);
+      } else {
+        roomsMap.set(roomKey, [svc]);
+      }
+    }
+    byCategory.forEach((roomsMap, categoryName) => {
+      const rooms: Array<{ roomName: string; items: typeof orderServiceItems }> = [];
+      roomsMap.forEach((items, roomName) => {
+        rooms.push({ roomName, items });
+      });
+      groups.push({ categoryName, rooms });
+    });
+    return groups;
+  })();
   const formatPrice = (value: string | number) =>
     Number(value).toLocaleString('ru-RU', {
       style: 'currency',
@@ -797,8 +852,8 @@ export default function AdminOrderDetailPage() {
             <label className={styles.inputLabel}>Фамилия</label>
             <input
               type="text"
-              value={customerFirstName}
-              onChange={(e) => setCustomerFirstName(e.target.value)}
+              value={customerLastName}
+              onChange={(e) => setCustomerLastName(e.target.value)}
               className={styles.input}
             />
           </div>
@@ -806,8 +861,8 @@ export default function AdminOrderDetailPage() {
             <label className={styles.inputLabel}>Имя</label>
             <input
               type="text"
-              value={customerLastName}
-              onChange={(e) => setCustomerLastName(e.target.value)}
+              value={customerFirstName}
+              onChange={(e) => setCustomerFirstName(e.target.value)}
               className={styles.input}
             />
           </div>
@@ -815,12 +870,12 @@ export default function AdminOrderDetailPage() {
             <label className={styles.inputLabel}>Отчество</label>
             <input
               type="text"
-              value={customerLastName}
-              onChange={(e) => setCustomerLastName(e.target.value)}
+              value={customerMiddleName}
+              onChange={(e) => setCustomerMiddleName(e.target.value)}
               className={styles.input}
             />
           </div>
-          {order.user?.phone && (
+          {!order.createdByManagerId && order.user?.phone && (
             <div className={styles.clientField}>
               <span className={styles.inputLabel}>Телефон</span>
               <span className={styles.clientPhone}>{order.user.phone}</span>
@@ -897,21 +952,37 @@ export default function AdminOrderDetailPage() {
                 </tr>
               );
             })}
-            {orderServiceItems.map((svc) => (
-              <tr key={svc.id} className={styles.tr}>
-                <td className={`${styles.td} ${styles.itemRow}`}>
-                  <span className={styles.productName}>{svc.name}</span>
-                  <span className={styles.itemMeta}>
-                    {svc.categoryName} · {svc.unit}
-                  </span>
-                </td>
-                <td className={styles.td}>—</td>
-                <td className={styles.td}>
-                  {svc.quantity} {svc.unit}
-                </td>
-                <td className={styles.td}>{formatPrice(svc.price)}</td>
-                <td className={styles.td}>{formatPrice(svc.amount)}</td>
-              </tr>
+            {orderServiceGroups.map((group) => (
+              <Fragment key={group.categoryName}>
+                <tr className={styles.serviceCategoryRow}>
+                  <td className={styles.serviceCategoryCell} colSpan={5}>
+                    {group.categoryName}
+                  </td>
+                </tr>
+                {group.rooms.map((room) => (
+                  <Fragment key={`${group.categoryName}-${room.roomName}`}>
+                    <tr className={styles.serviceRoomRow}>
+                      <td className={styles.serviceRoomCell} colSpan={5}>
+                        {room.roomName}
+                      </td>
+                    </tr>
+                    {room.items.map((svc) => (
+                      <tr key={svc.id} className={styles.tr}>
+                        <td className={`${styles.td} ${styles.itemRow}`}>
+                          <span className={styles.productName}>{svc.name}</span>
+                          <span className={styles.itemMeta}>{svc.unit}</span>
+                        </td>
+                        <td className={styles.td}>—</td>
+                        <td className={styles.td}>
+                          {svc.quantity} {svc.unit}
+                        </td>
+                        <td className={styles.td}>{formatPrice(svc.price)}</td>
+                        <td className={styles.td}>{formatPrice(svc.amount)}</td>
+                      </tr>
+                    ))}
+                  </Fragment>
+                ))}
+              </Fragment>
             ))}
           </tbody>
         </table>

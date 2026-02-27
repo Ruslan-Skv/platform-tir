@@ -171,17 +171,24 @@ export function OrdersPage() {
     {
       key: 'customer',
       title: 'Клиент',
-      render: (order: Order) => (
-        <div className={styles.customerCell}>
-          <span className={styles.customerName}>
-            {order.customerFirstName ?? (order as AdminOrderSummary).user?.firstName ?? ''}{' '}
-            {order.customerLastName ?? (order as AdminOrderSummary).user?.lastName ?? ''}
-          </span>
-          <span className={styles.customerEmail}>
-            {order.customerEmail ?? (order as AdminOrderSummary).user?.email ?? '—'}
-          </span>
-        </div>
-      ),
+      render: (order: Order) => {
+        const productOrder = order as AdminOrderSummary;
+        const isManagerCreated = Boolean(productOrder.createdByManagerId);
+        const name = isManagerCreated
+          ? `${order.customerFirstName ?? ''} ${order.customerLastName ?? ''}`.trim()
+          : `${order.customerFirstName ?? productOrder.user?.firstName ?? ''} ${
+              order.customerLastName ?? productOrder.user?.lastName ?? ''
+            }`.trim();
+        const email = isManagerCreated
+          ? (order.customerEmail ?? '—')
+          : (order.customerEmail ?? productOrder.user?.email ?? '—');
+        return (
+          <div className={styles.customerCell}>
+            <span className={styles.customerName}>{name || '—'}</span>
+            <span className={styles.customerEmail}>{email}</span>
+          </div>
+        );
+      },
     },
     {
       key: 'status',
