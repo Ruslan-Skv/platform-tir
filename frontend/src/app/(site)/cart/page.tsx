@@ -2,7 +2,7 @@
 
 import { TrashIcon, TruckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -30,11 +30,33 @@ import { useCart } from '@/shared/lib/hooks';
 
 import styles from './page.module.css';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const RESTORED_SERVICE_ORDERS_KEY = 'restored_service_order_ids';
+
+const getRestoredServiceOrderIds = (): Set<string> => {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = window.sessionStorage.getItem(RESTORED_SERVICE_ORDERS_KEY);
+    const parsed = raw ? (JSON.parse(raw) as string[]) : [];
+    return new Set(parsed);
+  } catch {
+    return new Set();
+  }
+};
+
+const markServiceOrderRestored = (orderId: string) => {
+  if (typeof window === 'undefined') return;
+  const current = getRestoredServiceOrderIds();
+  current.add(orderId);
+  window.sessionStorage.setItem(RESTORED_SERVICE_ORDERS_KEY, JSON.stringify([...current]));
+};
+
 export default function CartPage() {
   const {
     cart,
     cartServiceItems,
     count,
+    addServiceToCart,
     refreshCart,
     updateQuantity,
     updateCartItemQuantityById,
@@ -89,6 +111,7 @@ export default function CartPage() {
   const [showAddToApprovedModal, setShowAddToApprovedModal] = useState(false);
   /** Показать модалку объединения с заказом на проверке. */
   const [showAddToPendingReviewModal, setShowAddToPendingReviewModal] = useState(false);
+  const restoringServiceOrdersRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 1000);
@@ -140,6 +163,73 @@ export default function CartPage() {
     };
     loadOrders();
   }, [cart.length]);
+
+  // Восстанавливаем услуги в корзину после отмены заказа админом/менеджером.
+  useEffect(() => {
+    if (!userOrders?.length) return;
+    const cancelledOrders = userOrders.filter(
+      (order) => order.status === 'CANCELLED' && (order.orderServiceItems?.length ?? 0) > 0
+    );
+    if (cancelledOrders.length === 0) return;
+    const restoredIds = getRestoredServiceOrderIds();
+
+    const restoreOrderServices = async (order: UserOrder) => {
+      if (restoredIds.has(order.id) || restoringServiceOrdersRef.current.has(order.id)) return;
+      restoringServiceOrdersRef.current.add(order.id);
+      try {
+        const byCategory = new Map<
+          string,
+          { categoryName: string; rooms: Map<string, Map<string, number>> }
+        >();
+        for (const item of order.orderServiceItems ?? []) {
+          const slug = item.serviceCatalogItem?.category?.slug;
+          if (!slug) continue;
+          const categoryName = item.categoryName || 'Услуги';
+          const roomName = item.roomName || 'Помещение';
+          const category = byCategory.get(slug) ?? {
+            categoryName,
+            rooms: new Map<string, Map<string, number>>(),
+          };
+          const room = category.rooms.get(roomName) ?? new Map<string, number>();
+          const currentQty = room.get(item.serviceCatalogItemId) ?? 0;
+          room.set(item.serviceCatalogItemId, currentQty + item.quantity);
+          category.rooms.set(roomName, room);
+          byCategory.set(slug, category);
+        }
+
+        if (byCategory.size === 0) return;
+
+        for (const [slug, category] of byCategory.entries()) {
+          const alreadyInCart = cartServiceItems.some(
+            (cartItem) =>
+              cartItem.category?.slug === slug || cartItem.category?.name === category.categoryName
+          );
+          if (alreadyInCart) continue;
+          const res = await fetch(
+            `${API_URL}/service-catalog/categories/${encodeURIComponent(slug)}`
+          );
+          if (!res.ok) continue;
+          const data = (await res.json()) as { id: string };
+          const rooms = Array.from(category.rooms.entries()).map(([name, itemsMap]) => ({
+            name,
+            items: Array.from(itemsMap.entries()).map(([itemId, quantity]) => ({
+              itemId,
+              quantity,
+            })),
+          }));
+          await addServiceToCart(data.id, { rooms });
+        }
+
+        markServiceOrderRestored(order.id);
+      } finally {
+        restoringServiceOrdersRef.current.delete(order.id);
+      }
+    };
+
+    cancelledOrders.forEach((order) => {
+      void restoreOrderServices(order);
+    });
+  }, [userOrders, cartServiceItems, addServiceToCart]);
 
   const sortedOrders = useMemo(() => {
     if (!userOrders?.length) return [];
@@ -290,6 +380,27 @@ export default function CartPage() {
   /** ID позиций для секции 3: в проверенном заказе. */
   const section3ItemIds = cartItemIdsInApprovedOrder;
 
+  const getDetachedCategoriesForOrder = (orderId?: string | null) => {
+    if (!orderId || typeof window === 'undefined') return new Set<string>();
+    try {
+      const raw = window.sessionStorage.getItem('detached_service_categories');
+      const entries: Array<{
+        orderId: string;
+        categorySlug?: string;
+        categoryName?: string;
+      }> = raw ? JSON.parse(raw) : [];
+      const filtered = entries.filter((e) => e.orderId === orderId);
+      const keys = new Set<string>();
+      for (const entry of filtered) {
+        if (entry.categorySlug) keys.add(entry.categorySlug);
+        if (entry.categoryName) keys.add(entry.categoryName);
+      }
+      return keys;
+    } catch {
+      return new Set<string>();
+    }
+  };
+
   /** Группировка услуг заказа по категориям и помещениям для отображения карточек. */
   type OrderServiceGroup = {
     categoryName: string;
@@ -307,8 +418,12 @@ export default function CartPage() {
     }>;
     total: number;
   };
-  const groupOrderServiceItems = (items: UserOrder['orderServiceItems']): OrderServiceGroup[] => {
+  const groupOrderServiceItems = (
+    items: UserOrder['orderServiceItems'],
+    orderId?: string | null
+  ): OrderServiceGroup[] => {
     if (!items?.length) return [];
+    const detachedCategories = getDetachedCategoriesForOrder(orderId);
     const byCategory = new Map<
       string,
       { slug: string; rooms: Map<string, OrderServiceGroup['rooms'][number]['items']> }
@@ -316,6 +431,7 @@ export default function CartPage() {
     for (const o of items) {
       const cat = o.categoryName || 'Услуги';
       const slug = o.serviceCatalogItem?.category?.slug ?? '';
+      if (detachedCategories.has(slug) || detachedCategories.has(cat)) continue;
       const roomName = o.roomName || 'Помещение';
       const amount = typeof o.amount === 'string' ? parseFloat(o.amount) : Number(o.amount);
       const line = {
@@ -405,8 +521,11 @@ export default function CartPage() {
       }
     }
     const reviewOrder = pendingReviewOrder ?? returnedForCorrectionOrder ?? null;
-    const s2ServiceGroups = groupOrderServiceItems(reviewOrder?.orderServiceItems);
-    const s3ServiceGroups = groupOrderServiceItems(approvedOrder?.orderServiceItems);
+    const s2ServiceGroups = groupOrderServiceItems(reviewOrder?.orderServiceItems, reviewOrder?.id);
+    const s3ServiceGroups = groupOrderServiceItems(
+      approvedOrder?.orderServiceItems,
+      approvedOrder?.id
+    );
     const s1ServiceTotal = cartServiceItems.reduce(
       (s, i) => s + (i.total != null && i.total > 0 ? i.total : 0),
       0
@@ -560,15 +679,17 @@ export default function CartPage() {
     ? section2ItemIds.size > 0 || hasServiceItems
     : section1ItemIds.size > 0 || hasServiceItems;
 
+  const hasNewServiceItems = cartServiceItems.length > 0;
+  const hasNewItemsForReview = section1ItemIds.size > 0 || hasNewServiceItems;
   const needsAddToApprovedConfirm =
     !!approvedOrder &&
     approvalRemainingMs > 0 &&
-    section1ItemIds.size > 0 &&
+    hasNewItemsForReview &&
     !returnedForCorrectionOrder;
 
   const needsAddToPendingReviewConfirm =
     !!pendingReviewOrder &&
-    section1ItemIds.size > 0 &&
+    hasNewItemsForReview &&
     !returnedForCorrectionOrder &&
     !needsAddToApprovedConfirm;
 
@@ -1397,6 +1518,10 @@ export default function CartPage() {
                         })}
                       {(section.id === 'section2' || section.id === 'section3') &&
                         section.orderServiceGroups.map((group, idx) => {
+                          const orderIdForServices =
+                            section.id === 'section2'
+                              ? (pendingReviewOrder ?? returnedForCorrectionOrder)?.id
+                              : approvedOrder?.id;
                           const roomsForPreset = group.rooms.map((room) => ({
                             name: room.roomName,
                             items: room.items.map((i) => ({
@@ -1404,12 +1529,16 @@ export default function CartPage() {
                               quantity: i.quantity,
                             })),
                           }));
+                          const queryParams = new URLSearchParams();
+                          if (roomsForPreset.length > 0) {
+                            queryParams.set('rooms', buildRoomsParam(roomsForPreset));
+                          }
+                          if (orderIdForServices) {
+                            queryParams.set('orderId', orderIdForServices);
+                          }
+                          const query = queryParams.toString();
                           const orderServiceHref = group.categorySlug
-                            ? `/catalog/services/${group.categorySlug}${
-                                roomsForPreset.length > 0
-                                  ? `?rooms=${encodeURIComponent(buildRoomsParam(roomsForPreset))}`
-                                  : ''
-                              }`
+                            ? `/catalog/services/${group.categorySlug}${query ? `?${query}` : ''}`
                             : '/catalog/services';
                           const orderServiceContent = (
                             <>
@@ -2166,8 +2295,8 @@ export default function CartPage() {
               Добавить товары к проверенному заказу?
             </h3>
             <p className={styles.confirmModalText}>
-              У вас уже есть проверенный заказ. При отправке новых товаров на проверку они будут
-              добавлены к вашему проверенному заказу, и заказ снова отправится на проверку
+              У вас уже есть проверенный заказ. При отправке новых товаров и услуг на проверку они
+              будут добавлены к вашему проверенному заказу, и заказ снова отправится на проверку
               менеджеру.
             </p>
             <p className={styles.confirmModalHint}>
@@ -2210,8 +2339,8 @@ export default function CartPage() {
               Обновить заказ на проверке?
             </h3>
             <p className={styles.confirmModalText}>
-              У вас уже есть заказ на проверке. При отправке новых товаров они добавятся к этому
-              заказу, и проверка запустится заново с обновлённым списком товаров.
+              У вас уже есть заказ на проверке. При отправке новых товаров и услуг они добавятся к
+              этому заказу, и проверка запустится заново с обновлённым списком товаров и услуг.
             </p>
             <p className={styles.confirmModalHint}>
               Менеджер увидит объединённый заказ и проверит его заново.

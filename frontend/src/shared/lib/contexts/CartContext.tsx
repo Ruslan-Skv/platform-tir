@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 
 import * as cartApi from '@/shared/api/cart';
 import type { CartItem, CartServiceItem } from '@/shared/api/cart';
+import { type UserOrder, getUserOrders } from '@/shared/api/user-orders';
 
 interface CartContextValue {
   cart: CartItem[];
@@ -42,8 +43,43 @@ const CartContext = createContext<CartContextValue | undefined>(undefined);
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartServiceItems, setCartServiceItems] = useState<CartServiceItem[]>([]);
+  const [serviceOrderCategoryKeys, setServiceOrderCategoryKeys] = useState<string[]>([]);
+  const [detachedServiceCategoryKeys, setDetachedServiceCategoryKeys] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const lastTokenRef = React.useRef<string | null>(null);
+
+  const getOrderServiceCategoryKeys = useCallback((orders: UserOrder[]): string[] => {
+    const activeStatuses = new Set(['PENDING_REVIEW', 'RETURNED_FOR_CORRECTION', 'APPROVED']);
+    const keys = new Set<string>();
+    for (const order of orders) {
+      if (!activeStatuses.has(order.status)) continue;
+      for (const item of order.orderServiceItems ?? []) {
+        const slug = item.serviceCatalogItem?.category?.slug;
+        const name = item.categoryName;
+        const key = slug ? `slug:${slug}` : name ? `name:${name}` : null;
+        if (key) keys.add(key);
+      }
+    }
+    return [...keys];
+  }, []);
+
+  const getDetachedServiceCategoryKeys = useCallback((): string[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = window.sessionStorage.getItem('detached_service_categories');
+      const entries: Array<{ categorySlug?: string; categoryName?: string }> = raw
+        ? JSON.parse(raw)
+        : [];
+      const keys = new Set<string>();
+      for (const entry of entries) {
+        if (entry.categorySlug) keys.add(`slug:${entry.categorySlug}`);
+        if (entry.categoryName) keys.add(`name:${entry.categoryName}`);
+      }
+      return [...keys];
+    } catch {
+      return [];
+    }
+  }, []);
 
   const getAuthToken = useCallback(() => {
     if (typeof window === 'undefined') return null;
@@ -53,19 +89,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const refreshCart = useCallback(async () => {
     try {
       setIsLoading(true);
-      const [items, serviceItems] = await Promise.all([
+      const [items, serviceItems, orders] = await Promise.all([
         cartApi.getCart(),
         cartApi.getCartServiceItems().catch(() => []),
+        getUserOrders().catch(() => []),
       ]);
       setCart(items);
       setCartServiceItems(serviceItems);
+      setServiceOrderCategoryKeys(getOrderServiceCategoryKeys(orders));
+      setDetachedServiceCategoryKeys(getDetachedServiceCategoryKeys());
     } catch (error) {
       setCart([]);
       setCartServiceItems([]);
+      setServiceOrderCategoryKeys([]);
+      setDetachedServiceCategoryKeys([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [getOrderServiceCategoryKeys, getDetachedServiceCategoryKeys]);
 
   // Счётчик: товары/комплектующие + каждая категория услуг (1 за категорию)
   const count = useMemo(() => {
@@ -73,8 +114,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (item.product || item.component) return sum + item.quantity;
       return sum;
     }, 0);
-    return Math.round(productCount) + cartServiceItems.length;
-  }, [cart, cartServiceItems]);
+    const serviceCategoryKeys = new Set<string>();
+    cartServiceItems.forEach((item) => {
+      const slug = item.category?.slug;
+      const id = item.serviceCatalogCategoryId || item.category?.id;
+      const name = item.category?.name;
+      const key = slug ? `slug:${slug}` : id ? `id:${id}` : name ? `name:${name}` : null;
+      if (key) serviceCategoryKeys.add(key);
+    });
+    serviceOrderCategoryKeys.forEach((key) => serviceCategoryKeys.add(key));
+    detachedServiceCategoryKeys.forEach((key) => serviceCategoryKeys.delete(key));
+    const serviceCategoryCount = serviceCategoryKeys.size;
+    return Math.round(productCount) + serviceCategoryCount;
+  }, [cart, cartServiceItems, serviceOrderCategoryKeys, detachedServiceCategoryKeys]);
 
   const refreshCount = useCallback(async () => {
     // Обновляем корзину, счетчик обновится автоматически
@@ -88,10 +140,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (!token) {
         setCart([]);
         lastTokenRef.current = null;
+        setServiceOrderCategoryKeys([]);
         return;
       }
       if (lastTokenRef.current && lastTokenRef.current !== token) {
         setCart([]);
+        setServiceOrderCategoryKeys([]);
       }
       lastTokenRef.current = token;
       await refreshCart();
@@ -116,6 +170,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, [getAuthToken, refreshCart]);
+
+  useEffect(() => {
+    const handleDetachedChange = () => {
+      setDetachedServiceCategoryKeys(getDetachedServiceCategoryKeys());
+    };
+    handleDetachedChange();
+    window.addEventListener('cart-service-detached', handleDetachedChange);
+    window.addEventListener('cart-service-restored', handleDetachedChange);
+    return () => {
+      window.removeEventListener('cart-service-detached', handleDetachedChange);
+      window.removeEventListener('cart-service-restored', handleDetachedChange);
+    };
+  }, [getDetachedServiceCategoryKeys]);
 
   const addToCart = useCallback(
     async (

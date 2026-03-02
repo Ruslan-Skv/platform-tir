@@ -1118,6 +1118,26 @@
   color: #e5e7eb;
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .serviceCategoryRow {
+  background: #111827;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .serviceCategoryCell {
+  background: #111827;
+  border-bottom-color: #374151;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .serviceRoomRow {
+  background: #0f172a;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .serviceRoomCell {
+  background: #0f172a;
+  border-bottom-color: #374151;
+  color: #cbd5f5;
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .itemMeta {
   color: #9ca3af;
 }

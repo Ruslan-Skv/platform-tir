@@ -688,9 +688,13 @@ export class OrdersService {
 
     const pendingReviewOrder = activeOrders.find((o) => o.status === 'PENDING_REVIEW');
 
-    // Добавить новые товары к заказу, который уже на проверке (addToPendingReview + cartItemIds).
+    // Добавить новые товары/услуги к заказу, который уже на проверке (addToPendingReview + cartItemIds/услуги).
     // Объединяем с существующими позициями по (productId, size, openingSide), чтобы не дублировать строки.
-    if (pendingReviewOrder && dto?.addToPendingReview === true && dto?.cartItemIds?.length) {
+    if (
+      pendingReviewOrder &&
+      dto?.addToPendingReview === true &&
+      (dto?.cartItemIds?.length || serviceLines.length > 0)
+    ) {
       const existingSubtotal = parseFloat(pendingReviewOrder.subtotal.toString());
       const existingShipping = parseFloat(pendingReviewOrder.shippingCost.toString());
       const existingCarry = pendingReviewOrder.carryCost
@@ -767,6 +771,17 @@ export class OrdersService {
       }
 
       if (serviceLines.length > 0) {
+        const serviceCategoriesToReplace = [
+          ...new Set(serviceLines.map((l) => l.categoryName).filter(Boolean)),
+        ];
+        if (serviceCategoriesToReplace.length > 0) {
+          await this.prisma.orderServiceItem.deleteMany({
+            where: {
+              orderId: pendingReviewOrder.id,
+              categoryName: { in: serviceCategoriesToReplace },
+            },
+          });
+        }
         await this.prisma.orderServiceItem.createMany({
           data: serviceLines.map((l) => ({
             orderId: pendingReviewOrder.id,
@@ -779,6 +794,12 @@ export class OrdersService {
             price: l.price,
             amount: l.amount,
           })),
+        });
+      }
+
+      if (dto?.cartItemIds?.length) {
+        await this.prisma.cartItem.deleteMany({
+          where: { id: { in: dto.cartItemIds }, userId },
         });
       }
 
@@ -799,12 +820,17 @@ export class OrdersService {
         where: { role: { in: adminRoles }, isActive: true },
         select: { id: true },
       });
+      const hasServiceLines = serviceLines.length > 0;
       await Promise.all([
         ...admins.map((a) =>
           this.usersService.createNotification(a.id, {
             type: 'new_order',
-            title: 'В заказ на проверке добавлены новые товары',
-            message: `В заказ ${pendingReviewOrder.orderNumber} покупатель добавил новые товары. Заказ обновлён и снова ожидает проверки.`,
+            title: hasServiceLines
+              ? 'В заказ на проверке добавлены товары/услуги'
+              : 'В заказ на проверке добавлены новые товары',
+            message: hasServiceLines
+              ? `В заказ ${pendingReviewOrder.orderNumber} покупатель добавил новые товары/услуги. Заказ обновлён и снова ожидает проверки.`
+              : `В заказ ${pendingReviewOrder.orderNumber} покупатель добавил новые товары. Заказ обновлён и снова ожидает проверки.`,
           }),
         ),
         this.usersService.createNotification(userId, {
@@ -856,9 +882,11 @@ export class OrdersService {
     // Добавить новые товары к проверенному заказу (addToApproved или cartItemIds).
     // Объединяем с существующими позициями по (productId, size, openingSide).
     const wantsAddToApproved =
-      dto?.addToApproved === true || (dto?.cartItemIds && dto.cartItemIds.length > 0);
+      dto?.addToApproved === true ||
+      (dto?.cartItemIds && dto.cartItemIds.length > 0) ||
+      serviceLines.length > 0;
     if (approvedValid && approvedNotExpired && wantsAddToApproved) {
-      if (!dto?.cartItemIds?.length) {
+      if (!dto?.cartItemIds?.length && serviceLines.length === 0) {
         throw new BadRequestException(
           'Для добавления к проверенному заказу необходимо указать позиции корзины (cartItemIds).',
         );
@@ -938,6 +966,17 @@ export class OrdersService {
       }
 
       if (serviceLines.length > 0) {
+        const serviceCategoriesToReplace = [
+          ...new Set(serviceLines.map((l) => l.categoryName).filter(Boolean)),
+        ];
+        if (serviceCategoriesToReplace.length > 0) {
+          await this.prisma.orderServiceItem.deleteMany({
+            where: {
+              orderId: approvedOrder.id,
+              categoryName: { in: serviceCategoriesToReplace },
+            },
+          });
+        }
         await this.prisma.orderServiceItem.createMany({
           data: serviceLines.map((l) => ({
             orderId: approvedOrder.id,

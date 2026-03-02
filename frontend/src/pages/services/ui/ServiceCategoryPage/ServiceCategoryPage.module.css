@@ -1,3 +1,54 @@
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addCalcButton {
+  background: #111827;
+  border-color: #374151;
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addCalcButton:hover {
+  background: #1f2937;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcCard {
+  background: #0f172a;
+  border-color: #1f2937;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcCardActive {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.15);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcCardHeader {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcNameInput {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcNameInput::placeholder {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcSummaryTotal {
+  color: #6ee7b7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcCollapseButton {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcRemoveButton {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcRemoveButton:hover {
+  color: #f87171;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calcLoading {
+  color: #9ca3af;
+}
 .container {
   max-width: 1100px;
   margin: 0 auto;
@@ -189,7 +240,7 @@
 
 .calcCardHeader {
   display: grid;
-  grid-template-columns: 1fr auto auto auto;
+  grid-template-columns: 1fr 88px auto auto;
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 0.75rem 0.5rem;
@@ -214,6 +265,8 @@
   font-size: 0.8125rem;
   color: #059669;
   font-weight: 600;
+  text-align: right;
+  min-height: 1rem;
 }
 
 .calcCollapseButton {
@@ -249,6 +302,7 @@
   font-size: 0.8125rem;
   color: #6b7280;
   margin-top: 0.5rem;
+  min-height: 1rem;
 }
 
 .calcCardBody {
@@ -715,5 +769,48 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cartHint {
+  color: #9ca3af;
+}
+
+/* Усиленные тёмные стили для карточек помещений (в конце файла, чтобы перекрывать базу) */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calculator .calcCard {
+  background: #0f172a;
+  border-color: #1f2937;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calculator .calcCardActive {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calculator .calcCardHeader {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calculator .calcNameInput {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calculator .calcNameInput::placeholder {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calculator .calcSummaryTotal {
+  color: #6ee7b7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calculator .calcCollapseButton {
+  color: #cbd5f5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calculator .calcRemoveButton {
+  color: #cbd5f5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calculator .calcRemoveButton:hover {
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calculator .calcLoading {
   color: #9ca3af;
 }

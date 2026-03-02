@@ -1,3 +1,82 @@
+:where(html[data-theme='dark'], [data-app-theme='dark']) .page {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .count {
+  background: #1f2937;
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .serviceOrdersLink {
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .serviceOrdersLink:hover {
+  color: #bfdbfe;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dateInput {
+  background: #111827;
+  border-color: #374151;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput::placeholder {
+  color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .bulkActions {
+  background: #1f2937;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .bulkActions span {
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .bulkButton {
+  background: #111827;
+  border-color: #374151;
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .bulkButton:hover {
+  background: #1f2937;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .orderNumber {
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerName {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerEmail {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .totalAmount {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemsCount {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .viewButton {
+  background: #1f2937;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .viewButton:hover {
+  background: #374151;
+}
 .page {
   max-width: 1400px;
   margin: 0 auto;

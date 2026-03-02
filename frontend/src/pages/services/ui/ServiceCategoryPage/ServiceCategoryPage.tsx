@@ -15,6 +15,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
+import { cancelOrderByCustomer, getUserOrder } from '@/shared/api/user-orders';
+import { useApprovedOrderGuard } from '@/shared/lib/contexts/ApprovedOrderGuardContext';
 import { useCart } from '@/shared/lib/hooks';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal/ConfirmModal';
 
@@ -117,10 +119,85 @@ const decodeRoomsParam = (value: string | null): RoomPreset[] => {
   }
 };
 
+const getCancelledOrderIds = (): string[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.sessionStorage.getItem('cancelled_service_order_ids');
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+};
+
+const addCancelledOrderId = (orderId: string) => {
+  if (typeof window === 'undefined') return;
+  const current = new Set(getCancelledOrderIds());
+  current.add(orderId);
+  window.sessionStorage.setItem('cancelled_service_order_ids', JSON.stringify([...current]));
+};
+
+const removeCancelledOrderId = (orderId: string) => {
+  if (typeof window === 'undefined') return;
+  const current = new Set(getCancelledOrderIds());
+  current.delete(orderId);
+  window.sessionStorage.setItem('cancelled_service_order_ids', JSON.stringify([...current]));
+};
+
+const getDetachedServiceCategories = (): Array<{
+  orderId: string;
+  categorySlug?: string;
+  categoryName?: string;
+}> => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.sessionStorage.getItem('detached_service_categories');
+    return raw
+      ? (JSON.parse(raw) as Array<{
+          orderId: string;
+          categorySlug?: string;
+          categoryName?: string;
+        }>)
+      : [];
+  } catch {
+    return [];
+  }
+};
+
+const addDetachedServiceCategory = (
+  orderId: string,
+  categorySlug: string,
+  categoryName?: string
+) => {
+  if (typeof window === 'undefined') return;
+  const current = getDetachedServiceCategories();
+  current.push({ orderId, categorySlug, categoryName });
+  window.sessionStorage.setItem('detached_service_categories', JSON.stringify(current));
+  window.dispatchEvent(new Event('cart-service-detached'));
+};
+
+const removeDetachedServiceCategory = (
+  orderId: string,
+  categorySlug: string,
+  categoryName?: string
+) => {
+  if (typeof window === 'undefined') return;
+  const current = getDetachedServiceCategories().filter(
+    (entry) =>
+      !(
+        entry.orderId === orderId &&
+        (entry.categorySlug === categorySlug || entry.categoryName === categoryName)
+      )
+  );
+  window.sessionStorage.setItem('detached_service_categories', JSON.stringify(current));
+  window.dispatchEvent(new Event('cart-service-restored'));
+};
+
 export function ServiceCategoryPage({ slug }: { slug: string }) {
   const searchParams = useSearchParams();
   const roomsParam = searchParams.get('rooms');
+  const orderIdParam = searchParams.get('orderId');
   const { addServiceToCart, refreshCart, cartServiceItems, removeCartServiceItemById } = useCart();
+  const guard = useApprovedOrderGuard();
   const [data, setData] = useState<CategoryData | null>(null);
   const [loading, setLoading] = useState(true);
   const createCalcId = () => `calc-${Math.random().toString(36).slice(2, 10)}`;
@@ -139,13 +216,65 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
   const [addToCartError, setAddToCartError] = useState<string | null>(null);
   const [detachedFromCart, setDetachedFromCart] = useState(false);
   const [lastAddedTotal, setLastAddedTotal] = useState<number | null>(null);
+  const [presetInCart, setPresetInCart] = useState(false);
   const [detachConfirmOpen, setDetachConfirmOpen] = useState(false);
   const detachResolverRef = useRef<((value: boolean) => void) | null>(null);
+  const [pendingReviewConfirmOpen, setPendingReviewConfirmOpen] = useState(false);
+  const pendingReviewResolverRef = useRef<((value: boolean) => void) | null>(null);
+  const [orderStatus, setOrderStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!orderIdParam) {
+      setOrderStatus(null);
+      return;
+    }
+    getUserOrder(orderIdParam)
+      .then((order) => {
+        if (!cancelled) setOrderStatus(order.status ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setOrderStatus(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [orderIdParam]);
 
   useEffect(() => {
     setDetachedFromCart(false);
     setLastAddedTotal(null);
+    setPresetInCart(false);
   }, [slug, roomsParam]);
+
+  useEffect(() => {
+    if (!roomsParam || !data || detachedFromCart) return;
+    if (orderIdParam && getCancelledOrderIds().includes(orderIdParam)) {
+      setPresetInCart(false);
+      return;
+    }
+    setPresetInCart(true);
+    const cartItem = cartServiceItems.find(
+      (item) => item.serviceCatalogCategoryId === data.id || item.category?.id === data.id
+    );
+    if (cartItem) {
+      setLastAddedTotal(cartItem.total != null ? Number(cartItem.total) : null);
+    }
+  }, [roomsParam, data, cartServiceItems, detachedFromCart, orderIdParam]);
+
+  useEffect(() => {
+    if (!roomsParam || !data) return;
+    const hasCartItem = cartServiceItems.some(
+      (item) => item.serviceCatalogCategoryId === data.id || item.category?.id === data.id
+    );
+    if (hasCartItem || !presetInCart) return;
+    const total = calculations.reduce(
+      (sum, calc) =>
+        sum + calc.lines.reduce((roomSum, line) => roomSum + line.price * line.quantity, 0),
+      0
+    );
+    if (!Number.isNaN(total)) setLastAddedTotal(total);
+  }, [roomsParam, data, cartServiceItems, calculations, presetInCart]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -252,16 +381,48 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
     const cartItem = cartServiceItems.find(
       (item) => item.serviceCatalogCategoryId === data.id || item.category?.id === data.id
     );
-    if (!cartItem) return true;
-    const ok = await new Promise<boolean>((resolve) => {
-      detachResolverRef.current = resolve;
-      setDetachConfirmOpen(true);
-    });
-    if (!ok) return false;
+    if (!cartItem && !presetInCart) return true;
+    const isApprovedOrderEdit = Boolean(
+      orderIdParam && guard.approvedOrder && guard.approvedOrder.id === orderIdParam
+    );
+    const isPendingReviewEdit = Boolean(orderIdParam && orderStatus === 'PENDING_REVIEW');
+    let skipDetachConfirm = false;
+    const guardOk = await guard.confirmBeforeCartChange(async () => {}, isApprovedOrderEdit);
+    if (!guardOk && isApprovedOrderEdit) return false;
+    if (isPendingReviewEdit) {
+      const pendingOk = await new Promise<boolean>((resolve) => {
+        pendingReviewResolverRef.current = resolve;
+        setPendingReviewConfirmOpen(true);
+      });
+      if (!pendingOk) return false;
+      skipDetachConfirm = true;
+    }
+    if (isApprovedOrderEdit) {
+      skipDetachConfirm = true;
+    }
+    if (!skipDetachConfirm) {
+      const detachOk = await new Promise<boolean>((resolve) => {
+        detachResolverRef.current = resolve;
+        setDetachConfirmOpen(true);
+      });
+      if (!detachOk) return false;
+    }
     try {
-      await removeCartServiceItemById(cartItem.id);
-      await refreshCart();
+      if (orderIdParam && !getCancelledOrderIds().includes(orderIdParam)) {
+        if (!isApprovedOrderEdit) {
+          await cancelOrderByCustomer(orderIdParam);
+        }
+        addCancelledOrderId(orderIdParam);
+      }
+      if (cartItem) {
+        await removeCartServiceItemById(cartItem.id);
+        await refreshCart();
+      }
+      if (orderIdParam) {
+        if (data?.slug) addDetachedServiceCategory(orderIdParam, data.slug, data.name);
+      }
       setDetachedFromCart(true);
+      setPresetInCart(false);
       setLastAddedTotal(null);
       return true;
     } catch (err) {
@@ -452,9 +613,10 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
   const hasAnyCalcLines = calculations.some((calc) => calc.lines.length > 0);
   const isInCart =
     !!data &&
-    cartServiceItems.some(
-      (item) => item.serviceCatalogCategoryId === data.id || item.category?.id === data.id
-    );
+    (presetInCart ||
+      cartServiceItems.some(
+        (item) => item.serviceCatalogCategoryId === data.id || item.category?.id === data.id
+      ));
 
   const handleAddToCart = async () => {
     if (!data) return;
@@ -480,6 +642,11 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
       await refreshCart();
       setLastAddedTotal(total);
       setDetachedFromCart(false);
+      setPresetInCart(true);
+      if (orderIdParam) {
+        removeCancelledOrderId(orderIdParam);
+        if (data?.slug) removeDetachedServiceCategory(orderIdParam, data.slug, data.name);
+      }
     } catch (err) {
       setAddToCartError(err instanceof Error ? err.message : 'Ошибка добавления в корзину');
     } finally {
@@ -590,19 +757,17 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
                 <div
                   key={calc.id}
                   className={`${styles.calcCard} ${calc.id === activeCalcId ? styles.calcCardActive : ''}`}
+                  onClick={() => setActiveCalcId(calc.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setActiveCalcId(calc.id);
+                    }
+                  }}
                 >
-                  <div
-                    className={styles.calcCardHeader}
-                    onClick={() => setActiveCalcId(calc.id)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setActiveCalcId(calc.id);
-                      }
-                    }}
-                  >
+                  <div className={styles.calcCardHeader}>
                     <input
                       value={calc.name}
                       onChange={(e) => void updateCalcName(calc.id, e.target.value)}
@@ -610,11 +775,9 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
                       className={styles.calcNameInput}
                       placeholder="Название помещения"
                     />
-                    {calc.result && (
-                      <span className={styles.calcSummaryTotal}>
-                        {formatPrice(calc.result.total)}
-                      </span>
-                    )}
+                    <span className={styles.calcSummaryTotal}>
+                      {calc.loading ? '…' : calc.result ? formatPrice(calc.result.total) : '—'}
+                    </span>
                     <button
                       type="button"
                       className={styles.calcCollapseButton}
@@ -686,7 +849,9 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
                               </li>
                             ))}
                           </ul>
-                          {calc.loading && <div className={styles.calcLoading}>Расчёт...</div>}
+                          <div className={styles.calcLoading}>
+                            {calc.loading ? 'Расчёт...' : '\u00A0'}
+                          </div>
                         </>
                       )}
                     </div>
@@ -741,6 +906,23 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
         confirmText="Удалить и продолжить"
         cancelText="Отмена"
         variant="danger"
+      />
+      <ConfirmModal
+        isOpen={pendingReviewConfirmOpen}
+        onClose={() => {
+          setPendingReviewConfirmOpen(false);
+          pendingReviewResolverRef.current?.(false);
+          pendingReviewResolverRef.current = null;
+        }}
+        onConfirm={() => {
+          setPendingReviewConfirmOpen(false);
+          pendingReviewResolverRef.current?.(true);
+          pendingReviewResolverRef.current = null;
+        }}
+        title="Обновить заказ на проверке?"
+        message="У вас уже есть заказ на проверке. Завершите оформление заказа. При изменении состава заказа производится полное переоформление заказа. При этом все незавершённые заказы будут отменены! Продолжить?"
+        confirmText="Да"
+        cancelText="Нет"
       />
     </div>
   );
