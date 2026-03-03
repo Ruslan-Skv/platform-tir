@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../database/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -18,9 +19,7 @@ import type { CreateServiceOrderDto } from './dto/create-service-order.dto';
 import { OrderMailService } from './order-mail.service';
 import { Prisma } from '@prisma/client';
 
-/** Время действия статуса «Заказ проверен» (минуты). После истечения заказ возвращается в «На проверке». */
-const APPROVAL_VALID_MINUTES = 60;
-const APPROVAL_VALID_MS = APPROVAL_VALID_MINUTES * 60 * 1000;
+const DEFAULT_APPROVAL_VALID_MINUTES = 60;
 
 @Injectable()
 export class OrdersService {
@@ -29,6 +28,7 @@ export class OrdersService {
     private cartService: CartService,
     private usersService: UsersService,
     private orderMailService: OrderMailService,
+    private configService: ConfigService,
   ) {}
 
   async create(userId: string, createOrderDto: CreateOrderDto) {
@@ -97,15 +97,20 @@ export class OrdersService {
   async getDeliverySettlements(): Promise<{
     settlements: Array<{ name: string; price: number }>;
     deliveryPaymentMode: 'WITH_ORDER' | 'ON_SITE';
+    approvalValidMinutes: number;
   }> {
     const config = await this.getDeliveryConfig();
     const mode = config.deliveryPaymentMode === 'ON_SITE' ? 'ON_SITE' : 'WITH_ORDER';
+    const approvalValidMinutes =
+      (config as { approvalValidMinutes?: number }).approvalValidMinutes ??
+      DEFAULT_APPROVAL_VALID_MINUTES;
     return {
       settlements: (config.settlements ?? []).map((s) => ({
         name: s.name,
         price: Number(s.price),
       })),
       deliveryPaymentMode: mode,
+      approvalValidMinutes,
     };
   }
 
@@ -135,6 +140,7 @@ export class OrdersService {
           moversPriceOutside: 400,
           moversKgPerPerson: 50,
           moversVolumePerPerson: 0.5,
+          approvalValidMinutes: DEFAULT_APPROVAL_VALID_MINUTES,
         },
         include: { settlements: { orderBy: { order: 'asc' } } },
       });
@@ -682,9 +688,14 @@ export class OrdersService {
         approvedAt: { not: null },
       },
     });
+    const approvalValidMs =
+      ((config as { approvalValidMinutes?: number }).approvalValidMinutes ??
+        DEFAULT_APPROVAL_VALID_MINUTES) *
+      60 *
+      1000;
     const approvedValid =
       approvedNotExpired?.approvedAt &&
-      Date.now() - new Date(approvedNotExpired.approvedAt).getTime() < APPROVAL_VALID_MS;
+      Date.now() - new Date(approvedNotExpired.approvedAt).getTime() < approvalValidMs;
 
     const pendingReviewOrder = activeOrders.find((o) => o.status === 'PENDING_REVIEW');
 
@@ -1525,6 +1536,7 @@ export class OrdersService {
         createdByManagerId: managerId,
         processedByManagerId: managerId,
         customerEmail,
+        customerPhone: dto.customerPhone?.trim() || null,
         customerFirstName: dto.customerFirstName?.trim() || null,
         customerMiddleName: dto.customerMiddleName?.trim() || null,
         customerLastName: dto.customerLastName?.trim() || null,
@@ -1765,14 +1777,18 @@ export class OrdersService {
       orderBy: { createdAt: 'desc' },
     });
 
+    const deliveryConfig = await this.getDeliveryConfig();
+    const approvalValidMinutes =
+      (deliveryConfig as { approvalValidMinutes?: number }).approvalValidMinutes ??
+      DEFAULT_APPROVAL_VALID_MINUTES;
+    const approvalValidMs = approvalValidMinutes * 60 * 1000;
+    const expiryCancelReason = `Время на оформление заказа истекло (${approvalValidMinutes} мин). Товары остаются в корзине.`;
     const now = Date.now();
-    const expiryCancelReason =
-      'Время на оформление заказа истекло (60 мин). Товары остаются в корзине.';
     for (const order of orders) {
       if (
         order.status === 'APPROVED' &&
         order.approvedAt &&
-        now - new Date(order.approvedAt).getTime() > APPROVAL_VALID_MS
+        now - new Date(order.approvedAt).getTime() > approvalValidMs
       ) {
         await this.restoreStock(
           order.items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
@@ -1790,11 +1806,11 @@ export class OrdersService {
         (order as { approvedAt: Date | null }).approvedAt = null;
       }
     }
-    const deliveryConfig = await this.getDeliveryConfig();
     const paymentMode = deliveryConfig.deliveryPaymentMode === 'ON_SITE' ? 'ON_SITE' : 'WITH_ORDER';
     return orders.map((order) => ({
       ...order,
       deliveryPaymentMode: paymentMode,
+      approvalValidMinutes,
       ...(paymentMode === 'ON_SITE'
         ? { total: Number(order.subtotal) - Number(order.discount) }
         : {}),
@@ -1845,13 +1861,81 @@ export class OrdersService {
     }
     const deliveryConfig = await this.getDeliveryConfig();
     const paymentMode = deliveryConfig.deliveryPaymentMode === 'ON_SITE' ? 'ON_SITE' : 'WITH_ORDER';
+    const approvalValidMinutes =
+      (deliveryConfig as { approvalValidMinutes?: number }).approvalValidMinutes ??
+      DEFAULT_APPROVAL_VALID_MINUTES;
     return {
       ...order,
       deliveryPaymentMode: paymentMode,
+      approvalValidMinutes,
       ...(paymentMode === 'ON_SITE'
         ? { total: Number(order.subtotal) - Number(order.discount) }
         : {}),
     };
+  }
+
+  /**
+   * Отправить заказ на email клиента (только для менеджеров). Альтернатива кнопке в админке —
+   * когда у менеджера открыта ссылка на просмотр заказа, он может отправить заказ клиенту одним кликом.
+   */
+  async resendOrderToCustomerEmail(
+    token: string,
+    userRole?: string,
+  ): Promise<{ sent: boolean; error?: string }> {
+    const canSend = userRole && (await this.canPlaceServiceOrder(userRole));
+    if (!canSend) {
+      return { sent: false, error: 'Отправка заказа на email доступна только менеджерам' };
+    }
+    const payload = this.orderMailService.verifyOrderViewToken(token);
+    if (!payload) {
+      return { sent: false, error: 'Ссылка недействительна или истекла' };
+    }
+    const order = await this.prisma.order.findUnique({
+      where: { id: payload.orderId },
+      include: {
+        items: true,
+        orderServiceItems: true,
+        user: { select: { email: true } },
+      },
+    });
+    if (!order) {
+      return { sent: false, error: 'Заказ не найден' };
+    }
+    const customerEmail = (order as { customerEmail?: string | null }).customerEmail ?? '';
+    const orderEmail = order.createdByManagerId
+      ? customerEmail.toLowerCase()
+      : (order.user?.email ?? customerEmail).toLowerCase();
+    const payloadEmail = payload.email.toLowerCase();
+    if (orderEmail !== payloadEmail) {
+      return { sent: false, error: 'Ссылка не соответствует заказу' };
+    }
+    if (order.status !== 'APPROVED') {
+      return { sent: false, error: 'Отправить можно только проверенный заказ (статус «Проверен»)' };
+    }
+    const siteUrl = this.configService.get<string>('SITE_URL', 'http://localhost:3000');
+    const newToken = this.orderMailService.generateOrderViewToken(order.id, payload.email);
+    const viewOrderUrl = `${siteUrl}/order/view?token=${newToken}`;
+    const total = typeof order.total === 'string' ? parseFloat(order.total) : Number(order.total);
+    const itemsCount =
+      order.items.length +
+      (Array.isArray((order as { orderServiceItems?: unknown[] }).orderServiceItems)
+        ? (order as { orderServiceItems: unknown[] }).orderServiceItems.length
+        : 0);
+    const sent = await this.orderMailService.sendOrderToCustomer({
+      orderNumber: order.orderNumber,
+      customerEmail: payload.email,
+      total,
+      itemsCount,
+      viewOrderUrl,
+    });
+    if (!sent) {
+      return { sent: false, error: 'Не удалось отправить письмо. Попробуйте позже.' };
+    }
+    await this.prisma.order.update({
+      where: { id: order.id },
+      data: { sentToEmailAt: new Date(), orderViewToken: newToken },
+    });
+    return { sent: true };
   }
 
   async findOne(id: string, userId?: string, role?: string) {
@@ -1894,10 +1978,15 @@ export class OrdersService {
       throw new ForbiddenException('Access denied');
     }
 
+    const deliveryConfig = await this.getDeliveryConfig();
+    const approvalValidMinutes =
+      (deliveryConfig as { approvalValidMinutes?: number }).approvalValidMinutes ??
+      DEFAULT_APPROVAL_VALID_MINUTES;
+    const approvalValidMs = approvalValidMinutes * 60 * 1000;
     if (
       order.status === 'APPROVED' &&
       order.approvedAt &&
-      Date.now() - new Date(order.approvedAt).getTime() > APPROVAL_VALID_MS
+      Date.now() - new Date(order.approvedAt).getTime() > approvalValidMs
     ) {
       await this.restoreStock(
         order.items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
@@ -1907,7 +1996,7 @@ export class OrdersService {
         data: {
           status: 'CANCELLED',
           cancelledAt: new Date(),
-          cancelReason: 'Время на оформление заказа истекло (60 мин). Товары остаются в корзине.',
+          cancelReason: `Время на оформление заказа истекло (${approvalValidMinutes} мин). Товары остаются в корзине.`,
           approvedAt: null,
         },
         include: {
@@ -1935,11 +2024,11 @@ export class OrdersService {
       });
     }
 
-    const deliveryConfig = await this.getDeliveryConfig();
     const paymentMode = deliveryConfig.deliveryPaymentMode === 'ON_SITE' ? 'ON_SITE' : 'WITH_ORDER';
     return {
       ...order,
       deliveryPaymentMode: paymentMode,
+      approvalValidMinutes,
       ...(paymentMode === 'ON_SITE'
         ? { total: Number(order.subtotal) - Number(order.discount) }
         : {}),

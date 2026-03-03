@@ -7,6 +7,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
+import { sendOrderToCustomerEmail, updateAdminOrderCustomer } from '@/shared/api/admin-orders';
 import * as cartApi from '@/shared/api/cart';
 import type { CartItem } from '@/shared/api/cart';
 import {
@@ -18,6 +19,7 @@ import {
   type UserOrder,
   addCartItemToOrder,
   calculateDelivery,
+  canResendOrderToEmail,
   cancelOrderByCustomer,
   formatApprovalCountdown,
   getApprovalRemainingMs,
@@ -111,12 +113,83 @@ export default function CartPage() {
   const [showAddToApprovedModal, setShowAddToApprovedModal] = useState(false);
   /** Показать модалку объединения с заказом на проверке. */
   const [showAddToPendingReviewModal, setShowAddToPendingReviewModal] = useState(false);
+  /** Показать модалку «Отправить заказ на email клиенту» (для менеджеров). */
+  const [showSendToEmailModal, setShowSendToEmailModal] = useState(false);
+  const [canSendToEmail, setCanSendToEmail] = useState(false);
+  const [sendToEmailCustomer, setSendToEmailCustomer] = useState({
+    customerEmail: '',
+    customerFirstName: '',
+    customerMiddleName: '',
+    customerLastName: '',
+    customerPhone: '',
+  });
+  const [sendToEmailInProgress, setSendToEmailInProgress] = useState(false);
+  const [sendToEmailMessage, setSendToEmailMessage] = useState<string | null>(null);
   const restoringServiceOrdersRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    canResendOrderToEmail()
+      .then(setCanSendToEmail)
+      .catch(() => setCanSendToEmail(false));
+  }, []);
+
+  const openSendToEmailModal = () => {
+    if (!approvedOrder) return;
+    const email =
+      approvedOrder.createdByManagerId && approvedOrder.customerEmail
+        ? approvedOrder.customerEmail
+        : (approvedOrder.user?.email ?? approvedOrder.customerEmail ?? '');
+    setSendToEmailCustomer({
+      customerEmail: email,
+      customerFirstName: approvedOrder.customerFirstName ?? approvedOrder.user?.firstName ?? '',
+      customerMiddleName: approvedOrder.customerMiddleName ?? '',
+      customerLastName: approvedOrder.customerLastName ?? approvedOrder.user?.lastName ?? '',
+      customerPhone: approvedOrder.customerPhone ?? '',
+    });
+    setSendToEmailMessage(null);
+    setShowSendToEmailModal(true);
+  };
+
+  const handleSendToEmailSubmit = async () => {
+    if (!approvedOrder) return;
+    const email = sendToEmailCustomer.customerEmail.trim();
+    if (!email) {
+      setSendToEmailMessage('Введите email покупателя');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setSendToEmailMessage('Некорректный email');
+      return;
+    }
+    setSendToEmailInProgress(true);
+    setSendToEmailMessage(null);
+    try {
+      await updateAdminOrderCustomer(approvedOrder.id, {
+        customerEmail: email,
+        customerFirstName: sendToEmailCustomer.customerFirstName.trim() || null,
+        customerMiddleName: sendToEmailCustomer.customerMiddleName.trim() || null,
+        customerLastName: sendToEmailCustomer.customerLastName.trim() || null,
+        customerPhone: sendToEmailCustomer.customerPhone.trim() || null,
+      });
+      const result = await sendOrderToCustomerEmail(approvedOrder.id);
+      if (result.sent) {
+        setShowSendToEmailModal(false);
+        const orders = await getUserOrders();
+        setUserOrders(orders);
+      } else {
+        setSendToEmailMessage(result.error ?? 'Не удалось отправить');
+      }
+    } catch (err) {
+      setSendToEmailMessage(err instanceof Error ? err.message : 'Не удалось отправить');
+    } finally {
+      setSendToEmailInProgress(false);
+    }
+  };
 
   useEffect(() => {
     getDeliverySettlements()
@@ -243,7 +316,7 @@ export default function CartPage() {
   const returnedForCorrectionOrder =
     sortedOrders.find((o) => o.status === 'RETURNED_FOR_CORRECTION') ?? null;
   const approvalRemainingMs = approvedOrder
-    ? getApprovalRemainingMs(approvedOrder.approvedAt ?? null)
+    ? getApprovalRemainingMs(approvedOrder.approvedAt ?? null, approvedOrder.approvalValidMinutes)
     : 0;
   const approvalExpired = approvedOrder && approvalRemainingMs <= 0;
 
@@ -2259,6 +2332,15 @@ export default function CartPage() {
                           >
                             Оформить заказ
                           </Link>
+                          {canSendToEmail && (
+                            <button
+                              type="button"
+                              className={styles.sendToEmailLink}
+                              onClick={openSendToEmailModal}
+                            >
+                              Отправить заказ на email клиенту
+                            </button>
+                          )}
                         </div>
                       )}
                       {section.id === 'section3' && approvedOrder && approvalRemainingMs <= 0 && (
@@ -2318,6 +2400,130 @@ export default function CartPage() {
                 disabled={submitInProgress}
               >
                 {submitInProgress ? 'Отправка…' : 'Да, добавить к заказу'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSendToEmailModal && approvedOrder && (
+        <div
+          className={styles.confirmModalOverlay}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="send-to-email-modal-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !sendToEmailInProgress)
+              setShowSendToEmailModal(false);
+          }}
+        >
+          <div className={styles.confirmModalContent} onClick={(e) => e.stopPropagation()}>
+            <h3 id="send-to-email-modal-title" className={styles.confirmModalTitle}>
+              Отправить заказ на email клиенту
+            </h3>
+            <p className={styles.confirmModalText}>
+              Заполните данные покупателя. На указанный email будет отправлена ссылка на просмотр и
+              оформление заказа.
+            </p>
+            <div className={styles.sendToEmailForm}>
+              <div className={styles.sendToEmailRow}>
+                <div className={styles.sendToEmailField}>
+                  <label className={styles.sendToEmailLabel} htmlFor="send-email">
+                    Email <span className={styles.required}>*</span>
+                  </label>
+                  <input
+                    id="send-email"
+                    type="email"
+                    value={sendToEmailCustomer.customerEmail}
+                    onChange={(e) =>
+                      setSendToEmailCustomer((s) => ({ ...s, customerEmail: e.target.value }))
+                    }
+                    className={styles.sendToEmailInput}
+                    placeholder="customer@example.com"
+                  />
+                </div>
+                <div className={styles.sendToEmailField}>
+                  <label className={styles.sendToEmailLabel} htmlFor="send-phone">
+                    Телефон
+                  </label>
+                  <input
+                    id="send-phone"
+                    type="tel"
+                    value={sendToEmailCustomer.customerPhone}
+                    onChange={(e) =>
+                      setSendToEmailCustomer((s) => ({ ...s, customerPhone: e.target.value }))
+                    }
+                    className={styles.sendToEmailInput}
+                    placeholder="+7 (___) ___-__-__"
+                  />
+                </div>
+              </div>
+              <div className={styles.sendToEmailRow}>
+                <div className={styles.sendToEmailField}>
+                  <label className={styles.sendToEmailLabel} htmlFor="send-lastName">
+                    Фамилия
+                  </label>
+                  <input
+                    id="send-lastName"
+                    type="text"
+                    value={sendToEmailCustomer.customerLastName}
+                    onChange={(e) =>
+                      setSendToEmailCustomer((s) => ({ ...s, customerLastName: e.target.value }))
+                    }
+                    className={styles.sendToEmailInput}
+                  />
+                </div>
+                <div className={styles.sendToEmailField}>
+                  <label className={styles.sendToEmailLabel} htmlFor="send-firstName">
+                    Имя
+                  </label>
+                  <input
+                    id="send-firstName"
+                    type="text"
+                    value={sendToEmailCustomer.customerFirstName}
+                    onChange={(e) =>
+                      setSendToEmailCustomer((s) => ({ ...s, customerFirstName: e.target.value }))
+                    }
+                    className={styles.sendToEmailInput}
+                  />
+                </div>
+                <div className={styles.sendToEmailField}>
+                  <label className={styles.sendToEmailLabel} htmlFor="send-middleName">
+                    Отчество
+                  </label>
+                  <input
+                    id="send-middleName"
+                    type="text"
+                    value={sendToEmailCustomer.customerMiddleName}
+                    onChange={(e) =>
+                      setSendToEmailCustomer((s) => ({ ...s, customerMiddleName: e.target.value }))
+                    }
+                    className={styles.sendToEmailInput}
+                  />
+                </div>
+              </div>
+              {sendToEmailMessage && (
+                <p className={styles.sendToEmailError} role="alert">
+                  {sendToEmailMessage}
+                </p>
+              )}
+            </div>
+            <div className={styles.confirmModalActions}>
+              <button
+                type="button"
+                className={styles.confirmModalButtonSecondary}
+                onClick={() => !sendToEmailInProgress && setShowSendToEmailModal(false)}
+                disabled={sendToEmailInProgress}
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                className={styles.confirmModalButtonPrimary}
+                onClick={handleSendToEmailSubmit}
+                disabled={sendToEmailInProgress}
+              >
+                {sendToEmailInProgress ? 'Отправка…' : 'Отправить на email'}
               </button>
             </div>
           </div>

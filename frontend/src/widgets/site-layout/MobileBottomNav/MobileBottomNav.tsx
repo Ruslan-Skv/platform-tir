@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Cog6ToothIcon,
   HeartIcon,
   RectangleGroupIcon,
   ShoppingCartIcon,
@@ -14,6 +15,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { useUserAuth } from '@/features/auth/context/UserAuthContext';
+import { useSitePublicConfig } from '@/shared/lib/contexts/SitePublicConfigContext';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 
 import styles from './MobileBottomNav.module.css';
@@ -33,7 +35,10 @@ const navItems: Array<{
 
 export function MobileBottomNav() {
   const pathname = usePathname();
-  const { isAuthenticated } = useUserAuth();
+  const { isAuthenticated, user } = useUserAuth();
+  const { rolesShowAdminLink } = useSitePublicConfig();
+  const isAdmin =
+    !!user?.role && rolesShowAdminLink.length > 0 && rolesShowAdminLink.includes(user.role);
   const { count: cartCount } = useCart();
   const { count: compareCount } = useCompare();
   const { count: wishlistCount } = useWishlist();
@@ -45,15 +50,27 @@ export function MobileBottomNav() {
     return 0;
   };
 
+  const items: Array<{
+    href: string;
+    label: string;
+    Icon: React.ComponentType<{ className?: string }>;
+    authHref?: string;
+  }> = [
+    ...navItems,
+    ...(isAdmin ? [{ href: '/admin', label: 'Админка', Icon: Cog6ToothIcon }] : []),
+  ];
+
+  const path = pathname ?? '';
+
   return (
     <nav className={styles.bottomNav} aria-label="Мобильная навигация">
       <ul className={styles.list}>
-        {navItems.map(({ href, label, Icon, authHref }) => {
+        {items.map(({ href, label, Icon, authHref }) => {
           const linkHref = authHref && !isAuthenticated ? authHref : href;
           const isActive =
             href === '/catalog/products'
-              ? pathname.startsWith('/catalog')
-              : pathname === href || pathname.startsWith(href + '/');
+              ? path.startsWith('/catalog')
+              : path === href || path.startsWith(href + '/');
           const count = getCount(href);
           const showCount = count > 0;
 

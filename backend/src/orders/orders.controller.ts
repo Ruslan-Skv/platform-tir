@@ -41,11 +41,27 @@ export class OrdersController {
     return this.ordersService.findOneByViewToken(token);
   }
 
+  @Post('resend-to-email')
+  @ApiOperation({ summary: 'Отправить заказ на email клиента (только для менеджеров, по токену)' })
+  async resendOrderToCustomerEmail(
+    @Request() req: RequestWithUser,
+    @Body() body: { token: string },
+  ) {
+    return this.ordersService.resendOrderToCustomerEmail(body.token, req.user.role);
+  }
+
   @Get('can-place-service-order')
   @ApiOperation({ summary: 'Может ли текущий пользователь оформлять заказ услуг для клиента' })
   async canPlaceServiceOrder(@Request() req: RequestWithUser) {
     const canPlace = await this.ordersService.canPlaceServiceOrder(req.user.role);
     return { canPlace };
+  }
+
+  @Get('can-resend-order-to-email')
+  @ApiOperation({ summary: 'Может ли текущий пользователь отправлять заказ на email клиента' })
+  async canResendOrderToEmail(@Request() req: RequestWithUser) {
+    const canResend = await this.ordersService.canPlaceServiceOrder(req.user.role);
+    return { canResend };
   }
 
   @Get('delivery-settlements')

@@ -122,6 +122,35 @@
   margin-bottom: 1rem;
 }
 
+.resendSection {
+  margin-bottom: 1rem;
+}
+
+.resendButton {
+  padding: 0.5rem 1rem;
+  font-size: 0.9375rem;
+  color: #2563eb;
+  background: transparent;
+  border: 1px solid #2563eb;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.resendButton:hover:not(:disabled) {
+  background: #eff6ff;
+}
+
+.resendButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.resendMessage {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #166534;
+}
+
 .actions {
   display: flex;
   flex-direction: column;

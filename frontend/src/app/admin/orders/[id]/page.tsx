@@ -279,6 +279,7 @@ export default function AdminOrderDetailPage() {
   const [deliveryPlannedDate, setDeliveryPlannedDate] = useState('');
   const [deliverySaving, setDeliverySaving] = useState(false);
   const [customerEmail, setCustomerEmail] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const [customerFirstName, setCustomerFirstName] = useState('');
   const [customerMiddleName, setCustomerMiddleName] = useState('');
   const [customerLastName, setCustomerLastName] = useState('');
@@ -365,6 +366,7 @@ export default function AdminOrderDetailPage() {
           ? (order.customerEmail ?? '')
           : (order.customerEmail ?? order.user?.email ?? '')
     );
+    setCustomerPhone(managerIsCustomer ? '' : (order.customerPhone ?? order.user?.phone ?? ''));
     setCustomerFirstName(
       managerIsCustomer
         ? ''
@@ -387,10 +389,12 @@ export default function AdminOrderDetailPage() {
     order?.moversCount,
     order?.plannedDeliveryDate,
     order?.customerEmail,
+    order?.customerPhone,
     order?.customerFirstName,
     order?.customerMiddleName,
     order?.customerLastName,
     order?.user?.email,
+    order?.user?.phone,
     order?.user?.firstName,
     order?.user?.lastName,
     order?.user?.id,
@@ -520,6 +524,7 @@ export default function AdminOrderDetailPage() {
     try {
       const updated = await updateAdminOrderCustomer(id, {
         customerEmail: customerEmail.trim() || null,
+        customerPhone: customerPhone.trim() || null,
         customerFirstName: customerFirstName.trim() || null,
         customerMiddleName: customerMiddleName.trim() || null,
         customerLastName: customerLastName.trim() || null,
@@ -830,7 +835,9 @@ export default function AdminOrderDetailPage() {
         <p className={styles.approvalCountdown}>
           Осталось для оформления покупателем:{' '}
           <span className={styles.approvalCountdownTime}>
-            {formatApprovalCountdown(getApprovalRemainingMs(order.approvedAt))}
+            {formatApprovalCountdown(
+              getApprovalRemainingMs(order.approvedAt, order.approvalValidMinutes)
+            )}
           </span>
         </p>
       )}
@@ -875,12 +882,16 @@ export default function AdminOrderDetailPage() {
               className={styles.input}
             />
           </div>
-          {!order.createdByManagerId && order.user?.phone && (
-            <div className={styles.clientField}>
-              <span className={styles.inputLabel}>Телефон</span>
-              <span className={styles.clientPhone}>{order.user.phone}</span>
-            </div>
-          )}
+          <div className={styles.clientField}>
+            <label className={styles.inputLabel}>Телефон</label>
+            <input
+              type="tel"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              className={styles.input}
+              placeholder="+7 (___) ___-__-__"
+            />
+          </div>
           <div className={styles.clientActions}>
             <button
               type="button"

@@ -7,9 +7,11 @@ import { useSearchParams } from 'next/navigation';
 
 import {
   type UserOrder,
+  canResendOrderToEmail,
   formatApprovalCountdown,
   getApprovalRemainingMs,
   getUserOrderByToken,
+  resendOrderToCustomerEmail,
 } from '@/shared/api/user-orders';
 
 import styles from './page.module.css';
@@ -20,9 +22,12 @@ export default function OrderViewByTokenPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const [order, setOrder] = useState<UserOrder | null>(null);
+  const [canSendToEmail, setCanSendToEmail] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [, setTick] = useState(0);
+  const [resendInProgress, setResendInProgress] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   const loadOrder = useCallback(() => {
     if (!token) return;
@@ -61,6 +66,13 @@ export default function OrderViewByTokenPage() {
       cancelled = true;
     };
   }, [token]);
+
+  // Проверить, может ли текущий пользователь отправлять заказ на email (только менеджеры)
+  useEffect(() => {
+    canResendOrderToEmail()
+      .then(setCanSendToEmail)
+      .catch(() => setCanSendToEmail(false));
+  }, []);
 
   // Периодическое обновление заказа, чтобы видеть изменения со стороны менеджера (админка)
   useEffect(() => {
@@ -104,8 +116,29 @@ export default function OrderViewByTokenPage() {
   }
 
   const total = typeof order.total === 'string' ? parseFloat(order.total) : Number(order.total);
-  const approvalRemainingMs = getApprovalRemainingMs(order.approvedAt ?? null);
+  const approvalRemainingMs = getApprovalRemainingMs(
+    order.approvedAt ?? null,
+    order.approvalValidMinutes
+  );
   const approvalExpired = approvalRemainingMs <= 0;
+
+  const handleResendToEmail = async () => {
+    if (!token) return;
+    setResendInProgress(true);
+    setResendMessage(null);
+    try {
+      const result = await resendOrderToCustomerEmail(token);
+      if (result.sent) {
+        setResendMessage('Заказ отправлен на email клиента');
+      } else {
+        setResendMessage(result.error ?? 'Не удалось отправить');
+      }
+    } catch (err) {
+      setResendMessage(err instanceof Error ? err.message : 'Не удалось отправить');
+    } finally {
+      setResendInProgress(false);
+    }
+  };
 
   return (
     <div className={styles.container}>
@@ -188,6 +221,25 @@ export default function OrderViewByTokenPage() {
         Для оплаты и уточнения деталей доставки свяжитесь с менеджером или войдите в личный кабинет,
         если у вас есть аккаунт.
       </p>
+
+      {order.status === 'APPROVED' && !approvalExpired && canSendToEmail && (
+        <div className={styles.resendSection}>
+          <button
+            type="button"
+            onClick={handleResendToEmail}
+            disabled={resendInProgress}
+            className={styles.resendButton}
+            title="Отправить заказ на email клиенту"
+          >
+            {resendInProgress ? 'Отправка…' : 'Отправить заказ на email клиенту'}
+          </button>
+          {resendMessage && (
+            <p className={styles.resendMessage} role="status">
+              {resendMessage}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className={styles.actions}>
         <Link href="/login" className={styles.primaryLink}>

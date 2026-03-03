@@ -172,6 +172,7 @@ export class AdminOrdersController {
       moversVolumePerPerson?: number | null;
       settlements?: Array<{ id?: string; name: string; price: number; order?: number }>;
       rolesAllowedOrderForCustomer?: string[] | null;
+      approvalValidMinutes?: number;
     },
   ) {
     return this.adminOrdersService.updateDeliveryConfig(body, req.user.role);
@@ -205,6 +206,7 @@ export class AdminOrdersController {
     @Body()
     body: {
       customerEmail?: string | null;
+      customerPhone?: string | null;
       customerFirstName?: string | null;
       customerMiddleName?: string | null;
       customerLastName?: string | null;

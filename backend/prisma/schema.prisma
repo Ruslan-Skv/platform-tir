@@ -861,6 +861,8 @@ model DeliveryConfig {
   moversVolumePerPerson     Decimal? @db.Decimal(10, 4) // м³ на одного грузчика (опционально)
   /// Роли, которым разрешено оформлять заказ для клиента (массив строк, напр. ["SUPER_ADMIN","ADMIN","MANAGER"]). null = по умолчанию все три.
   rolesAllowedOrderForCustomer Json?
+  /// Время действия статуса «Заказ проверен» (минуты). После истечения заказ отменяется, товары возвращаются в корзину.
+  approvalValidMinutes       Int      @default(60)
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
   settlements               DeliverySettlement[]
@@ -1088,6 +1090,7 @@ model Order {
   userId            String
   createdByManagerId String?        // Менеджер оформил заказ для покупателя
   customerEmail     String?         // Email получателя (дублирует user.email для поиска)
+  customerPhone     String?         // Телефон покупателя (для заказов менеджера)
   customerFirstName String?         // Имя покупателя (для заказов менеджера)
   customerMiddleName String?        // Отчество покупателя (для заказов менеджера)
   customerLastName  String?         // Фамилия покупателя (для заказов менеджера)
@@ -1329,6 +1332,15 @@ model CatalogBlock {
   updatedAt               DateTime @updatedAt
 
   @@map("catalog_block")
+}
+
+/// Роли, которым показывать кнопку «Админка» на публичном сайте. null = по умолчанию (все админские роли).
+model SitePublicConfig {
+  id                   String   @id @default("main")
+  rolesShowAdminLink   Json?    // Массив ролей ["SUPER_ADMIN","ADMIN",...]. null = дефолтный набор
+  updatedAt            DateTime @updatedAt
+
+  @@map("site_public_config")
 }
 
 model NotificationSound {

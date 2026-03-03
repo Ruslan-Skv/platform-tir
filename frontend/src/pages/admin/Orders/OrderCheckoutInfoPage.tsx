@@ -1,11 +1,13 @@
 'use client';
 
+import Link from 'next/link';
+
 import styles from './OrderCheckoutInfoPage.module.css';
 
 const PRODUCT_STATUS_FLOW = [
   'PENDING_REVIEW — заказ отправлен на проверку менеджеру.',
   'RETURNED_FOR_CORRECTION — заказ отправлен на доработку покупателю.',
-  'APPROVED — заказ проверен, окно оформления 60 минут.',
+  'APPROVED — заказ проверен, окно оформления задаётся в настройках (по умолчанию 60 мин).',
   'PENDING / PROCESSING — обработка на складе или у менеджера.',
   'SHIPPED / DELIVERED — заказ отправлен и доставлен.',
   'CANCELLED / REFUNDED — отмена или возврат.',
@@ -51,13 +53,28 @@ export function OrderCheckoutInfoPage() {
           <ul className={styles.list}>
             <li>
               <strong>Покупатель оформляет сам</strong> — наполняет корзину, отправляет на проверку
-              менеджеру, после проверки получает доступ к оформлению (страница{' '}
-              <span className={styles.inlineCode}>/checkout?orderId=...</span>).
+              менеджеру, после одобрения нажимает «Оформить заказ» и переходит на страницу{' '}
+              <span className={styles.inlineCode}>/checkout?orderId=...</span>, где указывает адрес
+              доставки и способ оплаты. Доступ к оформлению ограничен окном времени (настраивается в{' '}
+              <Link href="/admin/settings/checkout" className={styles.link}>
+                Настройки → Оформление заказов
+              </Link>
+              ).
             </li>
             <li>
               <strong>Менеджер оформляет в интересах покупателя</strong> — работает с заказом в
-              админке: проверяет состав, вносит данные покупателя, может отправить заказ на email
-              покупателю и отправить на доработку при необходимости.
+              админке: проверяет состав, вносит данные покупателя (Email, ФИО, телефон), при
+              необходимости меняет позиции и доставку. Отправляет заказ на email покупателю — тот
+              получает ссылку на просмотр заказа (
+              <span className={styles.inlineCode}>/order/view?token=...</span>) и может войти в
+              личный кабинет для оформления или связаться с менеджером. Менеджер может отправить
+              заказ на доработку, если нужны правки.
+            </li>
+            <li>
+              <strong>Менеджер из корзины</strong> — если менеджер оформляет заказ «по телефону» и
+              заказ уже проверен, в корзине под кнопкой «Оформить заказ» появляется ссылка
+              «Отправить заказ на email клиенту». В модалке заполняются Email, ФИО, телефон — письмо
+              уходит покупателю, он оформляет по ссылке из письма (см. раздел 4).
             </li>
           </ul>
         </div>
@@ -82,13 +99,54 @@ export function OrderCheckoutInfoPage() {
           </ul>
         </div>
         <div className={styles.note} style={{ marginTop: 12 }}>
-          После статуса <strong>APPROVED</strong> действует окно оформления 60 минут. Если время
-          истекло, заказ снова требует проверки.
+          После статуса <strong>APPROVED</strong> действует окно оформления (настраивается в{' '}
+          <Link href="/admin/settings/checkout" className={styles.link}>
+            Настройки → Оформление заказов
+          </Link>
+          , по умолчанию 60 минут). Если время истекло, заказ отменяется, товары и услуги остаются в
+          корзине.
         </div>
       </section>
 
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>4. Порядок оформления доставки</h2>
+        <h2 className={styles.sectionTitle}>4. Просмотр заказа и отправка на email клиента</h2>
+        <div className={styles.card}>
+          <ul className={styles.list}>
+            <li>
+              Страница просмотра заказа по ссылке из письма:{' '}
+              <span className={styles.inlineCode}>/order/view?token=...</span>
+            </li>
+            <li>
+              <strong>Отправка заказа на email</strong> доступна только менеджерам (роли задаются в{' '}
+              <Link href="/admin/settings/delivery" className={styles.link}>
+                Настройки → Доставка → Оформление заказов для клиентов
+              </Link>
+              ). Три способа:
+            </li>
+            <li style={{ marginTop: 8, listStyle: 'none', paddingLeft: 0 }}>
+              — <strong>Админка, страница заказа</strong>: блок «Клиент» (Email, ФИО, телефон) +
+              кнопка «Отправить на email покупателя». Используются данные из формы.
+            </li>
+            <li style={{ listStyle: 'none', paddingLeft: 0 }}>
+              — <strong>Корзина</strong>: когда заказ в статусе{' '}
+              <span className={styles.inlineCode}>APPROVED</span> и время оформления не истекло, под
+              кнопкой «Оформить заказ» появляется ссылка «Отправить заказ на email клиенту». Клик
+              открывает модалку с полями Email (обязательное), Телефон, Фамилия, Имя, Отчество.
+              Перед отправкой данные покупателя сохраняются в заказе.
+            </li>
+            <li style={{ listStyle: 'none', paddingLeft: 0 }}>
+              — <strong>Страница просмотра заказа</strong> (
+              <span className={styles.inlineCode}>/order/view?token=...</span>): для менеджеров при
+              статусе <span className={styles.inlineCode}>APPROVED</span> и активном таймере —
+              кнопка «Отправить заказ на email клиенту» для повторной отправки на тот же email (без
+              формы).
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>5. Порядок оформления доставки</h2>
         <div className={styles.card}>
           <ul className={styles.list}>
             <li>
@@ -122,7 +180,7 @@ export function OrderCheckoutInfoPage() {
       </section>
 
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>5. Варианты и развилки</h2>
+        <h2 className={styles.sectionTitle}>6. Варианты и развилки</h2>
         <div className={styles.card}>
           <ul className={styles.list}>
             <li>
@@ -151,7 +209,7 @@ export function OrderCheckoutInfoPage() {
       </section>
 
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>6. Статусы заказов</h2>
+        <h2 className={styles.sectionTitle}>7. Статусы заказов</h2>
         <div className={styles.statusGrid}>
           <div className={styles.statusCard}>
             <p className={styles.statusTitle}>Заказы товаров/услуг из корзины</p>
@@ -177,7 +235,7 @@ export function OrderCheckoutInfoPage() {
       </section>
 
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>7. Тексты модальных подтверждений</h2>
+        <h2 className={styles.sectionTitle}>8. Тексты модальных подтверждений</h2>
         <div className={styles.card}>
           <ul className={styles.list}>
             <li>
@@ -222,6 +280,14 @@ export function OrderCheckoutInfoPage() {
               доставки» (кнопки: «Отмена», «Отправить»).
             </li>
             <li>
+              <strong>Отправить заказ на email клиенту</strong> (корзина, для менеджеров):
+              <br />
+              «Отправить заказ на email клиенту» — заголовок. Описание: «Заполните данные
+              покупателя. На указанный email будет отправлена ссылка на просмотр и оформление
+              заказа.» Форма: Email (обязательное), Телефон, Фамилия, Имя, Отчество. Кнопки:
+              «Отмена», «Отправить на email».
+            </li>
+            <li>
               <strong>Отменить заказ</strong> (админка):
               <br />
               «Отменить заказ …? Покупатель сможет оформить заказ заново из корзины.» (кнопки:
@@ -237,35 +303,60 @@ export function OrderCheckoutInfoPage() {
       </section>
 
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>8. Схема оформления</h2>
+        <h2 className={styles.sectionTitle}>9. Схема оформления</h2>
         <pre className={styles.diagram}>
           {`Каталог товаров / каталог услуг
           │
           ▼
-        Корзина
-   (товары + услуги)
+┌─────────────────────────────────────────────────────────────┐
+│  Корзина (товары + услуги)                                   │
+│  • Доставка: город, улица, тип TO_ENTRANCE / TO_APARTMENT    │
+│  • При до квартиры: этаж, лифт, желаемое время               │
+│  • Расчёт стоимости: /orders/calculate-delivery              │
+└─────────────────────────────────────────────────────────────┘
           │
           ▼
-Отправить на проверку
+      «Отправить на проверку»
           │
-          ├─ Есть APPROVED (<= 60 мин)?
-          │        ├─ Да → подтвердить добавление → addToApproved
+          ├─ Есть APPROVED (время не истекло)?
+          │        ├─ Да → модалка addToApproved → объединить → PENDING_REVIEW
           │        └─ Нет
           │
           ├─ Есть PENDING_REVIEW?
-          │        ├─ Да → подтвердить объединение → addToPendingReview
-          │        └─ Нет → создать новый заказ (PENDING_REVIEW)
+          │        ├─ Да → модалка addToPendingReview → объединить
+          │        └─ Нет → создать новый заказ
           │
           ▼
-    Проверка менеджером
+   PENDING_REVIEW (проверка менеджером в админке)
           │
-          ├─ APPROVED → ссылка на оформление /checkout?orderId=...
+          │  Менеджер: проверяет состав, меняет позиции/доставку,
+          │  вносит Email, ФИО, телефон в блок «Клиент»
+          │
+          ├─ APPROVED
           │        │
-          │        └─ Окно 60 минут → PROCESSING/SHIPPED/DELIVERED
+          │        ├─ Покупатель: кнопка «Оформить заказ» в корзине
+          │        │        → /checkout?orderId=... (адрес, оплата)
+          │        │        → окно N мин (настройки) → PENDING/PROCESSING → SHIPPED/DELIVERED
+          │        │
+          │        ├─ Покупатель: время истекло → заказ CANCELLED, товары в корзине
+          │        │
+          │        └─ Менеджер (корзина): «Отправить заказ на email клиенту»
+          │                 → модалка (Email*, ФИО, телефон) → письмо клиенту
+          │                 → клиент получает /order/view?token=... → просмотр, вход в ЛК
           │
-          ├─ RETURNED_FOR_CORRECTION → правки в корзине → повторная проверка
+          ├─ RETURNED_FOR_CORRECTION
+          │        │
+          │        └─ Покупатель: правки в корзине → «Отправить на проверку»
+          │                 → повторная проверка (PENDING_REVIEW)
           │
-          └─ CANCELLED / REFUNDED`}
+          ├─ CANCELLED (менеджер отменил)
+          │
+          └─ Покупатель: «Отменить проверку» → CANCELLED
+
+   Дополнительно (админка, страница заказа):
+   • Менеджер: блок «Клиент» + «Отправить на email покупателя»
+     → клиент получает /order/view?token=...
+   • Страница /order/view: менеджер может повторить отправку на email`}
         </pre>
       </section>
     </div>

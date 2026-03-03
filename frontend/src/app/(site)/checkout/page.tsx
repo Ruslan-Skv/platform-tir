@@ -79,7 +79,11 @@ export default function CheckoutPage() {
   }
 
   const total = typeof order.total === 'string' ? parseFloat(order.total) : Number(order.total);
-  const approvalRemainingMs = getApprovalRemainingMs(order.approvedAt ?? null);
+  const approvalValidMinutes = order.approvalValidMinutes ?? 60;
+  const approvalRemainingMs = getApprovalRemainingMs(
+    order.approvedAt ?? null,
+    approvalValidMinutes
+  );
   const approvalExpired = approvalRemainingMs <= 0;
 
   if (approvalExpired) {
@@ -87,7 +91,9 @@ export default function CheckoutPage() {
       <div className={styles.container}>
         <div className={styles.error}>
           <h1 className={styles.title}>Оформление заказа</h1>
-          <p>Время действия заказа истекло (60 минут). Заказ снова на проверке.</p>
+          <p>
+            Время действия заказа истекло ({approvalValidMinutes} мин). Заказ снова на проверке.
+          </p>
           <Link href="/cart" className={styles.link}>
             Вернуться в корзину
           </Link>

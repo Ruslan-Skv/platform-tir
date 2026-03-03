@@ -55,8 +55,38 @@ interface UserAuthContextType {
 
 const UserAuthContext = createContext<UserAuthContextType | undefined>(undefined);
 
-const TOKEN_KEY = 'user_token';
-const USER_KEY = 'user_data';
+const USER_TOKEN_KEY = 'user_token';
+const USER_DATA_KEY = 'user_data';
+const ADMIN_TOKEN_KEY = 'admin_token';
+const ADMIN_USER_KEY = 'admin_user';
+
+/** Загрузить состояние авторизации: приоритет user_*, fallback на admin_* (админ в публичке). */
+function loadAuthFromStorage(): {
+  token: string | null;
+  user: User | null;
+  source: 'user' | 'admin';
+} {
+  if (typeof window === 'undefined') {
+    return { token: null, user: null, source: 'user' };
+  }
+  let token = localStorage.getItem(USER_TOKEN_KEY);
+  let userJson = localStorage.getItem(USER_DATA_KEY);
+  let source: 'user' | 'admin' = 'user';
+  if (!token || !userJson) {
+    token = localStorage.getItem(ADMIN_TOKEN_KEY);
+    userJson = localStorage.getItem(ADMIN_USER_KEY);
+    source = 'admin';
+  }
+  if (!token || !userJson) {
+    return { token: null, user: null, source: 'user' };
+  }
+  try {
+    const parsedUser = JSON.parse(userJson) as User;
+    return { token, user: parsedUser, source };
+  } catch {
+    return { token: null, user: null, source: 'user' };
+  }
+}
 
 export function UserAuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -64,47 +94,78 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const logout = useCallback(() => {
+    const currentToken = token;
     setToken(null);
     setUser(null);
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    const usingAdmin =
+      typeof window !== 'undefined' && currentToken === localStorage.getItem(ADMIN_TOKEN_KEY);
+    if (usingAdmin) {
+      localStorage.removeItem(ADMIN_TOKEN_KEY);
+      localStorage.removeItem(ADMIN_USER_KEY);
+    } else {
+      localStorage.removeItem(USER_TOKEN_KEY);
+      localStorage.removeItem(USER_DATA_KEY);
+    }
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('auth-token-changed'));
     }
+  }, [token]);
+
+  const applyAuthFromStorage = useCallback(() => {
+    const { token: loadedToken, user: loadedUser } = loadAuthFromStorage();
+    setToken(loadedToken);
+    setUser(loadedUser);
+    return loadedToken;
   }, []);
 
-  // Load auth state from localStorage on mount
+  // Load auth state on mount: user_token first, fallback to admin_token (админ в публичке)
   useEffect(() => {
-    const savedToken = localStorage.getItem(TOKEN_KEY);
-    const savedUser = localStorage.getItem(USER_KEY);
+    const loadedToken = applyAuthFromStorage();
 
-    if (savedToken && savedUser) {
-      try {
-        const parsedUser = JSON.parse(savedUser);
-        setToken(savedToken);
-        setUser(parsedUser);
-
-        // Verify token is still valid
-        verifyToken(savedToken).then((isValid) => {
-          if (!isValid) {
+    if (loadedToken) {
+      const isAdminSource = localStorage.getItem(ADMIN_TOKEN_KEY) === loadedToken;
+      verifyToken(loadedToken).then((isValid) => {
+        if (!isValid) {
+          const { token: current } = loadAuthFromStorage();
+          if (current === loadedToken) {
             setToken(null);
             setUser(null);
-            localStorage.removeItem(TOKEN_KEY);
-            localStorage.removeItem(USER_KEY);
+            if (isAdminSource) {
+              localStorage.removeItem(ADMIN_TOKEN_KEY);
+              localStorage.removeItem(ADMIN_USER_KEY);
+            } else {
+              localStorage.removeItem(USER_TOKEN_KEY);
+              localStorage.removeItem(USER_DATA_KEY);
+            }
           }
-        });
-      } catch {
-        setToken(null);
-        setUser(null);
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
-      }
+        }
+      });
     }
     setIsLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [applyAuthFromStorage]);
 
-  const verifyToken = async (tokenToVerify: string): Promise<boolean> => {
+  // Синхронизация при смене токена (вход/выход в админке или другой вкладке)
+  useEffect(() => {
+    const handleAuthChange = () => {
+      applyAuthFromStorage();
+    };
+    window.addEventListener('auth-token-changed', handleAuthChange);
+    window.addEventListener('storage', (e: StorageEvent) => {
+      if (
+        e.key === USER_TOKEN_KEY ||
+        e.key === USER_DATA_KEY ||
+        e.key === ADMIN_TOKEN_KEY ||
+        e.key === ADMIN_USER_KEY
+      ) {
+        handleAuthChange();
+      }
+    });
+    return () => {
+      window.removeEventListener('auth-token-changed', handleAuthChange);
+    };
+  }, [applyAuthFromStorage]);
+
+  const verifyToken = useCallback(async (tokenToVerify: string): Promise<boolean> => {
     try {
       const response = await fetch(`${API_URL}/auth/profile`, {
         headers: {
@@ -114,17 +175,23 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
-        localStorage.setItem(USER_KEY, JSON.stringify(userData));
+        const isFromAdmin = localStorage.getItem(ADMIN_TOKEN_KEY) === tokenToVerify;
+        if (isFromAdmin) {
+          localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(userData));
+        } else {
+          localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
+        }
         return true;
       }
       return false;
     } catch {
       return false;
     }
-  };
+  }, []);
 
   const refreshUser = useCallback(async () => {
-    const savedToken = localStorage.getItem(TOKEN_KEY);
+    const savedToken =
+      localStorage.getItem(USER_TOKEN_KEY) || localStorage.getItem(ADMIN_TOKEN_KEY);
     if (!savedToken) return;
     try {
       const response = await fetch(`${API_URL}/auth/profile`, {
@@ -133,7 +200,12 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
-        localStorage.setItem(USER_KEY, JSON.stringify(userData));
+        const isFromAdmin = localStorage.getItem(ADMIN_TOKEN_KEY) === savedToken;
+        if (isFromAdmin) {
+          localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(userData));
+        } else {
+          localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
+        }
       }
     } catch {
       // ignore
@@ -163,11 +235,11 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       // Save to state and localStorage
       setToken(data.access_token);
       setUser(data.user);
-      localStorage.setItem(TOKEN_KEY, data.access_token);
-      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      localStorage.setItem(USER_TOKEN_KEY, data.access_token);
+      localStorage.setItem(USER_DATA_KEY, JSON.stringify(data.user));
       // Если был активен админ-токен — очищаем, чтобы корзина не смешивалась
-      localStorage.removeItem('admin_token');
-      localStorage.removeItem('admin_user');
+      localStorage.removeItem(ADMIN_TOKEN_KEY);
+      localStorage.removeItem(ADMIN_USER_KEY);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('auth-token-changed'));
       }
@@ -206,10 +278,10 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         // Save to state and localStorage
         setToken(data.access_token);
         setUser(data.user);
-        localStorage.setItem(TOKEN_KEY, data.access_token);
-        localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-        localStorage.removeItem('admin_token');
-        localStorage.removeItem('admin_user');
+        localStorage.setItem(USER_TOKEN_KEY, data.access_token);
+        localStorage.setItem(USER_DATA_KEY, JSON.stringify(data.user));
+        localStorage.removeItem(ADMIN_TOKEN_KEY);
+        localStorage.removeItem(ADMIN_USER_KEY);
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new Event('auth-token-changed'));
         }
@@ -262,7 +334,9 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { password: _password, ...userWithoutPassword } = updatedUser;
         setUser(userWithoutPassword);
-        localStorage.setItem(USER_KEY, JSON.stringify(userWithoutPassword));
+        const userKey =
+          token && localStorage.getItem(ADMIN_TOKEN_KEY) === token ? ADMIN_USER_KEY : USER_DATA_KEY;
+        localStorage.setItem(userKey, JSON.stringify(userWithoutPassword));
 
         return { success: true };
       } catch (error) {
@@ -309,7 +383,9 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { password: _password, ...userWithoutPassword } = updatedUser;
         setUser(userWithoutPassword);
-        localStorage.setItem(USER_KEY, JSON.stringify(userWithoutPassword));
+        const userKey =
+          token && localStorage.getItem(ADMIN_TOKEN_KEY) === token ? ADMIN_USER_KEY : USER_DATA_KEY;
+        localStorage.setItem(userKey, JSON.stringify(userWithoutPassword));
 
         return { success: true };
       } catch (error) {

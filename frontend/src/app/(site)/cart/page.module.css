@@ -1846,30 +1846,30 @@
 
 .confirmModalContent {
   background: #fff;
-  border-radius: 12px;
-  padding: 1.5rem 1.75rem;
-  max-width: 420px;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  max-width: 400px;
   width: 90%;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
 }
 
 .confirmModalTitle {
-  margin: 0 0 1rem;
-  font-size: 1.125rem;
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #111827;
 }
 
 .confirmModalText {
-  margin: 0 0 0.75rem;
-  font-size: 0.9375rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
   color: #374151;
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
 .confirmModalHint {
-  margin: 0 0 1.25rem;
-  font-size: 0.8125rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.75rem;
   color: #6b7280;
   line-height: 1.4;
 }
@@ -1881,13 +1881,13 @@
 }
 
 .confirmModalButtonSecondary {
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.75rem;
   background: #f3f4f6;
   color: #374151;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 .confirmModalButtonSecondary:hover:not(:disabled) {
@@ -1900,13 +1900,13 @@
 }
 
 .confirmModalButtonPrimary {
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.75rem;
   background: #d90652;
   color: #fff;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 500;
 }
 
@@ -1917,4 +1917,153 @@
 .confirmModalButtonPrimary:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.sendToEmailLink {
+  display: block;
+  margin-top: 0.35rem;
+  padding: 0.35rem 0;
+  font-size: 0.8125rem;
+  color: #2563eb;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.sendToEmailLink:hover {
+  color: #1d4ed8;
+}
+
+.sendToEmailForm {
+  margin: 0.5rem 0 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sendToEmailRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+}
+
+.sendToEmailField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1 1 120px;
+  max-width: 200px;
+}
+
+.sendToEmailRow .sendToEmailField {
+  flex: 1 1 120px;
+  max-width: 180px;
+}
+
+.sendToEmailLabel {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.sendToEmailInput {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8125rem;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  min-width: 100px;
+}
+
+.sendToEmailInput:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.required {
+  color: #dc2626;
+}
+
+.sendToEmailError {
+  font-size: 0.8125rem;
+  color: #dc2626;
+  margin: 0;
+}
+
+/* Тёмная тема для модалки */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .confirmModalOverlay {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .confirmModalContent {
+  background: #1f2937;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .confirmModalTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .confirmModalText {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .confirmModalHint {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .confirmModalButtonSecondary {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .confirmModalButtonSecondary:hover:not(:disabled) {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .confirmModalButtonPrimary {
+  background: #ec4899;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .confirmModalButtonPrimary:hover:not(:disabled) {
+  background: #db2777;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sendToEmailLink {
+  color: #60a5fa;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sendToEmailLink:hover {
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sendToEmailLabel {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sendToEmailInput {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sendToEmailInput::placeholder {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sendToEmailInput:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.25);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .required {
+  color: #f87171;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sendToEmailError {
+  color: #f87171;
 }

@@ -11,6 +11,7 @@ export interface AdminOrderSummary {
   submittedForReviewAt?: string | null;
   createdByManagerId?: string | null;
   customerEmail?: string | null;
+  customerPhone?: string | null;
   customerFirstName?: string | null;
   customerMiddleName?: string | null;
   customerLastName?: string | null;
@@ -26,6 +27,8 @@ export interface AdminOrderSummary {
     price: string | number;
     amount: string | number;
   }>;
+  /** Время действия статуса «Заказ проверен» (минуты). */
+  approvalValidMinutes?: number;
 }
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -128,6 +131,7 @@ export async function updateAdminOrderItem(
 
 export interface SubmitFromCartForCustomerDto {
   customerEmail: string;
+  customerPhone?: string;
   customerFirstName?: string;
   customerMiddleName?: string;
   customerLastName?: string;
@@ -257,6 +261,7 @@ export async function updateAdminOrderCustomer(
   orderId: string,
   data: {
     customerEmail?: string | null;
+    customerPhone?: string | null;
     customerFirstName?: string | null;
     customerMiddleName?: string | null;
     customerLastName?: string | null;
@@ -348,6 +353,8 @@ export interface DeliveryConfigDto {
   settlements: DeliverySettlementDto[];
   /** Роли, которым разрешено оформлять заказ для клиента. Только для супер-админа. Может отсутствовать до миграции. */
   rolesAllowedOrderForCustomer?: string[];
+  /** Время действия статуса «Заказ проверен» (минуты). После истечения заказ отменяется, товары остаются в корзине. */
+  approvalValidMinutes?: number;
 }
 
 export async function getDeliveryConfig(): Promise<DeliveryConfigDto> {
@@ -368,6 +375,8 @@ export async function updateDeliveryConfig(data: {
   settlements?: Array<{ id?: string; name: string; price: number; order?: number }>;
   /** Только супер-админ может передавать. Роли, которым разрешено оформлять заказ для клиента. */
   rolesAllowedOrderForCustomer?: string[] | null;
+  /** Время действия статуса «Заказ проверен» (минуты). 1–1440. */
+  approvalValidMinutes?: number;
 }): Promise<DeliveryConfigDto> {
   const res = await fetch(`${API_URL}/admin/orders/delivery-config`, {
     method: 'PATCH',

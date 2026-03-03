@@ -279,9 +279,19 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.settings.notifications',
       },
       {
+        label: 'Оформление заказов',
+        href: '/admin/settings/checkout',
+        resourceId: 'admin.settings.checkout',
+      },
+      {
         label: 'Доставка',
         href: '/admin/settings/delivery',
         resourceId: 'admin.settings.delivery',
+      },
+      {
+        label: 'Кнопка «Админка» на сайте',
+        href: '/admin/settings/admin-link',
+        resourceId: 'admin.settings.admin-link',
       },
       { label: 'Роли', href: '/admin/settings/roles', resourceId: 'admin.settings.roles' },
       { label: 'Управление пользователями', href: '/admin/users', resourceId: 'admin.users' },

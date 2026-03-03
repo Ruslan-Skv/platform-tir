@@ -1,0 +1,132 @@
+.page {
+  padding: 1.5rem;
+  max-width: 720px;
+}
+
+.header {
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.25rem;
+}
+
+.subtitle {
+  font-size: 0.9375rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.loading,
+.accessDenied {
+  color: #6b7280;
+  margin: 0;
+}
+
+.accessDenied {
+  color: #dc2626;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.section {
+  padding: 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+}
+
+.sectionTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.75rem;
+}
+
+.hint {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0 0 0.75rem;
+}
+
+.rolesCheckboxList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+}
+
+.roleCheckboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  color: #374151;
+  cursor: pointer;
+}
+
+.roleCheckboxLabel input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #4f46e5;
+}
+
+.toastSuccess,
+.toastError {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+}
+
+.toastSuccess {
+  background: rgb(34 197 94 / 20%);
+  color: rgb(22 163 74);
+}
+
+.toastError {
+  background: rgb(239 68 68 / 20%);
+  color: rgb(185 28 28);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.saveButton {
+  padding: 8px 20px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #fff;
+  background: #4f46e5;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: #4338ca;
+}
+
+.saveButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.previewLink {
+  font-size: 0.9375rem;
+  color: rgb(59 130 246);
+  text-decoration: none;
+}
+
+.previewLink:hover {
+  text-decoration: underline;
+}

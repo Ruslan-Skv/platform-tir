@@ -88,14 +88,29 @@ export interface UserOrder {
   returnedForCorrectionAt?: string | null;
   /** Комментарий менеджера при отправке на доработку. */
   returnedForCorrectionComment?: string | null;
+  /** Время действия статуса «Заказ проверен» (минуты). Приходит с API. */
+  approvalValidMinutes?: number;
+  /** Email покупателя (для заказов менеджера или если указан). */
+  customerEmail?: string | null;
+  customerFirstName?: string | null;
+  customerMiddleName?: string | null;
+  customerLastName?: string | null;
+  customerPhone?: string | null;
+  /** Пользователь-владелец заказа (при самовыкупе). */
+  user?: { id: string; email?: string; firstName?: string; lastName?: string } | null;
+  createdByManagerId?: string | null;
+  sentToEmailAt?: string | null;
 }
 
-/** Время действия статуса «Заказ проверен» (минуты). */
-export const APPROVAL_VALID_MINUTES = 60;
+/** Значение по умолчанию, если API не вернул approvalValidMinutes. */
+export const DEFAULT_APPROVAL_VALID_MINUTES = 60;
 
-export function getApprovalRemainingMs(approvedAt: string | null | undefined): number {
+export function getApprovalRemainingMs(
+  approvedAt: string | null | undefined,
+  approvalValidMinutes: number = DEFAULT_APPROVAL_VALID_MINUTES
+): number {
   if (!approvedAt) return 0;
-  const validUntil = new Date(approvedAt).getTime() + APPROVAL_VALID_MINUTES * 60 * 1000;
+  const validUntil = new Date(approvedAt).getTime() + approvalValidMinutes * 60 * 1000;
   return Math.max(0, validUntil - Date.now());
 }
 
@@ -129,6 +144,7 @@ export type DeliveryPaymentMode = 'WITH_ORDER' | 'ON_SITE';
 export interface DeliverySettlementsResponse {
   settlements: DeliverySettlementOption[];
   deliveryPaymentMode: DeliveryPaymentMode;
+  approvalValidMinutes?: number;
 }
 
 /** Список населённых пунктов и режим оплаты доставки для корзины. */
@@ -304,6 +320,32 @@ export async function getUserOrderByToken(token: string): Promise<UserOrder> {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as { message?: string }).message ?? 'Не удалось загрузить заказ');
+  }
+  return res.json();
+}
+
+/** Может ли текущий пользователь отправлять заказ на email клиента (только менеджеры). */
+export async function canResendOrderToEmail(): Promise<boolean> {
+  const res = await fetch(`${API_URL}/orders/can-resend-order-to-email`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) return false;
+  const data = (await res.json()) as { canResend?: boolean };
+  return !!data.canResend;
+}
+
+/** Отправить заказ на email клиента (только для менеджеров, требует авторизацию). */
+export async function resendOrderToCustomerEmail(
+  token: string
+): Promise<{ sent: boolean; error?: string }> {
+  const res = await fetch(`${API_URL}/orders/resend-to-email`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ token }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message ?? 'Не удалось отправить');
   }
   return res.json();
 }

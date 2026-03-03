@@ -10,7 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/react/24/solid';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -610,6 +610,20 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
   const showPrices = data?.showPricesInPublic ?? true;
   const activeCalc = calculations.find((calc) => calc.id === activeCalcId) ?? calculations[0];
   const activeCalcLines = activeCalc?.lines ?? [];
+
+  const totalAllRooms = useMemo(() => {
+    let sum = 0;
+    let anyLoading = false;
+    for (const calc of calculations) {
+      if (calc.loading) anyLoading = true;
+      if (calc.result?.total != null) {
+        sum += calc.result.total;
+      } else if (calc.lines.length > 0) {
+        sum += calc.lines.reduce((s, l) => s + l.price * l.quantity, 0);
+      }
+    }
+    return anyLoading ? null : sum;
+  }, [calculations]);
   const hasAnyCalcLines = calculations.some((calc) => calc.lines.length > 0);
   const isInCart =
     !!data &&
@@ -741,7 +755,12 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
         {showPrices && (
           <aside className={styles.calculator}>
             <div className={styles.calcHeaderRow}>
-              <h2 className={styles.sectionTitle}>Расчёты по помещениям</h2>
+              <h2 className={styles.sectionTitle}>
+                Расчёты по помещениям
+                {totalAllRooms !== null && totalAllRooms > 0 && (
+                  <span className={styles.calcHeaderTotal}> · {formatPrice(totalAllRooms)}</span>
+                )}
+              </h2>
               <button
                 type="button"
                 className={styles.addCalcButton}

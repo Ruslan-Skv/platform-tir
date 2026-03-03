@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Cog6ToothIcon,
   HeartIcon,
   MagnifyingGlassIcon,
   MoonIcon,
@@ -11,11 +12,13 @@ import {
 
 import React, { useEffect, useState } from 'react';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useUserAuth } from '@/features/auth/context/UserAuthContext';
 import { useTheme } from '@/features/theme';
 import { getAvatarUrl, getInitials } from '@/shared/lib/avatar';
+import { useSitePublicConfig } from '@/shared/lib/contexts/SitePublicConfigContext';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 
 import styles from './TopBar.module.css';
@@ -26,6 +29,9 @@ export const TopBar: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [avatarLoadError, setAvatarLoadError] = useState(false);
   const { isAuthenticated, user } = useUserAuth();
+  const { rolesShowAdminLink } = useSitePublicConfig();
+  const isAdmin =
+    !!user?.role && rolesShowAdminLink.length > 0 && rolesShowAdminLink.includes(user.role);
   const { count: wishlistCount } = useWishlist();
   const { count: compareCount } = useCompare();
   const { count: cartCount } = useCart();
@@ -117,6 +123,19 @@ export const TopBar: React.FC = () => {
             </div>
             <span className={styles.utilityText}></span>
           </button>
+
+          {/* Админка (только для админов) */}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className={styles.utilityButton}
+              title="Перейти в админку"
+              aria-label="Админка"
+            >
+              <Cog6ToothIcon className={styles.icon} />
+              <span className={styles.utilityText}></span>
+            </Link>
+          )}
 
           {/* Личный кабинет */}
           <button onClick={handleProfileClick} className={styles.utilityButton} type="button">

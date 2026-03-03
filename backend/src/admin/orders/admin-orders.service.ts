@@ -22,7 +22,7 @@ const ORDER_STATUS_LABELS: Record<string, string> = {
   REFUNDED: 'Возврат',
 };
 
-const APPROVAL_VALID_MS = 60 * 60 * 1000; // 60 минут действия статуса «Заказ проверен»
+const DEFAULT_APPROVAL_VALID_MINUTES = 60;
 
 @Injectable()
 export class AdminOrdersService {
@@ -341,10 +341,15 @@ export class AdminOrdersService {
       throw new NotFoundException(`Order with ID ${id} not found`);
     }
 
+    const config = await this.getDeliveryConfig();
+    const approvalValidMinutes =
+      (config as { approvalValidMinutes?: number }).approvalValidMinutes ??
+      DEFAULT_APPROVAL_VALID_MINUTES;
+    const approvalValidMs = approvalValidMinutes * 60 * 1000;
     if (
       order.status === 'APPROVED' &&
       order.approvedAt &&
-      Date.now() - new Date(order.approvedAt).getTime() > APPROVAL_VALID_MS
+      Date.now() - new Date(order.approvedAt).getTime() > approvalValidMs
     ) {
       await this.restoreStock(
         order.items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
@@ -354,7 +359,7 @@ export class AdminOrdersService {
         data: {
           status: 'CANCELLED',
           cancelledAt: new Date(),
-          cancelReason: 'Время на оформление заказа истекло (60 мин). Товары остаются в корзине.',
+          cancelReason: `Время на оформление заказа истекло (${approvalValidMinutes} мин). Товары остаются в корзине.`,
           approvedAt: null,
         },
         include: {
@@ -419,7 +424,7 @@ export class AdminOrdersService {
       });
     }
 
-    return order!;
+    return { ...order!, approvalValidMinutes };
   }
 
   /** Записать событие в историю заказа. */
@@ -649,11 +654,12 @@ export class AdminOrdersService {
     return { sent: true };
   }
 
-  /** Обновить данные покупателя (email/имя/фамилия) для заказа. */
+  /** Обновить данные покупателя (email/телефон/имя/фамилия) для заказа. */
   async updateOrderCustomer(
     orderId: string,
     data: {
       customerEmail?: string | null;
+      customerPhone?: string | null;
       customerFirstName?: string | null;
       customerMiddleName?: string | null;
       customerLastName?: string | null;
@@ -664,6 +670,9 @@ export class AdminOrdersService {
     const updateData: Prisma.OrderUpdateInput = {};
     if (data.customerEmail !== undefined) {
       updateData.customerEmail = data.customerEmail?.trim().toLowerCase() || null;
+    }
+    if (data.customerPhone !== undefined) {
+      updateData.customerPhone = data.customerPhone?.trim() || null;
     }
     if (data.customerFirstName !== undefined) {
       updateData.customerFirstName = data.customerFirstName?.trim() || null;
@@ -719,6 +728,7 @@ export class AdminOrdersService {
           moversPriceOutside: 400,
           moversKgPerPerson: 50,
           moversVolumePerPerson: 0.5,
+          approvalValidMinutes: DEFAULT_APPROVAL_VALID_MINUTES,
         },
         include: {
           settlements: { orderBy: { order: 'asc' } },
@@ -744,6 +754,7 @@ export class AdminOrdersService {
       moversVolumePerPerson?: number | null;
       settlements?: Array<{ id?: string; name: string; price: number; order?: number }>;
       rolesAllowedOrderForCustomer?: string[] | null;
+      approvalValidMinutes?: number;
     },
     currentUserRole?: string,
   ) {
@@ -760,6 +771,10 @@ export class AdminOrdersService {
     if (data.moversKgPerPerson !== undefined) updateData.moversKgPerPerson = data.moversKgPerPerson;
     if (data.moversVolumePerPerson !== undefined)
       updateData.moversVolumePerPerson = data.moversVolumePerPerson;
+    if (data.approvalValidMinutes !== undefined) {
+      const mins = Math.max(1, Math.min(1440, data.approvalValidMinutes)); // 1–1440 мин (24 ч)
+      updateData.approvalValidMinutes = mins;
+    }
 
     if (data.rolesAllowedOrderForCustomer !== undefined) {
       if (currentUserRole !== 'SUPER_ADMIN') {

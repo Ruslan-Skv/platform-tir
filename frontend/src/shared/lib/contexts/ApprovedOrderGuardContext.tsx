@@ -52,7 +52,9 @@ export function ApprovedOrderGuardProvider({ children }: { children: React.React
   const approvedOrder = useMemo(() => {
     if (!userOrders?.length) return null;
     const approved = userOrders.find(
-      (o) => o.status === 'APPROVED' && getApprovalRemainingMs(o.approvedAt ?? null) > 0
+      (o) =>
+        o.status === 'APPROVED' &&
+        getApprovalRemainingMs(o.approvedAt ?? null, o.approvalValidMinutes) > 0
     );
     return approved ?? null;
   }, [userOrders]);

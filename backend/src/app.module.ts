@@ -30,6 +30,7 @@ import { CatalogBlockModule } from './catalog-block/catalog-block.module';
 import { FormsModule } from './forms/forms.module';
 import { HomeSectionsModule } from './home-sections/home-sections.module';
 import { ContactFormModule } from './contact-form/contact-form.module';
+import { SitePublicModule } from './site-public/site-public.module';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { ContactFormModule } from './contact-form/contact-form.module';
     FormsModule,
     HomeSectionsModule,
     ContactFormModule,
+    SitePublicModule,
   ],
   controllers: [AppController],
   providers: [

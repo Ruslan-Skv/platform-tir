@@ -48,11 +48,25 @@ export default function AdminSettingsPage() {
           Уведомления
         </Link>
         <Link
+          href="/admin/settings/checkout"
+          className={styles.subtitle}
+          style={{ color: '#4f46e5', textDecoration: 'underline' }}
+        >
+          Оформление заказов
+        </Link>
+        <Link
           href="/admin/settings/delivery"
           className={styles.subtitle}
           style={{ color: '#4f46e5', textDecoration: 'underline' }}
         >
           Доставка
+        </Link>
+        <Link
+          href="/admin/settings/admin-link"
+          className={styles.subtitle}
+          style={{ color: '#4f46e5', textDecoration: 'underline' }}
+        >
+          Кнопка «Админка» на сайте
         </Link>
         <Link
           href="/admin/settings/roles"

@@ -198,6 +198,11 @@
   margin-bottom: 1rem;
 }
 
+.calcHeaderTotal {
+  font-weight: 600;
+  color: #059669;
+}
+
 .addCalcButton {
   display: inline-flex;
   align-items: center;
@@ -796,6 +801,10 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .calculator .calcSummaryTotal {
+  color: #6ee7b7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calculator .calcHeaderTotal {
   color: #6ee7b7;
 }
 

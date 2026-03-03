@@ -115,6 +115,21 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     label: 'Уведомления',
     path: '/admin/settings/notifications',
   },
+  {
+    id: 'admin.settings.checkout',
+    label: 'Оформление заказов',
+    path: '/admin/settings/checkout',
+  },
+  {
+    id: 'admin.settings.delivery',
+    label: 'Доставка',
+    path: '/admin/settings/delivery',
+  },
+  {
+    id: 'admin.settings.admin-link',
+    label: 'Кнопка «Админка» на сайте',
+    path: '/admin/settings/admin-link',
+  },
   { id: 'admin.settings.roles', label: 'Роли', path: '/admin/settings/roles' },
   { id: 'admin.users', label: 'Управление пользователями', path: '/admin/users' },
 ];
