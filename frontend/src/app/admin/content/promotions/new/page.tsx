@@ -1,4 +1,4 @@
-import { PromotionFormPage } from '@/pages/admin/Content/PromotionFormPage';
+import { PromotionFormPage } from '@/views/admin/Content/PromotionFormPage';
 
 export default function AdminPromotionNewPage() {
   return <PromotionFormPage />;

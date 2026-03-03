@@ -4,9 +4,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import Link from 'next/link';
 
-import { ProductCard } from '@/pages/catalog/ui/ProductsGrid';
 import * as compareApi from '@/shared/api/compare';
 import { useCompare } from '@/shared/lib/hooks';
+import { ProductCard } from '@/views/catalog/ui/ProductsGrid';
 
 import styles from './page.module.css';
 

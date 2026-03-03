@@ -1,6 +1,6 @@
 'use client';
 
-import { TasksPage } from '@/pages/admin/CRM/Tasks';
+import { TasksPage } from '@/views/admin/CRM/Tasks';
 
 export default function AdminTasksPage() {
   return <TasksPage />;

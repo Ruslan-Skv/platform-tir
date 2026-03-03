@@ -1,1 +1,0 @@
-export { ServiceCategoryPage } from './ServiceCategoryPage';

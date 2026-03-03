@@ -1,6 +1,6 @@
 'use client';
 
-import { CustomersPage } from '@/pages/admin/CRM/Customers/CustomersPage';
+import { CustomersPage } from '@/views/admin/CRM/Customers/CustomersPage';
 
 export default function AdminCustomersPage() {
   return <CustomersPage />;

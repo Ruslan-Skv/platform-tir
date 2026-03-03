@@ -1,4 +1,4 @@
-import { ServicesSectionPage } from '@/pages/admin/Content/ServicesSectionPage';
+import { ServicesSectionPage } from '@/views/admin/Content/ServicesSectionPage';
 
 export default function AdminServicesSectionPage() {
   return <ServicesSectionPage />;

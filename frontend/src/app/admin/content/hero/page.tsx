@@ -1,4 +1,4 @@
-import { HeroSectionPage } from '@/pages/admin/Content/HeroSectionPage';
+import { HeroSectionPage } from '@/views/admin/Content/HeroSectionPage';
 
 export default function AdminHeroSectionPage() {
   return <HeroSectionPage />;

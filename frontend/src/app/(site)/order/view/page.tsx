@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useState } from 'react';
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -18,7 +18,7 @@ import styles from './page.module.css';
 
 const POLL_INTERVAL_MS = 15000;
 
-export default function OrderViewByTokenPage() {
+function OrderViewContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const [order, setOrder] = useState<UserOrder | null>(null);
@@ -250,5 +250,19 @@ export default function OrderViewByTokenPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function OrderViewByTokenPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className={styles.container}>
+          <div className={styles.loading}>Загрузка...</div>
+        </div>
+      }
+    >
+      <OrderViewContent />
+    </Suspense>
   );
 }

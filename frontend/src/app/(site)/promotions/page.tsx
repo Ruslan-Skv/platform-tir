@@ -1,4 +1,4 @@
-import { PromotionsPage } from '@/pages/promotions/ui/PromotionsPage/PromotionsPage';
+import { PromotionsPage } from '@/views/promotions/ui/PromotionsPage/PromotionsPage';
 
 export default function PromotionsListPage() {
   return <PromotionsPage />;

@@ -1,4 +1,4 @@
-import { AdvantagesSectionPage } from '@/pages/admin/Content/AdvantagesSectionPage';
+import { AdvantagesSectionPage } from '@/views/admin/Content/AdvantagesSectionPage';
 
 export default function AdminAdvantagesSectionPage() {
   return <AdvantagesSectionPage />;

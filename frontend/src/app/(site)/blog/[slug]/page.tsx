@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 
-import { BlogPostPage } from '@/pages/blog/ui/BlogPostPage';
+import { BlogPostPage } from '@/views/blog/ui/BlogPostPage';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 const SITE_NAME = 'Территория интерьерных решений';

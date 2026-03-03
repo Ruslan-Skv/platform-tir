@@ -1,6 +1,6 @@
 'use client';
 
-import { PayrollPage } from '@/pages/admin/CRM/Payroll';
+import { PayrollPage } from '@/views/admin/CRM/Payroll';
 
 export default function AdminCrmPayrollPage() {
   return <PayrollPage />;

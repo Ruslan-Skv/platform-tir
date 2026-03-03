@@ -3,13 +3,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
-import { ROLES_CONFIG } from '@/pages/admin/Settings/rolesConfig';
 import {
   type DeliveryConfigDto,
   type DeliverySettlementDto,
   getDeliveryConfig,
   updateDeliveryConfig,
 } from '@/shared/api/admin-orders';
+import { ROLES_CONFIG } from '@/views/admin/Settings/rolesConfig';
 
 import styles from './page.module.css';
 

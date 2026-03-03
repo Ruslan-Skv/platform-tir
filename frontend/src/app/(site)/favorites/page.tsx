@@ -4,9 +4,9 @@ import React, { useEffect, useState } from 'react';
 
 import Link from 'next/link';
 
-import { ProductCard } from '@/pages/catalog/ui/ProductsGrid';
 import * as wishlistApi from '@/shared/api/wishlist';
 import { useWishlist } from '@/shared/lib/hooks';
+import { ProductCard } from '@/views/catalog/ui/ProductsGrid';
 
 import styles from './page.module.css';
 

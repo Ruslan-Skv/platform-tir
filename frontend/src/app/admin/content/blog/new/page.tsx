@@ -1,4 +1,4 @@
-import { BlogPostFormPage } from '@/pages/admin/Content/BlogPostFormPage';
+import { BlogPostFormPage } from '@/views/admin/Content/BlogPostFormPage';
 
 export default function AdminBlogNewPage() {
   return <BlogPostFormPage />;

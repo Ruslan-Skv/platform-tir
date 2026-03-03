@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 
-import { ContractFormPage } from '@/pages/admin/CRM/Contracts/ContractFormPage';
+import { ContractFormPage } from '@/views/admin/CRM/Contracts/ContractFormPage';
 
 export default function AdminContractEditPage() {
   const params = useParams();

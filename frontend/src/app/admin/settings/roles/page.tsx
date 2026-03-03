@@ -1,7 +1,7 @@
 'use client';
 
-import { RolesSection } from '@/pages/admin/Settings/RolesSection';
-import styles from '@/pages/admin/Settings/SettingsPage.module.css';
+import { RolesSection } from '@/views/admin/Settings/RolesSection';
+import styles from '@/views/admin/Settings/SettingsPage.module.css';
 
 export default function AdminRolesPage() {
   return (

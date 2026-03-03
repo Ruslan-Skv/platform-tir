@@ -1,4 +1,4 @@
-import { CatalogPage } from '@/pages/catalog/ui/CatalogPage';
+import { CatalogPage } from '@/views/catalog/ui/CatalogPage';
 
 // Маппинг slug категории на человекочитаемое название (fallback)
 const categoryNames: Record<string, string> = {

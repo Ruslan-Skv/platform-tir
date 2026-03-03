@@ -1,4 +1,4 @@
-import { CatalogPage } from '@/pages/catalog/ui/CatalogPage';
+import { CatalogPage } from '@/views/catalog/ui/CatalogPage';
 
 export default function AllProductsPage() {
   return <CatalogPage categorySlug="all" categoryName="Каталог" />;

@@ -1,4 +1,4 @@
-import { FooterSectionPage } from '@/pages/admin/Content/FooterSectionPage';
+import { FooterSectionPage } from '@/views/admin/Content/FooterSectionPage';
 
 export default function AdminFooterSectionPage() {
   return <FooterSectionPage />;

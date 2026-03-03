@@ -1,6 +1,6 @@
 'use client';
 
-import { OrdersPage } from '@/pages/admin/Orders/OrdersPage';
+import { OrdersPage } from '@/views/admin/Orders/OrdersPage';
 
 export default function AdminOrdersPage() {
   return <OrdersPage />;

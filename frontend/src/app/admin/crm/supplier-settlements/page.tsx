@@ -1,4 +1,4 @@
-import { SupplierSettlementsPage } from '@/pages/admin/CRM/SupplierSettlements';
+import { SupplierSettlementsPage } from '@/views/admin/CRM/SupplierSettlements';
 
 export default function AdminSupplierSettlementsPage() {
   return <SupplierSettlementsPage />;

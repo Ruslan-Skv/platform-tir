@@ -1,6 +1,6 @@
 import { use } from 'react';
 
-import { ServiceCategoryPage } from '@/pages/services/ui/ServiceCategoryPage';
+import { ServiceCategoryPage } from '@/views/services/ui/ServiceCategoryPage';
 
 interface PageProps {
   params: Promise<{ slug: string }>;

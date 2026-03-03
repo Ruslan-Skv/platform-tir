@@ -1,4 +1,4 @@
-import { ManagersPage } from '@/pages/admin/CRM/Managers/ManagersPage';
+import { ManagersPage } from '@/views/admin/CRM/Managers/ManagersPage';
 
 export default function Page() {
   return <ManagersPage />;

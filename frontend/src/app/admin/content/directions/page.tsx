@@ -1,6 +1,6 @@
 'use client';
 
-import { HomeDirectionsPage } from '@/pages/admin/Content';
+import { HomeDirectionsPage } from '@/views/admin/Content';
 
 export default function AdminHomeDirectionsPage() {
   return <HomeDirectionsPage />;

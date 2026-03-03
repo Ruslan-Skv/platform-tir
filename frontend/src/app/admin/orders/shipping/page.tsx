@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 
 import Link from 'next/link';
 
-import styles from '@/pages/admin/Orders/OrdersPage.module.css';
 import { type AdminOrderSummary, getAdminOrders } from '@/shared/api/admin-orders';
 import { DataTable } from '@/shared/ui/admin/DataTable';
+import styles from '@/views/admin/Orders/OrdersPage.module.css';
 
 type OrderWithDelivery = AdminOrderSummary & {
   shippingAddress?: {

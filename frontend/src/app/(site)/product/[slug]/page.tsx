@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 
-import { ProductDetailPage } from '@/pages/product/ui/ProductDetailPage';
+import { ProductDetailPage } from '@/views/product/ui/ProductDetailPage';
 
 interface ProductPageProps {
   params: Promise<{

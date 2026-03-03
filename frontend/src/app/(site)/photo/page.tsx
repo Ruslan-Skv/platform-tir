@@ -1,4 +1,4 @@
-import { PhotoPage } from '@/pages/photo/ui/PhotoPage/PhotoPage';
+import { PhotoPage } from '@/views/photo/ui/PhotoPage/PhotoPage';
 
 export default function PhotoListPage() {
   return <PhotoPage />;

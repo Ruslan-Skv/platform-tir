@@ -1,4 +1,4 @@
-import { ServiceCatalogPage } from '@/pages/services/ui/ServiceCatalogPage';
+import { ServiceCatalogPage } from '@/views/services/ui/ServiceCatalogPage';
 
 export default function ServicesListPage() {
   return <ServiceCatalogPage />;

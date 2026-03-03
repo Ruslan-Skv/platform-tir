@@ -1,6 +1,6 @@
 'use client';
 
-import { PartnersPage } from '@/pages/admin/Partners/PartnersPage';
+import { PartnersPage } from '@/views/admin/Partners/PartnersPage';
 
 export default function AdminPartnersPage() {
   return <PartnersPage />;

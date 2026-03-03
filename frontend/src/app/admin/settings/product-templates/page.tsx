@@ -1,7 +1,7 @@
 'use client';
 
-import { ProductTemplatesSection } from '@/pages/admin/Settings/ProductTemplatesSection';
-import styles from '@/pages/admin/Settings/SettingsPage.module.css';
+import { ProductTemplatesSection } from '@/views/admin/Settings/ProductTemplatesSection';
+import styles from '@/views/admin/Settings/SettingsPage.module.css';
 
 export default function AdminProductTemplatesPage() {
   return (

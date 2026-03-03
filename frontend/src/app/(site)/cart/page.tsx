@@ -50,7 +50,7 @@ const markServiceOrderRestored = (orderId: string) => {
   if (typeof window === 'undefined') return;
   const current = getRestoredServiceOrderIds();
   current.add(orderId);
-  window.sessionStorage.setItem(RESTORED_SERVICE_ORDERS_KEY, JSON.stringify([...current]));
+  window.sessionStorage.setItem(RESTORED_SERVICE_ORDERS_KEY, JSON.stringify(Array.from(current)));
 };
 
 export default function CartPage() {

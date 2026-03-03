@@ -1,6 +1,6 @@
 'use client';
 
-import { OrderCheckoutInfoPage } from '@/pages/admin/Orders/OrderCheckoutInfoPage';
+import { OrderCheckoutInfoPage } from '@/views/admin/Orders/OrderCheckoutInfoPage';
 
 export default function AdminOrderCheckoutInfoPage() {
   return <OrderCheckoutInfoPage />;

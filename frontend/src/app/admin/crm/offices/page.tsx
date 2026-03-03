@@ -1,4 +1,4 @@
-import { OfficesPage } from '@/pages/admin/CRM/Offices';
+import { OfficesPage } from '@/views/admin/CRM/Offices';
 
 export default function Page() {
   return <OfficesPage />;

@@ -1,4 +1,4 @@
-import { BlogPage } from '@/pages/blog/ui/BlogPage';
+import { BlogPage } from '@/views/blog/ui/BlogPage';
 
 export default function BlogListPage() {
   return <BlogPage />;

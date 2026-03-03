@@ -5,11 +5,11 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 
 import { useAuth } from '@/features/auth';
-import { ROLES_CONFIG } from '@/pages/admin/Settings/rolesConfig';
 import {
   getAdminSitePublicSettings,
   updateAdminSitePublicSettings,
 } from '@/shared/api/admin-site-public';
+import { ROLES_CONFIG } from '@/views/admin/Settings/rolesConfig';
 
 import styles from './page.module.css';
 

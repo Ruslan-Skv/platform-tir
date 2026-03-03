@@ -1,7 +1,7 @@
 'use client';
 
-import { CatalogSection } from '@/pages/admin/Settings/CatalogSection';
-import styles from '@/pages/admin/Settings/SettingsPage.module.css';
+import { CatalogSection } from '@/views/admin/Settings/CatalogSection';
+import styles from '@/views/admin/Settings/SettingsPage.module.css';
 
 export default function AdminCatalogSettingsPage() {
   return (

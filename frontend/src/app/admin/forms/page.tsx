@@ -1,6 +1,6 @@
 'use client';
 
-import { FormSubmissionsPage } from '@/pages/admin/Forms/FormSubmissionsPage';
+import { FormSubmissionsPage } from '@/views/admin/Forms/FormSubmissionsPage';
 
 export default function AdminFormsPage() {
   return <FormSubmissionsPage />;

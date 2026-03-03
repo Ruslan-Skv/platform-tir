@@ -1,7 +1,7 @@
 'use client';
 
-import styles from '@/pages/admin/Settings/SettingsPage.module.css';
-import { UserCabinetSection } from '@/pages/admin/Settings/UserCabinetSection';
+import styles from '@/views/admin/Settings/SettingsPage.module.css';
+import { UserCabinetSection } from '@/views/admin/Settings/UserCabinetSection';
 
 export default function AdminUserCabinetPage() {
   return (

@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 
-import { MeasurementFormPage } from '@/pages/admin/CRM/Measurements/MeasurementFormPage';
+import { MeasurementFormPage } from '@/views/admin/CRM/Measurements/MeasurementFormPage';
 
 export default function AdminMeasurementEditPage() {
   const params = useParams();

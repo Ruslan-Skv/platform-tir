@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import type { Product } from '@/entities/product/types';
-import { ProductCard } from '@/pages/catalog/ui/ProductsGrid';
+import { ProductCard } from '@/views/catalog/ui/ProductsGrid';
 
 import styles from './FeaturedProducts.module.css';
 
