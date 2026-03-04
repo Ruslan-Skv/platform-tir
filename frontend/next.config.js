@@ -10,9 +10,12 @@ const nextConfig = {
     includePaths: ['./src/shared/styles'],
   },
   async rewrites() {
+    const apiTarget = process.env.API_INTERNAL_URL || 'http://localhost:3001';
     return [
       // Браузер по умолчанию запрашивает /favicon.ico — отдаём favicon.svg
       { source: '/favicon.ico', destination: '/favicon.svg' },
+      // Проксирование API: в Docker бэкенд доступен как backend:3001
+      { source: '/api/v1/:path*', destination: `${apiTarget}/api/v1/:path*` },
     ];
   },
   images: {

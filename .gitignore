@@ -56,7 +56,6 @@ out/
 backend/dist/
 
 # Prisma
-backend/prisma/migrations/
 backend/prisma/*.db
 !backend/prisma/schema.prisma
 
