@@ -21,7 +21,7 @@ RUN npm run build
 # Production stage
 FROM node:20-slim AS runner
 
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y && apt-get install -y openssl curl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -38,9 +38,10 @@ RUN npm config set fetch-retries 5 && \
     npm config set fetch-retry-maxtimeout 120000 && \
     npm ci --omit=dev && npm cache clean --force
 
-# Copy prisma schema and migrations (explicit migrations copy for Docker context)
+# Copy prisma schema, migrations and create-super-admin script
 COPY prisma/schema.prisma ./prisma/schema.prisma
 COPY prisma/migrations ./prisma/migrations
+COPY prisma/create-super-admin.cjs ./prisma/create-super-admin.cjs
 RUN npx prisma generate
 
 # Copy built application

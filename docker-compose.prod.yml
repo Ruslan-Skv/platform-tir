@@ -1,0 +1,103 @@
+# Production override for Platform TIR
+# Использование: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Перед запуском:
+#   1. Скопируйте .env.example в .env
+#   2. Заполните SITE_URL, JWT_SECRET, POSTGRES_PASSWORD и др.
+#   3. Для SSL: подготовьте сертификаты в ./nginx/ssl/
+
+services:
+  postgres:
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-platform_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required for production}
+      POSTGRES_DB: ${POSTGRES_DB:-platform_tir}
+    ports: []  # Не публикуем порт в production (доступ только из Docker-сети)
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-platform_user}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  elasticsearch:
+    ports: []  # Не публикуем
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+  backend:
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required for production}
+      ELASTICSEARCH_NODE: http://elasticsearch:9200
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://example.com}
+      API_BASE_URL: ${API_BASE_URL:-https://example.com/api/v1}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET required for production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      NODE_ENV: production
+    ports: []  # Доступ только через nginx
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost:3001/api/v1/site-public/config']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://example.com/api/v1}
+        API_INTERNAL_URL: ${API_INTERNAL_URL:-http://backend:3001}
+    environment:
+      NODE_ENV: production
+      API_INTERNAL_URL: http://backend:3001
+    ports: []  # Доступ только через nginx
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3000/',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: platform-tir-nginx
+    ports:
+      - '80:80'
+      # Для SSL раскомментируйте и смонтируйте сертификаты:
+      # - '443:443'
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      # Для SSL:
+      # - ./nginx/ssl:/etc/nginx/ssl:ro
+      # - ./nginx/nginx.ssl.conf:/etc/nginx/conf.d/ssl.conf:ro
+    depends_on:
+      frontend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-sf', 'http://localhost/']
+      interval: 30s
+      timeout: 5s
+      retries: 3

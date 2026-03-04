@@ -1,13 +1,17 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { json, urlencoded } from 'express';
 import * as express from 'express';
 import { join } from 'path';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Trust proxy (nginx) — корректный IP и протокол из X-Forwarded-*
+  app.set('trust proxy', 1);
 
   // Раздача загруженных файлов (картинки «Наши направления» и др.)
   app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
