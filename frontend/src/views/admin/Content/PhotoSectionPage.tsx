@@ -168,10 +168,13 @@ export function PhotoSectionPage() {
     }
   };
 
+  const UPLOADS_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1').replace(
+    /\/api\/v1\/?$/,
+    ''
+  );
   const getImageUrl = (url: string) => {
     if (url.startsWith('http')) return url;
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    return `${apiUrl}${url}`;
+    return `${UPLOADS_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
   };
 
   return (

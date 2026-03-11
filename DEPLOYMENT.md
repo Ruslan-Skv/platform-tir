@@ -50,20 +50,38 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml exec backend nod
 
 ---
 
+## Несколько доменов (territory-interior.ru + территория-интерьерных-решений.рф)
+
+Для двух доменов, указывающих на один сервер:
+
+1. **NEXT_PUBLIC_API_URL** — используйте относительный путь `/api/v1`, чтобы API работало с обоих доменов без CORS.
+2. **CORS_ORIGIN** — укажите оба домена (кириллический — в Punycode):
+   ```bash
+   node -e "console.log(require('url').domainToASCII('территория-интерьерных-решений.рф'))"
+   # → xn-----mlcbabasabfm9bcdf6aacfbc3aeg7f4dwdza7f.xn--p1ai
+   ```
+   ```
+   CORS_ORIGIN=https://territory-interior.ru,https://xn-----mlcbabasabfm9bcdf6aacfbc3aeg7f4dwdza7f.xn--p1ai
+   ```
+3. Готовый шаблон: `cp .env.production.example .env`
+
+---
+
 ## SSL (HTTPS)
 
 ### Вариант 1: Let's Encrypt вручную
 
 1. Установите certbot на сервере
-2. Получите сертификаты:
+2. Получите сертификаты (для обоих доменов):
    ```bash
-   certbot certonly --standalone -d example.com
+   certbot certonly --standalone -d territory-interior.ru -d xn-----mlcbabasabfm9bcdf6aacfbc3aeg7f4dwdza7f.xn--p1ai
    ```
+   Или по отдельности, если certbot не поддерживает несколько -d.
 3. Скопируйте в проект:
    ```bash
    mkdir -p nginx/ssl
-   cp /etc/letsencrypt/live/example.com/fullchain.pem nginx/ssl/
-   cp /etc/letsencrypt/live/example.com/privkey.pem nginx/ssl/
+   cp /etc/letsencrypt/live/territory-interior.ru/fullchain.pem nginx/ssl/
+   cp /etc/letsencrypt/live/territory-interior.ru/privkey.pem nginx/ssl/
    ```
 4. Раскомментируйте SSL в `docker-compose.prod.yml`:
    - Порт `443:443` у nginx

@@ -29,12 +29,15 @@ export const PromotionsPage: React.FC = () => {
     loadPromotions();
   }, [loadPromotions]);
 
+  const UPLOADS_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1').replace(
+    /\/api\/v1\/?$/,
+    ''
+  );
   const getImageUrl = (url: string) => {
     if (url.startsWith('http')) return url;
     // /uploads/* — с бэкенда; /images/* — из public фронтенда
     if (url.startsWith('/uploads/')) {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      return `${apiUrl.replace(/\/$/, '')}${url}`;
+      return `${UPLOADS_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
     }
     return url; // /images/* — относительный путь, резолвится на фронтенд
   };
