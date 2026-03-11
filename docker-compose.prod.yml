@@ -1,9 +1,12 @@
 # Production override for Platform TIR
 # Использование: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 #
+# Образы backend, frontend, nginx собираются в GitHub Actions и публикуются в GHCR.
+# На сервере — только pull (без сборки). Переменная GHCR_IMAGE_PREFIX — владелец образа.
+#
 # Перед запуском:
-#   1. Скопируйте .env.example в .env
-#   2. Заполните SITE_URL, JWT_SECRET, POSTGRES_PASSWORD и др.
+#   1. Скопируйте .env.production.example в .env
+#   2. Заполните JWT_SECRET, POSTGRES_PASSWORD
 #   3. Для SSL: подготовьте сертификаты в ./nginx/ssl/
 
 services:
@@ -34,6 +37,9 @@ services:
         hard: -1
 
   backend:
+    image: ${GHCR_IMAGE_PREFIX:-ghcr.io/ruslan-skv}/platform-tir-backend:latest
+    volumes:
+      - backend_uploads:/app/uploads
     environment:
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required for production}
       ELASTICSEARCH_NODE: http://elasticsearch:9200
@@ -57,12 +63,7 @@ services:
       start_period: 40s
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://example.com/api/v1}
-        API_INTERNAL_URL: ${API_INTERNAL_URL:-http://backend:3001}
+    image: ${GHCR_IMAGE_PREFIX:-ghcr.io/ruslan-skv}/platform-tir-frontend:latest
     environment:
       NODE_ENV: production
       API_INTERNAL_URL: http://backend:3001
@@ -79,9 +80,7 @@ services:
       start_period: 20s
 
   nginx:
-    build:
-      context: ./nginx
-      dockerfile: Dockerfile
+    image: ${GHCR_IMAGE_PREFIX:-ghcr.io/ruslan-skv}/platform-tir-nginx:latest
     container_name: platform-tir-nginx
     ports:
       - '80:80'

@@ -5,14 +5,9 @@ WORKDIR /app
 
 # Install dependencies (retry config for flaky networks)
 COPY package.json package-lock.json* ./
-# RUN npm config set fetch-retries 5 && \
-#     npm config set fetch-retry-mintimeout 20000 && \
-#     npm config set fetch-retry-maxtimeout 120000 && \
-#     npm ci
 RUN npm config set fetch-retries 5 && \
     npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000 && \
-    npm config set registry https://registry.npmmirror.com && \
     npm ci
 
 # Copy prisma and generate client
@@ -37,14 +32,9 @@ RUN adduser --system --uid 1001 nestjs
 
 # Install production dependencies only (retry config for flaky networks)
 COPY package.json package-lock.json* ./
-# RUN npm config set fetch-retries 5 && \
-#     npm config set fetch-retry-mintimeout 20000 && \
-#     npm config set fetch-retry-maxtimeout 120000 && \
-#     npm ci --omit=dev && npm cache clean --force
 RUN npm config set fetch-retries 5 && \
     npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000 && \
-    npm config set registry https://registry.npmmirror.com && \
     npm ci --omit=dev && npm cache clean --force
 
 # Copy prisma schema, migrations and create-super-admin script

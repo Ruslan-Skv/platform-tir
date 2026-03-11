@@ -35,14 +35,32 @@ openssl rand -hex 32
 
 ### 2. Запуск
 
+**Вариант A: Образы из GitHub Actions (рекомендуется для VPS)**
+
+Образы собираются при push в `main` и публикуются в GitHub Container Registry. На сервере только pull:
+
+```bash
+# После push в main — дождаться успешного завершения workflow в Actions
+docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml pull
+docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml up -d
+```
+
+Используется `docker-compose.infra.yml` (вместо `docker-compose.yml`), чтобы не тянуть конфигурацию с `build` — иначе Compose попытается собрать образы.
+
+Если репозиторий в другой организации: `GHCR_IMAGE_PREFIX=ghcr.io/your-username docker compose ...`
+
+**Вариант B: Сборка на сервере** (если CI недоступен)
+
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
+(Соберёт образы и присвоит им теги из `image:`.)
+
 ### 3. Создание супер-администратора
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml exec backend node prisma/create-super-admin.cjs
+docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml exec backend node prisma/create-super-admin.cjs
 ```
 
 По умолчанию: `admin@platform.local` / `Admin123!`  
@@ -94,6 +112,19 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml exec backend nod
 
 ---
 
+## GitHub Actions: сборка образов
+
+При каждом push в `main` workflow `.github/workflows/docker-publish.yml`:
+
+1. Собирает backend, frontend, nginx
+2. Публикует в `ghcr.io/<owner>/platform-tir-*:latest`
+3. Первый запуск: вкладка **Actions** → выбрать workflow → **Run workflow**
+
+После успешного выполнения образы доступны на сервере через `docker compose ... pull`.  
+Если репозиторий приватный: GitHub → Packages → нужный образ → Package settings → Change visibility → Public.
+
+---
+
 ## Архитектура production
 
 ```
@@ -127,10 +158,11 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml exec backend nod
 
 ```bash
 git pull
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml pull
+docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml up -d
 ```
 
-Миграции выполняются автоматически при старте backend.
+Образы пересобираются в GitHub Actions при push в `main`. Миграции выполняются автоматически при старте backend.
 
 ---
 

@@ -1,0 +1,43 @@
+# Инфраструктура: postgres, elasticsearch
+# Используется для prod-деплоя с образами из GHCR (без сборки)
+# Запуск: docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml up -d
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: platform-tir-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-platform_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required for production}
+      POSTGRES_DB: ${POSTGRES_DB:-platform_tir}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports: []
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-platform_user}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: platform-tir-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
+      - bootstrap.memory_lock=true
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports: []
+    restart: unless-stopped
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+volumes:
+  postgres_data:
+  elasticsearch_data:
+  backend_uploads:
