@@ -19,9 +19,8 @@ COPY . .
 RUN npm run build
 
 # Production stage
+# Без apt-get: node:20-slim уже содержит libssl для Prisma; healthcheck — через node
 FROM node:20-slim AS runner
-
-RUN apt-get update -y && apt-get install -y openssl curl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
