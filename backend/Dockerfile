@@ -19,8 +19,11 @@ COPY . .
 RUN npm run build
 
 # Production stage
-# Без apt-get: node:20-slim уже содержит libssl для Prisma; healthcheck — через node
+# OpenSSL нужен Prisma Schema Engine (migrate deploy). apt-get работает в CI и локально; на VPS — образы из GHCR.
 FROM node:20-slim AS runner
+
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
