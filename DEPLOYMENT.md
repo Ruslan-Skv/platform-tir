@@ -87,26 +87,48 @@ docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml exec backe
 
 ## SSL (HTTPS)
 
-### Вариант 1: Let's Encrypt вручную
+### Автоматическая настройка (рекомендуется)
 
-1. Установите certbot на сервере
-2. Получите сертификаты (для обоих доменов):
+На сервере в `~/platform-tir`:
+
+```bash
+chmod +x scripts/setup-ssl.sh
+./scripts/setup-ssl.sh
+```
+
+Скрипт: останавливает nginx → получает сертификаты Let's Encrypt → копирует в `nginx/ssl/` → запускает nginx с SSL.
+
+### Ручная настройка
+
+1. Остановить nginx: `docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml stop nginx`
+2. Получить сертификаты:
    ```bash
-   certbot certonly --standalone -d territory-interior.ru -d xn-----mlcbabasabfm9bcdf6aacfbc3aeg7f4dwdza7f.xn--p1ai
+   sudo apt-get install -y certbot
+   sudo certbot certonly --standalone -d territory-interior.ru -d xn-----mlcbabasabfm9bcdf6aacfbc3aeg7f4dwdza7f.xn--p1ai --non-interactive --agree-tos --email admin@territory-interior.ru
    ```
-   Или по отдельности, если certbot не поддерживает несколько -d.
-3. Скопируйте в проект:
+3. Скопировать в проект:
    ```bash
    mkdir -p nginx/ssl
-   cp /etc/letsencrypt/live/territory-interior.ru/fullchain.pem nginx/ssl/
-   cp /etc/letsencrypt/live/territory-interior.ru/privkey.pem nginx/ssl/
+   sudo cp /etc/letsencrypt/live/territory-interior.ru/fullchain.pem nginx/ssl/
+   sudo cp /etc/letsencrypt/live/territory-interior.ru/privkey.pem nginx/ssl/
+   sudo chown $(whoami) nginx/ssl/*.pem
    ```
-4. Раскомментируйте SSL в `docker-compose.prod.yml`:
-   - Порт `443:443` у nginx
-   - Volumes для `./nginx/ssl` и `nginx.ssl.conf`
-5. Замените основной `nginx.conf` на `nginx.ssl.conf` или настройте HTTP→HTTPS редирект
+4. Запустить с SSL:
+   ```bash
+   docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml -f docker-compose.ssl.yml up -d
+   ```
 
-### Вариант 2: Внешний reverse proxy (Traefik, Caddy, Cloudflare)
+### Обновление сертификатов
+
+Let's Encrypt выдаёт сертификаты на 90 дней. Добавьте в crontab (`crontab -e`):
+
+```
+0 3 * * * certbot renew --quiet --deploy-hook "cd /home/ruslan/platform-tir && cp /etc/letsencrypt/live/territory-interior.ru/*.pem nginx/ssl/ && docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml -f docker-compose.ssl.yml restart nginx"
+```
+
+Или используйте отдельный скрипт и вызывайте его из cron.
+
+### Вариант: внешний reverse proxy (Traefik, Caddy, Cloudflare)
 
 Разверните приложение без SSL. Проксируйте порт 80 на nginx. SSL настраивается во внешнем прокси.
 

@@ -1,0 +1,13 @@
+# SSL override: включать после получения сертификатов Let's Encrypt
+# Использование: docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml -f docker-compose.ssl.yml up -d
+#
+# Перед запуском: сертификаты должны быть в ./nginx/ssl/fullchain.pem и privkey.pem
+
+services:
+  nginx:
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx/nginx-ssl.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
