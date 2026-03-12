@@ -48,6 +48,9 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET required for production}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       NODE_ENV: production
+      # Для скрипта create-super-admin.cjs (опционально)
+      SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-admin@platform.local}
+      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-Admin123!}
     ports: []  # Доступ только через nginx
     restart: unless-stopped
     depends_on:
