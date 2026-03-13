@@ -19,6 +19,7 @@ import type { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { uploadsBaseUrl } from '../common/utils/uploads-url';
 import { ContactFormService } from './contact-form.service';
 import { UpdateContactFormBlockDto } from './dto/update-contact-form-block.dto';
 
@@ -93,7 +94,7 @@ export class AdminContactFormController {
       throw new BadRequestException('Файл не загружен');
     }
     const baseUrl = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
-    const imageUrl = `${baseUrl.replace(/\/$/, '')}/uploads/contact-form/${file.filename}`;
+    const imageUrl = `${uploadsBaseUrl(baseUrl)}/uploads/contact-form/${file.filename}`;
     return { imageUrl };
   }
 }

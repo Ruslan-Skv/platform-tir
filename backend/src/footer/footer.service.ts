@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { uploadsBaseUrl } from '../common/utils/uploads-url';
 import * as path from 'path';
 
 export interface FooterLink {
@@ -45,7 +46,7 @@ export class FooterService {
       }),
     ]);
 
-    const prefix = baseUrl ? baseUrl.replace(/\/$/, '') : '';
+    const prefix = uploadsBaseUrl(baseUrl);
 
     const vkIconRaw = block?.vkIcon ?? '/images/icons-vk.png';
     const vkIcon = vkIconRaw.startsWith('http')
@@ -165,7 +166,7 @@ export class FooterService {
     }
     const filename = path.basename(file.path);
     const iconUrl = `/uploads/footer/${filename}`;
-    const prefix = baseUrl.replace(/\/$/, '');
+    const prefix = uploadsBaseUrl(baseUrl);
     const fullUrl = `${prefix}${iconUrl}`;
 
     await this.prisma.footerBlock.upsert({

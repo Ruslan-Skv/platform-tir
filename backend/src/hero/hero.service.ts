@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { uploadsBaseUrl } from '../common/utils/uploads-url';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -30,7 +31,7 @@ export class HeroService {
       this.prisma.heroFeature.findMany({ orderBy: { sortOrder: 'asc' } }),
     ]);
 
-    const prefix = baseUrl ? baseUrl.replace(/\/$/, '') : '';
+    const prefix = uploadsBaseUrl(baseUrl);
 
     const rawMode = block?.slideShowMode;
     const slideShowMode: HeroSlideShowMode =
@@ -120,7 +121,7 @@ export class HeroService {
     const slide = await this.prisma.heroSlide.create({
       data: { imageUrl, sortOrder: count },
     });
-    const prefix = baseUrl.replace(/\/$/, '');
+    const prefix = uploadsBaseUrl(baseUrl);
     return {
       id: slide.id,
       imageUrl: `${prefix}${imageUrl}`,
@@ -166,7 +167,7 @@ export class HeroService {
     }
     const filename = path.basename(file.path);
     const iconUrl = `/uploads/hero/icons/${filename}`;
-    const prefix = baseUrl.replace(/\/$/, '');
+    const prefix = uploadsBaseUrl(baseUrl);
     return { icon: `${prefix}${iconUrl}` };
   }
 

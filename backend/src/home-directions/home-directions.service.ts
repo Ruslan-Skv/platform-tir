@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { uploadsBaseUrl } from '../common/utils/uploads-url';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -15,10 +16,11 @@ export class HomeDirectionsService {
   async getImages(baseUrl?: string): Promise<Record<string, string>> {
     const records = await this.prisma.homeDirectionImage.findMany();
     const map: Record<string, string> = {};
+    const prefix = uploadsBaseUrl(baseUrl);
     for (const slug of SLUGS) {
       const r = records.find((x) => x.slug === slug);
       if (r?.imageUrl) {
-        map[slug] = baseUrl ? `${baseUrl.replace(/\/$/, '')}${r.imageUrl}` : r.imageUrl;
+        map[slug] = prefix ? `${prefix}${r.imageUrl}` : r.imageUrl;
       }
     }
     return map;
@@ -44,7 +46,7 @@ export class HomeDirectionsService {
     }
     fs.renameSync(file.path, destPath);
     const imageUrl = `/uploads/directions/${filename}`;
-    const fullUrl = `${baseUrl.replace(/\/$/, '')}${imageUrl}`;
+    const fullUrl = `${uploadsBaseUrl(baseUrl)}${imageUrl}`;
     await this.prisma.homeDirectionImage.upsert({
       where: { slug },
       create: { slug, imageUrl },

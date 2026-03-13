@@ -23,7 +23,7 @@ cp .env.example .env
 | `SITE_URL` | Публичный URL сайта, напр. `https://example.com` |
 | `NEXT_PUBLIC_API_URL` | URL API для браузера, напр. `https://example.com/api/v1` |
 | `CORS_ORIGIN` | Разрешённый origin (через запятую), напр. `https://example.com` |
-| `API_BASE_URL` | URL бэкенда для ссылок, напр. `https://example.com/api/v1` |
+| `API_BASE_URL` | URL бэкенда, напр. `https://example.com/api/v1`. Для картинок /uploads/ суффикс /api/v1 убирается автоматически |
 | `POSTGRES_PASSWORD` | **Обязательно** — пароль PostgreSQL |
 | `DATABASE_URL` | Connection string БД (должен соответствовать POSTGRES_*) |
 | `JWT_SECRET` | **Обязательно** — секрет JWT (минимум 32 символа) |

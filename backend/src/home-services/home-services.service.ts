@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { Prisma } from '@prisma/client';
+import { uploadsBaseUrl } from '../common/utils/uploads-url';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
 
@@ -51,7 +52,7 @@ export class HomeServicesService {
     const block = blockRows[0] ?? null;
     const items = itemRows ?? [];
 
-    const prefix = baseUrl ? baseUrl.replace(/\/$/, '') : '';
+    const prefix = uploadsBaseUrl(baseUrl);
 
     return {
       block: block
@@ -115,7 +116,7 @@ export class HomeServicesService {
     }
     const filename = path.basename(file.path);
     const imageUrl = `/uploads/services/images/${filename}`;
-    const prefix = baseUrl.replace(/\/$/, '');
+    const prefix = uploadsBaseUrl(baseUrl);
     return { imageUrl: `${prefix}${imageUrl}` };
   }
 
