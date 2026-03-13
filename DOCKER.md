@@ -43,7 +43,7 @@ docker compose ps
 
 Миграции Prisma выполняются автоматически при старте backend-контейнера (`prisma migrate deploy`).
 
-**Структура миграций**: используется единая baseline-миграция `20240101_000000_init`, сгенерированная из текущей схемы (`prisma migrate diff`). Предыдущие инкрементальные миграции сохранены в `backend/prisma/migrations_backup/` для справки.
+**Структура миграций**: используется единая baseline-миграция `20240101_000000_init`. Архив старых миграций: `backend/prisma/migrations_archive/` и `migrations_backup/`.
 
 **Важно**: папка `backend/prisma/migrations/` должна содержать актуальные миграции. Если в `.gitignore` исключена эта папка, необходимо закоммитить миграции в репозиторий для Docker-сборки.
 
@@ -66,8 +66,4 @@ cd frontend && npm run dev
 
 ## Продакшен
 
-Для production рекомендуется:
-1. Задать надёжный `JWT_SECRET`
-2. Настроить `NEXT_PUBLIC_API_URL` и `API_BASE_URL` на публичные URL
-3. Добавить reverse proxy (nginx, traefik) с HTTPS
-4. Настроить SMTP для писем (переменные `SMTP_*` в backend)
+Для деплоя на сервер: **`DEPLOYMENT.md`** — полная инструкция (Docker, nginx, SSL, GitHub Actions, бэкапы).

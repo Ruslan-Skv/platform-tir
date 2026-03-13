@@ -95,14 +95,15 @@ http://localhost:3001/api/v1/docs
 
 ```
 src/
-├── auth/              # Модуль аутентификации
-├── users/             # Управление пользователями
-├── products/          # Товары
-├── categories/        # Категории
+├── auth/              # Аутентификация (JWT)
+├── users/             # Пользователи
+├── admin/             # Админ-панель (CRM, каталог, контент, поддержка)
+├── products/          # Товары, категории
+├── cart/              # Корзина
 ├── orders/            # Заказы
-├── database/          # Prisma сервис
-├── elasticsearch/     # Elasticsearch сервис
-├── app.module.ts      # Главный модуль
+├── database/          # Prisma
+├── elasticsearch/     # Поиск
+├── hero, footer, forms, reviews, ...  # Секции сайта
 └── main.ts            # Точка входа
 ```
 

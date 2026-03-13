@@ -3,12 +3,16 @@
 Многофункциональная платформа для интерьерных решений на Next.js 16 + NestJS.
 
 ## Структура проекта
-- `/frontend` - Next.js 16 приложение (App Router)
-- `/backend` - NestJS API
-- `/docs` - документация
+- `/frontend` — Next.js 16 приложение (App Router)
+- `/backend` — NestJS API (PostgreSQL, Elasticsearch, Prisma)
+- `/nginx` — конфигурация reverse proxy для production
+- `/scripts` — скрипты деплоя (SSL, бэкап)
+- `/docs` — документация
 
 ## Быстрый старт
-См. DEVELOPMENT.md для детальных инструкций.
+
+**Локальная разработка:** `DOCKER.md`  
+**Деплой на сервер:** `DEPLOYMENT.md`
 
 ## Этапы разработки
 1. Базовый корпоративный сайт (SSG)
