@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [lastName, setLastName] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [inputsUnlocked, setInputsUnlocked] = useState(false);
 
   const { login, register } = useUserAuth();
   const router = useRouter();
@@ -87,7 +88,7 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className={styles.form}>
+        <form onSubmit={handleSubmit} className={styles.form} autoComplete="off">
           {!isLogin && (
             <>
               <div className={styles.field}>
@@ -132,6 +133,9 @@ export default function LoginPage() {
               className={styles.input}
               placeholder="Введите email"
               required
+              autoComplete="off"
+              readOnly={!inputsUnlocked}
+              onFocus={() => setInputsUnlocked(true)}
             />
           </div>
 
@@ -145,10 +149,36 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className={styles.input}
-              placeholder="Введите пароль"
+              placeholder={isLogin ? 'Введите пароль' : 'Придумайте пароль'}
               required
               minLength={6}
+              aria-describedby={!isLogin ? 'password-hint' : undefined}
+              autoComplete={isLogin ? 'off' : 'new-password'}
+              readOnly={!inputsUnlocked}
+              onFocus={() => setInputsUnlocked(true)}
             />
+            {!isLogin && (
+              <div id="password-hint" className={styles.passwordHintBlock}>
+                <p className={styles.passwordHint}>Пароль должен содержать:</p>
+                <ul className={styles.passwordRules}>
+                  <li className={password.length >= 6 ? styles.ruleMet : undefined}>
+                    минимум 6 символов
+                  </li>
+                  <li className={password.length >= 8 ? styles.ruleMet : undefined}>
+                    от 8 символов — надёжнее
+                  </li>
+                  <li
+                    className={
+                      /[a-zA-Zа-яА-ЯёЁ]/.test(password) && /\d/.test(password)
+                        ? styles.ruleMet
+                        : undefined
+                    }
+                  >
+                    буквы и цифры — рекомендуется
+                  </li>
+                </ul>
+              </div>
+            )}
           </div>
 
           {!isLogin && (
@@ -184,6 +214,7 @@ export default function LoginPage() {
               setError('');
               setPassword('');
               setConfirmPassword('');
+              setInputsUnlocked(false);
             }}
             className={styles.switchButton}
           >

@@ -3,10 +3,14 @@
  * Запуск: npx ts-node -r tsconfig-paths/register prisma/create-super-admin.ts
  * Или через Docker: docker compose exec backend npx ts-node -r tsconfig-paths/register prisma/create-super-admin.ts
  *
- * Переменные окружения (опционально):
+ * Переменные окружения (опционально) — из .env или env:
  *   SUPER_ADMIN_EMAIL    — email (по умолчанию: admin@platform.local)
  *   SUPER_ADMIN_PASSWORD — пароль (по умолчанию: Admin123!)
  */
+
+// Загружаем .env до остальных импортов (сначала корень проекта, затем backend/)
+require('dotenv').config({ path: require('path').resolve(process.cwd(), '../.env') });
+require('dotenv').config({ path: require('path').resolve(process.cwd(), '.env') });
 
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';

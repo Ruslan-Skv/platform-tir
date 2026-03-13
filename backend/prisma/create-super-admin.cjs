@@ -3,8 +3,12 @@
  * Usage: node prisma/create-super-admin.cjs
  * Docker: docker compose exec backend node prisma/create-super-admin.cjs
  *
- * Env: SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD (optional)
+ * Env: SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD (optional, from .env or process.env)
  */
+const path = require('path');
+require('dotenv').config({ path: path.resolve(process.cwd(), '../.env') });
+require('dotenv').config({ path: path.resolve(process.cwd(), '.env') });
+
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcrypt');
 

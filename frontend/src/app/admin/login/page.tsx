@@ -1,21 +1,26 @@
 'use client';
 
+import { MoonIcon, SunIcon } from '@heroicons/react/24/outline';
+
 import { useEffect, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
+import { useTheme } from '@/features/theme';
 
 import styles from './login.module.css';
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const { login, isAuthenticated, isLoading } = useAuth();
+  const { isDarkTheme, toggleTheme } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [inputsUnlocked, setInputsUnlocked] = useState(false);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -50,13 +55,26 @@ export default function AdminLoginPage() {
 
   return (
     <div className={styles.container}>
+      <button
+        type="button"
+        onClick={toggleTheme}
+        className={styles.themeToggle}
+        title={isDarkTheme ? 'Светлая тема' : 'Тёмная тема'}
+        aria-label={isDarkTheme ? 'Светлая тема' : 'Тёмная тема'}
+      >
+        {isDarkTheme ? (
+          <SunIcon className={styles.themeIcon} />
+        ) : (
+          <MoonIcon className={styles.themeIcon} />
+        )}
+      </button>
       <div className={styles.loginCard}>
         <div className={styles.logo}>
           <h1>ТИР</h1>
           <p>Административная панель</p>
         </div>
 
-        <form onSubmit={handleSubmit} className={styles.form}>
+        <form onSubmit={handleSubmit} className={styles.form} autoComplete="off">
           <h2 className={styles.title}>Вход в систему</h2>
 
           {error && <div className={styles.error}>{error}</div>}
@@ -70,7 +88,9 @@ export default function AdminLoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="admin@example.com"
               required
-              autoComplete="email"
+              autoComplete="off"
+              readOnly={!inputsUnlocked}
+              onFocus={() => setInputsUnlocked(true)}
               className={styles.input}
             />
           </div>
@@ -84,7 +104,9 @@ export default function AdminLoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
-              autoComplete="current-password"
+              autoComplete="new-password"
+              readOnly={!inputsUnlocked}
+              onFocus={() => setInputsUnlocked(true)}
               className={styles.input}
             />
           </div>

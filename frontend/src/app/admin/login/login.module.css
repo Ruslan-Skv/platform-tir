@@ -3,13 +3,81 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 50%, #d1d9e0 100%);
   padding: 20px;
+  position: relative;
+}
+
+/* Светлая тема — градиент по умолчанию выше */
+:where(html[data-theme='dark']) .container {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
 }
 
 .loading {
-  color: white;
+  color: #374151;
   font-size: 18px;
+}
+
+:where(html[data-theme='dark']) .loading {
+  color: #e5e7eb;
+}
+
+.themeToggle {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: rgb(255 255 255 / 90%);
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #374151;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.themeToggle:hover {
+  background: #fff;
+  color: #d90652;
+  border-color: rgb(217 6 82 / 0.3);
+}
+
+.themeToggle:focus {
+  outline: none;
+}
+
+.themeToggle:focus-visible {
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+}
+
+.themeIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+:where(html[data-theme='dark']) .themeToggle {
+  background: rgb(31 41 55 / 90%);
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark']) .themeToggle:hover {
+  background: #374151;
+  color: #ec4d7a;
+  border-color: rgb(217 6 82 / 0.4);
+}
+
+:where(html[data-theme='dark']) .themeToggle:focus-visible {
+  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.3);
 }
 
 .loginCard {
@@ -18,7 +86,8 @@
   padding: 40px;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
 }
 
 .logo {
@@ -35,7 +104,7 @@
 }
 
 .logo p {
-  color: #666;
+  color: #6b7280;
   margin: 8px 0 0;
   font-size: 14px;
 }
@@ -49,15 +118,15 @@
 .title {
   font-size: 24px;
   font-weight: 600;
-  color: #333;
+  color: #1f2937;
   margin: 0 0 8px;
   text-align: center;
 }
 
 .error {
-  background: #fff5f5;
-  border: 1px solid #feb2b2;
-  color: #c53030;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
   padding: 12px 16px;
   border-radius: 8px;
   font-size: 14px;
@@ -81,13 +150,17 @@
   border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 16px;
-  transition: all 0.2s;
+  transition:
+    border-color 0.35s ease,
+    box-shadow 0.35s ease;
   outline: none;
+  background: #fff;
+  color: #111827;
 }
 
 .input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: rgb(217 6 82 / 0.5);
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
 }
 
 .input::placeholder {
@@ -95,7 +168,7 @@
 }
 
 .submitButton {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: #d90652;
   color: white;
   border: none;
   padding: 14px 24px;
@@ -103,13 +176,22 @@
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
   margin-top: 8px;
 }
 
 .submitButton:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  background: #b80545;
+}
+
+.submitButton:focus {
+  outline: none;
+}
+
+.submitButton:focus-visible {
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.35);
 }
 
 .submitButton:disabled {
@@ -132,55 +214,73 @@
 }
 
 .backLink:hover {
-  color: #3b82f6;
+  color: #d90652;
 }
 
-/* Тёмная тема — форма входа */
-:where(html[data-theme='dark'], [data-app-theme='dark']) .loginCard {
+/* Тёмная тема — карточка и форма */
+:where(html[data-theme='dark']) .loginCard {
   background: #1f2937;
+  border-color: #374151;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .logo h1 {
+:where(html[data-theme='dark']) .logo h1 {
   color: #f9fafb;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .logo p {
+:where(html[data-theme='dark']) .logo p {
   color: #9ca3af;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+:where(html[data-theme='dark']) .title {
   color: #f9fafb;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .error {
-  background: rgb(239 68 68 / 0.2);
+:where(html[data-theme='dark']) .error {
+  background: rgb(239 68 68 / 0.15);
   border-color: #dc2626;
   color: #fca5a5;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .formGroup label {
+:where(html[data-theme='dark']) .formGroup label {
   color: #d1d5db;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .input {
+:where(html[data-theme='dark']) .input {
   background: #374151;
   border-color: #4b5563;
   color: #f9fafb;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .input::placeholder {
+:where(html[data-theme='dark']) .input:focus {
+  border-color: rgb(236 72 153 / 0.5);
+  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+}
+
+:where(html[data-theme='dark']) .input::placeholder {
   color: #9ca3af;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .footer {
+:where(html[data-theme='dark']) .submitButton {
+  background: #d90652;
+}
+
+:where(html[data-theme='dark']) .submitButton:hover:not(:disabled) {
+  background: #ec4d7a;
+}
+
+:where(html[data-theme='dark']) .submitButton:focus-visible {
+  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.35);
+}
+
+:where(html[data-theme='dark']) .footer {
   border-top-color: #374151;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .backLink {
+:where(html[data-theme='dark']) .backLink {
   color: #9ca3af;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .backLink:hover {
-  color: #93c5fd;
+:where(html[data-theme='dark']) .backLink:hover {
+  color: #ec4d7a;
 }

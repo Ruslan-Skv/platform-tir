@@ -5,7 +5,6 @@ import { MoonIcon, SunIcon } from '@heroicons/react/24/outline';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
 import { useTheme } from '@/features/theme';
@@ -19,6 +18,7 @@ import { getAdminReviews } from '@/shared/api/admin-reviews';
 import type { AdminReview } from '@/shared/api/admin-reviews';
 import { getAdminSupportConversations } from '@/shared/api/admin-support';
 import type { AdminSupportConversation } from '@/shared/api/admin-support';
+import { getAvatarUrl } from '@/shared/lib/avatar';
 import { type NotificationSoundType, playNotificationSound } from '@/shared/lib/notification-sound';
 import { getSafeHref } from '@/shared/lib/sanitize';
 
@@ -52,7 +52,6 @@ type NotificationItem =
   | { type: 'form'; id: string; date: string; link: string; text: string };
 
 export function AdminHeader() {
-  const router = useRouter();
   const { user, logout } = useAuth();
   const { isDarkTheme, toggleTheme } = useTheme();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -242,7 +241,7 @@ export function AdminHeader() {
 
   const handleLogout = () => {
     logout();
-    router.push('/admin/login');
+    window.location.href = '/admin/login';
   };
 
   const notificationItems: NotificationItem[] = [
@@ -369,7 +368,11 @@ export function AdminHeader() {
         <div className={styles.userWrapper} ref={userMenuRef}>
           <button className={styles.userButton} onClick={() => setShowUserMenu(!showUserMenu)}>
             {user?.avatar ? (
-              <img src={user.avatar} alt="" className={styles.avatarImg} />
+              <img
+                src={getAvatarUrl(user.avatar) ?? user.avatar}
+                alt=""
+                className={styles.avatarImg}
+              />
             ) : (
               <div className={styles.avatar}>{displayName.charAt(0).toUpperCase()}</div>
             )}

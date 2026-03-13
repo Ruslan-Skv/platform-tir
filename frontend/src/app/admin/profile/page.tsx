@@ -3,30 +3,41 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
+import { getAvatarUrl } from '@/shared/lib/avatar';
 
 import styles from './profile.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-const MAX_AVATAR_SIZE_BYTES = 500 * 1024; // 500 KB
+const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB (как в публичке)
+const USER_DATA_KEY = 'user_data';
+const ADMIN_USER_KEY = 'admin_user';
+
+function syncUserToStorage(updatedUser: Record<string, unknown>) {
+  const userJson = JSON.stringify(updatedUser);
+  localStorage.setItem(ADMIN_USER_KEY, userJson);
+  localStorage.setItem(USER_DATA_KEY, userJson);
+  window.dispatchEvent(new Event('auth-token-changed'));
+}
 
 export default function AdminProfilePage() {
-  const { user, getAuthHeaders, logout } = useAuth();
+  const { user, getAuthHeaders, logout, refreshUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Profile form
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName] = useState(user?.lastName || '');
-  const [email, setEmail] = useState(user?.email || '');
-  const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(user?.avatar ?? null);
+  const [avatarPath, setAvatarPath] = useState<string | null>(user?.avatar ?? null);
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
   const [profileMessage, setProfileMessage] = useState('');
   const [profileError, setProfileError] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
-    setAvatarDataUrl(user?.avatar ?? null);
-  }, [user?.avatar]);
+    setFirstName(user?.firstName || '');
+    setLastName(user?.lastName || '');
+    setAvatarPath(user?.avatar ?? null);
+  }, [user?.firstName, user?.lastName, user?.avatar]);
 
-  // Password form
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -34,26 +45,77 @@ export default function AdminProfilePage() {
   const [passwordError, setPasswordError] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
 
-  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file || !file.type.startsWith('image/')) {
-      setProfileError('Выберите изображение (JPG, PNG или GIF)');
+      setProfileError('Выберите изображение (JPG, PNG, WebP или GIF)');
       return;
     }
     if (file.size > MAX_AVATAR_SIZE_BYTES) {
-      setProfileError(`Размер файла не более ${MAX_AVATAR_SIZE_BYTES / 1024} КБ`);
+      setProfileError(`Размер файла не более ${MAX_AVATAR_SIZE_BYTES / 1024 / 1024} МБ`);
       return;
     }
     setProfileError('');
-    const reader = new FileReader();
-    reader.onload = () => setAvatarDataUrl(reader.result as string);
-    reader.readAsDataURL(file);
-    e.target.value = '';
+    setUploadingAvatar(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`${API_URL}/users/me/avatar`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || 'Ошибка загрузки аватарки');
+      }
+
+      const { user: updatedUser } = await response.json();
+      const { password: _p, ...userWithoutPassword } = updatedUser;
+      setAvatarPath(updatedUser.avatar ?? null);
+      setAvatarLoadError(false);
+      syncUserToStorage(userWithoutPassword);
+      await refreshUser();
+    } catch (error) {
+      setProfileError(error instanceof Error ? error.message : 'Ошибка загрузки');
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
-  const handleRemoveAvatar = () => {
-    setAvatarDataUrl(null);
+  const handleRemoveAvatar = async () => {
     setProfileError('');
+    setSavingProfile(true);
+    try {
+      const response = await fetch(`${API_URL}/users/me`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({ avatar: null }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || 'Ошибка удаления аватарки');
+      }
+
+      const updatedUser = await response.json();
+      const { password: _p, ...userWithoutPassword } = updatedUser;
+      setAvatarPath(null);
+      setAvatarLoadError(false);
+      syncUserToStorage(userWithoutPassword);
+      await refreshUser();
+    } catch (error) {
+      setProfileError(error instanceof Error ? error.message : 'Ошибка');
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -63,18 +125,13 @@ export default function AdminProfilePage() {
     setSavingProfile(true);
 
     try {
-      const response = await fetch(`${API_URL}/users/${user?.id}`, {
+      const response = await fetch(`${API_URL}/users/me`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           ...getAuthHeaders(),
         },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email,
-          avatar: avatarDataUrl,
-        }),
+        body: JSON.stringify({ firstName, lastName }),
       });
 
       if (!response.ok) {
@@ -83,23 +140,10 @@ export default function AdminProfilePage() {
       }
 
       const updatedUser = await response.json();
+      const { password: _p, ...userWithoutPassword } = updatedUser;
       setProfileMessage('Профиль успешно обновлён');
-
-      // Update localStorage with full user (including avatar)
-      const savedUser = localStorage.getItem('admin_user');
-      if (savedUser) {
-        const parsed = JSON.parse(savedUser);
-        Object.assign(parsed, {
-          firstName: updatedUser.firstName ?? firstName,
-          lastName: updatedUser.lastName ?? lastName,
-          email: updatedUser.email ?? email,
-          avatar: updatedUser.avatar ?? avatarDataUrl,
-        });
-        localStorage.setItem('admin_user', JSON.stringify(parsed));
-      }
-
-      // Reload page to update header
-      setTimeout(() => window.location.reload(), 1000);
+      syncUserToStorage(userWithoutPassword);
+      await refreshUser();
     } catch (error) {
       setProfileError(error instanceof Error ? error.message : 'Ошибка');
     } finally {
@@ -147,7 +191,6 @@ export default function AdminProfilePage() {
       setNewPassword('');
       setConfirmPassword('');
 
-      // Logout after password change
       setTimeout(() => {
         logout();
         window.location.href = '/admin/login';
@@ -159,12 +202,15 @@ export default function AdminProfilePage() {
     }
   };
 
+  const avatarUrl = avatarPath ? getAvatarUrl(avatarPath) : null;
+  const displayName =
+    [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || '?';
+
   return (
     <div className={styles.page}>
       <h1 className={styles.title}>Профиль</h1>
 
       <div className={styles.grid}>
-        {/* Profile Section */}
         <div className={styles.card}>
           <h2 className={styles.cardTitle}>Личные данные</h2>
 
@@ -176,11 +222,16 @@ export default function AdminProfilePage() {
               <label>Аватар</label>
               <div className={styles.avatarRow}>
                 <div className={styles.avatarPreview}>
-                  {avatarDataUrl ? (
-                    <img src={avatarDataUrl} alt="Аватар" className={styles.avatarImage} />
+                  {avatarPath && !avatarLoadError && avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="Аватар"
+                      className={styles.avatarImage}
+                      onError={() => setAvatarLoadError(true)}
+                    />
                   ) : (
                     <span className={styles.avatarPlaceholder}>
-                      {user?.firstName?.charAt(0) || user?.email?.charAt(0) || '?'}
+                      {displayName.charAt(0).toUpperCase()}
                     </span>
                   )}
                 </div>
@@ -197,19 +248,21 @@ export default function AdminProfilePage() {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     className={styles.avatarButton}
+                    disabled={uploadingAvatar}
                   >
-                    Выбрать файл
+                    {uploadingAvatar ? 'Загрузка...' : 'Выбрать файл'}
                   </button>
                   <button
                     type="button"
                     onClick={handleRemoveAvatar}
                     className={styles.avatarButtonSecondary}
+                    disabled={savingProfile || !avatarPath}
                   >
                     Удалить
                   </button>
                 </div>
               </div>
-              <span className={styles.avatarHint}>JPG, PNG или GIF, не более 500 КБ</span>
+              <span className={styles.avatarHint}>JPG, PNG, WebP или GIF, не более 2 МБ</span>
             </div>
 
             <div className={styles.formGroup}>
@@ -237,12 +290,11 @@ export default function AdminProfilePage() {
             <div className={styles.formGroup}>
               <label htmlFor="email">Email</label>
               <input
-                type="email"
+                type="text"
                 id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className={styles.input}
+                value={user?.email ?? ''}
+                disabled
+                className={`${styles.input} ${styles.disabled}`}
               />
             </div>
 
@@ -262,7 +314,6 @@ export default function AdminProfilePage() {
           </form>
         </div>
 
-        {/* Password Section */}
         <div className={styles.card}>
           <h2 className={styles.cardTitle}>Смена пароля</h2>
 
