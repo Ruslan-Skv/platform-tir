@@ -86,6 +86,11 @@ npx prisma generate
 - Перезапустите TypeScript сервер в VS Code (Ctrl+Shift+P → "TypeScript: Restart TS Server")
 - Или перезапустите IDE
 
+## Деплой на production
+
+После изменений: push в `main` → на сервере выполнить `git pull`, затем `docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml -f docker-compose.ssl.yml pull` и `up -d`.  
+Миграции применятся при старте backend. Подробнее: `DEPLOYMENT.md` → «Обслуживание и доработка».
+
 ## Дополнительная информация
 
 Подробная документация находится в `backend/MIGRATION_INSTRUCTIONS.md`

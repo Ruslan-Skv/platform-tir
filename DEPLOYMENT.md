@@ -178,13 +178,123 @@ Let's Encrypt выдаёт сертификаты на 90 дней. Добавь
 
 ## Обновление приложения
 
+Данные в БД, загрузки и volumes **сохраняются** — обновляются только образы и код.
+
 ```bash
+cd ~/platform-tir
 git pull
-docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml pull
-docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml -f docker-compose.ssl.yml pull
+docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml -f docker-compose.ssl.yml up -d
 ```
 
-Образы пересобираются в GitHub Actions при push в `main`. Миграции выполняются автоматически при старте backend.
+*Без SSL уберите `-f docker-compose.ssl.yml` из команд.*
+
+Миграции Prisma выполняются автоматически при старте backend (`prisma migrate deploy`).
+
+---
+
+## Обслуживание и доработка
+
+### Файлы compose
+
+| Режим | Файлы |
+|-------|-------|
+| С SSL | `-f docker-compose.infra.yml -f docker-compose.prod.yml -f docker-compose.ssl.yml` |
+| Без SSL | `-f docker-compose.infra.yml -f docker-compose.prod.yml` |
+
+### Алиас для удобства
+
+Добавьте в `~/.bashrc` (на сервере):
+
+```bash
+alias dc='docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml -f docker-compose.ssl.yml'
+```
+
+После `source ~/.bashrc` можно вызывать `dc pull`, `dc up -d`, `dc logs backend` и т.д.
+
+### Обновление приложения (порядок действий)
+
+| Шаг | Действие | Сохранность данных |
+|-----|----------|--------------------|
+| 1 | `git pull` | — |
+| 2 | `docker compose ... pull` | ✅ Volumes не трогаются |
+| 3 | `docker compose ... up -d` | ✅ БД, uploads, индексы сохраняются |
+
+**Важно:** не используйте `down -v` — флаг `-v` удаляет volumes и данные.
+
+### Изменение .env (пароли, CORS, домены)
+
+`restart` не подхватывает новые переменные. Нужно пересоздать контейнеры:
+
+```bash
+docker compose ... up -d
+```
+
+Compose пересоздаст контейнеры с обновлённым `.env`. После изменения суперадмина:
+
+```bash
+docker compose ... up -d backend
+docker compose ... exec backend node prisma/create-super-admin.cjs
+```
+
+### Перезапуск приложения
+
+| Ситуация | Команда |
+|----------|---------|
+| Временный сбой | `docker compose ... restart backend` (или frontend, nginx) |
+| Новые переменные из .env | `docker compose ... up -d` |
+| Обновление образа (после pull) | `docker compose ... up -d` |
+| Полная перезагрузка стека | `docker compose ... down` затем `up -d` |
+
+**Порядок старта:** postgres → elasticsearch → backend → frontend → nginx (Compose соблюдает `depends_on`).
+
+### Ручное применение миграций
+
+Обычно не требуется — backend при старте выполняет `prisma migrate deploy`. Если нужно:
+
+```bash
+docker compose ... exec backend npx prisma migrate deploy
+```
+
+### Резервное копирование
+
+**Автоматическое** (скрипт + cron):
+
+```bash
+chmod +x scripts/backup.sh
+./scripts/backup.sh   # проверка
+```
+
+Добавить в crontab (`crontab -e`), например ежедневно в 2:00:
+
+```
+0 2 * * * /home/ruslan/platform-tir/scripts/backup.sh >> /home/ruslan/platform-tir/backups/backup.log 2>&1
+```
+
+*Перед добавлением в cron выполните `./scripts/backup.sh` вручную — создастся каталог `backups/`.*
+
+Бэкапы сохраняются в `backups/`. Старше 7 дней — удаляются автоматически.
+
+**Ручное** (перед крупными обновлениями):
+
+```bash
+./scripts/backup.sh
+```
+
+### Цикл разработка → публикация
+
+1. **Локально:** вносите изменения, тестируете
+2. **Миграции:** `cd backend && npx prisma migrate dev --name описание`
+3. **Push в main:** `git push`
+4. **GitHub Actions:** собирает образы и пушит в GHCR
+5. **На сервере:** `git pull` → `dc pull` → `dc up -d`
+6. Миграции применяются при старте backend
+
+### Чего избегать
+
+- `docker compose down -v` — удаляет volumes и данные БД
+- `docker volume rm` для `postgres_data`, `backend_uploads`
+- Сборка на сервере (`--build`) — долго; используйте образы из GHCR
 
 ---
 
@@ -196,7 +306,7 @@ docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml up -d
 | `elasticsearch_data` | Индексы Elasticsearch |
 | `backend_uploads` | Загруженные файлы (изображения и т.д.) |
 
-Рекомендуется настроить резервное копирование `postgres_data` и `backend_uploads`.
+Резервное копирование: `scripts/backup.sh` (см. раздел выше).
 
 ---
 
