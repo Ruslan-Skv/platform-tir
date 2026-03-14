@@ -32,7 +32,7 @@ cp .env.example .env
 | `YANDEX_CLIENT_ID` | Client ID из приложения Яндекс ID (для входа через Яндекс) |
 | `YANDEX_CLIENT_SECRET` | Client secret приложения Яндекс ID |
 
-**Вход через Яндекс ID:** в настройках приложения в [Яндекс OAuth](https://oauth.yandex.com/) укажите Redirect URI: `https://your-domain.com/auth/yandex/callback` (или `http://localhost:3000/auth/yandex/callback` для разработки).
+**Вход через Яндекс ID:** см. раздел [«Настройка Yandex OAuth»](#настройка-yandex-oauth) ниже.
 
 Сгенерировать JWT_SECRET:
 ```bash
@@ -71,6 +71,51 @@ docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml exec backe
 
 По умолчанию: `admin@platform.local` / `Admin123!`  
 Переменные: `SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_PASSWORD`
+
+---
+
+## Настройка Yandex OAuth
+
+Если при нажатии «Войти через Яндекс» появляется «Вход через Яндекс временно недоступен» или `GET /api/v1/auth/yandex` возвращает 400:
+
+### 1. Переменные окружения
+
+Убедитесь, что в `.env` указаны и переданы в backend:
+
+```
+SITE_URL=https://territory-interior.ru
+YANDEX_CLIENT_ID=<Client ID из панели>
+YANDEX_CLIENT_SECRET=<Client secret>
+```
+
+Без `YANDEX_CLIENT_ID` бэкенд возвращает 400. `docker-compose.prod.yml` передаёт эти переменные в backend.
+
+### 2. Регистрация приложения в Яндекс OAuth
+
+1. Перейдите на [oauth.yandex.com](https://oauth.yandex.com/) и войдите в аккаунт.
+2. [Создайте приложение](https://oauth.yandex.com/client/new/id).
+3. **Платформа:** выберите **Web services**.
+4. **Redirect URI** — укажите **точно** (без слэша в конце):
+   ```
+   https://territory-interior.ru/auth/yandex/callback
+   ```
+   Для кириллического домена добавьте второй URI:
+   ```
+   https://xn-----mlcbabasabfm9bcdf6aacfbc3aeg7f4dwdza7f.xn--p1ai/auth/yandex/callback
+   ```
+5. **Права доступа:** включите «Яндекс ID» → имя, email, аватар (нужно для входа).
+6. Сохраните приложение. Скопируйте **Client ID** и **Client secret**.
+
+### 3. Статус «НЕ подключен» в личном кабинете Яндекс ID
+
+В [id.yandex.ru](https://id.yandex.ru) → «Приложения с доступом к аккаунту» приложение может показывать «НЕ подключен», пока вы не выполнили хотя бы один вход через него. После успешной авторизации статус изменится.
+
+### 4. Перезапуск после изменений
+
+После добавления переменных в `.env`:
+```bash
+docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml up -d
+```
 
 ---
 
@@ -333,6 +378,11 @@ chmod +x scripts/backup.sh
 ### CORS-ошибки
 - Убедитесь, что `CORS_ORIGIN` в `.env` совпадает с доменом, с которого открывается сайт
 - Для нескольких доменов: `CORS_ORIGIN=https://example.com,https://www.example.com`
+
+### Вход через Яндекс: 400 или «Временно недоступен»
+- Добавьте `YANDEX_CLIENT_ID`, `YANDEX_CLIENT_SECRET`, `SITE_URL` в `.env` и перезапустите backend
+- Redirect URI в приложении Яндекс OAuth должен **точно** совпадать с `{SITE_URL}/auth/yandex/callback`
+- См. [«Настройка Yandex OAuth»](#настройка-yandex-oauth)
 
 ### 502 Bad Gateway
 - Backend ещё не готов — проверьте `docker compose ps` и healthcheck
