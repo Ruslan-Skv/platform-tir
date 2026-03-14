@@ -7,6 +7,8 @@ export function getAvatarUrl(avatar: string | null | undefined): string | null {
   if (!avatar || typeof avatar !== 'string') return null;
   const trimmed = avatar.trim();
   if (!trimmed) return null;
+  // Data URLs (base64) возвращаем как есть — без добавления домена
+  if (trimmed.startsWith('data:')) return trimmed;
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
   const base = apiUrl.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
