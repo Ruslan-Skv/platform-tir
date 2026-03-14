@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -29,7 +29,7 @@ const ADMIN_ROLES = [
   'INSTALLER',
 ];
 
-export default function YandexCallbackPage() {
+function YandexCallbackContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const code = searchParams.get('code');
@@ -122,5 +122,24 @@ export default function YandexCallbackPage() {
         <p className={styles.hint}>Выполняется вход...</p>
       </div>
     </div>
+  );
+}
+
+export default function YandexCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className={styles.container}>
+          <div className={styles.card}>
+            <div className={styles.header}>
+              <h1 className={styles.title}>Вход через Яндекс</h1>
+            </div>
+            <p className={styles.hint}>Выполняется вход...</p>
+          </div>
+        </div>
+      }
+    >
+      <YandexCallbackContent />
+    </Suspense>
   );
 }
