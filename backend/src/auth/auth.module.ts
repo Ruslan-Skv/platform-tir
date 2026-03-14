@@ -9,6 +9,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { UsersModule } from '../users/users.module';
 import { PasswordResetMailService } from './password-reset-mail.service';
+import { YandexAuthService } from './yandex-auth.service';
 
 @Module({
   imports: [
@@ -26,7 +27,14 @@ import { PasswordResetMailService } from './password-reset-mail.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, PasswordResetMailService, JwtStrategy, LocalStrategy, OriginGuard],
+  providers: [
+    AuthService,
+    PasswordResetMailService,
+    YandexAuthService,
+    JwtStrategy,
+    LocalStrategy,
+    OriginGuard,
+  ],
   exports: [AuthService],
 })
 export class AuthModule {}

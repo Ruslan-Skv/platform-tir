@@ -29,6 +29,10 @@ cp .env.example .env
 | `JWT_SECRET` | **Обязательно** — секрет JWT (минимум 32 символа) |
 | `SITE_URL` | **Для писем** — публичный URL (восстановление пароля, ссылки в письмах заказов) |
 | `MAIL_FROM`, `SMTP_*` | Отправка email (восстановление пароля, заказы). Без SMTP письма не отправятся |
+| `YANDEX_CLIENT_ID` | Client ID из приложения Яндекс ID (для входа через Яндекс) |
+| `YANDEX_CLIENT_SECRET` | Client secret приложения Яндекс ID |
+
+**Вход через Яндекс ID:** в настройках приложения в [Яндекс OAuth](https://oauth.yandex.com/) укажите Redirect URI: `https://your-domain.com/auth/yandex/callback` (или `http://localhost:3000/auth/yandex/callback` для разработки).
 
 Сгенерировать JWT_SECRET:
 ```bash

@@ -42,6 +42,7 @@ model User {
   role              UserRole       @default(USER)
   isActive          Boolean        @default(true)
   isGuest           Boolean        @default(false) // Для заказов от менеджера: гость до регистрации
+  yandexId          String?        @unique // ID аккаунта Яндекс для OAuth
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
   avatar            String?

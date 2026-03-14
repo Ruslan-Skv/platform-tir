@@ -22,6 +22,25 @@ export default function LoginPage() {
 
   const { login, register } = useUserAuth();
   const router = useRouter();
+  const [yandexLoading, setYandexLoading] = useState(false);
+
+  const handleYandexLogin = async () => {
+    setYandexLoading(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/auth/yandex`);
+      if (res.ok) {
+        const { url } = await res.json();
+        if (url) window.location.href = url;
+        else setError('Вход через Яндекс временно недоступен');
+      } else {
+        setError('Вход через Яндекс временно недоступен');
+      }
+    } catch {
+      setError('Ошибка подключения к серверу');
+    } finally {
+      setYandexLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -201,6 +220,31 @@ export default function LoginPage() {
           )}
 
           {error && <div className={styles.error}>{error}</div>}
+
+          {isLogin && (
+            <>
+              <div className={styles.oauthBlock}>
+                <button
+                  type="button"
+                  onClick={handleYandexLogin}
+                  className={styles.yandexButton}
+                  disabled={yandexLoading}
+                >
+                  {yandexLoading ? (
+                    'Загрузка...'
+                  ) : (
+                    <>
+                      <span className={styles.yandexIcon}>Я</span>
+                      Войти через Яндекс
+                    </>
+                  )}
+                </button>
+              </div>
+              <div className={styles.oauthDivider}>
+                <span>или по email</span>
+              </div>
+            </>
+          )}
 
           <button type="submit" className={styles.submitButton} disabled={isLoading}>
             {isLoading ? 'Загрузка...' : isLogin ? 'Войти' : 'Зарегистрироваться'}

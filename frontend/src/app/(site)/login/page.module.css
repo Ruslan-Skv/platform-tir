@@ -215,6 +215,75 @@
   color: #d90652;
 }
 
+.oauthBlock {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 0;
+}
+
+.oauthDivider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0.5rem 0;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.oauthDivider::before,
+.oauthDivider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .oauthDivider {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .oauthDivider::before,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .oauthDivider::after {
+  background: #4b5563;
+}
+
+.yandexButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background: #fc3f1d;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.yandexButton:hover:not(:disabled) {
+  background: #e63514;
+}
+
+.yandexButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.yandexIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  background: white;
+  color: #fc3f1d;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
 .switchButton {
   background: none;
   border: none;
@@ -380,6 +449,14 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .forgotPasswordLink:hover {
   color: #ec4d7a;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .yandexButton {
+  background: #fc3f1d;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .yandexButton:hover:not(:disabled) {
+  background: #e63514;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cancelBlock {

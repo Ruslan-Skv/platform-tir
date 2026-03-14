@@ -9,12 +9,17 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { YandexCallbackDto } from './dto/yandex-callback.dto';
+import { YandexAuthService } from './yandex-auth.service';
 import type { RequestWithUser } from '../common/types/request-with-user.types';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly yandexAuthService: YandexAuthService,
+  ) {}
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @UseGuards(OriginGuard, LocalAuthGuard)
@@ -60,5 +65,20 @@ export class AuthController {
   @ApiOperation({ summary: 'Сброс пароля по токену из письма' })
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.newPassword);
+  }
+
+  @UseGuards(OriginGuard)
+  @Get('yandex')
+  @ApiOperation({ summary: 'URL для авторизации через Яндекс ID' })
+  getYandexAuthUrl() {
+    return { url: this.yandexAuthService.getAuthorizationUrl() };
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @UseGuards(OriginGuard)
+  @Post('yandex/callback')
+  @ApiOperation({ summary: 'Обмен кода Яндекс на JWT (вызывается с frontend после redirect)' })
+  async yandexCallback(@Body() dto: YandexCallbackDto) {
+    return this.yandexAuthService.exchangeCodeForUser(dto.code);
   }
 }
