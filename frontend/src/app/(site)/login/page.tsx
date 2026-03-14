@@ -235,7 +235,7 @@ export default function LoginPage() {
                   ) : (
                     <>
                       <span className={styles.yandexIcon}>Я</span>
-                      Войти через Яндекс
+                      Войти через Яндекс ID
                     </>
                   )}
                 </button>
