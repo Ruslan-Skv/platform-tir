@@ -331,3 +331,15 @@ chmod +x scripts/backup.sh
 ### 502 Bad Gateway
 - Backend ещё не готов — проверьте `docker compose ps` и healthcheck
 - Увеличьте `start_period` в healthcheck при медленном сервере
+
+### ERR_HTTP2_PROTOCOL_ERROR, Failed to load chunk
+Ошибка возникает при загрузке статики Next.js (`/_next/static/chunks/*.js`, `*.css`) через nginx с HTTP/2.
+
+**Причина:** Несовместимость HTTP/2 в nginx с проксированием к Node.js при множественных параллельных запросах chunks.
+
+**Решение:** В `nginx/nginx-ssl.conf` уже отключён HTTP/2 (`listen 443 ssl` вместо `listen 443 ssl http2`). Если проблема осталась:
+1. Убедитесь, что на сервере развёрнута актуальная версия конфига (с отключённым HTTP/2)
+2. Перезапустите nginx: `docker compose ... restart nginx`
+3. Очистите кэш браузера и попробуйте в режиме инкогнито
+
+**При использовании Cloudflare:** проверьте SSL/TLS режим (Full или Full Strict), отключите HTTP/2 на время диагностики в настройках Cloudflare.
