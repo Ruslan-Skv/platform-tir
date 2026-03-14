@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useUserAuth } from '@/features/auth/context/UserAuthContext';
@@ -220,6 +221,13 @@ export default function LoginPage() {
           >
             {isLogin ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти'}
           </button>
+          {isLogin && (
+            <p className={styles.forgotPassword}>
+              <Link href="/forgot-password" className={styles.forgotPasswordLink}>
+                Забыли пароль?
+              </Link>
+            </p>
+          )}
         </div>
 
         <div className={styles.cancelBlock}>

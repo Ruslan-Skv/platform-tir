@@ -134,6 +134,20 @@
   color: #059669;
 }
 
+.hint {
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin: 0 0 1.25rem;
+  line-height: 1.5;
+}
+
+.successText {
+  font-size: 1rem;
+  color: #374151;
+  margin: 0 0 1.5rem;
+  line-height: 1.6;
+}
+
 .error {
   padding: 0.75rem;
   background: #fef2f2;
@@ -183,6 +197,22 @@
 .switch {
   margin-top: 1.5rem;
   text-align: center;
+}
+
+.forgotPassword {
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+}
+
+.forgotPasswordLink {
+  color: #6b7280;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.2s;
+}
+
+.forgotPasswordLink:hover {
+  color: #d90652;
 }
 
 .switchButton {
@@ -235,6 +265,10 @@
 
 .cancelButton:hover {
   color: #374151;
+}
+
+.cancelBlock a.cancelButton {
+  text-decoration: none;
 }
 
 .cancelButton:focus {
@@ -305,6 +339,11 @@
   color: #34d399;
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .hint,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .successText {
+  color: #d1d5db;
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .error {
   background: rgb(239 68 68 / 0.15);
   border-color: #dc2626;
@@ -333,6 +372,14 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .switchButton:focus-visible {
   box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .forgotPasswordLink {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .forgotPasswordLink:hover {
+  color: #ec4d7a;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cancelBlock {

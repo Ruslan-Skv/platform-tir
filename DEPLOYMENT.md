@@ -27,6 +27,8 @@ cp .env.example .env
 | `POSTGRES_PASSWORD` | **Обязательно** — пароль PostgreSQL |
 | `DATABASE_URL` | Connection string БД (должен соответствовать POSTGRES_*) |
 | `JWT_SECRET` | **Обязательно** — секрет JWT (минимум 32 символа) |
+| `SITE_URL` | **Для писем** — публичный URL (восстановление пароля, ссылки в письмах заказов) |
+| `MAIL_FROM`, `SMTP_*` | Отправка email (восстановление пароля, заказы). Без SMTP письма не отправятся |
 
 Сгенерировать JWT_SECRET:
 ```bash

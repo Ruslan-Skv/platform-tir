@@ -7,6 +7,8 @@ import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import type { RequestWithUser } from '../common/types/request-with-user.types';
 
 @ApiTags('auth')
@@ -42,5 +44,21 @@ export class AuthController {
   @ApiOperation({ summary: 'Получить профиль текущего пользователя' })
   getProfile(@Request() req: RequestWithUser) {
     return req.user;
+  }
+
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  @UseGuards(OriginGuard)
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Запрос восстановления пароля' })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.requestPasswordReset(dto.email);
+  }
+
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @UseGuards(OriginGuard)
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Сброс пароля по токену из письма' })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.newPassword);
   }
 }

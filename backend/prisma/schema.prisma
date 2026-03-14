@@ -85,8 +85,25 @@ model User {
   orderEventsAsActor         OrderEvent[]     @relation("OrderEventActor")
   serviceOrders              ServiceOrder[]   @relation
   serviceOrdersCreated       ServiceOrder[]   @relation("ServiceOrdersCreatedByManager")
+  passwordResetTokens        PasswordResetToken[]
 
   @@map("users")
+}
+
+/// Токен для восстановления пароля. Срок действия 1 час.
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }
 
 model AdminResourcePermission {
