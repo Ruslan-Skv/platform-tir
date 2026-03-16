@@ -112,7 +112,6 @@ export function isInteriorDoorsCategoryById(
   categories: Array<{ id: string; slug: string; parentId?: string | null; children?: any[] }>
 ): boolean {
   if (!categoryId || categories.length === 0) {
-    console.log('❌ isInteriorDoorsCategoryById: нет categoryId или categories пуст');
     return false;
   }
 
@@ -124,14 +123,5 @@ export function isInteriorDoorsCategoryById(
     ? flattenCategories(categories as any)
     : (categories as Array<{ id: string; slug: string; parentId?: string | null }>);
 
-  console.log('🔍 isInteriorDoorsCategoryById:', {
-    categoryId,
-    hasNestedStructure,
-    flatCategoriesCount: flatCategories.length,
-    targetCategory: flatCategories.find((c) => c.id === categoryId),
-  });
-
-  const result = checkCategoryRecursive(categoryId, flatCategories);
-  console.log('✅ isInteriorDoorsCategoryById result:', result);
-  return result;
+  return checkCategoryRecursive(categoryId, flatCategories);
 }
