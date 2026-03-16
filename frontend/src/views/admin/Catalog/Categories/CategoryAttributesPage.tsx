@@ -95,6 +95,48 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
   // Inherit attributes state
   const [inheriting, setInheriting] = useState(false);
 
+  /** Генерация slug из названия (транслитерация + допустимые символы). */
+  const generateSlug = useCallback((name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-zа-яё0-9]+/gi, '-')
+      .replace(/^-|-$/g, '')
+      .replace(/а/g, 'a')
+      .replace(/б/g, 'b')
+      .replace(/в/g, 'v')
+      .replace(/г/g, 'g')
+      .replace(/д/g, 'd')
+      .replace(/е/g, 'e')
+      .replace(/ё/g, 'yo')
+      .replace(/ж/g, 'zh')
+      .replace(/з/g, 'z')
+      .replace(/и/g, 'i')
+      .replace(/й/g, 'y')
+      .replace(/к/g, 'k')
+      .replace(/л/g, 'l')
+      .replace(/м/g, 'm')
+      .replace(/н/g, 'n')
+      .replace(/о/g, 'o')
+      .replace(/п/g, 'p')
+      .replace(/р/g, 'r')
+      .replace(/с/g, 's')
+      .replace(/т/g, 't')
+      .replace(/у/g, 'u')
+      .replace(/ф/g, 'f')
+      .replace(/х/g, 'h')
+      .replace(/ц/g, 'ts')
+      .replace(/ч/g, 'ch')
+      .replace(/ш/g, 'sh')
+      .replace(/щ/g, 'sch')
+      .replace(/ъ/g, '')
+      .replace(/ы/g, 'y')
+      .replace(/ь/g, '')
+      .replace(/э/g, 'e')
+      .replace(/ю/g, 'yu')
+      .replace(/я/g, 'ya')
+      .substring(0, 100);
+  }, []);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -697,7 +739,14 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
               <input
                 type="text"
                 value={newAttribute.name}
-                onChange={(e) => setNewAttribute((prev) => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => {
+                  const name = e.target.value;
+                  setNewAttribute((prev) => ({
+                    ...prev,
+                    name,
+                    slug: generateSlug(name),
+                  }));
+                }}
                 className={styles.input}
                 placeholder="Например: Материал"
               />
@@ -804,7 +853,14 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
               <input
                 type="text"
                 value={editForm.name}
-                onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => {
+                  const name = e.target.value;
+                  setEditForm((prev) => ({
+                    ...prev,
+                    name,
+                    slug: generateSlug(name),
+                  }));
+                }}
                 className={styles.input}
                 placeholder="Например: Материал"
               />

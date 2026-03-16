@@ -638,6 +638,14 @@ export function ProductCreatePage() {
       </div>
 
       <form ref={formRef} onSubmit={handleSubmit} className={styles.form}>
+        <div className={styles.productMeta}>
+          <div className={styles.productMetaRow}>
+            <span className={styles.productMetaLabel}>Создал / последнее изменение:</span>
+            <span className={styles.productMetaDate}>
+              После сохранения здесь будут отображаться автор и дата создания.
+            </span>
+          </div>
+        </div>
         <div className={styles.formGrid}>
           {/* Main Info */}
           <div className={styles.formSection}>

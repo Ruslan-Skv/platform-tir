@@ -185,6 +185,10 @@ interface Product {
   attributes: Record<string, string> | null;
   sizes?: string[];
   openingSide?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: { email: string } | null;
+  updatedBy?: { email: string } | null;
   suppliers?: Array<{
     id: string;
     supplierId: string;
@@ -255,6 +259,12 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   const [partners, setPartners] = useState<Array<{ id: string; name: string }>>([]);
   const [productNotFound, setProductNotFound] = useState(false);
   const [cardSections, setCardSections] = useState<string[]>(DEFAULT_CARD_SECTIONS);
+  const [productMeta, setProductMeta] = useState<{
+    createdBy: string | null;
+    createdAt: string | null;
+    updatedBy: string | null;
+    updatedAt: string | null;
+  }>({ createdBy: null, createdAt: null, updatedBy: null, updatedAt: null });
 
   const [formData, setFormData] = useState({
     name: '',
@@ -517,6 +527,13 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
 
         // Сохраняем начальное название для отслеживания изменений
         setInitialName(product.name || '');
+
+        setProductMeta({
+          createdBy: product.createdBy?.email ?? null,
+          createdAt: product.createdAt ?? null,
+          updatedBy: product.updatedBy?.email ?? null,
+          updatedAt: product.updatedAt ?? null,
+        });
 
         setCustomAttributes(customAttrs);
       } catch (err) {
@@ -907,6 +924,21 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         throw new Error(data.message || 'Ошибка сохранения');
       }
 
+      const updated = await response.json();
+      if (
+        updated?.createdBy?.email ||
+        updated?.updatedBy?.email ||
+        updated?.createdAt ||
+        updated?.updatedAt
+      ) {
+        setProductMeta({
+          createdBy: updated.createdBy?.email ?? productMeta.createdBy,
+          createdAt: updated.createdAt ?? productMeta.createdAt,
+          updatedBy: updated.updatedBy?.email ?? productMeta.updatedBy,
+          updatedAt: updated.updatedAt ?? productMeta.updatedAt,
+        });
+      }
+
       setSuccess('Товар успешно сохранён');
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
@@ -981,6 +1013,38 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
       </div>
 
       <form ref={formRef} onSubmit={handleSubmit} className={styles.form}>
+        <div className={styles.productMeta}>
+          <div className={styles.productMetaRow}>
+            <span className={styles.productMetaLabel}>Создал:</span>
+            <span>
+              {productMeta.createdBy ?? '—'}
+              {productMeta.createdAt && (
+                <span className={styles.productMetaDate}>
+                  {' '}
+                  {new Date(productMeta.createdAt).toLocaleString('ru-RU', {
+                    dateStyle: 'short',
+                    timeStyle: 'short',
+                  })}
+                </span>
+              )}
+            </span>
+          </div>
+          <div className={styles.productMetaRow}>
+            <span className={styles.productMetaLabel}>Последнее изменение:</span>
+            <span>
+              {productMeta.updatedBy ?? '—'}
+              {productMeta.updatedAt && (
+                <span className={styles.productMetaDate}>
+                  {' '}
+                  {new Date(productMeta.updatedAt).toLocaleString('ru-RU', {
+                    dateStyle: 'short',
+                    timeStyle: 'short',
+                  })}
+                </span>
+              )}
+            </span>
+          </div>
+        </div>
         <div className={styles.formGrid}>
           {/* Main Info */}
           {showSection('main') && (

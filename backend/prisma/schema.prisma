@@ -87,6 +87,8 @@ model User {
   serviceOrders              ServiceOrder[]   @relation
   serviceOrdersCreated       ServiceOrder[]   @relation("ServiceOrdersCreatedByManager")
   passwordResetTokens        PasswordResetToken[]
+  productsCreated            Product[]             @relation("ProductCreatedBy")
+  productsUpdated            Product[]             @relation("ProductUpdatedBy")
 
   @@map("users")
 }
@@ -1038,6 +1040,8 @@ model Product {
   seoDescription   String?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
+  createdById      String?            // Кто создал карточку товара
+  updatedById      String?            // Кто последний изменил
   barcode          String?
   costPrice        Decimal?           @db.Decimal(10, 2)
   height           Decimal?           @db.Decimal(8, 2)
@@ -1057,6 +1061,8 @@ model Product {
   category         Category           @relation(fields: [categoryId], references: [id])
   manufacturer     Manufacturer?      @relation(fields: [manufacturerId], references: [id])
   partner          Partner?           @relation(fields: [partnerId], references: [id], onDelete: SetNull)
+  createdBy        User?              @relation("ProductCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy        User?              @relation("ProductUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
   reviews          Review[]
   wishlist         WishlistItem[]
   compareItems     CompareItem[]

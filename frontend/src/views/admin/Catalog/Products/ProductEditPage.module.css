@@ -165,6 +165,36 @@
   font-size: 13px;
 }
 
+.productMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  font-size: 0.8125rem;
+  color: #4b5563;
+}
+
+.productMetaRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.productMetaLabel {
+  font-weight: 600;
+  color: #374151;
+  flex-shrink: 0;
+}
+
+.productMetaDate {
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
 .form .sectionTitle,
 .form .formGroup label,
 .form .attributesSubtitle,
@@ -944,6 +974,20 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .formSection {
   background: #111827;
   border-radius: 8px;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productMeta {
+  background: #111827;
+  border-color: #374151;
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productMetaLabel {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .productMetaDate {
+  color: #9ca3af;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {

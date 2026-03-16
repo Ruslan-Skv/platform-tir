@@ -45,7 +45,12 @@ export class ProductsService {
     cardVariants: { orderBy: { sortOrder: 'asc' as const } },
   };
 
-  async create(createProductDto: CreateProductDto) {
+  private readonly createdByUpdatedByInclude = {
+    createdBy: { select: { email: true } },
+    updatedBy: { select: { email: true } },
+  };
+
+  async create(createProductDto: CreateProductDto, userId?: string) {
     // Поля поставщика, партнёра и cardVariants — исключаем из data для prisma.product.create
     const {
       supplierId,
@@ -61,6 +66,7 @@ export class ProductsService {
       category: {
         connect: { id: categoryId },
       },
+      ...(userId && { createdBy: { connect: { id: userId } } }),
     };
     // Преобразуем null в пустые массивы для sizes и openingSide
     // В PostgreSQL массивы не могут быть null, только пустые массивы []
@@ -80,6 +86,7 @@ export class ProductsService {
       include: {
         category: true,
         ...this.cardVariantsInclude,
+        ...this.createdByUpdatedByInclude,
       },
     });
 
@@ -204,6 +211,7 @@ export class ProductsService {
           },
         },
         ...this.cardVariantsInclude,
+        ...this.createdByUpdatedByInclude,
       },
     });
 
@@ -532,7 +540,7 @@ export class ProductsService {
     };
   }
 
-  async update(id: string, updateProductDto: UpdateProductDto) {
+  async update(id: string, updateProductDto: UpdateProductDto, userId?: string) {
     await this.findOne(id);
 
     // Поля поставщика, партнёра и cardVariants — исключаем из data для prisma.product.update
@@ -545,7 +553,10 @@ export class ProductsService {
       cardVariants,
       ...productData
     } = updateProductDto;
-    const data: Prisma.ProductUpdateInput = { ...productData };
+    const data: Prisma.ProductUpdateInput = {
+      ...productData,
+      ...(userId && { updatedBy: { connect: { id: userId } } }),
+    };
 
     // Преобразуем categoryId в связь category, если он передан
     if (categoryId !== undefined) {
@@ -580,6 +591,7 @@ export class ProductsService {
       include: {
         category: true,
         ...this.cardVariantsInclude,
+        ...this.createdByUpdatedByInclude,
       },
     });
 
@@ -682,7 +694,11 @@ export class ProductsService {
       'cardVariants' in updateProductDto
         ? await this.prisma.product.findUnique({
             where: { id },
-            include: { category: true, ...this.cardVariantsInclude },
+            include: {
+              category: true,
+              ...this.cardVariantsInclude,
+              ...this.createdByUpdatedByInclude,
+            },
           })
         : product;
     if (toReturn) await this.indexProduct(toReturn);
