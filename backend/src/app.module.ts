@@ -47,18 +47,21 @@ import { SitePublicModule } from './site-public/site-public.module';
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        transport: {
-          host: config.get('SMTP_HOST', 'localhost'),
-          port: config.get('SMTP_PORT', 1025),
-          secure: false,
-          auth:
-            config.get('SMTP_USER') && config.get('SMTP_PASS')
-              ? { user: config.get('SMTP_USER'), pass: config.get('SMTP_PASS') }
-              : undefined,
-        },
-        defaults: { from: config.get('MAIL_FROM', 'noreply@example.com') },
-      }),
+      useFactory: (config: ConfigService) => {
+        const port = parseInt(config.get('SMTP_PORT') ?? '1025', 10);
+        return {
+          transport: {
+            host: config.get('SMTP_HOST', 'localhost'),
+            port,
+            secure: port === 465, // true для SMTPS (465), false для 587/1025 (STARTTLS/MailHog)
+            auth:
+              config.get('SMTP_USER') && config.get('SMTP_PASS')
+                ? { user: config.get('SMTP_USER'), pass: config.get('SMTP_PASS') }
+                : undefined,
+          },
+          defaults: { from: config.get('MAIL_FROM', 'noreply@example.com') },
+        };
+      },
     }),
     DatabaseModule,
     ElasticsearchModule,

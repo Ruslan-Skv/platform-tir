@@ -34,6 +34,27 @@ services:
       timeout: 10s
       retries: 5
 
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: platform-tir-mailhog
+    ports:
+      - '1025:1025'   # SMTP (куда бэкенд отправляет письма)
+      - '8025:8025'   # Web UI — просмотр писем в браузере http://localhost:8025
+    restart: unless-stopped
+
+  # Одноразовый запуск сида: docker compose run --rm seed
+  seed:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: builder
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/platform_tir?schema=public
+    command: ["sh", "-c", "npm run prisma:seed"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   backend:
     build:
       context: ./backend
@@ -49,6 +70,11 @@ services:
       API_BASE_URL: ${API_BASE_URL:-http://localhost:3001}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      SITE_URL: ${SITE_URL:-http://localhost:3000}
+      # Письма уходят в MailHog (просмотр: http://localhost:8025)
+      MAIL_FROM: ${MAIL_FROM:-noreply@localhost}
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
     volumes:
       - backend_uploads:/app/uploads
     depends_on:
@@ -56,6 +82,8 @@ services:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
+      mailhog:
+        condition: service_started
 
   frontend:
     build:

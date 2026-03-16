@@ -1,5 +1,8 @@
-# Build stage (Debian: Prisma has compatibility issues with Alpine/musl)
-FROM node:20-slim AS builder
+# Build stage: Bullseye нужен для libssl1.1 (Prisma query engine), Alpine/musl не подходят для Prisma
+FROM node:20-bullseye-slim AS builder
+
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

@@ -55,6 +55,12 @@ services:
       # Для скрипта create-super-admin.cjs (опционально)
       SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-admin@platform.local}
       SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-Admin123!}
+      # Письма (восстановление пароля, заказ на email). Без SMTP письма не отправятся
+      MAIL_FROM: ${MAIL_FROM:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
     ports: []  # Доступ только через nginx
     restart: unless-stopped
     depends_on:

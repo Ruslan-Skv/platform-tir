@@ -98,7 +98,12 @@ export class AuthService {
     const siteUrl = this.config.get<string>('SITE_URL', 'http://localhost:3000');
     const resetUrl = `${siteUrl.replace(/\/$/, '')}/reset-password?token=${token}`;
 
-    await this.passwordResetMail.sendPasswordResetEmail(normalizedEmail, resetUrl);
+    const sent = await this.passwordResetMail.sendPasswordResetEmail(normalizedEmail, resetUrl);
+    if (!sent) {
+      console.warn(
+        'AuthService.requestPasswordReset: письмо не отправлено (проверьте SMTP и логи выше)',
+      );
+    }
     return { ok: true };
   }
 

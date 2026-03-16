@@ -1,7 +1,22 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { config } from 'dotenv';
+import * as path from 'path';
 
-const prisma = new PrismaClient();
+// Загружаем .env: из backend/ (cwd при npm run prisma:seed из backend/) и из папки рядом с seed
+config({ path: path.join(process.cwd(), '.env') });
+config({ path: path.join(__dirname, '..', '.env') });
+
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  throw new Error('DATABASE_URL не задан. Проверьте backend/.env');
+}
+// Prisma при первом запросе читает process.env.DATABASE_URL — убеждаемся, что он задан
+process.env.DATABASE_URL = databaseUrl;
+
+const prisma = new PrismaClient({
+  datasources: { db: { url: databaseUrl } },
+});
 
 const TEST_PASSWORD = 'Test123!';
 
