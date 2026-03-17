@@ -76,6 +76,20 @@ export default function AdminSettingsPage() {
           Письмо директору
         </Link>
         <Link
+          href="/admin/settings/measurement-form"
+          className={styles.subtitle}
+          style={{ color: '#4f46e5', textDecoration: 'underline' }}
+        >
+          Записаться на замер
+        </Link>
+        <Link
+          href="/admin/settings/callback-form"
+          className={styles.subtitle}
+          style={{ color: '#4f46e5', textDecoration: 'underline' }}
+        >
+          Заказать звонок
+        </Link>
+        <Link
           href="/admin/settings/pwa"
           className={styles.subtitle}
           style={{ color: '#4f46e5', textDecoration: 'underline' }}

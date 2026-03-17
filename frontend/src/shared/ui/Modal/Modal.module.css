@@ -47,15 +47,15 @@
 }
 
 .sizeMd {
-  max-width: 32rem;
+  max-width: 44rem;
 }
 
 .sizeLg {
-  max-width: 42rem;
+  max-width: 56rem;
 }
 
 .sizeXl {
-  max-width: 56rem;
+  max-width: 68rem;
 }
 
 .header {
@@ -113,6 +113,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .closeButton {
+  background: #111827;
   color: #9ca3af;
 }
 

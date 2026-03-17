@@ -45,7 +45,7 @@ export const CallbackForm: React.FC<CallbackFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
-      <div className={styles.grid}>
+      <div className={styles.gridRow1}>
         <div className={styles.fieldContainer}>
           <label className={styles.label}>Имя *</label>
           <input
@@ -58,7 +58,6 @@ export const CallbackForm: React.FC<CallbackFormProps> = ({
             placeholder="Ваше имя"
           />
         </div>
-
         <div className={styles.fieldContainer}>
           <label className={styles.label}>Телефон *</label>
           <input
@@ -71,67 +70,58 @@ export const CallbackForm: React.FC<CallbackFormProps> = ({
             placeholder="+7 (900) 123-45-67"
           />
         </div>
-      </div>
-
-      <div className={styles.fieldContainer}>
-        <label className={styles.label}>Email</label>
-        <input
-          type="email"
-          name="email"
-          value={formData.email || ''}
-          onChange={handleChange}
-          className={styles.input}
-          placeholder="your@email.com"
-        />
-      </div>
-
-      <div className={styles.fieldContainer}>
-        <label className={styles.label}>Удобное время для звонка *</label>
-        <select
-          name="preferredTime"
-          required
-          value={formData.preferredTime}
-          onChange={handleChange}
-          className={styles.select}
-        >
-          <option value="">Выберите время</option>
-          {timeSlots.map((time) => (
-            <option key={time} value={time}>
-              {time}
-            </option>
-          ))}
-        </select>
+        <div className={styles.fieldContainer}>
+          <label className={styles.label}>Email</label>
+          <input
+            type="email"
+            name="email"
+            value={formData.email || ''}
+            onChange={handleChange}
+            className={styles.input}
+            placeholder="your@email.com"
+          />
+        </div>
+        <div className={styles.fieldContainer}>
+          <label className={styles.label}>Время звонка *</label>
+          <select
+            name="preferredTime"
+            required
+            value={formData.preferredTime}
+            onChange={handleChange}
+            className={styles.select}
+          >
+            <option value="">Выберите время</option>
+            {timeSlots.map((time) => (
+              <option key={time} value={time}>
+                {time}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className={styles.fieldContainer}>
         <label className={styles.label}>Комментарий</label>
         <textarea
           name="comment"
-          rows={3}
+          rows={2}
           value={formData.comment || ''}
           onChange={handleChange}
           className={styles.textarea}
-          placeholder="Тема разговора, интересующие товары..."
+          placeholder="Тема разговора..."
         />
       </div>
 
       <div className={styles.info}>
         <div className={styles.infoContent}>
-          <div className={styles.infoIcon}>
-            <svg className={styles.infoSvg} fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </div>
-          <div className={styles.infoText}>
-            <p>
-              <strong>Мы перезвоним вам в течение 15 минут</strong> в выбранное время.
-            </p>
-            <p className={styles.infoSubtext}>Ответим на все вопросы и поможем с выбором!</p>
-          </div>
+          <svg className={styles.infoSvg} fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <span className={styles.infoText}>Перезвоним в течение 15 минут в выбранное время.</span>
         </div>
       </div>
 

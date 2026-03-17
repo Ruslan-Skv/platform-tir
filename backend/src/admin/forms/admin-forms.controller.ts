@@ -2,7 +2,9 @@ import { Body, Controller, Get, Patch, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PrismaService } from '../../database/prisma.service';
+import { UpdateCallbackFormBlockDto } from './dto/update-callback-form-block.dto';
 import { UpdateDirectorMessageBlockDto } from './dto/update-director-message-block.dto';
+import { UpdateMeasurementFormBlockDto } from './dto/update-measurement-form-block.dto';
 
 @ApiTags('admin/forms')
 @Controller('admin/forms')
@@ -72,6 +74,72 @@ export class AdminFormsController {
     });
     return {
       directorEmail: block.directorEmail,
+      updatedAt: block.updatedAt,
+    };
+  }
+
+  @Get('measurement-form-settings')
+  @ApiOperation({ summary: 'Настройки формы «Записаться на замер»' })
+  async getMeasurementFormSettings() {
+    const block = await this.prisma.measurementFormBlock.findUnique({
+      where: { id: 'main' },
+    });
+    return {
+      recipientEmail: block?.recipientEmail ?? null,
+      updatedAt: block?.updatedAt ?? null,
+    };
+  }
+
+  @Patch('measurement-form-settings')
+  @ApiOperation({ summary: 'Обновить настройки формы «Записаться на замер»' })
+  async updateMeasurementFormSettings(@Body() dto: UpdateMeasurementFormBlockDto) {
+    const block = await this.prisma.measurementFormBlock.upsert({
+      where: { id: 'main' },
+      create: {
+        id: 'main',
+        recipientEmail: dto.recipientEmail?.trim() || null,
+        updatedAt: new Date(),
+      },
+      update: {
+        recipientEmail: dto.recipientEmail?.trim() || null,
+        updatedAt: new Date(),
+      },
+    });
+    return {
+      recipientEmail: block.recipientEmail,
+      updatedAt: block.updatedAt,
+    };
+  }
+
+  @Get('callback-form-settings')
+  @ApiOperation({ summary: 'Настройки формы «Заказать звонок»' })
+  async getCallbackFormSettings() {
+    const block = await this.prisma.callbackFormBlock.findUnique({
+      where: { id: 'main' },
+    });
+    return {
+      recipientEmail: block?.recipientEmail ?? null,
+      updatedAt: block?.updatedAt ?? null,
+    };
+  }
+
+  @Patch('callback-form-settings')
+  @ApiOperation({ summary: 'Обновить настройки формы «Заказать звонок»' })
+  async updateCallbackFormSettings(@Body() dto: UpdateCallbackFormBlockDto) {
+    const block = await this.prisma.callbackFormBlock.upsert({
+      where: { id: 'main' },
+      create: {
+        id: 'main',
+        recipientEmail: dto.recipientEmail?.trim() || null,
+        updatedAt: new Date(),
+      },
+      update: {
+        recipientEmail: dto.recipientEmail?.trim() || null,
+        updatedAt: new Date(),
+      },
+    });
+    return {
+      recipientEmail: block.recipientEmail,
       updatedAt: block.updatedAt,
     };
   }

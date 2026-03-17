@@ -299,6 +299,16 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.settings.director-message',
       },
       {
+        label: 'Записаться на замер',
+        href: '/admin/settings/measurement-form',
+        resourceId: 'admin.settings.measurement-form',
+      },
+      {
+        label: 'Заказать звонок',
+        href: '/admin/settings/callback-form',
+        resourceId: 'admin.settings.callback-form',
+      },
+      {
         label: 'PWA и обновления',
         href: '/admin/settings/pwa',
         resourceId: 'admin.settings.pwa',

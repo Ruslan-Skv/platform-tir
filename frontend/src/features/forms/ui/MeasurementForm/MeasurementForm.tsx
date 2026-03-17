@@ -59,8 +59,6 @@ export const MeasurementForm: React.FC<MeasurementFormProps> = ({
     return dates;
   };
 
-  const timeSlots = ['09:00-11:00', '11:00-13:00', '13:00-15:00', '15:00-17:00', '17:00-19:00'];
-
   const productTypes = [
     'Межкомнатные двери',
     'Входные двери',
@@ -73,7 +71,7 @@ export const MeasurementForm: React.FC<MeasurementFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
-      <div className={styles.grid}>
+      <div className={styles.gridRow1}>
         <div className={styles.fieldContainer}>
           <label className={styles.label}>Имя *</label>
           <input
@@ -86,7 +84,6 @@ export const MeasurementForm: React.FC<MeasurementFormProps> = ({
             placeholder="Ваше имя"
           />
         </div>
-
         <div className={styles.fieldContainer}>
           <label className={styles.label}>Телефон *</label>
           <input
@@ -99,36 +96,34 @@ export const MeasurementForm: React.FC<MeasurementFormProps> = ({
             placeholder="+7 (900) 123-45-67"
           />
         </div>
-      </div>
-
-      <div className={styles.fieldContainer}>
-        <label className={styles.label}>Email</label>
-        <input
-          type="email"
-          name="email"
-          value={formData.email}
-          onChange={handleChange}
-          className={styles.input}
-          placeholder="your@email.com"
-        />
-      </div>
-
-      <div className={styles.fieldContainer}>
-        <label className={styles.label}>Адрес объекта *</label>
-        <input
-          type="text"
-          name="address"
-          required
-          value={formData.address}
-          onChange={handleChange}
-          className={styles.input}
-          placeholder="Город, улица, дом, квартира"
-        />
-      </div>
-
-      <div className={styles.grid}>
         <div className={styles.fieldContainer}>
-          <label className={styles.label}>Предпочтительная дата *</label>
+          <label className={styles.label}>Email</label>
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            className={styles.input}
+            placeholder="your@email.com"
+          />
+        </div>
+        <div className={styles.fieldContainer}>
+          <label className={styles.label}>Адрес *</label>
+          <input
+            type="text"
+            name="address"
+            required
+            value={formData.address}
+            onChange={handleChange}
+            className={styles.input}
+            placeholder="Город, улица, дом"
+          />
+        </div>
+      </div>
+
+      <div className={styles.gridRow2}>
+        <div className={styles.fieldContainer}>
+          <label className={styles.label}>Дата замера *</label>
           <select
             name="preferredDate"
             required
@@ -148,20 +143,18 @@ export const MeasurementForm: React.FC<MeasurementFormProps> = ({
             ))}
           </select>
         </div>
-
         <div className={styles.fieldContainer}>
-          <label className={styles.label}>Временной интервал *</label>
+          <label className={styles.label}>Интересующий товар</label>
           <select
-            name="preferredTime"
-            required
-            value={formData.preferredTime}
+            name="productType"
+            value={formData.productType}
             onChange={handleChange}
             className={styles.select}
           >
-            <option value="">Выберите время</option>
-            {timeSlots.map((time) => (
-              <option key={time} value={time}>
-                {time}
+            <option value="">Не выбрано</option>
+            {productTypes.map((type) => (
+              <option key={type} value={type}>
+                {type}
               </option>
             ))}
           </select>
@@ -169,55 +162,29 @@ export const MeasurementForm: React.FC<MeasurementFormProps> = ({
       </div>
 
       <div className={styles.fieldContainer}>
-        <label className={styles.label}>Интересующий товар</label>
-        <select
-          name="productType"
-          value={formData.productType}
-          onChange={handleChange}
-          className={styles.select}
-        >
-          <option value="">Не выбрано</option>
-          {productTypes.map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className={styles.fieldContainer}>
         <label className={styles.label}>Комментарий</label>
         <textarea
           name="comments"
-          rows={3}
+          rows={2}
           value={formData.comments}
           onChange={handleChange}
           className={styles.textarea}
-          placeholder="Дополнительная информация, особые пожелания..."
+          placeholder="Дополнительная информация..."
         />
       </div>
 
       <div className={styles.info}>
         <div className={styles.infoContent}>
-          <div className={styles.infoIcon}>
-            <svg className={styles.infoSvg} fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </div>
-          <div className={styles.infoText}>
-            <p>
-              <strong>Бесплатный замер</strong> включает:
-            </p>
-            <ul className={styles.infoList}>
-              <li>Выезд специалиста в удобное для вас время</li>
-              <li>Профессиональные замеры и консультация</li>
-              <li>Расчет точной стоимости работ</li>
-            </ul>
-          </div>
+          <svg className={styles.infoSvg} fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <span className={styles.infoText}>
+            Бесплатный выезд специалиста, замеры и расчёт стоимости.
+          </span>
         </div>
       </div>
 

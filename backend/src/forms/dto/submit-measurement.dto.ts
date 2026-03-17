@@ -31,11 +31,13 @@ export class SubmitMeasurementDto {
   @MaxLength(50)
   preferredDate: string;
 
-  @ApiProperty({ description: 'Предпочтительное время' })
+  @ApiPropertyOptional({
+    description: 'Предпочтительное время (устарело, оставлено для совместимости)',
+  })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(50)
-  preferredTime: string;
+  preferredTime?: string;
 
   @ApiProperty({ description: 'Тип продукта' })
   @IsString()

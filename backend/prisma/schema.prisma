@@ -262,6 +262,24 @@ model DirectorMessageBlock {
   @@map("director_message_block")
 }
 
+/// Настройки формы «Записаться на замер»: email для уведомлений при подаче заявки
+model MeasurementFormBlock {
+  id             String   @id @default("main")
+  recipientEmail String?  // Email для получения уведомлений о новых заявках (если пусто — только сохранение в БД)
+  updatedAt      DateTime @updatedAt
+
+  @@map("measurement_form_block")
+}
+
+/// Настройки формы «Заказать звонок»: email для уведомлений при подаче заявки
+model CallbackFormBlock {
+  id             String   @id @default("main")
+  recipientEmail String?  // Email для получения уведомлений (если пусто — только сохранение в БД)
+  updatedAt      DateTime @updatedAt
+
+  @@map("callback_form_block")
+}
+
 model Partner {
   id                 String   @id @default(cuid())
   name               String   // Название партнёра

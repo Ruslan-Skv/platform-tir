@@ -6,7 +6,7 @@ export interface MeasurementFormPayload {
   email: string;
   address: string;
   preferredDate: string;
-  preferredTime: string;
+  preferredTime?: string;
   productType: string;
   comments?: string;
 }

@@ -136,6 +136,16 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/settings/director-message',
   },
   {
+    id: 'admin.settings.measurement-form',
+    label: 'Записаться на замер',
+    path: '/admin/settings/measurement-form',
+  },
+  {
+    id: 'admin.settings.callback-form',
+    label: 'Заказать звонок',
+    path: '/admin/settings/callback-form',
+  },
+  {
     id: 'admin.settings.pwa',
     label: 'PWA и обновления',
     path: '/admin/settings/pwa',
