@@ -100,11 +100,11 @@ export const FormModals: React.FC = () => {
         {formSubmission.error && <div className={styles.error}>{formSubmission.error}</div>}
       </Modal>
 
-      {/* Модалка «Рассчитать стоимость» / «Отправить заявку» */}
+      {/* Модалка «Рассчитать стоимость» */}
       <Modal
         isOpen={quoteModal.isOpen}
         onClose={handleCloseQuote}
-        title="Отправить заявку"
+        title="Рассчитать стоимость"
         size="lg"
       >
         {formSubmission.success ? (

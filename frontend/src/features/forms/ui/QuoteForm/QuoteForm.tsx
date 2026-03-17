@@ -87,13 +87,19 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
   if (step === 1) {
     return (
       <div className={styles.form}>
-        <h3 className={styles.stepTitle}>Выберите интересующие вас позиции</h3>
+        <h3 className={styles.stepTitle}>
+          Выберите интересующие вас позиции (один или несколько вариантов)
+        </h3>
+        {/* <p className={styles.optionsHint}>Выберите один или несколько вариантов</p> */}
         {optionsLoading ? (
           <p className={styles.loadingHint}>Загрузка вариантов...</p>
         ) : (
           <div className={styles.optionsGrid}>
             {displayOptions.map((opt) => (
-              <label key={opt} className={styles.checkboxLabel}>
+              <label
+                key={opt}
+                className={`${styles.optionCard} ${selectedOptions.has(opt) ? styles.optionCardSelected : ''}`}
+              >
                 <input
                   type="checkbox"
                   checked={selectedOptions.has(opt)}
@@ -103,18 +109,23 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
                 <span className={styles.checkboxText}>{opt}</span>
               </label>
             ))}
+            <div
+              className={`${styles.optionCard} ${styles.optionCardCustom} ${customOption.trim() ? styles.optionCardSelected : ''}`}
+              onClick={(e) => {
+                const input = (e.currentTarget as HTMLDivElement).querySelector('input');
+                if (e.target !== input) input?.focus();
+              }}
+            >
+              <input
+                type="text"
+                value={customOption}
+                onChange={(e) => setCustomOption(e.target.value)}
+                className={styles.customInput}
+                placeholder="Свой вариант"
+              />
+            </div>
           </div>
         )}
-        <div className={styles.customOptionWrap}>
-          <label className={styles.label}>Свой вариант</label>
-          <input
-            type="text"
-            value={customOption}
-            onChange={(e) => setCustomOption(e.target.value)}
-            className={styles.input}
-            placeholder="Укажите другой вид работ или товара"
-          />
-        </div>
         <div className={styles.actions}>
           <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
             Отмена
