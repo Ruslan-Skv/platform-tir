@@ -105,7 +105,7 @@ export class ProductsController {
     enum: ['sort_order', 'created_desc'],
     description: 'Сортировка: sort_order (по порядку), created_desc (по дате)',
   })
-  findFeatured(
+  async findFeatured(
     @Query('limit') limit?: string,
     @Query('primaryFilter') primaryFilter?: string,
     @Query('secondaryOrder') secondaryOrder?: string,
@@ -119,7 +119,12 @@ export class ProductsController {
       secondaryOrder && ['sort_order', 'created_desc'].includes(secondaryOrder)
         ? (secondaryOrder as 'sort_order' | 'created_desc')
         : 'sort_order';
-    return this.productsService.findFeatured(limitNum, filter, order);
+    try {
+      return await this.productsService.findFeatured(limitNum, filter, order);
+    } catch (err) {
+      console.error('[ProductsController] findFeatured failed:', err);
+      return { products: [] };
+    }
   }
 
   @Get(':id')
