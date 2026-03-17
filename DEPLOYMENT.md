@@ -273,6 +273,17 @@ alias dc='docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml 
 
 **Важно:** не используйте `down -v` — флаг `-v` удаляет volumes и данные.
 
+### Переменные окружения (.env)
+
+Переменные для production берутся из **корневого** `.env` (рядом с `docker-compose.yml`). Docker Compose автоматически загружает его при запуске. Запускайте команды из корня проекта:
+
+```bash
+cd ~/platform-tir   # или путь к проекту
+docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml up -d
+```
+
+Проверьте, что `.env` содержит `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`, `SITE_URL` и другие нужные переменные.
+
 ### Изменение .env (пароли, CORS, домены)
 
 `restart` не подхватывает новые переменные. Нужно пересоздать контейнеры:
@@ -387,6 +398,15 @@ chmod +x scripts/backup.sh
 ### 502 Bad Gateway
 - Backend ещё не готов — проверьте `docker compose ps` и healthcheck
 - Увеличьте `start_period` в healthcheck при медленном сервере
+
+### Ошибка `products.createdById does not exist`
+Схема БД не совпадает с Prisma. Нужно применить миграции:
+
+```bash
+docker compose ... exec backend npx prisma migrate deploy
+```
+
+Если миграции уже применены, проверьте, что последний деплой содержит папку `backend/prisma/migrations/` с нужными миграциями (в т.ч. `20250317_000000_add_product_created_by_updated_by`).
 
 ### ERR_HTTP2_PROTOCOL_ERROR, Failed to load chunk
 Ошибка возникает при загрузке статики Next.js (`/_next/static/chunks/*.js`, `*.css`) через nginx с HTTP/2.
