@@ -2,6 +2,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1
 
 export interface QuoteFormSettings {
   recipientEmail: string | null;
+  telegramChatId: string | null;
   serviceTypeOptions: string[];
   updatedAt: string | null;
 }
@@ -17,7 +18,11 @@ export async function getAdminQuoteFormSettings(
 }
 
 export async function updateAdminQuoteFormSettings(
-  data: { recipientEmail?: string | null; serviceTypeOptions?: string[] | null },
+  data: {
+    recipientEmail?: string | null;
+    telegramChatId?: string | null;
+    serviceTypeOptions?: string[] | null;
+  },
   getAuthHeaders: () => Record<string, string>
 ): Promise<QuoteFormSettings> {
   const res = await fetch(`${API_URL}/admin/forms/quote-form-settings`, {

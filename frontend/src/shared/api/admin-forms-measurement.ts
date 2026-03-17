@@ -2,6 +2,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1
 
 export interface MeasurementFormSettings {
   recipientEmail: string | null;
+  telegramChatId: string | null;
   updatedAt: string | null;
 }
 
@@ -16,7 +17,7 @@ export async function getAdminMeasurementFormSettings(
 }
 
 export async function updateAdminMeasurementFormSettings(
-  data: { recipientEmail?: string | null },
+  data: { recipientEmail?: string | null; telegramChatId?: string | null },
   getAuthHeaders: () => Record<string, string>
 ): Promise<MeasurementFormSettings> {
   const res = await fetch(`${API_URL}/admin/forms/measurement-form-settings`, {

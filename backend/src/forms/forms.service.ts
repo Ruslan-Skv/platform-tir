@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
 import { PrismaService } from '../database/prisma.service';
+import { FormNotifierService } from './form-notifier.service';
 import { SubmitCallbackDto } from './dto/submit-callback.dto';
 import { SubmitDirectorMessageDto } from './dto/submit-director-message.dto';
 import { SubmitMeasurementDto } from './dto/submit-measurement.dto';
@@ -21,6 +22,7 @@ export class FormsService {
     private readonly prisma: PrismaService,
     private readonly mailer: MailerService,
     private readonly config: ConfigService,
+    private readonly formNotifier: FormNotifierService,
   ) {}
 
   async getQuoteFormOptions(): Promise<{ options: string[] }> {
@@ -48,33 +50,12 @@ export class FormsService {
       },
     });
 
-    const block = await this.prisma.measurementFormBlock.findUnique({
-      where: { id: 'main' },
+    await this.formNotifier.notify('measurement', {
+      subject: `Заявка на замер — ${dto.name}`,
+      html: this.buildMeasurementEmailHtml(dto),
+      text: this.buildMeasurementEmailText(dto),
+      replyTo: dto.email || undefined,
     });
-    const recipientEmail = block?.recipientEmail?.trim();
-    if (recipientEmail) {
-      const from = this.config.get<string>('MAIL_FROM') || 'noreply@example.com';
-      const subject = `Заявка на замер — ${dto.name}`;
-      try {
-        await this.mailer.sendMail({
-          from: `"Сайт: Заявка на замер" <${from}>`,
-          to: recipientEmail,
-          replyTo: dto.email || undefined,
-          subject,
-          html: this.buildMeasurementEmailHtml(dto),
-          text: this.buildMeasurementEmailText(dto),
-        });
-      } catch (err) {
-        console.error('FormsService.submitMeasurement sendMail error:', err);
-        const isDev = this.config.get('NODE_ENV') !== 'production';
-        if (!isDev) {
-          throw new BadRequestException('Не удалось отправить заявку. Попробуйте позже.');
-        }
-        console.warn(
-          'Письмо не отправлено (SMTP/MailHog недоступен). Заявка сохранена. Запустите: docker compose up -d mailhog',
-        );
-      }
-    }
 
     return submission;
   }
@@ -128,33 +109,12 @@ ${dto.comments ? `\nКомментарий:\n${dto.comments}` : ''}`;
       },
     });
 
-    const block = await this.prisma.callbackFormBlock.findUnique({
-      where: { id: 'main' },
+    await this.formNotifier.notify('callback', {
+      subject: `Заказ обратного звонка — ${dto.name}`,
+      html: this.buildCallbackEmailHtml(dto),
+      text: this.buildCallbackEmailText(dto),
+      replyTo: dto.email || undefined,
     });
-    const recipientEmail = block?.recipientEmail?.trim();
-    if (recipientEmail) {
-      const from = this.config.get<string>('MAIL_FROM') || 'noreply@example.com';
-      const subject = `Заказ обратного звонка — ${dto.name}`;
-      try {
-        await this.mailer.sendMail({
-          from: `"Сайт: Обратный звонок" <${from}>`,
-          to: recipientEmail,
-          replyTo: dto.email || undefined,
-          subject,
-          html: this.buildCallbackEmailHtml(dto),
-          text: this.buildCallbackEmailText(dto),
-        });
-      } catch (err) {
-        console.error('FormsService.submitCallback sendMail error:', err);
-        const isDev = this.config.get('NODE_ENV') !== 'production';
-        if (!isDev) {
-          throw new BadRequestException('Не удалось отправить заявку. Попробуйте позже.');
-        }
-        console.warn(
-          'Письмо не отправлено (SMTP/MailHog недоступен). Заявка сохранена. Запустите: docker compose up -d mailhog',
-        );
-      }
-    }
 
     return submission;
   }
@@ -193,10 +153,11 @@ ${dto.comment ? `\nКомментарий:\n${dto.comment}` : ''}`;
     const block = await this.prisma.directorMessageBlock.findUnique({
       where: { id: 'main' },
     });
-    const directorEmail = block?.directorEmail?.trim();
-    if (!directorEmail) {
+    const hasEmail = !!block?.directorEmail?.trim();
+    const hasTelegram = !!block?.telegramChatId?.trim() && !!this.config.get('TELEGRAM_BOT_TOKEN');
+    if (!hasEmail && !hasTelegram) {
       throw new BadRequestException(
-        'Форма «Письмо директору» временно недоступна. Укажите email директора в настройках админки.',
+        'Форма «Письмо директору» временно недоступна. Укажите email директора или Telegram в настройках админки.',
       );
     }
 
@@ -212,31 +173,13 @@ ${dto.comment ? `\nКомментарий:\n${dto.comment}` : ''}`;
       },
     });
 
-    const from = this.config.get<string>('MAIL_FROM') || 'noreply@example.com';
     const subjectLabel = SUBJECT_LABELS[dto.subject] || dto.subject;
-    const subject = `Письмо директору: ${subjectLabel} — от ${dto.name}`;
-
-    try {
-      await this.mailer.sendMail({
-        from: `"Сайт: Письмо директору" <${from}>`,
-        to: directorEmail,
-        replyTo: dto.email,
-        subject,
-        html: this.buildDirectorMessageHtml(dto),
-        text: this.buildDirectorMessageText(dto),
-      });
-    } catch (err) {
-      console.error('FormsService.submitDirectorMessage sendMail error:', err);
-      // В режиме разработки без MailHog — сохраняем заявку и возвращаем успех
-      const isDev = this.config.get('NODE_ENV') !== 'production';
-      if (isDev) {
-        console.warn(
-          'Письмо не отправлено (SMTP/MailHog недоступен). Заявка сохранена. Для локальной отправки запустите: docker compose up -d mailhog',
-        );
-      } else {
-        throw new BadRequestException('Не удалось отправить письмо. Попробуйте позже.');
-      }
-    }
+    await this.formNotifier.notify('director', {
+      subject: `Письмо директору: ${subjectLabel} — от ${dto.name}`,
+      html: this.buildDirectorMessageHtml(dto),
+      text: this.buildDirectorMessageText(dto),
+      replyTo: dto.email,
+    });
 
     return submission;
   }
@@ -286,33 +229,12 @@ ${dto.message}`;
       },
     });
 
-    const block = await this.prisma.quoteFormBlock.findUnique({
-      where: { id: 'main' },
+    await this.formNotifier.notify('quote', {
+      subject: `Заявка на расчёт стоимости — ${dto.name}`,
+      html: this.buildQuoteEmailHtml(dto),
+      text: this.buildQuoteEmailText(dto),
+      replyTo: dto.email || undefined,
     });
-    const recipientEmail = block?.recipientEmail?.trim();
-    if (recipientEmail) {
-      const from = this.config.get<string>('MAIL_FROM') || 'noreply@example.com';
-      const subject = `Заявка на расчёт стоимости — ${dto.name}`;
-      try {
-        await this.mailer.sendMail({
-          from: `"Сайт: Рассчитать стоимость" <${from}>`,
-          to: recipientEmail,
-          replyTo: dto.email || undefined,
-          subject,
-          html: this.buildQuoteEmailHtml(dto),
-          text: this.buildQuoteEmailText(dto),
-        });
-      } catch (err) {
-        console.error('FormsService.submitQuote sendMail error:', err);
-        const isDev = this.config.get('NODE_ENV') !== 'production';
-        if (!isDev) {
-          throw new BadRequestException('Не удалось отправить заявку. Попробуйте позже.');
-        }
-        console.warn(
-          'Письмо не отправлено (SMTP/MailHog недоступен). Заявка сохранена. Запустите: docker compose up -d mailhog',
-        );
-      }
-    }
 
     return submission;
   }

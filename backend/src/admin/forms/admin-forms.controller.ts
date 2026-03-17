@@ -56,6 +56,7 @@ export class AdminFormsController {
     });
     return {
       directorEmail: block?.directorEmail ?? null,
+      telegramChatId: block?.telegramChatId ?? null,
       updatedAt: block?.updatedAt ?? null,
     };
   }
@@ -68,15 +69,22 @@ export class AdminFormsController {
       create: {
         id: 'main',
         directorEmail: dto.directorEmail?.trim() || null,
+        telegramChatId: dto.telegramChatId?.trim() || null,
         updatedAt: new Date(),
       },
       update: {
-        directorEmail: dto.directorEmail?.trim() || null,
+        ...(dto.directorEmail !== undefined && {
+          directorEmail: dto.directorEmail?.trim() || null,
+        }),
+        ...(dto.telegramChatId !== undefined && {
+          telegramChatId: dto.telegramChatId?.trim() || null,
+        }),
         updatedAt: new Date(),
       },
     });
     return {
       directorEmail: block.directorEmail,
+      telegramChatId: block.telegramChatId,
       updatedAt: block.updatedAt,
     };
   }
@@ -89,6 +97,7 @@ export class AdminFormsController {
     });
     return {
       recipientEmail: block?.recipientEmail ?? null,
+      telegramChatId: block?.telegramChatId ?? null,
       updatedAt: block?.updatedAt ?? null,
     };
   }
@@ -101,15 +110,22 @@ export class AdminFormsController {
       create: {
         id: 'main',
         recipientEmail: dto.recipientEmail?.trim() || null,
+        telegramChatId: dto.telegramChatId?.trim() || null,
         updatedAt: new Date(),
       },
       update: {
-        recipientEmail: dto.recipientEmail?.trim() || null,
+        ...(dto.recipientEmail !== undefined && {
+          recipientEmail: dto.recipientEmail?.trim() || null,
+        }),
+        ...(dto.telegramChatId !== undefined && {
+          telegramChatId: dto.telegramChatId?.trim() || null,
+        }),
         updatedAt: new Date(),
       },
     });
     return {
       recipientEmail: block.recipientEmail,
+      telegramChatId: block.telegramChatId,
       updatedAt: block.updatedAt,
     };
   }
@@ -122,6 +138,7 @@ export class AdminFormsController {
     });
     return {
       recipientEmail: block?.recipientEmail ?? null,
+      telegramChatId: block?.telegramChatId ?? null,
       updatedAt: block?.updatedAt ?? null,
     };
   }
@@ -134,15 +151,22 @@ export class AdminFormsController {
       create: {
         id: 'main',
         recipientEmail: dto.recipientEmail?.trim() || null,
+        telegramChatId: dto.telegramChatId?.trim() || null,
         updatedAt: new Date(),
       },
       update: {
-        recipientEmail: dto.recipientEmail?.trim() || null,
+        ...(dto.recipientEmail !== undefined && {
+          recipientEmail: dto.recipientEmail?.trim() || null,
+        }),
+        ...(dto.telegramChatId !== undefined && {
+          telegramChatId: dto.telegramChatId?.trim() || null,
+        }),
         updatedAt: new Date(),
       },
     });
     return {
       recipientEmail: block.recipientEmail,
+      telegramChatId: block.telegramChatId,
       updatedAt: block.updatedAt,
     };
   }
@@ -157,6 +181,7 @@ export class AdminFormsController {
     const options = Array.isArray(opts) ? opts : [];
     return {
       recipientEmail: block?.recipientEmail ?? null,
+      telegramChatId: block?.telegramChatId ?? null,
       serviceTypeOptions: options,
       updatedAt: block?.updatedAt ?? null,
     };
@@ -177,12 +202,16 @@ export class AdminFormsController {
       create: {
         id: 'main',
         recipientEmail: dto.recipientEmail?.trim() || null,
+        telegramChatId: dto.telegramChatId?.trim() || null,
         serviceTypeOptions: dto.serviceTypeOptions ?? undefined,
         updatedAt: new Date(),
       },
       update: {
         ...(dto.recipientEmail !== undefined && {
           recipientEmail: dto.recipientEmail?.trim() || null,
+        }),
+        ...(dto.telegramChatId !== undefined && {
+          telegramChatId: dto.telegramChatId?.trim() || null,
         }),
         ...(serviceTypeOptionsValue !== undefined && {
           serviceTypeOptions: serviceTypeOptionsValue,
@@ -194,6 +223,7 @@ export class AdminFormsController {
     const options = Array.isArray(opts) ? opts : [];
     return {
       recipientEmail: block.recipientEmail,
+      telegramChatId: block.telegramChatId,
       serviceTypeOptions: options,
       updatedAt: block.updatedAt,
     };

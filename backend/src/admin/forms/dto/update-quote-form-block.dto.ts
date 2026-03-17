@@ -20,4 +20,13 @@ export class UpdateQuoteFormBlockDto {
   @IsString({ each: true })
   @MaxLength(150, { each: true })
   serviceTypeOptions?: string[] | null;
+
+  @ApiPropertyOptional({
+    example: '-1001234567890',
+    description: 'ID чата Telegram для уведомлений (нужен TELEGRAM_BOT_TOKEN в .env)',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  telegramChatId?: string | null;
 }

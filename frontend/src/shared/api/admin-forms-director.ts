@@ -2,6 +2,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1
 
 export interface DirectorMessageSettings {
   directorEmail: string | null;
+  telegramChatId: string | null;
   updatedAt: string | null;
 }
 
@@ -16,7 +17,7 @@ export async function getAdminDirectorMessageSettings(
 }
 
 export async function updateAdminDirectorMessageSettings(
-  data: { directorEmail?: string | null },
+  data: { directorEmail?: string | null; telegramChatId?: string | null },
   getAuthHeaders: () => Record<string, string>
 ): Promise<DirectorMessageSettings> {
   const res = await fetch(`${API_URL}/admin/forms/director-settings`, {

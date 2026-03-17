@@ -15,6 +15,7 @@ import styles from './SettingsPage.module.css';
 export function CallbackFormSection() {
   const { getAuthHeaders } = useAuth();
   const [recipientEmail, setRecipientEmail] = useState('');
+  const [telegramChatId, setTelegramChatId] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -28,6 +29,7 @@ export function CallbackFormSection() {
     try {
       const data = await getAdminCallbackFormSettings(getAuthHeaders);
       setRecipientEmail(data.recipientEmail ?? '');
+      setTelegramChatId(data.telegramChatId ?? '');
     } catch (err) {
       console.error('Failed to fetch callback form settings:', err);
       showToast('Не удалось загрузить настройки', 'error');
@@ -46,7 +48,10 @@ export function CallbackFormSection() {
     setToast(null);
     try {
       await updateAdminCallbackFormSettings(
-        { recipientEmail: recipientEmail.trim() || null },
+        {
+          recipientEmail: recipientEmail.trim() || null,
+          telegramChatId: telegramChatId.trim() || null,
+        },
         getAuthHeaders
       );
       showToast('Настройки сохранены', 'success');
@@ -69,9 +74,8 @@ export function CallbackFormSection() {
     <section className={styles.section}>
       <h2 className={styles.sectionTitle}>Заказать звонок</h2>
       <p className={styles.sectionDescription}>
-        Укажите email, на который будут приходить письма при подаче заявки на обратный звонок через
-        форму «Заказать звонок» в публичной части сайта. Если email не указан, заявки сохраняются
-        только в базе данных.
+        Укажите каналы уведомлений: email и/или Telegram (ID чата). Для Telegram добавьте
+        TELEGRAM_BOT_TOKEN в .env.
       </p>
       <p className={styles.sectionDescription} style={{ marginTop: -8 }}>
         Заявки также сохраняются в разделе{' '}
@@ -109,6 +113,29 @@ export function CallbackFormSection() {
             value={recipientEmail}
             onChange={(e) => setRecipientEmail(e.target.value)}
             placeholder="manager@company.ru"
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              fontSize: '0.9375rem',
+              border: '1px solid #d1d5db',
+              borderRadius: 6,
+            }}
+          />
+        </div>
+        <div className={styles.formGroup} style={{ marginBottom: 16 }}>
+          <label
+            htmlFor="telegramChatId"
+            className={styles.templateCheckboxLabel}
+            style={{ marginBottom: 8 }}
+          >
+            ID чата Telegram
+          </label>
+          <input
+            id="telegramChatId"
+            type="text"
+            value={telegramChatId}
+            onChange={(e) => setTelegramChatId(e.target.value)}
+            placeholder="-1001234567890 или 123456789"
             style={{
               width: '100%',
               padding: '8px 12px',

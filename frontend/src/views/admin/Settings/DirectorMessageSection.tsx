@@ -15,6 +15,7 @@ import styles from './SettingsPage.module.css';
 export function DirectorMessageSection() {
   const { getAuthHeaders } = useAuth();
   const [directorEmail, setDirectorEmail] = useState('');
+  const [telegramChatId, setTelegramChatId] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -28,6 +29,7 @@ export function DirectorMessageSection() {
     try {
       const data = await getAdminDirectorMessageSettings(getAuthHeaders);
       setDirectorEmail(data.directorEmail ?? '');
+      setTelegramChatId(data.telegramChatId ?? '');
     } catch (err) {
       console.error('Failed to fetch director message settings:', err);
       showToast('Не удалось загрузить настройки', 'error');
@@ -46,7 +48,10 @@ export function DirectorMessageSection() {
     setToast(null);
     try {
       await updateAdminDirectorMessageSettings(
-        { directorEmail: directorEmail.trim() || null },
+        {
+          directorEmail: directorEmail.trim() || null,
+          telegramChatId: telegramChatId.trim() || null,
+        },
         getAuthHeaders
       );
       showToast('Настройки сохранены', 'success');
@@ -69,9 +74,8 @@ export function DirectorMessageSection() {
     <section className={styles.section}>
       <h2 className={styles.sectionTitle}>Письмо директору</h2>
       <p className={styles.sectionDescription}>
-        Укажите email директора, на который будут приходить письма из формы «Письмо директору» в
-        публичной части сайта. Кнопка открытия формы находится в футере и в других местах сайта.
-        Если email не указан, форма будет возвращать ошибку при отправке.
+        Укажите каналы уведомлений: email директора и/или ID чата Telegram. Нужен хотя бы один
+        канал. Для Telegram добавьте TELEGRAM_BOT_TOKEN в .env.
       </p>
       <p className={styles.sectionDescription} style={{ marginTop: -8 }}>
         Письма с форм также сохраняются в разделе{' '}
@@ -109,6 +113,29 @@ export function DirectorMessageSection() {
             value={directorEmail}
             onChange={(e) => setDirectorEmail(e.target.value)}
             placeholder="director@company.ru"
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              fontSize: '0.9375rem',
+              border: '1px solid #d1d5db',
+              borderRadius: 6,
+            }}
+          />
+        </div>
+        <div className={styles.formGroup} style={{ marginBottom: 16 }}>
+          <label
+            htmlFor="telegramChatId"
+            className={styles.templateCheckboxLabel}
+            style={{ marginBottom: 8 }}
+          >
+            ID чата Telegram
+          </label>
+          <input
+            id="telegramChatId"
+            type="text"
+            value={telegramChatId}
+            onChange={(e) => setTelegramChatId(e.target.value)}
+            placeholder="-1001234567890 или 123456789"
             style={{
               width: '100%',
               padding: '8px 12px',
