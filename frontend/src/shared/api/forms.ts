@@ -19,6 +19,14 @@ export interface CallbackFormPayload {
   comment?: string;
 }
 
+export interface DirectorMessageFormPayload {
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+}
+
 export async function submitMeasurementForm(data: MeasurementFormPayload): Promise<void> {
   const res = await fetch(`${API_URL}/forms/measurement`, {
     method: 'POST',
@@ -47,6 +55,22 @@ export async function submitCallbackForm(data: CallbackFormPayload): Promise<voi
       err?.message ||
       (Array.isArray(err?.message) ? err.message.join(', ') : null) ||
       'Не удалось отправить заявку';
+    throw new Error(message);
+  }
+}
+
+export async function submitDirectorMessageForm(data: DirectorMessageFormPayload): Promise<void> {
+  const res = await fetch(`${API_URL}/forms/director-message`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const message =
+      err?.message ||
+      (Array.isArray(err?.message) ? err.message.join(', ') : null) ||
+      'Не удалось отправить письмо';
     throw new Error(message);
   }
 }

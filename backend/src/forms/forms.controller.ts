@@ -4,6 +4,7 @@ import { Throttle } from '@nestjs/throttler';
 import { OriginGuard } from '../common/guards/origin.guard';
 import { FormsService } from './forms.service';
 import { SubmitCallbackDto } from './dto/submit-callback.dto';
+import { SubmitDirectorMessageDto } from './dto/submit-director-message.dto';
 import { SubmitMeasurementDto } from './dto/submit-measurement.dto';
 
 @ApiTags('forms')
@@ -23,5 +24,11 @@ export class FormsController {
   @ApiOperation({ summary: 'Заказ обратного звонка' })
   async submitCallback(@Body() dto: SubmitCallbackDto) {
     return this.formsService.submitCallback(dto);
+  }
+
+  @Post('director-message')
+  @ApiOperation({ summary: 'Письмо директору' })
+  async submitDirectorMessage(@Body() dto: SubmitDirectorMessageDto) {
+    return this.formsService.submitDirectorMessage(dto);
   }
 }

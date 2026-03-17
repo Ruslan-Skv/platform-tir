@@ -10,6 +10,7 @@ export interface AdminFormSubmission {
   preferredDate: string | null;
   preferredTime: string;
   productType: string | null;
+  subject: string | null;
   comment: string | null;
   createdAt: string;
 }
@@ -27,7 +28,7 @@ function getAdminAuthHeaders(): HeadersInit {
 export async function getAdminFormSubmissions(
   page = 1,
   limit = 20,
-  type?: 'measurement' | 'callback'
+  type?: 'measurement' | 'callback' | 'director'
 ): Promise<{
   data: AdminFormSubmission[];
   total: number;

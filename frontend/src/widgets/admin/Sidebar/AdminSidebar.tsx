@@ -294,6 +294,11 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.settings.admin-link',
       },
       {
+        label: 'Письмо директору',
+        href: '/admin/settings/director-message',
+        resourceId: 'admin.settings.director-message',
+      },
+      {
         label: 'PWA и обновления',
         href: '/admin/settings/pwa',
         resourceId: 'admin.settings.pwa',

@@ -131,6 +131,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/settings/admin-link',
   },
   {
+    id: 'admin.settings.director-message',
+    label: 'Письмо директору',
+    path: '/admin/settings/director-message',
+  },
+  {
     id: 'admin.settings.pwa',
     label: 'PWA и обновления',
     path: '/admin/settings/pwa',

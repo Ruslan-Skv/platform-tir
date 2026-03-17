@@ -254,6 +254,14 @@ model ContactFormBlock {
   @@map("contact_form_block")
 }
 
+model DirectorMessageBlock {
+  id            String   @id @default("main")
+  directorEmail String?  // Email директора для формы «Письмо директору» (если пусто — письма не отправляются)
+  updatedAt     DateTime @updatedAt
+
+  @@map("director_message_block")
+}
+
 model Partner {
   id                 String   @id @default(cuid())
   name               String   // Название партнёра
@@ -1417,15 +1425,16 @@ model AdminNotificationsBlock {
 
 model FormSubmission {
   id             String   @id @default(cuid())
-  type           String   // "measurement" | "callback"
+  type           String   // "measurement" | "callback" | "director"
   name           String
   phone          String
   email          String?
   address        String?
   preferredDate  String?
   preferredTime  String
-  productType    String?
+  productType    String?  // для director — тема (subject)
   comment        String?  @db.Text
+  subject        String?  // тема письма для type=director
   createdAt      DateTime @default(now())
 
   @@map("form_submissions")

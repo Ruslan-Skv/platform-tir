@@ -9,12 +9,21 @@ import styles from './FormSubmissionsPage.module.css';
 const TYPE_LABELS: Record<string, string> = {
   measurement: 'Запись на замер',
   callback: 'Обратный звонок',
+  director: 'Письмо директору',
+};
+
+const SUBJECT_LABELS: Record<string, string> = {
+  complaint: 'Жалоба',
+  suggestion: 'Предложение',
+  cooperation: 'Сотрудничество',
+  question: 'Вопрос',
+  other: 'Другое',
 };
 
 export function FormSubmissionsPage() {
   const [submissions, setSubmissions] = useState<AdminFormSubmission[]>([]);
   const [loading, setLoading] = useState(true);
-  const [typeFilter, setTypeFilter] = useState<'measurement' | 'callback' | ''>('');
+  const [typeFilter, setTypeFilter] = useState<'measurement' | 'callback' | 'director' | ''>('');
 
   const loadSubmissions = useCallback(async () => {
     setLoading(true);
@@ -52,12 +61,15 @@ export function FormSubmissionsPage() {
       <div className={styles.toolbar}>
         <select
           value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value as 'measurement' | 'callback' | '')}
+          onChange={(e) =>
+            setTypeFilter(e.target.value as 'measurement' | 'callback' | 'director' | '')
+          }
           className={styles.select}
         >
           <option value="">Все заявки</option>
           <option value="measurement">Запись на замер</option>
           <option value="callback">Обратный звонок</option>
+          <option value="director">Письмо директору</option>
         </select>
         <button
           type="button"
@@ -83,13 +95,19 @@ export function FormSubmissionsPage() {
               </div>
               <div className={styles.cardBody}>
                 <p>
-                  <strong>{s.name}</strong> — {s.phone}
+                  <strong>{s.name}</strong>
+                  {s.phone && ` — ${s.phone}`}
                 </p>
                 {s.email && <p>Email: {s.email}</p>}
-                {s.address && <p>Адрес: {s.address}</p>}
-                {s.preferredDate && <p>Дата: {s.preferredDate}</p>}
-                <p>Время: {s.preferredTime}</p>
-                {s.productType && <p>Тип: {s.productType}</p>}
+                {s.type !== 'director' && (
+                  <>
+                    {s.address && <p>Адрес: {s.address}</p>}
+                    {s.preferredDate && <p>Дата: {s.preferredDate}</p>}
+                    {s.preferredTime && <p>Время: {s.preferredTime}</p>}
+                    {s.productType && <p>Тип: {s.productType}</p>}
+                  </>
+                )}
+                {s.subject && <p>Тема: {SUBJECT_LABELS[s.subject] ?? s.subject}</p>}
                 {s.comment && <p className={styles.comment}>{s.comment}</p>}
               </div>
             </div>

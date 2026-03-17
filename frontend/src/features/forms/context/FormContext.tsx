@@ -2,7 +2,11 @@
 
 import React, { createContext, useCallback, useContext, useState } from 'react';
 
-import { submitCallbackForm, submitMeasurementForm } from '@/shared/api/forms';
+import {
+  submitCallbackForm,
+  submitDirectorMessageForm,
+  submitMeasurementForm,
+} from '@/shared/api/forms';
 
 import type {
   CallbackFormData,
@@ -93,17 +97,22 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const handleDirectorMessageSubmit = useCallback(async (_data: DirectorMessageFormData) => {
+  const handleDirectorMessageSubmit = useCallback(async (data: DirectorMessageFormData) => {
     setFormSubmission({ loading: true, success: false, error: null });
     try {
-      // TODO: Заменить на реальный API вызов
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await submitDirectorMessageForm({
+        name: data.name,
+        email: data.email,
+        phone: data.phone || undefined,
+        subject: data.subject,
+        message: data.message,
+      });
       setFormSubmission({ loading: false, success: true, error: null });
     } catch (error) {
       setFormSubmission({
         loading: false,
         success: false,
-        error: error instanceof Error ? error.message : 'Произошла ошибка при отправке формы',
+        error: error instanceof Error ? error.message : 'Произошла ошибка при отправке письма',
       });
     }
   }, []);

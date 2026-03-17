@@ -69,6 +69,13 @@ export default function AdminSettingsPage() {
           Кнопка «Админка» на сайте
         </Link>
         <Link
+          href="/admin/settings/director-message"
+          className={styles.subtitle}
+          style={{ color: '#4f46e5', textDecoration: 'underline' }}
+        >
+          Письмо директору
+        </Link>
+        <Link
           href="/admin/settings/pwa"
           className={styles.subtitle}
           style={{ color: '#4f46e5', textDecoration: 'underline' }}
