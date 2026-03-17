@@ -1,7 +1,15 @@
-import type { CallbackFormData } from '../types/forms';
+import type { CallbackFormData, QuoteFormData } from '../types/forms';
 
 export interface CallbackFormProps {
   onSubmit: (data: CallbackFormData) => void;
+  onCancel: () => void;
+  loading?: boolean;
+}
+
+export interface QuoteFormProps {
+  /** Опции для выбора (из админки). Если пусто — используется дефолтный список */
+  options?: string[];
+  onSubmit: (data: QuoteFormData) => void;
   onCancel: () => void;
   loading?: boolean;
 }

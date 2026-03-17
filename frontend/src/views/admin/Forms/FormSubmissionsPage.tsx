@@ -10,6 +10,7 @@ const TYPE_LABELS: Record<string, string> = {
   measurement: 'Запись на замер',
   callback: 'Обратный звонок',
   director: 'Письмо директору',
+  quote: 'Рассчитать стоимость',
 };
 
 const SUBJECT_LABELS: Record<string, string> = {
@@ -23,7 +24,9 @@ const SUBJECT_LABELS: Record<string, string> = {
 export function FormSubmissionsPage() {
   const [submissions, setSubmissions] = useState<AdminFormSubmission[]>([]);
   const [loading, setLoading] = useState(true);
-  const [typeFilter, setTypeFilter] = useState<'measurement' | 'callback' | 'director' | ''>('');
+  const [typeFilter, setTypeFilter] = useState<
+    'measurement' | 'callback' | 'director' | 'quote' | ''
+  >('');
 
   const loadSubmissions = useCallback(async () => {
     setLoading(true);
@@ -62,7 +65,7 @@ export function FormSubmissionsPage() {
         <select
           value={typeFilter}
           onChange={(e) =>
-            setTypeFilter(e.target.value as 'measurement' | 'callback' | 'director' | '')
+            setTypeFilter(e.target.value as 'measurement' | 'callback' | 'director' | 'quote' | '')
           }
           className={styles.select}
         >
@@ -70,6 +73,7 @@ export function FormSubmissionsPage() {
           <option value="measurement">Запись на замер</option>
           <option value="callback">Обратный звонок</option>
           <option value="director">Письмо директору</option>
+          <option value="quote">Рассчитать стоимость</option>
         </select>
         <button
           type="button"

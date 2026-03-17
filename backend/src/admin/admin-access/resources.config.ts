@@ -146,6 +146,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/settings/callback-form',
   },
   {
+    id: 'admin.settings.quote-form',
+    label: 'Рассчитать стоимость',
+    path: '/admin/settings/quote-form',
+  },
+  {
     id: 'admin.settings.pwa',
     label: 'PWA и обновления',
     path: '/admin/settings/pwa',

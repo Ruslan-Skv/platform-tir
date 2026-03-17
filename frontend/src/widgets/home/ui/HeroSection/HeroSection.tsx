@@ -2,8 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
-
+import { useFormContext } from '@/features/forms/context/FormContext';
 import actionButtonStyles from '@/features/forms/ui/ActionButtons/ActionButton.module.css';
 import { Button } from '@/shared/ui/Button';
 
@@ -46,7 +45,7 @@ const DEFAULT_DATA: HeroData = {
 const SLIDE_INTERVAL_MS = 5000;
 
 export const HeroSection: React.FC = () => {
-  const router = useRouter();
+  const { quoteModal } = useFormContext();
   const slideshowRef = useRef<HTMLDivElement>(null);
   const [data, setData] = useState<HeroData>(DEFAULT_DATA);
   const [slideIndex, setSlideIndex] = useState(0);
@@ -137,7 +136,7 @@ export const HeroSection: React.FC = () => {
           <div className={styles.buttons}>
             <Button
               variant="outline"
-              onClick={() => router.push('/constructor')}
+              onClick={quoteModal.open}
               className={`${actionButtonStyles.button} ${actionButtonStyles.measurement} ${styles.heroButton}`}
               data-action-button="measurement"
             >

@@ -8,6 +8,7 @@ import { useFormContext } from '../../context/FormContext';
 import { CallbackForm } from '../CallbackForm';
 import { DirectorMessageForm } from '../DirectorMessageForm';
 import { MeasurementForm } from '../MeasurementForm';
+import { QuoteForm } from '../QuoteForm';
 import { SuccessMessage } from '../SuccessMessage';
 import styles from './FormModals.module.css';
 
@@ -16,13 +17,16 @@ export const FormModals: React.FC = () => {
     measurementModal,
     callbackModal,
     directorMessageModal,
+    quoteModal,
     formSubmission,
     handleMeasurementSubmit,
     handleCallbackSubmit,
     handleDirectorMessageSubmit,
+    handleQuoteSubmit,
     handleCloseMeasurement,
     handleCloseCallback,
     handleCloseDirectorMessage,
+    handleCloseQuote,
   } = useFormContext();
 
   return (
@@ -90,6 +94,29 @@ export const FormModals: React.FC = () => {
           <DirectorMessageForm
             onSubmit={handleDirectorMessageSubmit}
             onCancel={handleCloseDirectorMessage}
+            loading={formSubmission.loading}
+          />
+        )}
+        {formSubmission.error && <div className={styles.error}>{formSubmission.error}</div>}
+      </Modal>
+
+      {/* Модалка «Рассчитать стоимость» / «Отправить заявку» */}
+      <Modal
+        isOpen={quoteModal.isOpen}
+        onClose={handleCloseQuote}
+        title="Отправить заявку"
+        size="lg"
+      >
+        {formSubmission.success ? (
+          <SuccessMessage
+            title="Заявка принята!"
+            message="Менеджер свяжется с вами в ближайшее время и рассчитает стоимость"
+            onClose={handleCloseQuote}
+          />
+        ) : (
+          <QuoteForm
+            onSubmit={handleQuoteSubmit}
+            onCancel={handleCloseQuote}
             loading={formSubmission.loading}
           />
         )}

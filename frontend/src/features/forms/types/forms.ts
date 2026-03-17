@@ -26,6 +26,18 @@ export interface DirectorMessageFormData {
   attachment?: File;
 }
 
+export interface QuoteFormData {
+  /** Выбранные позиции (чекбоксы) */
+  selectedOptions: string[];
+  /** Свой вариант (текстовое поле) */
+  customOption?: string;
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+  comment: string;
+}
+
 export interface FormSubmissionState {
   loading: boolean;
   success: boolean;

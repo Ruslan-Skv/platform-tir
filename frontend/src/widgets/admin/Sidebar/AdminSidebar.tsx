@@ -309,6 +309,11 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.settings.callback-form',
       },
       {
+        label: 'Рассчитать стоимость',
+        href: '/admin/settings/quote-form',
+        resourceId: 'admin.settings.quote-form',
+      },
+      {
         label: 'PWA и обновления',
         href: '/admin/settings/pwa',
         resourceId: 'admin.settings.pwa',

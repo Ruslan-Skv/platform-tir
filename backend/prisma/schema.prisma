@@ -280,6 +280,16 @@ model CallbackFormBlock {
   @@map("callback_form_block")
 }
 
+/// Настройки формы «Рассчитать стоимость» / «Отправить заявку»: email и список позиций
+model QuoteFormBlock {
+  id                 String   @id @default("main")
+  recipientEmail     String?  // Email для получения уведомлений (если пусто — только сохранение в БД)
+  serviceTypeOptions Json?    // Массив строк — виды работ/товаров для выбора (настраивается в админке)
+  updatedAt          DateTime @updatedAt
+
+  @@map("quote_form_block")
+}
+
 model Partner {
   id                 String   @id @default(cuid())
   name               String   // Название партнёра

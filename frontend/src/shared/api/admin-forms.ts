@@ -28,7 +28,7 @@ function getAdminAuthHeaders(): HeadersInit {
 export async function getAdminFormSubmissions(
   page = 1,
   limit = 20,
-  type?: 'measurement' | 'callback' | 'director'
+  type?: 'measurement' | 'callback' | 'director' | 'quote'
 ): Promise<{
   data: AdminFormSubmission[];
   total: number;

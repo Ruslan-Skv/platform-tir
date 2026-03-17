@@ -1,10 +1,12 @@
 import { Body, Controller, Get, Patch, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { PrismaService } from '../../database/prisma.service';
 import { UpdateCallbackFormBlockDto } from './dto/update-callback-form-block.dto';
 import { UpdateDirectorMessageBlockDto } from './dto/update-director-message-block.dto';
 import { UpdateMeasurementFormBlockDto } from './dto/update-measurement-form-block.dto';
+import { UpdateQuoteFormBlockDto } from './dto/update-quote-form-block.dto';
 
 @ApiTags('admin/forms')
 @Controller('admin/forms')
@@ -24,7 +26,8 @@ export class AdminFormsController {
     const limitNum = limit ? parseInt(limit, 10) : 20;
     const skip = (pageNum - 1) * limitNum;
 
-    const where = type && ['measurement', 'callback', 'director'].includes(type) ? { type } : {};
+    const where =
+      type && ['measurement', 'callback', 'director', 'quote'].includes(type) ? { type } : {};
 
     const [data, total] = await Promise.all([
       this.prisma.formSubmission.findMany({
@@ -140,6 +143,58 @@ export class AdminFormsController {
     });
     return {
       recipientEmail: block.recipientEmail,
+      updatedAt: block.updatedAt,
+    };
+  }
+
+  @Get('quote-form-settings')
+  @ApiOperation({ summary: 'Настройки формы «Рассчитать стоимость»' })
+  async getQuoteFormSettings() {
+    const block = await this.prisma.quoteFormBlock.findUnique({
+      where: { id: 'main' },
+    });
+    const opts = block?.serviceTypeOptions;
+    const options = Array.isArray(opts) ? opts : [];
+    return {
+      recipientEmail: block?.recipientEmail ?? null,
+      serviceTypeOptions: options,
+      updatedAt: block?.updatedAt ?? null,
+    };
+  }
+
+  @Patch('quote-form-settings')
+  @ApiOperation({ summary: 'Обновить настройки формы «Рассчитать стоимость»' })
+  async updateQuoteFormSettings(@Body() dto: UpdateQuoteFormBlockDto) {
+    const serviceTypeOptionsValue: Prisma.InputJsonValue | typeof Prisma.JsonNull | undefined =
+      dto.serviceTypeOptions === undefined
+        ? undefined
+        : dto.serviceTypeOptions === null
+          ? Prisma.JsonNull
+          : (dto.serviceTypeOptions as Prisma.InputJsonValue);
+
+    const block = await this.prisma.quoteFormBlock.upsert({
+      where: { id: 'main' },
+      create: {
+        id: 'main',
+        recipientEmail: dto.recipientEmail?.trim() || null,
+        serviceTypeOptions: dto.serviceTypeOptions ?? undefined,
+        updatedAt: new Date(),
+      },
+      update: {
+        ...(dto.recipientEmail !== undefined && {
+          recipientEmail: dto.recipientEmail?.trim() || null,
+        }),
+        ...(serviceTypeOptionsValue !== undefined && {
+          serviceTypeOptions: serviceTypeOptionsValue,
+        }),
+        updatedAt: new Date(),
+      },
+    });
+    const opts = block.serviceTypeOptions;
+    const options = Array.isArray(opts) ? opts : [];
+    return {
+      recipientEmail: block.recipientEmail,
+      serviceTypeOptions: options,
       updatedAt: block.updatedAt,
     };
   }

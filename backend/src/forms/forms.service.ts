@@ -5,6 +5,7 @@ import { PrismaService } from '../database/prisma.service';
 import { SubmitCallbackDto } from './dto/submit-callback.dto';
 import { SubmitDirectorMessageDto } from './dto/submit-director-message.dto';
 import { SubmitMeasurementDto } from './dto/submit-measurement.dto';
+import { SubmitQuoteDto } from './dto/submit-quote.dto';
 
 const SUBJECT_LABELS: Record<string, string> = {
   complaint: 'Жалоба',
@@ -21,6 +22,16 @@ export class FormsService {
     private readonly mailer: MailerService,
     private readonly config: ConfigService,
   ) {}
+
+  async getQuoteFormOptions(): Promise<{ options: string[] }> {
+    const block = await this.prisma.quoteFormBlock.findUnique({
+      where: { id: 'main' },
+    });
+    const opts = block?.serviceTypeOptions;
+    const raw = Array.isArray(opts) ? opts : [];
+    const options = raw.filter((x): x is string => typeof x === 'string');
+    return { options };
+  }
 
   async submitMeasurement(dto: SubmitMeasurementDto) {
     const submission = await this.prisma.formSubmission.create({
@@ -258,5 +269,82 @@ ${dto.comment ? `\nКомментарий:\n${dto.comment}` : ''}`;
 ${dto.phone ? `Телефон: ${dto.phone}\n` : ''}
 ---
 ${dto.message}`;
+  }
+
+  async submitQuote(dto: SubmitQuoteDto) {
+    const submission = await this.prisma.formSubmission.create({
+      data: {
+        type: 'quote',
+        name: dto.name,
+        phone: dto.phone,
+        email: dto.email ?? null,
+        address: dto.address ?? null,
+        preferredDate: null,
+        preferredTime: '',
+        productType: dto.serviceType,
+        comment: dto.comment,
+      },
+    });
+
+    const block = await this.prisma.quoteFormBlock.findUnique({
+      where: { id: 'main' },
+    });
+    const recipientEmail = block?.recipientEmail?.trim();
+    if (recipientEmail) {
+      const from = this.config.get<string>('MAIL_FROM') || 'noreply@example.com';
+      const subject = `Заявка на расчёт стоимости — ${dto.name}`;
+      try {
+        await this.mailer.sendMail({
+          from: `"Сайт: Рассчитать стоимость" <${from}>`,
+          to: recipientEmail,
+          replyTo: dto.email || undefined,
+          subject,
+          html: this.buildQuoteEmailHtml(dto),
+          text: this.buildQuoteEmailText(dto),
+        });
+      } catch (err) {
+        console.error('FormsService.submitQuote sendMail error:', err);
+        const isDev = this.config.get('NODE_ENV') !== 'production';
+        if (!isDev) {
+          throw new BadRequestException('Не удалось отправить заявку. Попробуйте позже.');
+        }
+        console.warn(
+          'Письмо не отправлено (SMTP/MailHog недоступен). Заявка сохранена. Запустите: docker compose up -d mailhog',
+        );
+      }
+    }
+
+    return submission;
+  }
+
+  private buildQuoteEmailHtml(dto: SubmitQuoteDto): string {
+    const escaped = (s: string) =>
+      String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    return `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Заявка на расчёт стоимости</title></head>
+<body style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <h1>Новая заявка на расчёт стоимости</h1>
+  <p><strong>Имя:</strong> ${escaped(dto.name)}</p>
+  <p><strong>Телефон:</strong> ${escaped(dto.phone)}</p>
+  ${dto.email ? `<p><strong>Email:</strong> ${escaped(dto.email)}</p>` : ''}
+  <p><strong>Вид работ:</strong> ${escaped(dto.serviceType)}</p>
+  ${dto.address ? `<p><strong>Адрес / описание:</strong> ${escaped(dto.address)}</p>` : ''}
+  ${dto.comment ? `<hr style="margin: 16px 0; border: none; border-top: 1px solid #e5e7eb;"><p><strong>Комментарий:</strong></p><div style="white-space: pre-wrap;">${escaped(dto.comment)}</div>` : ''}
+</body>
+</html>`;
+  }
+
+  private buildQuoteEmailText(dto: SubmitQuoteDto): string {
+    return `Новая заявка на расчёт стоимости
+
+Имя: ${dto.name}
+Телефон: ${dto.phone}
+${dto.email ? `Email: ${dto.email}\n` : ''}Вид работ: ${dto.serviceType}
+${dto.address ? `Адрес / описание: ${dto.address}\n` : ''}${dto.comment ? `\nКомментарий:\n${dto.comment}` : ''}`;
   }
 }

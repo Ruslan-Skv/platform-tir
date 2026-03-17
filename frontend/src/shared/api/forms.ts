@@ -1,5 +1,12 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
+/** Публичные опции формы «Рассчитать стоимость» (виды работ/товаров) */
+export async function getQuoteFormOptions(): Promise<{ options: string[] }> {
+  const res = await fetch(`${API_URL}/forms/quote-form-options`);
+  if (!res.ok) throw new Error('Не удалось загрузить опции формы');
+  return res.json();
+}
+
 export interface MeasurementFormPayload {
   name: string;
   phone: string;
@@ -25,6 +32,16 @@ export interface DirectorMessageFormPayload {
   phone?: string;
   subject: string;
   message: string;
+}
+
+export interface QuoteFormPayload {
+  name: string;
+  phone: string;
+  email?: string;
+  /** Вид работ: строка (выбранные позиции + свой вариант через запятую) */
+  serviceType: string;
+  address?: string;
+  comment?: string;
 }
 
 export async function submitMeasurementForm(data: MeasurementFormPayload): Promise<void> {
@@ -71,6 +88,22 @@ export async function submitDirectorMessageForm(data: DirectorMessageFormPayload
       err?.message ||
       (Array.isArray(err?.message) ? err.message.join(', ') : null) ||
       'Не удалось отправить письмо';
+    throw new Error(message);
+  }
+}
+
+export async function submitQuoteForm(data: QuoteFormPayload): Promise<void> {
+  const res = await fetch(`${API_URL}/forms/quote`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const message =
+      err?.message ||
+      (Array.isArray(err?.message) ? err.message.join(', ') : null) ||
+      'Не удалось отправить заявку';
     throw new Error(message);
   }
 }

@@ -90,6 +90,13 @@ export default function AdminSettingsPage() {
           Заказать звонок
         </Link>
         <Link
+          href="/admin/settings/quote-form"
+          className={styles.subtitle}
+          style={{ color: '#4f46e5', textDecoration: 'underline' }}
+        >
+          Рассчитать стоимость
+        </Link>
+        <Link
           href="/admin/settings/pwa"
           className={styles.subtitle}
           style={{ color: '#4f46e5', textDecoration: 'underline' }}

@@ -6,6 +6,7 @@ import {
   submitCallbackForm,
   submitDirectorMessageForm,
   submitMeasurementForm,
+  submitQuoteForm,
 } from '@/shared/api/forms';
 
 import type {
@@ -13,6 +14,7 @@ import type {
   DirectorMessageFormData,
   FormSubmissionState,
   MeasurementFormData,
+  QuoteFormData,
 } from '../types/forms';
 
 interface ModalState {
@@ -25,13 +27,16 @@ interface FormContextValue {
   measurementModal: ModalState;
   callbackModal: ModalState;
   directorMessageModal: ModalState;
+  quoteModal: ModalState;
   formSubmission: FormSubmissionState;
   handleMeasurementSubmit: (data: MeasurementFormData) => void;
   handleCallbackSubmit: (data: CallbackFormData) => void;
   handleDirectorMessageSubmit: (data: DirectorMessageFormData) => void;
+  handleQuoteSubmit: (data: QuoteFormData) => void;
   handleCloseMeasurement: () => void;
   handleCloseCallback: () => void;
   handleCloseDirectorMessage: () => void;
+  handleCloseQuote: () => void;
 }
 
 const FormContext = createContext<FormContextValue | undefined>(undefined);
@@ -40,6 +45,7 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [measurementModalOpen, setMeasurementModalOpen] = useState(false);
   const [callbackModalOpen, setCallbackModalOpen] = useState(false);
   const [directorMessageModalOpen, setDirectorMessageModalOpen] = useState(false);
+  const [quoteModalOpen, setQuoteModalOpen] = useState(false);
   const [formSubmission, setFormSubmission] = useState<FormSubmissionState>({
     loading: false,
     success: false,
@@ -117,6 +123,32 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const handleQuoteSubmit = useCallback(async (data: QuoteFormData) => {
+    setFormSubmission({ loading: true, success: false, error: null });
+    const parts: string[] = [...data.selectedOptions];
+    if (data.customOption?.trim()) {
+      parts.push(`Свой вариант: ${data.customOption.trim()}`);
+    }
+    const serviceType = parts.length > 0 ? parts.join(', ') : 'Не указано';
+    try {
+      await submitQuoteForm({
+        name: data.name,
+        phone: data.phone,
+        email: data.email || undefined,
+        serviceType,
+        address: data.address || undefined,
+        comment: data.comment || undefined,
+      });
+      setFormSubmission({ loading: false, success: true, error: null });
+    } catch (error) {
+      setFormSubmission({
+        loading: false,
+        success: false,
+        error: error instanceof Error ? error.message : 'Произошла ошибка при отправке заявки',
+      });
+    }
+  }, []);
+
   const handleCloseMeasurement = useCallback(() => {
     setMeasurementModalOpen(false);
     setTimeout(() => {
@@ -133,6 +165,13 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const handleCloseDirectorMessage = useCallback(() => {
     setDirectorMessageModalOpen(false);
+    setTimeout(() => {
+      resetFormSubmission();
+    }, 300);
+  }, [resetFormSubmission]);
+
+  const handleCloseQuote = useCallback(() => {
+    setQuoteModalOpen(false);
     setTimeout(() => {
       resetFormSubmission();
     }, 300);
@@ -165,19 +204,31 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
     close: handleCloseDirectorMessage,
   };
 
+  const quoteModal: ModalState = {
+    isOpen: quoteModalOpen,
+    open: useCallback(() => {
+      resetFormSubmission();
+      setQuoteModalOpen(true);
+    }, [resetFormSubmission]),
+    close: handleCloseQuote,
+  };
+
   return (
     <FormContext.Provider
       value={{
         measurementModal,
         callbackModal,
         directorMessageModal,
+        quoteModal,
         formSubmission,
         handleMeasurementSubmit,
         handleCallbackSubmit,
         handleDirectorMessageSubmit,
+        handleQuoteSubmit,
         handleCloseMeasurement,
         handleCloseCallback,
         handleCloseDirectorMessage,
+        handleCloseQuote,
       }}
     >
       {children}
