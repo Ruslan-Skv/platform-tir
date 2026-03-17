@@ -130,6 +130,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     label: 'Кнопка «Админка» на сайте',
     path: '/admin/settings/admin-link',
   },
+  {
+    id: 'admin.settings.pwa',
+    label: 'PWA и обновления',
+    path: '/admin/settings/pwa',
+  },
   { id: 'admin.settings.roles', label: 'Роли', path: '/admin/settings/roles' },
   { id: 'admin.users', label: 'Управление пользователями', path: '/admin/users' },
 ];

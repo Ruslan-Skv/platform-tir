@@ -293,6 +293,11 @@ const baseNavItems: NavItem[] = [
         href: '/admin/settings/admin-link',
         resourceId: 'admin.settings.admin-link',
       },
+      {
+        label: 'PWA и обновления',
+        href: '/admin/settings/pwa',
+        resourceId: 'admin.settings.pwa',
+      },
       { label: 'Роли', href: '/admin/settings/roles', resourceId: 'admin.settings.roles' },
       { label: 'Управление пользователями', href: '/admin/users', resourceId: 'admin.users' },
     ],

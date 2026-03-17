@@ -1,0 +1,1 @@
+export { PWAUpdatePrompt } from './PWAUpdatePrompt';
