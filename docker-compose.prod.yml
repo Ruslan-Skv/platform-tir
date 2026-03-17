@@ -61,6 +61,8 @@ services:
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
+      # Telegram (уведомления о заявках с форм). Без токена — только email
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
     ports: []  # Доступ только через nginx
     restart: unless-stopped
     depends_on:

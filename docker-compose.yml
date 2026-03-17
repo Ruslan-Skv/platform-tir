@@ -75,6 +75,7 @@ services:
       MAIL_FROM: ${MAIL_FROM:-noreply@localhost}
       SMTP_HOST: mailhog
       SMTP_PORT: 1025
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
     volumes:
       - backend_uploads:/app/uploads
     depends_on:
