@@ -11,6 +11,11 @@ interface BreadcrumbItem {
   href?: string;
 }
 
+/** Проверяет, что строка похожа на slug (латиница/цифры/дефисы), а не на человекочитаемое название */
+function looksLikeSlug(s: string): boolean {
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(s.trim());
+}
+
 interface BreadcrumbsProps {
   categoryName?: string;
   parentCategoryName?: string;
@@ -24,8 +29,13 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
 }) => {
   const breadcrumbs: BreadcrumbItem[] = [{ label: 'Главная', href: '/' }];
 
+  // Не показывать slug в крошках — только человекочитаемые названия
+  const displayCategoryName = looksLikeSlug(categoryName) ? 'Каталог' : categoryName;
+  const displayParentName =
+    parentCategoryName && looksLikeSlug(parentCategoryName) ? undefined : parentCategoryName;
+
   // Если текущая категория - "Каталог", не добавляем её дважды
-  const isAllProducts = categoryName === 'Каталог';
+  const isAllProducts = displayCategoryName === 'Каталог';
 
   if (!isAllProducts) {
     // Добавляем "Каталог" как промежуточную ссылку
@@ -33,15 +43,15 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
   }
 
   // Если есть родительская категория, добавляем её
-  if (parentCategoryName && parentCategorySlug) {
+  if (displayParentName && parentCategorySlug) {
     breadcrumbs.push({
-      label: parentCategoryName,
+      label: displayParentName,
       href: `/catalog/products/${parentCategorySlug}`,
     });
   }
 
   // Текущая категория (без ссылки)
-  breadcrumbs.push({ label: categoryName });
+  breadcrumbs.push({ label: displayCategoryName });
 
   return (
     <nav className={styles.breadcrumbs} aria-label="Хлебные крошки">
