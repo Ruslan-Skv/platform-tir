@@ -941,6 +941,19 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
 
       setSuccess('Товар успешно сохранён');
       setTimeout(() => setSuccess(null), 3000);
+
+      // Сброс кэша публичных страниц (товар и каталог), чтобы изменения отображались без двойной перезагрузки
+      const slug = formData.slug?.trim();
+      if (slug) {
+        fetch('/api/revalidate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paths: [`/product/${slug}`, { path: '/catalog/products', type: 'layout' as const }],
+          }),
+        }).catch((e) => console.warn('Revalidate failed:', e));
+      }
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка сохранения');
     } finally {

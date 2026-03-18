@@ -386,6 +386,17 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
     fetchProducts();
   }, [fetchProducts]);
 
+  // Обновлять список при возврате на вкладку (после сохранения товара в другой вкладке или при переключении)
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchProducts(true);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, [fetchProducts]);
+
   // Filter and paginate products client-side
   const filteredProducts = useMemo(() => {
     let result = [...allProducts];

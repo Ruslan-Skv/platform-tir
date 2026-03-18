@@ -593,6 +593,21 @@ export function ProductCreatePage() {
       }
 
       const createdProduct = await response.json();
+
+      // Сброс кэша каталога на публичке, чтобы новый товар отображался без перезагрузки
+      const revalidatePaths: Array<string | { path: string; type: 'layout' }> = [
+        { path: '/catalog/products', type: 'layout' },
+      ];
+      if (createdProduct.slug) {
+        revalidatePaths.push(`/product/${createdProduct.slug}`);
+      }
+      fetch('/api/revalidate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paths: revalidatePaths }),
+      }).catch((e) => console.warn('Revalidate failed:', e));
+      router.refresh();
+
       router.push(`/admin/catalog/products/${createdProduct.id}/edit`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка создания товара');
