@@ -395,6 +395,17 @@ chmod +x scripts/backup.sh
 - Redirect URI в приложении Яндекс OAuth должен **точно** совпадать с `{SITE_URL}/auth/yandex/callback`
 - См. [«Настройка Yandex OAuth»](#настройка-yandex-oauth)
 
+### 413 Request Entity Too Large (создание/редактирование товара)
+Ошибка при отправке формы товара с несколькими или крупными изображениями (body запроса превышает лимит nginx).
+
+**Решение:** В конфигах nginx уже задано `client_max_body_size 25m;` (в `nginx/nginx.conf` и `nginx/nginx-ssl.conf`). После обновления конфигов перезапустите nginx:
+
+```bash
+docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml restart nginx
+```
+
+При использовании SSL: `docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml -f docker-compose.ssl.yml restart nginx`
+
 ### 502 Bad Gateway
 - Backend ещё не готов — проверьте `docker compose ps` и healthcheck
 - Увеличьте `start_period` в healthcheck при медленном сервере
