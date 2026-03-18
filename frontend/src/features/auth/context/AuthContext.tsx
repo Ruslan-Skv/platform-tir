@@ -146,9 +146,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
+        const rawMessage = error.message || '';
+        const friendlyMessage =
+          rawMessage === 'Unauthorized'
+            ? 'Неверный email или пароль'
+            : rawMessage || 'Неверный email или пароль';
         return {
           success: false,
-          error: error.message || 'Неверный email или пароль',
+          error: friendlyMessage,
         };
       }
 

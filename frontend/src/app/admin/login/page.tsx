@@ -117,6 +117,13 @@ export default function AdminLoginPage() {
         </form>
 
         <div className={styles.footer}>
+          <p className={styles.hint}>
+            Регистрировались через Яндекс? Задайте пароль через{' '}
+            <Link href="/forgot-password" className={styles.inlineLink}>
+              восстановление пароля
+            </Link>{' '}
+            на сайте, затем войдите сюда с email и новым паролем.
+          </p>
           <Link href="/" className={styles.backLink}>
             ← Вернуться на сайт
           </Link>
