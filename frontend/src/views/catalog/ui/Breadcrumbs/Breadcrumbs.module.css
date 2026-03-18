@@ -24,9 +24,11 @@
   font-size: 0.875rem;
   transition: color 0.2s ease;
   text-decoration: none;
+  cursor: pointer;
 }
 
-.link:hover {
+.link:hover,
+.link:focus-visible {
   color: #d90652;
 }
 
@@ -53,7 +55,8 @@
   color: #9ca3af;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .link:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .link:hover,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .link:focus-visible {
   color: #ec4899;
 }
 

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
 import { DataTable } from '@/shared/ui/admin/DataTable';
@@ -358,7 +358,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
     return flatten(categories);
   }, [categories]);
 
-  // Fetch all products once (including inactive for admin)
+  // Fetch all products (без кэша браузера, чтобы после создания/редактирования список был актуальным)
   const fetchProducts = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
       setRefreshing(true);
@@ -368,6 +368,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
     try {
       const response = await fetch(`${API_URL}/products/admin/all`, {
         headers: getAuthHeaders(),
+        cache: 'no-store',
       });
       if (response.ok) {
         const data = await response.json();
@@ -385,6 +386,20 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
+
+  // При каждом появлении страницы списка (в т.ч. переход «Назад к списку») обновлять список
+  const pathname = usePathname();
+  const prevPathnameRef = useRef(pathname);
+  useEffect(() => {
+    const isProductsList =
+      pathname === '/admin/catalog/products' ||
+      pathname.startsWith('/admin/catalog/products/category/');
+    const wasOnOtherPage = prevPathnameRef.current !== pathname;
+    prevPathnameRef.current = pathname;
+    if (isProductsList && wasOnOtherPage) {
+      fetchProducts(true);
+    }
+  }, [pathname, fetchProducts]);
 
   // Обновлять список при возврате на вкладку (после сохранения товара в другой вкладке или при переключении)
   useEffect(() => {

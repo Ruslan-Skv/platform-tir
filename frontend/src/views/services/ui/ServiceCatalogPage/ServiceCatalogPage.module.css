@@ -27,9 +27,11 @@
 .breadcrumbLink {
   color: #6b7280;
   text-decoration: none;
+  cursor: pointer;
 }
 
-.breadcrumbLink:hover {
+.breadcrumbLink:hover,
+.breadcrumbLink:focus-visible {
   color: #d90652;
 }
 

@@ -14,9 +14,11 @@
 .breadcrumbs a {
   color: #d90652;
   text-decoration: none;
+  cursor: pointer;
 }
 
-.breadcrumbs a:hover {
+.breadcrumbs a:hover,
+.breadcrumbs a:focus-visible {
   text-decoration: underline;
 }
 

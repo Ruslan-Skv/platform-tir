@@ -65,9 +65,11 @@
 .breadcrumb a {
   color: #2563eb;
   text-decoration: none;
+  cursor: pointer;
 }
 
-.breadcrumb a:hover {
+.breadcrumb a:hover,
+.breadcrumb a:focus-visible {
   text-decoration: underline;
 }
 

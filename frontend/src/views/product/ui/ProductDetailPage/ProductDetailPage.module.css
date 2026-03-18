@@ -117,9 +117,11 @@
 .breadcrumbLink {
   color: #6b7280;
   text-decoration: none;
+  cursor: pointer;
 }
 
-.breadcrumbLink:hover {
+.breadcrumbLink:hover,
+.breadcrumbLink:focus-visible {
   color: #d90652;
 }
 
@@ -1759,7 +1761,8 @@
   color: #9ca3af;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbLink:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbLink:hover,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbLink:focus-visible {
   color: #ec4899;
 }
 
