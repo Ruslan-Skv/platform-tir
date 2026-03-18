@@ -11,8 +11,6 @@ import { getSafeHref } from '@/shared/lib/sanitize';
 import { AccessModal } from './AccessModal';
 import styles from './AdminSidebar.module.css';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-
 interface AdminSidebarProps {
   collapsed: boolean;
   onToggle: () => void;
@@ -35,13 +33,6 @@ interface NavItem {
   icon: string;
   resourceId?: string;
   children?: NavChild[];
-}
-
-interface CategoryTree {
-  id: string;
-  name: string;
-  slug: string;
-  children?: CategoryTree[];
 }
 
 const baseNavItems: NavItem[] = [
@@ -149,18 +140,7 @@ const baseNavItems: NavItem[] = [
     icon: '📦',
     resourceId: 'admin.catalog',
     children: [
-      {
-        label: 'Товары',
-        href: '/admin/catalog/products',
-        resourceId: 'admin.catalog.products',
-        children: [
-          {
-            label: 'Все товары',
-            href: '/admin/catalog/products',
-            resourceId: 'admin.catalog.products',
-          },
-        ],
-      },
+      { label: 'Товары', href: '/admin/catalog/products', resourceId: 'admin.catalog.products' },
       {
         label: 'Категории',
         href: '/admin/catalog/categories',
@@ -319,15 +299,6 @@ const baseNavItems: NavItem[] = [
   },
 ];
 
-function categoryToNavChild(cat: CategoryTree): NavChild {
-  const hasChildren = cat.children && cat.children.length > 0;
-  return {
-    label: cat.name,
-    href: `/admin/catalog/products/category/${cat.id}`,
-    children: hasChildren ? cat.children!.map(categoryToNavChild) : undefined,
-  };
-}
-
 export function AdminSidebar({
   collapsed,
   onToggle,
@@ -340,7 +311,6 @@ export function AdminSidebar({
   const searchParams = useSearchParams();
   const { user: currentUser } = useAuth();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
-  const [categories, setCategories] = useState<CategoryTree[]>([]);
   const [isResizing, setIsResizing] = useState(false);
   const [accessModal, setAccessModal] = useState<{ resourceId: string; label: string } | null>(
     null
@@ -377,42 +347,7 @@ export function AdminSidebar({
     [width, onWidthChange, onResizeStart, onResizeEnd]
   );
 
-  const fetchCategories = useCallback(async () => {
-    try {
-      const response = await fetch(`${API_URL}/categories`);
-      if (response.ok) {
-        const data: CategoryTree[] = await response.json();
-        setCategories(data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch categories for sidebar:', err);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
-
-  const navItems = useMemo(() => {
-    const catalogItem = baseNavItems.find((item) => item.href === '/admin/catalog');
-    if (!catalogItem?.children) return baseNavItems;
-
-    const categoryNavChildren: NavChild[] = categories.flatMap(categoryToNavChild);
-    const productsChildren: NavChild[] = [
-      { label: 'Все товары', href: '/admin/catalog/products' },
-      ...categoryNavChildren,
-    ];
-
-    return baseNavItems.map((item) => {
-      if (item.href !== '/admin/catalog') return item;
-      return {
-        ...item,
-        children: catalogItem.children!.map((child) =>
-          child.label === 'Товары' ? { ...child, children: productsChildren } : child
-        ),
-      };
-    });
-  }, [categories]);
+  const navItems = useMemo(() => baseNavItems, []);
 
   // Найти путь (предки + сам ключ) для раскрытия при клике
   const getExpandBranch = useCallback(
