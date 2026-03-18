@@ -111,7 +111,8 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://localhost/health']
+      # Сначала HTTPS (если конфиг только с 443), иначе HTTP
+      test: ['CMD-SHELL', 'wget -q -O /dev/null --no-check-certificate https://localhost/health 2>/dev/null || wget -q -O /dev/null http://localhost/health']
       interval: 30s
       timeout: 5s
       retries: 3

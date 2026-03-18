@@ -1,2 +1,3 @@
-# nginx: busybox включает wget для healthcheck (без apk — избегаем сетевых запросов при сборке)
+# nginx: явно ставим wget для healthcheck (в nginx:alpine его может не быть)
 FROM nginx:alpine
+RUN apk add --no-cache wget
