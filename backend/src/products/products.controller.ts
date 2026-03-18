@@ -50,6 +50,15 @@ export class ProductsController {
     return this.productsService.findAllAdmin();
   }
 
+  @Get('admin/sizes-by-category')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Список размеров из товаров категории (подсказки для формы)' })
+  @ApiQuery({ name: 'categoryId', required: true, description: 'ID категории' })
+  getSizesByCategory(@Query('categoryId') categoryId: string) {
+    return this.productsService.getSizesByCategoryId(categoryId);
+  }
+
   @Post('admin/sync-supplier-prices')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

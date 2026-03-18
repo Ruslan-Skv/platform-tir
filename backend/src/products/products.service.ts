@@ -186,6 +186,25 @@ export class ProductsService {
     });
   }
 
+  /** Уникальные размеры из товаров категории (для подсказок в форме создания/редактирования) */
+  async getSizesByCategoryId(categoryId: string): Promise<string[]> {
+    const products = await this.prisma.product.findMany({
+      where: {
+        categoryId,
+        sizes: { isEmpty: false },
+      },
+      select: { sizes: true },
+    });
+    const set = new Set<string>();
+    for (const p of products) {
+      for (const s of p.sizes) {
+        const trimmed = s?.trim();
+        if (trimmed) set.add(trimmed);
+      }
+    }
+    return Array.from(set).sort();
+  }
+
   async findOne(id: string) {
     const product = await this.prisma.product.findUnique({
       where: { id },

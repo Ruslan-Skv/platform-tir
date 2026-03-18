@@ -208,6 +208,7 @@ export function ProductCreatePage() {
   const formRef = useRef<HTMLFormElement>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [suggestedSizes, setSuggestedSizes] = useState<string[]>([]);
 
   // Предзаполнение категории из URL
   useEffect(() => {
@@ -267,6 +268,29 @@ export function ProductCreatePage() {
     };
     fetchPartners();
   }, [getAuthHeaders]);
+
+  // Подсказки размеров из других товаров этой категории
+  useEffect(() => {
+    if (!formData.categoryId) {
+      setSuggestedSizes([]);
+      return;
+    }
+    let cancelled = false;
+    fetch(
+      `${API_URL}/products/admin/sizes-by-category?categoryId=${encodeURIComponent(formData.categoryId)}`,
+      { headers: getAuthHeaders() }
+    )
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: string[]) => {
+        if (!cancelled && Array.isArray(data)) setSuggestedSizes(data);
+      })
+      .catch(() => {
+        if (!cancelled) setSuggestedSizes([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.categoryId, getAuthHeaders]);
 
   // Fetch category attributes when category changes
   useEffect(() => {
@@ -1003,6 +1027,45 @@ export function ProductCreatePage() {
 
             <div className={styles.formGroup}>
               <label>Размеры</label>
+              {suggestedSizes.length > 0 && (
+                <div className={styles.sizesHint}>
+                  <span className={styles.sizesHintLabel}>
+                    Подсказка: размеры из других товаров категории —
+                  </span>
+                  <div className={styles.sizesHintChips}>
+                    {suggestedSizes.map((size) => {
+                      const alreadyAdded = formData.sizes.some(
+                        (s) => s.trim().toLowerCase() === size.trim().toLowerCase()
+                      );
+                      return (
+                        <button
+                          key={size}
+                          type="button"
+                          className={styles.sizesHintChip}
+                          disabled={alreadyAdded}
+                          onClick={() => {
+                            setFormData((prev) => {
+                              const trimmed = size.trim();
+                              if (!trimmed) return prev;
+                              const exists = prev.sizes.some(
+                                (s) => s.trim().toLowerCase() === trimmed.toLowerCase()
+                              );
+                              if (exists) return prev;
+                              const base = prev.sizes.filter((s) => s.trim() !== '');
+                              return {
+                                ...prev,
+                                sizes: base.length ? [...base, trimmed] : [trimmed],
+                              };
+                            });
+                          }}
+                        >
+                          {size}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <div className={styles.attributesList}>
                 {(formData.sizes.length > 0 ? formData.sizes : ['']).map((size, index) => (
                   <div key={`size-${index}`} className={styles.attributeRow}>
