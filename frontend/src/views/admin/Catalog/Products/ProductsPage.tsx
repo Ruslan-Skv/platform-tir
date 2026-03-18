@@ -216,11 +216,11 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
     };
   }, [showColumnSelector]);
 
-  // Fetch categories
+  // Fetch categories (в админке — все категории, включая неактивные, для корректной фильтрации)
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch(`${API_URL}/categories`);
+        const response = await fetch(`${API_URL}/categories?includeInactive=true`);
         if (response.ok) {
           const data = await response.json();
           setCategories(data);
@@ -399,15 +399,13 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       );
     }
 
-    // Category filter - включает подкатегории
+    // Category filter - включает подкатегории (применяем только когда категории загружены и категория найдена)
     if (categoryFilter) {
-      // Собираем ID выбранной категории и всех её подкатегорий
       const getCategoryIds = (cats: CategoriesResponse[], targetId: string): string[] => {
         const ids: string[] = [];
         const findAndCollect = (categories: CategoriesResponse[]): boolean => {
           for (const cat of categories) {
             if (cat.id === targetId) {
-              // Нашли целевую категорию - собираем её ID и все подкатегории
               ids.push(cat.id);
               const collectChildren = (c: CategoriesResponse) => {
                 if (c.children) {
@@ -431,7 +429,9 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       };
 
       const categoryIds = getCategoryIds(categories, categoryFilter);
-      result = result.filter((p) => categoryIds.includes(p.category.id));
+      if (categoryIds.length > 0) {
+        result = result.filter((p) => categoryIds.includes(p.category.id));
+      }
     }
 
     // Stock filter

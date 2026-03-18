@@ -166,11 +166,6 @@ const baseNavItems: NavItem[] = [
         href: '/admin/catalog/categories',
         resourceId: 'admin.catalog.categories',
       },
-      {
-        label: 'Характеристики',
-        href: '/admin/catalog/attributes',
-        resourceId: 'admin.catalog.attributes',
-      },
     ],
   },
   {
