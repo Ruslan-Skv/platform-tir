@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 
+import { useAdminAccessibleResources } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { useAuth } from '@/features/auth';
 import { getSafeHref } from '@/shared/lib/sanitize';
 
@@ -299,6 +300,38 @@ const baseNavItems: NavItem[] = [
   },
 ];
 
+function filterNavByAccess(
+  items: NavItem[],
+  hasAccess: (id: string | undefined) => boolean
+): NavItem[] {
+  return items
+    .map((item) => {
+      if (!item.children) {
+        return hasAccess(item.resourceId) ? item : null;
+      }
+      const filteredChildren = filterNavChildrenByAccess(item.children, hasAccess);
+      const visible = hasAccess(item.resourceId) || filteredChildren.length > 0;
+      return visible ? { ...item, children: filteredChildren } : null;
+    })
+    .filter((x): x is NavItem => x !== null);
+}
+
+function filterNavChildrenByAccess(
+  children: NavChild[],
+  hasAccess: (id: string | undefined) => boolean
+): NavChild[] {
+  return children
+    .map((child) => {
+      if (!child.children) {
+        return hasAccess(child.resourceId) ? child : null;
+      }
+      const filteredNested = filterNavChildrenByAccess(child.children, hasAccess);
+      const visible = hasAccess(child.resourceId) || filteredNested.length > 0;
+      return visible ? { ...child, children: filteredNested } : null;
+    })
+    .filter((x): x is NavChild => x !== null);
+}
+
 export function AdminSidebar({
   collapsed,
   onToggle,
@@ -310,6 +343,7 @@ export function AdminSidebar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user: currentUser } = useAuth();
+  const { hasAccess } = useAdminAccessibleResources();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [isResizing, setIsResizing] = useState(false);
   const [accessModal, setAccessModal] = useState<{ resourceId: string; label: string } | null>(
@@ -347,7 +381,7 @@ export function AdminSidebar({
     [width, onWidthChange, onResizeStart, onResizeEnd]
   );
 
-  const navItems = useMemo(() => baseNavItems, []);
+  const navItems = useMemo(() => filterNavByAccess(baseNavItems, hasAccess), [hasAccess]);
 
   // Найти путь (предки + сам ключ) для раскрытия при клике
   const getExpandBranch = useCallback(

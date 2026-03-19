@@ -122,6 +122,16 @@
   color: #4338ca;
 }
 
+.badgeDenied {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
 .revokeBtn {
   flex-shrink: 0;
   padding: 4px 10px;
@@ -246,6 +256,11 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .badge {
   background: #3730a3;
   color: #a5b4fc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .badgeDenied {
+  background: #7f1d1d;
+  color: #fecaca;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .revokeBtn {

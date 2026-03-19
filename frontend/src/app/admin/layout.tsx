@@ -5,6 +5,7 @@ import { Provider } from 'react-redux';
 
 import { usePathname, useRouter } from 'next/navigation';
 
+import { AdminAccessibleResourcesProvider } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { AuthProvider, useAuth } from '@/features/auth';
 import { getOrCreateStore } from '@/shared/lib/redux/store';
 import { AdminHeader } from '@/widgets/admin/Header/AdminHeader';
@@ -86,23 +87,25 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const effectiveSidebarWidth = sidebarCollapsed ? 70 : sidebarWidth;
 
   return (
-    <div className={styles.adminLayout}>
-      <AdminSidebar
-        collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-        width={effectiveSidebarWidth}
-        onWidthChange={handleSidebarWidthChange}
-        onResizeStart={() => setIsResizing(true)}
-        onResizeEnd={() => setIsResizing(false)}
-      />
-      <div
-        className={`${styles.mainArea} ${sidebarCollapsed ? styles.expanded : ''} ${isResizing ? styles.resizing : ''}`}
-        style={{ marginLeft: effectiveSidebarWidth }}
-      >
-        <AdminHeader />
-        <main className={styles.content}>{children}</main>
+    <AdminAccessibleResourcesProvider>
+      <div className={styles.adminLayout}>
+        <AdminSidebar
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+          width={effectiveSidebarWidth}
+          onWidthChange={handleSidebarWidthChange}
+          onResizeStart={() => setIsResizing(true)}
+          onResizeEnd={() => setIsResizing(false)}
+        />
+        <div
+          className={`${styles.mainArea} ${sidebarCollapsed ? styles.expanded : ''} ${isResizing ? styles.resizing : ''}`}
+          style={{ marginLeft: effectiveSidebarWidth }}
+        >
+          <AdminHeader />
+          <main className={styles.content}>{children}</main>
+        </div>
       </div>
-    </div>
+    </AdminAccessibleResourcesProvider>
   );
 }
 

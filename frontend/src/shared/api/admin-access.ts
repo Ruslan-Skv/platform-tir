@@ -21,7 +21,7 @@ export interface ResourcePermissionItem {
   email: string;
   firstName: string | null;
   lastName: string | null;
-  permission: 'VIEW' | 'EDIT';
+  permission: 'VIEW' | 'EDIT' | 'DENIED';
   createdAt: string;
 }
 
@@ -60,10 +60,18 @@ export async function getResourcePermissions(
   return res.json();
 }
 
+export async function getMyAccessibleResources(): Promise<string[]> {
+  const res = await fetch(`${API_URL}/admin/access/my-resources`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить список доступных разделов');
+  return res.json();
+}
+
 export async function setResourcePermission(
   resourceId: string,
   userId: string,
-  permission: 'VIEW' | 'EDIT'
+  permission: 'VIEW' | 'EDIT' | 'DENIED'
 ): Promise<ResourcePermissionItem[]> {
   const res = await fetch(
     `${API_URL}/admin/access/resources/${encodeURIComponent(resourceId)}/permissions`,

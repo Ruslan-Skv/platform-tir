@@ -2,20 +2,8 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PrismaService } from '../database/prisma.service';
 
-const DEFAULT_ADMIN_LINK_ROLES = [
-  'SUPER_ADMIN',
-  'ADMIN',
-  'CONTENT_MANAGER',
-  'MODERATOR',
-  'SUPPORT',
-  'PARTNER',
-  'BRIGADIER',
-  'LEAD_SPECIALIST_FURNITURE',
-  'LEAD_SPECIALIST_WINDOWS_DOORS',
-  'SURVEYOR',
-  'DRIVER',
-  'INSTALLER',
-];
+/** По умолчанию кнопка «Админка» только у супер-админа. В админке можно добавить другие роли. */
+const DEFAULT_ADMIN_LINK_ROLES = ['SUPER_ADMIN'];
 
 @ApiTags('site-public')
 @Controller('site-public')

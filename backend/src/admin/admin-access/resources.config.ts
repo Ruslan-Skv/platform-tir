@@ -19,6 +19,12 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     label: 'Движ. ден. средст',
     path: '/admin/crm/contract-payments',
   },
+  { id: 'admin.crm.cash-register', label: 'Касса', path: '/admin/crm/cash-register' },
+  {
+    id: 'admin.crm.supplier-settlements',
+    label: 'Расчёты с поставщиками',
+    path: '/admin/crm/supplier-settlements',
+  },
   {
     id: 'admin.crm.contract-payments.incassation',
     label: 'Инкассация по оплатам (редактирование)',
@@ -77,6 +83,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   { id: 'admin.partners', label: 'Партнёры', path: '/admin/partners' },
   { id: 'admin.catalog.suppliers', label: 'Поставщики', path: '/admin/catalog/suppliers' },
   { id: 'admin.orders', label: 'Заказы', path: '/admin/orders' },
+  {
+    id: 'admin.orders.checkout-info',
+    label: 'Порядок оформления',
+    path: '/admin/orders/checkout-info',
+  },
   { id: 'admin.orders.shipping', label: 'Доставка', path: '/admin/orders/shipping' },
   { id: 'admin.orders.payments', label: 'Оплаты', path: '/admin/orders/payments' },
   { id: 'admin.analytics', label: 'Аналитика', path: '/admin/analytics' },

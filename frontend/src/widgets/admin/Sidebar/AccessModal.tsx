@@ -25,7 +25,7 @@ export function AccessModal({ resourceId, label, onClose }: AccessModalProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [addUserId, setAddUserId] = useState('');
-  const [addPermission, setAddPermission] = useState<'VIEW' | 'EDIT'>('VIEW');
+  const [addPermission, setAddPermission] = useState<'VIEW' | 'EDIT' | 'DENIED'>('VIEW');
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -76,7 +76,22 @@ export function AccessModal({ resourceId, label, onClose }: AccessModalProps) {
     }
   };
 
+  const handleDeny = async (userId: string) => {
+    setSaving(true);
+    setError(null);
+    try {
+      const next = await setResourcePermission(resourceId, userId, 'DENIED');
+      setPermissions(next);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось закрыть доступ');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const assignedUserIds = new Set(permissions.map((p) => p.userId));
+  const grantedUsers = permissions.filter((p) => p.permission !== 'DENIED');
+  const deniedUsers = permissions.filter((p) => p.permission === 'DENIED');
   const availableUsers = users.filter((u) => !assignedUserIds.has(u.id));
 
   return (
@@ -105,11 +120,11 @@ export function AccessModal({ resourceId, label, onClose }: AccessModalProps) {
 
             <div className={styles.section}>
               <h3 className={styles.sectionTitle}>Кто имеет доступ</h3>
-              {permissions.length === 0 ? (
+              {grantedUsers.length === 0 && deniedUsers.length === 0 ? (
                 <p className={styles.empty}>Никому не выдан доступ к этому разделу.</p>
               ) : (
                 <ul className={styles.list}>
-                  {permissions.map((p) => (
+                  {grantedUsers.map((p) => (
                     <li key={p.userId} className={styles.listItem}>
                       <span className={styles.userName}>
                         {p.firstName || p.lastName
@@ -123,11 +138,40 @@ export function AccessModal({ resourceId, label, onClose }: AccessModalProps) {
                       <button
                         type="button"
                         className={styles.revokeBtn}
+                        onClick={() => handleDeny(p.userId)}
+                        disabled={saving}
+                        title="Закрыть доступ — пользователь не будет видеть раздел"
+                      >
+                        Закрыть доступ
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.revokeBtn}
                         onClick={() => handleRevoke(p.userId)}
                         disabled={saving}
-                        title="Удалить доступ"
+                        title="Удалить из списка — вернётся доступ по роли"
                       >
                         Удалить
+                      </button>
+                    </li>
+                  ))}
+                  {deniedUsers.map((p) => (
+                    <li key={p.userId} className={styles.listItem}>
+                      <span className={styles.userName}>
+                        {p.firstName || p.lastName
+                          ? [p.firstName, p.lastName].filter(Boolean).join(' ')
+                          : p.email}
+                        {p.firstName || p.lastName ? ` (${p.email})` : ''}
+                      </span>
+                      <span className={styles.badgeDenied}>Доступ закрыт</span>
+                      <button
+                        type="button"
+                        className={styles.revokeBtn}
+                        onClick={() => handleRevoke(p.userId)}
+                        disabled={saving}
+                        title="Восстановить доступ по роли"
+                      >
+                        Восстановить
                       </button>
                     </li>
                   ))}
@@ -136,7 +180,7 @@ export function AccessModal({ resourceId, label, onClose }: AccessModalProps) {
             </div>
 
             <div className={styles.section}>
-              <h3 className={styles.sectionTitle}>Добавить доступ</h3>
+              <h3 className={styles.sectionTitle}>Добавить доступ или запрет</h3>
               <div className={styles.addRow}>
                 <select
                   className={styles.select}
@@ -157,12 +201,13 @@ export function AccessModal({ resourceId, label, onClose }: AccessModalProps) {
                 <select
                   className={styles.selectPermission}
                   value={addPermission}
-                  onChange={(e) => setAddPermission(e.target.value as 'VIEW' | 'EDIT')}
+                  onChange={(e) => setAddPermission(e.target.value as 'VIEW' | 'EDIT' | 'DENIED')}
                   disabled={saving}
                   aria-label="Уровень доступа"
                 >
                   <option value="VIEW">Просмотр</option>
                   <option value="EDIT">Редактирование</option>
+                  <option value="DENIED">Закрыть доступ</option>
                 </select>
                 <button
                   type="button"
@@ -170,7 +215,7 @@ export function AccessModal({ resourceId, label, onClose }: AccessModalProps) {
                   onClick={handleAdd}
                   disabled={!addUserId || saving}
                 >
-                  Добавить
+                  {addPermission === 'DENIED' ? 'Запретить' : 'Добавить'}
                 </button>
               </div>
             </div>

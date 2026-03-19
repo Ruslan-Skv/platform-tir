@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, UseGuards, Request } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { AdminAccessService } from './admin-access.service';
+import type { RequestWithUser } from '../../common/types/request-with-user.types';
+import { AdminAccessService, ADMIN_ROLES } from './admin-access.service';
 import { SetPermissionDto, AdminResourcePermissionLevel } from './dto/set-permission.dto';
 
 @Controller('admin/access')
@@ -13,6 +15,13 @@ import { SetPermissionDto, AdminResourcePermissionLevel } from './dto/set-permis
 @ApiTags('Admin access')
 export class AdminAccessController {
   constructor(private readonly service: AdminAccessService) {}
+
+  @Get('my-resources')
+  @Roles(...ADMIN_ROLES)
+  @ApiOperation({ summary: 'Ресурсы, к которым имеет доступ текущий пользователь (для сайдбара)' })
+  getMyAccessibleResources(@Request() req: RequestWithUser) {
+    return this.service.getMyAccessibleResources(req.user.id, req.user.role as UserRole);
+  }
 
   @Get('users')
   @ApiOperation({ summary: 'Список пользователей админки для назначения доступа' })
