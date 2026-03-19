@@ -55,16 +55,16 @@ export default function ComparePage() {
 
   const slotCount = isMobile ? SLOTS_MOBILE : SLOTS_DESKTOP;
 
-  // В каждом слоте — все товары из сравнения
+  // Каждый слот привязан к одному товару: слот i = products[i]. Лишние слоты пустые.
   const productsPerSlot = useMemo(
     () =>
       Array(slotCount)
         .fill(null)
-        .map(() => [...products]),
+        .map((_, slot) => (slot < products.length ? [products[slot]!] : [])),
     [products, slotCount]
   );
 
-  // Индекс выбранного продукта внутри каждого слота
+  // Индекс выбранного продукта внутри каждого слота (для мобильной прокрутки, когда товаров > слотов)
   const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
 
   useEffect(() => {
@@ -76,8 +76,8 @@ export default function ComparePage() {
   }, []);
 
   useEffect(() => {
-    const maxIdx = Math.max(0, products.length - 1);
-    setSelectedIndices(Array.from({ length: slotCount }, (_, i) => Math.min(i, maxIdx)));
+    // Каждый слот показывает товар с тем же индексом (0, 1, 2, 3...). Пустые слоты — 0.
+    setSelectedIndices(Array.from({ length: slotCount }, () => 0));
   }, [products.length, slotCount]);
 
   const loadCompare = useCallback(async () => {
