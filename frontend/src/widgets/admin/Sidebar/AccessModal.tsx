@@ -3,13 +3,18 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import {
+  type AdminRoleItem,
   type AdminUserItem,
-  type ResourcePermissionItem,
+  type ResourcePermissionsResponse,
+  getAdminAccessRoles,
   getAdminAccessUsers,
   getResourcePermissions,
   revokeResourcePermission,
+  revokeRolePermission,
   setResourcePermission,
+  setRolePermission,
 } from '@/shared/api/admin-access';
+import { ROLES_CONFIG } from '@/views/admin/Settings/rolesConfig';
 
 import styles from './AccessModal.module.css';
 
@@ -19,24 +24,32 @@ interface AccessModalProps {
   onClose: () => void;
 }
 
+const ROLE_LABELS: Record<string, string> = Object.fromEntries(
+  ROLES_CONFIG.filter((r) => r.id !== 'USER' && r.id !== 'GUEST').map((r) => [r.id, r.label])
+);
+
 export function AccessModal({ resourceId, label, onClose }: AccessModalProps) {
-  const [permissions, setPermissions] = useState<ResourcePermissionItem[]>([]);
+  const [permissions, setPermissions] = useState<ResourcePermissionsResponse | null>(null);
   const [users, setUsers] = useState<AdminUserItem[]>([]);
+  const [roles, setRoles] = useState<AdminRoleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [addUserId, setAddUserId] = useState('');
+  const [addRoleId, setAddRoleId] = useState('');
   const [addPermission, setAddPermission] = useState<'VIEW' | 'EDIT' | 'DENIED'>('VIEW');
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
     try {
-      const [perms, userList] = await Promise.all([
+      const [perms, userList, roleList] = await Promise.all([
         getResourcePermissions(resourceId),
         getAdminAccessUsers(),
+        getAdminAccessRoles(),
       ]);
       setPermissions(perms);
       setUsers(userList);
+      setRoles(roleList);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ошибка загрузки');
     } finally {
@@ -48,7 +61,7 @@ export function AccessModal({ resourceId, label, onClose }: AccessModalProps) {
     load();
   }, [load]);
 
-  const handleAdd = async () => {
+  const handleAddUser = async () => {
     if (!addUserId) return;
     setSaving(true);
     setError(null);
@@ -63,7 +76,22 @@ export function AccessModal({ resourceId, label, onClose }: AccessModalProps) {
     }
   };
 
-  const handleRevoke = async (userId: string) => {
+  const handleAddRole = async () => {
+    if (!addRoleId) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const next = await setRolePermission(resourceId, addRoleId, addPermission);
+      setPermissions(next);
+      setAddRoleId('');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось сохранить');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRevokeUser = async (userId: string) => {
     setSaving(true);
     setError(null);
     try {
@@ -76,7 +104,20 @@ export function AccessModal({ resourceId, label, onClose }: AccessModalProps) {
     }
   };
 
-  const handleDeny = async (userId: string) => {
+  const handleRevokeRole = async (roleId: string) => {
+    setSaving(true);
+    setError(null);
+    try {
+      const next = await revokeRolePermission(resourceId, roleId);
+      setPermissions(next);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось удалить');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDenyUser = async (userId: string) => {
     setSaving(true);
     setError(null);
     try {
@@ -89,10 +130,27 @@ export function AccessModal({ resourceId, label, onClose }: AccessModalProps) {
     }
   };
 
-  const assignedUserIds = new Set(permissions.map((p) => p.userId));
-  const grantedUsers = permissions.filter((p) => p.permission !== 'DENIED');
-  const deniedUsers = permissions.filter((p) => p.permission === 'DENIED');
+  const handleDenyRole = async (roleId: string) => {
+    setSaving(true);
+    setError(null);
+    try {
+      const next = await setRolePermission(resourceId, roleId, 'DENIED');
+      setPermissions(next);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось закрыть доступ');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const grantedUsers = permissions?.users.filter((p) => p.permission !== 'DENIED') ?? [];
+  const deniedUsers = permissions?.users.filter((p) => p.permission === 'DENIED') ?? [];
+  const grantedRoles = permissions?.roles.filter((p) => p.permission !== 'DENIED') ?? [];
+  const deniedRoles = permissions?.roles.filter((p) => p.permission === 'DENIED') ?? [];
+  const assignedUserIds = new Set(permissions?.users.map((p) => p.id) ?? []);
+  const assignedRoleIds = new Set(permissions?.roles.map((p) => p.id) ?? []);
   const availableUsers = users.filter((u) => !assignedUserIds.has(u.id));
+  const availableRoles = roles.filter((r) => !assignedRoleIds.has(r.id));
 
   return (
     <div
@@ -118,14 +176,15 @@ export function AccessModal({ resourceId, label, onClose }: AccessModalProps) {
           <>
             {error && <div className={styles.error}>{error}</div>}
 
+            {/* Пользователи */}
             <div className={styles.section}>
-              <h3 className={styles.sectionTitle}>Кто имеет доступ</h3>
+              <h3 className={styles.sectionTitle}>По пользователям</h3>
               {grantedUsers.length === 0 && deniedUsers.length === 0 ? (
-                <p className={styles.empty}>Никому не выдан доступ к этому разделу.</p>
+                <p className={styles.empty}>Нет назначений по пользователям.</p>
               ) : (
                 <ul className={styles.list}>
                   {grantedUsers.map((p) => (
-                    <li key={p.userId} className={styles.listItem}>
+                    <li key={`u-${p.id}`} className={styles.listItem}>
                       <span className={styles.userName}>
                         {p.firstName || p.lastName
                           ? [p.firstName, p.lastName].filter(Boolean).join(' ')
@@ -138,25 +197,25 @@ export function AccessModal({ resourceId, label, onClose }: AccessModalProps) {
                       <button
                         type="button"
                         className={styles.revokeBtn}
-                        onClick={() => handleDeny(p.userId)}
+                        onClick={() => handleDenyUser(p.id)}
                         disabled={saving}
-                        title="Закрыть доступ — пользователь не будет видеть раздел"
+                        title="Закрыть доступ"
                       >
                         Закрыть доступ
                       </button>
                       <button
                         type="button"
                         className={styles.revokeBtn}
-                        onClick={() => handleRevoke(p.userId)}
+                        onClick={() => handleRevokeUser(p.id)}
                         disabled={saving}
-                        title="Удалить из списка — вернётся доступ по роли"
+                        title="Удалить — вернётся доступ по роли"
                       >
                         Удалить
                       </button>
                     </li>
                   ))}
                   {deniedUsers.map((p) => (
-                    <li key={p.userId} className={styles.listItem}>
+                    <li key={`u-${p.id}`} className={styles.listItem}>
                       <span className={styles.userName}>
                         {p.firstName || p.lastName
                           ? [p.firstName, p.lastName].filter(Boolean).join(' ')
@@ -167,7 +226,7 @@ export function AccessModal({ resourceId, label, onClose }: AccessModalProps) {
                       <button
                         type="button"
                         className={styles.revokeBtn}
-                        onClick={() => handleRevoke(p.userId)}
+                        onClick={() => handleRevokeUser(p.id)}
                         disabled={saving}
                         title="Восстановить доступ по роли"
                       >
@@ -177,10 +236,6 @@ export function AccessModal({ resourceId, label, onClose }: AccessModalProps) {
                   ))}
                 </ul>
               )}
-            </div>
-
-            <div className={styles.section}>
-              <h3 className={styles.sectionTitle}>Добавить доступ или запрет</h3>
               <div className={styles.addRow}>
                 <select
                   className={styles.select}
@@ -212,8 +267,97 @@ export function AccessModal({ resourceId, label, onClose }: AccessModalProps) {
                 <button
                   type="button"
                   className={styles.addBtn}
-                  onClick={handleAdd}
+                  onClick={handleAddUser}
                   disabled={!addUserId || saving}
+                >
+                  {addPermission === 'DENIED' ? 'Запретить' : 'Добавить'}
+                </button>
+              </div>
+            </div>
+
+            {/* Роли */}
+            <div className={styles.section}>
+              <h3 className={styles.sectionTitle}>
+                По ролям (влияет на всех пользователей с этой ролью)
+              </h3>
+              {grantedRoles.length === 0 && deniedRoles.length === 0 ? (
+                <p className={styles.empty}>Нет назначений по ролям.</p>
+              ) : (
+                <ul className={styles.list}>
+                  {grantedRoles.map((p) => (
+                    <li key={`r-${p.id}`} className={styles.listItem}>
+                      <span className={styles.userName}>{ROLE_LABELS[p.role] || p.role}</span>
+                      <span className={styles.badge}>
+                        {p.permission === 'EDIT' ? 'Редактирование' : 'Просмотр'}
+                      </span>
+                      <button
+                        type="button"
+                        className={styles.revokeBtn}
+                        onClick={() => handleDenyRole(p.id)}
+                        disabled={saving}
+                        title="Закрыть доступ для всех с этой ролью"
+                      >
+                        Закрыть доступ
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.revokeBtn}
+                        onClick={() => handleRevokeRole(p.id)}
+                        disabled={saving}
+                        title="Удалить — вернётся доступ по умолчанию для роли"
+                      >
+                        Удалить
+                      </button>
+                    </li>
+                  ))}
+                  {deniedRoles.map((p) => (
+                    <li key={`r-${p.id}`} className={styles.listItem}>
+                      <span className={styles.userName}>{ROLE_LABELS[p.role] || p.role}</span>
+                      <span className={styles.badgeDenied}>Доступ закрыт</span>
+                      <button
+                        type="button"
+                        className={styles.revokeBtn}
+                        onClick={() => handleRevokeRole(p.id)}
+                        disabled={saving}
+                        title="Восстановить доступ по умолчанию"
+                      >
+                        Восстановить
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className={styles.addRow}>
+                <select
+                  className={styles.select}
+                  value={addRoleId}
+                  onChange={(e) => setAddRoleId(e.target.value)}
+                  disabled={saving}
+                  aria-label="Роль"
+                >
+                  <option value="">Выберите роль</option>
+                  {availableRoles.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {ROLE_LABELS[r.id] || r.label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  className={styles.selectPermission}
+                  value={addPermission}
+                  onChange={(e) => setAddPermission(e.target.value as 'VIEW' | 'EDIT' | 'DENIED')}
+                  disabled={saving}
+                  aria-label="Уровень доступа"
+                >
+                  <option value="VIEW">Просмотр</option>
+                  <option value="EDIT">Редактирование</option>
+                  <option value="DENIED">Закрыть доступ</option>
+                </select>
+                <button
+                  type="button"
+                  className={styles.addBtn}
+                  onClick={handleAddRole}
+                  disabled={!addRoleId || saving}
                 >
                   {addPermission === 'DENIED' ? 'Запретить' : 'Добавить'}
                 </button>

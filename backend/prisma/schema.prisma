@@ -113,7 +113,7 @@ model AdminResourcePermission {
   id         String   @id @default(cuid())
   resourceId String
   userId     String
-  permission String   // VIEW | EDIT
+  permission String   // VIEW | EDIT | DENIED
   createdAt  DateTime @default(now())
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -121,6 +121,20 @@ model AdminResourcePermission {
   @@index([resourceId])
   @@index([userId])
   @@map("admin_resource_permissions")
+}
+
+/// Права доступа к ресурсам админки по ролям (влияют на всех пользователей с этой ролью).
+model AdminResourceRolePermission {
+  id         String   @id @default(cuid())
+  resourceId String
+  role       String   // SUPER_ADMIN, ADMIN, CONTENT_MANAGER и т.д.
+  permission String   // VIEW | EDIT | DENIED
+  createdAt  DateTime @default(now())
+
+  @@unique([resourceId, role])
+  @@index([resourceId])
+  @@index([role])
+  @@map("admin_resource_role_permissions")
 }
 
 model SupportConversation {

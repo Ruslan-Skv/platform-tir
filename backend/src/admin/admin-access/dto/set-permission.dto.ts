@@ -17,3 +17,13 @@ export class SetPermissionDto {
   @IsEnum(AdminResourcePermissionLevel)
   permission: AdminResourcePermissionLevel;
 }
+
+export class SetRolePermissionDto {
+  @ApiProperty({ description: 'Роль (SUPER_ADMIN, ADMIN, CONTENT_MANAGER и т.д.)' })
+  @IsString()
+  role: string;
+
+  @ApiProperty({ enum: AdminResourcePermissionLevel })
+  @IsEnum(AdminResourcePermissionLevel)
+  permission: AdminResourcePermissionLevel;
+}

@@ -6,7 +6,11 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
 import { AdminAccessService, ADMIN_ROLES } from './admin-access.service';
-import { SetPermissionDto, AdminResourcePermissionLevel } from './dto/set-permission.dto';
+import {
+  SetPermissionDto,
+  SetRolePermissionDto,
+  AdminResourcePermissionLevel,
+} from './dto/set-permission.dto';
 
 @Controller('admin/access')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -27,6 +31,12 @@ export class AdminAccessController {
   @ApiOperation({ summary: 'Список пользователей админки для назначения доступа' })
   getAdminUsers() {
     return this.service.getAdminUsers();
+  }
+
+  @Get('roles')
+  @ApiOperation({ summary: 'Список ролей для назначения доступа' })
+  getAdminRoles() {
+    return this.service.getAdminRoles();
   }
 
   @Get('resources')
@@ -55,5 +65,21 @@ export class AdminAccessController {
   @ApiOperation({ summary: 'Удалить доступ пользователя к ресурсу' })
   revokePermission(@Param('resourceId') resourceId: string, @Param('userId') userId: string) {
     return this.service.revokePermission(resourceId, userId);
+  }
+
+  @Post('resources/:resourceId/role-permissions')
+  @ApiOperation({ summary: 'Выдать или изменить доступ по роли (влияет на всех с этой ролью)' })
+  setRolePermission(@Param('resourceId') resourceId: string, @Body() dto: SetRolePermissionDto) {
+    return this.service.setRolePermission(
+      resourceId,
+      dto.role,
+      dto.permission as AdminResourcePermissionLevel,
+    );
+  }
+
+  @Delete('resources/:resourceId/role-permissions/:role')
+  @ApiOperation({ summary: 'Удалить доступ по роли' })
+  revokeRolePermission(@Param('resourceId') resourceId: string, @Param('role') role: string) {
+    return this.service.revokeRolePermission(resourceId, role);
   }
 }

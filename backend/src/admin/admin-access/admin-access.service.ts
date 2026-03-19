@@ -28,33 +28,52 @@ export class AdminAccessService {
 
   /**
    * Список resourceId, к которым имеет доступ текущий пользователь.
-   * SUPER_ADMIN — все. Остальные: доступ по роли + явные выдачи, минус явные запреты.
+   * SUPER_ADMIN — все. Остальные: дефолты роли + права по роли + права по пользователю, минус запреты.
+   * Запрет (DENIED) по пользователю или по роли исключает ресурс и всех его потомков.
    */
   async getMyAccessibleResources(userId: string, userRole: UserRole): Promise<string[]> {
     if (userRole === 'SUPER_ADMIN') {
       return ADMIN_RESOURCES.map((r) => r.id);
     }
-    const [explicitPerms, roleDefaults] = await Promise.all([
+    const [userPerms, rolePerms, roleDefaults] = await Promise.all([
       this.prisma.adminResourcePermission.findMany({
         where: { userId },
         select: { resourceId: true, permission: true },
       }),
+      this.prisma.adminResourceRolePermission.findMany({
+        where: { role: userRole },
+        select: { resourceId: true, permission: true },
+      }),
       Promise.resolve(ROLE_DEFAULT_RESOURCES[userRole] ?? ['admin']),
     ]);
-    const denied = new Set(
-      explicitPerms.filter((p) => p.permission === 'DENIED').map((p) => p.resourceId),
-    );
-    const granted = new Set(
-      explicitPerms
+    const deniedIds = new Set<string>([
+      ...userPerms.filter((p) => p.permission === 'DENIED').map((p) => p.resourceId),
+      ...rolePerms.filter((p) => p.permission === 'DENIED').map((p) => p.resourceId),
+    ]);
+    /** Исключить id, если он или любой его предок (admin.content для admin.content.blog) в denied */
+    const isDenied = (id: string) =>
+      deniedIds.has(id) || [...deniedIds].some((d) => id.startsWith(d + '.'));
+    const granted = new Set<string>([
+      ...roleDefaults,
+      ...rolePerms
         .filter((p) => p.permission === 'VIEW' || p.permission === 'EDIT')
         .map((p) => p.resourceId),
-    );
-    const fromRole = new Set(roleDefaults);
+      ...userPerms
+        .filter((p) => p.permission === 'VIEW' || p.permission === 'EDIT')
+        .map((p) => p.resourceId),
+    ]);
     const result = new Set<string>();
-    for (const id of [...granted, ...fromRole]) {
-      if (!denied.has(id)) result.add(id);
+    for (const id of granted) {
+      if (!isDenied(id)) result.add(id);
     }
     return Array.from(result);
+  }
+
+  getAdminRoles() {
+    return ADMIN_ROLES.map((role) => ({
+      id: role,
+      label: role,
+    }));
   }
 
   getAdminUsers() {
@@ -83,23 +102,40 @@ export class AdminAccessService {
 
   async getPermissions(resourceId: string) {
     this.getResourceById(resourceId);
-    const list = await this.prisma.adminResourcePermission.findMany({
-      where: { resourceId },
-      include: {
-        user: {
-          select: { id: true, email: true, firstName: true, lastName: true },
+    const [userList, roleList] = await Promise.all([
+      this.prisma.adminResourcePermission.findMany({
+        where: { resourceId },
+        include: {
+          user: {
+            select: { id: true, email: true, firstName: true, lastName: true, role: true },
+          },
         },
-      },
-      orderBy: { createdAt: 'asc' },
-    });
-    return list.map((p) => ({
-      userId: p.userId,
-      email: p.user.email,
-      firstName: p.user.firstName,
-      lastName: p.user.lastName,
-      permission: p.permission,
-      createdAt: p.createdAt,
-    }));
+        orderBy: { createdAt: 'asc' },
+      }),
+      this.prisma.adminResourceRolePermission.findMany({
+        where: { resourceId },
+        orderBy: { createdAt: 'asc' },
+      }),
+    ]);
+    return {
+      users: userList.map((p) => ({
+        type: 'user' as const,
+        id: p.userId,
+        email: p.user.email,
+        firstName: p.user.firstName,
+        lastName: p.user.lastName,
+        role: p.user.role,
+        permission: p.permission,
+        createdAt: p.createdAt,
+      })),
+      roles: roleList.map((p) => ({
+        type: 'role' as const,
+        id: p.role,
+        role: p.role,
+        permission: p.permission,
+        createdAt: p.createdAt,
+      })),
+    };
   }
 
   async setPermission(
@@ -122,6 +158,33 @@ export class AdminAccessService {
     this.getResourceById(resourceId);
     await this.prisma.adminResourcePermission.deleteMany({
       where: { resourceId, userId },
+    });
+    return this.getPermissions(resourceId);
+  }
+
+  async setRolePermission(
+    resourceId: string,
+    role: string,
+    permission: AdminResourcePermissionLevel,
+  ) {
+    this.getResourceById(resourceId);
+    if (!ADMIN_ROLES.includes(role as UserRole)) {
+      throw new NotFoundException(`Роль ${role} не найдена`);
+    }
+    await this.prisma.adminResourceRolePermission.upsert({
+      where: {
+        resourceId_role: { resourceId, role },
+      },
+      create: { resourceId, role, permission },
+      update: { permission },
+    });
+    return this.getPermissions(resourceId);
+  }
+
+  async revokeRolePermission(resourceId: string, role: string) {
+    this.getResourceById(resourceId);
+    await this.prisma.adminResourceRolePermission.deleteMany({
+      where: { resourceId, role },
     });
     return this.getPermissions(resourceId);
   }

@@ -16,14 +16,32 @@ export interface AdminResourceItem {
   path: string;
 }
 
-export interface ResourcePermissionItem {
-  userId: string;
+export interface ResourcePermissionUserItem {
+  type: 'user';
+  id: string;
   email: string;
   firstName: string | null;
   lastName: string | null;
+  role?: string;
   permission: 'VIEW' | 'EDIT' | 'DENIED';
   createdAt: string;
 }
+
+export interface ResourcePermissionRoleItem {
+  type: 'role';
+  id: string;
+  role: string;
+  permission: 'VIEW' | 'EDIT' | 'DENIED';
+  createdAt: string;
+}
+
+export interface ResourcePermissionsResponse {
+  users: ResourcePermissionUserItem[];
+  roles: ResourcePermissionRoleItem[];
+}
+
+/** @deprecated Используйте ResourcePermissionsResponse */
+export type ResourcePermissionItem = ResourcePermissionUserItem;
 
 export interface AdminUserItem {
   id: string;
@@ -51,7 +69,7 @@ export async function getAdminAccessUsers(): Promise<AdminUserItem[]> {
 
 export async function getResourcePermissions(
   resourceId: string
-): Promise<ResourcePermissionItem[]> {
+): Promise<ResourcePermissionsResponse> {
   const res = await fetch(
     `${API_URL}/admin/access/resources/${encodeURIComponent(resourceId)}/permissions`,
     { headers: getAdminAuthHeaders() }
@@ -72,7 +90,7 @@ export async function setResourcePermission(
   resourceId: string,
   userId: string,
   permission: 'VIEW' | 'EDIT' | 'DENIED'
-): Promise<ResourcePermissionItem[]> {
+): Promise<ResourcePermissionsResponse> {
   const res = await fetch(
     `${API_URL}/admin/access/resources/${encodeURIComponent(resourceId)}/permissions`,
     {
@@ -88,11 +106,53 @@ export async function setResourcePermission(
 export async function revokeResourcePermission(
   resourceId: string,
   userId: string
-): Promise<ResourcePermissionItem[]> {
+): Promise<ResourcePermissionsResponse> {
   const res = await fetch(
     `${API_URL}/admin/access/resources/${encodeURIComponent(resourceId)}/permissions/${encodeURIComponent(userId)}`,
     { method: 'DELETE', headers: getAdminAuthHeaders() }
   );
   if (!res.ok) throw new Error('Не удалось удалить доступ');
+  return res.json();
+}
+
+export interface AdminRoleItem {
+  id: string;
+  label: string;
+}
+
+export async function getAdminAccessRoles(): Promise<AdminRoleItem[]> {
+  const res = await fetch(`${API_URL}/admin/access/roles`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить список ролей');
+  return res.json();
+}
+
+export async function setRolePermission(
+  resourceId: string,
+  role: string,
+  permission: 'VIEW' | 'EDIT' | 'DENIED'
+): Promise<ResourcePermissionsResponse> {
+  const res = await fetch(
+    `${API_URL}/admin/access/resources/${encodeURIComponent(resourceId)}/role-permissions`,
+    {
+      method: 'POST',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify({ role, permission }),
+    }
+  );
+  if (!res.ok) throw new Error('Не удалось сохранить доступ по роли');
+  return res.json();
+}
+
+export async function revokeRolePermission(
+  resourceId: string,
+  role: string
+): Promise<ResourcePermissionsResponse> {
+  const res = await fetch(
+    `${API_URL}/admin/access/resources/${encodeURIComponent(resourceId)}/role-permissions/${encodeURIComponent(role)}`,
+    { method: 'DELETE', headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) throw new Error('Не удалось удалить доступ по роли');
   return res.json();
 }
