@@ -21,6 +21,7 @@
 
 .link {
   color: #6b7280;
+  display: inline-block;
   font-size: 0.875rem;
   transition: color 0.2s ease;
   text-decoration: none;

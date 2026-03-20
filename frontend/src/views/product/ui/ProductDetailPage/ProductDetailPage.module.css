@@ -116,6 +116,7 @@
 
 .breadcrumbLink {
   color: #6b7280;
+  display: inline-block;
   text-decoration: none;
   cursor: pointer;
 }
