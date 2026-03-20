@@ -10,6 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -102,6 +103,7 @@ export class CategoriesController {
   // ==================== АТРИБУТЫ КАТЕГОРИИ ====================
 
   @Get(':id/attributes')
+  @SkipThrottle()
   @ApiOperation({ summary: 'Получить атрибуты категории' })
   getCategoryAttributes(@Param('id') id: string) {
     return this.categoriesService.getCategoryAttributes(id);

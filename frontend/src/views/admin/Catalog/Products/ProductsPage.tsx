@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
 import { DataTable } from '@/shared/ui/admin/DataTable';
@@ -250,7 +250,8 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
     fetchSuppliers();
   }, [getAuthHeaders]);
 
-  // Собираем ID категории и всех подкатегорий для загрузки атрибутов
+  // Собираем ID категории для загрузки атрибутов.
+  // При фильтре по категории — эта категория + дети. Без фильтра — только категории товаров на странице (меньше запросов, нет 429).
   const categoryIdsForAttributes = useMemo(() => {
     const collectIds = (cats: CategoriesResponse[]): string[] => {
       const ids: string[] = [];
@@ -277,11 +278,18 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       };
       return findAndCollect(categories, categoryId);
     }
-    return collectIds(categories);
-  }, [categories, categoryId]);
+    // Без фильтра: только категории товаров на странице, чтобы не превысить rate limit
+    const ids = new Set<string>();
+    for (const p of allProducts) {
+      if (p.category?.id) ids.add(p.category.id);
+    }
+    return Array.from(ids);
+  }, [categories, categoryId, allProducts]);
 
   // Fetch category attributes — при categoryId только для этой категории, иначе для всех
+  // Последовательно, чтобы не превысить rate limit (429 Too Many Requests)
   useEffect(() => {
+    let cancelled = false;
     const fetchCategoryAttributes = async () => {
       if (categoryIdsForAttributes.length === 0) return;
 
@@ -290,25 +298,29 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
         { id: string; name: string; slug: string; type: string }
       >();
 
-      const attrPromises = categoryIdsForAttributes.map(async (catId) => {
+      const allAttrsArrays: Array<
+        Array<{
+          id: string;
+          attributeId: string;
+          attribute: { id: string; name: string; slug: string; type: string };
+        }>
+      > = [];
+      for (const catId of categoryIdsForAttributes) {
+        if (cancelled) return;
         try {
           const response = await fetch(`${API_URL}/categories/${catId}/attributes`);
           if (response.ok) {
-            const attrs: Array<{
-              id: string;
-              attributeId: string;
-              attribute: { id: string; name: string; slug: string; type: string };
-            }> = await response.json();
-            return attrs;
+            const attrs = await response.json();
+            allAttrsArrays.push(attrs);
+          } else {
+            allAttrsArrays.push([]);
           }
-          return [];
         } catch (err) {
           console.error(`Failed to fetch attributes for category ${catId}:`, err);
-          return [];
+          allAttrsArrays.push([]);
         }
-      });
-
-      const allAttrsArrays = await Promise.all(attrPromises);
+      }
+      if (cancelled) return;
       allAttrsArrays.forEach((attrs) => {
         attrs.forEach((ca) => {
           if (!allAttrsMap.has(ca.attribute.slug)) {
@@ -326,6 +338,9 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
     };
 
     fetchCategoryAttributes();
+    return () => {
+      cancelled = true;
+    };
   }, [categoryIdsForAttributes]);
 
   // Flatten categories for select dropdown (with unique keys)
@@ -366,7 +381,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       setLoading(true);
     }
     try {
-      const response = await fetch(`${API_URL}/products/admin/all`, {
+      const response = await fetch(`${API_URL}/products/admin/all?_=${Date.now()}`, {
         headers: getAuthHeaders(),
         cache: 'no-store',
       });
@@ -389,27 +404,44 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
 
   // При каждом появлении страницы списка (в т.ч. переход «Назад к списку») обновлять список
   const pathname = usePathname();
-  const prevPathnameRef = useRef(pathname);
+  const searchParams = useSearchParams();
+  const prevPathnameRef = useRef<string | null>(null);
+
+  // Параметр ?refresh= в URL — явный запрос обновить список (после создания/редактирования)
+  const refreshParam = searchParams.get('refresh');
+  useEffect(() => {
+    if (refreshParam) {
+      fetchProducts(true);
+      router.replace(pathname);
+    }
+  }, [refreshParam, pathname, fetchProducts, router]);
+
   useEffect(() => {
     const isProductsList =
       pathname === '/admin/catalog/products' ||
       pathname.startsWith('/admin/catalog/products/category/');
-    const wasOnOtherPage = prevPathnameRef.current !== pathname;
+    const isFirstVisit = prevPathnameRef.current === null;
+    const wasOnOtherPage = prevPathnameRef.current !== null && prevPathnameRef.current !== pathname;
     prevPathnameRef.current = pathname;
-    if (isProductsList && wasOnOtherPage) {
+    if (isProductsList && (isFirstVisit || wasOnOtherPage)) {
       fetchProducts(true);
     }
   }, [pathname, fetchProducts]);
 
-  // Обновлять список при возврате на вкладку (после сохранения товара в другой вкладке или при переключении)
+  // При возврате на вкладку или восстановлении из bfcache — обновить список
   useEffect(() => {
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        fetchProducts(true);
-      }
+      if (document.visibilityState === 'visible') fetchProducts(true);
     };
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) fetchProducts(true);
+    };
+    window.addEventListener('pageshow', onPageShow);
     document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      window.removeEventListener('pageshow', onPageShow);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [fetchProducts]);
 
   // Filter and paginate products client-side
@@ -615,8 +647,10 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       });
       if (response.ok) {
         setShowDeleteConfirmModal(false);
+        const idsToRemove = new Set(selectedIds);
+        setAllProducts((prev) => prev.filter((p) => !idsToRemove.has(p.id)));
         setSelectedIds([]);
-        fetchProducts();
+        fetchProducts(true);
       }
     } catch (err) {
       console.error('Failed to bulk delete:', err);
@@ -1289,6 +1323,19 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
           title="Редактировать"
         >
           ✏️
+        </button>
+        <button
+          className={styles.actionButton}
+          onClick={(e) => {
+            e.stopPropagation();
+            const copyUrl = `/admin/catalog/products/new?copyFrom=${product.id}${
+              categoryId ? `&fromCategory=${categoryId}` : ''
+            }`;
+            router.push(copyUrl);
+          }}
+          title="Копировать товар"
+        >
+          🔁
         </button>
       </div>
     ),

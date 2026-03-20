@@ -1004,7 +1004,9 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           <p>Товар с ID {productId} не существует или был удалён.</p>
           <button
             className={styles.backButton}
-            onClick={() => router.push('/admin/catalog/products')}
+            onClick={() => {
+              router.push(`/admin/catalog/products?refresh=${Date.now()}`);
+            }}
           >
             ← Вернуться к списку товаров
           </button>
@@ -1022,31 +1024,45 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <button
             className={styles.backButton}
-            onClick={() =>
-              router.push(
-                fromCategory
-                  ? `/admin/catalog/products/category/${fromCategory}`
-                  : '/admin/catalog/products'
-              )
-            }
+            onClick={() => {
+              const base = fromCategory
+                ? `/admin/catalog/products/category/${fromCategory}`
+                : '/admin/catalog/products';
+              router.push(`${base}?refresh=${Date.now()}`);
+            }}
           >
             ← Назад к списку
           </button>
           <h1 className={styles.title}>Редактирование товара</h1>
         </div>
-        <button
-          type="button"
-          className={styles.saveButton}
-          disabled={saving}
-          onClick={(e) => {
-            e.preventDefault();
-            if (formRef.current) {
-              formRef.current.requestSubmit();
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <button
+            type="button"
+            className={styles.cancelButton}
+            onClick={() =>
+              router.push(
+                `/admin/catalog/products/new?copyFrom=${productId}${
+                  fromCategory ? `&fromCategory=${fromCategory}` : ''
+                }`
+              )
             }
-          }}
-        >
-          {saving ? 'Сохранение...' : 'Сохранить изменения'}
-        </button>
+          >
+            🔁 Скопировать
+          </button>
+          <button
+            type="button"
+            className={styles.saveButton}
+            disabled={saving}
+            onClick={(e) => {
+              e.preventDefault();
+              if (formRef.current) {
+                formRef.current.requestSubmit();
+              }
+            }}
+          >
+            {saving ? 'Сохранение...' : 'Сохранить изменения'}
+          </button>
+        </div>
       </div>
 
       <form ref={formRef} onSubmit={handleSubmit} className={styles.form}>
@@ -2219,13 +2235,12 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         <button
           type="button"
           className={styles.backButtonBottom}
-          onClick={() =>
-            router.push(
-              fromCategory
-                ? `/admin/catalog/products/category/${fromCategory}`
-                : '/admin/catalog/products'
-            )
-          }
+          onClick={() => {
+            const base = fromCategory
+              ? `/admin/catalog/products/category/${fromCategory}`
+              : '/admin/catalog/products';
+            router.push(`${base}?refresh=${Date.now()}`);
+          }}
         >
           ← Назад к списку
         </button>
@@ -2233,13 +2248,12 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           <button
             type="button"
             className={styles.cancelButton}
-            onClick={() =>
-              router.push(
-                fromCategory
-                  ? `/admin/catalog/products/category/${fromCategory}`
-                  : '/admin/catalog/products'
-              )
-            }
+            onClick={() => {
+              const base = fromCategory
+                ? `/admin/catalog/products/category/${fromCategory}`
+                : '/admin/catalog/products';
+              router.push(`${base}?refresh=${Date.now()}`);
+            }}
           >
             Отмена
           </button>

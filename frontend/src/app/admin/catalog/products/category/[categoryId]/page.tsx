@@ -1,6 +1,6 @@
 'use client';
 
-import { use } from 'react';
+import { Suspense, use } from 'react';
 
 import { ProductsPage } from '@/views/admin/Catalog/Products/ProductsPage';
 
@@ -10,5 +10,9 @@ export default function AdminProductsByCategoryPage({
   params: Promise<{ categoryId: string }>;
 }) {
   const { categoryId } = use(params);
-  return <ProductsPage categoryId={categoryId} />;
+  return (
+    <Suspense fallback={<div style={{ padding: '2rem' }}>Загрузка...</div>}>
+      <ProductsPage categoryId={categoryId} />
+    </Suspense>
+  );
 }

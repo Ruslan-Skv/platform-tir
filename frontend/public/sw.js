@@ -3,7 +3,7 @@
  * - StaleWhileRevalidate для API товаров и каталога
  * - Поддержка обновления приложения (skipWaiting)
  *
- * VERSION: __BUILD_ID__
+ * VERSION: mmyu8il3
  * Обновляется при каждой сборке для триггера проверки новой версии
  */
 'use strict';

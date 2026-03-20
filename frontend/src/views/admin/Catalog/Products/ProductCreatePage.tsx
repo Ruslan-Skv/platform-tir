@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
 
 import styles from './ProductEditPage.module.css';
+import type { CopiedProductData } from './copy-product-utils';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -153,14 +154,53 @@ function generateSeoDescription(productName: string, categoryName: string): stri
   return description.substring(0, 160); // Оптимальная длина для SEO
 }
 
-export function ProductCreatePage() {
+const defaultFormData = {
+  name: '',
+  slug: '',
+  sku: '',
+  description: '',
+  price: '',
+  comparePrice: '',
+  stock: 0,
+  categoryId: '',
+  isActive: true,
+  isFeatured: false,
+  isNew: true,
+  partnerId: '',
+  sortOrder: 400,
+  seoTitle: '',
+  seoDescription: '',
+  supplierId: '',
+  supplierProductUrl: '',
+  supplierPrice: '',
+  videoUrl: '',
+  weight: '',
+  attributes: {} as Record<string, string>,
+  images: [] as string[],
+  sizes: [] as string[],
+  openingSide: [] as string[],
+};
+
+interface ProductCreatePageProps {
+  fromCategory?: string;
+  categoryIdFromUrl?: string;
+  initialCopyData?: CopiedProductData | null;
+  copyError?: string | null;
+  isCopyMode?: boolean;
+}
+
+export function ProductCreatePage({
+  fromCategory = '',
+  categoryIdFromUrl = '',
+  initialCopyData = null,
+  copyError: initialCopyError = null,
+  isCopyMode = false,
+}: ProductCreatePageProps = {}) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { getAuthHeaders } = useAuth();
-  const categoryIdFromUrl = searchParams.get('categoryId') ?? '';
   const [saving, setSaving] = useState(false);
   const [fetchingPrice, setFetchingPrice] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialCopyError);
   const [success, setSuccess] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<
@@ -168,40 +208,23 @@ export function ProductCreatePage() {
   >([]);
   const [partners, setPartners] = useState<Array<{ id: string; name: string }>>([]);
 
-  const [formData, setFormData] = useState({
-    name: '',
-    slug: '',
-    sku: '',
-    description: '',
-    price: '',
-    comparePrice: '',
-    stock: 0,
-    categoryId: '',
-    isActive: true,
-    isFeatured: false,
-    isNew: true,
-    partnerId: '',
-    sortOrder: 400,
-    seoTitle: '',
-    seoDescription: '',
-    supplierId: '',
-    supplierProductUrl: '',
-    supplierPrice: '',
-    attributes: {} as Record<string, string>,
-    images: [] as string[],
-    sizes: [] as string[],
-    openingSide: [] as string[],
-  });
+  const [formData, setFormData] = useState(
+    initialCopyData?.formData ?? { ...defaultFormData, categoryId: categoryIdFromUrl || '' }
+  );
 
   // Атрибуты категории и товара
-  const [categoryAttributes, setCategoryAttributes] = useState<CategoryAttribute[]>([]);
-  const [customAttributes, setCustomAttributes] = useState<{ key: string; value: string }[]>([]);
+  const [categoryAttributes, setCategoryAttributes] = useState<CategoryAttribute[]>(
+    (initialCopyData?.categoryAttributes ?? []) as CategoryAttribute[]
+  );
+  const [customAttributes, setCustomAttributes] = useState<{ key: string; value: string }[]>(
+    initialCopyData?.customAttributes ?? []
+  );
   const [newAttrKey, setNewAttrKey] = useState('');
   const [newAttrValue, setNewAttrValue] = useState('');
-  const [autoSlug, setAutoSlug] = useState(true);
-  const [autoSku, setAutoSku] = useState(true);
-  const [autoSeoTitle, setAutoSeoTitle] = useState(true);
-  const [autoSeoDescription, setAutoSeoDescription] = useState(true);
+  const [autoSlug, setAutoSlug] = useState(!!initialCopyData);
+  const [autoSku, setAutoSku] = useState(!!initialCopyData);
+  const [autoSeoTitle, setAutoSeoTitle] = useState(!initialCopyData);
+  const [autoSeoDescription, setAutoSeoDescription] = useState(!initialCopyData);
 
   // Загрузка изображений
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -210,12 +233,12 @@ export function ProductCreatePage() {
   const [dragActive, setDragActive] = useState(false);
   const [suggestedSizes, setSuggestedSizes] = useState<string[]>([]);
 
-  // Предзаполнение категории из URL
+  // Предзаполнение категории из URL (только когда не копируем)
   useEffect(() => {
-    if (categoryIdFromUrl) {
+    if (categoryIdFromUrl && !initialCopyData) {
       setFormData((prev) => ({ ...prev, categoryId: categoryIdFromUrl }));
     }
-  }, [categoryIdFromUrl]);
+  }, [categoryIdFromUrl, initialCopyData]);
 
   // Fetch categories
   useEffect(() => {
@@ -590,7 +613,7 @@ export function ProductCreatePage() {
         isNew: formData.isNew,
         isPartnerProduct: !!formData.partnerId,
         partnerId: formData.partnerId || undefined,
-        sortOrder: formData.sortOrder || 0,
+        sortOrder: formData.sortOrder ?? 400,
         seoTitle: formData.seoTitle || undefined,
         seoDescription: formData.seoDescription || undefined,
         attributes: attributesArray, // Массив с гарантированным порядком
@@ -600,6 +623,8 @@ export function ProductCreatePage() {
         supplierId: formData.supplierId || undefined,
         supplierProductUrl: formData.supplierProductUrl || undefined,
         supplierPrice: formData.supplierPrice ? parseFloat(formData.supplierPrice) : undefined,
+        videoUrl: formData.videoUrl || undefined,
+        weight: formData.weight ? parseFloat(formData.weight) : undefined,
       };
 
       const response = await fetch(`${API_URL}/products`, {
@@ -640,6 +665,12 @@ export function ProductCreatePage() {
     }
   };
 
+  const backUrl = fromCategory
+    ? `/admin/catalog/products/category/${fromCategory}`
+    : categoryIdFromUrl
+      ? `/admin/catalog/products/category/${categoryIdFromUrl}`
+      : '/admin/catalog/products';
+
   return (
     <div className={styles.page}>
       <div
@@ -649,17 +680,15 @@ export function ProductCreatePage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <button
             className={styles.backButton}
-            onClick={() =>
-              router.push(
-                categoryIdFromUrl
-                  ? `/admin/catalog/products/category/${categoryIdFromUrl}`
-                  : '/admin/catalog/products'
-              )
-            }
+            onClick={() => {
+              router.push(`${backUrl}?refresh=${Date.now()}`);
+            }}
           >
             ← Назад к списку
           </button>
-          <h1 className={styles.title}>Добавление товара</h1>
+          <h1 className={styles.title}>
+            {isCopyMode ? 'Добавление товара (копия)' : 'Добавление товара'}
+          </h1>
         </div>
         <button
           type="button"
@@ -1496,13 +1525,9 @@ export function ProductCreatePage() {
             <button
               type="button"
               className={styles.cancelButton}
-              onClick={() =>
-                router.push(
-                  categoryIdFromUrl
-                    ? `/admin/catalog/products/category/${categoryIdFromUrl}`
-                    : '/admin/catalog/products'
-                )
-              }
+              onClick={() => {
+                router.push(`${backUrl}?refresh=${Date.now()}`);
+              }}
             >
               Отмена
             </button>
@@ -1518,13 +1543,9 @@ export function ProductCreatePage() {
         <button
           type="button"
           className={styles.backButtonBottom}
-          onClick={() =>
-            router.push(
-              categoryIdFromUrl
-                ? `/admin/catalog/products/category/${categoryIdFromUrl}`
-                : '/admin/catalog/products'
-            )
-          }
+          onClick={() => {
+            router.push(`${backUrl}?refresh=${Date.now()}`);
+          }}
         >
           ← Назад к списку
         </button>
