@@ -21,7 +21,7 @@ import type { RequestWithUser } from '../../../common/types/request-with-user.ty
 
 @Controller('admin/catalog/suppliers')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN')
+@Roles('ADMIN', 'CONTENT_MANAGER')
 export class SuppliersController {
   constructor(private readonly suppliersService: SuppliersService) {}
 
