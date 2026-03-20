@@ -410,6 +410,39 @@ docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml restart ng
 - Backend ещё не готов — проверьте `docker compose ps` и healthcheck
 - Увеличьте `start_period` в healthcheck при медленном сервере
 
+### Backend unhealthy, контейнер backend не запускается
+Backend выполняет `prisma migrate deploy` при старте. Если миграция в БД помечена как failed (P3009), deploy прерывается и контейнер падает.
+
+**Решение 1 — пометить failed-миграцию как применённую (если схема уже есть):**
+```bash
+docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml run --rm backend npx prisma migrate resolve --applied 20240101_000000_init
+```
+Затем перезапустите:
+```bash
+docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml up -d
+```
+
+**Решение 2 — миграция упала из‑за «No space left on device»:**
+1. Освободите место на диске: `df -h`, `docker system prune`, `docker image prune -a`
+2. Проверьте, создана ли таблица:  
+   `docker compose ... exec postgres psql -U platform_user -d platform_tir -c "\dt admin_resource_role*"`
+3. Если таблица есть:  
+   `npx prisma migrate resolve --applied 20250319_000000_add_admin_resource_role_permissions`
+4. Если таблицы нет:  
+   `npx prisma migrate resolve --rolled-back 20250319_000000_add_admin_resource_role_permissions`  
+   затем `dc up -d` — миграция применится повторно.
+
+**Решение 3 — принудительно синхронизировать схему (миграции не используются):**
+```bash
+docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml run --rm backend npx prisma db push
+```
+После этого снова `dc up -d`. При следующем деплое миграции могут конфликтовать; предпочтительно использовать Решение 1.
+
+**Просмотр логов backend:**
+```bash
+docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml logs backend
+```
+
 ### Ошибка `products.createdById does not exist`
 Схема БД не совпадает с Prisma. Нужно применить миграции:
 
@@ -417,7 +450,7 @@ docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml restart ng
 docker compose ... exec backend npx prisma migrate deploy
 ```
 
-Если миграции уже применены, проверьте, что последний деплой содержит папку `backend/prisma/migrations/` с нужными миграциями (в т.ч. `20250317_000000_add_product_created_by_updated_by`).
+Если миграции уже применены, проверьте, что последний деплой содержит папку `backend/prisma/migrations/` с нужными миграциями (в т.ч. `20250317_000000_add_product_created_by_updated_by`, `20250319_000000_add_admin_resource_role_permissions`).
 
 ### ERR_HTTP2_PROTOCOL_ERROR, Failed to load chunk
 Ошибка возникает при загрузке статики Next.js (`/_next/static/chunks/*.js`, `*.css`) через nginx с HTTP/2.

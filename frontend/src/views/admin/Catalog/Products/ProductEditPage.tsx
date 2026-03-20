@@ -280,7 +280,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     isFeatured: false,
     isNew: false,
     partnerId: '',
-    sortOrder: 0,
+    sortOrder: 400,
     seoTitle: '',
     seoDescription: '',
     images: [] as string[],
@@ -1395,11 +1395,11 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        sortOrder: parseInt(e.target.value, 10) || 0,
+                        sortOrder: parseInt(e.target.value, 10) || 400,
                       }))
                     }
                     className={styles.input}
-                    placeholder="0"
+                    placeholder="400"
                   />
                   <p className={styles.hint}>Чем меньше число, тем выше в списке.</p>
                 </div>

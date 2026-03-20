@@ -181,7 +181,7 @@ export function ProductCreatePage() {
     isFeatured: false,
     isNew: true,
     partnerId: '',
-    sortOrder: 0,
+    sortOrder: 400,
     seoTitle: '',
     seoDescription: '',
     supplierId: '',
@@ -1008,11 +1008,11 @@ export function ProductCreatePage() {
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    sortOrder: parseInt(e.target.value, 10) || 0,
+                    sortOrder: parseInt(e.target.value, 10) || 400,
                   }))
                 }
                 className={styles.input}
-                placeholder="0"
+                placeholder="400"
               />
               <p className={styles.hint}>
                 Чем меньше число, тем выше товар в списке. Товары с одинаковым значением сортируются
