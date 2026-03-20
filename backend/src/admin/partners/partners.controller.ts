@@ -29,7 +29,7 @@ const logosDir = path.join(process.cwd(), 'uploads', 'partners');
 
 @Controller('admin/partners')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'SUPER_ADMIN')
+@Roles('ADMIN', 'CONTENT_MANAGER', 'SUPER_ADMIN')
 export class PartnersController {
   constructor(private readonly partnersService: PartnersService) {}
 

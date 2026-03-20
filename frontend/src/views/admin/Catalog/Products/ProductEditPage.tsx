@@ -245,7 +245,7 @@ interface ProductEditPageProps {
 export function ProductEditPage({ productId }: ProductEditPageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { getAuthHeaders } = useAuth();
+  const { getAuthHeaders, user } = useAuth();
   const fromCategory = searchParams.get('fromCategory') ?? '';
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -326,8 +326,13 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   const [dragActive, setDragActive] = useState(false);
 
   useEffect(() => {
-    setCardSections(getCardSections());
-  }, []);
+    // Контент-менеджеры всегда видят все секции формы (поставщики, цена, варианты и т.д.)
+    if (user?.role === 'CONTENT_MANAGER') {
+      setCardSections([...DEFAULT_CARD_SECTIONS]);
+    } else {
+      setCardSections(getCardSections());
+    }
+  }, [user?.role]);
 
   const showSection = (key: string) => cardSections.includes(key);
 
