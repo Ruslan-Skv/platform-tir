@@ -235,21 +235,21 @@ docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml logs -f fr
 
 ### Оповещения о заполнении диска
 
-Скрипт `scripts/disk-monitor.sh` проверяет использование диска и отправляет уведомления в Telegram:
+Скрипт `scripts/disk-monitor.sh` проверяет использование диска и отправляет уведомления на email:
 
 | Порог | Действие |
 |-------|----------|
-| **80%** | Предупреждение в Telegram (не чаще 1 раза в 24 ч) |
+| **80%** | Предупреждение на email (не чаще 1 раза в 24 ч) |
 | **90%** | Критичное уведомление |
 | **95%** | Автоматический запуск очистки |
 
 **Настройка:**
-1. Добавьте в `.env`:
+1. Убедитесь, что в `.env` заданы SMTP (те же, что для писем приложения): `MAIL_FROM`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`
+2. Добавьте email для алертов:
    ```
-   TELEGRAM_BOT_TOKEN=ваш_токен
-   TELEGRAM_ALERT_CHAT_ID=ваш_chat_id   # узнать: напишите боту @userinfobot в Telegram
+   DISK_ALERT_EMAIL=ваш@email.com
    ```
-2. Добавьте в crontab (`crontab -e`), например каждые 6 часов:
+3. Добавьте в crontab (`crontab -e`), например каждые 6 часов:
    ```
    0 */6 * * * /home/ваш_юзер/platform-tir/scripts/disk-monitor.sh
    ```
@@ -266,6 +266,7 @@ docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml logs -f fr
 ```bash
 chmod +x scripts/cleanup-disk.sh
 ./scripts/cleanup-disk.sh
+./scripts/disk-monitor.sh
 ```
 
 **Cron (еженедельно, воскресенье 3:00):**

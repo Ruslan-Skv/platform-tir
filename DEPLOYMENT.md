@@ -338,7 +338,7 @@ chmod +x scripts/backup.sh
 
 Бэкапы сохраняются в `backups/`. Старше 7 дней — удаляются автоматически.
 
-**Мониторинг диска и очистка:** см. [docs/VPS-OPTIMIZATION.md](docs/VPS-OPTIMIZATION.md) — скрипты `disk-monitor.sh` (оповещения в Telegram при 80%+) и `cleanup-disk.sh` (еженедельная очистка Docker, логов).
+**Мониторинг диска и очистка:** см. [docs/VPS-OPTIMIZATION.md](docs/VPS-OPTIMIZATION.md) — скрипты `disk-monitor.sh` (оповещения на email при 80%+) и `cleanup-disk.sh` (еженедельная очистка Docker, логов).
 
 **Ручное** (перед крупными обновлениями):
 

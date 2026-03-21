@@ -1,12 +1,12 @@
 #!/bin/bash
-# Мониторинг заполнения диска с оповещениями в Telegram
+# Мониторинг заполнения диска с оповещениями на email
 # Запуск: ./scripts/disk-monitor.sh
 # Для cron (каждые 6 часов): 0 */6 * * * /path/to/platform-tir/scripts/disk-monitor.sh
 #
-# Переменные в .env:
-#   TELEGRAM_BOT_TOKEN   — токен бота (если есть)
-#   TELEGRAM_ALERT_CHAT_ID — ID чата для алертов (узнать: написать боту @userinfobot)
-# Без TELEGRAM_* — только логирование в файл.
+# Переменные в .env (те же SMTP, что для писем приложения):
+#   MAIL_FROM, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
+#   DISK_ALERT_EMAIL — адрес для получения алертов
+# Без SMTP/DISK_ALERT_EMAIL — только логирование в файл.
 
 set -e
 cd "$(dirname "$0")/.."
@@ -16,11 +16,17 @@ WARN_PERCENT=80   # предупреждение
 CRIT_PERCENT=90   # критично
 CLEANUP_PERCENT=95  # при 95% можно автоматически запустить очистку (опционально)
 
-# Загрузка .env (только TELEGRAM_*)
+# Загрузка .env
 if [ -f .env ]; then
-  TELEGRAM_BOT_TOKEN=$(grep '^TELEGRAM_BOT_TOKEN=' .env 2>/dev/null | cut -d= -f2- | tr -d '\r"' | head -1)
-  TELEGRAM_ALERT_CHAT_ID=$(grep '^TELEGRAM_ALERT_CHAT_ID=' .env 2>/dev/null | cut -d= -f2- | tr -d '\r"' | head -1)
+  MAIL_FROM=$(grep '^MAIL_FROM=' .env 2>/dev/null | cut -d= -f2- | tr -d '\r"' | head -1)
+  SMTP_HOST=$(grep '^SMTP_HOST=' .env 2>/dev/null | cut -d= -f2- | tr -d '\r"' | head -1)
+  SMTP_PORT=$(grep '^SMTP_PORT=' .env 2>/dev/null | cut -d= -f2- | tr -d '\r"' | head -1)
+  SMTP_USER=$(grep '^SMTP_USER=' .env 2>/dev/null | cut -d= -f2- | tr -d '\r"' | head -1)
+  SMTP_PASS=$(grep '^SMTP_PASS=' .env 2>/dev/null | cut -d= -f2- | tr -d '\r"' | head -1)
+  DISK_ALERT_EMAIL=$(grep '^DISK_ALERT_EMAIL=' .env 2>/dev/null | cut -d= -f2- | tr -d '\r"' | head -1)
 fi
+SMTP_PORT=${SMTP_PORT:-587}
+MAIL_FROM=${MAIL_FROM:-noreply@localhost}
 
 LOG_DIR="${LOG_DIR:-backups}"
 mkdir -p "$LOG_DIR"
@@ -32,18 +38,37 @@ USAGE=$(df / | awk 'NR==2 {print $5}' | tr -d '%')
 USED_GB=$(df -BG / | awk 'NR==2 {print $3}' | tr -d 'G')
 TOTAL_GB=$(df -BG / | awk 'NR==2 {print $2}' | tr -d 'G')
 AVAIL_GB=$(df -BG / | awk 'NR==2 {print $4}' | tr -d 'G')
+HOSTNAME=$(hostname 2>/dev/null || echo "server")
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"; }
 
-send_telegram() {
-  local msg="$1"
-  if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_ALERT_CHAT_ID" ]; then
-    curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-      -d "chat_id=${TELEGRAM_ALERT_CHAT_ID}" \
-      -d "text=${msg}" \
-      -d "parse_mode=HTML" \
-      -d "disable_web_page_preview=1" >/dev/null 2>&1 || true
+send_email() {
+  local subject="$1"
+  local body="$2"
+  if [ -z "$DISK_ALERT_EMAIL" ] || [ -z "$SMTP_HOST" ]; then
+    return
   fi
+  python3 - "$DISK_ALERT_EMAIL" "$MAIL_FROM" "$SMTP_HOST" "$SMTP_PORT" "$SMTP_USER" "$SMTP_PASS" "$subject" "$body" << 'PYTHON'
+import sys, smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+try:
+  to_addr, from_addr, host, port, user, passwd, subj, body = sys.argv[1:9]
+  port = int(port)
+  msg = MIMEMultipart()
+  msg['From'] = from_addr
+  msg['To'] = to_addr
+  msg['Subject'] = subj
+  msg.attach(MIMEText(body, 'plain', 'utf-8'))
+  with smtplib.SMTP(host, port) as s:
+    if port == 587:
+      s.starttls()
+    if user and passwd:
+      s.login(user, passwd)
+    s.send_message(msg)
+except Exception as e:
+  sys.exit(1)
+PYTHON
 }
 
 # Не спамить: если уже отправляли алерт для этого уровня за последние 24ч — пропустить
@@ -66,10 +91,11 @@ save_state() {
 
 # Основная логика
 if [ "$USAGE" -ge "$CRIT_PERCENT" ]; then
-  MSG="🚨 <b>Критично!</b> Диск заполнен на ${USAGE}% (осталось ${AVAIL_GB} GB из ${TOTAL_GB} GB). Срочно освободите место."
-  log "CRITICAL: $MSG"
+  SUBJECT="[${HOSTNAME}] Критично: диск заполнен на ${USAGE}%"
+  BODY="Критично! Диск заполнен на ${USAGE}% (осталось ${AVAIL_GB} GB из ${TOTAL_GB} GB). Срочно освободите место. Запустите: ./scripts/cleanup-disk.sh"
+  log "CRITICAL: $BODY"
   if should_alert "crit"; then
-    send_telegram "$MSG"
+    send_email "$SUBJECT" "$BODY" 2>/dev/null || log "Не удалось отправить email"
     save_state "crit"
   fi
   # Опционально: запустить очистку
@@ -78,10 +104,11 @@ if [ "$USAGE" -ge "$CRIT_PERCENT" ]; then
     "$(dirname "$0")/cleanup-disk.sh" >> "$LOG_FILE" 2>&1 || true
   fi
 elif [ "$USAGE" -ge "$WARN_PERCENT" ]; then
-  MSG="⚠️ <b>Внимание</b> — диск заполнен на ${USAGE}% (осталось ${AVAIL_GB} GB). Рекомендуется очистка."
-  log "WARNING: $MSG"
+  SUBJECT="[${HOSTNAME}] Внимание: диск заполнен на ${USAGE}%"
+  BODY="Внимание — диск заполнен на ${USAGE}% (осталось ${AVAIL_GB} GB из ${TOTAL_GB} GB). Рекомендуется очистка: ./scripts/cleanup-disk.sh"
+  log "WARNING: $BODY"
   if should_alert "warn"; then
-    send_telegram "$MSG"
+    send_email "$SUBJECT" "$BODY" 2>/dev/null || log "Не удалось отправить email"
     save_state "warn"
   fi
 else
