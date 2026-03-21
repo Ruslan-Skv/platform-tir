@@ -31,6 +31,7 @@ interface Product {
   isNew: boolean;
   isPartnerProduct?: boolean;
   sortOrder?: number;
+  updatedAt?: string; // ISO дата последнего обновления
   attributes?: Record<string, string | number | boolean | string[]> | null;
   images: string[];
   suppliers?: Array<{
@@ -53,8 +54,21 @@ interface ColumnConfig {
   key: string;
   title: string;
   editable: boolean;
-  type: 'text' | 'number' | 'boolean' | 'currency';
+  type: 'text' | 'number' | 'boolean' | 'currency' | 'date';
 }
+
+const formatDate = (value: unknown): string => {
+  if (!value) return '—';
+  const date = typeof value === 'string' ? new Date(value) : value instanceof Date ? value : null;
+  if (!date || isNaN(date.getTime())) return '—';
+  return date.toLocaleDateString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
 
 const AVAILABLE_COLUMNS: ColumnConfig[] = [
   { key: 'price', title: 'Цена', editable: true, type: 'currency' },
@@ -67,6 +81,7 @@ const AVAILABLE_COLUMNS: ColumnConfig[] = [
   { key: 'isNew', title: 'Новинка', editable: true, type: 'boolean' },
   { key: 'isPartnerProduct', title: 'Товар партнёра', editable: true, type: 'boolean' },
   { key: 'supplier', title: 'Поставщик', editable: true, type: 'text' },
+  { key: 'updatedAt', title: 'Дата обновления', editable: false, type: 'date' },
 ];
 
 // Типы для редактируемых значений
@@ -1155,6 +1170,8 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
     {
       key: 'product',
       title: 'Товар',
+      sortable: true,
+      sortKey: 'name',
       render: (product: Product) => (
         <div className={styles.productCell}>
           <div className={styles.productImage}>
@@ -1178,6 +1195,8 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
           {
             key: 'category',
             title: 'Категория',
+            sortable: true,
+            sortKey: 'category.name',
             render: (product: Product) => product.category.name,
           },
         ]),
@@ -1216,7 +1235,11 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       return {
         key: columnConfig.key,
         title: columnConfig.title,
-        sortable: columnConfig.type === 'number' || columnConfig.type === 'currency',
+        sortable:
+          columnConfig.type === 'number' ||
+          columnConfig.type === 'currency' ||
+          columnConfig.type === 'boolean' ||
+          columnConfig.type === 'date',
         render: (product: Product) => {
           // В режиме быстрого редактирования редактируем только выбранные товары
           if (editMode && columnConfig.editable && selectedIds.includes(product.id)) {
@@ -1292,6 +1315,10 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
                 {value ? 'Да' : 'Нет'}
               </span>
             );
+          }
+
+          if (columnConfig.type === 'date') {
+            return <span>{formatDate(value)}</span>;
           }
 
           return <span>{String(value)}</span>;
@@ -1815,6 +1842,8 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
         data={paginatedProducts}
         columns={columns}
         keyExtractor={(product) => product.id}
+        defaultSortBy="name"
+        defaultSortOrder="asc"
         onRowClick={(product) => {
           const editUrl = categoryId
             ? `/admin/catalog/products/${product.id}/edit?fromCategory=${categoryId}`

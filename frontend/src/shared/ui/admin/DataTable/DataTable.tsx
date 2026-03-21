@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import styles from './DataTable.module.css';
 
@@ -9,6 +9,8 @@ interface Column<T> {
   title: string;
   render?: (item: T) => React.ReactNode;
   sortable?: boolean;
+  /** Ключ для сортировки (при отличии от key, напр. category → category.name) */
+  sortKey?: string;
   width?: string;
 }
 
@@ -16,6 +18,9 @@ interface DataTableProps<T> {
   data: T[];
   columns: Column<T>[];
   keyExtractor: (item: T) => string;
+  /** Начальная сортировка по умолчанию */
+  defaultSortBy?: string;
+  defaultSortOrder?: 'asc' | 'desc';
   onRowClick?: (item: T) => void;
   selectable?: boolean;
   /** Управляемый выбор: если передан, таблица использует этот массив (при сбросе выбора родителем отображается актуально) */
@@ -39,6 +44,8 @@ export function DataTable<T>({
   data,
   columns,
   keyExtractor,
+  defaultSortBy,
+  defaultSortOrder = 'asc',
   onRowClick,
   selectable = false,
   selectedIds: selectedIdsProp,
@@ -53,8 +60,8 @@ export function DataTable<T>({
   const isControlled = selectedIdsProp !== undefined;
   const selectedIds = isControlled ? selectedIdsProp : internalSelectedIds;
 
-  const [sortBy, setSortBy] = useState<string | null>(null);
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [sortBy, setSortBy] = useState<string | null>(defaultSortBy ?? null);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(defaultSortOrder);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
@@ -63,11 +70,11 @@ export function DataTable<T>({
   const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleSelectAll = () => {
-    if (selectedIds.length === data.length) {
+    if (selectedIds.length === displayData.length && displayData.length > 0) {
       if (!isControlled) setInternalSelectedIds([]);
       onSelectionChange?.([]);
     } else {
-      const allIds = data.map(keyExtractor);
+      const allIds = displayData.map(keyExtractor);
       if (!isControlled) setInternalSelectedIds(allIds);
       onSelectionChange?.(allIds);
     }
@@ -102,6 +109,39 @@ export function DataTable<T>({
     }
     return value;
   };
+
+  const compareValues = (a: unknown, b: unknown, order: 'asc' | 'desc'): number => {
+    const aNull = a === null || a === undefined;
+    const bNull = b === null || b === undefined;
+    if (aNull && bNull) return 0;
+    if (aNull) return order === 'asc' ? 1 : -1;
+    if (bNull) return order === 'asc' ? -1 : 1;
+    if (typeof a === 'boolean' && typeof b === 'boolean') {
+      const va = a ? 1 : 0;
+      const vb = b ? 1 : 0;
+      return order === 'asc' ? va - vb : vb - va;
+    }
+    const aNum = typeof a === 'number' ? a : parseFloat(String(a));
+    const bNum = typeof b === 'number' ? b : parseFloat(String(b));
+    if (!Number.isNaN(aNum) && !Number.isNaN(bNum)) {
+      return order === 'asc' ? aNum - bNum : bNum - aNum;
+    }
+    const sa = String(a).toLowerCase();
+    const sb = String(b).toLowerCase();
+    const cmp = sa.localeCompare(sb, undefined, { numeric: true });
+    return order === 'asc' ? cmp : -cmp;
+  };
+
+  const sortedData = useMemo(() => {
+    if (!sortBy || data.length === 0) return data;
+    return [...data].sort((a, b) => {
+      const aVal = getValue(a, sortBy);
+      const bVal = getValue(b, sortBy);
+      return compareValues(aVal, bVal, sortOrder);
+    });
+  }, [data, sortBy, sortOrder]);
+
+  const displayData = sortedData;
 
   const totalPages = pagination ? Math.ceil(pagination.total / pagination.limit) : 0;
 
@@ -255,27 +295,30 @@ export function DataTable<T>({
                   <th className={styles.checkboxCell}>
                     <input
                       type="checkbox"
-                      checked={selectedIds.length === data.length && data.length > 0}
+                      checked={selectedIds.length === displayData.length && displayData.length > 0}
                       onChange={handleSelectAll}
                       className={styles.checkbox}
                     />
                   </th>
                 )}
-                {columns.map((column) => (
-                  <th
-                    key={String(column.key)}
-                    style={{ width: column.width }}
-                    className={column.sortable ? styles.sortable : ''}
-                    onClick={() => column.sortable && handleSort(String(column.key))}
-                  >
-                    <span className={styles.headerContent}>
-                      {column.title}
-                      {column.sortable && sortBy === String(column.key) && (
-                        <span className={styles.sortIcon}>{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                      )}
-                    </span>
-                  </th>
-                ))}
+                {columns.map((column) => {
+                  const sortKey = column.sortKey ?? String(column.key);
+                  return (
+                    <th
+                      key={String(column.key)}
+                      style={{ width: column.width }}
+                      className={column.sortable ? styles.sortable : ''}
+                      onClick={() => column.sortable && handleSort(sortKey)}
+                    >
+                      <span className={styles.headerContent}>
+                        {column.title}
+                        {column.sortable && sortBy === sortKey && (
+                          <span className={styles.sortIcon}>{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </span>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
@@ -288,14 +331,14 @@ export function DataTable<T>({
                     <div className={styles.loader}>Загрузка...</div>
                   </td>
                 </tr>
-              ) : data.length === 0 ? (
+              ) : displayData.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length + (selectable ? 1 : 0)} className={styles.emptyCell}>
                     {emptyMessage}
                   </td>
                 </tr>
               ) : (
-                data.map((item) => {
+                displayData.map((item) => {
                   const id = keyExtractor(item);
                   const isHighlighted = highlightedIds?.includes(id) && highlightedRowClassName;
                   return (
