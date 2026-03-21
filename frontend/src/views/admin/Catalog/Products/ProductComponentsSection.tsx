@@ -22,10 +22,13 @@ interface ProductComponent {
 
 interface ProductComponentsSectionProps {
   productId: string;
+  /** ID категории товара — для загрузки подсказок наименований из других товаров категории */
+  categoryId?: string;
 }
 
 export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> = ({
   productId,
+  categoryId,
 }) => {
   const { getAuthHeaders } = useAuth();
   const [components, setComponents] = useState<ProductComponent[]>([]);
@@ -63,9 +66,33 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
   const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
+  const [suggestedNames, setSuggestedNames] = useState<string[]>([]);
+
   useEffect(() => {
     fetchComponents();
   }, [productId]);
+
+  useEffect(() => {
+    if (!categoryId) {
+      setSuggestedNames([]);
+      return;
+    }
+    let cancelled = false;
+    fetch(
+      `${API_URL}/product-components/admin/names-by-category?categoryId=${encodeURIComponent(categoryId)}`,
+      { headers: getAuthHeaders() }
+    )
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: string[]) => {
+        if (!cancelled && Array.isArray(data)) setSuggestedNames(data);
+      })
+      .catch(() => {
+        if (!cancelled) setSuggestedNames([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [categoryId, getAuthHeaders]);
 
   const fetchComponents = async () => {
     try {
@@ -224,11 +251,15 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
           throw new Error(errorMessage);
         }
 
+        const addedName = formData.name.trim();
         await fetchComponents();
         setShowAddForm(false);
         setEditingId(null);
         setEditingData({});
         resetForm();
+        if (categoryId && addedName && !suggestedNames.includes(addedName)) {
+          setSuggestedNames((prev) => [...prev, addedName].sort());
+        }
       }
     } catch (error) {
       // Error handled silently
@@ -335,9 +366,13 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
         throw new Error(errorMessage);
       }
 
+      const newName = data.name.trim();
       await fetchComponents();
       setEditingId(null);
       setEditingData({});
+      if (categoryId && newName && !suggestedNames.includes(newName)) {
+        setSuggestedNames((prev) => [...prev, newName].sort());
+      }
     } catch (error) {
       // Error handled silently
     }
@@ -531,18 +566,39 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label>Наименование *</label>
-              <select
+              {suggestedNames.length > 0 && (
+                <div className={styles.namesHint}>
+                  <span className={styles.namesHintLabel}>
+                    Подсказка: наименования из других товаров категории —
+                  </span>
+                  <div className={styles.namesHintChips}>
+                    {suggestedNames.map((name) => (
+                      <button
+                        key={name}
+                        type="button"
+                        className={styles.namesHintChip}
+                        onClick={() => setFormData({ ...formData, name })}
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <input
+                type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                list="component-names-datalist"
                 required
                 className={styles.input}
-              >
-                <option value="">Выберите наименование</option>
-                <option value="Стойка коробки">Стойка коробки</option>
-                <option value="Наличник">Наличник</option>
-                <option value="Добор">Добор</option>
-                <option value="Притворная планка">Притворная планка</option>
-              </select>
+                placeholder="Выберите или введите наименование"
+              />
+              <datalist id="component-names-datalist">
+                {suggestedNames.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
             </div>
             <div className={styles.formGroup}>
               <label>Тип *</label>
@@ -720,7 +776,8 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
                         <>
                           <div className={styles.inlineField}>
                             <label className={styles.inlineLabel}>Наименование</label>
-                            <select
+                            <input
+                              type="text"
                               value={editData.name}
                               onChange={(e) =>
                                 setEditingData({
@@ -728,13 +785,15 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
                                   [component.id]: { ...editData, name: e.target.value },
                                 })
                               }
+                              list={`component-names-inline-${component.id}`}
                               className={styles.inlineInput}
-                            >
-                              <option value="Стойка коробки">Стойка коробки</option>
-                              <option value="Наличник">Наличник</option>
-                              <option value="Добор">Добор</option>
-                              <option value="Притворная планка">Притворная планка</option>
-                            </select>
+                              placeholder="Наименование"
+                            />
+                            <datalist id={`component-names-inline-${component.id}`}>
+                              {suggestedNames.map((n) => (
+                                <option key={n} value={n} />
+                              ))}
+                            </datalist>
                           </div>
                           <div className={styles.inlineField}>
                             <label className={styles.inlineLabel}>Тип</label>

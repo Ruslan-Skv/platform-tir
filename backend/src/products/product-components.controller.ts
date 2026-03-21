@@ -42,6 +42,15 @@ export class ProductComponentsController {
     return this.componentsService.findAllAdmin(productId);
   }
 
+  @Get('admin/names-by-category')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Уникальные наименования комплектующих из товаров категории' })
+  getNamesByCategory(@Query('categoryId') categoryId: string) {
+    if (!categoryId) return [];
+    return this.componentsService.getComponentNamesByCategoryId(categoryId);
+  }
+
   @Get('product/:productId')
   @ApiOperation({ summary: 'Получить комплектующие для товара' })
   findByProductId(@Param('productId') productId: string) {

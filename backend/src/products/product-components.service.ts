@@ -130,4 +130,16 @@ export class ProductComponentsService {
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
     });
   }
+
+  /** Уникальные наименования комплектующих из товаров категории (для подсказок в форме) */
+  async getComponentNamesByCategoryId(categoryId: string): Promise<string[]> {
+    const components = await this.prisma.productComponent.findMany({
+      where: {
+        product: { categoryId },
+      },
+      select: { name: true },
+    });
+    const names = [...new Set(components.map((c) => c.name).filter(Boolean))];
+    return names.sort();
+  }
 }

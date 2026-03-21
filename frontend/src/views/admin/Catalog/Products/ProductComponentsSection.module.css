@@ -71,6 +71,41 @@
   color: #555;
 }
 
+.namesHint {
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+}
+
+.namesHintLabel {
+  display: block;
+  font-size: 0.75rem;
+  color: #166534;
+  margin-bottom: 0.35rem;
+}
+
+.namesHintChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.namesHintChip {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  background: #fff;
+  border: 1px solid #22c55e;
+  border-radius: 4px;
+  color: #15803d;
+  cursor: pointer;
+}
+
+.namesHintChip:hover {
+  background: #dcfce7;
+}
+
 .input {
   padding: 0.5rem 0.625rem;
   border: 1px solid #d1d5db;

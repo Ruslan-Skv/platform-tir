@@ -2227,7 +2227,9 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
 
       {/* Product Components Section */}
       {/* Вынесено за пределы основной формы, т.к. содержит свою форму */}
-      {productId && showSection('components') && <ProductComponentsSection productId={productId} />}
+      {productId && showSection('components') && (
+        <ProductComponentsSection productId={productId} categoryId={formData.categoryId} />
+      )}
 
       {/* Product Reviews Section */}
       {productId && <ProductReviewsSection productId={productId} />}
