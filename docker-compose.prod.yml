@@ -1,5 +1,5 @@
 # Production override for Platform TIR
-# Использование: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Использование: docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml up -d
 #
 # Образы backend, frontend, nginx собираются в GitHub Actions и публикуются в GHCR.
 # На сервере — только pull (без сборки). Переменная GHCR_IMAGE_PREFIX — владелец образа.
@@ -8,9 +8,14 @@
 #   1. Скопируйте .env.production.example в .env
 #   2. Заполните JWT_SECRET, POSTGRES_PASSWORD
 #   3. Для SSL: подготовьте сертификаты в ./nginx/ssl/
+#
+# Ресурсы: оптимизированы для VPS 8 GB RAM, 6 vCPU.
+# Подробнее: docs/VPS-OPTIMIZATION.md
 
 services:
   postgres:
+    mem_limit: 1g
+    cpus: '2'
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-platform_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required for production}
@@ -24,12 +29,14 @@ services:
       retries: 5
 
   elasticsearch:
+    mem_limit: 2g
+    cpus: '2'
     ports: []  # Не публикуем
     restart: unless-stopped
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
-      - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
+      - 'ES_JAVA_OPTS=-Xms1g -Xmx1g'
       - bootstrap.memory_lock=true
     ulimits:
       memlock:
@@ -38,6 +45,8 @@ services:
 
   backend:
     image: ${GHCR_IMAGE_PREFIX:-ghcr.io/ruslan-skv}/platform-tir-backend:latest
+    mem_limit: 1g
+    cpus: '2'
     volumes:
       - backend_uploads:/app/uploads
     environment:
@@ -79,6 +88,8 @@ services:
 
   frontend:
     image: ${GHCR_IMAGE_PREFIX:-ghcr.io/ruslan-skv}/platform-tir-frontend:latest
+    mem_limit: 1g
+    cpus: '1.5'
     environment:
       NODE_ENV: production
       API_INTERNAL_URL: http://backend:3001
@@ -97,6 +108,8 @@ services:
   nginx:
     image: ${GHCR_IMAGE_PREFIX:-ghcr.io/ruslan-skv}/platform-tir-nginx:latest
     container_name: platform-tir-nginx
+    mem_limit: 128m
+    cpus: '0.5'
     ports:
       - '80:80'
       # Для SSL раскомментируйте и смонтируйте сертификаты:
