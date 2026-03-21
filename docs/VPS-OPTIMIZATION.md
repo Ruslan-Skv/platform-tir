@@ -231,7 +231,63 @@ docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml logs -f fr
 
 ---
 
-## 11. Чек-лист после деплоя
+## 11. Мониторинг диска и автоматическая очистка
+
+### Оповещения о заполнении диска
+
+Скрипт `scripts/disk-monitor.sh` проверяет использование диска и отправляет уведомления в Telegram:
+
+| Порог | Действие |
+|-------|----------|
+| **80%** | Предупреждение в Telegram (не чаще 1 раза в 24 ч) |
+| **90%** | Критичное уведомление |
+| **95%** | Автоматический запуск очистки |
+
+**Настройка:**
+1. Добавьте в `.env`:
+   ```
+   TELEGRAM_BOT_TOKEN=ваш_токен
+   TELEGRAM_ALERT_CHAT_ID=ваш_chat_id   # узнать: напишите боту @userinfobot в Telegram
+   ```
+2. Добавьте в crontab (`crontab -e`), например каждые 6 часов:
+   ```
+   0 */6 * * * /home/ваш_юзер/platform-tir/scripts/disk-monitor.sh
+   ```
+
+### Автоматическая очистка
+
+Скрипт `scripts/cleanup-disk.sh` удаляет:
+- неиспользуемые Docker-образы, контейнеры, build cache (volumes с БД **не трогает**);
+- APT-кэш;
+- старые логи systemd (journal);
+- временные файлы /tmp старше 7 дней.
+
+**Ручной запуск:**
+```bash
+chmod +x scripts/cleanup-disk.sh
+./scripts/cleanup-disk.sh
+```
+
+**Cron (еженедельно, воскресенье 3:00):**
+```
+0 3 * * 0 /home/ваш_юзер/platform-tir/scripts/cleanup-disk.sh >> /home/ваш_юзер/platform-tir/backups/cleanup.log 2>&1
+```
+
+*Очистка APT и journal требует sudo. Для cron: `sudo crontab -e` (запуск от root) или настройте NOPASSWD в sudoers для apt-get/journalctl.*
+
+### Резюме: защита от переполнения
+
+| Мера | Скрипт | Cron |
+|------|--------|------|
+| Оповещения при 80%+ | `scripts/disk-monitor.sh` | каждые 6 ч |
+| Еженедельная очистка | `scripts/cleanup-disk.sh` | воскресенье 3:00 |
+| Старые бэкапы (7 дней) | встроено в `scripts/backup.sh` | ежедневно 2:00 |
+
+При 100 GB диска и текущей нагрузке переполнение маловероятно. Оповещения позволят среагировать до критического уровня.
+
+---
+
+## 12. Чек-лист после деплоя
 
 | Действие | Команда / Проверка |
 |----------|--------------------|
@@ -244,7 +300,7 @@ docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml logs -f fr
 
 ---
 
-## 12. Типичные проблемы
+## 13. Типичные проблемы
 
 ### Медленная загрузка страниц
 - Проверить `proxy_read_timeout`, `proxy_connect_timeout` в nginx.
@@ -263,3 +319,9 @@ docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml logs -f fr
 ### Медленный поиск
 - Проверить, что Elasticsearch индексирует товары.
 - Увеличить heap ES до 1 GB при 8 GB RAM на VPS.
+
+### Переполнение диска (100% занято)
+- Запустить `./scripts/cleanup-disk.sh` для освобождения места.
+- Проверить размер папки `backups/` — бэкапы старше 7 дней удаляются автоматически.
+- Проверить `docker system df` — неиспользуемые образы могут занимать много места.
+- Настроить `scripts/disk-monitor.sh` + cron для ранних оповещений (см. раздел 11 «Мониторинг диска»).
