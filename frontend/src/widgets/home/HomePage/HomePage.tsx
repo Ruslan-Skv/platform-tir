@@ -12,6 +12,7 @@ import {
   HeroSection,
   ServicesSection,
 } from '@/widgets/home';
+import type { HeroConfig } from '@/widgets/home/ui/HeroSection/hero.config';
 
 import styles from './HomePage.module.css';
 
@@ -24,7 +25,11 @@ const DEFAULT_VISIBILITY: HomeSectionsVisibility = {
   contactFormVisible: true,
 };
 
-export const HomePage: React.FC = () => {
+interface HomePageProps {
+  initialHeroData?: HeroConfig | null;
+}
+
+export const HomePage: React.FC<HomePageProps> = ({ initialHeroData }) => {
   const [visibility, setVisibility] = useState<HomeSectionsVisibility>(DEFAULT_VISIBILITY);
 
   const loadVisibility = useCallback(async () => {
@@ -42,7 +47,7 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className={styles.homePage}>
-      {visibility.heroVisible && <HeroSection />}
+      {visibility.heroVisible && <HeroSection initialData={initialHeroData} />}
       {visibility.directionsVisible && <CategoriesGrid />}
       {visibility.advantagesVisible && <AdvantagesSection />}
       {visibility.servicesVisible && <ServicesSection />}

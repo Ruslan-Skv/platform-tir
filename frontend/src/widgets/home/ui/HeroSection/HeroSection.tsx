@@ -7,51 +7,30 @@ import actionButtonStyles from '@/features/forms/ui/ActionButtons/ActionButton.m
 import { Button } from '@/shared/ui/Button';
 
 import styles from './HeroSection.module.css';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-
-export type HeroSlideShowMode = 'auto' | 'manual' | 'static';
-
-interface HeroData {
-  block: {
-    titleMain: string;
-    titleAccent: string;
-    subtitle: string;
-    slideShowMode?: HeroSlideShowMode;
-    slideGap?: number;
-  };
-  slides: { id: string; imageUrl: string; sortOrder: number }[];
-  features: { id: string; icon: string; title: string; sortOrder: number }[];
-}
-
-const DEFAULT_DATA: HeroData = {
-  block: {
-    titleMain: 'Создаем интерьеры мечты',
-    titleAccent: 'в Мурманске',
-    subtitle:
-      'Мебель на заказ, ремонт под ключ, двери входные и межкомнатные, натяжные потолки, жалюзи, мягкая мебель, кровати, матрасы .....',
-    slideShowMode: 'auto',
-    slideGap: 16,
-  },
-  slides: [],
-  features: [
-    { id: '1', icon: '🏭', title: 'Собственное производство', sortOrder: 0 },
-    { id: '2', icon: '📐', title: 'Бесплатный замер', sortOrder: 1 },
-    { id: '3', icon: '🛡️', title: 'Гарантия 3 года', sortOrder: 2 },
-    { id: '4', icon: '⚡', title: 'Сроки от 1 дня', sortOrder: 3 },
-  ],
-};
+import { HERO_CONFIG, type HeroConfig, type HeroSlideShowMode } from './hero.config';
 
 const SLIDE_INTERVAL_MS = 5000;
 
-export const HeroSection: React.FC = () => {
+export type { HeroSlideShowMode };
+
+interface HeroSectionProps {
+  /** Данные с сервера (при первом рендере) — без мигания. Админка редактирует через API. */
+  initialData?: HeroConfig | null;
+}
+
+export const HeroSection: React.FC<HeroSectionProps> = ({ initialData }) => {
   const { quoteModal } = useFormContext();
   const slideshowRef = useRef<HTMLDivElement>(null);
-  const [data, setData] = useState<HeroData>(DEFAULT_DATA);
   const [slideIndex, setSlideIndex] = useState(0);
   const [noTransition, setNoTransition] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(0);
 
+  // block и slides — с сервера; features — всегда с фронтенда (без мигания)
+  const data = {
+    block: (initialData ?? HERO_CONFIG).block,
+    slides: (initialData ?? HERO_CONFIG).slides,
+    features: HERO_CONFIG.features,
+  };
   const mode: HeroSlideShowMode = data.block.slideShowMode ?? 'auto';
   const count = data.slides.length;
   const isStatic = mode === 'static';
@@ -59,15 +38,6 @@ export const HeroSection: React.FC = () => {
   const displaySlides = isCarousel ? [...data.slides, data.slides[0]] : data.slides;
   const displayCount = displaySlides.length;
   const showDots = count > 1 && (mode === 'auto' || mode === 'manual');
-
-  useEffect(() => {
-    fetch(`${API_URL}/home/hero`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((d: HeroData | null) => {
-        if (d?.block) setData(d);
-      })
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     if (data.slides.length === 0) return;
@@ -103,11 +73,11 @@ export const HeroSection: React.FC = () => {
     }
   }, [slideIndex, count]);
 
+  // URL изображений: / — public, http(s) — внешние или с бэкенда (/uploads/)
   const imageUrl = (url: string) => {
     if (!url) return '';
-    if (url.startsWith('http')) return url;
-    const base = API_URL.replace(/\/api\/v1\/?$/, '');
-    return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
+    if (url.startsWith('http') || url.startsWith('/')) return url;
+    return `/${url}`;
   };
 
   const SLIDE_GAP_PX = data.block.slideGap ?? 16;
@@ -145,13 +115,13 @@ export const HeroSection: React.FC = () => {
           </div>
           <div className={styles.features}>
             {data.features.map((f) => {
-              const icon =
-                f.icon?.startsWith('http') && !f.icon.includes('/uploads/')
-                  ? f.icon.replace(/^https?:\/\/[^/]+/, '')
-                  : f.icon;
+              const icon = f.icon ?? '';
+              const isImageIcon =
+                icon.startsWith('http') ||
+                (icon.startsWith('/') && /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(icon));
               return (
                 <div key={f.id} className={styles.feature}>
-                  {icon && icon.includes('/uploads/') ? (
+                  {isImageIcon ? (
                     <img src={imageUrl(icon)} alt="" className={styles.featureIconImg} />
                   ) : icon ? (
                     <span className={styles.featureIcon}>{icon}</span>
