@@ -83,9 +83,9 @@ export function ServiceCatalogPage() {
             Главная
           </Link>
           <span className={styles.breadcrumbSep}>/</span>
-          <span className={styles.breadcrumbCurrent}>{data?.block?.title ?? 'Каталог услуг'}</span>
+          <span className={styles.breadcrumbCurrent}>{data?.block?.title ?? 'Ремонт квартир'}</span>
         </nav>
-        <h1 className={styles.title}>{data?.block?.title ?? 'Каталог услуг'}</h1>
+        <h1 className={styles.title}>{data?.block?.title ?? 'Ремонт квартир'}</h1>
         <p className={styles.empty}>
           Раздел в разработке. Скоро здесь появится каталог видов работ.
         </p>

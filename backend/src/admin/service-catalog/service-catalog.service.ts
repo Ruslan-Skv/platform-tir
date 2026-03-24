@@ -25,7 +25,7 @@ export class ServiceCatalogService {
       block = await this.prisma.serviceCatalogBlock.create({
         data: {
           id: 'main',
-          title: 'Каталог услуг',
+          title: 'Ремонт квартир',
           showPricesInPublic: true,
         },
       });

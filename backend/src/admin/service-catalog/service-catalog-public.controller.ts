@@ -9,7 +9,7 @@ export class ServiceCatalogPublicController {
   constructor(private readonly service: ServiceCatalogService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Каталог услуг (публичный)' })
+  @ApiOperation({ summary: 'Ремонт квартир (публичный)' })
   getCatalog() {
     return this.service.getPublicCatalog();
   }

@@ -265,7 +265,7 @@ export function ServiceCatalogSectionPage() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Категории каталога услуг</h1>
+        <h1 className={styles.title}>Категории ремонта квартир</h1>
         {!showNewCategory && (
           <button
             type="button"

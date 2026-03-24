@@ -272,7 +272,7 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
           >
             <div className={styles.dropdownContent}>
               <div className={styles.dropdownGrid}>
-                {/* Данные из API (полное управление в админке), для "Каталог услуг" используем категории из каталога услуг */}
+                {/* Данные из API (полное управление в админке), для "Ремонт квартир" используем категории из каталога услуг */}
                 {apiDropdownItems &&
                   !useDynamicServiceMenu &&
                   apiDropdownItems.map((dropdownItem) => (
@@ -312,7 +312,7 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
                     </div>
                   ))}
 
-                {/* Динамические категории для "Каталог услуг" (из админки) */}
+                {/* Динамические категории для "Ремонт квартир" (из админки) */}
                 {useDynamicServiceMenu &&
                   dynamicServiceCategories!.map((cat) => (
                     <div key={cat.id} className={styles.dropdownSection}>

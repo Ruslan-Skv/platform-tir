@@ -150,7 +150,7 @@ const baseNavItems: NavItem[] = [
     ],
   },
   {
-    label: 'Каталог услуг',
+    label: 'Ремонт квартир',
     href: '/admin/service-catalog',
     icon: '🔧',
     resourceId: 'admin.service-catalog',

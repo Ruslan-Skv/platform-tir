@@ -690,7 +690,7 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
   return (
     <div className={styles.container}>
       <nav className={styles.breadcrumb}>
-        <Link href="/catalog/services">Каталог услуг</Link>
+        <Link href="/catalog/services">Ремонт квартир</Link>
         <span className={styles.breadcrumbSep}>/</span>
         <span>{data.name}</span>
       </nav>

@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: PageProps) {
     if (res.ok) {
       const cat = await res.json();
       return {
-        title: `${cat.name} | Каталог услуг | Территория интерьерных решений`,
+        title: `${cat.name} | Ремонт квартир | Территория интерьерных решений`,
         description: cat.description || `Виды работ: ${cat.name}`,
       };
     }
@@ -29,6 +29,6 @@ export async function generateMetadata({ params }: PageProps) {
     /* ignore */
   }
   return {
-    title: 'Каталог услуг | Территория интерьерных решений',
+    title: 'Ремонт квартир | Территория интерьерных решений',
   };
 }

@@ -74,10 +74,10 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   { id: 'admin.catalog.products', label: 'Товары', path: '/admin/catalog/products' },
   { id: 'admin.catalog.categories', label: 'Категории', path: '/admin/catalog/categories' },
   { id: 'admin.catalog.attributes', label: 'Характеристики', path: '/admin/catalog/attributes' },
-  { id: 'admin.service-catalog', label: 'Каталог услуг', path: '/admin/service-catalog' },
+  { id: 'admin.service-catalog', label: 'Ремонт квартир', path: '/admin/service-catalog' },
   {
     id: 'admin.service-catalog.items',
-    label: 'Каталог услуг — Виды работ',
+    label: 'Ремонт квартир — Виды работ',
     path: '/admin/service-catalog/items',
   },
   { id: 'admin.partners', label: 'Партнёры', path: '/admin/partners' },

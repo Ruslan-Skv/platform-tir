@@ -1,4 +1,4 @@
-/** Иконки heroicons для категорий каталога услуг */
+/** Иконки heroicons для категорий ремонта квартир */
 export const SERVICE_ICON_OPTIONS = [
   { value: 'PaintBrush', label: 'Кисть' },
   { value: 'Bolt', label: 'Молния' },

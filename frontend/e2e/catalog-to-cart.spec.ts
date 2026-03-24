@@ -26,7 +26,7 @@ test.describe('Каталог товаров', () => {
   });
 });
 
-test.describe('Каталог услуг', () => {
+test.describe('Ремонт квартир', () => {
   test('страница каталога услуг открывается', async ({ page }) => {
     await page.goto('/catalog/services');
     await expect(page).toHaveURL(/\/catalog\/services/);

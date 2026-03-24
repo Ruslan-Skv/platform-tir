@@ -422,10 +422,10 @@ model ServiceItem {
   @@map("service_items")
 }
 
-// --- Каталог услуг (виды работ с ценами) ---
+// --- Ремонт квартир (виды работ с ценами) ---
 model ServiceCatalogBlock {
   id                  String   @id @default("main")
-  title               String   @default("Каталог услуг")
+  title               String   @default("Ремонт квартир")
   showPricesInPublic  Boolean  @default(true) // Показывать стоимость в публичной части
   updatedAt           DateTime @updatedAt
 

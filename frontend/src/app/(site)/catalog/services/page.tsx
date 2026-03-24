@@ -6,7 +6,7 @@ export default function ServicesListPage() {
 
 export function generateMetadata() {
   return {
-    title: 'Каталог услуг | Территория интерьерных решений',
+    title: 'Ремонт квартир | Территория интерьерных решений',
     description:
       'Каталог видов работ с ценами: малярные работы, сантехника, полы, кафель, электромонтаж и другие услуги по ремонту.',
   };
