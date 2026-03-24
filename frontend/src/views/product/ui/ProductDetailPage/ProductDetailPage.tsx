@@ -1109,18 +1109,17 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
           </div>
 
           {/* Характеристики */}
-          {(attributesArray.length > 0 || (product.weight != null && product.weight !== '')) && (
+          {(attributesArray.length > 0 ||
+            (product.weight != null && !Number.isNaN(Number(product.weight)))) && (
             <div className={styles.attributes}>
               <h2 className={styles.attributesTitle}>Характеристики</h2>
               <dl className={styles.attributesList}>
-                {product.weight != null &&
-                  product.weight !== '' &&
-                  !Number.isNaN(Number(product.weight)) && (
-                    <>
-                      <dt>Масса</dt>
-                      <dd>{`${Number(product.weight)} кг`}</dd>
-                    </>
-                  )}
+                {product.weight != null && !Number.isNaN(Number(product.weight)) && (
+                  <>
+                    <dt>Масса</dt>
+                    <dd>{`${Number(product.weight)} кг`}</dd>
+                  </>
+                )}
                 {attributesArray.map((attr, index) => {
                   // Пропускаем пустые значения
                   if (!attr.value) return null;

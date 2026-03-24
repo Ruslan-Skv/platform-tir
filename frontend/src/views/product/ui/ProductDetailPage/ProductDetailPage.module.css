@@ -1256,6 +1256,7 @@
   border: 1px solid #d1d5db;
   border-radius: 0.375rem;
   background: white;
+  color: #374151;
   font-size: 1.25rem;
   cursor: pointer;
   transition: all 0.2s;
@@ -1287,6 +1288,7 @@
   border: 1px solid #d1d5db;
   border-radius: 0.375rem;
   background: white;
+  color: #374151;
   font-size: 1.25rem;
   cursor: pointer;
   transition: all 0.2s;
@@ -1578,11 +1580,14 @@
 
   .pricesRow {
     flex-wrap: wrap;
+    align-items: flex-start;
   }
 
   .priceBox {
     min-width: 0;
     flex: 1 1 120px;
+    align-self: flex-start;
+    padding: 0.35rem 0.5rem;
   }
 
   /* На мобильных тултип «комплект» не показываем справа — не помещается */
@@ -1671,8 +1676,8 @@
   }
 
   .attributesList {
-    grid-template-columns: 1fr;
-    gap: 0.35rem 0;
+    grid-template-columns: auto 1fr;
+    gap: 0.35rem 0.75rem;
   }
 
   .attributesList dt {
