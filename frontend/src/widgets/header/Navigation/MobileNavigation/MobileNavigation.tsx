@@ -107,7 +107,11 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
       };
     }
 
-    if (activeMenuItem === 'Каталог услуг') {
+    // Ремонт квартир (каталог услуг) — по имени или href для обратной совместимости
+    const isServicesMenu =
+      activeMenuItem === 'Ремонт квартир' ||
+      menuButtons.find((b) => b.name === activeMenuItem)?.href === '/catalog/services';
+    if (isServicesMenu) {
       return {
         category: 'services',
         items: serviceCategories.map((cat) => ({

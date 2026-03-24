@@ -454,9 +454,14 @@ async function main() {
   // Добавляем отсутствующие пункты по имени; у существующих обновляем ссылку и hasDropdown.
   // Вложенное меню настраивается в админке для каждого пункта.
   // ============================================
+  // Переименовываем «Каталог услуг» в «Ремонт квартир» для существующих записей
+  await prisma.navigationItem.updateMany({
+    where: { href: '/catalog/services', name: 'Каталог услуг' },
+    data: { name: 'Ремонт квартир' },
+  });
   const defaultNavItems = [
     { name: 'Каталог', href: '/catalog/products', hasDropdown: true },
-    { name: 'Каталог услуг', href: '/catalog/services', hasDropdown: true },
+    { name: 'Ремонт квартир', href: '/catalog/services', hasDropdown: true },
     { name: 'Акции', href: '/promotions', hasDropdown: true },
     { name: 'Блог', href: '/blog', hasDropdown: true },
     { name: 'Фото', href: '/photo', hasDropdown: true },
@@ -493,13 +498,13 @@ async function main() {
     console.log(`✅ Navigation: всего пунктов в меню: ${totalNav}`);
   }
 
-  // Пункты выпадающего меню по умолчанию (для «Каталог услуг», «Акции», «Блог», «Фото»).
+  // Пункты выпадающего меню по умолчанию (для «Ремонт квартир», «Акции», «Блог», «Фото»).
   // «Каталог» заполняется из категорий каталога, здесь не трогаем.
   const defaultDropdownByNavName: Record<
     string,
     { name: string; href: string; icon?: string; submenu?: { name: string; href: string }[] }[]
   > = {
-    'Каталог услуг': [
+    'Ремонт квартир': [
       { name: 'Малярные работы', href: '/catalog/services/painting', icon: 'PaintBrush' },
       { name: 'Работы по электрике', href: '/catalog/services/electrical', icon: 'Bolt' },
       { name: 'Работы по полам', href: '/catalog/services/floors', icon: 'Square3Stack3D' },

@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  ArrowLeftIcon,
   Bars3Icon,
   ChatBubbleLeftRightIcon,
   MagnifyingGlassIcon,
@@ -99,23 +100,33 @@ export const Header: React.FC<HeaderProps> = ({ onNavigationClick }) => {
                   <Bars3Icon className={styles.mobileHeaderIconSvg} />
                 </button>
               </div>
-              <form
-                className={styles.mobileSearchForm}
-                onSubmit={handleMobileSearchSubmit}
-                role="search"
-              >
-                <input
-                  type="search"
-                  className={styles.mobileSearchInput}
-                  placeholder="Поиск..."
-                  aria-label="Поиск"
-                  value={mobileSearchQuery}
-                  onChange={(e) => setMobileSearchQuery(e.target.value)}
-                />
-                <button type="submit" className={styles.mobileSearchSubmit} aria-label="Искать">
-                  <MagnifyingGlassIcon className={styles.mobileSearchIcon} />
+              <div className={styles.mobileSearchRow}>
+                <button
+                  type="button"
+                  className={styles.mobileBackButton}
+                  onClick={() => router.back()}
+                  aria-label="Назад"
+                >
+                  <ArrowLeftIcon className={styles.mobileBackIcon} />
                 </button>
-              </form>
+                <form
+                  className={styles.mobileSearchForm}
+                  onSubmit={handleMobileSearchSubmit}
+                  role="search"
+                >
+                  <input
+                    type="search"
+                    className={styles.mobileSearchInput}
+                    placeholder="Поиск..."
+                    aria-label="Поиск"
+                    value={mobileSearchQuery}
+                    onChange={(e) => setMobileSearchQuery(e.target.value)}
+                  />
+                  <button type="submit" className={styles.mobileSearchSubmit} aria-label="Искать">
+                    <MagnifyingGlassIcon className={styles.mobileSearchIcon} />
+                  </button>
+                </form>
+              </div>
             </div>
           )}
         </div>

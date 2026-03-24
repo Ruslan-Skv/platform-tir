@@ -92,9 +92,9 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
     dynamicCategories &&
     dynamicCategories.length > 0;
 
-  // Для "Каталог услуг" всегда используем категории из админки каталога услуг (игнорируем dropdownItems из меню навигации)
+  // Для "Ремонт квартир" (/catalog/services) всегда используем категории из админки каталога услуг (игнорируем dropdownItems из меню навигации)
   const useDynamicServiceMenu =
-    item.name === 'Каталог услуг' &&
+    (item.name === 'Ремонт квартир' || item.href === '/catalog/services') &&
     dynamicServiceCategories &&
     dynamicServiceCategories.length > 0;
   const pathname = usePathname();

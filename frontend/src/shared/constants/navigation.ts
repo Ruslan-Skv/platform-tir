@@ -13,7 +13,7 @@ export const navigation: NavigationItem[] = [
     category: 'products',
   },
   {
-    name: 'Каталог услуг',
+    name: 'Ремонт квартир',
     href: '/catalog/services',
     hasDropdown: true,
     category: 'services',

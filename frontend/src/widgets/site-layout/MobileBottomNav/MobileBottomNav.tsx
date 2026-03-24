@@ -3,6 +3,7 @@
 import {
   Cog6ToothIcon,
   HeartIcon,
+  HomeIcon,
   RectangleGroupIcon,
   ShoppingCartIcon,
   Squares2X2Icon,
@@ -27,6 +28,7 @@ const navItems: Array<{
   authHref?: string;
 }> = [
   { href: '/catalog/products', label: 'Каталог', Icon: RectangleGroupIcon },
+  { href: '/catalog/services', label: 'Ремонт квартир', Icon: HomeIcon },
   { href: '/compare', label: 'Сравнить', Icon: Squares2X2Icon },
   { href: '/cart', label: 'Корзина', Icon: ShoppingCartIcon },
   { href: '/favorites', label: 'Избранное', Icon: HeartIcon },
@@ -69,8 +71,10 @@ export function MobileBottomNav() {
           const linkHref = authHref && !isAuthenticated ? authHref : href;
           const isActive =
             href === '/catalog/products'
-              ? path.startsWith('/catalog')
-              : path === href || path.startsWith(href + '/');
+              ? path.startsWith('/catalog/products')
+              : href === '/catalog/services'
+                ? path.startsWith('/catalog/services')
+                : path === href || path.startsWith(href + '/');
           const count = getCount(href);
           const showCount = count > 0;
 
