@@ -31,16 +31,38 @@ fi
 echo "=== Останавливаем backend, frontend, nginx ==="
 docker compose $COMPOSE_FILES stop backend frontend nginx 2>/dev/null || true
 
+# Читаем пользователя и пароль из .env (для restore и для создания user при --clean)
+if [ -f .env ]; then
+  PG_USER=$(grep '^POSTGRES_USER=' .env 2>/dev/null | cut -d= -f2- | tr -d '\r"' | head -1)
+  PG_PASS=$(grep '^POSTGRES_PASSWORD=' .env 2>/dev/null | cut -d= -f2- | tr -d '\r"' | head -1)
+  PG_DB=$(grep '^POSTGRES_DB=' .env 2>/dev/null | cut -d= -f2- | tr -d '\r"' | head -1)
+fi
+PG_USER=${PG_USER:-platform_user}
+PG_DB=${PG_DB:-platform_tir}
+
 if [ "$CLEAN_DB" = true ]; then
   echo ""
   echo "=== Очистка БД (--clean) ==="
-  docker compose $COMPOSE_FILES exec -T postgres psql -U platform_user -d postgres -c "DROP DATABASE IF EXISTS platform_tir;"
-  docker compose $COMPOSE_FILES exec -T postgres psql -U platform_user -d postgres -c "CREATE DATABASE platform_tir;"
+  # Сначала пробуем platform_user, если не существует — используем postgres (суперпользователь по умолчанию)
+  if docker compose $COMPOSE_FILES exec -T postgres psql -U "$PG_USER" -d postgres -c "SELECT 1" &>/dev/null; then
+    PG_SUPER="$PG_USER"
+  else
+    echo "Пользователь $PG_USER не найден, используем postgres для очистки..."
+    PG_SUPER="postgres"
+  fi
+  docker compose $COMPOSE_FILES exec -T postgres psql -U "$PG_SUPER" -d postgres -c "DROP DATABASE IF EXISTS platform_tir;"
+  docker compose $COMPOSE_FILES exec -T postgres psql -U "$PG_SUPER" -d postgres -c "CREATE DATABASE platform_tir;"
+  # Создаём platform_user если его нет (для совместимости с дампом и DATABASE_URL)
+  if [ "$PG_SUPER" = "postgres" ] && [ -n "$PG_PASS" ]; then
+    PG_PASS_ESC=$(echo "$PG_PASS" | sed "s/'/''/g")
+    docker compose $COMPOSE_FILES exec -T postgres psql -U postgres -d postgres -c "DO \$\$ BEGIN CREATE USER $PG_USER WITH PASSWORD '$PG_PASS_ESC' SUPERUSER; EXCEPTION WHEN duplicate_object THEN NULL; END \$\$;"
+    docker compose $COMPOSE_FILES exec -T postgres psql -U postgres -d postgres -c "ALTER DATABASE platform_tir OWNER TO $PG_USER;"
+  fi
 fi
 
 echo ""
 echo "=== Восстановление PostgreSQL ==="
-docker compose $COMPOSE_FILES exec -T postgres psql -U platform_user -d platform_tir < "$POSTGRES_FILE"
+docker compose $COMPOSE_FILES exec -T postgres psql -U "$PG_USER" -d platform_tir < "$POSTGRES_FILE"
 echo "PostgreSQL восстановлен."
 
 if [ -n "$UPLOADS_FILE" ] && [ -f "$UPLOADS_FILE" ]; then
