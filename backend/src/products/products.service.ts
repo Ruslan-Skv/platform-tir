@@ -785,6 +785,26 @@ export class ProductsService {
   }
 
   /**
+   * Переиндексация всех товаров в Elasticsearch (для миграции или восстановления поиска)
+   */
+  async reindexAllProducts(): Promise<{ indexed: number; errors: number }> {
+    const products = await this.prisma.product.findMany({
+      include: { category: true },
+    });
+    let indexed = 0;
+    let errors = 0;
+    for (const p of products) {
+      try {
+        await this.indexProduct(p);
+        indexed++;
+      } catch {
+        errors++;
+      }
+    }
+    return { indexed, errors };
+  }
+
+  /**
    * Массовая синхронизация цен поставщика: для всех ProductSupplier с заданной ссылкой
    * получает цену по URL, при изменении обновляет supplierPrice и ставит supplierPriceChangedAt.
    */

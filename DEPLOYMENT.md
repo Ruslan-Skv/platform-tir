@@ -3,6 +3,7 @@
 ## Требования
 
 - Docker и Docker Compose
+- **Миграция на новый сервер:** см. [docs/MIGRATION-REG-TO-TIMEWEB.md](docs/MIGRATION-REG-TO-TIMEWEB.md)
 - Домен (для SSL)
 - Сертификаты Let's Encrypt (опционально, для HTTPS)
 - **VPS:** рекомендуется минимум 4 GB RAM, 2 vCPU. См. [docs/VPS-OPTIMIZATION.md](docs/VPS-OPTIMIZATION.md) для подбора параметров и оптимизации производительности.

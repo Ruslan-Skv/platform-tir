@@ -14,15 +14,19 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AdminProductsService } from './admin-products.service';
+import { ProductsService } from '../../../products/products.service';
 import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 
 @Controller('admin/catalog/products')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'CONTENT_MANAGER', 'PARTNER')
+@Roles('ADMIN', 'CONTENT_MANAGER', 'PARTNER', 'SUPER_ADMIN')
 export class AdminProductsController {
-  constructor(private readonly adminProductsService: AdminProductsService) {}
+  constructor(
+    private readonly adminProductsService: AdminProductsService,
+    private readonly productsService: ProductsService,
+  ) {}
 
   @Get()
   findAll(
@@ -56,8 +60,15 @@ export class AdminProductsController {
   }
 
   @Get('stats')
+  @Roles('ADMIN', 'CONTENT_MANAGER', 'PARTNER')
   getStats() {
     return this.adminProductsService.getStats();
+  }
+
+  @Post('reindex-elasticsearch')
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  reindexElasticsearch() {
+    return this.productsService.reindexAllProducts();
   }
 
   @Get('export')
