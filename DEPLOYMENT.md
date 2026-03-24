@@ -121,20 +121,23 @@ docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml up -d
 
 ---
 
-## Несколько доменов (territory-interior.ru + территория-интерьерных-решений.рф)
+## Несколько доменов и зеркалирование
 
-Для двух доменов, указывающих на один сервер:
+**Основной домен:** territory-interior.ru  
+**Зеркала (301 → основной):** территория-интерьерных-решений.рф, 601270.ru
 
-1. **NEXT_PUBLIC_API_URL** — используйте относительный путь `/api/v1`, чтобы API работало с обоих доменов без CORS.
-2. **CORS_ORIGIN** — укажите оба домена (кириллический — в Punycode):
+1. **NEXT_PUBLIC_API_URL** — относительный путь `/api/v1`.
+2. **CORS_ORIGIN** — все домены (на случай запросов до редиректа):
+   ```
+   CORS_ORIGIN=https://territory-interior.ru,https://xn-----mlcbabasabfm9bcdf6aacfbc3aeg7f4dwdza7f.xn--p1ai,https://601270.ru
+   ```
+3. **SSL:** все домены должны быть в сертификате Let's Encrypt. При первом запуске `setup-ssl.sh` включает все три. Для добавления 601270.ru к уже существующему сертификату:
    ```bash
-   node -e "console.log(require('url').domainToASCII('территория-интерьерных-решений.рф'))"
-   # → xn-----mlcbabasabfm9bcdf6aacfbc3aeg7f4dwdza7f.xn--p1ai
+   chmod +x scripts/expand-ssl-domains.sh
+   ./scripts/expand-ssl-domains.sh
    ```
-   ```
-   CORS_ORIGIN=https://territory-interior.ru,https://xn-----mlcbabasabfm9bcdf6aacfbc3aeg7f4dwdza7f.xn--p1ai
-   ```
-3. Готовый шаблон: `cp .env.production.example .env`
+4. **DNS:** A-записи всех доменов должны указывать на IP сервера.
+5. Готовый шаблон: `cp .env.production.example .env`
 
 ---
 
