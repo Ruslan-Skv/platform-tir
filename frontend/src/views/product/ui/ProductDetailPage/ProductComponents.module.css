@@ -341,6 +341,11 @@
   border-color: #374151;
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .componentImage {
+  background: #111827;
+  border-color: #4b5563;
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .componentName {
   color: #d1d5db;
 }

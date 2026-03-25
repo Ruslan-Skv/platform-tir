@@ -1090,6 +1090,30 @@
   border-color: #d90652;
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .imageContainer {
+  background: #111827;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantChip {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantChip:hover {
+  background: #4b5563;
+  border-color: #d90652;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantChipActive {
+  background: rgb(217 6 82 / 0.15);
+  border-color: #d90652;
+  box-shadow: 0 0 0 1px #d90652;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantChip span {
+  color: #d1d5db;
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .name {
   color: #f9fafb;
 }

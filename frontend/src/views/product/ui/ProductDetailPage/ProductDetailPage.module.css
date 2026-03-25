@@ -1777,12 +1777,11 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .mainImage {
-  background: transparent;
-  border-color: #374151;
+  background: #111827;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .thumbnail {
-  background: transparent;
+  background: #111827;
   border-color: #374151;
 }
 
@@ -1792,6 +1791,30 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .thumbnailActive {
   border-color: #ec4899;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantChip {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantChip:hover {
+  background: #4b5563;
+  border-color: #d90652;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantChipActive {
+  background: rgb(217 6 82 / 0.15);
+  border-color: #d90652;
+  box-shadow: 0 0 0 1px #d90652;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantChip span {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantName {
+  color: #9ca3af;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
