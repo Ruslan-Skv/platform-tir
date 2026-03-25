@@ -238,6 +238,11 @@ interface CategoryAttribute {
   attribute: Attribute;
 }
 
+interface ParserInfo {
+  key: string;
+  title: string;
+}
+
 interface ProductEditPageProps {
   productId: string;
 }
@@ -266,6 +271,9 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     updatedAt: string | null;
   }>({ createdBy: null, createdAt: null, updatedBy: null, updatedAt: null });
   const [suggestedSizes, setSuggestedSizes] = useState<string[]>([]);
+  const [parserInfo, setParserInfo] = useState<ParserInfo | null>(null);
+  const [parserLoading, setParserLoading] = useState(false);
+  const [parserBannerError, setParserBannerError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -575,6 +583,72 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
       cancelled = true;
     };
   }, [formData.categoryId, getAuthHeaders]);
+
+  // Парсер цены: при выбранных категории, поставщике и ссылке на товар поставщика
+  useEffect(() => {
+    const supplierId = formData.supplierId;
+    const categoryId = formData.categoryId;
+    const url = formData.supplierProductUrl.trim();
+    if (!supplierId || !categoryId || !url) {
+      setParserInfo(null);
+      setParserBannerError(null);
+      setParserLoading(false);
+      return;
+    }
+
+    const ac = new AbortController();
+    let cancelled = false;
+    setParserLoading(true);
+    setParserBannerError(null);
+    const loadParserInfo = async () => {
+      try {
+        const params = new URLSearchParams();
+        params.set('supplierId', supplierId);
+        params.set('categoryId', categoryId);
+        params.set('url', url);
+        const response = await fetch(`${API_URL}/products/scrape/parser?${params.toString()}`, {
+          headers: getAuthHeaders(),
+          signal: ac.signal,
+        });
+        if (!response.ok) {
+          let errText = `Не удалось получить данные парсера (код ${response.status}).`;
+          try {
+            const errBody = (await response.json()) as { message?: string };
+            if (typeof errBody?.message === 'string' && errBody.message.trim()) {
+              errText = errBody.message;
+            }
+          } catch {
+            // ignore
+          }
+          if (!cancelled) {
+            setParserInfo(null);
+            setParserBannerError(errText);
+          }
+          return;
+        }
+        const data = (await response.json()) as { parser?: ParserInfo };
+        if (!cancelled) {
+          setParserBannerError(null);
+          setParserInfo(data.parser ?? null);
+        }
+      } catch (e) {
+        if (cancelled || (e instanceof DOMException && e.name === 'AbortError')) return;
+        if (!cancelled) {
+          setParserInfo(null);
+          setParserBannerError('Ошибка сети при запросе парсера.');
+        }
+      } finally {
+        if (!cancelled) setParserLoading(false);
+      }
+    };
+
+    void loadParserInfo();
+    return () => {
+      cancelled = true;
+      ac.abort();
+      setParserLoading(false);
+    };
+  }, [formData.supplierId, formData.categoryId, formData.supplierProductUrl, getAuthHeaders]);
 
   // Flatten categories for select
   const flattenCategories = (cats: Category[], prefix = ''): { id: string; name: string }[] => {
@@ -1103,6 +1177,26 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
             </span>
           </div>
         </div>
+
+        {formData.categoryId && formData.supplierId && formData.supplierProductUrl.trim() && (
+          <div className={styles.parserNotice} role="status" aria-live="polite">
+            {parserLoading ? (
+              <>Определяется парсер цены по ссылке…</>
+            ) : parserInfo ? (
+              <>
+                <strong>Парсер цены:</strong> {parserInfo.title}
+              </>
+            ) : parserBannerError ? (
+              <>{parserBannerError}</>
+            ) : (
+              <>
+                Не удалось определить парсер по ответу сервера. После нажатия «Получить цену»
+                название парсера подставится из ответа, если запрос прошёл успешно.
+              </>
+            )}
+          </div>
+        )}
+
         <div className={styles.formGrid}>
           {/* Main Info */}
           {showSection('main') && (
@@ -1233,7 +1327,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                             setFetchingPrice(true);
                             setError(null);
                             const response = await fetch(
-                              `${API_URL}/products/scrape/price?url=${encodeURIComponent(formData.supplierProductUrl)}`,
+                              `${API_URL}/products/scrape/price?url=${encodeURIComponent(formData.supplierProductUrl)}&supplierId=${encodeURIComponent(formData.supplierId || '')}&categoryId=${encodeURIComponent(formData.categoryId || '')}`,
                               {
                                 headers: getAuthHeaders(),
                               }
@@ -1247,7 +1341,22 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                               ...prev,
                               supplierPrice: String(data.price),
                             }));
-                            setSuccess(`Цена получена: ${data.price} ₽`);
+                            if (
+                              data?.parser &&
+                              typeof data.parser === 'object' &&
+                              typeof data.parser.title === 'string'
+                            ) {
+                              setParserInfo({
+                                key: typeof data.parser.key === 'string' ? data.parser.key : '',
+                                title: data.parser.title,
+                              });
+                              setParserBannerError(null);
+                            }
+                            const parserTitle =
+                              typeof data?.parser?.title === 'string'
+                                ? ` (${data.parser.title})`
+                                : '';
+                            setSuccess(`Цена получена: ${data.price} ₽${parserTitle}`);
                             setTimeout(() => setSuccess(null), 3000);
                           } catch (err) {
                             setError(err instanceof Error ? err.message : 'Ошибка получения цены');

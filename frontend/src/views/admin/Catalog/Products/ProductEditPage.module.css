@@ -94,6 +94,22 @@
   margin-bottom: 12px;
 }
 
+/* Парсер цены по ссылке поставщика — заметный блок вверху формы */
+.parserNotice {
+  padding: 12px 14px;
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+  border-radius: 8px;
+  color: #1e3a8a;
+  margin-bottom: 16px;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.parserNotice strong {
+  font-weight: 600;
+}
+
 /* Toast notification - fixed at bottom of screen */
 .toast {
   position: fixed;
@@ -1006,6 +1022,12 @@
   background: rgb(16 185 129 / 0.2);
   border-color: #059669;
   color: #6ee7b7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .parserNotice {
+  background: rgb(37 99 235 / 0.2);
+  border-color: #3b82f6;
+  color: #bfdbfe;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .form {

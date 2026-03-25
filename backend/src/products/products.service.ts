@@ -814,7 +814,7 @@ export class ProductsService {
         supplierProductUrl: { not: null },
       },
       include: {
-        product: { select: { id: true, name: true } },
+        product: { select: { id: true, name: true, categoryId: true } },
       },
     });
 
@@ -830,7 +830,10 @@ export class ProductsService {
       if (!url) continue;
 
       try {
-        const newPrice = await this.priceScraper.getPriceFromUrl(url);
+        const { price: newPrice } = await this.priceScraper.getPriceFromUrl(url, {
+          supplierId: row.supplierId,
+          categoryId: row.product.categoryId,
+        });
         const currentPrice = Number(row.supplierPrice);
         const priceChanged = Math.abs(newPrice - currentPrice) > 0.01;
 
@@ -870,7 +873,7 @@ export class ProductsService {
         supplierProductUrl: { not: null },
       },
       include: {
-        product: { select: { id: true, name: true } },
+        product: { select: { id: true, name: true, categoryId: true } },
       },
     });
 
@@ -887,7 +890,10 @@ export class ProductsService {
       if (!url) continue;
 
       try {
-        const newPrice = await this.priceScraper.getPriceFromUrl(url);
+        const { price: newPrice } = await this.priceScraper.getPriceFromUrl(url, {
+          supplierId: row.supplierId,
+          categoryId: row.product.categoryId,
+        });
         const currentPrice = Number(row.supplierPrice);
         const priceChanged = Math.abs(newPrice - currentPrice) > 0.01;
 

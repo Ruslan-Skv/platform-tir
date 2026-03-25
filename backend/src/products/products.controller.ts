@@ -136,6 +136,39 @@ export class ProductsController {
     }
   }
 
+  @Get('scrape/price')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Получить цену товара по ссылке поставщика' })
+  @ApiQuery({ name: 'url', required: true, description: 'URL товара у поставщика' })
+  @ApiQuery({ name: 'supplierId', required: false, description: 'ID поставщика' })
+  @ApiQuery({ name: 'categoryId', required: false, description: 'ID категории товара' })
+  async getPriceFromUrl(
+    @Query('url') url: string,
+    @Query('supplierId') supplierId?: string,
+    @Query('categoryId') categoryId?: string,
+  ) {
+    return this.priceScraperService.getPriceFromUrl(url, { supplierId, categoryId });
+  }
+
+  @Get('scrape/parser')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Определить, какой парсер будет использован для поставщика/категории/ссылки',
+  })
+  @ApiQuery({ name: 'url', required: false, description: 'URL товара у поставщика (опционально)' })
+  @ApiQuery({ name: 'supplierId', required: false, description: 'ID поставщика' })
+  @ApiQuery({ name: 'categoryId', required: false, description: 'ID категории товара' })
+  async getParserInfo(
+    @Query('url') url?: string,
+    @Query('supplierId') supplierId?: string,
+    @Query('categoryId') categoryId?: string,
+  ) {
+    const parser = await this.priceScraperService.getParserInfo({ url, supplierId, categoryId });
+    return { parser };
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Получить товар по ID' })
   findOne(@Param('id') id: string) {
@@ -172,15 +205,5 @@ export class ProductsController {
   @ApiOperation({ summary: 'Удалить товар' })
   remove(@Param('id') id: string) {
     return this.productsService.remove(id);
-  }
-
-  @Get('scrape/price')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Получить цену товара по ссылке поставщика' })
-  @ApiQuery({ name: 'url', required: true, description: 'URL товара у поставщика' })
-  async getPriceFromUrl(@Query('url') url: string) {
-    const price = await this.priceScraperService.getPriceFromUrl(url);
-    return { price };
   }
 }
