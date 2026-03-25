@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -212,6 +212,8 @@ export function ProductCreatePage({
 }: ProductCreatePageProps = {}) {
   const router = useRouter();
   const { getAuthHeaders } = useAuth();
+  const getAuthHeadersRef = useRef(getAuthHeaders);
+  getAuthHeadersRef.current = getAuthHeaders;
   const [saving, setSaving] = useState(false);
   const [fetchingPrice, setFetchingPrice] = useState(false);
   const [error, setError] = useState<string | null>(initialCopyError);
@@ -249,7 +251,76 @@ export function ProductCreatePage({
   const [parserInfo, setParserInfo] = useState<ParserInfo | null>(null);
   const [parserLoading, setParserLoading] = useState(false);
   const [parserBannerError, setParserBannerError] = useState<string | null>(null);
+  const parserAbortRef = useRef<AbortController | null>(null);
   const [imageUrlModalOpen, setImageUrlModalOpen] = useState(false);
+
+  /** Только метаданные парсера (без запроса цены на страницу поставщика). Цена — по кнопке «Получить цену». */
+  const fetchParserMetadata = useCallback(
+    async (supplierId: string, categoryId: string, url: string) => {
+      const trimmed = url.trim();
+      parserAbortRef.current?.abort();
+      const ac = new AbortController();
+      parserAbortRef.current = ac;
+
+      if (!supplierId || !categoryId || !trimmed) {
+        setParserInfo(null);
+        setParserBannerError(null);
+        setParserLoading(false);
+        return;
+      }
+
+      setParserLoading(true);
+      setParserBannerError(null);
+      try {
+        const params = new URLSearchParams();
+        params.set('supplierId', supplierId);
+        params.set('categoryId', categoryId);
+        params.set('url', trimmed);
+        const response = await fetch(`${API_URL}/products/scrape/parser?${params.toString()}`, {
+          headers: getAuthHeadersRef.current(),
+          signal: ac.signal,
+        });
+        if (!response.ok) {
+          let errText =
+            response.status === 429
+              ? 'Слишком много запросов к серверу. Подождите несколько секунд и попробуйте снова.'
+              : `Не удалось получить данные парсера (код ${response.status}).`;
+          try {
+            const errBody = (await response.json()) as { message?: string };
+            if (typeof errBody?.message === 'string' && errBody.message.trim()) {
+              errText = errBody.message;
+            }
+          } catch {
+            // ignore
+          }
+          setParserInfo(null);
+          setParserBannerError(errText);
+          return;
+        }
+        const data = (await response.json()) as { parser?: ParserInfo };
+        setParserBannerError(null);
+        setParserInfo(data.parser ?? null);
+      } catch (e) {
+        if (e instanceof DOMException && e.name === 'AbortError') return;
+        setParserInfo(null);
+        setParserBannerError('Ошибка сети при запросе парсера.');
+      } finally {
+        if (parserAbortRef.current === ac) {
+          setParserLoading(false);
+        }
+      }
+    },
+    []
+  );
+
+  const handleSupplierProductUrlBlur = () => {
+    const supplierId = formData.supplierId;
+    const categoryId = formData.categoryId;
+    const url = formData.supplierProductUrl;
+    if (supplierId && categoryId && url.trim()) {
+      void fetchParserMetadata(supplierId, categoryId, url);
+    }
+  };
 
   // Предзаполнение категории из URL (только когда не копируем)
   useEffect(() => {
@@ -411,71 +482,26 @@ export function ProductCreatePage({
     fetchCategoryAttributes();
   }, [formData.categoryId]);
 
-  // Парсер цены: запрос только когда выбраны категория, поставщик и непустая ссылка на товар
+  // Какой парсер будет использован — при смене поставщика/категории; для новой ссылки — после blur поля URL.
   useEffect(() => {
     const supplierId = formData.supplierId;
     const categoryId = formData.categoryId;
     const url = formData.supplierProductUrl.trim();
     if (!supplierId || !categoryId || !url) {
+      parserAbortRef.current?.abort();
       setParserInfo(null);
       setParserBannerError(null);
       setParserLoading(false);
       return;
     }
+    void fetchParserMetadata(supplierId, categoryId, formData.supplierProductUrl);
+  }, [formData.supplierId, formData.categoryId, fetchParserMetadata]);
 
-    const ac = new AbortController();
-    let cancelled = false;
-    setParserLoading(true);
-    setParserBannerError(null);
-    const loadParserInfo = async () => {
-      try {
-        const params = new URLSearchParams();
-        params.set('supplierId', supplierId);
-        params.set('categoryId', categoryId);
-        params.set('url', url);
-        const response = await fetch(`${API_URL}/products/scrape/parser?${params.toString()}`, {
-          headers: getAuthHeaders(),
-          signal: ac.signal,
-        });
-        if (!response.ok) {
-          let errText = `Не удалось получить данные парсера (код ${response.status}).`;
-          try {
-            const errBody = (await response.json()) as { message?: string };
-            if (typeof errBody?.message === 'string' && errBody.message.trim()) {
-              errText = errBody.message;
-            }
-          } catch {
-            // ignore
-          }
-          if (!cancelled) {
-            setParserInfo(null);
-            setParserBannerError(errText);
-          }
-          return;
-        }
-        const data = (await response.json()) as { parser?: ParserInfo };
-        if (!cancelled) {
-          setParserBannerError(null);
-          setParserInfo(data.parser ?? null);
-        }
-      } catch (e) {
-        if (cancelled || (e instanceof DOMException && e.name === 'AbortError')) return;
-        if (!cancelled) {
-          setParserInfo(null);
-          setParserBannerError('Ошибка сети при запросе парсера.');
-        }
-      } finally {
-        if (!cancelled) setParserLoading(false);
-      }
-    };
-
-    void loadParserInfo();
+  useEffect(() => {
     return () => {
-      cancelled = true;
-      ac.abort();
-      setParserLoading(false);
+      parserAbortRef.current?.abort();
     };
-  }, [formData.supplierId, formData.categoryId, formData.supplierProductUrl, getAuthHeaders]);
+  }, []);
 
   // Flatten categories for select
   const flattenCategories = (cats: Category[], prefix = ''): { id: string; name: string }[] => {
@@ -567,11 +593,21 @@ export function ProductCreatePage({
           return { ...prev, ...updates, ...seoUpdates };
         });
       } else if (name === 'categoryId') {
+        setParserInfo(null);
+        setParserBannerError(null);
         // При смене категории обновляем SEO
         setFormData((prev) => {
           const seoUpdates = updateSeoFields(prev.name, value, autoSeoTitle, autoSeoDescription);
           return { ...prev, categoryId: value, ...seoUpdates };
         });
+      } else if (name === 'supplierId') {
+        setParserInfo(null);
+        setParserBannerError(null);
+        setFormData((prev) => ({ ...prev, supplierId: value }));
+      } else if (name === 'supplierProductUrl') {
+        setParserInfo(null);
+        setParserBannerError(null);
+        setFormData((prev) => ({ ...prev, supplierProductUrl: value }));
       } else {
         setFormData((prev) => ({ ...prev, [name]: value }));
       }
@@ -857,8 +893,8 @@ export function ProductCreatePage({
               <>{parserBannerError}</>
             ) : (
               <>
-                Не удалось определить парсер по ответу сервера. После нажатия «Получить цену»
-                название парсера подставится из ответа, если запрос прошёл успешно.
+                Укажите ссылку и уберите фокус с поля (или смените поставщика/категорию), чтобы
+                показать парсер. Загрузка цены по ссылке — только по кнопке «Получить цену».
               </>
             )}
           </div>
@@ -982,6 +1018,7 @@ export function ProductCreatePage({
                       name="supplierProductUrl"
                       value={formData.supplierProductUrl}
                       onChange={handleChange}
+                      onBlur={handleSupplierProductUrlBlur}
                       className={styles.input}
                       placeholder="https://supplier.com/product/123"
                     />
@@ -1051,8 +1088,9 @@ export function ProductCreatePage({
                     </button>
                   </div>
                   <p className={styles.hint}>
-                    Введите ссылку на товар у поставщика и нажмите "Получить цену" для
-                    автоматического заполнения
+                    Какой парсер будет использован, показывается после ухода с поля ссылки или при
+                    смене поставщика/категории. Цену по ссылке получайте только по кнопке «Получить
+                    цену».
                   </p>
                 </div>
                 <div className={styles.formGroup}>
