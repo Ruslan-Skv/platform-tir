@@ -221,8 +221,8 @@ export function ProductCreatePage({
   );
   const [newAttrKey, setNewAttrKey] = useState('');
   const [newAttrValue, setNewAttrValue] = useState('');
-  const [autoSlug, setAutoSlug] = useState(!!initialCopyData);
-  const [autoSku, setAutoSku] = useState(!!initialCopyData);
+  const [autoSlug, setAutoSlug] = useState(true);
+  const [autoSku, setAutoSku] = useState(true);
   const [autoSeoTitle, setAutoSeoTitle] = useState(!initialCopyData);
   const [autoSeoDescription, setAutoSeoDescription] = useState(!initialCopyData);
 
