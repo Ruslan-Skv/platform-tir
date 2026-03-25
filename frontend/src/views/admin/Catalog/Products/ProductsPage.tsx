@@ -1844,6 +1844,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
         keyExtractor={(product) => product.id}
         defaultSortBy="name"
         defaultSortOrder="asc"
+        sortStorageKey={`admin_products_sort:${categoryId ?? 'all'}`}
         onRowClick={(product) => {
           const editUrl = categoryId
             ? `/admin/catalog/products/${product.id}/edit?fromCategory=${categoryId}`

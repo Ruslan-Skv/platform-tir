@@ -21,6 +21,8 @@ interface DataTableProps<T> {
   /** Начальная сортировка по умолчанию */
   defaultSortBy?: string;
   defaultSortOrder?: 'asc' | 'desc';
+  /** Если задан — сортировка (ключ + порядок) сохраняется в localStorage */
+  sortStorageKey?: string;
   onRowClick?: (item: T) => void;
   selectable?: boolean;
   /** Управляемый выбор: если передан, таблица использует этот массив (при сбросе выбора родителем отображается актуально) */
@@ -40,12 +42,43 @@ interface DataTableProps<T> {
   };
 }
 
+type SortOrder = 'asc' | 'desc';
+
+function loadPersistedSortState(params: {
+  storageKey?: string;
+  defaultSortBy?: string;
+  defaultSortOrder: SortOrder;
+}): { sortBy: string | null; sortOrder: SortOrder } {
+  const { storageKey, defaultSortBy, defaultSortOrder } = params;
+
+  const fallback: { sortBy: string | null; sortOrder: SortOrder } = {
+    sortBy: defaultSortBy ?? null,
+    sortOrder: defaultSortOrder,
+  };
+
+  if (!storageKey || typeof window === 'undefined') return fallback;
+
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return fallback;
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return fallback;
+    const obj = parsed as Record<string, unknown>;
+    const sortBy = typeof obj.sortBy === 'string' ? obj.sortBy : obj.sortBy === null ? null : null;
+    const sortOrder = obj.sortOrder === 'asc' || obj.sortOrder === 'desc' ? obj.sortOrder : null;
+    return { sortBy, sortOrder: sortOrder ?? fallback.sortOrder };
+  } catch {
+    return fallback;
+  }
+}
+
 export function DataTable<T>({
   data,
   columns,
   keyExtractor,
   defaultSortBy,
   defaultSortOrder = 'asc',
+  sortStorageKey,
   onRowClick,
   selectable = false,
   selectedIds: selectedIdsProp,
@@ -60,14 +93,44 @@ export function DataTable<T>({
   const isControlled = selectedIdsProp !== undefined;
   const selectedIds = isControlled ? selectedIdsProp : internalSelectedIds;
 
-  const [sortBy, setSortBy] = useState<string | null>(defaultSortBy ?? null);
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(defaultSortOrder);
+  const initialSortRef = useRef<{ sortBy: string | null; sortOrder: SortOrder } | null>(null);
+  if (initialSortRef.current === null) {
+    initialSortRef.current = loadPersistedSortState({
+      storageKey: sortStorageKey,
+      defaultSortBy,
+      defaultSortOrder,
+    });
+  }
+
+  const [sortBy, setSortBy] = useState<string | null>(initialSortRef.current.sortBy);
+  const [sortOrder, setSortOrder] = useState<SortOrder>(initialSortRef.current.sortOrder);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
   const isScrollingLeftRef = useRef(false);
   const isScrollingRightRef = useRef(false);
   const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // При смене ключа хранения (например, разные страницы/вкладки) — подхватить сохранённую сортировку
+  useEffect(() => {
+    const next = loadPersistedSortState({
+      storageKey: sortStorageKey,
+      defaultSortBy,
+      defaultSortOrder,
+    });
+    setSortBy(next.sortBy);
+    setSortOrder(next.sortOrder);
+  }, [sortStorageKey, defaultSortBy, defaultSortOrder]);
+
+  // Persist sorting
+  useEffect(() => {
+    if (!sortStorageKey || typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(sortStorageKey, JSON.stringify({ sortBy, sortOrder }));
+    } catch {
+      // ignore
+    }
+  }, [sortStorageKey, sortBy, sortOrder]);
 
   const handleSelectAll = () => {
     if (selectedIds.length === displayData.length && displayData.length > 0) {

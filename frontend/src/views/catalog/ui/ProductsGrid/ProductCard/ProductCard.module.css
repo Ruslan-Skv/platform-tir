@@ -417,11 +417,17 @@
 
 .imageContainer {
   position: relative;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .image {
   aspect-ratio: 1;
-  object-fit: cover;
+  /* Не обрезаем товар: показываем целиком как в каталоге поставщика */
+  object-fit: contain;
   transition: opacity 0.3s ease;
   width: 100%;
 }
