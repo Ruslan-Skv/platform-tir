@@ -37,6 +37,9 @@ USER nextjs
 
 EXPOSE 3000
 
+# Совпадает с docker-compose: SSR из Node ходит к бэкенду по имени сервиса. При необходимости переопределяется в compose.
+ENV API_INTERNAL_URL=http://backend:3001
+
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 

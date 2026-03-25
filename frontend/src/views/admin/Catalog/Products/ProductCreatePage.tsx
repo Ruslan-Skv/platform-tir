@@ -7,7 +7,12 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth';
 
 import styles from './ProductEditPage.module.css';
-import type { CopiedProductData } from './copy-product-utils';
+import {
+  type CategoryAttributeForCopy,
+  type CopiedProductData,
+  type ProductForCopy,
+  mapProductToCopyData,
+} from './copy-product-utils';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -184,6 +189,8 @@ const defaultFormData = {
 interface ProductCreatePageProps {
   fromCategory?: string;
   categoryIdFromUrl?: string;
+  /** ID товара из ?copyFrom= — для подгрузки копии с клиента, если SSR не достучался до API (часто в проде). */
+  copyFromProductId?: string | null;
   initialCopyData?: CopiedProductData | null;
   copyError?: string | null;
   isCopyMode?: boolean;
@@ -197,6 +204,7 @@ interface ParserInfo {
 export function ProductCreatePage({
   fromCategory = '',
   categoryIdFromUrl = '',
+  copyFromProductId = null,
   initialCopyData = null,
   copyError: initialCopyError = null,
   isCopyMode = false,
@@ -247,6 +255,60 @@ export function ProductCreatePage({
       setFormData((prev) => ({ ...prev, categoryId: categoryIdFromUrl }));
     }
   }, [categoryIdFromUrl, initialCopyData]);
+
+  // Копирование: если SSR не получил товар (прод: внутренний URL бэкенда недоступен из Node), подгружаем с клиента через /api/v1 (nginx).
+  useEffect(() => {
+    if (!copyFromProductId || initialCopyData != null) return;
+
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const productRes = await fetch(`${API_URL}/products/${copyFromProductId}`, {
+          cache: 'no-store',
+        });
+        if (!productRes.ok) {
+          if (!cancelled) {
+            setError('Не удалось загрузить товар для копирования');
+          }
+          return;
+        }
+        const product: ProductForCopy = await productRes.json();
+        const catId = product.categoryId || product.category?.id;
+        let categoryAttrsForCopy: CategoryAttributeForCopy[] = [];
+        if (catId) {
+          const attrsRes = await fetch(`${API_URL}/categories/${catId}/attributes`, {
+            cache: 'no-store',
+          });
+          if (attrsRes.ok) {
+            const attrsData = await attrsRes.json();
+            categoryAttrsForCopy = attrsData.sort(
+              (a: CategoryAttributeForCopy, b: CategoryAttributeForCopy) =>
+                (a.order || 0) - (b.order || 0)
+            );
+          }
+        }
+        const mapped = mapProductToCopyData(product, categoryAttrsForCopy);
+        if (cancelled) return;
+        setError(null);
+        setFormData(mapped.formData);
+        setCategoryAttributes(mapped.categoryAttributes as CategoryAttribute[]);
+        setCustomAttributes(mapped.customAttributes);
+        setAutoSeoTitle(false);
+        setAutoSeoDescription(false);
+        setAutoSlug(true);
+        setAutoSku(true);
+      } catch {
+        if (!cancelled) {
+          setError('Не удалось загрузить товар для копирования');
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [copyFromProductId, initialCopyData]);
 
   // Fetch categories
   useEffect(() => {

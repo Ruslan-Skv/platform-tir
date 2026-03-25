@@ -6,7 +6,10 @@ import {
   mapProductToCopyData,
 } from '@/views/admin/Catalog/Products/copy-product-utils';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+// RSC: ходим на бэкенд напрямую (см. app/(site)/page.tsx). NEXT_PUBLIC_API_URL часто указывает на прокси
+// Next (:3000) — с сервера такой fetch в Docker/SSR даёт не-JSON или ошибку, копирование ломается.
+const apiBase = process.env.API_INTERNAL_URL || 'http://localhost:3001';
+const API_URL = `${apiBase.replace(/\/$/, '')}/api/v1`;
 
 export default async function NewProductPage({
   searchParams,
@@ -55,6 +58,7 @@ export default async function NewProductPage({
     <ProductCreatePage
       fromCategory={fromCategory}
       categoryIdFromUrl={categoryIdFromUrl}
+      copyFromProductId={copyFromId ?? null}
       initialCopyData={initialCopyData}
       copyError={copyError}
       isCopyMode={!!copyFromId}
