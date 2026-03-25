@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
 
+import { ImageUrlModal } from './ImageUrlModal';
 import styles from './ProductEditPage.module.css';
 import {
   type CategoryAttributeForCopy,
@@ -248,6 +249,7 @@ export function ProductCreatePage({
   const [parserInfo, setParserInfo] = useState<ParserInfo | null>(null);
   const [parserLoading, setParserLoading] = useState(false);
   const [parserBannerError, setParserBannerError] = useState<string | null>(null);
+  const [imageUrlModalOpen, setImageUrlModalOpen] = useState(false);
 
   // Предзаполнение категории из URL (только когда не копируем)
   useEffect(() => {
@@ -635,15 +637,7 @@ export function ProductCreatePage({
     });
   };
 
-  const handleImageUrlAdd = () => {
-    const url = prompt('Введите URL изображения:');
-    if (url && url.trim()) {
-      setFormData((prev) => ({
-        ...prev,
-        images: [...prev.images, url.trim()],
-      }));
-    }
-  };
+  const handleImageUrlAdd = () => setImageUrlModalOpen(true);
 
   const removeImage = (index: number) => {
     setFormData((prev) => ({
@@ -1708,6 +1702,17 @@ export function ProductCreatePage({
           </div>
         </div>
       </form>
+
+      <ImageUrlModal
+        isOpen={imageUrlModalOpen}
+        onClose={() => setImageUrlModalOpen(false)}
+        onConfirm={(url) => {
+          setFormData((prev) => ({
+            ...prev,
+            images: [...prev.images, url],
+          }));
+        }}
+      />
 
       {/* Кнопка "Назад к списку" в самом низу */}
       <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>

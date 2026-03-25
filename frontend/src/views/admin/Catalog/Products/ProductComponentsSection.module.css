@@ -473,3 +473,137 @@
     justify-content: flex-start;
   }
 }
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .section {
+  background: #111827;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
+  color: #f3f4f6;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .kitCompositionInfo {
+  background: rgb(14 116 144 / 0.2);
+  border-color: #0e7490;
+  color: #bae6fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .form {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formGroup label {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .namesHint {
+  background: rgb(34 197 94 / 0.12);
+  border-color: #22c55e;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .namesHintLabel {
+  color: #86efac;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .namesHintChip {
+  background: #1f2937;
+  border-color: #22c55e;
+  color: #86efac;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .namesHintChip:hover {
+  background: #111827;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input {
+  background: #111827;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input::placeholder {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .componentItem {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .groupTitle {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .componentType {
+  color: #f3f4f6;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .componentStock,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .componentSortOrder,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inlineLabel {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .componentImage {
+  background: #111827;
+  border-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inlineInput {
+  background: #111827;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inlineImageButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inlineImageButton:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editButton:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton {
+  background: rgb(239 68 68 / 0.2);
+  border-color: #dc2626;
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton:hover {
+  background: rgb(239 68 68 / 0.35);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .imagePreview {
+  background: #111827;
+  border-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .uploadButton,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .urlButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .uploadButton:hover,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .urlButton:hover {
+  background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .emptyState,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
+  color: #9ca3af;
+}

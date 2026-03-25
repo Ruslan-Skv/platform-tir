@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 
+import { ImageUrlModal } from './ImageUrlModal';
 import styles from './ProductComponentsSection.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
@@ -67,6 +68,10 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
   const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
   const [suggestedNames, setSuggestedNames] = useState<string[]>([]);
+
+  const [imageUrlModalOpen, setImageUrlModalOpen] = useState(false);
+  /** null — форма добавления; иначе id комплектующего для inline-редактирования */
+  const [imageUrlModalInlineId, setImageUrlModalInlineId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchComponents();
@@ -447,20 +452,13 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
   };
 
   const handleImageUrlAdd = () => {
-    const url = prompt('Введите URL изображения:');
-    if (url && url.trim()) {
-      setFormData((prev) => ({ ...prev, image: url.trim() }));
-    }
+    setImageUrlModalInlineId(null);
+    setImageUrlModalOpen(true);
   };
 
   const handleImageUrlAddInline = (componentId: string) => {
-    const url = prompt('Введите URL изображения:');
-    if (url && url.trim()) {
-      setEditingData((prev) => ({
-        ...prev,
-        [componentId]: { ...prev[componentId], image: url.trim() },
-      }));
-    }
+    setImageUrlModalInlineId(componentId);
+    setImageUrlModalOpen(true);
   };
 
   const removeImage = () => {
@@ -984,6 +982,27 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
           Комплектующие не добавлены. Нажмите "Добавить комплектующее" для создания.
         </div>
       )}
+
+      <ImageUrlModal
+        isOpen={imageUrlModalOpen}
+        onClose={() => {
+          setImageUrlModalOpen(false);
+          setImageUrlModalInlineId(null);
+        }}
+        onConfirm={(url) => {
+          if (imageUrlModalInlineId != null) {
+            setEditingData((prev) => ({
+              ...prev,
+              [imageUrlModalInlineId]: {
+                ...prev[imageUrlModalInlineId],
+                image: url,
+              },
+            }));
+          } else {
+            setFormData((prev) => ({ ...prev, image: url }));
+          }
+        }}
+      />
     </div>
   );
 };

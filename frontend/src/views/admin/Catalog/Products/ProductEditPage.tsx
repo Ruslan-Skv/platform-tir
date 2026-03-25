@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
 
+import { ImageUrlModal } from './ImageUrlModal';
 import { ProductComponentsSection } from './ProductComponentsSection';
 import styles from './ProductEditPage.module.css';
 import { ProductReviewsSection } from './ProductReviewsSection';
@@ -274,6 +275,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   const [parserInfo, setParserInfo] = useState<ParserInfo | null>(null);
   const [parserLoading, setParserLoading] = useState(false);
   const [parserBannerError, setParserBannerError] = useState<string | null>(null);
+  const [imageUrlModalOpen, setImageUrlModalOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -874,15 +876,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     e.target.value = '';
   };
 
-  const handleImageUrlAdd = () => {
-    const url = prompt('Введите URL изображения:');
-    if (url && url.trim()) {
-      setFormData((prev) => ({
-        ...prev,
-        images: [...prev.images, url.trim()],
-      }));
-    }
-  };
+  const handleImageUrlAdd = () => setImageUrlModalOpen(true);
 
   const removeImage = (index: number) => {
     setFormData((prev) => ({
@@ -2333,6 +2327,17 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           )}
         </div>
       </form>
+
+      <ImageUrlModal
+        isOpen={imageUrlModalOpen}
+        onClose={() => setImageUrlModalOpen(false)}
+        onConfirm={(url) => {
+          setFormData((prev) => ({
+            ...prev,
+            images: [...prev.images, url],
+          }));
+        }}
+      />
 
       {/* Product Components Section */}
       {/* Вынесено за пределы основной формы, т.к. содержит свою форму */}

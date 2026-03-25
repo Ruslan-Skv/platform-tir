@@ -1171,6 +1171,30 @@
   background: #1f2937;
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantBlock {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantBlockTitle {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantImagePreview img {
+  border-color: #4b5563;
+  background: #111827;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantRemoveButton {
+  background: rgb(239 68 68 / 0.2);
+  border-color: #dc2626;
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantRemoveButton:hover {
+  background: rgb(239 68 68 / 0.35);
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .formActions {
   border-top-color: #374151;
 }
