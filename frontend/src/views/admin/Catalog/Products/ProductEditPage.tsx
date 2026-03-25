@@ -469,6 +469,27 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     fetchPartners();
   }, [getAuthHeaders]);
 
+  // Предупреждение после создания копии, если часть комплектующих не перенеслась
+  useEffect(() => {
+    if (loading || productNotFound) return;
+    const raw = searchParams.get('componentsCopyError');
+    if (!raw) return;
+    const num = parseInt(raw, 10);
+    if (!Number.isFinite(num) || num <= 0) return;
+
+    setError((prev) => {
+      if (prev) return prev;
+      return `Товар создан, но не удалось автоматически скопировать ${num} комплектующих. Добавьте их вручную в блоке «Комплектующие».`;
+    });
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('componentsCopyError');
+    const q = params.toString();
+    router.replace(`/admin/catalog/products/${productId}/edit${q ? `?${q}` : ''}`, {
+      scroll: false,
+    });
+  }, [loading, productId, productNotFound, router, searchParams]);
+
   // Fetch product
   useEffect(() => {
     const fetchProduct = async () => {

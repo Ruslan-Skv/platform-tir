@@ -49,6 +49,46 @@ export interface CategoryAttributeForCopy {
   };
 }
 
+/** Поля для POST /product-components/product/:newProductId при копировании товара */
+export interface CopyProductComponentPayload {
+  name: string;
+  type: string;
+  price: number;
+  image?: string;
+  stock: number;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export function mapRawComponentsToCopyPayload(raw: unknown): CopyProductComponentPayload[] {
+  if (!Array.isArray(raw)) return [];
+  const out: CopyProductComponentPayload[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const o = item as Record<string, unknown>;
+    const name = typeof o.name === 'string' ? o.name.trim() : '';
+    const type = typeof o.type === 'string' ? o.type.trim() : '';
+    const priceRaw = o.price;
+    let price: number;
+    if (typeof priceRaw === 'number') {
+      price = priceRaw;
+    } else if (typeof priceRaw === 'string') {
+      price = parseFloat(priceRaw.replace(',', '.'));
+    } else {
+      continue;
+    }
+    if (!name || !type || !Number.isFinite(price) || price < 0) continue;
+    const image =
+      typeof o.image === 'string' && o.image.trim().length > 0 ? o.image.trim() : undefined;
+    const stock = typeof o.stock === 'number' && o.stock >= 0 ? o.stock : 0;
+    const isActive = typeof o.isActive === 'boolean' ? o.isActive : true;
+    const sortOrder = typeof o.sortOrder === 'number' ? o.sortOrder : 0;
+    out.push({ name, type, price, image, stock, isActive, sortOrder });
+  }
+  out.sort((a, b) => a.sortOrder - b.sortOrder);
+  return out;
+}
+
 export interface CopiedProductData {
   formData: {
     name: string;
@@ -78,11 +118,14 @@ export interface CopiedProductData {
   };
   categoryAttributes: CategoryAttributeForCopy[];
   customAttributes: { key: string; value: string }[];
+  /** Комплектующие исходного товара — создаются для нового товара после POST /products */
+  componentsToCopy: CopyProductComponentPayload[];
 }
 
 export function mapProductToCopyData(
   product: ProductForCopy,
-  categoryAttributes: CategoryAttributeForCopy[]
+  categoryAttributes: CategoryAttributeForCopy[],
+  rawComponents?: unknown
 ): CopiedProductData {
   const nameToSlugMap: Record<string, string> = {};
   const categoryAttrNames: string[] = [];
@@ -152,5 +195,6 @@ export function mapProductToCopyData(
     },
     categoryAttributes,
     customAttributes: customAttrs,
+    componentsToCopy: mapRawComponentsToCopyPayload(rawComponents ?? []),
   };
 }

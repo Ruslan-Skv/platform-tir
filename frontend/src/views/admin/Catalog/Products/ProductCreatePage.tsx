@@ -11,8 +11,10 @@ import styles from './ProductEditPage.module.css';
 import {
   type CategoryAttributeForCopy,
   type CopiedProductData,
+  type CopyProductComponentPayload,
   type ProductForCopy,
   mapProductToCopyData,
+  mapRawComponentsToCopyPayload,
 } from './copy-product-utils';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
@@ -235,6 +237,9 @@ export function ProductCreatePage({
   const [customAttributes, setCustomAttributes] = useState<{ key: string; value: string }[]>(
     initialCopyData?.customAttributes ?? []
   );
+  const [componentsToCopy, setComponentsToCopy] = useState<CopyProductComponentPayload[]>(
+    () => initialCopyData?.componentsToCopy ?? []
+  );
   const [newAttrKey, setNewAttrKey] = useState('');
   const [newAttrValue, setNewAttrValue] = useState('');
   const [autoSlug, setAutoSlug] = useState(true);
@@ -328,6 +333,30 @@ export function ProductCreatePage({
       setFormData((prev) => ({ ...prev, categoryId: categoryIdFromUrl }));
     }
   }, [categoryIdFromUrl, initialCopyData]);
+
+  // Список комплектующих исходного товара (админка: все позиции, включая неактивные)
+  useEffect(() => {
+    if (!copyFromProductId || !isCopyMode) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `${API_URL}/product-components/admin/all?productId=${encodeURIComponent(copyFromProductId)}`,
+          { headers: getAuthHeadersRef.current(), cache: 'no-store' }
+        );
+        if (cancelled || !res.ok) return;
+        const data: unknown = await res.json();
+        if (!cancelled) {
+          setComponentsToCopy(mapRawComponentsToCopyPayload(data));
+        }
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [copyFromProductId, isCopyMode]);
 
   // Копирование: если SSR не получил товар (прод: внутренний URL бэкенда недоступен из Node), подгружаем с клиента через /api/v1 (nginx).
   useEffect(() => {
@@ -809,6 +838,37 @@ export function ProductCreatePage({
 
       const createdProduct = await response.json();
 
+      let componentsCopyErrors = 0;
+      if (componentsToCopy.length > 0) {
+        for (const comp of componentsToCopy) {
+          const payload: Record<string, unknown> = {
+            name: comp.name,
+            type: comp.type,
+            price: comp.price,
+            stock: comp.stock,
+            isActive: comp.isActive,
+            sortOrder: comp.sortOrder,
+          };
+          if (comp.image) payload.image = comp.image;
+          try {
+            const compRes = await fetch(
+              `${API_URL}/product-components/product/${createdProduct.id}`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...getAuthHeaders(),
+                },
+                body: JSON.stringify(payload),
+              }
+            );
+            if (!compRes.ok) componentsCopyErrors++;
+          } catch {
+            componentsCopyErrors++;
+          }
+        }
+      }
+
       // Сброс кэша каталога на публичке, чтобы новый товар отображался без перезагрузки
       const revalidatePaths: Array<string | { path: string; type: 'layout' }> = [
         { path: '/catalog/products', type: 'layout' },
@@ -823,7 +883,9 @@ export function ProductCreatePage({
       }).catch((e) => console.warn('Revalidate failed:', e));
       router.refresh();
 
-      router.push(`/admin/catalog/products/${createdProduct.id}/edit`);
+      const componentsQuery =
+        componentsCopyErrors > 0 ? `?componentsCopyError=${componentsCopyErrors}` : '';
+      router.push(`/admin/catalog/products/${createdProduct.id}/edit${componentsQuery}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка создания товара');
     } finally {

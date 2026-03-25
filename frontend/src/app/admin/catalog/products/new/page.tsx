@@ -47,7 +47,18 @@ export default async function NewProductPage({
             );
           }
         }
-        initialCopyData = mapProductToCopyData(product, categoryAttributes);
+        let rawComponents: unknown = [];
+        try {
+          const compRes = await fetch(`${API_URL}/product-components/product/${copyFromId}`, {
+            cache: 'no-store',
+          });
+          if (compRes.ok) {
+            rawComponents = await compRes.json();
+          }
+        } catch {
+          // без комплектующих копия всё равно возможна; клиент подтянет полный список из админки
+        }
+        initialCopyData = mapProductToCopyData(product, categoryAttributes, rawComponents);
       }
     } catch {
       copyError = 'Не удалось загрузить товар для копирования';
