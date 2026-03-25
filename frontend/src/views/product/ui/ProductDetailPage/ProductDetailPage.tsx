@@ -57,6 +57,18 @@ interface ProductData {
   }>;
 }
 
+interface CategoryAttribute {
+  id: string;
+  attributeId: string;
+  isRequired: boolean;
+  order: number;
+  attribute: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+}
+
 interface ProductDetailPageProps {
   slug: string;
 }
@@ -144,6 +156,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [addingToCart, setAddingToCart] = useState<Record<string, boolean>>({});
   const [components, setComponents] = useState<ProductComponent[]>([]);
+  const [categoryAttributes, setCategoryAttributes] = useState<CategoryAttribute[]>([]);
   const [variantNotification, setVariantNotification] = useState<string | null>(null);
   const [selectedCardVariantIndex, setSelectedCardVariantIndex] = useState(0);
 
@@ -264,6 +277,37 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
 
     fetchProduct();
   }, [slug]);
+
+  // Атрибуты категории (с order) нужны, чтобы выводить характеристики в заданном порядке
+  useEffect(() => {
+    const categoryId = product?.category?.id;
+    if (!categoryId) {
+      setCategoryAttributes([]);
+      return;
+    }
+
+    let cancelled = false;
+    const fetchCategoryAttributes = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+        const res = await fetch(`${apiUrl}/categories/${categoryId}/attributes`);
+        if (!res.ok) {
+          if (!cancelled) setCategoryAttributes([]);
+          return;
+        }
+        const data: CategoryAttribute[] = await res.json();
+        const sorted = [...data].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        if (!cancelled) setCategoryAttributes(sorted);
+      } catch {
+        if (!cancelled) setCategoryAttributes([]);
+      }
+    };
+
+    fetchCategoryAttributes();
+    return () => {
+      cancelled = true;
+    };
+  }, [product?.category?.id]);
 
   // Получаем ID товара для работы с wishlist, compare и загрузки комплектующих
   const productId = useMemo(() => (product ? String(product.id) : ''), [product]);
@@ -415,25 +459,83 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     !selectedCardVariant && product.comparePrice ? parseFloat(product.comparePrice) : null;
   const discount = comparePrice ? Math.round(((comparePrice - price) / comparePrice) * 100) : null;
 
-  // Атрибуты могут быть в двух форматах:
-  // 1. Новый формат (массив): [{name: "Модель", value: "..."}, ...]
-  // 2. Старый формат (объект): {key: value, ...}
   type AttributeItem = { name: string; value: string };
-  let attributesArray: AttributeItem[] = [];
 
-  if (product.attributes) {
+  const rawAttributesArray = useMemo<AttributeItem[]>(() => {
+    if (!product?.attributes) return [];
+    // Атрибуты могут быть в двух форматах:
+    // 1) массив [{name, value}] (новый формат)
+    // 2) объект { [slug|name]: value } (старый формат)
     if (Array.isArray(product.attributes)) {
-      // Новый формат - массив
-      attributesArray = product.attributes as AttributeItem[];
-    } else {
-      // Старый формат - объект (порядок не гарантирован)
-      const attrsObj = product.attributes as Record<string, string>;
-      attributesArray = Object.entries(attrsObj).map(([key, value]) => ({
-        name: key,
-        value: String(value),
-      }));
+      return (product.attributes as AttributeItem[]).filter(
+        (a) => a && typeof a.name === 'string' && a.name.trim() !== ''
+      );
     }
-  }
+    const attrsObj = product.attributes as Record<string, unknown>;
+    return Object.entries(attrsObj).map(([key, value]) => ({
+      name: key,
+      value: value == null ? '' : String(value),
+    }));
+  }, [product?.attributes]);
+
+  const attributesArray = useMemo<AttributeItem[]>(() => {
+    if (rawAttributesArray.length === 0) return [];
+
+    // Если для категории задан порядок — выводим характеристики именно в нём
+    if (categoryAttributes.length > 0) {
+      const bySlug = new Map<string, string>();
+      const byName = new Map<string, string>();
+
+      for (const item of rawAttributesArray) {
+        const key = item.name.trim();
+        const val = item.value;
+        if (!key) continue;
+        // В старом формате key обычно = slug; в новом — чаще всего name.
+        // Поэтому держим оба словаря и пробуем матчиться по slug и по title.
+        bySlug.set(key, val);
+        byName.set(key, val);
+      }
+
+      const usedKeys = new Set<string>();
+      const ordered: AttributeItem[] = [];
+
+      for (const ca of categoryAttributes) {
+        const slug = ca.attribute.slug;
+        const title = ca.attribute.name;
+        const valueFromSlug = bySlug.get(slug);
+        const valueFromName = byName.get(title);
+        const value =
+          valueFromSlug !== undefined
+            ? valueFromSlug
+            : valueFromName !== undefined
+              ? valueFromName
+              : undefined;
+
+        if (value === undefined) continue;
+        const trimmed = String(value).trim();
+        if (!trimmed) continue;
+
+        ordered.push({ name: title, value: trimmed });
+        usedKeys.add(slug);
+        usedKeys.add(title);
+      }
+
+      // Добавляем "лишние" атрибуты (например, кастомные), сохраняя исходный порядок
+      for (const item of rawAttributesArray) {
+        const key = item.name.trim();
+        if (!key) continue;
+        if (usedKeys.has(key)) continue;
+        const trimmed = String(item.value ?? '').trim();
+        if (!trimmed) continue;
+        ordered.push({ name: key, value: trimmed });
+      }
+
+      return ordered;
+    }
+
+    // Без схемы категории — как было (показываем непустые)
+    return rawAttributesArray.filter((a) => String(a.value ?? '').trim() !== '');
+  }, [rawAttributesArray, categoryAttributes]);
 
   // Формируем хлебные крошки
   const breadcrumbs = [
