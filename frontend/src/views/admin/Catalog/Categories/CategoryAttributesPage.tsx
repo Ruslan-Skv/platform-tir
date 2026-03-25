@@ -59,6 +59,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [reordering, setReordering] = useState(false);
 
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
@@ -152,8 +153,10 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
       }
 
       if (attrsRes.ok) {
-        const data = await attrsRes.json();
-        setCategoryAttributes(data);
+        const data: CategoryAttribute[] = await attrsRes.json();
+        // Бекенд уже отдаёт orderBy: { order: 'asc' }, но сортируем ещё раз для надёжности
+        const sorted = [...data].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        setCategoryAttributes(sorted);
       }
 
       if (allAttrsRes.ok) {
@@ -175,6 +178,68 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
   const showMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
     setTimeout(() => setMessage(null), 3000);
+  };
+
+  const persistCategoryAttributesOrder = async (
+    items: Array<{ attributeId: string; order: number }>
+  ) => {
+    if (items.length === 0) return;
+    try {
+      setReordering(true);
+      await Promise.all(
+        items.map(({ attributeId, order }) =>
+          fetch(`${API_URL}/categories/${categoryId}/attributes/${attributeId}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              ...getAuthHeaders(),
+            },
+            body: JSON.stringify({ order }),
+          })
+        )
+      );
+    } catch {
+      showMessage('error', 'Не удалось сохранить порядок атрибутов');
+      // Возвращаем актуальные данные с сервера (на случай расхождений)
+      fetchData();
+    } finally {
+      setReordering(false);
+    }
+  };
+
+  const moveCategoryAttribute = async (attributeId: string, direction: 'up' | 'down') => {
+    if (reordering) return;
+    const index = categoryAttributes.findIndex((ca) => ca.attributeId === attributeId);
+    if (index < 0) return;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= categoryAttributes.length) return;
+
+    const next = [...categoryAttributes];
+    const tmp = next[index];
+    next[index] = next[targetIndex];
+    next[targetIndex] = tmp;
+
+    // Нормализуем order под текущий порядок списка (0..n-1)
+    const normalized = next.map((ca, i) => ({ ...ca, order: i }));
+    setCategoryAttributes(normalized);
+
+    // Сохраняем только два изменившихся элемента (swap)
+    await persistCategoryAttributesOrder([
+      { attributeId: normalized[index].attributeId, order: normalized[index].order },
+      { attributeId: normalized[targetIndex].attributeId, order: normalized[targetIndex].order },
+    ]);
+  };
+
+  const normalizeCategoryAttributesOrder = async () => {
+    if (reordering) return;
+    const normalized = [...categoryAttributes]
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .map((ca, i) => ({ ...ca, order: i }));
+    setCategoryAttributes(normalized);
+    await persistCategoryAttributesOrder(
+      normalized.map((ca) => ({ attributeId: ca.attributeId, order: ca.order }))
+    );
+    showMessage('success', 'Порядок атрибутов сохранён');
   };
 
   // Get attributes not yet added to category
@@ -534,6 +599,16 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
           <div className={styles.sectionHeader}>
             <h2>Атрибуты категории ({categoryAttributes.length})</h2>
             <div className={styles.sectionActions}>
+              {categoryAttributes.length > 1 && (
+                <button
+                  className={styles.normalizeOrderButton}
+                  onClick={normalizeCategoryAttributesOrder}
+                  disabled={reordering}
+                  title="Пронумеровать атрибуты по текущему списку и сохранить. Полезно, если после добавления у нескольких атрибутов одинаковый order."
+                >
+                  {reordering ? '⏳ Сохранение порядка...' : '↕ Сохранить порядок'}
+                </button>
+              )}
               {category?.parentId && (
                 <button
                   className={styles.inheritButton}
@@ -557,7 +632,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
 
           {categoryAttributes.length > 0 ? (
             <div className={styles.attributesList}>
-              {categoryAttributes.map((ca) => (
+              {categoryAttributes.map((ca, idx) => (
                 <div key={ca.id} className={styles.attributeCard}>
                   <div className={styles.attributeHeader}>
                     <input
@@ -567,6 +642,28 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
                       className={styles.applyCheckbox}
                       title="Выбрать для применения к товарам"
                     />
+                    <div className={styles.orderControls} aria-label="Порядок атрибутов">
+                      <button
+                        type="button"
+                        className={styles.orderButton}
+                        onClick={() => moveCategoryAttribute(ca.attributeId, 'up')}
+                        disabled={reordering || idx === 0}
+                        title="Выше"
+                        aria-label="Переместить выше"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.orderButton}
+                        onClick={() => moveCategoryAttribute(ca.attributeId, 'down')}
+                        disabled={reordering || idx === categoryAttributes.length - 1}
+                        title="Ниже"
+                        aria-label="Переместить ниже"
+                      >
+                        ↓
+                      </button>
+                    </div>
                     <div className={styles.attributeInfo}>
                       <span className={styles.attributeName}>{ca.attribute.name}</span>
                       <span className={styles.attributeSlug}>{ca.attribute.slug}</span>
