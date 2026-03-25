@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -16,6 +16,10 @@ import {
   mapProductToCopyData,
   mapRawComponentsToCopyPayload,
 } from './copy-product-utils';
+import {
+  collectInteriorDoorsSubtreeIdsFromRoots,
+  findInteriorDoorsRootForSelection,
+} from './interior-doors-category-utils';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -240,6 +244,16 @@ export function ProductCreatePage({
   const [componentsToCopy, setComponentsToCopy] = useState<CopyProductComponentPayload[]>(
     () => initialCopyData?.componentsToCopy ?? []
   );
+  const [newComponentDraft, setNewComponentDraft] = useState({
+    name: '',
+    type: '',
+    price: '',
+    image: '',
+    stock: 0,
+    isActive: true,
+    sortOrder: 0,
+  });
+  const [componentsDraftError, setComponentsDraftError] = useState<string | null>(null);
   const [newAttrKey, setNewAttrKey] = useState('');
   const [newAttrValue, setNewAttrValue] = useState('');
   const [autoSlug, setAutoSlug] = useState(true);
@@ -253,6 +267,7 @@ export function ProductCreatePage({
   const [imageError, setImageError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [suggestedSizes, setSuggestedSizes] = useState<string[]>([]);
+  const [suggestedComponentNames, setSuggestedComponentNames] = useState<string[]>([]);
   const [parserInfo, setParserInfo] = useState<ParserInfo | null>(null);
   const [parserLoading, setParserLoading] = useState(false);
   const [parserBannerError, setParserBannerError] = useState<string | null>(null);
@@ -487,6 +502,37 @@ export function ProductCreatePage({
     };
   }, [formData.categoryId, getAuthHeaders]);
 
+  // Подсказки наименований: все уникальные названия из товаров в поддереве «Межкомнатные двери»
+  useEffect(() => {
+    if (!formData.categoryId) {
+      setSuggestedComponentNames([]);
+      return;
+    }
+    const root = findInteriorDoorsRootForSelection(categories, formData.categoryId);
+    if (!root) {
+      setSuggestedComponentNames([]);
+      return;
+    }
+    let cancelled = false;
+    const params = new URLSearchParams({
+      categoryId: root.id,
+      includeSubtree: '1',
+    });
+    fetch(`${API_URL}/product-components/admin/names-by-category?${params.toString()}`, {
+      headers: getAuthHeaders(),
+    })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: string[]) => {
+        if (!cancelled && Array.isArray(data)) setSuggestedComponentNames(data);
+      })
+      .catch(() => {
+        if (!cancelled) setSuggestedComponentNames([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.categoryId, categories, getAuthHeaders]);
+
   // Fetch category attributes when category changes
   useEffect(() => {
     const fetchCategoryAttributes = async () => {
@@ -550,6 +596,53 @@ export function ProductCreatePage({
   const getCategoryName = (categoryId: string): string => {
     const category = flatCategories.find((c) => c.id === categoryId);
     return category ? category.name.replace(/^[—\s]+/, '') : ''; // Убираем префиксы вложенности
+  };
+
+  /** ID категории «Межкомнатные двери» и всех дочерних (по дереву из API) */
+  const interiorDoorsCategoryIds = useMemo(
+    () => collectInteriorDoorsSubtreeIdsFromRoots(categories),
+    [categories]
+  );
+
+  const isInteriorDoorsCategorySelected = useMemo(() => {
+    if (!formData.categoryId) return false;
+    return interiorDoorsCategoryIds.has(formData.categoryId);
+  }, [formData.categoryId, interiorDoorsCategoryIds]);
+
+  const addDraftComponent = () => {
+    const name = newComponentDraft.name.trim();
+    const type = newComponentDraft.type.trim();
+    const price = parseFloat(newComponentDraft.price.replace(',', '.'));
+    if (!name || !type || !Number.isFinite(price) || price < 0) {
+      setComponentsDraftError('Заполните комплектующее: название, тип и корректную цену.');
+      return;
+    }
+    setComponentsToCopy((prev) => [
+      ...prev,
+      {
+        name,
+        type,
+        price,
+        image: newComponentDraft.image.trim() || undefined,
+        stock: Number.isFinite(newComponentDraft.stock) ? newComponentDraft.stock : 0,
+        isActive: newComponentDraft.isActive,
+        sortOrder: Number.isFinite(newComponentDraft.sortOrder) ? newComponentDraft.sortOrder : 0,
+      },
+    ]);
+    setComponentsDraftError(null);
+    setNewComponentDraft({
+      name: '',
+      type: '',
+      price: '',
+      image: '',
+      stock: 0,
+      isActive: true,
+      sortOrder: 0,
+    });
+  };
+
+  const removeDraftComponent = (index: number) => {
+    setComponentsToCopy((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Обновить SEO поля при изменении данных
@@ -1784,6 +1877,186 @@ export function ProductCreatePage({
             </div>
           </div>
         </div>
+
+        {isInteriorDoorsCategorySelected && (
+          <div className={`${styles.formSection} ${styles.formSectionFullWidth}`}>
+            <h2 className={styles.sectionTitle}>Комплектующие</h2>
+            <p className={styles.hint}>
+              Для категории «Межкомнатные двери» и любой её дочерней категории комплектующие можно
+              добавить сразу при создании. Они будут созданы вместе с товаром.
+            </p>
+            {componentsDraftError && <p className={styles.imageError}>{componentsDraftError}</p>}
+            {suggestedComponentNames.length > 0 && (
+              <div className={styles.sizesHint}>
+                <span className={styles.sizesHintLabel}>
+                  Подсказка: наименования из других товаров категории -
+                </span>
+                <div className={styles.sizesHintChips}>
+                  {suggestedComponentNames.map((name) => (
+                    <button
+                      key={name}
+                      type="button"
+                      className={styles.sizesHintChip}
+                      onClick={() =>
+                        setNewComponentDraft((prev) => ({
+                          ...prev,
+                          name,
+                        }))
+                      }
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                gap: '0.75rem',
+                marginBottom: '0.75rem',
+              }}
+            >
+              <div className={styles.formGroup}>
+                <label htmlFor="componentDraftName">Название</label>
+                <input
+                  id="componentDraftName"
+                  className={styles.input}
+                  placeholder="Название"
+                  list="component-names-create-datalist"
+                  value={newComponentDraft.name}
+                  onChange={(e) =>
+                    setNewComponentDraft((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                />
+              </div>
+              <datalist id="component-names-create-datalist">
+                {suggestedComponentNames.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
+              <div className={styles.formGroup}>
+                <label htmlFor="componentDraftType">Тип</label>
+                <input
+                  id="componentDraftType"
+                  className={styles.input}
+                  placeholder="Тип"
+                  value={newComponentDraft.type}
+                  onChange={(e) =>
+                    setNewComponentDraft((prev) => ({ ...prev, type: e.target.value }))
+                  }
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label htmlFor="componentDraftPrice">Цена</label>
+                <input
+                  id="componentDraftPrice"
+                  className={styles.input}
+                  placeholder="Цена"
+                  inputMode="decimal"
+                  value={newComponentDraft.price}
+                  onChange={(e) =>
+                    setNewComponentDraft((prev) => ({
+                      ...prev,
+                      price: e.target.value.replace(/[^0-9.,]/g, ''),
+                    }))
+                  }
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label htmlFor="componentDraftImage">Изображение (URL/Base64)</label>
+                <input
+                  id="componentDraftImage"
+                  className={styles.input}
+                  placeholder="URL/Base64 изображения (опционально)"
+                  value={newComponentDraft.image}
+                  onChange={(e) =>
+                    setNewComponentDraft((prev) => ({ ...prev, image: e.target.value }))
+                  }
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label htmlFor="componentDraftStock">Остаток</label>
+                <input
+                  id="componentDraftStock"
+                  className={styles.input}
+                  placeholder="Остаток"
+                  inputMode="numeric"
+                  value={String(newComponentDraft.stock)}
+                  onChange={(e) =>
+                    setNewComponentDraft((prev) => ({
+                      ...prev,
+                      stock: parseInt(e.target.value.replace(/[^0-9]/g, '') || '0', 10),
+                    }))
+                  }
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label htmlFor="componentDraftSortOrder">Сортировка</label>
+                <input
+                  id="componentDraftSortOrder"
+                  className={styles.input}
+                  placeholder="Сортировка"
+                  inputMode="numeric"
+                  value={String(newComponentDraft.sortOrder)}
+                  onChange={(e) =>
+                    setNewComponentDraft((prev) => ({
+                      ...prev,
+                      sortOrder: parseInt(e.target.value.replace(/[^0-9]/g, '') || '0', 10),
+                    }))
+                  }
+                />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <input
+                  type="checkbox"
+                  checked={newComponentDraft.isActive}
+                  onChange={(e) =>
+                    setNewComponentDraft((prev) => ({ ...prev, isActive: e.target.checked }))
+                  }
+                />
+                Активно
+              </label>
+              <button type="button" className={styles.addAttrButton} onClick={addDraftComponent}>
+                + Добавить комплектующее
+              </button>
+            </div>
+
+            {componentsToCopy.length > 0 && (
+              <div style={{ marginTop: '1rem', display: 'grid', gap: '0.5rem' }}>
+                {componentsToCopy.map((component, index) => (
+                  <div
+                    key={`${component.name}-${component.type}-${index}`}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      padding: '0.5rem 0.75rem',
+                    }}
+                  >
+                    <span>
+                      {component.name} / {component.type} - {component.price} руб., склад:{' '}
+                      {component.stock}
+                    </span>
+                    <button
+                      type="button"
+                      className={styles.removeAttrButton}
+                      onClick={() => removeDraftComponent(index)}
+                      title="Удалить комплектующее"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className={styles.formActions}>
           <div className={styles.formActionsRight}>

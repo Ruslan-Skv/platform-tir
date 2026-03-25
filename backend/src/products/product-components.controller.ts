@@ -45,10 +45,19 @@ export class ProductComponentsController {
   @Get('admin/names-by-category')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Уникальные наименования комплектующих из товаров категории' })
-  getNamesByCategory(@Query('categoryId') categoryId: string) {
+  @ApiOperation({
+    summary:
+      'Уникальные наименования комплектующих из товаров категории (опционально — всё поддерево категории)',
+  })
+  getNamesByCategory(
+    @Query('categoryId') categoryId: string,
+    @Query('includeSubtree') includeSubtree?: string,
+  ) {
     if (!categoryId) return [];
-    return this.componentsService.getComponentNamesByCategoryId(categoryId);
+    const subtree = includeSubtree === '1' || includeSubtree === 'true';
+    return this.componentsService.getComponentNamesByCategoryId(categoryId, {
+      includeSubtree: subtree,
+    });
   }
 
   @Get('product/:productId')

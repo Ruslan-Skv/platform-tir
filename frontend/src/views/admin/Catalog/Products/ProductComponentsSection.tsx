@@ -25,11 +25,20 @@ interface ProductComponentsSectionProps {
   productId: string;
   /** ID категории товара — для загрузки подсказок наименований из других товаров категории */
   categoryId?: string;
+  /**
+   * Если задано — подсказки грузятся по этой категории (например корень «Межкомнатные двери»),
+   * а не по categoryId товара.
+   */
+  componentNamesHintCategoryId?: string;
+  /** Вместе с componentNamesHintCategoryId: учитывать все дочерние категории */
+  componentNamesIncludeSubtree?: boolean;
 }
 
 export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> = ({
   productId,
   categoryId,
+  componentNamesHintCategoryId,
+  componentNamesIncludeSubtree = false,
 }) => {
   const { getAuthHeaders } = useAuth();
   const [components, setComponents] = useState<ProductComponent[]>([]);
@@ -78,15 +87,21 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
   }, [productId]);
 
   useEffect(() => {
-    if (!categoryId) {
+    const hintCategoryId = componentNamesHintCategoryId ?? categoryId;
+    if (!hintCategoryId) {
       setSuggestedNames([]);
       return;
     }
     let cancelled = false;
-    fetch(
-      `${API_URL}/product-components/admin/names-by-category?categoryId=${encodeURIComponent(categoryId)}`,
-      { headers: getAuthHeaders() }
-    )
+    const params = new URLSearchParams({
+      categoryId: hintCategoryId,
+    });
+    if (componentNamesIncludeSubtree) {
+      params.set('includeSubtree', '1');
+    }
+    fetch(`${API_URL}/product-components/admin/names-by-category?${params.toString()}`, {
+      headers: getAuthHeaders(),
+    })
       .then((res) => (res.ok ? res.json() : []))
       .then((data: string[]) => {
         if (!cancelled && Array.isArray(data)) setSuggestedNames(data);
@@ -97,7 +112,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
     return () => {
       cancelled = true;
     };
-  }, [categoryId, getAuthHeaders]);
+  }, [categoryId, componentNamesHintCategoryId, componentNamesIncludeSubtree, getAuthHeaders]);
 
   const fetchComponents = async () => {
     try {

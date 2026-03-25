@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -10,6 +10,7 @@ import { ImageUrlModal } from './ImageUrlModal';
 import { ProductComponentsSection } from './ProductComponentsSection';
 import styles from './ProductEditPage.module.css';
 import { ProductReviewsSection } from './ProductReviewsSection';
+import { findInteriorDoorsRootForSelection } from './interior-doors-category-utils';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -712,6 +713,12 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   };
 
   const flatCategories = flattenCategories(categories);
+
+  /** Корень «Межкомнатные двери» для подсказок комплектующих по всему поддереву */
+  const interiorDoorsRootForHints = useMemo(
+    () => findInteriorDoorsRootForSelection(categories, formData.categoryId),
+    [categories, formData.categoryId]
+  );
 
   // Получить название категории по ID
   const getCategoryName = (categoryId: string): string => {
@@ -2401,7 +2408,12 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
       {/* Product Components Section */}
       {/* Вынесено за пределы основной формы, т.к. содержит свою форму */}
       {productId && showSection('components') && (
-        <ProductComponentsSection productId={productId} categoryId={formData.categoryId} />
+        <ProductComponentsSection
+          productId={productId}
+          categoryId={formData.categoryId}
+          componentNamesHintCategoryId={interiorDoorsRootForHints?.id}
+          componentNamesIncludeSubtree={!!interiorDoorsRootForHints}
+        />
       )}
 
       {/* Product Reviews Section */}

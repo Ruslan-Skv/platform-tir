@@ -131,11 +131,36 @@ export class ProductComponentsService {
     });
   }
 
+  /** Все id категории + потомков (рекурсивно по parentId) */
+  private async getCategoryIdsIncludingDescendants(rootId: string): Promise<string[]> {
+    const result: string[] = [];
+    const walk = async (id: string) => {
+      result.push(id);
+      const children = await this.prisma.category.findMany({
+        where: { parentId: id },
+        select: { id: true },
+      });
+      for (const ch of children) {
+        await walk(ch.id);
+      }
+    };
+    await walk(rootId);
+    return result;
+  }
+
   /** Уникальные наименования комплектующих из товаров категории (для подсказок в форме) */
-  async getComponentNamesByCategoryId(categoryId: string): Promise<string[]> {
+  async getComponentNamesByCategoryId(
+    categoryId: string,
+    options?: { includeSubtree?: boolean },
+  ): Promise<string[]> {
+    const categoryIds =
+      options?.includeSubtree === true
+        ? await this.getCategoryIdsIncludingDescendants(categoryId)
+        : [categoryId];
+
     const components = await this.prisma.productComponent.findMany({
       where: {
-        product: { categoryId },
+        product: { categoryId: { in: categoryIds } },
       },
       select: { name: true },
     });
