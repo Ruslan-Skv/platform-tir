@@ -69,6 +69,8 @@ interface CategoryAttribute {
   };
 }
 
+type AttributeItem = { name: string; value: string };
+
 interface ProductDetailPageProps {
   slug: string;
 }
@@ -432,35 +434,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     return Math.round(total);
   }, [product, components, selectedCardVariant]);
 
-  if (loading) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.loading}>Загрузка товара...</div>
-      </div>
-    );
-  }
-
-  if (error || !product) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.error}>
-          <h1>Ошибка</h1>
-          <p>{error || 'Товар не найден'}</p>
-          <Link href="/" className={styles.backLink}>
-            Вернуться на главную
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const price = displayPrice;
-  const comparePrice =
-    !selectedCardVariant && product.comparePrice ? parseFloat(product.comparePrice) : null;
-  const discount = comparePrice ? Math.round(((comparePrice - price) / comparePrice) * 100) : null;
-
-  type AttributeItem = { name: string; value: string };
-
+  // Хуки атрибутов — строго до любых return, иначе нарушается порядок Hooks при loading → loaded
   const rawAttributesArray = useMemo<AttributeItem[]>(() => {
     if (!product?.attributes) return [];
     // Атрибуты могут быть в двух форматах:
@@ -536,6 +510,33 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     // Без схемы категории — как было (показываем непустые)
     return rawAttributesArray.filter((a) => String(a.value ?? '').trim() !== '');
   }, [rawAttributesArray, categoryAttributes]);
+
+  if (loading) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.loading}>Загрузка товара...</div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.error}>
+          <h1>Ошибка</h1>
+          <p>{error || 'Товар не найден'}</p>
+          <Link href="/" className={styles.backLink}>
+            Вернуться на главную
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const price = displayPrice;
+  const comparePrice =
+    !selectedCardVariant && product.comparePrice ? parseFloat(product.comparePrice) : null;
+  const discount = comparePrice ? Math.round(((comparePrice - price) / comparePrice) * 100) : null;
 
   // Формируем хлебные крошки
   const breadcrumbs = [
