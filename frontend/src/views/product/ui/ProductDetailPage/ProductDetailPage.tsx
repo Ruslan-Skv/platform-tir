@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import Link from 'next/link';
@@ -73,6 +73,14 @@ type AttributeItem = { name: string; value: string };
 
 interface ProductDetailPageProps {
   slug: string;
+}
+
+/** Прокрутка в начало страницы товара (мобильные часто сохраняют offset с каталога или смещаются после подгрузки контента). */
+function scrollProductDetailToTop() {
+  if (typeof window === 'undefined') return;
+  window.scrollTo(0, 0);
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
 }
 
 /** Плеер для YouTube, Vimeo или прямого URL видео */
@@ -251,6 +259,24 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Вверх страницы при открытии карточки / смене slug (до отрисовки, чтобы не мигать серединой каталога).
+  useLayoutEffect(() => {
+    scrollProductDetailToTop();
+  }, [slug]);
+
+  // После окончания загрузки данных — снова вверх (высота страницы меняется, на телефонах позиция «плывёт»).
+  useEffect(() => {
+    if (loading) return;
+    let innerId = 0;
+    const outerId = requestAnimationFrame(() => {
+      innerId = requestAnimationFrame(scrollProductDetailToTop);
+    });
+    return () => {
+      cancelAnimationFrame(outerId);
+      if (innerId) cancelAnimationFrame(innerId);
+    };
+  }, [loading, slug]);
 
   useEffect(() => {
     const fetchProduct = async () => {
