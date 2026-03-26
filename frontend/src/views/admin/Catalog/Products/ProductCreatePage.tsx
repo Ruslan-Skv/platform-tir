@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth';
 
 import { ImageUrlModal } from './ImageUrlModal';
+import componentStyles from './ProductComponentsSection.module.css';
 import styles from './ProductEditPage.module.css';
 import {
   type CategoryAttributeForCopy,
@@ -253,6 +254,16 @@ export function ProductCreatePage({
     isActive: true,
     sortOrder: 0,
   });
+  const [editingComponentIndex, setEditingComponentIndex] = useState<number | null>(null);
+  const [editingComponentDraft, setEditingComponentDraft] = useState({
+    name: '',
+    type: '',
+    price: '',
+    image: '',
+    stock: 0,
+    isActive: true,
+    sortOrder: 0,
+  });
   const [componentsDraftError, setComponentsDraftError] = useState<string | null>(null);
   const [newAttrKey, setNewAttrKey] = useState('');
   const [newAttrValue, setNewAttrValue] = useState('');
@@ -404,12 +415,29 @@ export function ProductCreatePage({
             );
           }
         }
-        const mapped = mapProductToCopyData(product, categoryAttrsForCopy);
+        let rawComponents: unknown = [];
+        try {
+          const componentsRes = await fetch(
+            `${API_URL}/product-components/admin/all?productId=${encodeURIComponent(copyFromProductId)}`,
+            {
+              headers: getAuthHeadersRef.current(),
+              cache: 'no-store',
+            }
+          );
+          if (componentsRes.ok) {
+            rawComponents = await componentsRes.json();
+          }
+        } catch {
+          // Игнорируем: копирование товара возможно и без комплектующих
+        }
+
+        const mapped = mapProductToCopyData(product, categoryAttrsForCopy, rawComponents);
         if (cancelled) return;
         setError(null);
         setFormData(mapped.formData);
         setCategoryAttributes(mapped.categoryAttributes as CategoryAttribute[]);
         setCustomAttributes(mapped.customAttributes);
+        setComponentsToCopy(mapped.componentsToCopy);
         setAutoSeoTitle(false);
         setAutoSeoDescription(false);
         setAutoSlug(true);
@@ -643,6 +671,65 @@ export function ProductCreatePage({
 
   const removeDraftComponent = (index: number) => {
     setComponentsToCopy((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const startEditDraftComponent = (index: number) => {
+    const item = componentsToCopy[index];
+    if (!item) return;
+    setEditingComponentIndex(index);
+    setEditingComponentDraft({
+      name: item.name,
+      type: item.type,
+      price: String(item.price),
+      image: item.image ?? '',
+      stock: item.stock,
+      isActive: item.isActive,
+      sortOrder: item.sortOrder,
+    });
+  };
+
+  const cancelEditDraftComponent = () => {
+    setEditingComponentIndex(null);
+    setEditingComponentDraft({
+      name: '',
+      type: '',
+      price: '',
+      image: '',
+      stock: 0,
+      isActive: true,
+      sortOrder: 0,
+    });
+  };
+
+  const saveEditDraftComponent = () => {
+    if (editingComponentIndex === null) return;
+    const name = editingComponentDraft.name.trim();
+    const type = editingComponentDraft.type.trim();
+    const price = parseFloat(editingComponentDraft.price.replace(',', '.'));
+    if (!name || !type || !Number.isFinite(price) || price < 0) {
+      setComponentsDraftError('Заполните комплектующее: название, тип и корректную цену.');
+      return;
+    }
+    setComponentsToCopy((prev) =>
+      prev.map((item, idx) =>
+        idx === editingComponentIndex
+          ? {
+              ...item,
+              name,
+              type,
+              price,
+              image: editingComponentDraft.image.trim() || undefined,
+              stock: Number.isFinite(editingComponentDraft.stock) ? editingComponentDraft.stock : 0,
+              isActive: editingComponentDraft.isActive,
+              sortOrder: Number.isFinite(editingComponentDraft.sortOrder)
+                ? editingComponentDraft.sortOrder
+                : 0,
+            }
+          : item
+      )
+    );
+    setComponentsDraftError(null);
+    cancelEditDraftComponent();
   };
 
   // Обновить SEO поля при изменении данных
@@ -2030,27 +2117,207 @@ export function ProductCreatePage({
                 {componentsToCopy.map((component, index) => (
                   <div
                     key={`${component.name}-${component.type}-${index}`}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      padding: '0.5rem 0.75rem',
-                    }}
+                    className={componentStyles.componentItem}
                   >
-                    <span>
-                      {component.name} / {component.type} - {component.price} руб., склад:{' '}
-                      {component.stock}
-                    </span>
-                    <button
-                      type="button"
-                      className={styles.removeAttrButton}
-                      onClick={() => removeDraftComponent(index)}
-                      title="Удалить комплектующее"
-                    >
-                      🗑️
-                    </button>
+                    {editingComponentIndex === index ? (
+                      <div className={componentStyles.componentInfo}>
+                        <div
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                            gap: '0.75rem',
+                          }}
+                        >
+                          <div className={componentStyles.inlineField}>
+                            <label className={componentStyles.inlineLabel}>Наименование</label>
+                            <input
+                              className={componentStyles.inlineInput}
+                              value={editingComponentDraft.name}
+                              onChange={(e) =>
+                                setEditingComponentDraft((prev) => ({
+                                  ...prev,
+                                  name: e.target.value,
+                                }))
+                              }
+                              placeholder="Название"
+                            />
+                          </div>
+                          <div className={componentStyles.inlineField}>
+                            <label className={componentStyles.inlineLabel}>Тип</label>
+                            <input
+                              className={componentStyles.inlineInput}
+                              value={editingComponentDraft.type}
+                              onChange={(e) =>
+                                setEditingComponentDraft((prev) => ({
+                                  ...prev,
+                                  type: e.target.value,
+                                }))
+                              }
+                              placeholder="Тип"
+                            />
+                          </div>
+                          <div className={componentStyles.inlineField}>
+                            <label className={componentStyles.inlineLabel}>Цена</label>
+                            <input
+                              className={componentStyles.inlineInput}
+                              inputMode="decimal"
+                              value={editingComponentDraft.price}
+                              onChange={(e) =>
+                                setEditingComponentDraft((prev) => ({
+                                  ...prev,
+                                  price: e.target.value.replace(/[^0-9.,]/g, ''),
+                                }))
+                              }
+                              placeholder="Цена"
+                            />
+                          </div>
+                          <div className={componentStyles.inlineField}>
+                            <label className={componentStyles.inlineLabel}>Изображение</label>
+                            <input
+                              className={componentStyles.inlineInput}
+                              value={editingComponentDraft.image}
+                              onChange={(e) =>
+                                setEditingComponentDraft((prev) => ({
+                                  ...prev,
+                                  image: e.target.value,
+                                }))
+                              }
+                              placeholder="URL/Base64 изображения (опционально)"
+                            />
+                          </div>
+                          <div className={componentStyles.inlineField}>
+                            <label className={componentStyles.inlineLabel}>Склад</label>
+                            <input
+                              className={componentStyles.inlineInput}
+                              inputMode="numeric"
+                              value={String(editingComponentDraft.stock)}
+                              onChange={(e) =>
+                                setEditingComponentDraft((prev) => ({
+                                  ...prev,
+                                  stock: parseInt(e.target.value.replace(/[^0-9]/g, '') || '0', 10),
+                                }))
+                              }
+                              placeholder="Остаток"
+                            />
+                          </div>
+                          <div className={componentStyles.inlineField}>
+                            <label className={componentStyles.inlineLabel}>Сортировка</label>
+                            <input
+                              className={componentStyles.inlineInput}
+                              inputMode="numeric"
+                              value={String(editingComponentDraft.sortOrder)}
+                              onChange={(e) =>
+                                setEditingComponentDraft((prev) => ({
+                                  ...prev,
+                                  sortOrder: parseInt(
+                                    e.target.value.replace(/[^0-9]/g, '') || '0',
+                                    10
+                                  ),
+                                }))
+                              }
+                              placeholder="Сортировка"
+                            />
+                          </div>
+                        </div>
+                        <div className={componentStyles.componentActions}>
+                          <label className={componentStyles.inlineCheckbox}>
+                            <input
+                              type="checkbox"
+                              checked={editingComponentDraft.isActive}
+                              onChange={(e) =>
+                                setEditingComponentDraft((prev) => ({
+                                  ...prev,
+                                  isActive: e.target.checked,
+                                }))
+                              }
+                            />
+                            Активно
+                          </label>
+                          <button
+                            type="button"
+                            className={componentStyles.saveButton}
+                            onClick={saveEditDraftComponent}
+                          >
+                            Сохранить
+                          </button>
+                          <button
+                            type="button"
+                            className={componentStyles.cancelButton}
+                            onClick={cancelEditDraftComponent}
+                          >
+                            Отмена
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className={componentStyles.componentInfo}>
+                          <div className={componentStyles.componentInfoRow}>
+                            <span className={componentStyles.componentName}>{component.name}</span>
+                            <span className={componentStyles.componentType}>{component.type}</span>
+                            <span className={componentStyles.componentPrice}>
+                              {component.price} ₽
+                            </span>
+                            <span className={componentStyles.componentStock}>
+                              Склад: {component.stock} шт.
+                            </span>
+                            <span className={componentStyles.componentSortOrder}>
+                              Сортировка: {component.sortOrder}
+                            </span>
+                            {!component.isActive && (
+                              <span className={componentStyles.inactiveBadge}>Неактивен</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className={componentStyles.componentActions}>
+                          <button
+                            type="button"
+                            className={componentStyles.editButton}
+                            onClick={() => startEditDraftComponent(index)}
+                            title="Редактировать комплектующее"
+                            aria-label="Редактировать комплектующее"
+                          >
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden
+                            >
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            className={componentStyles.deleteButton}
+                            onClick={() => removeDraftComponent(index)}
+                            title="Удалить комплектующее"
+                          >
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden
+                            >
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                              <line x1="10" y1="11" x2="10" y2="17" />
+                              <line x1="14" y1="11" x2="14" y2="17" />
+                            </svg>
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
