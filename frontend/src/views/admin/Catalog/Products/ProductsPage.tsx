@@ -199,6 +199,9 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
     }, 3000);
   }, []);
 
+  // Категория, которую нужно сохранять при переходах на create/edit/copy и обратно.
+  const persistedCategoryId = categoryFilter || categoryId || '';
+
   useEffect(() => {
     return () => {
       if (selectionHintTimeoutRef.current) {
@@ -1342,8 +1345,8 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
           className={styles.actionButton}
           onClick={(e) => {
             e.stopPropagation();
-            const editUrl = categoryId
-              ? `/admin/catalog/products/${product.id}/edit?fromCategory=${categoryId}`
+            const editUrl = persistedCategoryId
+              ? `/admin/catalog/products/${product.id}/edit?fromCategory=${persistedCategoryId}`
               : `/admin/catalog/products/${product.id}/edit`;
             router.push(editUrl);
           }}
@@ -1356,7 +1359,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
           onClick={(e) => {
             e.stopPropagation();
             const copyUrl = `/admin/catalog/products/new?copyFrom=${product.id}${
-              categoryId ? `&fromCategory=${categoryId}` : ''
+              persistedCategoryId ? `&fromCategory=${persistedCategoryId}` : ''
             }`;
             router.push(copyUrl);
           }}
@@ -1640,8 +1643,8 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
           <button
             className={styles.addButton}
             onClick={() => {
-              const url = categoryId
-                ? `/admin/catalog/products/new?categoryId=${categoryId}`
+              const url = persistedCategoryId
+                ? `/admin/catalog/products/new?categoryId=${persistedCategoryId}&fromCategory=${persistedCategoryId}`
                 : '/admin/catalog/products/new';
               router.push(url);
             }}
@@ -1846,8 +1849,8 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
         defaultSortOrder="asc"
         sortStorageKey={`admin_products_sort:${categoryId ?? 'all'}`}
         onRowClick={(product) => {
-          const editUrl = categoryId
-            ? `/admin/catalog/products/${product.id}/edit?fromCategory=${categoryId}`
+          const editUrl = persistedCategoryId
+            ? `/admin/catalog/products/${product.id}/edit?fromCategory=${persistedCategoryId}`
             : `/admin/catalog/products/${product.id}/edit`;
           router.push(editUrl);
         }}
