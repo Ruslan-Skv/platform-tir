@@ -133,12 +133,6 @@
   transform: translateX(5px);
 }
 
-/* Карточка «Акции» в спокойном состоянии — та же обводка, что и у остальных;
-   отличия только по бейджу «Акция» и по ховеру (общий .card:hover). */
-.saleCard {
-  /* без переопределения border/box-shadow — как .card */
-}
-
 /* Темная тема */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
   color: #f7fafc;

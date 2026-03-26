@@ -275,6 +275,13 @@ alias dc='docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml 
 | 1 | `git pull` | — |
 | 2 | `docker compose ... pull` | ✅ Volumes не трогаются |
 | 3 | `docker compose ... up -d` | ✅ БД, uploads, индексы сохраняются |
+| 4 | `docker image prune -f` | ✅ Удаляет только висячие образы `<none>`; запущенные контейнеры не трогает |
+
+После каждого `pull` с тегом `latest` предыдущие слои остаются без тега и могут занимать много места в `/var/lib/docker`. Шаг 4 освобождает этот объём.
+
+```bash
+docker image prune -f
+```
 
 **Важно:** не используйте `down -v` — флаг `-v` удаляет volumes и данные.
 
