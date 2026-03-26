@@ -1063,9 +1063,18 @@ export function ProductCreatePage({
       }).catch((e) => console.warn('Revalidate failed:', e));
       router.refresh();
 
-      const componentsQuery =
-        componentsCopyErrors > 0 ? `?componentsCopyError=${componentsCopyErrors}` : '';
-      router.push(`/admin/catalog/products/${createdProduct.id}/edit${componentsQuery}`);
+      const nextParams = new URLSearchParams();
+      if (componentsCopyErrors > 0) {
+        nextParams.set('componentsCopyError', String(componentsCopyErrors));
+      }
+      const returnCategoryId = fromCategory || categoryIdFromUrl || formData.categoryId;
+      if (returnCategoryId) {
+        nextParams.set('fromCategory', returnCategoryId);
+      }
+      const nextQuery = nextParams.toString();
+      router.push(
+        `/admin/catalog/products/${createdProduct.id}/edit${nextQuery ? `?${nextQuery}` : ''}`
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка создания товара');
     } finally {
