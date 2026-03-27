@@ -296,9 +296,9 @@ export function Dashboard() {
               <span className={styles.quickActionIcon}>👤</span>
               <span>Новый клиент</span>
             </a>
-            <a href="/admin/content/pages/new" className={styles.quickAction}>
+            <a href="/admin/content/home" className={styles.quickAction}>
               <span className={styles.quickActionIcon}>📄</span>
-              <span>Создать страницу</span>
+              <span>Управлять главной</span>
             </a>
             <a href="/admin/content/blog/new" className={styles.quickAction}>
               <span className={styles.quickActionIcon}>✏️</span>
