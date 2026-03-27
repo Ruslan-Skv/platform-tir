@@ -30,14 +30,24 @@ export interface Service {
  * Файлы лежат в public/images/; при работе бэкенда подменяются из API (админка).
  * Используются при недоступности бэкенда, чтобы не запрашивать URL с localhost:3001.
  */
+// export const DEFAULT_DIRECTION_IMAGES: Record<string, string> = {
+//   furniture: '/images/mebel.jpg',
+//   repair: '/images/remont-kvartir.jpg',
+//   doors: '/images/dveri.jpg',
+//   windows: '/images/okna.jpg',
+//   ceilings: '/images/potolki.jpg',
+//   blinds: '/images/zhalyuzi.jpg',
+//   sales: '/images/akcii.jpg',
+// };
+
 export const DEFAULT_DIRECTION_IMAGES: Record<string, string> = {
-  furniture: '/images/mebel.jpg',
-  repair: '/images/remont-kvartir.jpg',
-  doors: '/images/dveri.jpg',
-  windows: '/images/okna.jpg',
-  ceilings: '/images/potolki.jpg',
-  blinds: '/images/zhalyuzi.jpg',
-  sales: '/images/akcii.jpg',
+  furniture: '/images/mebel.png',
+  repair: '/images/remont-kvartir.png',
+  doors: '/images/dveri.png',
+  windows: '/images/okna.png',
+  ceilings: '/images/potolki.png',
+  blinds: '/images/zhalyuzi.png',
+  // sales: '/images/akcii.png',
 };
 
 export const categories: Category[] = [
@@ -95,16 +105,16 @@ export const categories: Category[] = [
     productCount: 73,
     href: '/catalog?category=жалюзи',
   },
-  {
-    id: 7,
-    slug: 'sales',
-    name: 'Акции',
-    description: 'Специальные предложения и скидки',
-    image: DEFAULT_DIRECTION_IMAGES.sales ?? '',
-    productCount: 28,
-    href: '/catalog?category=акции',
-    isSale: true,
-  },
+  // {
+  //   id: 7,
+  //   slug: 'sales',
+  //   name: 'Акции',
+  //   description: 'Специальные предложения и скидки',
+  //   image: DEFAULT_DIRECTION_IMAGES.sales ?? '',
+  //   productCount: 28,
+  //   href: '/catalog?category=акции',
+  //   isSale: true,
+  // },
 ];
 
 export const advantages: Advantage[] = [
@@ -134,7 +144,7 @@ export const advantages: Advantage[] = [
   },
   {
     id: 5,
-    title: 'Гарантия 3 года',
+    title: 'Гарантия 1 год',
     description: 'Предоставляем гарантию на все работы и материалы',
     icon: '🛡️',
   },

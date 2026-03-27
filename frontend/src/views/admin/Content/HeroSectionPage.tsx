@@ -278,7 +278,7 @@ export function HeroSectionPage() {
       showMessage('error', 'Ошибка подключения');
     } finally {
       setUploadingIcon(null);
-      setIconUploadTarget(null);
+      iconUploadTargetRef.current = null;
       e.target.value = '';
     }
   };
@@ -338,7 +338,7 @@ export function HeroSectionPage() {
             value={data.block.titleMain}
             onChange={(e) => handleBlockChange('titleMain', e.target.value)}
             className={styles.input}
-            placeholder="Создаем интерьеры мечты"
+            placeholder="Создаем интерьер мечты"
           />
         </div>
         <div className={styles.formGroup}>

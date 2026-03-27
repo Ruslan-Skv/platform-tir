@@ -49,7 +49,7 @@ export class HeroService {
             slideGap,
           }
         : {
-            titleMain: 'Создаем интерьеры мечты',
+            titleMain: 'Создаем интерьер мечты',
             titleAccent: 'в Мурманске',
             subtitle:
               'Мебель на заказ, ремонт под ключ, двери входные и межкомнатные, натяжные потолки, жалюзи, мягкая мебель, кровати, матрасы .....',
@@ -86,7 +86,7 @@ export class HeroService {
       where: { id: 'main' },
       create: {
         id: 'main',
-        titleMain: data.titleMain ?? 'Создаем интерьеры мечты',
+        titleMain: data.titleMain ?? 'Создаем интерьер мечты',
         titleAccent: data.titleAccent ?? 'в Мурманске',
         subtitle: data.subtitle ?? '',
         slideShowMode: data.slideShowMode ?? 'auto',

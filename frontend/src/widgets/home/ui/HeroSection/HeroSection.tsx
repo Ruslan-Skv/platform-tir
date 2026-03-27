@@ -25,12 +25,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ initialData }) => {
   const [noTransition, setNoTransition] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(0);
 
-  // block и slides — с сервера; features — всегда с фронтенда (без мигания)
-  const data = {
-    block: (initialData ?? HERO_CONFIG).block,
-    slides: (initialData ?? HERO_CONFIG).slides,
-    features: HERO_CONFIG.features,
-  };
+  // Данные Hero приходят с сервера; HERO_CONFIG используется как fallback.
+  const data = initialData ?? HERO_CONFIG;
   const mode: HeroSlideShowMode = data.block.slideShowMode ?? 'auto';
   const count = data.slides.length;
   const isStatic = mode === 'static';

@@ -21,7 +21,7 @@ export interface HeroConfig {
 
 export const HERO_CONFIG: HeroConfig = {
   block: {
-    titleMain: 'Создаем интерьеры мечты',
+    titleMain: 'Создаем интерьер мечты',
     titleAccent: 'в Мурманске',
     subtitle:
       'Мебель на заказ, ремонт под ключ, двери входные и межкомнатные, натяжные потолки, жалюзи, мягкая мебель, кровати, матрасы .....',
@@ -36,7 +36,7 @@ export const HERO_CONFIG: HeroConfig = {
   features: [
     { id: '1', icon: '🏭', title: 'Собственное производство', sortOrder: 0 },
     { id: '2', icon: '📐', title: 'Бесплатный замер', sortOrder: 1 },
-    { id: '3', icon: '🛡️', title: 'Гарантия 3 года', sortOrder: 2 },
+    { id: '3', icon: '🛡️', title: 'Гарантия 1 год', sortOrder: 2 },
     { id: '4', icon: '⚡', title: 'Сроки от 1 дня', sortOrder: 3 },
   ],
 };

@@ -5,16 +5,11 @@ import styles from './CategoriesGrid.module.css';
 
 interface CategoryCardProps {
   category: Category;
-  onClick: () => void;
 }
 
-export const CategoryCard: React.FC<CategoryCardProps> = ({ category, onClick }) => {
+export const CategoryCard: React.FC<CategoryCardProps> = ({ category }) => {
   return (
-    <button
-      type="button"
-      className={`${styles.card} ${category.isSale ? styles.saleCard : ''}`}
-      onClick={onClick}
-    >
+    <div className={`${styles.card} ${category.isSale ? styles.saleCard : ''}`}>
       <div
         className={styles.cardImage}
         style={category.image ? { backgroundImage: `url(${category.image})` } : undefined}
@@ -29,6 +24,6 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({ category, onClick })
           <span className={styles.arrow}>→</span>
         </div>
       </div>
-    </button>
+    </div>
   );
 };

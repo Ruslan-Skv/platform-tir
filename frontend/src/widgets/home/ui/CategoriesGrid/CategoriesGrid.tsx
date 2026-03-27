@@ -2,8 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
-
 import { type Category, categories } from '../../lib/constants';
 import { DEFAULT_DIRECTION_IMAGES } from '../../lib/constants/homeConstants';
 import styles from './CategoriesGrid.module.css';
@@ -35,7 +33,6 @@ function setStoredDirectionImages(data: Record<string, string>): void {
 }
 
 export const CategoriesGrid: React.FC = () => {
-  const router = useRouter();
   // Стартуем с дефолтных картинок (локальные пути), чтобы при остановленном бэкенде
   // не рендерить URL с localhost:3001 и не получать ERR_CONNECTION_REFUSED в консоли.
   const [directionImages, setDirectionImages] = useState<Record<string, string>>(
@@ -65,10 +62,6 @@ export const CategoriesGrid: React.FC = () => {
     image: directionImages[cat.slug] || cat.image,
   }));
 
-  const handleCategoryClick = (href: string) => {
-    router.push(href);
-  };
-
   return (
     <section className={styles.categories}>
       <div className={styles.container}>
@@ -79,11 +72,7 @@ export const CategoriesGrid: React.FC = () => {
 
         <div className={styles.grid}>
           {categoriesWithImages.map((category) => (
-            <CategoryCard
-              key={category.id}
-              category={category}
-              onClick={() => handleCategoryClick(category.href)}
-            />
+            <CategoryCard key={category.id} category={category} />
           ))}
         </div>
       </div>
