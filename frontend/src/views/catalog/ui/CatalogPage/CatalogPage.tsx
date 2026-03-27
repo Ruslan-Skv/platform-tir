@@ -38,6 +38,16 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
     }
   }, [mobileFiltersOpen]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [categorySlug]);
+
+  useEffect(() => {
+    if (totalPages > 0 && currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });

@@ -74,7 +74,8 @@ interface ProductsGridProps {
   onSortChange?: () => void;
 }
 
-const PRODUCTS_PER_PAGE = 20; // 5 строк × 4 столбца
+/** Десктоп: 3 колонки × 5 строк; остальное уходит на следующие страницы пагинатора */
+const PRODUCTS_PER_PAGE = 15;
 
 type SortOption =
   | 'default'
