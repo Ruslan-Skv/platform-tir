@@ -10,6 +10,7 @@ import { DataTable } from '@/shared/ui/admin/DataTable';
 import styles from './ProductsPage.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const PRODUCTS_PAGE_LIMIT_STORAGE_KEY = 'admin_products_page_limit';
 
 /** Уникальный query при каждом входе в карточку — иначе Next.js Router Cache может не перемонтировать страницу и показать старые поля */
 function hrefToProductEdit(productId: string, fromCategory: string): string {
@@ -130,7 +131,17 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const hasSelection = selectedIds.length > 0;
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
+  const [limit, setLimit] = useState<number>(() => {
+    if (typeof window === 'undefined') return 20;
+    try {
+      const raw = localStorage.getItem(PRODUCTS_PAGE_LIMIT_STORAGE_KEY);
+      if (!raw) return 20;
+      const parsed = Number(raw);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : 20;
+    } catch {
+      return 20;
+    }
+  });
 
   // Advanced filters
   const [activeFilter, setActiveFilter] = useState<'all' | 'yes' | 'no'>('all');
@@ -372,9 +383,11 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
     };
   }, [categoryIdsForAttributes]);
 
-  // Flatten categories for select dropdown (with unique keys)
+  // Текущее имя категории для заголовка: берём активный фильтр из селекта.
+  // Это позволяет заголовку меняться при ручной смене категории в фильтре.
   const currentCategoryName = useMemo(() => {
-    if (!categoryId) return null;
+    const activeCategoryId = categoryFilter || categoryId;
+    if (!activeCategoryId) return null;
     const findName = (cats: CategoriesResponse[], id: string): string | null => {
       for (const cat of cats) {
         if (cat.id === id) return cat.name;
@@ -385,8 +398,8 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       }
       return null;
     };
-    return findName(categories, categoryId);
-  }, [categories, categoryId]);
+    return findName(categories, activeCategoryId);
+  }, [categories, categoryFilter, categoryId]);
 
   const flatCategories = useMemo(() => {
     const flatten = (cats: CategoriesResponse[], prefix = ''): { id: string; name: string }[] => {
@@ -622,6 +635,12 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
     priceMin,
     priceMax,
   ]);
+
+  // Persist selected page size between navigations
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(PRODUCTS_PAGE_LIMIT_STORAGE_KEY, String(limit));
+  }, [limit]);
 
   // Check if any advanced filter is active
   const hasAdvancedFilters =
