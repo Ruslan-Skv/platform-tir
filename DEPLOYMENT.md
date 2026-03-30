@@ -322,6 +322,56 @@ docker compose ... exec backend node prisma/create-super-admin.cjs
 
 **Порядок старта:** postgres → elasticsearch → backend → frontend → nginx (Compose соблюдает `depends_on`).
 
+### Внутренний мониторинг (Uptime Kuma)
+
+Отдельный контейнер из [`docker-compose.monitoring.yml`](docker-compose.monitoring.yml): проверка доступности сайта и API, уведомления (email и др.). Он **не входит** в основной стек (`docker-compose.infra.yml` + `docker-compose.prod.yml`), поэтому типичный деплой приложения этот сервис **не трогает**.
+
+#### Первый запуск (один раз)
+
+Из корня репозитория на сервере:
+
+```bash
+cd ~/platform-tir
+docker compose -f docker-compose.monitoring.yml up -d
+```
+
+Панель по умолчанию слушает только **localhost** (**127.0.0.1:3002**). Доступ с вашего компьютера без открытия порта в интернет:
+
+```bash
+ssh -L 3002:127.0.0.1:3002 user@IP_СЕРВЕРА
+```
+
+В браузере: `http://127.0.0.1:3002`. Настройка мониторов и SMTP — в интерфейсе Kuma (см. комментарии в начале `docker-compose.monitoring.yml`).
+
+#### Повседневная работа и деплой
+
+| Действие | Нужно ли что-то делать с Kuma |
+|----------|-------------------------------|
+| `git pull`, `dc pull`, `dc up -d` (обновление приложения) | **Нет** |
+| `dc restart backend` / `frontend` / `nginx` | **Нет** |
+| Перезагрузка VPS | Обычно **нет**: у сервиса задано `restart: unless-stopped` |
+
+Повторно вызывать `docker compose -f docker-compose.monitoring.yml up -d` нужно только если вы меняли этот compose-файл, обновляете образ Kuma или поднимаете мониторинг после удаления контейнера.
+
+#### Предупреждение `Found orphan containers ([uptime-kuma])`
+
+При `dc up -d` Compose может сообщить, что контейнер `uptime-kuma` — «сирота» относительно **текущего** набора compose-файлов. Так и задумано: мониторинг описан в другом файле, на работу стека это **не влияет**. **Не добавляйте** к основному деплою флаг `--remove-orphans`, если не хотите удалить контейнер мониторинга.
+
+#### Обновление образа и перезапуск только Kuma
+
+```bash
+docker compose -f docker-compose.monitoring.yml pull
+docker compose -f docker-compose.monitoring.yml up -d
+```
+
+Если нужно перезапустить только контейнер без обновления образа:
+
+```bash
+docker restart uptime-kuma
+```
+
+Настройки и история проверок хранятся в Docker volume (в compose — `uptime-kuma-data`); при обычных перезапусках приложения они **сохраняются**.
+
 ### Ручное применение миграций
 
 Обычно не требуется — backend при старте выполняет `prisma migrate deploy`. Если нужно:
