@@ -50,6 +50,12 @@ export class ProductsService {
     updatedBy: { select: { email: true } },
   };
 
+  /** Артикул товара у поставщика (с сайта поставщика); не подставляем внутренний SKU. */
+  private normalizeSupplierSku(value: string | null | undefined): string {
+    if (value == null) return '';
+    return String(value).trim();
+  }
+
   async create(createProductDto: CreateProductDto, userId?: string) {
     // Поля поставщика, партнёра и cardVariants — исключаем из data для prisma.product.create
     const {
@@ -130,10 +136,7 @@ export class ProductsService {
         create: {
           productId: product.id,
           supplierId: supplierId,
-          supplierSku:
-            supplierSku != null && String(supplierSku).trim() !== ''
-              ? String(supplierSku).trim()
-              : product.sku || '',
+          supplierSku: this.normalizeSupplierSku(supplierSku),
           supplierPrice: supplierPrice ? new Prisma.Decimal(supplierPrice) : product.price,
           supplierProductUrl: supplierProductUrl || null,
           supplierStock: product.stock || 0,
@@ -142,10 +145,7 @@ export class ProductsService {
         update: {
           isMainSupplier: true,
           ...(supplierSku !== undefined && {
-            supplierSku:
-              supplierSku === null || String(supplierSku).trim() === ''
-                ? product.sku || ''
-                : String(supplierSku).trim(),
+            supplierSku: this.normalizeSupplierSku(supplierSku),
           }),
           ...(supplierPrice !== undefined && { supplierPrice: new Prisma.Decimal(supplierPrice) }),
           ...(supplierProductUrl !== undefined && {
@@ -669,10 +669,7 @@ export class ProductsService {
           create: {
             productId: id,
             supplierId: supplierId,
-            supplierSku:
-              supplierSku != null && String(supplierSku).trim() !== ''
-                ? String(supplierSku).trim()
-                : product.sku || '',
+            supplierSku: this.normalizeSupplierSku(supplierSku),
             supplierPrice: supplierPrice ? new Prisma.Decimal(supplierPrice) : product.price,
             supplierProductUrl: supplierProductUrl || null,
             supplierStock: product.stock || 0,
@@ -681,10 +678,7 @@ export class ProductsService {
           update: {
             isMainSupplier: true,
             ...(supplierSku !== undefined && {
-              supplierSku:
-                supplierSku === null || String(supplierSku).trim() === ''
-                  ? product.sku || ''
-                  : String(supplierSku).trim(),
+              supplierSku: this.normalizeSupplierSku(supplierSku),
             }),
             ...(supplierPrice !== undefined && {
               supplierPrice: new Prisma.Decimal(supplierPrice),
@@ -713,10 +707,7 @@ export class ProductsService {
             where: { id: mainSupplier.id },
             data: {
               ...(supplierSku !== undefined && {
-                supplierSku:
-                  supplierSku === null || String(supplierSku).trim() === ''
-                    ? product.sku || ''
-                    : String(supplierSku).trim(),
+                supplierSku: this.normalizeSupplierSku(supplierSku),
               }),
               ...(supplierPrice !== undefined && {
                 supplierPrice: new Prisma.Decimal(supplierPrice),
