@@ -47,6 +47,7 @@ interface Product {
     id: string;
     supplierId: string;
     isMainSupplier: boolean;
+    supplierSku?: string | null;
     supplierPrice?: string | number;
     supplierProductUrl?: string | null;
     supplierPriceChangedAt?: string | null;
@@ -90,6 +91,7 @@ const AVAILABLE_COLUMNS: ColumnConfig[] = [
   { key: 'isNew', title: 'Новинка', editable: true, type: 'boolean' },
   { key: 'isPartnerProduct', title: 'Товар партнёра', editable: true, type: 'boolean' },
   { key: 'supplier', title: 'Поставщик', editable: true, type: 'text' },
+  { key: 'supplierSku', title: 'Арт. поставщика', editable: false, type: 'text' },
   { key: 'updatedAt', title: 'Дата обновления', editable: false, type: 'date' },
 ];
 
@@ -1293,6 +1295,16 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
             return (
               <span>{mainSupplier.supplier.commercialName || mainSupplier.supplier.legalName}</span>
             );
+          }
+
+          // Артикул товара поставщика — из главного поставщика
+          if (columnConfig.key === 'supplierSku') {
+            const mainSupplier = product.suppliers?.find((s) => s.isMainSupplier);
+            const sku = mainSupplier?.supplierSku?.trim();
+            if (!sku) {
+              return <span className={styles.emptyValue}>—</span>;
+            }
+            return <span>{sku}</span>;
           }
 
           // Цена поставщика + пометка «изменилась»
