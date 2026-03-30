@@ -221,8 +221,12 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
     }, 3000);
   }, []);
 
-  // Категория, которую нужно сохранять при переходах на create/edit/copy и обратно.
-  const persistedCategoryId = categoryFilter || categoryId || '';
+  // Категория для fromCategory / предзаполнения «новый товар» — только то, что выбрано в селекте.
+  // Так «Все категории» не подменяется на categoryId из URL и обратный переход из карточки совпадает с фильтром.
+  const persistedCategoryId = categoryFilter;
+
+  /** Предыдущий categoryId из URL — чтобы сбросить селект при уходе с /products/category/:id на /products */
+  const prevRouteCategoryIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     return () => {
@@ -232,11 +236,14 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
     };
   }, []);
 
-  // Синхронизация фильтра категории при навигации по категориям
+  // Синхронизация фильтра с маршрутом: /products/category/:id → селект = id; уход на /products → сброс «Все категории»
   useEffect(() => {
     if (categoryId) {
       setCategoryFilter(categoryId);
+    } else if (prevRouteCategoryIdRef.current) {
+      setCategoryFilter('');
     }
+    prevRouteCategoryIdRef.current = categoryId;
   }, [categoryId]);
 
   // Close column selector when clicking outside
@@ -303,7 +310,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       }
       return ids;
     };
-    if (categoryId) {
+    if (categoryFilter) {
       const findAndCollect = (cats: CategoriesResponse[], targetId: string): string[] => {
         for (const cat of cats) {
           if (cat.id === targetId) {
@@ -316,7 +323,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
         }
         return [];
       };
-      return findAndCollect(categories, categoryId);
+      return findAndCollect(categories, categoryFilter);
     }
     // Без фильтра: только категории товаров на странице, чтобы не превысить rate limit
     const ids = new Set<string>();
@@ -324,7 +331,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       if (p.category?.id) ids.add(p.category.id);
     }
     return Array.from(ids);
-  }, [categories, categoryId, allProducts]);
+  }, [categories, categoryFilter, allProducts]);
 
   // Fetch category attributes — при categoryId только для этой категории, иначе для всех
   // Последовательно, чтобы не превысить rate limit (429 Too Many Requests)
@@ -383,11 +390,9 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
     };
   }, [categoryIdsForAttributes]);
 
-  // Текущее имя категории для заголовка: берём активный фильтр из селекта.
-  // Это позволяет заголовку меняться при ручной смене категории в фильтре.
+  // Заголовок только по селекту: пустое значение = «Товары» без подзаголовка (не подставляем categoryId из URL).
   const currentCategoryName = useMemo(() => {
-    const activeCategoryId = categoryFilter || categoryId;
-    if (!activeCategoryId) return null;
+    if (!categoryFilter) return null;
     const findName = (cats: CategoriesResponse[], id: string): string | null => {
       for (const cat of cats) {
         if (cat.id === id) return cat.name;
@@ -398,8 +403,8 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       }
       return null;
     };
-    return findName(categories, activeCategoryId);
-  }, [categories, categoryFilter, categoryId]);
+    return findName(categories, categoryFilter);
+  }, [categories, categoryFilter]);
 
   const flatCategories = useMemo(() => {
     const flatten = (cats: CategoriesResponse[], prefix = ''): { id: string; name: string }[] => {
@@ -1909,7 +1914,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
         keyExtractor={(product) => product.id}
         defaultSortBy="name"
         defaultSortOrder="asc"
-        sortStorageKey={`admin_products_sort:${categoryId ?? 'all'}`}
+        sortStorageKey={`admin_products_sort:${categoryFilter || categoryId || 'all'}`}
         onRowClick={(product) => {
           router.push(hrefToProductEdit(product.id, persistedCategoryId));
         }}

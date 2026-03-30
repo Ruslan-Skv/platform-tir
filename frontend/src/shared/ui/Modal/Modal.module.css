@@ -29,9 +29,12 @@
 }
 
 .panel {
-  background: rgb(211 211 211);
+  background: #fff;
+  border: 1px solid #e5e7eb;
   border-radius: 1rem;
+  box-shadow: 0 10px 40px rgb(0 0 0 / 12%);
   box-sizing: border-box;
+  color-scheme: light;
   margin: 0 auto;
   max-height: 90vh;
   overflow-y: auto;
@@ -106,6 +109,8 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .panel {
   background: #1f2937;
   border: 1px solid #374151;
+  box-shadow: 0 10px 40px rgb(0 0 0 / 35%);
+  color-scheme: dark;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {

@@ -164,7 +164,16 @@
   }
 
   .actions {
-    display: none;
+    margin-bottom: 2rem;
+  }
+
+  .measurementButtonWrap {
+    width: 100%;
+    max-width: min(100%, 22rem);
+  }
+
+  .measurementButtonWrap button {
+    width: 100%;
   }
 
   .contactInfo {
