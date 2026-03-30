@@ -401,8 +401,25 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
   }, [categories]);
 
   // Fetch all products (без кэша браузера, чтобы после создания/редактирования список был актуальным)
-  const fetchProducts = useCallback(async (isRefresh = false) => {
-    if (isRefresh) {
+  // full — первая загрузка (скелетон таблицы); refresh — явное обновление (кнопка, навигация);
+  // silent — только данные, без индикаторов (возврат на вкладку, иначе дёргается панель фильтров)
+  const fetchProducts = useCallback(async (mode: 'full' | 'refresh' | 'silent' = 'full') => {
+    if (mode === 'silent') {
+      try {
+        const response = await fetch(`${API_URL}/products/admin/all?_=${Date.now()}`, {
+          headers: getAuthHeaders(),
+          cache: 'no-store',
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setAllProducts(Array.isArray(data) ? data : []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch products:', err);
+      }
+      return;
+    }
+    if (mode === 'refresh') {
       setRefreshing(true);
     } else {
       setLoading(true);
@@ -438,7 +455,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
   const refreshParam = searchParams.get('refresh');
   useEffect(() => {
     if (refreshParam) {
-      fetchProducts(true);
+      fetchProducts('refresh');
       router.replace(pathname);
     }
   }, [refreshParam, pathname, fetchProducts, router]);
@@ -447,21 +464,29 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
     const isProductsList =
       pathname === '/admin/catalog/products' ||
       pathname.startsWith('/admin/catalog/products/category/');
-    const isFirstVisit = prevPathnameRef.current === null;
-    const wasOnOtherPage = prevPathnameRef.current !== null && prevPathnameRef.current !== pathname;
+    const prev = prevPathnameRef.current;
+    const wasOnOtherPage = prev !== null && prev !== pathname;
     prevPathnameRef.current = pathname;
-    if (isProductsList && (isFirstVisit || wasOnOtherPage)) {
-      fetchProducts(true);
+    if (!isProductsList || !wasOnOtherPage) {
+      return;
     }
+    // Первая загрузка списка — уже в useEffect выше (fetch без аргумента). Здесь только смена маршрута.
+    // Возврат с формы товара — без индикатора «Обновление», иначе дёргается панель фильтров (как при вкладке).
+    const pathOnly = (prev.split('?')[0] ?? prev) as string;
+    const fromProductEditor =
+      pathOnly === '/admin/catalog/products/new' ||
+      pathOnly.startsWith('/admin/catalog/products/new/') ||
+      /^\/admin\/catalog\/products\/[^/]+\/edit$/.test(pathOnly);
+    fetchProducts(fromProductEditor ? 'silent' : 'refresh');
   }, [pathname, fetchProducts]);
 
   // При возврате на вкладку или восстановлении из bfcache — обновить список
   useEffect(() => {
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') fetchProducts(true);
+      if (document.visibilityState === 'visible') fetchProducts('silent');
     };
     const onPageShow = (e: PageTransitionEvent) => {
-      if (e.persisted) fetchProducts(true);
+      if (e.persisted) fetchProducts('silent');
     };
     window.addEventListener('pageshow', onPageShow);
     document.addEventListener('visibilitychange', onVisibilityChange);
@@ -677,7 +702,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
         const idsToRemove = new Set(selectedIds);
         setAllProducts((prev) => prev.filter((p) => !idsToRemove.has(p.id)));
         setSelectedIds([]);
-        fetchProducts(true);
+        fetchProducts('refresh');
       }
     } catch (err) {
       console.error('Failed to bulk delete:', err);
@@ -1582,7 +1607,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
                       (data.errors?.length ? `, ошибок: ${data.errors.length}` : '');
                 setSyncSupplierPricesMessage(msg);
                 setTimeout(() => setSyncSupplierPricesMessage(null), 5000);
-                fetchProducts(true);
+                fetchProducts('refresh');
               } catch (e) {
                 setSyncSupplierPricesMessage(
                   e instanceof Error ? e.message : 'Ошибка обновления цен поставщика'
@@ -1633,7 +1658,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
                       (data.errors?.length ? `, ошибок: ${data.errors.length}` : '');
                 setSyncSupplierPricesMessage(msg);
                 setTimeout(() => setSyncSupplierPricesMessage(null), 5000);
-                fetchProducts(true);
+                fetchProducts('refresh');
               } catch (e) {
                 setSyncSupplierPricesMessage(
                   e instanceof Error ? e.message : 'Ошибка синхронизации цен'
@@ -1719,7 +1744,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
         </button>
         <button
           className={styles.refreshButton}
-          onClick={() => fetchProducts(true)}
+          onClick={() => fetchProducts('refresh')}
           disabled={loading || refreshing}
         >
           🔄 {refreshing ? 'Обновление...' : loading ? 'Загрузка...' : 'Обновить'}
