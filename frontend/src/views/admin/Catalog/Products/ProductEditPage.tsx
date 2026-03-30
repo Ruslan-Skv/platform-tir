@@ -195,6 +195,7 @@ interface Product {
     id: string;
     supplierId: string;
     isMainSupplier: boolean;
+    supplierSku?: string;
     supplierPrice?: string | number;
     supplierProductUrl?: string | null;
     supplier: {
@@ -304,6 +305,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     sizes: [] as string[],
     openingSide: [] as string[],
     supplierId: '',
+    supplierSku: '',
     supplierProductUrl: '',
     supplierPrice: '',
     cardVariants: [] as Array<{
@@ -593,6 +595,8 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         const mainSupplier = product.suppliers?.find((ps) => ps.isMainSupplier);
         const supplierId = mainSupplier?.supplierId || '';
         const supplierProductUrl = mainSupplier?.supplierProductUrl || '';
+        const supplierSku =
+          mainSupplier?.supplierSku != null ? String(mainSupplier.supplierSku) : '';
         const supplierPrice = mainSupplier?.supplierPrice ? String(mainSupplier.supplierPrice) : '';
 
         const cardVariantsForm = (product.cardVariants || []).map((v) => ({
@@ -616,6 +620,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           categoryId: product.categoryId || '',
           manufacturerId: product.manufacturerId || null,
           supplierId: supplierId,
+          supplierSku: supplierSku,
           supplierProductUrl: supplierProductUrl,
           supplierPrice: supplierPrice,
           isActive: product.isActive ?? true,
@@ -1065,6 +1070,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           supplierId: formData.supplierId || null,
           supplierProductUrl: formData.supplierProductUrl || null,
           supplierPrice: formData.supplierPrice ? parseFloat(formData.supplierPrice) : undefined,
+          supplierSku: formData.supplierId ? formData.supplierSku.trim() || null : undefined,
           cardVariants: formData.cardVariants
             .filter((v) => v.name.trim() && !Number.isNaN(parseFloat(v.price)))
             .slice(0, 5)
@@ -1357,6 +1363,20 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label htmlFor="supplierSku">Артикул товара поставщика</label>
+                  <input
+                    type="text"
+                    id="supplierSku"
+                    name="supplierSku"
+                    value={formData.supplierSku}
+                    onChange={handleChange}
+                    className={styles.input}
+                    placeholder="Код у поставщика"
+                    disabled={!formData.supplierId}
+                  />
                 </div>
               </div>
 

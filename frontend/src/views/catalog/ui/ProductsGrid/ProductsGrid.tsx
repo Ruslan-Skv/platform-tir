@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 import type { Product } from '@/entities/product/types';
 import { useMobileCatalogColumns } from '@/shared/lib/hooks';
@@ -72,10 +72,30 @@ interface ProductsGridProps {
   currentPage?: number;
   onTotalPagesChange?: (totalPages: number) => void;
   onSortChange?: () => void;
+  /** Вызывается при переключении десктоп ↔ мобильный (меняется число товаров на страницу) */
+  onProductsPerPageLayoutChange?: () => void;
 }
 
-/** Десктоп: 3 колонки × 5 строк; остальное уходит на следующие страницы пагинатора */
-const PRODUCTS_PER_PAGE = 15;
+/** Десктоп: 3 колонки × 5 строк; остальное — пагинация */
+const PRODUCTS_PER_PAGE_DESKTOP = 15;
+/**
+ * Мобильный каталог (≤768px, как в ProductsGrid.module.css): чётное число,
+ * чтобы при сетке в 2 колонки не оставалась одна карточка в последнем ряду.
+ */
+const PRODUCTS_PER_PAGE_MOBILE = 16;
+
+const MOBILE_CATALOG_MEDIA = '(max-width: 768px)';
+
+function subscribeMobileCatalogViewport(cb: () => void) {
+  if (typeof window === 'undefined') return () => {};
+  const mq = window.matchMedia(MOBILE_CATALOG_MEDIA);
+  mq.addEventListener('change', cb);
+  return () => mq.removeEventListener('change', cb);
+}
+
+function getMobileCatalogViewport(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia(MOBILE_CATALOG_MEDIA).matches;
+}
 
 type SortOption =
   | 'default'
@@ -92,6 +112,7 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
   currentPage = 1,
   onTotalPagesChange,
   onSortChange,
+  onProductsPerPageLayoutChange,
 }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [originalProducts, setOriginalProducts] = useState<Product[]>([]);
@@ -99,6 +120,14 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('default');
   const mobileCatalogColumns = useMobileCatalogColumns();
+  const isMobileCatalogViewport = useSyncExternalStore(
+    subscribeMobileCatalogViewport,
+    getMobileCatalogViewport,
+    () => false
+  );
+  const productsPerPage = isMobileCatalogViewport
+    ? PRODUCTS_PER_PAGE_MOBILE
+    : PRODUCTS_PER_PAGE_DESKTOP;
   const [partnerSettings, setPartnerSettings] = useState<{
     partnerLogoUrl: string | null;
     showPartnerIconOnCards: boolean;
@@ -251,9 +280,9 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
   }, [sortBy, originalProducts]);
 
   // Пагинация - вычисляем до условных возвратов
-  const totalPages = Math.ceil(products.length / PRODUCTS_PER_PAGE);
-  const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
-  const endIndex = startIndex + PRODUCTS_PER_PAGE;
+  const totalPages = Math.ceil(products.length / productsPerPage);
+  const startIndex = (currentPage - 1) * productsPerPage;
+  const endIndex = startIndex + productsPerPage;
   const currentProducts = products.slice(startIndex, endIndex);
 
   // Передаём количество страниц в родительский компонент
@@ -261,6 +290,14 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
   useEffect(() => {
     onTotalPagesChange?.(totalPages);
   }, [totalPages, onTotalPagesChange]);
+
+  const prevMobileViewportRef = useRef(isMobileCatalogViewport);
+  useEffect(() => {
+    if (prevMobileViewportRef.current !== isMobileCatalogViewport) {
+      prevMobileViewportRef.current = isMobileCatalogViewport;
+      onProductsPerPageLayoutChange?.();
+    }
+  }, [isMobileCatalogViewport, onProductsPerPageLayoutChange]);
 
   if (loading) {
     return (

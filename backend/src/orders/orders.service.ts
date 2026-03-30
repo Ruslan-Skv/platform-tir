@@ -2282,9 +2282,13 @@ export class OrdersService {
     return updated;
   }
 
-  private async restoreStock(items: Array<{ productId: string; quantity: number }>) {
+  private async restoreStock(items: Array<{ productId: string | null; quantity: number }>) {
+    const rows = items.filter(
+      (i): i is { productId: string; quantity: number } => i.productId != null,
+    );
+    if (!rows.length) return;
     await this.prisma.$transaction(
-      items.map((item) =>
+      rows.map((item) =>
         this.prisma.product.update({
           where: { id: item.productId },
           data: { stock: { increment: item.quantity } },

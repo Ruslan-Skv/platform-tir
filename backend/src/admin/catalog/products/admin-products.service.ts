@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
+import { ElasticsearchService } from '../../../elasticsearch/elasticsearch.service';
 import { Prisma } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -35,9 +36,14 @@ interface ImportProductDto {
 const MAX_BULK_IDS = 1000;
 const MAX_IMPORT_PRODUCTS = 500;
 
+const PRODUCT_SEARCH_INDEX = 'products';
+
 @Injectable()
 export class AdminProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private elasticsearch: ElasticsearchService,
+  ) {}
 
   async findAll(params?: {
     search?: string;
@@ -253,6 +259,14 @@ export class AdminProductsService {
     const result = await this.prisma.product.deleteMany({
       where: { id: { in: ids } },
     });
+
+    await Promise.all(
+      ids.map((id) =>
+        this.elasticsearch.deleteDocument(PRODUCT_SEARCH_INDEX, id).catch(() => {
+          /* индекс может быть отключён — удаление из БД уже выполнено */
+        }),
+      ),
+    );
 
     return {
       success: true,

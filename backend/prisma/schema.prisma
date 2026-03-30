@@ -1240,7 +1240,8 @@ model OrderEvent {
 model OrderItem {
   id                    String    @id @default(cuid())
   orderId               String
-  productId             String
+  /// Обнуляется при удалении товара из каталога (позиция заказа и цена остаются в истории)
+  productId             String?
   cardVariantId         String?   // Вариант из «схожих товаров в карточке» (для истории)
   quantity              Int
   price                 Decimal   @db.Decimal(10, 2)
@@ -1251,8 +1252,8 @@ model OrderItem {
   replacementNote       String?   @db.Text // Пометка о замене для покупателя
   createdAt             DateTime  @default(now())
   order                 Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product               Product   @relation(fields: [productId], references: [id])
-  replacedFromProduct   Product?  @relation("OrderItemReplacedFrom", fields: [replacedFromProductId], references: [id])
+  product               Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+  replacedFromProduct   Product?  @relation("OrderItemReplacedFrom", fields: [replacedFromProductId], references: [id], onDelete: SetNull)
 
   @@map("order_items")
 }

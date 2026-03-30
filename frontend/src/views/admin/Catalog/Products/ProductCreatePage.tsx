@@ -184,6 +184,7 @@ const defaultFormData = {
   seoTitle: '',
   seoDescription: '',
   supplierId: '',
+  supplierSku: '',
   supplierProductUrl: '',
   supplierPrice: '',
   videoUrl: '',
@@ -998,6 +999,10 @@ export function ProductCreatePage({
         supplierId: formData.supplierId || undefined,
         supplierProductUrl: formData.supplierProductUrl || undefined,
         supplierPrice: formData.supplierPrice ? parseFloat(formData.supplierPrice) : undefined,
+        supplierSku:
+          formData.supplierId && formData.supplierSku.trim()
+            ? formData.supplierSku.trim()
+            : undefined,
         videoUrl: formData.videoUrl || undefined,
         weight: formData.weight ? parseFloat(formData.weight) : undefined,
       };
@@ -1255,6 +1260,20 @@ export function ProductCreatePage({
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="supplierSku">Артикул товара поставщика</label>
+                <input
+                  type="text"
+                  id="supplierSku"
+                  name="supplierSku"
+                  value={formData.supplierSku}
+                  onChange={handleChange}
+                  className={styles.input}
+                  placeholder="Код у поставщика"
+                  disabled={!formData.supplierId}
+                />
               </div>
             </div>
 

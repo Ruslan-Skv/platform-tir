@@ -122,7 +122,7 @@ export class AnalyticsService {
       take: limit,
     });
 
-    const productIds = topProducts.map((p) => p.productId);
+    const productIds = topProducts.map((p) => p.productId).filter((id): id is string => id != null);
     const products = await this.prisma.product.findMany({
       where: { id: { in: productIds } },
       select: {
@@ -136,7 +136,7 @@ export class AnalyticsService {
     const productMap = new Map(products.map((p) => [p.id, p]));
 
     return topProducts.map((item) => ({
-      product: productMap.get(item.productId),
+      product: item.productId != null ? productMap.get(item.productId) : undefined,
       quantity: item._sum.quantity,
       revenue: item._sum.price,
     }));

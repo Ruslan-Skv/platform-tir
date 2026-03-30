@@ -29,6 +29,7 @@ export interface ProductForCopy {
   suppliers?: Array<{
     supplierId: string;
     isMainSupplier: boolean;
+    supplierSku?: string;
     supplierPrice?: string | number;
     supplierProductUrl?: string | null;
   }>;
@@ -107,6 +108,7 @@ export interface CopiedProductData {
     seoTitle: string;
     seoDescription: string;
     supplierId: string;
+    supplierSku: string;
     supplierProductUrl: string;
     supplierPrice: string;
     videoUrl: string;
@@ -184,6 +186,7 @@ export function mapProductToCopyData(
       seoTitle: product.seoTitle || '',
       seoDescription: product.seoDescription || '',
       supplierId: mainSupplier?.supplierId || '',
+      supplierSku: mainSupplier?.supplierSku != null ? String(mainSupplier.supplierSku) : '',
       supplierProductUrl: mainSupplier?.supplierProductUrl || '',
       supplierPrice: mainSupplier?.supplierPrice ? String(mainSupplier.supplierPrice) : '',
       videoUrl: product.videoUrl || '',

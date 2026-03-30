@@ -107,6 +107,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
             currentPage={currentPage}
             onTotalPagesChange={setTotalPages}
             onSortChange={() => setCurrentPage(1)}
+            onProductsPerPageLayoutChange={() => setCurrentPage(1)}
           />
         </main>
       </div>

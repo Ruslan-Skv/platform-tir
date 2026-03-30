@@ -56,6 +56,7 @@ export class ProductsService {
       supplierId,
       supplierProductUrl,
       supplierPrice,
+      supplierSku,
       categoryId,
       partnerId,
       cardVariants,
@@ -129,7 +130,10 @@ export class ProductsService {
         create: {
           productId: product.id,
           supplierId: supplierId,
-          supplierSku: product.sku || '',
+          supplierSku:
+            supplierSku != null && String(supplierSku).trim() !== ''
+              ? String(supplierSku).trim()
+              : product.sku || '',
           supplierPrice: supplierPrice ? new Prisma.Decimal(supplierPrice) : product.price,
           supplierProductUrl: supplierProductUrl || null,
           supplierStock: product.stock || 0,
@@ -137,6 +141,12 @@ export class ProductsService {
         },
         update: {
           isMainSupplier: true,
+          ...(supplierSku !== undefined && {
+            supplierSku:
+              supplierSku === null || String(supplierSku).trim() === ''
+                ? product.sku || ''
+                : String(supplierSku).trim(),
+          }),
           ...(supplierPrice !== undefined && { supplierPrice: new Prisma.Decimal(supplierPrice) }),
           ...(supplierProductUrl !== undefined && {
             supplierProductUrl: supplierProductUrl || null,
@@ -567,6 +577,7 @@ export class ProductsService {
       supplierId,
       supplierProductUrl,
       supplierPrice,
+      supplierSku,
       categoryId,
       partnerId,
       cardVariants,
@@ -637,7 +648,8 @@ export class ProductsService {
     if (
       'supplierId' in updateProductDto ||
       'supplierProductUrl' in updateProductDto ||
-      'supplierPrice' in updateProductDto
+      'supplierPrice' in updateProductDto ||
+      'supplierSku' in updateProductDto
     ) {
       if (supplierId) {
         // Сначала снимаем флаг isMainSupplier у всех существующих поставщиков этого товара
@@ -657,7 +669,10 @@ export class ProductsService {
           create: {
             productId: id,
             supplierId: supplierId,
-            supplierSku: product.sku || '',
+            supplierSku:
+              supplierSku != null && String(supplierSku).trim() !== ''
+                ? String(supplierSku).trim()
+                : product.sku || '',
             supplierPrice: supplierPrice ? new Prisma.Decimal(supplierPrice) : product.price,
             supplierProductUrl: supplierProductUrl || null,
             supplierStock: product.stock || 0,
@@ -665,6 +680,12 @@ export class ProductsService {
           },
           update: {
             isMainSupplier: true,
+            ...(supplierSku !== undefined && {
+              supplierSku:
+                supplierSku === null || String(supplierSku).trim() === ''
+                  ? product.sku || ''
+                  : String(supplierSku).trim(),
+            }),
             ...(supplierPrice !== undefined && {
               supplierPrice: new Prisma.Decimal(supplierPrice),
             }),
@@ -673,7 +694,11 @@ export class ProductsService {
             }),
           },
         });
-      } else if (supplierProductUrl !== undefined || supplierPrice !== undefined) {
+      } else if (
+        supplierProductUrl !== undefined ||
+        supplierPrice !== undefined ||
+        supplierSku !== undefined
+      ) {
         // Если обновляются только supplierProductUrl или supplierPrice, но supplierId не указан
         // Находим главного поставщика и обновляем его данные
         const mainSupplier = await this.prisma.productSupplier.findFirst({
@@ -687,6 +712,12 @@ export class ProductsService {
           await this.prisma.productSupplier.update({
             where: { id: mainSupplier.id },
             data: {
+              ...(supplierSku !== undefined && {
+                supplierSku:
+                  supplierSku === null || String(supplierSku).trim() === ''
+                    ? product.sku || ''
+                    : String(supplierSku).trim(),
+              }),
               ...(supplierPrice !== undefined && {
                 supplierPrice: new Prisma.Decimal(supplierPrice),
               }),

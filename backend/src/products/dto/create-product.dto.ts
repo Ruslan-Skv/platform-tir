@@ -153,6 +153,15 @@ export class CreateProductDto {
   @IsString()
   supplierId?: string;
 
+  @ApiProperty({
+    example: 'SUP-ART-8821',
+    required: false,
+    description: 'Артикул товара у поставщика',
+  })
+  @IsOptional()
+  @IsString()
+  supplierSku?: string;
+
   @ApiProperty({ example: 'https://supplier.com/product/123', required: false })
   @IsOptional()
   @IsString()
