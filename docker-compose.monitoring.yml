@@ -1,0 +1,32 @@
+# Внутренний мониторинг: Uptime Kuma (веб-панель + email/Telegram и др.)
+#
+# Запуск на том же VPS (рядом с основным стеком):
+#   docker compose -f docker-compose.monitoring.yml up -d
+#
+# Панель только с localhost (без открытия в интернет):
+#   http://127.0.0.1:3002
+#   Доступ с вашего ПК: ssh -L 3002:127.0.0.1:3002 user@server
+#
+# Мониторы в Kuma (примеры URL — подставьте свой домен или host.docker.internal):
+#   - https://ВАШ_ДОМЕН/api/v1/health   — реальная проверка API (Nest)
+#   - https://ВАШ_ДОМЕН/                — главная (Next)
+#   Не полагайтесь только на GET /health у nginx: там статический «ok», без backend.
+#
+# Доступ из контейнера Kuma к сервисам на хосте (nginx :80/:443):
+#   http://host.docker.internal/api/v1/health
+#   (ниже extra_hosts с host-gateway — стандарт для Docker на Linux)
+
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:3002:3001'
+    volumes:
+      - uptime-kuma-data:/app/data
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+volumes:
+  uptime-kuma-data:
