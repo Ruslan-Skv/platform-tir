@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   Request,
+  Header,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
@@ -171,6 +172,7 @@ export class ProductsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Получить товар по ID' })
+  @Header('Cache-Control', 'no-store, max-age=0, must-revalidate')
   findOne(@Param('id') id: string) {
     return this.productsService.findOne(id);
   }

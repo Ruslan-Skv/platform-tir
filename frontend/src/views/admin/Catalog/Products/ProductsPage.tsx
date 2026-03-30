@@ -11,6 +11,15 @@ import styles from './ProductsPage.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
+/** Уникальный query при каждом входе в карточку — иначе Next.js Router Cache может не перемонтировать страницу и показать старые поля */
+function hrefToProductEdit(productId: string, fromCategory: string): string {
+  const base = fromCategory
+    ? `/admin/catalog/products/${productId}/edit?fromCategory=${fromCategory}`
+    : `/admin/catalog/products/${productId}/edit`;
+  const sep = base.includes('?') ? '&' : '?';
+  return `${base}${sep}v=${Date.now()}`;
+}
+
 interface Category {
   id: string;
   name: string;
@@ -1345,10 +1354,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
           className={styles.actionButton}
           onClick={(e) => {
             e.stopPropagation();
-            const editUrl = persistedCategoryId
-              ? `/admin/catalog/products/${product.id}/edit?fromCategory=${persistedCategoryId}`
-              : `/admin/catalog/products/${product.id}/edit`;
-            router.push(editUrl);
+            router.push(hrefToProductEdit(product.id, persistedCategoryId));
           }}
           title="Редактировать"
         >
@@ -1849,10 +1855,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
         defaultSortOrder="asc"
         sortStorageKey={`admin_products_sort:${categoryId ?? 'all'}`}
         onRowClick={(product) => {
-          const editUrl = persistedCategoryId
-            ? `/admin/catalog/products/${product.id}/edit?fromCategory=${persistedCategoryId}`
-            : `/admin/catalog/products/${product.id}/edit`;
-          router.push(editUrl);
+          router.push(hrefToProductEdit(product.id, persistedCategoryId));
         }}
         selectable
         selectedIds={selectedIds}

@@ -730,18 +730,27 @@ export class ProductsService {
       }
     }
 
-    // Update in Elasticsearch (product уже с cardVariants из include или после sync)
-    const toReturn =
-      'cardVariants' in updateProductDto
-        ? await this.prisma.product.findUnique({
-            where: { id },
-            include: {
-              category: true,
-              ...this.cardVariantsInclude,
-              ...this.createdByUpdatedByInclude,
+    // После правок ProductSupplier нужен повторный findUnique: первый prisma.product.update
+    // выполняется до upsert поставщика — иначе в ответе PATCH не было бы актуальных suppliers/supplierSku.
+    const toReturn = await this.prisma.product.findUnique({
+      where: { id },
+      include: {
+        category: true,
+        suppliers: {
+          include: {
+            supplier: {
+              select: {
+                id: true,
+                legalName: true,
+                commercialName: true,
+              },
             },
-          })
-        : product;
+          },
+        },
+        ...this.cardVariantsInclude,
+        ...this.createdByUpdatedByInclude,
+      },
+    });
     if (toReturn) await this.indexProduct(toReturn);
     return toReturn ?? product;
   }

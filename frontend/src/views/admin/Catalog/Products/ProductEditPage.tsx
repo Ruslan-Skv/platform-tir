@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
 import { getApiErrorMessage } from '@/shared/lib/api-error';
@@ -253,6 +253,7 @@ interface ProductEditPageProps {
 
 export function ProductEditPage({ productId }: ProductEditPageProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const { getAuthHeaders, user } = useAuth();
   const getAuthHeadersRef = useRef(getAuthHeaders);
@@ -496,20 +497,28 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
 
   // Fetch product
   useEffect(() => {
-    const fetchProduct = async () => {
-      if (!productId) {
-        setError('ID товара не указан');
-        setLoading(false);
-        return;
-      }
+    if (!productId) {
+      setError('ID товара не указан');
+      setLoading(false);
+      return;
+    }
 
-      setLoading(true);
-      setError(null);
-      setProductNotFound(false);
+    const ac = new AbortController();
+    let active = true;
 
+    setLoading(true);
+    setError(null);
+    setProductNotFound(false);
+
+    const run = async () => {
       try {
-        console.log('Fetching product:', productId);
-        const response = await fetch(`${API_URL}/products/${productId}`);
+        const productUrl = `${API_URL}/products/${encodeURIComponent(productId)}?t=${Date.now()}`;
+        const response = await fetch(productUrl, {
+          cache: 'no-store',
+          signal: ac.signal,
+        });
+
+        if (!active) return;
 
         if (response.status === 404) {
           setProductNotFound(true);
@@ -521,7 +530,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         }
 
         const product: Product = await response.json();
-        console.log('Product loaded:', product);
+        if (!active) return;
 
         // Загружаем атрибуты категории сначала, чтобы правильно разделить атрибуты
         let loadedCategoryAttributes: CategoryAttribute[] = [];
@@ -531,9 +540,12 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
 
         if (product.categoryId) {
           try {
-            const attrsResponse = await fetch(
-              `${API_URL}/categories/${product.categoryId}/attributes`
-            );
+            const attrsUrl = `${API_URL}/categories/${encodeURIComponent(product.categoryId)}/attributes?t=${Date.now()}`;
+            const attrsResponse = await fetch(attrsUrl, {
+              cache: 'no-store',
+              signal: ac.signal,
+            });
+            if (!active) return;
             if (attrsResponse.ok) {
               const attrsData: CategoryAttribute[] = await attrsResponse.json();
               // Сортируем по order для гарантии правильного порядка
@@ -548,9 +560,12 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
               });
             }
           } catch (attrErr) {
+            if ((attrErr as Error).name === 'AbortError') return;
             console.error('Error loading category attributes:', attrErr);
           }
         }
+
+        if (!active) return;
 
         // Разделяем атрибуты на категорийные и кастомные
         // Атрибуты могут быть в двух форматах: массив (новый) или объект (старый)
@@ -610,6 +625,8 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           sortOrder: typeof v.sortOrder === 'number' ? v.sortOrder : 0,
         }));
 
+        if (!active) return;
+
         setFormData({
           name: product.name || '',
           slug: product.slug || '',
@@ -652,15 +669,25 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
 
         setCustomAttributes(customAttrs);
       } catch (err) {
+        if ((err as Error).name === 'AbortError') return;
+        if (!active) return;
         console.error('Error fetching product:', err);
         setError(err instanceof Error ? err.message : 'Ошибка загрузки');
       } finally {
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchProduct();
-  }, [productId]);
+    void run();
+
+    return () => {
+      active = false;
+      ac.abort();
+    };
+    // pathname: при клиентской навигации из списка сегмент может восстановиться из кэша маршрутизатора
+  }, [productId, pathname]);
 
   // Подсказки размеров из других товаров этой категории
   useEffect(() => {
@@ -1071,7 +1098,8 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           supplierId: formData.supplierId || null,
           supplierProductUrl: formData.supplierProductUrl || null,
           supplierPrice: formData.supplierPrice ? parseFloat(formData.supplierPrice) : undefined,
-          supplierSku: formData.supplierId ? formData.supplierSku.trim() || null : undefined,
+          // Пустой артикул — явная строка "", не null: иначе ключ может пропасть из DTO после валидации и очистка не доходит до БД
+          supplierSku: formData.supplierId ? formData.supplierSku.trim() : undefined,
           cardVariants: formData.cardVariants
             .filter((v) => v.name.trim() && !Number.isNaN(parseFloat(v.price)))
             .slice(0, 5)
@@ -1092,7 +1120,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         throw new Error(getApiErrorMessage(data, 'Ошибка сохранения'));
       }
 
-      const updated = await response.json();
+      const updated = (await response.json()) as Product;
       if (
         updated?.createdBy?.email ||
         updated?.updatedBy?.email ||
@@ -1105,6 +1133,24 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           updatedBy: updated.updatedBy?.email ?? productMeta.updatedBy,
           updatedAt: updated.updatedAt ?? productMeta.updatedAt,
         });
+      }
+
+      // Ответ PATCH теперь включает suppliers после upsert; синхронизируем поля поставщика с сервером
+      if (Array.isArray(updated?.suppliers)) {
+        const main = updated.suppliers.find((ps) => ps.isMainSupplier);
+        if (main) {
+          setFormData((prev) => ({
+            ...prev,
+            supplierId: main.supplierId || prev.supplierId,
+            supplierSku:
+              main.supplierSku != null && String(main.supplierSku).length > 0
+                ? String(main.supplierSku)
+                : '',
+            supplierProductUrl: main.supplierProductUrl ?? prev.supplierProductUrl,
+            supplierPrice:
+              main.supplierPrice != null ? String(main.supplierPrice) : prev.supplierPrice,
+          }));
+        }
       }
 
       setSuccess('Товар успешно сохранён');
