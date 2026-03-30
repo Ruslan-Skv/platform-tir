@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
+import { getApiErrorMessage } from '@/shared/lib/api-error';
 
 import { ImageUrlModal } from './ImageUrlModal';
 import { ProductComponentsSection } from './ProductComponentsSection';
@@ -1088,7 +1089,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || 'Ошибка сохранения');
+        throw new Error(getApiErrorMessage(data, 'Ошибка сохранения'));
       }
 
       const updated = await response.json();
@@ -1413,7 +1414,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                             );
                             if (!response.ok) {
                               const data = await response.json().catch(() => ({}));
-                              throw new Error(data.message || 'Ошибка получения цены');
+                              throw new Error(getApiErrorMessage(data, 'Ошибка получения цены'));
                             }
                             const data = await response.json();
                             setFormData((prev) => ({

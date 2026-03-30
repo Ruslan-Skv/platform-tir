@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
+import { getApiErrorMessage } from '@/shared/lib/api-error';
 
 import { ImageUrlModal } from './ImageUrlModal';
 import componentStyles from './ProductComponentsSection.module.css';
@@ -1018,7 +1019,7 @@ export function ProductCreatePage({
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || 'Ошибка создания товара');
+        throw new Error(getApiErrorMessage(data, 'Ошибка создания товара'));
       }
 
       const createdProduct = await response.json();
@@ -1310,7 +1311,7 @@ export function ProductCreatePage({
                           );
                           if (!response.ok) {
                             const data = await response.json().catch(() => ({}));
-                            throw new Error(data.message || 'Ошибка получения цены');
+                            throw new Error(getApiErrorMessage(data, 'Ошибка получения цены'));
                           }
                           const data = await response.json();
                           setFormData((prev) => ({

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { MailerModule } from '@nestjs-modules/mailer';
@@ -31,6 +31,7 @@ import { FormsModule } from './forms/forms.module';
 import { HomeSectionsModule } from './home-sections/home-sections.module';
 import { ContactFormModule } from './contact-form/contact-form.module';
 import { SitePublicModule } from './site-public/site-public.module';
+import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exception.filter';
 
 @Module({
   imports: [
@@ -93,6 +94,10 @@ import { SitePublicModule } from './site-public/site-public.module';
   controllers: [AppController],
   providers: [
     AppService,
+    {
+      provide: APP_FILTER,
+      useClass: PrismaClientExceptionFilter,
+    },
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
