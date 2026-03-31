@@ -24,6 +24,14 @@ function readPageFromSearchParams(searchParams: URLSearchParams): number {
   return Number.isFinite(raw) && raw >= 1 ? raw : 1;
 }
 
+function readSavedScrollPosition(urlKey: string): number | null {
+  if (typeof window === 'undefined') return null;
+  const raw = sessionStorage.getItem(`catalog_scroll:${urlKey}`);
+  if (raw == null) return null;
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0 ? value : null;
+}
+
 const CatalogPageContent: React.FC<CatalogPageProps> = ({
   categorySlug,
   categoryName,
@@ -37,8 +45,13 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
   /** 0 — ещё не получили из сетки; нельзя начинать с 1, иначе при возврате с ?page=N эффект сразу «поджимает» URL к 1 */
   const [totalPages, setTotalPages] = useState(0);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [didRestoreScroll, setDidRestoreScroll] = useState(false);
 
   const pageFromUrl = useMemo(() => readPageFromSearchParams(searchParams), [searchParams]);
+  const catalogUrlKey = useMemo(
+    () => `${pathname}${searchParams.size > 0 ? `?${searchParams.toString()}` : ''}`,
+    [pathname, searchParams]
+  );
 
   const currentPage = useMemo(() => {
     if (totalPages > 0) {
@@ -79,6 +92,27 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
       replacePageInUrl(totalPages, false);
     }
   }, [totalPages, pageFromUrl, replacePageInUrl]);
+
+  useEffect(() => {
+    setDidRestoreScroll(false);
+  }, [catalogUrlKey]);
+
+  useEffect(() => {
+    if (didRestoreScroll) return;
+    if (totalPages <= 0) return;
+    const savedY = readSavedScrollPosition(catalogUrlKey);
+    if (savedY == null) {
+      setDidRestoreScroll(true);
+      return;
+    }
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: savedY, behavior: 'auto' });
+        sessionStorage.removeItem(`catalog_scroll:${catalogUrlKey}`);
+        setDidRestoreScroll(true);
+      });
+    });
+  }, [catalogUrlKey, didRestoreScroll, totalPages]);
 
   const handlePageChange = (page: number) => {
     replacePageInUrl(page, true);

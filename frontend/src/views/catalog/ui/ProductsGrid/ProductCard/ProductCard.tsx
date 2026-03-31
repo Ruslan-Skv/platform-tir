@@ -20,6 +20,13 @@ interface ProductCardProps {
   showPartnerIconOnCards?: boolean; // Показывать иконку партнёра на карточках
 }
 
+function saveCatalogScrollPosition(): void {
+  if (typeof window === 'undefined') return;
+  if (!window.location.pathname.startsWith('/catalog/products')) return;
+  const urlKey = `${window.location.pathname}${window.location.search}`;
+  sessionStorage.setItem(`catalog_scroll:${urlKey}`, String(window.scrollY));
+}
+
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   isCompareMode = false,
@@ -197,7 +204,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     <div
       className={`${styles.productCard} ${compact ? styles.productCardCompact : ''} ${isCompareMode ? styles.productCardCompare : ''}`}
     >
-      <Link href={`/product/${product.slug}`} className={styles.cardLink}>
+      <Link
+        href={`/product/${product.slug}`}
+        className={styles.cardLink}
+        onClick={saveCatalogScrollPosition}
+      >
         <div className={styles.nameBlock}>
           <h3 className={styles.name}>{displayName}</h3>
         </div>
