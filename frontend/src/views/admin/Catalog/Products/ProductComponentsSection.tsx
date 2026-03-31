@@ -19,6 +19,7 @@ interface ProductComponent {
   stock: number;
   isActive: boolean;
   sortOrder: number;
+  createdAt?: string;
 }
 
 interface ProductComponentsSectionProps {
@@ -125,7 +126,17 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
       );
       if (response.ok) {
         const data = await response.json();
-        setComponents(data);
+        const sorted = Array.isArray(data)
+          ? [...data].sort((a: ProductComponent, b: ProductComponent) => {
+              const sortDiff = (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+              if (sortDiff !== 0) return sortDiff;
+              const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+              if (aTime !== bTime) return aTime - bTime;
+              return a.id.localeCompare(b.id);
+            })
+          : [];
+        setComponents(sorted);
       }
     } catch (error) {
       // Error handled silently
