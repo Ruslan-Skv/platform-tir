@@ -2,7 +2,9 @@
 
 import { FunnelIcon } from '@heroicons/react/24/outline';
 
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { Breadcrumbs } from '../Breadcrumbs';
 import { FiltersSidebar } from '../FiltersSidebar';
@@ -17,16 +19,50 @@ export interface CatalogPageProps {
   parentCategorySlug?: string;
 }
 
-export const CatalogPage: React.FC<CatalogPageProps> = ({
+function readPageFromSearchParams(searchParams: URLSearchParams): number {
+  const raw = Number.parseInt(searchParams.get('page') || '1', 10);
+  return Number.isFinite(raw) && raw >= 1 ? raw : 1;
+}
+
+const CatalogPageContent: React.FC<CatalogPageProps> = ({
   categorySlug,
   categoryName,
   parentCategoryName,
   parentCategorySlug,
 }) => {
   const displayCategoryName = categoryName || categorySlug || 'Каталог';
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  /** 0 — ещё не получили из сетки; нельзя начинать с 1, иначе при возврате с ?page=N эффект сразу «поджимает» URL к 1 */
+  const [totalPages, setTotalPages] = useState(0);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  const pageFromUrl = useMemo(() => readPageFromSearchParams(searchParams), [searchParams]);
+
+  const currentPage = useMemo(() => {
+    if (totalPages > 0) {
+      return Math.min(pageFromUrl, totalPages);
+    }
+    return pageFromUrl;
+  }, [pageFromUrl, totalPages]);
+
+  const replacePageInUrl = useCallback(
+    (page: number, scrollToTop: boolean) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (page <= 1) {
+        params.delete('page');
+      } else {
+        params.set('page', String(page));
+      }
+      const q = params.toString();
+      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+      if (scrollToTop) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    },
+    [pathname, router, searchParams]
+  );
 
   useEffect(() => {
     if (mobileFiltersOpen) {
@@ -39,18 +75,17 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   }, [mobileFiltersOpen]);
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [categorySlug]);
-
-  useEffect(() => {
-    if (totalPages > 0 && currentPage > totalPages) {
-      setCurrentPage(1);
+    if (totalPages > 0 && pageFromUrl > totalPages) {
+      replacePageInUrl(totalPages, false);
     }
-  }, [totalPages, currentPage]);
+  }, [totalPages, pageFromUrl, replacePageInUrl]);
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    replacePageInUrl(page, true);
+  };
+
+  const goToFirstCatalogPage = () => {
+    replacePageInUrl(1, false);
   };
 
   return (
@@ -106,8 +141,8 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
             categoryName={displayCategoryName}
             currentPage={currentPage}
             onTotalPagesChange={setTotalPages}
-            onSortChange={() => setCurrentPage(1)}
-            onProductsPerPageLayoutChange={() => setCurrentPage(1)}
+            onSortChange={goToFirstCatalogPage}
+            onProductsPerPageLayoutChange={goToFirstCatalogPage}
           />
         </main>
       </div>
@@ -125,3 +160,17 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
     </div>
   );
 };
+
+function CatalogPageFallback() {
+  return (
+    <div className={styles.catalogPage}>
+      <p className={styles.suspenseFallback}>Загрузка каталога…</p>
+    </div>
+  );
+}
+
+export const CatalogPage: React.FC<CatalogPageProps> = (props) => (
+  <Suspense fallback={<CatalogPageFallback />}>
+    <CatalogPageContent {...props} />
+  </Suspense>
+);
