@@ -418,3 +418,129 @@
     transform: translateX(0);
   }
 }
+
+/* Светлая тема админ-сайдбара */
+:where(html[data-theme='light'], [data-app-theme='light']) .sidebar {
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  border-right: 1px solid #e5e7eb;
+  color: #111827;
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .header {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .logo {
+  color: #111827;
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .toggleBtn {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .toggleBtn:hover {
+  background: #d1d5db;
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .navLink {
+  color: #4b5563;
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .navLink:hover {
+  color: #111827;
+  background: rgba(99, 102, 241, 0.08);
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .navLink.active {
+  color: #111827;
+  background: rgba(99, 102, 241, 0.14);
+  border-left-color: #6366f1;
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .accessIcon {
+  color: #6b7280;
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .accessIcon:hover {
+  color: #111827;
+  background: rgba(99, 102, 241, 0.1);
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .accessIconSubmenu {
+  color: #6b7280;
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .accessIconSubmenu:hover {
+  color: #111827;
+  background: rgba(99, 102, 241, 0.08);
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .arrow {
+  opacity: 0.65;
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .submenu {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .submenuLink {
+  color: #4b5563;
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .submenuLink:hover {
+  color: #111827;
+  background: rgba(99, 102, 241, 0.08);
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .submenuLink.active {
+  color: #111827;
+  background: rgba(99, 102, 241, 0.14);
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .submenuGroupRow {
+  color: #4b5563;
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .submenuGroupRow:hover {
+  color: #111827;
+  background: rgba(99, 102, 241, 0.08);
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .submenuGroupRow.active {
+  color: #111827;
+  background: rgba(99, 102, 241, 0.14);
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .submenuGroupLink:hover {
+  color: #111827;
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .submenuNested {
+  background: rgba(148, 163, 184, 0.1);
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .footer {
+  border-top: 1px solid #e5e7eb;
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .backLink {
+  color: #4b5563;
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .backLink:hover {
+  color: #111827;
+  background: rgba(99, 102, 241, 0.1);
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .resizer::after {
+  background: rgba(17, 24, 39, 0.15);
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .nav::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.7);
+}
+
+:where(html[data-theme='light'], [data-app-theme='light']) .nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.8);
+}
