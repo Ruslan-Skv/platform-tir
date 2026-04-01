@@ -245,6 +245,10 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.settings.catalog',
       },
       {
+        label: 'Блок фильтров',
+        href: '/admin/settings/catalog-filters',
+      },
+      {
         label: 'Личный кабинет',
         href: '/admin/settings/user-cabinet',
         resourceId: 'admin.settings.user-cabinet',

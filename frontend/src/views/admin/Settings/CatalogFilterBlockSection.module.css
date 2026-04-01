@@ -1,0 +1,130 @@
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  width: 100%;
+}
+
+.table th,
+.table td {
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.table th {
+  background: #f9fafb;
+  font-weight: 600;
+}
+
+.muted {
+  color: #6b7280;
+  font-size: 0.8125rem;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.primaryBtn {
+  background: #4f46e5;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+}
+
+.primaryBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.secondaryBtn {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  color: #374151;
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 0.35rem 0.75rem;
+}
+
+.dangerBtn {
+  background: #fff;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #b91c1c;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  padding: 0.35rem 0.65rem;
+}
+
+.formCard {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+}
+
+.formGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  margin-bottom: 1rem;
+}
+
+.formField label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  margin-bottom: 0.35rem;
+}
+
+.formField input[type='text'],
+.formField input[type='number'],
+.formField select {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  max-width: 100%;
+  padding: 0.45rem 0.65rem;
+  width: 100%;
+}
+
+.checkboxRow {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.itemsTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+}
+
+.itemRow {
+  align-items: flex-end;
+  border-bottom: 1px solid #f3f4f6;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 140px 1fr 1fr 70px 36px;
+  padding: 0.75rem 0;
+}
+
+@media (width <= 900px) {
+  .itemRow {
+    grid-template-columns: 1fr;
+  }
+}

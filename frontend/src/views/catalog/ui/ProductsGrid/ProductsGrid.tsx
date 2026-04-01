@@ -1,11 +1,16 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
 import type { Product } from '@/entities/product/types';
 import { useMobileCatalogColumns } from '@/shared/lib/hooks';
+import {
+  applyCatalogFilters,
+  filterSearchSignature,
+} from '@/views/catalog/lib/applyCatalogFilters';
+import type { CatalogFilterFacet } from '@/views/catalog/lib/catalogFilters.types';
 
 import { ProductCard } from './ProductCard';
 import styles from './ProductsGrid.module.css';
@@ -28,6 +33,7 @@ interface ApiProduct {
   images: string[];
   videoUrl?: string | null;
   attributes: Record<string, unknown> | null;
+  manufacturer?: { id: string; name: string; slug?: string } | null;
   sortOrder?: number;
   createdAt?: string;
   rating?: number;
@@ -76,6 +82,10 @@ interface ProductsGridProps {
   onSortChange?: () => void;
   /** Вызывается при переключении десктоп ↔ мобильный (меняется число товаров на страницу) */
   onProductsPerPageLayoutChange?: () => void;
+  /** Фасеты с бэкенда (те же, что в FiltersSidebar) — для клиентской фильтрации */
+  catalogFilters?: CatalogFilterFacet[];
+  /** Границы цен по исходному списку категории/поиска (до фильтров) */
+  onBasePriceBoundsChange?: (bounds: { min: number; max: number } | null) => void;
 }
 
 /** Десктоп: 3 колонки × 5 строк; остальное — пагинация */
@@ -108,6 +118,40 @@ type SortOption =
   | 'new'
   | 'rating';
 
+function sortProducts(productsToSort: Product[], sortOption: SortOption): Product[] {
+  const sorted = [...productsToSort];
+
+  switch (sortOption) {
+    case 'price-asc':
+      return sorted.sort((a, b) => a.price - b.price);
+    case 'price-desc':
+      return sorted.sort((a, b) => b.price - a.price);
+    case 'name-asc':
+      return sorted.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+    case 'name-desc':
+      return sorted.sort((a, b) => b.name.localeCompare(a.name, 'ru'));
+    case 'new':
+      return sorted.sort((a, b) => {
+        if (a.isNew !== b.isNew) {
+          return a.isNew ? -1 : 1;
+        }
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      });
+    case 'rating':
+      return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    case 'default':
+    default:
+      return sorted.sort((a, b) => {
+        const sortOrderA = a.sortOrder ?? 0;
+        const sortOrderB = b.sortOrder ?? 0;
+        if (sortOrderA !== sortOrderB) {
+          return sortOrderA - sortOrderB;
+        }
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      });
+  }
+}
+
 export const ProductsGrid: React.FC<ProductsGridProps> = ({
   categorySlug,
   categoryName = 'Каталог',
@@ -115,12 +159,13 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
   onTotalPagesChange,
   onSortChange,
   onProductsPerPageLayoutChange,
+  catalogFilters,
+  onBasePriceBoundsChange,
 }) => {
   const searchParams = useSearchParams();
   const catalogSearchRaw = searchParams.get('search');
   const catalogSearch = catalogSearchRaw?.trim() ?? '';
 
-  const [products, setProducts] = useState<Product[]>([]);
   const [originalProducts, setOriginalProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -195,6 +240,9 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
           partnerTooltipText: p.partner?.tooltipText ?? null,
           partnerShowTooltip: p.partner?.showTooltip ?? true,
           inStock: p.stock > 0,
+          stock: p.stock,
+          manufacturerId: p.manufacturer?.id ?? null,
+          attributes: p.attributes ?? null,
           discount: p.comparePrice
             ? Math.round(
                 ((parseFloat(p.comparePrice) - parseFloat(p.price)) / parseFloat(p.comparePrice)) *
@@ -218,7 +266,6 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
         }));
 
         setOriginalProducts(mappedProducts);
-        setProducts(mappedProducts);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Произошла ошибка');
       } finally {
@@ -249,54 +296,45 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
     fetchPartnerSettings();
   }, []);
 
-  // Функция сортировки товаров
-  const sortProducts = (productsToSort: Product[], sortOption: SortOption): Product[] => {
-    const sorted = [...productsToSort];
-
-    switch (sortOption) {
-      case 'price-asc':
-        return sorted.sort((a, b) => a.price - b.price);
-      case 'price-desc':
-        return sorted.sort((a, b) => b.price - a.price);
-      case 'name-asc':
-        return sorted.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
-      case 'name-desc':
-        return sorted.sort((a, b) => b.name.localeCompare(a.name, 'ru'));
-      case 'new':
-        return sorted.sort((a, b) => {
-          // Сначала новые товары (isNew), затем по дате создания
-          if (a.isNew !== b.isNew) {
-            return a.isNew ? -1 : 1;
-          }
-          return (b.createdAt || 0) - (a.createdAt || 0);
-        });
-      case 'rating':
-        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-      case 'default':
-      default:
-        // Сортировка по sortOrder (из админки), затем по дате создания
-        return sorted.sort((a, b) => {
-          const sortOrderA = a.sortOrder ?? 0;
-          const sortOrderB = b.sortOrder ?? 0;
-          if (sortOrderA !== sortOrderB) {
-            return sortOrderA - sortOrderB;
-          }
-          return (b.createdAt || 0) - (a.createdAt || 0);
-        });
-    }
-  };
-
-  // Применяем сортировку при изменении sortBy или originalProducts
   useEffect(() => {
-    const sorted = sortProducts(originalProducts, sortBy);
-    setProducts(sorted);
-  }, [sortBy, originalProducts]);
+    if (!onBasePriceBoundsChange) return;
+    if (originalProducts.length === 0) {
+      onBasePriceBoundsChange(null);
+      return;
+    }
+    const prices = originalProducts.map((p) => p.price).filter((x) => Number.isFinite(x));
+    if (prices.length === 0) {
+      onBasePriceBoundsChange(null);
+      return;
+    }
+    const min = Math.floor(Math.min(...prices));
+    const max = Math.ceil(Math.max(...prices));
+    onBasePriceBoundsChange({ min, max });
+  }, [originalProducts, onBasePriceBoundsChange]);
+
+  const prevFilterSigRef = useRef<string | null>(null);
+  useEffect(() => {
+    const sig = filterSearchSignature(searchParams);
+    if (prevFilterSigRef.current === null) {
+      prevFilterSigRef.current = sig;
+      return;
+    }
+    if (prevFilterSigRef.current !== sig) {
+      prevFilterSigRef.current = sig;
+      onSortChange?.();
+    }
+  }, [searchParams, onSortChange]);
+
+  const filteredSortedProducts = useMemo(() => {
+    const filtered = applyCatalogFilters(originalProducts, searchParams, catalogFilters ?? []);
+    return sortProducts(filtered, sortBy);
+  }, [originalProducts, searchParams, catalogFilters, sortBy]);
 
   // Пагинация - вычисляем до условных возвратов
-  const totalPages = Math.ceil(products.length / productsPerPage);
+  const totalPages = Math.ceil(filteredSortedProducts.length / productsPerPage);
   const startIndex = (currentPage - 1) * productsPerPage;
   const endIndex = startIndex + productsPerPage;
-  const currentProducts = products.slice(startIndex, endIndex);
+  const currentProducts = filteredSortedProducts.slice(startIndex, endIndex);
 
   // Передаём количество страниц в родительский компонент
   // Этот useEffect должен быть до условных return, чтобы соблюдать правила хуков
@@ -339,11 +377,13 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
     );
   }
 
-  if (products.length === 0) {
+  if (filteredSortedProducts.length === 0) {
     return (
       <div className={styles.productsGrid}>
         <div className={styles.gridHeader}>{titleBlock}</div>
-        <div className={styles.empty}>Товары не найдены</div>
+        <div className={styles.empty}>
+          {originalProducts.length > 0 ? 'Нет товаров по выбранным фильтрам' : 'Товары не найдены'}
+        </div>
       </div>
     );
   }
@@ -354,8 +394,12 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
         {titleBlock}
         <div className={styles.headerRight}>
           <span className={styles.totalCount}>
-            {products.length}{' '}
-            {products.length === 1 ? 'товар' : products.length < 5 ? 'товара' : 'товаров'}
+            {filteredSortedProducts.length}{' '}
+            {filteredSortedProducts.length === 1
+              ? 'товар'
+              : filteredSortedProducts.length < 5
+                ? 'товара'
+                : 'товаров'}
           </span>
           <div className={styles.sorting}>
             <label htmlFor="sort-select" className={styles.sortLabel}>

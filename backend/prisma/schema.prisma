@@ -791,6 +791,7 @@ model Attribute {
   updatedAt    DateTime            @updatedAt
   values       AttributeValue[]
   categories   CategoryAttribute[]
+  catalogFilterBlockItems CatalogFilterBlockItem[]
 
   @@map("attributes")
 }
@@ -1037,6 +1038,42 @@ model MarketingMetric {
   @@map("marketing_metrics")
 }
 
+/// Публичный каталог: вид элемента в блоке фильтров (атрибут / наличие / производитель).
+enum CatalogFilterItemKind {
+  ATTRIBUTE
+  STOCK
+  MANUFACTURER
+}
+
+/// Настройки блока фильтров категории (админка → Настройки → Блок фильтров).
+model CatalogFilterBlock {
+  id                 String                   @id @default(cuid())
+  name               String                   @default("")
+  categoryId         String                   @unique
+  includeDescendants Boolean                  @default(true)
+  sortOrder          Int                      @default(0)
+  isActive           Boolean                  @default(true)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  category           Category                 @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  items              CatalogFilterBlockItem[]
+
+  @@map("catalog_filter_blocks")
+}
+
+model CatalogFilterBlockItem {
+  id            String                @id @default(cuid())
+  blockId       String
+  kind          CatalogFilterItemKind
+  attributeId   String?
+  labelOverride String?
+  sortOrder     Int                   @default(0)
+  block         CatalogFilterBlock    @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  attribute     Attribute?            @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  @@map("catalog_filter_block_items")
+}
+
 model Category {
   id          String              @id @default(cuid())
   name        String
@@ -1053,6 +1090,7 @@ model Category {
   children    Category[]          @relation("CategoryTree")
   attributes  CategoryAttribute[]
   products    Product[]
+  catalogFilterBlock CatalogFilterBlock?
 
   @@map("categories")
 }

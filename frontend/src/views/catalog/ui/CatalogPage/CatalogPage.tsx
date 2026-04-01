@@ -6,6 +6,8 @@ import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } fr
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
+import { useCatalogFilters } from '@/views/catalog/lib/useCatalogFilters';
+
 import { Breadcrumbs } from '../Breadcrumbs';
 import { FiltersSidebar } from '../FiltersSidebar';
 import { Pagination } from '../Pagination';
@@ -46,10 +48,18 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
   const [totalPages, setTotalPages] = useState(0);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [didRestoreScroll, setDidRestoreScroll] = useState(false);
+  const [priceBounds, setPriceBounds] = useState<{ min: number; max: number } | null>(null);
 
   const pageFromUrl = useMemo(() => readPageFromSearchParams(searchParams), [searchParams]);
   const searchFromUrl = searchParams.get('search') ?? '';
   const prevSearchFromUrlRef = useRef<string | null>(null);
+
+  const {
+    filters: catalogFilters,
+    loading: filtersLoading,
+    hasFacets,
+  } = useCatalogFilters(categorySlug);
+  const showFilterColumn = Boolean(filtersLoading || hasFacets || priceBounds);
 
   const catalogUrlKey = useMemo(
     () => `${pathname}${searchParams.size > 0 ? `?${searchParams.toString()}` : ''}`,
@@ -150,40 +160,55 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
             parentCategorySlug={parentCategorySlug}
           />
         </div>
-        <div className={styles.mobileFiltersRow}>
-          <button
-            type="button"
-            className={styles.mobileFiltersButton}
-            onClick={() => setMobileFiltersOpen(true)}
-            aria-label="Открыть фильтры"
-          >
-            <FunnelIcon className={styles.mobileFiltersButtonIcon} />
-            Фильтры
-          </button>
-        </div>
+        {showFilterColumn ? (
+          <div className={styles.mobileFiltersRow}>
+            <button
+              type="button"
+              className={styles.mobileFiltersButton}
+              onClick={() => setMobileFiltersOpen(true)}
+              aria-label="Открыть фильтры"
+            >
+              <FunnelIcon className={styles.mobileFiltersButtonIcon} />
+              Фильтры
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {/* 2. Основной контент - фильтры и товары */}
-      <div className={styles.mainContent}>
+      <div
+        className={`${styles.mainContent} ${!showFilterColumn ? styles.mainContentFullWidth : ''}`}
+      >
         {/* Десктоп: боковая панель фильтров */}
-        <aside className={styles.filtersSidebar}>
-          <FiltersSidebar />
-        </aside>
+        {showFilterColumn ? (
+          <aside className={styles.filtersSidebar}>
+            <FiltersSidebar
+              filters={catalogFilters}
+              loading={filtersLoading}
+              priceBounds={priceBounds}
+            />
+          </aside>
+        ) : null}
 
         {/* Мобильные: оверлей с фильтрами (панель снизу) */}
-        <div
-          className={styles.filtersOverlay}
-          data-open={mobileFiltersOpen}
-          aria-hidden={!mobileFiltersOpen}
-        >
-          <div className={styles.filtersBackdrop} onClick={() => setMobileFiltersOpen(false)} />
-          <div className={styles.filtersDrawer}>
-            <FiltersSidebar
-              mobileOpen={mobileFiltersOpen}
-              onClose={() => setMobileFiltersOpen(false)}
-            />
+        {showFilterColumn ? (
+          <div
+            className={styles.filtersOverlay}
+            data-open={mobileFiltersOpen}
+            aria-hidden={!mobileFiltersOpen}
+          >
+            <div className={styles.filtersBackdrop} onClick={() => setMobileFiltersOpen(false)} />
+            <div className={styles.filtersDrawer}>
+              <FiltersSidebar
+                mobileOpen={mobileFiltersOpen}
+                onClose={() => setMobileFiltersOpen(false)}
+                filters={catalogFilters}
+                loading={filtersLoading}
+                priceBounds={priceBounds}
+              />
+            </div>
           </div>
-        </div>
+        ) : null}
 
         {/* Колонка с товарами */}
         <main className={styles.productsSection}>
@@ -194,6 +219,8 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
             onTotalPagesChange={setTotalPages}
             onSortChange={goToFirstCatalogPage}
             onProductsPerPageLayoutChange={goToFirstCatalogPage}
+            catalogFilters={catalogFilters}
+            onBasePriceBoundsChange={setPriceBounds}
           />
         </main>
       </div>

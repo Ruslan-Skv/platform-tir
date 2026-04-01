@@ -38,6 +38,15 @@
   grid-template-columns: 280px 1fr;
 }
 
+/* Нет настраиваемых фильтров для ветки категории — одна колонка */
+.mainContentFullWidth {
+  grid-template-columns: 1fr;
+}
+
+.mainContentFullWidth .productsSection {
+  grid-column: 1;
+}
+
 .filtersSidebar {
   grid-column: 1;
 }

@@ -929,7 +929,7 @@ export function ProductCreatePage({
     try {
       // Собираем все атрибуты в правильном порядке
       // Используем массив для сохранения порядка, затем конвертируем в объект
-      const orderedAttributes: Array<{ key: string; value: string }> = [];
+      const orderedAttributes: Array<{ key: string; value: string; slug?: string }> = [];
 
       // 1. Сначала атрибуты категории в порядке их определения
       // categoryAttributes уже отсортированы по order
@@ -940,6 +940,7 @@ export function ProductCreatePage({
           orderedAttributes.push({
             key: ca.attribute.name,
             value: value,
+            slug: ca.attribute.slug,
           });
         }
       });
@@ -954,11 +955,11 @@ export function ProductCreatePage({
         }
       });
 
-      // Сохраняем как массив для гарантии порядка
-      // Формат: [{name: "Модель", value: "..."}, {name: "Цвет", value: "..."}, ...]
-      const attributesArray = orderedAttributes.map(({ key, value }) => ({
+      // Сохраняем как массив для гарантии порядка; slug — для фильтров каталога
+      const attributesArray = orderedAttributes.map(({ key, value, slug }) => ({
         name: key,
         value: value,
+        ...(slug ? { slug } : {}),
       }));
 
       // Validate categoryId before sending

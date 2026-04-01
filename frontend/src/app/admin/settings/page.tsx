@@ -41,6 +41,13 @@ export default function AdminSettingsPage() {
           Каталог
         </Link>
         <Link
+          href="/admin/settings/catalog-filters"
+          className={styles.subtitle}
+          style={{ color: '#4f46e5', textDecoration: 'underline' }}
+        >
+          Блок фильтров
+        </Link>
+        <Link
           href="/admin/settings/notifications"
           className={styles.subtitle}
           style={{ color: '#4f46e5', textDecoration: 'underline' }}

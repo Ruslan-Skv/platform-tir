@@ -39,6 +39,10 @@ export interface Product {
   videoUrl?: string | null;
   /** Масса товара, кг */
   weight?: number | null;
+  /** Публичный каталог: остаток и сырые атрибуты для фильтров */
+  stock?: number;
+  manufacturerId?: string | null;
+  attributes?: unknown;
 }
 
 export interface ProductCardVariant {

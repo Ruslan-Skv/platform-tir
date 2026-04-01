@@ -7,6 +7,15 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { SearchProductsDto } from './dto/search-products.dto';
 import { Category, Prisma } from '@prisma/client';
 
+import { CatalogFilterBlocksService } from '../catalog-filter-blocks/catalog-filter-blocks.service';
+import type { CatalogFiltersResponseDto } from '../catalog-filter-blocks/dto/public-filters.dto';
+
+export type {
+  CatalogFilterFacetDto,
+  CatalogFilterOptionDto,
+  CatalogFiltersResponseDto,
+} from '../catalog-filter-blocks/dto/public-filters.dto';
+
 type CategoryWithChildren = Category & { children?: CategoryWithChildren[] };
 
 export interface SyncSupplierPricesResult {
@@ -39,6 +48,7 @@ export class ProductsService {
     private prisma: PrismaService,
     private elasticsearch: ElasticsearchService,
     private priceScraper: PriceScraperService,
+    private catalogFilterBlocks: CatalogFilterBlocksService,
   ) {}
 
   private readonly cardVariantsInclude = {
@@ -385,6 +395,13 @@ export class ProductsService {
   private catalogPublicListInclude(): Prisma.ProductInclude {
     return {
       category: true,
+      manufacturer: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
       partner: {
         select: {
           id: true,
@@ -397,6 +414,13 @@ export class ProductsService {
       },
       ...this.cardVariantsInclude,
     };
+  }
+
+  /**
+   * Фильтры каталога: конфигурация из админки (Настройки → Блок фильтров).
+   */
+  async findCategoryFilters(categorySlug: string): Promise<CatalogFiltersResponseDto> {
+    return this.catalogFilterBlocks.getPublicFiltersByCategorySlug(categorySlug);
   }
 
   /**

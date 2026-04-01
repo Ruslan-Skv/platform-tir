@@ -205,6 +205,14 @@ export class ProductsController {
     return this.productsService.findBySlug(slug);
   }
 
+  @Get('category/:categorySlug/filters')
+  @ApiOperation({
+    summary: 'Фильтры каталога для категории (ветка + фасеты по атрибутам и производителям)',
+  })
+  findCategoryFilters(@Param('categorySlug') categorySlug: string) {
+    return this.productsService.findCategoryFilters(categorySlug);
+  }
+
   @Get('category/:categorySlug')
   @ApiOperation({ summary: 'Получить товары по категории (slug)' })
   @ApiQuery({

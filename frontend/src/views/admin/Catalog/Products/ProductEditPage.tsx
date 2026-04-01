@@ -1019,7 +1019,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     try {
       // Собираем все атрибуты в правильном порядке
       // Используем массив для сохранения порядка, затем конвертируем в объект
-      const orderedAttributes: Array<{ key: string; value: string }> = [];
+      const orderedAttributes: Array<{ key: string; value: string; slug?: string }> = [];
 
       // 1. Сначала атрибуты категории в порядке их определения
       // categoryAttributes уже отсортированы по order
@@ -1030,6 +1030,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           orderedAttributes.push({
             key: ca.attribute.name,
             value: value,
+            slug: ca.attribute.slug,
           });
         }
       });
@@ -1045,10 +1046,11 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
       });
 
       // Сохраняем как массив для гарантии порядка
-      // Формат: [{name: "Модель", value: "..."}, {name: "Цвет", value: "..."}, ...]
-      const attributesArray = orderedAttributes.map(({ key, value }) => ({
+      // Формат: [{ name, value, slug? }, ...] — slug для фильтров каталога по attribute.slug
+      const attributesArray = orderedAttributes.map(({ key, value, slug }) => ({
         name: key,
         value: value,
+        ...(slug ? { slug } : {}),
       }));
 
       // Также создаём объект для обратной совместимости (но порядок не гарантирован)
