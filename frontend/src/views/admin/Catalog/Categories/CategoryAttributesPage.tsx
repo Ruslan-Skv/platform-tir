@@ -142,6 +142,18 @@ interface CategoryAttributesPageProps {
   categoryId: string;
 }
 
+function attributeTypeBadgeClass(type: Attribute['type']): string {
+  const map: Record<Attribute['type'], string> = {
+    TEXT: styles.typeText,
+    NUMBER: styles.typeNumber,
+    BOOLEAN: styles.typeBoolean,
+    SELECT: styles.typeSelect,
+    MULTI_SELECT: styles.typeMultiSelect,
+    COLOR: styles.typeColor,
+  };
+  return `${styles.attributeType} ${map[type]}`;
+}
+
 export function CategoryAttributesPage({ categoryId }: CategoryAttributesPageProps) {
   const router = useRouter();
   const { getAuthHeaders } = useAuth();
@@ -814,7 +826,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
                       <span className={styles.attributeName}>{ca.attribute.name}</span>
                       <span className={styles.attributeSlug}>{ca.attribute.slug}</span>
                     </div>
-                    <span className={styles.attributeType}>
+                    <span className={attributeTypeBadgeClass(ca.attribute.type)}>
                       {getTypeLabel(ca.attribute.type)}
                       {ca.attribute.unit && ` (${ca.attribute.unit})`}
                     </span>
@@ -962,7 +974,9 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
                         }}
                       />
                       <span className={styles.attrName}>{attr.name}</span>
-                      <span className={styles.attrType}>{getTypeLabel(attr.type)}</span>
+                      <span className={attributeTypeBadgeClass(attr.type)}>
+                        {getTypeLabel(attr.type)}
+                      </span>
                     </label>
                   ))}
                 </div>
