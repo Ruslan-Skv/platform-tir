@@ -1,3 +1,5 @@
+import { multiSelectHasSelection } from './category-attribute-multiselect';
+
 /** Строка привязки атрибута к категории (для валидации карточки товара). */
 export type CategoryAttrRowForValidation = {
   isRequired: boolean;
@@ -5,9 +7,12 @@ export type CategoryAttrRowForValidation = {
 };
 
 export function categoryAttributeValueFilled(
-  _type: string,
+  type: string,
   raw: string | undefined | null
 ): boolean {
+  if (type === 'MULTI_SELECT') {
+    return multiSelectHasSelection(raw);
+  }
   return String(raw ?? '').trim().length > 0;
 }
 
@@ -82,9 +87,15 @@ export function validateAdminProductRequiredFields(
   return missing;
 }
 
+/** Поддерживает `styles` из CSS-модуля (`Record<string, string>`) или явную пару классов. */
 export function adminProductFieldHighlightClass(
   filled: boolean,
-  mod: { fieldHighlightEmpty: string; fieldHighlightFilled: string }
+  mod: Record<string, string> & {
+    fieldHighlightEmpty?: string;
+    fieldHighlightFilled?: string;
+  }
 ): string {
-  return filled ? mod.fieldHighlightFilled : mod.fieldHighlightEmpty;
+  const empty = mod.fieldHighlightEmpty ?? '';
+  const filledCls = mod.fieldHighlightFilled ?? '';
+  return filled ? filledCls : empty;
 }

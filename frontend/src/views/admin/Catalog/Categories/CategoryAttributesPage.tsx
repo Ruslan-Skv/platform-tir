@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -14,6 +14,7 @@ interface AttributeValue {
   id: string;
   value: string;
   colorHex?: string;
+  order?: number;
 }
 
 interface Attribute {
@@ -24,6 +25,98 @@ interface Attribute {
   unit?: string;
   isFilterable: boolean;
   values: AttributeValue[];
+}
+
+const LIST_ATTRIBUTE_TYPES: Attribute['type'][] = ['SELECT', 'MULTI_SELECT'];
+
+function isListAttributeType(t: Attribute['type']): boolean {
+  return LIST_ATTRIBUTE_TYPES.includes(t);
+}
+
+function AttributeOptionRowsEditor({
+  rows,
+  onChange,
+  mod,
+}: {
+  rows: string[];
+  onChange: (next: string[]) => void;
+  mod: typeof styles;
+}) {
+  const moveRow = (index: number, direction: -1 | 1) => {
+    const j = index + direction;
+    if (j < 0 || j >= rows.length) return;
+    const next = [...rows];
+    [next[index], next[j]] = [next[j], next[index]];
+    onChange(next);
+  };
+
+  return (
+    <div className={mod.optionRowsEditor}>
+      <div className={mod.optionRowsHeader}>
+        <span className={mod.optionRowsTitle}>Варианты списка</span>
+        <button
+          type="button"
+          className={mod.addOptionButton}
+          onClick={() => onChange([...rows, ''])}
+        >
+          + Добавить вариант
+        </button>
+      </div>
+      <p className={mod.optionRowsHint}>
+        На карточке товара значение можно выбрать только из этого списка. Порядок строк совпадает с
+        порядком в выпадающем списке.
+      </p>
+      {rows.length === 0 ? (
+        <p className={mod.optionRowsEmpty}>Пока нет вариантов — нажмите «Добавить вариант».</p>
+      ) : (
+        <ul className={mod.optionRowsList}>
+          {rows.map((row, index) => (
+            <li key={index} className={mod.optionRow}>
+              <input
+                type="text"
+                value={row}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  const next = [...rows];
+                  next[index] = v;
+                  onChange(next);
+                }}
+                className={mod.input}
+                placeholder={`Значение ${index + 1}`}
+              />
+              <div className={mod.optionRowActions}>
+                <button
+                  type="button"
+                  className={mod.optionRowMoveBtn}
+                  disabled={index === 0}
+                  onClick={() => moveRow(index, -1)}
+                  title="Выше"
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  className={mod.optionRowMoveBtn}
+                  disabled={index >= rows.length - 1}
+                  onClick={() => moveRow(index, 1)}
+                  title="Ниже"
+                >
+                  ↓
+                </button>
+                <button
+                  type="button"
+                  className={mod.optionRowRemoveBtn}
+                  onClick={() => onChange(rows.filter((_, i) => i !== index))}
+                >
+                  Удалить
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 interface CategoryAttribute {
@@ -58,7 +151,11 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
   const [allAttributes, setAllAttributes] = useState<Attribute[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [noticeModal, setNoticeModal] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
+  const noticeCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [reordering, setReordering] = useState(false);
 
   // Modal states
@@ -77,7 +174,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
     type: 'TEXT' as Attribute['type'],
     unit: '',
     isFilterable: true,
-    values: '',
+    optionRows: [] as string[],
   });
 
   // Edit attribute modal
@@ -89,7 +186,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
     type: 'TEXT' as Attribute['type'],
     unit: '',
     isFilterable: true,
-    values: '',
+    optionRows: [] as string[],
   });
 
   // Apply to products state
@@ -142,47 +239,77 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
       .substring(0, 100);
   }, []);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [categoryRes, attrsRes, allAttrsRes] = await Promise.all([
-        fetch(`${API_URL}/categories/${categoryId}`),
-        fetch(`${API_URL}/categories/${categoryId}/attributes`),
-        fetch(`${API_URL}/categories/attributes/all`),
-      ]);
-
-      if (categoryRes.ok) {
-        const data = await categoryRes.json();
-        setCategory(data);
-      }
-
-      if (attrsRes.ok) {
-        const data: CategoryAttribute[] = await attrsRes.json();
-        // Бекенд уже отдаёт orderBy: { order: 'asc' }, но сортируем ещё раз для надёжности
-        const sorted = [...data].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-        setCategoryAttributes(sorted);
-      }
-
-      if (allAttrsRes.ok) {
-        const data = await allAttrsRes.json();
-        setAllAttributes(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch data:', error);
-      setMessage({ type: 'error', text: 'Ошибка загрузки данных' });
-    } finally {
-      setLoading(false);
+  const clearNoticeModal = useCallback(() => {
+    if (noticeCloseTimerRef.current !== null) {
+      clearTimeout(noticeCloseTimerRef.current);
+      noticeCloseTimerRef.current = null;
     }
-  }, [categoryId]);
+    setNoticeModal(null);
+  }, []);
+
+  const showMessage = useCallback((type: 'success' | 'error', text: string) => {
+    if (noticeCloseTimerRef.current !== null) {
+      clearTimeout(noticeCloseTimerRef.current);
+    }
+    setNoticeModal({ type, text });
+    noticeCloseTimerRef.current = setTimeout(() => {
+      setNoticeModal(null);
+      noticeCloseTimerRef.current = null;
+    }, 4500);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (noticeCloseTimerRef.current !== null) {
+        clearTimeout(noticeCloseTimerRef.current);
+      }
+    };
+  }, []);
+
+  const fetchData = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const silent = options?.silent === true;
+      if (!silent) {
+        setLoading(true);
+      }
+      try {
+        const [categoryRes, attrsRes, allAttrsRes] = await Promise.all([
+          fetch(`${API_URL}/categories/${categoryId}`),
+          fetch(`${API_URL}/categories/${categoryId}/attributes`),
+          fetch(`${API_URL}/categories/attributes/all`),
+        ]);
+
+        if (categoryRes.ok) {
+          const data = await categoryRes.json();
+          setCategory(data);
+        }
+
+        if (attrsRes.ok) {
+          const data: CategoryAttribute[] = await attrsRes.json();
+          // Бекенд уже отдаёт orderBy: { order: 'asc' }, но сортируем ещё раз для надёжности
+          const sorted = [...data].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+          setCategoryAttributes(sorted);
+        }
+
+        if (allAttrsRes.ok) {
+          const data = await allAttrsRes.json();
+          setAllAttributes(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+        showMessage('error', 'Ошибка загрузки данных');
+      } finally {
+        if (!silent) {
+          setLoading(false);
+        }
+      }
+    },
+    [categoryId, showMessage]
+  );
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  const showMessage = (type: 'success' | 'error', text: string) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage(null), 3000);
-  };
 
   const persistCategoryAttributesOrder = async (
     items: Array<{ attributeId: string; order: number }>
@@ -205,7 +332,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
     } catch {
       showMessage('error', 'Не удалось сохранить порядок атрибутов');
       // Возвращаем актуальные данные с сервера (на случай расхождений)
-      fetchData();
+      fetchData({ silent: true });
     } finally {
       setReordering(false);
     }
@@ -273,7 +400,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
         setShowAddModal(false);
         setSelectedAttributeIds([]);
         setBulkAddAsRequired(false);
-        fetchData();
+        fetchData({ silent: true });
       } else {
         throw new Error('Failed to add attributes');
       }
@@ -298,7 +425,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
 
       if (response.ok) {
         showMessage('success', 'Атрибут удалён');
-        fetchData();
+        fetchData({ silent: true });
       } else {
         throw new Error('Failed to remove attribute');
       }
@@ -328,7 +455,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
             ? 'Атрибут обязателен при сохранении карточки товара в этой категории'
             : 'Обязательность снята'
         );
-        fetchData();
+        fetchData({ silent: true });
       } else {
         const data = await response.json().catch(() => ({}));
         showMessage(
@@ -351,13 +478,9 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
 
     setSaving(true);
     try {
-      const values =
-        newAttribute.type === 'SELECT' || newAttribute.type === 'MULTI_SELECT'
-          ? newAttribute.values
-              .split('\n')
-              .map((v) => v.trim())
-              .filter(Boolean)
-          : undefined;
+      const valuesPayload = isListAttributeType(newAttribute.type)
+        ? newAttribute.optionRows.map((v) => v.trim()).filter(Boolean)
+        : undefined;
 
       const response = await fetch(`${API_URL}/categories/attributes`, {
         method: 'POST',
@@ -371,7 +494,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
           type: newAttribute.type,
           unit: newAttribute.unit || undefined,
           isFilterable: newAttribute.isFilterable,
-          values,
+          values: valuesPayload,
         }),
       });
 
@@ -385,7 +508,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
           type: 'TEXT',
           unit: '',
           isFilterable: true,
-          values: '',
+          optionRows: [],
         });
 
         // Add to category automatically
@@ -402,7 +525,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
         });
 
         setCreateLinkAsRequired(false);
-        fetchData();
+        fetchData({ silent: true });
       } else {
         const data = await response.json().catch(() => ({}));
         throw new Error(data.message || 'Failed to create attribute');
@@ -477,7 +600,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
           'success',
           `Унаследовано: ${result.inherited} атрибут(ов), пропущено: ${result.skipped}`
         );
-        fetchData();
+        fetchData({ silent: true });
       } else {
         const data = await response.json().catch(() => ({}));
         throw new Error(data.message || 'Failed to inherit attributes');
@@ -495,13 +618,16 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
   // Open edit modal
   const openEditModal = (attr: Attribute) => {
     setEditingAttribute(attr);
+    const sortedValues = [...attr.values].sort(
+      (a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)
+    );
     setEditForm({
       name: attr.name,
       slug: attr.slug,
       type: attr.type,
       unit: attr.unit || '',
       isFilterable: attr.isFilterable,
-      values: attr.values.map((v) => v.value).join('\n'),
+      optionRows: sortedValues.map((v) => v.value),
     });
     setShowEditModal(true);
   };
@@ -515,13 +641,9 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
 
     setSaving(true);
     try {
-      const values =
-        editForm.type === 'SELECT' || editForm.type === 'MULTI_SELECT'
-          ? editForm.values
-              .split('\n')
-              .map((v) => v.trim())
-              .filter(Boolean)
-          : undefined;
+      const listValues = isListAttributeType(editForm.type)
+        ? editForm.optionRows.map((v) => v.trim()).filter(Boolean)
+        : [];
 
       const response = await fetch(`${API_URL}/attributes/${editingAttribute.id}`, {
         method: 'PATCH',
@@ -535,7 +657,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
           type: editForm.type,
           unit: editForm.unit || null,
           isFilterable: editForm.isFilterable,
-          values,
+          values: listValues,
         }),
       });
 
@@ -543,7 +665,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
         showMessage('success', 'Атрибут обновлён');
         setShowEditModal(false);
         setEditingAttribute(null);
-        fetchData();
+        fetchData({ silent: true });
       } else {
         const data = await response.json().catch(() => ({}));
         throw new Error(data.message || 'Failed to update attribute');
@@ -573,7 +695,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
 
       if (response.ok) {
         showMessage('success', 'Атрибут удалён');
-        fetchData();
+        fetchData({ silent: true });
       } else {
         throw new Error('Failed to delete attribute');
       }
@@ -616,8 +738,6 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
         </button>
         <h1 className={styles.title}>Атрибуты категории: {category?.name}</h1>
       </div>
-
-      {message && <div className={`${styles.message} ${styles[message.type]}`}>{message.text}</div>}
 
       <div className={styles.content}>
         {/* Left: Category attributes */}
@@ -935,12 +1055,14 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
                 <label>Тип</label>
                 <select
                   value={newAttribute.type}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const type = e.target.value as Attribute['type'];
                     setNewAttribute((prev) => ({
                       ...prev,
-                      type: e.target.value as Attribute['type'],
-                    }))
-                  }
+                      type,
+                      ...(!isListAttributeType(type) ? { optionRows: [] } : {}),
+                    }));
+                  }}
                   className={styles.select}
                 >
                   <option value="TEXT">Текст</option>
@@ -964,15 +1086,12 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
               </div>
             </div>
 
-            {(newAttribute.type === 'SELECT' || newAttribute.type === 'MULTI_SELECT') && (
+            {isListAttributeType(newAttribute.type) && (
               <div className={styles.formGroup}>
-                <label>Значения (по одному на строку)</label>
-                <textarea
-                  value={newAttribute.values}
-                  onChange={(e) => setNewAttribute((prev) => ({ ...prev, values: e.target.value }))}
-                  className={styles.textarea}
-                  rows={5}
-                  placeholder="Сталь&#10;Дерево&#10;Пластик"
+                <AttributeOptionRowsEditor
+                  rows={newAttribute.optionRows}
+                  onChange={(optionRows) => setNewAttribute((prev) => ({ ...prev, optionRows }))}
+                  mod={styles}
                 />
               </div>
             )}
@@ -1064,12 +1183,14 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
                 <label>Тип</label>
                 <select
                   value={editForm.type}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const type = e.target.value as Attribute['type'];
                     setEditForm((prev) => ({
                       ...prev,
-                      type: e.target.value as Attribute['type'],
-                    }))
-                  }
+                      type,
+                      ...(!isListAttributeType(type) ? { optionRows: [] } : {}),
+                    }));
+                  }}
                   className={styles.select}
                 >
                   <option value="TEXT">Текст</option>
@@ -1093,15 +1214,12 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
               </div>
             </div>
 
-            {(editForm.type === 'SELECT' || editForm.type === 'MULTI_SELECT') && (
+            {isListAttributeType(editForm.type) && (
               <div className={styles.formGroup}>
-                <label>Значения (по одному на строку)</label>
-                <textarea
-                  value={editForm.values}
-                  onChange={(e) => setEditForm((prev) => ({ ...prev, values: e.target.value }))}
-                  className={styles.textarea}
-                  rows={5}
-                  placeholder="Сталь&#10;Дерево&#10;Пластик"
+                <AttributeOptionRowsEditor
+                  rows={editForm.optionRows}
+                  onChange={(optionRows) => setEditForm((prev) => ({ ...prev, optionRows }))}
+                  mod={styles}
                 />
               </div>
             )}
@@ -1123,6 +1241,33 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
               </button>
               <button className={styles.saveButton} onClick={handleEditAttribute} disabled={saving}>
                 {saving ? 'Сохранение...' : 'Сохранить'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {noticeModal && (
+        <div
+          className={styles.noticeOverlay}
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="category-attributes-notice-title"
+          onClick={clearNoticeModal}
+        >
+          <div
+            className={`${styles.noticeModal} ${
+              noticeModal.type === 'success' ? styles.noticeModalSuccess : styles.noticeModalError
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="category-attributes-notice-title">
+              {noticeModal.type === 'success' ? 'Готово' : 'Ошибка'}
+            </h3>
+            <p className={styles.noticeModalText}>{noticeModal.text}</p>
+            <div className={styles.noticeModalActions}>
+              <button type="button" className={styles.noticeModalButton} onClick={clearNoticeModal}>
+                Закрыть
               </button>
             </div>
           </div>

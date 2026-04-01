@@ -105,6 +105,35 @@
   border-color: #14b8a6;
 }
 
+/* Обязательный выпадающий список: «Выберите значение» — тот же жёлтый, что у инпутов; disabled не обесцвечивает */
+.select.fieldHighlightEmpty:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+  background-color: #fff9c4 !important;
+  color: #78716c;
+  border-color: #d1d5db;
+}
+
+.select.fieldHighlightFilled:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+/* Атрибуты категории: селект/инпут в строке — гарантированная подсветка поверх .input/.select */
+.attributeInput .select.fieldHighlightEmpty,
+.attributeInput .input.fieldHighlightEmpty {
+  background-color: #fff9c4 !important;
+  color: #1c1917;
+  border-color: #d1d5db;
+}
+
+.attributeInput .select.fieldHighlightFilled,
+.attributeInput .input.fieldHighlightFilled {
+  background-color: #ccfbf1 !important;
+  color: #065f46;
+  border-color: #14b8a6;
+}
+
 .fieldHighlightBlockEmpty {
   padding: 10px 12px;
   border-radius: 8px;
@@ -887,6 +916,41 @@
   gap: 8px;
 }
 
+.attributeRowMulti {
+  align-items: start;
+}
+
+.attributeRowMulti .attributeInput {
+  align-items: flex-start;
+}
+
+.multiSelectOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.multiSelectOptionLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  color: #374151;
+  cursor: pointer;
+}
+
+.multiSelectOptionLabel input {
+  accent-color: #6366f1;
+}
+
+.attrListHint {
+  font-size: 0.8125rem;
+  color: #9ca3af;
+  line-height: 1.4;
+}
+
 .attributeInput .input,
 .attributeInput .select {
   flex: 1;
@@ -1146,6 +1210,34 @@
   background-color: #fef9c3;
   border-color: #eab308;
   color: #1c1917;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select.fieldHighlightEmpty:disabled {
+  background-color: #fff9c4 !important;
+  color: #57534e;
+  border-color: #ca8a04;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .attributeInput
+  .select.fieldHighlightEmpty,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .attributeInput
+  .input.fieldHighlightEmpty {
+  background-color: #fff9c4 !important;
+  color: #1c1917;
+  border-color: #ca8a04;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .attributeInput
+  .select.fieldHighlightFilled,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .attributeInput
+  .input.fieldHighlightFilled {
+  background-color: #0f766e !important;
+  color: #ecfdf5;
+  border-color: #2dd4bf;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockFilled {

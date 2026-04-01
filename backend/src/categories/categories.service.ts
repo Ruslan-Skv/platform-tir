@@ -281,23 +281,173 @@ export class CategoriesService {
 
   // ==================== АТРИБУТЫ КАТЕГОРИИ ====================
 
-  // Получить все атрибуты категории
-  async getCategoryAttributes(categoryId: string) {
-    await this.findOne(categoryId);
+  /** Цепочка id родителей от прямого родителя к корню (без текущей категории). */
+  private async getAncestorCategoryIds(categoryId: string): Promise<string[]> {
+    const ids: string[] = [];
+    let current = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+      select: { parentId: true },
+    });
+    while (current?.parentId) {
+      ids.push(current.parentId);
+      current = await this.prisma.category.findUnique({
+        where: { id: current.parentId },
+        select: { parentId: true },
+      });
+    }
+    return ids;
+  }
 
-    return this.prisma.categoryAttribute.findMany({
-      where: { categoryId },
-      include: {
-        attribute: {
-          include: {
-            values: {
-              orderBy: { order: 'asc' },
-            },
+  /** attributeId, для которых isRequired=true хотя бы у одного предка (та же связь категория–атрибут). */
+  private async getAttributeIdsRequiredInAncestors(categoryId: string): Promise<Set<string>> {
+    const ancestorIds = await this.getAncestorCategoryIds(categoryId);
+    if (ancestorIds.length === 0) {
+      return new Set();
+    }
+    const rows = await this.prisma.categoryAttribute.findMany({
+      where: {
+        categoryId: { in: ancestorIds },
+        isRequired: true,
+      },
+      select: { attributeId: true },
+    });
+    return new Set(rows.map((r) => r.attributeId));
+  }
+
+  private categoryAttributeInclude() {
+    return {
+      attribute: {
+        include: {
+          values: {
+            orderBy: { order: 'asc' as const },
           },
         },
       },
+    } as const;
+  }
+
+  /**
+   * Атрибуты, заданные у предков, но ещё без своей строки у текущей категории
+   * (в т.ч. список значений SELECT / MULTI_SELECT с родителя).
+   * Ближайший предок имеет приоритет при дублировании attributeId.
+   */
+  private async getInheritedCategoryAttributesFromAncestors(
+    categoryId: string,
+    ownAttributeIds: Set<string>,
+  ) {
+    const ancestorIds = await this.getAncestorCategoryIds(categoryId);
+    if (ancestorIds.length === 0) {
+      return [];
+    }
+
+    const ancRows = await this.prisma.categoryAttribute.findMany({
+      where: { categoryId: { in: ancestorIds } },
+      include: this.categoryAttributeInclude(),
       orderBy: { order: 'asc' },
     });
+
+    const byCategory = new Map<string, typeof ancRows>();
+    for (const r of ancRows) {
+      const list = byCategory.get(r.categoryId) ?? [];
+      list.push(r);
+      byCategory.set(r.categoryId, list);
+    }
+
+    const seen = new Set<string>();
+    const inherited: typeof ancRows = [];
+
+    for (const ancId of ancestorIds) {
+      const list = byCategory.get(ancId) ?? [];
+      for (const r of list) {
+        if (ownAttributeIds.has(r.attributeId)) continue;
+        if (seen.has(r.attributeId)) continue;
+        seen.add(r.attributeId);
+        inherited.push({
+          ...r,
+          id: `${categoryId}::inherited::${r.attributeId}`,
+          categoryId,
+        });
+      }
+    }
+
+    return inherited;
+  }
+
+  /** Ближайшая строка categoryAttribute у предка (для материализации у потомка). */
+  private async findNearestAncestorCategoryAttributeRow(categoryId: string, attributeId: string) {
+    const ancestorIds = await this.getAncestorCategoryIds(categoryId);
+    for (const ancId of ancestorIds) {
+      const row = await this.prisma.categoryAttribute.findUnique({
+        where: {
+          categoryId_attributeId: {
+            categoryId: ancId,
+            attributeId,
+          },
+        },
+      });
+      if (row) return row;
+    }
+    return null;
+  }
+
+  /** Создать связь категория–атрибут у потомка по образцу предка (после PATCH и т.п.). */
+  private async materializeCategoryAttributeForChildIfMissing(
+    categoryId: string,
+    attributeId: string,
+  ) {
+    const existing = await this.prisma.categoryAttribute.findUnique({
+      where: {
+        categoryId_attributeId: { categoryId, attributeId },
+      },
+    });
+    if (existing) return existing;
+
+    const template = await this.findNearestAncestorCategoryAttributeRow(categoryId, attributeId);
+    if (!template) return null;
+
+    const inheritedRequired = await this.getAttributeIdsRequiredInAncestors(categoryId);
+    const isRequired = template.isRequired || inheritedRequired.has(attributeId);
+
+    return this.prisma.categoryAttribute.create({
+      data: {
+        categoryId,
+        attributeId,
+        isRequired,
+        order: template.order,
+      },
+    });
+  }
+
+  /** Получить все атрибуты категории: свои + унаследованные от предков (выпадающие списки и т.д.), эффективный isRequired. */
+  async getCategoryAttributes(categoryId: string) {
+    await this.findOne(categoryId);
+
+    const ownRows = await this.prisma.categoryAttribute.findMany({
+      where: { categoryId },
+      include: this.categoryAttributeInclude(),
+      orderBy: { order: 'asc' },
+    });
+
+    const ownAttrIds = new Set(ownRows.map((r) => r.attributeId));
+    const inheritedRows = await this.getInheritedCategoryAttributesFromAncestors(
+      categoryId,
+      ownAttrIds,
+    );
+
+    const combined = [...ownRows, ...inheritedRows];
+    const requiredInAncestors = await this.getAttributeIdsRequiredInAncestors(categoryId);
+
+    const merged = combined.map((row) => ({
+      ...row,
+      isRequired: row.isRequired || requiredInAncestors.has(row.attributeId),
+    }));
+
+    merged.sort((a, b) => {
+      if (a.order !== b.order) return a.order - b.order;
+      return a.attribute.name.localeCompare(b.attribute.name, 'ru');
+    });
+
+    return merged;
   }
 
   // Добавить атрибут к категории
@@ -327,18 +477,17 @@ export class CategoriesService {
       throw new BadRequestException('Этот атрибут уже добавлен к категории');
     }
 
+    const inheritedRequired = await this.getAttributeIdsRequiredInAncestors(categoryId);
+    const isRequired = Boolean(dto.isRequired) || inheritedRequired.has(dto.attributeId);
+
     return this.prisma.categoryAttribute.create({
       data: {
         categoryId,
         attributeId: dto.attributeId,
-        isRequired: dto.isRequired ?? false,
+        isRequired,
         order: dto.order ?? 0,
       },
-      include: {
-        attribute: {
-          include: { values: true },
-        },
-      },
+      include: this.categoryAttributeInclude(),
     });
   }
 
@@ -379,6 +528,15 @@ export class CategoriesService {
     });
 
     if (!categoryAttribute) {
+      const fromAncestor = await this.findNearestAncestorCategoryAttributeRow(
+        categoryId,
+        attributeId,
+      );
+      if (fromAncestor) {
+        throw new BadRequestException(
+          'Этот атрибут задан у родительской категории. Открепите его там или снимите наследование.',
+        );
+      }
       throw new NotFoundException('Атрибут не найден в этой категории');
     }
 
@@ -393,7 +551,7 @@ export class CategoriesService {
     attributeId: string,
     data: { isRequired?: boolean; order?: number },
   ) {
-    const categoryAttribute = await this.prisma.categoryAttribute.findUnique({
+    let categoryAttribute = await this.prisma.categoryAttribute.findUnique({
       where: {
         categoryId_attributeId: {
           categoryId,
@@ -403,10 +561,26 @@ export class CategoriesService {
     });
 
     if (!categoryAttribute) {
-      throw new NotFoundException('Атрибут не найден в этой категории');
+      const materialized = await this.materializeCategoryAttributeForChildIfMissing(
+        categoryId,
+        attributeId,
+      );
+      if (!materialized) {
+        throw new NotFoundException('Атрибут не найден в этой категории');
+      }
+      categoryAttribute = materialized;
     }
 
-    return this.prisma.categoryAttribute.update({
+    if (data.isRequired === false) {
+      const inheritedRequired = await this.getAttributeIdsRequiredInAncestors(categoryId);
+      if (inheritedRequired.has(attributeId)) {
+        throw new BadRequestException(
+          'Нельзя снять обязательность: атрибут помечен как обязательный в родительской категории',
+        );
+      }
+    }
+
+    const updated = await this.prisma.categoryAttribute.update({
       where: { id: categoryAttribute.id },
       data,
       include: {
@@ -415,6 +589,12 @@ export class CategoriesService {
         },
       },
     });
+
+    const inheritedRequired = await this.getAttributeIdsRequiredInAncestors(categoryId);
+    return {
+      ...updated,
+      isRequired: updated.isRequired || inheritedRequired.has(attributeId),
+    };
   }
 
   // Применить атрибуты категории ко всем её товарам

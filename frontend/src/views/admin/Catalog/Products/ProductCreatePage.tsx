@@ -11,6 +11,11 @@ import { ImageUrlModal } from './ImageUrlModal';
 import componentStyles from './ProductComponentsSection.module.css';
 import styles from './ProductEditPage.module.css';
 import {
+  decodeMultiSelectStored,
+  encodeMultiSelectValues,
+  multiSelectHasSelection,
+} from './category-attribute-multiselect';
+import {
   type CategoryAttributeForCopy,
   type CopiedProductData,
   type CopyProductComponentPayload,
@@ -1886,129 +1891,213 @@ export function ProductCreatePage({
                 <h3 className={styles.attributesSubtitle}>Атрибуты категории</h3>
                 {categoryAttributes.length > 0 ? (
                   <div className={styles.attributesList}>
-                    {categoryAttributes.map((ca) => (
-                      <div key={ca.id} className={styles.attributeRow}>
-                        <label className={styles.attributeLabel}>
-                          {ca.attribute.name}
-                          {ca.attribute.unit && (
-                            <span className={styles.unit}>({ca.attribute.unit})</span>
-                          )}
-                        </label>
-                        <div className={styles.attributeInput}>
-                          {ca.attribute.type === 'BOOLEAN' ? (
-                            <select
-                              value={formData.attributes[ca.attribute.slug] || ''}
-                              onChange={(e) =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  attributes: {
-                                    ...prev.attributes,
-                                    [ca.attribute.slug]: e.target.value,
-                                  },
-                                }))
-                              }
-                              className={
-                                ca.isRequired
-                                  ? `${styles.select} ${adminProductFieldHighlightClass(
-                                      categoryAttributeValueFilled(
-                                        ca.attribute.type,
-                                        formData.attributes[ca.attribute.slug]
-                                      ),
-                                      styles
-                                    )}`
-                                  : styles.select
-                              }
-                            >
-                              <option value="">Не указано</option>
-                              <option value="Да">Да</option>
-                              <option value="Нет">Нет</option>
-                            </select>
-                          ) : ca.attribute.type === 'SELECT' ? (
-                            <select
-                              value={formData.attributes[ca.attribute.slug] || ''}
-                              onChange={(e) =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  attributes: {
-                                    ...prev.attributes,
-                                    [ca.attribute.slug]: e.target.value,
-                                  },
-                                }))
-                              }
-                              className={
-                                ca.isRequired
-                                  ? `${styles.select} ${adminProductFieldHighlightClass(
-                                      categoryAttributeValueFilled(
-                                        ca.attribute.type,
-                                        formData.attributes[ca.attribute.slug]
-                                      ),
-                                      styles
-                                    )}`
-                                  : styles.select
-                              }
-                            >
-                              <option value="">Выберите значение</option>
-                              {ca.attribute.values.map((v) => (
-                                <option key={v.id} value={v.value}>
-                                  {v.value}
+                    {categoryAttributes.map((ca) => {
+                      const slug = ca.attribute.slug;
+                      const rawAttr = formData.attributes[slug];
+                      const attrRequired = Boolean(ca.isRequired);
+                      const attrValueFilled = categoryAttributeValueFilled(
+                        ca.attribute.type,
+                        rawAttr
+                      );
+                      const showClear =
+                        ca.attribute.type === 'MULTI_SELECT'
+                          ? multiSelectHasSelection(rawAttr)
+                          : ca.attribute.type === 'BOOLEAN'
+                            ? Boolean(rawAttr)
+                            : Boolean(rawAttr);
+                      const isSelectFromList =
+                        ca.attribute.type === 'SELECT' ||
+                        (ca.attribute.type === 'COLOR' && ca.attribute.values.length > 0);
+
+                      return (
+                        <div
+                          key={ca.id}
+                          className={
+                            ca.attribute.type === 'MULTI_SELECT'
+                              ? `${styles.attributeRow} ${styles.attributeRowMulti}`
+                              : styles.attributeRow
+                          }
+                        >
+                          <label className={styles.attributeLabel}>
+                            {ca.attribute.name}
+                            {ca.attribute.unit && (
+                              <span className={styles.unit}>({ca.attribute.unit})</span>
+                            )}
+                          </label>
+                          <div className={styles.attributeInput}>
+                            {ca.attribute.type === 'BOOLEAN' ? (
+                              <select
+                                value={rawAttr || ''}
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    attributes: {
+                                      ...prev.attributes,
+                                      [slug]: e.target.value,
+                                    },
+                                  }))
+                                }
+                                className={
+                                  attrRequired
+                                    ? `${styles.select} ${
+                                        attrValueFilled
+                                          ? styles.fieldHighlightFilled
+                                          : styles.fieldHighlightEmpty
+                                      }`
+                                    : styles.select
+                                }
+                              >
+                                <option value="">Не указано</option>
+                                <option value="Да">Да</option>
+                                <option value="Нет">Нет</option>
+                              </select>
+                            ) : ca.attribute.type === 'MULTI_SELECT' ? (
+                              <div
+                                className={
+                                  attrRequired
+                                    ? `${styles.multiSelectOptions} ${
+                                        attrValueFilled
+                                          ? styles.fieldHighlightBlockFilled
+                                          : styles.fieldHighlightBlockEmpty
+                                      }`
+                                    : styles.multiSelectOptions
+                                }
+                              >
+                                {ca.attribute.values.length === 0 ? (
+                                  <span className={styles.attrListHint}>
+                                    Нет вариантов списка — задайте их в настройках категории
+                                    (Каталог → Категории).
+                                  </span>
+                                ) : (
+                                  ca.attribute.values.map((v) => {
+                                    const selected = decodeMultiSelectStored(rawAttr);
+                                    const checked = selected.includes(v.value);
+                                    return (
+                                      <label key={v.id} className={styles.multiSelectOptionLabel}>
+                                        <input
+                                          type="checkbox"
+                                          checked={checked}
+                                          onChange={(e) => {
+                                            const next = e.target.checked
+                                              ? [...new Set([...selected, v.value])]
+                                              : selected.filter((x) => x !== v.value);
+                                            setFormData((prev) => ({
+                                              ...prev,
+                                              attributes: {
+                                                ...prev.attributes,
+                                                [slug]: encodeMultiSelectValues(next),
+                                              },
+                                            }));
+                                          }}
+                                        />
+                                        <span>{v.value}</span>
+                                      </label>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            ) : isSelectFromList ? (
+                              <select
+                                disabled={ca.attribute.values.length === 0}
+                                value={rawAttr || ''}
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    attributes: {
+                                      ...prev.attributes,
+                                      [slug]: e.target.value,
+                                    },
+                                  }))
+                                }
+                                className={
+                                  attrRequired
+                                    ? `${styles.select} ${
+                                        attrValueFilled
+                                          ? styles.fieldHighlightFilled
+                                          : styles.fieldHighlightEmpty
+                                      }`
+                                    : styles.select
+                                }
+                              >
+                                <option value="">
+                                  {ca.attribute.values.length === 0
+                                    ? 'Нет вариантов — задайте в Каталог → Категории'
+                                    : 'Выберите значение'}
                                 </option>
-                              ))}
-                            </select>
-                          ) : ca.attribute.type === 'NUMBER' ? (
-                            <input
-                              type="number"
-                              value={formData.attributes[ca.attribute.slug] || ''}
-                              onChange={(e) =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  attributes: {
-                                    ...prev.attributes,
-                                    [ca.attribute.slug]: e.target.value,
-                                  },
-                                }))
-                              }
-                              className={
-                                ca.isRequired
-                                  ? `${styles.input} ${adminProductFieldHighlightClass(
-                                      categoryAttributeValueFilled(
-                                        ca.attribute.type,
-                                        formData.attributes[ca.attribute.slug]
-                                      ),
-                                      styles
-                                    )}`
-                                  : styles.input
-                              }
-                              step="any"
-                            />
-                          ) : (
-                            <input
-                              type="text"
-                              value={formData.attributes[ca.attribute.slug] || ''}
-                              onChange={(e) =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  attributes: {
-                                    ...prev.attributes,
-                                    [ca.attribute.slug]: e.target.value,
-                                  },
-                                }))
-                              }
-                              className={
-                                ca.isRequired
-                                  ? `${styles.input} ${adminProductFieldHighlightClass(
-                                      categoryAttributeValueFilled(
-                                        ca.attribute.type,
-                                        formData.attributes[ca.attribute.slug]
-                                      ),
-                                      styles
-                                    )}`
-                                  : styles.input
-                              }
-                            />
-                          )}
+                                {ca.attribute.values.map((v) => (
+                                  <option key={v.id} value={v.value}>
+                                    {v.value}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : ca.attribute.type === 'NUMBER' ? (
+                              <input
+                                type="number"
+                                value={rawAttr || ''}
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    attributes: {
+                                      ...prev.attributes,
+                                      [slug]: e.target.value,
+                                    },
+                                  }))
+                                }
+                                className={
+                                  attrRequired
+                                    ? `${styles.input} ${
+                                        attrValueFilled
+                                          ? styles.fieldHighlightFilled
+                                          : styles.fieldHighlightEmpty
+                                      }`
+                                    : styles.input
+                                }
+                                step="any"
+                              />
+                            ) : (
+                              <input
+                                type="text"
+                                value={rawAttr || ''}
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    attributes: {
+                                      ...prev.attributes,
+                                      [slug]: e.target.value,
+                                    },
+                                  }))
+                                }
+                                className={
+                                  attrRequired
+                                    ? `${styles.input} ${
+                                        attrValueFilled
+                                          ? styles.fieldHighlightFilled
+                                          : styles.fieldHighlightEmpty
+                                      }`
+                                    : styles.input
+                                }
+                              />
+                            )}
+                            {showClear && (
+                              <button
+                                type="button"
+                                className={styles.clearAttrButton}
+                                onClick={() =>
+                                  setFormData((prev) => {
+                                    const newAttrs = { ...prev.attributes };
+                                    delete newAttrs[slug];
+                                    return { ...prev, attributes: newAttrs };
+                                  })
+                                }
+                                title="Очистить"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className={styles.noAttributes}>
