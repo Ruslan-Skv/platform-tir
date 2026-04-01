@@ -65,6 +65,10 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedAttributeIds, setSelectedAttributeIds] = useState<string[]>([]);
+  /** Для массового добавления: сразу isRequired в связи категория–атрибут */
+  const [bulkAddAsRequired, setBulkAddAsRequired] = useState(false);
+  /** Для «Создать и добавить»: первая привязка к категории с обязательностью */
+  const [createLinkAsRequired, setCreateLinkAsRequired] = useState(false);
 
   // New attribute form
   const [newAttribute, setNewAttribute] = useState({
@@ -258,13 +262,17 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
           'Content-Type': 'application/json',
           ...getAuthHeaders(),
         },
-        body: JSON.stringify({ attributeIds: selectedAttributeIds }),
+        body: JSON.stringify({
+          attributeIds: selectedAttributeIds,
+          isRequired: bulkAddAsRequired,
+        }),
       });
 
       if (response.ok) {
         showMessage('success', 'Атрибуты добавлены');
         setShowAddModal(false);
         setSelectedAttributeIds([]);
+        setBulkAddAsRequired(false);
         fetchData();
       } else {
         throw new Error('Failed to add attributes');
@@ -314,7 +322,21 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
       );
 
       if (response.ok) {
+        showMessage(
+          'success',
+          !currentValue
+            ? 'Атрибут обязателен при сохранении карточки товара в этой категории'
+            : 'Обязательность снята'
+        );
         fetchData();
+      } else {
+        const data = await response.json().catch(() => ({}));
+        showMessage(
+          'error',
+          typeof data.message === 'string' && data.message.trim()
+            ? data.message
+            : 'Не удалось обновить обязательность'
+        );
       }
     } catch {
       showMessage('error', 'Ошибка обновления');
@@ -373,9 +395,13 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
             'Content-Type': 'application/json',
             ...getAuthHeaders(),
           },
-          body: JSON.stringify({ attributeId: created.id }),
+          body: JSON.stringify({
+            attributeId: created.id,
+            isRequired: createLinkAsRequired,
+          }),
         });
 
+        setCreateLinkAsRequired(false);
         fetchData();
       } else {
         const data = await response.json().catch(() => ({}));
@@ -709,13 +735,16 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
                   )}
 
                   <div className={styles.attributeFooter}>
-                    <label className={styles.requiredToggle}>
+                    <label
+                      className={styles.requiredToggle}
+                      title="На карточке товара поле подсвечивается и сохранение без значения блокируется."
+                    >
                       <input
                         type="checkbox"
                         checked={ca.isRequired}
                         onChange={() => handleToggleRequired(ca.attributeId, ca.isRequired)}
                       />
-                      <span>Обязательный</span>
+                      <span>Обязательный для товара</span>
                     </label>
                     <div className={styles.attributeActions}>
                       <button
@@ -774,9 +803,27 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
 
       {/* Add existing attribute modal */}
       {showAddModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowAddModal(false)}>
+        <div
+          className={styles.modalOverlay}
+          onClick={() => {
+            setShowAddModal(false);
+            setBulkAddAsRequired(false);
+          }}
+        >
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <h3>Добавить атрибуты</h3>
+            <p className={styles.hint}>
+              Отметьте «Обязательный для товара», чтобы на карточке товара поле подсвечивалось и не
+              давало сохранить товар без значения (в категориях с этим атрибутом).
+            </p>
+            <label className={styles.checkboxLabel} style={{ marginBottom: '0.75rem' }}>
+              <input
+                type="checkbox"
+                checked={bulkAddAsRequired}
+                onChange={(e) => setBulkAddAsRequired(e.target.checked)}
+              />
+              <span>Обязательный для товара (все выбранные ниже)</span>
+            </label>
 
             {availableAttributes.length > 0 ? (
               <>
@@ -801,7 +848,13 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
                 </div>
 
                 <div className={styles.modalActions}>
-                  <button className={styles.cancelButton} onClick={() => setShowAddModal(false)}>
+                  <button
+                    className={styles.cancelButton}
+                    onClick={() => {
+                      setShowAddModal(false);
+                      setBulkAddAsRequired(false);
+                    }}
+                  >
                     Отмена
                   </button>
                   <button
@@ -816,7 +869,13 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
             ) : (
               <div className={styles.emptyModal}>
                 <p>Все атрибуты уже добавлены к категории</p>
-                <button className={styles.cancelButton} onClick={() => setShowAddModal(false)}>
+                <button
+                  className={styles.cancelButton}
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setBulkAddAsRequired(false);
+                  }}
+                >
                   Закрыть
                 </button>
               </div>
@@ -827,7 +886,13 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
 
       {/* Create new attribute modal */}
       {showCreateModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowCreateModal(false)}>
+        <div
+          className={styles.modalOverlay}
+          onClick={() => {
+            setShowCreateModal(false);
+            setCreateLinkAsRequired(false);
+          }}
+        >
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <h3>Создать новый атрибут</h3>
 
@@ -923,8 +988,23 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
               <span>Использовать для фильтрации</span>
             </label>
 
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={createLinkAsRequired}
+                onChange={(e) => setCreateLinkAsRequired(e.target.checked)}
+              />
+              <span>Обязательный при заполнении карточек товаров в этой категории</span>
+            </label>
+
             <div className={styles.modalActions}>
-              <button className={styles.cancelButton} onClick={() => setShowCreateModal(false)}>
+              <button
+                className={styles.cancelButton}
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setCreateLinkAsRequired(false);
+                }}
+              >
                 Отмена
               </button>
               <button

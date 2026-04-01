@@ -1,3 +1,34 @@
+/** Строка привязки атрибута к категории (для валидации карточки товара). */
+export type CategoryAttrRowForValidation = {
+  isRequired: boolean;
+  attribute: { slug: string; name: string; type: string };
+};
+
+export function categoryAttributeValueFilled(
+  _type: string,
+  raw: string | undefined | null
+): boolean {
+  return String(raw ?? '').trim().length > 0;
+}
+
+/**
+ * Атрибуты категории с флагом «обязательный» (задаётся в админке: Категории → атрибуты категории).
+ * Подписи в ошибке — как в форме (attribute.name).
+ */
+export function validateRequiredCategoryAttributes(
+  rows: CategoryAttrRowForValidation[],
+  attributes: Record<string, string>
+): string[] {
+  const missing: string[] = [];
+  for (const ca of rows) {
+    if (!ca.isRequired) continue;
+    if (!categoryAttributeValueFilled(ca.attribute.type, attributes[ca.attribute.slug])) {
+      missing.push(ca.attribute.name);
+    }
+  }
+  return missing;
+}
+
 /** Снимок полей карточки товара в админке для проверки обязательных значений и подсветки. */
 export interface AdminProductFormSnapshot {
   name: string;
@@ -9,10 +40,15 @@ export interface AdminProductFormSnapshot {
   stock: number;
   sizes: string[];
   images: string[];
+  /** Значения атрибутов категории по slug. */
+  attributes: Record<string, string>;
 }
 
 /** Возвращает подписи незаполненных обязательных полей (по порядку проверки). */
-export function validateAdminProductRequiredFields(s: AdminProductFormSnapshot): string[] {
+export function validateAdminProductRequiredFields(
+  s: AdminProductFormSnapshot,
+  categoryAttributes?: CategoryAttrRowForValidation[]
+): string[] {
   const missing: string[] = [];
   if (!s.name.trim()) missing.push('Название');
   if (!s.categoryId.trim()) missing.push('Категория');
@@ -37,6 +73,10 @@ export function validateAdminProductRequiredFields(s: AdminProductFormSnapshot):
   const hasImage = s.images.some((url) => url.trim().length > 0);
   if (!hasImage) {
     missing.push('Изображение');
+  }
+
+  if (categoryAttributes?.length) {
+    missing.push(...validateRequiredCategoryAttributes(categoryAttributes, s.attributes));
   }
 
   return missing;

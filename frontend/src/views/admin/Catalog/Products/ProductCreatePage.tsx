@@ -24,6 +24,7 @@ import {
 } from './interior-doors-category-utils';
 import {
   adminProductFieldHighlightClass,
+  categoryAttributeValueFilled,
   validateAdminProductRequiredFields,
 } from './product-form-required-fields';
 
@@ -957,17 +958,21 @@ export function ProductCreatePage({
     e.preventDefault();
     setError(null);
 
-    const missing = validateAdminProductRequiredFields({
-      name: formData.name,
-      categoryId: formData.categoryId,
-      supplierId: formData.supplierId,
-      supplierProductUrl: formData.supplierProductUrl,
-      supplierSku: formData.supplierSku,
-      price: formData.price,
-      stock: formData.stock,
-      sizes: formData.sizes,
-      images: formData.images,
-    });
+    const missing = validateAdminProductRequiredFields(
+      {
+        name: formData.name,
+        categoryId: formData.categoryId,
+        supplierId: formData.supplierId,
+        supplierProductUrl: formData.supplierProductUrl,
+        supplierSku: formData.supplierSku,
+        price: formData.price,
+        stock: formData.stock,
+        sizes: formData.sizes,
+        images: formData.images,
+        attributes: formData.attributes,
+      },
+      categoryAttributes
+    );
     if (missing.length > 0) {
       setError(
         `Не удалось создать товар: не заполнены обязательные поля: ${missing.join(', ')}. Заполните их и попробуйте снова.`
@@ -1885,7 +1890,6 @@ export function ProductCreatePage({
                       <div key={ca.id} className={styles.attributeRow}>
                         <label className={styles.attributeLabel}>
                           {ca.attribute.name}
-                          {ca.isRequired && <span className={styles.required}>*</span>}
                           {ca.attribute.unit && (
                             <span className={styles.unit}>({ca.attribute.unit})</span>
                           )}
@@ -1903,7 +1907,17 @@ export function ProductCreatePage({
                                   },
                                 }))
                               }
-                              className={styles.select}
+                              className={
+                                ca.isRequired
+                                  ? `${styles.select} ${adminProductFieldHighlightClass(
+                                      categoryAttributeValueFilled(
+                                        ca.attribute.type,
+                                        formData.attributes[ca.attribute.slug]
+                                      ),
+                                      styles
+                                    )}`
+                                  : styles.select
+                              }
                             >
                               <option value="">Не указано</option>
                               <option value="Да">Да</option>
@@ -1921,7 +1935,17 @@ export function ProductCreatePage({
                                   },
                                 }))
                               }
-                              className={styles.select}
+                              className={
+                                ca.isRequired
+                                  ? `${styles.select} ${adminProductFieldHighlightClass(
+                                      categoryAttributeValueFilled(
+                                        ca.attribute.type,
+                                        formData.attributes[ca.attribute.slug]
+                                      ),
+                                      styles
+                                    )}`
+                                  : styles.select
+                              }
                             >
                               <option value="">Выберите значение</option>
                               {ca.attribute.values.map((v) => (
@@ -1943,7 +1967,17 @@ export function ProductCreatePage({
                                   },
                                 }))
                               }
-                              className={styles.input}
+                              className={
+                                ca.isRequired
+                                  ? `${styles.input} ${adminProductFieldHighlightClass(
+                                      categoryAttributeValueFilled(
+                                        ca.attribute.type,
+                                        formData.attributes[ca.attribute.slug]
+                                      ),
+                                      styles
+                                    )}`
+                                  : styles.input
+                              }
                               step="any"
                             />
                           ) : (
@@ -1959,7 +1993,17 @@ export function ProductCreatePage({
                                   },
                                 }))
                               }
-                              className={styles.input}
+                              className={
+                                ca.isRequired
+                                  ? `${styles.input} ${adminProductFieldHighlightClass(
+                                      categoryAttributeValueFilled(
+                                        ca.attribute.type,
+                                        formData.attributes[ca.attribute.slug]
+                                      ),
+                                      styles
+                                    )}`
+                                  : styles.input
+                              }
                             />
                           )}
                         </div>
