@@ -2,7 +2,7 @@
 
 import { FunnelIcon } from '@heroicons/react/24/outline';
 
-import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
@@ -48,6 +48,9 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
   const [didRestoreScroll, setDidRestoreScroll] = useState(false);
 
   const pageFromUrl = useMemo(() => readPageFromSearchParams(searchParams), [searchParams]);
+  const searchFromUrl = searchParams.get('search') ?? '';
+  const prevSearchFromUrlRef = useRef<string | null>(null);
+
   const catalogUrlKey = useMemo(
     () => `${pathname}${searchParams.size > 0 ? `?${searchParams.toString()}` : ''}`,
     [pathname, searchParams]
@@ -92,6 +95,20 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
       replacePageInUrl(totalPages, false);
     }
   }, [totalPages, pageFromUrl, replacePageInUrl]);
+
+  /** При смене поискового запроса сбрасываем страницу пагинации, чтобы не оставаться на пустой странице. */
+  useEffect(() => {
+    if (prevSearchFromUrlRef.current === null) {
+      prevSearchFromUrlRef.current = searchFromUrl;
+      return;
+    }
+    if (prevSearchFromUrlRef.current !== searchFromUrl) {
+      prevSearchFromUrlRef.current = searchFromUrl;
+      if (pageFromUrl > 1) {
+        replacePageInUrl(1, false);
+      }
+    }
+  }, [searchFromUrl, pageFromUrl, replacePageInUrl]);
 
   useEffect(() => {
     setDidRestoreScroll(false);

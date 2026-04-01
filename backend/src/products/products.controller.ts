@@ -94,10 +94,32 @@ export class ProductsController {
     return this.productsService.search(searchDto);
   }
 
+  @Get('search/suggestions')
+  @ApiOperation({ summary: 'Подсказки по товарам для строки поиска' })
+  @ApiQuery({ name: 'q', required: true, description: 'Строка поиска (от 2 символов)' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Число подсказок, по умолчанию 8, макс. 20',
+  })
+  async searchSuggestions(@Query('q') q: string, @Query('limit') limit?: string) {
+    const lim = limit ? parseInt(limit, 10) : 8;
+    const suggestions = await this.productsService.searchSuggestions(
+      q ?? '',
+      Number.isFinite(lim) ? lim : 8,
+    );
+    return { suggestions };
+  }
+
   @Get('catalog/all')
   @ApiOperation({ summary: 'Получить все товары каталога' })
-  findAllProducts() {
-    return this.productsService.findAllProducts();
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Поиск по наименованию и артикулу (SKU)',
+  })
+  findAllProducts(@Query('search') search?: string) {
+    return this.productsService.findAllProducts(search);
   }
 
   @Get('featured')
@@ -185,8 +207,13 @@ export class ProductsController {
 
   @Get('category/:categorySlug')
   @ApiOperation({ summary: 'Получить товары по категории (slug)' })
-  findByCategory(@Param('categorySlug') categorySlug: string) {
-    return this.productsService.findByCategory(categorySlug);
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Поиск по наименованию и артикулу (SKU) внутри категории',
+  })
+  findByCategory(@Param('categorySlug') categorySlug: string, @Query('search') search?: string) {
+    return this.productsService.findByCategory(categorySlug, search);
   }
 
   @Patch(':id')

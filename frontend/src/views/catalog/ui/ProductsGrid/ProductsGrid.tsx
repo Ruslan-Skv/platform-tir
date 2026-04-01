@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
+import { useSearchParams } from 'next/navigation';
+
 import type { Product } from '@/entities/product/types';
 import { useMobileCatalogColumns } from '@/shared/lib/hooks';
 
@@ -114,6 +116,10 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
   onSortChange,
   onProductsPerPageLayoutChange,
 }) => {
+  const searchParams = useSearchParams();
+  const catalogSearchRaw = searchParams.get('search');
+  const catalogSearch = catalogSearchRaw?.trim() ?? '';
+
   const [products, setProducts] = useState<Product[]>([]);
   const [originalProducts, setOriginalProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -144,11 +150,18 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
         setLoading(true);
         setError(null);
 
+        const qs = new URLSearchParams();
+        if (catalogSearch) {
+          qs.set('search', catalogSearch);
+        }
+        const queryString = qs.toString();
+
         // Для slug "all" используем специальный endpoint для всех товаров
-        const endpoint =
+        const basePath =
           categorySlug === 'all'
             ? `${API_URL}/products/catalog/all`
-            : `${API_URL}/products/category/${categorySlug}`;
+            : `${API_URL}/products/category/${encodeURIComponent(categorySlug)}`;
+        const endpoint = queryString ? `${basePath}?${queryString}` : basePath;
         const response = await fetch(endpoint);
 
         if (!response.ok) {
@@ -216,7 +229,7 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
     fetchProducts();
     // Сбрасываем сортировку при изменении категории
     setSortBy('default');
-  }, [categorySlug]);
+  }, [categorySlug, catalogSearch]);
 
   useEffect(() => {
     const fetchPartnerSettings = async () => {
@@ -299,12 +312,19 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
     }
   }, [isMobileCatalogViewport, onProductsPerPageLayoutChange]);
 
+  const titleBlock = (
+    <div className={styles.titleBlock}>
+      <h1 className={styles.title}>{categoryName}</h1>
+      {catalogSearch ? (
+        <p className={styles.searchQueryHint}>По запросу: «{catalogSearch}»</p>
+      ) : null}
+    </div>
+  );
+
   if (loading) {
     return (
       <div className={styles.productsGrid}>
-        <div className={styles.gridHeader}>
-          <h1 className={styles.title}>{categoryName}</h1>
-        </div>
+        <div className={styles.gridHeader}>{titleBlock}</div>
         <div className={styles.loading}>Загрузка товаров...</div>
       </div>
     );
@@ -313,9 +333,7 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
   if (error) {
     return (
       <div className={styles.productsGrid}>
-        <div className={styles.gridHeader}>
-          <h1 className={styles.title}>{categoryName}</h1>
-        </div>
+        <div className={styles.gridHeader}>{titleBlock}</div>
         <div className={styles.error}>{error}</div>
       </div>
     );
@@ -324,9 +342,7 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
   if (products.length === 0) {
     return (
       <div className={styles.productsGrid}>
-        <div className={styles.gridHeader}>
-          <h1 className={styles.title}>{categoryName}</h1>
-        </div>
+        <div className={styles.gridHeader}>{titleBlock}</div>
         <div className={styles.empty}>Товары не найдены</div>
       </div>
     );
@@ -335,7 +351,7 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
   return (
     <div className={styles.productsGrid}>
       <div className={styles.gridHeader}>
-        <h1 className={styles.title}>{categoryName}</h1>
+        {titleBlock}
         <div className={styles.headerRight}>
           <span className={styles.totalCount}>
             {products.length}{' '}

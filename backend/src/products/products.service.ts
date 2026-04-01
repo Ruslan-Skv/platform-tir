@@ -45,6 +45,9 @@ export class ProductsService {
     cardVariants: { orderBy: { sortOrder: 'asc' as const } },
   };
 
+  /** Лимит выдачи при полнотекстовом поиске в каталоге (как у окна ES по умолчанию). */
+  private readonly catalogSearchMaxSize = 10_000;
+
   private readonly createdByUpdatedByInclude = {
     createdBy: { select: { email: true } },
     updatedBy: { select: { email: true } },
@@ -277,7 +280,7 @@ export class ProductsService {
     return enriched ?? product;
   }
 
-  async findByCategory(categorySlug: string) {
+  async findByCategory(categorySlug: string, search?: string) {
     // Находим категорию по slug
     const category = await this.prisma.category.findUnique({
       where: { slug: categorySlug },
@@ -296,29 +299,24 @@ export class ProductsService {
 
     // Рекурсивно собираем все ID категорий (включая все дочерние)
     const categoryIds = this.collectCategoryIds(category);
+    const categoryIdSet = new Set(categoryIds);
+    const term = search?.trim();
 
-    // Получаем товары из этой категории и всех дочерних
-    const products = await this.prisma.product.findMany({
-      where: {
-        categoryId: { in: categoryIds },
-        isActive: true,
-      },
-      include: {
-        category: true,
-        partner: {
-          select: {
-            id: true,
-            name: true,
-            logoUrl: true,
-            showLogoOnCards: true,
-            tooltipText: true,
-            showTooltip: true,
-          },
-        },
-        ...this.cardVariantsInclude,
-      },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-    });
+    let products;
+    if (term) {
+      const esIds = await this.elasticsearchSearchCatalogProductIds(term, categoryIds);
+      if (esIds !== null && esIds.length > 0) {
+        const loaded = await this.loadCatalogProductsOrderedByIds(esIds);
+        products = loaded.filter((p) => categoryIdSet.has(p.categoryId));
+        if (products.length === 0) {
+          products = await this.findByCategoryFromPrisma(categoryIds, search);
+        }
+      } else {
+        products = await this.findByCategoryFromPrisma(categoryIds, search);
+      }
+    } else {
+      products = await this.findByCategoryFromPrisma(categoryIds, undefined);
+    }
 
     const enrichedProducts = await this.enrichProductsWithRating(products);
     return {
@@ -371,28 +369,168 @@ export class ProductsService {
     return ids;
   }
 
-  // Получить все товары (для страницы "Каталог товаров")
-  async findAllProducts() {
-    const products = await this.prisma.product.findMany({
+  /** Условие публичного поиска: наименование или артикул (внутренний SKU). */
+  private buildPublicProductSearchWhere(search?: string): Prisma.ProductWhereInput | undefined {
+    const term = search?.trim();
+    if (!term) return undefined;
+    return {
+      OR: [
+        { name: { contains: term, mode: 'insensitive' } },
+        { sku: { contains: term, mode: 'insensitive' } },
+      ],
+    };
+  }
+
+  /** Include для публичного списка товаров в каталоге (карточки, партнёр, варианты). */
+  private catalogPublicListInclude(): Prisma.ProductInclude {
+    return {
+      category: true,
+      partner: {
+        select: {
+          id: true,
+          name: true,
+          logoUrl: true,
+          showLogoOnCards: true,
+          tooltipText: true,
+          showTooltip: true,
+        },
+      },
+      ...this.cardVariantsInclude,
+    };
+  }
+
+  /**
+   * Разбор ответа search API: совместимость @elastic/elasticsearch v7 (`body`) и v8 (плоский объект).
+   */
+  private parseElasticsearchSearchResponse(result: unknown): {
+    hitIds: string[];
+    total: number;
+  } {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const r = result as any;
+    const rawHits = r?.body?.hits?.hits ?? r?.hits?.hits ?? [];
+    const totalRaw = r?.body?.hits?.total ?? r?.hits?.total;
+    const total =
+      typeof totalRaw === 'number'
+        ? totalRaw
+        : typeof totalRaw?.value === 'number'
+          ? totalRaw.value
+          : 0;
+    const hitIds = Array.isArray(rawHits)
+      ? rawHits
+          .map((h: { _id?: string }) => h._id)
+          .filter((id): id is string => typeof id === 'string')
+      : [];
+    return { hitIds, total };
+  }
+
+  /**
+   * Полнотекстовый поиск в индексе (релевантность, опечатки). Совпадает с полями `GET /products/search`.
+   * @returns null — Elasticsearch недоступен; [] — запрос выполнен, совпадений нет; иначе id в порядке релевантности.
+   */
+  private async elasticsearchSearchCatalogProductIds(
+    query: string,
+    categoryIds?: string[],
+  ): Promise<string[] | null> {
+    if (!this.elasticsearch.isAvailable()) {
+      return null;
+    }
+    const term = query.trim();
+    if (!term) {
+      return [];
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const filter: any[] = [{ term: { isActive: true } }];
+    if (categoryIds !== undefined && categoryIds.length > 0) {
+      filter.push({ terms: { 'category.id': categoryIds } });
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const body: any = {
+      query: {
+        bool: {
+          must: [
+            {
+              multi_match: {
+                query: term,
+                fields: ['name^3', 'description', 'sku'],
+                fuzziness: 'AUTO',
+              },
+            },
+          ],
+          filter,
+        },
+      },
+      size: this.catalogSearchMaxSize,
+      _source: false,
+      sort: [{ _score: { order: 'desc' } }],
+    };
+
+    const result = await this.elasticsearch.search(this.indexName, body);
+    const { hitIds } = this.parseElasticsearchSearchResponse(result);
+    return hitIds;
+  }
+
+  /** Загрузка товаров для каталога с сохранением порядка id (например порядка ES). */
+  private async loadCatalogProductsOrderedByIds(orderedIds: string[]) {
+    if (orderedIds.length === 0) {
+      return [];
+    }
+    const rows = await this.prisma.product.findMany({
       where: {
+        id: { in: orderedIds },
         isActive: true,
       },
-      include: {
-        category: true,
-        partner: {
-          select: {
-            id: true,
-            name: true,
-            logoUrl: true,
-            showLogoOnCards: true,
-            tooltipText: true,
-            showTooltip: true,
-          },
-        },
-        ...this.cardVariantsInclude,
+      include: this.catalogPublicListInclude(),
+    });
+    const map = new Map(rows.map((p) => [p.id, p]));
+    return orderedIds.map((id) => map.get(id)).filter((p): p is (typeof rows)[number] => p != null);
+  }
+
+  private async findAllProductsFromPrisma(search?: string) {
+    const searchWhere = this.buildPublicProductSearchWhere(search);
+    return this.prisma.product.findMany({
+      where: {
+        isActive: true,
+        ...(searchWhere ?? {}),
       },
+      include: this.catalogPublicListInclude(),
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
     });
+  }
+
+  private async findByCategoryFromPrisma(categoryIds: string[], search?: string) {
+    const searchWhere = this.buildPublicProductSearchWhere(search);
+    return this.prisma.product.findMany({
+      where: {
+        categoryId: { in: categoryIds },
+        isActive: true,
+        ...(searchWhere ?? {}),
+      },
+      include: this.catalogPublicListInclude(),
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+    });
+  }
+
+  // Получить все товары (для страницы "Каталог товаров")
+  async findAllProducts(search?: string) {
+    const term = search?.trim();
+    let products;
+
+    if (term) {
+      const esIds = await this.elasticsearchSearchCatalogProductIds(term);
+      if (esIds !== null && esIds.length > 0) {
+        products = await this.loadCatalogProductsOrderedByIds(esIds);
+        if (products.length === 0) {
+          products = await this.findAllProductsFromPrisma(search);
+        }
+      } else {
+        products = await this.findAllProductsFromPrisma(search);
+      }
+    } else {
+      products = await this.findAllProductsFromPrisma(undefined);
+    }
 
     const enrichedProducts = await this.enrichProductsWithRating(products);
     return {
@@ -403,7 +541,7 @@ export class ProductsService {
         description: 'Все товары',
       },
       products: enrichedProducts,
-      total: products.length,
+      total: enrichedProducts.length,
     };
   }
 
@@ -540,9 +678,8 @@ export class ProductsService {
     }
 
     const result = await this.elasticsearch.search(this.indexName, searchQuery);
+    const { hitIds: productIds, total } = this.parseElasticsearchSearchResponse(result);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const productIds = result.body.hits.hits.map((hit: any) => hit._id);
     const products = await this.prisma.product.findMany({
       where: {
         id: { in: productIds },
@@ -562,11 +699,99 @@ export class ProductsService {
 
     return {
       products: enrichedProducts,
-      total: result.body.hits.total.value,
+      total,
       page,
       limit,
-      totalPages: Math.ceil(result.body.hits.total.value / limit),
+      totalPages: Math.ceil(total / limit),
     };
+  }
+
+  /** Подсказки для строки поиска (компактный ответ, порядок как в ES при наличии индекса). */
+  async searchSuggestions(
+    rawQuery: string,
+    limit = 8,
+  ): Promise<
+    Array<{
+      id: string;
+      name: string;
+      slug: string;
+      sku: string | null;
+      imageUrl: string | null;
+    }>
+  > {
+    const query = rawQuery.trim();
+    if (query.length < 2) {
+      return [];
+    }
+    const take = Math.min(Math.max(1, limit), 20);
+
+    let orderedIds: string[] | null = null;
+    if (this.elasticsearch.isAvailable()) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const body: any = {
+        query: {
+          bool: {
+            must: [
+              {
+                multi_match: {
+                  query,
+                  fields: ['name^3', 'description', 'sku'],
+                  fuzziness: 'AUTO',
+                },
+              },
+            ],
+            filter: [{ term: { isActive: true } }],
+          },
+        },
+        size: take,
+        _source: ['name', 'slug', 'sku', 'images'],
+      };
+      const result = await this.elasticsearch.search(this.indexName, body);
+      const { hitIds } = this.parseElasticsearchSearchResponse(result);
+      if (hitIds.length > 0) {
+        orderedIds = hitIds;
+      }
+    }
+
+    const mapRow = (p: {
+      id: string;
+      name: string;
+      slug: string;
+      sku: string | null;
+      images: string[];
+    }) => ({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      sku: p.sku,
+      imageUrl: p.images?.[0] ?? null,
+    });
+
+    if (!orderedIds) {
+      const rows = await this.prisma.product.findMany({
+        where: {
+          isActive: true,
+          OR: [
+            { name: { contains: query, mode: 'insensitive' } },
+            { sku: { contains: query, mode: 'insensitive' } },
+          ],
+        },
+        select: { id: true, name: true, slug: true, sku: true, images: true },
+        take,
+        orderBy: { name: 'asc' },
+      });
+      return rows.map(mapRow);
+    }
+
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: orderedIds }, isActive: true },
+      select: { id: true, name: true, slug: true, sku: true, images: true },
+    });
+    const map = new Map(products.map((p) => [p.id, p]));
+    return orderedIds
+      .map((id) => map.get(id))
+      .filter((p): p is NonNullable<typeof p> => p != null)
+      .map(mapRow);
   }
 
   async update(id: string, updateProductDto: UpdateProductDto, userId?: string) {

@@ -24,6 +24,7 @@ describe('ProductsService', () => {
     search: jest.fn(),
     createIndex: jest.fn(),
     deleteDocument: jest.fn(),
+    isAvailable: jest.fn().mockReturnValue(false),
   };
 
   const mockPriceScraper = { getPriceFromUrl: jest.fn() };

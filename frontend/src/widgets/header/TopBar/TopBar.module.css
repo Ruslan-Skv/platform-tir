@@ -35,15 +35,31 @@
   margin-left: auto;
 }
 
+/* Оболочка поиска: ширина анимируется здесь, чтобы выпадающий список не резался overflow */
+.searchShell {
+  box-sizing: border-box;
+  flex-shrink: 0;
+  margin-right: 0.5rem;
+  position: relative;
+  width: 11.75rem;
+  z-index: 30;
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.searchShell:focus-within {
+  /* ~×3: 11.75rem → 35.25rem (~564px); на узком десктопе — по ширине окна */
+  width: min(35.25rem, calc(100vw - 15rem));
+}
+
 /* Поиск — слева от иконки «Сравнить», скругление как у кнопок «Заказать обратный звонок» */
 .searchForm {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
+  width: 100%;
   border: 1px solid #e5e7eb;
   border-radius: 20px;
-  overflow: hidden;
   background: #f9fafb;
-  margin-right: 0.5rem;
   transition: border-color 0.35s ease;
 }
 
@@ -51,23 +67,108 @@
   border-color: rgb(217 6 82 / 0.35);
 }
 
+.suggestionsList {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.08),
+    0 4px 6px -4px rgb(0 0 0 / 0.06);
+  left: 0;
+  list-style: none;
+  margin: 0.25rem 0 0;
+  max-height: min(20rem, 50vh);
+  overflow-y: auto;
+  padding: 0.25rem 0;
+  position: absolute;
+  right: 0;
+  top: 100%;
+}
+
+.suggestionItem {
+  align-items: center;
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  gap: 0.625rem;
+  font-size: 0.8125rem;
+  line-height: 1.25;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  width: 100%;
+}
+
+.suggestionItem:hover,
+.suggestionItem[data-active='true'] {
+  background: #f3f4f6;
+}
+
+.suggestionThumb {
+  background: #f3f4f6;
+  border-radius: 6px;
+  flex-shrink: 0;
+  height: 2.5rem;
+  object-fit: cover;
+  width: 2.5rem;
+}
+
+span.suggestionThumb {
+  display: block;
+  flex-shrink: 0;
+}
+
+.suggestionText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.suggestionName {
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggestionMeta {
+  color: #6b7280;
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggestionsLoading {
+  color: #6b7280;
+  font-size: 0.8125rem;
+  padding: 0.5rem 0.75rem;
+}
+
 .searchInput {
-  width: 140px;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
   padding: 4px 8px 4px 10px;
   border: none;
   background: transparent;
   color: #111827;
   font-size: 0.875rem;
   outline: none;
-  transition: box-shadow 0.35s ease;
+  box-shadow: none;
 }
 
-.searchInput:focus {
-  outline: none;
-}
-
+.searchInput:focus,
 .searchInput:focus-visible {
-  box-shadow: inset 0 0 0 2px rgb(217 6 82 / 0.2);
+  outline: none;
+  box-shadow: none;
+}
+
+/* Нативный крестик очистки — нужен; лупу слева в Safari не показываем (своя иконка справа). */
+.searchInput::-webkit-search-decoration {
+  display: none;
 }
 
 .searchInput::placeholder {
@@ -78,27 +179,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   padding: 4px 8px;
   border: none;
   border-radius: 0.25rem;
   background: transparent;
   color: #374151;
   cursor: pointer;
-  transition:
-    color 0.35s ease,
-    box-shadow 0.35s ease;
+  transition: color 0.35s ease;
 }
 
 .searchSubmit:hover {
   color: #d90652;
 }
 
-.searchSubmit:focus {
-  outline: none;
-}
-
+.searchSubmit:focus,
 .searchSubmit:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  outline: none;
+  box-shadow: none;
 }
 
 .searchSubmit:active {
@@ -108,6 +206,16 @@
 .searchIcon {
   height: 1rem;
   width: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .searchShell {
+    transition: none;
+  }
+
+  .searchForm {
+    transition: border-color 0.35s ease;
+  }
 }
 
 .utilityButton {
@@ -280,6 +388,35 @@
   border-color: rgb(217 6 82 / 0.4);
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .suggestionsList {
+  background: #1f2937;
+  border-color: #4b5563;
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.35),
+    0 4px 6px -4px rgb(0 0 0 / 0.25);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .suggestionItem:hover,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .suggestionItem[data-active='true'] {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .suggestionThumb {
+  background: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .suggestionName {
+  color: #f3f4f6;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .suggestionMeta {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .suggestionsLoading {
+  color: #9ca3af;
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput {
   color: #e5e7eb;
 }
@@ -295,14 +432,6 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchSubmit:hover,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchSubmit:active {
   color: #d90652;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput:focus-visible {
-  box-shadow: inset 0 0 0 2px rgb(217 6 82 / 0.25);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .searchSubmit:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
 }
 
 /* Мобильная адаптация для текста кнопок */
