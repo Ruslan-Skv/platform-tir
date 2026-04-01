@@ -94,6 +94,32 @@
   margin-bottom: 12px;
 }
 
+/* Обязательные поля карточки: пусто — светло-жёлтый, заполнено — светло-салатовый */
+.fieldHighlightEmpty {
+  background-color: #fff9c4 !important;
+}
+
+.fieldHighlightFilled {
+  background-color: #ccfbf1 !important;
+  color: #065f46;
+  border-color: #14b8a6;
+}
+
+.fieldHighlightBlockEmpty {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background-color: #fff9c4;
+  border: 1px solid #fbc02d;
+}
+
+.fieldHighlightBlockFilled {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background-color: #ccfbf1;
+  border: 1px solid #14b8a6;
+  color: #065f46;
+}
+
 /* Парсер цены по ссылке поставщика — заметный блок вверху формы */
 .parserNotice {
   padding: 12px 14px;
@@ -1074,6 +1100,102 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .textarea::placeholder,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input::placeholder {
   color: #9ca3af;
+}
+
+/* Подсветка обязательных полей: светлый фон — тёмный текст (иначе сливается с color инпутов в dark) */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input.fieldHighlightEmpty,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select.fieldHighlightEmpty,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .textarea.fieldHighlightEmpty {
+  color: #1c1917;
+  border-color: #ca8a04;
+  caret-color: #1c1917;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input.fieldHighlightFilled,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select.fieldHighlightFilled,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .textarea.fieldHighlightFilled {
+  background-color: #0f766e !important;
+  color: #ecfdf5;
+  border-color: #2dd4bf;
+  caret-color: #ecfdf5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input.fieldHighlightEmpty::placeholder,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .textarea.fieldHighlightEmpty::placeholder {
+  color: #78716c;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .input.fieldHighlightFilled::placeholder,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .textarea.fieldHighlightFilled::placeholder {
+  color: #5eead4;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select.fieldHighlightEmpty option {
+  background: #fffbeb;
+  color: #1c1917;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select.fieldHighlightFilled option {
+  background: #115e59;
+  color: #ecfdf5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockEmpty {
+  background-color: #fef9c3;
+  border-color: #eab308;
+  color: #1c1917;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockFilled {
+  background-color: #134e4a;
+  border-color: #14b8a6;
+  color: #ccfbf1;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockEmpty .hint {
+  color: #57534e;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockFilled .hint {
+  color: #99f6e4;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockEmpty .sizesHint,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockEmpty .sizesHintLabel {
+  color: #44403c;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockFilled .sizesHint,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .fieldHighlightBlockFilled
+  .sizesHintLabel {
+  color: #5eead4;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockEmpty .sizesHintChip {
+  background: #fef08a;
+  border-color: #ca8a04;
+  color: #1c1917;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockFilled .sizesHintChip {
+  background: #0f766e;
+  border-color: #2dd4bf;
+  color: #ecfdf5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockEmpty .noImages {
+  background: rgb(254 252 232 / 0.6);
+  border-color: #ca8a04;
+  color: #57534e;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockFilled .noImages {
+  background: rgb(15 118 110 / 0.45);
+  border-color: #14b8a6;
+  color: #99f6e4;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .checkbox span {

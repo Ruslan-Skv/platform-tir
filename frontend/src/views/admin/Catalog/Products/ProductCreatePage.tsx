@@ -22,6 +22,10 @@ import {
   collectInteriorDoorsSubtreeIdsFromRoots,
   findInteriorDoorsRootForSelection,
 } from './interior-doors-category-utils';
+import {
+  adminProductFieldHighlightClass,
+  validateAdminProductRequiredFields,
+} from './product-form-required-fields';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -236,6 +240,34 @@ export function ProductCreatePage({
   const [formData, setFormData] = useState(
     initialCopyData?.formData ?? { ...defaultFormData, categoryId: categoryIdFromUrl || '' }
   );
+
+  const reqHighlight = useMemo(() => {
+    const priceRaw = String(formData.price).trim().replace(',', '.');
+    const priceNum = parseFloat(priceRaw);
+    return {
+      name: formData.name.trim().length > 0,
+      category: Boolean(formData.categoryId.trim()),
+      supplier: Boolean(formData.supplierId.trim()),
+      supplierUrl: formData.supplierProductUrl.trim().length > 0,
+      supplierSku:
+        !formData.supplierId ||
+        (formData.supplierSku != null && String(formData.supplierSku).trim().length > 0),
+      price: priceRaw !== '' && Number.isFinite(priceNum) && priceNum > 0,
+      stock: Number.isFinite(formData.stock) && formData.stock >= 0,
+      sizes: formData.sizes.some((s) => s.trim().length > 0),
+      images: formData.images.some((u) => u.trim().length > 0),
+    };
+  }, [
+    formData.name,
+    formData.categoryId,
+    formData.supplierId,
+    formData.supplierProductUrl,
+    formData.supplierSku,
+    formData.price,
+    formData.stock,
+    formData.sizes,
+    formData.images,
+  ]);
 
   // Атрибуты категории и товара
   const [categoryAttributes, setCategoryAttributes] = useState<CategoryAttribute[]>(
@@ -923,8 +955,27 @@ export function ProductCreatePage({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
     setError(null);
+
+    const missing = validateAdminProductRequiredFields({
+      name: formData.name,
+      categoryId: formData.categoryId,
+      supplierId: formData.supplierId,
+      supplierProductUrl: formData.supplierProductUrl,
+      supplierSku: formData.supplierSku,
+      price: formData.price,
+      stock: formData.stock,
+      sizes: formData.sizes,
+      images: formData.images,
+    });
+    if (missing.length > 0) {
+      setError(
+        `Не удалось создать товар: не заполнены обязательные поля: ${missing.join(', ')}. Заполните их и попробуйте снова.`
+      );
+      return;
+    }
+
+    setSaving(true);
 
     try {
       // Собираем все атрибуты в правильном порядке
@@ -961,13 +1012,6 @@ export function ProductCreatePage({
         value: value,
         ...(slug ? { slug } : {}),
       }));
-
-      // Validate categoryId before sending
-      if (!formData.categoryId || formData.categoryId.trim() === '') {
-        setError('Выберите категорию');
-        setSaving(false);
-        return;
-      }
 
       console.log('Creating product with attributes (ordered array):', attributesArray);
 
@@ -1173,7 +1217,7 @@ export function ProductCreatePage({
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className={styles.input}
+                  className={`${styles.input} ${adminProductFieldHighlightClass(reqHighlight.name, styles)}`}
                   placeholder="Введите название товара"
                 />
               </div>
@@ -1235,7 +1279,7 @@ export function ProductCreatePage({
                   value={formData.categoryId}
                   onChange={handleChange}
                   required
-                  className={styles.select}
+                  className={`${styles.select} ${adminProductFieldHighlightClass(reqHighlight.category, styles)}`}
                 >
                   <option value="">Выберите категорию</option>
                   {flatCategories.map((cat) => (
@@ -1247,13 +1291,14 @@ export function ProductCreatePage({
               </div>
 
               <div className={styles.formGroup}>
-                <label htmlFor="supplierId">Поставщик</label>
+                <label htmlFor="supplierId">Поставщик *</label>
                 <select
                   id="supplierId"
                   name="supplierId"
                   value={formData.supplierId}
                   onChange={handleChange}
-                  className={styles.select}
+                  required
+                  className={`${styles.select} ${adminProductFieldHighlightClass(reqHighlight.supplier, styles)}`}
                 >
                   <option value="">Не выбран</option>
                   {suppliers.map((supplier) => (
@@ -1272,7 +1317,11 @@ export function ProductCreatePage({
                   name="supplierSku"
                   value={formData.supplierSku}
                   onChange={handleChange}
-                  className={styles.input}
+                  className={
+                    formData.supplierId
+                      ? `${styles.input} ${adminProductFieldHighlightClass(reqHighlight.supplierSku, styles)}`
+                      : styles.input
+                  }
                   placeholder="Код у поставщика"
                   disabled={!formData.supplierId}
                 />
@@ -1282,7 +1331,7 @@ export function ProductCreatePage({
             {formData.supplierId && (
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
-                  <label htmlFor="supplierProductUrl">Ссылка на товар поставщика</label>
+                  <label htmlFor="supplierProductUrl">Ссылка на товар поставщика *</label>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <input
                       type="url"
@@ -1291,7 +1340,8 @@ export function ProductCreatePage({
                       value={formData.supplierProductUrl}
                       onChange={handleChange}
                       onBlur={handleSupplierProductUrlBlur}
-                      className={styles.input}
+                      required
+                      className={`${styles.input} ${adminProductFieldHighlightClass(reqHighlight.supplierUrl, styles)}`}
                       placeholder="https://supplier.com/product/123"
                     />
                     <button
@@ -1435,7 +1485,7 @@ export function ProductCreatePage({
                   value={formData.price}
                   onChange={handlePriceChange}
                   required
-                  className={styles.input}
+                  className={`${styles.input} ${adminProductFieldHighlightClass(reqHighlight.price, styles)}`}
                   placeholder="0.00"
                   autoComplete="off"
                 />
@@ -1458,7 +1508,7 @@ export function ProductCreatePage({
             </div>
 
             <div className={styles.formGroup}>
-              <label htmlFor="stock">Остаток на складе</label>
+              <label htmlFor="stock">Остаток на складе *</label>
               <input
                 type="text"
                 inputMode="numeric"
@@ -1466,7 +1516,8 @@ export function ProductCreatePage({
                 name="stock"
                 value={formData.stock}
                 onChange={handleIntegerChange}
-                className={styles.input}
+                required
+                className={`${styles.input} ${adminProductFieldHighlightClass(reqHighlight.stock, styles)}`}
                 placeholder="0"
                 autoComplete="off"
               />
@@ -1530,98 +1581,106 @@ export function ProductCreatePage({
             <h2 className={styles.sectionTitle}>Варианты исполнения</h2>
 
             <div className={styles.formGroup}>
-              <label>Размеры</label>
-              {suggestedSizes.length > 0 && (
-                <div className={styles.sizesHint}>
-                  <span className={styles.sizesHintLabel}>
-                    Подсказка: размеры из других товаров категории —
-                  </span>
-                  <div className={styles.sizesHintChips}>
-                    {suggestedSizes.map((size) => {
-                      const alreadyAdded = formData.sizes.some(
-                        (s) => s.trim().toLowerCase() === size.trim().toLowerCase()
-                      );
-                      return (
-                        <button
-                          key={size}
-                          type="button"
-                          className={styles.sizesHintChip}
-                          disabled={alreadyAdded}
-                          onClick={() => {
-                            setFormData((prev) => {
-                              const trimmed = size.trim();
-                              if (!trimmed) return prev;
-                              const exists = prev.sizes.some(
-                                (s) => s.trim().toLowerCase() === trimmed.toLowerCase()
-                              );
-                              if (exists) return prev;
-                              const base = prev.sizes.filter((s) => s.trim() !== '');
-                              return {
-                                ...prev,
-                                sizes: base.length ? [...base, trimmed] : [trimmed],
-                              };
-                            });
-                          }}
-                        >
-                          {size}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-              <div className={styles.attributesList}>
-                {(formData.sizes.length > 0 ? formData.sizes : ['']).map((size, index) => (
-                  <div key={`size-${index}`} className={styles.attributeRow}>
-                    <input
-                      type="text"
-                      value={size}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setFormData((prev) => {
-                          const nextSizes = prev.sizes.length > 0 ? [...prev.sizes] : [''];
-                          nextSizes[index] = value;
-                          return { ...prev, sizes: nextSizes };
-                        });
-                      }}
-                      className={styles.input}
-                      placeholder="60x200"
-                      aria-label={`Размер ${index + 1}`}
-                    />
-                    {formData.sizes.length > 1 && (
-                      <button
-                        type="button"
-                        className={styles.removeAttrButton}
-                        onClick={() =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            sizes: prev.sizes.filter((_, i) => i !== index),
-                          }))
-                        }
-                        title="Удалить"
-                      >
-                        🗑️
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <button
-                type="button"
-                className={styles.addAttrButton}
-                onClick={() =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    sizes: [...prev.sizes, ''],
-                  }))
+              <label>Размеры *</label>
+              <div
+                className={
+                  reqHighlight.sizes
+                    ? styles.fieldHighlightBlockFilled
+                    : styles.fieldHighlightBlockEmpty
                 }
               >
-                + Добавить размер
-              </button>
-              <p className={styles.hint}>
-                Добавьте один или несколько размеров. Если не указано, параметр не будет
-                отображаться в публичке.
-              </p>
+                {suggestedSizes.length > 0 && (
+                  <div className={styles.sizesHint}>
+                    <span className={styles.sizesHintLabel}>
+                      Подсказка: размеры из других товаров категории —
+                    </span>
+                    <div className={styles.sizesHintChips}>
+                      {suggestedSizes.map((size) => {
+                        const alreadyAdded = formData.sizes.some(
+                          (s) => s.trim().toLowerCase() === size.trim().toLowerCase()
+                        );
+                        return (
+                          <button
+                            key={size}
+                            type="button"
+                            className={styles.sizesHintChip}
+                            disabled={alreadyAdded}
+                            onClick={() => {
+                              setFormData((prev) => {
+                                const trimmed = size.trim();
+                                if (!trimmed) return prev;
+                                const exists = prev.sizes.some(
+                                  (s) => s.trim().toLowerCase() === trimmed.toLowerCase()
+                                );
+                                if (exists) return prev;
+                                const base = prev.sizes.filter((s) => s.trim() !== '');
+                                return {
+                                  ...prev,
+                                  sizes: base.length ? [...base, trimmed] : [trimmed],
+                                };
+                              });
+                            }}
+                          >
+                            {size}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                <div className={styles.attributesList}>
+                  {(formData.sizes.length > 0 ? formData.sizes : ['']).map((size, index) => (
+                    <div key={`size-${index}`} className={styles.attributeRow}>
+                      <input
+                        type="text"
+                        value={size}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setFormData((prev) => {
+                            const nextSizes = prev.sizes.length > 0 ? [...prev.sizes] : [''];
+                            nextSizes[index] = value;
+                            return { ...prev, sizes: nextSizes };
+                          });
+                        }}
+                        className={styles.input}
+                        placeholder="60x200"
+                        aria-label={`Размер ${index + 1}`}
+                      />
+                      {formData.sizes.length > 1 && (
+                        <button
+                          type="button"
+                          className={styles.removeAttrButton}
+                          onClick={() =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              sizes: prev.sizes.filter((_, i) => i !== index),
+                            }))
+                          }
+                          title="Удалить"
+                        >
+                          🗑️
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className={styles.addAttrButton}
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      sizes: [...prev.sizes, ''],
+                    }))
+                  }
+                >
+                  + Добавить размер
+                </button>
+                <p className={styles.hint}>
+                  Добавьте один или несколько размеров. Если не указано, параметр не будет
+                  отображаться в публичке.
+                </p>
+              </div>
             </div>
 
             <div className={styles.formGroup}>
@@ -1708,83 +1767,91 @@ export function ProductCreatePage({
 
           {/* Images */}
           <div className={`${styles.formSection} ${styles.formSectionFullWidth}`}>
-            <h2 className={styles.sectionTitle}>Изображения</h2>
+            <h2 className={styles.sectionTitle}>Изображения *</h2>
 
             {imageError && <div className={styles.imageError}>{imageError}</div>}
 
-            {/* Drag & Drop zone */}
             <div
-              className={`${styles.dropZone} ${dragActive ? styles.dropZoneActive : ''}`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
+              className={
+                reqHighlight.images
+                  ? styles.fieldHighlightBlockFilled
+                  : styles.fieldHighlightBlockEmpty
+              }
             >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                multiple
-                onChange={(e) => handleImageUpload(e.target.files)}
-                className={styles.fileInput}
-              />
-              <div className={styles.dropZoneContent}>
-                <span className={styles.dropZoneIcon}>📷</span>
-                <p className={styles.dropZoneText}>
-                  Перетащите изображения сюда или{' '}
-                  <span className={styles.dropZoneLink}>выберите файлы</span>
-                </p>
-                <p className={styles.dropZoneHint}>JPG, PNG, WebP, GIF до 5MB</p>
+              {/* Drag & Drop zone */}
+              <div
+                className={`${styles.dropZone} ${dragActive ? styles.dropZoneActive : ''}`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  multiple
+                  onChange={(e) => handleImageUpload(e.target.files)}
+                  className={styles.fileInput}
+                />
+                <div className={styles.dropZoneContent}>
+                  <span className={styles.dropZoneIcon}>📷</span>
+                  <p className={styles.dropZoneText}>
+                    Перетащите изображения сюда или{' '}
+                    <span className={styles.dropZoneLink}>выберите файлы</span>
+                  </p>
+                  <p className={styles.dropZoneHint}>JPG, PNG, WebP, GIF до 5MB</p>
+                </div>
               </div>
-            </div>
 
-            {/* Add by URL */}
-            <button type="button" className={styles.addUrlButton} onClick={handleImageUrlAdd}>
-              🔗 Добавить по URL
-            </button>
+              {/* Add by URL */}
+              <button type="button" className={styles.addUrlButton} onClick={handleImageUrlAdd}>
+                🔗 Добавить по URL
+              </button>
 
-            {/* Images grid */}
-            {formData.images.length > 0 ? (
-              <div className={styles.imagesGrid}>
-                {formData.images.map((img, index) => (
-                  <div key={index} className={styles.imageItem}>
-                    <img src={img} alt={`Изображение ${index + 1}`} />
-                    {index === 0 && <span className={styles.mainImageBadge}>Главное</span>}
-                    <div className={styles.imageActions}>
-                      <button
-                        type="button"
-                        className={styles.imageActionBtn}
-                        onClick={() => moveImage(index, 'up')}
-                        disabled={index === 0}
-                        title="Переместить влево"
-                      >
-                        ←
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.imageActionBtn}
-                        onClick={() => moveImage(index, 'down')}
-                        disabled={index === formData.images.length - 1}
-                        title="Переместить вправо"
-                      >
-                        →
-                      </button>
-                      <button
-                        type="button"
-                        className={`${styles.imageActionBtn} ${styles.imageDeleteBtn}`}
-                        onClick={() => removeImage(index)}
-                        title="Удалить"
-                      >
-                        🗑️
-                      </button>
+              {/* Images grid */}
+              {formData.images.length > 0 ? (
+                <div className={styles.imagesGrid}>
+                  {formData.images.map((img, index) => (
+                    <div key={index} className={styles.imageItem}>
+                      <img src={img} alt={`Изображение ${index + 1}`} />
+                      {index === 0 && <span className={styles.mainImageBadge}>Главное</span>}
+                      <div className={styles.imageActions}>
+                        <button
+                          type="button"
+                          className={styles.imageActionBtn}
+                          onClick={() => moveImage(index, 'up')}
+                          disabled={index === 0}
+                          title="Переместить влево"
+                        >
+                          ←
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.imageActionBtn}
+                          onClick={() => moveImage(index, 'down')}
+                          disabled={index === formData.images.length - 1}
+                          title="Переместить вправо"
+                        >
+                          →
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.imageActionBtn} ${styles.imageDeleteBtn}`}
+                          onClick={() => removeImage(index)}
+                          title="Удалить"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className={styles.noImages}>Изображения не добавлены</p>
-            )}
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.noImages}>Изображения не добавлены</p>
+              )}
+            </div>
           </div>
 
           {/* Description */}
