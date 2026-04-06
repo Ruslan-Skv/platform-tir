@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { ElasticsearchService } from '../elasticsearch/elasticsearch.service';
 import { PriceScraperService } from './price-scraper.service';
@@ -55,6 +55,13 @@ export class ProductsService {
     cardVariants: { orderBy: { sortOrder: 'asc' as const } },
   };
 
+  private readonly cardBadgeSelectionsInclude = {
+    cardBadgeSelections: {
+      orderBy: { sortOrder: 'asc' as const },
+      include: { badge: true },
+    },
+  };
+
   /** Лимит выдачи при полнотекстовом поиске в каталоге (как у окна ES по умолчанию). */
   private readonly catalogSearchMaxSize = 10_000;
 
@@ -69,6 +76,36 @@ export class ProductsService {
     return String(value).trim();
   }
 
+  /** Замена набора бэйджей карточки (слева от фото), не более 5 уникальных id из справочника. */
+  private async syncProductCardBadges(productId: string, badgeIds: string[] | undefined | null) {
+    if (badgeIds === undefined) {
+      return;
+    }
+    const list = badgeIds ?? [];
+    const unique = [...new Set(list.filter((id) => typeof id === 'string' && id.trim()))];
+    if (unique.length > 5) {
+      throw new BadRequestException('На один товар можно назначить не более 5 бэйджей карточки');
+    }
+    await this.prisma.productCardBadgeOnProduct.deleteMany({ where: { productId } });
+    if (unique.length === 0) {
+      return;
+    }
+    const defs = await this.prisma.productCardBadgeDefinition.findMany({
+      where: { id: { in: unique } },
+      select: { id: true },
+    });
+    if (defs.length !== unique.length) {
+      throw new BadRequestException('Указан неизвестный идентификатор бэйджа карточки');
+    }
+    await this.prisma.productCardBadgeOnProduct.createMany({
+      data: unique.map((badgeId, i) => ({
+        productId,
+        badgeId,
+        sortOrder: i,
+      })),
+    });
+  }
+
   async create(createProductDto: CreateProductDto, userId?: string) {
     // Поля поставщика, партнёра и cardVariants — исключаем из data для prisma.product.create
     const {
@@ -79,6 +116,7 @@ export class ProductsService {
       categoryId,
       partnerId,
       cardVariants,
+      catalogBadgeIds,
       ...productData
     } = createProductDto;
     const data: Prisma.ProductCreateInput = {
@@ -109,6 +147,8 @@ export class ProductsService {
         ...this.createdByUpdatedByInclude,
       },
     });
+
+    await this.syncProductCardBadges(product.id, catalogBadgeIds ?? []);
 
     // Схожие товары в карточке (до 5)
     if (cardVariants && cardVariants.length > 0) {
@@ -171,7 +211,16 @@ export class ProductsService {
     // Index in Elasticsearch
     await this.indexProduct(product);
 
-    return product;
+    const createdFull = await this.prisma.product.findUnique({
+      where: { id: product.id },
+      include: {
+        category: true,
+        ...this.cardVariantsInclude,
+        ...this.cardBadgeSelectionsInclude,
+        ...this.createdByUpdatedByInclude,
+      },
+    });
+    return createdFull ?? product;
   }
 
   async findAll() {
@@ -253,6 +302,7 @@ export class ProductsService {
           },
         },
         ...this.cardVariantsInclude,
+        ...this.cardBadgeSelectionsInclude,
         ...this.createdByUpdatedByInclude,
       },
     });
@@ -279,6 +329,7 @@ export class ProductsService {
           orderBy: { createdAt: 'desc' },
         },
         ...this.cardVariantsInclude,
+        ...this.cardBadgeSelectionsInclude,
       },
     });
 
@@ -413,6 +464,7 @@ export class ProductsService {
         },
       },
       ...this.cardVariantsInclude,
+      ...this.cardBadgeSelectionsInclude,
     };
   }
 
@@ -613,6 +665,7 @@ export class ProductsService {
               },
             },
             ...this.cardVariantsInclude,
+            ...this.cardBadgeSelectionsInclude,
           },
           orderBy,
           take: limit,
@@ -633,6 +686,7 @@ export class ProductsService {
         },
       },
       ...this.cardVariantsInclude,
+      ...this.cardBadgeSelectionsInclude,
     };
     const primary = await this.prisma.product.findMany({
       where: primaryWhere,
@@ -830,6 +884,7 @@ export class ProductsService {
       categoryId,
       partnerId,
       cardVariants,
+      catalogBadgeIds,
       ...productData
     } = updateProductDto;
     const data: Prisma.ProductUpdateInput = {
@@ -870,6 +925,7 @@ export class ProductsService {
       include: {
         category: true,
         ...this.cardVariantsInclude,
+        ...this.cardBadgeSelectionsInclude,
         ...this.createdByUpdatedByInclude,
       },
     });
@@ -979,6 +1035,10 @@ export class ProductsService {
       }
     }
 
+    if ('catalogBadgeIds' in updateProductDto) {
+      await this.syncProductCardBadges(id, catalogBadgeIds ?? []);
+    }
+
     // После правок ProductSupplier нужен повторный findUnique: первый prisma.product.update
     // выполняется до upsert поставщика — иначе в ответе PATCH не было бы актуальных suppliers/supplierSku.
     const toReturn = await this.prisma.product.findUnique({
@@ -997,6 +1057,7 @@ export class ProductsService {
           },
         },
         ...this.cardVariantsInclude,
+        ...this.cardBadgeSelectionsInclude,
         ...this.createdByUpdatedByInclude,
       },
     });

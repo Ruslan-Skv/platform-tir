@@ -1159,9 +1159,37 @@ model Product {
   wishlist         WishlistItem[]
   compareItems     CompareItem[]
   components       ProductComponent[]
-  cardVariants     ProductCardVariant[]
+  cardVariants          ProductCardVariant[]
+  cardBadgeSelections   ProductCardBadgeOnProduct[]
 
   @@map("products")
+}
+
+/// Справочник бэйджей карточки товара (слева от фото — JPG из настроек каталога).
+model ProductCardBadgeDefinition {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  label       String
+  description String?  @db.Text
+  imageUrl    String?
+  sortOrder   Int      @default(0)
+  products    ProductCardBadgeOnProduct[]
+
+  @@map("product_card_badge_definitions")
+}
+
+/// Выбранные для товара бэйджи (макс. 5 на товар), порядок = sortOrder.
+model ProductCardBadgeOnProduct {
+  id        String   @id @default(cuid())
+  productId String
+  badgeId   String
+  sortOrder Int      @default(0)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  badge     ProductCardBadgeDefinition @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, badgeId])
+  @@index([productId])
+  @@map("product_card_badge_on_products")
 }
 
 /// Схожие товары в одной карточке (до 5): отличаются ценой, размером, фото, наименованием, цветом, доп. опцией (как на Wildberries/Озон).

@@ -8,6 +8,7 @@ import Link from 'next/link';
 
 import type { Product } from '@/entities/product';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
+import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
 
 import styles from './ProductCard.module.css';
 
@@ -25,6 +26,12 @@ function saveCatalogScrollPosition(): void {
   if (!window.location.pathname.startsWith('/catalog/products')) return;
   const urlKey = `${window.location.pathname}${window.location.search}`;
   sessionStorage.setItem(`catalog_scroll:${urlKey}`, String(window.scrollY));
+}
+
+function publicAssetUrl(relative: string): string {
+  const api = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+  const base = api.replace(/\/api\/v1\/?$/, '') || 'http://localhost:3001';
+  return `${base}${relative}`;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
@@ -214,17 +221,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
         <div className={styles.imageSection}>
           <div className={styles.imageSideLeft}>
-            <div className={styles.badges}>
-              {product.isFeatured && <span className={styles.hitBadge}>ХИТ</span>}
-              {product.isNew && <span className={styles.newBadge}>Новинка</span>}
-              {product.discount && (
-                <span className={styles.discountBadge}>-{product.discount}%</span>
-              )}
-              {product.videoUrl && (
-                <span className={styles.videoBadge} title="Есть видео о товаре">
-                  ▶ Видео
-                </span>
-              )}
+            <div className={styles.catalogBadgeImages}>
+              {product.catalogBadges?.map((b) => {
+                const hoverText = b.description?.trim() || b.label || '';
+                return (
+                  <BadgeTooltip key={b.id} content={hoverText} side="right" compact>
+                    <img
+                      src={publicAssetUrl(b.imageUrl)}
+                      alt={b.label}
+                      className={styles.catalogBadgeImg}
+                    />
+                  </BadgeTooltip>
+                );
+              })}
             </div>
             {product.isPartnerProduct &&
               showPartnerIconOnCards &&
@@ -293,6 +302,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             )}
           </div>
           <div className={styles.imageSideRight}>
+            <div className={styles.textBadges}>
+              {product.isFeatured && <span className={styles.hitBadge}>ХИТ</span>}
+              {product.isNew && <span className={styles.newBadge}>Новинка</span>}
+              {product.discount && (
+                <span className={styles.discountBadge}>-{product.discount}%</span>
+              )}
+              {product.videoUrl && (
+                <span className={styles.videoBadge} title="Есть видео о товаре">
+                  ▶ Видео
+                </span>
+              )}
+            </div>
             <div className={styles.actionButtons}>
               {isCompareMode ? (
                 <button

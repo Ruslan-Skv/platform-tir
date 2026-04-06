@@ -1,0 +1,89 @@
+.wrap {
+  display: inline-flex;
+  vertical-align: middle;
+  max-width: 100%;
+  pointer-events: auto;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 10050;
+  max-width: min(280px, calc(100vw - 24px));
+  padding: 0.65rem 0.9rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  /* Светлая тема: светлый «popover», хорошо читается на карточке */
+  color: #1f2937;
+  background: linear-gradient(165deg, #ffffff 0%, #f9fafb 40%, #f3f4f6 100%);
+  box-shadow:
+    0 12px 32px rgb(15 23 42 / 0.12),
+    0 4px 14px rgb(15 23 42 / 0.08),
+    inset 0 1px 0 rgb(255 255 255 / 0.9);
+  border: 1px solid rgb(134 239 172 / 0.55);
+  pointer-events: none;
+  animation: badgeTooltipOpacity 0.2s ease forwards;
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform: translateY(-50%);
+}
+
+.tooltip_side_right::after {
+  right: 100%;
+  margin-right: -1px;
+  border: 7px solid transparent;
+  border-right-color: #f3f4f6;
+}
+
+.tooltip_side_left::after {
+  left: 100%;
+  margin-left: -1px;
+  border: 7px solid transparent;
+  border-left-color: #f3f4f6;
+}
+
+/* Тёмная тема: чуть светлее фона карточки, светлый текст и видимая обводка */
+:global(html[data-theme='dark']) .tooltip,
+:global([data-app-theme='dark']) .tooltip {
+  color: #f3f4f6;
+  background: linear-gradient(165deg, #525d6e 0%, #3d4655 45%, #2d3542 100%);
+  border: 1px solid rgb(110 231 183 / 0.42);
+  box-shadow:
+    0 14px 36px rgb(0 0 0 / 0.45),
+    0 6px 16px rgb(0 0 0 / 0.28),
+    inset 0 1px 0 rgb(255 255 255 / 0.08);
+}
+
+:global(html[data-theme='dark']) .tooltip_side_right::after,
+:global([data-app-theme='dark']) .tooltip_side_right::after {
+  border-right-color: #3d4655;
+}
+
+:global(html[data-theme='dark']) .tooltip_side_left::after,
+:global([data-app-theme='dark']) .tooltip_side_left::after {
+  border-left-color: #3d4655;
+}
+
+.tooltipCompact {
+  /* Уже базовой подсказки — не вылезает за карточку в сетке каталога */
+  max-width: min(196px, calc(100vw - 24px));
+  padding: 0.45rem 0.6rem;
+  font-size: 0.72rem;
+  line-height: 1.38;
+}
+
+@keyframes badgeTooltipOpacity {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

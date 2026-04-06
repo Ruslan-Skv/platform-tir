@@ -8,6 +8,7 @@ import {
   IsArray,
   Min,
   ArrayMaxSize,
+  ArrayUnique,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ProductCardVariantDto } from './product-card-variant.dto';
@@ -181,4 +182,16 @@ export class CreateProductDto {
   @ArrayMaxSize(5)
   @Type(() => ProductCardVariantDto)
   cardVariants?: ProductCardVariantDto[];
+
+  @ApiProperty({
+    description: 'ID бэйджей карточки (слева от фото), из справочника; не более 5',
+    required: false,
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(5)
+  @ArrayUnique()
+  @IsString({ each: true })
+  catalogBadgeIds?: string[];
 }

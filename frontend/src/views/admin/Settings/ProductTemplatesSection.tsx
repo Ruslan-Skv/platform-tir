@@ -27,6 +27,7 @@ const TABLE_COLUMN_OPTIONS = [
 const CARD_SECTION_OPTIONS = [
   { key: 'main', label: 'Основная информация', required: true },
   { key: 'pricing', label: 'Цена и наличие', required: true },
+  { key: 'cardBadges', label: 'Бэйджи карточки товара', required: false },
   { key: 'variants', label: 'Варианты исполнения (размеры, сторона открывания)', required: false },
   { key: 'seo', label: 'SEO', required: false },
   { key: 'images', label: 'Изображения', required: false },

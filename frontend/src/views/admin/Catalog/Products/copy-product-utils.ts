@@ -33,6 +33,10 @@ export interface ProductForCopy {
     supplierPrice?: string | number;
     supplierProductUrl?: string | null;
   }>;
+  cardBadgeSelections?: Array<{
+    sortOrder: number;
+    badgeId: string;
+  }>;
 }
 
 export interface CategoryAttributeForCopy {
@@ -117,6 +121,7 @@ export interface CopiedProductData {
     images: string[];
     sizes: string[];
     openingSide: string[];
+    catalogBadgeIds: string[];
   };
   categoryAttributes: CategoryAttributeForCopy[];
   customAttributes: { key: string; value: string }[];
@@ -195,6 +200,10 @@ export function mapProductToCopyData(
       images: Array.isArray(product.images) ? [...product.images] : [],
       sizes: Array.isArray(product.sizes) ? [...product.sizes] : [],
       openingSide: Array.isArray(product.openingSide) ? [...product.openingSide] : [],
+      catalogBadgeIds: (product.cardBadgeSelections ?? [])
+        .slice()
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+        .map((s) => s.badgeId),
     },
     categoryAttributes,
     customAttributes: customAttrs,

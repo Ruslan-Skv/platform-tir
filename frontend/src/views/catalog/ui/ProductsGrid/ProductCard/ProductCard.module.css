@@ -82,9 +82,8 @@
     white-space: nowrap;
   }
 
-  .productCardCompact .badges {
-    left: 0.2rem;
-    top: 0.2rem;
+  .productCardCompact .catalogBadgeImg {
+    max-height: 28px;
   }
 
   .productCardCompact .hitBadge,
@@ -186,24 +185,28 @@
     min-width: 0;
   }
 
-  .imageSideLeft .badges {
+  .imageSideLeft .catalogBadgeImages {
     position: static;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+    gap: 0.25rem;
+    width: 100%;
   }
 
-  .imageSideLeft .badges .hitBadge,
-  .imageSideLeft .badges .newBadge,
-  .imageSideLeft .badges .discountBadge,
-  .imageSideLeft .badges .videoBadge {
-    margin-bottom: 0.15rem;
+  .imageSideRight .textBadges {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.15rem;
+    width: 100%;
   }
 
-  .imageSideLeft .badges .hitBadge:last-child,
-  .imageSideLeft .badges .newBadge:last-child,
-  .imageSideLeft .badges .discountBadge:last-child,
-  .imageSideLeft .badges .videoBadge:last-child {
+  .imageSideRight .textBadges .hitBadge,
+  .imageSideRight .textBadges .newBadge,
+  .imageSideRight .textBadges .discountBadge,
+  .imageSideRight .textBadges .videoBadge {
     margin-bottom: 0;
   }
 
@@ -526,6 +529,39 @@
   margin: 0;
   background: #d90652;
   border: 2px solid white;
+}
+
+.catalogBadgeImages {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  /* Контейнер без hit-test, чтобы клики по фото проходили; сами бэйджи — см. > * */
+  pointer-events: none;
+}
+
+.catalogBadgeImages > * {
+  pointer-events: auto;
+}
+
+.catalogBadgeImg {
+  display: block;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.textBadges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+  pointer-events: none;
+}
+
+.textBadges span {
+  pointer-events: auto;
 }
 
 .badges {

@@ -5,11 +5,29 @@ import { ProductsController } from './products.controller';
 import { ProductComponentsService } from './product-components.service';
 import { ProductComponentsController } from './product-components.controller';
 import { PriceScraperService } from './price-scraper.service';
+import { ProductCardBadgesService } from './product-card-badges.service';
+import { ProductCardBadgesController } from './product-card-badges.controller';
+import { AdminProductCardBadgesController } from './admin-product-card-badges.controller';
 
 @Module({
   imports: [CatalogFilterBlocksModule],
-  controllers: [ProductsController, ProductComponentsController],
-  providers: [ProductsService, ProductComponentsService, PriceScraperService],
-  exports: [ProductsService, ProductComponentsService, PriceScraperService],
+  controllers: [
+    ProductsController,
+    ProductComponentsController,
+    ProductCardBadgesController,
+    AdminProductCardBadgesController,
+  ],
+  providers: [
+    ProductsService,
+    ProductComponentsService,
+    PriceScraperService,
+    ProductCardBadgesService,
+  ],
+  exports: [
+    ProductsService,
+    ProductComponentsService,
+    PriceScraperService,
+    ProductCardBadgesService,
+  ],
 })
 export class ProductsModule {}

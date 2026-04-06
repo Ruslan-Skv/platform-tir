@@ -32,6 +32,7 @@ const CARD_SECTIONS_STORAGE_KEY = 'admin_product_card_template_sections';
 const DEFAULT_CARD_SECTIONS = [
   'main',
   'pricing',
+  'cardBadges',
   'variants',
   'cardVariants',
   'seo',
@@ -227,6 +228,11 @@ interface Product {
     extraOption?: string | null;
     sortOrder?: number;
   }>;
+  cardBadgeSelections?: Array<{
+    sortOrder: number;
+    badgeId: string;
+    badge: { id: string; key: string; label: string; imageUrl: string | null };
+  }>;
 }
 
 interface AttributeValue {
@@ -294,6 +300,9 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   const [parserBannerError, setParserBannerError] = useState<string | null>(null);
   const parserAbortRef = useRef<AbortController | null>(null);
   const [imageUrlModalOpen, setImageUrlModalOpen] = useState(false);
+  const [badgeDefinitions, setBadgeDefinitions] = useState<
+    Array<{ id: string; key: string; label: string; sortOrder: number }>
+  >([]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -330,7 +339,31 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
       extraOption: string;
       sortOrder: number;
     }>,
+    catalogBadgeIds: [] as string[],
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_URL}/product-card-badges/definitions`, { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: unknown) => {
+        if (cancelled || !Array.isArray(data)) return;
+        setBadgeDefinitions(
+          data.map((d: { id: string; key: string; label: string; sortOrder: number }) => ({
+            id: d.id,
+            key: d.key,
+            label: d.label,
+            sortOrder: d.sortOrder ?? 0,
+          }))
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setBadgeDefinitions([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const reqHighlight = useMemo(() => {
     const priceRaw = String(formData.price).trim().replace(',', '.');
@@ -675,7 +708,6 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           comparePrice: product.comparePrice ? String(product.comparePrice) : '',
           stock: product.stock || 0,
           categoryId: product.categoryId || '',
-          manufacturerId: product.manufacturerId || null,
           supplierId: supplierId,
           supplierSku: supplierSku,
           supplierProductUrl: supplierProductUrl,
@@ -694,6 +726,10 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           sizes: product.sizes || [],
           openingSide: product.openingSide || [],
           cardVariants: cardVariantsForm,
+          catalogBadgeIds: (product.cardBadgeSelections ?? [])
+            .slice()
+            .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+            .map((s) => s.badgeId),
         });
 
         // Сохраняем начальное название для отслеживания изменений
@@ -1200,6 +1236,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
               extraOption: v.extraOption.trim() || undefined,
               sortOrder: v.sortOrder,
             })),
+          catalogBadgeIds: formData.catalogBadgeIds,
         }),
       });
 
@@ -1767,6 +1804,21 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                   />
                   <span>Активен (показывать на сайте)</span>
                 </label>
+              </div>
+            </div>
+          )}
+
+          {showSection('cardBadges') && (
+            <div className={styles.formSection}>
+              <h2 className={styles.sectionTitle}>Бэйджи карточки товара</h2>
+
+              <h3
+                className={styles.sectionTitle}
+                style={{ fontSize: '1rem', marginBottom: '0.5rem' }}
+              >
+                Справа от фото (текстовые)
+              </h3>
+              <div className={styles.checkboxGroup}>
                 <label className={styles.checkbox}>
                   <input
                     type="checkbox"
@@ -1785,6 +1837,62 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                   />
                   <span>Новинка</span>
                 </label>
+              </div>
+              <p className={styles.hint}>
+                Скидка и метка «Видео» на сайте выводятся автоматически при старой цене и ссылке на
+                видео.
+              </p>
+
+              <h3
+                className={styles.sectionTitle}
+                style={{ fontSize: '1rem', marginTop: '1.25rem', marginBottom: '0.5rem' }}
+              >
+                Слева от фото (картинки, не более 5)
+              </h3>
+              <p className={styles.hint}>
+                Изображения задаются в разделе «Настройки → Бэйджи карточек». Выбрано:{' '}
+                {formData.catalogBadgeIds.length} / 5.
+              </p>
+              <div
+                className={styles.attributesList}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+                  gap: '0.35rem',
+                }}
+              >
+                {badgeDefinitions.map((b) => {
+                  const checked = formData.catalogBadgeIds.includes(b.id);
+                  return (
+                    <label
+                      key={b.id}
+                      className={styles.checkbox}
+                      style={{ alignItems: 'flex-start' }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setFormData((prev) => {
+                            const i = prev.catalogBadgeIds.indexOf(b.id);
+                            if (i >= 0) {
+                              return {
+                                ...prev,
+                                catalogBadgeIds: prev.catalogBadgeIds.filter((id) => id !== b.id),
+                              };
+                            }
+                            if (prev.catalogBadgeIds.length >= 5) {
+                              alert('Можно выбрать не более 5 бэйджей слева от фото');
+                              return prev;
+                            }
+                            return { ...prev, catalogBadgeIds: [...prev.catalogBadgeIds, b.id] };
+                          });
+                        }}
+                      />
+                      <span>{b.label}</span>
+                    </label>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -2190,7 +2298,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
 
           {/* SEO */}
           {showSection('seo') && (
-            <div className={styles.formSection}>
+            <div className={`${styles.formSection} ${styles.formSectionFullWidth}`}>
               <h2 className={styles.sectionTitle}>SEO</h2>
 
               <div className={styles.formGroup}>

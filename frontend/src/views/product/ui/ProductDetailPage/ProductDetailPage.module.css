@@ -150,8 +150,43 @@
   gap: 1rem;
 }
 
+.galleryMainRow {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.galleryLeftBadges {
+  flex: 0 0 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.catalogBadgeDetailImg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.galleryRightBadges {
+  flex: 0 0 88px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
 .mainImage {
   position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
   background: transparent;
   border-radius: 0.75rem;
   border: none;
@@ -188,16 +223,6 @@
   font-size: 1rem;
 }
 
-.badges {
-  position: absolute;
-  top: 1rem;
-  left: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  z-index: 1;
-}
-
 .hitBadge {
   background: #f59e0b;
   color: white;
@@ -222,6 +247,15 @@
   padding: 0.25rem 0.75rem;
   border-radius: 0.25rem;
   font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.videoBadge {
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
   font-size: 0.875rem;
 }
 

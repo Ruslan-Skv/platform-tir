@@ -55,6 +55,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.settings.partner-products',
     'admin.settings.reviews',
     'admin.settings.catalog',
+    'admin.settings.catalog-badges',
     'admin.settings.user-cabinet',
     'admin.settings.notifications',
     'admin.settings.checkout',

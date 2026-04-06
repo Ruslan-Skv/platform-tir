@@ -43,6 +43,15 @@ export interface Product {
   stock?: number;
   manufacturerId?: string | null;
   attributes?: unknown;
+  /** Бэйджи слева от фото (JPG из настроек каталога), только с загруженным imageUrl */
+  catalogBadges?: Array<{
+    id: string;
+    key: string;
+    label: string;
+    imageUrl: string;
+    /** Подсказка при наведении; если пусто — можно показать label */
+    description?: string | null;
+  }>;
 }
 
 export interface ProductCardVariant {

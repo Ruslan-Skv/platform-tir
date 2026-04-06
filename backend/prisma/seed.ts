@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { seedProductCardBadges } from './seed-product-card-badges';
 import * as bcrypt from 'bcrypt';
 import { config } from 'dotenv';
 import * as path from 'path';
@@ -758,6 +759,9 @@ async function main() {
     });
   }
   console.log('✅ ServiceCatalog: блок и категории созданы');
+
+  await seedProductCardBadges(prisma);
+  console.log('✅ ProductCardBadge: справочник бэйджей карточки товара');
 
   console.log('🎉 Seeding completed!');
 }

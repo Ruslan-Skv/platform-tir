@@ -245,6 +245,11 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.settings.catalog',
       },
       {
+        label: 'Бэйджи карточек',
+        href: '/admin/settings/catalog/product-badges',
+        resourceId: 'admin.settings.catalog-badges',
+      },
+      {
         label: 'Блок фильтров',
         href: '/admin/settings/catalog-filters',
       },

@@ -9,6 +9,7 @@ import { type ProductComponent, getProductComponents } from '@/shared/api/produc
 import type { Review } from '@/shared/api/reviews';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 import { escapeHtmlAndPreserveNewlines, getSafeHref } from '@/shared/lib/sanitize';
+import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
 
 import { ProductComponents } from './ProductComponents';
 import styles from './ProductDetailPage.module.css';
@@ -55,6 +56,16 @@ interface ProductData {
     extraOption?: string | null;
     sortOrder?: number;
   }>;
+  cardBadgeSelections?: Array<{
+    sortOrder: number;
+    badge: {
+      id: string;
+      key: string;
+      label: string;
+      imageUrl: string | null;
+      description?: string | null;
+    };
+  }>;
 }
 
 interface CategoryAttribute {
@@ -73,6 +84,12 @@ type AttributeItem = { name: string; value: string };
 
 interface ProductDetailPageProps {
   slug: string;
+}
+
+function publicAssetUrl(relative: string): string {
+  const api = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+  const base = api.replace(/\/api\/v1\/?$/, '') || 'http://localhost:3001';
+  return `${base}${relative}`;
 }
 
 /** Прокрутка в начало страницы товара (мобильные часто сохраняют offset с каталога или смещаются после подгрузки контента). */
@@ -632,28 +649,55 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
       <div className={styles.productLayout}>
         {/* Галерея изображений */}
         <div className={styles.gallery}>
-          <div className={styles.mainImage}>
-            {product.images.length > 0 ? (
-              <button
-                type="button"
-                className={styles.mainImageButton}
-                onClick={() => openLightbox(selectedImage)}
-                aria-label="Открыть изображение"
-              >
-                <img
-                  src={product.images[selectedImage]}
-                  alt={product.name}
-                  className={styles.image}
-                />
-              </button>
-            ) : (
-              <div className={styles.noImage}>Нет изображения</div>
-            )}
-            {/* Бейджи */}
-            <div className={styles.badges}>
+          <div className={styles.galleryMainRow}>
+            <div className={styles.galleryLeftBadges}>
+              {(product.cardBadgeSelections ?? [])
+                .slice()
+                .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+                .map((s) => s.badge)
+                .filter((b) => b.imageUrl)
+                .map((b) => {
+                  const hoverText = b.description?.trim() || b.label || '';
+                  return (
+                    <BadgeTooltip key={b.id} content={hoverText} side="right">
+                      <img
+                        src={publicAssetUrl(b.imageUrl!)}
+                        alt={b.label}
+                        className={styles.catalogBadgeDetailImg}
+                      />
+                    </BadgeTooltip>
+                  );
+                })}
+            </div>
+            <div className={styles.mainImage}>
+              {product.images.length > 0 ? (
+                <button
+                  type="button"
+                  className={styles.mainImageButton}
+                  onClick={() => openLightbox(selectedImage)}
+                  aria-label="Открыть изображение"
+                >
+                  <img
+                    src={product.images[selectedImage]}
+                    alt={product.name}
+                    className={styles.image}
+                  />
+                </button>
+              ) : (
+                <div className={styles.noImage}>Нет изображения</div>
+              )}
+            </div>
+            <div className={styles.galleryRightBadges}>
               {product.isFeatured && <span className={styles.hitBadge}>ХИТ</span>}
               {product.isNew && <span className={styles.newBadge}>Новинка</span>}
-              {discount && <span className={styles.discountBadge}>-{discount}%</span>}
+              {discount != null && discount > 0 && (
+                <span className={styles.discountBadge}>-{discount}%</span>
+              )}
+              {product.videoUrl && (
+                <span className={styles.videoBadge} title="Есть видео о товаре">
+                  ▶ Видео
+                </span>
+              )}
             </div>
           </div>
 

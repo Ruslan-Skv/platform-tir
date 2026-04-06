@@ -51,6 +51,16 @@ interface ApiProduct {
     tooltipText?: string | null;
     showTooltip?: boolean;
   } | null;
+  cardBadgeSelections?: Array<{
+    sortOrder: number;
+    badge: {
+      id: string;
+      key: string;
+      label: string;
+      imageUrl: string | null;
+      description?: string | null;
+    };
+  }>;
 }
 
 function mapApiProductToProduct(p: ApiProduct, index: number): Product {
@@ -87,6 +97,18 @@ function mapApiProductToProduct(p: ApiProduct, index: number): Product {
     sortOrder: p.sortOrder ?? 0,
     createdAt: p.createdAt ? new Date(p.createdAt).getTime() : Date.now(),
     videoUrl: p.videoUrl ?? undefined,
+    catalogBadges: (p.cardBadgeSelections ?? [])
+      .slice()
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      .map((s) => s.badge)
+      .filter((b) => b.imageUrl != null && b.imageUrl !== '')
+      .map((b) => ({
+        id: b.id,
+        key: b.key,
+        label: b.label,
+        imageUrl: b.imageUrl as string,
+        description: b.description ?? null,
+      })),
   };
 }
 

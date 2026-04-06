@@ -61,6 +61,16 @@ interface ApiProduct {
     extraOption?: string | null;
     sortOrder?: number;
   }>;
+  cardBadgeSelections?: Array<{
+    sortOrder: number;
+    badge: {
+      id: string;
+      key: string;
+      label: string;
+      imageUrl: string | null;
+      description?: string | null;
+    };
+  }>;
 }
 
 interface CategoryResponse {
@@ -263,6 +273,18 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
             extraOption: v.extraOption ?? undefined,
             sortOrder: v.sortOrder,
           })),
+          catalogBadges: (p.cardBadgeSelections ?? [])
+            .slice()
+            .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+            .map((s) => s.badge)
+            .filter((b) => b.imageUrl != null && b.imageUrl !== '')
+            .map((b) => ({
+              id: b.id,
+              key: b.key,
+              label: b.label,
+              imageUrl: b.imageUrl as string,
+              description: b.description ?? null,
+            })),
         }));
 
         setOriginalProducts(mappedProducts);
