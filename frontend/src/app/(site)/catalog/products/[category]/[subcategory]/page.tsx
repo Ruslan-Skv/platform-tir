@@ -41,7 +41,8 @@ async function getCategoryNameBySlug(slug: string): Promise<string | null> {
 export default async function SubcategoryPage({ params }: SubcategoryPageProps) {
   const { category, subcategory } = await params;
 
-  const parentCategoryName = categoryNames[category] ?? category;
+  const parentCategoryName =
+    categoryNames[category] ?? (await getCategoryNameBySlug(category)) ?? category;
   const categorySlug = subcategory;
 
   // Название подкатегории из API (на русском), чтобы в хлебных крошках не показывался slug
@@ -59,7 +60,8 @@ export default async function SubcategoryPage({ params }: SubcategoryPageProps) 
 
 export async function generateMetadata({ params }: SubcategoryPageProps) {
   const { category, subcategory } = await params;
-  const parentCategoryName = categoryNames[category] ?? category;
+  const parentCategoryName =
+    categoryNames[category] ?? (await getCategoryNameBySlug(category)) ?? category;
   const categoryName = await getCategoryNameBySlug(subcategory);
 
   const displayName = categoryName ?? subcategory;
