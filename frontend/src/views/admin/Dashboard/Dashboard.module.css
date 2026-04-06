@@ -1,15 +1,26 @@
+/* Бирюзовые акценты — как у заполненных полей карточки товара (ProductEditPage: #14b8a6, #ccfbf1) */
 .page {
+  --dash-turquoise: #14b8a6;
+  --dash-turquoise-deep: #0d9488;
+  --dash-turquoise-soft: #ccfbf1;
+  --dash-turquoise-muted: #0f766e;
+
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 4px 48px;
 }
 
 .hero {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 45%, #c026d3 100%);
+  background: linear-gradient(
+    135deg,
+    var(--dash-turquoise-deep) 0%,
+    var(--dash-turquoise) 38%,
+    #6366f1 100%
+  );
   border-radius: 12px;
   padding: 14px 18px 16px;
   margin-bottom: 12px;
-  box-shadow: 0 6px 24px rgb(79 70 229 / 0.22);
+  box-shadow: 0 6px 24px rgb(20 184 166 / 0.28);
 }
 
 .heroText {
@@ -85,9 +96,9 @@
 
 .dateInput:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--dash-turquoise);
   background: #fff;
-  box-shadow: 0 0 0 3px rgb(99 102 241 / 0.2);
+  box-shadow: 0 0 0 3px rgb(20 184 166 / 0.22);
 }
 
 .dateSep {
@@ -99,7 +110,7 @@
 
 .primaryBtn {
   padding: 6px 14px;
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  background: linear-gradient(135deg, var(--dash-turquoise-deep), var(--dash-turquoise));
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -112,7 +123,7 @@
 }
 
 .primaryBtn:hover:not(:disabled) {
-  box-shadow: 0 4px 14px rgb(99 102 241 / 0.45);
+  box-shadow: 0 4px 14px rgb(20 184 166 / 0.45);
   transform: translateY(-1px);
 }
 
@@ -150,9 +161,9 @@
 }
 
 .chip:hover {
-  background: #eef2ff;
-  border-color: #c7d2fe;
-  color: #4338ca;
+  background: var(--dash-turquoise-soft);
+  border-color: #5eead4;
+  color: var(--dash-turquoise-muted);
 }
 
 .errorBanner {
@@ -409,7 +420,7 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, var(--dash-turquoise-deep), var(--dash-turquoise));
   color: #fff;
   font-size: 0.75rem;
   font-weight: 700;
@@ -452,8 +463,9 @@
 }
 
 .badgePeriod {
-  background: #eef2ff;
-  color: #4338ca;
+  background: var(--dash-turquoise-soft);
+  color: var(--dash-turquoise-muted);
+  border: 1px solid rgb(20 184 166 / 0.35);
 }
 
 .badgeTotal {
@@ -497,18 +509,20 @@
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
-  color: #4f46e5;
+  color: var(--dash-turquoise-muted);
   font-size: 0.9rem;
   font-weight: 500;
   text-decoration: none;
   transition:
     border-color 0.15s,
-    background 0.15s;
+    background 0.15s,
+    color 0.15s;
 }
 
 .quickLink:hover {
-  background: #f5f3ff;
-  border-color: #c4b5fd;
+  background: var(--dash-turquoise-soft);
+  border-color: #5eead4;
+  color: #0d9488;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .toolbar,
@@ -556,8 +570,9 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .badgePeriod {
-  background: rgb(99 102 241 / 0.25);
-  color: #c7d2fe;
+  background: rgb(20 184 166 / 0.22);
+  color: #5eead4;
+  border-color: rgb(20 184 166 / 0.4);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .badgeTotal {
@@ -566,12 +581,13 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .quickLink {
-  color: #a5b4fc;
+  color: #5eead4;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .quickLink:hover {
-  background: #374151;
-  border-color: #6366f1;
+  background: rgb(20 184 166 / 0.12);
+  border-color: #14b8a6;
+  color: #99f6e4;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .rangeHint strong {
@@ -589,9 +605,9 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chip:hover {
-  background: #4b5563;
-  border-color: #818cf8;
-  color: #e0e7ff;
+  background: rgb(20 184 166 / 0.15);
+  border-color: #14b8a6;
+  color: #99f6e4;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chartsWrap {
