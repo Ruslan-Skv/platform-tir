@@ -24,12 +24,16 @@ import { PromotionModule } from './promotions/promotion.module';
 import { UserCabinetModule } from './user-cabinet/user-cabinet.module';
 import { AdminCatalogBlockModule } from './catalog-block/admin-catalog-block.module';
 import { AdminAccessModule } from './admin-access/admin-access.module';
+import { AdminPresenceModule } from './admin-presence/admin-presence.module';
+import { AdminDashboardModule } from './dashboard/admin-dashboard.module';
 import { OfficeCashModule } from './office-cash/office-cash.module';
 import { ServiceCatalogModule } from './service-catalog/service-catalog.module';
 
 @Module({
   imports: [
     AdminAccessModule,
+    AdminPresenceModule,
+    AdminDashboardModule,
     OfficeCashModule,
     // CRM
     CustomersModule,

@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/features/auth';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
-import styles from './UserCabinetSection.module.css';
+import styles from './ProductCardBadgesSection.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -124,73 +124,38 @@ export function ProductCardBadgesSection() {
 
   if (loading) {
     return (
-      <div className={styles.page}>
+      <div className={styles.root}>
         <p className={styles.loading}>Загрузка…</p>
       </div>
     );
   }
 
   return (
-    <div className={styles.page}>
+    <div className={styles.root}>
       {toast && (
         <p
-          className={styles.toast}
-          style={
-            toast.type === 'success'
-              ? { background: 'rgb(34 197 94 / 20%)', color: 'rgb(22 163 74)' }
-              : { background: 'rgb(239 68 68 / 20%)', color: 'rgb(185 28 28)' }
-          }
+          className={`${styles.toast} ${toast.type === 'success' ? styles.toastSuccess : styles.toastError}`}
         >
           {toast.message}
         </p>
       )}
-      <section className={styles.section}>
-        <p className={styles.sectionDescription} style={{ marginBottom: '1rem' }}>
+      <section>
+        <p className={styles.intro}>
           Загрузите картинки в формате JPEG для каждого типа бэйджа и при необходимости укажите
           описание — оно показывается покупателю при наведении на бэйдж. На карточке товара (слева
           от фото) отображаются только выбранные для товара бэйджи с загруженным изображением (не
           более 5 на товар — задаётся в карточке товара).
         </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div className={styles.list}>
           {rows.map((row) => (
-            <div
-              key={row.id}
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                alignItems: 'flex-start',
-                gap: '0.75rem',
-                padding: '0.75rem',
-                border: '1px solid #e5e7eb',
-                borderRadius: '0.5rem',
-                background: '#fafafa',
-              }}
-            >
-              <span style={{ minWidth: '1.5rem', color: '#6b7280', fontSize: '0.875rem' }}>
-                {row.sortOrder}.
-              </span>
-              <div style={{ flex: '1 1 220px', minWidth: 0 }}>
-                <div style={{ fontWeight: 500, marginBottom: '0.35rem' }}>{row.label}</div>
-                <label
-                  htmlFor={`badge-desc-${row.id}`}
-                  style={{
-                    fontSize: '0.8125rem',
-                    color: '#6b7280',
-                    display: 'block',
-                    marginBottom: '0.25rem',
-                  }}
-                >
+            <div key={row.id} className={styles.row}>
+              <span className={styles.order}>{row.sortOrder}.</span>
+              <div className={styles.main}>
+                <div className={styles.badgeTitle}>{row.label}</div>
+                <label htmlFor={`badge-desc-${row.id}`} className={styles.fieldLabel}>
                   Описание (подсказка при наведении)
                 </label>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    alignItems: 'flex-start',
-                    gap: '0.5rem',
-                    width: '100%',
-                  }}
-                >
+                <div className={styles.descRow}>
                   <textarea
                     id={`badge-desc-${row.id}`}
                     rows={2}
@@ -199,93 +164,38 @@ export function ProductCardBadgesSection() {
                       setDescDraft((prev) => ({ ...prev, [row.id]: e.target.value }))
                     }
                     disabled={uploadingId !== null}
-                    style={{
-                      flex: '1 1 auto',
-                      minWidth: 0,
-                      boxSizing: 'border-box',
-                      padding: '0.5rem',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: 6,
-                      fontSize: '0.875rem',
-                      resize: 'vertical',
-                    }}
+                    className={styles.textarea}
                     placeholder="Краткий текст для всплывающей подсказки на сайте"
                   />
                   <button
                     type="button"
+                    className={styles.saveBtn}
                     onClick={() => void handleSaveDescription(row.id, descDraft[row.id] ?? '')}
                     disabled={
                       uploadingId !== null || (descDraft[row.id] ?? '') === (row.description ?? '')
                     }
-                    style={{
-                      flexShrink: 0,
-                      alignSelf: 'flex-start',
-                      padding: '0.45rem 0.65rem',
-                      border: 'none',
-                      borderRadius: 6,
-                      background: '#d90652',
-                      color: '#fff',
-                      cursor:
-                        uploadingId !== null ||
-                        (descDraft[row.id] ?? '') === (row.description ?? '')
-                          ? 'not-allowed'
-                          : 'pointer',
-                      fontSize: '0.8125rem',
-                      fontWeight: 500,
-                      whiteSpace: 'nowrap',
-                      opacity:
-                        uploadingId !== null ||
-                        (descDraft[row.id] ?? '') === (row.description ?? '')
-                          ? 0.55
-                          : 1,
-                    }}
                   >
                     Сохранить описание
                   </button>
                 </div>
               </div>
-              <div
-                style={{
-                  width: 56,
-                  height: 56,
-                  border: '1px dashed #d1d5db',
-                  borderRadius: 4,
-                  overflow: 'hidden',
-                  background: '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
+              <div className={styles.thumbWrap}>
                 {row.imageUrl ? (
-                  <img
-                    src={publicUploadUrl(row.imageUrl)}
-                    alt=""
-                    style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                  />
+                  <img src={publicUploadUrl(row.imageUrl)} alt="" className={styles.thumbImg} />
                 ) : (
-                  <span style={{ fontSize: '0.65rem', color: '#9ca3af', textAlign: 'center' }}>
-                    нет
-                  </span>
+                  <span className={styles.thumbEmpty}>нет</span>
                 )}
               </div>
-              <label style={{ cursor: uploadingId === row.id ? 'wait' : 'pointer' }}>
-                <span
-                  style={{
-                    display: 'inline-block',
-                    padding: '0.35rem 0.75rem',
-                    background: '#d90652',
-                    color: '#fff',
-                    borderRadius: 6,
-                    fontSize: '0.875rem',
-                  }}
-                >
+              <label
+                className={`${styles.uploadLabel} ${uploadingId === row.id ? styles.uploadLabelWait : ''}`}
+              >
+                <span className={styles.uploadBtn}>
                   {uploadingId === row.id ? '…' : 'Загрузить JPG'}
                 </span>
                 <input
                   type="file"
                   accept=".jpg,.jpeg,image/jpeg"
-                  style={{ display: 'none' }}
+                  className={styles.fileInput}
                   disabled={uploadingId !== null}
                   onChange={(e) => {
                     const f = e.target.files?.[0];
@@ -297,18 +207,9 @@ export function ProductCardBadgesSection() {
               {row.imageUrl && (
                 <button
                   type="button"
+                  className={styles.clearBtn}
                   onClick={() => void handleClear(row.id)}
                   disabled={uploadingId !== null}
-                  style={{
-                    padding: '0.35rem 0.75rem',
-                    border: 'none',
-                    borderRadius: 6,
-                    background: '#64748b',
-                    color: '#fff',
-                    fontWeight: 500,
-                    cursor: uploadingId ? 'wait' : 'pointer',
-                    opacity: uploadingId !== null ? 0.6 : 1,
-                  }}
                 >
                   Снять
                 </button>

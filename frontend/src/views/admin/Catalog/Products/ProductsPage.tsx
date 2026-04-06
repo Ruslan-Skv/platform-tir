@@ -58,6 +58,13 @@ interface Product {
       commercialName?: string | null;
     };
   }>;
+  /** Кто создал карточку товара */
+  createdBy?: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+  } | null;
 }
 
 // Доступные для отображения и редактирования колонки
@@ -94,6 +101,7 @@ const AVAILABLE_COLUMNS: ColumnConfig[] = [
   { key: 'supplier', title: 'Поставщик', editable: true, type: 'text' },
   { key: 'supplierSku', title: 'Арт. поставщика', editable: false, type: 'text' },
   { key: 'updatedAt', title: 'Дата обновления', editable: false, type: 'date' },
+  { key: 'createdBy', title: 'Автор', editable: false, type: 'text' },
 ];
 
 // Типы для редактируемых значений
@@ -128,6 +136,8 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState(categoryId ?? '');
   const [stockFilter, setStockFilter] = useState('');
+  /** '' — все; '__none__' — без создателя; иначе id пользователя */
+  const [authorFilter, setAuthorFilter] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const hasSelection = selectedIds.length > 0;
   const [page, setPage] = useState(1);
@@ -209,6 +219,20 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
   /** ID товаров, у которых изменилась цена поставщика после «Обновить цены» */
   const [priceChangedIds, setPriceChangedIds] = useState<string[]>([]);
   const selectionHintTimeoutRef = useRef<number | null>(null);
+
+  const authorOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of allProducts) {
+      const c = p.createdBy;
+      if (c?.id) {
+        const label = `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email;
+        map.set(c.id, label);
+      }
+    }
+    return Array.from(map.entries())
+      .map(([id, label]) => ({ id, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'ru'));
+  }, [allProducts]);
 
   const showSelectionHint = useCallback((message = 'Выберите товары в таблице') => {
     setSelectionHintMessage(message);
@@ -610,12 +634,19 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       });
     }
 
+    if (authorFilter === '__none__') {
+      result = result.filter((p) => !p.createdBy);
+    } else if (authorFilter) {
+      result = result.filter((p) => p.createdBy?.id === authorFilter);
+    }
+
     return result;
   }, [
     allProducts,
     searchQuery,
     categoryFilter,
     stockFilter,
+    authorFilter,
     activeFilter,
     featuredFilter,
     newFilter,
@@ -634,6 +665,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
     searchQuery,
     categoryFilter,
     stockFilter,
+    authorFilter,
     activeFilter,
     featuredFilter,
     newFilter,
@@ -1358,6 +1390,16 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
             );
           }
 
+          if (columnConfig.key === 'createdBy') {
+            const author = product.createdBy;
+            if (!author) {
+              return <span className={styles.emptyValue}>—</span>;
+            }
+            const name = `${author.firstName || ''} ${author.lastName || ''}`.trim();
+            const main = name || author.email;
+            return <span title={author.email}>{main}</span>;
+          }
+
           const value = product[columnConfig.key as keyof Product];
 
           if (columnConfig.type === 'currency') {
@@ -1756,6 +1798,24 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
           <option value="in-stock">В наличии</option>
           <option value="low-stock">Мало</option>
           <option value="out-of-stock">Нет в наличии</option>
+        </select>
+        <select
+          value={authorFilter}
+          onChange={(e) => {
+            setAuthorFilter(e.target.value);
+            setPage(1);
+          }}
+          className={styles.select}
+          title="Фильтр по автору карточки"
+          aria-label="Автор карточки"
+        >
+          <option value="">Все авторы</option>
+          <option value="__none__">Без автора</option>
+          {authorOptions.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.label}
+            </option>
+          ))}
         </select>
         <select
           value={limit}

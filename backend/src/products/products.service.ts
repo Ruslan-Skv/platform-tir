@@ -238,6 +238,14 @@ export class ProductsService {
     return this.prisma.product.findMany({
       include: {
         category: true,
+        createdBy: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
         suppliers: {
           where: {
             isMainSupplier: true,

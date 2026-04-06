@@ -1,230 +1,212 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+
+import Link from 'next/link';
+
+import {
+  type CatalogActivityResponse,
+  type CatalogActivityRow,
+  getCatalogActivity,
+} from '@/shared/api/admin-dashboard';
+import { getInitials } from '@/shared/lib/avatar';
 
 import styles from './Dashboard.module.css';
 
-interface DashboardStats {
-  orders: {
-    today: number;
-    week: number;
-    month: number;
-    pending: number;
-  };
-  revenue: {
-    today: number;
-    week: number;
-    month: number;
-  };
-  alerts: {
-    lowStockProducts: number;
-    pendingTasks: number;
-  };
-  customers: {
-    newThisMonth: number;
-  };
+function formatPerson(row: CatalogActivityRow): string {
+  const n = `${row.firstName || ''} ${row.lastName || ''}`.trim();
+  return n || row.email;
 }
 
-// Mock data - replace with API calls
-const mockStats: DashboardStats = {
-  orders: {
-    today: 12,
-    week: 87,
-    month: 342,
-    pending: 8,
-  },
-  revenue: {
-    today: 156000,
-    week: 1234000,
-    month: 5678000,
-  },
-  alerts: {
-    lowStockProducts: 15,
-    pendingTasks: 7,
-  },
-  customers: {
-    newThisMonth: 48,
-  },
-};
+/** Доля `part` от `total` в процентах (для отображения в UI). */
+function formatSharePercent(part: number, total: number): string {
+  if (total <= 0) return '0%';
+  return new Intl.NumberFormat('ru-RU', {
+    style: 'percent',
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 0,
+  }).format(part / total);
+}
 
-const mockRecentOrders = [
-  { id: '1', number: '#12345', customer: 'Иванов И.И.', total: 45000, status: 'PENDING' },
-  { id: '2', number: '#12344', customer: 'Петров П.П.', total: 128000, status: 'PROCESSING' },
-  { id: '3', number: '#12343', customer: 'Сидоров С.С.', total: 67000, status: 'SHIPPED' },
-  { id: '4', number: '#12342', customer: 'Козлова К.К.', total: 89000, status: 'DELIVERED' },
-  { id: '5', number: '#12341', customer: 'Николаев Н.Н.', total: 34000, status: 'PENDING' },
-];
+function toDateInputValue(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
-const mockTasks = [
-  { id: '1', title: 'Позвонить клиенту ООО "Строй"', dueDate: '2026-01-19', priority: 'HIGH' },
-  {
-    id: '2',
-    title: 'Подготовить коммерческое предложение',
-    dueDate: '2026-01-20',
-    priority: 'MEDIUM',
-  },
-  { id: '3', title: 'Обновить каталог товаров', dueDate: '2026-01-21', priority: 'LOW' },
-];
+function parseDateInput(s: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  const [y, m, d] = s.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  return Number.isNaN(dt.getTime()) ? null : dt;
+}
 
-export function Dashboard() {
-  const [stats] = useState<DashboardStats>(mockStats);
+function startOfDayLocal(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+}
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
+function endOfDayLocal(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+}
 
-  const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      PENDING: 'Ожидает',
-      PROCESSING: 'В обработке',
-      SHIPPED: 'Отправлен',
-      DELIVERED: 'Доставлен',
-      CANCELLED: 'Отменен',
-    };
-    return labels[status] || status;
-  };
+const CHART_BAR_HUES = [250, 265, 280, 220, 200, 310, 235, 295] as const;
 
-  const getStatusClass = (status: string) => {
-    const classes: Record<string, string> = {
-      PENDING: styles.statusPending,
-      PROCESSING: styles.statusProcessing,
-      SHIPPED: styles.statusShipped,
-      DELIVERED: styles.statusDelivered,
-      CANCELLED: styles.statusCancelled,
-    };
-    return classes[status] || '';
-  };
+function chartBarColor(index: number): string {
+  const h = CHART_BAR_HUES[index % CHART_BAR_HUES.length];
+  return `hsl(${h} 65% 48%)`;
+}
 
-  const getPriorityClass = (priority: string) => {
-    const classes: Record<string, string> = {
-      HIGH: styles.priorityHigh,
-      MEDIUM: styles.priorityMedium,
-      LOW: styles.priorityLow,
-      URGENT: styles.priorityUrgent,
-    };
-    return classes[priority] || '';
-  };
+function ActivityBarChart({
+  rows,
+  valueKey,
+  'aria-label': ariaLabel,
+}: {
+  rows: CatalogActivityRow[];
+  valueKey: 'countInPeriod' | 'totalCreated';
+  'aria-label': string;
+}) {
+  const sorted = useMemo(
+    () => [...rows].sort((a, b) => b[valueKey] - a[valueKey]),
+    [rows, valueKey]
+  );
+  const totalSum = useMemo(() => rows.reduce((s, r) => s + r[valueKey], 0), [rows, valueKey]);
 
   return (
-    <div className={styles.dashboard}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Дашборд</h1>
-        <p className={styles.subtitle}>Добро пожаловать в панель управления</p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className={styles.statsGrid}>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>📦</div>
-          <div className={styles.statContent}>
-            <span className={styles.statValue}>{stats.orders.today}</span>
-            <span className={styles.statLabel}>Заказов сегодня</span>
-          </div>
-          <div className={styles.statTrend}>
-            <span className={styles.trendPositive}>+12%</span>
-            <span className={styles.trendLabel}>vs вчера</span>
-          </div>
-        </div>
-
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>💰</div>
-          <div className={styles.statContent}>
-            <span className={styles.statValue}>{formatCurrency(stats.revenue.today)}</span>
-            <span className={styles.statLabel}>Выручка сегодня</span>
-          </div>
-          <div className={styles.statTrend}>
-            <span className={styles.trendPositive}>+8%</span>
-            <span className={styles.trendLabel}>vs вчера</span>
-          </div>
-        </div>
-
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>👥</div>
-          <div className={styles.statContent}>
-            <span className={styles.statValue}>{stats.customers.newThisMonth}</span>
-            <span className={styles.statLabel}>Новых клиентов</span>
-          </div>
-          <div className={styles.statTrend}>
-            <span className={styles.trendPositive}>+25%</span>
-            <span className={styles.trendLabel}>vs прошлый месяц</span>
-          </div>
-        </div>
-
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>⏳</div>
-          <div className={styles.statContent}>
-            <span className={styles.statValue}>{stats.orders.pending}</span>
-            <span className={styles.statLabel}>Ожидают обработки</span>
-          </div>
-          <div className={styles.statAction}>
-            <a href="/admin/orders?status=PENDING">Обработать →</a>
-          </div>
-        </div>
-      </div>
-
-      {/* Alerts */}
-      {(stats.alerts.lowStockProducts > 0 || stats.alerts.pendingTasks > 0) && (
-        <div className={styles.alertsSection}>
-          {stats.alerts.lowStockProducts > 0 && (
-            <div className={`${styles.alert} ${styles.alertWarning}`}>
-              <span className={styles.alertIcon}>⚠️</span>
-              <span className={styles.alertText}>
-                {stats.alerts.lowStockProducts} товаров с низким остатком
+    <div className={styles.chart} role="img" aria-label={ariaLabel}>
+      <p className={styles.chartHint}>
+        Столбцы — доля каждого администратора от суммы по таблице ({totalSum} шт.).
+      </p>
+      <ul className={styles.chartList}>
+        {sorted.map((row, index) => {
+          const v = row[valueKey];
+          const widthPct = totalSum > 0 ? (v / totalSum) * 100 : 0;
+          const shareLabel = formatSharePercent(v, totalSum);
+          return (
+            <li key={row.userId} className={styles.chartRow}>
+              <span className={styles.chartName} title={formatPerson(row)}>
+                {formatPerson(row)}
               </span>
-              <a href="/admin/catalog/products?lowStock=true" className={styles.alertLink}>
-                Посмотреть
-              </a>
-            </div>
-          )}
-          {stats.alerts.pendingTasks > 0 && (
-            <div className={`${styles.alert} ${styles.alertInfo}`}>
-              <span className={styles.alertIcon}>📋</span>
-              <span className={styles.alertText}>
-                {stats.alerts.pendingTasks} задач требуют внимания
+              <div className={styles.chartTrack}>
+                <div
+                  className={styles.chartFill}
+                  style={{
+                    width: `${widthPct}%`,
+                    background: chartBarColor(index),
+                  }}
+                />
+              </div>
+              <span className={styles.chartNum}>
+                <span className={styles.chartCount}>{v}</span>
+                <span className={styles.chartPct} title="Доля от суммы">
+                  {shareLabel}
+                </span>
               </span>
-              <a href="/admin/crm/tasks" className={styles.alertLink}>
-                Перейти
-              </a>
-            </div>
-          )}
-        </div>
-      )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
 
-      {/* Main Content Grid */}
-      <div className={styles.contentGrid}>
-        {/* Recent Orders */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>Последние заказы</h2>
-            <a href="/admin/orders" className={styles.cardLink}>
-              Все заказы →
-            </a>
+function ActivityTable({
+  title,
+  icon,
+  rows,
+  emptyHint,
+  loading,
+}: {
+  title: string;
+  icon: string;
+  rows: CatalogActivityRow[];
+  emptyHint: string;
+  loading: boolean;
+}) {
+  const sumInPeriod = rows.reduce((s, r) => s + r.countInPeriod, 0);
+  const sumTotalCreated = rows.reduce((s, r) => s + r.totalCreated, 0);
+
+  return (
+    <section className={styles.panel}>
+      <div className={styles.panelHead}>
+        <span className={styles.panelIcon} aria-hidden>
+          {icon}
+        </span>
+        <h2 className={styles.panelTitle}>{title}</h2>
+      </div>
+      {loading ? (
+        <p className={styles.empty}>Загрузка…</p>
+      ) : rows.length === 0 ? (
+        <p className={styles.empty}>{emptyHint}</p>
+      ) : (
+        <>
+          <div className={styles.chartsWrap}>
+            <div className={styles.chartBlock}>
+              <h3 className={styles.chartTitle}>За выбранный период</h3>
+              <ActivityBarChart
+                rows={rows}
+                valueKey="countInPeriod"
+                aria-label={`${title}: сравнение по числу созданных записей за период`}
+              />
+            </div>
+            <div className={styles.chartBlock}>
+              <h3 className={styles.chartTitle}>Всего за всё время</h3>
+              <ActivityBarChart
+                rows={rows}
+                valueKey="totalCreated"
+                aria-label={`${title}: сравнение по всем созданным записям за всё время`}
+              />
+            </div>
           </div>
-          <div className={styles.tableWrapper}>
+          <div className={styles.tableWrap}>
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>Номер</th>
-                  <th>Клиент</th>
-                  <th>Сумма</th>
-                  <th>Статус</th>
+                  <th>Администратор</th>
+                  <th className={styles.colNum}>За период</th>
+                  <th
+                    className={styles.colPct}
+                    title="Доля от суммы созданных за период по всем администраторам в таблице"
+                  >
+                    % пер.
+                  </th>
+                  <th className={styles.colNum}>Всего</th>
+                  <th
+                    className={styles.colPct}
+                    title="Доля от суммы всего созданного по всем администраторам в таблице"
+                  >
+                    % всего
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {mockRecentOrders.map((order) => (
-                  <tr key={order.id}>
+                {rows.map((row) => (
+                  <tr key={row.userId}>
                     <td>
-                      <a href={`/admin/orders/${order.id}`}>{order.number}</a>
+                      <div className={styles.userCell}>
+                        <span className={styles.avatar} aria-hidden>
+                          {getInitials(row.firstName, row.lastName, row.email)}
+                        </span>
+                        <div className={styles.userText}>
+                          <span className={styles.userName}>{formatPerson(row)}</span>
+                          <span className={styles.userEmail}>{row.email}</span>
+                        </div>
+                      </div>
                     </td>
-                    <td>{order.customer}</td>
-                    <td>{formatCurrency(order.total)}</td>
-                    <td>
-                      <span className={`${styles.status} ${getStatusClass(order.status)}`}>
-                        {getStatusLabel(order.status)}
+                    <td className={styles.colNum}>
+                      <span className={styles.badgePeriod}>{row.countInPeriod}</span>
+                    </td>
+                    <td className={styles.colPct}>
+                      <span className={styles.pctCell}>
+                        {formatSharePercent(row.countInPeriod, sumInPeriod)}
+                      </span>
+                    </td>
+                    <td className={styles.colNum}>
+                      <span className={styles.badgeTotal}>{row.totalCreated}</span>
+                    </td>
+                    <td className={styles.colPct}>
+                      <span className={styles.pctCell}>
+                        {formatSharePercent(row.totalCreated, sumTotalCreated)}
                       </span>
                     </td>
                   </tr>
@@ -232,81 +214,192 @@ export function Dashboard() {
               </tbody>
             </table>
           </div>
-        </div>
+        </>
+      )}
+    </section>
+  );
+}
 
-        {/* Tasks */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>Мои задачи</h2>
-            <a href="/admin/crm/tasks" className={styles.cardLink}>
-              Все задачи →
-            </a>
-          </div>
-          <div className={styles.tasksList}>
-            {mockTasks.map((task) => (
-              <div key={task.id} className={styles.taskItem}>
-                <div className={styles.taskContent}>
-                  <span className={`${styles.taskPriority} ${getPriorityClass(task.priority)}`} />
-                  <div className={styles.taskInfo}>
-                    <span className={styles.taskTitle}>{task.title}</span>
-                    <span className={styles.taskDue}>До: {task.dueDate}</span>
-                  </div>
-                </div>
-                <button className={styles.taskComplete}>✓</button>
-              </div>
-            ))}
-          </div>
-        </div>
+export function Dashboard() {
+  const defaultRange = useMemo(() => {
+    const to = new Date();
+    const from = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
+    return { from: startOfDayLocal(from), to: endOfDayLocal(to) };
+  }, []);
 
-        {/* Revenue Summary */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>Выручка</h2>
-            <a href="/admin/analytics/sales" className={styles.cardLink}>
-              Подробнее →
-            </a>
-          </div>
-          <div className={styles.revenueSummary}>
-            <div className={styles.revenueItem}>
-              <span className={styles.revenueLabel}>За неделю</span>
-              <span className={styles.revenueValue}>{formatCurrency(stats.revenue.week)}</span>
-            </div>
-            <div className={styles.revenueItem}>
-              <span className={styles.revenueLabel}>За месяц</span>
-              <span className={styles.revenueValue}>{formatCurrency(stats.revenue.month)}</span>
-            </div>
-            <div className={styles.revenueChart}>
-              {/* Placeholder for chart */}
-              <div className={styles.chartPlaceholder}>📊 График выручки</div>
-            </div>
-          </div>
-        </div>
+  const [fromInput, setFromInput] = useState(() => toDateInputValue(defaultRange.from));
+  const [toInput, setToInput] = useState(() => toDateInputValue(defaultRange.to));
+  const [data, setData] = useState<CatalogActivityResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-        {/* Quick Actions */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>Быстрые действия</h2>
+  const load = useCallback(async () => {
+    const fromD = parseDateInput(fromInput);
+    const toD = parseDateInput(toInput);
+    if (!fromD || !toD) {
+      setError('Укажите корректные даты');
+      return;
+    }
+    const from = startOfDayLocal(fromD);
+    const to = endOfDayLocal(toD);
+    if (from > to) {
+      setError('Дата «с» не может быть позже «по»');
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await getCatalogActivity(from, to);
+      setData(res);
+    } catch (e) {
+      setData(null);
+      setError(e instanceof Error ? e.message : 'Ошибка загрузки');
+    } finally {
+      setLoading(false);
+    }
+  }, [fromInput, toInput]);
+
+  useEffect(() => {
+    void load();
+    // Только начальная загрузка; дальше — кнопка «Показать» и пресеты
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const fetchRange = useCallback((from: Date, to: Date) => {
+    setFromInput(toDateInputValue(from));
+    setToInput(toDateInputValue(to));
+    setLoading(true);
+    setError(null);
+    getCatalogActivity(from, to)
+      .then(setData)
+      .catch((e) => {
+        setData(null);
+        setError(e instanceof Error ? e.message : 'Ошибка загрузки');
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const applyPreset = (days: number) => {
+    const to = endOfDayLocal(new Date());
+    const from = startOfDayLocal(new Date(to.getTime() - days * 24 * 60 * 60 * 1000));
+    fetchRange(from, to);
+  };
+
+  const thisMonth = () => {
+    const now = new Date();
+    const from = startOfDayLocal(new Date(now.getFullYear(), now.getMonth(), 1));
+    const to = endOfDayLocal(now);
+    fetchRange(from, to);
+  };
+
+  return (
+    <div className={styles.page}>
+      <header className={styles.hero}>
+        <div className={styles.heroText}>
+          <h1 className={styles.title}>Дашборд</h1>
+          <p className={styles.subtitle}>
+            Активность по каталогу: диаграммы и таблица показывают, кто сколько карточек товаров
+            создал за выбранный период и за всё время.
+          </p>
+        </div>
+      </header>
+
+      <div className={styles.toolbar}>
+        <div className={styles.toolbarRow}>
+          <div className={styles.dateRow}>
+            <label className={styles.dateField}>
+              <span className={styles.dateLabel}>С</span>
+              <input
+                type="date"
+                className={styles.dateInput}
+                value={fromInput}
+                onChange={(e) => setFromInput(e.target.value)}
+              />
+            </label>
+            <span className={styles.dateSep}>—</span>
+            <label className={styles.dateField}>
+              <span className={styles.dateLabel}>По</span>
+              <input
+                type="date"
+                className={styles.dateInput}
+                value={toInput}
+                onChange={(e) => setToInput(e.target.value)}
+              />
+            </label>
+            <button
+              type="button"
+              className={styles.primaryBtn}
+              onClick={() => load()}
+              disabled={loading}
+            >
+              {loading ? 'Загрузка…' : 'Показать'}
+            </button>
           </div>
-          <div className={styles.quickActions}>
-            <a href="/admin/catalog/products/new" className={styles.quickAction}>
-              <span className={styles.quickActionIcon}>➕</span>
-              <span>Добавить товар</span>
-            </a>
-            <a href="/admin/crm/customers/new" className={styles.quickAction}>
-              <span className={styles.quickActionIcon}>👤</span>
-              <span>Новый клиент</span>
-            </a>
-            <a href="/admin/content/home" className={styles.quickAction}>
-              <span className={styles.quickActionIcon}>📄</span>
-              <span>Управлять главной</span>
-            </a>
-            <a href="/admin/content/blog/new" className={styles.quickAction}>
-              <span className={styles.quickActionIcon}>✏️</span>
-              <span>Написать статью</span>
-            </a>
+          <div className={styles.presets}>
+            <span className={styles.presetsLabel}>Быстро:</span>
+            <button type="button" className={styles.chip} onClick={() => applyPreset(7)}>
+              7 дней
+            </button>
+            <button type="button" className={styles.chip} onClick={() => applyPreset(30)}>
+              30 дней
+            </button>
+            <button type="button" className={styles.chip} onClick={thisMonth}>
+              С начала месяца
+            </button>
           </div>
         </div>
       </div>
+
+      {error && <div className={styles.errorBanner}>{error}</div>}
+
+      {data && (
+        <p className={styles.rangeHint}>
+          Период:{' '}
+          <strong>
+            {new Date(data.from).toLocaleString('ru-RU', {
+              day: '2-digit',
+              month: 'long',
+              year: 'numeric',
+            })}{' '}
+            —{' '}
+            {new Date(data.to).toLocaleString('ru-RU', {
+              day: '2-digit',
+              month: 'long',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </strong>
+        </p>
+      )}
+
+      <div className={styles.grid}>
+        <ActivityTable
+          title="Товары"
+          icon="📦"
+          loading={loading}
+          rows={data?.products ?? []}
+          emptyHint="Нет данных: за период никто не создавал товары (или у карточек не указан автор)."
+        />
+      </div>
+
+      <section className={styles.quickLinks}>
+        <h2 className={styles.quickTitle}>Быстрые ссылки</h2>
+        <div className={styles.quickGrid}>
+          <Link href="/admin/catalog/products" className={styles.quickLink}>
+            Каталог товаров
+          </Link>
+          <Link href="/admin/catalog/categories" className={styles.quickLink}>
+            Категории
+          </Link>
+          <Link href="/admin/catalog/products/new" className={styles.quickLink}>
+            Новый товар
+          </Link>
+          <Link href="/admin/orders" className={styles.quickLink}>
+            Заказы
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

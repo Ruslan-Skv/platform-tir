@@ -3,6 +3,35 @@
   margin: 0 auto;
 }
 
+/** Страницы настроек, где нужна ширина контейнера каталога */
+.pageWide {
+  max-width: none;
+  width: 100%;
+}
+
+.badgesHeader {
+  margin-bottom: 14px;
+}
+
+.badgesTitle {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 4px 0;
+}
+
+.badgesSubtitle {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: #6b7280;
+  margin: 0;
+}
+
+.badgesBack {
+  margin-top: 0.35rem;
+  font-size: 0.8125rem;
+}
+
 .header {
   margin-bottom: 32px;
 }

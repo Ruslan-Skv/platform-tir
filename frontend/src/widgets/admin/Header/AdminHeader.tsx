@@ -23,6 +23,7 @@ import { type NotificationSoundType, playNotificationSound } from '@/shared/lib/
 import { getSafeHref } from '@/shared/lib/sanitize';
 
 import styles from './AdminHeader.module.css';
+import { AdminOnlineAvatars } from './AdminOnlineAvatars';
 
 const ROLE_NAMES: Record<string, string> = {
   ADMIN: 'Администратор',
@@ -285,6 +286,7 @@ export function AdminHeader() {
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const unreadCount = notificationItems.length;
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
   return (
     <header className={styles.header}>
@@ -298,6 +300,7 @@ export function AdminHeader() {
       </div>
 
       <div className={styles.actions}>
+        {isSuperAdmin && <AdminOnlineAvatars />}
         <button
           type="button"
           className={styles.iconButton}

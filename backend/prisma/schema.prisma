@@ -89,6 +89,7 @@ model User {
   passwordResetTokens        PasswordResetToken[]
   productsCreated            Product[]             @relation("ProductCreatedBy")
   productsUpdated            Product[]             @relation("ProductUpdatedBy")
+  categoriesCreated          Category[]            @relation("CategoryCreatedBy")
 
   @@map("users")
 }
@@ -1086,11 +1087,13 @@ model Category {
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
   icon        String?
+  createdById String?
   parent      Category?           @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
   children    Category[]          @relation("CategoryTree")
   attributes  CategoryAttribute[]
   products    Product[]
   catalogFilterBlock CatalogFilterBlock?
+  createdBy   User?               @relation("CategoryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@map("categories")
 }

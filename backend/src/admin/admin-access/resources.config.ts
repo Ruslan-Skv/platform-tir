@@ -122,6 +122,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/settings/catalog/product-badges',
   },
   {
+    id: 'admin.settings.catalog-filters',
+    label: 'Блок фильтров',
+    path: '/admin/settings/catalog-filters',
+  },
+  {
     id: 'admin.settings.user-cabinet',
     label: 'Личный кабинет',
     path: '/admin/settings/user-cabinet',

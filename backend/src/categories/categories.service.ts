@@ -29,10 +29,19 @@ interface ApplyAttributesToProductsDto {
 export class CategoriesService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createCategoryDto: CreateCategoryDto) {
-    // Создаём категорию
+  async create(createCategoryDto: CreateCategoryDto, createdByUserId?: string) {
     const category = await this.prisma.category.create({
-      data: createCategoryDto,
+      data: {
+        name: createCategoryDto.name,
+        slug: createCategoryDto.slug,
+        description: createCategoryDto.description,
+        image: createCategoryDto.image,
+        icon: createCategoryDto.icon,
+        parentId: createCategoryDto.parentId ?? undefined,
+        order: createCategoryDto.order ?? 0,
+        isActive: createCategoryDto.isActive ?? true,
+        createdById: createdByUserId ?? null,
+      },
       include: {
         parent: true,
         children: true,

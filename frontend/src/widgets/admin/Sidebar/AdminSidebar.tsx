@@ -36,6 +36,40 @@ interface NavItem {
   children?: NavChild[];
 }
 
+/** Все href подраздела (плоские + вложенные) — для выбора самого длинного совпадения с pathname */
+function collectAllNavHrefs(children: NavChild[]): string[] {
+  const out: string[] = [];
+  for (const c of children) {
+    out.push(c.href);
+    if (c.children) {
+      for (const n of c.children) {
+        out.push(n.href);
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Из кандидатов выбирается самый длинный href, для которого pathname === href или pathname.startsWith(href + '/').
+ * Так «…/settings/catalog» не подсвечивается на странице «…/settings/catalog/product-badges».
+ */
+function getBestMatchingHref(
+  pathname: string | null | undefined,
+  candidates: string[]
+): string | null {
+  if (!pathname) return null;
+  let best: string | null = null;
+  for (const href of candidates) {
+    const match = pathname === href || pathname.startsWith(href + '/');
+    if (!match) continue;
+    if (!best || href.length > best.length) {
+      best = href;
+    }
+  }
+  return best;
+}
+
 const baseNavItems: NavItem[] = [
   { label: 'Дашборд', href: '/admin', icon: '📊', resourceId: 'admin' },
   {
@@ -252,6 +286,7 @@ const baseNavItems: NavItem[] = [
       {
         label: 'Блок фильтров',
         href: '/admin/settings/catalog-filters',
+        resourceId: 'admin.settings.catalog-filters',
       },
       {
         label: 'Личный кабинет',
@@ -426,6 +461,36 @@ export function AdminSidebar({
 
   const isNestedExpanded = (child: NavChild) => expandedItems.includes(child.href);
 
+  const isActive = (href: string) => {
+    if (href === '/admin') {
+      return pathname === '/admin';
+    }
+    return pathname?.startsWith(href) ?? false;
+  };
+
+  const fromCategory = searchParams?.get('fromCategory');
+  const isProductEditPage = pathname?.match(/^\/admin\/catalog\/products\/[^/]+\/edit/);
+
+  const isChildActive = (children: NavChild[] | undefined): boolean => {
+    if (!children) return false;
+    return getBestMatchingHref(pathname ?? '', collectAllNavHrefs(children)) !== null;
+  };
+
+  const isChildOrDescendantActive = (child: NavChild): boolean => {
+    const nestedHrefs = child.children
+      ? [child.href, ...child.children.map((n) => n.href)]
+      : [child.href];
+    return getBestMatchingHref(pathname ?? '', nestedHrefs) !== null;
+  };
+
+  const isPathActive = (href: string, sectionNavHrefs: string[]) => {
+    if (isProductEditPage && fromCategory) {
+      const categoryHref = `/admin/catalog/products/category/${fromCategory}`;
+      return href === categoryHref;
+    }
+    return getBestMatchingHref(pathname ?? '', sectionNavHrefs) === href;
+  };
+
   // При навигации раскрываем только активную ветку (accordion)
   useEffect(() => {
     const toExpand: string[] = [];
@@ -440,36 +505,8 @@ export function AdminSidebar({
       }
     });
     setExpandedItems(toExpand);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- раскрытие по pathname; isActive/isChild* меняются с pathname
   }, [pathname, navItems]);
-
-  const isActive = (href: string) => {
-    if (href === '/admin') {
-      return pathname === '/admin';
-    }
-    return pathname?.startsWith(href) ?? false;
-  };
-
-  const fromCategory = searchParams?.get('fromCategory');
-  const isProductEditPage = pathname?.match(/^\/admin\/catalog\/products\/[^/]+\/edit/);
-
-  const isPathActive = (href: string) => {
-    if (isProductEditPage && fromCategory) {
-      const categoryHref = `/admin/catalog/products/category/${fromCategory}`;
-      return href === categoryHref;
-    }
-    return pathname === href || (pathname?.startsWith(href + '/') ?? false);
-  };
-
-  const isChildActive = (children: NavChild[] | undefined): boolean => {
-    if (!children) return false;
-    return children.some(
-      (child) =>
-        isPathActive(child.href) || (child.children ? isChildActive(child.children) : false)
-    );
-  };
-
-  const isChildOrDescendantActive = (child: NavChild): boolean =>
-    isPathActive(child.href) || (child.children ? isChildActive(child.children) : false);
 
   return (
     <aside
@@ -495,71 +532,139 @@ export function AdminSidebar({
       </div>
 
       <nav className={styles.nav}>
-        {navItems.map((item) => (
-          <div key={item.href} className={styles.navItem}>
-            {item.children ? (
-              <>
-                <div className={styles.navLinkRow}>
-                  <button
-                    className={`${styles.navLink} ${
-                      isActive(item.href) || isChildActive(item.children) ? styles.active : ''
-                    }`}
-                    onClick={() => toggleExpand(item.href)}
-                  >
-                    <span className={styles.icon}>{item.icon}</span>
-                    {!collapsed && (
-                      <>
-                        <span className={styles.label}>{item.label}</span>
-                        <span
-                          className={`${styles.arrow} ${
-                            expandedItems.includes(item.href) ? styles.expanded : ''
-                          }`}
-                        >
-                          ▼
-                        </span>
-                      </>
-                    )}
-                  </button>
-                  {!collapsed && isSuperAdmin && item.resourceId && (
+        {navItems.map((item) => {
+          const sectionNavHrefs = item.children ? collectAllNavHrefs(item.children) : [];
+          return (
+            <div key={item.href} className={styles.navItem}>
+              {item.children ? (
+                <>
+                  <div className={styles.navLinkRow}>
                     <button
-                      type="button"
-                      className={styles.accessIcon}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setAccessModal({ resourceId: item.resourceId!, label: item.label });
-                      }}
-                      title="Доступ"
-                      aria-label={`Управление доступом: ${item.label}`}
+                      className={`${styles.navLink} ${
+                        isActive(item.href) || isChildActive(item.children) ? styles.active : ''
+                      }`}
+                      onClick={() => toggleExpand(item.href)}
                     >
-                      🛡️
+                      <span className={styles.icon}>{item.icon}</span>
+                      {!collapsed && (
+                        <>
+                          <span className={styles.label}>{item.label}</span>
+                          <span
+                            className={`${styles.arrow} ${
+                              expandedItems.includes(item.href) ? styles.expanded : ''
+                            }`}
+                          >
+                            ▼
+                          </span>
+                        </>
+                      )}
                     </button>
-                  )}
-                </div>
-                {!collapsed && expandedItems.includes(item.href) && (
-                  <div className={styles.submenu}>
-                    {item.children.map((child) =>
-                      child.children ? (
-                        <div key={child.label} className={styles.submenuGroup}>
-                          <div className={styles.submenuGroupRowWrap}>
-                            <button
-                              type="button"
-                              className={`${styles.submenuGroupRow} ${
-                                isChildOrDescendantActive(child) ? styles.active : ''
-                              }`}
-                              onClick={() => toggleExpand(child.href)}
-                              aria-expanded={isNestedExpanded(child)}
-                              aria-label={`${child.label}, ${isNestedExpanded(child) ? 'свернуть' : 'развернуть'}`}
-                            >
-                              <span className={styles.submenuGroupLink}>{child.label}</span>
-                              <span
-                                className={`${styles.arrow} ${
-                                  isNestedExpanded(child) ? styles.expanded : ''
+                    {!collapsed && isSuperAdmin && item.resourceId && (
+                      <button
+                        type="button"
+                        className={styles.accessIcon}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setAccessModal({ resourceId: item.resourceId!, label: item.label });
+                        }}
+                        title="Доступ"
+                        aria-label={`Управление доступом: ${item.label}`}
+                      >
+                        🛡️
+                      </button>
+                    )}
+                  </div>
+                  {!collapsed && expandedItems.includes(item.href) && (
+                    <div className={styles.submenu}>
+                      {item.children.map((child) =>
+                        child.children ? (
+                          <div key={child.label} className={styles.submenuGroup}>
+                            <div className={styles.submenuGroupRowWrap}>
+                              <button
+                                type="button"
+                                className={`${styles.submenuGroupRow} ${
+                                  isChildOrDescendantActive(child) ? styles.active : ''
                                 }`}
+                                onClick={() => toggleExpand(child.href)}
+                                aria-expanded={isNestedExpanded(child)}
+                                aria-label={`${child.label}, ${isNestedExpanded(child) ? 'свернуть' : 'развернуть'}`}
                               >
-                                ▼
-                              </span>
-                            </button>
+                                <span className={styles.submenuGroupLink}>{child.label}</span>
+                                <span
+                                  className={`${styles.arrow} ${
+                                    isNestedExpanded(child) ? styles.expanded : ''
+                                  }`}
+                                >
+                                  ▼
+                                </span>
+                              </button>
+                              {isSuperAdmin && child.resourceId && (
+                                <button
+                                  type="button"
+                                  className={styles.accessIconSubmenu}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setAccessModal({
+                                      resourceId: child.resourceId!,
+                                      label: child.label,
+                                    });
+                                  }}
+                                  title="Доступ"
+                                  aria-label={`Управление доступом: ${child.label}`}
+                                >
+                                  🛡️
+                                </button>
+                              )}
+                            </div>
+                            {isNestedExpanded(child) && (
+                              <div className={styles.submenuNested}>
+                                {child.children.map((nested) => (
+                                  <div key={nested.href} className={styles.submenuLinkRow}>
+                                    <Link
+                                      href={getSafeHref(nested.href, '/')}
+                                      className={`${styles.submenuLink} ${
+                                        isPathActive(nested.href, sectionNavHrefs)
+                                          ? styles.active
+                                          : ''
+                                      }`}
+                                    >
+                                      {nested.label}
+                                    </Link>
+                                    {isSuperAdmin && nested.resourceId && (
+                                      <button
+                                        type="button"
+                                        className={styles.accessIconSubmenu}
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          setAccessModal({
+                                            resourceId: nested.resourceId!,
+                                            label: nested.label,
+                                          });
+                                        }}
+                                        title="Доступ"
+                                        aria-label={`Управление доступом: ${nested.label}`}
+                                      >
+                                        🛡️
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div key={child.label} className={styles.submenuLinkRow}>
+                            <Link
+                              href={getSafeHref(child.href, '/')}
+                              className={`${styles.submenuLink} ${
+                                isPathActive(child.href, sectionNavHrefs) ? styles.active : ''
+                              }`}
+                            >
+                              {child.label}
+                            </Link>
                             {isSuperAdmin && child.resourceId && (
                               <button
                                 type="button"
@@ -579,103 +684,40 @@ export function AdminSidebar({
                               </button>
                             )}
                           </div>
-                          {isNestedExpanded(child) && (
-                            <div className={styles.submenuNested}>
-                              {child.children.map((nested) => (
-                                <div key={nested.href} className={styles.submenuLinkRow}>
-                                  <Link
-                                    href={getSafeHref(nested.href, '/')}
-                                    className={`${styles.submenuLink} ${
-                                      isPathActive(nested.href) ? styles.active : ''
-                                    }`}
-                                  >
-                                    {nested.label}
-                                  </Link>
-                                  {isSuperAdmin && nested.resourceId && (
-                                    <button
-                                      type="button"
-                                      className={styles.accessIconSubmenu}
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setAccessModal({
-                                          resourceId: nested.resourceId!,
-                                          label: nested.label,
-                                        });
-                                      }}
-                                      title="Доступ"
-                                      aria-label={`Управление доступом: ${nested.label}`}
-                                    >
-                                      🛡️
-                                    </button>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div key={child.label} className={styles.submenuLinkRow}>
-                          <Link
-                            href={getSafeHref(child.href, '/')}
-                            className={`${styles.submenuLink} ${
-                              isPathActive(child.href) ? styles.active : ''
-                            }`}
-                          >
-                            {child.label}
-                          </Link>
-                          {isSuperAdmin && child.resourceId && (
-                            <button
-                              type="button"
-                              className={styles.accessIconSubmenu}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setAccessModal({
-                                  resourceId: child.resourceId!,
-                                  label: child.label,
-                                });
-                              }}
-                              title="Доступ"
-                              aria-label={`Управление доступом: ${child.label}`}
-                            >
-                              🛡️
-                            </button>
-                          )}
-                        </div>
-                      )
-                    )}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className={styles.navLinkRow}>
-                <Link
-                  href={getSafeHref(item.href, '/')}
-                  className={`${styles.navLink} ${isActive(item.href) ? styles.active : ''}`}
-                >
-                  <span className={styles.icon}>{item.icon}</span>
-                  {!collapsed && <span className={styles.label}>{item.label}</span>}
-                </Link>
-                {!collapsed && isSuperAdmin && item.resourceId && (
-                  <button
-                    type="button"
-                    className={styles.accessIcon}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setAccessModal({ resourceId: item.resourceId!, label: item.label });
-                    }}
-                    title="Доступ"
-                    aria-label={`Управление доступом: ${item.label}`}
+                        )
+                      )}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className={styles.navLinkRow}>
+                  <Link
+                    href={getSafeHref(item.href, '/')}
+                    className={`${styles.navLink} ${isActive(item.href) ? styles.active : ''}`}
                   >
-                    🛡️
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+                    <span className={styles.icon}>{item.icon}</span>
+                    {!collapsed && <span className={styles.label}>{item.label}</span>}
+                  </Link>
+                  {!collapsed && isSuperAdmin && item.resourceId && (
+                    <button
+                      type="button"
+                      className={styles.accessIcon}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setAccessModal({ resourceId: item.resourceId!, label: item.label });
+                      }}
+                      title="Доступ"
+                      aria-label={`Управление доступом: ${item.label}`}
+                    >
+                      🛡️
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </nav>
 
       {accessModal && (
