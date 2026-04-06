@@ -83,7 +83,8 @@
   }
 
   .productCardCompact .catalogBadgeImg {
-    max-height: 28px;
+    max-height: 24px;
+    max-width: 2.48rem;
   }
 
   .productCardCompact .hitBadge,
@@ -117,11 +118,11 @@
   }
 
   .productCardCompact .imageSideLeft {
-    width: 3rem;
+    width: 2.75rem;
   }
 
   .productCardCompact .imageSideRight {
-    width: 2.5rem;
+    width: 2.59rem;
   }
 }
 
@@ -369,6 +370,23 @@
     top: auto;
     bottom: 2rem;
     left: 0.3rem;
+    height: 1.375rem;
+    width: 1.375rem;
+  }
+
+  /* Бэйджи-картинки слева от фото — меньше на смартфоне */
+  .productCard .imageSideLeft {
+    width: 2.92rem;
+  }
+
+  .productCard .catalogBadgeImages {
+    gap: 0.11rem;
+  }
+
+  .productCard .catalogBadgeImg {
+    max-height: 24px;
+    max-width: 2.64rem;
+    width: auto;
   }
 }
 

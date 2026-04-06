@@ -1543,6 +1543,21 @@
     gap: 0.75rem;
   }
 
+  .galleryLeftBadges {
+    flex: 0 0 57px;
+    gap: 0.33rem;
+  }
+
+  .galleryRightBadges {
+    flex: 0 0 79px;
+    gap: 0.39rem;
+  }
+
+  .catalogBadgeDetailImg {
+    max-height: 29px;
+    max-width: 53px;
+  }
+
   .mainImage {
     min-height: 220px;
     max-height: 320px;
