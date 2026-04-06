@@ -589,16 +589,13 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     });
   }
 
-  // Формируем URL для категории товара
-  // Если есть родительская категория: /catalog/products/parent-slug/subcategory-part
-  // Если нет родительской: /catalog/products/category-slug
+  // URL подкатегории как в каталоге и в админке (навигация): /catalog/products/{parent}/{child.slug}
+  // Второй сегмент — полный slug листовой категории из API (не суффикс без префикса родителя):
+  // иначе Next открывает несуществующий маршрут, ломается клиентская навигация и хлебные крошки.
   if (product.category.parent) {
-    // Извлекаем часть подкатегории из полного slug
-    // entrance-doors-tt-xl-xxl -> tt-xl-xxl (убираем prefix entrance-doors-)
-    const subcategoryPart = product.category.slug.replace(`${product.category.parent.slug}-`, '');
     breadcrumbs.push({
       label: product.category.name,
-      href: `/catalog/products/${product.category.parent.slug}/${subcategoryPart}`,
+      href: `/catalog/products/${product.category.parent.slug}/${product.category.slug}`,
     });
   } else {
     breadcrumbs.push({
