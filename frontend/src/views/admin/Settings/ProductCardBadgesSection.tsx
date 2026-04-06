@@ -3,14 +3,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
 import styles from './UserCabinetSection.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-
-function assetBaseUrl(): string {
-  return API_URL.replace(/\/api\/v1\/?$/, '') || 'http://localhost:3001';
-}
 
 export interface ProductCardBadgeDefinition {
   id: string;
@@ -132,8 +129,6 @@ export function ProductCardBadgesSection() {
       </div>
     );
   }
-
-  const base = assetBaseUrl();
 
   return (
     <div className={styles.page}>
@@ -264,7 +259,7 @@ export function ProductCardBadgesSection() {
               >
                 {row.imageUrl ? (
                   <img
-                    src={`${base}${row.imageUrl}`}
+                    src={publicUploadUrl(row.imageUrl)}
                     alt=""
                     style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                   />

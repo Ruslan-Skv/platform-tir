@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Req,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -15,6 +16,7 @@ import { diskStorage } from 'multer';
 import * as fs from 'fs';
 import * as path from 'path';
 import { extname } from 'path';
+import type { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -61,11 +63,22 @@ export class AdminProductCardBadgesController {
       },
     }),
   )
-  async upload(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
+  /**
+   * Как у admin/partners (uploadLogo) и admin/photo (uploadImage): в БД сохраняем абсолютный URL.
+   * Фото товара в карточке редактирования — это base64 в JSON, без /uploads; бэйджи — файлы на диске.
+   */
+  async upload(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: Request,
+  ) {
     if (!file) {
       throw new BadRequestException('Файл не получен');
     }
-    const imageUrl = `/uploads/product-card-badges/${file.filename}`;
+    const relative = `/uploads/product-card-badges/${file.filename}`;
+    const rawBase = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
+    const baseUrl = rawBase.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
+    const imageUrl = `${baseUrl}${relative}`;
     return this.productCardBadgesService.setImageUrl(id, imageUrl);
   }
 

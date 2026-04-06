@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { type ProductComponent, getProductComponents } from '@/shared/api/product-components';
 import type { Review } from '@/shared/api/reviews';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { escapeHtmlAndPreserveNewlines, getSafeHref } from '@/shared/lib/sanitize';
 import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
 
@@ -84,12 +85,6 @@ type AttributeItem = { name: string; value: string };
 
 interface ProductDetailPageProps {
   slug: string;
-}
-
-function publicAssetUrl(relative: string): string {
-  const api = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-  const base = api.replace(/\/api\/v1\/?$/, '') || 'http://localhost:3001';
-  return `${base}${relative}`;
 }
 
 /** Прокрутка в начало страницы товара (мобильные часто сохраняют offset с каталога или смещаются после подгрузки контента). */
@@ -661,7 +656,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                   return (
                     <BadgeTooltip key={b.id} content={hoverText} side="right">
                       <img
-                        src={publicAssetUrl(b.imageUrl!)}
+                        src={publicUploadUrl(b.imageUrl)}
                         alt={b.label}
                         className={styles.catalogBadgeDetailImg}
                       />

@@ -16,6 +16,8 @@ const nextConfig = {
       { source: '/favicon.ico', destination: '/favicon.svg' },
       // Проксирование API: в Docker бэкенд доступен как backend:3001
       { source: '/api/v1/:path*', destination: `${apiTarget}/api/v1/:path*` },
+      // Загрузки (бэйджи карточки и др.) — те же относительные URL, что и в проде за nginx
+      { source: '/uploads/:path*', destination: `${apiTarget}/uploads/:path*` },
     ];
   },
   images: {

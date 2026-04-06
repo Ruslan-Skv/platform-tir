@@ -8,6 +8,7 @@ import Link from 'next/link';
 
 import type { Product } from '@/entities/product';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
 
 import styles from './ProductCard.module.css';
@@ -26,12 +27,6 @@ function saveCatalogScrollPosition(): void {
   if (!window.location.pathname.startsWith('/catalog/products')) return;
   const urlKey = `${window.location.pathname}${window.location.search}`;
   sessionStorage.setItem(`catalog_scroll:${urlKey}`, String(window.scrollY));
-}
-
-function publicAssetUrl(relative: string): string {
-  const api = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-  const base = api.replace(/\/api\/v1\/?$/, '') || 'http://localhost:3001';
-  return `${base}${relative}`;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
@@ -227,7 +222,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 return (
                   <BadgeTooltip key={b.id} content={hoverText} side="right" compact>
                     <img
-                      src={publicAssetUrl(b.imageUrl)}
+                      src={publicUploadUrl(b.imageUrl)}
                       alt={b.label}
                       className={styles.catalogBadgeImg}
                     />
