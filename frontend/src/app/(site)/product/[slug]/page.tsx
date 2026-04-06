@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 
+import { getServerApiBaseUrl } from '@/shared/lib/server-api-base-url';
 import { ProductDetailPage } from '@/views/product/ui/ProductDetailPage';
 
 interface ProductPageProps {
@@ -8,13 +9,12 @@ interface ProductPageProps {
   }>;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 const SITE_NAME = 'Территория интерьерных решений';
 
 // Функция загрузки товара для метаданных
 async function getProduct(slug: string) {
   try {
-    const response = await fetch(`${API_URL}/products/slug/${slug}`, {
+    const response = await fetch(`${getServerApiBaseUrl()}/products/slug/${slug}`, {
       next: { revalidate: 60 }, // Кэширование на 60 секунд
     });
 

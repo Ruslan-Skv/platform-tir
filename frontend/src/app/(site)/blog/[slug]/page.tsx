@@ -1,8 +1,9 @@
 import { Metadata } from 'next';
 
+import { getServerApiBaseUrl } from '@/shared/lib/server-api-base-url';
 import { BlogPostPage } from '@/views/blog/ui/BlogPostPage';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const API_URL = getServerApiBaseUrl();
 const SITE_NAME = 'Территория интерьерных решений';
 
 interface BlogPostPageProps {

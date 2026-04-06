@@ -1,6 +1,7 @@
+import { getServerApiBaseUrl } from '@/shared/lib/server-api-base-url';
 import { CatalogPage } from '@/views/catalog/ui/CatalogPage';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const API_URL = getServerApiBaseUrl();
 
 // Маппинг slug родительской категории на человекочитаемое название (fallback, если API недоступен)
 const categoryNames: Record<string, string> = {
