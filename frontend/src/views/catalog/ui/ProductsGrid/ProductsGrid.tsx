@@ -1,5 +1,7 @@
 'use client';
 
+import { FunnelIcon } from '@heroicons/react/24/outline';
+
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
 import { useSearchParams } from 'next/navigation';
@@ -96,6 +98,13 @@ interface ProductsGridProps {
   catalogFilters?: CatalogFilterFacet[];
   /** Границы цен по исходному списку категории/поиска (до фильтров) */
   onBasePriceBoundsChange?: (bounds: { min: number; max: number } | null) => void;
+  /** Уникальные подкатегории в выборке — для блока «Категория» в фильтрах (>1) */
+  onCategoryFilterOptionsChange?: (
+    options: { slug: string; label: string; count: number }[]
+  ) => void;
+  /** Мобильный каталог: иконка фильтров справа от заголовка */
+  showMobileFiltersButton?: boolean;
+  onMobileFiltersOpen?: () => void;
 }
 
 /** Десктоп: 3 колонки × 5 строк; остальное — пагинация */
@@ -171,6 +180,9 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
   onProductsPerPageLayoutChange,
   catalogFilters,
   onBasePriceBoundsChange,
+  onCategoryFilterOptionsChange,
+  showMobileFiltersButton = false,
+  onMobileFiltersOpen,
 }) => {
   const searchParams = useSearchParams();
   const catalogSearchRaw = searchParams.get('search');
@@ -238,6 +250,7 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
           image: p.images[0] || '/images/products/door-placeholder.jpg',
           images: p.images,
           category: p.category.name,
+          categorySlug: p.category.slug,
           categoryId: parseInt(p.category.id) || undefined,
           rating: p.rating ?? 0,
           reviewsCount: p.reviewsCount ?? 0,
@@ -334,6 +347,22 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
     onBasePriceBoundsChange({ min, max });
   }, [originalProducts, onBasePriceBoundsChange]);
 
+  useEffect(() => {
+    if (!onCategoryFilterOptionsChange) return;
+    const slugMap = new Map<string, { label: string; count: number }>();
+    for (const p of originalProducts) {
+      const slug = p.categorySlug?.trim();
+      if (!slug) continue;
+      const prev = slugMap.get(slug);
+      if (prev) prev.count += 1;
+      else slugMap.set(slug, { label: p.category, count: 1 });
+    }
+    const opts = [...slugMap.entries()]
+      .map(([slug, { label, count }]) => ({ slug, label, count }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'ru'));
+    onCategoryFilterOptionsChange(opts.length > 1 ? opts : []);
+  }, [originalProducts, onCategoryFilterOptionsChange]);
+
   const prevFilterSigRef = useRef<string | null>(null);
   useEffect(() => {
     const sig = filterSearchSignature(searchParams);
@@ -374,7 +403,19 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
 
   const titleBlock = (
     <div className={styles.titleBlock}>
-      <h1 className={styles.title}>{categoryName}</h1>
+      <div className={styles.titleRow}>
+        <h1 className={styles.title}>{categoryName}</h1>
+        {showMobileFiltersButton && onMobileFiltersOpen ? (
+          <button
+            type="button"
+            className={styles.mobileFiltersIconButton}
+            onClick={onMobileFiltersOpen}
+            aria-label="Открыть фильтры"
+          >
+            <FunnelIcon className={styles.mobileFiltersIcon} aria-hidden />
+          </button>
+        ) : null}
+      </div>
       {catalogSearch ? (
         <p className={styles.searchQueryHint}>По запросу: «{catalogSearch}»</p>
       ) : null}

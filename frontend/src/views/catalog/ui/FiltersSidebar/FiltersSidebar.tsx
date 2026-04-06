@@ -1,8 +1,9 @@
 'use client';
 
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
@@ -10,6 +11,12 @@ import { buildAttrParamKey } from '@/views/catalog/lib/applyCatalogFilters';
 import type { CatalogFilterFacet } from '@/views/catalog/lib/catalogFilters.types';
 
 import styles from './FiltersSidebar.module.css';
+
+export interface CategoryFilterOption {
+  slug: string;
+  label: string;
+  count?: number;
+}
 
 export interface FiltersSidebarProps {
   /** На мобильных: открыта ли панель (оверлей) */
@@ -19,9 +26,16 @@ export interface FiltersSidebarProps {
   filters: CatalogFilterFacet[];
   loading?: boolean;
   priceBounds?: { min: number; max: number } | null;
+  /** Подкатегории по текущей выборке товаров (из сетки); пусто — блок не показываем */
+  categoryOptions?: CategoryFilterOption[];
 }
 
 const PRICE_STEP = 100;
+
+function formatFilterOptionLabel(label: string, count: number | undefined): string {
+  if (count === undefined || !Number.isFinite(count)) return label;
+  return `${label} (${count.toLocaleString('ru-RU')})`;
+}
 
 function formatPriceInput(value: number): string {
   return Math.max(0, Math.round(value)).toLocaleString('ru-RU');
@@ -54,6 +68,55 @@ function clampCatalogPriceRange(
   return { min: clampedMin, max: clampedMax };
 }
 
+type FilterSectionProps = {
+  sectionId: string;
+  title: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+};
+
+function CatalogFilterSection({
+  sectionId,
+  title,
+  isOpen,
+  onToggle,
+  children,
+}: FilterSectionProps) {
+  return (
+    <div className={styles.section}>
+      <div className={styles.sectionHeaderRow}>
+        <h3 className={styles.sectionTitle} id={`filter-heading-${sectionId}`}>
+          {title}
+        </h3>
+        <button
+          type="button"
+          className={styles.sectionToggle}
+          onClick={onToggle}
+          aria-expanded={isOpen}
+          aria-controls={`filter-body-${sectionId}`}
+          title={isOpen ? 'Свернуть' : 'Развернуть'}
+        >
+          <ChevronDownIcon
+            className={`${styles.sectionChevron} ${!isOpen ? styles.sectionChevronCollapsed : ''}`}
+            aria-hidden
+          />
+        </button>
+      </div>
+      {isOpen ? (
+        <div
+          className={styles.sectionBody}
+          id={`filter-body-${sectionId}`}
+          role="region"
+          aria-labelledby={`filter-heading-${sectionId}`}
+        >
+          {children}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function clearCatalogFilterKeys(params: URLSearchParams): void {
   const toRemove = new Set<string>();
   for (const k of params.keys()) {
@@ -62,7 +125,8 @@ function clearCatalogFilterKeys(params: URLSearchParams): void {
       k === 'avail' ||
       k === 'mfr' ||
       k === 'price_min' ||
-      k === 'price_max'
+      k === 'price_max' ||
+      k === 'cat'
     ) {
       toRemove.add(k);
     }
@@ -77,6 +141,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
   filters,
   loading,
   priceBounds,
+  categoryOptions = [],
 }) => {
   const router = useRouter();
   const pathname = usePathname();
@@ -145,6 +210,55 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
     [replaceParams]
   );
 
+  const isCatChecked = useCallback(
+    (slug: string) => searchParams.getAll('cat').includes(slug),
+    [searchParams]
+  );
+
+  const toggleCat = useCallback(
+    (slug: string, checked: boolean) => {
+      replaceParams((p) => {
+        const prev = p.getAll('cat');
+        p.delete('cat');
+        const merged = checked
+          ? [...prev.filter((x) => x !== slug), slug]
+          : prev.filter((x) => x !== slug);
+        merged.forEach((v) => p.append('cat', v));
+        p.delete('page');
+      });
+    },
+    [replaceParams]
+  );
+
+  const selectAllCategories = useCallback(() => {
+    replaceParams((p) => {
+      p.delete('cat');
+      for (const opt of categoryOptions) {
+        p.append('cat', opt.slug);
+      }
+      p.delete('page');
+    });
+  }, [replaceParams, categoryOptions]);
+
+  const clearAllCategories = useCallback(() => {
+    replaceParams((p) => {
+      p.delete('cat');
+      p.delete('page');
+    });
+  }, [replaceParams]);
+
+  const categoryBulkState = useMemo(() => {
+    const selected = new Set(searchParams.getAll('cat'));
+    if (categoryOptions.length === 0) {
+      return { allSelected: false, noneSelected: true };
+    }
+    const allSelected =
+      categoryOptions.every((o) => selected.has(o.slug)) &&
+      selected.size === categoryOptions.length;
+    const noneSelected = selected.size === 0;
+    return { allSelected, noneSelected };
+  }, [searchParams, categoryOptions]);
+
   const availValue = searchParams.get('avail');
 
   const setAvail = useCallback(
@@ -164,7 +278,8 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
         k === 'avail' ||
         k === 'mfr' ||
         k === 'price_min' ||
-        k === 'price_max'
+        k === 'price_max' ||
+        k === 'cat'
       )
         return true;
     }
@@ -186,6 +301,21 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
   const [priceMaxInput, setPriceMaxInput] = useState(() => formatPriceInput(selectedMax));
   const [priceMinFocused, setPriceMinFocused] = useState(false);
   const [priceMaxFocused, setPriceMaxFocused] = useState(false);
+
+  /** Сворачивание секций: по умолчанию развёрнуто (ключ отсутствует или не false) */
+  const [sectionExpanded, setSectionExpanded] = useState<Record<string, boolean>>({});
+
+  const isSectionOpen = useCallback(
+    (id: string) => sectionExpanded[id] !== false,
+    [sectionExpanded]
+  );
+
+  const toggleSection = useCallback((id: string) => {
+    setSectionExpanded((prev) => {
+      const open = prev[id] !== false;
+      return { ...prev, [id]: !open };
+    });
+  }, []);
 
   /** Пока поле в фокусе — не подставляем значение из URL/слайдера, иначе ввод ломается (цифры «дописываются»). */
   useEffect(() => {
@@ -229,6 +359,21 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
     [priceBounds, replaceParams]
   );
 
+  /** Мобильный оверлей: зафиксировать цену из полей ввода и закрыть панель */
+  const applyMobileFilters = useCallback(() => {
+    if (priceBounds) {
+      const parsedMin = parsePriceInput(priceMinInput) ?? priceBounds.min;
+      const parsedMax = parsePriceInput(priceMaxInput) ?? priceBounds.max;
+      const { min, max } = clampCatalogPriceRange(priceBounds, parsedMin, parsedMax);
+      pendingMinRef.current = min;
+      pendingMaxRef.current = max;
+      setPriceMinInput(formatPriceInput(min));
+      setPriceMaxInput(formatPriceInput(max));
+      setPriceRange(min, max);
+    }
+    onClose?.();
+  }, [onClose, priceBounds, priceMaxInput, priceMinInput, setPriceRange]);
+
   const commitPriceMin = useCallback(() => {
     if (!priceBounds) return;
     const parsed = parsePriceInput(priceMinInput);
@@ -252,8 +397,13 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
   const renderFacet = (facet: CatalogFilterFacet) => {
     if (facet.id === 'availability' && facet.type === 'radio') {
       return (
-        <div key={facet.id} className={styles.section}>
-          <h3 className={styles.sectionTitle}>{facet.label}</h3>
+        <CatalogFilterSection
+          key={facet.id}
+          sectionId={facet.id}
+          title={facet.label}
+          isOpen={isSectionOpen(facet.id)}
+          onToggle={() => toggleSection(facet.id)}
+        >
           <div className={styles.options}>
             <label className={styles.option}>
               <input
@@ -272,19 +422,26 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
                   checked={availValue === opt.value}
                   onChange={() => setAvail(opt.value)}
                 />
-                <span className={styles.optionText}>{opt.label}</span>
+                <span className={styles.optionText}>
+                  {formatFilterOptionLabel(opt.label, opt.count)}
+                </span>
               </label>
             ))}
           </div>
-        </div>
+        </CatalogFilterSection>
       );
     }
 
     if (facet.id === 'manufacturer' && facet.type === 'checkbox') {
       if (facet.options.length === 0) return null;
       return (
-        <div key={facet.id} className={styles.section}>
-          <h3 className={styles.sectionTitle}>{facet.label}</h3>
+        <CatalogFilterSection
+          key={facet.id}
+          sectionId={facet.id}
+          title={facet.label}
+          isOpen={isSectionOpen(facet.id)}
+          onToggle={() => toggleSection(facet.id)}
+        >
           <div className={styles.options}>
             {facet.options.map((opt) => (
               <label key={opt.value} className={styles.option}>
@@ -293,18 +450,25 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
                   checked={isMfrChecked(opt.value)}
                   onChange={(e) => toggleMfr(opt.value, e.target.checked)}
                 />
-                <span className={styles.optionText}>{opt.label}</span>
+                <span className={styles.optionText}>
+                  {formatFilterOptionLabel(opt.label, opt.count)}
+                </span>
               </label>
             ))}
           </div>
-        </div>
+        </CatalogFilterSection>
       );
     }
 
     if (facet.type === 'checkbox' && facet.options.length > 0) {
       return (
-        <div key={facet.id} className={styles.section}>
-          <h3 className={styles.sectionTitle}>{facet.label}</h3>
+        <CatalogFilterSection
+          key={facet.id}
+          sectionId={facet.id}
+          title={facet.label}
+          isOpen={isSectionOpen(facet.id)}
+          onToggle={() => toggleSection(facet.id)}
+        >
           <div className={styles.options}>
             {facet.options.map((opt) => (
               <label key={opt.value} className={styles.option}>
@@ -313,20 +477,27 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
                   checked={isAttrChecked(facet.id, opt.value)}
                   onChange={(e) => toggleAttr(facet.id, opt.value, e.target.checked)}
                 />
-                <span className={styles.optionText}>{opt.label}</span>
+                <span className={styles.optionText}>
+                  {formatFilterOptionLabel(opt.label, opt.count)}
+                </span>
               </label>
             ))}
           </div>
-        </div>
+        </CatalogFilterSection>
       );
     }
 
     if (facet.type === 'checkbox' && facet.options.length === 0) {
       return (
-        <div key={facet.id} className={styles.section}>
-          <h3 className={styles.sectionTitle}>{facet.label}</h3>
+        <CatalogFilterSection
+          key={facet.id}
+          sectionId={facet.id}
+          title={facet.label}
+          isOpen={isSectionOpen(facet.id)}
+          onToggle={() => toggleSection(facet.id)}
+        >
           <p className={styles.emptyFacet}>Нет значений в этой категории</p>
-        </div>
+        </CatalogFilterSection>
       );
     }
 
@@ -346,7 +517,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
     );
   }
 
-  if (!priceBounds && filters.length === 0) {
+  if (!priceBounds && filters.length === 0 && categoryOptions.length === 0) {
     return null;
   }
 
@@ -380,8 +551,12 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
 
       <div className={styles.sections}>
         {priceBounds && priceBounds.max >= priceBounds.min ? (
-          <div className={styles.section}>
-            <h3 className={styles.sectionTitle}>Цена</h3>
+          <CatalogFilterSection
+            sectionId="price"
+            title="Цена"
+            isOpen={isSectionOpen('price')}
+            onToggle={() => toggleSection('price')}
+          >
             <div className={styles.priceInputs}>
               <label className={styles.priceInputLabel}>
                 От
@@ -460,10 +635,62 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
               <span>{selectedMin.toLocaleString('ru-RU')} ₽</span>
               <span>{selectedMax.toLocaleString('ru-RU')} ₽</span>
             </div>
-          </div>
+          </CatalogFilterSection>
+        ) : null}
+        {categoryOptions.length > 0 ? (
+          <CatalogFilterSection
+            sectionId="category"
+            title="Категория"
+            isOpen={isSectionOpen('category')}
+            onToggle={() => toggleSection('category')}
+          >
+            <div className={styles.categoryBulkRow}>
+              <button
+                type="button"
+                className={styles.categoryBulkBtn}
+                onClick={selectAllCategories}
+                disabled={categoryBulkState.allSelected}
+              >
+                Выделить все
+              </button>
+              <span className={styles.categoryBulkSep} aria-hidden>
+                ·
+              </span>
+              <button
+                type="button"
+                className={styles.categoryBulkBtn}
+                onClick={clearAllCategories}
+                disabled={categoryBulkState.noneSelected}
+              >
+                Сбросить все
+              </button>
+            </div>
+            <div className={styles.options}>
+              {categoryOptions.map((opt) => (
+                <label key={opt.slug} className={styles.option}>
+                  <input
+                    type="checkbox"
+                    checked={isCatChecked(opt.slug)}
+                    onChange={(e) => toggleCat(opt.slug, e.target.checked)}
+                  />
+                  <span className={styles.optionText}>
+                    {formatFilterOptionLabel(opt.label, opt.count)}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </CatalogFilterSection>
         ) : null}
         {filters.map((f) => renderFacet(f))}
       </div>
+
+      {onClose ? (
+        <div className={styles.mobileApplyBar}>
+          <button type="button" className={styles.mobileApplyButton} onClick={applyMobileFilters}>
+            Применить
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 };

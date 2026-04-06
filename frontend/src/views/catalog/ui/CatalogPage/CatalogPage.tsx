@@ -1,7 +1,5 @@
 'use client';
 
-import { FunnelIcon } from '@heroicons/react/24/outline';
-
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -9,6 +7,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCatalogFilters } from '@/views/catalog/lib/useCatalogFilters';
 
 import { Breadcrumbs } from '../Breadcrumbs';
+import type { CategoryFilterOption } from '../FiltersSidebar';
 import { FiltersSidebar } from '../FiltersSidebar';
 import { Pagination } from '../Pagination';
 import { ProductsGrid } from '../ProductsGrid';
@@ -49,6 +48,7 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [didRestoreScroll, setDidRestoreScroll] = useState(false);
   const [priceBounds, setPriceBounds] = useState<{ min: number; max: number } | null>(null);
+  const [categoryFilterOptions, setCategoryFilterOptions] = useState<CategoryFilterOption[]>([]);
 
   const pageFromUrl = useMemo(() => readPageFromSearchParams(searchParams), [searchParams]);
   const searchFromUrl = searchParams.get('search') ?? '';
@@ -59,7 +59,9 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
     loading: filtersLoading,
     hasFacets,
   } = useCatalogFilters(categorySlug);
-  const showFilterColumn = Boolean(filtersLoading || hasFacets || priceBounds);
+  const showFilterColumn = Boolean(
+    filtersLoading || hasFacets || priceBounds || categoryFilterOptions.length > 0
+  );
 
   const catalogUrlKey = useMemo(
     () => `${pathname}${searchParams.size > 0 ? `?${searchParams.toString()}` : ''}`,
@@ -151,7 +153,7 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
 
   return (
     <div className={styles.catalogPage}>
-      {/* 1. Верхний блок: крошки + кнопка «Фильтры» (рядом на мобильных) */}
+      {/* 1. Верхний блок: хлебные крошки */}
       <div className={styles.topSection}>
         <div className={styles.breadcrumbsSection}>
           <Breadcrumbs
@@ -160,19 +162,6 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
             parentCategorySlug={parentCategorySlug}
           />
         </div>
-        {showFilterColumn ? (
-          <div className={styles.mobileFiltersRow}>
-            <button
-              type="button"
-              className={styles.mobileFiltersButton}
-              onClick={() => setMobileFiltersOpen(true)}
-              aria-label="Открыть фильтры"
-            >
-              <FunnelIcon className={styles.mobileFiltersButtonIcon} />
-              Фильтры
-            </button>
-          </div>
-        ) : null}
       </div>
 
       {/* 2. Основной контент - фильтры и товары */}
@@ -186,6 +175,7 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
               filters={catalogFilters}
               loading={filtersLoading}
               priceBounds={priceBounds}
+              categoryOptions={categoryFilterOptions}
             />
           </aside>
         ) : null}
@@ -205,6 +195,7 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
                 filters={catalogFilters}
                 loading={filtersLoading}
                 priceBounds={priceBounds}
+                categoryOptions={categoryFilterOptions}
               />
             </div>
           </div>
@@ -221,6 +212,9 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
             onProductsPerPageLayoutChange={goToFirstCatalogPage}
             catalogFilters={catalogFilters}
             onBasePriceBoundsChange={setPriceBounds}
+            onCategoryFilterOptionsChange={setCategoryFilterOptions}
+            showMobileFiltersButton={showFilterColumn}
+            onMobileFiltersOpen={() => setMobileFiltersOpen(true)}
           />
         </main>
       </div>

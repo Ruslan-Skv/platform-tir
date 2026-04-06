@@ -47,6 +47,7 @@
 /* Мобильные устройства */
 @media (width <= 768px) {
   .breadcrumbs {
+    margin-bottom: 0.35rem;
     padding: 0; /* Убираем внутренние отступы на мобильных */
   }
 }

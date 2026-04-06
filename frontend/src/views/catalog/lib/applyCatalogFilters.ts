@@ -7,7 +7,7 @@ const ATTR_PARAM_PREFIX = 'attr_';
 
 /** Ключи query-параметров фильтров (кроме page, search). */
 export function catalogFilterParamKeys(): string[] {
-  return ['avail', 'mfr', 'price_min', 'price_max'];
+  return ['avail', 'mfr', 'price_min', 'price_max', 'cat'];
 }
 
 export function buildAttrParamKey(filterId: string): string {
@@ -23,7 +23,8 @@ export function filterSearchSignature(params: URLSearchParams): string {
       k === 'avail' ||
       k === 'mfr' ||
       k === 'price_min' ||
-      k === 'price_max'
+      k === 'price_max' ||
+      k === 'cat'
     ) {
       pairs.push(`${k}=${v}`);
     }
@@ -57,6 +58,12 @@ export function applyCatalogFilters(
     if (Number.isFinite(maxPrice)) {
       list = list.filter((p) => p.price <= maxPrice);
     }
+  }
+
+  const categorySlugs = params.getAll('cat').filter(Boolean);
+  if (categorySlugs.length > 0) {
+    const allowed = new Set(categorySlugs);
+    list = list.filter((p) => p.categorySlug != null && allowed.has(p.categorySlug));
   }
 
   const avail = params.get('avail');

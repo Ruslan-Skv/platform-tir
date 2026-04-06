@@ -10,6 +10,8 @@ export interface Product {
   image: string;
   images?: string[];
   category: string;
+  /** Slug листовой категории из API (каталог: фильтр по подкатегориям) */
+  categorySlug?: string;
   categoryId?: number;
   rating: number;
   reviewsCount?: number;

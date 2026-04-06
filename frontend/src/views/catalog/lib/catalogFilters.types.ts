@@ -1,6 +1,8 @@
 export interface CatalogFilterOption {
   value: string;
   label: string;
+  /** Товаров с этим значением в текущей ветке каталога (как на бэкенде) */
+  count?: number;
 }
 
 export interface CatalogFilterFacet {

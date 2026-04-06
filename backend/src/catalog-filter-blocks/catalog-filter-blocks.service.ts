@@ -3,11 +3,7 @@ import { Category, Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { CreateCatalogFilterBlockDto } from './dto/create-catalog-filter-block.dto';
 import { UpdateCatalogFilterBlockDto } from './dto/update-catalog-filter-block.dto';
-import {
-  CatalogFilterFacetDto,
-  CatalogFilterOptionDto,
-  CatalogFiltersResponseDto,
-} from './dto/public-filters.dto';
+import { CatalogFilterFacetDto, CatalogFiltersResponseDto } from './dto/public-filters.dto';
 import { CatalogFilterBlockItemInputDto } from './dto/catalog-filter-block-item.dto';
 
 type CategoryWithChildren = Category & { children?: CategoryWithChildren[] };
@@ -194,28 +190,37 @@ export class CatalogFilterBlocksService {
 
     for (const item of block.items) {
       if (item.kind === 'STOCK') {
+        let inStock = 0;
+        let onOrder = 0;
+        for (const p of products) {
+          if (Number(p.stock ?? 0) > 0) inStock += 1;
+          else onOrder += 1;
+        }
         filters.push({
           id: 'availability',
           label: item.labelOverride?.trim() || 'Наличие',
           type: 'radio',
           options: [
-            { value: 'in_stock', label: 'В наличии' },
-            { value: 'on_order', label: 'Под заказ' },
+            { value: 'in_stock', label: 'В наличии', count: inStock },
+            { value: 'on_order', label: 'Под заказ', count: onOrder },
           ],
         });
         continue;
       }
 
       if (item.kind === 'MANUFACTURER') {
-        const map = new Map<string, CatalogFilterOptionDto>();
+        const map = new Map<string, { value: string; label: string; count: number }>();
         for (const p of products) {
           if (p.manufacturerId && p.manufacturer?.name) {
-            map.set(p.manufacturerId, { value: p.manufacturerId, label: p.manufacturer.name });
+            const id = p.manufacturerId;
+            const prev = map.get(id);
+            if (prev) prev.count += 1;
+            else map.set(id, { value: id, label: p.manufacturer.name, count: 1 });
           }
         }
-        const options = Array.from(map.values()).sort((a, b) =>
-          a.label.localeCompare(b.label, 'ru'),
-        );
+        const options = Array.from(map.values())
+          .sort((a, b) => a.label.localeCompare(b.label, 'ru'))
+          .map(({ value, label, count }) => ({ value, label, count }));
         filters.push({
           id: 'manufacturer',
           label: item.labelOverride?.trim() || 'Производитель',
@@ -228,17 +233,17 @@ export class CatalogFilterBlocksService {
       if (item.kind === 'ATTRIBUTE') {
         const meta = item.attribute;
         if (!meta) continue;
-        const valueSet = new Set<string>();
+        const valueCounts = new Map<string, number>();
         for (const p of products) {
           const v = this.getAttrValueFromProductJson(p.attributes, {
             slug: meta.slug,
             name: meta.name,
           });
-          if (v) valueSet.add(v);
+          if (v) valueCounts.set(v, (valueCounts.get(v) ?? 0) + 1);
         }
-        const options = Array.from(valueSet)
-          .sort((a, b) => a.localeCompare(b, 'ru'))
-          .map((value) => ({ value, label: value }));
+        const options = Array.from(valueCounts.entries())
+          .sort((a, b) => a[0].localeCompare(b[0], 'ru'))
+          .map(([value, count]) => ({ value, label: value, count }));
         filters.push({
           id: meta.slug,
           label: (item.labelOverride?.trim() || meta.name).trim(),
