@@ -109,16 +109,21 @@
 
 /* Хлебные крошки */
 .breadcrumbs {
-  margin-bottom: 1.5rem;
-  font-size: 0.875rem;
   color: #6b7280;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+  /* Следующий блок — .productLayout (grid с галереей); без z-index следующий sibling может перекрывать клики по ссылкам справа от «Главная» */
+  position: relative;
+  z-index: 10;
 }
 
 .breadcrumbLink {
   color: #6b7280;
-  display: inline-block;
-  text-decoration: none;
   cursor: pointer;
+  display: inline-block;
+  position: relative;
+  text-decoration: none;
+  z-index: 1;
 }
 
 .breadcrumbLink:hover,

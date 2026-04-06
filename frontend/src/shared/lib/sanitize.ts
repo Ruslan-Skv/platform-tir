@@ -107,7 +107,8 @@ const UNSAFE_HREF_PROTOCOLS = /^(javascript|data|vbscript|file):/i;
  */
 export function getSafeHref(href: string | null | undefined, fallback = '#'): string {
   if (href == null || typeof href !== 'string') return fallback;
-  const trimmed = href.trim();
+  // BOM и прочие невидимые символы ломают startsWith('/') — в проде иногда приходят из API/БД
+  const trimmed = href.trim().replace(/^\uFEFF/, '');
   if (!trimmed) return fallback;
   if (trimmed.startsWith('/') || trimmed.startsWith('#')) return trimmed;
   if (UNSAFE_HREF_PROTOCOLS.test(trimmed)) return fallback;

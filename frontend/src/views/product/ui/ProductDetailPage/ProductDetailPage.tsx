@@ -87,6 +87,19 @@ interface ProductDetailPageProps {
   slug: string;
 }
 
+/** Путь в каталог как в app router: /catalog/products[/parent][/child]; сегменты кодируются для безопасных slug из API */
+function catalogProductsHref(...slugSegments: string[]): string {
+  const parts = slugSegments
+    .map((s) =>
+      String(s ?? '')
+        .trim()
+        .replace(/^\uFEFF/, '')
+    )
+    .filter((s) => s.length > 0);
+  if (parts.length === 0) return '/catalog/products';
+  return `/catalog/products/${parts.map((p) => encodeURIComponent(p)).join('/')}`;
+}
+
 /** Прокрутка в начало страницы товара (мобильные часто сохраняют offset с каталога или смещаются после подгрузки контента). */
 function scrollProductDetailToTop() {
   if (typeof window === 'undefined') return;
@@ -585,7 +598,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
   if (product.category.parent) {
     breadcrumbs.push({
       label: product.category.parent.name,
-      href: `/catalog/products/${product.category.parent.slug}`,
+      href: catalogProductsHref(product.category.parent.slug),
     });
   }
 
@@ -595,12 +608,12 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
   if (product.category.parent) {
     breadcrumbs.push({
       label: product.category.name,
-      href: `/catalog/products/${product.category.parent.slug}/${product.category.slug}`,
+      href: catalogProductsHref(product.category.parent.slug, product.category.slug),
     });
   } else {
     breadcrumbs.push({
       label: product.category.name,
-      href: `/catalog/products/${product.category.slug}`,
+      href: catalogProductsHref(product.category.slug),
     });
   }
 
