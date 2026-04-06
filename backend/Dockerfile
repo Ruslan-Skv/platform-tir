@@ -46,7 +46,9 @@ RUN npm config set fetch-retries 5 && \
 # Copy prisma schema, migrations and create-super-admin script
 COPY prisma/schema.prisma ./prisma/schema.prisma
 COPY prisma/migrations ./prisma/migrations
+COPY prisma/data ./prisma/data
 COPY prisma/create-super-admin.cjs ./prisma/create-super-admin.cjs
+COPY prisma/seed-product-card-badges.cjs ./prisma/seed-product-card-badges.cjs
 RUN npx prisma generate
 
 # Copy built application
