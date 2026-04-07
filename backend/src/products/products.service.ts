@@ -115,6 +115,7 @@ export class ProductsService {
       supplierSku,
       categoryId,
       partnerId,
+      manufacturerId,
       cardVariants,
       catalogBadgeIds,
       ...productData
@@ -126,6 +127,9 @@ export class ProductsService {
       },
       ...(userId && { createdBy: { connect: { id: userId } } }),
     };
+    if (manufacturerId && manufacturerId.trim()) {
+      data.manufacturer = { connect: { id: manufacturerId.trim() } };
+    }
     // Преобразуем null в пустые массивы для sizes и openingSide
     // В PostgreSQL массивы не могут быть null, только пустые массивы []
     if (data.sizes === null) {
@@ -308,6 +312,9 @@ export class ProductsService {
               },
             },
           },
+        },
+        manufacturer: {
+          select: { id: true, name: true, slug: true },
         },
         ...this.cardVariantsInclude,
         ...this.cardBadgeSelectionsInclude,
@@ -891,6 +898,7 @@ export class ProductsService {
       supplierSku,
       categoryId,
       partnerId,
+      manufacturerId,
       cardVariants,
       catalogBadgeIds,
       ...productData
@@ -899,6 +907,12 @@ export class ProductsService {
       ...productData,
       ...(userId && { updatedBy: { connect: { id: userId } } }),
     };
+
+    if (manufacturerId !== undefined) {
+      data.manufacturer = manufacturerId
+        ? { connect: { id: manufacturerId } }
+        : { disconnect: true };
+    }
 
     // Преобразуем categoryId в связь category, если он передан
     if (categoryId !== undefined) {

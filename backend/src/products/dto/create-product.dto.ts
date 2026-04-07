@@ -108,6 +108,15 @@ export class CreateProductDto {
   @IsNotEmpty()
   categoryId: string;
 
+  @ApiProperty({
+    example: 'manufacturer-cuid',
+    required: false,
+    description: 'Производитель из справочника (Настройки → Производители)',
+  })
+  @IsOptional()
+  @IsString()
+  manufacturerId?: string;
+
   @ApiProperty({ example: ['/images/product1.jpg'], required: false })
   @IsOptional()
   @IsArray()

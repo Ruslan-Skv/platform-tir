@@ -127,6 +127,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/settings/catalog-filters',
   },
   {
+    id: 'admin.settings.catalog-manufacturers',
+    label: 'Производители',
+    path: '/admin/settings/catalog/manufacturers',
+  },
+  {
     id: 'admin.settings.user-cabinet',
     label: 'Личный кабинет',
     path: '/admin/settings/user-cabinet',

@@ -197,6 +197,7 @@ const defaultFormData = {
   supplierId: '',
   supplierSku: '',
   supplierProductUrl: '',
+  manufacturerId: '',
   supplierPrice: '',
   videoUrl: '',
   weight: '',
@@ -243,6 +244,9 @@ export function ProductCreatePage({
     Array<{ id: string; legalName: string; commercialName?: string | null }>
   >([]);
   const [partners, setPartners] = useState<Array<{ id: string; name: string }>>([]);
+  const [manufacturers, setManufacturers] = useState<
+    Array<{ id: string; name: string; slug: string; isActive: boolean }>
+  >([]);
 
   const [formData, setFormData] = useState(() => {
     const merged = initialCopyData?.formData ?? {
@@ -579,6 +583,31 @@ export function ProductCreatePage({
       }
     };
     fetchPartners();
+  }, [getAuthHeaders]);
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const response = await fetch(`${API_URL}/admin/catalog/manufacturers?limit=500`, {
+          headers: getAuthHeaders(),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const list = Array.isArray(data.data) ? data.data : [];
+          setManufacturers(
+            list.map((m: { id: string; name: string; slug: string; isActive?: boolean }) => ({
+              id: m.id,
+              name: m.name,
+              slug: m.slug,
+              isActive: m.isActive !== false,
+            }))
+          );
+        }
+      } catch (err) {
+        console.error('Failed to fetch manufacturers:', err);
+      }
+    };
+    void run();
   }, [getAuthHeaders]);
 
   // Подсказки размеров из других товаров этой категории
@@ -1009,6 +1038,7 @@ export function ProductCreatePage({
         sizes: formData.sizes,
         images: formData.images,
         attributes: formData.attributes,
+        manufacturerId: formData.manufacturerId,
       },
       categoryAttributes
     );
@@ -1030,6 +1060,17 @@ export function ProductCreatePage({
       // categoryAttributes уже отсортированы по order
       categoryAttributes.forEach((ca) => {
         const slug = ca.attribute.slug;
+        if (slug === 'manufacturer') {
+          const m = manufacturers.find((x) => x.id === formData.manufacturerId);
+          if (m) {
+            orderedAttributes.push({
+              key: ca.attribute.name,
+              value: m.name,
+              slug: ca.attribute.slug,
+            });
+          }
+          return;
+        }
         const value = formData.attributes[slug];
         if (value) {
           orderedAttributes.push({
@@ -1093,6 +1134,7 @@ export function ProductCreatePage({
           formData.supplierId && formData.supplierSku.trim()
             ? formData.supplierSku.trim()
             : undefined,
+        manufacturerId: formData.manufacturerId.trim() || undefined,
         videoUrl: formData.videoUrl || undefined,
         weight: formData.weight ? parseFloat(formData.weight) : undefined,
         catalogBadgeIds: formData.catalogBadgeIds,
@@ -1998,13 +2040,14 @@ export function ProductCreatePage({
                     {categoryAttributes.map((ca) => {
                       const slug = ca.attribute.slug;
                       const rawAttr = formData.attributes[slug];
+                      const isManufacturerAttr = slug === 'manufacturer';
                       const attrRequired = Boolean(ca.isRequired);
-                      const attrValueFilled = categoryAttributeValueFilled(
-                        ca.attribute.type,
-                        rawAttr
-                      );
-                      const showClear =
-                        ca.attribute.type === 'MULTI_SELECT'
+                      const attrValueFilled = isManufacturerAttr
+                        ? Boolean(formData.manufacturerId?.trim())
+                        : categoryAttributeValueFilled(ca.attribute.type, rawAttr);
+                      const showClear = isManufacturerAttr
+                        ? Boolean(formData.manufacturerId?.trim())
+                        : ca.attribute.type === 'MULTI_SELECT'
                           ? multiSelectHasSelection(rawAttr)
                           : ca.attribute.type === 'BOOLEAN'
                             ? Boolean(rawAttr)
@@ -2029,7 +2072,41 @@ export function ProductCreatePage({
                             )}
                           </label>
                           <div className={styles.attributeInput}>
-                            {ca.attribute.type === 'BOOLEAN' ? (
+                            {isManufacturerAttr ? (
+                              <select
+                                id={`attr-manufacturer-${ca.id}`}
+                                value={formData.manufacturerId}
+                                onChange={(e) => {
+                                  const id = e.target.value;
+                                  const mName = manufacturers.find((m) => m.id === id)?.name ?? '';
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    manufacturerId: id,
+                                    attributes: {
+                                      ...prev.attributes,
+                                      manufacturer: mName,
+                                    },
+                                  }));
+                                }}
+                                className={
+                                  attrRequired
+                                    ? `${styles.select} ${
+                                        formData.manufacturerId?.trim()
+                                          ? styles.fieldHighlightFilled
+                                          : styles.fieldHighlightEmpty
+                                      }`
+                                    : styles.select
+                                }
+                              >
+                                <option value="">Выберите значение</option>
+                                {manufacturers.map((m) => (
+                                  <option key={m.id} value={m.id} disabled={!m.isActive}>
+                                    {m.name}
+                                    {!m.isActive ? ' (неактивен)' : ''}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : ca.attribute.type === 'BOOLEAN' ? (
                               <select
                                 value={rawAttr || ''}
                                 onChange={(e) =>
@@ -2188,6 +2265,13 @@ export function ProductCreatePage({
                                 className={styles.clearAttrButton}
                                 onClick={() =>
                                   setFormData((prev) => {
+                                    if (slug === 'manufacturer') {
+                                      return {
+                                        ...prev,
+                                        manufacturerId: '',
+                                        attributes: { ...prev.attributes, manufacturer: '' },
+                                      };
+                                    }
                                     const newAttrs = { ...prev.attributes };
                                     delete newAttrs[slug];
                                     return { ...prev, attributes: newAttrs };

@@ -22,11 +22,17 @@ export function categoryAttributeValueFilled(
  */
 export function validateRequiredCategoryAttributes(
   rows: CategoryAttrRowForValidation[],
-  attributes: Record<string, string>
+  attributes: Record<string, string>,
+  /** Для атрибута со slug `manufacturer` значение берётся из поля товара, не из `attributes`. */
+  manufacturerId?: string
 ): string[] {
   const missing: string[] = [];
   for (const ca of rows) {
     if (!ca.isRequired) continue;
+    if (ca.attribute.slug === 'manufacturer') {
+      if (!String(manufacturerId ?? '').trim()) missing.push(ca.attribute.name);
+      continue;
+    }
     if (!categoryAttributeValueFilled(ca.attribute.type, attributes[ca.attribute.slug])) {
       missing.push(ca.attribute.name);
     }
@@ -47,6 +53,8 @@ export interface AdminProductFormSnapshot {
   images: string[];
   /** Значения атрибутов категории по slug. */
   attributes: Record<string, string>;
+  /** Связь товара со справочником производителей (атрибут категории `manufacturer`). */
+  manufacturerId: string;
 }
 
 /** Возвращает подписи незаполненных обязательных полей (по порядку проверки). */
@@ -81,7 +89,9 @@ export function validateAdminProductRequiredFields(
   }
 
   if (categoryAttributes?.length) {
-    missing.push(...validateRequiredCategoryAttributes(categoryAttributes, s.attributes));
+    missing.push(
+      ...validateRequiredCategoryAttributes(categoryAttributes, s.attributes, s.manufacturerId)
+    );
   }
 
   return missing;

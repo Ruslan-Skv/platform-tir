@@ -37,6 +37,7 @@ export interface ProductForCopy {
     sortOrder: number;
     badgeId: string;
   }>;
+  manufacturerId?: string | null;
 }
 
 export interface CategoryAttributeForCopy {
@@ -115,6 +116,7 @@ export interface CopiedProductData {
     supplierSku: string;
     supplierProductUrl: string;
     supplierPrice: string;
+    manufacturerId: string;
     videoUrl: string;
     weight: string;
     attributes: Record<string, string>;
@@ -194,6 +196,7 @@ export function mapProductToCopyData(
       supplierSku: '',
       supplierProductUrl: '',
       supplierPrice: '',
+      manufacturerId: product.manufacturerId ?? '',
       videoUrl: product.videoUrl || '',
       weight: product.weight != null ? String(product.weight) : '',
       attributes: categoryAttrsOnly,

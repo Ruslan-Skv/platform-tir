@@ -106,6 +106,10 @@ export class ManufacturersService {
 
   async remove(id: string) {
     await this.findOne(id);
+    await this.prisma.product.updateMany({
+      where: { manufacturerId: id },
+      data: { manufacturerId: null },
+    });
     return this.prisma.manufacturer.delete({
       where: { id },
     });

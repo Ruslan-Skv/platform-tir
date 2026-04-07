@@ -284,6 +284,11 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.settings.catalog-badges',
       },
       {
+        label: 'Производители',
+        href: '/admin/settings/catalog/manufacturers',
+        resourceId: 'admin.settings.catalog-manufacturers',
+      },
+      {
         label: 'Блок фильтров',
         href: '/admin/settings/catalog-filters',
         resourceId: 'admin.settings.catalog-filters',

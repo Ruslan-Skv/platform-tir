@@ -186,6 +186,7 @@ interface Product {
   categoryId: string;
   category: Category;
   manufacturerId: string | null;
+  manufacturer?: { id: string; name: string; slug?: string } | null;
   isActive: boolean;
   isFeatured: boolean;
   isNew: boolean;
@@ -286,6 +287,9 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     Array<{ id: string; legalName: string; commercialName?: string | null }>
   >([]);
   const [partners, setPartners] = useState<Array<{ id: string; name: string }>>([]);
+  const [manufacturers, setManufacturers] = useState<
+    Array<{ id: string; name: string; slug: string; isActive: boolean }>
+  >([]);
   const [productNotFound, setProductNotFound] = useState(false);
   const [cardSections, setCardSections] = useState<string[]>(DEFAULT_CARD_SECTIONS);
   const [productMeta, setProductMeta] = useState<{
@@ -329,6 +333,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     supplierId: '',
     supplierSku: '',
     supplierProductUrl: '',
+    manufacturerId: '',
     supplierPrice: '',
     cardVariants: [] as Array<{
       name: string;
@@ -546,6 +551,31 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     fetchPartners();
   }, [getAuthHeaders]);
 
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const response = await fetch(`${API_URL}/admin/catalog/manufacturers?limit=500`, {
+          headers: getAuthHeaders(),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const list = Array.isArray(data.data) ? data.data : [];
+          setManufacturers(
+            list.map((m: { id: string; name: string; slug: string; isActive?: boolean }) => ({
+              id: m.id,
+              name: m.name,
+              slug: m.slug,
+              isActive: m.isActive !== false,
+            }))
+          );
+        }
+      } catch (err) {
+        console.error('Failed to fetch manufacturers:', err);
+      }
+    };
+    void run();
+  }, [getAuthHeaders]);
+
   // Предупреждение после создания копии, если часть комплектующих не перенеслась
   useEffect(() => {
     if (loading || productNotFound) return;
@@ -679,6 +709,10 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           }
         });
 
+        if (product.manufacturer?.name) {
+          categoryAttrsOnly.manufacturer = product.manufacturer.name;
+        }
+
         // Находим основного поставщика
         const mainSupplier = product.suppliers?.find((ps) => ps.isMainSupplier);
         const supplierId = mainSupplier?.supplierId || '';
@@ -711,6 +745,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           supplierId: supplierId,
           supplierSku: supplierSku,
           supplierProductUrl: supplierProductUrl,
+          manufacturerId: product.manufacturerId ?? '',
           supplierPrice: supplierPrice,
           isActive: product.isActive ?? true,
           isFeatured: product.isFeatured ?? false,
@@ -1126,6 +1161,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         sizes: formData.sizes,
         images: formData.images,
         attributes: formData.attributes,
+        manufacturerId: formData.manufacturerId,
       },
       categoryAttributes
     );
@@ -1147,6 +1183,17 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
       // categoryAttributes уже отсортированы по order
       categoryAttributes.forEach((ca) => {
         const slug = ca.attribute.slug;
+        if (slug === 'manufacturer') {
+          const m = manufacturers.find((x) => x.id === formData.manufacturerId);
+          if (m) {
+            orderedAttributes.push({
+              key: ca.attribute.name,
+              value: m.name,
+              slug: ca.attribute.slug,
+            });
+          }
+          return;
+        }
         const value = formData.attributes[slug];
         if (value) {
           orderedAttributes.push({
@@ -1224,6 +1271,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           supplierPrice: formData.supplierPrice ? parseFloat(formData.supplierPrice) : undefined,
           // Пустой артикул — явная строка "", не null: иначе ключ может пропасть из DTO после валидации и очистка не доходит до БД
           supplierSku: formData.supplierId ? formData.supplierSku.trim() : undefined,
+          manufacturerId: formData.manufacturerId.trim() || null,
           cardVariants: formData.cardVariants
             .filter((v) => v.name.trim() && !Number.isNaN(parseFloat(v.price)))
             .slice(0, 5)
@@ -2488,14 +2536,15 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                       {categoryAttributes.map((ca) => {
                         const slug = ca.attribute.slug;
                         const rawAttr = formData.attributes[slug];
+                        const isManufacturerAttr = slug === 'manufacturer';
                         /** Обязательность с учётом настроек категории и родителей (см. API getCategoryAttributes). */
                         const attrRequired = Boolean(ca.isRequired);
-                        const attrValueFilled = categoryAttributeValueFilled(
-                          ca.attribute.type,
-                          rawAttr
-                        );
-                        const showClear =
-                          ca.attribute.type === 'MULTI_SELECT'
+                        const attrValueFilled = isManufacturerAttr
+                          ? Boolean(formData.manufacturerId?.trim())
+                          : categoryAttributeValueFilled(ca.attribute.type, rawAttr);
+                        const showClear = isManufacturerAttr
+                          ? Boolean(formData.manufacturerId?.trim())
+                          : ca.attribute.type === 'MULTI_SELECT'
                             ? multiSelectHasSelection(rawAttr)
                             : ca.attribute.type === 'BOOLEAN'
                               ? Boolean(rawAttr)
@@ -2520,7 +2569,42 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                               )}
                             </label>
                             <div className={styles.attributeInput}>
-                              {ca.attribute.type === 'BOOLEAN' ? (
+                              {isManufacturerAttr ? (
+                                <select
+                                  id={`attr-manufacturer-${ca.id}`}
+                                  value={formData.manufacturerId}
+                                  onChange={(e) => {
+                                    const id = e.target.value;
+                                    const mName =
+                                      manufacturers.find((m) => m.id === id)?.name ?? '';
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      manufacturerId: id,
+                                      attributes: {
+                                        ...prev.attributes,
+                                        manufacturer: mName,
+                                      },
+                                    }));
+                                  }}
+                                  className={
+                                    attrRequired
+                                      ? `${styles.select} ${
+                                          formData.manufacturerId?.trim()
+                                            ? styles.fieldHighlightFilled
+                                            : styles.fieldHighlightEmpty
+                                        }`
+                                      : styles.select
+                                  }
+                                >
+                                  <option value="">Выберите значение</option>
+                                  {manufacturers.map((m) => (
+                                    <option key={m.id} value={m.id} disabled={!m.isActive}>
+                                      {m.name}
+                                      {!m.isActive ? ' (неактивен)' : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : ca.attribute.type === 'BOOLEAN' ? (
                                 <select
                                   value={rawAttr || ''}
                                   onChange={(e) =>
@@ -2679,6 +2763,13 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                                   className={styles.clearAttrButton}
                                   onClick={() =>
                                     setFormData((prev) => {
+                                      if (slug === 'manufacturer') {
+                                        return {
+                                          ...prev,
+                                          manufacturerId: '',
+                                          attributes: { ...prev.attributes, manufacturer: '' },
+                                        };
+                                      }
                                       const newAttrs = { ...prev.attributes };
                                       delete newAttrs[slug];
                                       return { ...prev, attributes: newAttrs };
