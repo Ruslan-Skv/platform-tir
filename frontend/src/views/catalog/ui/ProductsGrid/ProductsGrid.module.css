@@ -129,9 +129,39 @@
   }
 
   .headerRight {
-    width: 100%;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
     justify-content: space-between;
-    flex-wrap: wrap;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .totalCount {
+    flex: 0 1 auto;
+    font-size: 0.75rem;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sorting {
+    flex: 0 1 auto;
+    flex-wrap: nowrap;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  .sortLabel {
+    flex-shrink: 0;
+  }
+
+  .sortSelect {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: min(11.5rem, 48vw);
+    padding: 0.35rem 0.45rem;
   }
 
   .title {
@@ -177,10 +207,6 @@
 
   .sortLabel,
   .sortSelect {
-    font-size: 0.75rem;
-  }
-
-  .totalCount {
     font-size: 0.75rem;
   }
 
