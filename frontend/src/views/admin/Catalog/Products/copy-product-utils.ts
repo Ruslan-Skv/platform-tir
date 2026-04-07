@@ -15,6 +15,7 @@ export interface ProductForCopy {
   price: string | number;
   comparePrice?: string | number | null;
   stock: number;
+  onOrder?: boolean;
   categoryId?: string;
   category?: { id: string };
   isActive: boolean;
@@ -112,6 +113,7 @@ export interface CopiedProductData {
     price: string;
     comparePrice: string;
     stock: number;
+    onOrder: boolean;
     categoryId: string;
     isActive: boolean;
     isFeatured: boolean;
@@ -128,7 +130,6 @@ export interface CopiedProductData {
     coatingMaterialId: string;
     canvasTypeId: string;
     videoUrl: string;
-    weight: string;
     attributes: Record<string, string>;
     images: string[];
     sizes: string[];
@@ -201,6 +202,7 @@ export function mapProductToCopyData(
       price: '',
       comparePrice: '',
       stock: product.stock ?? 0,
+      onOrder: product.onOrder ?? false,
       categoryId: product.categoryId || product.category?.id || '',
       isActive: true,
       isFeatured: product.isFeatured ?? false,
@@ -217,7 +219,6 @@ export function mapProductToCopyData(
       coatingMaterialId: product.coatingMaterialId ?? '',
       canvasTypeId: product.canvasTypeId ?? '',
       videoUrl: product.videoUrl || '',
-      weight: product.weight != null ? String(product.weight) : '',
       attributes: categoryAttrsOnly,
       images: Array.isArray(product.images) ? [...product.images] : [],
       sizes: Array.isArray(product.sizes) ? [...product.sizes] : [],

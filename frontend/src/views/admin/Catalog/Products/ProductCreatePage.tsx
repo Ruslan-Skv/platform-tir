@@ -190,6 +190,7 @@ const defaultFormData = {
   price: '',
   comparePrice: '',
   stock: 0,
+  onOrder: false,
   categoryId: '',
   isActive: true,
   isFeatured: false,
@@ -206,7 +207,6 @@ const defaultFormData = {
   canvasTypeId: '',
   supplierPrice: '',
   videoUrl: '',
-  weight: '',
   attributes: {} as Record<string, string>,
   images: [] as string[],
   sizes: [] as string[],
@@ -267,6 +267,7 @@ export function ProductCreatePage({
     };
     return {
       ...merged,
+      onOrder: merged.onOrder ?? false,
       catalogBadgeIds: merged.catalogBadgeIds ?? [],
     };
   });
@@ -1200,6 +1201,7 @@ export function ProductCreatePage({
         price: parseFloat(formData.price) || 0,
         comparePrice: formData.comparePrice ? parseFloat(formData.comparePrice) : undefined,
         stock: formData.stock,
+        onOrder: formData.onOrder,
         categoryId: formData.categoryId,
         isActive: formData.isActive,
         isFeatured: formData.isFeatured,
@@ -1224,7 +1226,6 @@ export function ProductCreatePage({
         coatingMaterialId: formData.coatingMaterialId.trim() || undefined,
         canvasTypeId: formData.canvasTypeId.trim() || undefined,
         videoUrl: formData.videoUrl || undefined,
-        weight: formData.weight ? parseFloat(formData.weight) : undefined,
         catalogBadgeIds: formData.catalogBadgeIds,
       };
 
@@ -1646,10 +1647,12 @@ export function ProductCreatePage({
           </div>
 
           {/* Pricing & Stock */}
-          <div className={styles.formSection}>
+          <div
+            className={`${styles.formSection} ${styles.formSectionFullWidth} ${styles.formSectionCompact} ${styles.formSectionPricingTight}`}
+          >
             <h2 className={styles.sectionTitle}>Цена и наличие</h2>
 
-            <div className={styles.formRow}>
+            <div className={styles.pricingOneRow}>
               <div className={styles.formGroup}>
                 <label htmlFor="price">Цена *</label>
                 <input
@@ -1666,7 +1669,9 @@ export function ProductCreatePage({
                 />
               </div>
               <div className={styles.formGroup}>
-                <label htmlFor="comparePrice">Старая цена</label>
+                <label htmlFor="comparePrice" title="Для скидки на витрине">
+                  Старая цена
+                </label>
                 <input
                   type="text"
                   inputMode="decimal"
@@ -1678,71 +1683,81 @@ export function ProductCreatePage({
                   placeholder="0.00"
                   autoComplete="off"
                 />
-                <p className={styles.hint}>Для отображения скидки</p>
               </div>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="stock">Остаток на складе *</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                id="stock"
-                name="stock"
-                value={formData.stock}
-                onChange={handleIntegerChange}
-                required
-                className={`${styles.input} ${adminProductFieldHighlightClass(reqHighlight.stock, styles)}`}
-                placeholder="0"
-                autoComplete="off"
-              />
-            </div>
-
-            <div className={styles.checkboxGroup}>
-              <label className={styles.checkbox}>
+              <div className={styles.formGroup}>
+                <label htmlFor="stock" title="Остаток на складе">
+                  Остаток *
+                </label>
                 <input
-                  type="checkbox"
-                  name="isActive"
-                  checked={formData.isActive}
-                  onChange={handleChange}
+                  type="text"
+                  inputMode="numeric"
+                  id="stock"
+                  name="stock"
+                  value={formData.stock}
+                  onChange={handleIntegerChange}
+                  required
+                  className={`${styles.input} ${adminProductFieldHighlightClass(reqHighlight.stock, styles)}`}
+                  placeholder="0"
+                  autoComplete="off"
                 />
-                <span>Активен (показывать на сайте)</span>
-              </label>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="sortOrder">Сортировка</label>
-              <input
-                type="number"
-                id="sortOrder"
-                name="sortOrder"
-                value={formData.sortOrder}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    sortOrder: parseInt(e.target.value, 10) || 400,
-                  }))
-                }
-                className={styles.input}
-                placeholder="400"
-              />
-              <p className={styles.hint}>
-                Чем меньше число, тем выше товар в списке. Товары с одинаковым значением сортируются
-                по дате создания.
-              </p>
+              </div>
+              <div className={styles.formGroup}>
+                <label htmlFor="sortOrder" title="Меньше число — выше в списке">
+                  Сортировка
+                </label>
+                <input
+                  type="number"
+                  id="sortOrder"
+                  name="sortOrder"
+                  value={formData.sortOrder}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      sortOrder: parseInt(e.target.value, 10) || 400,
+                    }))
+                  }
+                  className={styles.input}
+                  placeholder="400"
+                />
+              </div>
+              <div
+                className={`${styles.checkboxGroup} ${styles.checkboxGroupRow} ${styles.pricingInlineChecks}`}
+              >
+                <label
+                  className={styles.checkbox}
+                  title="При нулевом остатке на витрине — «Под заказ»; при остатке больше нуля — «В наличии»."
+                >
+                  <input
+                    type="checkbox"
+                    checked={formData.onOrder}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, onOrder: e.target.checked }))
+                    }
+                  />
+                  <span>Под заказ</span>
+                </label>
+                <label className={styles.checkbox}>
+                  <input
+                    type="checkbox"
+                    name="isActive"
+                    checked={formData.isActive}
+                    onChange={handleChange}
+                  />
+                  <span>Активен (на сайте)</span>
+                </label>
+              </div>
             </div>
           </div>
 
-          <div className={styles.formSection}>
+          <div
+            className={`${styles.formSection} ${styles.formSectionFullWidth} ${styles.formSectionCompact}`}
+          >
             <h2 className={styles.sectionTitle}>Бэйджи карточки товара</h2>
 
-            <h3
-              className={styles.sectionTitle}
-              style={{ fontSize: '1rem', marginBottom: '0.5rem' }}
-            >
+            <h3 className={`${styles.subsectionTitle} ${styles.subsectionTitleFirst}`}>
               Справа от фото (текстовые)
             </h3>
-            <div className={styles.checkboxGroup}>
+            <div className={`${styles.checkboxGroup} ${styles.checkboxGroupRow}`}>
               <label className={styles.checkbox}>
                 <input
                   type="checkbox"
@@ -1762,29 +1777,17 @@ export function ProductCreatePage({
                 <span>Новинка</span>
               </label>
             </div>
-            <p className={styles.hint}>
-              Скидка и метка «Видео» на сайте выводятся автоматически при старой цене и ссылке на
-              видео.
+            <p className={styles.hintTight}>
+              Скидка и «Видео» на сайте — автоматически при старой цене и ссылке на видео.
             </p>
 
-            <h3
-              className={styles.sectionTitle}
-              style={{ fontSize: '1rem', marginTop: '1.25rem', marginBottom: '0.5rem' }}
-            >
+            <h3 className={`${styles.subsectionTitle} ${styles.subsectionTitleSpaced}`}>
               Слева от фото (картинки, не более 5)
             </h3>
-            <p className={styles.hint}>
-              Изображения — в «Настройки → Бэйджи карточек». Выбрано:{' '}
-              {formData.catalogBadgeIds.length} / 5.
+            <p className={styles.hintTight}>
+              JPG в «Настройки → Бэйджи карточек». Выбрано: {formData.catalogBadgeIds.length} / 5.
             </p>
-            <div
-              className={styles.attributesList}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-                gap: '0.35rem',
-              }}
-            >
+            <div className={styles.cardBadgesPickGrid}>
               {badgeDefinitions.map((b) => {
                 const checked = formData.catalogBadgeIds.includes(b.id);
                 return (

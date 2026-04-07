@@ -1,4 +1,5 @@
 import type { Product } from '@/entities/product/types';
+import { getProductAvailability } from '@/shared/lib/product-availability';
 
 import type { CatalogFilterFacet } from './catalogFilters.types';
 import { getProductAttrValue } from './productAttrValue';
@@ -68,9 +69,17 @@ export function applyCatalogFilters(
 
   const avail = params.get('avail');
   if (avail === 'in_stock') {
-    list = list.filter((p) => Number(p.stock ?? 0) > 0);
+    list = list.filter(
+      (p) => getProductAvailability(Number(p.stock ?? 0), p.onOrder) === 'in_stock'
+    );
   } else if (avail === 'on_order') {
-    list = list.filter((p) => Number(p.stock ?? 0) <= 0);
+    list = list.filter(
+      (p) => getProductAvailability(Number(p.stock ?? 0), p.onOrder) === 'on_order'
+    );
+  } else if (avail === 'out_of_stock') {
+    list = list.filter(
+      (p) => getProductAvailability(Number(p.stock ?? 0), p.onOrder) === 'out_of_stock'
+    );
   }
 
   const mfrIds = params.getAll('mfr');

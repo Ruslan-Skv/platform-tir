@@ -6,16 +6,22 @@
 }
 
 .sectionHeader {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
+  background: #e2e8f0;
+  border-radius: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
   margin-bottom: 0.5rem;
+  padding: 6px 10px;
 }
 
 .sectionTitle {
+  color: #1e293b;
   font-size: 1.125rem;
   font-weight: 600;
-  color: #333;
+  margin: 0;
 }
 
 .addButton {
@@ -478,8 +484,12 @@
   background: #111827;
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionHeader {
+  background: #374151;
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
-  color: #f3f4f6;
+  color: #f1f5f9;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .kitCompositionInfo {

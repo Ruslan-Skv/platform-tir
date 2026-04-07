@@ -6,6 +6,10 @@ import Link from 'next/link';
 
 import * as compareApi from '@/shared/api/compare';
 import { useCompare } from '@/shared/lib/hooks';
+import {
+  PRODUCT_AVAILABILITY_LABEL,
+  getProductAvailability,
+} from '@/shared/lib/product-availability';
 import { ProductCard } from '@/views/catalog/ui/ProductsGrid';
 
 import styles from './page.module.css';
@@ -25,6 +29,7 @@ interface CompareProduct {
   isNew?: boolean;
   isFeatured?: boolean;
   stock?: number;
+  onOrder?: boolean;
   attributes?: Array<{ name: string; value: string }> | Record<string, unknown> | null;
 }
 
@@ -137,6 +142,8 @@ export default function ComparePage() {
           isNew: p.isNew,
           isFeatured: p.isFeatured,
           inStock: (p.stock ?? 0) > 0,
+          stock: p.stock,
+          onOrder: p.onOrder ?? false,
           discount: comparePrice
             ? Math.round(((comparePrice - price) / comparePrice) * 100)
             : undefined,
@@ -250,15 +257,24 @@ export default function ComparePage() {
       key: 'stock',
       label: 'Наличие',
       get: (m: MappedProduct) =>
-        m ? (
-          m.inStock ? (
-            <span className={styles.inStock}>✓ В наличии</span>
-          ) : (
-            <span className={styles.outOfStock}>Под заказ</span>
-          )
-        ) : (
-          '—'
-        ),
+        m
+          ? (() => {
+              const av = getProductAvailability(Number(m.stock ?? 0), m.onOrder);
+              const cls =
+                av === 'in_stock'
+                  ? styles.inStock
+                  : av === 'on_order'
+                    ? styles.onOrder
+                    : styles.soldOut;
+              const prefix = av === 'in_stock' ? '✓ ' : '';
+              return (
+                <span className={cls}>
+                  {prefix}
+                  {PRODUCT_AVAILABILITY_LABEL[av]}
+                </span>
+              );
+            })()
+          : '—',
     },
   ] as const;
 

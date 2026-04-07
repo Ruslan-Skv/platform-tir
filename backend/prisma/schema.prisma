@@ -1151,6 +1151,8 @@ model Product {
   price            Decimal            @db.Decimal(10, 2)
   comparePrice     Decimal?           @db.Decimal(10, 2)
   stock            Int                @default(0)
+  /// При нулевом остатке: витрина «Под заказ» вместо «Товар закончился». Если остаток больше нуля — всегда «В наличии».
+  onOrder          Boolean            @default(false)
   isActive         Boolean            @default(true)
   isFeatured       Boolean            @default(false)
   isNew            Boolean            @default(false)

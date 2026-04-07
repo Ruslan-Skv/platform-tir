@@ -8,6 +8,10 @@ import Link from 'next/link';
 
 import type { Product } from '@/entities/product';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
+import {
+  PRODUCT_AVAILABILITY_LABEL,
+  getProductAvailability,
+} from '@/shared/lib/product-availability';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
 
@@ -92,6 +96,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   const finalPrice = displayPrice;
   const oldPrice = displayOldPrice;
+
+  const availability = getProductAvailability(Number(product.stock ?? 0), product.onOrder);
+  const availabilityTextClass =
+    availability === 'in_stock'
+      ? styles.availabilityTextInStock
+      : availability === 'on_order'
+        ? styles.availabilityTextOnOrder
+        : styles.availabilityTextOut;
 
   const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -370,7 +382,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             </div>
           )}
           <h3 className={`${styles.name} ${styles.nameInContent}`}>{displayName}</h3>
-          {product.sku && <p className={styles.sku}>Арт. {product.sku}</p>}
+          <div className={`${styles.skuRow} ${product.sku ? '' : styles.skuRowNoSku}`}>
+            {product.sku ? <p className={styles.sku}>Арт. {product.sku}</p> : null}
+            <span className={`${styles.availabilityText} ${availabilityTextClass}`}>
+              {PRODUCT_AVAILABILITY_LABEL[availability]}
+            </span>
+          </div>
           <p className={styles.category}>{product.category}</p>
 
           {(product.rating > 0 || (product.reviewsCount ?? 0) > 0) && (

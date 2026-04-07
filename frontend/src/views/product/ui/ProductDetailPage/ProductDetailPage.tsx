@@ -8,6 +8,10 @@ import Link from 'next/link';
 import { type ProductComponent, getProductComponents } from '@/shared/api/product-components';
 import type { Review } from '@/shared/api/reviews';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
+import {
+  PRODUCT_AVAILABILITY_LABEL,
+  getProductAvailability,
+} from '@/shared/lib/product-availability';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { escapeHtmlAndPreserveNewlines, getSafeHref } from '@/shared/lib/sanitize';
 import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
@@ -25,6 +29,7 @@ interface ProductData {
   price: string;
   comparePrice: string | null;
   stock: number;
+  onOrder?: boolean;
   images: string[];
   videoUrl?: string | null;
   weight?: number | null;
@@ -727,11 +732,22 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
           <div className={styles.titleRow}>
             <h1 className={styles.title}>{product.name}</h1>
             <div className={styles.titleAvailability}>
-              {product.stock > 0 ? (
-                <span className={styles.inStock}>✓ В наличии</span>
-              ) : (
-                <span className={styles.outOfStock}>Под заказ</span>
-              )}
+              {(() => {
+                const av = getProductAvailability(product.stock, product.onOrder);
+                const cls =
+                  av === 'in_stock'
+                    ? styles.inStock
+                    : av === 'on_order'
+                      ? styles.onOrder
+                      : styles.soldOut;
+                const prefix = av === 'in_stock' ? '✓ ' : '';
+                return (
+                  <span className={cls}>
+                    {prefix}
+                    {PRODUCT_AVAILABILITY_LABEL[av]}
+                  </span>
+                );
+              })()}
             </div>
           </div>
 

@@ -330,6 +330,16 @@
   color: #6b7280;
 }
 
+.onOrder {
+  color: #d90652;
+  font-weight: 500;
+}
+
+.soldOut {
+  color: #6b7280;
+  font-weight: 500;
+}
+
 /* Адаптивность десктопа — 768px и выше */
 @media (max-width: 768px) {
   .compareTableWrapper {
@@ -482,5 +492,13 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .outOfStock {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .onOrder {
+  color: #d90652;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .soldOut {
   color: #9ca3af;
 }

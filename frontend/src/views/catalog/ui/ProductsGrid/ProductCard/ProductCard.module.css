@@ -309,7 +309,8 @@
     min-height: 2.2em;
   }
 
-  .productCard .sku {
+  .productCard .skuRow .sku,
+  .productCard .skuRow .availabilityText {
     font-size: 0.5625rem;
   }
 
@@ -870,10 +871,45 @@
   overflow: hidden;
 }
 
+.skuRow {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  justify-content: space-between;
+  margin: 0 0 0.15rem;
+}
+
+.skuRowNoSku {
+  justify-content: flex-end;
+}
+
 .sku {
   color: #9ca3af;
+  flex: 1 1 auto;
   font-size: 0.6875rem;
-  margin: 0 0 0.15rem;
+  margin: 0;
+  min-width: 0;
+}
+
+.availabilityText {
+  flex: 0 0 auto;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: right;
+}
+
+.availabilityTextInStock {
+  color: #059669;
+}
+
+.availabilityTextOnOrder {
+  color: #d90652;
+}
+
+.availabilityTextOut {
+  color: #6b7280;
 }
 
 .category {
@@ -1174,6 +1210,18 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sku {
   color: #6b7280;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .availabilityTextInStock {
+  color: #34d399;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .availabilityTextOnOrder {
+  color: #d90652;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .availabilityTextOut {
+  color: #9ca3af;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .category {

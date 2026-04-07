@@ -5,10 +5,18 @@
 }
 
 .title {
+  background: #e2e8f0;
+  border-radius: 6px;
+  color: #1e293b;
   font-size: 1.125rem;
   font-weight: 600;
-  color: #1f2937;
   margin: 0 0 0.5rem 0;
+  padding: 8px 12px;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  background: #374151;
+  color: #f1f5f9;
 }
 
 .loading,

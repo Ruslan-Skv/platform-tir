@@ -31,6 +31,8 @@ export interface Product {
   isSale?: boolean;
   discount?: number;
   inStock?: boolean;
+  /** Админ: при нулевом остатке показывать «Под заказ» (если остаток > 0, на витрине всё равно «В наличии»). */
+  onOrder?: boolean;
   characteristics?: ProductCharacteristic[];
   // Дополнительные поля для сортировки
   sortOrder?: number;

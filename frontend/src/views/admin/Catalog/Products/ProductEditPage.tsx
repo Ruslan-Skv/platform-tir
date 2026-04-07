@@ -187,6 +187,7 @@ interface Product {
   price: string;
   comparePrice: string | null;
   stock: number;
+  onOrder?: boolean;
   categoryId: string;
   category: Category;
   manufacturerId: string | null;
@@ -330,6 +331,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     price: '',
     comparePrice: '',
     stock: 0,
+    onOrder: false,
     categoryId: '',
     isActive: true,
     isFeatured: false,
@@ -340,7 +342,6 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     seoDescription: '',
     images: [] as string[],
     videoUrl: '',
-    weight: '',
     attributes: {} as Record<string, string>,
     sizes: [] as string[],
     openingSide: [] as string[],
@@ -813,6 +814,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           price: String(product.price || ''),
           comparePrice: product.comparePrice ? String(product.comparePrice) : '',
           stock: product.stock || 0,
+          onOrder: product.onOrder ?? false,
           categoryId: product.categoryId || '',
           supplierId: supplierId,
           supplierSku: supplierSku,
@@ -830,7 +832,6 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           seoDescription: product.seoDescription || '',
           images: product.images || [],
           videoUrl: product.videoUrl || '',
-          weight: product.weight != null ? String(product.weight) : '',
           attributes: categoryAttrsOnly,
           sizes: product.sizes || [],
           openingSide: product.openingSide || [],
@@ -1349,6 +1350,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           price: parseFloat(formData.price),
           comparePrice: formData.comparePrice ? parseFloat(formData.comparePrice) : null,
           stock: formData.stock,
+          onOrder: formData.onOrder,
           categoryId: formData.categoryId,
           isActive: formData.isActive,
           isFeatured: formData.isFeatured,
@@ -1361,7 +1363,6 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           attributes: attributesArray, // Теперь массив с гарантированным порядком
           images: formData.images,
           videoUrl: formData.videoUrl?.trim() || null,
-          weight: formData.weight ? parseFloat(formData.weight) : null,
           sizes: hasSizes ? cleanedSizes : null,
           openingSide: hasOpeningSide ? formData.openingSide : null,
           supplierId: formData.supplierId || null,
@@ -1852,10 +1853,12 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
 
           {/* Pricing & Stock */}
           {showSection('pricing') && (
-            <div className={styles.formSection}>
+            <div
+              className={`${styles.formSection} ${styles.formSectionFullWidth} ${styles.formSectionCompact} ${styles.formSectionPricingTight}`}
+            >
               <h2 className={styles.sectionTitle}>Цена и наличие</h2>
 
-              <div className={styles.formRow}>
+              <div className={styles.pricingOneRow}>
                 <div className={styles.formGroup}>
                   <label htmlFor="price">Цена *</label>
                   <input
@@ -1872,7 +1875,9 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                   />
                 </div>
                 <div className={styles.formGroup}>
-                  <label htmlFor="comparePrice">Старая цена</label>
+                  <label htmlFor="comparePrice" title="Для скидки на витрине">
+                    Старая цена
+                  </label>
                   <input
                     type="text"
                     inputMode="decimal"
@@ -1885,11 +1890,10 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                     autoComplete="off"
                   />
                 </div>
-              </div>
-
-              <div className={styles.formRow}>
                 <div className={styles.formGroup}>
-                  <label htmlFor="stock">Остаток на складе *</label>
+                  <label htmlFor="stock" title="Остаток на складе">
+                    Остаток *
+                  </label>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -1904,26 +1908,9 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                   />
                 </div>
                 <div className={styles.formGroup}>
-                  <label htmlFor="weight">Масса, кг</label>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    id="weight"
-                    name="weight"
-                    value={formData.weight}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        weight: e.target.value.replace(',', '.'),
-                      }))
-                    }
-                    className={styles.input}
-                    placeholder="0"
-                    autoComplete="off"
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label htmlFor="sortOrder">Сортировка</label>
+                  <label htmlFor="sortOrder" title="Меньше число — выше в списке">
+                    Сортировка
+                  </label>
                   <input
                     type="number"
                     id="sortOrder"
@@ -1938,35 +1925,47 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                     className={styles.input}
                     placeholder="400"
                   />
-                  <p className={styles.hint}>Чем меньше число, тем выше в списке.</p>
                 </div>
-              </div>
-
-              <div className={styles.checkboxGroup}>
-                <label className={styles.checkbox}>
-                  <input
-                    type="checkbox"
-                    name="isActive"
-                    checked={formData.isActive}
-                    onChange={handleChange}
-                  />
-                  <span>Активен (показывать на сайте)</span>
-                </label>
+                <div
+                  className={`${styles.checkboxGroup} ${styles.checkboxGroupRow} ${styles.pricingInlineChecks}`}
+                >
+                  <label
+                    className={styles.checkbox}
+                    title="При нулевом остатке на витрине — «Под заказ»; при остатке больше нуля — «В наличии»."
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.onOrder}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, onOrder: e.target.checked }))
+                      }
+                    />
+                    <span>Под заказ</span>
+                  </label>
+                  <label className={styles.checkbox}>
+                    <input
+                      type="checkbox"
+                      name="isActive"
+                      checked={formData.isActive}
+                      onChange={handleChange}
+                    />
+                    <span>Активен (на сайте)</span>
+                  </label>
+                </div>
               </div>
             </div>
           )}
 
           {showSection('cardBadges') && (
-            <div className={styles.formSection}>
+            <div
+              className={`${styles.formSection} ${styles.formSectionFullWidth} ${styles.formSectionCompact}`}
+            >
               <h2 className={styles.sectionTitle}>Бэйджи карточки товара</h2>
 
-              <h3
-                className={styles.sectionTitle}
-                style={{ fontSize: '1rem', marginBottom: '0.5rem' }}
-              >
+              <h3 className={`${styles.subsectionTitle} ${styles.subsectionTitleFirst}`}>
                 Справа от фото (текстовые)
               </h3>
-              <div className={styles.checkboxGroup}>
+              <div className={`${styles.checkboxGroup} ${styles.checkboxGroupRow}`}>
                 <label className={styles.checkbox}>
                   <input
                     type="checkbox"
@@ -1986,29 +1985,17 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                   <span>Новинка</span>
                 </label>
               </div>
-              <p className={styles.hint}>
-                Скидка и метка «Видео» на сайте выводятся автоматически при старой цене и ссылке на
-                видео.
+              <p className={styles.hintTight}>
+                Скидка и «Видео» на сайте — автоматически при старой цене и ссылке на видео.
               </p>
 
-              <h3
-                className={styles.sectionTitle}
-                style={{ fontSize: '1rem', marginTop: '1.25rem', marginBottom: '0.5rem' }}
-              >
+              <h3 className={`${styles.subsectionTitle} ${styles.subsectionTitleSpaced}`}>
                 Слева от фото (картинки, не более 5)
               </h3>
-              <p className={styles.hint}>
-                Изображения задаются в разделе «Настройки → Бэйджи карточек». Выбрано:{' '}
-                {formData.catalogBadgeIds.length} / 5.
+              <p className={styles.hintTight}>
+                JPG в «Настройки → Бэйджи карточек». Выбрано: {formData.catalogBadgeIds.length} / 5.
               </p>
-              <div
-                className={styles.attributesList}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-                  gap: '0.35rem',
-                }}
-              >
+              <div className={styles.cardBadgesPickGrid}>
                 {badgeDefinitions.map((b) => {
                   const checked = formData.catalogBadgeIds.includes(b.id);
                   return (

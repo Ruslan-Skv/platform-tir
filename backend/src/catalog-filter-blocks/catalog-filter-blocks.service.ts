@@ -181,6 +181,7 @@ export class CatalogFilterBlocksService {
       select: {
         attributes: true,
         stock: true,
+        onOrder: true,
         manufacturerId: true,
         manufacturer: { select: { id: true, name: true } },
       },
@@ -191,10 +192,13 @@ export class CatalogFilterBlocksService {
     for (const item of block.items) {
       if (item.kind === 'STOCK') {
         let inStock = 0;
-        let onOrder = 0;
+        let onOrderOnly = 0;
+        let outOfStock = 0;
         for (const p of products) {
-          if (Number(p.stock ?? 0) > 0) inStock += 1;
-          else onOrder += 1;
+          const s = Number(p.stock ?? 0);
+          if (s > 0) inStock += 1;
+          else if (p.onOrder) onOrderOnly += 1;
+          else outOfStock += 1;
         }
         filters.push({
           id: 'availability',
@@ -202,7 +206,8 @@ export class CatalogFilterBlocksService {
           type: 'radio',
           options: [
             { value: 'in_stock', label: 'В наличии', count: inStock },
-            { value: 'on_order', label: 'Под заказ', count: onOrder },
+            { value: 'on_order', label: 'Под заказ', count: onOrderOnly },
+            { value: 'out_of_stock', label: 'Товар закончился', count: outOfStock },
           ],
         });
         continue;

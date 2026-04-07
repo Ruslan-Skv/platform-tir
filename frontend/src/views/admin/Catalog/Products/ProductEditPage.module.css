@@ -310,6 +310,132 @@
   grid-column: 1 / -1;
 }
 
+/* Полная ширина + плотнее по вертикали (цена, бэйджи) */
+.formSectionCompact {
+  padding: 6px 10px;
+}
+
+.formSectionCompact .sectionTitle {
+  font-size: 0.875rem;
+  margin-bottom: 6px;
+  padding: 6px 10px;
+}
+
+.formSectionCompact .formGroup {
+  margin-bottom: 4px;
+}
+
+.formSectionCompact .checkboxGroup {
+  gap: 4px;
+  margin-top: 4px;
+}
+
+/* Все поля блока «Цена и наличие» в одну строку */
+.pricingOneRow {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px 10px;
+  margin-top: 2px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  width: 100%;
+}
+
+.pricingOneRow .formGroup {
+  flex: 1 1 0;
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.pricingInlineChecks {
+  align-items: center;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 10px;
+  justify-content: flex-start;
+  margin: 0 0 2px;
+  min-width: 0;
+  padding-left: 4px;
+  white-space: nowrap;
+}
+
+.pricingInlineChecks .checkbox {
+  margin: 0;
+}
+
+/* Ещё плотнее: мелкие подписи и поля */
+.formSectionPricingTight {
+  padding: 4px 8px;
+}
+
+.formSectionPricingTight .sectionTitle {
+  font-size: 0.8125rem;
+  margin-bottom: 6px;
+  padding: 5px 8px;
+}
+
+.formSectionPricingTight .formGroup {
+  margin-bottom: 2px;
+}
+
+.formSectionPricingTight .pricingOneRow .formGroup {
+  margin-bottom: 0;
+}
+
+.formSectionPricingTight .formGroup label {
+  font-size: 0.6875rem;
+  margin-bottom: 1px;
+}
+
+.formSectionPricingTight .input {
+  font-size: 0.75rem;
+  min-height: 28px;
+  padding: 3px 8px;
+}
+
+.formSectionPricingTight .checkbox span {
+  font-size: 0.75rem;
+}
+
+.formSectionPricingTight .checkbox input {
+  height: 16px;
+  width: 16px;
+}
+
+.subsectionTitle {
+  background: #f1f5f9;
+  border-radius: 4px;
+  color: #334155;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin: 0.35rem 0 0.25rem;
+  padding: 6px 10px;
+}
+
+.subsectionTitleFirst {
+  margin-top: 0;
+}
+
+.subsectionTitleSpaced {
+  margin-top: 0.5rem;
+}
+
+.hintTight {
+  color: #6b7280;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  margin: 2px 0 0;
+}
+
+.cardBadgesPickGrid {
+  display: grid;
+  gap: 0.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
 .attributesGrid {
   display: flex;
   flex-direction: column;
@@ -317,12 +443,13 @@
 }
 
 .sectionTitle {
+  background: #e2e8f0;
+  border-radius: 6px;
+  color: #1e293b;
   font-size: 0.9375rem;
   font-weight: 600;
-  color: #1f2937;
-  margin: 0 0 6px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid #e5e7eb;
+  margin: 0 0 10px;
+  padding: 8px 12px;
 }
 
 .formGroup {
@@ -391,6 +518,13 @@
 .checkboxGroupRow {
   flex-direction: row;
   flex-wrap: wrap;
+}
+
+.pricingFlagsRow {
+  align-items: center;
+  column-gap: 1.25rem;
+  flex-wrap: wrap;
+  row-gap: 4px;
 }
 
 .checkbox {
@@ -704,13 +838,16 @@
 }
 
 .attributesSubtitle {
+  align-items: center;
+  background: #f1f5f9;
+  border-radius: 4px;
+  color: #334155;
+  display: flex;
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #374151;
-  margin: 0 0 4px;
-  display: flex;
-  align-items: center;
   gap: 4px;
+  margin: 0 0 8px;
+  padding: 6px 10px;
 }
 
 .customAttrHint {
@@ -814,10 +951,13 @@
 }
 
 .cardVariantBlockTitle {
+  background: #e2e8f0;
+  border-radius: 6px 6px 0 0;
+  color: #334155;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #475569;
-  margin: 0 0 0.5rem;
+  margin: -0.5rem -0.75rem 0.5rem -0.75rem;
+  padding: 6px 10px;
 }
 
 .cardVariantImageRow {
@@ -1145,8 +1285,17 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
-  color: #f9fafb;
-  border-bottom-color: #374151;
+  background: #374151;
+  color: #f1f5f9;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subsectionTitle {
+  background: #1f2937;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .hintTight {
+  color: #9ca3af;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .formGroup label {
@@ -1391,7 +1540,8 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantBlockTitle {
-  color: #e5e7eb;
+  background: #374151;
+  color: #f1f5f9;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantImagePreview img {
@@ -1436,6 +1586,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .attributesSubtitle {
+  background: #1f2937;
   color: #e5e7eb;
 }
 

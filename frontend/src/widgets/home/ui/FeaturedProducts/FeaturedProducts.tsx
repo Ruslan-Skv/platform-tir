@@ -28,6 +28,7 @@ interface ApiProduct {
   price: string;
   comparePrice: string | null;
   stock: number;
+  onOrder?: boolean;
   isActive: boolean;
   isNew: boolean;
   isFeatured: boolean;
@@ -90,6 +91,8 @@ function mapApiProductToProduct(p: ApiProduct, index: number): Product {
     partnerTooltipText: p.partner?.tooltipText ?? null,
     partnerShowTooltip: p.partner?.showTooltip ?? true,
     inStock: p.stock > 0,
+    stock: p.stock,
+    onOrder: p.onOrder ?? false,
     discount:
       comparePrice && comparePrice > price
         ? Math.round(((comparePrice - price) / comparePrice) * 100)

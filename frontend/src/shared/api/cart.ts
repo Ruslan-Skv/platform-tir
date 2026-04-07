@@ -19,6 +19,7 @@ export interface CartItem {
     comparePrice?: number;
     images: string[];
     stock?: number;
+    onOrder?: boolean;
     category: {
       id: string;
       name: string;

@@ -29,6 +29,10 @@ import {
 } from '@/shared/api/user-orders';
 import { useApprovedOrderGuard } from '@/shared/lib/contexts/ApprovedOrderGuardContext';
 import { useCart } from '@/shared/lib/hooks';
+import {
+  PRODUCT_AVAILABILITY_LABEL,
+  getProductAvailability,
+} from '@/shared/lib/product-availability';
 
 import styles from './page.module.css';
 
@@ -1140,7 +1144,7 @@ export default function CartPage() {
                               </p>
                               {(item.size ||
                                 item.openingSide ||
-                                (item.product.stock !== undefined && item.product.stock === 0)) && (
+                                item.product.stock !== undefined) && (
                                 <div className={styles.itemOptionsRow}>
                                   {(item.size || item.openingSide) && (
                                     <div className={styles.itemOptions}>
@@ -1156,9 +1160,24 @@ export default function CartPage() {
                                       )}
                                     </div>
                                   )}
-                                  {item.product.stock !== undefined && item.product.stock === 0 && (
-                                    <span className={styles.outOfStockBadge}>Под заказ</span>
-                                  )}
+                                  {item.product.stock !== undefined &&
+                                    (() => {
+                                      const av = getProductAvailability(
+                                        item.product.stock,
+                                        item.product.onOrder
+                                      );
+                                      const badgeClass =
+                                        av === 'in_stock'
+                                          ? styles.inStockBadge
+                                          : av === 'on_order'
+                                            ? styles.onOrderBadge
+                                            : styles.soldOutBadge;
+                                      return (
+                                        <span className={badgeClass}>
+                                          {PRODUCT_AVAILABILITY_LABEL[av]}
+                                        </span>
+                                      );
+                                    })()}
                                 </div>
                               )}
                               {managerComment && !dismissedManagerCommentIds.has(item.id) && (

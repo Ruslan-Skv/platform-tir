@@ -28,6 +28,7 @@ interface ApiProduct {
   price: string;
   comparePrice: string | null;
   stock: number;
+  onOrder?: boolean;
   isActive: boolean;
   isNew: boolean;
   isFeatured: boolean;
@@ -264,6 +265,7 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
           partnerShowTooltip: p.partner?.showTooltip ?? true,
           inStock: p.stock > 0,
           stock: p.stock,
+          onOrder: p.onOrder ?? false,
           manufacturerId: p.manufacturer?.id ?? null,
           attributes: p.attributes ?? null,
           discount: p.comparePrice

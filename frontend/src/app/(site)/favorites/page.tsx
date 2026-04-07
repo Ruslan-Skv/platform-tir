@@ -25,6 +25,7 @@ interface WishlistProduct {
   isNew?: boolean;
   isFeatured?: boolean;
   stock?: number;
+  onOrder?: boolean;
   rating?: number;
   reviewsCount?: number;
 }
@@ -86,6 +87,8 @@ export default function FavoritesPage() {
       isNew: p.isNew,
       isFeatured: p.isFeatured,
       inStock: (p.stock ?? 0) > 0,
+      stock: p.stock,
+      onOrder: p.onOrder ?? false,
       discount: comparePrice
         ? Math.round(((comparePrice - price) / comparePrice) * 100)
         : undefined,

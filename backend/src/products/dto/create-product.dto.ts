@@ -54,6 +54,17 @@ export class CreateProductDto {
   stock?: number;
 
   @ApiProperty({
+    example: false,
+    default: false,
+    required: false,
+    description:
+      'При нулевом остатке: бэйдж «Под заказ» на витрине. Не влияет, если остаток больше нуля.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  onOrder?: boolean;
+
+  @ApiProperty({
     example: 25.5,
     required: false,
     description: 'Масса товара, кг',

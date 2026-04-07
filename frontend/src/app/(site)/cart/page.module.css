@@ -370,6 +370,36 @@
   border-radius: 0.2rem;
 }
 
+.onOrderBadge {
+  display: inline-block;
+  padding: 0.15rem 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #d90652;
+  background: rgb(217 6 82 / 0.1);
+  border-radius: 0.2rem;
+}
+
+.inStockBadge {
+  display: inline-block;
+  padding: 0.15rem 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #047857;
+  background: #d1fae5;
+  border-radius: 0.2rem;
+}
+
+.soldOutBadge {
+  display: inline-block;
+  padding: 0.15rem 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #4b5563;
+  background: #e5e7eb;
+  border-radius: 0.2rem;
+}
+
 .itemEditedByAdmin {
   display: flex;
   align-items: center;
@@ -1305,7 +1335,10 @@
     padding: 0.1rem 0.25rem;
   }
 
-  .outOfStockBadge {
+  .outOfStockBadge,
+  .onOrderBadge,
+  .inStockBadge,
+  .soldOutBadge {
     font-size: 0.625rem;
     padding: 0.1rem 0.25rem;
   }
@@ -1652,6 +1685,21 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .outOfStockBadge {
   color: #fbbf24;
   background: #78350f;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .onOrderBadge {
+  color: #d90652;
+  background: rgb(217 6 82 / 0.2);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inStockBadge {
+  color: #34d399;
+  background: #064e3b;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .soldOutBadge {
+  color: #d1d5db;
+  background: #374151;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .itemQuantity {
