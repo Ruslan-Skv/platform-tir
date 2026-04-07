@@ -1,4 +1,8 @@
-import { CATEGORY_ATTR_SLUG_CANVAS_TYPE } from './catalog-attribute-fk-slugs';
+import {
+  isCanvasTypeFkCategorySlug,
+  isCoatingMaterialFkCategorySlug,
+  isManufacturerFkCategorySlug,
+} from './catalog-attribute-fk-slugs';
 import { multiSelectHasSelection } from './category-attribute-multiselect';
 
 /** Строка привязки атрибута к категории (для валидации карточки товара). */
@@ -36,15 +40,15 @@ export function validateRequiredCategoryAttributes(
   const missing: string[] = [];
   for (const ca of rows) {
     if (!ca.isRequired) continue;
-    if (ca.attribute.slug === 'manufacturer') {
+    if (isManufacturerFkCategorySlug(ca.attribute.slug)) {
       if (!String(fk?.manufacturerId ?? '').trim()) missing.push(ca.attribute.name);
       continue;
     }
-    if (ca.attribute.slug === 'coating-material') {
+    if (isCoatingMaterialFkCategorySlug(ca.attribute.slug)) {
       if (!String(fk?.coatingMaterialId ?? '').trim()) missing.push(ca.attribute.name);
       continue;
     }
-    if (ca.attribute.slug === CATEGORY_ATTR_SLUG_CANVAS_TYPE) {
+    if (isCanvasTypeFkCategorySlug(ca.attribute.slug)) {
       if (!String(fk?.canvasTypeId ?? '').trim()) missing.push(ca.attribute.name);
       continue;
     }
@@ -72,6 +76,8 @@ export interface AdminProductFormSnapshot {
   manufacturerId: string;
   /** Справочник «Материал покрытия» (атрибут `coating-material`). */
   coatingMaterialId: string;
+  /** Справочник «Тип полотна» (атрибут `canvas-type`). */
+  canvasTypeId?: string;
 }
 
 /** Возвращает подписи незаполненных обязательных полей (по порядку проверки). */

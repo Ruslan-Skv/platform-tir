@@ -17,7 +17,7 @@ import { Roles } from '../../../common/decorators/roles.decorator';
 
 @Controller('admin/catalog/canvas-types')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'CONTENT_MANAGER')
+@Roles('ADMIN', 'CONTENT_MANAGER', 'PARTNER')
 export class CanvasTypesController {
   constructor(private readonly canvasTypesService: CanvasTypesService) {}
 

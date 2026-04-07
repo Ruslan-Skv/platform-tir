@@ -4,6 +4,7 @@
 import {
   CATEGORY_ATTR_SLUG_CANVAS_TYPE,
   CATEGORY_ATTR_SLUG_COATING_MATERIAL,
+  CATEGORY_ATTR_SLUG_MANUFACTURER,
 } from './catalog-attribute-fk-slugs';
 
 export interface ProductForCopy {
@@ -43,6 +44,7 @@ export interface ProductForCopy {
     badgeId: string;
   }>;
   manufacturerId?: string | null;
+  manufacturer?: { name: string } | null;
   coatingMaterialId?: string | null;
   coatingMaterial?: { name: string } | null;
   canvasTypeId?: string | null;
@@ -184,6 +186,9 @@ export function mapProductToCopyData(
     }
   });
 
+  if (product.manufacturer?.name) {
+    categoryAttrsOnly[CATEGORY_ATTR_SLUG_MANUFACTURER] = product.manufacturer.name;
+  }
   if (product.coatingMaterial?.name) {
     categoryAttrsOnly[CATEGORY_ATTR_SLUG_COATING_MATERIAL] = product.coatingMaterial.name;
   }

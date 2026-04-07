@@ -17,7 +17,7 @@ import { Roles } from '../../../common/decorators/roles.decorator';
 
 @Controller('admin/catalog/manufacturers')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'CONTENT_MANAGER')
+@Roles('ADMIN', 'CONTENT_MANAGER', 'PARTNER')
 export class ManufacturersController {
   constructor(private readonly manufacturersService: ManufacturersService) {}
 

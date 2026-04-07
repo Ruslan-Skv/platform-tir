@@ -5,14 +5,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
+import { fetchAdminCanvasTypesList } from '@/shared/api/admin-canvas-types';
+import { fetchAdminCoatingMaterialsList } from '@/shared/api/admin-coating-materials';
+import { fetchAdminManufacturersList } from '@/shared/api/admin-manufacturers';
 import { getApiErrorMessage } from '@/shared/lib/api-error';
 
 import { ImageUrlModal } from './ImageUrlModal';
 import componentStyles from './ProductComponentsSection.module.css';
 import styles from './ProductEditPage.module.css';
 import {
-  CATEGORY_ATTR_SLUG_CANVAS_TYPE,
-  CATEGORY_ATTR_SLUG_COATING_MATERIAL,
+  isCanvasTypeFkCategorySlug,
+  isCoatingMaterialFkCategorySlug,
+  isManufacturerFkCategorySlug,
 } from './catalog-attribute-fk-slugs';
 import {
   decodeMultiSelectStored,
@@ -259,6 +263,7 @@ export function ProductCreatePage({
   const [canvasTypes, setCanvasTypes] = useState<
     Array<{ id: string; name: string; slug: string; isActive: boolean }>
   >([]);
+  const [fkCatalogError, setFkCatalogError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState(() => {
     const merged = initialCopyData?.formData ?? {
@@ -599,79 +604,39 @@ export function ProductCreatePage({
   }, [getAuthHeaders]);
 
   useEffect(() => {
-    const run = async () => {
+    let cancelled = false;
+    const mapRow = (m: { id: string; name: string; slug: string; isActive?: boolean }) => ({
+      id: m.id,
+      name: m.name,
+      slug: m.slug,
+      isActive: m.isActive !== false,
+    });
+    void (async () => {
       try {
-        const response = await fetch(`${API_URL}/admin/catalog/manufacturers?limit=500`, {
-          headers: getAuthHeaders(),
-        });
-        if (response.ok) {
-          const data = await response.json();
-          const list = Array.isArray(data.data) ? data.data : [];
-          setManufacturers(
-            list.map((m: { id: string; name: string; slug: string; isActive?: boolean }) => ({
-              id: m.id,
-              name: m.name,
-              slug: m.slug,
-              isActive: m.isActive !== false,
-            }))
+        const [mList, cmList, ctList] = await Promise.all([
+          fetchAdminManufacturersList({ limit: 500 }),
+          fetchAdminCoatingMaterialsList({ limit: 500 }),
+          fetchAdminCanvasTypesList({ limit: 500 }),
+        ]);
+        if (cancelled) return;
+        setManufacturers(mList.map(mapRow));
+        setCoatingMaterials(cmList.map(mapRow));
+        setCanvasTypes(ctList.map(mapRow));
+        setFkCatalogError(null);
+      } catch (err) {
+        console.error('Failed to fetch catalog FK lists:', err);
+        if (!cancelled) {
+          setFkCatalogError(
+            getApiErrorMessage(err) ??
+              'Не удалось загрузить справочники (производители, материалы, тип полотна).'
           );
         }
-      } catch (err) {
-        console.error('Failed to fetch manufacturers:', err);
       }
+    })();
+    return () => {
+      cancelled = true;
     };
-    void run();
-  }, [getAuthHeaders]);
-
-  useEffect(() => {
-    const run = async () => {
-      try {
-        const response = await fetch(`${API_URL}/admin/catalog/coating-materials?limit=500`, {
-          headers: getAuthHeaders(),
-        });
-        if (response.ok) {
-          const data = await response.json();
-          const list = Array.isArray(data.data) ? data.data : [];
-          setCoatingMaterials(
-            list.map((m: { id: string; name: string; slug: string; isActive?: boolean }) => ({
-              id: m.id,
-              name: m.name,
-              slug: m.slug,
-              isActive: m.isActive !== false,
-            }))
-          );
-        }
-      } catch (err) {
-        console.error('Failed to fetch coating materials:', err);
-      }
-    };
-    void run();
-  }, [getAuthHeaders]);
-
-  useEffect(() => {
-    const run = async () => {
-      try {
-        const response = await fetch(`${API_URL}/admin/catalog/canvas-types?limit=500`, {
-          headers: getAuthHeaders(),
-        });
-        if (response.ok) {
-          const data = await response.json();
-          const list = Array.isArray(data.data) ? data.data : [];
-          setCanvasTypes(
-            list.map((m: { id: string; name: string; slug: string; isActive?: boolean }) => ({
-              id: m.id,
-              name: m.name,
-              slug: m.slug,
-              isActive: m.isActive !== false,
-            }))
-          );
-        }
-      } catch (err) {
-        console.error('Failed to fetch canvas types:', err);
-      }
-    };
-    void run();
-  }, [getAuthHeaders]);
+  }, []);
 
   // Подсказки размеров из других товаров этой категории
   useEffect(() => {
@@ -1125,7 +1090,7 @@ export function ProductCreatePage({
       // categoryAttributes уже отсортированы по order
       categoryAttributes.forEach((ca) => {
         const slug = ca.attribute.slug;
-        if (slug === 'manufacturer') {
+        if (isManufacturerFkCategorySlug(slug)) {
           const m = manufacturers.find((x) => x.id === formData.manufacturerId);
           if (m) {
             orderedAttributes.push({
@@ -1136,7 +1101,7 @@ export function ProductCreatePage({
           }
           return;
         }
-        if (slug === CATEGORY_ATTR_SLUG_COATING_MATERIAL) {
+        if (isCoatingMaterialFkCategorySlug(slug)) {
           const cm = coatingMaterials.find((x) => x.id === formData.coatingMaterialId);
           if (cm) {
             orderedAttributes.push({
@@ -1147,7 +1112,7 @@ export function ProductCreatePage({
           }
           return;
         }
-        if (slug === CATEGORY_ATTR_SLUG_CANVAS_TYPE) {
+        if (isCanvasTypeFkCategorySlug(slug)) {
           const ct = canvasTypes.find((x) => x.id === formData.canvasTypeId);
           if (ct) {
             orderedAttributes.push({
@@ -2126,14 +2091,20 @@ export function ProductCreatePage({
               {/* Category attributes */}
               <div className={styles.attributesSection}>
                 <h3 className={styles.attributesSubtitle}>Атрибуты категории</h3>
+                {fkCatalogError && (
+                  <p className={styles.error} role="alert">
+                    {fkCatalogError} Поля «Производитель», «Материал покрытия» и «Тип полотна» не
+                    заполнятся без справочников. Проверьте роль пользователя и доступ к API.
+                  </p>
+                )}
                 {categoryAttributes.length > 0 ? (
                   <div className={styles.attributesList}>
                     {categoryAttributes.map((ca) => {
                       const slug = ca.attribute.slug;
                       const rawAttr = formData.attributes[slug];
-                      const isManufacturerAttr = slug === 'manufacturer';
-                      const isCoatingMaterialAttr = slug === CATEGORY_ATTR_SLUG_COATING_MATERIAL;
-                      const isCanvasTypeAttr = slug === CATEGORY_ATTR_SLUG_CANVAS_TYPE;
+                      const isManufacturerAttr = isManufacturerFkCategorySlug(slug);
+                      const isCoatingMaterialAttr = isCoatingMaterialFkCategorySlug(slug);
+                      const isCanvasTypeAttr = isCanvasTypeFkCategorySlug(slug);
                       const attrRequired = Boolean(ca.isRequired);
                       const attrValueFilled = isManufacturerAttr
                         ? Boolean(formData.manufacturerId?.trim())
@@ -2185,7 +2156,7 @@ export function ProductCreatePage({
                                     manufacturerId: id,
                                     attributes: {
                                       ...prev.attributes,
-                                      manufacturer: mName,
+                                      [slug]: mName,
                                     },
                                   }));
                                 }}
@@ -2220,7 +2191,7 @@ export function ProductCreatePage({
                                     coatingMaterialId: id,
                                     attributes: {
                                       ...prev.attributes,
-                                      [CATEGORY_ATTR_SLUG_COATING_MATERIAL]: label,
+                                      [slug]: label,
                                     },
                                   }));
                                 }}
@@ -2254,7 +2225,7 @@ export function ProductCreatePage({
                                     canvasTypeId: id,
                                     attributes: {
                                       ...prev.attributes,
-                                      [CATEGORY_ATTR_SLUG_CANVAS_TYPE]: label,
+                                      [slug]: label,
                                     },
                                   }));
                                 }}
@@ -2435,30 +2406,30 @@ export function ProductCreatePage({
                                 className={styles.clearAttrButton}
                                 onClick={() =>
                                   setFormData((prev) => {
-                                    if (slug === 'manufacturer') {
+                                    if (isManufacturerFkCategorySlug(slug)) {
                                       return {
                                         ...prev,
                                         manufacturerId: '',
-                                        attributes: { ...prev.attributes, manufacturer: '' },
+                                        attributes: { ...prev.attributes, [slug]: '' },
                                       };
                                     }
-                                    if (slug === CATEGORY_ATTR_SLUG_COATING_MATERIAL) {
+                                    if (isCoatingMaterialFkCategorySlug(slug)) {
                                       return {
                                         ...prev,
                                         coatingMaterialId: '',
                                         attributes: {
                                           ...prev.attributes,
-                                          [CATEGORY_ATTR_SLUG_COATING_MATERIAL]: '',
+                                          [slug]: '',
                                         },
                                       };
                                     }
-                                    if (slug === CATEGORY_ATTR_SLUG_CANVAS_TYPE) {
+                                    if (isCanvasTypeFkCategorySlug(slug)) {
                                       return {
                                         ...prev,
                                         canvasTypeId: '',
                                         attributes: {
                                           ...prev.attributes,
-                                          [CATEGORY_ATTR_SLUG_CANVAS_TYPE]: '',
+                                          [slug]: '',
                                         },
                                       };
                                     }
