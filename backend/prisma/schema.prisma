@@ -779,6 +779,36 @@ model Manufacturer {
   @@map("manufacturers")
 }
 
+/// Материал покрытия — справочник для атрибута категории со slug `coating-material`.
+model CoatingMaterial {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  isActive    Boolean   @default(true)
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+
+  @@map("coating_materials")
+}
+
+/// Тип полотна — справочник для атрибута категории со slug `canvas-type`.
+model CanvasType {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  isActive    Boolean   @default(true)
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+
+  @@map("canvas_types")
+}
+
 model Attribute {
   id           String              @id @default(cuid())
   name         String
@@ -1142,6 +1172,8 @@ model Product {
   height           Decimal?           @db.Decimal(8, 2)
   length           Decimal?           @db.Decimal(8, 2)
   manufacturerId   String?
+  coatingMaterialId String?
+  canvasTypeId     String?
   minStock         Int                @default(0)
   seoKeywords      String[]
   shortDescription String?
@@ -1155,6 +1187,8 @@ model Product {
   suppliers              ProductSupplier[]
   category         Category           @relation(fields: [categoryId], references: [id])
   manufacturer     Manufacturer?      @relation(fields: [manufacturerId], references: [id])
+  coatingMaterial  CoatingMaterial?   @relation(fields: [coatingMaterialId], references: [id])
+  canvasType       CanvasType?        @relation(fields: [canvasTypeId], references: [id])
   partner          Partner?           @relation(fields: [partnerId], references: [id], onDelete: SetNull)
   createdBy        User?              @relation("ProductCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   updatedBy        User?              @relation("ProductUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)

@@ -11,6 +11,10 @@ import { ImageUrlModal } from './ImageUrlModal';
 import componentStyles from './ProductComponentsSection.module.css';
 import styles from './ProductEditPage.module.css';
 import {
+  CATEGORY_ATTR_SLUG_CANVAS_TYPE,
+  CATEGORY_ATTR_SLUG_COATING_MATERIAL,
+} from './catalog-attribute-fk-slugs';
+import {
   decodeMultiSelectStored,
   encodeMultiSelectValues,
   multiSelectHasSelection,
@@ -198,6 +202,8 @@ const defaultFormData = {
   supplierSku: '',
   supplierProductUrl: '',
   manufacturerId: '',
+  coatingMaterialId: '',
+  canvasTypeId: '',
   supplierPrice: '',
   videoUrl: '',
   weight: '',
@@ -245,6 +251,12 @@ export function ProductCreatePage({
   >([]);
   const [partners, setPartners] = useState<Array<{ id: string; name: string }>>([]);
   const [manufacturers, setManufacturers] = useState<
+    Array<{ id: string; name: string; slug: string; isActive: boolean }>
+  >([]);
+  const [coatingMaterials, setCoatingMaterials] = useState<
+    Array<{ id: string; name: string; slug: string; isActive: boolean }>
+  >([]);
+  const [canvasTypes, setCanvasTypes] = useState<
     Array<{ id: string; name: string; slug: string; isActive: boolean }>
   >([]);
 
@@ -605,6 +617,56 @@ export function ProductCreatePage({
         }
       } catch (err) {
         console.error('Failed to fetch manufacturers:', err);
+      }
+    };
+    void run();
+  }, [getAuthHeaders]);
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const response = await fetch(`${API_URL}/admin/catalog/coating-materials?limit=500`, {
+          headers: getAuthHeaders(),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const list = Array.isArray(data.data) ? data.data : [];
+          setCoatingMaterials(
+            list.map((m: { id: string; name: string; slug: string; isActive?: boolean }) => ({
+              id: m.id,
+              name: m.name,
+              slug: m.slug,
+              isActive: m.isActive !== false,
+            }))
+          );
+        }
+      } catch (err) {
+        console.error('Failed to fetch coating materials:', err);
+      }
+    };
+    void run();
+  }, [getAuthHeaders]);
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const response = await fetch(`${API_URL}/admin/catalog/canvas-types?limit=500`, {
+          headers: getAuthHeaders(),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const list = Array.isArray(data.data) ? data.data : [];
+          setCanvasTypes(
+            list.map((m: { id: string; name: string; slug: string; isActive?: boolean }) => ({
+              id: m.id,
+              name: m.name,
+              slug: m.slug,
+              isActive: m.isActive !== false,
+            }))
+          );
+        }
+      } catch (err) {
+        console.error('Failed to fetch canvas types:', err);
       }
     };
     void run();
@@ -1039,6 +1101,8 @@ export function ProductCreatePage({
         images: formData.images,
         attributes: formData.attributes,
         manufacturerId: formData.manufacturerId,
+        coatingMaterialId: formData.coatingMaterialId,
+        canvasTypeId: formData.canvasTypeId,
       },
       categoryAttributes
     );
@@ -1066,6 +1130,28 @@ export function ProductCreatePage({
             orderedAttributes.push({
               key: ca.attribute.name,
               value: m.name,
+              slug: ca.attribute.slug,
+            });
+          }
+          return;
+        }
+        if (slug === CATEGORY_ATTR_SLUG_COATING_MATERIAL) {
+          const cm = coatingMaterials.find((x) => x.id === formData.coatingMaterialId);
+          if (cm) {
+            orderedAttributes.push({
+              key: ca.attribute.name,
+              value: cm.name,
+              slug: ca.attribute.slug,
+            });
+          }
+          return;
+        }
+        if (slug === CATEGORY_ATTR_SLUG_CANVAS_TYPE) {
+          const ct = canvasTypes.find((x) => x.id === formData.canvasTypeId);
+          if (ct) {
+            orderedAttributes.push({
+              key: ca.attribute.name,
+              value: ct.name,
               slug: ca.attribute.slug,
             });
           }
@@ -1135,6 +1221,8 @@ export function ProductCreatePage({
             ? formData.supplierSku.trim()
             : undefined,
         manufacturerId: formData.manufacturerId.trim() || undefined,
+        coatingMaterialId: formData.coatingMaterialId.trim() || undefined,
+        canvasTypeId: formData.canvasTypeId.trim() || undefined,
         videoUrl: formData.videoUrl || undefined,
         weight: formData.weight ? parseFloat(formData.weight) : undefined,
         catalogBadgeIds: formData.catalogBadgeIds,
@@ -2041,17 +2129,27 @@ export function ProductCreatePage({
                       const slug = ca.attribute.slug;
                       const rawAttr = formData.attributes[slug];
                       const isManufacturerAttr = slug === 'manufacturer';
+                      const isCoatingMaterialAttr = slug === CATEGORY_ATTR_SLUG_COATING_MATERIAL;
+                      const isCanvasTypeAttr = slug === CATEGORY_ATTR_SLUG_CANVAS_TYPE;
                       const attrRequired = Boolean(ca.isRequired);
                       const attrValueFilled = isManufacturerAttr
                         ? Boolean(formData.manufacturerId?.trim())
-                        : categoryAttributeValueFilled(ca.attribute.type, rawAttr);
+                        : isCoatingMaterialAttr
+                          ? Boolean(formData.coatingMaterialId?.trim())
+                          : isCanvasTypeAttr
+                            ? Boolean(formData.canvasTypeId?.trim())
+                            : categoryAttributeValueFilled(ca.attribute.type, rawAttr);
                       const showClear = isManufacturerAttr
                         ? Boolean(formData.manufacturerId?.trim())
-                        : ca.attribute.type === 'MULTI_SELECT'
-                          ? multiSelectHasSelection(rawAttr)
-                          : ca.attribute.type === 'BOOLEAN'
-                            ? Boolean(rawAttr)
-                            : Boolean(rawAttr);
+                        : isCoatingMaterialAttr
+                          ? Boolean(formData.coatingMaterialId?.trim())
+                          : isCanvasTypeAttr
+                            ? Boolean(formData.canvasTypeId?.trim())
+                            : ca.attribute.type === 'MULTI_SELECT'
+                              ? multiSelectHasSelection(rawAttr)
+                              : ca.attribute.type === 'BOOLEAN'
+                                ? Boolean(rawAttr)
+                                : Boolean(rawAttr);
                       const isSelectFromList =
                         ca.attribute.type === 'SELECT' ||
                         (ca.attribute.type === 'COLOR' && ca.attribute.values.length > 0);
@@ -2100,6 +2198,75 @@ export function ProductCreatePage({
                               >
                                 <option value="">Выберите значение</option>
                                 {manufacturers.map((m) => (
+                                  <option key={m.id} value={m.id} disabled={!m.isActive}>
+                                    {m.name}
+                                    {!m.isActive ? ' (неактивен)' : ''}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : isCoatingMaterialAttr ? (
+                              <select
+                                id={`attr-coating-material-${ca.id}`}
+                                value={formData.coatingMaterialId}
+                                onChange={(e) => {
+                                  const id = e.target.value;
+                                  const label =
+                                    coatingMaterials.find((m) => m.id === id)?.name ?? '';
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    coatingMaterialId: id,
+                                    attributes: {
+                                      ...prev.attributes,
+                                      [CATEGORY_ATTR_SLUG_COATING_MATERIAL]: label,
+                                    },
+                                  }));
+                                }}
+                                className={
+                                  attrRequired
+                                    ? `${styles.select} ${
+                                        formData.coatingMaterialId?.trim()
+                                          ? styles.fieldHighlightFilled
+                                          : styles.fieldHighlightEmpty
+                                      }`
+                                    : styles.select
+                                }
+                              >
+                                <option value="">Выберите значение</option>
+                                {coatingMaterials.map((m) => (
+                                  <option key={m.id} value={m.id} disabled={!m.isActive}>
+                                    {m.name}
+                                    {!m.isActive ? ' (неактивен)' : ''}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : isCanvasTypeAttr ? (
+                              <select
+                                id={`attr-canvas-type-${ca.id}`}
+                                value={formData.canvasTypeId}
+                                onChange={(e) => {
+                                  const id = e.target.value;
+                                  const label = canvasTypes.find((m) => m.id === id)?.name ?? '';
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    canvasTypeId: id,
+                                    attributes: {
+                                      ...prev.attributes,
+                                      [CATEGORY_ATTR_SLUG_CANVAS_TYPE]: label,
+                                    },
+                                  }));
+                                }}
+                                className={
+                                  attrRequired
+                                    ? `${styles.select} ${
+                                        formData.canvasTypeId?.trim()
+                                          ? styles.fieldHighlightFilled
+                                          : styles.fieldHighlightEmpty
+                                      }`
+                                    : styles.select
+                                }
+                              >
+                                <option value="">Выберите значение</option>
+                                {canvasTypes.map((m) => (
                                   <option key={m.id} value={m.id} disabled={!m.isActive}>
                                     {m.name}
                                     {!m.isActive ? ' (неактивен)' : ''}
@@ -2270,6 +2437,26 @@ export function ProductCreatePage({
                                         ...prev,
                                         manufacturerId: '',
                                         attributes: { ...prev.attributes, manufacturer: '' },
+                                      };
+                                    }
+                                    if (slug === CATEGORY_ATTR_SLUG_COATING_MATERIAL) {
+                                      return {
+                                        ...prev,
+                                        coatingMaterialId: '',
+                                        attributes: {
+                                          ...prev.attributes,
+                                          [CATEGORY_ATTR_SLUG_COATING_MATERIAL]: '',
+                                        },
+                                      };
+                                    }
+                                    if (slug === CATEGORY_ATTR_SLUG_CANVAS_TYPE) {
+                                      return {
+                                        ...prev,
+                                        canvasTypeId: '',
+                                        attributes: {
+                                          ...prev.attributes,
+                                          [CATEGORY_ATTR_SLUG_CANVAS_TYPE]: '',
+                                        },
                                       };
                                     }
                                     const newAttrs = { ...prev.attributes };

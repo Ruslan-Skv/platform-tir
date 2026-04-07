@@ -289,6 +289,16 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.settings.catalog-manufacturers',
       },
       {
+        label: 'Материалы покрытия',
+        href: '/admin/settings/catalog/coating-materials',
+        resourceId: 'admin.settings.catalog-coating-materials',
+      },
+      {
+        label: 'Типы полотна',
+        href: '/admin/settings/catalog/canvas-types',
+        resourceId: 'admin.settings.catalog-canvas-types',
+      },
+      {
         label: 'Блок фильтров',
         href: '/admin/settings/catalog-filters',
         resourceId: 'admin.settings.catalog-filters',

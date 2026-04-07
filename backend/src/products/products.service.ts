@@ -116,6 +116,8 @@ export class ProductsService {
       categoryId,
       partnerId,
       manufacturerId,
+      coatingMaterialId,
+      canvasTypeId,
       cardVariants,
       catalogBadgeIds,
       ...productData
@@ -129,6 +131,12 @@ export class ProductsService {
     };
     if (manufacturerId && manufacturerId.trim()) {
       data.manufacturer = { connect: { id: manufacturerId.trim() } };
+    }
+    if (coatingMaterialId && coatingMaterialId.trim()) {
+      data.coatingMaterial = { connect: { id: coatingMaterialId.trim() } };
+    }
+    if (canvasTypeId && canvasTypeId.trim()) {
+      data.canvasType = { connect: { id: canvasTypeId.trim() } };
     }
     // Преобразуем null в пустые массивы для sizes и openingSide
     // В PostgreSQL массивы не могут быть null, только пустые массивы []
@@ -316,6 +324,12 @@ export class ProductsService {
         manufacturer: {
           select: { id: true, name: true, slug: true },
         },
+        coatingMaterial: {
+          select: { id: true, name: true, slug: true },
+        },
+        canvasType: {
+          select: { id: true, name: true, slug: true },
+        },
         ...this.cardVariantsInclude,
         ...this.cardBadgeSelectionsInclude,
         ...this.createdByUpdatedByInclude,
@@ -462,6 +476,20 @@ export class ProductsService {
     return {
       category: true,
       manufacturer: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+      coatingMaterial: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+      canvasType: {
         select: {
           id: true,
           name: true,
@@ -899,6 +927,8 @@ export class ProductsService {
       categoryId,
       partnerId,
       manufacturerId,
+      coatingMaterialId,
+      canvasTypeId,
       cardVariants,
       catalogBadgeIds,
       ...productData
@@ -912,6 +942,16 @@ export class ProductsService {
       data.manufacturer = manufacturerId
         ? { connect: { id: manufacturerId } }
         : { disconnect: true };
+    }
+
+    if (coatingMaterialId !== undefined) {
+      data.coatingMaterial = coatingMaterialId
+        ? { connect: { id: coatingMaterialId } }
+        : { disconnect: true };
+    }
+
+    if (canvasTypeId !== undefined) {
+      data.canvasType = canvasTypeId ? { connect: { id: canvasTypeId } } : { disconnect: true };
     }
 
     // Преобразуем categoryId в связь category, если он передан

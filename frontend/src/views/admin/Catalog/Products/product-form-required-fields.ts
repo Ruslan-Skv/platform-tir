@@ -1,3 +1,4 @@
+import { CATEGORY_ATTR_SLUG_CANVAS_TYPE } from './catalog-attribute-fk-slugs';
 import { multiSelectHasSelection } from './category-attribute-multiselect';
 
 /** Строка привязки атрибута к категории (для валидации карточки товара). */
@@ -16,6 +17,13 @@ export function categoryAttributeValueFilled(
   return String(raw ?? '').trim().length > 0;
 }
 
+/** Значения FK на справочники для атрибутов категории с особыми slug. */
+export type CategoryAttrForeignKeys = {
+  manufacturerId?: string;
+  coatingMaterialId?: string;
+  canvasTypeId?: string;
+};
+
 /**
  * Атрибуты категории с флагом «обязательный» (задаётся в админке: Категории → атрибуты категории).
  * Подписи в ошибке — как в форме (attribute.name).
@@ -23,14 +31,21 @@ export function categoryAttributeValueFilled(
 export function validateRequiredCategoryAttributes(
   rows: CategoryAttrRowForValidation[],
   attributes: Record<string, string>,
-  /** Для атрибута со slug `manufacturer` значение берётся из поля товара, не из `attributes`. */
-  manufacturerId?: string
+  fk?: CategoryAttrForeignKeys
 ): string[] {
   const missing: string[] = [];
   for (const ca of rows) {
     if (!ca.isRequired) continue;
     if (ca.attribute.slug === 'manufacturer') {
-      if (!String(manufacturerId ?? '').trim()) missing.push(ca.attribute.name);
+      if (!String(fk?.manufacturerId ?? '').trim()) missing.push(ca.attribute.name);
+      continue;
+    }
+    if (ca.attribute.slug === 'coating-material') {
+      if (!String(fk?.coatingMaterialId ?? '').trim()) missing.push(ca.attribute.name);
+      continue;
+    }
+    if (ca.attribute.slug === CATEGORY_ATTR_SLUG_CANVAS_TYPE) {
+      if (!String(fk?.canvasTypeId ?? '').trim()) missing.push(ca.attribute.name);
       continue;
     }
     if (!categoryAttributeValueFilled(ca.attribute.type, attributes[ca.attribute.slug])) {
@@ -55,6 +70,8 @@ export interface AdminProductFormSnapshot {
   attributes: Record<string, string>;
   /** Связь товара со справочником производителей (атрибут категории `manufacturer`). */
   manufacturerId: string;
+  /** Справочник «Материал покрытия» (атрибут `coating-material`). */
+  coatingMaterialId: string;
 }
 
 /** Возвращает подписи незаполненных обязательных полей (по порядку проверки). */
@@ -90,7 +107,11 @@ export function validateAdminProductRequiredFields(
 
   if (categoryAttributes?.length) {
     missing.push(
-      ...validateRequiredCategoryAttributes(categoryAttributes, s.attributes, s.manufacturerId)
+      ...validateRequiredCategoryAttributes(categoryAttributes, s.attributes, {
+        manufacturerId: s.manufacturerId,
+        coatingMaterialId: s.coatingMaterialId,
+        canvasTypeId: s.canvasTypeId,
+      })
     );
   }
 

@@ -117,6 +117,26 @@ export class CreateProductDto {
   @IsString()
   manufacturerId?: string;
 
+  @ApiProperty({
+    example: 'coating-material-cuid',
+    required: false,
+    description:
+      'Материал покрытия из справочника (Настройки → Материалы покрытия); атрибут категории coating-material',
+  })
+  @IsOptional()
+  @IsString()
+  coatingMaterialId?: string;
+
+  @ApiProperty({
+    example: 'canvas-type-cuid',
+    required: false,
+    description:
+      'Тип полотна из справочника (Настройки → Типы полотна); атрибут категории canvas-type',
+  })
+  @IsOptional()
+  @IsString()
+  canvasTypeId?: string;
+
   @ApiProperty({ example: ['/images/product1.jpg'], required: false })
   @IsOptional()
   @IsArray()

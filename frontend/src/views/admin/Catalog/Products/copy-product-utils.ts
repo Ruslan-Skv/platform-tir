@@ -1,6 +1,10 @@
 /**
  * Утилиты для копирования товара. Используются на сервере и клиенте.
  */
+import {
+  CATEGORY_ATTR_SLUG_CANVAS_TYPE,
+  CATEGORY_ATTR_SLUG_COATING_MATERIAL,
+} from './catalog-attribute-fk-slugs';
 
 export interface ProductForCopy {
   id: string;
@@ -38,6 +42,10 @@ export interface ProductForCopy {
     badgeId: string;
   }>;
   manufacturerId?: string | null;
+  coatingMaterialId?: string | null;
+  coatingMaterial?: { name: string } | null;
+  canvasTypeId?: string | null;
+  canvasType?: { name: string } | null;
 }
 
 export interface CategoryAttributeForCopy {
@@ -117,6 +125,8 @@ export interface CopiedProductData {
     supplierProductUrl: string;
     supplierPrice: string;
     manufacturerId: string;
+    coatingMaterialId: string;
+    canvasTypeId: string;
     videoUrl: string;
     weight: string;
     attributes: Record<string, string>;
@@ -173,6 +183,13 @@ export function mapProductToCopyData(
     }
   });
 
+  if (product.coatingMaterial?.name) {
+    categoryAttrsOnly[CATEGORY_ATTR_SLUG_COATING_MATERIAL] = product.coatingMaterial.name;
+  }
+  if (product.canvasType?.name) {
+    categoryAttrsOnly[CATEGORY_ATTR_SLUG_CANVAS_TYPE] = product.canvasType.name;
+  }
+
   const mainSupplier = product.suppliers?.find((ps) => ps.isMainSupplier);
 
   return {
@@ -197,6 +214,8 @@ export function mapProductToCopyData(
       supplierProductUrl: '',
       supplierPrice: '',
       manufacturerId: product.manufacturerId ?? '',
+      coatingMaterialId: product.coatingMaterialId ?? '',
+      canvasTypeId: product.canvasTypeId ?? '',
       videoUrl: product.videoUrl || '',
       weight: product.weight != null ? String(product.weight) : '',
       attributes: categoryAttrsOnly,

@@ -132,6 +132,16 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/settings/catalog/manufacturers',
   },
   {
+    id: 'admin.settings.catalog-coating-materials',
+    label: 'Материалы покрытия',
+    path: '/admin/settings/catalog/coating-materials',
+  },
+  {
+    id: 'admin.settings.catalog-canvas-types',
+    label: 'Типы полотна',
+    path: '/admin/settings/catalog/canvas-types',
+  },
+  {
     id: 'admin.settings.user-cabinet',
     label: 'Личный кабинет',
     path: '/admin/settings/user-cabinet',
