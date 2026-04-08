@@ -28,7 +28,8 @@ interface SubcategoryPageProps {
 async function getCategoryNameBySlug(slug: string): Promise<string | null> {
   try {
     const res = await fetch(`${API_URL}/categories/slug/${encodeURIComponent(slug)}`, {
-      next: { revalidate: 60 },
+      // См. [category]/page.tsx — тяжёлый JSON, не кэшируем в Data Cache Next (лимит ~2 MB).
+      cache: 'no-store',
     });
     if (!res.ok) return null;
     const data = await res.json();

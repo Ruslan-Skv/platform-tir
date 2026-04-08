@@ -27,7 +27,8 @@ interface CategoryPageProps {
 async function getCategoryNameBySlug(slug: string): Promise<string | null> {
   try {
     const res = await fetch(`${API_URL}/categories/slug/${encodeURIComponent(slug)}`, {
-      next: { revalidate: 60 },
+      // Ответ категории может быть >2 MB (Next Data Cache не пишет такие ответы — шум в логах).
+      cache: 'no-store',
     });
     if (!res.ok) return null;
     const data = await res.json();
