@@ -67,19 +67,13 @@ export function applyCatalogFilters(
     list = list.filter((p) => p.categorySlug != null && allowed.has(p.categorySlug));
   }
 
-  const avail = params.get('avail');
-  if (avail === 'in_stock') {
-    list = list.filter(
-      (p) => getProductAvailability(Number(p.stock ?? 0), p.onOrder) === 'in_stock'
-    );
-  } else if (avail === 'on_order') {
-    list = list.filter(
-      (p) => getProductAvailability(Number(p.stock ?? 0), p.onOrder) === 'on_order'
-    );
-  } else if (avail === 'out_of_stock') {
-    list = list.filter(
-      (p) => getProductAvailability(Number(p.stock ?? 0), p.onOrder) === 'out_of_stock'
-    );
+  const availVals = params.getAll('avail').filter(Boolean);
+  if (availVals.length > 0) {
+    const allowed = new Set(availVals);
+    list = list.filter((p) => {
+      const a = getProductAvailability(Number(p.stock ?? 0), p.onOrder);
+      return allowed.has(a);
+    });
   }
 
   const mfrIds = params.getAll('mfr');

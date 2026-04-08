@@ -203,7 +203,7 @@ export class CatalogFilterBlocksService {
         filters.push({
           id: 'availability',
           label: item.labelOverride?.trim() || 'Наличие',
-          type: 'radio',
+          type: 'checkbox',
           options: [
             { value: 'in_stock', label: 'В наличии', count: inStock },
             { value: 'on_order', label: 'Под заказ', count: onOrderOnly },

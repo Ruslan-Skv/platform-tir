@@ -259,13 +259,20 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
     return { allSelected, noneSelected };
   }, [searchParams, categoryOptions]);
 
-  const availValue = searchParams.get('avail');
+  const isAvailChecked = useCallback(
+    (value: string) => searchParams.getAll('avail').includes(value),
+    [searchParams]
+  );
 
-  const setAvail = useCallback(
-    (value: string | null) => {
+  const toggleAvail = useCallback(
+    (value: string, checked: boolean) => {
       replaceParams((p) => {
+        const prev = p.getAll('avail');
         p.delete('avail');
-        if (value) p.set('avail', value);
+        const merged = checked
+          ? [...prev.filter((x) => x !== value), value]
+          : prev.filter((x) => x !== value);
+        merged.forEach((v) => p.append('avail', v));
       });
     },
     [replaceParams]
@@ -395,7 +402,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
   }, [priceBounds, priceMaxInput, selectedMin, setPriceRange]);
 
   const renderFacet = (facet: CatalogFilterFacet) => {
-    if (facet.id === 'availability' && facet.type === 'radio') {
+    if (facet.id === 'availability') {
       return (
         <CatalogFilterSection
           key={facet.id}
@@ -405,22 +412,12 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
           onToggle={() => toggleSection(facet.id)}
         >
           <div className={styles.options}>
-            <label className={styles.option}>
-              <input
-                type="radio"
-                name="catalog-avail"
-                checked={availValue == null || availValue === ''}
-                onChange={() => setAvail(null)}
-              />
-              <span className={styles.optionText}>Все</span>
-            </label>
             {facet.options.map((opt) => (
               <label key={opt.value} className={styles.option}>
                 <input
-                  type="radio"
-                  name="catalog-avail"
-                  checked={availValue === opt.value}
-                  onChange={() => setAvail(opt.value)}
+                  type="checkbox"
+                  checked={isAvailChecked(opt.value)}
+                  onChange={(e) => toggleAvail(opt.value, e.target.checked)}
                 />
                 <span className={styles.optionText}>
                   {formatFilterOptionLabel(opt.label, opt.count)}
