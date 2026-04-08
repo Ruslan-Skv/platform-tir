@@ -8,7 +8,7 @@ import { useAuth } from '@/features/auth';
 import { fetchAdminCanvasTypesList } from '@/shared/api/admin-canvas-types';
 import { fetchAdminCoatingMaterialsList } from '@/shared/api/admin-coating-materials';
 import { fetchAdminManufacturersList } from '@/shared/api/admin-manufacturers';
-import { getApiErrorMessage } from '@/shared/lib/api-error';
+import { getApiErrorMessage, isNetworkFetchError } from '@/shared/lib/api-error';
 
 import { ImageUrlModal } from './ImageUrlModal';
 import { ProductComponentsSection } from './ProductComponentsSection';
@@ -314,6 +314,8 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   >([]);
   /** Ошибка загрузки справочников для полей manufacturer / coating / canvas (как в «Настройках»). */
   const [fkCatalogError, setFkCatalogError] = useState<string | null>(null);
+  /** Подсказка про роль/API — только если ошибка не чисто сетевая («Failed to fetch»). */
+  const [fkCatalogShowPermissionHint, setFkCatalogShowPermissionHint] = useState(false);
   const [productNotFound, setProductNotFound] = useState(false);
   const [cardSections, setCardSections] = useState<string[]>(DEFAULT_CARD_SECTIONS);
   const [productMeta, setProductMeta] = useState<{
@@ -585,32 +587,49 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
       slug: m.slug,
       isActive: m.isActive !== false,
     });
+    const listHeaders: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...(getAuthHeaders() as Record<string, string>),
+    };
     void (async () => {
       try {
         const [mList, cmList, ctList] = await Promise.all([
-          fetchAdminManufacturersList({ limit: 500 }),
-          fetchAdminCoatingMaterialsList({ limit: 500 }),
-          fetchAdminCanvasTypesList({ limit: 500 }),
+          fetchAdminManufacturersList({ limit: 500 }, listHeaders),
+          fetchAdminCoatingMaterialsList({ limit: 500 }, listHeaders),
+          fetchAdminCanvasTypesList({ limit: 500 }, listHeaders),
         ]);
         if (cancelled) return;
         setManufacturers(mList.map(mapRow));
         setCoatingMaterials(cmList.map(mapRow));
         setCanvasTypes(ctList.map(mapRow));
         setFkCatalogError(null);
+        setFkCatalogShowPermissionHint(false);
       } catch (err) {
         console.error('Failed to fetch catalog FK lists:', err);
         if (!cancelled) {
-          setFkCatalogError(
-            getApiErrorMessage(err) ??
-              'Не удалось загрузить справочники (производители, материалы, тип полотна).'
-          );
+          if (isNetworkFetchError(err)) {
+            setFkCatalogError(
+              'Не удалось загрузить справочники: запрос к API не выполнился (сеть, CORS, смешанный HTTP/HTTPS или неверный NEXT_PUBLIC_API_URL). Проверьте вкладку «Сеть» в инструментах разработчика.'
+            );
+            setFkCatalogShowPermissionHint(false);
+          } else {
+            const part =
+              err instanceof Error && err.message.trim()
+                ? err.message.trim()
+                : getApiErrorMessage(
+                    err,
+                    'Не удалось загрузить справочники (производители, материалы, тип полотна).'
+                  );
+            setFkCatalogError(part);
+            setFkCatalogShowPermissionHint(true);
+          }
         }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [getAuthHeaders]);
 
   // Предупреждение после создания копии, если часть комплектующих не перенеслась
   useEffect(() => {
@@ -2589,8 +2608,15 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                   <h3 className={styles.attributesSubtitle}>Атрибуты категории</h3>
                   {fkCatalogError && (
                     <p className={styles.error} role="alert">
-                      {fkCatalogError} Поля «Производитель», «Материал покрытия» и «Тип полотна» не
-                      заполнятся без справочников. Проверьте роль пользователя и доступ к API.
+                      {fkCatalogError}
+                      {fkCatalogShowPermissionHint ? (
+                        <>
+                          {' '}
+                          Поля «Производитель», «Материал покрытия» и «Тип полотна» не заполнятся
+                          без справочников. Если ответ сервера был «доступ запрещён», проверьте роль
+                          и выдачу ресурсов в разделе доступа.
+                        </>
+                      ) : null}
                     </p>
                   )}
                   {categoryAttributes.length > 0 ? (

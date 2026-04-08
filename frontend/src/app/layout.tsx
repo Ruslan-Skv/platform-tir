@@ -5,7 +5,24 @@ import { StoreProvider } from '@/shared/lib/redux';
 
 import './globals.css';
 
+/** Публичный URL сайта для OG/Twitter и прочих абсолютных ссылок в metadata (см. Next metadataBase). */
+function getMetadataBase(): URL {
+  const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (raw) {
+    try {
+      return new URL(raw.endsWith('/') ? raw.slice(0, -1) : raw);
+    } catch {
+      /* ignore invalid */
+    }
+  }
+  if (process.env.VERCEL_URL) {
+    return new URL(`https://${process.env.VERCEL_URL}`);
+  }
+  return new URL('http://localhost:3000');
+}
+
 export const metadata: Metadata = {
+  metadataBase: getMetadataBase(),
   title: 'Территория интерьерных решений',
   description: 'Платформа для дизайна интерьеров и покупки товаров',
   icons: {

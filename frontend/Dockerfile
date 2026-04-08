@@ -10,6 +10,9 @@ RUN npm ci
 # Build arguments for Next.js (baked in at build time)
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+# Публичный https://origin без завершающего / — для metadataBase (OG) и абсолютных URL
+ARG NEXT_PUBLIC_SITE_URL
+ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
 ARG API_INTERNAL_URL
 ENV API_INTERNAL_URL=${API_INTERNAL_URL}
 

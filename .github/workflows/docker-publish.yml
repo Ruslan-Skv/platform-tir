@@ -74,6 +74,7 @@ jobs:
           labels: ${{ steps.meta-frontend.outputs.labels }}
           build-args: |
             NEXT_PUBLIC_API_URL=/api/v1
+            NEXT_PUBLIC_SITE_URL=${{ vars.NEXT_PUBLIC_SITE_URL }}
             API_INTERNAL_URL=http://backend:3001
           cache-from: type=gha
           cache-to: type=gha,mode=max

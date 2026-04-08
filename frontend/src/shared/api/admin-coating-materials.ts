@@ -28,18 +28,23 @@ export interface AdminCoatingMaterialsListResponse {
   totalPages: number;
 }
 
-export async function fetchAdminCoatingMaterialsList(params?: {
-  limit?: number;
-  isActive?: boolean;
-}): Promise<AdminCoatingMaterial[]> {
+export async function fetchAdminCoatingMaterialsList(
+  params?: {
+    limit?: number;
+    isActive?: boolean;
+  },
+  headersOverride?: HeadersInit
+): Promise<AdminCoatingMaterial[]> {
   const search = new URLSearchParams();
   search.set('limit', String(params?.limit ?? 500));
   search.set('page', '1');
   if (params?.isActive !== undefined) {
     search.set('isActive', params.isActive ? 'true' : 'false');
   }
+  const base = getAdminAuthHeaders() as Record<string, string>;
+  const extra = headersOverride ? (headersOverride as Record<string, string>) : {};
   const res = await fetch(`${API_URL}/admin/catalog/coating-materials?${search}`, {
-    headers: getAdminAuthHeaders(),
+    headers: { ...base, ...extra },
     cache: 'no-store',
   });
   if (!res.ok) {
