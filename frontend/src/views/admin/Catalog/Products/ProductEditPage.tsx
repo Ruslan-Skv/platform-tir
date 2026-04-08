@@ -9,6 +9,7 @@ import { fetchAdminCanvasTypesList } from '@/shared/api/admin-canvas-types';
 import { fetchAdminCoatingMaterialsList } from '@/shared/api/admin-coating-materials';
 import { fetchAdminDoorThicknessesList } from '@/shared/api/admin-door-thicknesses';
 import { fetchAdminManufacturersList } from '@/shared/api/admin-manufacturers';
+import { fetchAdminWeatherstripsList } from '@/shared/api/admin-weatherstrips';
 import { getApiErrorMessage, isNetworkFetchError } from '@/shared/lib/api-error';
 
 import { ImageUrlModal } from './ImageUrlModal';
@@ -20,10 +21,12 @@ import {
   CATEGORY_ATTR_SLUG_COATING_MATERIAL,
   CATEGORY_ATTR_SLUG_DOOR_THICKNESS,
   CATEGORY_ATTR_SLUG_MANUFACTURER,
+  CATEGORY_ATTR_SLUG_WEATHERSTRIP,
   isCanvasTypeFkCategorySlug,
   isCoatingMaterialFkCategorySlug,
   isDoorThicknessFkCategorySlug,
   isManufacturerFkCategorySlug,
+  isWeatherstripFkCategorySlug,
 } from './catalog-attribute-fk-slugs';
 import {
   decodeMultiSelectStored,
@@ -208,6 +211,8 @@ interface Product {
   canvasType?: { id: string; name: string; slug?: string } | null;
   doorThicknessId?: string | null;
   doorThickness?: { id: string; name: string; slug?: string } | null;
+  weatherstripId?: string | null;
+  weatherstrip?: { id: string; name: string; slug?: string } | null;
   isActive: boolean;
   isFeatured: boolean;
   isNew: boolean;
@@ -320,6 +325,9 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   const [doorThicknesses, setDoorThicknesses] = useState<
     Array<{ id: string; name: string; slug: string; isActive: boolean }>
   >([]);
+  const [weatherstrips, setWeatherstrips] = useState<
+    Array<{ id: string; name: string; slug: string; isActive: boolean }>
+  >([]);
   /** Ошибка загрузки справочников для полей manufacturer / coating / canvas / door thickness (как в «Настройках»). */
   const [fkCatalogError, setFkCatalogError] = useState<string | null>(null);
   /** Подсказка про роль/API — только если ошибка не чисто сетевая («Failed to fetch»). */
@@ -371,6 +379,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     coatingMaterialId: '',
     canvasTypeId: '',
     doorThicknessId: '',
+    weatherstripId: '',
     supplierPrice: '',
     cardVariants: [] as Array<{
       name: string;
@@ -602,17 +611,19 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     };
     void (async () => {
       try {
-        const [mList, cmList, ctList, dtList] = await Promise.all([
+        const [mList, cmList, ctList, dtList, wsList] = await Promise.all([
           fetchAdminManufacturersList({ limit: 500 }, listHeaders),
           fetchAdminCoatingMaterialsList({ limit: 500 }, listHeaders),
           fetchAdminCanvasTypesList({ limit: 500 }, listHeaders),
           fetchAdminDoorThicknessesList({ limit: 500 }, listHeaders),
+          fetchAdminWeatherstripsList({ limit: 500 }, listHeaders),
         ]);
         if (cancelled) return;
         setManufacturers(mList.map(mapRow));
         setCoatingMaterials(cmList.map(mapRow));
         setCanvasTypes(ctList.map(mapRow));
         setDoorThicknesses(dtList.map(mapRow));
+        setWeatherstrips(wsList.map(mapRow));
         setFkCatalogError(null);
         setFkCatalogShowPermissionHint(false);
       } catch (err) {
@@ -629,7 +640,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                 ? err.message.trim()
                 : getApiErrorMessage(
                     err,
-                    'Не удалось загрузить справочники (производители, материалы, тип полотна, толщина двери).'
+                    'Не удалось загрузить справочники (производители, материалы, тип полотна, толщина двери, уплотнители).'
                   );
             setFkCatalogError(part);
             setFkCatalogShowPermissionHint(true);
@@ -787,6 +798,9 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         if (product.doorThickness?.name) {
           categoryAttrsOnly[CATEGORY_ATTR_SLUG_DOOR_THICKNESS] = product.doorThickness.name;
         }
+        if (product.weatherstrip?.name) {
+          categoryAttrsOnly[CATEGORY_ATTR_SLUG_WEATHERSTRIP] = product.weatherstrip.name;
+        }
 
         // Находим основного поставщика
         const mainSupplier = product.suppliers?.find((ps) => ps.isMainSupplier);
@@ -825,6 +839,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           coatingMaterialId: product.coatingMaterialId ?? '',
           canvasTypeId: product.canvasTypeId ?? '',
           doorThicknessId: product.doorThicknessId ?? '',
+          weatherstripId: product.weatherstripId ?? '',
           supplierPrice: supplierPrice,
           isActive: product.isActive ?? true,
           isFeatured: product.isFeatured ?? false,
@@ -1243,6 +1258,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         coatingMaterialId: formData.coatingMaterialId,
         canvasTypeId: formData.canvasTypeId,
         doorThicknessId: formData.doorThicknessId,
+        weatherstripId: formData.weatherstripId,
       },
       categoryAttributes
     );
@@ -1303,6 +1319,17 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
             orderedAttributes.push({
               key: ca.attribute.name,
               value: dt.name,
+              slug: ca.attribute.slug,
+            });
+          }
+          return;
+        }
+        if (isWeatherstripFkCategorySlug(slug)) {
+          const ws = weatherstrips.find((x) => x.id === formData.weatherstripId);
+          if (ws) {
+            orderedAttributes.push({
+              key: ca.attribute.name,
+              value: ws.name,
               slug: ca.attribute.slug,
             });
           }
@@ -1389,6 +1416,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           coatingMaterialId: formData.coatingMaterialId.trim() || null,
           canvasTypeId: formData.canvasTypeId.trim() || null,
           doorThicknessId: formData.doorThicknessId.trim() || null,
+          weatherstripId: formData.weatherstripId.trim() || null,
           cardVariants: formData.cardVariants
             .filter((v) => v.name.trim() && !Number.isNaN(parseFloat(v.price)))
             .slice(0, 5)
@@ -2641,9 +2669,9 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                       {fkCatalogShowPermissionHint ? (
                         <>
                           {' '}
-                          Поля «Производитель», «Материал покрытия», «Тип полотна» и «Толщина двери»
-                          не заполнятся без справочников. Если ответ сервера был «доступ запрещён»,
-                          проверьте роль и выдачу ресурсов в разделе доступа.
+                          Поля «Производитель», «Материал покрытия», «Тип полотна», «Толщина двери»
+                          и «Уплотнители» не заполнятся без справочников. Если ответ сервера был
+                          «доступ запрещён», проверьте роль и выдачу ресурсов в разделе доступа.
                         </>
                       ) : null}
                     </p>
@@ -2657,6 +2685,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                         const isCoatingMaterialAttr = isCoatingMaterialFkCategorySlug(slug);
                         const isCanvasTypeAttr = isCanvasTypeFkCategorySlug(slug);
                         const isDoorThicknessAttr = isDoorThicknessFkCategorySlug(slug);
+                        const isWeatherstripAttr = isWeatherstripFkCategorySlug(slug);
                         /** Обязательность с учётом настроек категории и родителей (см. API getCategoryAttributes). */
                         const attrRequired = Boolean(ca.isRequired);
                         const attrValueFilled = isManufacturerAttr
@@ -2667,7 +2696,9 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                               ? Boolean(formData.canvasTypeId?.trim())
                               : isDoorThicknessAttr
                                 ? Boolean(formData.doorThicknessId?.trim())
-                                : categoryAttributeValueFilled(ca.attribute.type, rawAttr);
+                                : isWeatherstripAttr
+                                  ? Boolean(formData.weatherstripId?.trim())
+                                  : categoryAttributeValueFilled(ca.attribute.type, rawAttr);
                         const showClear = isManufacturerAttr
                           ? Boolean(formData.manufacturerId?.trim())
                           : isCoatingMaterialAttr
@@ -2676,11 +2707,13 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                               ? Boolean(formData.canvasTypeId?.trim())
                               : isDoorThicknessAttr
                                 ? Boolean(formData.doorThicknessId?.trim())
-                                : ca.attribute.type === 'MULTI_SELECT'
-                                  ? multiSelectHasSelection(rawAttr)
-                                  : ca.attribute.type === 'BOOLEAN'
-                                    ? Boolean(rawAttr)
-                                    : Boolean(rawAttr);
+                                : isWeatherstripAttr
+                                  ? Boolean(formData.weatherstripId?.trim())
+                                  : ca.attribute.type === 'MULTI_SELECT'
+                                    ? multiSelectHasSelection(rawAttr)
+                                    : ca.attribute.type === 'BOOLEAN'
+                                      ? Boolean(rawAttr)
+                                      : Boolean(rawAttr);
                         const isSelectFromList =
                           ca.attribute.type === 'SELECT' ||
                           (ca.attribute.type === 'COLOR' && ca.attribute.values.length > 0);
@@ -2834,6 +2867,41 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                                 >
                                   <option value="">Выберите значение</option>
                                   {doorThicknesses.map((m) => (
+                                    <option key={m.id} value={m.id} disabled={!m.isActive}>
+                                      {m.name}
+                                      {!m.isActive ? ' (неактивен)' : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : isWeatherstripAttr ? (
+                                <select
+                                  id={`attr-weatherstrip-${ca.id}`}
+                                  value={formData.weatherstripId}
+                                  onChange={(e) => {
+                                    const id = e.target.value;
+                                    const label =
+                                      weatherstrips.find((m) => m.id === id)?.name ?? '';
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      weatherstripId: id,
+                                      attributes: {
+                                        ...prev.attributes,
+                                        [slug]: label,
+                                      },
+                                    }));
+                                  }}
+                                  className={
+                                    attrRequired
+                                      ? `${styles.select} ${
+                                          formData.weatherstripId?.trim()
+                                            ? styles.fieldHighlightFilled
+                                            : styles.fieldHighlightEmpty
+                                        }`
+                                      : styles.select
+                                  }
+                                >
+                                  <option value="">Выберите значение</option>
+                                  {weatherstrips.map((m) => (
                                     <option key={m.id} value={m.id} disabled={!m.isActive}>
                                       {m.name}
                                       {!m.isActive ? ' (неактивен)' : ''}
@@ -3030,6 +3098,16 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                                         return {
                                           ...prev,
                                           doorThicknessId: '',
+                                          attributes: {
+                                            ...prev.attributes,
+                                            [slug]: '',
+                                          },
+                                        };
+                                      }
+                                      if (isWeatherstripFkCategorySlug(slug)) {
+                                        return {
+                                          ...prev,
+                                          weatherstripId: '',
                                           attributes: {
                                             ...prev.attributes,
                                             [slug]: '',

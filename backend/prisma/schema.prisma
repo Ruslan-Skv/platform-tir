@@ -824,6 +824,21 @@ model DoorThickness {
   @@map("door_thicknesses")
 }
 
+/// Уплотнители — справочник для атрибута категории со slug `weatherstrip`.
+model Weatherstrip {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  isActive    Boolean   @default(true)
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+
+  @@map("weatherstrips")
+}
+
 model Attribute {
   id           String              @id @default(cuid())
   name         String
@@ -1192,6 +1207,7 @@ model Product {
   coatingMaterialId String?
   canvasTypeId     String?
   doorThicknessId  String?
+  weatherstripId   String?
   minStock         Int                @default(0)
   seoKeywords      String[]
   shortDescription String?
@@ -1208,6 +1224,7 @@ model Product {
   coatingMaterial  CoatingMaterial?   @relation(fields: [coatingMaterialId], references: [id])
   canvasType       CanvasType?        @relation(fields: [canvasTypeId], references: [id])
   doorThickness    DoorThickness?     @relation(fields: [doorThicknessId], references: [id])
+  weatherstrip     Weatherstrip?      @relation(fields: [weatherstripId], references: [id])
   partner          Partner?           @relation(fields: [partnerId], references: [id], onDelete: SetNull)
   createdBy        User?              @relation("ProductCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   updatedBy        User?              @relation("ProductUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)

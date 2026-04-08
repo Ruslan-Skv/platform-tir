@@ -127,6 +127,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/settings/catalog-filters',
   },
   {
+    id: 'admin.settings.catalog-dropdown-lists',
+    label: 'Выпадающие списки',
+    path: '/admin/settings/dropdown-lists',
+  },
+  {
     id: 'admin.settings.catalog-manufacturers',
     label: 'Производители',
     path: '/admin/settings/catalog/manufacturers',
@@ -145,6 +150,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     id: 'admin.settings.catalog-door-thicknesses',
     label: 'Толщина двери',
     path: '/admin/settings/catalog/door-thicknesses',
+  },
+  {
+    id: 'admin.settings.catalog-weatherstrips',
+    label: 'Уплотнители',
+    path: '/admin/settings/catalog/weatherstrips',
   },
   {
     id: 'admin.settings.user-cabinet',

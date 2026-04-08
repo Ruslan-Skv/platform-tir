@@ -13,6 +13,9 @@ export const CATEGORY_ATTR_SLUG_CANVAS_TYPE = 'canvas-type';
 /** Атрибут «Толщина двери» — значение из справочника (`Product.doorThicknessId`). */
 export const CATEGORY_ATTR_SLUG_DOOR_THICKNESS = 'door-thickness';
 
+/** Атрибут «Уплотнители» — значение из справочника (`Product.weatherstripId`). */
+export const CATEGORY_ATTR_SLUG_WEATHERSTRIP = 'weatherstrip';
+
 /** Приводит slug атрибута к каноническому виду для сравнения (нижний регистр, `_` → `-`). */
 export function normalizeCategoryAttrSlug(slug: string): string {
   return slug.trim().toLowerCase().replace(/_/g, '-');
@@ -36,4 +39,9 @@ export function isCanvasTypeFkCategorySlug(slug: string): boolean {
 /** Справочник толщины двери: slug `door-thickness`. */
 export function isDoorThicknessFkCategorySlug(slug: string): boolean {
   return normalizeCategoryAttrSlug(slug) === CATEGORY_ATTR_SLUG_DOOR_THICKNESS;
+}
+
+/** Справочник уплотнителей: slug `weatherstrip`. */
+export function isWeatherstripFkCategorySlug(slug: string): boolean {
+  return normalizeCategoryAttrSlug(slug) === CATEGORY_ATTR_SLUG_WEATHERSTRIP;
 }

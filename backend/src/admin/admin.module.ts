@@ -13,6 +13,7 @@ import { ManufacturersModule } from './catalog/manufacturers/manufacturers.modul
 import { CoatingMaterialsModule } from './catalog/coating-materials/coating-materials.module';
 import { CanvasTypesModule } from './catalog/canvas-types/canvas-types.module';
 import { DoorThicknessesModule } from './catalog/door-thicknesses/door-thicknesses.module';
+import { WeatherstripsModule } from './catalog/weatherstrips/weatherstrips.module';
 import { AttributesModule } from './catalog/attributes/attributes.module';
 import { SuppliersModule } from './catalog/suppliers/suppliers.module';
 import { PartnersModule } from './partners/partners.module';
@@ -55,6 +56,7 @@ import { ServiceCatalogModule } from './service-catalog/service-catalog.module';
     CoatingMaterialsModule,
     CanvasTypesModule,
     DoorThicknessesModule,
+    WeatherstripsModule,
     AttributesModule,
     SuppliersModule,
     PartnersModule,
@@ -89,6 +91,7 @@ import { ServiceCatalogModule } from './service-catalog/service-catalog.module';
     CoatingMaterialsModule,
     CanvasTypesModule,
     DoorThicknessesModule,
+    WeatherstripsModule,
     AttributesModule,
     SuppliersModule,
     PartnersModule,

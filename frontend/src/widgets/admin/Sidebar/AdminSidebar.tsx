@@ -284,24 +284,36 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.settings.catalog-badges',
       },
       {
-        label: 'Производители',
-        href: '/admin/settings/catalog/manufacturers',
-        resourceId: 'admin.settings.catalog-manufacturers',
-      },
-      {
-        label: 'Материалы покрытия',
-        href: '/admin/settings/catalog/coating-materials',
-        resourceId: 'admin.settings.catalog-coating-materials',
-      },
-      {
-        label: 'Типы полотна',
-        href: '/admin/settings/catalog/canvas-types',
-        resourceId: 'admin.settings.catalog-canvas-types',
-      },
-      {
-        label: 'Толщина двери',
-        href: '/admin/settings/catalog/door-thicknesses',
-        resourceId: 'admin.settings.catalog-door-thicknesses',
+        label: 'Выпадающие списки',
+        href: '/admin/settings/dropdown-lists',
+        resourceId: 'admin.settings.catalog-dropdown-lists',
+        children: [
+          {
+            label: 'Производители',
+            href: '/admin/settings/catalog/manufacturers',
+            resourceId: 'admin.settings.catalog-manufacturers',
+          },
+          {
+            label: 'Материалы покрытия',
+            href: '/admin/settings/catalog/coating-materials',
+            resourceId: 'admin.settings.catalog-coating-materials',
+          },
+          {
+            label: 'Типы полотна',
+            href: '/admin/settings/catalog/canvas-types',
+            resourceId: 'admin.settings.catalog-canvas-types',
+          },
+          {
+            label: 'Толщина двери',
+            href: '/admin/settings/catalog/door-thicknesses',
+            resourceId: 'admin.settings.catalog-door-thicknesses',
+          },
+          {
+            label: 'Уплотнители',
+            href: '/admin/settings/catalog/weatherstrips',
+            resourceId: 'admin.settings.catalog-weatherstrips',
+          },
+        ],
       },
       {
         label: 'Блок фильтров',

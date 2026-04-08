@@ -3,6 +3,7 @@ import {
   isCoatingMaterialFkCategorySlug,
   isDoorThicknessFkCategorySlug,
   isManufacturerFkCategorySlug,
+  isWeatherstripFkCategorySlug,
 } from './catalog-attribute-fk-slugs';
 import { multiSelectHasSelection } from './category-attribute-multiselect';
 
@@ -28,6 +29,7 @@ export type CategoryAttrForeignKeys = {
   coatingMaterialId?: string;
   canvasTypeId?: string;
   doorThicknessId?: string;
+  weatherstripId?: string;
 };
 
 /**
@@ -58,6 +60,10 @@ export function validateRequiredCategoryAttributes(
       if (!String(fk?.doorThicknessId ?? '').trim()) missing.push(ca.attribute.name);
       continue;
     }
+    if (isWeatherstripFkCategorySlug(ca.attribute.slug)) {
+      if (!String(fk?.weatherstripId ?? '').trim()) missing.push(ca.attribute.name);
+      continue;
+    }
     if (!categoryAttributeValueFilled(ca.attribute.type, attributes[ca.attribute.slug])) {
       missing.push(ca.attribute.name);
     }
@@ -86,6 +92,8 @@ export interface AdminProductFormSnapshot {
   canvasTypeId?: string;
   /** Справочник «Толщина двери» (атрибут `door-thickness`). */
   doorThicknessId?: string;
+  /** Справочник «Уплотнители» (атрибут `weatherstrip`). */
+  weatherstripId?: string;
 }
 
 /** Возвращает подписи незаполненных обязательных полей (по порядку проверки). */
@@ -126,6 +134,7 @@ export function validateAdminProductRequiredFields(
         coatingMaterialId: s.coatingMaterialId,
         canvasTypeId: s.canvasTypeId,
         doorThicknessId: s.doorThicknessId,
+        weatherstripId: s.weatherstripId,
       })
     );
   }

@@ -158,6 +158,16 @@ export class CreateProductDto {
   @IsString()
   doorThicknessId?: string;
 
+  @ApiProperty({
+    example: 'weatherstrip-cuid',
+    required: false,
+    description:
+      'Уплотнители из справочника (Настройки → Уплотнители); атрибут категории weatherstrip',
+  })
+  @IsOptional()
+  @IsString()
+  weatherstripId?: string;
+
   @ApiProperty({ example: ['/images/product1.jpg'], required: false })
   @IsOptional()
   @IsArray()

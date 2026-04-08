@@ -119,6 +119,7 @@ export class ProductsService {
       coatingMaterialId,
       canvasTypeId,
       doorThicknessId,
+      weatherstripId,
       cardVariants,
       catalogBadgeIds,
       ...productData
@@ -141,6 +142,9 @@ export class ProductsService {
     }
     if (doorThicknessId && doorThicknessId.trim()) {
       data.doorThickness = { connect: { id: doorThicknessId.trim() } };
+    }
+    if (weatherstripId && weatherstripId.trim()) {
+      data.weatherstrip = { connect: { id: weatherstripId.trim() } };
     }
     // Преобразуем null в пустые массивы для sizes и openingSide
     // В PostgreSQL массивы не могут быть null, только пустые массивы []
@@ -337,6 +341,9 @@ export class ProductsService {
         doorThickness: {
           select: { id: true, name: true, slug: true },
         },
+        weatherstrip: {
+          select: { id: true, name: true, slug: true },
+        },
         ...this.cardVariantsInclude,
         ...this.cardBadgeSelectionsInclude,
         ...this.createdByUpdatedByInclude,
@@ -504,6 +511,13 @@ export class ProductsService {
         },
       },
       doorThickness: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+      weatherstrip: {
         select: {
           id: true,
           name: true,
@@ -944,6 +958,7 @@ export class ProductsService {
       coatingMaterialId,
       canvasTypeId,
       doorThicknessId,
+      weatherstripId,
       cardVariants,
       catalogBadgeIds,
       ...productData
@@ -972,6 +987,12 @@ export class ProductsService {
     if (doorThicknessId !== undefined) {
       data.doorThickness = doorThicknessId
         ? { connect: { id: doorThicknessId } }
+        : { disconnect: true };
+    }
+
+    if (weatherstripId !== undefined) {
+      data.weatherstrip = weatherstripId
+        ? { connect: { id: weatherstripId } }
         : { disconnect: true };
     }
 
