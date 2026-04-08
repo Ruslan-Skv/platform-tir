@@ -118,6 +118,7 @@ export class ProductsService {
       manufacturerId,
       coatingMaterialId,
       canvasTypeId,
+      doorThicknessId,
       cardVariants,
       catalogBadgeIds,
       ...productData
@@ -137,6 +138,9 @@ export class ProductsService {
     }
     if (canvasTypeId && canvasTypeId.trim()) {
       data.canvasType = { connect: { id: canvasTypeId.trim() } };
+    }
+    if (doorThicknessId && doorThicknessId.trim()) {
+      data.doorThickness = { connect: { id: doorThicknessId.trim() } };
     }
     // Преобразуем null в пустые массивы для sizes и openingSide
     // В PostgreSQL массивы не могут быть null, только пустые массивы []
@@ -330,6 +334,9 @@ export class ProductsService {
         canvasType: {
           select: { id: true, name: true, slug: true },
         },
+        doorThickness: {
+          select: { id: true, name: true, slug: true },
+        },
         ...this.cardVariantsInclude,
         ...this.cardBadgeSelectionsInclude,
         ...this.createdByUpdatedByInclude,
@@ -490,6 +497,13 @@ export class ProductsService {
         },
       },
       canvasType: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+      doorThickness: {
         select: {
           id: true,
           name: true,
@@ -929,6 +943,7 @@ export class ProductsService {
       manufacturerId,
       coatingMaterialId,
       canvasTypeId,
+      doorThicknessId,
       cardVariants,
       catalogBadgeIds,
       ...productData
@@ -952,6 +967,12 @@ export class ProductsService {
 
     if (canvasTypeId !== undefined) {
       data.canvasType = canvasTypeId ? { connect: { id: canvasTypeId } } : { disconnect: true };
+    }
+
+    if (doorThicknessId !== undefined) {
+      data.doorThickness = doorThicknessId
+        ? { connect: { id: doorThicknessId } }
+        : { disconnect: true };
     }
 
     // Преобразуем categoryId в связь category, если он передан

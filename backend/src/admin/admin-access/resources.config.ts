@@ -142,6 +142,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/settings/catalog/canvas-types',
   },
   {
+    id: 'admin.settings.catalog-door-thicknesses',
+    label: 'Толщина двери',
+    path: '/admin/settings/catalog/door-thicknesses',
+  },
+  {
     id: 'admin.settings.user-cabinet',
     label: 'Личный кабинет',
     path: '/admin/settings/user-cabinet',

@@ -148,6 +148,16 @@ export class CreateProductDto {
   @IsString()
   canvasTypeId?: string;
 
+  @ApiProperty({
+    example: 'door-thickness-cuid',
+    required: false,
+    description:
+      'Толщина двери из справочника (Настройки → Толщина двери); атрибут категории door-thickness',
+  })
+  @IsOptional()
+  @IsString()
+  doorThicknessId?: string;
+
   @ApiProperty({ example: ['/images/product1.jpg'], required: false })
   @IsOptional()
   @IsArray()

@@ -299,6 +299,11 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.settings.catalog-canvas-types',
       },
       {
+        label: 'Толщина двери',
+        href: '/admin/settings/catalog/door-thicknesses',
+        resourceId: 'admin.settings.catalog-door-thicknesses',
+      },
+      {
         label: 'Блок фильтров',
         href: '/admin/settings/catalog-filters',
         resourceId: 'admin.settings.catalog-filters',

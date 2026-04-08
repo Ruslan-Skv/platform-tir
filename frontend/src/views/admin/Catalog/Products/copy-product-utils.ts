@@ -4,6 +4,7 @@
 import {
   CATEGORY_ATTR_SLUG_CANVAS_TYPE,
   CATEGORY_ATTR_SLUG_COATING_MATERIAL,
+  CATEGORY_ATTR_SLUG_DOOR_THICKNESS,
   CATEGORY_ATTR_SLUG_MANUFACTURER,
 } from './catalog-attribute-fk-slugs';
 
@@ -49,6 +50,8 @@ export interface ProductForCopy {
   coatingMaterial?: { name: string } | null;
   canvasTypeId?: string | null;
   canvasType?: { name: string } | null;
+  doorThicknessId?: string | null;
+  doorThickness?: { name: string } | null;
 }
 
 export interface CategoryAttributeForCopy {
@@ -131,6 +134,7 @@ export interface CopiedProductData {
     manufacturerId: string;
     coatingMaterialId: string;
     canvasTypeId: string;
+    doorThicknessId: string;
     videoUrl: string;
     attributes: Record<string, string>;
     images: string[];
@@ -195,6 +199,9 @@ export function mapProductToCopyData(
   if (product.canvasType?.name) {
     categoryAttrsOnly[CATEGORY_ATTR_SLUG_CANVAS_TYPE] = product.canvasType.name;
   }
+  if (product.doorThickness?.name) {
+    categoryAttrsOnly[CATEGORY_ATTR_SLUG_DOOR_THICKNESS] = product.doorThickness.name;
+  }
 
   const mainSupplier = product.suppliers?.find((ps) => ps.isMainSupplier);
 
@@ -223,6 +230,7 @@ export function mapProductToCopyData(
       manufacturerId: product.manufacturerId ?? '',
       coatingMaterialId: product.coatingMaterialId ?? '',
       canvasTypeId: product.canvasTypeId ?? '',
+      doorThicknessId: product.doorThicknessId ?? '',
       videoUrl: product.videoUrl || '',
       attributes: categoryAttrsOnly,
       images: Array.isArray(product.images) ? [...product.images] : [],

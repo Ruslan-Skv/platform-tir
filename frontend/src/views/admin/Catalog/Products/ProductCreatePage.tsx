@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth';
 import { fetchAdminCanvasTypesList } from '@/shared/api/admin-canvas-types';
 import { fetchAdminCoatingMaterialsList } from '@/shared/api/admin-coating-materials';
+import { fetchAdminDoorThicknessesList } from '@/shared/api/admin-door-thicknesses';
 import { fetchAdminManufacturersList } from '@/shared/api/admin-manufacturers';
 import { getApiErrorMessage, isNetworkFetchError } from '@/shared/lib/api-error';
 
@@ -16,6 +17,7 @@ import styles from './ProductEditPage.module.css';
 import {
   isCanvasTypeFkCategorySlug,
   isCoatingMaterialFkCategorySlug,
+  isDoorThicknessFkCategorySlug,
   isManufacturerFkCategorySlug,
 } from './catalog-attribute-fk-slugs';
 import {
@@ -209,6 +211,7 @@ const defaultFormData = {
   manufacturerId: '',
   coatingMaterialId: '',
   canvasTypeId: '',
+  doorThicknessId: '',
   supplierPrice: '',
   videoUrl: '',
   attributes: {} as Record<string, string>,
@@ -261,6 +264,9 @@ export function ProductCreatePage({
     Array<{ id: string; name: string; slug: string; isActive: boolean }>
   >([]);
   const [canvasTypes, setCanvasTypes] = useState<
+    Array<{ id: string; name: string; slug: string; isActive: boolean }>
+  >([]);
+  const [doorThicknesses, setDoorThicknesses] = useState<
     Array<{ id: string; name: string; slug: string; isActive: boolean }>
   >([]);
   const [fkCatalogError, setFkCatalogError] = useState<string | null>(null);
@@ -618,15 +624,17 @@ export function ProductCreatePage({
     };
     void (async () => {
       try {
-        const [mList, cmList, ctList] = await Promise.all([
+        const [mList, cmList, ctList, dtList] = await Promise.all([
           fetchAdminManufacturersList({ limit: 500 }, listHeaders),
           fetchAdminCoatingMaterialsList({ limit: 500 }, listHeaders),
           fetchAdminCanvasTypesList({ limit: 500 }, listHeaders),
+          fetchAdminDoorThicknessesList({ limit: 500 }, listHeaders),
         ]);
         if (cancelled) return;
         setManufacturers(mList.map(mapRow));
         setCoatingMaterials(cmList.map(mapRow));
         setCanvasTypes(ctList.map(mapRow));
+        setDoorThicknesses(dtList.map(mapRow));
         setFkCatalogError(null);
         setFkCatalogShowPermissionHint(false);
       } catch (err) {
@@ -643,7 +651,7 @@ export function ProductCreatePage({
                 ? err.message.trim()
                 : getApiErrorMessage(
                     err,
-                    'Не удалось загрузить справочники (производители, материалы, тип полотна).'
+                    'Не удалось загрузить справочники (производители, материалы, тип полотна, толщина двери).'
                   );
             setFkCatalogError(part);
             setFkCatalogShowPermissionHint(true);
@@ -1087,6 +1095,7 @@ export function ProductCreatePage({
         manufacturerId: formData.manufacturerId,
         coatingMaterialId: formData.coatingMaterialId,
         canvasTypeId: formData.canvasTypeId,
+        doorThicknessId: formData.doorThicknessId,
       },
       categoryAttributes
     );
@@ -1136,6 +1145,17 @@ export function ProductCreatePage({
             orderedAttributes.push({
               key: ca.attribute.name,
               value: ct.name,
+              slug: ca.attribute.slug,
+            });
+          }
+          return;
+        }
+        if (isDoorThicknessFkCategorySlug(slug)) {
+          const dt = doorThicknesses.find((x) => x.id === formData.doorThicknessId);
+          if (dt) {
+            orderedAttributes.push({
+              key: ca.attribute.name,
+              value: dt.name,
               slug: ca.attribute.slug,
             });
           }
@@ -1208,6 +1228,7 @@ export function ProductCreatePage({
         manufacturerId: formData.manufacturerId.trim() || undefined,
         coatingMaterialId: formData.coatingMaterialId.trim() || undefined,
         canvasTypeId: formData.canvasTypeId.trim() || undefined,
+        doorThicknessId: formData.doorThicknessId.trim() || undefined,
         videoUrl: formData.videoUrl || undefined,
         catalogBadgeIds: formData.catalogBadgeIds,
       };
@@ -2116,9 +2137,9 @@ export function ProductCreatePage({
                     {fkCatalogShowPermissionHint ? (
                       <>
                         {' '}
-                        Поля «Производитель», «Материал покрытия» и «Тип полотна» не заполнятся без
-                        справочников. Если ответ сервера был «доступ запрещён», проверьте роль и
-                        выдачу ресурсов в разделе доступа.
+                        Поля «Производитель», «Материал покрытия», «Тип полотна» и «Толщина двери»
+                        не заполнятся без справочников. Если ответ сервера был «доступ запрещён»,
+                        проверьте роль и выдачу ресурсов в разделе доступа.
                       </>
                     ) : null}
                   </p>
@@ -2131,6 +2152,7 @@ export function ProductCreatePage({
                       const isManufacturerAttr = isManufacturerFkCategorySlug(slug);
                       const isCoatingMaterialAttr = isCoatingMaterialFkCategorySlug(slug);
                       const isCanvasTypeAttr = isCanvasTypeFkCategorySlug(slug);
+                      const isDoorThicknessAttr = isDoorThicknessFkCategorySlug(slug);
                       const attrRequired = Boolean(ca.isRequired);
                       const attrValueFilled = isManufacturerAttr
                         ? Boolean(formData.manufacturerId?.trim())
@@ -2138,18 +2160,22 @@ export function ProductCreatePage({
                           ? Boolean(formData.coatingMaterialId?.trim())
                           : isCanvasTypeAttr
                             ? Boolean(formData.canvasTypeId?.trim())
-                            : categoryAttributeValueFilled(ca.attribute.type, rawAttr);
+                            : isDoorThicknessAttr
+                              ? Boolean(formData.doorThicknessId?.trim())
+                              : categoryAttributeValueFilled(ca.attribute.type, rawAttr);
                       const showClear = isManufacturerAttr
                         ? Boolean(formData.manufacturerId?.trim())
                         : isCoatingMaterialAttr
                           ? Boolean(formData.coatingMaterialId?.trim())
                           : isCanvasTypeAttr
                             ? Boolean(formData.canvasTypeId?.trim())
-                            : ca.attribute.type === 'MULTI_SELECT'
-                              ? multiSelectHasSelection(rawAttr)
-                              : ca.attribute.type === 'BOOLEAN'
-                                ? Boolean(rawAttr)
-                                : Boolean(rawAttr);
+                            : isDoorThicknessAttr
+                              ? Boolean(formData.doorThicknessId?.trim())
+                              : ca.attribute.type === 'MULTI_SELECT'
+                                ? multiSelectHasSelection(rawAttr)
+                                : ca.attribute.type === 'BOOLEAN'
+                                  ? Boolean(rawAttr)
+                                  : Boolean(rawAttr);
                       const isSelectFromList =
                         ca.attribute.type === 'SELECT' ||
                         (ca.attribute.type === 'COLOR' && ca.attribute.values.length > 0);
@@ -2267,6 +2293,41 @@ export function ProductCreatePage({
                               >
                                 <option value="">Выберите значение</option>
                                 {canvasTypes.map((m) => (
+                                  <option key={m.id} value={m.id} disabled={!m.isActive}>
+                                    {m.name}
+                                    {!m.isActive ? ' (неактивен)' : ''}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : isDoorThicknessAttr ? (
+                              <select
+                                id={`attr-door-thickness-${ca.id}`}
+                                value={formData.doorThicknessId}
+                                onChange={(e) => {
+                                  const id = e.target.value;
+                                  const label =
+                                    doorThicknesses.find((m) => m.id === id)?.name ?? '';
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    doorThicknessId: id,
+                                    attributes: {
+                                      ...prev.attributes,
+                                      [slug]: label,
+                                    },
+                                  }));
+                                }}
+                                className={
+                                  attrRequired
+                                    ? `${styles.select} ${
+                                        formData.doorThicknessId?.trim()
+                                          ? styles.fieldHighlightFilled
+                                          : styles.fieldHighlightEmpty
+                                      }`
+                                    : styles.select
+                                }
+                              >
+                                <option value="">Выберите значение</option>
+                                {doorThicknesses.map((m) => (
                                   <option key={m.id} value={m.id} disabled={!m.isActive}>
                                     {m.name}
                                     {!m.isActive ? ' (неактивен)' : ''}
@@ -2453,6 +2514,16 @@ export function ProductCreatePage({
                                       return {
                                         ...prev,
                                         canvasTypeId: '',
+                                        attributes: {
+                                          ...prev.attributes,
+                                          [slug]: '',
+                                        },
+                                      };
+                                    }
+                                    if (isDoorThicknessFkCategorySlug(slug)) {
+                                      return {
+                                        ...prev,
+                                        doorThicknessId: '',
                                         attributes: {
                                           ...prev.attributes,
                                           [slug]: '',

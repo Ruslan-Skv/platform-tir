@@ -10,6 +10,9 @@ export const CATEGORY_ATTR_SLUG_COATING_MATERIAL = 'coating-material';
 /** Атрибут «Тип полотна» — значение из справочника (`Product.canvasTypeId`). */
 export const CATEGORY_ATTR_SLUG_CANVAS_TYPE = 'canvas-type';
 
+/** Атрибут «Толщина двери» — значение из справочника (`Product.doorThicknessId`). */
+export const CATEGORY_ATTR_SLUG_DOOR_THICKNESS = 'door-thickness';
+
 /** Приводит slug атрибута к каноническому виду для сравнения (нижний регистр, `_` → `-`). */
 export function normalizeCategoryAttrSlug(slug: string): string {
   return slug.trim().toLowerCase().replace(/_/g, '-');
@@ -28,4 +31,9 @@ export function isCoatingMaterialFkCategorySlug(slug: string): boolean {
 /** Справочник типа полотна: slug `canvas-type`. */
 export function isCanvasTypeFkCategorySlug(slug: string): boolean {
   return normalizeCategoryAttrSlug(slug) === CATEGORY_ATTR_SLUG_CANVAS_TYPE;
+}
+
+/** Справочник толщины двери: slug `door-thickness`. */
+export function isDoorThicknessFkCategorySlug(slug: string): boolean {
+  return normalizeCategoryAttrSlug(slug) === CATEGORY_ATTR_SLUG_DOOR_THICKNESS;
 }

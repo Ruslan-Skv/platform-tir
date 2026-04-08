@@ -809,6 +809,21 @@ model CanvasType {
   @@map("canvas_types")
 }
 
+/// Толщина двери — справочник для атрибута категории со slug `door-thickness`.
+model DoorThickness {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  isActive    Boolean   @default(true)
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+
+  @@map("door_thicknesses")
+}
+
 model Attribute {
   id           String              @id @default(cuid())
   name         String
@@ -1176,6 +1191,7 @@ model Product {
   manufacturerId   String?
   coatingMaterialId String?
   canvasTypeId     String?
+  doorThicknessId  String?
   minStock         Int                @default(0)
   seoKeywords      String[]
   shortDescription String?
@@ -1191,6 +1207,7 @@ model Product {
   manufacturer     Manufacturer?      @relation(fields: [manufacturerId], references: [id])
   coatingMaterial  CoatingMaterial?   @relation(fields: [coatingMaterialId], references: [id])
   canvasType       CanvasType?        @relation(fields: [canvasTypeId], references: [id])
+  doorThickness    DoorThickness?     @relation(fields: [doorThicknessId], references: [id])
   partner          Partner?           @relation(fields: [partnerId], references: [id], onDelete: SetNull)
   createdBy        User?              @relation("ProductCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   updatedBy        User?              @relation("ProductUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)

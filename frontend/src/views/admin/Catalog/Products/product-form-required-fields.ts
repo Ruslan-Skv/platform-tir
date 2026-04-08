@@ -1,6 +1,7 @@
 import {
   isCanvasTypeFkCategorySlug,
   isCoatingMaterialFkCategorySlug,
+  isDoorThicknessFkCategorySlug,
   isManufacturerFkCategorySlug,
 } from './catalog-attribute-fk-slugs';
 import { multiSelectHasSelection } from './category-attribute-multiselect';
@@ -26,6 +27,7 @@ export type CategoryAttrForeignKeys = {
   manufacturerId?: string;
   coatingMaterialId?: string;
   canvasTypeId?: string;
+  doorThicknessId?: string;
 };
 
 /**
@@ -50,6 +52,10 @@ export function validateRequiredCategoryAttributes(
     }
     if (isCanvasTypeFkCategorySlug(ca.attribute.slug)) {
       if (!String(fk?.canvasTypeId ?? '').trim()) missing.push(ca.attribute.name);
+      continue;
+    }
+    if (isDoorThicknessFkCategorySlug(ca.attribute.slug)) {
+      if (!String(fk?.doorThicknessId ?? '').trim()) missing.push(ca.attribute.name);
       continue;
     }
     if (!categoryAttributeValueFilled(ca.attribute.type, attributes[ca.attribute.slug])) {
@@ -78,6 +84,8 @@ export interface AdminProductFormSnapshot {
   coatingMaterialId: string;
   /** Справочник «Тип полотна» (атрибут `canvas-type`). */
   canvasTypeId?: string;
+  /** Справочник «Толщина двери» (атрибут `door-thickness`). */
+  doorThicknessId?: string;
 }
 
 /** Возвращает подписи незаполненных обязательных полей (по порядку проверки). */
@@ -117,6 +125,7 @@ export function validateAdminProductRequiredFields(
         manufacturerId: s.manufacturerId,
         coatingMaterialId: s.coatingMaterialId,
         canvasTypeId: s.canvasTypeId,
+        doorThicknessId: s.doorThicknessId,
       })
     );
   }
