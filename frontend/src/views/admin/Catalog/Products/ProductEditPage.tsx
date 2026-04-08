@@ -1981,7 +1981,8 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                 Слева от фото (картинки, не более 5)
               </h3>
               <p className={styles.hintTight}>
-                JPG в «Настройки → Бэйджи карточек». Выбрано: {formData.catalogBadgeIds.length} / 5.
+                PNG или JPG в «Настройки → Бэйджи карточек». Выбрано:{' '}
+                {formData.catalogBadgeIds.length} / 5.
               </p>
               <div className={styles.cardBadgesPickGrid}>
                 {badgeDefinitions.map((b) => {

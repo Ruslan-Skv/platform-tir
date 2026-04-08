@@ -4,10 +4,18 @@ import React, { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
 import styles from './ProductCardBadgesSection.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+
+function isAllowedBadgeImageFile(file: File): boolean {
+  const byName = /\.(png|jpe?g)$/i.test(file.name);
+  const byType =
+    file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/pjpeg';
+  return byName || byType;
+}
 
 export interface ProductCardBadgeDefinition {
   id: string;
@@ -25,6 +33,7 @@ export function ProductCardBadgesSection() {
   const [descDraft, setDescDraft] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const showToast = useCallback((message: string, type: 'success' | 'error') => {
@@ -54,8 +63,8 @@ export function ProductCardBadgesSection() {
   }, [load]);
 
   const handleUpload = async (id: string, file: File) => {
-    if (!/\.jpe?g$/i.test(file.name) && file.type !== 'image/jpeg') {
-      showToast('Допустим только JPEG (.jpg)', 'error');
+    if (!isAllowedBadgeImageFile(file)) {
+      showToast('Допустимы PNG или JPEG (.png, .jpg, .jpeg)', 'error');
       return;
     }
     setUploadingId(id);
@@ -101,7 +110,7 @@ export function ProductCardBadgesSection() {
     }
   };
 
-  const handleClear = async (id: string) => {
+  const performRemoveIcon = async (id: string) => {
     setUploadingId(id);
     try {
       const res = await fetch(`${API_URL}/admin/product-card-badges/definitions/${id}`, {
@@ -112,15 +121,20 @@ export function ProductCardBadgesSection() {
         },
         body: JSON.stringify({ imageUrl: null }),
       });
-      if (!res.ok) throw new Error('Не удалось удалить изображение');
+      if (!res.ok) throw new Error('Не удалось удалить иконку');
       await load();
-      showToast('Изображение снято', 'success');
+      showToast('Иконка удалена. Можно загрузить новую.', 'success');
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Ошибка', 'error');
     } finally {
       setUploadingId(null);
     }
   };
+
+  const deleteConfirmLabel =
+    deleteConfirmId !== null
+      ? (rows.find((r) => r.id === deleteConfirmId)?.label ?? 'этот бэйдж')
+      : '';
 
   if (loading) {
     return (
@@ -139,12 +153,26 @@ export function ProductCardBadgesSection() {
           {toast.message}
         </p>
       )}
+      <ConfirmModal
+        isOpen={deleteConfirmId !== null}
+        title="Удалить иконку бэйджа"
+        message={`Удалить иконку для «${deleteConfirmLabel}»? На сайте перестанет отображаться этот бэйдж, пока не загрузите новое изображение.`}
+        confirmText="Удалить"
+        cancelText="Отмена"
+        variant="danger"
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={() => {
+          if (deleteConfirmId) void performRemoveIcon(deleteConfirmId);
+        }}
+      />
       <section>
         <p className={styles.intro}>
-          Загрузите картинки в формате JPEG для каждого типа бэйджа и при необходимости укажите
-          описание — оно показывается покупателю при наведении на бэйдж. На карточке товара (слева
-          от фото) отображаются только выбранные для товара бэйджи с загруженным изображением (не
-          более 5 на товар — задаётся в карточке товара).
+          Загрузите иконки в формате <strong>PNG</strong> (с прозрачным фоном) или JPEG для каждого
+          типа бэйджа и при необходимости укажите описание — оно показывается покупателю при
+          наведении на бэйдж. На карточке товара (слева от фото) отображаются только выбранные для
+          товара бэйджи с загруженным изображением (не более 5 на товар — задаётся в карточке
+          товара). Новый файл при загрузке подменяет текущую иконку; крестик на превью очищает слот
+          — после этого можно снова загрузить картинку.
         </p>
         <div className={styles.list}>
           {rows.map((row) => (
@@ -179,41 +207,51 @@ export function ProductCardBadgesSection() {
                   </button>
                 </div>
               </div>
-              <div className={styles.thumbWrap}>
-                {row.imageUrl ? (
-                  <img src={publicUploadUrl(row.imageUrl)} alt="" className={styles.thumbImg} />
-                ) : (
-                  <span className={styles.thumbEmpty}>нет</span>
-                )}
-              </div>
-              <label
-                className={`${styles.uploadLabel} ${uploadingId === row.id ? styles.uploadLabelWait : ''}`}
-              >
-                <span className={styles.uploadBtn}>
-                  {uploadingId === row.id ? '…' : 'Загрузить JPG'}
-                </span>
-                <input
-                  type="file"
-                  accept=".jpg,.jpeg,image/jpeg"
-                  className={styles.fileInput}
-                  disabled={uploadingId !== null}
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    e.target.value = '';
-                    if (f) void handleUpload(row.id, f);
-                  }}
-                />
-              </label>
-              {row.imageUrl && (
-                <button
-                  type="button"
-                  className={styles.clearBtn}
-                  onClick={() => void handleClear(row.id)}
-                  disabled={uploadingId !== null}
+              <div className={styles.thumbCol}>
+                <div
+                  className={`${styles.thumbWrap} ${row.imageUrl ? styles.thumbWrapHasImage : ''}`}
                 >
-                  Снять
-                </button>
-              )}
+                  {row.imageUrl ? (
+                    <>
+                      <img src={publicUploadUrl(row.imageUrl)} alt="" className={styles.thumbImg} />
+                      <button
+                        type="button"
+                        className={styles.thumbRemoveOverlay}
+                        title="Удалить иконку"
+                        aria-label={`Удалить иконку: ${row.label}`}
+                        disabled={uploadingId !== null}
+                        onClick={() => setDeleteConfirmId(row.id)}
+                      >
+                        ×
+                      </button>
+                    </>
+                  ) : (
+                    <span className={styles.thumbEmpty}>нет</span>
+                  )}
+                </div>
+                <label
+                  className={`${styles.uploadLabel} ${uploadingId === row.id ? styles.uploadLabelWait : ''}`}
+                >
+                  <span className={styles.uploadBtn}>
+                    {uploadingId === row.id
+                      ? '…'
+                      : row.imageUrl
+                        ? 'Заменить файл'
+                        : 'Загрузить PNG / JPG'}
+                  </span>
+                  <input
+                    type="file"
+                    accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+                    className={styles.fileInput}
+                    disabled={uploadingId !== null}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      e.target.value = '';
+                      if (f) void handleUpload(row.id, f);
+                    }}
+                  />
+                </label>
+              </div>
             </div>
           ))}
         </div>

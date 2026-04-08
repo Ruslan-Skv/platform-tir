@@ -33,7 +33,7 @@ export class AdminProductCardBadgesController {
   constructor(private readonly productCardBadgesService: ProductCardBadgesService) {}
 
   @Post('definitions/:id/upload')
-  @ApiOperation({ summary: 'Загрузить JPG для бэйджа карточки товара' })
+  @ApiOperation({ summary: 'Загрузить PNG или JPEG для бэйджа карточки товара' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -49,14 +49,25 @@ export class AdminProductCardBadgesController {
           cb(null, badgesDir);
         },
         filename: (_req, file, cb) => {
-          cb(null, `badge-${Date.now()}${extname(file.originalname) || '.jpg'}`);
+          const ext = extname(file.originalname).toLowerCase();
+          const fallback =
+            file.mimetype === 'image/png'
+              ? '.png'
+              : file.mimetype === 'image/jpeg'
+                ? '.jpg'
+                : '.png';
+          cb(null, `badge-${Date.now()}${ext || fallback}`);
         },
       }),
       limits: { fileSize: 2 * 1024 * 1024 },
       fileFilter: (_req, file, cb) => {
-        const ok = /\.jpe?g$/i.test(file.originalname) || file.mimetype === 'image/jpeg';
-        if (!ok) {
-          cb(new BadRequestException('Допустим только формат JPEG (.jpg, .jpeg)'), false);
+        const isJpeg =
+          /\.jpe?g$/i.test(file.originalname) ||
+          file.mimetype === 'image/jpeg' ||
+          file.mimetype === 'image/pjpeg';
+        const isPng = /\.png$/i.test(file.originalname) || file.mimetype === 'image/png';
+        if (!isJpeg && !isPng) {
+          cb(new BadRequestException('Допустимы только PNG (.png) или JPEG (.jpg, .jpeg)'), false);
           return;
         }
         cb(null, true);
