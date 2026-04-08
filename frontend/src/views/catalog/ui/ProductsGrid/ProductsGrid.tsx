@@ -37,6 +37,8 @@ interface ApiProduct {
   videoUrl?: string | null;
   attributes: Record<string, unknown> | null;
   manufacturer?: { id: string; name: string; slug?: string } | null;
+  doorThickness?: { id: string; name: string; slug?: string } | null;
+  weatherstrip?: { id: string; name: string; slug?: string } | null;
   sortOrder?: number;
   createdAt?: string;
   rating?: number;
@@ -267,6 +269,8 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
           stock: p.stock,
           onOrder: p.onOrder ?? false,
           manufacturerId: p.manufacturer?.id ?? null,
+          doorThicknessLabel: p.doorThickness?.name ?? null,
+          weatherstripLabel: p.weatherstrip?.name ?? null,
           attributes: p.attributes ?? null,
           discount: p.comparePrice
             ? Math.round(

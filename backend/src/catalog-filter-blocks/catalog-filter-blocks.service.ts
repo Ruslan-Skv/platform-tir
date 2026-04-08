@@ -13,6 +13,29 @@ export class CatalogFilterBlocksService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** Значение атрибута из JSON товара (совместимо с публичным фронтом). */
+  /**
+   * Значение для фасета «атрибут»: из JSON товара или из справочника (толщина / уплотнитель),
+   * если в карточке заданы FK и в JSON значения нет.
+   */
+  getAttrValueForFacetProduct(
+    p: {
+      attributes: unknown;
+      doorThickness?: { name: string } | null;
+      weatherstrip?: { name: string } | null;
+    },
+    meta: { slug: string; name: string },
+  ): string | null {
+    const fromJson = this.getAttrValueFromProductJson(p.attributes, meta);
+    if (fromJson) return fromJson;
+    if (meta.slug === 'door-thickness' && p.doorThickness?.name) {
+      return p.doorThickness.name.trim();
+    }
+    if (meta.slug === 'weatherstrip' && p.weatherstrip?.name) {
+      return p.weatherstrip.name.trim();
+    }
+    return null;
+  }
+
   getAttrValueFromProductJson(
     attributes: unknown,
     meta: { slug: string; name: string },
@@ -184,6 +207,8 @@ export class CatalogFilterBlocksService {
         onOrder: true,
         manufacturerId: true,
         manufacturer: { select: { id: true, name: true } },
+        doorThickness: { select: { name: true } },
+        weatherstrip: { select: { name: true } },
       },
     });
 
@@ -240,7 +265,7 @@ export class CatalogFilterBlocksService {
         if (!meta) continue;
         const valueCounts = new Map<string, number>();
         for (const p of products) {
-          const v = this.getAttrValueFromProductJson(p.attributes, {
+          const v = this.getAttrValueForFacetProduct(p, {
             slug: meta.slug,
             name: meta.name,
           });

@@ -168,6 +168,135 @@ async function main() {
   console.log('✅ Created categories');
 
   // ============================================
+  // Входные двери: атрибуты категории, справочники, блок фильтров (публичный каталог)
+  // ============================================
+  const attrDoorThickness = await prisma.attribute.upsert({
+    where: { slug: 'door-thickness' },
+    update: { name: 'Толщина двери' },
+    create: {
+      name: 'Толщина двери',
+      slug: 'door-thickness',
+      isFilterable: true,
+      order: 10,
+    },
+  });
+  const attrWeatherstrip = await prisma.attribute.upsert({
+    where: { slug: 'weatherstrip' },
+    update: { name: 'Уплотнитель' },
+    create: {
+      name: 'Уплотнитель',
+      slug: 'weatherstrip',
+      isFilterable: true,
+      order: 11,
+    },
+  });
+
+  await prisma.categoryAttribute.upsert({
+    where: {
+      categoryId_attributeId: {
+        categoryId: entranceDoorsCategory.id,
+        attributeId: attrDoorThickness.id,
+      },
+    },
+    update: {},
+    create: {
+      categoryId: entranceDoorsCategory.id,
+      attributeId: attrDoorThickness.id,
+      order: 10,
+    },
+  });
+  await prisma.categoryAttribute.upsert({
+    where: {
+      categoryId_attributeId: {
+        categoryId: entranceDoorsCategory.id,
+        attributeId: attrWeatherstrip.id,
+      },
+    },
+    update: {},
+    create: {
+      categoryId: entranceDoorsCategory.id,
+      attributeId: attrWeatherstrip.id,
+      order: 11,
+    },
+  });
+
+  const doorThicknessSeeds = [
+    { slug: 'dt-85-mm', name: '85 мм', order: 85 },
+    { slug: 'dt-100-mm', name: '100 мм', order: 100 },
+    { slug: 'dt-110-mm', name: '110 мм', order: 110 },
+    { slug: 'dt-115-mm', name: '115 мм', order: 115 },
+    { slug: 'dt-120-mm', name: '120 мм', order: 120 },
+  ] as const;
+  const thicknessIdByLabel = new Map<string, string>();
+  for (const dt of doorThicknessSeeds) {
+    const row = await prisma.doorThickness.upsert({
+      where: { slug: dt.slug },
+      update: { name: dt.name, order: dt.order },
+      create: {
+        name: dt.name,
+        slug: dt.slug,
+        order: dt.order,
+        isActive: true,
+      },
+    });
+    thicknessIdByLabel.set(dt.name, row.id);
+  }
+
+  const weatherstripSeeds = [
+    { slug: 'ws-2', name: '2 контура', order: 1 },
+    { slug: 'ws-3', name: '3 контура', order: 2 },
+    { slug: 'ws-4', name: '4 контура', order: 3 },
+  ] as const;
+  const weatherstripIds: string[] = [];
+  for (const ws of weatherstripSeeds) {
+    const row = await prisma.weatherstrip.upsert({
+      where: { slug: ws.slug },
+      update: { name: ws.name, order: ws.order },
+      create: {
+        name: ws.name,
+        slug: ws.slug,
+        order: ws.order,
+        isActive: true,
+      },
+    });
+    weatherstripIds.push(row.id);
+  }
+
+  const existingEntranceFilterBlock = await prisma.catalogFilterBlock.findUnique({
+    where: { categoryId: entranceDoorsCategory.id },
+  });
+  if (!existingEntranceFilterBlock) {
+    await prisma.catalogFilterBlock.create({
+      data: {
+        categoryId: entranceDoorsCategory.id,
+        includeDescendants: true,
+        name: 'Входные двери',
+        items: {
+          create: [
+            { kind: 'MANUFACTURER', sortOrder: 0 },
+            {
+              kind: 'ATTRIBUTE',
+              attributeId: attrDoorThickness.id,
+              sortOrder: 1,
+              labelOverride: 'Толщина двери',
+            },
+            {
+              kind: 'ATTRIBUTE',
+              attributeId: attrWeatherstrip.id,
+              sortOrder: 2,
+              labelOverride: 'Уплотнитель',
+            },
+            { kind: 'STOCK', sortOrder: 3, labelOverride: 'Наличие' },
+          ],
+        },
+      },
+    });
+    console.log('✅ CatalogFilterBlock: входные двери (производитель, толщина, уплотнитель, наличие)');
+  } else {
+    console.log('✅ CatalogFilterBlock: входные двери — блок уже есть, пропуск');
+  }
+
+  // ============================================
   // ТОВАРЫ: Входные двери ТТ XL / XXL
   // ============================================
 
@@ -306,16 +435,26 @@ async function main() {
     },
   ];
 
-  for (const productData of entranceDoorProducts) {
+  for (let i = 0; i < entranceDoorProducts.length; i++) {
+    const productData = entranceDoorProducts[i];
+    const attrs = productData.attributes as Record<string, unknown>;
+    const thicknessLabel = String(attrs.thickness ?? '').trim();
+    const doorThicknessId = thicknessIdByLabel.get(thicknessLabel) ?? null;
+    const weatherstripId = weatherstripIds[i % weatherstripIds.length]!;
+
     await prisma.product.upsert({
       where: { slug: productData.slug },
       update: {
         ...productData,
         categoryId: ttXlXxlCategory.id,
+        doorThicknessId,
+        weatherstripId,
       },
       create: {
         ...productData,
         categoryId: ttXlXxlCategory.id,
+        doorThicknessId,
+        weatherstripId,
         isActive: true,
         isFeatured: true,
       },

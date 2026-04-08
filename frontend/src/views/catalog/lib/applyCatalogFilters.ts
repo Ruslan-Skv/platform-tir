@@ -101,7 +101,10 @@ export function applyCatalogFilters(
     if (!slug && !name) continue;
 
     list = list.filter((p) => {
-      const v = getProductAttrValue(p.attributes, { slug, name: name ?? null });
+      const v =
+        getProductAttrValue(p.attributes, { slug, name: name ?? null }) ??
+        (slug === 'door-thickness' ? (p.doorThicknessLabel ?? null) : null) ??
+        (slug === 'weatherstrip' ? (p.weatherstripLabel ?? null) : null);
       return v != null && v !== '' && selectedSet.has(v);
     });
   }

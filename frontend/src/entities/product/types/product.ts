@@ -46,6 +46,9 @@ export interface Product {
   /** Публичный каталог: остаток и сырые атрибуты для фильтров */
   stock?: number;
   manufacturerId?: string | null;
+  /** Подписи из справочников (согласованы с фасетами каталога по slug door-thickness / weatherstrip) */
+  doorThicknessLabel?: string | null;
+  weatherstripLabel?: string | null;
   attributes?: unknown;
   /** Бэйджи слева от фото (JPG из настроек каталога), только с загруженным imageUrl */
   catalogBadges?: Array<{
