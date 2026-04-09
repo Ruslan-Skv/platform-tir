@@ -8,7 +8,10 @@ import type { ReactNode } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { buildAttrParamKey } from '@/views/catalog/lib/applyCatalogFilters';
-import type { CategoryFilterOption } from '@/views/catalog/lib/buildCategoryFilterOptions';
+import {
+  type CategoryFilterOption,
+  buildCategoryFilterGroups,
+} from '@/views/catalog/lib/buildCategoryFilterOptions';
 import type { CatalogFilterFacet } from '@/views/catalog/lib/catalogFilters.types';
 
 import styles from './FiltersSidebar.module.css';
@@ -308,6 +311,32 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
 
   /** Сворачивание секций: по умолчанию развёрнуто (ключ отсутствует или не false) */
   const [sectionExpanded, setSectionExpanded] = useState<Record<string, boolean>>({});
+
+  /** Развёрнуты ли дочерние категории у родителя (по умолчанию все свёрнуты) */
+  const [expandedCategoryParents, setExpandedCategoryParents] = useState<Record<string, boolean>>(
+    {}
+  );
+
+  const categoryOptionsFingerprint = useMemo(
+    () => categoryOptions.map((o) => o.slug).join('\0'),
+    [categoryOptions]
+  );
+
+  useEffect(() => {
+    setExpandedCategoryParents({});
+  }, [categoryOptionsFingerprint]);
+
+  const categoryGroups = useMemo(
+    () => buildCategoryFilterGroups(categoryOptions),
+    [categoryOptions]
+  );
+
+  const toggleCategoryParentExpanded = useCallback((parentSlug: string) => {
+    setExpandedCategoryParents((prev) => ({
+      ...prev,
+      [parentSlug]: !prev[parentSlug],
+    }));
+  }, []);
 
   const isSectionOpen = useCallback(
     (id: string) => sectionExpanded[id] !== false,
@@ -634,7 +663,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
         {categoryOptions.length > 0 ? (
           <CatalogFilterSection
             sectionId="category"
-            title="Категория"
+            title="Категории"
             isOpen={isSectionOpen('category')}
             onToggle={() => toggleSection('category')}
           >
@@ -660,23 +689,83 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
               </button>
             </div>
             <div className={styles.options}>
-              {categoryOptions.map((opt) => (
-                <label
-                  key={opt.slug}
-                  className={`${styles.option} ${opt.depth === 1 ? styles.categoryOptionNested : ''}`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isCatChecked(opt.slug)}
-                    onChange={(e) => toggleCat(opt.slug, e.target.checked)}
-                  />
-                  <span
-                    className={`${styles.optionText} ${opt.depth === 1 ? styles.categoryOptionNestedLabel : opt.depth === 0 ? styles.categoryOptionParentLabel : ''}`}
-                  >
-                    {formatFilterOptionLabel(opt.label, opt.count)}
-                  </span>
-                </label>
-              ))}
+              {categoryGroups.map((group) => {
+                if (group.type === 'single') {
+                  const opt = group.opt;
+                  return (
+                    <label
+                      key={opt.slug}
+                      className={`${styles.option} ${opt.depth === 1 ? styles.categoryOptionNested : ''}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isCatChecked(opt.slug)}
+                        onChange={(e) => toggleCat(opt.slug, e.target.checked)}
+                      />
+                      <span
+                        className={`${styles.optionText} ${opt.depth === 1 ? styles.categoryOptionNestedLabel : opt.depth === 0 ? styles.categoryOptionParentLabel : ''}`}
+                      >
+                        {formatFilterOptionLabel(opt.label, opt.count)}
+                      </span>
+                    </label>
+                  );
+                }
+                const { parent, children } = group;
+                const childrenExpanded = expandedCategoryParents[parent.slug] === true;
+                return (
+                  <div key={parent.slug} className={styles.categoryParentGroup}>
+                    <div className={styles.categoryParentRow}>
+                      <label className={`${styles.option} ${styles.categoryParentLabelRow}`}>
+                        <input
+                          type="checkbox"
+                          checked={isCatChecked(parent.slug)}
+                          onChange={(e) => toggleCat(parent.slug, e.target.checked)}
+                        />
+                        <span
+                          className={`${styles.optionText} ${styles.categoryOptionParentLabel}`}
+                        >
+                          {formatFilterOptionLabel(parent.label, parent.count)}
+                        </span>
+                      </label>
+                      <button
+                        type="button"
+                        className={styles.categoryExpandBtn}
+                        aria-expanded={childrenExpanded}
+                        aria-label={
+                          childrenExpanded ? 'Свернуть подкатегории' : 'Развернуть подкатегории'
+                        }
+                        onClick={() => toggleCategoryParentExpanded(parent.slug)}
+                      >
+                        <ChevronDownIcon
+                          className={`${styles.categoryExpandChevron} ${childrenExpanded ? styles.categoryExpandChevronOpen : ''}`}
+                          aria-hidden
+                        />
+                      </button>
+                    </div>
+                    {childrenExpanded ? (
+                      <div className={styles.categoryChildrenWrap}>
+                        {children.map((opt) => (
+                          <label
+                            key={opt.slug}
+                            className={`${styles.option} ${styles.categoryOptionNested}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isCatChecked(opt.slug)}
+                              onChange={(e) => toggleCat(opt.slug, e.target.checked)}
+                            />
+                            <span
+                              className={`${styles.optionText} ${styles.categoryOptionNestedLabel}`}
+                            >
+                              {formatFilterOptionLabel(opt.label, opt.count)}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
           </CatalogFilterSection>
         ) : null}

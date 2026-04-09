@@ -89,3 +89,34 @@ export function buildCategoryFilterOptions(products: readonly Product[]): Catego
 
   return out.length > 1 ? out : [];
 }
+
+/** Группы для UI: одиночная категория или родитель с дочерними (сворачиваемые). */
+export type CategoryFilterGroup =
+  | { type: 'single'; opt: CategoryFilterOption }
+  | { type: 'parent'; parent: CategoryFilterOption; children: CategoryFilterOption[] };
+
+export function buildCategoryFilterGroups(options: CategoryFilterOption[]): CategoryFilterGroup[] {
+  const groups: CategoryFilterGroup[] = [];
+  let i = 0;
+  while (i < options.length) {
+    const opt = options[i];
+    if (opt.depth === 1) {
+      i += 1;
+      continue;
+    }
+    const children: CategoryFilterOption[] = [];
+    let j = i + 1;
+    while (j < options.length && options[j].depth === 1) {
+      children.push(options[j]);
+      j += 1;
+    }
+    if (children.length > 0) {
+      groups.push({ type: 'parent', parent: opt, children });
+      i = j;
+    } else {
+      groups.push({ type: 'single', opt });
+      i += 1;
+    }
+  }
+  return groups;
+}
