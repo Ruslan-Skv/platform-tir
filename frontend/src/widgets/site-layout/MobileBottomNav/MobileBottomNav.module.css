@@ -79,6 +79,34 @@
   width: 1.375rem;
 }
 
+.profileAvatar {
+  border-radius: 50%;
+  display: block;
+  flex-shrink: 0;
+  height: 1.375rem;
+  object-fit: cover;
+  width: 1.375rem;
+}
+
+.profileInitials {
+  align-items: center;
+  background: #e5e7eb;
+  border-radius: 50%;
+  color: #374151;
+  display: flex;
+  flex-shrink: 0;
+  font-size: 0.5rem;
+  font-weight: 600;
+  height: 1.375rem;
+  justify-content: center;
+  width: 1.375rem;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .profileInitials {
+  background: #4b5563;
+  color: #e5e7eb;
+}
+
 .badge {
   position: absolute;
   top: -0.375rem;

@@ -11,11 +11,13 @@ import {
 } from '@heroicons/react/24/outline';
 
 import type React from 'react';
+import { useEffect, useState } from 'react';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { useUserAuth } from '@/features/auth/context/UserAuthContext';
+import { getAvatarUrl, getInitials } from '@/shared/lib/avatar';
 import { useSitePublicConfig } from '@/shared/lib/contexts/SitePublicConfigContext';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 
@@ -37,7 +39,12 @@ const navItems: Array<{
 
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
   const { isAuthenticated, user } = useUserAuth();
+
+  useEffect(() => {
+    setAvatarLoadError(false);
+  }, [user?.avatar]);
   const { rolesShowAdminLink } = useSitePublicConfig();
   const isAdmin =
     !!user?.role && rolesShowAdminLink.length > 0 && rolesShowAdminLink.includes(user.role);
@@ -78,6 +85,9 @@ export function MobileBottomNav() {
           const count = getCount(href);
           const showCount = count > 0;
 
+          const showProfileAvatar =
+            href === '/profile' && isAuthenticated && user && linkHref === '/profile';
+
           return (
             <li key={href} className={styles.item}>
               <Link
@@ -86,7 +96,23 @@ export function MobileBottomNav() {
                 aria-current={isActive ? 'page' : undefined}
               >
                 <span className={styles.iconWrap}>
-                  <Icon className={styles.icon} />
+                  {showProfileAvatar ? (
+                    user.avatar && !avatarLoadError ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={getAvatarUrl(user.avatar) ?? ''}
+                        alt=""
+                        className={styles.profileAvatar}
+                        onError={() => setAvatarLoadError(true)}
+                      />
+                    ) : (
+                      <span className={styles.profileInitials}>
+                        {getInitials(user.firstName, user.lastName, user.email)}
+                      </span>
+                    )
+                  ) : (
+                    <Icon className={styles.icon} />
+                  )}
                   {showCount && <span className={styles.badge}>{count > 99 ? '99+' : count}</span>}
                 </span>
                 <span className={styles.label}>{label}</span>
