@@ -64,7 +64,12 @@ export function applyCatalogFilters(
   const categorySlugs = params.getAll('cat').filter(Boolean);
   if (categorySlugs.length > 0) {
     const allowed = new Set(categorySlugs);
-    list = list.filter((p) => p.categorySlug != null && allowed.has(p.categorySlug));
+    list = list.filter((p) => {
+      if (p.categorySlug == null) return false;
+      if (allowed.has(p.categorySlug)) return true;
+      if (p.parentCategorySlug != null && allowed.has(p.parentCategorySlug)) return true;
+      return false;
+    });
   }
 
   const availVals = params.getAll('avail').filter(Boolean);

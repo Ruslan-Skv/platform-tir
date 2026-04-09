@@ -12,6 +12,9 @@ export interface Product {
   category: string;
   /** Slug листовой категории из API (каталог: фильтр по подкатегориям) */
   categorySlug?: string;
+  /** Родитель листовой категории (если есть) — фильтр «Категория» */
+  parentCategorySlug?: string | null;
+  parentCategoryName?: string | null;
   categoryId?: number;
   rating: number;
   reviewsCount?: number;

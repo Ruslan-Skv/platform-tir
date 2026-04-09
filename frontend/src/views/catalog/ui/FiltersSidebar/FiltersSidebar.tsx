@@ -8,15 +8,12 @@ import type { ReactNode } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { buildAttrParamKey } from '@/views/catalog/lib/applyCatalogFilters';
+import type { CategoryFilterOption } from '@/views/catalog/lib/buildCategoryFilterOptions';
 import type { CatalogFilterFacet } from '@/views/catalog/lib/catalogFilters.types';
 
 import styles from './FiltersSidebar.module.css';
 
-export interface CategoryFilterOption {
-  slug: string;
-  label: string;
-  count?: number;
-}
+export type { CategoryFilterOption };
 
 export interface FiltersSidebarProps {
   /** На мобильных: открыта ли панель (оверлей) */
@@ -664,13 +661,18 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
             </div>
             <div className={styles.options}>
               {categoryOptions.map((opt) => (
-                <label key={opt.slug} className={styles.option}>
+                <label
+                  key={opt.slug}
+                  className={`${styles.option} ${opt.depth === 1 ? styles.categoryOptionNested : ''}`}
+                >
                   <input
                     type="checkbox"
                     checked={isCatChecked(opt.slug)}
                     onChange={(e) => toggleCat(opt.slug, e.target.checked)}
                   />
-                  <span className={styles.optionText}>
+                  <span
+                    className={`${styles.optionText} ${opt.depth === 1 ? styles.categoryOptionNestedLabel : opt.depth === 0 ? styles.categoryOptionParentLabel : ''}`}
+                  >
                     {formatFilterOptionLabel(opt.label, opt.count)}
                   </span>
                 </label>

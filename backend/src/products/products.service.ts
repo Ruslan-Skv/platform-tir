@@ -488,7 +488,17 @@ export class ProductsService {
   /** Include для публичного списка товаров в каталоге (карточки, партнёр, варианты). */
   private catalogPublicListInclude(): Prisma.ProductInclude {
     return {
-      category: true,
+      category: {
+        include: {
+          parent: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+        },
+      },
       manufacturer: {
         select: {
           id: true,

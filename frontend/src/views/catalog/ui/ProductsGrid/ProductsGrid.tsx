@@ -12,6 +12,10 @@ import {
   applyCatalogFilters,
   filterSearchSignature,
 } from '@/views/catalog/lib/applyCatalogFilters';
+import {
+  type CategoryFilterOption,
+  buildCategoryFilterOptions,
+} from '@/views/catalog/lib/buildCategoryFilterOptions';
 import type { CatalogFilterFacet } from '@/views/catalog/lib/catalogFilters.types';
 
 import { ProductCard } from './ProductCard';
@@ -47,6 +51,7 @@ interface ApiProduct {
     id: string;
     name: string;
     slug: string;
+    parent?: { id: string; name: string; slug: string } | null;
   };
   partner?: {
     id: string;
@@ -102,9 +107,7 @@ interface ProductsGridProps {
   /** Границы цен по исходному списку категории/поиска (до фильтров) */
   onBasePriceBoundsChange?: (bounds: { min: number; max: number } | null) => void;
   /** Уникальные подкатегории в выборке — для блока «Категория» в фильтрах (>1) */
-  onCategoryFilterOptionsChange?: (
-    options: { slug: string; label: string; count: number }[]
-  ) => void;
+  onCategoryFilterOptionsChange?: (options: CategoryFilterOption[]) => void;
   /** Мобильный каталог: иконка фильтров справа от заголовка */
   showMobileFiltersButton?: boolean;
   onMobileFiltersOpen?: () => void;
@@ -271,6 +274,8 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
           manufacturerId: p.manufacturer?.id ?? null,
           doorThicknessLabel: p.doorThickness?.name ?? null,
           weatherstripLabel: p.weatherstrip?.name ?? null,
+          parentCategorySlug: p.category.parent?.slug ?? null,
+          parentCategoryName: p.category.parent?.name ?? null,
           attributes: p.attributes ?? null,
           discount: p.comparePrice
             ? Math.round(
@@ -355,18 +360,7 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
 
   useEffect(() => {
     if (!onCategoryFilterOptionsChange) return;
-    const slugMap = new Map<string, { label: string; count: number }>();
-    for (const p of originalProducts) {
-      const slug = p.categorySlug?.trim();
-      if (!slug) continue;
-      const prev = slugMap.get(slug);
-      if (prev) prev.count += 1;
-      else slugMap.set(slug, { label: p.category, count: 1 });
-    }
-    const opts = [...slugMap.entries()]
-      .map(([slug, { label, count }]) => ({ slug, label, count }))
-      .sort((a, b) => a.label.localeCompare(b.label, 'ru'));
-    onCategoryFilterOptionsChange(opts.length > 1 ? opts : []);
+    onCategoryFilterOptionsChange(buildCategoryFilterOptions(originalProducts));
   }, [originalProducts, onCategoryFilterOptionsChange]);
 
   const prevFilterSigRef = useRef<string | null>(null);

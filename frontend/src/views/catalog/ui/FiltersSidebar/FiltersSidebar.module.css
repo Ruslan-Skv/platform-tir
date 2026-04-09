@@ -282,6 +282,23 @@
   color: #374151;
 }
 
+.categoryOptionParentLabel {
+  color: #374151;
+  font-weight: 600;
+}
+
+.categoryOptionNested {
+  border-left: 3px solid #e5e7eb;
+  margin-left: 0.25rem;
+  padding-left: 0.75rem;
+}
+
+.categoryOptionNestedLabel {
+  color: #6b7280;
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
 .range {
   display: flex;
   flex-direction: column;
@@ -465,6 +482,18 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .option:hover .optionText {
   color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryOptionParentLabel {
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryOptionNested {
+  border-left-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryOptionNestedLabel {
+  color: #9ca3af;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .rangeValues {
