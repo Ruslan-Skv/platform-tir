@@ -3,7 +3,10 @@
   display: flex;
   gap: 1rem;
   justify-content: center;
+  max-width: 100%;
+  min-width: 0;
   padding: 0;
+  width: 100%;
 }
 
 .prevButton,
@@ -35,6 +38,21 @@
 .pages {
   display: flex;
   gap: 0.25rem;
+  min-width: 0;
+}
+
+.ellipsis {
+  align-items: center;
+  color: #6b7280;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  padding: 0 0.125rem;
+  user-select: none;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .ellipsis {
+  color: #9ca3af;
 }
 
 .pageButton {

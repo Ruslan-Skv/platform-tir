@@ -65,12 +65,6 @@ html {
   }
 }
 
-html,
-body {
-  max-width: 100%;
-  overflow-x: clip;
-}
-
 body {
   background-color: #242424;
   color: rgb(255 255 255 / 87%);
@@ -364,14 +358,15 @@ select:focus-visible {
   flex-direction: column;
   max-width: 100%;
   min-height: 100vh;
-  overflow-x: clip;
   position: relative;
   width: 100%;
 }
 
 .mainContent {
   flex: 1;
+  min-width: 0;
   position: relative;
+  width: 100%;
   z-index: 30;
 }
 

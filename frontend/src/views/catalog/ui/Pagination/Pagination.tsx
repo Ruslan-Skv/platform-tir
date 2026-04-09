@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 
 import styles from './Pagination.module.css';
 
@@ -8,6 +8,33 @@ interface PaginationProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+}
+
+/** Не рендерить сотни кнопок — на «все товары» ширина ломала мобильную вёрстку. */
+const MAX_ALL_PAGE_BUTTONS = 9;
+
+type PageSlot = number | 'ellipsis';
+
+function buildPageSlots(totalPages: number, currentPage: number): PageSlot[] {
+  if (totalPages <= MAX_ALL_PAGE_BUTTONS) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+  const set = new Set<number>();
+  set.add(1);
+  set.add(totalPages);
+  const windowRadius = 2;
+  for (let p = currentPage - windowRadius; p <= currentPage + windowRadius; p++) {
+    if (p >= 1 && p <= totalPages) set.add(p);
+  }
+  const sorted = [...set].sort((a, b) => a - b);
+  const out: PageSlot[] = [];
+  for (let i = 0; i < sorted.length; i++) {
+    if (i > 0 && sorted[i] - sorted[i - 1] > 1) {
+      out.push('ellipsis');
+    }
+    out.push(sorted[i]);
+  }
+  return out;
 }
 
 export const Pagination: React.FC<PaginationProps> = ({
@@ -27,6 +54,8 @@ export const Pagination: React.FC<PaginationProps> = ({
     }
   };
 
+  const slots = useMemo(() => buildPageSlots(totalPages, currentPage), [totalPages, currentPage]);
+
   return (
     <nav className={styles.pagination} aria-label="Пагинация">
       <button
@@ -40,18 +69,24 @@ export const Pagination: React.FC<PaginationProps> = ({
       </button>
 
       <div className={styles.pages}>
-        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-          <button
-            key={page}
-            type="button"
-            className={`${styles.pageButton} ${page === currentPage ? styles.active : ''}`}
-            onClick={() => onPageChange(page)}
-            aria-label={`Страница ${page}`}
-            aria-current={page === currentPage ? 'page' : undefined}
-          >
-            {page}
-          </button>
-        ))}
+        {slots.map((slot, idx) =>
+          slot === 'ellipsis' ? (
+            <span key={`e-${idx}`} className={styles.ellipsis} aria-hidden>
+              …
+            </span>
+          ) : (
+            <button
+              key={slot}
+              type="button"
+              className={`${styles.pageButton} ${slot === currentPage ? styles.active : ''}`}
+              onClick={() => onPageChange(slot)}
+              aria-label={`Страница ${slot}`}
+              aria-current={slot === currentPage ? 'page' : undefined}
+            >
+              {slot}
+            </button>
+          )
+        )}
       </div>
 
       <button
