@@ -19,11 +19,12 @@ import {
 
 import React from 'react';
 
-import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 
 import { dropdownMenus } from '@/shared/constants/navigation';
 import type { NavigationCategory } from '@/shared/lib/hooks';
-import { getSafeHref } from '@/shared/lib/sanitize';
+import { getSafeHref, isInternalAppHref } from '@/shared/lib/sanitize';
 import type { NavigationItem as NavigationItemType } from '@/shared/types/navigation';
 import { Button } from '@/shared/ui/Button';
 
@@ -48,6 +49,32 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   DocumentText: DocumentTextIcon,
   BuildingOffice: BuildingOfficeIcon,
 };
+
+function DropdownLink({
+  href,
+  className,
+  onClick,
+  children,
+}: {
+  href: string;
+  className: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  const safe = getSafeHref(href);
+  if (isInternalAppHref(safe)) {
+    return (
+      <Link href={safe} className={className} onClick={onClick} prefetch={false}>
+        {children}
+      </Link>
+    );
+  }
+  return (
+    <a href={safe} className={className} onClick={onClick}>
+      {children}
+    </a>
+  );
+}
 
 export interface NavigationItemProps {
   item: NavigationItemType;
@@ -98,6 +125,7 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
     dynamicServiceCategories &&
     dynamicServiceCategories.length > 0;
   const pathname = usePathname();
+  const router = useRouter();
   const navItemRef = React.useRef<HTMLDivElement>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const [alignment, setAlignment] = React.useState<'left' | 'right' | 'center'>('left');
@@ -193,11 +221,14 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
   }, [isActive, item.name]);
 
   const handleClick = () => {
-    // Всегда переходим по ссылке, если она есть
     if (item.href) {
-      window.location.href = item.href;
+      const safe = getSafeHref(item.href);
+      if (isInternalAppHref(safe)) {
+        router.push(safe);
+      } else if (safe !== '#') {
+        window.location.href = safe;
+      }
     }
-    // Дополнительно вызываем колбэк
     if (onClick) {
       onClick(item.name);
     }
@@ -208,7 +239,6 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
     if (onClick) {
       onClick(itemName);
     }
-    // Переход выполняется стандартным поведением ссылки <a href="...">
   };
 
   // Функция для получения иконки по имени
@@ -278,8 +308,8 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
                   apiDropdownItems.map((dropdownItem) => (
                     <div key={dropdownItem.id} className={styles.dropdownSection}>
                       <div className={styles.dropdownSectionInner}>
-                        <a
-                          href={getSafeHref(dropdownItem.href)}
+                        <DropdownLink
+                          href={dropdownItem.href}
                           onClick={() => handleDropdownItemClick(dropdownItem.name)}
                           className={styles.dropdownItem}
                         >
@@ -293,18 +323,18 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
                           >
                             {dropdownItem.name}
                           </span>
-                        </a>
+                        </DropdownLink>
                         {dropdownItem.submenu && dropdownItem.submenu.length > 0 && (
                           <div className={styles.submenu}>
                             {dropdownItem.submenu.map((subItem) => (
-                              <a
+                              <DropdownLink
                                 key={subItem.id}
-                                href={getSafeHref(subItem.href)}
+                                href={subItem.href}
                                 onClick={() => handleDropdownItemClick(subItem.name)}
                                 className={styles.submenuItem}
                               >
                                 {subItem.name}
-                              </a>
+                              </DropdownLink>
                             ))}
                           </div>
                         )}
@@ -317,8 +347,8 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
                   dynamicServiceCategories!.map((cat) => (
                     <div key={cat.id} className={styles.dropdownSection}>
                       <div className={styles.dropdownSectionInner}>
-                        <a
-                          href={getSafeHref(cat.href)}
+                        <DropdownLink
+                          href={cat.href}
                           onClick={() => handleDropdownItemClick(cat.name)}
                           className={styles.dropdownItem}
                         >
@@ -334,7 +364,7 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
                           >
                             {cat.name}
                           </span>
-                        </a>
+                        </DropdownLink>
                       </div>
                     </div>
                   ))}
@@ -344,8 +374,8 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
                   dynamicCategories!.map((category) => (
                     <div key={category.slug} className={styles.dropdownSection}>
                       <div className={styles.dropdownSectionInner}>
-                        <a
-                          href={getSafeHref(category.href)}
+                        <DropdownLink
+                          href={category.href}
                           onClick={() => handleDropdownItemClick(category.name)}
                           className={styles.dropdownItem}
                         >
@@ -363,13 +393,13 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
                           >
                             {category.name}
                           </span>
-                        </a>
+                        </DropdownLink>
                         {category.hasSubmenu && category.submenu.length > 0 && (
                           <div className={styles.submenu}>
                             {category.submenu.map((subItem) => (
-                              <a
+                              <DropdownLink
                                 key={subItem.slug}
-                                href={getSafeHref(subItem.href)}
+                                href={subItem.href}
                                 onClick={() => handleDropdownItemClick(subItem.name)}
                                 className={styles.submenuItem}
                               >
@@ -383,7 +413,7 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
                                   <span className={styles.submenuItemIcon}>{subItem.icon}</span>
                                 ) : null}
                                 <span>{subItem.name}</span>
-                              </a>
+                              </DropdownLink>
                             ))}
                           </div>
                         )}
@@ -398,8 +428,8 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
                   menuData.items.map((dropdownItem) => (
                     <div key={dropdownItem.href} className={styles.dropdownSection}>
                       <div className={styles.dropdownSectionInner}>
-                        <a
-                          href={getSafeHref(dropdownItem.href)}
+                        <DropdownLink
+                          href={dropdownItem.href}
                           onClick={() => handleDropdownItemClick(dropdownItem.name)}
                           className={styles.dropdownItem}
                         >
@@ -413,18 +443,18 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
                           >
                             {dropdownItem.name}
                           </span>
-                        </a>
+                        </DropdownLink>
                         {dropdownItem.hasSubmenu && dropdownItem.submenu && (
                           <div className={styles.submenu}>
                             {dropdownItem.submenu.map((subItem) => (
-                              <a
+                              <DropdownLink
                                 key={subItem.href}
-                                href={getSafeHref(subItem.href)}
+                                href={subItem.href}
                                 onClick={() => handleDropdownItemClick(subItem.name)}
                                 className={styles.submenuItem}
                               >
                                 {subItem.name}
-                              </a>
+                              </DropdownLink>
                             ))}
                           </div>
                         )}

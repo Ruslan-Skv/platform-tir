@@ -105,6 +105,11 @@ const UNSAFE_HREF_PROTOCOLS = /^(javascript|data|vbscript|file):/i;
  * @param href - URL из CMS, конфига или пользовательских данных
  * @param fallback - значение при небезопасном URL (по умолчанию '#')
  */
+/** Внутренний путь приложения для next/link (не внешняя ссылка и не protocol-relative //). */
+export function isInternalAppHref(href: string): boolean {
+  return Boolean(href && href !== '#' && href.startsWith('/') && !href.startsWith('//'));
+}
+
 export function getSafeHref(href: string | null | undefined, fallback = '#'): string {
   if (href == null || typeof href !== 'string') return fallback;
   // BOM и прочие невидимые символы ломают startsWith('/') — в проде иногда приходят из API/БД

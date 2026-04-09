@@ -58,6 +58,19 @@ html {
   scrollbar-gutter: stable;
 }
 
+@media (width <= 768px) {
+  html {
+    /* На узких экранах stable + 100%-контент иногда даёт горизонтальный скролл */
+    scrollbar-gutter: auto;
+  }
+}
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
 body {
   background-color: #242424;
   color: rgb(255 255 255 / 87%);
@@ -73,6 +86,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizelegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Светлая тема: не показывать тёмный фон body до монтирования слоя Background (клиентская навигаця). */
+html[data-theme='light'] body {
+  background-color: #f3f4f6;
+  color: #111827;
 }
 
 /* ===== ТИПОГРАФИКА ===== */
@@ -343,7 +362,9 @@ select:focus-visible {
 .App {
   display: flex;
   flex-direction: column;
+  max-width: 100%;
   min-height: 100vh;
+  overflow-x: clip;
   position: relative;
   width: 100%;
 }
