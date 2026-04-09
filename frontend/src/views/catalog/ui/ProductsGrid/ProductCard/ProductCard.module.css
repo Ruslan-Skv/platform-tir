@@ -83,8 +83,8 @@
   }
 
   .productCardCompact .catalogBadgeImg {
-    max-height: 20.4px;
-    max-width: 2.108rem;
+    max-height: 18.36px;
+    max-width: 1.897rem;
   }
 
   .productCardCompact .hitBadge,
@@ -385,8 +385,8 @@
   }
 
   .productCard .catalogBadgeImg {
-    max-height: 20.4px;
-    max-width: 2.244rem;
+    max-height: 18.36px;
+    max-width: 2.02rem;
     width: auto;
   }
 }
@@ -565,8 +565,8 @@
 
 .catalogBadgeImg {
   display: block;
-  /* −15% к первоначальному размеру в сетке каталога */
-  max-width: 85%;
+  /* База −15%; ещё −10% к размеру иконок (зазоры между ними не меняем) */
+  max-width: 76.5%;
   width: auto;
   height: auto;
   object-fit: contain;
