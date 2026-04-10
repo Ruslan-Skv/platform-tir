@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Category, Prisma } from '@prisma/client';
+import { CatalogFilterOptionsSort, Category, Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { CreateCatalogFilterBlockDto } from './dto/create-catalog-filter-block.dto';
 import { UpdateCatalogFilterBlockDto } from './dto/update-catalog-filter-block.dto';
@@ -34,6 +34,63 @@ export class CatalogFilterBlocksService {
       return p.weatherstrip.name.trim();
     }
     return null;
+  }
+
+  /** Первое число в строке значения (например «40 мм», «12,5 см»). */
+  private parseLeadingNumber(value: string): number | null {
+    const normalized = value.replace(/\s/g, ' ').replace(',', '.');
+    const m = normalized.match(/-?\d+(?:\.\d+)?/);
+    if (!m) return null;
+    const n = Number(m[0]);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  private compareFacetValuesNumericDescThenLocale(a: string, b: string): number {
+    const na = this.parseLeadingNumber(a);
+    const nb = this.parseLeadingNumber(b);
+    if (na != null && nb != null && na !== nb) return nb - na;
+    if (na != null && nb == null) return -1;
+    if (na == null && nb != null) return 1;
+    return a.localeCompare(b, 'ru');
+  }
+
+  /**
+   * Порядок опций фасета по атрибуту: по умолчанию — числа по убыванию; иначе алфавит или явный список.
+   */
+  private sortAttributeFacetEntries(
+    entries: [string, number][],
+    mode: CatalogFilterOptionsSort,
+    manualOrder: unknown,
+  ): [string, number][] {
+    const manual = this.normalizeManualOptionOrder(manualOrder);
+    if (mode === CatalogFilterOptionsSort.TEXT_ASC) {
+      return [...entries].sort((a, b) => a[0].localeCompare(b[0], 'ru'));
+    }
+    if (mode === CatalogFilterOptionsSort.MANUAL && manual.length > 0) {
+      const idx = new Map<string, number>();
+      for (let i = 0; i < manual.length; i++) {
+        const key = manual[i];
+        if (!idx.has(key)) idx.set(key, i);
+      }
+      return [...entries].sort((a, b) => {
+        const ia = idx.has(a[0]) ? idx.get(a[0])! : Number.MAX_SAFE_INTEGER;
+        const ib = idx.has(b[0]) ? idx.get(b[0])! : Number.MAX_SAFE_INTEGER;
+        if (ia !== ib) return ia - ib;
+        return this.compareFacetValuesNumericDescThenLocale(a[0], b[0]);
+      });
+    }
+    return [...entries].sort((a, b) => this.compareFacetValuesNumericDescThenLocale(a[0], b[0]));
+  }
+
+  private normalizeManualOptionOrder(raw: unknown): string[] {
+    if (!Array.isArray(raw)) return [];
+    const out: string[] = [];
+    for (const x of raw) {
+      if (typeof x !== 'string') continue;
+      const t = x.trim();
+      if (t) out.push(t);
+    }
+    return out;
   }
 
   getAttrValueFromProductJson(
@@ -271,9 +328,12 @@ export class CatalogFilterBlocksService {
           });
           if (v) valueCounts.set(v, (valueCounts.get(v) ?? 0) + 1);
         }
-        const options = Array.from(valueCounts.entries())
-          .sort((a, b) => a[0].localeCompare(b[0], 'ru'))
-          .map(([value, count]) => ({ value, label: value, count }));
+        const sortedEntries = this.sortAttributeFacetEntries(
+          Array.from(valueCounts.entries()),
+          item.optionsSort ?? CatalogFilterOptionsSort.NUMERIC_DESC,
+          item.manualOptionOrder,
+        );
+        const options = sortedEntries.map(([value, count]) => ({ value, label: value, count }));
         filters.push({
           id: meta.slug,
           label: (item.labelOverride?.trim() || meta.name).trim(),
@@ -357,13 +417,26 @@ export class CatalogFilterBlocksService {
     items: CatalogFilterBlockItemInputDto[],
   ) {
     for (const it of items) {
+      const isAttr = it.kind === 'ATTRIBUTE';
+      const optionsSort = isAttr
+        ? (it.optionsSort ?? CatalogFilterOptionsSort.NUMERIC_DESC)
+        : CatalogFilterOptionsSort.NUMERIC_DESC;
+      const manualList =
+        isAttr &&
+        it.optionsSort === CatalogFilterOptionsSort.MANUAL &&
+        Array.isArray(it.manualOptionOrder) &&
+        it.manualOptionOrder.length > 0
+          ? it.manualOptionOrder.map((s) => String(s).trim()).filter(Boolean)
+          : null;
       await tx.catalogFilterBlockItem.create({
         data: {
           blockId,
           kind: it.kind,
-          attributeId: it.kind === 'ATTRIBUTE' ? (it.attributeId ?? null) : null,
+          attributeId: isAttr ? (it.attributeId ?? null) : null,
           labelOverride: it.labelOverride?.trim() || null,
           sortOrder: it.sortOrder ?? 0,
+          optionsSort,
+          manualOptionOrder: manualList && manualList.length > 0 ? manualList : Prisma.JsonNull,
         },
       });
     }

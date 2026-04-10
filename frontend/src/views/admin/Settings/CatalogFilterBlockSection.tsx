@@ -11,6 +11,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1
 
 type FilterKind = 'ATTRIBUTE' | 'STOCK' | 'MANUFACTURER';
 
+type OptionsSort = 'NUMERIC_DESC' | 'TEXT_ASC' | 'MANUAL';
+
 interface FlatCategory {
   id: string;
   name: string;
@@ -30,6 +32,8 @@ interface BlockItemApi {
   attributeId: string | null;
   labelOverride: string | null;
   sortOrder: number;
+  optionsSort?: OptionsSort;
+  manualOptionOrder?: unknown;
   attribute?: { id: string; name: string; slug: string } | null;
 }
 
@@ -50,6 +54,8 @@ interface FormItem {
   attributeId: string;
   labelOverride: string;
   sortOrder: number;
+  optionsSort: OptionsSort;
+  manualOptionOrderText: string;
 }
 
 function newKey(): string {
@@ -65,7 +71,18 @@ function emptyFormItem(sortOrder: number): FormItem {
     attributeId: '',
     labelOverride: '',
     sortOrder,
+    optionsSort: 'NUMERIC_DESC',
+    manualOptionOrderText: '',
   };
+}
+
+function manualOrderToText(raw: unknown): string {
+  if (!Array.isArray(raw)) return '';
+  return raw
+    .filter((x): x is string => typeof x === 'string')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .join('\n');
 }
 
 function blockToFormItems(items: BlockItemApi[]): FormItem[] {
@@ -75,6 +92,8 @@ function blockToFormItems(items: BlockItemApi[]): FormItem[] {
     attributeId: it.attributeId ?? '',
     labelOverride: it.labelOverride ?? '',
     sortOrder: it.sortOrder ?? i,
+    optionsSort: it.kind === 'ATTRIBUTE' ? (it.optionsSort ?? 'NUMERIC_DESC') : 'NUMERIC_DESC',
+    manualOptionOrderText: it.kind === 'ATTRIBUTE' ? manualOrderToText(it.manualOptionOrder) : '',
   }));
 }
 
@@ -82,6 +101,12 @@ const KIND_OPTIONS: { value: FilterKind; label: string }[] = [
   { value: 'ATTRIBUTE', label: 'Атрибут' },
   { value: 'STOCK', label: 'Наличие' },
   { value: 'MANUFACTURER', label: 'Производитель' },
+];
+
+const OPTIONS_SORT_OPTIONS: { value: OptionsSort; label: string }[] = [
+  { value: 'NUMERIC_DESC', label: 'Числа: от большего к меньшему (по умолчанию)' },
+  { value: 'TEXT_ASC', label: 'По алфавиту (А→Я)' },
+  { value: 'MANUAL', label: 'Вручную (список ниже)' },
 ];
 
 export function CatalogFilterBlockSection() {
@@ -185,13 +210,25 @@ export function CatalogFilterBlockSection() {
   };
 
   const buildPayload = () => {
-    const items = formItems.map((it, index) => ({
-      kind: it.kind,
-      attributeId:
-        it.kind === 'ATTRIBUTE' && it.attributeId.trim() ? it.attributeId.trim() : undefined,
-      labelOverride: it.labelOverride.trim() || undefined,
-      sortOrder: Number.isFinite(it.sortOrder) ? it.sortOrder : index,
-    }));
+    const items = formItems.map((it, index) => {
+      const manualLines = it.manualOptionOrderText
+        .split(/\r?\n/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const base = {
+        kind: it.kind,
+        attributeId:
+          it.kind === 'ATTRIBUTE' && it.attributeId.trim() ? it.attributeId.trim() : undefined,
+        labelOverride: it.labelOverride.trim() || undefined,
+        sortOrder: Number.isFinite(it.sortOrder) ? it.sortOrder : index,
+      };
+      if (it.kind !== 'ATTRIBUTE') return base;
+      return {
+        ...base,
+        optionsSort: it.optionsSort,
+        ...(it.optionsSort === 'MANUAL' ? { manualOptionOrder: manualLines } : {}),
+      };
+    });
     return {
       name: name.trim() || undefined,
       categoryId,
@@ -285,6 +322,11 @@ export function CatalogFilterBlockSection() {
         const next = { ...row, ...patch };
         if (patch.kind != null && patch.kind !== 'ATTRIBUTE') {
           next.attributeId = '';
+          next.optionsSort = 'NUMERIC_DESC';
+          next.manualOptionOrderText = '';
+        }
+        if (patch.optionsSort != null && patch.optionsSort !== 'MANUAL') {
+          next.manualOptionOrderText = '';
         }
         return next;
       })
@@ -389,81 +431,120 @@ export function CatalogFilterBlockSection() {
             </label>
           </div>
 
-          <h4 className={styles.itemsTitle}>Фильтры (порядок = порядок на сайте)</h4>
+          <h4 className={styles.itemsTitle}>Фильтры (порядок секций = порядок на сайте)</h4>
+          <p className={styles.muted} style={{ marginBottom: '0.75rem' }}>
+            Для фильтров по атрибуту можно задать порядок значений внутри секции (например толщина:
+            от большей к меньшей) или перечислить значения вручную — строки должны совпадать с
+            данными в карточке товара.
+          </p>
           {formItems.map((it) => (
-            <div key={it.key} className={styles.itemRow}>
-              <div className={styles.formField}>
-                <label>Тип</label>
-                <select
-                  value={it.kind}
-                  onChange={(e) => updateItem(it.key, { kind: e.target.value as FilterKind })}
-                >
-                  {KIND_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {it.kind === 'ATTRIBUTE' ? (
+            <div key={it.key} className={styles.itemBlock}>
+              <div className={styles.itemRow}>
                 <div className={styles.formField}>
-                  <label>Атрибут категории *</label>
+                  <label>Тип</label>
                   <select
-                    value={it.attributeId}
-                    onChange={(e) => updateItem(it.key, { attributeId: e.target.value })}
+                    value={it.kind}
+                    onChange={(e) => updateItem(it.key, { kind: e.target.value as FilterKind })}
                   >
-                    <option value="">— выберите —</option>
-                    {categoryAttrs.map((row) => (
-                      <option key={row.attribute.id} value={row.attribute.id}>
-                        {row.attribute.name} ({row.attribute.slug})
+                    {KIND_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
                       </option>
                     ))}
                   </select>
-                  {!categoryId ? (
-                    <span className={styles.muted}>Сначала выберите категорию выше.</span>
-                  ) : categoryAttrs.length === 0 ? (
-                    <span className={styles.muted}>
-                      У категории нет атрибутов. Добавьте их в разделе категорий.
-                    </span>
+                </div>
+                {it.kind === 'ATTRIBUTE' ? (
+                  <div className={styles.formField}>
+                    <label>Атрибут категории *</label>
+                    <select
+                      value={it.attributeId}
+                      onChange={(e) => updateItem(it.key, { attributeId: e.target.value })}
+                    >
+                      <option value="">— выберите —</option>
+                      {categoryAttrs.map((row) => (
+                        <option key={row.attribute.id} value={row.attribute.id}>
+                          {row.attribute.name} ({row.attribute.slug})
+                        </option>
+                      ))}
+                    </select>
+                    {!categoryId ? (
+                      <span className={styles.muted}>Сначала выберите категорию выше.</span>
+                    ) : categoryAttrs.length === 0 ? (
+                      <span className={styles.muted}>
+                        У категории нет атрибутов. Добавьте их в разделе категорий.
+                      </span>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className={styles.formField}>
+                    <span className={styles.muted}>—</span>
+                  </div>
+                )}
+                <div className={styles.formField}>
+                  <label>Подпись на сайте (необяз.)</label>
+                  <input
+                    type="text"
+                    value={it.labelOverride}
+                    onChange={(e) => updateItem(it.key, { labelOverride: e.target.value })}
+                    placeholder="По умолчанию — имя атрибута"
+                  />
+                </div>
+                <div className={styles.formField}>
+                  <label>Порядок секции</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={it.sortOrder}
+                    onChange={(e) =>
+                      updateItem(it.key, { sortOrder: parseInt(e.target.value, 10) || 0 })
+                    }
+                  />
+                </div>
+                <button
+                  type="button"
+                  className={styles.dangerBtn}
+                  title="Удалить строку"
+                  onClick={() =>
+                    setFormItems((prev) =>
+                      prev.length <= 1 ? prev : prev.filter((x) => x.key !== it.key)
+                    )
+                  }
+                >
+                  ×
+                </button>
+              </div>
+              {it.kind === 'ATTRIBUTE' ? (
+                <div className={styles.itemOptionsRow}>
+                  <div className={styles.formField}>
+                    <label>Порядок значений внутри фильтра</label>
+                    <select
+                      value={it.optionsSort}
+                      onChange={(e) =>
+                        updateItem(it.key, { optionsSort: e.target.value as OptionsSort })
+                      }
+                    >
+                      {OPTIONS_SORT_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {it.optionsSort === 'MANUAL' ? (
+                    <div className={styles.formField}>
+                      <label>Одно значение на строку (как в товаре)</label>
+                      <textarea
+                        value={it.manualOptionOrderText}
+                        onChange={(e) =>
+                          updateItem(it.key, { manualOptionOrderText: e.target.value })
+                        }
+                        placeholder={'100 мм\n80 мм\n40 мм'}
+                        spellCheck={false}
+                      />
+                    </div>
                   ) : null}
                 </div>
-              ) : (
-                <div className={styles.formField}>
-                  <span className={styles.muted}>—</span>
-                </div>
-              )}
-              <div className={styles.formField}>
-                <label>Подпись на сайте (необяз.)</label>
-                <input
-                  type="text"
-                  value={it.labelOverride}
-                  onChange={(e) => updateItem(it.key, { labelOverride: e.target.value })}
-                  placeholder="По умолчанию — имя атрибута"
-                />
-              </div>
-              <div className={styles.formField}>
-                <label>Порядок</label>
-                <input
-                  type="number"
-                  min={0}
-                  value={it.sortOrder}
-                  onChange={(e) =>
-                    updateItem(it.key, { sortOrder: parseInt(e.target.value, 10) || 0 })
-                  }
-                />
-              </div>
-              <button
-                type="button"
-                className={styles.dangerBtn}
-                title="Удалить строку"
-                onClick={() =>
-                  setFormItems((prev) =>
-                    prev.length <= 1 ? prev : prev.filter((x) => x.key !== it.key)
-                  )
-                }
-              >
-                ×
-              </button>
+              ) : null}
             </div>
           ))}
           <div style={{ marginTop: 12 }}>

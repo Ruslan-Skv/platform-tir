@@ -1106,6 +1106,16 @@ enum CatalogFilterItemKind {
   MANUFACTURER
 }
 
+/// Порядок значений внутри фильтра по атрибуту (витрина каталога).
+enum CatalogFilterOptionsSort {
+  /// По убыванию извлечённого числа («100 мм» выше «40 мм»); без числа — в конце, по алфавиту.
+  NUMERIC_DESC
+  /// По алфавиту (как раньше по умолчанию).
+  TEXT_ASC
+  /// Явный список значений (совпадение строки с карточки товара); остальные — после, по NUMERIC_DESC.
+  MANUAL
+}
+
 /// Настройки блока фильтров категории (админка → Настройки → Блок фильтров).
 model CatalogFilterBlock {
   id                 String                   @id @default(cuid())
@@ -1123,14 +1133,18 @@ model CatalogFilterBlock {
 }
 
 model CatalogFilterBlockItem {
-  id            String                @id @default(cuid())
-  blockId       String
-  kind          CatalogFilterItemKind
-  attributeId   String?
-  labelOverride String?
-  sortOrder     Int                   @default(0)
-  block         CatalogFilterBlock    @relation(fields: [blockId], references: [id], onDelete: Cascade)
-  attribute     Attribute?            @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  id                String                   @id @default(cuid())
+  blockId           String
+  kind              CatalogFilterItemKind
+  attributeId       String?
+  labelOverride     String?
+  sortOrder         Int                      @default(0)
+  /// Только для kind=ATTRIBUTE; для STOCK/MANUFACTURER не используется (оставлено значение по умолчанию).
+  optionsSort       CatalogFilterOptionsSort @default(NUMERIC_DESC)
+  /// Список значений в нужном порядке (только при optionsSort=MANUAL).
+  manualOptionOrder Json?
+  block             CatalogFilterBlock       @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  attribute         Attribute?               @relation(fields: [attributeId], references: [id], onDelete: Cascade)
 
   @@map("catalog_filter_block_items")
 }
