@@ -1,6 +1,5 @@
 import { fetchNavigation } from '@/shared/api/navigation';
 import { CartProvider } from '@/shared/lib/contexts/CartContext';
-import { CompareProvider } from '@/shared/lib/contexts/CompareContext';
 import { NavigationProvider } from '@/shared/lib/contexts/NavigationContext';
 import { WishlistProvider } from '@/shared/lib/contexts/WishlistContext';
 import { getServerApiBaseUrl } from '@/shared/lib/server-api-base-url';
@@ -13,9 +12,7 @@ export default async function SiteRootLayout({ children }: { children: React.Rea
     <NavigationProvider initialItems={initialNavigation}>
       <CartProvider>
         <WishlistProvider>
-          <CompareProvider>
-            <SiteLayout>{children}</SiteLayout>
-          </CompareProvider>
+          <SiteLayout>{children}</SiteLayout>
         </WishlistProvider>
       </CartProvider>
     </NavigationProvider>

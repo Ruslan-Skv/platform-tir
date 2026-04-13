@@ -358,6 +358,23 @@ export class ProductsService {
     return enriched ?? product;
   }
 
+  /** Активные товары по ID для страницы сравнения (гость и т.п.), порядок как в запросе. */
+  async findManyActiveByIdsForCompare(ids: string[]) {
+    const unique = [...new Set(ids.map((id) => id.trim()).filter(Boolean))].slice(0, 10);
+    if (unique.length === 0) {
+      return [];
+    }
+    const rows = await this.prisma.product.findMany({
+      where: { id: { in: unique }, isActive: true },
+      include: {
+        category: true,
+      },
+    });
+    const map = new Map(rows.map((p) => [p.id, p]));
+    const ordered = unique.map((id) => map.get(id)).filter((p): p is NonNullable<typeof p> => !!p);
+    return this.enrichProductsWithRating(ordered);
+  }
+
   async findBySlug(slug: string) {
     const product = await this.prisma.product.findUnique({
       where: { slug },

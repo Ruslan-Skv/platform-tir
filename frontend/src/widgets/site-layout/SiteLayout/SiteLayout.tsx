@@ -7,6 +7,7 @@ import { FormModals, FormProvider } from '@/features/forms';
 import { PWAUpdatePrompt } from '@/features/pwa';
 import { useTheme } from '@/features/theme';
 import { ApprovedOrderGuardProvider } from '@/shared/lib/contexts/ApprovedOrderGuardContext';
+import { CompareProvider } from '@/shared/lib/contexts/CompareContext';
 import { SitePublicConfigProvider } from '@/shared/lib/contexts/SitePublicConfigContext';
 import { Background } from '@/widgets/background';
 import { ChatSupportOpenProvider, ChatSupportWidget } from '@/widgets/chat-support';
@@ -24,30 +25,32 @@ export const SiteLayout: React.FC<SiteLayoutProps> = ({ children }) => {
 
   return (
     <UserAuthProvider>
-      <SitePublicConfigProvider>
-        <ApprovedOrderGuardProvider>
-          <FormProvider>
-            <ChatSupportOpenProvider>
-              <div
-                className="App"
-                data-app-theme={isDarkTheme ? 'dark' : 'light'}
-                suppressHydrationWarning
-              >
-                <Background />
-                <Header />
+      <CompareProvider>
+        <SitePublicConfigProvider>
+          <ApprovedOrderGuardProvider>
+            <FormProvider>
+              <ChatSupportOpenProvider>
+                <div
+                  className="App"
+                  data-app-theme={isDarkTheme ? 'dark' : 'light'}
+                  suppressHydrationWarning
+                >
+                  <Background />
+                  <Header />
 
-                <div className="mainContent">{children}</div>
+                  <div className="mainContent">{children}</div>
 
-                <Footer />
-                <MobileBottomNav />
-                <ChatSupportWidget />
-                <FormModals />
-                <PWAUpdatePrompt />
-              </div>
-            </ChatSupportOpenProvider>
-          </FormProvider>
-        </ApprovedOrderGuardProvider>
-      </SitePublicConfigProvider>
+                  <Footer />
+                  <MobileBottomNav />
+                  <ChatSupportWidget />
+                  <FormModals />
+                  <PWAUpdatePrompt />
+                </div>
+              </ChatSupportOpenProvider>
+            </FormProvider>
+          </ApprovedOrderGuardProvider>
+        </SitePublicConfigProvider>
+      </CompareProvider>
     </UserAuthProvider>
   );
 };

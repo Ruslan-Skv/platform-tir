@@ -18,6 +18,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { SearchProductsDto } from './dto/search-products.dto';
 import { ProductIdsDto } from './dto/product-ids.dto';
+import { CompareProductIdsDto } from './dto/compare-product-ids.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { RequestWithUser } from '../common/types/request-with-user.types';
 
@@ -86,6 +87,14 @@ export class ProductsController {
   })
   async applySupplierPrices(@Body() dto: ProductIdsDto) {
     return this.productsService.applySupplierPrices(dto.productIds);
+  }
+
+  @Post('compare-list')
+  @ApiOperation({
+    summary: 'Товары для сравнения по списку ID (публично, только активные, до 10 шт.)',
+  })
+  findManyForCompare(@Body() dto: CompareProductIdsDto) {
+    return this.productsService.findManyActiveByIdsForCompare(dto.productIds);
   }
 
   @Get('search')

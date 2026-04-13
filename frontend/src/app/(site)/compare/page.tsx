@@ -94,11 +94,7 @@ export default function ComparePage() {
       await refreshCount();
     } catch (err) {
       if (err instanceof Error) {
-        if (err.message === 'Необходима авторизация') {
-          setError('Войдите в систему, чтобы просмотреть сравнение товаров');
-        } else {
-          setError(err.message);
-        }
+        setError(err.message);
       } else {
         setError('Произошла ошибка при загрузке сравнения');
       }

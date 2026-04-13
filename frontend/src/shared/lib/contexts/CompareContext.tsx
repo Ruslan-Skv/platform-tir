@@ -1,6 +1,14 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import * as compareApi from '@/shared/api/compare';
 
@@ -25,60 +33,110 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
 
+  const compareRef = useRef<string[]>([]);
+  compareRef.current = compare;
+
+  const prevHadTokenRef = useRef<boolean | null>(null);
+
+  const reloadCompareFromStorageOrApi = useCallback(async () => {
+    const hasToken = compareApi.hasSiteAuthToken();
+    const prev = prevHadTokenRef.current;
+
+    if (hasToken) {
+      const guestIds = compareApi.readGuestCompareIds();
+      if (guestIds.length > 0) {
+        compareApi.clearGuestCompareIds();
+        for (const id of guestIds) {
+          try {
+            await compareApi.addToCompare(id);
+          } catch {
+            /* дубликат, лимит или сеть */
+          }
+        }
+      }
+      try {
+        const products = await compareApi.getCompare();
+        setCompare(products.map((p) => p.id));
+        setCount(products.length);
+      } catch {
+        setCompare([]);
+        setCount(0);
+      }
+    } else {
+      if (prev === true) {
+        compareApi.writeGuestCompareIds(compareRef.current);
+      }
+      const ids = compareApi.readGuestCompareIds();
+      setCompare(ids);
+      setCount(ids.length);
+    }
+
+    prevHadTokenRef.current = hasToken;
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    const run = async () => {
+      setIsLoading(true);
+      try {
+        await reloadCompareFromStorageOrApi();
+      } finally {
+        if (alive) setIsLoading(false);
+      }
+    };
+    void run();
+    return () => {
+      alive = false;
+    };
+  }, [reloadCompareFromStorageOrApi]);
+
+  useEffect(() => {
+    const onAuthOrStorage = () => {
+      void reloadCompareFromStorageOrApi();
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (
+        e.key === 'user_token' ||
+        e.key === 'user_data' ||
+        e.key === 'admin_token' ||
+        e.key === 'admin_user' ||
+        e.key === compareApi.GUEST_COMPARE_STORAGE_KEY
+      ) {
+        onAuthOrStorage();
+      }
+    };
+    if (typeof window === 'undefined') return undefined;
+    window.addEventListener('auth-token-changed', onAuthOrStorage);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('auth-token-changed', onAuthOrStorage);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [reloadCompareFromStorageOrApi]);
+
   const refreshCount = useCallback(async () => {
     try {
       const newCount = await compareApi.getCompareCount();
       setCount(newCount);
     } catch {
-      setCount(0);
+      setCount(compareApi.hasSiteAuthToken() ? 0 : compareApi.readGuestCompareIds().length);
     }
   }, []);
 
-  // Загружаем полный список сравнения при инициализации (1 запрос вместо N проверок на карточках)
-  useEffect(() => {
-    compareApi
-      .getCompare()
-      .then((products) => {
-        const ids = products.map((p) => p.id);
-        setCompare(ids);
-        setCount(ids.length);
-      })
-      .catch(() => {
-        setCompare([]);
-        refreshCount().catch(() => {});
-      });
-  }, [refreshCount]);
-
   const addToCompare = useCallback(
     async (productId: string) => {
-      try {
-        await compareApi.addToCompare(productId);
-        setCompare((prev) => (prev.includes(productId) ? prev : [...prev, productId]));
-        // Синхронизируем счетчик с сервером после успешной операции
-        await refreshCount();
-      } catch (error) {
-        if (error instanceof Error && error.message === 'Необходима авторизация') {
-          throw new Error('Войдите в систему, чтобы добавить товар в сравнение');
-        }
-        throw error;
-      }
+      await compareApi.addToCompare(productId);
+      setCompare((prev) => (prev.includes(productId) ? prev : [...prev, productId]));
+      await refreshCount();
     },
     [refreshCount]
   );
 
   const removeFromCompare = useCallback(
     async (productId: string) => {
-      try {
-        await compareApi.removeFromCompare(productId);
-        setCompare((prev) => prev.filter((id) => id !== productId));
-        // Синхронизируем счетчик с сервером после успешной операции
-        await refreshCount();
-      } catch (error) {
-        if (error instanceof Error && error.message === 'Необходима авторизация') {
-          throw new Error('Войдите в систему, чтобы удалить товар из сравнения');
-        }
-        throw error;
-      }
+      await compareApi.removeFromCompare(productId);
+      setCompare((prev) => prev.filter((id) => id !== productId));
+      await refreshCount();
     },
     [refreshCount]
   );
