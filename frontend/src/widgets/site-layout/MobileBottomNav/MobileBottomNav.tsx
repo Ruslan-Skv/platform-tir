@@ -45,9 +45,11 @@ export function MobileBottomNav() {
   useEffect(() => {
     setAvatarLoadError(false);
   }, [user?.avatar]);
-  const { rolesShowAdminLink } = useSitePublicConfig();
+  const { rolesShowAdminLinkMobile } = useSitePublicConfig();
   const isAdmin =
-    !!user?.role && rolesShowAdminLink.length > 0 && rolesShowAdminLink.includes(user.role);
+    !!user?.role &&
+    rolesShowAdminLinkMobile.length > 0 &&
+    rolesShowAdminLinkMobile.includes(user.role);
   const { count: cartCount } = useCart();
   const { count: compareCount } = useCompare();
   const { count: wishlistCount } = useWishlist();

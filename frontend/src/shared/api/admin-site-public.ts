@@ -12,8 +12,14 @@ function getAuthHeaders(): HeadersInit {
 
 export interface AdminSitePublicSettings {
   id: string;
-  rolesShowAdminLink: string[] | null;
+  /** Массив или объект { desktop?, mobile? } — см. parseRolesShowAdminLinkFromApi */
+  rolesShowAdminLink: unknown;
   updatedAt: string;
+}
+
+export interface RolesShowAdminLinkByDevicePayload {
+  desktop: string[] | null;
+  mobile: string[] | null;
 }
 
 export async function getAdminSitePublicSettings(): Promise<AdminSitePublicSettings> {
@@ -26,6 +32,7 @@ export async function getAdminSitePublicSettings(): Promise<AdminSitePublicSetti
 
 export async function updateAdminSitePublicSettings(data: {
   rolesShowAdminLink?: string[] | null;
+  rolesShowAdminLinkByDevice?: RolesShowAdminLinkByDevicePayload | null;
 }): Promise<AdminSitePublicSettings> {
   const res = await fetch(`${API_URL}/admin/site-public/settings`, {
     method: 'PATCH',

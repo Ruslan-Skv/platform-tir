@@ -1566,10 +1566,11 @@ model CatalogBlock {
   @@map("catalog_block")
 }
 
-/// Роли, которым показывать кнопку «Админка» на публичном сайте. null = по умолчанию (все админские роли).
+/// Роли, которым показывать кнопку «Админка» на публичном сайте.
+/// null = дефолт сервера. Либо JSON-массив ролей (одинаково для десктопа и мобилки), либо объект { desktop, mobile } с массивами или null по каналам.
 model SitePublicConfig {
   id                   String   @id @default("main")
-  rolesShowAdminLink   Json?    // Массив ролей ["SUPER_ADMIN","ADMIN",...]. null = дефолтный набор
+  rolesShowAdminLink   Json?
   updatedAt            DateTime @updatedAt
 
   @@map("site_public_config")

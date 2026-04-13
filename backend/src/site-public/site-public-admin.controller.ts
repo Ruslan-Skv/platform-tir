@@ -35,12 +35,30 @@ export class SitePublicAdminController {
   @Patch('settings')
   @ApiOperation({ summary: 'Обновить настройки (супер-админ)' })
   async updateSettings(@Body() dto: UpdateSitePublicDto) {
-    const jsonValue =
-      dto.rolesShowAdminLink === undefined
-        ? undefined
-        : dto.rolesShowAdminLink === null
+    let jsonValue: Prisma.InputJsonValue | typeof Prisma.JsonNull | undefined = undefined;
+
+    if (dto.rolesShowAdminLinkByDevice !== undefined) {
+      if (dto.rolesShowAdminLinkByDevice === null) {
+        jsonValue = Prisma.JsonNull;
+      } else {
+        const d = dto.rolesShowAdminLinkByDevice.desktop;
+        const m = dto.rolesShowAdminLinkByDevice.mobile;
+        if (d === null && m === null) {
+          jsonValue = Prisma.JsonNull;
+        } else {
+          jsonValue = {
+            desktop: d ?? null,
+            mobile: m ?? null,
+          };
+        }
+      }
+    } else if (dto.rolesShowAdminLink !== undefined) {
+      jsonValue =
+        dto.rolesShowAdminLink === null
           ? Prisma.JsonNull
-          : dto.rolesShowAdminLink;
+          : (dto.rolesShowAdminLink as Prisma.InputJsonValue);
+    }
+
     return this.prisma.sitePublicConfig.upsert({
       where: { id: 'main' },
       update: {

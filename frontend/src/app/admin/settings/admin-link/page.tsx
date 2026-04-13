@@ -9,6 +9,7 @@ import {
   getAdminSitePublicSettings,
   updateAdminSitePublicSettings,
 } from '@/shared/api/admin-site-public';
+import { parseRolesShowAdminLinkFromApi } from '@/shared/lib/site-public-admin-link';
 import { ROLES_CONFIG } from '@/views/admin/Settings/rolesConfig';
 
 import styles from './page.module.css';
@@ -33,10 +34,13 @@ const DEFAULT_ROLES = [
   'INSTALLER',
 ];
 
+type Channel = 'desktop' | 'mobile';
+
 export default function AdminSettingsAdminLinkPage() {
   const { user } = useAuth();
   const [settings, setSettings] = useState<{
-    rolesShowAdminLink: string[] | null;
+    desktopRoles: string[] | null;
+    mobileRoles: string[] | null;
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -45,11 +49,10 @@ export default function AdminSettingsAdminLinkPage() {
   const load = useCallback(async () => {
     try {
       const data = await getAdminSitePublicSettings();
+      const parsed = parseRolesShowAdminLinkFromApi(data.rolesShowAdminLink);
       setSettings({
-        rolesShowAdminLink:
-          Array.isArray(data.rolesShowAdminLink) && data.rolesShowAdminLink.length > 0
-            ? data.rolesShowAdminLink
-            : null,
+        desktopRoles: parsed.desktop,
+        mobileRoles: parsed.mobile,
       });
     } catch {
       setSettings(null);
@@ -62,12 +65,14 @@ export default function AdminSettingsAdminLinkPage() {
     load();
   }, [load]);
 
-  const toggleRole = (roleId: string, checked: boolean) => {
+  const toggleRole = (channel: Channel, roleId: string, checked: boolean) => {
     if (!settings) return;
-    const current = settings.rolesShowAdminLink ?? DEFAULT_ROLES;
+    const key = channel === 'desktop' ? 'desktopRoles' : 'mobileRoles';
+    const current = settings[key] ?? DEFAULT_ROLES;
     const next = checked ? [...current, roleId] : current.filter((r) => r !== roleId);
     setSettings({
-      rolesShowAdminLink: next.length > 0 ? next : null,
+      ...settings,
+      [key]: next.length > 0 ? next : null,
     });
   };
 
@@ -77,9 +82,17 @@ export default function AdminSettingsAdminLinkPage() {
     setSaving(true);
     setMessage(null);
     try {
-      await updateAdminSitePublicSettings({
-        rolesShowAdminLink: settings.rolesShowAdminLink,
-      });
+      const { desktopRoles, mobileRoles } = settings;
+      if (desktopRoles === null && mobileRoles === null) {
+        await updateAdminSitePublicSettings({ rolesShowAdminLinkByDevice: null });
+      } else {
+        await updateAdminSitePublicSettings({
+          rolesShowAdminLinkByDevice: {
+            desktop: desktopRoles,
+            mobile: mobileRoles,
+          },
+        });
+      }
       setMessage({ text: 'Настройки сохранены' });
       await load();
     } catch (err) {
@@ -110,15 +123,38 @@ export default function AdminSettingsAdminLinkPage() {
     );
   }
 
-  const currentRoles = settings.rolesShowAdminLink ?? DEFAULT_ROLES;
+  const currentDesktop = settings.desktopRoles ?? DEFAULT_ROLES;
+  const currentMobile = settings.mobileRoles ?? DEFAULT_ROLES;
+
+  const renderRoleCheckboxes = (channel: Channel, currentRoles: string[]) => (
+    <div className={styles.rolesCheckboxList}>
+      {SELECTABLE_ROLES.map((roleId) => {
+        const roleConfig = ROLES_CONFIG.find((r) => r.id === roleId);
+        const label = roleConfig?.label ?? roleId;
+        const checked = currentRoles.includes(roleId);
+        return (
+          <label key={roleId} className={styles.roleCheckboxLabel}>
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={(e) => toggleRole(channel, roleId, e.target.checked)}
+            />
+            <span>{label}</span>
+          </label>
+        );
+      })}
+    </div>
+  );
 
   return (
     <div className={styles.page}>
       <header className={styles.header}>
         <h1 className={styles.title}>Кнопка «Админка» на публичном сайте</h1>
         <p className={styles.subtitle}>
-          Выберите роли, для которых отображается кнопка-иконка перехода в админку в шапке и нижнем
-          меню публичного сайта. Если ничего не выбрано, используется набор по умолчанию.
+          Для широкого экрана (шапка TopBar, ширина больше 768px) и для телефона (нижняя навигация,
+          не больше 768px) можно задать разные наборы ролей. Если в блоке снять все галочки и
+          сохранить, для этого варианта используется встроенный минимальный набор (как при пустой
+          настройке в базе).
         </p>
       </header>
 
@@ -128,30 +164,24 @@ export default function AdminSettingsAdminLinkPage() {
             {message.text}
           </div>
         )}
+
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Роли с видимой кнопкой «Админка»</h2>
+          <h2 className={styles.sectionTitle}>Десктоп и планшет (шапка)</h2>
           <p className={styles.hint}>
-            Отметьте роли, для которых показывать иконку шестерёнки и переход в админку в TopBar и
-            мобильной навигации.
+            Иконка шестерёнки в верхней панели, когда видна шапка TopBar (ширина экрана больше
+            768px).
           </p>
-          <div className={styles.rolesCheckboxList}>
-            {SELECTABLE_ROLES.map((roleId) => {
-              const roleConfig = ROLES_CONFIG.find((r) => r.id === roleId);
-              const label = roleConfig?.label ?? roleId;
-              const checked = currentRoles.includes(roleId);
-              return (
-                <label key={roleId} className={styles.roleCheckboxLabel}>
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={(e) => toggleRole(roleId, e.target.checked)}
-                  />
-                  <span>{label}</span>
-                </label>
-              );
-            })}
-          </div>
+          {renderRoleCheckboxes('desktop', currentDesktop)}
         </section>
+
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Мобильный телефон</h2>
+          <p className={styles.hint}>
+            Пункт «Админка» в нижней фиксированной навигации при ширине экрана не больше 768px.
+          </p>
+          {renderRoleCheckboxes('mobile', currentMobile)}
+        </section>
+
         <div className={styles.actions}>
           <button type="submit" className={styles.saveButton} disabled={saving}>
             {saving ? 'Сохранение...' : 'Сохранить'}

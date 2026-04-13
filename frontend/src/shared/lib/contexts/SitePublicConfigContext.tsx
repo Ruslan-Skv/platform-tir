@@ -5,13 +5,15 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import { getSitePublicConfig } from '@/shared/api/site-public';
 
 export interface SitePublicConfigState {
-  rolesShowAdminLink: string[];
+  rolesShowAdminLinkDesktop: string[];
+  rolesShowAdminLinkMobile: string[];
   isLoading: boolean;
   error: Error | null;
 }
 
 const defaultValue: SitePublicConfigState = {
-  rolesShowAdminLink: [],
+  rolesShowAdminLinkDesktop: [],
+  rolesShowAdminLinkMobile: [],
   isLoading: true,
   error: null,
 };
@@ -27,8 +29,11 @@ export function SitePublicConfigProvider({ children }: { children: React.ReactNo
     getSitePublicConfig()
       .then((data) => {
         if (!cancelled) {
+          const desktop = data.rolesShowAdminLinkDesktop ?? data.rolesShowAdminLink ?? [];
+          const mobile = data.rolesShowAdminLinkMobile ?? data.rolesShowAdminLink ?? desktop;
           setState({
-            rolesShowAdminLink: data.rolesShowAdminLink ?? [],
+            rolesShowAdminLinkDesktop: desktop,
+            rolesShowAdminLinkMobile: mobile,
             isLoading: false,
             error: null,
           });
@@ -37,7 +42,8 @@ export function SitePublicConfigProvider({ children }: { children: React.ReactNo
       .catch((err) => {
         if (!cancelled) {
           setState({
-            rolesShowAdminLink: [],
+            rolesShowAdminLinkDesktop: [],
+            rolesShowAdminLinkMobile: [],
             isLoading: false,
             error: err instanceof Error ? err : new Error(String(err)),
           });
@@ -57,14 +63,19 @@ export function useSitePublicConfig(): SitePublicConfigState {
   return useContext(SitePublicConfigContext);
 }
 
-export function useAdminLinkVisible(): (userRole: string | undefined) => boolean {
-  const { rolesShowAdminLink } = useSitePublicConfig();
+export type AdminLinkViewport = 'desktop' | 'mobile';
+
+export function useAdminLinkVisible(
+  viewport: AdminLinkViewport = 'desktop'
+): (userRole: string | undefined) => boolean {
+  const { rolesShowAdminLinkDesktop, rolesShowAdminLinkMobile } = useSitePublicConfig();
+  const roles = viewport === 'desktop' ? rolesShowAdminLinkDesktop : rolesShowAdminLinkMobile;
   return useCallback(
     (userRole: string | undefined) => {
       if (!userRole) return false;
-      if (rolesShowAdminLink.length === 0) return false;
-      return rolesShowAdminLink.includes(userRole);
+      if (roles.length === 0) return false;
+      return roles.includes(userRole);
     },
-    [rolesShowAdminLink]
+    [roles]
   );
 }

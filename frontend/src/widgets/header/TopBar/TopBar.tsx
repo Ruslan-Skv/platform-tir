@@ -135,9 +135,11 @@ export const TopBar: React.FC<TopBarProps> = ({ catalogSearch }) => {
   const router = useRouter();
   const [avatarLoadError, setAvatarLoadError] = useState(false);
   const { isAuthenticated, user } = useUserAuth();
-  const { rolesShowAdminLink } = useSitePublicConfig();
+  const { rolesShowAdminLinkDesktop } = useSitePublicConfig();
   const isAdmin =
-    !!user?.role && rolesShowAdminLink.length > 0 && rolesShowAdminLink.includes(user.role);
+    !!user?.role &&
+    rolesShowAdminLinkDesktop.length > 0 &&
+    rolesShowAdminLinkDesktop.includes(user.role);
   const { count: wishlistCount } = useWishlist();
   const { count: compareCount } = useCompare();
   const { count: cartCount } = useCart();

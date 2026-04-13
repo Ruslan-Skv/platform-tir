@@ -1,9 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PrismaService } from '../database/prisma.service';
-
-/** По умолчанию кнопка «Админка» только у супер-админа. В админке можно добавить другие роли. */
-const DEFAULT_ADMIN_LINK_ROLES = ['SUPER_ADMIN'];
+import { resolveAdminLinkRolesForPublic } from './admin-link-roles.util';
 
 @ApiTags('site-public')
 @Controller('site-public')
@@ -17,10 +15,12 @@ export class SitePublicController {
       where: { id: 'main' },
     });
     const raw = block?.rolesShowAdminLink;
-    const rolesShowAdminLink =
-      Array.isArray(raw) && raw.length > 0
-        ? (raw as string[]).filter((r) => typeof r === 'string')
-        : DEFAULT_ADMIN_LINK_ROLES;
-    return { rolesShowAdminLink };
+    const { desktop, mobile } = resolveAdminLinkRolesForPublic(raw);
+    return {
+      rolesShowAdminLinkDesktop: desktop,
+      rolesShowAdminLinkMobile: mobile,
+      /** @deprecated Используйте rolesShowAdminLinkDesktop — то же значение для обратной совместимости. */
+      rolesShowAdminLink: desktop,
+    };
   }
 }
