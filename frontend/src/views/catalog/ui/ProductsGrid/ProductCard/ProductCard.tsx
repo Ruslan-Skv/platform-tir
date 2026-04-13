@@ -20,7 +20,7 @@ import styles from './ProductCard.module.css';
 interface ProductCardProps {
   product: Product;
   isCompareMode?: boolean; // Режим сравнения - скрыть кнопку сравнения, показать кнопку удаления
-  compact?: boolean; // Компактный режим для страницы сравнения на мобильных
+  compact?: boolean; // Уменьшенная карточка на узких экранах (по необходимости)
   onRemoveFromCompare?: () => void; // Callback после удаления из сравнения
   partnerLogoUrl?: string | null; // URL логотипа партнёра для товаров партнёра
   showPartnerIconOnCards?: boolean; // Показывать иконку партнёра на карточках

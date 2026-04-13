@@ -1,3 +1,5 @@
+import type { CatalogApiProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export const GUEST_COMPARE_STORAGE_KEY = 'tir_guest_compare_product_ids';
@@ -20,24 +22,6 @@ interface CompareItem {
       slug: string;
     };
   };
-}
-
-interface Product {
-  id: string;
-  name: string;
-  slug: string;
-  price: number;
-  comparePrice?: number;
-  images: string[];
-  category: {
-    id: string;
-    name: string;
-    slug: string;
-  };
-  stock?: number;
-  isNew?: boolean;
-  isFeatured?: boolean;
-  attributes?: Array<{ name: string; value: string }> | Record<string, unknown> | null;
 }
 
 function getAuthToken(): string | null {
@@ -82,7 +66,7 @@ export function clearGuestCompareIds(): void {
   localStorage.removeItem(GUEST_COMPARE_STORAGE_KEY);
 }
 
-async function fetchCompareProductsByIds(ids: string[]): Promise<Product[]> {
+async function fetchCompareProductsByIds(ids: string[]): Promise<CatalogApiProduct[]> {
   if (ids.length === 0) return [];
   const response = await fetch(`${API_URL}/products/compare-list`, {
     method: 'POST',
@@ -95,7 +79,7 @@ async function fetchCompareProductsByIds(ids: string[]): Promise<Product[]> {
   return response.json();
 }
 
-export async function getCompare(): Promise<Product[]> {
+export async function getCompare(): Promise<CatalogApiProduct[]> {
   if (hasSiteAuthToken()) {
     const response = await fetch(`${API_URL}/compare`, {
       method: 'GET',

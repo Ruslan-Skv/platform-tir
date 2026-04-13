@@ -1,76 +1,65 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 
+import type { ProductCharacteristic } from '@/entities/product';
 import * as compareApi from '@/shared/api/compare';
 import { useCompare } from '@/shared/lib/hooks';
 import {
   PRODUCT_AVAILABILITY_LABEL,
   getProductAvailability,
 } from '@/shared/lib/product-availability';
+import type { CatalogApiProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
+import { mapCatalogApiProductToProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
 import { ProductCard } from '@/views/catalog/ui/ProductsGrid';
+import catalogGridStyles from '@/views/catalog/ui/ProductsGrid/ProductsGrid.module.css';
 
 import styles from './page.module.css';
 
-interface CompareProduct {
-  id: string;
-  name: string;
-  slug: string;
-  price: number;
-  comparePrice?: number;
-  images: string[];
-  category: {
-    id: string;
-    name: string;
-    slug: string;
-  };
-  isNew?: boolean;
-  isFeatured?: boolean;
-  stock?: number;
-  onOrder?: boolean;
-  attributes?: Array<{ name: string; value: string }> | Record<string, unknown> | null;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+
+function extractCharacteristicsFromAttributes(
+  attributes:
+    | CatalogApiProduct['attributes']
+    | Array<{ name: string; value: string }>
+    | null
+    | undefined
+): ProductCharacteristic[] | undefined {
+  if (!attributes) return undefined;
+  if (Array.isArray(attributes)) {
+    return attributes
+      .filter((attr) => attr && attr.name && attr.value != null)
+      .map((attr) => ({ name: String(attr.name), value: String(attr.value) }));
+  }
+  if (typeof attributes === 'object') {
+    return Object.entries(attributes)
+      .filter(([_, v]) => v != null && v !== '')
+      .map(([name, value]) => ({ name: String(name), value: String(value) }));
+  }
+  return undefined;
 }
 
 const SLOTS_MOBILE = 2;
 const SLOTS_DESKTOP = 4;
 
 export default function ComparePage() {
-  const { count, refreshCount, compare } = useCompare();
-  const [products, setProducts] = useState<CompareProduct[]>([]);
+  const { count, refreshCount } = useCompare();
+  const [products, setProducts] = useState<CatalogApiProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  const slotScrollRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  const handleSlotScroll = useCallback((slot: number, listLength: number) => {
-    const el = slotScrollRefs.current[slot];
-    if (!el || listLength <= 1) return;
-    const pageWidth = el.clientWidth;
-    const idx = Math.round(el.scrollLeft / pageWidth);
-    const clamped = Math.max(0, Math.min(idx, listLength - 1));
-    setSelectedIndices((prev) => {
-      if (prev[slot] === clamped) return prev;
-      const next = [...prev];
-      next[slot] = clamped;
-      return next;
-    });
-  }, []);
+  /** id товара в каждом слоте (устойчиво к удалению других позиций из списка). */
+  const [slotProductId, setSlotProductId] = useState<string[]>([]);
+  const [partnerSettings, setPartnerSettings] = useState<{
+    partnerLogoUrl: string | null;
+    showPartnerIconOnCards: boolean;
+  }>({ partnerLogoUrl: null, showPartnerIconOnCards: true });
 
   const slotCount = isMobile ? SLOTS_MOBILE : SLOTS_DESKTOP;
 
-  // Каждый слот привязан к одному товару: слот i = products[i]. Лишние слоты пустые.
-  const productsPerSlot = useMemo(
-    () =>
-      Array(slotCount)
-        .fill(null)
-        .map((_, slot) => (slot < products.length ? [products[slot]!] : [])),
-    [products, slotCount]
-  );
-
-  // Индекс выбранного продукта внутри каждого слота (для мобильной прокрутки, когда товаров > слотов)
-  const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
+  const productIdsKey = useMemo(() => products.map((p) => p.id).join('|'), [products]);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)');
@@ -81,9 +70,20 @@ export default function ComparePage() {
   }, []);
 
   useEffect(() => {
-    // Каждый слот показывает товар с тем же индексом (0, 1, 2, 3...). Пустые слоты — 0.
-    setSelectedIndices(Array.from({ length: slotCount }, () => 0));
-  }, [products.length, slotCount]);
+    if (products.length === 0) {
+      setSlotProductId([]);
+      return;
+    }
+    setSlotProductId((prev) =>
+      Array.from({ length: slotCount }, (_, slot) => {
+        const oldId = prev[slot];
+        if (oldId && products.some((p) => p.id === oldId)) {
+          return oldId;
+        }
+        return products[slot % products.length]!.id;
+      })
+    );
+  }, [productIdsKey, products, slotCount]);
 
   const loadCompare = useCallback(async () => {
     try {
@@ -113,52 +113,30 @@ export default function ComparePage() {
     }
   }, [count, loading, products.length, loadCompare]);
 
+  useEffect(() => {
+    const fetchPartnerSettings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/home/partner-products`);
+        if (res.ok) {
+          const data = await res.json();
+          setPartnerSettings({
+            partnerLogoUrl: data.partnerLogoUrl ?? null,
+            showPartnerIconOnCards: data.showPartnerIconOnCards ?? true,
+          });
+        }
+      } catch {
+        // ignore
+      }
+    };
+    fetchPartnerSettings();
+  }, []);
+
   const mappedProducts = useMemo(
     () =>
-      products.map((p, index) => {
-        const price = typeof p.price === 'string' ? parseFloat(p.price) : Number(p.price);
-        const comparePrice = p.comparePrice
-          ? typeof p.comparePrice === 'string'
-            ? parseFloat(p.comparePrice)
-            : Number(p.comparePrice)
-          : undefined;
-
-        return {
-          id: index + 1,
-          originalId: p.id,
-          slug: p.slug,
-          name: p.name,
-          price,
-          oldPrice: comparePrice,
-          image: p.images?.[0] || '/images/products/door-placeholder.jpg',
-          images: p.images || [],
-          category: p.category.name,
-          categoryId: parseInt(p.category.id) || undefined,
-          rating: 4.5,
-          isNew: p.isNew,
-          isFeatured: p.isFeatured,
-          inStock: (p.stock ?? 0) > 0,
-          stock: p.stock,
-          onOrder: p.onOrder ?? false,
-          discount: comparePrice
-            ? Math.round(((comparePrice - price) / comparePrice) * 100)
-            : undefined,
-          characteristics: (() => {
-            if (!p.attributes) return undefined;
-            if (Array.isArray(p.attributes)) {
-              return p.attributes
-                .filter((attr) => attr && attr.name && attr.value != null)
-                .map((attr) => ({ name: String(attr.name), value: String(attr.value) }));
-            }
-            if (typeof p.attributes === 'object' && p.attributes !== null) {
-              return Object.entries(p.attributes)
-                .filter(([_, v]) => v != null && v !== '')
-                .map(([name, value]) => ({ name: String(name), value: String(value) }));
-            }
-            return undefined;
-          })(),
-        };
-      }),
+      products.map((p, index) => ({
+        ...mapCatalogApiProductToProduct(p, index),
+        characteristics: extractCharacteristicsFromAttributes(p.attributes),
+      })),
     [products]
   );
 
@@ -175,23 +153,36 @@ export default function ComparePage() {
     return Array.from(charMap.keys()).sort();
   }, [mappedProducts]);
 
-  const setSlotIndex = useCallback((slot: number, delta: number, listLength: number) => {
-    if (listLength <= 1) return;
-    setSelectedIndices((prev) => {
-      const next = [...prev];
-      next[slot] = (next[slot] + delta + listLength) % listLength;
-      return next;
-    });
-  }, []);
+  const getProductIndexForSlot = (slot: number): number => {
+    const id = slotProductId[slot];
+    if (id) {
+      const idx = products.findIndex((p) => p.id === id);
+      if (idx >= 0) return idx;
+    }
+    return Math.min(slot, Math.max(0, products.length - 1));
+  };
 
   const getMappedProductForSlot = (slot: number) => {
-    const list = productsPerSlot[slot];
-    const idx = selectedIndices[slot] ?? 0;
-    const p = list?.[idx] ?? null;
-    if (!p) return null;
-    const productIdx = products.indexOf(p);
-    return mappedProducts[productIdx] ?? null;
+    const pi = getProductIndexForSlot(slot);
+    return mappedProducts[pi] ?? null;
   };
+
+  const shiftSlotProduct = (slot: number, delta: number) => {
+    if (products.length <= 1) return;
+    setSlotProductId((prev) => {
+      const next = [...prev];
+      const curId = next[slot];
+      let curIdx = curId ? products.findIndex((p) => p.id === curId) : -1;
+      if (curIdx < 0) {
+        curIdx = slot % products.length;
+      }
+      const newIdx = (curIdx + delta + products.length) % products.length;
+      next[slot] = products[newIdx]!.id;
+      return next;
+    });
+  };
+
+  const canPickInSlot = products.length > 1;
 
   if (loading) {
     return (
@@ -274,19 +265,39 @@ export default function ComparePage() {
     },
   ] as const;
 
+  const renderSlotNav = (slot: number) => {
+    if (!canPickInSlot) return null;
+    const pi = getProductIndexForSlot(slot);
+    return (
+      <div className={styles.slotNav}>
+        <button
+          type="button"
+          onClick={() => shiftSlotProduct(slot, -1)}
+          aria-label={`Предыдущий товар в колонке ${slot + 1}`}
+        >
+          ‹
+        </button>
+        <span>
+          {pi + 1} / {products.length}
+        </span>
+        <button
+          type="button"
+          onClick={() => shiftSlotProduct(slot, 1)}
+          aria-label={`Следующий товар в колонке ${slot + 1}`}
+        >
+          ›
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <h1 className={styles.title}>Сравнение товаров</h1>
-        {count > 0 && (
-          <p className={styles.subtitle}>
-            {count} {count === 1 ? 'товар' : count < 5 ? 'товара' : 'товаров'} в сравнении
-          </p>
-        )}
       </div>
 
       <div className={styles.compareWrapper}>
-        {/* Десктоп: таблица с фиксированной колонкой характеристик */}
         {!isMobile && (
           <div className={styles.compareTableWrapper}>
             <div className={styles.compareTable}>
@@ -294,8 +305,6 @@ export default function ComparePage() {
                 <div className={styles.headerCellChars} />
                 {Array.from({ length: slotCount }).map((_, slot) => {
                   const product = getMappedProductForSlot(slot);
-                  const slotProducts = productsPerSlot[slot] ?? [];
-                  const canScroll = slotProducts.length > 1;
                   return (
                     <div key={slot} className={styles.slotColumn}>
                       <div className={styles.slotCard}>
@@ -304,30 +313,12 @@ export default function ComparePage() {
                             product={product}
                             isCompareMode
                             onRemoveFromCompare={loadCompare}
+                            partnerLogoUrl={partnerSettings.partnerLogoUrl}
+                            showPartnerIconOnCards={partnerSettings.showPartnerIconOnCards}
                           />
                         )}
                       </div>
-                      {canScroll && (
-                        <div className={styles.slotNav}>
-                          <button
-                            type="button"
-                            onClick={() => setSlotIndex(slot, -1, slotProducts.length)}
-                            aria-label="Предыдущий товар"
-                          >
-                            ‹
-                          </button>
-                          <span>
-                            {selectedIndices[slot]! + 1} / {slotProducts.length}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setSlotIndex(slot, 1, slotProducts.length)}
-                            aria-label="Следующий товар"
-                          >
-                            ›
-                          </button>
-                        </div>
-                      )}
+                      {renderSlotNav(slot)}
                     </div>
                   );
                 })}
@@ -362,105 +353,55 @@ export default function ComparePage() {
           </div>
         )}
 
-        {/* Мобильный: карточки с параметрами под каждым товаром (как vseinstrumenti) */}
         {isMobile && (
           <div className={styles.mobileCompare}>
-            {Array.from({ length: slotCount }).map((_, slot) => {
-              const slotProducts = productsPerSlot[slot] ?? [];
-              const canScroll = slotProducts.length > 1;
-              return (
-                <div key={slot} className={styles.mobileSlot}>
-                  <div
-                    className={styles.mobileSlotScroll}
-                    ref={(el) => {
-                      slotScrollRefs.current[slot] = el;
-                    }}
-                    onScroll={() => handleSlotScroll(slot, slotProducts.length)}
-                  >
-                    {slotProducts.map((p) => {
-                      const productIdx = products.indexOf(p);
-                      const mp = mappedProducts[productIdx];
-                      return (
-                        <div key={p.id} className={styles.mobileSlotPage}>
-                          <div className={styles.mobileCard}>
-                            {mp && (
-                              <ProductCard
-                                product={mp}
-                                isCompareMode
-                                compact
-                                onRemoveFromCompare={loadCompare}
-                              />
-                            )}
-                          </div>
-                          <div className={styles.mobileParams}>
-                            {basicRows.map((row) => (
-                              <div key={row.key} className={styles.mobileParam}>
-                                <span className={styles.mobileParamName}>{row.label}</span>
-                                <div className={styles.mobileParamValue}>{row.get(mp ?? null)}</div>
-                              </div>
-                            ))}
-                            {allCharacteristics.map((charName) => {
-                              const char = mp?.characteristics?.find((c) => c.name === charName);
-                              return (
-                                <div key={charName} className={styles.mobileParam}>
-                                  <span className={styles.mobileParamName}>{charName}</span>
-                                  <span className={styles.mobileParamValue}>
-                                    {char ? char.value : '—'}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
+            <div className={`${catalogGridStyles.grid} ${catalogGridStyles.gridMobile2}`}>
+              {Array.from({ length: slotCount }).map((_, slot) => {
+                const mp = getMappedProductForSlot(slot);
+                return (
+                  <div key={slot} className={styles.mobileCardCell}>
+                    {mp ? (
+                      <ProductCard
+                        product={mp}
+                        isCompareMode
+                        onRemoveFromCompare={loadCompare}
+                        partnerLogoUrl={partnerSettings.partnerLogoUrl}
+                        showPartnerIconOnCards={partnerSettings.showPartnerIconOnCards}
+                      />
+                    ) : null}
                   </div>
-                  {canScroll && (
-                    <div className={styles.mobileSlotNav}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const nextIdx =
-                            (selectedIndices[slot]! - 1 + slotProducts.length) %
-                            slotProducts.length;
-                          setSlotIndex(slot, -1, slotProducts.length);
-                          const el = slotScrollRefs.current[slot];
-                          if (el) {
-                            el.scrollTo({
-                              left: nextIdx * el.clientWidth,
-                              behavior: 'smooth',
-                            });
-                          }
-                        }}
-                        aria-label="Предыдущий товар"
-                      >
-                        ‹
-                      </button>
-                      <span>
-                        {selectedIndices[slot]! + 1} / {slotProducts.length}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const nextIdx = (selectedIndices[slot]! + 1) % slotProducts.length;
-                          setSlotIndex(slot, 1, slotProducts.length);
-                          const el = slotScrollRefs.current[slot];
-                          if (el) {
-                            el.scrollTo({
-                              left: nextIdx * el.clientWidth,
-                              behavior: 'smooth',
-                            });
-                          }
-                        }}
-                        aria-label="Следующий товар"
-                      >
-                        ›
-                      </button>
+                );
+              })}
+            </div>
+            <div className={styles.mobileMetaGrid}>
+              {Array.from({ length: slotCount }).map((_, slot) => {
+                const mp = getMappedProductForSlot(slot);
+                return (
+                  <div key={slot} className={styles.mobileSlotMeta}>
+                    {renderSlotNav(slot)}
+                    <div className={styles.mobileParams}>
+                      {basicRows.map((row) => (
+                        <div key={row.key} className={styles.mobileParam}>
+                          <span className={styles.mobileParamName}>{row.label}</span>
+                          <div className={styles.mobileParamValue}>{row.get(mp ?? null)}</div>
+                        </div>
+                      ))}
+                      {allCharacteristics.map((charName) => {
+                        const char = mp?.characteristics?.find((c) => c.name === charName);
+                        return (
+                          <div key={charName} className={styles.mobileParam}>
+                            <span className={styles.mobileParamName}>{charName}</span>
+                            <span className={styles.mobileParamValue}>
+                              {char ? char.value : '—'}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
-                  )}
-                </div>
-              );
-            })}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

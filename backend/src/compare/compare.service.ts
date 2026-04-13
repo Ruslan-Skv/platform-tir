@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { ProductsService } from '../products/products.service';
 
 @Injectable()
 export class CompareService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private productsService: ProductsService,
+  ) {}
 
   async addToCompare(userId: string, productId: string) {
     // Проверяем, существует ли товар
@@ -80,17 +84,11 @@ export class CompareService {
   async getCompare(userId: string) {
     const items = await this.prisma.compareItem.findMany({
       where: { userId },
-      include: {
-        product: {
-          include: {
-            category: true,
-          },
-        },
-      },
       orderBy: { createdAt: 'desc' },
+      select: { productId: true },
     });
-
-    return items.map((item: { product: unknown }) => item.product);
+    const ids = items.map((i) => i.productId);
+    return this.productsService.findManyActiveByIdsForCompare(ids);
   }
 
   async getCompareCount(userId: string) {

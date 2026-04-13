@@ -366,9 +366,7 @@ export class ProductsService {
     }
     const rows = await this.prisma.product.findMany({
       where: { id: { in: unique }, isActive: true },
-      include: {
-        category: true,
-      },
+      include: this.catalogPublicListInclude(),
     });
     const map = new Map(rows.map((p) => [p.id, p]));
     const ordered = unique.map((id) => map.get(id)).filter((p): p is NonNullable<typeof p> => !!p);
