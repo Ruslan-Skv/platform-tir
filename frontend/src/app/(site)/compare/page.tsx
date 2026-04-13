@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 
@@ -373,34 +373,52 @@ export default function ComparePage() {
                 );
               })}
             </div>
-            <div className={styles.mobileMetaGrid}>
-              {Array.from({ length: slotCount }).map((_, slot) => {
-                const mp = getMappedProductForSlot(slot);
-                return (
-                  <div key={slot} className={styles.mobileSlotMeta}>
-                    {renderSlotNav(slot)}
-                    <div className={styles.mobileParams}>
-                      {basicRows.map((row) => (
-                        <div key={row.key} className={styles.mobileParam}>
-                          <span className={styles.mobileParamName}>{row.label}</span>
-                          <div className={styles.mobileParamValue}>{row.get(mp ?? null)}</div>
-                        </div>
-                      ))}
-                      {allCharacteristics.map((charName) => {
-                        const char = mp?.characteristics?.find((c) => c.name === charName);
-                        return (
-                          <div key={charName} className={styles.mobileParam}>
-                            <span className={styles.mobileParamName}>{charName}</span>
-                            <span className={styles.mobileParamValue}>
-                              {char ? char.value : '—'}
-                            </span>
-                          </div>
-                        );
-                      })}
+            <div
+              className={styles.mobileNavRow}
+              style={{ gridTemplateColumns: `repeat(${slotCount}, minmax(0, 1fr))` }}
+            >
+              {Array.from({ length: slotCount }).map((_, slot) => (
+                <div key={slot} className={styles.mobileNavCell}>
+                  {renderSlotNav(slot)}
+                </div>
+              ))}
+            </div>
+            <div
+              className={styles.mobileParamsTable}
+              style={{
+                gridTemplateColumns: `minmax(5.5rem, 34%) repeat(${slotCount}, minmax(0, 1fr))`,
+              }}
+            >
+              {basicRows.map((row) => (
+                <Fragment key={row.key}>
+                  <div className={styles.mobileParamRowLabel}>{row.label}</div>
+                  {Array.from({ length: slotCount }).map((_, slot) => (
+                    <div
+                      key={slot}
+                      className={`${styles.mobileParamRowValue}${slot === slotCount - 1 ? ` ${styles.mobileParamRowValueLast}` : ''}`}
+                    >
+                      {row.get(getMappedProductForSlot(slot) ?? null)}
                     </div>
-                  </div>
-                );
-              })}
+                  ))}
+                </Fragment>
+              ))}
+              {allCharacteristics.map((charName) => (
+                <Fragment key={charName}>
+                  <div className={styles.mobileParamRowLabel}>{charName}</div>
+                  {Array.from({ length: slotCount }).map((_, slot) => {
+                    const m = getMappedProductForSlot(slot);
+                    const char = m?.characteristics?.find((c) => c.name === charName);
+                    return (
+                      <div
+                        key={slot}
+                        className={`${styles.mobileParamRowValue}${slot === slotCount - 1 ? ` ${styles.mobileParamRowValueLast}` : ''}`}
+                      >
+                        {char ? char.value : '—'}
+                      </div>
+                    );
+                  })}
+                </Fragment>
+              ))}
             </div>
           </div>
         )}
