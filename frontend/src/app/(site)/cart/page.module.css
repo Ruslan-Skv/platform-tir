@@ -57,16 +57,16 @@
 .link {
   display: inline-block;
   padding: 0.75rem 1.5rem;
-  background: #d90652;
+  background: var(--gradient-accent);
   color: white;
   text-decoration: none;
   border-radius: 0.375rem;
   font-weight: 500;
-  transition: background-color 0.2s;
+  transition: background 0.2s;
 }
 
 .link:hover {
-  background: #b80545;
+  background: var(--gradient-accent-hover);
 }
 
 .content {
@@ -245,7 +245,7 @@
 }
 
 .itemName:hover {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .itemCategory {
@@ -266,7 +266,7 @@
 }
 
 .serviceItemLink:hover .itemName {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .serviceItemIcon {
@@ -375,8 +375,8 @@
   padding: 0.15rem 0.35rem;
   font-size: 0.6875rem;
   font-weight: 600;
-  color: #d90652;
-  background: rgb(217 6 82 / 0.1);
+  color: var(--color-accent);
+  background: rgb(var(--color-accent-rgb) / 0.1);
   border-radius: 0.2rem;
 }
 
@@ -578,8 +578,8 @@
 .clearButton {
   padding: 0.625rem 1.25rem;
   background: transparent;
-  border: 1px solid #d90652;
-  color: #d90652;
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
   border-radius: 0.375rem;
   font-size: 0.9375rem;
   font-weight: 600;
@@ -590,7 +590,7 @@
 }
 
 .clearButton:hover {
-  background: #d90652;
+  background: var(--color-accent);
   color: #fff;
 }
 
@@ -671,7 +671,7 @@
 }
 
 .deliveryOption input {
-  accent-color: #d90652;
+  accent-color: var(--color-accent);
 }
 
 .deliveryPrice {
@@ -699,7 +699,7 @@
 .deliveryCheckbox {
   width: 1.25rem;
   height: 1.25rem;
-  accent-color: #d90652;
+  accent-color: var(--color-accent);
 }
 
 .deliveryCheckboxHint {
@@ -922,7 +922,7 @@
 
 .deliveryFormField input:focus {
   outline: none;
-  border-color: #d90652;
+  border-color: var(--color-accent);
   box-shadow: 0 0 0 2px rgba(217, 6, 82, 0.2);
 }
 
@@ -938,7 +938,7 @@
 
 .deliveryFormField select:focus {
   outline: none;
-  border-color: #d90652;
+  border-color: var(--color-accent);
   box-shadow: 0 0 0 2px rgba(217, 6, 82, 0.2);
 }
 
@@ -975,7 +975,7 @@
 }
 
 .deliveryRadioLabel input {
-  accent-color: #d90652;
+  accent-color: var(--color-accent);
 }
 
 .deliveryFormLift {
@@ -1006,7 +1006,7 @@
 }
 
 .deliveryFormCheckbox input {
-  accent-color: #d90652;
+  accent-color: var(--color-accent);
 }
 
 .deliveryFormTotal {
@@ -1060,14 +1060,14 @@
   display: block;
   width: 100%;
   padding: 0.875rem 1.5rem;
-  background: #d90652;
+  background: var(--gradient-accent);
   color: white;
   border: none;
   border-radius: 0.375rem;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background 0.2s;
   margin-top: 1rem;
   text-align: center;
   text-decoration: none;
@@ -1075,7 +1075,7 @@
 }
 
 .checkoutButton:hover {
-  background: #b80545;
+  background: var(--gradient-accent-hover);
 }
 
 .checkoutButton:disabled {
@@ -1228,7 +1228,7 @@
 }
 
 .checkoutHintPink {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .cancelReviewWrap {
@@ -1249,7 +1249,7 @@
 }
 
 .cancelReviewLink:hover:not(:disabled) {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .cancelReviewLink:disabled {
@@ -1274,7 +1274,7 @@
 }
 
 .continueShopping:hover {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 /* Мобильная адаптация */
@@ -1563,21 +1563,21 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .checkoutButton {
-  background: #d90652;
+  background: var(--gradient-accent);
   color: #fff;
   border-color: transparent;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .checkoutButton:hover:not(:disabled) {
-  background: #b80545;
+  background: var(--gradient-accent-hover);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .checkoutHint {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .checkoutHintPink {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cancelReviewLink {
@@ -1657,7 +1657,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .itemName:hover {
-  color: #ec4899;
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .itemCategory,
@@ -1688,8 +1688,8 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .onOrderBadge {
-  color: #d90652;
-  background: rgb(217 6 82 / 0.2);
+  color: var(--color-accent);
+  background: rgb(var(--color-accent-rgb) / 0.2);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .inStockBadge {
@@ -1741,12 +1741,12 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .clearButton {
   background: transparent;
-  border-color: #d90652;
+  border-color: var(--color-accent);
   color: #f472b6;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .clearButton:hover {
-  background: #d90652;
+  background: var(--color-accent);
   color: #fff;
 }
 
@@ -1821,7 +1821,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryFormField input:focus {
-  border-color: #d90652;
+  border-color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryFormField select {
@@ -1831,7 +1831,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryFormField select:focus {
-  border-color: #d90652;
+  border-color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryFormMoversNote {
@@ -1878,7 +1878,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .continueShopping:hover {
-  color: #ec4899;
+  color: var(--color-accent);
 }
 
 /* Модалка подтверждения добавления к проверенному заказу */
@@ -1949,7 +1949,7 @@
 
 .confirmModalButtonPrimary {
   padding: 0.4rem 0.75rem;
-  background: #d90652;
+  background: var(--color-accent);
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -1959,7 +1959,7 @@
 }
 
 .confirmModalButtonPrimary:hover:not(:disabled) {
-  background: #b80545;
+  background: var(--color-accent-hover);
 }
 
 .confirmModalButtonPrimary:disabled {
@@ -2073,7 +2073,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .confirmModalButtonPrimary {
-  background: #ec4899;
+  background: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])

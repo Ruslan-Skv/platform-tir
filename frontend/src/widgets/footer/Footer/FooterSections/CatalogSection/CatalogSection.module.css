@@ -25,7 +25,7 @@
 }
 
 .link:hover {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
@@ -37,7 +37,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .link:hover {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 @media (width <= 768px) {

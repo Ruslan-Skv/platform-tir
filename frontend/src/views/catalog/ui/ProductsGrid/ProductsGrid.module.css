@@ -202,8 +202,8 @@
   }
 
   .mobileFiltersIconButton:hover {
-    border-color: rgb(217 6 82 / 0.35);
-    color: #d90652;
+    border-color: rgb(var(--color-accent-rgb) / 0.35);
+    color: var(--color-accent);
   }
 
   .mobileFiltersIcon {
@@ -218,8 +218,8 @@
   }
 
   :where(html[data-theme='dark'], [data-app-theme='dark']) .mobileFiltersIconButton:hover {
-    border-color: rgb(217 6 82 / 0.4);
-    color: #d90652;
+    border-color: rgb(var(--color-accent-rgb) / 0.4);
+    color: var(--color-accent);
   }
 
   .sortLabel,

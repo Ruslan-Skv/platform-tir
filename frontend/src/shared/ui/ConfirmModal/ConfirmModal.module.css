@@ -46,12 +46,12 @@
 }
 
 .confirmButton.default {
-  background: #d90652;
+  background: var(--color-accent);
   color: white;
 }
 
 .confirmButton.default:hover {
-  background: #b80545;
+  background: var(--color-accent-hover);
 }
 
 .confirmButton.danger {

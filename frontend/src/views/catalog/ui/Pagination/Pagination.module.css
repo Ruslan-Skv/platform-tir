@@ -71,8 +71,8 @@
 }
 
 .pageButton.active {
-  background: #d90652;
-  border-color: #d90652;
+  background: var(--color-accent);
+  border-color: var(--color-accent);
   color: white;
 }
 
@@ -147,8 +147,8 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .pageButton.active {
-  background: #d90652;
-  border-color: #d90652;
+  background: var(--color-accent);
+  border-color: var(--color-accent);
   color: white;
 }
 

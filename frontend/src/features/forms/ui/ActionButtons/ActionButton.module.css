@@ -19,11 +19,11 @@
 
 .button.measurement,
 .button.outline.measurement {
-  background-color: #d90652 !important;
+  background: var(--gradient-accent) !important;
   border: none !important;
-  color: #fff !important;
+  color: var(--color-accent-contrast) !important;
   transition:
-    background-color 0.3s ease,
+    background 0.3s ease,
     color 0.3s ease;
 }
 
@@ -31,14 +31,14 @@
 .button.measurement:active:not(.disabled),
 .button.outline.measurement:hover:not(.disabled),
 .button.outline.measurement:active:not(.disabled) {
-  background-color: #b80546 !important;
+  background: var(--gradient-accent-hover) !important;
   box-shadow: none;
-  color: #fff !important;
+  color: var(--color-accent-contrast) !important;
 }
 
 .button.measurement:focus-visible,
 .button.outline.measurement:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+  box-shadow: var(--focus-ring-accent-strong);
 }
 
 /* Отключаем glow эффект для measurement */
@@ -65,12 +65,12 @@
   background-color: #f9fafb !important;
   border-color: rgb(81 81 81 / 45%) !important;
   box-shadow: none;
-  color: #d90652 !important;
+  color: var(--color-accent) !important;
 }
 
 .button.callback:focus-visible,
 .button.outline.callback:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  box-shadow: var(--focus-ring-accent);
 }
 
 /* Отключаем glow эффект для callback */
@@ -82,9 +82,9 @@
 /* Светлая тема */
 :where(html[data-theme='light'], [data-app-theme='light']) .button.measurement,
 :where(html[data-theme='light'], [data-app-theme='light']) .button.outline.measurement {
-  background-color: #d90652 !important;
+  background: var(--gradient-accent) !important;
   border: none !important;
-  color: #fff !important;
+  color: var(--color-accent-contrast) !important;
 }
 
 :where(html[data-theme='light'], [data-app-theme='light']) .button.callback,
@@ -97,17 +97,17 @@
 /* Темная тема - кнопка "Записаться на замер" */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .button.measurement,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .button.outline.measurement {
-  background-color: #d90652 !important;
+  background: var(--gradient-accent) !important;
   border: none !important;
-  color: #fff !important;
+  color: var(--color-accent-contrast) !important;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .button.measurement:hover:not(.disabled),
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .button.outline.measurement:hover:not(.disabled) {
-  background-color: #b80546 !important;
+  background: var(--gradient-accent-hover) !important;
   box-shadow: none;
-  color: #fff !important;
+  color: var(--color-accent-contrast) !important;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .button.callback,
@@ -126,24 +126,24 @@
   background-color: rgb(55 65 81 / 60%) !important;
   border-color: rgb(156 163 175 / 80%) !important;
   box-shadow: none;
-  color: #d90652 !important;
+  color: var(--color-accent) !important;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .button.callback:focus-visible,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .button.outline.callback:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+  box-shadow: var(--focus-ring-accent-strong);
 }
 
 @media (width <= 480px) {
   .button.measurement,
   .button.outline.measurement {
-    background-color: #d90652 !important;
-    color: #fff !important;
+    background: var(--gradient-accent) !important;
+    color: var(--color-accent-contrast) !important;
   }
 
   :where(html[data-theme='dark'], [data-app-theme='dark']) .button.measurement,
   :where(html[data-theme='dark'], [data-app-theme='dark']) .button.outline.measurement {
-    background-color: #d90652 !important;
-    color: #fff !important;
+    background: var(--gradient-accent) !important;
+    color: var(--color-accent-contrast) !important;
   }
 }

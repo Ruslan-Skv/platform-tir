@@ -11,6 +11,25 @@
   /* Максимальная ширина контейнера */
   --container-max-width: 1280px;
   --container-padding: 1rem;
+
+  /* Акцентный красный (светлая тема) */
+  --color-accent: #d90652;
+  --color-accent-rgb: 217 6 82;
+  --color-accent-rgb-dark-legacy: 236 72 153;
+  --color-accent-hover: #b80545;
+  --color-accent-pressed: #a3043f;
+  --color-accent-contrast: #ffffff;
+  --color-accent-soft: rgb(var(--color-accent-rgb) / 10%);
+  --color-accent-soft-strong: rgb(var(--color-accent-rgb) / 20%);
+  --gradient-accent: linear-gradient(
+    135deg,
+    #ef2a76 0%,
+    var(--color-accent) 55%,
+    var(--color-accent-hover) 100%
+  );
+  --gradient-accent-hover: linear-gradient(135deg, #e1226c 0%, #c6064d 55%, #aa043f 100%);
+  --focus-ring-accent: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
+  --focus-ring-accent-strong: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.25);
 }
 
 /* ===== ПОДКЛЮЧЕНИЕ ШРИФТОВ ===== */
@@ -88,6 +107,22 @@ html[data-theme='light'] body {
   color: #111827;
 }
 
+/* Тёмная тема: приглушённый акцентный красный */
+:where(html[data-theme='dark'], [data-app-theme='dark']) {
+  --color-accent: #b11149;
+  --color-accent-rgb: 177 17 73;
+  --color-accent-rgb-dark-legacy: 177 17 73;
+  --color-accent-hover: #980f3e;
+  --color-accent-pressed: #850d36;
+  --color-accent-contrast: #ffffff;
+  --color-accent-soft: rgb(177 17 73 / 12%);
+  --color-accent-soft-strong: rgb(177 17 73 / 22%);
+  --gradient-accent: linear-gradient(135deg, #c21f58 0%, #a91044 55%, #8f0d39 100%);
+  --gradient-accent-hover: linear-gradient(135deg, #b81c52 0%, #98103e 55%, #7f0b32 100%);
+  --focus-ring-accent: 0 0 0 2px rgb(177 17 73 / 0.24);
+  --focus-ring-accent-strong: 0 0 0 2px rgb(177 17 73 / 0.3);
+}
+
 /* ===== ТИПОГРАФИКА ===== */
 h1,
 h2,
@@ -150,7 +185,7 @@ a:focus {
 
 a:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  box-shadow: var(--focus-ring-accent);
   border-radius: 0.25rem;
 }
 
@@ -180,7 +215,7 @@ button:focus {
 
 button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  box-shadow: var(--focus-ring-accent);
 }
 
 button:active:not(:disabled) {
@@ -205,7 +240,7 @@ input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  box-shadow: var(--focus-ring-accent);
 }
 
 /* Элементы с role="button" (доступность) */
@@ -215,17 +250,7 @@ select:focus-visible {
 
 [role='button']:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
-}
-
-/* Тёмная тема — обводка фокуса */
-:where(html[data-theme='dark'], [data-app-theme='dark']) a:focus-visible,
-:where(html[data-theme='dark'], [data-app-theme='dark']) button:focus-visible,
-:where(html[data-theme='dark'], [data-app-theme='dark']) input:focus-visible,
-:where(html[data-theme='dark'], [data-app-theme='dark']) textarea:focus-visible,
-:where(html[data-theme='dark'], [data-app-theme='dark']) select:focus-visible,
-:where(html[data-theme='dark'], [data-app-theme='dark']) [role='button']:focus-visible {
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+  box-shadow: var(--focus-ring-accent);
 }
 
 /* ===== УТИЛИТНЫЕ КЛАССЫ ===== */

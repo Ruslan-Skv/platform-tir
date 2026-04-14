@@ -29,7 +29,7 @@
 .clearButton {
   background: none;
   border: none;
-  color: #d90652;
+  color: var(--color-accent);
   cursor: pointer;
   font-size: 0.875rem;
   transition: color 0.2s ease;
@@ -131,7 +131,7 @@
 }
 
 .clearButton:hover {
-  color: #b80545;
+  color: var(--color-accent-hover);
 }
 
 .clearButton:disabled {
@@ -199,7 +199,7 @@
 }
 
 .sectionToggle:focus-visible {
-  outline: 2px solid rgb(217 6 82 / 0.35);
+  outline: 2px solid rgb(var(--color-accent-rgb) / 0.35);
   outline-offset: 2px;
 }
 
@@ -230,7 +230,7 @@
 .categoryBulkBtn {
   background: none;
   border: none;
-  color: #d90652;
+  color: var(--color-accent);
   cursor: pointer;
   font-size: 0.8125rem;
   padding: 0.2rem 0;
@@ -240,7 +240,7 @@
 }
 
 .categoryBulkBtn:hover:not(:disabled) {
-  color: #b80545;
+  color: var(--color-accent-hover);
 }
 
 .categoryBulkBtn:disabled {
@@ -269,7 +269,7 @@
 }
 
 .option input {
-  accent-color: #d90652;
+  accent-color: var(--color-accent);
 }
 
 .optionText {
@@ -363,7 +363,7 @@
 }
 
 .range input {
-  accent-color: #d90652;
+  accent-color: var(--color-accent);
 }
 
 .rangeValues {
@@ -429,7 +429,7 @@
 .priceRange::-webkit-slider-thumb {
   appearance: none;
   background: #fff;
-  border: 2px solid #d90652;
+  border: 2px solid var(--color-accent);
   border-radius: 50%;
   cursor: pointer;
   height: 16px;
@@ -439,7 +439,7 @@
 
 .priceRange::-moz-range-thumb {
   background: #fff;
-  border: 2px solid #d90652;
+  border: 2px solid var(--color-accent);
   border-radius: 50%;
   cursor: pointer;
   height: 16px;
@@ -469,7 +469,7 @@
 }
 
 .mobileApplyButton {
-  background: #d90652;
+  background: var(--color-accent);
   border: none;
   border-radius: 0.5rem;
   color: #fff;
@@ -488,7 +488,7 @@
 }
 
 .mobileApplyButton:focus-visible {
-  outline: 2px solid rgb(217 6 82 / 0.45);
+  outline: 2px solid rgb(var(--color-accent-rgb) / 0.45);
   outline-offset: 2px;
 }
 
@@ -582,12 +582,12 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .priceRange::-webkit-slider-thumb {
   background: #111827;
-  border-color: #d90652;
+  border-color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .priceRange::-moz-range-thumb {
   background: #111827;
-  border-color: #d90652;
+  border-color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .mobileApplyBar {

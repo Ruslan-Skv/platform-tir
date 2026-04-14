@@ -34,9 +34,9 @@
 }
 
 .searchInput:focus-visible {
-  border-color: rgb(217 6 82 / 0.5);
+  border-color: rgb(var(--color-accent-rgb) / 0.5);
   background: #fff;
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
 }
 
 .searchIcon {
@@ -133,7 +133,7 @@
 }
 
 .iconButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
 }
 
 .iconButton:active {
@@ -151,7 +151,7 @@
 }
 
 .userButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
 }
 
 .userButton:active {
@@ -163,7 +163,7 @@
 }
 
 .markAllRead:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
   border-radius: 0.25rem;
 }
 
@@ -419,7 +419,7 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput:focus-visible {
   background: #4b5563;
-  border-color: rgb(217 6 82 / 0.5);
+  border-color: rgb(var(--color-accent-rgb) / 0.5);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchIcon {

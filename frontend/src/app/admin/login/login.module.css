@@ -47,8 +47,8 @@
 
 .themeToggle:hover {
   background: #fff;
-  color: #d90652;
-  border-color: rgb(217 6 82 / 0.3);
+  color: var(--color-accent);
+  border-color: rgb(var(--color-accent-rgb) / 0.3);
 }
 
 .themeToggle:focus {
@@ -56,7 +56,7 @@
 }
 
 .themeToggle:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.25);
 }
 
 .themeIcon {
@@ -73,11 +73,11 @@
 :where(html[data-theme='dark']) .themeToggle:hover {
   background: #374151;
   color: #ec4d7a;
-  border-color: rgb(217 6 82 / 0.4);
+  border-color: rgb(var(--color-accent-rgb) / 0.4);
 }
 
 :where(html[data-theme='dark']) .themeToggle:focus-visible {
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.3);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb-dark-legacy) / 0.3);
 }
 
 .loginCard {
@@ -159,8 +159,8 @@
 }
 
 .input:focus {
-  border-color: rgb(217 6 82 / 0.5);
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  border-color: rgb(var(--color-accent-rgb) / 0.5);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
 }
 
 .input::placeholder {
@@ -168,7 +168,7 @@
 }
 
 .submitButton {
-  background: #d90652;
+  background: var(--color-accent);
   color: white;
   border: none;
   padding: 14px 24px;
@@ -183,7 +183,7 @@
 }
 
 .submitButton:hover:not(:disabled) {
-  background: #b80545;
+  background: var(--color-accent-hover);
 }
 
 .submitButton:focus {
@@ -191,7 +191,7 @@
 }
 
 .submitButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.35);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.35);
 }
 
 .submitButton:disabled {
@@ -217,7 +217,7 @@
 }
 
 .inlineLink {
-  color: #d90652;
+  color: var(--color-accent);
   text-decoration: none;
 }
 
@@ -233,7 +233,7 @@
 }
 
 .backLink:hover {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 /* Тёмная тема — карточка и форма */
@@ -272,8 +272,8 @@
 }
 
 :where(html[data-theme='dark']) .input:focus {
-  border-color: rgb(236 72 153 / 0.5);
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+  border-color: rgb(var(--color-accent-rgb-dark-legacy) / 0.5);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb-dark-legacy) / 0.25);
 }
 
 :where(html[data-theme='dark']) .input::placeholder {
@@ -281,7 +281,7 @@
 }
 
 :where(html[data-theme='dark']) .submitButton {
-  background: #d90652;
+  background: var(--color-accent);
 }
 
 :where(html[data-theme='dark']) .submitButton:hover:not(:disabled) {
@@ -289,7 +289,7 @@
 }
 
 :where(html[data-theme='dark']) .submitButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.35);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb-dark-legacy) / 0.35);
 }
 
 :where(html[data-theme='dark']) .footer {

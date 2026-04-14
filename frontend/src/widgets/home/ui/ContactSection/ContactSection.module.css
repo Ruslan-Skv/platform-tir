@@ -47,7 +47,7 @@
 }
 
 .titleSecond {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .subtitle {
@@ -70,7 +70,12 @@
 }
 
 .measurementButtonWrap button {
-  background: linear-gradient(135deg, #d90652 0%, #b80546 50%, #9a0432 100%) !important;
+  background: linear-gradient(
+    135deg,
+    var(--color-accent) 0%,
+    var(--color-accent-hover) 50%,
+    #9a0432 100%
+  ) !important;
   border: none !important;
 }
 
@@ -84,7 +89,7 @@
   border: none;
   padding: 0;
   font: inherit;
-  color: #d90652;
+  color: var(--color-accent);
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 0.2em;
@@ -137,7 +142,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .callbackLink {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .infoLabel {

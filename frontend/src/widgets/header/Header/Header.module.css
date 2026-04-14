@@ -83,18 +83,18 @@
 }
 
 .mobileHeaderIcon:hover {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .mobileHeaderIconBurger {
-  background: #d90652;
-  border-color: #d90652;
+  background: var(--color-accent);
+  border-color: var(--color-accent);
   color: #fff;
 }
 
 .mobileHeaderIconBurger:hover {
-  background: #b80546;
-  border-color: #b80546;
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
   color: #fff;
 }
 
@@ -103,7 +103,7 @@
 }
 
 .mobileHeaderIcon:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.25);
 }
 
 .mobileHeaderIconSvg {
@@ -141,7 +141,7 @@
 }
 
 .mobileBackButton:hover {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .mobileBackButton:focus {
@@ -149,7 +149,7 @@
 }
 
 .mobileBackButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.25);
 }
 
 .mobileBackIcon {
@@ -172,7 +172,7 @@
 }
 
 .mobileSearchForm:focus-within {
-  border-color: rgb(217 6 82 / 0.35);
+  border-color: rgb(var(--color-accent-rgb) / 0.35);
 }
 
 .mobileSearchInput {
@@ -213,7 +213,7 @@
 }
 
 .mobileSearchSubmit:hover {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .mobileSearchSubmit:focus,
@@ -313,18 +313,18 @@ span.mobileSuggestionThumb {
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .mobileHeaderIcon:hover {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .mobileHeaderIconBurger {
-  background: #d90652;
-  border-color: #d90652;
+  background: var(--color-accent);
+  border-color: var(--color-accent);
   color: #fff;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .mobileHeaderIconBurger:hover {
-  background: #b80546;
-  border-color: #b80546;
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
   color: #fff;
 }
 
@@ -335,7 +335,7 @@ span.mobileSuggestionThumb {
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .mobileBackButton:hover {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .mobileSearchForm {
@@ -344,7 +344,7 @@ span.mobileSuggestionThumb {
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .mobileSearchForm:focus-within {
-  border-color: rgb(217 6 82 / 0.4);
+  border-color: rgb(var(--color-accent-rgb) / 0.4);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .mobileSearchInput {
@@ -360,7 +360,7 @@ span.mobileSuggestionThumb {
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .mobileSearchSubmit:hover {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .mobileSuggestionsList {
@@ -407,7 +407,12 @@ span.mobileSuggestionThumb {
 
 /* Градиент для кнопки «Записаться на замер» (как в секции контактной формы) */
 .header button[data-action-button='measurement'] {
-  background: linear-gradient(135deg, #d90652 0%, #b80546 50%, #9a0432 100%) !important;
+  background: linear-gradient(
+    135deg,
+    var(--color-accent) 0%,
+    var(--color-accent-hover) 50%,
+    #9a0432 100%
+  ) !important;
   border: none !important;
 }
 

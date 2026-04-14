@@ -345,7 +345,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .stageCONTACTED {
-  background: rgb(236 72 153 / 0.25);
+  background: rgb(var(--color-accent-rgb-dark-legacy) / 0.25);
   color: #f9a8d4;
 }
 

@@ -86,7 +86,7 @@
 
 .primaryLink {
   align-items: center;
-  background: #d90652;
+  background: var(--color-accent);
   border-radius: 0.5rem;
   color: #fff;
   display: inline-flex;
@@ -102,12 +102,12 @@
 }
 
 .primaryLink:hover {
-  background: #b80545;
+  background: var(--color-accent-hover);
   color: #fff;
 }
 
 .primaryLink:focus-visible {
-  outline: 2px solid #d90652;
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
@@ -149,7 +149,7 @@
 }
 
 .secondary:focus-visible {
-  outline: 2px solid #d90652;
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
@@ -189,7 +189,7 @@
 }
 
 .hintLink {
-  color: #d90652;
+  color: var(--color-accent);
   font-weight: 500;
   text-decoration: none;
 }
@@ -204,7 +204,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .primaryLink {
-  background: #d90652;
+  background: var(--color-accent);
   color: #fff;
 }
 

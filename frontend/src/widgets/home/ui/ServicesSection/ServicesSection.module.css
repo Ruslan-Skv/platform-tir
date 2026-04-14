@@ -54,7 +54,7 @@
 }
 
 .serviceCard:hover {
-  border-color: #d90652;
+  border-color: var(--color-accent);
   box-shadow: 0 10px 25px rgb(0 0 0 / 10%);
   transform: translateY(-5px);
 }
@@ -108,13 +108,13 @@
 }
 
 .price {
-  color: #d90652;
+  color: var(--color-accent);
   font-size: 1.25rem;
   font-weight: 700;
 }
 
 .serviceButton {
-  background-color: #d90652;
+  background-color: var(--color-accent);
   border: none;
   border-radius: 8px;
   color: white;
@@ -126,7 +126,7 @@
 }
 
 .serviceButton:hover {
-  background-color: #b80546;
+  background-color: var(--color-accent-hover);
 }
 
 /* Темная тема */

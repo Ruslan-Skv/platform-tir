@@ -74,8 +74,8 @@
 
 .menuItemField:hover {
   background: #f3f4f6;
-  border-color: rgb(217 6 82 / 0.35);
-  color: #d90652;
+  border-color: rgb(var(--color-accent-rgb) / 0.35);
+  color: var(--color-accent);
 }
 
 .menuItemField:focus {
@@ -83,8 +83,8 @@
 }
 
 .menuItemField:focus-visible {
-  border-color: rgb(217 6 82 / 0.5);
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  border-color: rgb(var(--color-accent-rgb) / 0.5);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
 }
 
 button.menuItemField {
@@ -122,7 +122,7 @@ button.menuItemField {
 }
 
 .backButton:hover {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .backButton:focus {
@@ -130,7 +130,7 @@ button.menuItemField {
 }
 
 .backButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
 }
 
 .backIcon {
@@ -158,8 +158,8 @@ button.menuItemField {
 
 .subMenuItem:hover {
   background: #f3f4f6;
-  border-color: rgb(217 6 82 / 0.35);
-  color: #d90652;
+  border-color: rgb(var(--color-accent-rgb) / 0.35);
+  color: var(--color-accent);
 }
 
 .subMenuItem:focus {
@@ -167,8 +167,8 @@ button.menuItemField {
 }
 
 .subMenuItem:focus-visible {
-  border-color: rgb(217 6 82 / 0.5);
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  border-color: rgb(var(--color-accent-rgb) / 0.5);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
 }
 
 .subMenuItemImage,
@@ -217,8 +217,8 @@ button.menuItemField {
 
 .subSubMenuItem:hover {
   background: #f3f4f6;
-  border-color: rgb(217 6 82 / 0.35);
-  color: #d90652;
+  border-color: rgb(var(--color-accent-rgb) / 0.35);
+  color: var(--color-accent);
 }
 
 .subSubMenuItemImage,
@@ -268,8 +268,8 @@ button.menuItemField {
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .menuItemField:hover {
   background: #374151;
-  border-color: rgb(217 6 82 / 0.4);
-  color: #d90652;
+  border-color: rgb(var(--color-accent-rgb) / 0.4);
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .backButton {
@@ -279,7 +279,7 @@ button.menuItemField {
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .backButton:hover {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .subMenuItem {
@@ -290,8 +290,8 @@ button.menuItemField {
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .subMenuItem:hover {
   background: #374151;
-  border-color: rgb(217 6 82 / 0.4);
-  color: #d90652;
+  border-color: rgb(var(--color-accent-rgb) / 0.4);
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .subSubMenuItem {
@@ -302,8 +302,8 @@ button.menuItemField {
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .subSubMenuItem:hover {
   background: #374151;
-  border-color: rgb(217 6 82 / 0.4);
-  color: #d90652;
+  border-color: rgb(var(--color-accent-rgb) / 0.4);
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .menuFooter {

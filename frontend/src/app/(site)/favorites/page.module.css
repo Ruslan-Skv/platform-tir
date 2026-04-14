@@ -83,16 +83,16 @@
 .link {
   display: inline-block;
   padding: 0.75rem 1.5rem;
-  background-color: #d90652;
+  background: var(--gradient-accent);
   color: white;
   text-decoration: none;
   border-radius: 0.5rem;
   font-weight: 500;
-  transition: background-color 0.2s;
+  transition: background 0.2s;
 }
 
 .link:hover {
-  background-color: #b80545;
+  background: var(--gradient-accent-hover);
 }
 
 /* Темная тема */

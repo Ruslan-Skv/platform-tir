@@ -716,7 +716,7 @@
 
 .deliveryCostInput:focus {
   outline: none;
-  border-color: #d90652;
+  border-color: var(--color-accent);
 }
 
 .deliveryCostSaveBtn {
@@ -725,7 +725,7 @@
   margin-top: 0.25rem;
   padding: 0.3rem 0.6rem;
   font-size: 0.8125rem;
-  background: #d90652;
+  background: var(--color-accent);
   color: #fff;
   border: none;
   border-radius: 4px;
@@ -733,7 +733,7 @@
 }
 
 .deliveryCostSaveBtn:hover:not(:disabled) {
-  background: #b80545;
+  background: var(--color-accent-hover);
 }
 
 .deliveryCostSaveBtn:disabled {
@@ -1321,7 +1321,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostInput:focus {
-  border-color: #d90652;
+  border-color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostInput::placeholder {

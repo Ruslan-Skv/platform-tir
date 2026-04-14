@@ -32,7 +32,7 @@
 
 .breadcrumbLink:hover,
 .breadcrumbLink:focus-visible {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .breadcrumbSep {
@@ -77,7 +77,7 @@
 }
 
 .categoryCard:hover {
-  border-color: rgb(217 6 82 / 0.4);
+  border-color: rgb(var(--color-accent-rgb) / 0.4);
   box-shadow: 0 4px 12px rgb(0 0 0 / 0.06);
 }
 
@@ -106,7 +106,7 @@
 }
 
 .categoryCard:hover .categoryCardIconSvg {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .categoryCardTitle {
@@ -164,7 +164,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbLink:hover {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .breadcrumbSep {
@@ -186,7 +186,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCard:hover {
-  border-color: rgb(217 6 82 / 0.5);
+  border-color: rgb(var(--color-accent-rgb) / 0.5);
   box-shadow: 0 4px 12px rgb(0 0 0 / 0.3);
 }
 
@@ -199,7 +199,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCard:hover .categoryCardIconSvg {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardTitle {

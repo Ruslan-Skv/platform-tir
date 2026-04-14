@@ -61,7 +61,7 @@
 }
 
 .closeButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.25);
 }
 
 .form {
@@ -103,8 +103,8 @@
 }
 
 .input:focus-visible {
-  border-color: rgb(217 6 82 / 0.5);
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  border-color: rgb(var(--color-accent-rgb) / 0.5);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
 }
 
 .passwordHintBlock {
@@ -160,7 +160,7 @@
 
 .submitButton {
   padding: 0.875rem 1.25rem;
-  background: #d90652;
+  background: var(--color-accent);
   color: white;
   border: none;
   border-radius: 8px;
@@ -174,7 +174,7 @@
 }
 
 .submitButton:hover:not(:disabled) {
-  background: #b80545;
+  background: var(--color-accent-hover);
 }
 
 .submitButton:focus {
@@ -182,7 +182,7 @@
 }
 
 .submitButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.35);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.35);
 }
 
 .submitButton:active:not(:disabled) {
@@ -212,7 +212,7 @@
 }
 
 .forgotPasswordLink:hover {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .oauthBlock {
@@ -252,7 +252,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.875rem 1.25rem;
-  background: #d90652;
+  background: var(--color-accent);
   color: white;
   border: none;
   border-radius: 8px;
@@ -266,7 +266,7 @@
 }
 
 .yandexButton:hover:not(:disabled) {
-  background: #b80545;
+  background: var(--color-accent-hover);
 }
 
 .yandexButton:focus {
@@ -274,7 +274,7 @@
 }
 
 .yandexButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.35);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.35);
 }
 
 .yandexButton:disabled {
@@ -298,7 +298,7 @@
 .switchButton {
   background: none;
   border: none;
-  color: #d90652;
+  color: var(--color-accent);
   cursor: pointer;
   font-size: 0.9rem;
   text-decoration: underline;
@@ -308,7 +308,7 @@
 }
 
 .switchButton:hover {
-  color: #b80545;
+  color: var(--color-accent-hover);
 }
 
 .switchButton:focus {
@@ -316,7 +316,7 @@
 }
 
 .switchButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
   border-radius: 0.25rem;
 }
 
@@ -356,7 +356,7 @@
 }
 
 .cancelButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
   border-radius: 0.25rem;
 }
 
@@ -385,7 +385,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .closeButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb-dark-legacy) / 0.25);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .label {
@@ -403,8 +403,8 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input:focus-visible {
-  border-color: rgb(236 72 153 / 0.5);
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+  border-color: rgb(var(--color-accent-rgb-dark-legacy) / 0.5);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb-dark-legacy) / 0.25);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .passwordHint {
@@ -431,7 +431,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .submitButton {
-  background: #d90652;
+  background: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .submitButton:hover:not(:disabled) {
@@ -439,7 +439,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .submitButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.35);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb-dark-legacy) / 0.35);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .switchButton {
@@ -451,7 +451,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .switchButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb-dark-legacy) / 0.25);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .forgotPasswordLink {
@@ -463,7 +463,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .yandexButton {
-  background: #d90652;
+  background: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .yandexButton:hover:not(:disabled) {
@@ -471,7 +471,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .yandexButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.35);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb-dark-legacy) / 0.35);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cancelBlock {
@@ -487,7 +487,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb-dark-legacy) / 0.25);
 }
 
 @media (max-width: 768px) {

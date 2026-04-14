@@ -84,7 +84,7 @@
 }
 
 .close:focus-visible {
-  outline: 2px solid #d90652;
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 

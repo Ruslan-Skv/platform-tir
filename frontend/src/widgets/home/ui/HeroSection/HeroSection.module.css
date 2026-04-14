@@ -38,7 +38,7 @@
 }
 
 .titleAccent {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .subtitle {
@@ -56,7 +56,12 @@
 
 .buttons .heroButton {
   width: auto;
-  background: linear-gradient(135deg, #d90652 0%, #b80546 50%, #9a0432 100%) !important;
+  background: linear-gradient(
+    135deg,
+    var(--color-accent) 0%,
+    var(--color-accent-hover) 50%,
+    #9a0432 100%
+  ) !important;
   border: none !important;
 }
 
@@ -170,14 +175,14 @@
   width: 12px;
   height: 12px;
   margin: 0;
-  background: #d90652;
+  background: var(--color-accent);
   border: 2px solid white;
 }
 
 .imagePlaceholder {
   align-items: center;
   aspect-ratio: 1 / 1;
-  background: linear-gradient(135deg, #d90652 0%, #ec4899 100%);
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent) 100%);
   border-radius: 20px;
   color: white;
   display: flex;

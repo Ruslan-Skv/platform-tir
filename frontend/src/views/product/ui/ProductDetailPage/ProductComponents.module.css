@@ -100,7 +100,7 @@
 .componentPrice {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #d90652;
+  color: var(--color-accent);
   white-space: nowrap;
 }
 
@@ -166,7 +166,7 @@
 
 .addToCartButton {
   padding: 0.25rem 0.6rem;
-  background: #d90652;
+  background: var(--color-accent);
   color: white;
   border: none;
   border-radius: 0.25rem;
@@ -183,7 +183,7 @@
 }
 
 .addToCartButton:hover:not(:disabled) {
-  background: #b8044a;
+  background: var(--color-accent-hover);
 }
 
 .addToCartButton:disabled {
@@ -196,7 +196,7 @@
   align-items: center;
   gap: 0.35rem;
   padding: 0.25rem 0.6rem;
-  background: #d90652;
+  background: var(--color-accent);
   border: none;
   border-radius: 0.25rem;
   font-size: 0.6875rem;
@@ -355,7 +355,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cartControls {
-  background: #d90652;
+  background: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .inCartLabel {

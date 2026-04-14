@@ -64,7 +64,7 @@
 }
 
 .searchForm:focus-within {
-  border-color: rgb(217 6 82 / 0.35);
+  border-color: rgb(var(--color-accent-rgb) / 0.35);
 }
 
 .suggestionsList {
@@ -190,7 +190,7 @@ span.suggestionThumb {
 }
 
 .searchSubmit:hover {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .searchSubmit:focus,
@@ -200,7 +200,7 @@ span.suggestionThumb {
 }
 
 .searchSubmit:active {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .searchIcon {
@@ -235,7 +235,7 @@ span.suggestionThumb {
 }
 
 .utilityButton:hover {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .utilityButton:focus {
@@ -243,11 +243,11 @@ span.suggestionThumb {
 }
 
 .utilityButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
 }
 
 .utilityButton:active {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 /* Tooltip для иконок в десктопной шапке */
@@ -341,7 +341,7 @@ span.suggestionThumb {
 }
 
 .utilityButton:hover .iconCompare {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .profileAvatar,
@@ -385,7 +385,7 @@ span.suggestionThumb {
   position: absolute;
   top: -0.5rem;
   right: -0.5rem;
-  background-color: #d90652;
+  background-color: var(--color-accent);
   border-radius: 50%;
   color: white;
   font-size: 0.625rem;
@@ -409,7 +409,7 @@ span.suggestionThumb {
 }
 
 .mobileUtilityButton:hover {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .mobileIcon {
@@ -424,11 +424,11 @@ span.suggestionThumb {
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .utilityButton:hover,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .utilityButton:active {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .utilityButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.25);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .iconCompare {
@@ -436,7 +436,7 @@ span.suggestionThumb {
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .utilityButton:hover .iconCompare {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .mobileUtilityButton {
@@ -444,7 +444,7 @@ span.suggestionThumb {
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .mobileUtilityButton:hover {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .profileInitials {
@@ -458,7 +458,7 @@ span.suggestionThumb {
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchForm:focus-within {
-  border-color: rgb(217 6 82 / 0.4);
+  border-color: rgb(var(--color-accent-rgb) / 0.4);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .suggestionsList {
@@ -504,7 +504,7 @@ span.suggestionThumb {
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchSubmit:hover,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchSubmit:active {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 /* Мобильная адаптация для текста кнопок */

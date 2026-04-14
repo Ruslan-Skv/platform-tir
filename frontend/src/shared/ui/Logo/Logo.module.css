@@ -13,7 +13,7 @@
 }
 
 .logoLink:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
 }
 
 .logo {
@@ -50,7 +50,7 @@
 }
 
 .color5 {
-  fill: #d90652;
+  fill: var(--color-accent);
   transition: fill 0.3s ease;
 }
 
@@ -124,10 +124,10 @@
 @keyframes colorPulse5 {
   0%,
   100% {
-    fill: #d90652;
+    fill: var(--color-accent);
   }
   50% {
-    fill: #ec4899;
+    fill: var(--color-accent);
   }
 }
 
@@ -144,7 +144,7 @@
 
 /* Темная тема — обводка фокуса (тот же красный, что в светлой) */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .logoLink:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.25);
 }
 
 /* Темная тема: текст логотипа — светло-серый, акценты — красный */
@@ -153,7 +153,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .color5 {
-  fill: #d90652;
+  fill: var(--color-accent);
 }
 
 /* Анимация для темной темы */
@@ -178,10 +178,10 @@
 @keyframes colorPulse5Dark {
   0%,
   100% {
-    fill: #d90652;
+    fill: var(--color-accent);
   }
   50% {
-    fill: #ec4899;
+    fill: var(--color-accent);
   }
 }
 

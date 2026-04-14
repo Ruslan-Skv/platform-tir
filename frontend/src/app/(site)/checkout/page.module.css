@@ -111,7 +111,7 @@
 }
 
 .backLink {
-  color: #d90652;
+  color: var(--color-accent);
   text-decoration: none;
   font-size: 0.9375rem;
 }
@@ -129,7 +129,7 @@
 .error .link {
   display: inline-block;
   margin-top: 1rem;
-  color: #d90652;
+  color: var(--color-accent);
   text-decoration: none;
 }
 

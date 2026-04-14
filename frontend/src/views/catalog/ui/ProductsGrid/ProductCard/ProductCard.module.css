@@ -10,7 +10,7 @@
 }
 
 .productCard:hover {
-  border-color: #d90652;
+  border-color: var(--color-accent);
   box-shadow: 0 10px 25px rgb(0 0 0 / 10%);
   transform: translateY(-5px);
 }
@@ -269,7 +269,7 @@
   .imageSideRight .favoriteButton.favoriteButtonActive,
   .imageSideRight .favoriteButton.favoriteButtonActive:hover {
     background: transparent;
-    color: #d90652;
+    color: var(--color-accent);
   }
 
   .imageSideRight .compareButton.compareButtonActive,
@@ -365,7 +365,7 @@
   /* Иконка «Избранное» в активном состоянии — фирменный красный */
   .productCard .favoriteButton.favoriteButtonActive,
   .productCard .favoriteButton.favoriteButtonActive:hover {
-    color: #d90652;
+    color: var(--color-accent);
   }
 
   /* Иконка «Партнёр» в левом нижнем углу, чуть выше края */
@@ -492,7 +492,7 @@
 }
 
 .imageNavButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.25);
   transition: box-shadow 0.35s ease;
 }
 
@@ -535,7 +535,7 @@
 }
 
 .imageDot:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.25);
 }
 
 .imageDot:hover {
@@ -548,7 +548,7 @@
   width: 12px;
   height: 12px;
   margin: 0;
-  background: #d90652;
+  background: var(--color-accent);
   border: 2px solid white;
 }
 
@@ -616,7 +616,7 @@
 }
 
 .discountBadge {
-  background: #d90652;
+  background: var(--color-accent);
   border-radius: 0.15rem;
   color: white;
   display: block;
@@ -701,7 +701,7 @@
 .favoriteButton:focus-visible,
 .compareButton:focus-visible,
 .removeButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.25);
   transition: box-shadow 0.35s ease;
 }
 
@@ -832,14 +832,14 @@
 }
 
 .cardVariantChip:hover {
-  border-color: #d90652;
+  border-color: var(--color-accent);
   background: #fff;
 }
 
 .cardVariantChipActive {
-  border-color: #d90652;
-  background: rgb(217 6 82 / 0.08);
-  box-shadow: 0 0 0 1px #d90652;
+  border-color: var(--color-accent);
+  background: rgb(var(--color-accent-rgb) / 0.08);
+  box-shadow: 0 0 0 1px var(--color-accent);
 }
 
 .cardVariantChipImg {
@@ -908,7 +908,7 @@
 }
 
 .availabilityTextOnOrder {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .availabilityTextOut {
@@ -980,7 +980,7 @@
 }
 
 .addToCartButton {
-  background: #d90652;
+  background: var(--gradient-accent);
   border: none;
   border-radius: 0.5rem;
   color: white;
@@ -992,7 +992,7 @@
   margin-right: -0.75rem;
   margin-bottom: -0.65rem;
   padding: 0.5rem 0.75rem;
-  transition: background-color 0.2s ease;
+  transition: background 0.2s ease;
   width: calc(100% + 1.5rem);
   height: 36px;
   box-sizing: border-box;
@@ -1002,7 +1002,7 @@
 }
 
 .addToCartButton:hover:not(:disabled) {
-  background: #b80545;
+  background: var(--gradient-accent-hover);
 }
 
 .addToCartButton:focus {
@@ -1010,7 +1010,7 @@
 }
 
 .addToCartButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+  box-shadow: var(--focus-ring-accent-strong);
 }
 
 .addToCartButton:active:not(:disabled) {
@@ -1180,7 +1180,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .productCard:hover {
-  border-color: #d90652;
+  border-color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .imageContainer {
@@ -1194,13 +1194,13 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantChip:hover {
   background: #4b5563;
-  border-color: #d90652;
+  border-color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantChipActive {
-  background: rgb(217 6 82 / 0.15);
-  border-color: #d90652;
-  box-shadow: 0 0 0 1px #d90652;
+  background: rgb(var(--color-accent-rgb) / 0.15);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantChip span {
@@ -1220,7 +1220,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .availabilityTextOnOrder {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .availabilityTextOut {
@@ -1244,7 +1244,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .finalPrice {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .favoriteButton,
@@ -1279,11 +1279,11 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButton {
-  background: #d90652;
+  background: var(--gradient-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButton:hover:not(:disabled) {
-  background: #b80546;
+  background: var(--gradient-accent-hover);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cartControls {
@@ -1342,7 +1342,7 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .removeButton:focus-visible,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .imageNavButton:focus-visible,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(236 72 153 / 0.25);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb-dark-legacy) / 0.25);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .imageDots {
@@ -1359,7 +1359,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .imageDotActive {
-  background: #d90652;
+  background: var(--color-accent);
   border-color: white;
 }
 

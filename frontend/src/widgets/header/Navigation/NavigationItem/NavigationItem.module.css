@@ -23,7 +23,7 @@
   left: 0;
   right: 0;
   height: 2px;
-  background-color: #d90652;
+  background-color: var(--color-accent);
   z-index: 1;
   pointer-events: none;
 }
@@ -46,7 +46,7 @@
 
 .navItem:hover .navButton,
 .navItem:hover .navText {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .navButton:focus {
@@ -54,15 +54,15 @@
 }
 
 .navItem .navButton:focus-visible {
-  color: #d90652;
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
   transition:
     box-shadow 0.35s ease,
     color 0.35s ease;
 }
 
 .navItem .navButton:active:not(.disabled) .navText {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .chevron {
@@ -143,8 +143,8 @@
 }
 
 .dropdownItem:hover {
-  background: rgb(217 6 82 / 0.08);
-  color: #d90652;
+  background: rgb(var(--color-accent-rgb) / 0.08);
+  color: var(--color-accent);
 }
 
 .dropdownItem:focus {
@@ -152,14 +152,14 @@
 }
 
 .dropdownItem:focus-visible {
-  background: rgb(217 6 82 / 0.08);
-  color: #d90652;
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  background: rgb(var(--color-accent-rgb) / 0.08);
+  color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
 }
 
 .dropdownItem:active {
-  background: rgb(217 6 82 / 0.12);
-  color: #d90652;
+  background: rgb(var(--color-accent-rgb) / 0.12);
+  color: var(--color-accent);
 }
 
 .dropdownItemIconWrapper {
@@ -265,8 +265,8 @@
 }
 
 .submenuItem:hover {
-  background: rgb(217 6 82 / 0.08);
-  color: #d90652;
+  background: rgb(var(--color-accent-rgb) / 0.08);
+  color: var(--color-accent);
 }
 
 .submenuItem:focus {
@@ -274,14 +274,14 @@
 }
 
 .submenuItem:focus-visible {
-  background: rgb(217 6 82 / 0.08);
-  color: #d90652;
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.2);
+  background: rgb(var(--color-accent-rgb) / 0.08);
+  color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
 }
 
 .submenuItem:active {
-  background: rgb(217 6 82 / 0.12);
-  color: #d90652;
+  background: rgb(var(--color-accent-rgb) / 0.12);
+  color: var(--color-accent);
 }
 
 /* Иконки и изображения для категорий */
@@ -326,23 +326,23 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .navItem:hover .navButton,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .navItem:hover .navText {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .navItem .navButton:focus-visible {
-  color: #d90652;
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+  color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.25);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .navItem
   .navButton:active:not(.disabled)
   .navText {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .navButtonCurrentLine {
-  background-color: #d90652;
+  background-color: var(--color-accent);
 }
 
 /* Тёмная тема выпадающего меню — в тон Header (#171717) */
@@ -359,19 +359,19 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownItem:hover {
-  background: rgb(217 6 82 / 0.12);
-  color: #d90652;
+  background: rgb(var(--color-accent-rgb) / 0.12);
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownItem:focus-visible {
-  background: rgb(217 6 82 / 0.12);
-  color: #d90652;
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+  background: rgb(var(--color-accent-rgb) / 0.12);
+  color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.25);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownItem:active {
-  background: rgb(217 6 82 / 0.18);
-  color: #d90652;
+  background: rgb(var(--color-accent-rgb) / 0.18);
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .submenuItem {
@@ -379,19 +379,19 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .submenuItem:hover {
-  background: rgb(217 6 82 / 0.12);
-  color: #d90652;
+  background: rgb(var(--color-accent-rgb) / 0.12);
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .submenuItem:focus-visible {
-  background: rgb(217 6 82 / 0.12);
-  color: #d90652;
-  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.25);
+  background: rgb(var(--color-accent-rgb) / 0.12);
+  color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.25);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .submenuItem:active {
-  background: rgb(217 6 82 / 0.18);
-  color: #d90652;
+  background: rgb(var(--color-accent-rgb) / 0.18);
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .submenu {

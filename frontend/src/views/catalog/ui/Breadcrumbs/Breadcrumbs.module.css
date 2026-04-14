@@ -30,7 +30,7 @@
 
 .link:hover,
 .link:focus-visible {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .current {
@@ -59,7 +59,7 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .link:hover,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .link:focus-visible {
-  color: #ec4899;
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .current {

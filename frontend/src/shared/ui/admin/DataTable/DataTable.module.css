@@ -60,7 +60,7 @@
 
 .scrollArrow:hover {
   background: linear-gradient(to right, rgba(249, 250, 251, 0.95), rgba(249, 250, 251, 0.8));
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 .scrollArrowLeft {
@@ -89,7 +89,7 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .scrollArrow:hover {
   background: linear-gradient(to right, rgba(55, 65, 81, 0.95), rgba(55, 65, 81, 0.8));
-  color: #ec4899;
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .scrollArrowLeft {

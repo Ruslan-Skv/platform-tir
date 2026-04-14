@@ -76,7 +76,7 @@
 .link {
   display: inline-block;
   padding: 0.75rem 1.5rem;
-  background: #d90652;
+  background: var(--gradient-accent);
   color: #fff;
   text-decoration: none;
   border-radius: 0.375rem;
@@ -85,11 +85,11 @@
 }
 
 .link:hover {
-  background: #b80545;
+  background: var(--gradient-accent-hover);
 }
 
 .link:focus-visible {
-  outline: 2px solid #d90652;
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
@@ -130,8 +130,8 @@
 
 .slotNav button:hover {
   background: #f9fafb;
-  border-color: #d90652;
-  color: #d90652;
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 .slotNav span {
@@ -340,7 +340,7 @@
 }
 
 .onOrder {
-  color: #d90652;
+  color: var(--color-accent);
   font-weight: 500;
 }
 
@@ -428,11 +428,11 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .link {
-  background: #d90652;
+  background: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .link:hover {
-  background: #b80545;
+  background: var(--color-accent-hover);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .compareWrapper {
@@ -455,7 +455,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .slotNav button:hover {
-  border-color: #d90652;
+  border-color: var(--color-accent);
   color: #f9a8c4;
 }
 
@@ -514,7 +514,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .onOrder {
-  color: #d90652;
+  color: var(--color-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .soldOut {
