@@ -12,7 +12,10 @@ export interface ModalProps {
   title?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showCloseButton?: boolean;
+  /** Доп. класс для панели (например компактная мобильная модалка) */
   className?: string;
+  /** Доп. класс для заголовка */
+  titleClassName?: string;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -22,6 +25,8 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   size = 'md',
   showCloseButton = true,
+  className,
+  titleClassName,
 }) => {
   const sizeClasses = {
     sm: styles.sizeSm,
@@ -36,12 +41,18 @@ export const Modal: React.FC<ModalProps> = ({
 
       <div className={styles.container}>
         <div className={styles.center}>
-          <Dialog.Panel className={`${styles.panel} ${sizeClasses[size]}`}>
+          <Dialog.Panel
+            className={`${styles.panel} ${sizeClasses[size]} ${className ?? ''}`.trim()}
+          >
             {(title || showCloseButton) && (
               <div
                 className={`${styles.header} ${title ? styles.headerWithTitle : styles.headerWithoutTitle}`}
               >
-                {title && <Dialog.Title className={styles.title}>{title}</Dialog.Title>}
+                {title && (
+                  <Dialog.Title className={`${styles.title} ${titleClassName ?? ''}`.trim()}>
+                    {title}
+                  </Dialog.Title>
+                )}
 
                 {showCloseButton && (
                   <button

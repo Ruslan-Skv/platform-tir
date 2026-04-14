@@ -5,6 +5,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import * as cartApi from '@/shared/api/cart';
 import type { CartItem, CartServiceItem } from '@/shared/api/cart';
 import { type UserOrder, getUserOrders } from '@/shared/api/user-orders';
+import { AuthRequiredForCartError, emitCartAuthRequired } from '@/shared/lib/cart-auth-required';
 
 interface CartContextValue {
   cart: CartItem[];
@@ -221,7 +222,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         await refreshCart();
       } catch (error) {
         if (error instanceof Error && error.message === 'Необходима авторизация') {
-          throw new Error('Войдите в систему, чтобы добавить товар в корзину');
+          emitCartAuthRequired('add_product');
+          throw new AuthRequiredForCartError('add_product');
         }
         throw error;
       }
@@ -241,7 +243,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         await refreshCart();
       } catch (error) {
         if (error instanceof Error && error.message === 'Необходима авторизация') {
-          throw new Error('Войдите в систему, чтобы добавить услуги в корзину');
+          emitCartAuthRequired('add_service');
+          throw new AuthRequiredForCartError('add_service');
         }
         throw error;
       }
@@ -289,7 +292,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         await refreshCart();
       } catch (error) {
         if (error instanceof Error && error.message === 'Необходима авторизация') {
-          throw new Error('Войдите в систему, чтобы добавить комплектующее в корзину');
+          emitCartAuthRequired('add_component');
+          throw new AuthRequiredForCartError('add_component');
         }
         throw error;
       }

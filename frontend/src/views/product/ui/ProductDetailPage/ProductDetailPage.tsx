@@ -7,6 +7,7 @@ import Link from 'next/link';
 
 import { type ProductComponent, getProductComponents } from '@/shared/api/product-components';
 import type { Review } from '@/shared/api/reviews';
+import { isAuthRequiredForCartError } from '@/shared/lib/cart-auth-required';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 import {
   PRODUCT_AVAILABILITY_LABEL,
@@ -1134,6 +1135,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                                               setTimeout(resolve, 100)
                                             );
                                           } catch (error) {
+                                            if (isAuthRequiredForCartError(error)) {
+                                              return;
+                                            }
                                             if (error instanceof Error) {
                                               alert(error.message);
                                             } else {
@@ -1281,6 +1285,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                       setIsAddingToCart(true);
                       await addToCart(productId, 1, undefined, undefined, selectedCardVariant?.id);
                     } catch (error) {
+                      if (isAuthRequiredForCartError(error)) {
+                        return;
+                      }
                       if (error instanceof Error) {
                         alert(error.message);
                       } else {

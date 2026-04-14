@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { type ProductComponent, getProductComponents } from '@/shared/api/product-components';
+import { isAuthRequiredForCartError } from '@/shared/lib/cart-auth-required';
 import { useCart } from '@/shared/lib/hooks';
 
 import styles from './ProductComponents.module.css';
@@ -82,6 +83,9 @@ export const ProductComponents: React.FC<ProductComponentsProps> = ({
       setAddingToCart((prev) => ({ ...prev, [component.id]: true }));
       await addComponentToCart(component.id, quantities[component.id] || 1);
     } catch (error) {
+      if (isAuthRequiredForCartError(error)) {
+        return;
+      }
       if (error instanceof Error) {
         alert(error.message);
       } else {

@@ -3,6 +3,7 @@ import { CartProvider } from '@/shared/lib/contexts/CartContext';
 import { NavigationProvider } from '@/shared/lib/contexts/NavigationContext';
 import { WishlistProvider } from '@/shared/lib/contexts/WishlistContext';
 import { getServerApiBaseUrl } from '@/shared/lib/server-api-base-url';
+import { CartAuthRequiredModalHost } from '@/shared/ui/CartAuthRequiredModal';
 import { SiteLayout } from '@/widgets/site-layout';
 
 export default async function SiteRootLayout({ children }: { children: React.ReactNode }) {
@@ -11,6 +12,7 @@ export default async function SiteRootLayout({ children }: { children: React.Rea
   return (
     <NavigationProvider initialItems={initialNavigation}>
       <CartProvider>
+        <CartAuthRequiredModalHost />
         <WishlistProvider>
           <SiteLayout>{children}</SiteLayout>
         </WishlistProvider>

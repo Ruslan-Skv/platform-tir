@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
 import { cancelOrderByCustomer, getUserOrder } from '@/shared/api/user-orders';
+import { isAuthRequiredForCartError } from '@/shared/lib/cart-auth-required';
 import { useApprovedOrderGuard } from '@/shared/lib/contexts/ApprovedOrderGuardContext';
 import { useCart } from '@/shared/lib/hooks';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal/ConfirmModal';
@@ -662,6 +663,10 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
         if (data?.slug) removeDetachedServiceCategory(orderIdParam, data.slug, data.name);
       }
     } catch (err) {
+      if (isAuthRequiredForCartError(err)) {
+        setAddToCartError(null);
+        return;
+      }
       setAddToCartError(err instanceof Error ? err.message : 'Ошибка добавления в корзину');
     } finally {
       setAddToCartLoading(false);

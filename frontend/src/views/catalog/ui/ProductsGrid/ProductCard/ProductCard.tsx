@@ -7,6 +7,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import type { Product } from '@/entities/product';
+import { isAuthRequiredForCartError } from '@/shared/lib/cart-auth-required';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 import {
   PRODUCT_AVAILABILITY_LABEL,
@@ -182,6 +183,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       setIsAddingToCart(true);
       await addToCart(productId, 1, undefined, undefined, cardVariantId);
     } catch (error) {
+      if (isAuthRequiredForCartError(error)) {
+        return;
+      }
       if (error instanceof Error) {
         alert(error.message);
       } else {
