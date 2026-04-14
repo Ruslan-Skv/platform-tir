@@ -1,16 +1,30 @@
 'use client';
 
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { CheckIcon, PencilSquareIcon, XMarkIcon } from '@heroicons/react/24/outline';
+
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import Link from 'next/link';
 
+import {
+  patchProductAttributes,
+  patchProductDescription,
+  patchProductPricing,
+} from '@/shared/api/admin-product-patch';
 import { isCompareLimitExceededError } from '@/shared/api/compare';
-import { type ProductComponent, getProductComponents } from '@/shared/api/product-components';
+import {
+  type ProductComponent,
+  type PublicComponentDraftRow,
+  getProductComponents,
+  patchProductComponent,
+} from '@/shared/api/product-components';
 import type { Review } from '@/shared/api/reviews';
 import { isAuthRequiredForCartError } from '@/shared/lib/cart-auth-required';
 import { emitCompareLimitExceeded } from '@/shared/lib/compare-limit-notify';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
+import { useCanEditCatalogOnPublic } from '@/shared/lib/hooks/useCanEditCatalogOnPublic';
+import { usePublicSiteEditMode } from '@/shared/lib/hooks/usePublicSiteEditMode';
 import {
   PRODUCT_AVAILABILITY_LABEL,
   getProductAvailability,
@@ -39,7 +53,10 @@ interface ProductData {
   isNew: boolean;
   isFeatured: boolean;
   // Атрибуты могут быть массивом (новый формат) или объектом (старый формат)
-  attributes: Array<{ name: string; value: string }> | Record<string, unknown> | null;
+  attributes:
+    | Array<{ name: string; value: string; slug?: string }>
+    | Record<string, unknown>
+    | null;
   sizes?: string[];
   openingSide?: string[];
   category: {
@@ -89,7 +106,41 @@ interface CategoryAttribute {
   };
 }
 
-type AttributeItem = { name: string; value: string };
+type AttributeItem = { name: string; value: string; slug?: string };
+
+function serializePublicAttributeDraft(rows: AttributeItem[]): string {
+  return JSON.stringify(
+    rows.map((a) => ({
+      name: a.name.trim(),
+      value: a.value,
+      slug: a.slug ?? '',
+    }))
+  );
+}
+
+function normalizePriceDraftInput(raw: string): string {
+  return raw.replace(/\s/g, '').replace(',', '.');
+}
+
+function isPublicPriceDraftDirty(draft: string, baseline: string): boolean {
+  const d = normalizePriceDraftInput(draft);
+  const b = normalizePriceDraftInput(baseline);
+  const nd = parseFloat(d);
+  const nb = parseFloat(b);
+  if (Number.isFinite(nd) && Number.isFinite(nb)) return nd !== nb;
+  return draft.trim() !== baseline.trim();
+}
+
+function serializePublicComponentsDraft(rows: PublicComponentDraftRow[]): string {
+  return JSON.stringify(
+    rows.map((r) => ({
+      id: r.id,
+      name: r.name.trim(),
+      type: r.type.trim(),
+      price: r.price.replace(/\s/g, '').replace(',', '.'),
+    }))
+  );
+}
 
 interface ProductDetailPageProps {
   slug: string;
@@ -200,6 +251,25 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
   const [addingToCart, setAddingToCart] = useState<Record<string, boolean>>({});
   const [components, setComponents] = useState<ProductComponent[]>([]);
   const [categoryAttributes, setCategoryAttributes] = useState<CategoryAttribute[]>([]);
+  const publicSiteEditMode = usePublicSiteEditMode();
+  const canEditCatalogOnPublic = useCanEditCatalogOnPublic();
+  const showPublicAttrsToolbar = publicSiteEditMode && canEditCatalogOnPublic;
+  const [isEditingPublicAttrs, setIsEditingPublicAttrs] = useState(false);
+  const [draftAttributes, setDraftAttributes] = useState<AttributeItem[]>([]);
+  const [savingPublicAttrs, setSavingPublicAttrs] = useState(false);
+  const [isEditingPublicPrice, setIsEditingPublicPrice] = useState(false);
+  const [draftPrice, setDraftPrice] = useState('');
+  const [savingPublicPrice, setSavingPublicPrice] = useState(false);
+  const [isEditingPublicDescription, setIsEditingPublicDescription] = useState(false);
+  const [draftDescription, setDraftDescription] = useState('');
+  const [savingPublicDescription, setSavingPublicDescription] = useState(false);
+  const [isEditingPublicComponents, setIsEditingPublicComponents] = useState(false);
+  const [draftComponents, setDraftComponents] = useState<PublicComponentDraftRow[]>([]);
+  const [savingPublicComponents, setSavingPublicComponents] = useState(false);
+  const attrsEditBaselineRef = useRef('');
+  const priceEditBaselineRef = useRef('');
+  const descriptionEditBaselineRef = useRef('');
+  const componentsEditBaselineRef = useRef('');
   const [variantNotification, setVariantNotification] = useState<string | null>(null);
   const [selectedCardVariantIndex, setSelectedCardVariantIndex] = useState(0);
 
@@ -214,6 +284,26 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
       ? parseFloat(product.price)
       : 0;
   const displayName = selectedCardVariant ? selectedCardVariant.name : (product?.name ?? '');
+
+  const isPublicAttrsDirty = useMemo(() => {
+    if (!isEditingPublicAttrs) return false;
+    return serializePublicAttributeDraft(draftAttributes) !== attrsEditBaselineRef.current;
+  }, [isEditingPublicAttrs, draftAttributes]);
+
+  const isPublicPriceDirty = useMemo(() => {
+    if (!isEditingPublicPrice) return false;
+    return isPublicPriceDraftDirty(draftPrice, priceEditBaselineRef.current);
+  }, [isEditingPublicPrice, draftPrice]);
+
+  const isPublicDescriptionDirty = useMemo(() => {
+    if (!isEditingPublicDescription) return false;
+    return draftDescription !== descriptionEditBaselineRef.current;
+  }, [isEditingPublicDescription, draftDescription]);
+
+  const isPublicComponentsDirty = useMemo(() => {
+    if (!isEditingPublicComponents) return false;
+    return serializePublicComponentsDraft(draftComponents) !== componentsEditBaselineRef.current;
+  }, [isEditingPublicComponents, draftComponents]);
 
   // Получаем информацию о варианте в корзине
   const getCartItemForVariant = useCallback(
@@ -370,6 +460,21 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     };
   }, [product?.category?.id]);
 
+  useEffect(() => {
+    setIsEditingPublicAttrs(false);
+    setDraftAttributes([]);
+    setIsEditingPublicPrice(false);
+    setDraftPrice('');
+    setIsEditingPublicDescription(false);
+    setDraftDescription('');
+    attrsEditBaselineRef.current = '';
+    priceEditBaselineRef.current = '';
+    descriptionEditBaselineRef.current = '';
+    setIsEditingPublicComponents(false);
+    setDraftComponents([]);
+    componentsEditBaselineRef.current = '';
+  }, [product?.id]);
+
   // Получаем ID товара для работы с wishlist, compare и загрузки комплектующих
   const productId = useMemo(() => (product ? String(product.id) : ''), [product]);
 
@@ -475,8 +580,13 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
   // Стоимость комплекта по подсказке: полотно 1шт., стойка коробки 2,5шт., наличники 5шт.
   const kitPrice = useMemo(() => {
     if (!product || components.length === 0) return null;
-    const canvasPrice =
-      selectedCardVariant != null
+    const draftCanvasRaw = draftPrice.replace(/\s/g, '').replace(',', '.');
+    const draftCanvas = parseFloat(draftCanvasRaw);
+    const useDraftCanvas = isEditingPublicPrice && Number.isFinite(draftCanvas) && draftCanvas >= 0;
+
+    const canvasPrice = useDraftCanvas
+      ? draftCanvas
+      : selectedCardVariant != null
         ? typeof selectedCardVariant.price === 'string'
           ? parseFloat(selectedCardVariant.price)
           : selectedCardVariant.price
@@ -493,7 +603,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     if (stoikaKorobka) total += 2.5 * parseFloat(stoikaKorobka.price);
     if (nalichnik) total += 5 * parseFloat(nalichnik.price);
     return Math.round(total);
-  }, [product, components, selectedCardVariant]);
+  }, [product, components, selectedCardVariant, isEditingPublicPrice, draftPrice]);
 
   // Хуки атрибутов — строго до любых return, иначе нарушается порядок Hooks при loading → loaded
   const rawAttributesArray = useMemo<AttributeItem[]>(() => {
@@ -502,9 +612,13 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     // 1) массив [{name, value}] (новый формат)
     // 2) объект { [slug|name]: value } (старый формат)
     if (Array.isArray(product.attributes)) {
-      return (product.attributes as AttributeItem[]).filter(
-        (a) => a && typeof a.name === 'string' && a.name.trim() !== ''
-      );
+      return (product.attributes as Array<{ name: string; value?: unknown; slug?: string }>)
+        .filter((a) => a && typeof a.name === 'string' && a.name.trim() !== '')
+        .map((a) => ({
+          name: a.name,
+          value: a.value == null ? '' : String(a.value),
+          ...(typeof a.slug === 'string' && a.slug.trim() !== '' ? { slug: a.slug.trim() } : {}),
+        }));
     }
     const attrsObj = product.attributes as Record<string, unknown>;
     return Object.entries(attrsObj).map(([key, value]) => ({
@@ -550,7 +664,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
         const trimmed = String(value).trim();
         if (!trimmed) continue;
 
-        ordered.push({ name: title, value: trimmed });
+        ordered.push({ name: title, value: trimmed, slug });
         usedKeys.add(slug);
         usedKeys.add(title);
       }
@@ -560,9 +674,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
         const key = item.name.trim();
         if (!key) continue;
         if (usedKeys.has(key)) continue;
+        if (item.slug && usedKeys.has(item.slug)) continue;
         const trimmed = String(item.value ?? '').trim();
         if (!trimmed) continue;
-        ordered.push({ name: key, value: trimmed });
+        ordered.push({ name: key, value: trimmed, slug: item.slug });
       }
 
       return ordered;
@@ -571,6 +686,254 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     // Без схемы категории — как было (показываем непустые)
     return rawAttributesArray.filter((a) => String(a.value ?? '').trim() !== '');
   }, [rawAttributesArray, categoryAttributes]);
+
+  /** Все строки характеристик для режима правки с публичного сайта (в т.ч. пустые значения по схеме категории). */
+  const attributesEditableRows = useMemo<AttributeItem[]>(() => {
+    if (!product) return [];
+    if (categoryAttributes.length > 0) {
+      const bySlug = new Map<string, string>();
+      const byName = new Map<string, string>();
+      for (const item of rawAttributesArray) {
+        const key = item.name.trim();
+        if (!key) continue;
+        const val = String(item.value ?? '');
+        bySlug.set(key, val);
+        byName.set(key, val);
+      }
+      const usedKeys = new Set<string>();
+      const ordered: AttributeItem[] = [];
+      for (const ca of categoryAttributes) {
+        const slug = ca.attribute.slug;
+        const title = ca.attribute.name;
+        const valueFromSlug = bySlug.get(slug);
+        const valueFromName = byName.get(title);
+        const value =
+          valueFromSlug !== undefined
+            ? valueFromSlug
+            : valueFromName !== undefined
+              ? valueFromName
+              : '';
+        ordered.push({ name: title, value: String(value), slug });
+        usedKeys.add(slug);
+        usedKeys.add(title);
+      }
+      for (const item of rawAttributesArray) {
+        const key = item.name.trim();
+        if (!key) continue;
+        if (usedKeys.has(key)) continue;
+        if (item.slug && usedKeys.has(item.slug)) continue;
+        ordered.push({
+          name: key,
+          value: String(item.value ?? ''),
+          slug: item.slug,
+        });
+      }
+      return ordered;
+    }
+    return rawAttributesArray.filter((a) => a.name.trim() !== '');
+  }, [product, rawAttributesArray, categoryAttributes]);
+
+  const showAttributesSection = useMemo(() => {
+    if (!product) return false;
+    const hasWeight = product.weight != null && !Number.isNaN(Number(product.weight));
+    return (
+      attributesArray.length > 0 ||
+      hasWeight ||
+      (showPublicAttrsToolbar && attributesEditableRows.length > 0)
+    );
+  }, [product, attributesArray, showPublicAttrsToolbar, attributesEditableRows]);
+
+  const handleSavePublicAttributes = useCallback(async () => {
+    if (!product) return;
+    const payload = draftAttributes
+      .map((r) => ({
+        name: r.name.trim(),
+        value: r.value.trim(),
+        ...(r.slug ? { slug: r.slug } : {}),
+      }))
+      .filter((r) => r.name.length > 0 && r.value.length > 0);
+
+    setSavingPublicAttrs(true);
+    try {
+      const result = await patchProductAttributes(product.id, payload);
+      if (!result.ok) {
+        alert(result.message);
+        return;
+      }
+      const data = result.data as ProductData;
+      if (data && typeof data === 'object' && 'id' in data) {
+        setProduct(data);
+      }
+      setIsEditingPublicAttrs(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Не удалось сохранить характеристики');
+    } finally {
+      setSavingPublicAttrs(false);
+    }
+  }, [product, draftAttributes]);
+
+  const handleSavePublicPrice = useCallback(async () => {
+    if (!product) return;
+    const raw = draftPrice.replace(/\s/g, '').replace(',', '.');
+    const num = parseFloat(raw);
+    if (!Number.isFinite(num) || num < 0) {
+      alert('Укажите корректную цену (неотрицательное число)');
+      return;
+    }
+
+    setSavingPublicPrice(true);
+    try {
+      const variants = product.cardVariants;
+      const hasVariants = variants && variants.length > 0;
+      const result = hasVariants
+        ? await patchProductPricing(product.id, {
+            cardVariants: variants.map((v, i) => ({
+              name: v.name,
+              price:
+                i === selectedCardVariantIndex
+                  ? num
+                  : typeof v.price === 'string'
+                    ? parseFloat(v.price)
+                    : v.price,
+              image: v.image?.trim() || undefined,
+              size: v.size?.trim() || undefined,
+              color: v.color?.trim() || undefined,
+              extraOption: v.extraOption?.trim() || undefined,
+              sortOrder: v.sortOrder ?? i,
+            })),
+          })
+        : await patchProductPricing(product.id, { price: num });
+
+      if (!result.ok) {
+        alert(result.message);
+        return;
+      }
+      const data = result.data as ProductData;
+      if (data && typeof data === 'object' && 'id' in data) {
+        setProduct(data);
+      }
+      setIsEditingPublicPrice(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Не удалось сохранить цену');
+    } finally {
+      setSavingPublicPrice(false);
+    }
+  }, [product, draftPrice, selectedCardVariantIndex]);
+
+  const handleSavePublicDescription = useCallback(async () => {
+    if (!product) return;
+    const trimmed = draftDescription.trim();
+    setSavingPublicDescription(true);
+    try {
+      const result = await patchProductDescription(product.id, trimmed.length > 0 ? trimmed : null);
+      if (!result.ok) {
+        alert(result.message);
+        return;
+      }
+      const data = result.data as ProductData;
+      if (data && typeof data === 'object' && 'id' in data) {
+        setProduct(data);
+      }
+      setIsEditingPublicDescription(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Не удалось сохранить описание');
+    } finally {
+      setSavingPublicDescription(false);
+    }
+  }, [product, draftDescription]);
+
+  const exitPublicPriceEdit = useCallback(() => {
+    if (savingPublicPrice) return;
+    setDraftPrice(priceEditBaselineRef.current);
+    setIsEditingPublicPrice(false);
+  }, [savingPublicPrice]);
+
+  const exitPublicAttrsEdit = useCallback(() => {
+    if (savingPublicAttrs) return;
+    const baseline = attrsEditBaselineRef.current;
+    if (baseline) {
+      try {
+        const raw = JSON.parse(baseline) as Array<{ name: string; value: string; slug?: string }>;
+        setDraftAttributes(
+          raw.map((r) => ({
+            name: r.name,
+            value: r.value,
+            ...(r.slug ? { slug: r.slug } : {}),
+          }))
+        );
+      } catch {
+        /* ignore */
+      }
+    }
+    setIsEditingPublicAttrs(false);
+  }, [savingPublicAttrs]);
+
+  const exitPublicDescriptionEdit = useCallback(() => {
+    if (savingPublicDescription) return;
+    setDraftDescription(descriptionEditBaselineRef.current);
+    setIsEditingPublicDescription(false);
+  }, [savingPublicDescription]);
+
+  const handleDraftComponentChange = useCallback(
+    (id: string, field: 'name' | 'type' | 'price', value: string) => {
+      setDraftComponents((prev) =>
+        prev.map((row) => (row.id === id ? { ...row, [field]: value } : row))
+      );
+    },
+    []
+  );
+
+  const exitPublicComponentsEdit = useCallback(() => {
+    if (savingPublicComponents) return;
+    const baseline = componentsEditBaselineRef.current;
+    if (baseline) {
+      try {
+        setDraftComponents(JSON.parse(baseline) as PublicComponentDraftRow[]);
+      } catch {
+        /* ignore */
+      }
+    }
+    setIsEditingPublicComponents(false);
+  }, [savingPublicComponents]);
+
+  const handleSavePublicComponents = useCallback(async () => {
+    if (!product) return;
+    setSavingPublicComponents(true);
+    try {
+      for (const row of draftComponents) {
+        const orig = components.find((c) => c.id === row.id);
+        if (!orig) continue;
+        const name = row.name.trim();
+        const type = row.type.trim();
+        if (!name || !type) {
+          alert('Заполните наименование и тип для каждой позиции');
+          return;
+        }
+        const priceNum = parseFloat(row.price.replace(/\s/g, '').replace(',', '.'));
+        if (!Number.isFinite(priceNum) || priceNum < 0) {
+          alert(`Некорректная цена для «${name}»`);
+          return;
+        }
+        let origPrice = parseFloat(String(orig.price).replace(/\s/g, '').replace(',', '.'));
+        if (!Number.isFinite(origPrice)) origPrice = 0;
+        if (orig.name === name && orig.type === type && Math.abs(origPrice - priceNum) < 1e-9) {
+          continue;
+        }
+        const res = await patchProductComponent(row.id, { name, type, price: priceNum });
+        if (!res.ok) {
+          alert(res.message);
+          return;
+        }
+      }
+      const fresh = await getProductComponents(product.id);
+      setComponents(fresh);
+      setIsEditingPublicComponents(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Не удалось сохранить комплектующие');
+    } finally {
+      setSavingPublicComponents(false);
+    }
+  }, [product, draftComponents, components]);
 
   if (loading) {
     return (
@@ -785,38 +1148,121 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
           )}
 
           <div className={styles.priceBlock}>
-            <div className={styles.pricesRow}>
-              {components.length > 0 ? (
-                <>
-                  <div className={styles.priceBox}>
-                    <span className={styles.priceLabel}>полотно</span>
-                    <div className={styles.priceInfo}>
+            <div className={styles.priceRowCluster}>
+              <div className={styles.pricesRow}>
+                {components.length > 0 ? (
+                  <>
+                    <div className={styles.priceBox}>
+                      <span className={styles.priceLabel}>полотно</span>
+                      <div
+                        className={`${styles.priceInfo} ${isEditingPublicPrice ? styles.priceInfoEditing : ''}`}
+                      >
+                        {comparePrice && (
+                          <span className={styles.oldPrice}>{comparePrice.toLocaleString()} ₽</span>
+                        )}
+                        {isEditingPublicPrice ? (
+                          <span className={styles.priceEditRow}>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              className={styles.priceEditInput}
+                              value={draftPrice}
+                              onChange={(e) => setDraftPrice(e.target.value)}
+                              aria-label="Цена"
+                            />
+                            <span className={styles.priceCurrency}>₽</span>
+                          </span>
+                        ) : (
+                          <span className={styles.price}>{price.toLocaleString()} ₽</span>
+                        )}
+                      </div>
+                    </div>
+                    <div
+                      className={`${styles.priceBox} ${styles.priceBoxTooltip}`}
+                      data-tooltip="В комплект входит: полотно 1шт., стойка коробки 2,5шт., наличники 5шт."
+                    >
+                      <span className={styles.priceLabel}>комплект</span>
+                      <div className={styles.priceInfo}>
+                        <span className={styles.price}>
+                          {(kitPrice ?? price).toLocaleString('ru-RU')} ₽
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className={styles.priceItem}>
+                    <div
+                      className={`${styles.priceInfo} ${isEditingPublicPrice ? styles.priceInfoEditing : ''}`}
+                    >
                       {comparePrice && (
                         <span className={styles.oldPrice}>{comparePrice.toLocaleString()} ₽</span>
                       )}
-                      <span className={styles.price}>{price.toLocaleString()} ₽</span>
+                      {isEditingPublicPrice ? (
+                        <span className={styles.priceEditRow}>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            className={styles.priceEditInput}
+                            value={draftPrice}
+                            onChange={(e) => setDraftPrice(e.target.value)}
+                            aria-label="Цена"
+                          />
+                          <span className={styles.priceCurrency}>₽</span>
+                        </span>
+                      ) : (
+                        <span className={styles.price}>{price.toLocaleString()} ₽</span>
+                      )}
                     </div>
                   </div>
-                  <div
-                    className={`${styles.priceBox} ${styles.priceBoxTooltip}`}
-                    data-tooltip="В комплект входит: полотно 1шт., стойка коробки 2,5шт., наличники 5шт."
-                  >
-                    <span className={styles.priceLabel}>комплект</span>
-                    <div className={styles.priceInfo}>
-                      <span className={styles.price}>
-                        {(kitPrice ?? price).toLocaleString('ru-RU')} ₽
-                      </span>
+                )}
+              </div>
+              {showPublicAttrsToolbar && (
+                <div className={styles.publicPriceToolbar}>
+                  {!isEditingPublicPrice ? (
+                    <button
+                      type="button"
+                      className={styles.attributesEditBtn}
+                      onClick={() => {
+                        const src = selectedCardVariant
+                          ? String(
+                              typeof selectedCardVariant.price === 'string'
+                                ? selectedCardVariant.price
+                                : selectedCardVariant.price
+                            )
+                          : product.price;
+                        priceEditBaselineRef.current = src;
+                        setDraftPrice(src);
+                        setIsEditingPublicPrice(true);
+                      }}
+                      title="Редактировать цену"
+                      aria-label="Редактировать цену"
+                    >
+                      <PencilSquareIcon className={styles.attributesEditIcon} aria-hidden />
+                    </button>
+                  ) : (
+                    <div className={styles.publicEditToolbarActions}>
+                      <button
+                        type="button"
+                        className={styles.attributesCancelBtn}
+                        onClick={exitPublicPriceEdit}
+                        disabled={savingPublicPrice}
+                        title="Закрыть без сохранения"
+                        aria-label="Закрыть без сохранения"
+                      >
+                        <XMarkIcon className={styles.attributesCancelIcon} aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.attributesSaveBtn}
+                        onClick={() => void handleSavePublicPrice()}
+                        disabled={savingPublicPrice || !isPublicPriceDirty}
+                        title={savingPublicPrice ? 'Сохранение...' : 'Сохранить'}
+                        aria-label={savingPublicPrice ? 'Сохранение...' : 'Сохранить'}
+                      >
+                        <CheckIcon className={styles.attributesSaveIcon} aria-hidden />
+                      </button>
                     </div>
-                  </div>
-                </>
-              ) : (
-                <div className={styles.priceItem}>
-                  <div className={styles.priceInfo}>
-                    {comparePrice && (
-                      <span className={styles.oldPrice}>{comparePrice.toLocaleString()} ₽</span>
-                    )}
-                    <span className={styles.price}>{price.toLocaleString()} ₽</span>
-                  </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1314,10 +1760,54 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
           </div>
 
           {/* Характеристики */}
-          {(attributesArray.length > 0 ||
-            (product.weight != null && !Number.isNaN(Number(product.weight)))) && (
+          {showAttributesSection && (
             <div className={styles.attributes}>
-              <h2 className={styles.attributesTitle}>Характеристики</h2>
+              <div className={styles.attributesHeader}>
+                <h2 className={styles.attributesTitle}>Характеристики</h2>
+                {showPublicAttrsToolbar && attributesEditableRows.length > 0 && (
+                  <div className={styles.attributesToolbar}>
+                    {!isEditingPublicAttrs ? (
+                      <button
+                        type="button"
+                        className={styles.attributesEditBtn}
+                        onClick={() => {
+                          const rows = attributesEditableRows.map((a) => ({ ...a }));
+                          attrsEditBaselineRef.current = serializePublicAttributeDraft(rows);
+                          setDraftAttributes(rows);
+                          setIsEditingPublicAttrs(true);
+                        }}
+                        title="Редактировать характеристики"
+                        aria-label="Редактировать характеристики"
+                      >
+                        <PencilSquareIcon className={styles.attributesEditIcon} aria-hidden />
+                      </button>
+                    ) : (
+                      <div className={styles.publicEditToolbarActions}>
+                        <button
+                          type="button"
+                          className={styles.attributesCancelBtn}
+                          onClick={exitPublicAttrsEdit}
+                          disabled={savingPublicAttrs}
+                          title="Закрыть без сохранения"
+                          aria-label="Закрыть без сохранения"
+                        >
+                          <XMarkIcon className={styles.attributesCancelIcon} aria-hidden />
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.attributesSaveBtn}
+                          onClick={() => void handleSavePublicAttributes()}
+                          disabled={savingPublicAttrs || !isPublicAttrsDirty}
+                          title={savingPublicAttrs ? 'Сохранение...' : 'Сохранить'}
+                          aria-label={savingPublicAttrs ? 'Сохранение...' : 'Сохранить'}
+                        >
+                          <CheckIcon className={styles.attributesSaveIcon} aria-hidden />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               <dl className={styles.attributesList}>
                 {product.weight != null && !Number.isNaN(Number(product.weight)) && (
                   <>
@@ -1325,17 +1815,36 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                     <dd>{`${Number(product.weight)} кг`}</dd>
                   </>
                 )}
-                {attributesArray.map((attr, index) => {
-                  // Пропускаем пустые значения
-                  if (!attr.value) return null;
+                {isEditingPublicAttrs
+                  ? draftAttributes.map((attr, index) => (
+                      <React.Fragment key={`${attr.slug ?? attr.name}-${index}`}>
+                        <dt>{attr.name}</dt>
+                        <dd>
+                          <input
+                            type="text"
+                            className={styles.attributesInput}
+                            value={attr.value}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setDraftAttributes((prev) =>
+                                prev.map((row, i) => (i === index ? { ...row, value: v } : row))
+                              );
+                            }}
+                            aria-label={`Значение: ${attr.name}`}
+                          />
+                        </dd>
+                      </React.Fragment>
+                    ))
+                  : attributesArray.map((attr, index) => {
+                      if (!attr.value) return null;
 
-                  return (
-                    <React.Fragment key={`${attr.name}-${index}`}>
-                      <dt>{attr.name}</dt>
-                      <dd>{attr.value}</dd>
-                    </React.Fragment>
-                  );
-                })}
+                      return (
+                        <React.Fragment key={`${attr.name}-${index}`}>
+                          <dt>{attr.name}</dt>
+                          <dd>{attr.value}</dd>
+                        </React.Fragment>
+                      );
+                    })}
               </dl>
             </div>
           )}
@@ -1343,13 +1852,72 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
       </div>
 
       {/* Описание */}
-      {product.description && (
+      {(product.description?.trim() || showPublicAttrsToolbar) && (
         <div className={styles.description}>
-          <h2 className={styles.descriptionTitle}>Описание</h2>
-          <div
-            className={styles.descriptionText}
-            dangerouslySetInnerHTML={{ __html: escapeHtmlAndPreserveNewlines(product.description) }}
-          />
+          <div className={styles.attributesHeader}>
+            <h2 className={`${styles.descriptionTitle} ${styles.descriptionTitleBar}`}>Описание</h2>
+            {showPublicAttrsToolbar && (
+              <div className={styles.attributesToolbar}>
+                {!isEditingPublicDescription ? (
+                  <button
+                    type="button"
+                    className={styles.attributesEditBtn}
+                    onClick={() => {
+                      const src = product.description ?? '';
+                      descriptionEditBaselineRef.current = src;
+                      setDraftDescription(src);
+                      setIsEditingPublicDescription(true);
+                    }}
+                    title="Редактировать описание"
+                    aria-label="Редактировать описание"
+                  >
+                    <PencilSquareIcon className={styles.attributesEditIcon} aria-hidden />
+                  </button>
+                ) : (
+                  <div className={styles.publicEditToolbarActions}>
+                    <button
+                      type="button"
+                      className={styles.attributesCancelBtn}
+                      onClick={exitPublicDescriptionEdit}
+                      disabled={savingPublicDescription}
+                      title="Закрыть без сохранения"
+                      aria-label="Закрыть без сохранения"
+                    >
+                      <XMarkIcon className={styles.attributesCancelIcon} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.attributesSaveBtn}
+                      onClick={() => void handleSavePublicDescription()}
+                      disabled={savingPublicDescription || !isPublicDescriptionDirty}
+                      title={savingPublicDescription ? 'Сохранение...' : 'Сохранить'}
+                      aria-label={savingPublicDescription ? 'Сохранение...' : 'Сохранить'}
+                    >
+                      <CheckIcon className={styles.attributesSaveIcon} aria-hidden />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          {isEditingPublicDescription ? (
+            <textarea
+              className={styles.descriptionTextarea}
+              value={draftDescription}
+              onChange={(e) => setDraftDescription(e.target.value)}
+              rows={10}
+              aria-label="Текст описания"
+            />
+          ) : product.description?.trim() ? (
+            <div
+              className={styles.descriptionText}
+              dangerouslySetInnerHTML={{
+                __html: escapeHtmlAndPreserveNewlines(product.description),
+              }}
+            />
+          ) : (
+            <p className={styles.descriptionEmpty}>Описание не заполнено</p>
+          )}
         </div>
       )}
 
@@ -1362,7 +1930,35 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
       )}
 
       {/* Комплектующие */}
-      <ProductComponents productId={product.id} initialComponents={components} />
+      <ProductComponents
+        productId={product.id}
+        initialComponents={components}
+        publicToolbar={
+          showPublicAttrsToolbar && components.length > 0
+            ? {
+                show: true,
+                isEditing: isEditingPublicComponents,
+                onStartEdit: () => {
+                  const rows: PublicComponentDraftRow[] = components.map((c) => ({
+                    id: c.id,
+                    name: c.name,
+                    type: c.type,
+                    price: String(c.price),
+                  }));
+                  componentsEditBaselineRef.current = serializePublicComponentsDraft(rows);
+                  setDraftComponents(rows);
+                  setIsEditingPublicComponents(true);
+                },
+                onCancel: exitPublicComponentsEdit,
+                onSave: () => void handleSavePublicComponents(),
+                canSave: isPublicComponentsDirty,
+                saving: savingPublicComponents,
+              }
+            : undefined
+        }
+        draftRows={isEditingPublicComponents ? draftComponents : undefined}
+        onDraftRowChange={handleDraftComponentChange}
+      />
 
       {/* Отзывы */}
       <ProductReviewsSection

@@ -54,6 +54,78 @@
   gap: 10px;
 }
 
+.publicSiteEditToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #374151;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s,
+    box-shadow 0.2s;
+}
+
+.publicSiteEditToggle:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #111827;
+}
+
+.publicSiteEditToggle:focus {
+  outline: none;
+}
+
+.publicSiteEditToggle:focus-visible {
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.22);
+  border-color: rgb(var(--color-accent-rgb) / 0.45);
+}
+
+.publicSiteEditToggle:active:not(:disabled) {
+  transform: translateY(0.5px);
+}
+
+.publicSiteEditToggleActive {
+  background: rgb(var(--color-accent-rgb) / 0.12);
+  border-color: rgb(var(--color-accent-rgb) / 0.38);
+  color: rgb(var(--color-accent-rgb));
+}
+
+.publicSiteEditToggleActive:hover {
+  background: rgb(var(--color-accent-rgb) / 0.18);
+  border-color: rgb(var(--color-accent-rgb) / 0.48);
+}
+
+.publicSiteEditIcon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.publicSiteEditLabel {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (width <= 900px) {
+  .publicSiteEditLabel {
+    display: none;
+  }
+
+  .publicSiteEditToggle {
+    padding: 6px;
+  }
+}
+
 /* Онлайн в админке (только супер-админ) */
 .onlineGroup {
   display: flex;
@@ -424,6 +496,35 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchIcon {
   opacity: 0.7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .publicSiteEditToggle {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .publicSiteEditToggle:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .publicSiteEditToggle:focus-visible {
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.4);
+  border-color: rgb(var(--color-accent-rgb) / 0.55);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .publicSiteEditToggleActive {
+  background: rgb(var(--color-accent-rgb) / 0.22);
+  border-color: rgb(var(--color-accent-rgb) / 0.5);
+  color: rgb(var(--color-accent-rgb));
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .publicSiteEditToggleActive:hover {
+  background: rgb(var(--color-accent-rgb) / 0.3);
+  border-color: rgb(var(--color-accent-rgb) / 0.62);
+  color: #f9fafb;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .iconButton {

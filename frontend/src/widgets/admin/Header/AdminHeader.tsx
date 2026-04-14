@@ -1,6 +1,6 @@
 'use client';
 
-import { MoonIcon, SunIcon } from '@heroicons/react/24/outline';
+import { MoonIcon, PencilSquareIcon, SunIcon } from '@heroicons/react/24/outline';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -19,7 +19,13 @@ import type { AdminReview } from '@/shared/api/admin-reviews';
 import { getAdminSupportConversations } from '@/shared/api/admin-support';
 import type { AdminSupportConversation } from '@/shared/api/admin-support';
 import { getAvatarUrl } from '@/shared/lib/avatar';
+import { canRoleEditCatalogOnPublicSite } from '@/shared/lib/catalog-public-edit';
 import { type NotificationSoundType, playNotificationSound } from '@/shared/lib/notification-sound';
+import {
+  PUBLIC_SITE_EDIT_MODE_EVENT,
+  getPublicSiteEditMode,
+  setPublicSiteEditMode,
+} from '@/shared/lib/public-site-edit-mode';
 import { getSafeHref } from '@/shared/lib/sanitize';
 
 import styles from './AdminHeader.module.css';
@@ -71,6 +77,8 @@ export function AdminHeader() {
     measurementForms: number;
     callbackForms: number;
   } | null>(null);
+
+  const [publicSiteEditMode, setPublicSiteEditModeState] = useState(false);
 
   const notificationRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -213,6 +221,17 @@ export function AdminHeader() {
   }, [loadNotificationSettings]);
 
   useEffect(() => {
+    setPublicSiteEditModeState(getPublicSiteEditMode());
+    const sync = () => setPublicSiteEditModeState(getPublicSiteEditMode());
+    window.addEventListener('storage', sync);
+    window.addEventListener(PUBLIC_SITE_EDIT_MODE_EVENT, sync);
+    return () => {
+      window.removeEventListener('storage', sync);
+      window.removeEventListener(PUBLIC_SITE_EDIT_MODE_EVENT, sync);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!notificationSettings) return;
     loadAllNotifications();
     const intervalMs = (notificationSettings.checkIntervalSeconds ?? 60) * 1000;
@@ -287,6 +306,13 @@ export function AdminHeader() {
 
   const unreadCount = notificationItems.length;
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const canTogglePublicSiteEdit = canRoleEditCatalogOnPublicSite(user?.role);
+
+  const togglePublicSiteEditMode = () => {
+    const next = !getPublicSiteEditMode();
+    setPublicSiteEditMode(next);
+    setPublicSiteEditModeState(next);
+  };
 
   return (
     <header className={styles.header}>
@@ -301,6 +327,27 @@ export function AdminHeader() {
 
       <div className={styles.actions}>
         {isSuperAdmin && <AdminOnlineAvatars />}
+        {canTogglePublicSiteEdit && (
+          <button
+            type="button"
+            className={
+              publicSiteEditMode
+                ? `${styles.publicSiteEditToggle} ${styles.publicSiteEditToggleActive}`
+                : styles.publicSiteEditToggle
+            }
+            onClick={togglePublicSiteEditMode}
+            title={
+              publicSiteEditMode
+                ? 'Выключить редактирование публичного сайта'
+                : 'Включить режим: правки характеристик товаров на публичном сайте'
+            }
+          >
+            <PencilSquareIcon className={styles.publicSiteEditIcon} aria-hidden />
+            <span className={styles.publicSiteEditLabel}>
+              {publicSiteEditMode ? 'Редактирование сайта: вкл' : 'Редактировать публичный сайт'}
+            </span>
+          </button>
+        )}
         <button
           type="button"
           className={styles.iconButton}

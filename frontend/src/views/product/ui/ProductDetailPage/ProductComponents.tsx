@@ -1,22 +1,47 @@
 'use client';
 
+import { CheckIcon, PencilSquareIcon, XMarkIcon } from '@heroicons/react/24/outline';
+
 import React, { useEffect, useState } from 'react';
 
-import { type ProductComponent, getProductComponents } from '@/shared/api/product-components';
+import {
+  type ProductComponent,
+  type PublicComponentDraftRow,
+  getProductComponents,
+} from '@/shared/api/product-components';
 import { isAuthRequiredForCartError } from '@/shared/lib/cart-auth-required';
 import { useCart } from '@/shared/lib/hooks';
 
 import styles from './ProductComponents.module.css';
+import pageStyles from './ProductDetailPage.module.css';
+
+export interface ProductComponentsPublicToolbar {
+  show: boolean;
+  isEditing: boolean;
+  onStartEdit: () => void;
+  onCancel: () => void;
+  onSave: () => void | Promise<void>;
+  canSave: boolean;
+  saving: boolean;
+}
 
 interface ProductComponentsProps {
   productId: string;
   /** Переданные с родителя комплектующие — используются вместо отдельного запроса */
   initialComponents?: ProductComponent[] | null;
+  /** Панель редактирования с публичного сайта (роль + режим «Редактировать публичный сайт») */
+  publicToolbar?: ProductComponentsPublicToolbar;
+  /** Черновики строк при `publicToolbar.isEditing` */
+  draftRows?: PublicComponentDraftRow[] | null;
+  onDraftRowChange?: (id: string, field: 'name' | 'type' | 'price', value: string) => void;
 }
 
 export const ProductComponents: React.FC<ProductComponentsProps> = ({
   productId,
   initialComponents,
+  publicToolbar,
+  draftRows,
+  onDraftRowChange,
 }) => {
   const { cart, addComponentToCart, updateComponentQuantity, removeComponentFromCart } = useCart();
   const [components, setComponents] = useState<ProductComponent[]>(initialComponents ?? []);
@@ -105,26 +130,74 @@ export const ProductComponents: React.FC<ProductComponentsProps> = ({
     return null;
   }
 
-  // Группируем комплектующие по наименованию
-  const groupedComponents = components.reduce(
-    (acc, comp) => {
-      if (!acc[comp.name]) {
-        acc[comp.name] = [];
-      }
-      acc[comp.name].push(comp);
-      return acc;
-    },
-    {} as Record<string, ProductComponent[]>
+  const isPublicEditing = Boolean(publicToolbar?.isEditing && draftRows?.length);
+
+  const titleBlock = publicToolbar?.show ? (
+    <div className={styles.componentsHeader}>
+      <h2 className={`${styles.componentsTitle} ${styles.componentsTitleBar}`}>Комплектующие</h2>
+      <div className={pageStyles.publicEditToolbarActions}>
+        {!publicToolbar.isEditing ? (
+          <button
+            type="button"
+            className={pageStyles.attributesEditBtn}
+            onClick={publicToolbar.onStartEdit}
+            title="Редактировать комплектующие"
+            aria-label="Редактировать комплектующие"
+          >
+            <PencilSquareIcon className={pageStyles.attributesEditIcon} aria-hidden />
+          </button>
+        ) : (
+          <>
+            <button
+              type="button"
+              className={pageStyles.attributesCancelBtn}
+              onClick={publicToolbar.onCancel}
+              disabled={publicToolbar.saving}
+              title="Закрыть без сохранения"
+              aria-label="Закрыть без сохранения"
+            >
+              <XMarkIcon className={pageStyles.attributesCancelIcon} aria-hidden />
+            </button>
+            <button
+              type="button"
+              className={pageStyles.attributesSaveBtn}
+              onClick={() => void publicToolbar.onSave()}
+              disabled={publicToolbar.saving || !publicToolbar.canSave}
+              title={publicToolbar.saving ? 'Сохранение...' : 'Сохранить'}
+              aria-label={publicToolbar.saving ? 'Сохранение...' : 'Сохранить'}
+            >
+              <CheckIcon className={pageStyles.attributesSaveIcon} aria-hidden />
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  ) : (
+    <h2 className={styles.componentsTitle}>Комплектующие</h2>
   );
 
   return (
     <div className={styles.componentsSection}>
-      <h2 className={styles.componentsTitle}>Комплектующие</h2>
+      {titleBlock}
       <div className={styles.componentsList}>
         {components.map((component) => {
-          const price = parseFloat(component.price);
-          const step = getQuantityStep(component);
-          const minQty = getMinQuantity(component);
+          const draft =
+            isPublicEditing && draftRows ? draftRows.find((d) => d.id === component.id) : undefined;
+          const displayName = draft?.name ?? component.name;
+          const displayType = draft?.type ?? component.type;
+          const displayPriceStr = draft?.price ?? String(component.price);
+          const price = parseFloat(displayPriceStr.replace(/\s/g, '').replace(',', '.')) || 0;
+
+          const step = getQuantityStep({
+            ...component,
+            name: displayName,
+            type: displayType,
+          });
+          const minQty = getMinQuantity({
+            ...component,
+            name: displayName,
+            type: displayType,
+          });
           const quantity = quantities[component.id] ?? (step === 0.5 ? 1 : 1);
           const isAdding = addingToCart[component.id] || false;
           const formatQty = (q: number) => (step === 0.5 && q % 1 !== 0 ? q.toFixed(1) : String(q));
@@ -134,135 +207,171 @@ export const ProductComponents: React.FC<ProductComponentsProps> = ({
               <div className={styles.componentLeft}>
                 {component.image && (
                   <div className={styles.componentImage}>
-                    <img src={component.image} alt={component.type} />
+                    <img src={component.image} alt={displayType} />
                   </div>
                 )}
                 <div className={styles.componentInfo}>
-                  <span className={styles.componentName}>{component.name}</span>
-                  <span className={styles.componentType}>{component.type}</span>
+                  {isPublicEditing && draft && onDraftRowChange ? (
+                    <>
+                      <input
+                        type="text"
+                        className={styles.componentEditInput}
+                        value={draft.name}
+                        onChange={(e) => onDraftRowChange(component.id, 'name', e.target.value)}
+                        aria-label="Наименование комплектующего"
+                      />
+                      <input
+                        type="text"
+                        className={styles.componentEditInputSecondary}
+                        value={draft.type}
+                        onChange={(e) => onDraftRowChange(component.id, 'type', e.target.value)}
+                        aria-label="Тип комплектующего"
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <span className={styles.componentName}>{component.name}</span>
+                      <span className={styles.componentType}>{component.type}</span>
+                    </>
+                  )}
                 </div>
               </div>
               <div className={styles.componentRight}>
-                <span className={styles.componentPrice}>{price.toLocaleString()} ₽ / шт.</span>
+                {isPublicEditing && draft && onDraftRowChange ? (
+                  <div className={styles.componentEditPriceWrap}>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      className={styles.componentEditPrice}
+                      value={draft.price}
+                      onChange={(e) => onDraftRowChange(component.id, 'price', e.target.value)}
+                      aria-label="Цена за штуку"
+                    />
+                    <span className={styles.componentPriceSuffix}>₽ / шт.</span>
+                  </div>
+                ) : (
+                  <span className={styles.componentPrice}>{price.toLocaleString()} ₽ / шт.</span>
+                )}
                 <div className={styles.componentActions}>
-                  {(() => {
-                    const cartItem = cart.find(
-                      (item) =>
-                        item.componentId !== null &&
-                        item.productId === null &&
-                        String(item.componentId) === String(component.id)
-                    );
-                    const cartQuantity = cartItem ? Number(cartItem.quantity) : 0;
-                    const isInCart = cartQuantity > 0;
+                  {!isPublicEditing &&
+                    (() => {
+                      const cartItem = cart.find(
+                        (item) =>
+                          item.componentId !== null &&
+                          item.productId === null &&
+                          String(item.componentId) === String(component.id)
+                      );
+                      const cartQuantity = cartItem ? Number(cartItem.quantity) : 0;
+                      const isInCart = cartQuantity > 0;
 
-                    if (isInCart) {
-                      const cartStep = getQuantityStep(component);
-                      const cartMin = getMinQuantity(component);
-                      const cartQtyNum = Number(cartQuantity);
+                      if (isInCart) {
+                        const cartStep = getQuantityStep(component);
+                        const cartMin = getMinQuantity(component);
+                        const cartQtyNum = Number(cartQuantity);
+                        return (
+                          <div className={styles.cartControls}>
+                            <span className={styles.inCartLabel}>В корзине</span>
+                            <div
+                              className={styles.quantityControls}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                type="button"
+                                className={styles.quantityButton}
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  if (isAdding) return;
+                                  try {
+                                    const newQuantity = Math.round((cartQtyNum - cartStep) * 2) / 2;
+                                    if (newQuantity < cartMin) {
+                                      await removeComponentFromCart(component.id);
+                                      return;
+                                    }
+                                    await updateComponentQuantity(component.id, newQuantity);
+                                  } catch (error) {
+                                    if (error instanceof Error) {
+                                      alert(error.message);
+                                    } else {
+                                      alert('Произошла ошибка при обновлении количества');
+                                    }
+                                  }
+                                }}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }}
+                                disabled={isAdding}
+                              >
+                                −
+                              </button>
+                              <span className={styles.quantityValue}>
+                                {cartStep === 0.5 && cartQtyNum % 1 !== 0
+                                  ? cartQtyNum.toFixed(1)
+                                  : cartQuantity}
+                              </span>
+                              <button
+                                type="button"
+                                className={styles.quantityButton}
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  if (isAdding) return;
+                                  try {
+                                    const newQuantity = Math.round((cartQtyNum + cartStep) * 2) / 2;
+                                    await updateComponentQuantity(component.id, newQuantity);
+                                  } catch (error) {
+                                    if (error instanceof Error) {
+                                      alert(error.message);
+                                    } else {
+                                      alert('Произошла ошибка при обновлении количества');
+                                    }
+                                  }
+                                }}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }}
+                                disabled={isAdding}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      }
+
                       return (
-                        <div className={styles.cartControls}>
-                          <span className={styles.inCartLabel}>В корзине</span>
-                          <div
-                            className={styles.quantityControls}
-                            onClick={(e) => e.stopPropagation()}
-                          >
+                        <>
+                          <div className={styles.quantitySelector}>
                             <button
                               type="button"
                               className={styles.quantityButton}
-                              onClick={async (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                if (isAdding) return;
-                                try {
-                                  const newQuantity = Math.round((cartQtyNum - cartStep) * 2) / 2;
-                                  if (newQuantity < cartMin) {
-                                    await removeComponentFromCart(component.id);
-                                    return;
-                                  }
-                                  await updateComponentQuantity(component.id, newQuantity);
-                                } catch (error) {
-                                  if (error instanceof Error) {
-                                    alert(error.message);
-                                  } else {
-                                    alert('Произошла ошибка при обновлении количества');
-                                  }
-                                }
-                              }}
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                              }}
-                              disabled={isAdding}
+                              onClick={() => handleQuantityChange(component.id, -1, step)}
+                              disabled={quantity <= minQty}
                             >
                               −
                             </button>
-                            <span className={styles.quantityValue}>
-                              {cartStep === 0.5 && cartQtyNum % 1 !== 0
-                                ? cartQtyNum.toFixed(1)
-                                : cartQuantity}
-                            </span>
+                            <span className={styles.quantityValue}>{formatQty(quantity)}</span>
                             <button
                               type="button"
                               className={styles.quantityButton}
-                              onClick={async (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                if (isAdding) return;
-                                try {
-                                  const newQuantity = Math.round((cartQtyNum + cartStep) * 2) / 2;
-                                  await updateComponentQuantity(component.id, newQuantity);
-                                } catch (error) {
-                                  if (error instanceof Error) {
-                                    alert(error.message);
-                                  } else {
-                                    alert('Произошла ошибка при обновлении количества');
-                                  }
-                                }
-                              }}
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                              }}
-                              disabled={isAdding}
+                              onClick={() => handleQuantityChange(component.id, 1, step)}
                             >
                               +
                             </button>
                           </div>
-                        </div>
+                          <button
+                            type="button"
+                            className={styles.addToCartButton}
+                            onClick={() => handleAddToCart(component)}
+                            disabled={isAdding}
+                          >
+                            {isAdding ? 'Добавление...' : 'В корзину'}
+                          </button>
+                        </>
                       );
-                    }
-
-                    return (
-                      <>
-                        <div className={styles.quantitySelector}>
-                          <button
-                            type="button"
-                            className={styles.quantityButton}
-                            onClick={() => handleQuantityChange(component.id, -1, step)}
-                            disabled={quantity <= minQty}
-                          >
-                            −
-                          </button>
-                          <span className={styles.quantityValue}>{formatQty(quantity)}</span>
-                          <button
-                            type="button"
-                            className={styles.quantityButton}
-                            onClick={() => handleQuantityChange(component.id, 1, step)}
-                          >
-                            +
-                          </button>
-                        </div>
-                        <button
-                          type="button"
-                          className={styles.addToCartButton}
-                          onClick={() => handleAddToCart(component)}
-                          disabled={isAdding}
-                        >
-                          {isAdding ? 'Добавление...' : 'В корзину'}
-                        </button>
-                      </>
-                    );
-                  })()}
+                    })()}
                 </div>
               </div>
             </div>

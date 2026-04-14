@@ -6,6 +6,18 @@
   padding-top: 1rem;
 }
 
+.componentsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.componentsTitleBar {
+  margin-bottom: 0;
+}
+
 .componentsTitle {
   font-size: 1.125rem;
   font-weight: 600;
@@ -95,6 +107,76 @@
   font-weight: 500;
   color: #6b7280;
   line-height: 1.2;
+}
+
+.componentEditInput {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #111827;
+  background: #fff;
+}
+
+.componentEditInput:focus {
+  outline: none;
+  border-color: rgb(var(--color-accent-rgb) / 0.55);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.15);
+}
+
+.componentEditInputSecondary {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #374151;
+  background: #fff;
+}
+
+.componentEditInputSecondary:focus {
+  outline: none;
+  border-color: rgb(var(--color-accent-rgb) / 0.55);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.15);
+}
+
+.componentEditPriceWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.componentEditPrice {
+  width: 4.5rem;
+  box-sizing: border-box;
+  padding: 0.2rem 0.35rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  background: #fff;
+}
+
+.componentEditPrice:focus {
+  outline: none;
+  border-color: rgb(var(--color-accent-rgb) / 0.55);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.15);
+}
+
+.componentPriceSuffix {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+  white-space: nowrap;
 }
 
 .componentPrice {
@@ -352,6 +434,18 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .componentType {
   color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .componentEditInput,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .componentEditInputSecondary,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .componentEditPrice {
+  background: #111827;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .componentPriceSuffix {
+  color: #9ca3af;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cartControls {
