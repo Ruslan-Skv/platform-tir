@@ -5,51 +5,42 @@
 }
 
 .header {
-  margin-bottom: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.titleRow {
+  align-items: center;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+  min-width: 0;
 }
 
 .title {
+  flex: 1;
   font-size: 2rem;
   font-weight: 700;
   color: #111827;
-  margin: 0 0 0.5rem;
-}
-
-.subtitle {
-  font-size: 1rem;
-  color: #6b7280;
   margin: 0;
+  min-width: 0;
 }
 
-.grid {
-  align-items: stretch;
-  display: grid;
-  gap: 1.5rem;
-  grid-template-columns: repeat(4, 1fr);
-  padding: 0 0.5rem;
-  margin-top: 2rem;
+.itemCount {
+  color: #6b7280;
+  flex-shrink: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
-/* Большие экраны */
-@media (width <= 1280px) {
-  .grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-/* Планшеты */
-@media (width <= 1024px) {
-  .grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* Мобильные устройства */
-@media (width <= 768px) {
-  .grid {
-    grid-template-columns: 1fr;
-    padding: 0;
-  }
+/* Сами колонки — из ProductsGrid.module.css (.grid + .gridMobile2); зазор от заголовка — у .header */
+.productsGrid {
+  margin-top: 0;
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
 }
 
 .empty {
@@ -109,7 +100,7 @@
   color: #f9fafb;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .subtitle {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .itemCount {
   color: #9ca3af;
 }
 
@@ -135,7 +126,17 @@
     padding: 1rem;
   }
 
+  /* Как заголовок каталога в ProductsGrid: .title на мобилке */
   .title {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .itemCount {
+    font-size: 0.8125rem;
+  }
+
+  .header {
+    margin-bottom: 0.5rem;
   }
 }

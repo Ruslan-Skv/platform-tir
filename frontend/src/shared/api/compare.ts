@@ -2,6 +2,22 @@ import type { CatalogApiProduct } from '@/views/catalog/lib/mapCatalogApiProduct
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
+export const COMPARE_MAX_ITEMS = 10;
+
+export const COMPARE_LIMIT_MESSAGE = 'Максимум 10 товаров можно сравнить одновременно';
+
+export class CompareLimitExceededError extends Error {
+  constructor() {
+    super(COMPARE_LIMIT_MESSAGE);
+    this.name = 'CompareLimitExceededError';
+    Object.setPrototypeOf(this, CompareLimitExceededError.prototype);
+  }
+}
+
+export function isCompareLimitExceededError(e: unknown): e is CompareLimitExceededError {
+  return e instanceof CompareLimitExceededError;
+}
+
 export const GUEST_COMPARE_STORAGE_KEY = 'tir_guest_compare_product_ids';
 
 interface CompareItem {
@@ -127,8 +143,8 @@ export async function addToCompare(productId: string): Promise<CompareItem> {
     if (ids.includes(productId)) {
       throw new Error('Товар уже в сравнении');
     }
-    if (ids.length >= 10) {
-      throw new Error('Максимум 10 товаров можно сравнить одновременно');
+    if (ids.length >= COMPARE_MAX_ITEMS) {
+      throw new CompareLimitExceededError();
     }
     const next = [...ids, productId];
     writeGuestCompareIds(next);
@@ -160,7 +176,7 @@ export async function addToCompare(productId: string): Promise<CompareItem> {
     if (response.status === 409) {
       const errorData = await response.json().catch(() => ({}));
       if (errorData.message?.includes('Maximum')) {
-        throw new Error('Максимум 10 товаров можно сравнить одновременно');
+        throw new CompareLimitExceededError();
       }
       throw new Error('Товар уже в сравнении');
     }

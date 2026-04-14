@@ -20,6 +20,21 @@ import styles from './page.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
+function goodsWord(n: number): string {
+  const mod100 = Math.abs(n) % 100;
+  const mod10 = mod100 % 10;
+  if (mod100 >= 11 && mod100 <= 14) {
+    return 'товаров';
+  }
+  if (mod10 === 1) {
+    return 'товар';
+  }
+  if (mod10 >= 2 && mod10 <= 4) {
+    return 'товара';
+  }
+  return 'товаров';
+}
+
 function extractCharacteristicsFromAttributes(
   attributes:
     | CatalogApiProduct['attributes']
@@ -210,7 +225,9 @@ export default function ComparePage() {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
-          <h1 className={styles.title}>Сравнение товаров</h1>
+          <div className={styles.titleRow}>
+            <h1 className={styles.title}>Сравнение товаров</h1>
+          </div>
         </div>
         <div className={styles.empty}>
           <h2>Ваш список сравнения пуст</h2>
@@ -294,7 +311,14 @@ export default function ComparePage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Сравнение товаров</h1>
+        <div className={styles.titleRow}>
+          <h1 className={styles.title}>Сравнение товаров</h1>
+          {count > 0 && (
+            <span className={styles.itemCount}>
+              {count} {goodsWord(count)}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className={styles.compareWrapper}>

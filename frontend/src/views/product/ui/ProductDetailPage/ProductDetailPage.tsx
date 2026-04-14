@@ -5,9 +5,11 @@ import { createPortal } from 'react-dom';
 
 import Link from 'next/link';
 
+import { isCompareLimitExceededError } from '@/shared/api/compare';
 import { type ProductComponent, getProductComponents } from '@/shared/api/product-components';
 import type { Review } from '@/shared/api/reviews';
 import { isAuthRequiredForCartError } from '@/shared/lib/cart-auth-required';
+import { emitCompareLimitExceeded } from '@/shared/lib/compare-limit-notify';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 import {
   PRODUCT_AVAILABILITY_LABEL,
@@ -416,7 +418,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
       await toggleCompare(productId);
       // Состояние обновится автоматически через глобальный контекст
     } catch (err) {
-      if (err instanceof Error) {
+      if (isCompareLimitExceededError(err)) {
+        emitCompareLimitExceeded();
+      } else if (err instanceof Error) {
         alert(err.message);
       } else {
         alert('Произошла ошибка при работе с сравнением');

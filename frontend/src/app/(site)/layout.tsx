@@ -4,6 +4,7 @@ import { NavigationProvider } from '@/shared/lib/contexts/NavigationContext';
 import { WishlistProvider } from '@/shared/lib/contexts/WishlistContext';
 import { getServerApiBaseUrl } from '@/shared/lib/server-api-base-url';
 import { CartAuthRequiredModalHost } from '@/shared/ui/CartAuthRequiredModal';
+import { CompareLimitToastHost } from '@/shared/ui/CompareLimitToast';
 import { SiteLayout } from '@/widgets/site-layout';
 
 export default async function SiteRootLayout({ children }: { children: React.ReactNode }) {
@@ -13,6 +14,7 @@ export default async function SiteRootLayout({ children }: { children: React.Rea
     <NavigationProvider initialItems={initialNavigation}>
       <CartProvider>
         <CartAuthRequiredModalHost />
+        <CompareLimitToastHost />
         <WishlistProvider>
           <SiteLayout>{children}</SiteLayout>
         </WishlistProvider>

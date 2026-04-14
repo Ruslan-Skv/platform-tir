@@ -7,7 +7,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import type { Product } from '@/entities/product';
+import { isCompareLimitExceededError } from '@/shared/api/compare';
 import { isAuthRequiredForCartError } from '@/shared/lib/cart-auth-required';
+import { emitCompareLimitExceeded } from '@/shared/lib/compare-limit-notify';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 import {
   PRODUCT_AVAILABILITY_LABEL,
@@ -139,7 +141,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       await toggleCompare(productId);
       // Состояние обновится автоматически через глобальный контекст
     } catch (error) {
-      if (error instanceof Error) {
+      if (isCompareLimitExceededError(error)) {
+        emitCompareLimitExceeded();
+      } else if (error instanceof Error) {
         alert(error.message);
       } else {
         alert('Произошла ошибка при работе с сравнением');

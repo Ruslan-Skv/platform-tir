@@ -9,10 +9,26 @@ import { useWishlist } from '@/shared/lib/hooks';
 import type { CatalogApiProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
 import { mapCatalogApiProductToProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
 import { ProductCard } from '@/views/catalog/ui/ProductsGrid';
+import catalogGridStyles from '@/views/catalog/ui/ProductsGrid/ProductsGrid.module.css';
 
 import styles from './page.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+
+function goodsWord(n: number): string {
+  const mod100 = Math.abs(n) % 100;
+  const mod10 = mod100 % 10;
+  if (mod100 >= 11 && mod100 <= 14) {
+    return 'товаров';
+  }
+  if (mod10 === 1) {
+    return 'товар';
+  }
+  if (mod10 >= 2 && mod10 <= 4) {
+    return 'товара';
+  }
+  return 'товаров';
+}
 
 export default function FavoritesPage() {
   const { count, refreshCount } = useWishlist();
@@ -94,12 +110,14 @@ export default function FavoritesPage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Избранное</h1>
-        {count > 0 && (
-          <p className={styles.subtitle}>
-            {count} {count === 1 ? 'товар' : count < 5 ? 'товара' : 'товаров'} в избранном
-          </p>
-        )}
+        <div className={styles.titleRow}>
+          <h1 className={styles.title}>Избранное</h1>
+          {count > 0 && (
+            <span className={styles.itemCount}>
+              {count} {goodsWord(count)}
+            </span>
+          )}
+        </div>
       </div>
 
       {products.length === 0 ? (
@@ -111,7 +129,9 @@ export default function FavoritesPage() {
           </Link>
         </div>
       ) : (
-        <div className={styles.grid}>
+        <div
+          className={`${styles.productsGrid} ${catalogGridStyles.grid} ${catalogGridStyles.gridMobile2}`}
+        >
           {mappedProducts.map((product) => (
             <ProductCard
               key={product.originalId ?? product.slug}
