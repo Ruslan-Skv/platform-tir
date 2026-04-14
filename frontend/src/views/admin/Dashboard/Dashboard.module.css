@@ -10,6 +10,12 @@
   padding: 0 4px 48px;
 }
 
+@media (max-width: 640px) {
+  .page {
+    padding: 0 12px 32px;
+  }
+}
+
 .hero {
   background: linear-gradient(
     135deg,
@@ -43,6 +49,22 @@
   color: rgb(255 255 255 / 0.88);
 }
 
+@media (max-width: 640px) {
+  .hero {
+    padding: 12px 14px 14px;
+    border-radius: 10px;
+  }
+
+  .title {
+    font-size: 1.125rem;
+  }
+
+  .subtitle {
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+}
+
 .toolbar {
   background: #fff;
   border: 1px solid #e5e7eb;
@@ -50,6 +72,13 @@
   padding: 10px 14px;
   margin-bottom: 12px;
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+@media (max-width: 640px) {
+  .toolbar {
+    padding: 12px;
+    border-radius: 12px;
+  }
 }
 
 .toolbarRow {
@@ -180,6 +209,7 @@
   font-size: 0.8125rem;
   color: #6b7280;
   margin: 0 0 14px;
+  overflow-wrap: anywhere;
 }
 
 .rangeHint strong {
@@ -213,6 +243,15 @@
     flex-direction: column;
     align-items: stretch;
   }
+
+  .dateInput {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .dateSep {
+    display: none;
+  }
 }
 
 .panel {
@@ -230,6 +269,16 @@
   padding: 16px 18px;
   background: linear-gradient(180deg, #fafafa 0%, #fff 100%);
   border-bottom: 1px solid #f3f4f6;
+}
+
+@media (max-width: 640px) {
+  .panelHead {
+    padding: 12px 14px;
+  }
+
+  .panelTitle {
+    font-size: 1rem;
+  }
 }
 
 .panelIcon {
@@ -255,6 +304,8 @@
 @media (max-width: 700px) {
   .chartsWrap {
     grid-template-columns: 1fr;
+    padding: 12px 14px 8px;
+    gap: 14px;
   }
 }
 
@@ -349,9 +400,33 @@
   line-height: 1.15;
 }
 
+@media (max-width: 520px) {
+  .chartRow {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    align-items: stretch;
+  }
+
+  .chartName {
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .chartNum {
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: baseline;
+    gap: 10px;
+    text-align: left;
+  }
+}
+
 .tableWrap {
   padding: 0;
   min-height: 120px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 
 .table {
@@ -405,8 +480,98 @@
   border-bottom: none;
 }
 
-.table tbody tr:hover td {
-  background: #fafafa;
+@media (hover: hover) {
+  .table tbody tr:hover td {
+    background: #fafafa;
+  }
+}
+
+/* Узкие экраны: строки таблицы — карточки (без горизонтального скролла) */
+@media (max-width: 640px) {
+  .tableWrap {
+    overflow-x: visible;
+  }
+
+  .table {
+    display: block;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tbody {
+    display: block;
+  }
+
+  .table tbody tr {
+    display: block;
+    margin-bottom: 12px;
+    padding: 14px 12px;
+    background: #fafafa;
+    border-radius: 12px;
+    border: 1px solid #f3f4f6;
+  }
+
+  .table tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .table tbody td {
+    display: block;
+    padding: 0;
+    border: none;
+    vertical-align: middle;
+  }
+
+  .table tbody td:first-child {
+    padding-bottom: 12px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .table tbody td:first-child::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+
+  .table tbody td:not(:first-child) {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-top: 1px solid #f3f4f6;
+    text-align: right !important;
+  }
+
+  .table tbody td:not(:first-child)::before {
+    content: attr(data-label);
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+    text-align: left;
+  }
+
+  .table tbody td.colNum,
+  .table tbody td.colPct {
+    width: auto;
+  }
+
+  @media (hover: hover) {
+    .table tbody tr:hover td {
+      background: transparent;
+    }
+  }
 }
 
 .userCell {
@@ -450,6 +615,16 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+@media (max-width: 640px) {
+  .userName,
+  .userEmail {
+    white-space: normal;
+    word-break: break-word;
+    overflow: visible;
+    text-overflow: unset;
+  }
 }
 
 .badgePeriod,
@@ -525,6 +700,21 @@
   color: #0d9488;
 }
 
+@media (max-width: 640px) {
+  .quickGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .quickLink {
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .toolbar,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .panel,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .quickLink {
@@ -565,8 +755,39 @@
   border-bottom-color: #374151;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody tr:hover td {
-  background: #374151;
+@media (hover: hover) {
+  :where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody tr:hover td {
+    background: #374151;
+  }
+}
+
+@media (max-width: 640px) {
+  :where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody tr {
+    background: #111827;
+    border-color: #374151;
+  }
+
+  :where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody td:first-child {
+    border-bottom-color: #374151;
+  }
+
+  :where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody td:not(:first-child) {
+    border-top-color: #1f2937;
+  }
+
+  @media (hover: hover) {
+    :where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody tr:hover td {
+      background: transparent;
+    }
+  }
+
+  :where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody td:first-child::before,
+  :where(html[data-theme='dark'], [data-app-theme='dark'])
+    .table
+    tbody
+    td:not(:first-child)::before {
+    color: #9ca3af;
+  }
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .badgePeriod {

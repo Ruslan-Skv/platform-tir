@@ -1,6 +1,6 @@
 'use client';
 
-import { MoonIcon, PencilSquareIcon, SunIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, MoonIcon, PencilSquareIcon, SunIcon } from '@heroicons/react/24/outline';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -305,7 +305,6 @@ export function AdminHeader() {
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const unreadCount = notificationItems.length;
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const canTogglePublicSiteEdit = canRoleEditCatalogOnPublicSite(user?.role);
 
   const togglePublicSiteEditMode = () => {
@@ -326,7 +325,15 @@ export function AdminHeader() {
       </div>
 
       <div className={styles.actions}>
-        {isSuperAdmin && <AdminOnlineAvatars />}
+        <Link
+          href={getSafeHref('/', '/')}
+          className={`${styles.iconButton} ${styles.toPublicSiteLink}`}
+          title="На сайт"
+          aria-label="Перейти на публичный сайт"
+        >
+          <HomeIcon className={styles.themeIcon} aria-hidden />
+        </Link>
+        <AdminOnlineAvatars />
         {canTogglePublicSiteEdit && (
           <button
             type="button"

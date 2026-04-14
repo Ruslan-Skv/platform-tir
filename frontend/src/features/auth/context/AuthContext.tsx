@@ -2,6 +2,8 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
+import { setPublicSiteEditMode } from '@/shared/lib/public-site-edit-mode';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 type AdminRole =
@@ -72,6 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem(USER_KEY);
       localStorage.removeItem(USER_TOKEN_KEY);
       localStorage.removeItem(USER_DATA_KEY);
+      setPublicSiteEditMode(false);
       window.dispatchEvent(new Event('auth-token-changed'));
     }
     setToken(null);

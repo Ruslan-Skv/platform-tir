@@ -29,6 +29,7 @@ import {
   PRODUCT_AVAILABILITY_LABEL,
   getProductAvailability,
 } from '@/shared/lib/product-availability';
+import { touchPublicSiteEditModeActivity } from '@/shared/lib/public-site-edit-mode';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { escapeHtmlAndPreserveNewlines, getSafeHref } from '@/shared/lib/sanitize';
 import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
@@ -764,6 +765,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
       if (data && typeof data === 'object' && 'id' in data) {
         setProduct(data);
       }
+      touchPublicSiteEditModeActivity();
       setIsEditingPublicAttrs(false);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Не удалось сохранить характеристики');
@@ -812,6 +814,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
       if (data && typeof data === 'object' && 'id' in data) {
         setProduct(data);
       }
+      touchPublicSiteEditModeActivity();
       setIsEditingPublicPrice(false);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Не удалось сохранить цену');
@@ -834,6 +837,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
       if (data && typeof data === 'object' && 'id' in data) {
         setProduct(data);
       }
+      touchPublicSiteEditModeActivity();
       setIsEditingPublicDescription(false);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Не удалось сохранить описание');
@@ -844,12 +848,14 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
 
   const exitPublicPriceEdit = useCallback(() => {
     if (savingPublicPrice) return;
+    touchPublicSiteEditModeActivity();
     setDraftPrice(priceEditBaselineRef.current);
     setIsEditingPublicPrice(false);
   }, [savingPublicPrice]);
 
   const exitPublicAttrsEdit = useCallback(() => {
     if (savingPublicAttrs) return;
+    touchPublicSiteEditModeActivity();
     const baseline = attrsEditBaselineRef.current;
     if (baseline) {
       try {
@@ -870,6 +876,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
 
   const exitPublicDescriptionEdit = useCallback(() => {
     if (savingPublicDescription) return;
+    touchPublicSiteEditModeActivity();
     setDraftDescription(descriptionEditBaselineRef.current);
     setIsEditingPublicDescription(false);
   }, [savingPublicDescription]);
@@ -885,6 +892,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
 
   const exitPublicComponentsEdit = useCallback(() => {
     if (savingPublicComponents) return;
+    touchPublicSiteEditModeActivity();
     const baseline = componentsEditBaselineRef.current;
     if (baseline) {
       try {
@@ -927,6 +935,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
       }
       const fresh = await getProductComponents(product.id);
       setComponents(fresh);
+      touchPublicSiteEditModeActivity();
       setIsEditingPublicComponents(false);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Не удалось сохранить комплектующие');
@@ -1223,6 +1232,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                       type="button"
                       className={styles.attributesEditBtn}
                       onClick={() => {
+                        touchPublicSiteEditModeActivity();
                         const src = selectedCardVariant
                           ? String(
                               typeof selectedCardVariant.price === 'string'
@@ -1771,6 +1781,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                         type="button"
                         className={styles.attributesEditBtn}
                         onClick={() => {
+                          touchPublicSiteEditModeActivity();
                           const rows = attributesEditableRows.map((a) => ({ ...a }));
                           attrsEditBaselineRef.current = serializePublicAttributeDraft(rows);
                           setDraftAttributes(rows);
@@ -1863,6 +1874,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                     type="button"
                     className={styles.attributesEditBtn}
                     onClick={() => {
+                      touchPublicSiteEditModeActivity();
                       const src = product.description ?? '';
                       descriptionEditBaselineRef.current = src;
                       setDraftDescription(src);
@@ -1939,6 +1951,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                 show: true,
                 isEditing: isEditingPublicComponents,
                 onStartEdit: () => {
+                  touchPublicSiteEditModeActivity();
                   const rows: PublicComponentDraftRow[] = components.map((c) => ({
                     id: c.id,
                     name: c.name,

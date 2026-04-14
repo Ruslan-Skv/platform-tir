@@ -126,7 +126,7 @@
   }
 }
 
-/* Онлайн в админке (только супер-админ) */
+/* Онлайн в админке */
 .onlineGroup {
   display: flex;
   align-items: center;
@@ -210,6 +210,19 @@
 
 .iconButton:active {
   opacity: 0.9;
+}
+
+/* Сайдбар с «На сайт» скрыт в drawer до 1024px — дублируем переход в шапке только на мобильной вёрстке */
+.toPublicSiteLink {
+  display: none;
+  text-decoration: none;
+  color: inherit;
+}
+
+@media (max-width: 1024px) {
+  .toPublicSiteLink {
+    display: flex;
+  }
 }
 
 .themeIcon {

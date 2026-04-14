@@ -25,7 +25,7 @@ export class AdminPresenceController {
   }
 
   @Get('online')
-  @Roles('SUPER_ADMIN')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'Список администраторов, сейчас работающих в админке' })
   getOnline() {
     return this.adminPresenceService.getOnlineAdmins();

@@ -182,7 +182,7 @@ function ActivityTable({
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.userId}>
-                    <td>
+                    <td data-label="Администратор">
                       <div className={styles.userCell}>
                         <span className={styles.avatar} aria-hidden>
                           {getInitials(row.firstName, row.lastName, row.email)}
@@ -193,18 +193,18 @@ function ActivityTable({
                         </div>
                       </div>
                     </td>
-                    <td className={styles.colNum}>
+                    <td className={styles.colNum} data-label="За период">
                       <span className={styles.badgePeriod}>{row.countInPeriod}</span>
                     </td>
-                    <td className={styles.colPct}>
+                    <td className={styles.colPct} data-label="% пер.">
                       <span className={styles.pctCell}>
                         {formatSharePercent(row.countInPeriod, sumInPeriod)}
                       </span>
                     </td>
-                    <td className={styles.colNum}>
+                    <td className={styles.colNum} data-label="Всего">
                       <span className={styles.badgeTotal}>{row.totalCreated}</span>
                     </td>
-                    <td className={styles.colPct}>
+                    <td className={styles.colPct} data-label="% всего">
                       <span className={styles.pctCell}>
                         {formatSharePercent(row.totalCreated, sumTotalCreated)}
                       </span>
