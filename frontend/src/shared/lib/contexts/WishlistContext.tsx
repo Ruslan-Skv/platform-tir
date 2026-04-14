@@ -1,6 +1,14 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import * as wishlistApi from '@/shared/api/wishlist';
 
@@ -25,55 +33,113 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
 
+  const wishlistRef = useRef<string[]>([]);
+  wishlistRef.current = wishlist;
+
+  const prevHadTokenRef = useRef<boolean | null>(null);
+
+  const reloadWishlistFromStorageOrApi = useCallback(async () => {
+    const hasToken = wishlistApi.hasSiteAuthToken();
+    const prev = prevHadTokenRef.current;
+
+    if (hasToken) {
+      const guestIds = wishlistApi.readGuestWishlistIds();
+      if (guestIds.length > 0) {
+        wishlistApi.clearGuestWishlistIds();
+        for (const id of guestIds) {
+          try {
+            await wishlistApi.addToWishlist(id);
+          } catch {
+            /* дубликат или сеть */
+          }
+        }
+      }
+      try {
+        const products = await wishlistApi.getWishlist();
+        setWishlist(products.map((p) => p.id));
+        setCount(products.length);
+      } catch {
+        setWishlist([]);
+        setCount(0);
+      }
+    } else {
+      if (prev === true) {
+        wishlistApi.writeGuestWishlistIds(wishlistRef.current);
+      }
+      const ids = wishlistApi.readGuestWishlistIds();
+      setWishlist(ids);
+      setCount(ids.length);
+    }
+
+    prevHadTokenRef.current = hasToken;
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    const run = async () => {
+      setIsLoading(true);
+      try {
+        await reloadWishlistFromStorageOrApi();
+      } finally {
+        if (alive) setIsLoading(false);
+      }
+    };
+    void run();
+    return () => {
+      alive = false;
+    };
+  }, [reloadWishlistFromStorageOrApi]);
+
+  useEffect(() => {
+    const onAuthOrStorage = () => {
+      void reloadWishlistFromStorageOrApi();
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (
+        e.key === 'user_token' ||
+        e.key === 'user_data' ||
+        e.key === 'admin_token' ||
+        e.key === 'admin_user' ||
+        e.key === wishlistApi.GUEST_WISHLIST_STORAGE_KEY
+      ) {
+        onAuthOrStorage();
+      }
+    };
+    if (typeof window === 'undefined') return undefined;
+    window.addEventListener('auth-token-changed', onAuthOrStorage);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('auth-token-changed', onAuthOrStorage);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [reloadWishlistFromStorageOrApi]);
+
   const refreshCount = useCallback(async () => {
     try {
       const newCount = await wishlistApi.getWishlistCount();
       setCount(newCount);
     } catch {
-      setCount(0);
+      setCount(wishlistApi.hasSiteAuthToken() ? 0 : wishlistApi.readGuestWishlistIds().length);
     }
   }, []);
 
-  // Загружаем полный список избранного при инициализации (1 запрос вместо N проверок на карточках)
-  useEffect(() => {
-    wishlistApi
-      .getWishlist()
-      .then((products) => {
-        const ids = products.map((p) => p.id);
-        setWishlist(ids);
-        setCount(ids.length);
-      })
-      .catch(() => {
-        setWishlist([]);
-        refreshCount().catch(() => {});
-      });
-  }, [refreshCount]);
-
-  const addToWishlist = useCallback(async (productId: string) => {
-    try {
+  const addToWishlist = useCallback(
+    async (productId: string) => {
       await wishlistApi.addToWishlist(productId);
       setWishlist((prev) => (prev.includes(productId) ? prev : [...prev, productId]));
-      setCount((prev) => prev + 1);
-    } catch (error) {
-      if (error instanceof Error && error.message === 'Необходима авторизация') {
-        throw new Error('Войдите в систему, чтобы добавить товар в избранное');
-      }
-      throw error;
-    }
-  }, []);
+      await refreshCount();
+    },
+    [refreshCount]
+  );
 
-  const removeFromWishlist = useCallback(async (productId: string) => {
-    try {
+  const removeFromWishlist = useCallback(
+    async (productId: string) => {
       await wishlistApi.removeFromWishlist(productId);
       setWishlist((prev) => prev.filter((id) => id !== productId));
-      setCount((prev) => Math.max(0, prev - 1));
-    } catch (error) {
-      if (error instanceof Error && error.message === 'Необходима авторизация') {
-        throw new Error('Войдите в систему, чтобы удалить товар из избранного');
-      }
-      throw error;
-    }
-  }, []);
+      await refreshCount();
+    },
+    [refreshCount]
+  );
 
   const toggleWishlist = useCallback(
     async (productId: string) => {

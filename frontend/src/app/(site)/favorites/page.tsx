@@ -1,40 +1,46 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 
 import * as wishlistApi from '@/shared/api/wishlist';
 import { useWishlist } from '@/shared/lib/hooks';
+import type { CatalogApiProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
+import { mapCatalogApiProductToProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
 import { ProductCard } from '@/views/catalog/ui/ProductsGrid';
 
 import styles from './page.module.css';
 
-interface WishlistProduct {
-  id: string;
-  name: string;
-  slug: string;
-  price: number;
-  comparePrice?: number;
-  images: string[];
-  category: {
-    id: string;
-    name: string;
-    slug: string;
-  };
-  isNew?: boolean;
-  isFeatured?: boolean;
-  stock?: number;
-  onOrder?: boolean;
-  rating?: number;
-  reviewsCount?: number;
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export default function FavoritesPage() {
   const { count, refreshCount } = useWishlist();
-  const [products, setProducts] = useState<WishlistProduct[]>([]);
+  const [products, setProducts] = useState<CatalogApiProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [partnerSettings, setPartnerSettings] = useState<{
+    partnerLogoUrl: string | null;
+    showPartnerIconOnCards: boolean;
+  }>({ partnerLogoUrl: null, showPartnerIconOnCards: true });
+
+  useEffect(() => {
+    const fetchPartnerSettings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/home/partner-products`);
+        if (res.ok) {
+          const data = await res.json();
+          setPartnerSettings({
+            partnerLogoUrl: data.partnerLogoUrl ?? null,
+            showPartnerIconOnCards: data.showPartnerIconOnCards ?? true,
+          });
+        }
+      } catch {
+        // ignore
+      }
+    };
+    fetchPartnerSettings();
+  }, []);
 
   useEffect(() => {
     const loadWishlist = async () => {
@@ -46,11 +52,7 @@ export default function FavoritesPage() {
         await refreshCount();
       } catch (err) {
         if (err instanceof Error) {
-          if (err.message === 'Необходима авторизация') {
-            setError('Войдите в систему, чтобы просмотреть избранные товары');
-          } else {
-            setError(err.message);
-          }
+          setError(err.message);
         } else {
           setError('Произошла ошибка при загрузке избранного');
         }
@@ -60,40 +62,12 @@ export default function FavoritesPage() {
     };
 
     loadWishlist();
-  }, [refreshCount]);
+  }, [refreshCount, count]);
 
-  // Преобразуем формат API в формат Product для ProductCard
-  const mappedProducts = products.map((p, index) => {
-    const price = typeof p.price === 'string' ? parseFloat(p.price) : Number(p.price);
-    const comparePrice = p.comparePrice
-      ? typeof p.comparePrice === 'string'
-        ? parseFloat(p.comparePrice)
-        : Number(p.comparePrice)
-      : undefined;
-
-    return {
-      id: index + 1, // Временный ID для ProductCard
-      originalId: p.id, // Оригинальный ID из API для работы с wishlist
-      slug: p.slug,
-      name: p.name,
-      price,
-      oldPrice: comparePrice,
-      image: p.images?.[0] || '/images/products/door-placeholder.jpg',
-      images: p.images || [],
-      category: p.category.name,
-      categoryId: parseInt(p.category.id) || undefined,
-      rating: p.rating ?? 0,
-      reviewsCount: p.reviewsCount ?? 0,
-      isNew: p.isNew,
-      isFeatured: p.isFeatured,
-      inStock: (p.stock ?? 0) > 0,
-      stock: p.stock,
-      onOrder: p.onOrder ?? false,
-      discount: comparePrice
-        ? Math.round(((comparePrice - price) / comparePrice) * 100)
-        : undefined,
-    };
-  });
+  const mappedProducts = useMemo(
+    () => products.map((p, index) => mapCatalogApiProductToProduct(p, index)),
+    [products]
+  );
 
   if (loading) {
     return (
@@ -139,7 +113,12 @@ export default function FavoritesPage() {
       ) : (
         <div className={styles.grid}>
           {mappedProducts.map((product) => (
-            <ProductCard key={product.originalId || product.slug} product={product} />
+            <ProductCard
+              key={product.originalId ?? product.slug}
+              product={product}
+              partnerLogoUrl={partnerSettings.partnerLogoUrl}
+              showPartnerIconOnCards={partnerSettings.showPartnerIconOnCards}
+            />
           ))}
         </div>
       )}

@@ -19,6 +19,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { SearchProductsDto } from './dto/search-products.dto';
 import { ProductIdsDto } from './dto/product-ids.dto';
 import { CompareProductIdsDto } from './dto/compare-product-ids.dto';
+import { WishlistProductIdsDto } from './dto/wishlist-product-ids.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { RequestWithUser } from '../common/types/request-with-user.types';
 
@@ -95,6 +96,14 @@ export class ProductsController {
   })
   findManyForCompare(@Body() dto: CompareProductIdsDto) {
     return this.productsService.findManyActiveByIdsForCompare(dto.productIds);
+  }
+
+  @Post('wishlist-list')
+  @ApiOperation({
+    summary: 'Товары для избранного по списку ID (публично, только активные, до 500 шт. за запрос)',
+  })
+  findManyForWishlist(@Body() dto: WishlistProductIdsDto) {
+    return this.productsService.findManyActiveByIdsForWishlist(dto.productIds);
   }
 
   @Get('search')

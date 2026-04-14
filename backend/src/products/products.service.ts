@@ -373,6 +373,21 @@ export class ProductsService {
     return this.enrichProductsWithRating(ordered);
   }
 
+  /** Активные товары по ID для избранного (гость и т.п.), порядок как в запросе, до 500 шт. */
+  async findManyActiveByIdsForWishlist(ids: string[]) {
+    const unique = [...new Set(ids.map((id) => id.trim()).filter(Boolean))].slice(0, 500);
+    if (unique.length === 0) {
+      return [];
+    }
+    const rows = await this.prisma.product.findMany({
+      where: { id: { in: unique }, isActive: true },
+      include: this.catalogPublicListInclude(),
+    });
+    const map = new Map(rows.map((p) => [p.id, p]));
+    const ordered = unique.map((id) => map.get(id)).filter((p): p is NonNullable<typeof p> => !!p);
+    return this.enrichProductsWithRating(ordered);
+  }
+
   async findBySlug(slug: string) {
     const product = await this.prisma.product.findUnique({
       where: { slug },

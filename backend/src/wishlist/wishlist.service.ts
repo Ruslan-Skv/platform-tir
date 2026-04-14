@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { ProductsService } from '../products/products.service';
 
 @Injectable()
 export class WishlistService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private productsService: ProductsService,
+  ) {}
 
   async addToWishlist(userId: string, productId: string) {
     // Проверяем, существует ли товар
@@ -71,44 +75,11 @@ export class WishlistService {
   async getWishlist(userId: string) {
     const items = await this.prisma.wishlistItem.findMany({
       where: { userId },
-      include: {
-        product: {
-          include: {
-            category: true,
-          },
-        },
-      },
       orderBy: { createdAt: 'desc' },
+      select: { productId: true },
     });
-
-    const products = items.map((item) => item.product);
-    return this.enrichProductsWithRating(products);
-  }
-
-  private async enrichProductsWithRating<T extends { id: string }>(
-    products: T[],
-  ): Promise<(T & { rating: number; reviewsCount: number })[]> {
-    if (products.length === 0) return [];
-    const productIds = products.map((p) => p.id);
-    const agg = await this.prisma.review.groupBy({
-      by: ['productId'],
-      where: { productId: { in: productIds }, isApproved: true },
-      _avg: { rating: true },
-      _count: { id: true },
-    });
-    const ratingMap = new Map(
-      agg.map((a) => [
-        a.productId,
-        {
-          rating: a._avg.rating ? Math.round(a._avg.rating * 10) / 10 : 0,
-          reviewsCount: a._count.id,
-        },
-      ]),
-    );
-    return products.map((p) => {
-      const r = ratingMap.get(p.id) ?? { rating: 0, reviewsCount: 0 };
-      return { ...p, rating: r.rating, reviewsCount: r.reviewsCount };
-    });
+    const ids = items.map((i) => i.productId);
+    return this.productsService.findManyActiveByIdsForWishlist(ids);
   }
 
   async getWishlistCount(userId: string) {
