@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { seedRemontKvartirCatalog } from './seed-remont-kvartir-catalog';
 import { seedProductCardBadges } from './seed-product-card-badges';
 import * as bcrypt from 'bcrypt';
 import { config } from 'dotenv';
@@ -866,38 +867,15 @@ async function main() {
   console.log('✅ CrmDirection: направления CRM созданы');
 
   // ============================================
-  // РЕМОНТ КВАРТИР: блок и категории
-  // Примечание: переименование title в существующих БД выполняется миграцией 20250324.
+  // РЕМОНТ КВАРТИР: блок, дерево категорий и позиции (полный прайс — см. prisma/remont-kvartir/)
+  // Полная замена каталога: REMONT_KVARTIR_RESEED=1 npx ts-node ... prisma/seed-remont-kvartir-catalog.ts
   // ============================================
-  await prisma.serviceCatalogBlock.upsert({
-    where: { id: 'main' },
-    update: {},
-    create: {
-      id: 'main',
-      title: 'Ремонт квартир',
-      showPricesInPublic: true,
-    },
+  await seedRemontKvartirCatalog(prisma, {
+    fullReseed: false,
+    // Удалить старые демо-категории (painting, electrical, …): REMONT_KVARTIR_DROP_LEGACY=1 в env
+    dropLegacyFlat: process.env.REMONT_KVARTIR_DROP_LEGACY === '1',
   });
-  const serviceCategories = [
-    { name: 'Малярные работы', slug: 'painting', icon: 'PaintBrush', sortOrder: 0 },
-    { name: 'Работы по электрике', slug: 'electrical', icon: 'Bolt', sortOrder: 1 },
-    { name: 'Работы по полам', slug: 'floors', icon: 'Square3Stack3D', sortOrder: 2 },
-    { name: 'Работы по потолкам', slug: 'ceilings', icon: 'Cube', sortOrder: 3 },
-    { name: 'Работы по сантехнике', slug: 'plumbing', icon: 'WrenchScrewdriver', sortOrder: 4 },
-    { name: 'Работы с кафелем', slug: 'tiling', icon: 'Squares2X2', sortOrder: 5 },
-    { name: 'Монтаж дверей', slug: 'door-installation', icon: 'RectangleStack', sortOrder: 6 },
-    { name: 'Монтаж окон', slug: 'window-installation', icon: 'Squares2X2', sortOrder: 7 },
-    { name: 'Монтаж натяжных потолков', slug: 'stretch-ceiling-installation', icon: 'Cube', sortOrder: 8 },
-    { name: 'Монтаж жалюзей', slug: 'blinds-installation', icon: 'ViewColumns', sortOrder: 9 },
-  ];
-  for (const c of serviceCategories) {
-    await prisma.serviceCatalogCategory.upsert({
-      where: { slug: c.slug },
-      update: { name: c.name, icon: c.icon, sortOrder: c.sortOrder },
-      create: { ...c, isActive: true },
-    });
-  }
-  console.log('✅ ServiceCatalog: блок и категории созданы');
+  console.log('✅ ServiceCatalog: каталог «Ремонт квартир» (дерево и позиции) обновлён');
 
   await seedProductCardBadges(prisma);
   console.log('✅ ProductCardBadge: справочник бэйджей карточки товара');
