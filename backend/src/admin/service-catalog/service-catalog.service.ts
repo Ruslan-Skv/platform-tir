@@ -11,6 +11,7 @@ import { CreateServiceCatalogItemDto } from './dto/create-service-catalog-item.d
 import { UpdateServiceCatalogItemDto } from './dto/update-service-catalog-item.dto';
 import { UpdateServiceCatalogBlockDto } from './dto/update-service-catalog-block.dto';
 import { Prisma, ServiceCatalogCategory } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 type CategoryWithIncludes = ServiceCatalogCategory & {
   items: { price: Prisma.Decimal; [key: string]: unknown }[];
@@ -94,6 +95,50 @@ export class ServiceCatalogService {
     await this.findCategoryById(newParentId);
     if (await this.isUnderAncestor(categoryId, newParentId)) {
       throw new BadRequestException('Нельзя сделать родителем свою подкатегорию');
+    }
+  }
+
+  /** Все id категорий в поддереве, включая корень (для удаления и проверок). */
+  private async collectSubtreeCategoryIds(rootId: string): Promise<string[]> {
+    const ids = [rootId];
+    const children = await this.prisma.serviceCatalogCategory.findMany({
+      where: { parentId: rootId },
+      select: { id: true },
+    });
+    for (const { id } of children) {
+      ids.push(...(await this.collectSubtreeCategoryIds(id)));
+    }
+    return ids;
+  }
+
+  /**
+   * Заказы хранят ссылку на catalog item с onDelete: Restrict — без этого удаление ветки падает с P2003.
+   */
+  private async assertCategorySubtreeHasNoBlockingOrderLines(
+    rootCategoryId: string,
+  ): Promise<void> {
+    const categoryIds = await this.collectSubtreeCategoryIds(rootCategoryId);
+    const itemIds = (
+      await this.prisma.serviceCatalogItem.findMany({
+        where: { categoryId: { in: categoryIds } },
+        select: { id: true },
+      })
+    ).map((r) => r.id);
+    if (itemIds.length === 0) return;
+
+    const [serviceOrderLines, orderLines] = await Promise.all([
+      this.prisma.serviceOrderItem.count({
+        where: { serviceCatalogItemId: { in: itemIds } },
+      }),
+      this.prisma.orderServiceItem.count({
+        where: { serviceCatalogItemId: { in: itemIds } },
+      }),
+    ]);
+    const total = serviceOrderLines + orderLines;
+    if (total > 0) {
+      throw new BadRequestException(
+        `Нельзя удалить категорию: по видам работ из этой ветки есть ${total} связанных строк в заказах (услуги уже были в заказах). Удалите или измените эти заказы либо скорректируйте позиции, затем повторите удаление.`,
+      );
     }
   }
 
@@ -215,17 +260,46 @@ export class ServiceCatalogService {
     });
   }
 
+  /**
+   * Удаляет категорию и всё поддерево (дочерние категории → листья сначала).
+   * Позиции удаляются каскадно вместе с категорией.
+   * Если по видам работ есть заказы (FK), удаление невозможно — 400 с пояснением.
+   */
   async removeCategory(id: string) {
-    await this.findCategoryById(id);
-    const childCount = await this.prisma.serviceCatalogCategory.count({
-      where: { parentId: id },
-    });
-    if (childCount > 0) {
-      throw new BadRequestException('Сначала удалите или перенесите дочерние категории');
+    const existing = await this.findCategoryById(id);
+    await this.assertCategorySubtreeHasNoBlockingOrderLines(id);
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const removeRecursive = async (categoryId: string) => {
+          const children = await tx.serviceCatalogCategory.findMany({
+            where: { parentId: categoryId },
+            select: { id: true },
+            orderBy: { sortOrder: 'asc' },
+          });
+          for (const ch of children) {
+            await removeRecursive(ch.id);
+          }
+          await tx.serviceCatalogCategory.delete({ where: { id: categoryId } });
+        };
+        await removeRecursive(id);
+      });
+    } catch (e) {
+      if (e instanceof BadRequestException) {
+        throw e;
+      }
+      if (
+        e instanceof PrismaClientKnownRequestError &&
+        (e.code === 'P2003' || e.code === 'P2014')
+      ) {
+        throw new BadRequestException(
+          'Не удалось удалить категорию: остались связи с заказами или другими данными (возможна гонка при параллельном изменении). Обновите страницу и проверьте заказы.',
+        );
+      }
+      throw e;
     }
-    return this.prisma.serviceCatalogCategory.delete({
-      where: { id },
-    });
+
+    return existing;
   }
 
   // --- Items (admin) ---

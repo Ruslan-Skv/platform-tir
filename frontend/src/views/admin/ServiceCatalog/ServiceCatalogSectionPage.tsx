@@ -79,6 +79,18 @@ function collectDescendantIds(cat: ServiceCatalogCategory): Set<string> {
   return s;
 }
 
+/** Число вложенных категорий во всём поддереве (без самой категории) */
+function countNestedCategories(cat: ServiceCatalogCategory): number {
+  return collectDescendantIds(cat).size;
+}
+
+function buildDeleteCategoryModalMessage(name: string, nestedCategoryCount: number): string {
+  if (nestedCategoryCount > 0) {
+    return `Удалить категорию «${name}»?\n\nБудут также удалены все дочерние и вложенные подкатегории (${nestedCategoryCount}) и все виды работ внутри этой ветки.`;
+  }
+  return `Удалить категорию «${name}»? Все виды работ в этой категории также будут удалены.`;
+}
+
 function findCategoryById(
   cats: ServiceCatalogCategory[],
   id: string
@@ -172,6 +184,7 @@ export function ServiceCatalogSectionPage() {
     type: 'category';
     id: string;
     name: string;
+    nestedCategoryCount: number;
   } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -678,7 +691,12 @@ export function ServiceCatalogSectionPage() {
                             type="button"
                             className={styles.deleteButton}
                             onClick={() =>
-                              setDeleteTarget({ type: 'category', id: cat.id, name: cat.name })
+                              setDeleteTarget({
+                                type: 'category',
+                                id: cat.id,
+                                name: cat.name,
+                                nestedCategoryCount: countNestedCategories(cat),
+                              })
                             }
                             title="Удалить категорию"
                           >
@@ -924,8 +942,16 @@ export function ServiceCatalogSectionPage() {
 
       <ConfirmModal
         isOpen={!!deleteTarget}
-        title="Подтверждение удаления"
-        message={deleteTarget ? `Удалить категорию «${deleteTarget.name}»?` : ''}
+        title={
+          deleteTarget && deleteTarget.nestedCategoryCount > 0
+            ? 'Удаление категории и подкатегорий'
+            : 'Подтверждение удаления'
+        }
+        message={
+          deleteTarget
+            ? buildDeleteCategoryModalMessage(deleteTarget.name, deleteTarget.nestedCategoryCount)
+            : ''
+        }
         confirmText="Удалить"
         cancelText="Отмена"
         onConfirm={handleDelete}

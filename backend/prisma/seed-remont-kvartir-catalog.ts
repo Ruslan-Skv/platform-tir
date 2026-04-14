@@ -2,7 +2,8 @@
  * Полное заполнение каталога «Ремонт квартир»: 12 групп → подкатегории → позиции.
  *
  * Запуск из каталога backend:
- *   npx ts-node -r tsconfig-paths/register prisma/seed-remont-kvartir-catalog.ts
+ *   npm run prisma:seed-remont-kvartir
+ * Подхватывается .env из backend/, затем из корня репозитория (если в проде .env только там).
  *
  * Полная замена каталога (удаляет все категории и позиции услуг, затем создаёт заново):
  *   REMONT_KVARTIR_RESEED=1 npx ts-node -r tsconfig-paths/register prisma/seed-remont-kvartir-catalog.ts
@@ -23,10 +24,14 @@ import { slugifySegment } from './remont-kvartir/slugify';
 
 config({ path: path.join(process.cwd(), '.env') });
 config({ path: path.join(__dirname, '..', '.env') });
+// Монорепозиторий: часто единственный .env в корне проекта (не в backend/)
+config({ path: path.join(__dirname, '..', '..', '.env') });
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
-  throw new Error('DATABASE_URL не задан. Проверьте backend/.env');
+  throw new Error(
+    'DATABASE_URL не задан. Добавьте его в .env в корне репозитория или в backend/.env, либо экспортируйте в окружение.',
+  );
 }
 process.env.DATABASE_URL = databaseUrl;
 

@@ -5,13 +5,16 @@ import * as bcrypt from 'bcrypt';
 import { config } from 'dotenv';
 import * as path from 'path';
 
-// Загружаем .env: из backend/ (cwd при npm run prisma:seed из backend/) и из папки рядом с seed
+// Загружаем .env: cwd → backend/ → корень репозитория (в проде иногда только корневой .env)
 config({ path: path.join(process.cwd(), '.env') });
 config({ path: path.join(__dirname, '..', '.env') });
+config({ path: path.join(__dirname, '..', '..', '.env') });
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
-  throw new Error('DATABASE_URL не задан. Проверьте backend/.env');
+  throw new Error(
+    'DATABASE_URL не задан. Добавьте его в .env в корне или в backend/, либо в окружение процесса.',
+  );
 }
 // Prisma при первом запросе читает process.env.DATABASE_URL — убеждаемся, что он задан
 process.env.DATABASE_URL = databaseUrl;
