@@ -434,20 +434,24 @@ model ServiceCatalogBlock {
 }
 
 model ServiceCatalogCategory {
-  id                   String                @id @default(cuid())
-  name                 String
-  slug                 String                @unique
-  description          String?               @db.Text
-  icon                 String?               // Имя иконки heroicons (PaintBrush, Bolt и т.д.)
-  image                String?               // URL или base64 — при наличии показывается вместо иконки
-  showPricesInPublic   Boolean               @default(true) // Показывать стоимость в публичной части
-  sortOrder            Int                   @default(0)
-  isActive             Boolean               @default(true)
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
-  items       ServiceCatalogItem[]
-  cartServiceItems     CartServiceItem[]
+  id                 String    @id @default(cuid())
+  name               String
+  slug               String    @unique
+  description        String?   @db.Text
+  icon               String? // Имя иконки heroicons (PaintBrush, Bolt и т.д.)
+  image              String? // URL или base64 — при наличии показывается вместо иконки
+  showPricesInPublic Boolean   @default(true) // Показывать стоимость в публичной части
+  sortOrder          Int       @default(0)
+  isActive           Boolean   @default(true)
+  parentId           String?
+  parent             ServiceCatalogCategory?  @relation("ServiceCatalogCategoryChildren", fields: [parentId], references: [id], onDelete: Restrict)
+  children           ServiceCatalogCategory[] @relation("ServiceCatalogCategoryChildren")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  items              ServiceCatalogItem[]
+  cartServiceItems   CartServiceItem[]
 
+  @@index([parentId])
   @@map("service_catalog_categories")
 }
 

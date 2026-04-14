@@ -19,6 +19,8 @@ import { cancelOrderByCustomer, getUserOrder } from '@/shared/api/user-orders';
 import { isAuthRequiredForCartError } from '@/shared/lib/cart-auth-required';
 import { useApprovedOrderGuard } from '@/shared/lib/contexts/ApprovedOrderGuardContext';
 import { useCart } from '@/shared/lib/hooks';
+import { getSafeHref } from '@/shared/lib/sanitize';
+import { serviceCatalogIconMap } from '@/shared/lib/serviceCatalogIcons';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal/ConfirmModal';
 
 import styles from './ServiceCategoryPage.module.css';
@@ -38,8 +40,20 @@ interface CategoryData {
   name: string;
   slug: string;
   description?: string | null;
+  icon?: string | null;
+  image?: string | null;
   items: ServiceCatalogItem[];
   showPricesInPublic: boolean;
+  parent?: { id: string; name: string; slug: string } | null;
+  children?: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    description?: string | null;
+    icon?: string | null;
+    image?: string | null;
+    itemsCount: number;
+  }>;
 }
 
 const formatPrice = (n: number) =>
@@ -697,6 +711,14 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
       <nav className={styles.breadcrumb}>
         <Link href="/catalog/services">Ремонт квартир</Link>
         <span className={styles.breadcrumbSep}>/</span>
+        {data.parent && (
+          <>
+            <Link href={getSafeHref(`/catalog/services/${data.parent.slug}`)}>
+              {data.parent.name}
+            </Link>
+            <span className={styles.breadcrumbSep}>/</span>
+          </>
+        )}
         <span>{data.name}</span>
       </nav>
 
@@ -704,57 +726,101 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
       {data.description && <p className={styles.description}>{data.description}</p>}
 
       <div className={styles.content}>
+        {data.children && data.children.length > 0 && (
+          <section className={styles.subcategoriesSection} aria-label="Подкатегории">
+            <h2 className={styles.sectionTitle}>Подкатегории</h2>
+            <ul className={styles.subcategoriesList}>
+              {data.children.map((ch) => {
+                const IconC = !ch.image && ch.icon ? serviceCatalogIconMap[ch.icon] : null;
+                return (
+                  <li key={ch.id}>
+                    <Link
+                      href={getSafeHref(`/catalog/services/${ch.slug}`)}
+                      className={styles.subcategoryCard}
+                    >
+                      {ch.image ? (
+                        <span className={styles.subcategoryMedia}>
+                          <img src={ch.image} alt="" className={styles.subcategoryImg} />
+                        </span>
+                      ) : IconC ? (
+                        <span className={styles.subcategoryMedia}>
+                          <IconC className={styles.subcategoryIcon} aria-hidden />
+                        </span>
+                      ) : null}
+                      <span className={styles.subcategoryTitle}>{ch.name}</span>
+                      {ch.itemsCount > 0 && (
+                        <span className={styles.subcategoryCount}>{ch.itemsCount} видов работ</span>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
         <section className={styles.itemsSection}>
           <h2 className={styles.sectionTitle}>Виды работ</h2>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Название</th>
-                {showPrices && (
-                  <>
-                    <th>Цена за ед.</th>
-                    <th>Ед. изм.</th>
-                    <th></th>
-                  </>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {data.items.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.name}</td>
+          {data.items.length === 0 ? (
+            <p className={styles.emptyItemsHint}>
+              {data.children && data.children.length > 0
+                ? 'Выберите подкатегорию выше или перейдите в неё, чтобы увидеть виды работ.'
+                : 'В этой категории пока нет позиций.'}
+            </p>
+          ) : null}
+          {data.items.length > 0 ? (
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Название</th>
                   {showPrices && (
                     <>
-                      <td>{item.price !== undefined ? formatPrice(item.price) : '—'}</td>
-                      <td>{item.unit}</td>
-                      <td>
-                        {item.price !== undefined &&
-                          (() => {
-                            const isInCalc = activeCalcLines.some((l) => l.itemId === item.id);
-                            return (
-                              <button
-                                type="button"
-                                className={`${styles.addButton} ${isInCalc ? styles.addButtonSelected : ''}`}
-                                onClick={() => void addToCalculator(item)}
-                                title={
-                                  isInCalc ? 'В расчёте (нажмите, чтобы добавить ещё)' : 'В расчёт'
-                                }
-                              >
-                                {isInCalc ? (
-                                  <CheckCircleIconSolid className={styles.addButtonIcon} />
-                                ) : (
-                                  <PlusCircleIcon className={styles.addButtonIcon} />
-                                )}
-                              </button>
-                            );
-                          })()}
-                      </td>
+                      <th>Цена за ед.</th>
+                      <th>Ед. изм.</th>
+                      <th></th>
                     </>
                   )}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data.items.map((item) => (
+                  <tr key={item.id}>
+                    <td>{item.name}</td>
+                    {showPrices && (
+                      <>
+                        <td>{item.price !== undefined ? formatPrice(item.price) : '—'}</td>
+                        <td>{item.unit}</td>
+                        <td>
+                          {item.price !== undefined &&
+                            (() => {
+                              const isInCalc = activeCalcLines.some((l) => l.itemId === item.id);
+                              return (
+                                <button
+                                  type="button"
+                                  className={`${styles.addButton} ${isInCalc ? styles.addButtonSelected : ''}`}
+                                  onClick={() => void addToCalculator(item)}
+                                  title={
+                                    isInCalc
+                                      ? 'В расчёте (нажмите, чтобы добавить ещё)'
+                                      : 'В расчёт'
+                                  }
+                                >
+                                  {isInCalc ? (
+                                    <CheckCircleIconSolid className={styles.addButtonIcon} />
+                                  ) : (
+                                    <PlusCircleIcon className={styles.addButtonIcon} />
+                                  )}
+                                </button>
+                              );
+                            })()}
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : null}
         </section>
 
         {showPrices && (

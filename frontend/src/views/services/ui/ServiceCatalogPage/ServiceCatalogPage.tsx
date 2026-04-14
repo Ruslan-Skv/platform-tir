@@ -28,6 +28,9 @@ interface ServiceCatalogCategory {
   icon?: string | null;
   image?: string | null;
   items: ServiceCatalogItem[];
+  children?: ServiceCatalogCategory[];
+  /** Всего видов работ в этой категории и во всех вложенных */
+  totalWorkTypes?: number;
 }
 
 interface CatalogData {
@@ -126,10 +129,15 @@ export function ServiceCatalogPage() {
                 {cat.description && (
                   <p className={styles.categoryCardDescription}>{cat.description}</p>
                 )}
-                {cat.items.length > 0 && (
+                {(cat.totalWorkTypes ?? cat.items.length) > 0 && (
                   <span className={styles.categoryCardCount}>
-                    {cat.items.length} вид
-                    {cat.items.length === 1 ? '' : cat.items.length < 5 ? 'а' : 'ов'} работ
+                    {cat.totalWorkTypes ?? cat.items.length} вид
+                    {(cat.totalWorkTypes ?? cat.items.length) === 1
+                      ? ''
+                      : (cat.totalWorkTypes ?? cat.items.length) < 5
+                        ? 'а'
+                        : 'ов'}{' '}
+                    работ
                   </span>
                 )}
               </Link>

@@ -10,7 +10,14 @@ import { UpdateServiceCatalogCategoryDto } from './dto/update-service-catalog-ca
 import { CreateServiceCatalogItemDto } from './dto/create-service-catalog-item.dto';
 import { UpdateServiceCatalogItemDto } from './dto/update-service-catalog-item.dto';
 import { UpdateServiceCatalogBlockDto } from './dto/update-service-catalog-block.dto';
-import { Prisma } from '@prisma/client';
+import { Prisma, ServiceCatalogCategory } from '@prisma/client';
+
+type CategoryWithIncludes = ServiceCatalogCategory & {
+  items: { price: Prisma.Decimal; [key: string]: unknown }[];
+  _count: { items: number };
+};
+
+type CategoryTreeNode = CategoryWithIncludes & { children: CategoryTreeNode[] };
 
 @Injectable()
 export class ServiceCatalogService {
@@ -41,6 +48,55 @@ export class ServiceCatalogService {
     });
   }
 
+  private buildCategoryTree(flat: CategoryWithIncludes[]): CategoryTreeNode[] {
+    const map = new Map<string, CategoryTreeNode>();
+    for (const c of flat) {
+      map.set(c.id, { ...c, children: [] });
+    }
+    const roots: CategoryTreeNode[] = [];
+    for (const c of flat) {
+      const node = map.get(c.id)!;
+      if (c.parentId && map.has(c.parentId)) {
+        map.get(c.parentId)!.children.push(node);
+      } else {
+        roots.push(node);
+      }
+    }
+    const sortRec = (nodes: CategoryTreeNode[]) => {
+      nodes.sort((a, b) => a.sortOrder - b.sortOrder);
+      for (const n of nodes) sortRec(n.children);
+    };
+    sortRec(roots);
+    return roots;
+  }
+
+  /** Подняться от nodeId к корню: если встретится possibleAncestorId — nodeId лежит в поддереве possibleAncestorId */
+  private async isUnderAncestor(possibleAncestorId: string, nodeId: string): Promise<boolean> {
+    let current: string | null = nodeId;
+    for (let i = 0; i < 512 && current; i++) {
+      if (current === possibleAncestorId) return true;
+      const row: { parentId: string | null } | null =
+        await this.prisma.serviceCatalogCategory.findUnique({
+          where: { id: current },
+          select: { parentId: true },
+        });
+      current = row?.parentId ?? null;
+    }
+    return false;
+  }
+
+  private async assertValidParentMove(categoryId: string, newParentId: string | null | undefined) {
+    if (newParentId === undefined) return;
+    if (newParentId === null) return;
+    if (newParentId === categoryId) {
+      throw new BadRequestException('Категория не может быть родителем самой себе');
+    }
+    await this.findCategoryById(newParentId);
+    if (await this.isUnderAncestor(categoryId, newParentId)) {
+      throw new BadRequestException('Нельзя сделать родителем свою подкатегорию');
+    }
+  }
+
   // --- Categories (admin) ---
   async createCategory(dto: CreateServiceCatalogCategoryDto) {
     const existing = await this.prisma.serviceCatalogCategory.findUnique({
@@ -49,6 +105,10 @@ export class ServiceCatalogService {
     if (existing) {
       throw new ConflictException(`Категория с slug "${dto.slug}" уже существует`);
     }
+    if (dto.parentId) {
+      await this.findCategoryById(dto.parentId);
+    }
+
     return this.prisma.serviceCatalogCategory.create({
       data: {
         name: dto.name,
@@ -59,6 +119,7 @@ export class ServiceCatalogService {
         showPricesInPublic: dto.showPricesInPublic ?? true,
         sortOrder: dto.sortOrder ?? 0,
         isActive: dto.isActive ?? true,
+        parentId: dto.parentId ?? null,
       },
       include: { _count: { select: { items: true } } },
     });
@@ -68,7 +129,7 @@ export class ServiceCatalogService {
     const where: Prisma.ServiceCatalogCategoryWhereInput = {};
     if (!includeInactive) where.isActive = true;
 
-    return this.prisma.serviceCatalogCategory.findMany({
+    const flat = await this.prisma.serviceCatalogCategory.findMany({
       where,
       include: {
         _count: { select: { items: true } },
@@ -78,6 +139,8 @@ export class ServiceCatalogService {
       },
       orderBy: { sortOrder: 'asc' },
     });
+
+    return this.buildCategoryTree(flat as CategoryWithIncludes[]);
   }
 
   async findCategoryById(id: string) {
@@ -98,6 +161,14 @@ export class ServiceCatalogService {
       where: { slug, isActive: true },
       include: {
         items: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
+        parent: { select: { id: true, name: true, slug: true } },
+        children: {
+          where: { isActive: true },
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            _count: { select: { items: true } },
+          },
+        },
       },
     });
     if (!cat) {
@@ -116,15 +187,42 @@ export class ServiceCatalogService {
         throw new ConflictException(`Категория с slug "${dto.slug}" уже существует`);
       }
     }
+    if (dto.parentId !== undefined) {
+      await this.assertValidParentMove(id, dto.parentId ?? null);
+    }
+
+    const data: Prisma.ServiceCatalogCategoryUpdateInput = {};
+    if (dto.name !== undefined) data.name = dto.name;
+    if (dto.slug !== undefined) data.slug = dto.slug;
+    if (dto.description !== undefined) data.description = dto.description;
+    if (dto.icon !== undefined) data.icon = dto.icon;
+    if (dto.image !== undefined) data.image = dto.image;
+    if (dto.showPricesInPublic !== undefined) data.showPricesInPublic = dto.showPricesInPublic;
+    if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
+    if (dto.isActive !== undefined) data.isActive = dto.isActive;
+    if (dto.parentId !== undefined) {
+      if (dto.parentId === null) {
+        data.parent = { disconnect: true };
+      } else {
+        data.parent = { connect: { id: dto.parentId } };
+      }
+    }
+
     return this.prisma.serviceCatalogCategory.update({
       where: { id },
-      data: dto,
+      data,
       include: { _count: { select: { items: true } } },
     });
   }
 
   async removeCategory(id: string) {
     await this.findCategoryById(id);
+    const childCount = await this.prisma.serviceCatalogCategory.count({
+      where: { parentId: id },
+    });
+    if (childCount > 0) {
+      throw new BadRequestException('Сначала удалите или перенесите дочерние категории');
+    }
     return this.prisma.serviceCatalogCategory.delete({
       where: { id },
     });
@@ -215,48 +313,18 @@ export class ServiceCatalogService {
     });
   }
 
-  // --- Public ---
-  async getPublicCatalog() {
-    const block = await this.getBlock();
-    const categories = await this.prisma.serviceCatalogCategory.findMany({
-      where: { isActive: true },
-      include: {
-        items: {
-          where: { isActive: true },
-          orderBy: { sortOrder: 'asc' },
-        },
-      },
-      orderBy: { sortOrder: 'asc' },
-    });
-
-    return {
-      block: {
-        id: block.id,
-        title: block.title,
-      },
-      categories: categories.map((c) => ({
-        ...c,
-        showPricesInPublic: c.showPricesInPublic,
-        items: c.items.map((item) => {
-          const base = {
-            id: item.id,
-            name: item.name,
-            description: item.description,
-            unit: item.unit,
-            sortOrder: item.sortOrder,
-          };
-          if (c.showPricesInPublic) {
-            return { ...base, price: Number(item.price) };
-          }
-          return base;
-        }),
-      })),
-    };
-  }
-
-  async getPublicCategoryBySlug(slug: string) {
-    const category = await this.findCategoryBySlug(slug);
-    const items = category.items.map((item) => {
+  private mapPublicItems(
+    showPrices: boolean,
+    items: {
+      id: string;
+      name: string;
+      description: string | null;
+      unit: string;
+      sortOrder: number;
+      price: Prisma.Decimal;
+    }[],
+  ) {
+    return items.map((item) => {
       const base = {
         id: item.id,
         name: item.name,
@@ -264,19 +332,96 @@ export class ServiceCatalogService {
         unit: item.unit,
         sortOrder: item.sortOrder,
       };
-      if (category.showPricesInPublic) {
+      if (showPrices) {
         return { ...base, price: Number(item.price) };
       }
       return base;
     });
+  }
+
+  private mapPublicCategoryTree(nodes: CategoryTreeNode[]): Record<string, unknown>[] {
+    return nodes.map((c) => {
+      const childMaps = this.mapPublicCategoryTree(c.children);
+      const ownItems = this.mapPublicItems(
+        c.showPricesInPublic,
+        c.items as Parameters<typeof this.mapPublicItems>[1],
+      );
+      const childTotal = childMaps.reduce(
+        (s, ch) => s + (typeof ch.totalWorkTypes === 'number' ? ch.totalWorkTypes : 0),
+        0,
+      );
+      const totalWorkTypes = ownItems.length + childTotal;
+      const out: Record<string, unknown> = {
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        description: c.description,
+        icon: c.icon,
+        image: c.image,
+        showPricesInPublic: c.showPricesInPublic,
+        items: ownItems,
+        totalWorkTypes,
+      };
+      if (childMaps.length > 0) {
+        out.children = childMaps;
+      }
+      return out;
+    });
+  }
+
+  async getPublicCatalog() {
+    const block = await this.getBlock();
+    const flat = await this.prisma.serviceCatalogCategory.findMany({
+      where: { isActive: true },
+      include: {
+        items: {
+          where: { isActive: true },
+          orderBy: { sortOrder: 'asc' },
+        },
+        _count: { select: { items: true } },
+      },
+      orderBy: { sortOrder: 'asc' },
+    });
+
+    const tree = this.buildCategoryTree(flat as unknown as CategoryWithIncludes[]);
+
     return {
-      ...category,
-      items,
-      showPricesInPublic: category.showPricesInPublic,
+      block: {
+        id: block.id,
+        title: block.title,
+      },
+      categories: this.mapPublicCategoryTree(tree),
     };
   }
 
-  // --- Расчёт стоимости ---
+  async getPublicCategoryBySlug(slug: string) {
+    const category = await this.findCategoryBySlug(slug);
+    const items = this.mapPublicItems(category.showPricesInPublic, category.items);
+    const children =
+      category.children?.map((ch) => ({
+        id: ch.id,
+        name: ch.name,
+        slug: ch.slug,
+        description: ch.description,
+        icon: ch.icon,
+        image: ch.image,
+        itemsCount: ch._count.items,
+      })) ?? [];
+
+    return {
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      description: category.description,
+      icon: category.icon,
+      image: category.image,
+      items,
+      showPricesInPublic: category.showPricesInPublic,
+      parent: category.parent,
+      children,
+    };
+  }
+
   async calculateTotal(items: { itemId: string; quantity: number }[]) {
     if (!items.length) {
       return { total: 0, lines: [], showPricesInPublic: false };

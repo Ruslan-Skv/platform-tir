@@ -30,8 +30,24 @@ interface ServiceCatalogCategory {
   image: string | null;
   sortOrder: number;
   isActive: boolean;
+  parentId?: string | null;
+  children?: ServiceCatalogCategory[];
   items?: ServiceCatalogItem[];
   _count?: { items: number };
+}
+
+function flattenServiceCategories(
+  cats: ServiceCatalogCategory[],
+  level = 0
+): Array<{ cat: ServiceCatalogCategory; level: number }> {
+  const out: Array<{ cat: ServiceCatalogCategory; level: number }> = [];
+  for (const c of cats) {
+    out.push({ cat: c, level });
+    if (c.children?.length) {
+      out.push(...flattenServiceCategories(c.children, level + 1));
+    }
+  }
+  return out;
 }
 
 const formatPrice = (n: number) =>
@@ -206,12 +222,15 @@ export function ServiceCatalogItemsPage() {
             Создайте категории в разделе «Категории», затем добавляйте виды работ.
           </p>
         ) : (
-          categories.map((cat) => {
+          flattenServiceCategories(categories).map(({ cat, level }) => {
             const isCollapsed = collapsedCategoryIds.has(cat.id);
             const itemsCount = cat.items?.length ?? 0;
             return (
               <div key={cat.id} className={styles.categoryBlock}>
-                <div className={styles.categoryBlockHeader}>
+                <div
+                  className={styles.categoryBlockHeader}
+                  style={{ paddingLeft: `${10 + level * 16}px` }}
+                >
                   <button
                     type="button"
                     className={styles.expandButton}
