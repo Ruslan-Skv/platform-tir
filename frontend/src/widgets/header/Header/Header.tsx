@@ -14,6 +14,7 @@ import React, { Suspense, useEffect, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
+import { useUserAuth } from '@/features/auth/context/UserAuthContext';
 import { useTheme } from '@/features/theme';
 import { Logo } from '@/shared/ui/Logo';
 import { useChatSupportOpen } from '@/widgets/chat-support';
@@ -160,6 +161,7 @@ function HeaderChrome({
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
   const chatSupport = useChatSupportOpen();
+  const { isAuthenticated } = useUserAuth();
   const { isDarkTheme, toggleTheme } = useTheme();
 
   useEffect(() => {
@@ -184,14 +186,16 @@ function HeaderChrome({
                 <a href={PHONE_LINK} className={styles.mobileHeaderIcon} aria-label="Позвонить">
                   <PhoneIcon className={styles.mobileHeaderIconSvg} />
                 </a>
-                <button
-                  type="button"
-                  className={styles.mobileHeaderIcon}
-                  onClick={() => chatSupport?.openChat()}
-                  aria-label="Чат поддержки"
-                >
-                  <ChatBubbleLeftRightIcon className={styles.mobileHeaderIconSvg} />
-                </button>
+                {isAuthenticated ? (
+                  <button
+                    type="button"
+                    className={styles.mobileHeaderIcon}
+                    onClick={() => chatSupport?.openChat()}
+                    aria-label="Чат поддержки"
+                  >
+                    <ChatBubbleLeftRightIcon className={styles.mobileHeaderIconSvg} />
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className={styles.mobileHeaderIcon}
