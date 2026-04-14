@@ -185,7 +185,13 @@ export const TopBar: React.FC<TopBarProps> = ({ catalogSearch }) => {
             </div>
           )}
           {/* Сравнение товаров (иконка как в карточках товаров) */}
-          <button onClick={handleCompareClick} className={styles.utilityButton} type="button">
+          <button
+            onClick={handleCompareClick}
+            className={styles.utilityButton}
+            type="button"
+            aria-label="Сравнение"
+            data-tooltip="Сравнение"
+          >
             <div className={styles.iconWrapper}>
               <span className={`${styles.icon} ${styles.iconCompare}`} aria-hidden>
                 ⚖
@@ -202,6 +208,8 @@ export const TopBar: React.FC<TopBarProps> = ({ catalogSearch }) => {
             onClick={() => router.push('/favorites')}
             className={styles.utilityButton}
             type="button"
+            aria-label="Избранное"
+            data-tooltip="Избранное"
           >
             <div className={styles.iconWrapper}>
               <HeartIcon className={styles.icon} />
@@ -217,6 +225,8 @@ export const TopBar: React.FC<TopBarProps> = ({ catalogSearch }) => {
             onClick={() => router.push('/cart')}
             className={styles.utilityButton}
             type="button"
+            aria-label="Корзина"
+            data-tooltip="Корзина"
           >
             <div className={styles.iconWrapper}>
               <ShoppingCartIcon className={styles.icon} />
@@ -232,8 +242,8 @@ export const TopBar: React.FC<TopBarProps> = ({ catalogSearch }) => {
             <Link
               href="/admin"
               className={styles.utilityButton}
-              title="Перейти в админку"
               aria-label="Админка"
+              data-tooltip="Перейти в админку"
             >
               <Cog6ToothIcon className={styles.icon} />
               <span className={styles.utilityText}></span>
@@ -241,7 +251,13 @@ export const TopBar: React.FC<TopBarProps> = ({ catalogSearch }) => {
           )}
 
           {/* Личный кабинет */}
-          <button onClick={handleProfileClick} className={styles.utilityButton} type="button">
+          <button
+            onClick={handleProfileClick}
+            className={styles.utilityButton}
+            type="button"
+            aria-label={isAuthenticated ? 'Профиль' : 'Войти'}
+            data-tooltip={isAuthenticated ? 'Профиль' : 'Войти'}
+          >
             {isAuthenticated && user ? (
               <>
                 {user.avatar && !avatarLoadError ? (
@@ -271,7 +287,13 @@ export const TopBar: React.FC<TopBarProps> = ({ catalogSearch }) => {
           </button>
 
           {/* Переключение темы */}
-          <button onClick={toggleTheme} className={styles.utilityButton} type="button">
+          <button
+            onClick={toggleTheme}
+            className={styles.utilityButton}
+            type="button"
+            aria-label={isDarkTheme ? 'Светлая тема' : 'Тёмная тема'}
+            data-tooltip={isDarkTheme ? 'Светлая тема' : 'Тёмная тема'}
+          >
             {isDarkTheme ? (
               <SunIcon className={styles.icon} />
             ) : (

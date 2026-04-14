@@ -35,7 +35,7 @@
   white-space: nowrap;
 }
 
-/* Сами колонки — из ProductsGrid.module.css (.grid + .gridMobile2); зазор от заголовка — у .header */
+/* Сами колонки — из ProductsGrid (.grid + .gridDesktop4 + .gridMobile2); зазор — у .header */
 .productsGrid {
   margin-top: 0;
   max-width: 100%;

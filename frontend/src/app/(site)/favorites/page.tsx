@@ -130,7 +130,7 @@ export default function FavoritesPage() {
         </div>
       ) : (
         <div
-          className={`${styles.productsGrid} ${catalogGridStyles.grid} ${catalogGridStyles.gridMobile2}`}
+          className={`${styles.productsGrid} ${catalogGridStyles.grid} ${catalogGridStyles.gridDesktop4} ${catalogGridStyles.gridMobile2}`}
         >
           {mappedProducts.map((product) => (
             <ProductCard

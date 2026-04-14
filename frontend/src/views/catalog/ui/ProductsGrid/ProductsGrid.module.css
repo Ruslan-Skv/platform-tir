@@ -105,16 +105,29 @@
   padding: 0 0.5rem;
 }
 
+/* Модификатор: 4 колонки на широком экране (избранное и т.п.) */
+.grid.gridDesktop4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
 /* Большие экраны */
 @media (width <= 1280px) {
   .grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  .grid.gridDesktop4 {
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
 /* Планшеты */
 @media (width <= 1024px) {
   .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grid.gridDesktop4 {
     grid-template-columns: repeat(2, 1fr);
   }
 }
