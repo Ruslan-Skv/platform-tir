@@ -1,5 +1,5 @@
 .page {
-  padding: 1.5rem;
+  padding: 1rem 1.25rem;
   max-width: 1200px;
   color: #1f2937;
 }
@@ -8,7 +8,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .headerActions {
@@ -17,17 +17,17 @@
 }
 
 .title {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
   margin: 0;
   color: #1f2937;
 }
 
 .viewLink {
-  padding: 0.5rem 1rem;
+  padding: 0.35rem 0.65rem;
   color: rgb(59 130 246);
   text-decoration: none;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
 }
 
 .viewLink:hover {
@@ -35,9 +35,9 @@
 }
 
 .message {
-  padding: 0.75rem 1rem;
+  padding: 0.45rem 0.65rem;
   border-radius: 6px;
-  margin-bottom: 1rem;
+  margin-bottom: 0.65rem;
 }
 
 .message.success {
@@ -51,17 +51,17 @@
 }
 
 .section {
-  margin-bottom: 2rem;
-  padding: 1rem;
+  margin-bottom: 1.25rem;
+  padding: 0.65rem 0.75rem;
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
 }
 
 .sectionTitle {
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 600;
-  margin: 0 0 1rem;
+  margin: 0 0 0.5rem;
   color: #374151;
 }
 
@@ -72,16 +72,88 @@
 }
 
 .categoryBlock {
-  margin-bottom: 2rem;
-  padding: 1rem;
-  background: #f9fafb;
+  margin-bottom: 0.65rem;
+  padding: 0.5rem 0.75rem;
   border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-sizing: border-box;
+}
+
+.categoryBlockParent {
+  background: #fff;
+  border-left: 4px solid #2563eb;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 8%);
+}
+
+.categoryBlockParent .categoryBlockHeader {
+  background: #ccfbf1;
+  margin: -0.5rem -0.75rem 0.45rem -0.75rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px 6px 0 0;
+}
+
+.categoryBlockParent:not(:has(.itemsTable)) .categoryBlockHeader {
+  margin-bottom: 0;
+  border-radius: 6px;
+}
+
+.categoryBlockChild {
+  background: #f1f5f9;
+  border-left: 3px solid #64748b;
 }
 
 .categoryBlockHeader {
   display: flex;
   align-items: center;
+  gap: 0.35rem;
+}
+
+.categoryHeaderControls {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+
+.categoryHeaderMain {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.nestedToggleButton {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: #fff;
+  border: 1px solid #0d9488;
+  border-radius: 5px;
+  color: #0f766e;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.nestedToggleButton:hover {
+  background: #ccfbf1;
+  border-color: #0f766e;
+  color: #134e4a;
+}
+
+.nestedToggleIcon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .categoryBlock:not(:has(.itemsTable)) .categoryBlockHeader {
@@ -89,21 +161,21 @@
 }
 
 .categoryBlock:has(.itemsTable) .categoryBlockHeader {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.45rem;
 }
 
 .expandButton {
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
   background: #e5e7eb;
   border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 1.25rem;
+  border-radius: 5px;
+  font-size: 1.05rem;
   font-weight: 600;
   line-height: 1;
   color: #374151;
@@ -121,15 +193,53 @@
 .categoryBlockCount {
   font-weight: 500;
   color: #6b7280;
-  font-size: 0.9375rem;
+  font-size: 0.8125rem;
 }
 
 .categoryBlockTitle {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 0.9375rem;
+  font-weight: 700;
   margin: 0;
-  color: #374151;
+  color: #1e293b;
   flex: 1;
+  min-width: 0;
+}
+
+.categoryTitleRow {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.parentNestedStats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.05rem;
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #0f766e;
+  line-height: 1.2;
+  text-align: right;
+}
+
+.parentNestedStatLine {
+  white-space: nowrap;
+}
+
+.parentNestedStatValue {
+  font-weight: 700;
+  color: #134e4a;
+}
+
+.categoryBlockTitleNested {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
 }
 
 .categoryBlockIcon {
@@ -155,13 +265,13 @@
 .itemsTable {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   table-layout: fixed;
 }
 
 .itemsTable th,
 .itemsTable td {
-  padding: 0.5rem 0.75rem;
+  padding: 0.3rem 0.45rem;
   text-align: left;
   border-bottom: 1px solid #e5e7eb;
 }
@@ -195,20 +305,20 @@
 }
 
 .input {
-  padding: 0.5rem 0.75rem;
+  padding: 0.3rem 0.45rem;
   border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.9375rem;
-  min-width: 120px;
+  border-radius: 5px;
+  font-size: 0.875rem;
+  min-width: 100px;
 }
 
 .nameTextarea {
   width: 100%;
-  min-height: 2.5rem;
-  padding: 0.5rem 0.75rem;
+  min-height: 2rem;
+  padding: 0.3rem 0.45rem;
   border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.9375rem;
+  border-radius: 5px;
+  font-size: 0.875rem;
   font-family: inherit;
   resize: vertical;
   box-sizing: border-box;
@@ -220,12 +330,12 @@
 }
 
 .saveButton {
-  padding: 0.5rem 1rem;
+  padding: 0.3rem 0.6rem;
   background: rgb(34 197 94);
   color: white;
   border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  border-radius: 5px;
+  font-size: 0.8125rem;
   cursor: pointer;
 }
 
@@ -234,11 +344,11 @@
 }
 
 .cancelButton {
-  padding: 0.5rem 1rem;
+  padding: 0.3rem 0.6rem;
   background: #f3f4f6;
   border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  border-radius: 5px;
+  font-size: 0.8125rem;
   cursor: pointer;
 }
 
@@ -247,8 +357,8 @@
 }
 
 .smallButton {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.8125rem;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.75rem;
   background: #e5e7eb;
   border: 1px solid #d1d5db;
   border-radius: 4px;
@@ -267,8 +377,8 @@
 }
 
 .editButton {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -285,8 +395,8 @@
 }
 
 .deleteButton {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -304,8 +414,8 @@
 }
 
 .addItemRow td {
-  padding-top: 0.75rem;
-  padding-bottom: 0.75rem;
+  padding-top: 0.45rem;
+  padding-bottom: 0.45rem;
   vertical-align: middle;
 }
 
@@ -315,12 +425,12 @@
 }
 
 .addItemButton {
-  margin-top: 0.5rem;
-  padding: 0.5rem 1rem;
+  margin-top: 0.35rem;
+  padding: 0.3rem 0.65rem;
   background: #e5e7eb;
   border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  border-radius: 5px;
+  font-size: 0.8125rem;
   cursor: pointer;
 }
 
@@ -354,8 +464,37 @@
   color: #f9fafb;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryBlock {
-  background: #171717;
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryBlockParent {
+  background: #1e293b;
+  border-color: #334155;
+  border-left-color: #3b82f6;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 35%);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryBlockChild {
+  background: #0f172a;
+  border-color: #334155;
+  border-left-color: #94a3b8;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryBlockParent .categoryBlockHeader {
+  background: rgb(45 212 191 / 0.18);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryBlockTitle {
+  color: #f1f5f9;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryBlockTitleNested {
+  color: #cbd5e1;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .parentNestedStats {
+  color: #99f6e4;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .parentNestedStatValue {
+  color: #ccfbf1;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .expandButton {
@@ -369,12 +508,20 @@
   border-color: #6b7280;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryBlockCount {
-  color: #9ca3af;
+:where(html[data-theme='dark'], [data-app-theme='dark']) .nestedToggleButton {
+  background: #134e4a;
+  border-color: #2dd4bf;
+  color: #ccfbf1;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryBlockTitle {
-  color: #e5e7eb;
+:where(html[data-theme='dark'], [data-app-theme='dark']) .nestedToggleButton:hover {
+  background: #115e59;
+  border-color: #5eead4;
+  color: #f0fdfa;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryBlockCount {
+  color: #9ca3af;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .categoryBlockIconSvg {

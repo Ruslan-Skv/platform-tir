@@ -1,5 +1,7 @@
 'use client';
 
+import { ChevronsDown, ChevronsUp } from 'lucide-react';
+
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
@@ -50,6 +52,27 @@ function flattenServiceCategories(
   return out;
 }
 
+/** Все id дочерних категорий (рекурсивно), без самой `node`. */
+function collectDescendantCategoryIds(node: ServiceCatalogCategory): string[] {
+  const ids: string[] = [];
+  if (!node.children?.length) return ids;
+  for (const ch of node.children) {
+    ids.push(ch.id, ...collectDescendantCategoryIds(ch));
+  }
+  return ids;
+}
+
+/** Сумма длин `items` по всем вложенным категориям (без учёта позиций у самой `node`). */
+function countItemsInDescendantCategories(node: ServiceCatalogCategory): number {
+  if (!node.children?.length) return 0;
+  let n = 0;
+  for (const ch of node.children) {
+    n += ch.items?.length ?? 0;
+    n += countItemsInDescendantCategories(ch);
+  }
+  return n;
+}
+
 const formatPrice = (n: number) =>
   new Intl.NumberFormat('ru-RU', { style: 'decimal', minimumFractionDigits: 0 }).format(n);
 
@@ -82,6 +105,21 @@ export function ServiceCatalogItemsPage() {
         next.delete(categoryId);
       } else {
         next.add(categoryId);
+      }
+      return next;
+    });
+  };
+
+  const toggleAllDescendantsCollapsed = (parent: ServiceCatalogCategory) => {
+    const ids = collectDescendantCategoryIds(parent);
+    if (ids.length === 0) return;
+    setCollapsedCategoryIds((prev) => {
+      const next = new Set(prev);
+      const allCollapsed = ids.every((id) => next.has(id));
+      if (allCollapsed) {
+        for (const id of ids) next.delete(id);
+      } else {
+        for (const id of ids) next.add(id);
       }
       return next;
     });
@@ -225,36 +263,91 @@ export function ServiceCatalogItemsPage() {
           flattenServiceCategories(categories).map(({ cat, level }) => {
             const isCollapsed = collapsedCategoryIds.has(cat.id);
             const itemsCount = cat.items?.length ?? 0;
+            const descendantIds =
+              level === 0 && cat.children?.length ? collectDescendantCategoryIds(cat) : [];
+            const nestedGroupCount = descendantIds.length;
+            const nestedItemsCount =
+              level === 0 && cat.children?.length ? countItemsInDescendantCategories(cat) : 0;
+            const allNestedCollapsed =
+              descendantIds.length > 0 && descendantIds.every((id) => collapsedCategoryIds.has(id));
             return (
-              <div key={cat.id} className={styles.categoryBlock}>
-                <div
-                  className={styles.categoryBlockHeader}
-                  style={{ paddingLeft: `${10 + level * 16}px` }}
-                >
-                  <button
-                    type="button"
-                    className={styles.expandButton}
-                    onClick={() => toggleCategory(cat.id)}
-                    title={isCollapsed ? 'Развернуть' : 'Свернуть'}
-                    aria-expanded={!isCollapsed}
-                  >
-                    {isCollapsed ? '+' : '−'}
-                  </button>
-                  <h3 className={styles.categoryBlockTitle}>
-                    {cat.image ? (
-                      <img src={cat.image} alt="" className={styles.categoryBlockImage} />
-                    ) : cat.icon && serviceCatalogIconMap[cat.icon] ? (
-                      <span className={styles.categoryBlockIcon}>
-                        {React.createElement(serviceCatalogIconMap[cat.icon], {
-                          className: styles.categoryBlockIconSvg,
-                        })}
-                      </span>
+              <div
+                key={cat.id}
+                className={`${styles.categoryBlock} ${level === 0 ? styles.categoryBlockParent : styles.categoryBlockChild}`}
+                style={level > 0 ? { marginLeft: `calc(${level} * 2rem)` } : undefined}
+              >
+                <div className={styles.categoryBlockHeader}>
+                  <div className={styles.categoryHeaderControls}>
+                    <button
+                      type="button"
+                      className={styles.expandButton}
+                      onClick={() => toggleCategory(cat.id)}
+                      title={isCollapsed ? 'Развернуть' : 'Свернуть'}
+                      aria-expanded={!isCollapsed}
+                    >
+                      {isCollapsed ? '+' : '−'}
+                    </button>
+                    {descendantIds.length > 0 ? (
+                      <button
+                        type="button"
+                        className={styles.nestedToggleButton}
+                        onClick={() => toggleAllDescendantsCollapsed(cat)}
+                        title={
+                          allNestedCollapsed
+                            ? 'Развернуть все вложенные категории'
+                            : 'Свернуть все вложенные категории'
+                        }
+                        aria-label={
+                          allNestedCollapsed
+                            ? 'Развернуть все вложенные категории'
+                            : 'Свернуть все вложенные категории'
+                        }
+                      >
+                        {allNestedCollapsed ? (
+                          <ChevronsUp className={styles.nestedToggleIcon} aria-hidden />
+                        ) : (
+                          <ChevronsDown className={styles.nestedToggleIcon} aria-hidden />
+                        )}
+                      </button>
                     ) : null}
-                    {cat.name}
-                    {itemsCount > 0 && (
-                      <span className={styles.categoryBlockCount}> ({itemsCount})</span>
-                    )}
-                  </h3>
+                  </div>
+                  <div className={styles.categoryHeaderMain}>
+                    <h3
+                      className={`${styles.categoryBlockTitle} ${level > 0 ? styles.categoryBlockTitleNested : ''}`}
+                    >
+                      <span className={styles.categoryTitleRow}>
+                        {cat.image ? (
+                          <img src={cat.image} alt="" className={styles.categoryBlockImage} />
+                        ) : cat.icon && serviceCatalogIconMap[cat.icon] ? (
+                          <span className={styles.categoryBlockIcon}>
+                            {React.createElement(serviceCatalogIconMap[cat.icon], {
+                              className: styles.categoryBlockIconSvg,
+                            })}
+                          </span>
+                        ) : null}
+                        {cat.name}
+                        {itemsCount > 0 && (
+                          <span className={styles.categoryBlockCount}> ({itemsCount})</span>
+                        )}
+                      </span>
+                    </h3>
+                    {level === 0 && nestedGroupCount > 0 ? (
+                      <div className={styles.parentNestedStats} role="status">
+                        <span className={styles.parentNestedStatLine}>
+                          Вложенных групп:{' '}
+                          <strong className={styles.parentNestedStatValue}>
+                            {nestedGroupCount}
+                          </strong>
+                        </span>
+                        <span className={styles.parentNestedStatLine}>
+                          Видов работ во вложенных:{' '}
+                          <strong className={styles.parentNestedStatValue}>
+                            {nestedItemsCount}
+                          </strong>
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
                 {!isCollapsed && (
                   <>
@@ -284,7 +377,7 @@ export function ServiceCatalogItemsPage() {
                                     setEditItemData((p) => ({ ...p, name: e.target.value }))
                                   }
                                   className={styles.nameTextarea}
-                                  rows={2}
+                                  rows={1}
                                 />
                               ) : (
                                 item.name
@@ -394,7 +487,7 @@ export function ServiceCatalogItemsPage() {
                                 }
                                 placeholder="Название"
                                 className={styles.nameTextarea}
-                                rows={2}
+                                rows={1}
                               />
                             </td>
                             <td>
