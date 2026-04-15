@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 
 import Link from 'next/link';
 
-import type { Photo, PhotoCategory, PhotoProject } from '@/shared/api/photo';
+import type { PhotoCategory, PhotoProject } from '@/shared/api/photo';
 import { getPhotoCategories, getPhotoProjects } from '@/shared/api/photo';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
@@ -23,9 +23,8 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug }) => 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
     initialCategorySlug ?? null
   );
-  const [lightboxPhoto, setLightboxPhoto] = useState<Photo | null>(null);
-  const [sliderProject, setSliderProject] = useState<PhotoProject | null>(null);
-  const [sliderIndex, setSliderIndex] = useState(0);
+  /** Увеличенный просмотр: один лайтбокс для сетки, masonry и слайдера с листанием при нескольких фото */
+  const [lightbox, setLightbox] = useState<{ project: PhotoProject; index: number } | null>(null);
 
   useEffect(() => {
     setSelectedCategory(initialCategorySlug ?? null);
@@ -59,6 +58,50 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug }) => 
       .catch(() => setCategories([]));
   }, []);
 
+  const closeLightbox = useCallback(() => setLightbox(null), []);
+
+  const lightboxGoPrev = useCallback(() => {
+    setLightbox((lb) => {
+      if (!lb || lb.project.photos.length < 2) return lb;
+      const n = lb.project.photos.length;
+      return { ...lb, index: (lb.index - 1 + n) % n };
+    });
+  }, []);
+
+  const lightboxGoNext = useCallback(() => {
+    setLightbox((lb) => {
+      if (!lb || lb.project.photos.length < 2) return lb;
+      const n = lb.project.photos.length;
+      return { ...lb, index: (lb.index + 1) % n };
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!lightbox) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeLightbox();
+        return;
+      }
+      if (lightbox.project.photos.length < 2) return;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        lightboxGoPrev();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        lightboxGoNext();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [lightbox, closeLightbox, lightboxGoPrev, lightboxGoNext]);
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -81,10 +124,7 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug }) => 
                 key={photo.id}
                 type="button"
                 className={styles.sliderPhoto}
-                onClick={() => {
-                  setSliderProject(project);
-                  setSliderIndex(i);
-                }}
+                onClick={() => setLightbox({ project, index: i })}
               >
                 <img src={getImageUrl(photo.imageUrl)} alt="" loading="lazy" />
               </button>
@@ -107,12 +147,12 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug }) => 
     if (mode === 'masonry') {
       return (
         <div className={styles.masonry}>
-          {photos.map((photo) => (
+          {photos.map((photo, i) => (
             <button
               key={photo.id}
               type="button"
               className={styles.masonryItem}
-              onClick={() => setLightboxPhoto(photo)}
+              onClick={() => setLightbox({ project, index: i })}
             >
               <img src={getImageUrl(photo.imageUrl)} alt="" loading="lazy" />
             </button>
@@ -123,12 +163,12 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug }) => 
 
     return (
       <div className={styles.grid}>
-        {photos.map((photo) => (
+        {photos.map((photo, i) => (
           <button
             key={photo.id}
             type="button"
             className={styles.gridItem}
-            onClick={() => setLightboxPhoto(photo)}
+            onClick={() => setLightbox({ project, index: i })}
           >
             <img src={getImageUrl(photo.imageUrl)} alt="" loading="lazy" />
           </button>
@@ -153,9 +193,6 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug }) => 
 
       <header className={styles.header}>
         <h1 className={styles.title}>Фото наших работ</h1>
-        <p className={styles.subtitle}>
-          Примеры выполненных проектов: ремонт, мебель, двери, окна и многое другое
-        </p>
       </header>
 
       <div className={styles.content}>
@@ -211,10 +248,10 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug }) => 
                 {projects.map((project) => (
                   <article key={project.id} className={styles.projectCard}>
                     <h2 className={styles.projectTitle}>{project.title}</h2>
+                    {renderProjectPhotos(project)}
                     {project.description && (
                       <p className={styles.projectDescription}>{project.description}</p>
                     )}
-                    {renderProjectPhotos(project)}
                   </article>
                 ))}
               </div>
@@ -247,76 +284,60 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug }) => 
         </main>
       </div>
 
-      {lightboxPhoto && (
+      {lightbox && lightbox.project.photos.length > 0 && (
         <div
           className={styles.lightbox}
           role="dialog"
           aria-modal="true"
           aria-label="Просмотр фото"
-          onClick={() => setLightboxPhoto(null)}
+          onClick={closeLightbox}
         >
           <button
             type="button"
             className={styles.lightboxClose}
-            onClick={() => setLightboxPhoto(null)}
+            onClick={closeLightbox}
             aria-label="Закрыть"
           >
             ×
           </button>
           <div className={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
-            <img src={getImageUrl(lightboxPhoto.imageUrl)} alt="" />
-          </div>
-        </div>
-      )}
-
-      {sliderProject && sliderProject.photos.length > 0 && (
-        <div
-          className={styles.lightbox}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Слайдер фото"
-          onClick={() => setSliderProject(null)}
-        >
-          <button
-            type="button"
-            className={styles.lightboxClose}
-            onClick={() => setSliderProject(null)}
-            aria-label="Закрыть"
-          >
-            ×
-          </button>
-          <div className={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
-            <img
-              src={getImageUrl(sliderProject.photos[sliderIndex].imageUrl)}
-              alt={sliderProject.title}
-            />
-            {sliderProject.photos.length > 1 && (
-              <div className={styles.lightboxNav}>
-                <button
-                  type="button"
-                  className={styles.lightboxNavBtn}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSliderIndex((i) => (i === 0 ? sliderProject.photos.length - 1 : i - 1));
-                  }}
-                >
-                  ←
-                </button>
-                <span className={styles.lightboxNavInfo}>
-                  {sliderIndex + 1} / {sliderProject.photos.length}
-                </span>
-                <button
-                  type="button"
-                  className={styles.lightboxNavBtn}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSliderIndex((i) => (i === sliderProject.photos.length - 1 ? 0 : i + 1));
-                  }}
-                >
-                  →
-                </button>
-              </div>
-            )}
+            <div className={styles.lightboxFigure}>
+              <img
+                src={getImageUrl(lightbox.project.photos[lightbox.index].imageUrl)}
+                alt={lightbox.project.title}
+              />
+              {lightbox.project.photos.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className={styles.lightboxArrow}
+                    data-side="prev"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      lightboxGoPrev();
+                    }}
+                    aria-label="Предыдущее фото"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.lightboxArrow}
+                    data-side="next"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      lightboxGoNext();
+                    }}
+                    aria-label="Следующее фото"
+                  >
+                    ›
+                  </button>
+                  <span className={styles.lightboxCounter}>
+                    {lightbox.index + 1} / {lightbox.project.photos.length}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

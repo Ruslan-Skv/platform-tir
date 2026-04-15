@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 
 import { dropdownMenus } from '@/shared/constants/navigation';
 import type { NavigationCategory } from '@/shared/lib/hooks';
+import { navItemLabel } from '@/shared/lib/navItemLabel';
 import { renderNavigationIcon } from '@/shared/lib/navigationIcon';
 import { getSafeHref, isInternalAppHref } from '@/shared/lib/sanitize';
 import type { NavigationItem as NavigationItemType } from '@/shared/types/navigation';
@@ -74,7 +75,14 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
   // Приоритет: данные из API (dropdownItems), затем для "Каталог" — динамические категории, иначе константы
   const apiDropdownItems =
     item.dropdownItems && item.dropdownItems.length > 0 ? item.dropdownItems : null;
-  const menuData = hasDropdown && !apiDropdownItems ? dropdownMenus[item.name] : null;
+  const menuData =
+    hasDropdown && !apiDropdownItems
+      ? (dropdownMenus[item.name as keyof typeof dropdownMenus] ??
+        (item.name === 'Фото' || item.href === '/photo'
+          ? dropdownMenus['Наши работы']
+          : undefined) ??
+        null)
+      : null;
 
   // Для "Каталог" используем динамические категории если нет данных из API
   const useDynamicMenu =
@@ -102,7 +110,7 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
   React.useEffect(() => {
     if (isActive) {
       // Для "Блог" и "Наши работы" — всегда выравнивание по правому краю
-      if (item.name === 'Блог' || item.name === 'Наши работы') {
+      if (item.name === 'Блог' || item.name === 'Наши работы' || item.name === 'Фото') {
         setAlignment('right');
       }
       // Для "Акции" - выравнивание по центру (с проверкой границ)
@@ -215,7 +223,7 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
       <div className={styles.navButtonWrap}>
         {isCurrentPage && <span className={styles.navButtonCurrentLine} aria-hidden />}
         <Button variant="link" size="sm" onClick={handleClick} className={styles.navButton}>
-          <span className={styles.navText}>{item.name}</span>
+          <span className={styles.navText}>{navItemLabel(item.name)}</span>
         </Button>
       </div>
 

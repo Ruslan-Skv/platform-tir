@@ -250,7 +250,7 @@ export function PhotoProjectFormPage({ projectId }: PhotoProjectFormPageProps) {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Опишите выполненные работы..."
             className={styles.textarea}
-            rows={4}
+            rows={14}
           />
         </div>
 

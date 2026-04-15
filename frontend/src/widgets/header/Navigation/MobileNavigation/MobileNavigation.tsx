@@ -15,6 +15,7 @@ import {
   useDynamicServiceCategories,
   useNavigationItems,
 } from '@/shared/lib/hooks';
+import { navItemLabel } from '@/shared/lib/navItemLabel';
 import { renderNavigationIcon } from '@/shared/lib/navigationIcon';
 import { getSafeHref } from '@/shared/lib/sanitize';
 
@@ -125,7 +126,17 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
       };
     }
 
-    return dropdownMenus[activeMenuItem];
+    const staticMenu = dropdownMenus[activeMenuItem as keyof typeof dropdownMenus];
+    if (staticMenu) return staticMenu;
+
+    /* После переименования раздела ключ в константах — «Наши работы»; в БД ещё может быть «Фото» */
+    const hrefForActive = menuButtons.find((b) => b.name === activeMenuItem)?.href;
+    const isPhotoSection = activeMenuItem === 'Фото' || hrefForActive === '/photo';
+    if (isPhotoSection) {
+      return dropdownMenus['Наши работы'];
+    }
+
+    return undefined;
   };
 
   const activeSubmenu = getActiveSubmenu();
@@ -146,7 +157,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
                     }
                     className={styles.menuItemField}
                   >
-                    <span>{button.name}</span>
+                    <span>{navItemLabel(button.name)}</span>
                     <span className={styles.menuItemFieldArrow} aria-hidden>
                       ›
                     </span>
@@ -158,7 +169,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
                     className={styles.menuItemField}
                     onClick={handleCloseMenu}
                   >
-                    <span>{button.name}</span>
+                    <span>{navItemLabel(button.name)}</span>
                   </Link>
                 )
               )}
