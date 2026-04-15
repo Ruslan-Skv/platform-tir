@@ -49,12 +49,6 @@
   margin: 0;
 }
 
-@media (max-width: 768px) {
-  .title {
-    font-size: 1.25rem;
-  }
-}
-
 .content {
   display: grid;
   grid-template-columns: 240px 1fr;
@@ -70,38 +64,111 @@
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .sidebarSection {
   background: rgb(255 255 255 / 5%);
   border-radius: 8px;
-  padding: 1rem;
+  padding: 0.5rem 0.65rem 0.55rem;
+  transition: padding-bottom 0.2s ease;
+}
+
+.sidebarSectionCollapsed {
+  padding-bottom: 0.4rem;
+}
+
+.sidebarSectionCollapsed .sidebarHeader {
+  margin-bottom: 0;
+}
+
+.sidebarHeader {
+  align-items: center;
+  display: flex;
+  gap: 0.35rem;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+  min-height: 0;
 }
 
 .sidebarTitle {
-  font-size: 1rem;
+  flex: 1;
+  font-size: 0.9375rem;
   font-weight: 600;
-  margin: 0 0 0.75rem;
+  line-height: 1.25;
+  margin: 0;
+  min-width: 0;
+}
+
+.sidebarToggle {
+  align-items: center;
+  background: rgb(255 255 255 / 8%);
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 6px;
+  color: rgb(255 255 255 / 85%);
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  height: 1.75rem;
+  justify-content: center;
+  padding: 0;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+  width: 1.75rem;
+}
+
+.sidebarToggle:hover {
+  background: rgb(255 255 255 / 14%);
+  border-color: rgb(255 255 255 / 22%);
+}
+
+.sidebarToggleIcon {
+  height: 1.125rem;
+  width: 1.125rem;
+  transition: transform 0.25s ease;
+}
+
+.sidebarToggleIconExpanded {
+  transform: rotate(180deg);
+}
+
+.categoryListWrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s ease;
+}
+
+.categoryListWrap[data-expanded='true'] {
+  grid-template-rows: 1fr;
+}
+
+.categoryListWrap > .categoryList {
+  min-height: 0;
+  overflow: hidden;
 }
 
 .categoryList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
 .categoryItem {
-  display: block;
-  width: 100%;
-  padding: 0.5rem 0;
   background: none;
   border: none;
   color: rgb(255 255 255 / 80%);
-  text-align: left;
   cursor: pointer;
+  display: block;
+  font-size: 0.875rem;
+  line-height: 1.3;
+  padding: 0.28rem 0;
+  text-align: left;
   text-decoration: none;
-  font-size: 0.9375rem;
+  width: 100%;
 }
 
 .categoryItem:hover {
@@ -113,9 +180,40 @@
   font-weight: 500;
 }
 
+/* Как в каталоге: FiltersSidebar .option / .optionText */
+.categoryOption {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+.categoryOption input {
+  accent-color: var(--color-accent);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.categoryOptionText {
+  color: #9ca3af;
+  flex: 1;
+  font-size: 0.875rem;
+  line-height: 1.3;
+  min-width: 0;
+  transition: color 0.2s ease;
+}
+
+.categoryOption:hover .categoryOptionText {
+  color: #e5e7eb;
+}
+
 .categoryCount {
   margin-left: 0.25rem;
-  color: rgb(255 255 255 / 50%);
+  color: inherit;
   font-size: 0.875rem;
 }
 
@@ -143,8 +241,8 @@
 }
 
 .projectTitle {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.0625rem;
+  font-weight: 400;
   margin: 0 0 1rem;
   color: rgb(255 255 255 / 95%);
 }
@@ -155,6 +253,10 @@
   line-height: 1.65;
   color: rgb(255 255 255 / 75%);
   white-space: pre-wrap;
+  text-align: justify;
+  text-align-last: start;
+  hyphens: auto;
+  overflow-wrap: break-word;
   word-break: break-word;
   /* Эмодзи и символы из админки */
   font-family:
@@ -327,6 +429,122 @@
   color: rgb(255 255 255 / 70%);
 }
 
+/* Мобильная типографика и отступы (как каталог услуг / товары) */
+@media (width <= 768px) {
+  .photoPage {
+    min-width: 0;
+    padding: 0.4rem 0.75rem 0.75rem;
+  }
+
+  .breadcrumbs {
+    margin-bottom: 0.25rem;
+  }
+
+  .breadcrumbsList {
+    font-size: 0.8125rem;
+  }
+
+  .header {
+    margin-bottom: 0.75rem;
+  }
+
+  .title {
+    font-size: 1.25rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .content {
+    gap: 1rem;
+  }
+
+  .sidebarSection {
+    padding: 0.5rem 0.65rem 0.55rem;
+  }
+
+  .sidebarTitle {
+    font-size: 0.875rem;
+  }
+
+  .sidebarToggle {
+    height: 1.65rem;
+    width: 1.65rem;
+  }
+
+  .sidebarToggleIcon {
+    height: 1rem;
+    width: 1rem;
+  }
+
+  .categoryItem {
+    font-size: 0.8125rem;
+    padding: 0.26rem 0;
+  }
+
+  .categoryList {
+    gap: 0.35rem;
+  }
+
+  .categoryOptionText {
+    font-size: 0.8125rem;
+  }
+
+  .categoryCount {
+    font-size: 0.75rem;
+  }
+
+  .projectsList {
+    gap: 1.25rem;
+  }
+
+  .projectCard {
+    padding: 1rem;
+    border-radius: 8px;
+  }
+
+  .projectTitle {
+    font-size: 0.9375rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .projectDescription {
+    font-size: 0.875rem;
+    line-height: 1.55;
+  }
+
+  .loading,
+  .empty {
+    padding: 2rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .pagination {
+    margin-top: 1.25rem;
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .paginationButton {
+    font-size: 0.8125rem;
+    padding: 0.4rem 0.75rem;
+  }
+
+  .paginationInfo {
+    font-size: 0.75rem;
+  }
+
+  .grid {
+    gap: 0.75rem;
+  }
+
+  .masonryItem {
+    margin-bottom: 0.75rem;
+  }
+
+  .sliderPhoto {
+    flex: 0 0 min(240px, 78vw);
+  }
+}
+
 /* Lightbox */
 .lightbox {
   position: fixed;
@@ -487,6 +705,17 @@
   color: #111827;
 }
 
+:where(html[data-theme='light']) .sidebarToggle {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #374151;
+}
+
+:where(html[data-theme='light']) .sidebarToggle:hover {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+}
+
 :where(html[data-theme='light']) .categoryItem {
   color: #374151;
 }
@@ -499,8 +728,16 @@
   color: #2563eb;
 }
 
-:where(html[data-theme='light']) .categoryCount {
+:where(html[data-theme='light']) .categoryOptionText {
   color: #6b7280;
+}
+
+:where(html[data-theme='light']) .categoryOption:hover .categoryOptionText {
+  color: #374151;
+}
+
+:where(html[data-theme='light']) .categoryCount {
+  color: inherit;
 }
 
 :where(html[data-theme='light']) .loading,

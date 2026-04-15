@@ -48,11 +48,16 @@ export async function getPhotoCategories(): Promise<PhotoCategory[]> {
 
 export async function getPhotoProjects(params?: {
   category?: string;
+  categories?: string[];
   page?: number;
   limit?: number;
 }): Promise<ProjectsResponse> {
   const searchParams = new URLSearchParams();
-  if (params?.category) searchParams.set('category', params.category);
+  if (params?.categories && params.categories.length > 0) {
+    searchParams.set('categories', params.categories.join(','));
+  } else if (params?.category) {
+    searchParams.set('category', params.category);
+  }
   if (params?.page) searchParams.set('page', String(params.page));
   if (params?.limit) searchParams.set('limit', String(params.limit));
 

@@ -1,8 +1,11 @@
 'use client';
 
+import { ChevronDownIcon } from '@heroicons/react/24/outline';
+
 import React, { useCallback, useEffect, useState } from 'react';
 
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 
 import type { PhotoCategory, PhotoProject } from '@/shared/api/photo';
 import { getPhotoCategories, getPhotoProjects } from '@/shared/api/photo';
@@ -15,19 +18,22 @@ interface PhotoPageProps {
 }
 
 export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug }) => {
+  const router = useRouter();
+  const pathname = usePathname();
   const [projects, setProjects] = useState<PhotoProject[]>([]);
   const [categories, setCategories] = useState<PhotoCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(
-    initialCategorySlug ?? null
+  const [selectedSlugs, setSelectedSlugs] = useState<string[]>(() =>
+    initialCategorySlug ? [initialCategorySlug] : []
   );
   /** Увеличенный просмотр: один лайтбокс для сетки, masonry и слайдера с листанием при нескольких фото */
   const [lightbox, setLightbox] = useState<{ project: PhotoProject; index: number } | null>(null);
+  const [categoriesExpanded, setCategoriesExpanded] = useState(true);
 
   useEffect(() => {
-    setSelectedCategory(initialCategorySlug ?? null);
+    setSelectedSlugs(initialCategorySlug ? [initialCategorySlug] : []);
     setCurrentPage(1);
   }, [initialCategorySlug]);
 
@@ -35,7 +41,7 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug }) => 
     setLoading(true);
     try {
       const res = await getPhotoProjects({
-        category: selectedCategory || undefined,
+        categories: selectedSlugs.length > 0 ? selectedSlugs : undefined,
         page: currentPage,
         limit: 12,
       });
@@ -46,7 +52,23 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug }) => 
     } finally {
       setLoading(false);
     }
-  }, [currentPage, selectedCategory]);
+  }, [currentPage, selectedSlugs]);
+
+  const toggleCategorySlug = useCallback((slug: string) => {
+    setSelectedSlugs((prev) => {
+      if (prev.includes(slug)) return prev.filter((s) => s !== slug);
+      return [...prev, slug];
+    });
+    setCurrentPage(1);
+  }, []);
+
+  const clearCategoryFilters = useCallback(() => {
+    setSelectedSlugs([]);
+    setCurrentPage(1);
+    if (pathname !== '/photo') {
+      router.push('/photo');
+    }
+  }, [pathname, router]);
 
   useEffect(() => {
     loadProjects();
@@ -197,41 +219,69 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug }) => 
 
       <div className={styles.content}>
         <aside className={styles.sidebar}>
-          <div className={styles.sidebarSection}>
-            <h3 className={styles.sidebarTitle}>Категории</h3>
-            <ul className={styles.categoryList}>
-              <li>
-                <Link
-                  href="/photo"
-                  className={`${styles.categoryItem} ${!selectedCategory ? styles.active : ''}`}
-                  onClick={() => {
-                    setSelectedCategory(null);
-                    setCurrentPage(1);
-                  }}
-                >
-                  Все объекты
-                </Link>
-              </li>
-              {categories.map((cat) => (
-                <li key={cat.id}>
-                  <Link
-                    href={`/photo/${cat.slug}`}
-                    className={`${styles.categoryItem} ${
-                      selectedCategory === cat.slug ? styles.active : ''
-                    }`}
-                    onClick={() => {
-                      setSelectedCategory(cat.slug);
-                      setCurrentPage(1);
-                    }}
+          <div
+            className={`${styles.sidebarSection} ${!categoriesExpanded ? styles.sidebarSectionCollapsed : ''}`}
+          >
+            <div className={styles.sidebarHeader}>
+              <h3 className={styles.sidebarTitle} id="photo-categories-heading">
+                Категории
+              </h3>
+              <button
+                type="button"
+                className={styles.sidebarToggle}
+                onClick={() => setCategoriesExpanded((v) => !v)}
+                aria-expanded={categoriesExpanded}
+                aria-controls="photo-categories-list"
+                aria-label={
+                  categoriesExpanded ? 'Свернуть список категорий' : 'Развернуть список категорий'
+                }
+              >
+                <ChevronDownIcon
+                  className={`${styles.sidebarToggleIcon} ${
+                    categoriesExpanded ? styles.sidebarToggleIconExpanded : ''
+                  }`}
+                  aria-hidden
+                />
+              </button>
+            </div>
+            <div className={styles.categoryListWrap} data-expanded={categoriesExpanded}>
+              <ul
+                id="photo-categories-list"
+                className={styles.categoryList}
+                aria-labelledby="photo-categories-heading"
+              >
+                <li>
+                  <button
+                    type="button"
+                    className={`${styles.categoryItem} ${selectedSlugs.length === 0 ? styles.active : ''}`}
+                    onClick={clearCategoryFilters}
                   >
-                    {cat.name}
-                    {cat._count?.projects != null && (
-                      <span className={styles.categoryCount}>({cat._count.projects})</span>
-                    )}
-                  </Link>
+                    Все объекты
+                  </button>
                 </li>
-              ))}
-            </ul>
+                {categories.map((cat) => {
+                  const checked = selectedSlugs.includes(cat.slug);
+                  return (
+                    <li key={cat.id}>
+                      <label className={styles.categoryOption}>
+                        <input
+                          id={`photo-category-${cat.id}`}
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleCategorySlug(cat.slug)}
+                        />
+                        <span className={styles.categoryOptionText}>
+                          {cat.name}
+                          {cat._count?.projects != null && (
+                            <span className={styles.categoryCount}>({cat._count.projects})</span>
+                          )}
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           </div>
         </aside>
 
@@ -250,7 +300,9 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug }) => 
                     <h2 className={styles.projectTitle}>{project.title}</h2>
                     {renderProjectPhotos(project)}
                     {project.description && (
-                      <p className={styles.projectDescription}>{project.description}</p>
+                      <p className={styles.projectDescription} lang="ru">
+                        {project.description}
+                      </p>
                     )}
                   </article>
                 ))}

@@ -119,15 +119,26 @@ export class PhotoService {
   async findAllProjects(params?: {
     categoryId?: string;
     categorySlug?: string;
+    categorySlugs?: string[];
     page?: number;
     limit?: number;
   }) {
-    const { categoryId, categorySlug, page = 1, limit = 20 } = params ?? {};
+    const { categoryId, categorySlug, categorySlugs, page = 1, limit = 20 } = params ?? {};
     const skip = (page - 1) * limit;
 
+    const slugList: string[] =
+      categorySlugs && categorySlugs.length > 0
+        ? categorySlugs
+        : categorySlug
+          ? [categorySlug]
+          : [];
+
     const where: Prisma.PhotoProjectWhereInput = {};
-    if (categoryId) where.categoryId = categoryId;
-    if (categorySlug) where.category = { slug: categorySlug };
+    if (categoryId) {
+      where.categoryId = categoryId;
+    } else if (slugList.length > 0) {
+      where.category = { slug: { in: slugList } };
+    }
 
     const [projects, total] = await Promise.all([
       this.prisma.photoProject.findMany({
@@ -309,9 +320,16 @@ export class PhotoService {
     });
   }
 
-  async getPublicProjects(categorySlug?: string, page = 1, limit = 12) {
+  async getPublicProjects(categorySlug?: string, categoriesCsv?: string, page = 1, limit = 12) {
+    const fromCsv = categoriesCsv
+      ? categoriesCsv
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [];
+    const categorySlugs = fromCsv.length > 0 ? fromCsv : categorySlug ? [categorySlug] : undefined;
     return this.findAllProjects({
-      categorySlug,
+      categorySlugs,
       page,
       limit,
     });

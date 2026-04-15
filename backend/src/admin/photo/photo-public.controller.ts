@@ -17,11 +17,13 @@ export class PhotoPublicController {
   @ApiOperation({ summary: 'Список объектов с фото (публичный)' })
   getProjects(
     @Query('category') categorySlug?: string,
+    @Query('categories') categoriesCsv?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
     return this.photoService.getPublicProjects(
       categorySlug,
+      categoriesCsv,
       page ? parseInt(page, 10) : 1,
       limit ? parseInt(limit, 10) : 12,
     );
