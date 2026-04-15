@@ -1,8 +1,8 @@
 'use client';
 
-import { ChevronsDown, ChevronsUp } from 'lucide-react';
+import { ChevronsDown, ChevronsUp, FoldVertical, UnfoldVertical } from 'lucide-react';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 import { serviceCatalogIconMap } from '@/shared/lib/serviceCatalogIcons';
@@ -73,6 +73,34 @@ function countItemsInDescendantCategories(node: ServiceCatalogCategory): number 
   return n;
 }
 
+/** id категории → id родителя (для корня — undefined). */
+function buildCategoryParentMap(
+  cats: ServiceCatalogCategory[],
+  parentId: string | undefined = undefined,
+  out = new Map<string, string | undefined>()
+): Map<string, string | undefined> {
+  for (const c of cats) {
+    out.set(c.id, parentId);
+    if (c.children?.length) {
+      buildCategoryParentMap(c.children, c.id, out);
+    }
+  }
+  return out;
+}
+
+function isStrictDescendantOf(
+  catId: string,
+  ancestorId: string,
+  idToParent: Map<string, string | undefined>
+): boolean {
+  let p = idToParent.get(catId);
+  while (p !== undefined) {
+    if (p === ancestorId) return true;
+    p = idToParent.get(p);
+  }
+  return false;
+}
+
 const formatPrice = (n: number) =>
   new Intl.NumberFormat('ru-RU', { style: 'decimal', minimumFractionDigits: 0 }).format(n);
 
@@ -97,6 +125,12 @@ export function ServiceCatalogItemsPage() {
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [editItemData, setEditItemData] = useState<Partial<ServiceCatalogItem>>({});
   const [collapsedCategoryIds, setCollapsedCategoryIds] = useState<Set<string>>(new Set());
+  /** Корневые родители (level 0), у которых скрыт список блоков вложенных категорий. */
+  const [nestedChildBlocksHiddenRoots, setNestedChildBlocksHiddenRoots] = useState<Set<string>>(
+    () => new Set()
+  );
+
+  const categoryParentMap = useMemo(() => buildCategoryParentMap(categories), [categories]);
 
   const toggleCategory = (categoryId: string) => {
     setCollapsedCategoryIds((prev) => {
@@ -121,6 +155,15 @@ export function ServiceCatalogItemsPage() {
       } else {
         for (const id of ids) next.add(id);
       }
+      return next;
+    });
+  };
+
+  const toggleNestedChildCategoryBlocksVisibility = (rootParentId: string) => {
+    setNestedChildBlocksHiddenRoots((prev) => {
+      const next = new Set(prev);
+      if (next.has(rootParentId)) next.delete(rootParentId);
+      else next.add(rootParentId);
       return next;
     });
   };
@@ -261,6 +304,14 @@ export function ServiceCatalogItemsPage() {
           </p>
         ) : (
           flattenServiceCategories(categories).map(({ cat, level }) => {
+            if (level > 0) {
+              for (const rootId of nestedChildBlocksHiddenRoots) {
+                if (isStrictDescendantOf(cat.id, rootId, categoryParentMap)) {
+                  return null;
+                }
+              }
+            }
+
             const isCollapsed = collapsedCategoryIds.has(cat.id);
             const itemsCount = cat.items?.length ?? 0;
             const descendantIds =
@@ -270,6 +321,8 @@ export function ServiceCatalogItemsPage() {
               level === 0 && cat.children?.length ? countItemsInDescendantCategories(cat) : 0;
             const allNestedCollapsed =
               descendantIds.length > 0 && descendantIds.every((id) => collapsedCategoryIds.has(id));
+            const nestedChildBlocksHidden =
+              level === 0 && descendantIds.length > 0 && nestedChildBlocksHiddenRoots.has(cat.id);
             return (
               <div
                 key={cat.id}
@@ -288,27 +341,50 @@ export function ServiceCatalogItemsPage() {
                       {isCollapsed ? '+' : '−'}
                     </button>
                     {descendantIds.length > 0 ? (
-                      <button
-                        type="button"
-                        className={styles.nestedToggleButton}
-                        onClick={() => toggleAllDescendantsCollapsed(cat)}
-                        title={
-                          allNestedCollapsed
-                            ? 'Развернуть все вложенные категории'
-                            : 'Свернуть все вложенные категории'
-                        }
-                        aria-label={
-                          allNestedCollapsed
-                            ? 'Развернуть все вложенные категории'
-                            : 'Свернуть все вложенные категории'
-                        }
-                      >
-                        {allNestedCollapsed ? (
-                          <ChevronsUp className={styles.nestedToggleIcon} aria-hidden />
-                        ) : (
-                          <ChevronsDown className={styles.nestedToggleIcon} aria-hidden />
-                        )}
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          className={styles.nestedToggleButton}
+                          onClick={() => toggleAllDescendantsCollapsed(cat)}
+                          title={
+                            allNestedCollapsed
+                              ? 'Развернуть таблицы видов работ во всех вложенных категориях'
+                              : 'Свернуть таблицы видов работ во всех вложенных категориях'
+                          }
+                          aria-label={
+                            allNestedCollapsed
+                              ? 'Развернуть таблицы видов работ во всех вложенных категориях'
+                              : 'Свернуть таблицы видов работ во всех вложенных категориях'
+                          }
+                        >
+                          {allNestedCollapsed ? (
+                            <ChevronsUp className={styles.nestedToggleIcon} aria-hidden />
+                          ) : (
+                            <ChevronsDown className={styles.nestedToggleIcon} aria-hidden />
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.nestedListToggleButton}
+                          onClick={() => toggleNestedChildCategoryBlocksVisibility(cat.id)}
+                          title={
+                            nestedChildBlocksHidden
+                              ? 'Показать список вложенных категорий'
+                              : 'Скрыть список вложенных категорий'
+                          }
+                          aria-label={
+                            nestedChildBlocksHidden
+                              ? 'Показать список вложенных категорий'
+                              : 'Скрыть список вложенных категорий'
+                          }
+                        >
+                          {nestedChildBlocksHidden ? (
+                            <UnfoldVertical className={styles.nestedToggleIcon} aria-hidden />
+                          ) : (
+                            <FoldVertical className={styles.nestedToggleIcon} aria-hidden />
+                          )}
+                        </button>
+                      </>
                     ) : null}
                   </div>
                   <div className={styles.categoryHeaderMain}>

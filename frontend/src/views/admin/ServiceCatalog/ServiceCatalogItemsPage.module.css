@@ -150,6 +150,31 @@
   color: #134e4a;
 }
 
+.nestedListToggleButton {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: #fff;
+  border: 1px solid #7c3aed;
+  border-radius: 5px;
+  color: #6d28d9;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.nestedListToggleButton:hover {
+  background: #f5f3ff;
+  border-color: #5b21b6;
+  color: #5b21b6;
+}
+
 .nestedToggleIcon {
   width: 14px;
   height: 14px;
@@ -518,6 +543,18 @@
   background: #115e59;
   border-color: #5eead4;
   color: #f0fdfa;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .nestedListToggleButton {
+  background: #4c1d95;
+  border-color: #a78bfa;
+  color: #ddd6fe;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .nestedListToggleButton:hover {
+  background: #5b21b6;
+  border-color: #c4b5fd;
+  color: #f5f3ff;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .categoryBlockCount {
