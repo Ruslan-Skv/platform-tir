@@ -40,6 +40,8 @@ export interface DropdownItem {
   hasSubmenu?: boolean;
   submenu?: DropdownSubItem[];
   icon?: string; // Имя иконки из heroicons или путь к изображению
+  /** Превью категории (каталог из API / услуги) */
+  image?: string | null;
 }
 
 export interface DropdownMenu {

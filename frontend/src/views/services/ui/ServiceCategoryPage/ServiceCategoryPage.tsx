@@ -68,6 +68,16 @@ function workGroupKey(section: CategoryItemSection, sectionIdx: number): string 
   return `${section.slug}::${sectionIdx}`;
 }
 
+function getTableSectionsForData(data: CategoryData): CategoryItemSection[] {
+  if (data.itemSections && data.itemSections.length > 0) {
+    return data.itemSections;
+  }
+  if (data.items.length > 0) {
+    return [{ name: data.name, slug: data.slug, items: data.items }];
+  }
+  return [];
+}
+
 const publicWorkGroupsStorageKey = (categorySlug: string) =>
   `public.service-catalog.category.work-groups.${encodeURIComponent(categorySlug)}`;
 
@@ -380,25 +390,29 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
   const [collapsedWorkGroupKeys, setCollapsedWorkGroupKeys] = useState<Set<string>>(
     () => new Set()
   );
-  const skipPersistPublicWorkGroupsRef = useRef(true);
   /** Пока true — не пишем черновик в localStorage (первая гидрация URL/хранилища). */
   const skipPersistCalculatorDraftRef = useRef(true);
   const prevSlugForCalculatorRef = useRef<string | null>(null);
 
-  useEffect(() => {
+  /*
+   * Свёрнутые группы: одна синхронная фаза — чтение из LS + пересечение с актуальными секциями.
+   * Запись при клике — сразу в storage (без отложенного useEffect), иначе при уходе со страницы данные не успевают сохраниться.
+   */
+  useLayoutEffect(() => {
     if (!data || data.slug !== slug) return;
-    skipPersistPublicWorkGroupsRef.current = true;
-    const keys = readCollapsedWorkGroupKeysFromStorage(slug);
-    setCollapsedWorkGroupKeys(new Set(keys));
-  }, [slug, data?.id, data?.slug]);
-
-  useEffect(() => {
-    if (skipPersistPublicWorkGroupsRef.current) {
-      skipPersistPublicWorkGroupsRef.current = false;
+    const sections = getTableSectionsForData(data);
+    if (sections.length === 0) {
+      setCollapsedWorkGroupKeys(new Set());
       return;
     }
-    writeCollapsedWorkGroupKeysToStorage(slug, collapsedWorkGroupKeys);
-  }, [slug, collapsedWorkGroupKeys]);
+    const valid = new Set(sections.map((s, i) => workGroupKey(s, i)));
+    const stored = readCollapsedWorkGroupKeysFromStorage(slug);
+    const next = new Set<string>();
+    for (const k of stored) {
+      if (valid.has(k)) next.add(k);
+    }
+    setCollapsedWorkGroupKeys(next);
+  }, [slug, data]);
 
   useEffect(() => {
     let cancelled = false;
@@ -834,29 +848,8 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
 
   const tableSections = useMemo((): CategoryItemSection[] => {
     if (!data) return [];
-    if (data.itemSections && data.itemSections.length > 0) {
-      return data.itemSections;
-    }
-    if (data.items.length > 0) {
-      return [{ name: data.name, slug: data.slug, items: data.items }];
-    }
-    return [];
+    return getTableSectionsForData(data);
   }, [data]);
-
-  useEffect(() => {
-    if (!data || tableSections.length === 0) return;
-    const valid = new Set(tableSections.map((s, i) => workGroupKey(s, i)));
-    setCollapsedWorkGroupKeys((prev) => {
-      const next = new Set<string>();
-      for (const k of prev) {
-        if (valid.has(k)) next.add(k);
-      }
-      if (prev.size === next.size && [...prev].every((k) => next.has(k))) {
-        return prev;
-      }
-      return next;
-    });
-  }, [data, tableSections]);
 
   const tableColCount = showPrices ? 4 : 1;
 
@@ -866,6 +859,7 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
+      writeCollapsedWorkGroupKeysToStorage(slug, next);
       return next;
     });
   };

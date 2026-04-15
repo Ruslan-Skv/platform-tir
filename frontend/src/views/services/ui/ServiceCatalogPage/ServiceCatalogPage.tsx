@@ -38,13 +38,6 @@ interface CatalogData {
   categories: ServiceCatalogCategory[];
 }
 
-const formatPrice = (n: number) =>
-  new Intl.NumberFormat('ru-RU', {
-    style: 'decimal',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(n) + ' ₽';
-
 export function ServiceCatalogPage() {
   const [data, setData] = useState<CatalogData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -131,13 +124,7 @@ export function ServiceCatalogPage() {
                 )}
                 {(cat.totalWorkTypes ?? cat.items.length) > 0 && (
                   <span className={styles.categoryCardCount}>
-                    {cat.totalWorkTypes ?? cat.items.length} вид
-                    {(cat.totalWorkTypes ?? cat.items.length) === 1
-                      ? ''
-                      : (cat.totalWorkTypes ?? cat.items.length) < 5
-                        ? 'а'
-                        : 'ов'}{' '}
-                    работ
+                    ({cat.totalWorkTypes ?? cat.items.length})
                   </span>
                 )}
               </Link>

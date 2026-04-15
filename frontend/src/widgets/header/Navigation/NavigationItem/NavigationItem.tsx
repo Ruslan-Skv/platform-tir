@@ -1,21 +1,4 @@
-import {
-  BoltIcon,
-  BuildingOfficeIcon,
-  CubeIcon,
-  CubeTransparentIcon,
-  DocumentTextIcon,
-  HomeIcon,
-  LightBulbIcon,
-  MoonIcon,
-  PaintBrushIcon,
-  RectangleStackIcon,
-  Square3Stack3DIcon,
-  Squares2X2Icon,
-  TableCellsIcon,
-  TagIcon,
-  ViewColumnsIcon,
-  WrenchScrewdriverIcon,
-} from '@heroicons/react/24/outline';
+import { RectangleStackIcon } from '@heroicons/react/24/outline';
 
 import React from 'react';
 
@@ -24,31 +7,12 @@ import { usePathname, useRouter } from 'next/navigation';
 
 import { dropdownMenus } from '@/shared/constants/navigation';
 import type { NavigationCategory } from '@/shared/lib/hooks';
+import { renderNavigationIcon } from '@/shared/lib/navigationIcon';
 import { getSafeHref, isInternalAppHref } from '@/shared/lib/sanitize';
 import type { NavigationItem as NavigationItemType } from '@/shared/types/navigation';
 import { Button } from '@/shared/ui/Button';
 
 import styles from './NavigationItem.module.css';
-
-// Маппинг имен иконок на компоненты
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  RectangleStack: RectangleStackIcon,
-  WrenchScrewdriver: WrenchScrewdriverIcon,
-  Squares2X2: Squares2X2Icon,
-  ViewColumns: ViewColumnsIcon,
-  Cube: CubeIcon,
-  Home: HomeIcon,
-  TableCells: TableCellsIcon,
-  Moon: MoonIcon,
-  CubeTransparent: CubeTransparentIcon,
-  LightBulb: LightBulbIcon,
-  PaintBrush: PaintBrushIcon,
-  Bolt: BoltIcon,
-  Square3Stack3D: Square3Stack3DIcon,
-  Tag: TagIcon,
-  DocumentText: DocumentTextIcon,
-  BuildingOffice: BuildingOfficeIcon,
-};
 
 function DropdownLink({
   href,
@@ -241,36 +205,6 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
     }
   };
 
-  // Функция для получения иконки по имени
-  const getIcon = (iconName?: string) => {
-    if (!iconName) {
-      return null;
-    }
-
-    // Если это путь к изображению
-    if (iconName.startsWith('/') || iconName.startsWith('http')) {
-      return (
-        <img
-          src={iconName}
-          alt=""
-          className={styles.dropdownItemIcon}
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.style.display = 'none';
-          }}
-        />
-      );
-    }
-
-    // Если это имя иконки из маппинга
-    const IconComponent = iconMap[iconName];
-    if (IconComponent) {
-      return <IconComponent className={styles.dropdownItemIcon} />;
-    }
-
-    return null;
-  };
-
   return (
     <div
       ref={navItemRef}
@@ -315,7 +249,7 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
                         >
                           {dropdownItem.icon && (
                             <span className={styles.dropdownItemIconWrapper}>
-                              {getIcon(dropdownItem.icon)}
+                              {renderNavigationIcon(dropdownItem.icon, styles.dropdownItemIcon)}
                             </span>
                           )}
                           <span
@@ -356,7 +290,7 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
                             {cat.image ? (
                               <img src={cat.image} alt="" className={styles.categoryImage} />
                             ) : cat.icon ? (
-                              getIcon(cat.icon)
+                              renderNavigationIcon(cat.icon, styles.dropdownItemIcon)
                             ) : null}
                           </span>
                           <span
@@ -435,7 +369,7 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
                         >
                           {dropdownItem.icon && (
                             <span className={styles.dropdownItemIconWrapper}>
-                              {getIcon(dropdownItem.icon)}
+                              {renderNavigationIcon(dropdownItem.icon, styles.dropdownItemIcon)}
                             </span>
                           )}
                           <span

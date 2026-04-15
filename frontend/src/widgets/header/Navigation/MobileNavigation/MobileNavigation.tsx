@@ -15,6 +15,7 @@ import {
   useDynamicServiceCategories,
   useNavigationItems,
 } from '@/shared/lib/hooks';
+import { renderNavigationIcon } from '@/shared/lib/navigationIcon';
 import { getSafeHref } from '@/shared/lib/sanitize';
 
 import styles from './MobileNavigation.module.css';
@@ -119,6 +120,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
           href: cat.href,
           productType: cat.slug,
           icon: cat.icon,
+          image: cat.image,
         })),
       };
     }
@@ -177,9 +179,9 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
                   >
                     {subItem.image ? (
                       <img src={subItem.image} alt="" className={styles.subMenuItemImage} />
-                    ) : subItem.icon ? (
-                      <span className={styles.subMenuItemIcon}>{subItem.icon}</span>
-                    ) : null}
+                    ) : (
+                      renderNavigationIcon(subItem.icon, styles.subMenuItemIcon)
+                    )}
                     <span>{subItem.name}</span>
                   </Link>
                 ))}

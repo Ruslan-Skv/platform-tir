@@ -111,7 +111,7 @@
 
 .categoryCardTitle {
   font-size: 1.0625rem;
-  font-weight: 600;
+  font-weight: 400;
   margin: 0 0 0.5rem;
   color: #111827;
 }
@@ -141,6 +141,14 @@
   .page {
     gap: 0.5rem;
     padding: 0.4rem 0.75rem 0.75rem;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .mainContent {
+    min-width: 0;
+    max-width: 100%;
   }
 
   .breadcrumbs {
@@ -153,8 +161,86 @@
     margin-bottom: 0.65rem;
   }
 
-  .grid {
-    grid-template-columns: 1fr;
+  /*
+   * Список категорий: .mainContent повышает специфичность,
+   * иначе тёмная тема ниже по файлу перебивает flex/фон и ломает вёрстку.
+   */
+  .mainContent .grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .mainContent .categoryCard {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.55rem 0.65rem;
+    border: none;
+    border-radius: 0;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fff;
+    box-shadow: none;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .mainContent .categoryCard:last-child {
+    border-bottom: none;
+  }
+
+  .mainContent .categoryCard:hover,
+  .mainContent .categoryCard:focus-visible {
+    box-shadow: none;
+    background: #f9fafb;
+  }
+
+  .mainContent .categoryCardIcon {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    margin-bottom: 0;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .mainContent .categoryCardIconSvg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .mainContent .categoryCardTitle {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.9375rem;
+    margin: 0;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mainContent .categoryCardDescription {
+    display: none;
+  }
+
+  .mainContent .categoryCardCount {
+    flex-shrink: 0;
+    margin-top: 0;
+    font-size: 0.8125rem;
+    line-height: 1.2;
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -217,4 +303,24 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .loading,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .empty {
   color: #9ca3af;
+}
+
+@media (width <= 768px) {
+  :where(html[data-theme='dark'], [data-app-theme='dark']) .mainContent .grid {
+    border-color: #374151;
+    background: #171717;
+  }
+
+  :where(html[data-theme='dark'], [data-app-theme='dark']) .mainContent .categoryCard {
+    border-bottom-color: #374151;
+    background: #171717;
+  }
+
+  :where(html[data-theme='dark'], [data-app-theme='dark']) .mainContent .categoryCard:hover,
+  :where(html[data-theme='dark'], [data-app-theme='dark'])
+    .mainContent
+    .categoryCard:focus-visible {
+    box-shadow: none;
+    background: #1f2937;
+  }
 }
