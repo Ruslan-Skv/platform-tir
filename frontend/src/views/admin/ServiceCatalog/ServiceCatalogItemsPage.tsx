@@ -9,7 +9,7 @@ import {
   UnfoldVertical,
 } from 'lucide-react';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { useAuth } from '@/features/auth';
@@ -19,6 +19,50 @@ import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import styles from './ServiceCatalogItemsPage.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+
+/** Свернутые блоки + скрытые вложенные группы (страница «Виды работ»). */
+const SERVICE_CATALOG_UI_STORAGE_KEY = 'admin.service-catalog.items-page.ui';
+
+type ServiceCatalogUiPersist = {
+  collapsedCategoryIds: string[];
+  nestedChildBlocksHiddenRoots: string[];
+};
+
+function readServiceCatalogUiState(): ServiceCatalogUiPersist | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(SERVICE_CATALOG_UI_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== 'object') return null;
+    const o = parsed as Record<string, unknown>;
+    const collapsedCategoryIds = Array.isArray(o.collapsedCategoryIds)
+      ? o.collapsedCategoryIds.filter((x): x is string => typeof x === 'string')
+      : [];
+    const nestedChildBlocksHiddenRoots = Array.isArray(o.nestedChildBlocksHiddenRoots)
+      ? o.nestedChildBlocksHiddenRoots.filter((x): x is string => typeof x === 'string')
+      : [];
+    return { collapsedCategoryIds, nestedChildBlocksHiddenRoots };
+  } catch {
+    return null;
+  }
+}
+
+function writeServiceCatalogUiState(
+  collapsedCategoryIds: Set<string>,
+  nestedChildBlocksHiddenRoots: Set<string>
+): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const payload: ServiceCatalogUiPersist = {
+      collapsedCategoryIds: [...collapsedCategoryIds],
+      nestedChildBlocksHiddenRoots: [...nestedChildBlocksHiddenRoots],
+    };
+    localStorage.setItem(SERVICE_CATALOG_UI_STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // квота / приватный режим
+  }
+}
 
 interface ServiceCatalogItem {
   id: string;
@@ -261,9 +305,27 @@ export function ServiceCatalogItemsPage() {
   const [nestedChildBlocksHiddenRoots, setNestedChildBlocksHiddenRoots] = useState<Set<string>>(
     () => new Set()
   );
+  /** Пропустить первую запись в storage после монтирования (ещё не подтянули сохранённое UI). */
+  const skipPersistUiRef = useRef(true);
   /** `cat:id` | `item:id` — блокировка кнопок при PATCH порядка */
   const [reorderBusyKey, setReorderBusyKey] = useState<string | null>(null);
   const reorderInProgress = reorderBusyKey !== null;
+
+  useEffect(() => {
+    const saved = readServiceCatalogUiState();
+    if (saved) {
+      setCollapsedCategoryIds(new Set(saved.collapsedCategoryIds));
+      setNestedChildBlocksHiddenRoots(new Set(saved.nestedChildBlocksHiddenRoots));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (skipPersistUiRef.current) {
+      skipPersistUiRef.current = false;
+      return;
+    }
+    writeServiceCatalogUiState(collapsedCategoryIds, nestedChildBlocksHiddenRoots);
+  }, [collapsedCategoryIds, nestedChildBlocksHiddenRoots]);
 
   const structuralCategoryRows = useMemo(
     () => flattenStructuralCategoryRows(categories, undefined, []),
