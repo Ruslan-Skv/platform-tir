@@ -10,7 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/react/24/solid';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -20,7 +20,6 @@ import { isAuthRequiredForCartError } from '@/shared/lib/cart-auth-required';
 import { useApprovedOrderGuard } from '@/shared/lib/contexts/ApprovedOrderGuardContext';
 import { useCart } from '@/shared/lib/hooks';
 import { getSafeHref } from '@/shared/lib/sanitize';
-import { serviceCatalogIconMap } from '@/shared/lib/serviceCatalogIcons';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal/ConfirmModal';
 
 import styles from './ServiceCategoryPage.module.css';
@@ -35,6 +34,12 @@ interface ServiceCatalogItem {
   price?: number;
 }
 
+interface CategoryItemSection {
+  name: string;
+  slug: string;
+  items: ServiceCatalogItem[];
+}
+
 interface CategoryData {
   id: string;
   name: string;
@@ -42,7 +47,10 @@ interface CategoryData {
   description?: string | null;
   icon?: string | null;
   image?: string | null;
+  /** Плоский список всех видов работ (корень + вложенные), для пресетов и корзины */
   items: ServiceCatalogItem[];
+  /** Секции таблицы: своя группа + вложенные, в порядке обхода дерева */
+  itemSections?: CategoryItemSection[];
   showPricesInPublic: boolean;
   parent?: { id: string; name: string; slug: string } | null;
   children?: Array<{
@@ -56,12 +64,51 @@ interface CategoryData {
   }>;
 }
 
-const formatPrice = (n: number) =>
-  new Intl.NumberFormat('ru-RU', {
-    style: 'decimal',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(n) + ' ₽';
+function workGroupKey(section: CategoryItemSection, sectionIdx: number): string {
+  return `${section.slug}::${sectionIdx}`;
+}
+
+const publicWorkGroupsStorageKey = (categorySlug: string) =>
+  `public.service-catalog.category.work-groups.${encodeURIComponent(categorySlug)}`;
+
+function readCollapsedWorkGroupKeysFromStorage(categorySlug: string): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(publicWorkGroupsStorageKey(categorySlug));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((x): x is string => typeof x === 'string');
+  } catch {
+    return [];
+  }
+}
+
+function writeCollapsedWorkGroupKeysToStorage(categorySlug: string, keys: Set<string>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(publicWorkGroupsStorageKey(categorySlug), JSON.stringify([...keys]));
+  } catch {
+    // квота / приватный режим
+  }
+}
+
+const newCalcId = () => `calc-${Math.random().toString(36).slice(2, 10)}`;
+
+const calculatorDraftStorageKey = (categorySlug: string) =>
+  `public.service-catalog.category.calculator-draft.${encodeURIComponent(categorySlug)}`;
+
+/** Сериализуемый снапшот черновика калькулятора (без result API — пересчитается после загрузки). */
+type PersistedCalculatorDraftV1 = {
+  v: 1;
+  activeCalcId: string;
+  calcs: Array<{
+    id: string;
+    name: string;
+    collapsed: boolean;
+    lines: Array<{ itemId: string; quantity: number }>;
+  }>;
+};
 
 interface CalculatorLine {
   itemId: string;
@@ -93,6 +140,99 @@ type CalculatorDraft = {
   loading: boolean;
   collapsed: boolean;
 };
+
+function readCalculatorDraftFromStorage(slug: string): PersistedCalculatorDraftV1 | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(calculatorDraftStorageKey(slug));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== 'object') return null;
+    const p = parsed as Partial<PersistedCalculatorDraftV1>;
+    if (p.v !== 1 || typeof p.activeCalcId !== 'string' || !Array.isArray(p.calcs)) return null;
+    return p as PersistedCalculatorDraftV1;
+  } catch {
+    return null;
+  }
+}
+
+function writeCalculatorDraftToStorage(
+  slug: string,
+  calculations: CalculatorDraft[],
+  activeCalcId: string
+): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const payload: PersistedCalculatorDraftV1 = {
+      v: 1,
+      activeCalcId,
+      calcs: calculations.map((c) => ({
+        id: c.id,
+        name: c.name,
+        collapsed: c.collapsed,
+        lines: c.lines.map((l) => ({ itemId: l.itemId, quantity: l.quantity })),
+      })),
+    };
+    localStorage.setItem(calculatorDraftStorageKey(slug), JSON.stringify(payload));
+  } catch {
+    // квота / приватный режим
+  }
+}
+
+/**
+ * Восстанавливает черновик из localStorage, подставляя актуальные name/unit/price из каталога.
+ */
+function hydrateCalculatorDraftFromStorage(
+  slug: string,
+  data: CategoryData
+): { calculations: CalculatorDraft[]; activeCalcId: string } | null {
+  const raw = readCalculatorDraftFromStorage(slug);
+  if (!raw || raw.calcs.length === 0) return null;
+
+  const idToItem = new Map(data.items.map((i) => [i.id, i]));
+  const calculations: CalculatorDraft[] = raw.calcs.map((c) => {
+    const lines: CalculatorLine[] = [];
+    for (const l of c.lines) {
+      if (!l || typeof l.itemId !== 'string') continue;
+      const q = typeof l.quantity === 'number' && !Number.isNaN(l.quantity) ? l.quantity : 0;
+      if (q <= 0) continue;
+      const item = idToItem.get(l.itemId);
+      if (!item || item.price === undefined) continue;
+      lines.push({
+        itemId: item.id,
+        name: item.name,
+        unit: item.unit,
+        price: item.price,
+        quantity: q,
+      });
+    }
+    const id = typeof c.id === 'string' && c.id.length > 0 ? c.id : newCalcId();
+    return {
+      id,
+      name: typeof c.name === 'string' && c.name.length > 0 ? c.name : 'Помещение',
+      collapsed: Boolean(c.collapsed),
+      lines,
+      result: null,
+      loading: false,
+    };
+  });
+
+  if (calculations.length === 0) return null;
+
+  const activeRaw =
+    typeof raw.activeCalcId === 'string' && calculations.some((c) => c.id === raw.activeCalcId)
+      ? raw.activeCalcId
+      : calculations[0].id;
+
+  return { calculations, activeCalcId: activeRaw };
+}
+
+const formatPrice = (n: number) =>
+  new Intl.NumberFormat('ru-RU', {
+    style: 'decimal',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(n) + ' ₽';
 
 /** Парсинг query-параметра preset: "itemId1:qty1,itemId2:qty2" */
 function parsePresetParam(preset: string | null): Array<{ itemId: string; quantity: number }> {
@@ -215,10 +355,9 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
   const guard = useApprovedOrderGuard();
   const [data, setData] = useState<CategoryData | null>(null);
   const [loading, setLoading] = useState(true);
-  const createCalcId = () => `calc-${Math.random().toString(36).slice(2, 10)}`;
   const [calculations, setCalculations] = useState<CalculatorDraft[]>(() => [
     {
-      id: createCalcId(),
+      id: newCalcId(),
       name: 'Помещение 1',
       lines: [],
       result: null,
@@ -237,6 +376,29 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
   const [pendingReviewConfirmOpen, setPendingReviewConfirmOpen] = useState(false);
   const pendingReviewResolverRef = useRef<((value: boolean) => void) | null>(null);
   const [orderStatus, setOrderStatus] = useState<string | null>(null);
+  /** Ключи `slug::index` свёрнутых блоков видов работ по группам */
+  const [collapsedWorkGroupKeys, setCollapsedWorkGroupKeys] = useState<Set<string>>(
+    () => new Set()
+  );
+  const skipPersistPublicWorkGroupsRef = useRef(true);
+  /** Пока true — не пишем черновик в localStorage (первая гидрация URL/хранилища). */
+  const skipPersistCalculatorDraftRef = useRef(true);
+  const prevSlugForCalculatorRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!data || data.slug !== slug) return;
+    skipPersistPublicWorkGroupsRef.current = true;
+    const keys = readCollapsedWorkGroupKeysFromStorage(slug);
+    setCollapsedWorkGroupKeys(new Set(keys));
+  }, [slug, data?.id, data?.slug]);
+
+  useEffect(() => {
+    if (skipPersistPublicWorkGroupsRef.current) {
+      skipPersistPublicWorkGroupsRef.current = false;
+      return;
+    }
+    writeCollapsedWorkGroupKeysToStorage(slug, collapsedWorkGroupKeys);
+  }, [slug, collapsedWorkGroupKeys]);
 
   useEffect(() => {
     let cancelled = false;
@@ -312,10 +474,11 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
     load();
   }, [load]);
 
-  /** Предустановка позиций из query-параметра ?preset=itemId1:qty1,itemId2:qty2 (после загрузки категории). */
+  /** Предустановка из URL (?rooms= / ?preset=), иначе — черновик из localStorage. */
   const presetRaw = searchParams.get('preset');
-  useEffect(() => {
-    if (!data) return;
+  useLayoutEffect(() => {
+    if (!data || data.slug !== slug) return;
+
     const roomPresets = decodeRoomsParam(roomsParam);
     if (roomPresets.length > 0) {
       const idToItem = new Map(data.items.map((i) => [i.id, i]));
@@ -334,7 +497,7 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
           }
         }
         return {
-          id: createCalcId(),
+          id: newCalcId(),
           name: room.name || `Помещение ${idx + 1}`,
           lines,
           result: null,
@@ -346,44 +509,62 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
         setCalculations(nextCalculations);
         setActiveCalcId(nextCalculations[0].id);
       }
+      skipPersistCalculatorDraftRef.current = false;
       return;
     }
+
     const presetItems = parsePresetParam(presetRaw);
-    if (presetItems.length === 0) return;
-    const idToItem = new Map(data.items.map((i) => [i.id, i]));
-    const lines: CalculatorLine[] = [];
-    for (const { itemId, quantity } of presetItems) {
-      const item = idToItem.get(itemId);
-      if (item && item.price !== undefined) {
-        lines.push({
-          itemId: item.id,
-          name: item.name,
-          unit: item.unit,
-          price: item.price,
-          quantity,
+    if (presetItems.length > 0) {
+      const idToItem = new Map(data.items.map((i) => [i.id, i]));
+      const lines: CalculatorLine[] = [];
+      for (const { itemId, quantity } of presetItems) {
+        const item = idToItem.get(itemId);
+        if (item && item.price !== undefined) {
+          lines.push({
+            itemId: item.id,
+            name: item.name,
+            unit: item.unit,
+            price: item.price,
+            quantity,
+          });
+        }
+      }
+      if (lines.length > 0) {
+        setCalculations((prev) => {
+          if (prev.length === 0) {
+            const id = newCalcId();
+            setActiveCalcId(id);
+            return [
+              {
+                id,
+                name: 'Помещение 1',
+                lines,
+                result: null,
+                loading: false,
+                collapsed: false,
+              },
+            ];
+          }
+          return prev.map((calc, index) => (index === 0 ? { ...calc, lines, result: null } : calc));
         });
+        skipPersistCalculatorDraftRef.current = false;
+        return;
       }
     }
-    if (lines.length > 0) {
-      setCalculations((prev) => {
-        if (prev.length === 0) {
-          const id = createCalcId();
-          setActiveCalcId(id);
-          return [
-            {
-              id,
-              name: 'Помещение 1',
-              lines,
-              result: null,
-              loading: false,
-              collapsed: false,
-            },
-          ];
-        }
-        return prev.map((calc, index) => (index === 0 ? { ...calc, lines, result: null } : calc));
-      });
+
+    const restored = hydrateCalculatorDraftFromStorage(slug, data);
+    if (restored) {
+      setCalculations(restored.calculations);
+      setActiveCalcId(restored.activeCalcId);
     }
-  }, [data, presetRaw, roomsParam]);
+    skipPersistCalculatorDraftRef.current = false;
+  }, [data, presetRaw, roomsParam, slug]);
+
+  useEffect(() => {
+    if (!data || data.slug !== slug) return;
+    if (skipPersistCalculatorDraftRef.current) return;
+    writeCalculatorDraftToStorage(slug, calculations, activeCalcId);
+  }, [slug, data?.id, calculations, activeCalcId]);
 
   useEffect(() => {
     if (!activeCalcId && calculations.length > 0) {
@@ -525,7 +706,7 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
   const addCalculation = async () => {
     const canEdit = await requireDetachFromCart();
     if (!canEdit) return;
-    const id = createCalcId();
+    const id = newCalcId();
     setCalculations((prev) => [
       ...prev,
       {
@@ -546,7 +727,7 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
     setCalculations((prev) => {
       const next = prev.filter((calc) => calc.id !== calcId);
       if (next.length === 0) {
-        const id = createCalcId();
+        const id = newCalcId();
         setActiveCalcId(id);
         return [
           {
@@ -580,6 +761,31 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
 
   const lastCalcSignature = useRef(new Map<string, string>());
   const calcTimers = useRef(new Map<string, number>());
+
+  useEffect(() => {
+    if (prevSlugForCalculatorRef.current !== null && prevSlugForCalculatorRef.current !== slug) {
+      skipPersistCalculatorDraftRef.current = true;
+      lastCalcSignature.current = new Map();
+      for (const t of calcTimers.current.values()) {
+        window.clearTimeout(t);
+      }
+      calcTimers.current.clear();
+      const id = newCalcId();
+      setCalculations([
+        {
+          id,
+          name: 'Помещение 1',
+          lines: [],
+          result: null,
+          loading: false,
+          collapsed: false,
+        },
+      ]);
+      setActiveCalcId(id);
+    }
+    prevSlugForCalculatorRef.current = slug;
+  }, [slug]);
+
   const calcSignature = (lines: CalculatorLine[]) =>
     lines
       .map((l) => `${l.itemId}:${l.quantity}`)
@@ -625,6 +831,44 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
   const showPrices = data?.showPricesInPublic ?? true;
   const activeCalc = calculations.find((calc) => calc.id === activeCalcId) ?? calculations[0];
   const activeCalcLines = activeCalc?.lines ?? [];
+
+  const tableSections = useMemo((): CategoryItemSection[] => {
+    if (!data) return [];
+    if (data.itemSections && data.itemSections.length > 0) {
+      return data.itemSections;
+    }
+    if (data.items.length > 0) {
+      return [{ name: data.name, slug: data.slug, items: data.items }];
+    }
+    return [];
+  }, [data]);
+
+  useEffect(() => {
+    if (!data || tableSections.length === 0) return;
+    const valid = new Set(tableSections.map((s, i) => workGroupKey(s, i)));
+    setCollapsedWorkGroupKeys((prev) => {
+      const next = new Set<string>();
+      for (const k of prev) {
+        if (valid.has(k)) next.add(k);
+      }
+      if (prev.size === next.size && [...prev].every((k) => next.has(k))) {
+        return prev;
+      }
+      return next;
+    });
+  }, [data, tableSections]);
+
+  const tableColCount = showPrices ? 4 : 1;
+
+  const toggleWorkGroupCollapsed = (section: CategoryItemSection, sectionIdx: number) => {
+    const key = workGroupKey(section, sectionIdx);
+    setCollapsedWorkGroupKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   const totalAllRooms = useMemo(() => {
     let sum = 0;
@@ -726,101 +970,107 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
       {data.description && <p className={styles.description}>{data.description}</p>}
 
       <div className={styles.content}>
-        {data.children && data.children.length > 0 && (
-          <section className={styles.subcategoriesSection} aria-label="Подкатегории">
-            <h2 className={styles.sectionTitle}>Подкатегории</h2>
-            <ul className={styles.subcategoriesList}>
-              {data.children.map((ch) => {
-                const IconC = !ch.image && ch.icon ? serviceCatalogIconMap[ch.icon] : null;
-                return (
-                  <li key={ch.id}>
-                    <Link
-                      href={getSafeHref(`/catalog/services/${ch.slug}`)}
-                      className={styles.subcategoryCard}
-                    >
-                      {ch.image ? (
-                        <span className={styles.subcategoryMedia}>
-                          <img src={ch.image} alt="" className={styles.subcategoryImg} />
-                        </span>
-                      ) : IconC ? (
-                        <span className={styles.subcategoryMedia}>
-                          <IconC className={styles.subcategoryIcon} aria-hidden />
-                        </span>
-                      ) : null}
-                      <span className={styles.subcategoryTitle}>{ch.name}</span>
-                      {ch.itemsCount > 0 && (
-                        <span className={styles.subcategoryCount}>{ch.itemsCount} видов работ</span>
-                      )}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        )}
-
-        <section className={styles.itemsSection}>
-          <h2 className={styles.sectionTitle}>Виды работ</h2>
-          {data.items.length === 0 ? (
-            <p className={styles.emptyItemsHint}>
-              {data.children && data.children.length > 0
-                ? 'Выберите подкатегорию выше или перейдите в неё, чтобы увидеть виды работ.'
-                : 'В этой категории пока нет позиций.'}
-            </p>
-          ) : null}
-          {data.items.length > 0 ? (
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Название</th>
-                  {showPrices && (
-                    <>
-                      <th>Цена за ед.</th>
-                      <th>Ед. изм.</th>
-                      <th></th>
-                    </>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {data.items.map((item) => (
-                  <tr key={item.id}>
-                    <td>{item.name}</td>
+        <section className={styles.itemsSection} aria-label="Виды работ">
+          {tableSections.length === 0 ? (
+            <p className={styles.emptyItemsHint}>В этой категории пока нет позиций.</p>
+          ) : (
+            <div className={styles.tableScroll}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Название</th>
                     {showPrices && (
                       <>
-                        <td>{item.price !== undefined ? formatPrice(item.price) : '—'}</td>
-                        <td>{item.unit}</td>
-                        <td>
-                          {item.price !== undefined &&
-                            (() => {
-                              const isInCalc = activeCalcLines.some((l) => l.itemId === item.id);
-                              return (
-                                <button
-                                  type="button"
-                                  className={`${styles.addButton} ${isInCalc ? styles.addButtonSelected : ''}`}
-                                  onClick={() => void addToCalculator(item)}
-                                  title={
-                                    isInCalc
-                                      ? 'В расчёте (нажмите, чтобы добавить ещё)'
-                                      : 'В расчёт'
-                                  }
-                                >
-                                  {isInCalc ? (
-                                    <CheckCircleIconSolid className={styles.addButtonIcon} />
-                                  ) : (
-                                    <PlusCircleIcon className={styles.addButtonIcon} />
-                                  )}
-                                </button>
-                              );
-                            })()}
-                        </td>
+                        <th>Цена за ед.</th>
+                        <th>Ед. изм.</th>
+                        <th></th>
                       </>
                     )}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : null}
+                </thead>
+                {tableSections.map((section, sectionIdx) => {
+                  const gKey = workGroupKey(section, sectionIdx);
+                  const groupDomId = `wg-${data.id}-${sectionIdx}`;
+                  const groupCollapsed =
+                    section.items.length > 0 && collapsedWorkGroupKeys.has(gKey);
+                  return (
+                    <tbody key={gKey} id={groupDomId} className={styles.tableGroupTbody}>
+                      <tr className={styles.tableGroupRow}>
+                        <td colSpan={tableColCount}>
+                          <div className={styles.tableGroupHeaderInner}>
+                            {section.items.length > 0 ? (
+                              <button
+                                type="button"
+                                className={styles.tableGroupToggle}
+                                onClick={() => toggleWorkGroupCollapsed(section, sectionIdx)}
+                                aria-expanded={!groupCollapsed}
+                                aria-controls={groupDomId}
+                                title={groupCollapsed ? 'Развернуть группу' : 'Свернуть группу'}
+                                aria-label={
+                                  groupCollapsed
+                                    ? `Развернуть виды работ: Этап ${sectionIdx + 1}, ${section.name}`
+                                    : `Свернуть виды работ: Этап ${sectionIdx + 1}, ${section.name}`
+                                }
+                              >
+                                <ChevronDownIcon
+                                  className={`${styles.tableGroupToggleIcon} ${groupCollapsed ? styles.tableGroupToggleIconCollapsed : ''}`}
+                                  aria-hidden
+                                />
+                              </button>
+                            ) : null}
+                            <span className={styles.tableGroupStageLabel}>
+                              Этап {sectionIdx + 1}
+                            </span>
+                            <span className={styles.tableGroupTitle}>{section.name}</span>
+                          </div>
+                        </td>
+                      </tr>
+                      {!groupCollapsed &&
+                        section.items.map((item) => (
+                          <tr key={item.id}>
+                            <td>{item.name}</td>
+                            {showPrices && (
+                              <>
+                                <td>{item.price !== undefined ? formatPrice(item.price) : '—'}</td>
+                                <td>{item.unit}</td>
+                                <td className={styles.tableActionCell}>
+                                  {item.price !== undefined &&
+                                    (() => {
+                                      const isInCalc = activeCalcLines.some(
+                                        (l) => l.itemId === item.id
+                                      );
+                                      return (
+                                        <button
+                                          type="button"
+                                          className={`${styles.addButton} ${isInCalc ? styles.addButtonSelected : ''}`}
+                                          onClick={() => void addToCalculator(item)}
+                                          title={
+                                            isInCalc
+                                              ? 'В расчёте (нажмите, чтобы добавить ещё)'
+                                              : 'В расчёт'
+                                          }
+                                        >
+                                          {isInCalc ? (
+                                            <CheckCircleIconSolid
+                                              className={styles.addButtonIcon}
+                                            />
+                                          ) : (
+                                            <PlusCircleIcon className={styles.addButtonIcon} />
+                                          )}
+                                        </button>
+                                      );
+                                    })()}
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        ))}
+                    </tbody>
+                  );
+                })}
+              </table>
+            </div>
+          )}
         </section>
 
         {showPrices && (
@@ -939,8 +1189,12 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
                               </li>
                             ))}
                           </ul>
-                          <div className={styles.calcLoading}>
-                            {calc.loading ? 'Расчёт...' : '\u00A0'}
+                          <div
+                            className={styles.calcLoading}
+                            aria-live="polite"
+                            aria-busy={calc.loading}
+                          >
+                            {calc.loading ? 'Расчёт…' : '\u00a0'}
                           </div>
                         </>
                       )}
@@ -972,10 +1226,6 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
                   : 'В корзину'}
             </button>
             {addToCartError && <p className={styles.orderError}>{addToCartError}</p>}
-            <p className={styles.cartHint}>
-              Добавьте услуги в корзину, затем оформите заказ в корзине аналогично товарам. Данные
-              покупателя заполняются в админке.
-            </p>
           </aside>
         )}
       </div>

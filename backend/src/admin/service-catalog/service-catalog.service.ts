@@ -71,6 +71,34 @@ export class ServiceCatalogService {
     return roots;
   }
 
+  /** Все id категорий в поддереве (включая root), только активные связи. */
+  private async collectActiveSubtreeCategoryIds(rootId: string): Promise<string[]> {
+    const out = new Set<string>([rootId]);
+    let frontier = [rootId];
+    for (let depth = 0; depth < 64 && frontier.length > 0; depth++) {
+      const rows = await this.prisma.serviceCatalogCategory.findMany({
+        where: { parentId: { in: frontier }, isActive: true },
+        select: { id: true },
+      });
+      frontier = [];
+      for (const row of rows) {
+        if (!out.has(row.id)) {
+          out.add(row.id);
+          frontier.push(row.id);
+        }
+      }
+    }
+    return [...out];
+  }
+
+  private countActiveItemsInCategorySubtree(node: CategoryTreeNode): number {
+    let n = node.items?.length ?? 0;
+    for (const ch of node.children ?? []) {
+      n += this.countActiveItemsInCategorySubtree(ch);
+    }
+    return n;
+  }
+
   /** Подняться от nodeId к корню: если встретится possibleAncestorId — nodeId лежит в поддереве possibleAncestorId */
   private async isUnderAncestor(possibleAncestorId: string, nodeId: string): Promise<boolean> {
     let current: string | null = nodeId;
@@ -526,29 +554,82 @@ export class ServiceCatalogService {
   }
 
   async getPublicCategoryBySlug(slug: string) {
-    const category = await this.findCategoryBySlug(slug);
-    const items = this.mapPublicItems(category.showPricesInPublic, category.items);
+    const rootMeta = await this.prisma.serviceCatalogCategory.findFirst({
+      where: { slug, isActive: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        icon: true,
+        image: true,
+        showPricesInPublic: true,
+        parent: { select: { id: true, name: true, slug: true } },
+      },
+    });
+    if (!rootMeta) {
+      throw new NotFoundException('Категория не найдена');
+    }
+
+    const subtreeIds = await this.collectActiveSubtreeCategoryIds(rootMeta.id);
+    const flat = await this.prisma.serviceCatalogCategory.findMany({
+      where: { id: { in: subtreeIds }, isActive: true },
+      include: {
+        items: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
+        _count: { select: { items: true } },
+      },
+      orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+    });
+
+    const tree = this.buildCategoryTree(flat as CategoryWithIncludes[]);
+    const rootNode = tree.find((n) => n.id === rootMeta.id);
+    if (!rootNode) {
+      throw new NotFoundException('Категория не найдена');
+    }
+
+    type PublicItem = ReturnType<ServiceCatalogService['mapPublicItems']>[number];
+    const itemSections: { name: string; slug: string; items: PublicItem[] }[] = [];
+    const walk = (n: CategoryTreeNode) => {
+      const mapped = this.mapPublicItems(
+        n.showPricesInPublic,
+        n.items as Parameters<ServiceCatalogService['mapPublicItems']>[1],
+      );
+      if (mapped.length > 0) {
+        itemSections.push({ name: n.name, slug: n.slug, items: mapped });
+      }
+      const kids = [...(n.children ?? [])].sort(
+        (a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id),
+      );
+      for (const ch of kids) {
+        walk(ch);
+      }
+    };
+    walk(rootNode);
+
+    const items = itemSections.flatMap((s) => s.items);
+
     const children =
-      category.children?.map((ch) => ({
+      rootNode.children?.map((ch) => ({
         id: ch.id,
         name: ch.name,
         slug: ch.slug,
         description: ch.description,
         icon: ch.icon,
         image: ch.image,
-        itemsCount: ch._count.items,
+        itemsCount: this.countActiveItemsInCategorySubtree(ch as CategoryTreeNode),
       })) ?? [];
 
     return {
-      id: category.id,
-      name: category.name,
-      slug: category.slug,
-      description: category.description,
-      icon: category.icon,
-      image: category.image,
+      id: rootNode.id,
+      name: rootNode.name,
+      slug: rootNode.slug,
+      description: rootNode.description,
+      icon: rootNode.icon,
+      image: rootNode.image,
       items,
-      showPricesInPublic: category.showPricesInPublic,
-      parent: category.parent,
+      itemSections,
+      showPricesInPublic: rootNode.showPricesInPublic,
+      parent: rootMeta.parent,
       children,
     };
   }

@@ -173,19 +173,423 @@
 
 .emptyItemsHint {
   color: #6b7280;
-  font-size: 0.95rem;
-  margin: 0 0 1rem;
-  line-height: 1.5;
+  font-size: 0.875rem;
+  margin: 0 0 0.75rem;
+  line-height: 1.45;
 }
 
 .content {
   display: grid;
-  grid-template-columns: 1fr 420px;
+  grid-template-columns: minmax(0, 1fr) 420px;
   gap: 2rem;
 }
 
 @media (max-width: 900px) {
   .content {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+  }
+
+  .tableScroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    padding-bottom: 0.125rem;
+  }
+
+  .tableScroll .table {
+    min-width: 26rem;
+  }
+
+  .table th:nth-child(2),
+  .table td:nth-child(2) {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 1.25rem 0.75rem;
+  }
+
+  .breadcrumb {
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+
+  .title {
+    font-size: 1.35rem;
+  }
+
+  .description {
+    font-size: 0.9375rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .content {
+    gap: 1.25rem;
+  }
+
+  /* Без отрицательных margin — иначе ряд обрезается у края вьюпорта / скролла */
+  .tableScroll {
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0.5rem;
+    padding-right: max(1.75rem, calc(env(safe-area-inset-right, 0px) + 1.25rem));
+  }
+
+  .tableScroll thead {
+    display: none;
+  }
+
+  .tableScroll .table {
+    min-width: 22rem;
+    font-size: 0.75rem;
+    line-height: 1.18;
+    padding-right: 1rem;
+    box-sizing: border-box;
+  }
+
+  .tableScroll .table th,
+  .tableScroll .table td {
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
+  }
+
+  .tableScroll .table th:nth-child(2),
+  .tableScroll .table td:nth-child(2) {
+    padding-left: 0.12rem;
+    padding-right: 0.55rem;
+  }
+
+  .tableScroll .table th:nth-child(3),
+  .tableScroll .table td:nth-child(3) {
+    padding-left: 0.4rem;
+    padding-right: 0.12rem;
+  }
+
+  .tableScroll .table th:nth-child(4) {
+    padding-left: 0.15rem;
+    padding-right: 0.65rem;
+  }
+
+  .tableScroll .table td.tableActionCell {
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-left: 0.2rem;
+    padding-right: max(0.85rem, env(safe-area-inset-right, 0px));
+    min-width: 3.1rem;
+    width: 1%;
+    vertical-align: middle;
+    overflow: visible;
+    text-align: center;
+  }
+
+  .tableScroll .table .addButton {
+    overflow: visible;
+    flex-shrink: 0;
+  }
+
+  .tableScroll .table .addButtonIcon {
+    overflow: visible;
+    flex-shrink: 0;
+    display: block;
+  }
+
+  .tableScroll .table td:first-child {
+    overflow-wrap: anywhere;
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-right: 0.35rem;
+  }
+
+  /* Заголовок этапа: одна строка — «Этап N» слева, название справа с обрезкой */
+  .tableScroll .tableGroupHeaderInner {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.28rem;
+    min-width: 0;
+  }
+
+  .tableScroll .tableGroupHeaderInner .tableGroupToggle {
+    flex-shrink: 0;
+  }
+
+  .tableGroupRow td {
+    padding-top: 0.08rem;
+    padding-bottom: 0.08rem;
+  }
+
+  .tableScroll .tableGroupStageLabel {
+    flex: 0 0 auto;
+    font-size: 0.6875rem;
+    line-height: 1.2;
+    font-weight: 600;
+    white-space: nowrap;
+    margin-right: 0;
+  }
+
+  .tableScroll .tableGroupTitle {
+    flex: 1 1 0%;
+    min-width: 0;
+    font-size: 0.6875rem;
+    line-height: 1.2;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .emptyItemsHint {
+    font-size: 0.8125rem;
+  }
+
+  .tableGroupToggle {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .tableGroupToggleIcon {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .addButton {
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    padding: 0.15rem;
+  }
+
+  /* Как у таблицы: .tableScroll .table → 0.75rem / line-height 1.18 */
+  .calculator {
+    position: static;
+    padding: 0.32rem 0.28rem;
+    border-radius: 5px;
+    font-size: 0.75rem;
+    line-height: 1.18;
+  }
+
+  .calculator .calcHeaderRow {
+    margin-bottom: 0.18rem;
+    gap: 0.15rem;
+    align-items: flex-start;
+  }
+
+  .calculator .sectionTitle {
+    font-size: inherit;
+    margin: 0;
+    line-height: inherit;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .calculator .addCalcButton {
+    width: 1.85rem;
+    height: 1.85rem;
+    flex-shrink: 0;
+    border-radius: 4px;
+  }
+
+  .calculator .addCalcButtonIcon {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .calculator .calcHeaderTotal {
+    font-size: inherit;
+  }
+
+  .calculator .calcCards {
+    gap: 0.2rem;
+    margin-bottom: 0.22rem;
+  }
+
+  .calculator .calcCard {
+    border-radius: 5px;
+  }
+
+  .calculator .calcCardActive {
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2);
+  }
+
+  .calculator .calcCardHeader {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-rows: auto auto;
+    gap: 0.12rem 0.18rem;
+    padding: 0.18rem 0.22rem 0.12rem;
+    min-width: 0;
+  }
+
+  .calculator .calcCardHeader .calcNameInput {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    font-size: inherit;
+    line-height: inherit;
+    padding: 0.02rem 0.04rem;
+  }
+
+  .calculator .calcCardHeader .calcSummaryTotal {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+    text-align: left;
+    font-size: inherit;
+    line-height: inherit;
+    min-height: 0;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .calculator .calcCardHeader .calcCollapseButton {
+    grid-column: 2;
+    grid-row: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.85rem;
+    min-height: 1.85rem;
+    margin: 0;
+    padding: 0;
+    border-radius: 4px;
+  }
+
+  .calculator .calcCardHeader .calcCollapseIcon {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  .calculator .calcCardHeader .calcRemoveButton {
+    grid-column: 3;
+    grid-row: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.85rem;
+    min-height: 1.85rem;
+    margin: 0;
+    padding: 0;
+    border-radius: 4px;
+  }
+
+  .calculator .calcCardHeader .calcRemoveIcon {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  .calculator .calcCardBody {
+    padding: 0 0.22rem 0.12rem;
+  }
+
+  .calculator .calcEmpty {
+    font-size: inherit;
+    line-height: inherit;
+    margin: 0;
+  }
+
+  .calculator .calcList {
+    margin-bottom: 0;
+    min-width: 0;
+  }
+
+  .calculator .calcLine {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.35rem;
+    padding: 0.15rem 0;
+    min-width: 0;
+  }
+
+  .calculator .calcLineInfo {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 0;
+  }
+
+  .calculator .calcLineName {
+    font-size: inherit;
+    line-height: inherit;
+    overflow-wrap: anywhere;
+  }
+
+  .calculator .calcLinePrice {
+    font-size: inherit;
+    line-height: inherit;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .calculator .calcLineControls {
+    flex-shrink: 0;
+    align-self: center;
+    justify-content: flex-end;
+    gap: 0.12rem;
+  }
+
+  .calculator .quantityInput {
+    width: 3.25rem;
+    min-width: 3.25rem;
+    max-width: 3.25rem;
+    flex: 0 0 3.25rem;
+    height: 1.85rem;
+    min-height: 1.85rem;
+    box-sizing: border-box;
+    padding: 0 0.15rem;
+    font-size: inherit;
+    line-height: inherit;
+    border-radius: 4px;
+  }
+
+  .calculator .removeButton {
+    width: 1.85rem;
+    height: 1.85rem;
+    min-width: 1.85rem;
+    min-height: 1.85rem;
+    flex-shrink: 0;
+    font-size: 0.875rem;
+    box-sizing: border-box;
+    border-radius: 4px;
+  }
+
+  .calculator .calcLoading {
+    margin-top: 0.08rem;
+    min-height: 1.18em;
+    font-size: inherit;
+    line-height: inherit;
+  }
+
+  /* Высота как у базовой .addToCartButton (36px); только отступ сверху в компактном блоке */
+  .calculator .addToCartButton {
+    margin-top: 0.2rem;
+  }
+
+  .calculator .addToCartIcon {
+    width: 0.95rem;
+    height: 0.95rem;
+  }
+
+  .calculator .orderError {
+    margin: 0.12rem 0 0;
+    font-size: inherit;
+    line-height: inherit;
+  }
+
+  .subcategoriesList {
     grid-template-columns: 1fr;
   }
 }
@@ -201,21 +605,29 @@
   color: #374151;
 }
 
+.tableScroll {
+  width: 100%;
+  min-width: 0;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9375rem;
+  font-size: 0.8125rem;
+  line-height: 1.35;
 }
 
 .table th,
 .table td {
-  padding: 0.75rem 1rem;
+  padding: 0.35rem 0.6rem;
   text-align: left;
   border-bottom: 1px solid #e5e7eb;
+  vertical-align: middle;
 }
 
 .table th {
   font-weight: 600;
+  font-size: 0.75rem;
   color: #6b7280;
 }
 
@@ -223,15 +635,92 @@
   color: #1f2937;
 }
 
+.tableActionCell {
+  text-align: center;
+  vertical-align: middle;
+  width: 1%;
+  white-space: nowrap;
+}
+
+.tableGroupTbody {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tableGroupRow td {
+  background: #f3f4f6;
+  border-bottom: 1px solid #e5e7eb;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+
+.tableGroupHeaderInner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.45rem;
+}
+
+.tableGroupToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.625rem;
+  height: 1.625rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  color: #4b5563;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.tableGroupToggle:hover,
+.tableGroupToggle:focus-visible {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #111827;
+  outline: none;
+}
+
+.tableGroupToggleIcon {
+  width: 0.9375rem;
+  height: 0.9375rem;
+  transition: transform 0.2s ease;
+}
+
+.tableGroupToggleIconCollapsed {
+  transform: rotate(-90deg);
+}
+
+.tableGroupStageLabel {
+  flex-shrink: 0;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  margin-right: 0.35rem;
+}
+
+.tableGroupTitle {
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: #111827;
+}
+
 .addButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.35rem;
+  padding: 0.15rem;
   background: transparent;
   color: #6b7280;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
   transition: color 0.2s;
 }
@@ -249,18 +738,45 @@
 }
 
 .addButtonIcon {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.125rem;
+  height: 1.125rem;
 }
 
 .calculator {
   position: sticky;
   top: 1rem;
   height: fit-content;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 1.5rem;
   background: #f9fafb;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
+}
+
+@media (min-width: 641px) {
+  .calculator {
+    /* Как у .table: текст видов работ */
+    font-size: 0.8125rem;
+    line-height: 1.35;
+  }
+}
+
+.calculator .sectionTitle {
+  font-size: inherit;
+  line-height: inherit;
+  margin: 0;
+}
+
+.calculator .addToCartButton {
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.calculator .orderError {
+  font-size: inherit;
+  line-height: inherit;
 }
 
 .calcHeaderRow {
@@ -303,9 +819,12 @@
   flex-direction: column;
   gap: 0.75rem;
   margin-bottom: 1rem;
+  min-width: 0;
 }
 
 .calcCard {
+  min-width: 0;
+  max-width: 100%;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
   background: white;
@@ -318,16 +837,18 @@
 
 .calcCardHeader {
   display: grid;
-  grid-template-columns: 1fr 88px auto auto;
+  grid-template-columns: minmax(0, 1fr) 88px auto auto;
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 0.75rem 0.5rem;
   cursor: pointer;
+  min-width: 0;
 }
 
 .calcNameInput {
+  min-width: 0;
   border: none;
-  font-size: 0.9375rem;
+  font-size: inherit;
   font-weight: 600;
   color: #1f2937;
   background: transparent;
@@ -340,18 +861,22 @@
 }
 
 .calcSummaryTotal {
-  font-size: 0.8125rem;
+  min-width: 0;
+  font-size: inherit;
   color: #059669;
   font-weight: 600;
   text-align: right;
   min-height: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .calcCollapseButton {
   border: none;
   background: transparent;
   color: #6b7280;
-  font-size: 0.8125rem;
+  font-size: inherit;
   cursor: pointer;
 }
 
@@ -377,10 +902,11 @@
 }
 
 .calcLoading {
-  font-size: 0.8125rem;
+  font-size: inherit;
   color: #6b7280;
-  margin-top: 0.5rem;
-  min-height: 1rem;
+  margin-top: 0.25rem;
+  min-height: 1.35em;
+  line-height: inherit;
 }
 
 .calcCardBody {
@@ -388,15 +914,15 @@
 }
 
 .calcEmpty {
-  font-size: 0.875rem;
+  font-size: inherit;
   color: #6b7280;
   margin: 0;
-  line-height: 1.5;
+  line-height: inherit;
 }
 
 .calcList {
   list-style: none;
-  margin: 0 0 1rem;
+  margin: 0 0 0.25rem;
   padding: 0;
 }
 
@@ -419,14 +945,24 @@
 }
 
 .calcLineName {
-  font-size: 0.9375rem;
+  font-size: inherit;
   font-weight: 500;
   color: #374151;
+  overflow-wrap: anywhere;
+}
+
+/* Только в калькуляторе: длинные названия переносятся, блок с полем — по центру по вертикали */
+.calculator .calcLine {
+  align-items: flex-start;
 }
 
 .calcLinePrice {
-  font-size: 0.8125rem;
+  min-width: 0;
+  font-size: inherit;
   color: #6b7280;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .calcLineControls {
@@ -440,7 +976,7 @@
   padding: 0.35rem 0.5rem;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 0.875rem;
+  font-size: inherit;
 }
 
 .removeButton {
@@ -458,6 +994,35 @@
 
 .removeButton:hover {
   background: #fef2f2;
+}
+
+/* В калькуляторе поле количества и «×» — одна высота; при переносе названия — по центру строки */
+.calculator .calcLineControls {
+  align-self: center;
+  align-items: center;
+}
+
+.calculator .quantityInput {
+  height: 2rem;
+  min-height: 2rem;
+  box-sizing: border-box;
+  width: 3.5rem;
+  min-width: 3.5rem;
+  max-width: 3.5rem;
+  flex: 0 0 3.5rem;
+  padding: 0 0.28rem;
+  border-radius: 4px;
+  font-size: inherit;
+}
+
+.calculator .removeButton {
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  min-height: 2rem;
+  box-sizing: border-box;
+  padding: 0;
+  border-radius: 4px;
 }
 
 .calcButton {
@@ -649,13 +1214,6 @@
   height: 1.25rem;
 }
 
-.cartHint {
-  font-size: 0.8125rem;
-  color: #6b7280;
-  margin: 0.75rem 0 0;
-  line-height: 1.4;
-}
-
 /* Тёмная тема */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .container {
   color: #d1d5db;
@@ -687,6 +1245,36 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .description {
   color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tableGroupTbody {
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tableGroupRow td {
+  background: #1f2937;
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tableGroupToggle {
+  background: #111827;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tableGroupToggle:hover,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tableGroupToggle:focus-visible {
+  background: #1f2937;
+  border-color: #6b7280;
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tableGroupStageLabel {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tableGroupTitle {
+  color: #f9fafb;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
@@ -844,10 +1432,6 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButtonSuccess:hover,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButtonSuccess:disabled {
   background: #10b981;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .cartHint {
-  color: #9ca3af;
 }
 
 /* Усиленные тёмные стили для карточек помещений (в конце файла, чтобы перекрывать базу) */
