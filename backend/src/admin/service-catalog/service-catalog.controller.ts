@@ -16,6 +16,7 @@ import { UpdateServiceCatalogCategoryDto } from './dto/update-service-catalog-ca
 import { CreateServiceCatalogItemDto } from './dto/create-service-catalog-item.dto';
 import { UpdateServiceCatalogItemDto } from './dto/update-service-catalog-item.dto';
 import { UpdateServiceCatalogBlockDto } from './dto/update-service-catalog-block.dto';
+import { ReorderServiceCatalogCategoryDto } from './dto/reorder-service-catalog-category.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -56,6 +57,20 @@ export class ServiceCatalogController {
   @ApiOperation({ summary: 'Категория по ID' })
   findCategory(@Param('id') id: string) {
     return this.service.findCategoryById(id);
+  }
+
+  @Post('categories/:id/reorder')
+  @ApiOperation({
+    summary: 'Поменять порядок категории среди соседей',
+    description:
+      'Соседи определяются только по parentId в БД; корневые и вложенные группы не смешиваются.',
+  })
+  reorderCategorySibling(
+    @Param('id') id: string,
+    @Body() dto: ReorderServiceCatalogCategoryDto,
+    @Query('includeInactive') includeInactive?: string,
+  ) {
+    return this.service.reorderCategoryAmongSiblings(id, dto.direction, includeInactive === 'true');
   }
 
   @Patch('categories/:id')

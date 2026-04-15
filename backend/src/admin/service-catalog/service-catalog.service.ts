@@ -64,7 +64,7 @@ export class ServiceCatalogService {
       }
     }
     const sortRec = (nodes: CategoryTreeNode[]) => {
-      nodes.sort((a, b) => a.sortOrder - b.sortOrder);
+      nodes.sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
       for (const n of nodes) sortRec(n.children);
     };
     sortRec(roots);
@@ -182,10 +182,67 @@ export class ServiceCatalogService {
           ? { orderBy: { sortOrder: 'asc' } }
           : { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
       },
-      orderBy: { sortOrder: 'asc' },
+      orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
     });
 
     return this.buildCategoryTree(flat as CategoryWithIncludes[]);
+  }
+
+  /**
+   * Порядок только среди записей с тем же parentId в БД (корни: parentId null).
+   * Исключает ошибки клиента при смешении корневых и вложенных категорий.
+   */
+  async reorderCategoryAmongSiblings(
+    categoryId: string,
+    direction: 'up' | 'down',
+    includeInactive = true,
+  ) {
+    const activeWhere: Prisma.ServiceCatalogCategoryWhereInput = includeInactive
+      ? {}
+      : { isActive: true };
+
+    const cat = await this.prisma.serviceCatalogCategory.findFirst({
+      where: { id: categoryId, ...activeWhere },
+      select: { id: true, parentId: true },
+    });
+    if (!cat) {
+      throw new NotFoundException('Категория не найдена');
+    }
+
+    const parentKey = cat.parentId;
+    const siblingParentFilter: Prisma.ServiceCatalogCategoryWhereInput =
+      parentKey === null ? { parentId: null } : { parentId: parentKey };
+
+    const siblings = await this.prisma.serviceCatalogCategory.findMany({
+      where: { ...siblingParentFilter, ...activeWhere },
+      orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+      select: { id: true },
+    });
+
+    const idx = siblings.findIndex((s) => s.id === categoryId);
+    if (idx < 0) {
+      throw new BadRequestException('Категория не входит в список соседей по данным БД');
+    }
+    const j = direction === 'up' ? idx - 1 : idx + 1;
+    if (j < 0 || j >= siblings.length) {
+      return this.findAllCategories(includeInactive);
+    }
+
+    const orderIds = siblings.map((s) => s.id);
+    const tmp = orderIds[idx];
+    orderIds[idx] = orderIds[j];
+    orderIds[j] = tmp;
+
+    await this.prisma.$transaction(async (tx) => {
+      for (let i = 0; i < orderIds.length; i++) {
+        await tx.serviceCatalogCategory.update({
+          where: { id: orderIds[i] },
+          data: { sortOrder: i },
+        });
+      }
+    });
+
+    return this.findAllCategories(includeInactive);
   }
 
   async findCategoryById(id: string) {

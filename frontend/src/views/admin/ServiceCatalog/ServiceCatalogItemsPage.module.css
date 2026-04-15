@@ -34,20 +34,44 @@
   text-decoration: underline;
 }
 
-.message {
-  padding: 0.45rem 0.65rem;
-  border-radius: 6px;
-  margin-bottom: 0.65rem;
+/* Плавающее уведомление (портал в body), не влияет на поток страницы */
+.toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 10000;
+  max-width: min(22rem, calc(100vw - 2rem));
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.35;
+  box-shadow: 0 8px 28px rgb(15 23 42 / 18%);
+  animation: serviceCatalogToastIn 0.25s ease-out;
 }
 
-.message.success {
-  background: rgb(34 197 94 / 20%);
-  color: rgb(22 163 74);
+.toastSuccess {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
 }
 
-.message.error {
-  background: rgb(239 68 68 / 20%);
-  color: rgb(220 38 38);
+.toastError {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+@keyframes serviceCatalogToastIn {
+  from {
+    transform: translateY(0.5rem);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .section {
@@ -123,6 +147,74 @@
   gap: 0.5rem;
   flex: 1;
   min-width: 0;
+}
+
+.categoryTitleWithReorder {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.categoryTitleWithReorder .categoryBlockTitle {
+  flex: 1;
+  min-width: 0;
+}
+
+.reorderGroupButtons {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+}
+
+.reorderIconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.reorderIconButton:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.reorderIconButton:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.reorderGroupIcon {
+  width: 14px;
+  height: 14px;
+}
+
+.reorderItemIcon {
+  width: 12px;
+  height: 12px;
+}
+
+.itemReorderWrap {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.1rem;
+  margin-right: 0.2rem;
+  vertical-align: middle;
 }
 
 .nestedToggleButton {
@@ -319,7 +411,7 @@
 }
 
 .actionsColumn {
-  width: 180px;
+  width: 220px;
 }
 
 .nameCell {
@@ -397,8 +489,10 @@
 
 .cellActions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.25rem;
   align-items: center;
+  justify-content: flex-end;
 }
 
 .editButton {
@@ -470,6 +564,18 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
   color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .toastSuccess {
+  background: #064e3b;
+  color: #d1fae5;
+  border-color: #047857;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .toastError {
+  background: #7f1d1d;
+  color: #fecaca;
+  border-color: #991b1b;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .viewLink {
@@ -555,6 +661,18 @@
   background: #5b21b6;
   border-color: #c4b5fd;
   color: #f5f3ff;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .reorderIconButton {
+  background: #374151;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .reorderIconButton:hover:not(:disabled) {
+  background: #4b5563;
+  border-color: #6b7280;
+  color: #f9fafb;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .categoryBlockCount {
