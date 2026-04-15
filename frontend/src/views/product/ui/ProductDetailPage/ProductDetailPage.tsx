@@ -29,6 +29,7 @@ import {
   PRODUCT_AVAILABILITY_LABEL,
   getProductAvailability,
 } from '@/shared/lib/product-availability';
+import { isPublicPriceDraftDirty } from '@/shared/lib/public-price-draft';
 import { touchPublicSiteEditModeActivity } from '@/shared/lib/public-site-edit-mode';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { escapeHtmlAndPreserveNewlines, getSafeHref } from '@/shared/lib/sanitize';
@@ -117,19 +118,6 @@ function serializePublicAttributeDraft(rows: AttributeItem[]): string {
       slug: a.slug ?? '',
     }))
   );
-}
-
-function normalizePriceDraftInput(raw: string): string {
-  return raw.replace(/\s/g, '').replace(',', '.');
-}
-
-function isPublicPriceDraftDirty(draft: string, baseline: string): boolean {
-  const d = normalizePriceDraftInput(draft);
-  const b = normalizePriceDraftInput(baseline);
-  const nd = parseFloat(d);
-  const nb = parseFloat(b);
-  if (Number.isFinite(nd) && Number.isFinite(nb)) return nd !== nb;
-  return draft.trim() !== baseline.trim();
 }
 
 function serializePublicComponentsDraft(rows: PublicComponentDraftRow[]): string {

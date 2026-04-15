@@ -71,6 +71,15 @@
     margin-bottom: 0.25rem;
   }
 
+  .productCardCompact .pricePublicWrap {
+    margin-bottom: 0.25rem;
+    gap: 0.2rem;
+  }
+
+  .productCardCompact .publicPriceToolbar {
+    padding-top: 0;
+  }
+
   .productCardCompact .price .oldPrice {
     font-size: 0.5rem;
     white-space: nowrap;
@@ -339,6 +348,10 @@
   }
 
   .productCard .price {
+    margin-bottom: 0.5rem;
+  }
+
+  .productCard .pricePublicWrap {
     margin-bottom: 0.5rem;
   }
 
@@ -979,6 +992,188 @@
   font-weight: 600;
 }
 
+.pricePublicWrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.35rem 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.pricePublicWrap .price {
+  margin-bottom: 0;
+  flex: 1;
+  min-width: 0;
+  flex-wrap: wrap;
+  row-gap: 0.25rem;
+}
+
+.priceEditing {
+  align-items: flex-start;
+}
+
+.publicPriceToolbar {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding-top: 0.125rem;
+}
+
+.priceEditRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.priceEditInput {
+  width: 5.5rem;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  background: #fff;
+}
+
+.priceEditInput:focus {
+  outline: none;
+  border-color: rgb(var(--color-accent-rgb) / 0.55);
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
+}
+
+.priceCurrency {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.publicEditToolbarActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.attributesEditBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.875rem;
+  height: 1.875rem;
+  padding: 0;
+  border: 1px solid rgb(37 99 235 / 0.35);
+  border-radius: 7px;
+  background: #fff;
+  color: #2563eb;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.attributesEditBtn:hover {
+  background: rgb(37 99 235 / 0.08);
+  border-color: rgb(37 99 235 / 0.55);
+  color: #1d4ed8;
+}
+
+.attributesEditIcon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  color: #2563eb;
+}
+
+.attributesEditBtn:hover .attributesEditIcon {
+  color: #1d4ed8;
+}
+
+.attributesCancelBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.875rem;
+  height: 1.875rem;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  background: #fff;
+  cursor: pointer;
+  color: #6b7280;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.attributesCancelBtn:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.attributesCancelBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.attributesCancelIcon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.attributesSaveBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.875rem;
+  height: 1.875rem;
+  padding: 0;
+  border-radius: 7px;
+  border: 1px solid #e5e7eb;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgb(var(--color-accent-rgb));
+  color: #fff;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    opacity 0.2s;
+}
+
+.attributesSaveBtn:not(:disabled) {
+  border-color: transparent;
+}
+
+.attributesSaveBtn:not(:disabled):hover {
+  filter: brightness(1.05);
+}
+
+.attributesSaveBtn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #9ca3af;
+}
+
+.attributesSaveIcon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  color: #fff;
+}
+
+.attributesSaveBtn:disabled .attributesSaveIcon {
+  color: #9ca3af;
+}
+
 .addToCartButton {
   background: var(--gradient-accent);
   border: none;
@@ -1245,6 +1440,55 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .finalPrice {
   color: var(--color-accent);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .priceEditInput {
+  border-color: #4b5563;
+  color: #f9fafb;
+  background: #1f2937;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .priceCurrency {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributesEditBtn {
+  background: #1f2937;
+  border-color: rgb(96 165 250 / 0.45);
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributesEditBtn:hover {
+  background: rgb(37 99 235 / 0.2);
+  border-color: rgb(96 165 250 / 0.65);
+  color: #bfdbfe;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributesEditIcon {
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .attributesEditBtn:hover
+  .attributesEditIcon {
+  color: #bfdbfe;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributesCancelBtn {
+  background: #1f2937;
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributesCancelBtn:hover:not(:disabled) {
+  background: #374151;
+  border-color: #6b7280;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .attributesSaveBtn:disabled {
+  background: #374151;
+  border-color: #4b5563;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .favoriteButton,

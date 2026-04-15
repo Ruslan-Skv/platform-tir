@@ -1,22 +1,29 @@
 'use client';
 
+import { CheckIcon, PencilSquareIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { Wallet } from 'lucide-react';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Link from 'next/link';
 
 import type { Product } from '@/entities/product';
+import { patchProductPricing } from '@/shared/api/admin-product-patch';
 import { isCompareLimitExceededError } from '@/shared/api/compare';
 import { isAuthRequiredForCartError } from '@/shared/lib/cart-auth-required';
 import { emitCompareLimitExceeded } from '@/shared/lib/compare-limit-notify';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
+import { useCanEditCatalogOnPublic } from '@/shared/lib/hooks/useCanEditCatalogOnPublic';
+import { usePublicSiteEditMode } from '@/shared/lib/hooks/usePublicSiteEditMode';
 import {
   PRODUCT_AVAILABILITY_LABEL,
   getProductAvailability,
 } from '@/shared/lib/product-availability';
+import { isPublicPriceDraftDirty } from '@/shared/lib/public-price-draft';
+import { touchPublicSiteEditModeActivity } from '@/shared/lib/public-site-edit-mode';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
+import type { CatalogApiProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
 
 import styles from './ProductCard.module.css';
 
@@ -27,6 +34,8 @@ interface ProductCardProps {
   onRemoveFromCompare?: () => void; // Callback после удаления из сравнения
   partnerLogoUrl?: string | null; // URL логотипа партнёра для товаров партнёра
   showPartnerIconOnCards?: boolean; // Показывать иконку партнёра на карточках
+  /** После PATCH цены с публичного сайта — обновить товар в сетке каталога */
+  onProductCatalogPatched?: (data: CatalogApiProduct) => void;
 }
 
 function saveCatalogScrollPosition(): void {
@@ -43,6 +52,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onRemoveFromCompare,
   partnerLogoUrl = null,
   showPartnerIconOnCards = true,
+  onProductCatalogPatched,
 }) => {
   const { toggleWishlist, isInWishlist, wishlist } = useWishlist();
   const { toggleCompare, isInCompare, compare, removeFromCompare } = useCompare();
@@ -52,6 +62,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
+
+  const publicSiteEditMode = usePublicSiteEditMode();
+  const canEditCatalogOnPublic = useCanEditCatalogOnPublic();
+  const showPublicPriceEdit = publicSiteEditMode && canEditCatalogOnPublic && !isCompareMode;
+  const [isEditingPublicPrice, setIsEditingPublicPrice] = useState(false);
+  const [draftPrice, setDraftPrice] = useState('');
+  const [savingPublicPrice, setSavingPublicPrice] = useState(false);
+  const priceEditBaselineRef = useRef('');
 
   const cardVariants =
     product.cardVariants && product.cardVariants.length > 0 ? product.cardVariants : [];
@@ -80,6 +98,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     setCurrentImageIndex(0);
   }, [product.id]);
 
+  useEffect(() => {
+    setIsEditingPublicPrice(false);
+  }, [product.originalId, product.slug, selectedVariantIndex]);
+
   // Получаем оригинальный ID товара из API
   const getProductId = (): string => {
     // Используем originalId если он есть, иначе пробуем преобразовать id в string
@@ -99,6 +121,63 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   const finalPrice = displayPrice;
   const oldPrice = displayOldPrice;
+
+  const isPublicPriceDirty = useMemo(() => {
+    if (!isEditingPublicPrice) return false;
+    return isPublicPriceDraftDirty(draftPrice, priceEditBaselineRef.current);
+  }, [isEditingPublicPrice, draftPrice]);
+
+  const exitPublicPriceEdit = useCallback(() => {
+    if (savingPublicPrice) return;
+    touchPublicSiteEditModeActivity();
+    setDraftPrice(priceEditBaselineRef.current);
+    setIsEditingPublicPrice(false);
+  }, [savingPublicPrice]);
+
+  const handleSavePublicPrice = useCallback(async () => {
+    const raw = draftPrice.replace(/\s/g, '').replace(',', '.');
+    const num = parseFloat(raw);
+    if (!Number.isFinite(num) || num < 0) {
+      alert('Укажите корректную цену (неотрицательное число)');
+      return;
+    }
+    const variants = product.cardVariants;
+    const hasVariants = variants && variants.length > 0;
+    setSavingPublicPrice(true);
+    try {
+      const result = hasVariants
+        ? await patchProductPricing(productId, {
+            cardVariants: variants!.map((v, i) => ({
+              name: v.name,
+              price:
+                i === selectedVariantIndex
+                  ? num
+                  : typeof v.price === 'string'
+                    ? parseFloat(String(v.price))
+                    : v.price,
+              image: v.image?.trim() || undefined,
+              size: v.size?.trim() || undefined,
+              color: v.color?.trim() || undefined,
+              extraOption: v.extraOption?.trim() || undefined,
+              sortOrder: v.sortOrder ?? i,
+            })),
+          })
+        : await patchProductPricing(productId, { price: num });
+
+      if (!result.ok) {
+        alert(result.message);
+        return;
+      }
+      const data = result.data as CatalogApiProduct;
+      onProductCatalogPatched?.(data);
+      touchPublicSiteEditModeActivity();
+      setIsEditingPublicPrice(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Не удалось сохранить цену');
+    } finally {
+      setSavingPublicPrice(false);
+    }
+  }, [draftPrice, product, productId, selectedVariantIndex, onProductCatalogPatched]);
 
   const availability = getProductAvailability(Number(product.stock ?? 0), product.onOrder);
   const availabilityTextClass =
@@ -409,13 +488,83 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             </div>
           )}
 
-          <div className={styles.price}>
-            <span className={styles.priceLabel}>Стоимость:</span>
-            <span className={styles.priceIcon} aria-hidden>
-              <Wallet size={18} strokeWidth={2} />
-            </span>
-            {oldPrice && <span className={styles.oldPrice}>{oldPrice.toLocaleString()} ₽</span>}
-            <span className={styles.finalPrice}>{finalPrice.toLocaleString()} ₽</span>
+          <div
+            className={styles.pricePublicWrap}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <div className={`${styles.price} ${isEditingPublicPrice ? styles.priceEditing : ''}`}>
+              <span className={styles.priceLabel}>Стоимость:</span>
+              <span className={styles.priceIcon} aria-hidden>
+                <Wallet size={18} strokeWidth={2} />
+              </span>
+              {oldPrice && !isEditingPublicPrice && (
+                <span className={styles.oldPrice}>{oldPrice.toLocaleString()} ₽</span>
+              )}
+              {isEditingPublicPrice ? (
+                <span className={styles.priceEditRow}>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    className={styles.priceEditInput}
+                    value={draftPrice}
+                    onChange={(e) => setDraftPrice(e.target.value)}
+                    aria-label="Цена"
+                  />
+                  <span className={styles.priceCurrency}>₽</span>
+                </span>
+              ) : (
+                <span className={styles.finalPrice}>{finalPrice.toLocaleString()} ₽</span>
+              )}
+            </div>
+            {showPublicPriceEdit ? (
+              <div className={styles.publicPriceToolbar}>
+                {!isEditingPublicPrice ? (
+                  <button
+                    type="button"
+                    className={styles.attributesEditBtn}
+                    onClick={() => {
+                      touchPublicSiteEditModeActivity();
+                      const src = selectedVariant
+                        ? String(selectedVariant.price)
+                        : String(product.price);
+                      priceEditBaselineRef.current = src;
+                      setDraftPrice(src);
+                      setIsEditingPublicPrice(true);
+                    }}
+                    title="Редактировать цену"
+                    aria-label="Редактировать цену"
+                  >
+                    <PencilSquareIcon className={styles.attributesEditIcon} aria-hidden />
+                  </button>
+                ) : (
+                  <div className={styles.publicEditToolbarActions}>
+                    <button
+                      type="button"
+                      className={styles.attributesCancelBtn}
+                      onClick={exitPublicPriceEdit}
+                      disabled={savingPublicPrice}
+                      title="Закрыть без сохранения"
+                      aria-label="Закрыть без сохранения"
+                    >
+                      <XMarkIcon className={styles.attributesCancelIcon} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.attributesSaveBtn}
+                      onClick={() => void handleSavePublicPrice()}
+                      disabled={savingPublicPrice || !isPublicPriceDirty}
+                      title={savingPublicPrice ? 'Сохранение...' : 'Сохранить'}
+                      aria-label={savingPublicPrice ? 'Сохранение...' : 'Сохранить'}
+                    >
+                      <CheckIcon className={styles.attributesSaveIcon} aria-hidden />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : null}
           </div>
 
           {(() => {

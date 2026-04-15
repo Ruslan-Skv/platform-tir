@@ -2,7 +2,14 @@
 
 import { FunnelIcon } from '@heroicons/react/24/outline';
 
-import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
@@ -261,6 +268,15 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
     return sortProducts(filtered, sortBy);
   }, [originalProducts, searchParams, catalogFilters, sortBy]);
 
+  const handleProductCatalogPatched = useCallback((data: CatalogApiProduct) => {
+    setOriginalProducts((prev) => {
+      const idx = prev.findIndex((p) => p.originalId === data.id);
+      if (idx < 0) return prev;
+      const mapped = mapCatalogApiProductToProduct(data, idx);
+      return prev.map((p, i) => (i === idx ? mapped : p));
+    });
+  }, []);
+
   // Пагинация - вычисляем до условных возвратов
   const totalPages = Math.ceil(filteredSortedProducts.length / productsPerPage);
   const startIndex = (currentPage - 1) * productsPerPage;
@@ -378,6 +394,7 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
             product={product}
             partnerLogoUrl={partnerSettings.partnerLogoUrl}
             showPartnerIconOnCards={partnerSettings.showPartnerIconOnCards}
+            onProductCatalogPatched={handleProductCatalogPatched}
           />
         ))}
       </div>
