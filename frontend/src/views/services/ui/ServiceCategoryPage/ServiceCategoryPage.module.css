@@ -977,6 +977,16 @@
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: inherit;
+  /* Явный светлый вид: иначе при html[data-theme='light'] и body color-scheme: light dark
+     нативные поля на iOS/Android могут окрашиваться как системные тёмные */
+  background-color: #ffffff;
+  color: #111827;
+  color-scheme: light;
+}
+
+:where(html[data-theme='light']) .quantityInput:focus {
+  border-color: #2563eb;
+  outline: none;
 }
 
 .removeButton {
@@ -1335,6 +1345,7 @@
   background: #262626;
   border-color: #525252;
   color: #d1d5db;
+  color-scheme: dark;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .quantityInput:focus {

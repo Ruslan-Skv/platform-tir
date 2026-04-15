@@ -678,17 +678,18 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
     );
   };
 
-  const updateQuantity = async (calcId: string, itemId: string, quantity: number) => {
+  const updateQuantity = async (calcId: string, itemId: string, rawQuantity: number) => {
     const canEdit = await requireDetachFromCart();
     if (!canEdit) return;
+    const quantity = Number.isFinite(rawQuantity) ? Math.max(0, rawQuantity) : 0;
     setCalculations((prev) =>
       prev.map((calc) => {
         if (calc.id !== calcId) return calc;
-        const nextLines =
-          quantity <= 0
-            ? calc.lines.filter((l) => l.itemId !== itemId)
-            : calc.lines.map((l) => (l.itemId === itemId ? { ...l, quantity } : l));
-        return { ...calc, lines: nextLines, result: null };
+        return {
+          ...calc,
+          lines: calc.lines.map((l) => (l.itemId === itemId ? { ...l, quantity } : l)),
+          result: null,
+        };
       })
     );
   };
@@ -900,10 +901,13 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
       await addServiceToCart(data.id, {
         rooms: drafts.map((calc) => ({
           name: calc.name || 'Помещение',
-          items: calc.lines.map((line) => ({
-            itemId: line.itemId,
-            quantity: Number(line.quantity) || 1,
-          })),
+          items: calc.lines.map((line) => {
+            const q = Number(line.quantity);
+            return {
+              itemId: line.itemId,
+              quantity: Number.isFinite(q) ? Math.max(0, q) : 1,
+            };
+          }),
         })),
       });
       await refreshCart();
@@ -1159,16 +1163,18 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
                                 <div className={styles.calcLineControls}>
                                   <input
                                     type="number"
-                                    min={0.01}
+                                    min={0}
                                     step={0.1}
                                     value={line.quantity}
-                                    onChange={(e) =>
+                                    onChange={(e) => {
+                                      const v = e.target.value;
+                                      const n = v === '' ? 0 : parseFloat(v);
                                       void updateQuantity(
                                         calc.id,
                                         line.itemId,
-                                        parseFloat(e.target.value) || 0
-                                      )
-                                    }
+                                        Number.isNaN(n) ? 0 : n
+                                      );
+                                    }}
                                     className={styles.quantityInput}
                                   />
                                   <button
