@@ -12,6 +12,7 @@ import {
   getAdminPhotoCategories,
   getAdminProjects,
 } from '@/shared/api/admin-photo';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
 import styles from './PhotoSectionPage.module.css';
@@ -168,19 +169,12 @@ export function PhotoSectionPage() {
     }
   };
 
-  const UPLOADS_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1').replace(
-    /\/api\/v1\/?$/,
-    ''
-  );
-  const getImageUrl = (url: string) => {
-    if (url.startsWith('http')) return url;
-    return `${UPLOADS_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
-  };
+  const getImageUrl = (url: string) => publicUploadUrl(url);
 
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Фото</h1>
+        <h1 className={styles.title}>Наши работы</h1>
         <div className={styles.headerActions}>
           <Link href="/admin/content/photo/projects/new" className={styles.createButton}>
             + Добавить объект

@@ -5,6 +5,7 @@ import { extname } from 'path';
 import { PrismaService } from '../../database/prisma.service';
 import { CreatePromotionDto } from './dto/create-promotion.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
+import { uploadsBaseUrl } from '../../common/utils/uploads-url';
 
 @Injectable()
 export class PromotionService {
@@ -23,7 +24,7 @@ export class PromotionService {
     const destPath = path.join(uploadsDir, filename);
     fs.renameSync(file.path, destPath);
     const imageUrl = `/uploads/promotions/${filename}`;
-    const prefix = baseUrl.replace(/\/$/, '');
+    const prefix = uploadsBaseUrl(baseUrl);
     return { imageUrl: `${prefix}${imageUrl}` };
   }
 

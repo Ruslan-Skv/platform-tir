@@ -549,7 +549,7 @@ async function main() {
 
   const aboutLinks = [
     { name: 'Контакты', href: '/contacts' },
-    { name: 'Фото', href: '/photo' },
+    { name: 'Наши работы', href: '/photo' },
     { name: 'Вакансии', href: '/careers' },
   ];
   const catalogLinks = [
@@ -593,18 +593,29 @@ async function main() {
 
   console.log('✅ Footer seeded');
 
+  await prisma.footerSectionLink.updateMany({
+    where: { href: '/photo', name: 'Фото' },
+    data: { name: 'Наши работы' },
+  });
+
+  await prisma.navigationItem.updateMany({
+    where: { href: '/photo', name: 'Фото' },
+    data: { name: 'Наши работы' },
+  });
+
   // ============================================
   // МЕНЮ НАВИГАЦИИ (кнопки в шапке сайта)
   // Добавляем отсутствующие пункты по имени; у существующих обновляем ссылку и hasDropdown.
   // Вложенное меню настраивается в админке для каждого пункта.
   // Примечание: переименование «Каталог услуг» → «Ремонт квартир» в существующих БД выполняется миграцией 20250324.
+  // «Фото» → «Наши работы»: миграция 20260415120000 + дублирование выше для сидов без migrate.
   // ============================================
   const defaultNavItems = [
     { name: 'Каталог', href: '/catalog/products', hasDropdown: true },
     { name: 'Ремонт квартир', href: '/catalog/services', hasDropdown: true },
     { name: 'Акции', href: '/promotions', hasDropdown: true },
     { name: 'Блог', href: '/blog', hasDropdown: true },
-    { name: 'Фото', href: '/photo', hasDropdown: true },
+    { name: 'Наши работы', href: '/photo', hasDropdown: true },
   ];
   const existingNav = await prisma.navigationItem.findMany({ orderBy: { sortOrder: 'asc' } });
   const byName = new Map(existingNav.map((n) => [n.name, n]));
@@ -638,7 +649,7 @@ async function main() {
     console.log(`✅ Navigation: всего пунктов в меню: ${totalNav}`);
   }
 
-  // Пункты выпадающего меню по умолчанию (для «Ремонт квартир», «Акции», «Блог», «Фото»).
+  // Пункты выпадающего меню по умолчанию (для «Ремонт квартир», «Акции», «Блог», «Наши работы»).
   // «Каталог» заполняется из категорий каталога, здесь не трогаем.
   const defaultDropdownByNavName: Record<
     string,
@@ -662,7 +673,7 @@ async function main() {
     ],
     Акции: [{ name: 'Все акции', href: '/promotions', icon: 'Tag' }],
     Блог: [{ name: 'Все записи', href: '/blog', icon: 'DocumentText' }],
-    Фото: [
+    'Наши работы': [
       { name: 'Ремонт санузла', href: '/photo/bathroom-renovation', icon: 'Home' },
       { name: 'Ремонт квартиры', href: '/photo/apartment-renovation', icon: 'BuildingOffice' },
       { name: 'Кухни', href: '/photo/kitchens', icon: 'Home' },
@@ -787,7 +798,7 @@ async function main() {
     console.log('✅ Blog: тестовая статья создана');
   }
 
-  // Photo categories (для раздела «Фото»)
+  // Photo categories (для раздела «Наши работы»)
   const photoCategories = [
     { name: 'Ремонт санузла', slug: 'bathroom-renovation', order: 0 },
     { name: 'Ремонт квартиры', slug: 'apartment-renovation', order: 1 },

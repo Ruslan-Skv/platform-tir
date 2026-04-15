@@ -15,6 +15,7 @@ import {
   updatePhotoProject,
   uploadPhoto,
 } from '@/shared/api/admin-photo';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
 import styles from './PhotoProjectFormPage.module.css';
 
@@ -185,14 +186,7 @@ export function PhotoProjectFormPage({ projectId }: PhotoProjectFormPageProps) {
     }
   };
 
-  const UPLOADS_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1').replace(
-    /\/api\/v1\/?$/,
-    ''
-  );
-  const getImageUrl = (url: string) => {
-    if (url.startsWith('http')) return url;
-    return `${UPLOADS_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
-  };
+  const getImageUrl = (url: string) => publicUploadUrl(url);
 
   if (loading && projectId) {
     return (

@@ -155,7 +155,7 @@ const baseNavItems: NavItem[] = [
       { label: 'Страницы', href: '/admin/content/home', resourceId: 'admin.content.home' },
       { label: 'Блог', href: '/admin/content/blog', resourceId: 'admin.content.blog' },
       { label: 'Акции', href: '/admin/content/promotions', resourceId: 'admin.content.promotions' },
-      { label: 'Фото', href: '/admin/content/photo', resourceId: 'admin.content.photo' },
+      { label: 'Наши работы', href: '/admin/content/photo', resourceId: 'admin.content.photo' },
       {
         label: 'Комментарии',
         href: '/admin/content/comments',

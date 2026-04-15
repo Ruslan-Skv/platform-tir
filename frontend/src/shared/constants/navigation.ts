@@ -41,7 +41,7 @@ export const navigation: NavigationItem[] = [
     category: 'blog',
   },
   {
-    name: 'Фото',
+    name: 'Наши работы',
     href: '/photo',
     hasDropdown: true,
     category: 'photo',
@@ -163,7 +163,7 @@ export const dropdownMenus: DropdownMenus = {
       },
     ],
   },
-  Фото: {
+  'Наши работы': {
     category: 'photo',
     image: '../images/remont-kvartir.jpg',
     items: [

@@ -8,9 +8,21 @@
  *
  * В dev Next проксирует `/uploads` на `API_INTERNAL_URL` / localhost:3001 (см. next.config.js rewrites).
  */
+
+/**
+ * Раньше при API_BASE_URL с суффиксом /api/v1 в БД попадали URL вида .../api/v1/uploads/...
+ * Статика отдаётся с `/uploads/`, не под префиксом API — убираем лишний сегмент.
+ */
+export function normalizeUploadsInUrl(url: string): string {
+  if (!url) return url;
+  return url
+    .replace(/^(https?:\/\/[^/?#]+)\/api\/v1(?=\/uploads\/)/i, '$1')
+    .replace(/^\/api\/v1(?=\/uploads\/)/, '');
+}
+
 export function publicUploadUrl(path: string | null | undefined): string {
   if (path == null || path === '') return '';
-  const p = path.trim();
+  const p = normalizeUploadsInUrl(path.trim());
   if (/^https?:\/\//i.test(p)) return p;
   const normalized = p.startsWith('/') ? p : `/${p}`;
   if (normalized.startsWith('/uploads/')) {

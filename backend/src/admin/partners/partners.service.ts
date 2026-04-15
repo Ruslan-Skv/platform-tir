@@ -3,6 +3,7 @@ import * as path from 'path';
 import { PrismaService } from '../../database/prisma.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
 import { Prisma } from '@prisma/client';
+import { uploadsBaseUrl } from '../../common/utils/uploads-url';
 
 @Injectable()
 export class PartnersService {
@@ -14,7 +15,7 @@ export class PartnersService {
     }
     const filename = path.basename(file.path);
     const logoUrl = `/uploads/partners/${filename}`;
-    const prefix = baseUrl.replace(/\/$/, '');
+    const prefix = uploadsBaseUrl(baseUrl);
     return { logoUrl: `${prefix}${logoUrl}` };
   }
 

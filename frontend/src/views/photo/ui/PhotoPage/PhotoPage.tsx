@@ -6,6 +6,7 @@ import Link from 'next/link';
 
 import type { Photo, PhotoCategory, PhotoProject } from '@/shared/api/photo';
 import { getPhotoCategories, getPhotoProjects } from '@/shared/api/photo';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
 import styles from './PhotoPage.module.css';
 
@@ -63,14 +64,7 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug }) => 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const UPLOADS_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1').replace(
-    /\/api\/v1\/?$/,
-    ''
-  );
-  const getImageUrl = (url: string) => {
-    if (url.startsWith('http')) return url;
-    return `${UPLOADS_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
-  };
+  const getImageUrl = (url: string) => publicUploadUrl(url);
 
   const renderProjectPhotos = (project: PhotoProject) => {
     const photos = project.photos ?? [];
@@ -102,7 +96,7 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug }) => 
                 key={i}
                 type="button"
                 className={`${styles.sliderDot} ${i === 0 ? styles.active : ''}`}
-                aria-label={`Фото ${i + 1}`}
+                aria-label={`Слайд ${i + 1}`}
               />
             ))}
           </div>
@@ -152,7 +146,7 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug }) => 
             <span className={styles.separator}>/</span>
           </li>
           <li>
-            <span className={styles.current}>Фото</span>
+            <span className={styles.current}>Наши работы</span>
           </li>
         </ol>
       </nav>
@@ -270,7 +264,7 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug }) => 
             ×
           </button>
           <div className={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
-            <img src={getImageUrl(lightboxPhoto.imageUrl)} alt="Фото" />
+            <img src={getImageUrl(lightboxPhoto.imageUrl)} alt="" />
           </div>
         </div>
       )}

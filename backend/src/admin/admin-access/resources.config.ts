@@ -66,7 +66,7 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   { id: 'admin.content.pages', label: 'Страницы', path: '/admin/content/pages' },
   { id: 'admin.content.blog', label: 'Блог', path: '/admin/content/blog' },
   { id: 'admin.content.promotions', label: 'Акции', path: '/admin/content/promotions' },
-  { id: 'admin.content.photo', label: 'Фото', path: '/admin/content/photo' },
+  { id: 'admin.content.photo', label: 'Наши работы', path: '/admin/content/photo' },
   { id: 'admin.content.comments', label: 'Комментарии', path: '/admin/content/comments' },
   { id: 'admin.content.navigation', label: 'Меню навигации', path: '/admin/content/navigation' },
   { id: 'admin.content.footer', label: 'Футер', path: '/admin/content/footer' },

@@ -27,6 +27,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { PrismaService } from '../../database/prisma.service';
 import { UserRole } from '@prisma/client';
 import { UpdateAdminNotificationsDto } from './dto/update-admin-notifications.dto';
+import { uploadsBaseUrl } from '../../common/utils/uploads-url';
 
 /** Prisma findUnique/upsert не принимают role: null — используем findFirst для default. */
 async function findBlockByRole(prisma: PrismaService, role: string | null) {
@@ -413,7 +414,7 @@ export class AdminNotificationsController {
     const filename = path.basename(file.path);
     const fileUrl = `/uploads/notification-sounds/${filename}`;
     const baseUrl = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
-    const prefix = baseUrl.replace(/\/$/, '');
+    const prefix = uploadsBaseUrl(baseUrl);
     const fullUrl = `${prefix}${fileUrl}`;
 
     const sound = await this.prisma.notificationSound.create({

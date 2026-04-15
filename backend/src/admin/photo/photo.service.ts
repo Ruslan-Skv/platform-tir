@@ -9,6 +9,7 @@ import { UpdatePhotoProjectDto } from './dto/update-photo-project.dto';
 import { CreatePhotoDto } from './dto/create-photo.dto';
 import { UpdatePhotoDto } from './dto/update-photo.dto';
 import { Prisma } from '@prisma/client';
+import { uploadsBaseUrl } from '../../common/utils/uploads-url';
 
 @Injectable()
 export class PhotoService {
@@ -329,7 +330,7 @@ export class PhotoService {
     const destPath = path.join(uploadsDir, filename);
     fs.renameSync(file.path, destPath);
     const imageUrl = `/uploads/photo/${filename}`;
-    const prefix = baseUrl.replace(/\/$/, '');
+    const prefix = uploadsBaseUrl(baseUrl);
     return { imageUrl: `${prefix}${imageUrl}` };
   }
 }
