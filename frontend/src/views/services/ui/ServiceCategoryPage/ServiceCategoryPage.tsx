@@ -128,6 +128,16 @@ interface CalculatorLine {
   quantity: number;
 }
 
+/** Сколько позиций этапа (по `itemId`) уже в расчёте активного помещения. */
+function countSelectedInSectionForLines(
+  section: CategoryItemSection,
+  lines: CalculatorLine[]
+): number {
+  if (section.items.length === 0 || lines.length === 0) return 0;
+  const ids = new Set(section.items.map((i) => i.id));
+  return lines.filter((l) => ids.has(l.itemId)).length;
+}
+
 interface CalculateResult {
   total: number;
   lines: {
@@ -991,6 +1001,10 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
                   const groupDomId = `wg-${data.id}-${sectionIdx}`;
                   const groupCollapsed =
                     section.items.length > 0 && collapsedWorkGroupKeys.has(gKey);
+                  const selectedInStage =
+                    showPrices && section.items.length > 0
+                      ? countSelectedInSectionForLines(section, activeCalcLines)
+                      : 0;
                   return (
                     <tbody key={gKey} id={groupDomId} className={styles.tableGroupTbody}>
                       <tr className={styles.tableGroupRow}>
@@ -1020,6 +1034,15 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
                               Этап {sectionIdx + 1}
                             </span>
                             <span className={styles.tableGroupTitle}>{section.name}</span>
+                            {selectedInStage > 0 ? (
+                              <span
+                                className={styles.tableGroupSelectedCount}
+                                title={`В расчёте активного помещения: ${selectedInStage}`}
+                                aria-label={`Выбрано позиций этого этапа в расчёте: ${selectedInStage}`}
+                              >
+                                {selectedInStage}
+                              </span>
+                            ) : null}
                           </div>
                         </td>
                       </tr>

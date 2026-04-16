@@ -712,6 +712,21 @@
   color: #111827;
 }
 
+.tableGroupSelectedCount {
+  margin-left: auto;
+  flex-shrink: 0;
+  min-width: 1.375rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  text-align: center;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
 .addButton {
   display: inline-flex;
   align-items: center;
@@ -1285,6 +1300,11 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .tableGroupTitle {
   color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tableGroupSelectedCount {
+  background: #1e3a5f;
+  color: #93c5fd;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
