@@ -313,6 +313,13 @@
   font-size: 0.8125rem;
 }
 
+.categoryMarkupBadge {
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #047857;
+  white-space: nowrap;
+}
+
 .categoryBlockTitle {
   font-size: 0.9375rem;
   font-weight: 700;
@@ -399,11 +406,18 @@
 }
 
 .nameColumn {
-  width: 360px;
+  width: 300px;
 }
 
 .priceColumn {
-  width: 130px;
+  width: 96px;
+}
+
+.priceDerivedCell {
+  color: #047857;
+  font-weight: 500;
+  white-space: nowrap;
+  vertical-align: middle;
 }
 
 .unitColumn {
@@ -618,6 +632,14 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .categoryBlockTitleNested {
   color: #cbd5e1;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryMarkupBadge {
+  color: #6ee7b7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .priceDerivedCell {
+  color: #6ee7b7;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .parentNestedStats {

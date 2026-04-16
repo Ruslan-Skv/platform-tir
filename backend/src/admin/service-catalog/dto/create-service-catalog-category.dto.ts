@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsBoolean, MinLength } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsBoolean, MinLength, Min, Max } from 'class-validator';
 
 export class CreateServiceCatalogCategoryDto {
   @IsString()
@@ -29,6 +29,13 @@ export class CreateServiceCatalogCategoryDto {
   @IsBoolean()
   @IsOptional()
   showPricesInPublic?: boolean;
+
+  /** Наценка на группу, % к базовой цене вида работ (может быть отрицательной). 0 — брать наценку у родительской категории. */
+  @IsNumber()
+  @Min(-1000)
+  @Max(10000)
+  @IsOptional()
+  priceMarkupPercent?: number;
 
   @IsNumber()
   @IsOptional()

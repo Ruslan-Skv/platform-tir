@@ -1,4 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { serviceCatalogPriceWithMarkup } from '../common/utils/service-catalog-price';
+import {
+  effectiveServiceCatalogMarkupPercent,
+  loadServiceCatalogCategoryMarkupMap,
+} from '../common/utils/service-catalog-markup-effective';
 import { PrismaService } from '../database/prisma.service';
 
 @Injectable()
@@ -343,13 +349,22 @@ export class CartService {
             id: true,
             name: true,
             slug: true,
-            items: { select: { id: true, name: true, unit: true, price: true } },
           },
         },
       },
       orderBy: { createdAt: 'desc' },
     });
-    return rows.map((r) => {
+
+    const allLineItemIds = new Set<string>();
+    const parsedRows: Array<{
+      row: (typeof rows)[0];
+      rawRooms: Array<{
+        name: string;
+        items: { itemId?: string; item_id?: string; quantity: number }[];
+      }>;
+    }> = [];
+
+    for (const r of rows) {
       const raw = r.items as
         | { itemId?: string; item_id?: string; quantity: number }[]
         | {
@@ -365,7 +380,53 @@ export class CartService {
             name: room.name ?? 'Помещение',
             items: Array.isArray(room.items) ? room.items : [],
           }));
-      const catalogMap = new Map((r.category.items ?? []).map((c) => [c.id, c]));
+      for (const room of rawRooms) {
+        for (const li of room.items ?? []) {
+          const id = li.itemId ?? li.item_id;
+          if (id != null) allLineItemIds.add(String(id));
+        }
+      }
+      parsedRows.push({ row: r, rawRooms });
+    }
+
+    const catalogMap = new Map<
+      string,
+      {
+        name: string;
+        unit: string;
+        price: Prisma.Decimal;
+        categoryId: string;
+      }
+    >();
+    let categoryMarkupMap = new Map<
+      string,
+      { parentId: string | null; priceMarkupPercent: Prisma.Decimal }
+    >();
+    if (allLineItemIds.size > 0) {
+      const dbItems = await this.prisma.serviceCatalogItem.findMany({
+        where: { id: { in: [...allLineItemIds] } },
+        select: {
+          id: true,
+          name: true,
+          unit: true,
+          price: true,
+          categoryId: true,
+        },
+      });
+      categoryMarkupMap = await loadServiceCatalogCategoryMarkupMap(this.prisma, [
+        ...new Set(dbItems.map((i) => i.categoryId)),
+      ]);
+      for (const row of dbItems) {
+        catalogMap.set(row.id, {
+          name: row.name,
+          unit: row.unit,
+          price: row.price,
+          categoryId: row.categoryId,
+        });
+      }
+    }
+
+    return parsedRows.map(({ row: r, rawRooms }) => {
       let total = 0;
       const roomsWithDetails = rawRooms.map((room) => {
         let roomTotal = 0;
@@ -375,7 +436,13 @@ export class CartService {
             const itemId = String(i.itemId ?? i.item_id);
             const cat = catalogMap.get(itemId);
             const quantity = Math.max(0, Number(i.quantity) || 0);
-            const price = cat?.price != null ? Number(cat.price) : 0;
+            const price =
+              cat?.price != null
+                ? serviceCatalogPriceWithMarkup(
+                    cat.price,
+                    effectiveServiceCatalogMarkupPercent(cat.categoryId, categoryMarkupMap),
+                  )
+                : 0;
             const amount = price * quantity;
             roomTotal += amount;
             total += amount;
@@ -393,11 +460,9 @@ export class CartService {
       });
       const itemsWithDetails = roomsWithDetails.flatMap((room) => room.items);
       const { category, ...rest } = r;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- items excluded from category
-      const { items, ...categorySafe } = category;
       return {
         ...rest,
-        category: categorySafe,
+        category,
         itemsWithDetails,
         rooms: rawRooms.map((room) => ({
           name: room.name || 'Помещение',

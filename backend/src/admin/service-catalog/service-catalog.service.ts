@@ -12,6 +12,12 @@ import { UpdateServiceCatalogItemDto } from './dto/update-service-catalog-item.d
 import { UpdateServiceCatalogBlockDto } from './dto/update-service-catalog-block.dto';
 import { Prisma, ServiceCatalogCategory } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { serviceCatalogPriceWithMarkup } from '../../common/utils/service-catalog-price';
+import {
+  categoryRowsToMarkupMap,
+  effectiveServiceCatalogMarkupPercent,
+  loadServiceCatalogCategoryMarkupMap,
+} from '../../common/utils/service-catalog-markup-effective';
 
 type CategoryWithIncludes = ServiceCatalogCategory & {
   items: { price: Prisma.Decimal; [key: string]: unknown }[];
@@ -189,6 +195,7 @@ export class ServiceCatalogService {
         description: dto.description,
         icon: dto.icon ?? null,
         image: dto.image ?? null,
+        priceMarkupPercent: new Prisma.Decimal(dto.priceMarkupPercent ?? 0),
         showPricesInPublic: dto.showPricesInPublic ?? true,
         sortOrder: dto.sortOrder ?? 0,
         isActive: dto.isActive ?? true,
@@ -328,6 +335,9 @@ export class ServiceCatalogService {
     if (dto.icon !== undefined) data.icon = dto.icon;
     if (dto.image !== undefined) data.image = dto.image;
     if (dto.showPricesInPublic !== undefined) data.showPricesInPublic = dto.showPricesInPublic;
+    if (dto.priceMarkupPercent !== undefined) {
+      data.priceMarkupPercent = new Prisma.Decimal(dto.priceMarkupPercent);
+    }
     if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
     if (dto.parentId !== undefined) {
@@ -390,7 +400,7 @@ export class ServiceCatalogService {
   // --- Items (admin) ---
   async createItem(dto: CreateServiceCatalogItemDto) {
     await this.findCategoryById(dto.categoryId);
-    return this.prisma.serviceCatalogItem.create({
+    const created = await this.prisma.serviceCatalogItem.create({
       data: {
         categoryId: dto.categoryId,
         name: dto.name,
@@ -400,10 +410,8 @@ export class ServiceCatalogService {
         sortOrder: dto.sortOrder ?? 0,
         isActive: dto.isActive ?? true,
       },
-      include: {
-        category: { select: { id: true, name: true, slug: true } },
-      },
     });
+    return this.findItemById(created.id);
   }
 
   async findAllItems(params?: { categoryId?: string; page?: number; limit?: number }) {
@@ -417,7 +425,15 @@ export class ServiceCatalogService {
       this.prisma.serviceCatalogItem.findMany({
         where,
         include: {
-          category: { select: { id: true, name: true, slug: true } },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              parentId: true,
+              priceMarkupPercent: true,
+            },
+          },
         },
         orderBy: [{ category: { sortOrder: 'asc' } }, { sortOrder: 'asc' }],
         skip,
@@ -426,8 +442,19 @@ export class ServiceCatalogService {
       this.prisma.serviceCatalogItem.count({ where }),
     ]);
 
+    const markupMap = await loadServiceCatalogCategoryMarkupMap(this.prisma, [
+      ...new Set(items.map((i) => i.categoryId)),
+    ]);
+
     return {
-      data: items,
+      data: items.map((item) => ({
+        ...item,
+        /** Базовая цена хранится в `price`; итог с наценкой группы (категории позиции). */
+        priceWithMarkup: serviceCatalogPriceWithMarkup(
+          item.price,
+          effectiveServiceCatalogMarkupPercent(item.categoryId, markupMap),
+        ),
+      })),
       total,
       page,
       limit,
@@ -445,7 +472,16 @@ export class ServiceCatalogService {
     if (!item) {
       throw new NotFoundException('Вид работ не найден');
     }
-    return item;
+    const markupMap = await loadServiceCatalogCategoryMarkupMap(this.prisma, [item.categoryId]);
+    const basePrice = Number(item.price);
+    return {
+      ...item,
+      basePrice,
+      priceWithMarkup: serviceCatalogPriceWithMarkup(
+        item.price,
+        effectiveServiceCatalogMarkupPercent(item.categoryId, markupMap),
+      ),
+    };
   }
 
   async updateItem(id: string, dto: UpdateServiceCatalogItemDto) {
@@ -456,17 +492,18 @@ export class ServiceCatalogService {
     const data: Prisma.ServiceCatalogItemUpdateInput = { ...dto };
     if (dto.price !== undefined) data.price = new Prisma.Decimal(dto.price);
 
-    return this.prisma.serviceCatalogItem.update({
+    await this.prisma.serviceCatalogItem.update({
       where: { id },
       data,
-      include: {
-        category: { select: { id: true, name: true, slug: true } },
-      },
     });
+    return this.findItemById(id);
   }
 
   async removeItem(id: string) {
-    await this.findItemById(id);
+    const row = await this.prisma.serviceCatalogItem.findUnique({ where: { id } });
+    if (!row) {
+      throw new NotFoundException('Вид работ не найден');
+    }
     return this.prisma.serviceCatalogItem.delete({
       where: { id },
     });
@@ -482,6 +519,7 @@ export class ServiceCatalogService {
       sortOrder: number;
       price: Prisma.Decimal;
     }[],
+    categoryMarkupPercent: Prisma.Decimal,
   ) {
     return items.map((item) => {
       const base = {
@@ -492,18 +530,26 @@ export class ServiceCatalogService {
         sortOrder: item.sortOrder,
       };
       if (showPrices) {
-        return { ...base, price: Number(item.price) };
+        return {
+          ...base,
+          price: serviceCatalogPriceWithMarkup(item.price, categoryMarkupPercent),
+        };
       }
       return base;
     });
   }
 
-  private mapPublicCategoryTree(nodes: CategoryTreeNode[]): Record<string, unknown>[] {
+  private mapPublicCategoryTree(
+    nodes: CategoryTreeNode[],
+    markupById: ReturnType<typeof categoryRowsToMarkupMap>,
+  ): Record<string, unknown>[] {
     return nodes.map((c) => {
-      const childMaps = this.mapPublicCategoryTree(c.children);
+      const childMaps = this.mapPublicCategoryTree(c.children, markupById);
+      const effectiveMarkup = effectiveServiceCatalogMarkupPercent(c.id, markupById);
       const ownItems = this.mapPublicItems(
         c.showPricesInPublic,
         c.items as Parameters<typeof this.mapPublicItems>[1],
+        effectiveMarkup,
       );
       const childTotal = childMaps.reduce(
         (s, ch) => s + (typeof ch.totalWorkTypes === 'number' ? ch.totalWorkTypes : 0),
@@ -543,13 +589,20 @@ export class ServiceCatalogService {
     });
 
     const tree = this.buildCategoryTree(flat as unknown as CategoryWithIncludes[]);
+    const markupById = categoryRowsToMarkupMap(
+      flat.map((c) => ({
+        id: c.id,
+        parentId: c.parentId,
+        priceMarkupPercent: c.priceMarkupPercent,
+      })),
+    );
 
     return {
       block: {
         id: block.id,
         title: block.title,
       },
-      categories: this.mapPublicCategoryTree(tree),
+      categories: this.mapPublicCategoryTree(tree, markupById),
     };
   }
 
@@ -587,12 +640,21 @@ export class ServiceCatalogService {
       throw new NotFoundException('Категория не найдена');
     }
 
+    const markupById = categoryRowsToMarkupMap(
+      flat.map((c) => ({
+        id: c.id,
+        parentId: c.parentId,
+        priceMarkupPercent: c.priceMarkupPercent,
+      })),
+    );
+
     type PublicItem = ReturnType<ServiceCatalogService['mapPublicItems']>[number];
     const itemSections: { name: string; slug: string; items: PublicItem[] }[] = [];
     const walk = (n: CategoryTreeNode) => {
       const mapped = this.mapPublicItems(
         n.showPricesInPublic,
         n.items as Parameters<ServiceCatalogService['mapPublicItems']>[1],
+        effectiveServiceCatalogMarkupPercent(n.id, markupById),
       );
       if (mapped.length > 0) {
         itemSections.push({ name: n.name, slug: n.slug, items: mapped });
@@ -643,9 +705,20 @@ export class ServiceCatalogService {
     const dbItems = await this.prisma.serviceCatalogItem.findMany({
       where: { id: { in: ids }, isActive: true },
       include: {
-        category: { select: { name: true, slug: true, showPricesInPublic: true } },
+        category: {
+          select: {
+            name: true,
+            slug: true,
+            showPricesInPublic: true,
+            priceMarkupPercent: true,
+          },
+        },
       },
     });
+
+    const markupMap = await loadServiceCatalogCategoryMarkupMap(this.prisma, [
+      ...new Set(dbItems.map((i) => i.categoryId)),
+    ]);
 
     const idToItem = new Map(dbItems.map((i) => [i.id, i]));
     const lines: {
@@ -668,7 +741,10 @@ export class ServiceCatalogService {
       if (item.category.showPricesInPublic) {
         anyCategoryShowsPrices = true;
       }
-      const price = Number(item.price);
+      const price = serviceCatalogPriceWithMarkup(
+        item.price,
+        effectiveServiceCatalogMarkupPercent(item.categoryId, markupMap),
+      );
       const amount = price * quantity;
       total += amount;
       lines.push({

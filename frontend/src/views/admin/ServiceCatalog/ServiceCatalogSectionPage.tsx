@@ -23,6 +23,8 @@ interface NewServiceCategoryForm {
   icon: ServiceIconOptionValue | '';
   image: string;
   showPricesInPublic: boolean;
+  /** Наценка на группу, % к базовой цене видов работ (может быть отрицательной). */
+  priceMarkupPercent: number;
 }
 
 interface ServiceCatalogItem {
@@ -44,6 +46,7 @@ interface ServiceCatalogCategory {
   icon: string | null;
   image: string | null;
   showPricesInPublic: boolean;
+  priceMarkupPercent?: number;
   sortOrder: number;
   isActive: boolean;
   parentId?: string | null;
@@ -128,6 +131,7 @@ const INITIAL_NEW_SERVICE_CATEGORY: NewServiceCategoryForm = {
   icon: '',
   image: '',
   showPricesInPublic: true,
+  priceMarkupPercent: 0,
 };
 
 const slugify = (text: string) => {
@@ -207,6 +211,7 @@ export function ServiceCatalogSectionPage() {
     icon: string;
     image: string;
     showPricesInPublic: boolean;
+    priceMarkupPercent: number;
     parentId: string | null;
   } | null>(null);
   const editCategoryFileInputRef = useRef<HTMLInputElement>(null);
@@ -341,6 +346,7 @@ export function ServiceCatalogSectionPage() {
     if (newCategory.image.trim()) {
       body.image = newCategory.image.trim();
     }
+    body.priceMarkupPercent = Number(newCategory.priceMarkupPercent) || 0;
 
     try {
       const res = await fetch(`${API_URL}/admin/service-catalog/categories`, {
@@ -385,6 +391,7 @@ export function ServiceCatalogSectionPage() {
         icon: editCategoryData.icon || undefined,
         image: editCategoryData.image?.trim() || null,
         showPricesInPublic: editCategoryData.showPricesInPublic,
+        priceMarkupPercent: Number(editCategoryData.priceMarkupPercent) || 0,
         parentId: editCategoryData.parentId,
       };
       const res = await fetch(`${API_URL}/admin/service-catalog/categories/${id}`, {
@@ -608,6 +615,27 @@ export function ServiceCatalogSectionPage() {
                           />
                           Показывать цены на сайте
                         </label>
+                        <label className={styles.formGroup}>
+                          <span className={styles.parentFieldLabel}>
+                            Наценка на группу, % (к базовой цене; может быть отрицательной)
+                          </span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            className={styles.input}
+                            value={editCategoryData.priceMarkupPercent}
+                            onChange={(e) =>
+                              setEditCategoryData((p) =>
+                                p
+                                  ? {
+                                      ...p,
+                                      priceMarkupPercent: parseFloat(e.target.value) || 0,
+                                    }
+                                  : p
+                              )
+                            }
+                          />
+                        </label>
                         <button
                           type="button"
                           className={styles.saveButton}
@@ -680,6 +708,7 @@ export function ServiceCatalogSectionPage() {
                                 icon: cat.icon || '',
                                 image: cat.image || '',
                                 showPricesInPublic: cat.showPricesInPublic ?? true,
+                                priceMarkupPercent: Number(cat.priceMarkupPercent ?? 0),
                                 parentId: cat.parentId ?? null,
                               });
                             }}
@@ -916,6 +945,24 @@ export function ServiceCatalogSectionPage() {
                 />
                 Показывать цены на сайте
               </label>
+
+              <div className={styles.createFormGroup}>
+                <label className={styles.label}>
+                  Наценка на группу, % (к базовой цене видов работ; может быть отрицательной)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className={styles.input}
+                  value={newCategory.priceMarkupPercent}
+                  onChange={(e) =>
+                    setNewCategory((prev) => ({
+                      ...prev,
+                      priceMarkupPercent: parseFloat(e.target.value) || 0,
+                    }))
+                  }
+                />
+              </div>
             </div>
 
             <div className={styles.modalActions}>

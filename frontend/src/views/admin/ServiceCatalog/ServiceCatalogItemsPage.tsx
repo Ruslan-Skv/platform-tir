@@ -84,6 +84,8 @@ interface ServiceCatalogCategory {
   image: string | null;
   sortOrder: number;
   isActive: boolean;
+  /** Наценка на группу, % к базовой цене видов работ в этой категории. */
+  priceMarkupPercent?: number;
   parentId?: string | null;
   children?: ServiceCatalogCategory[];
   items?: ServiceCatalogItem[];
@@ -277,6 +279,45 @@ function buildRenumberedOrderAfterSwap<T extends { id: string }>(
   return reordered.map((s, i) => ({ id: s.id, sortOrder: i }));
 }
 
+function priceWithMarkup(base: number, markupPercent: number | null | undefined): number {
+  const m = markupPercent ?? 0;
+  return Math.round(base * (1 + m / 100) * 100) / 100;
+}
+
+type CategoryMarkupLookupRow = { parentId: string | null; priceMarkupPercent: number };
+
+/** Соответствует бэкенду: 0% у группы — наследовать наценку родителя. */
+function buildCategoryMarkupByIdFromTree(
+  roots: ServiceCatalogCategory[]
+): Map<string, CategoryMarkupLookupRow> {
+  const map = new Map<string, CategoryMarkupLookupRow>();
+  const walk = (nodes: ServiceCatalogCategory[]) => {
+    for (const c of nodes) {
+      map.set(c.id, {
+        parentId: c.parentId ?? null,
+        priceMarkupPercent: Number(c.priceMarkupPercent ?? 0),
+      });
+      if (c.children?.length) walk(c.children);
+    }
+  };
+  walk(roots);
+  return map;
+}
+
+function effectiveServiceCatalogMarkupPercentClient(
+  categoryId: string,
+  byId: Map<string, CategoryMarkupLookupRow>
+): number {
+  let current: string | null = categoryId;
+  for (let d = 0; d < 512 && current; d++) {
+    const row = byId.get(current);
+    if (!row) return 0;
+    if (row.priceMarkupPercent !== 0) return row.priceMarkupPercent;
+    current = row.parentId;
+  }
+  return 0;
+}
+
 const formatPrice = (n: number) =>
   new Intl.NumberFormat('ru-RU', { style: 'decimal', minimumFractionDigits: 0 }).format(n);
 
@@ -329,6 +370,11 @@ export function ServiceCatalogItemsPage() {
 
   const structuralCategoryRows = useMemo(
     () => flattenStructuralCategoryRows(categories, undefined, []),
+    [categories]
+  );
+
+  const categoryMarkupById = useMemo(
+    () => buildCategoryMarkupByIdFromTree(categories),
     [categories]
   );
 
@@ -606,6 +652,11 @@ export function ServiceCatalogItemsPage() {
                 }
               }
 
+              const effectiveMarkup = effectiveServiceCatalogMarkupPercentClient(
+                cat.id,
+                categoryMarkupById
+              );
+
               const isCollapsed = collapsedCategoryIds.has(cat.id);
               const itemsCount = cat.items?.length ?? 0;
               const descendantIds =
@@ -707,6 +758,13 @@ export function ServiceCatalogItemsPage() {
                             {itemsCount > 0 && (
                               <span className={styles.categoryBlockCount}> ({itemsCount})</span>
                             )}
+                            {effectiveMarkup !== 0 && (
+                              <span className={styles.categoryMarkupBadge}>
+                                {' '}
+                                · наценка {effectiveMarkup > 0 ? '+' : ''}
+                                {effectiveMarkup}%
+                              </span>
+                            )}
                           </span>
                         </h3>
                         {siblingCats.length > 1 ? (
@@ -762,13 +820,15 @@ export function ServiceCatalogItemsPage() {
                         <colgroup>
                           <col className={styles.nameColumn} />
                           <col className={styles.priceColumn} />
+                          <col className={styles.priceColumn} />
                           <col className={styles.unitColumn} />
                           <col className={styles.actionsColumn} />
                         </colgroup>
                         <thead>
                           <tr>
                             <th>Название</th>
-                            <th>Цена за ед.</th>
+                            <th>База</th>
+                            <th>Итого</th>
                             <th>Ед. изм.</th>
                             <th></th>
                           </tr>
@@ -818,6 +878,18 @@ export function ServiceCatalogItemsPage() {
                                   ) : (
                                     formatPrice(item.price)
                                   )}
+                                </td>
+                                <td className={styles.priceDerivedCell}>
+                                  {editingItem === item.id
+                                    ? formatPrice(
+                                        priceWithMarkup(
+                                          editItemData.price !== undefined
+                                            ? Number(editItemData.price)
+                                            : item.price,
+                                          effectiveMarkup
+                                        )
+                                      )
+                                    : formatPrice(priceWithMarkup(item.price, effectiveMarkup))}
                                 </td>
                                 <td>
                                   {editingItem === item.id ? (
@@ -948,10 +1020,18 @@ export function ServiceCatalogItemsPage() {
                                   onChange={(e) =>
                                     setNewItem((p) => ({ ...p, price: e.target.value }))
                                   }
-                                  placeholder="Цена"
+                                  placeholder="Базовая цена"
                                   className={styles.input}
                                   style={{ width: '100%', boxSizing: 'border-box' }}
                                 />
+                              </td>
+                              <td className={styles.priceDerivedCell}>
+                                {formatPrice(
+                                  priceWithMarkup(
+                                    parseFloat(newItem.price.replace(',', '.')) || 0,
+                                    effectiveMarkup
+                                  )
+                                )}
                               </td>
                               <td>
                                 <input

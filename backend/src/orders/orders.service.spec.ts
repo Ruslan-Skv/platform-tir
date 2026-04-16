@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../database/prisma.service';
@@ -24,6 +25,7 @@ describe('OrdersService', () => {
     address: { create: jest.fn() },
     user: { findMany: jest.fn(), findUnique: jest.fn() },
     serviceCatalogItem: { findMany: jest.fn() },
+    serviceCatalogCategory: { findMany: jest.fn() },
     cartServiceItem: { delete: jest.fn() },
     orderItem: { findMany: jest.fn() },
     orderServiceItem: { createMany: jest.fn(), deleteMany: jest.fn() },
@@ -100,11 +102,19 @@ describe('OrdersService', () => {
       (mockPrisma.serviceCatalogItem.findMany as jest.Mock).mockResolvedValue([
         {
           id: itemId,
+          categoryId,
           name: 'Уборка квартиры',
           unit: 'м²',
           price: 500,
           isActive: true,
-          category: { name: 'Уборка' },
+          category: { name: 'Уборка', priceMarkupPercent: 0 },
+        },
+      ]);
+      (mockPrisma.serviceCatalogCategory.findMany as jest.Mock).mockResolvedValue([
+        {
+          id: categoryId,
+          parentId: null,
+          priceMarkupPercent: new Prisma.Decimal(0),
         },
       ]);
       (mockPrisma.cartServiceItem.delete as jest.Mock).mockResolvedValue({});

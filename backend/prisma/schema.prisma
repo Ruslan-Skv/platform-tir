@@ -440,6 +440,8 @@ model ServiceCatalogCategory {
   description        String?   @db.Text
   icon               String? // Имя иконки heroicons (PaintBrush, Bolt и т.д.)
   image              String? // URL или base64 — при наличии показывается вместо иконки
+  /// Наценка на все виды работ в этой категории, % к базовой цене позиции (может быть отрицательной). 0 — наследовать у родителя; ненулевое — своя наценка. Публичка показывает только итог.
+  priceMarkupPercent Decimal   @default(0) @db.Decimal(10, 2)
   showPricesInPublic Boolean   @default(true) // Показывать стоимость в публичной части
   sortOrder          Int       @default(0)
   isActive           Boolean   @default(true)

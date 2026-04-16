@@ -18,6 +18,11 @@ import type { SubmitFromCartForCustomerDto } from './dto/submit-from-cart-for-cu
 import type { CreateServiceOrderDto } from './dto/create-service-order.dto';
 import { OrderMailService } from './order-mail.service';
 import { Prisma } from '@prisma/client';
+import { serviceCatalogPriceWithMarkup } from '../common/utils/service-catalog-price';
+import {
+  effectiveServiceCatalogMarkupPercent,
+  loadServiceCatalogCategoryMarkupMap,
+} from '../common/utils/service-catalog-markup-effective';
 
 const DEFAULT_APPROVAL_VALID_MINUTES = 60;
 
@@ -291,8 +296,11 @@ export class OrdersService {
     const itemIds = [...new Set(allLines.map((l) => l.itemId))];
     const dbItems = await this.prisma.serviceCatalogItem.findMany({
       where: { id: { in: itemIds }, isActive: true },
-      include: { category: { select: { name: true } } },
+      include: { category: { select: { name: true, priceMarkupPercent: true } } },
     });
+    const markupMap = await loadServiceCatalogCategoryMarkupMap(this.prisma, [
+      ...new Set(dbItems.map((i) => i.categoryId)),
+    ]);
     const idToItem = new Map(dbItems.map((i) => [i.id, i]));
 
     const lines: Array<{
@@ -311,7 +319,10 @@ export class OrdersService {
       const item = idToItem.get(line.itemId);
       if (!item) continue;
       const qty = Math.max(0.01, Number(line.quantity));
-      const price = parseFloat(item.price.toString());
+      const price = serviceCatalogPriceWithMarkup(
+        item.price,
+        effectiveServiceCatalogMarkupPercent(item.categoryId, markupMap),
+      );
       const amount = price * qty;
       subtotal += amount;
       lines.push({
@@ -364,8 +375,11 @@ export class OrdersService {
     const itemIds = [...new Set(allLines.map((l) => l.itemId))];
     const dbItems = await this.prisma.serviceCatalogItem.findMany({
       where: { id: { in: itemIds }, isActive: true },
-      include: { category: { select: { name: true } } },
+      include: { category: { select: { name: true, priceMarkupPercent: true } } },
     });
+    const markupMap = await loadServiceCatalogCategoryMarkupMap(this.prisma, [
+      ...new Set(dbItems.map((i) => i.categoryId)),
+    ]);
     const idToItem = new Map(dbItems.map((i) => [i.id, i]));
 
     let total = 0;
@@ -383,7 +397,10 @@ export class OrdersService {
       const item = idToItem.get(line.itemId);
       if (!item) continue;
       const qty = Math.max(0.01, Number(line.quantity));
-      const price = parseFloat(item.price.toString());
+      const price = serviceCatalogPriceWithMarkup(
+        item.price,
+        effectiveServiceCatalogMarkupPercent(item.categoryId, markupMap),
+      );
       const amount = price * qty;
       total += amount;
       orderLines.push({
@@ -2067,8 +2084,12 @@ export class OrdersService {
     const itemIds = dto.items.map((i) => i.itemId);
     const dbItems = await this.prisma.serviceCatalogItem.findMany({
       where: { id: { in: itemIds }, isActive: true },
-      include: { category: { select: { name: true } } },
+      include: { category: { select: { name: true, priceMarkupPercent: true } } },
     });
+
+    const markupMap = await loadServiceCatalogCategoryMarkupMap(this.prisma, [
+      ...new Set(dbItems.map((i) => i.categoryId)),
+    ]);
 
     const idToItem = new Map(dbItems.map((i) => [i.id, i]));
     let total = 0;
@@ -2088,7 +2109,10 @@ export class OrdersService {
         throw new BadRequestException(`Вид работ с ID ${line.itemId} не найден`);
       }
       const qty = Math.max(0.01, Number(line.quantity));
-      const price = parseFloat(item.price.toString());
+      const price = serviceCatalogPriceWithMarkup(
+        item.price,
+        effectiveServiceCatalogMarkupPercent(item.categoryId, markupMap),
+      );
       const amount = price * qty;
       total += amount;
       orderLines.push({
