@@ -26,6 +26,8 @@ export interface PhotoProject {
   categoryId: string;
   title: string;
   description: string | null;
+  /** Дата и время показа карточки на сайте («Наши работы»); до миграции может отсутствовать */
+  publishedAt?: string;
   /** Широкий экран (десктоп / планшет) */
   displayMode: PhotoDisplayMode;
   /** Узкий экран (телефон), до 768px; при отсутствии в ответе API — как `displayMode`. */

@@ -334,11 +334,13 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug, initi
                   return (
                     <article key={project.id} className={styles.projectCard}>
                       <h2 className={styles.projectTitle}>{project.title}</h2>
-                      {project.createdAt ? (
+                      {(project.publishedAt ?? project.createdAt) ? (
                         <p className={styles.projectPublishedAt} lang="ru">
-                          Опубликовано:{' '}
-                          <time dateTime={project.createdAt}>
-                            {formatPhotoProjectPublishedAt(project.createdAt)}
+                          На сайте с:{' '}
+                          <time dateTime={project.publishedAt ?? project.createdAt}>
+                            {formatPhotoProjectPublishedAt(
+                              project.publishedAt ?? project.createdAt
+                            )}
                           </time>
                         </p>
                       ) : null}

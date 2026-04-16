@@ -110,6 +110,9 @@ export class PhotoService {
         displayMode: desktop,
         displayModeMobile: dto.displayModeMobile ?? desktop,
         sortOrder: dto.sortOrder ?? 0,
+        ...(dto.publishedAt != null && dto.publishedAt !== ''
+          ? { publishedAt: new Date(dto.publishedAt) }
+          : {}),
       },
       include: {
         category: { select: { id: true, name: true, slug: true } },
@@ -149,7 +152,7 @@ export class PhotoService {
           category: { select: { id: true, name: true, slug: true } },
           photos: { orderBy: { sortOrder: 'asc' } },
         },
-        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+        orderBy: [{ sortOrder: 'asc' }, { publishedAt: 'desc' }],
         skip,
         take: limit,
       }),
@@ -184,9 +187,13 @@ export class PhotoService {
     if (dto.categoryId) {
       await this.findCategoryById(dto.categoryId);
     }
+    const { publishedAt, ...rest } = dto;
     return this.prisma.photoProject.update({
       where: { id },
-      data: dto,
+      data: {
+        ...rest,
+        ...(publishedAt !== undefined ? { publishedAt: new Date(publishedAt) } : {}),
+      },
       include: {
         category: { select: { id: true, name: true, slug: true } },
         photos: { orderBy: { sortOrder: 'asc' } },

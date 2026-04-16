@@ -29,6 +29,28 @@ const DISPLAY_MODES = [
   { value: 'slider', label: 'Слайдер' },
 ] as const;
 
+/** Значение для input[type=datetime-local] в локальном часовом поясе */
+function toDatetimeLocalValue(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) {
+    return toDatetimeLocalValue(new Date().toISOString());
+  }
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const h = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${y}-${m}-${day}T${h}:${min}`;
+}
+
+function fromDatetimeLocalToIso(local: string): string {
+  const d = new Date(local);
+  if (Number.isNaN(d.getTime())) {
+    throw new Error('Некорректная дата и время на сайте');
+  }
+  return d.toISOString();
+}
+
 interface PhotoProjectFormPageProps {
   projectId?: string;
 }
@@ -43,6 +65,9 @@ export function PhotoProjectFormPage({ projectId }: PhotoProjectFormPageProps) {
   const [description, setDescription] = useState('');
   const [displayMode, setDisplayMode] = useState<PhotoDisplayMode>('grid');
   const [displayModeMobile, setDisplayModeMobile] = useState<PhotoDisplayMode>('grid');
+  const [publishedAtLocal, setPublishedAtLocal] = useState(() =>
+    toDatetimeLocalValue(new Date().toISOString())
+  );
   const [photos, setPhotos] = useState<{ id: string; imageUrl: string }[]>([]);
   const [loading, setLoading] = useState(!!projectId);
   const [saving, setSaving] = useState(false);
@@ -77,6 +102,7 @@ export function PhotoProjectFormPage({ projectId }: PhotoProjectFormPageProps) {
       setDescription(data.description ?? '');
       setDisplayMode(data.displayMode);
       setDisplayModeMobile(data.displayModeMobile ?? data.displayMode);
+      setPublishedAtLocal(toDatetimeLocalValue(data.publishedAt ?? data.createdAt));
       setPhotos(data.photos.map((p) => ({ id: p.id, imageUrl: p.imageUrl })));
     } catch {
       showMessage('error', 'Ошибка загрузки объекта');
@@ -104,6 +130,14 @@ export function PhotoProjectFormPage({ projectId }: PhotoProjectFormPageProps) {
     }
     setSaving(true);
     try {
+      let publishedAtIso: string;
+      try {
+        publishedAtIso = fromDatetimeLocalToIso(publishedAtLocal);
+      } catch (err) {
+        showMessage('error', err instanceof Error ? err.message : 'Некорректная дата публикации');
+        setSaving(false);
+        return;
+      }
       if (projectId) {
         await updatePhotoProject(projectId, {
           categoryId,
@@ -111,6 +145,7 @@ export function PhotoProjectFormPage({ projectId }: PhotoProjectFormPageProps) {
           description: description.trim() || undefined,
           displayMode,
           displayModeMobile,
+          publishedAt: publishedAtIso,
         });
         showMessage('success', 'Объект обновлён');
       } else {
@@ -120,6 +155,7 @@ export function PhotoProjectFormPage({ projectId }: PhotoProjectFormPageProps) {
           description: description.trim() || undefined,
           displayMode,
           displayModeMobile,
+          publishedAt: publishedAtIso,
         });
         showMessage('success', 'Объект создан');
         if (photos.length > 0) {
@@ -248,6 +284,21 @@ export function PhotoProjectFormPage({ projectId }: PhotoProjectFormPageProps) {
             placeholder="Например: Квартира ул. Ленина 15"
             className={styles.input}
             required
+          />
+        </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Дата и время на сайте</label>
+          <p className={styles.fieldHint}>
+            Показывается в разделе «Наши работы» у посетителей. Не привязана к моменту сохранения
+            записи в админке.
+          </p>
+          <input
+            type="datetime-local"
+            value={publishedAtLocal}
+            onChange={(e) => setPublishedAtLocal(e.target.value)}
+            className={styles.input}
+            step={60}
           />
         </div>
 

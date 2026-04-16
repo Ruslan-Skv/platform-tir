@@ -36,6 +36,8 @@ export interface AdminPhotoProject {
   categoryId: string;
   title: string;
   description: string | null;
+  /** Показ на сайте «Наши работы» */
+  publishedAt?: string;
   displayMode: PhotoDisplayMode;
   /** После миграции всегда есть; до обновления бэкенда может отсутствовать. */
   displayModeMobile?: PhotoDisplayMode;
@@ -58,6 +60,8 @@ export interface CreatePhotoProjectDto {
   categoryId: string;
   title: string;
   description?: string;
+  /** ISO 8601; не задано — сервер подставит текущий момент */
+  publishedAt?: string;
   displayMode?: PhotoDisplayMode;
   displayModeMobile?: PhotoDisplayMode;
   sortOrder?: number;

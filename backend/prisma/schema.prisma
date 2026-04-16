@@ -715,6 +715,7 @@ model PhotoProject {
   description String?       @db.Text // Описание выполненных работ
   displayMode String        @default("grid") // десктоп: grid | masonry | slider
   displayModeMobile String  @default("grid") // мобила: grid | masonry | slider
+  publishedAt DateTime      @default(now()) // дата показа на сайте «Наши работы», не createdAt
   sortOrder   Int           @default(0)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
