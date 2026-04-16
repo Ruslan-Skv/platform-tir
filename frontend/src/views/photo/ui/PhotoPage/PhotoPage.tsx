@@ -336,7 +336,10 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug, initi
                       <h2 className={styles.projectTitle}>{project.title}</h2>
                       {(project.publishedAt ?? project.createdAt) ? (
                         <p className={styles.projectPublishedAt} lang="ru">
-                          <time dateTime={project.publishedAt ?? project.createdAt}>
+                          <time
+                            dateTime={project.publishedAt ?? project.createdAt}
+                            suppressHydrationWarning
+                          >
                             {formatPhotoProjectPublishedAt(
                               project.publishedAt ?? project.createdAt
                             )}
