@@ -5,7 +5,11 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import type { AdminPhotoCategory, AdminPhotoProject } from '@/shared/api/admin-photo';
+import type {
+  AdminPhotoCategory,
+  AdminPhotoProject,
+  PhotoDisplayMode,
+} from '@/shared/api/admin-photo';
 import {
   createPhotoProject,
   createPhotos,
@@ -37,7 +41,8 @@ export function PhotoProjectFormPage({ projectId }: PhotoProjectFormPageProps) {
   const [categoryId, setCategoryId] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [displayMode, setDisplayMode] = useState<'grid' | 'masonry' | 'slider'>('grid');
+  const [displayMode, setDisplayMode] = useState<PhotoDisplayMode>('grid');
+  const [displayModeMobile, setDisplayModeMobile] = useState<PhotoDisplayMode>('grid');
   const [photos, setPhotos] = useState<{ id: string; imageUrl: string }[]>([]);
   const [loading, setLoading] = useState(!!projectId);
   const [saving, setSaving] = useState(false);
@@ -70,7 +75,8 @@ export function PhotoProjectFormPage({ projectId }: PhotoProjectFormPageProps) {
       setCategoryId(data.categoryId);
       setTitle(data.title);
       setDescription(data.description ?? '');
-      setDisplayMode(data.displayMode as 'grid' | 'masonry' | 'slider');
+      setDisplayMode(data.displayMode);
+      setDisplayModeMobile(data.displayModeMobile ?? data.displayMode);
       setPhotos(data.photos.map((p) => ({ id: p.id, imageUrl: p.imageUrl })));
     } catch {
       showMessage('error', 'Ошибка загрузки объекта');
@@ -104,6 +110,7 @@ export function PhotoProjectFormPage({ projectId }: PhotoProjectFormPageProps) {
           title: title.trim(),
           description: description.trim() || undefined,
           displayMode,
+          displayModeMobile,
         });
         showMessage('success', 'Объект обновлён');
       } else {
@@ -112,6 +119,7 @@ export function PhotoProjectFormPage({ projectId }: PhotoProjectFormPageProps) {
           title: title.trim(),
           description: description.trim() || undefined,
           displayMode,
+          displayModeMobile,
         });
         showMessage('success', 'Объект создан');
         if (photos.length > 0) {
@@ -255,10 +263,27 @@ export function PhotoProjectFormPage({ projectId }: PhotoProjectFormPageProps) {
         </div>
 
         <div className={styles.formGroup}>
-          <label className={styles.label}>Отображение фото</label>
+          <label className={styles.label}>Отображение на компьютере и планшете</label>
+          <p className={styles.fieldHint}>Ширина экрана больше 768 px</p>
           <select
             value={displayMode}
-            onChange={(e) => setDisplayMode(e.target.value as 'grid' | 'masonry' | 'slider')}
+            onChange={(e) => setDisplayMode(e.target.value as PhotoDisplayMode)}
+            className={styles.select}
+          >
+            {DISPLAY_MODES.map((m) => (
+              <option key={m.value} value={m.value}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Отображение на телефоне</label>
+          <p className={styles.fieldHint}>Ширина экрана до 768 px включительно</p>
+          <select
+            value={displayModeMobile}
+            onChange={(e) => setDisplayModeMobile(e.target.value as PhotoDisplayMode)}
             className={styles.select}
           >
             {DISPLAY_MODES.map((m) => (

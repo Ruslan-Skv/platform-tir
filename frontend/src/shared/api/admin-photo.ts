@@ -29,12 +29,16 @@ export interface AdminPhoto {
   updatedAt: string;
 }
 
+export type PhotoDisplayMode = 'grid' | 'masonry' | 'slider';
+
 export interface AdminPhotoProject {
   id: string;
   categoryId: string;
   title: string;
   description: string | null;
-  displayMode: 'grid' | 'masonry' | 'slider';
+  displayMode: PhotoDisplayMode;
+  /** После миграции всегда есть; до обновления бэкенда может отсутствовать. */
+  displayModeMobile?: PhotoDisplayMode;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
@@ -54,7 +58,8 @@ export interface CreatePhotoProjectDto {
   categoryId: string;
   title: string;
   description?: string;
-  displayMode?: 'grid' | 'masonry' | 'slider';
+  displayMode?: PhotoDisplayMode;
+  displayModeMobile?: PhotoDisplayMode;
   sortOrder?: number;
 }
 

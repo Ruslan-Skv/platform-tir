@@ -61,6 +61,13 @@
   color: #374151;
 }
 
+.fieldHint {
+  margin: -0.2rem 0 0;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  line-height: 1.35;
+}
+
 .input,
 .select,
 .textarea {
@@ -195,6 +202,10 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .label {
   color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHint {
+  color: #9ca3af;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input,

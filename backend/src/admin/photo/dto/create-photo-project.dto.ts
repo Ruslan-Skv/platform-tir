@@ -1,4 +1,6 @@
-import { IsString, IsOptional, MinLength } from 'class-validator';
+import { IsString, IsOptional, MinLength, IsIn } from 'class-validator';
+
+const PHOTO_DISPLAY = ['grid', 'masonry', 'slider'] as const;
 
 export class CreatePhotoProjectDto {
   @IsString()
@@ -13,9 +15,13 @@ export class CreatePhotoProjectDto {
   @IsOptional()
   description?: string;
 
-  @IsString()
   @IsOptional()
+  @IsIn(PHOTO_DISPLAY, { message: 'Недопустимый режим отображения (десктоп)' })
   displayMode?: 'grid' | 'masonry' | 'slider';
+
+  @IsOptional()
+  @IsIn(PHOTO_DISPLAY, { message: 'Недопустимый режим отображения (мобила)' })
+  displayModeMobile?: 'grid' | 'masonry' | 'slider';
 
   @IsOptional()
   sortOrder?: number;

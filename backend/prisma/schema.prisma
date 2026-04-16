@@ -713,7 +713,8 @@ model PhotoProject {
   categoryId  String
   title       String        // Название объекта (например "Квартира ул. Ленина 15")
   description String?       @db.Text // Описание выполненных работ
-  displayMode String        @default("grid") // grid | masonry | slider
+  displayMode String        @default("grid") // десктоп: grid | masonry | slider
+  displayModeMobile String  @default("grid") // мобила: grid | masonry | slider
   sortOrder   Int           @default(0)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt

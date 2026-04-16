@@ -6,6 +6,7 @@ export { useWishlist } from '../contexts/WishlistContext';
 export { useCompare } from './useCompare';
 export { useCart } from './useCart';
 export { useMobileCatalogColumns } from './useMobileCatalogColumns';
+export { usePhotoMobileLayout } from './usePhotoMobileLayout';
 export { usePublicSiteEditMode } from './usePublicSiteEditMode';
 export { useCanEditCatalogOnPublic } from './useCanEditCatalogOnPublic';
 export type { CategoryFromAPI, NavigationCategory } from './useDynamicCategories';

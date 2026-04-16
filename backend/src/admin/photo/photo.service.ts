@@ -101,12 +101,14 @@ export class PhotoService {
   // Projects
   async createProject(dto: CreatePhotoProjectDto) {
     await this.findCategoryById(dto.categoryId);
+    const desktop = dto.displayMode ?? 'grid';
     return this.prisma.photoProject.create({
       data: {
         categoryId: dto.categoryId,
         title: dto.title,
         description: dto.description,
-        displayMode: dto.displayMode ?? 'grid',
+        displayMode: desktop,
+        displayModeMobile: dto.displayModeMobile ?? desktop,
         sortOrder: dto.sortOrder ?? 0,
       },
       include: {

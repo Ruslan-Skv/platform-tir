@@ -23,6 +23,13 @@ const DISPLAY_MODE_LABELS: Record<string, string> = {
   slider: 'Слайдер',
 };
 
+function projectDisplayModesSummary(project: AdminPhotoProject): string {
+  const d = project.displayMode;
+  const m = project.displayModeMobile ?? d;
+  if (m === d) return DISPLAY_MODE_LABELS[d] ?? d;
+  return `ПК: ${DISPLAY_MODE_LABELS[d] ?? d} · Моб: ${DISPLAY_MODE_LABELS[m] ?? m}`;
+}
+
 export function PhotoSectionPage() {
   const [categories, setCategories] = useState<AdminPhotoCategory[]>([]);
   const [projects, setProjects] = useState<AdminPhotoProject[]>([]);
@@ -298,7 +305,7 @@ export function PhotoSectionPage() {
                       <span className={styles.projectCategory}>{project.category.name}</span>
                     )}
                     <span className={styles.projectDisplayMode}>
-                      {DISPLAY_MODE_LABELS[project.displayMode] ?? project.displayMode}
+                      {projectDisplayModesSummary(project)}
                     </span>
                     <span className={styles.projectPhotoCount}>{project.photos.length} фото</span>
                     {project.description && (
