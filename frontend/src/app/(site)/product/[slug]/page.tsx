@@ -15,7 +15,7 @@ const SITE_NAME = 'Территория интерьерных решений';
 async function getProduct(slug: string) {
   try {
     const response = await fetch(`${getServerApiBaseUrl()}/products/slug/${slug}`, {
-      next: { revalidate: 60 }, // Кэширование на 60 секунд
+      cache: 'no-store',
     });
 
     if (!response.ok) {

@@ -219,6 +219,7 @@ export class ProductsController {
 
   @Get('slug/:slug')
   @ApiOperation({ summary: 'Получить товар по slug' })
+  @Header('Cache-Control', 'no-store, max-age=0, must-revalidate')
   findBySlug(@Param('slug') slug: string) {
     return this.productsService.findBySlug(slug);
   }

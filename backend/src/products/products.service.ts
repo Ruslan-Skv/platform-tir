@@ -1179,7 +1179,7 @@ export class ProductsService {
       }
     }
 
-    if ('catalogBadgeIds' in updateProductDto) {
+    if (catalogBadgeIds !== undefined) {
       await this.syncProductCardBadges(id, catalogBadgeIds ?? []);
     }
 

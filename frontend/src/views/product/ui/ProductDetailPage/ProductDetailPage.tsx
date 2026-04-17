@@ -6,9 +6,11 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { createPortal } from 'react-dom';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import {
   patchProductAttributes,
+  patchProductCatalogBadges,
   patchProductDescription,
   patchProductPricing,
 } from '@/shared/api/admin-product-patch';
@@ -110,6 +112,21 @@ interface CategoryAttribute {
 
 type AttributeItem = { name: string; value: string; slug?: string };
 
+interface ProductCardBadgeDefinition {
+  id: string;
+  key: string;
+  label: string;
+  imageUrl: string | null;
+  description?: string | null;
+}
+
+function catalogBadgeIdsFromProduct(product: ProductData): string[] {
+  return (product.cardBadgeSelections ?? [])
+    .slice()
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    .map((s) => String(s.badge.id));
+}
+
 function serializePublicAttributeDraft(rows: AttributeItem[]): string {
   return JSON.stringify(
     rows.map((a) => ({
@@ -206,6 +223,7 @@ function ProductVideoPlayer({ url }: { url: string }) {
 }
 
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) => {
+  const router = useRouter();
   const {
     cart,
     addToCart,
@@ -255,10 +273,15 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
   const [isEditingPublicComponents, setIsEditingPublicComponents] = useState(false);
   const [draftComponents, setDraftComponents] = useState<PublicComponentDraftRow[]>([]);
   const [savingPublicComponents, setSavingPublicComponents] = useState(false);
+  const [badgeDefinitions, setBadgeDefinitions] = useState<ProductCardBadgeDefinition[]>([]);
+  const [isEditingPublicBadges, setIsEditingPublicBadges] = useState(false);
+  const [draftCatalogBadgeIds, setDraftCatalogBadgeIds] = useState<string[]>([]);
+  const [savingPublicBadges, setSavingPublicBadges] = useState(false);
   const attrsEditBaselineRef = useRef('');
   const priceEditBaselineRef = useRef('');
   const descriptionEditBaselineRef = useRef('');
   const componentsEditBaselineRef = useRef('');
+  const badgesEditBaselineRef = useRef('');
   const [variantNotification, setVariantNotification] = useState<string | null>(null);
   const [selectedCardVariantIndex, setSelectedCardVariantIndex] = useState(0);
 
@@ -293,6 +316,13 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     if (!isEditingPublicComponents) return false;
     return serializePublicComponentsDraft(draftComponents) !== componentsEditBaselineRef.current;
   }, [isEditingPublicComponents, draftComponents]);
+
+  const isPublicBadgesDirty = useMemo(() => {
+    if (!isEditingPublicBadges) return false;
+    return JSON.stringify(draftCatalogBadgeIds) !== badgesEditBaselineRef.current;
+  }, [isEditingPublicBadges, draftCatalogBadgeIds]);
+
+  const showBadgePublicEditBlock = showPublicAttrsToolbar && badgeDefinitions.length > 0;
 
   // Получаем информацию о варианте в корзине
   const getCartItemForVariant = useCallback(
@@ -397,7 +427,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
         setError(null);
 
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-        const response = await fetch(`${apiUrl}/products/slug/${slug}`);
+        const response = await fetch(`${apiUrl}/products/slug/${slug}`, {
+          cache: 'no-store',
+        });
 
         if (!response.ok) {
           if (response.status === 404) {
@@ -450,6 +482,37 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
   }, [product?.category?.id]);
 
   useEffect(() => {
+    if (!showPublicAttrsToolbar) {
+      setBadgeDefinitions([]);
+      setIsEditingPublicBadges(false);
+      setDraftCatalogBadgeIds([]);
+      badgesEditBaselineRef.current = '';
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+        const res = await fetch(`${apiUrl}/product-card-badges/definitions`);
+        if (!res.ok) {
+          if (!cancelled) setBadgeDefinitions([]);
+          return;
+        }
+        const data: unknown = await res.json();
+        if (!cancelled) {
+          setBadgeDefinitions(Array.isArray(data) ? (data as ProductCardBadgeDefinition[]) : []);
+        }
+      } catch {
+        if (!cancelled) setBadgeDefinitions([]);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [showPublicAttrsToolbar]);
+
+  useEffect(() => {
     setIsEditingPublicAttrs(false);
     setDraftAttributes([]);
     setIsEditingPublicPrice(false);
@@ -462,6 +525,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     setIsEditingPublicComponents(false);
     setDraftComponents([]);
     componentsEditBaselineRef.current = '';
+    setIsEditingPublicBadges(false);
+    setDraftCatalogBadgeIds([]);
+    badgesEditBaselineRef.current = '';
   }, [product?.id]);
 
   // Получаем ID товара для работы с wishlist, compare и загрузки комплектующих
@@ -731,6 +797,73 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
       (showPublicAttrsToolbar && attributesEditableRows.length > 0)
     );
   }, [product, attributesArray, showPublicAttrsToolbar, attributesEditableRows]);
+
+  const toggleDraftCatalogBadgeId = useCallback((rawBadgeId: string) => {
+    const badgeId = String(rawBadgeId);
+    setDraftCatalogBadgeIds((prev) => {
+      const normalized = prev.map((id) => String(id));
+      const i = normalized.indexOf(badgeId);
+      if (i >= 0) {
+        return normalized.filter((id) => id !== badgeId);
+      }
+      if (normalized.length >= 5) {
+        alert('Можно выбрать не более 5 бэйджей слева от фото');
+        return prev;
+      }
+      return [...normalized, badgeId];
+    });
+  }, []);
+
+  const exitPublicBadgesEdit = useCallback(() => {
+    if (savingPublicBadges) return;
+    touchPublicSiteEditModeActivity();
+    try {
+      const parsed = JSON.parse(badgesEditBaselineRef.current) as unknown;
+      if (Array.isArray(parsed) && parsed.every((x) => typeof x === 'string')) {
+        setDraftCatalogBadgeIds(parsed as string[]);
+      }
+    } catch {
+      /* ignore */
+    }
+    setIsEditingPublicBadges(false);
+  }, [savingPublicBadges]);
+
+  const handleSavePublicCatalogBadges = useCallback(async () => {
+    if (!product) return;
+    setSavingPublicBadges(true);
+    try {
+      const idsPayload = draftCatalogBadgeIds.map((x) => String(x)).filter((x) => x.length > 0);
+      const result = await patchProductCatalogBadges(product.id, idsPayload);
+      if (!result.ok) {
+        alert(result.message);
+        return;
+      }
+      const data = result.data as ProductData;
+      if (data && typeof data === 'object' && 'id' in data) {
+        setProduct(data);
+      }
+      const slugForRevalidate = product.slug?.trim();
+      if (slugForRevalidate) {
+        fetch('/api/revalidate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paths: [
+              `/product/${slugForRevalidate}`,
+              { path: '/catalog/products', type: 'layout' as const },
+            ],
+          }),
+        }).catch(() => {});
+      }
+      router.refresh();
+      touchPublicSiteEditModeActivity();
+      setIsEditingPublicBadges(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Не удалось сохранить бэйджи');
+    } finally {
+      setSavingPublicBadges(false);
+    }
+  }, [product, draftCatalogBadgeIds]);
 
   const handleSavePublicAttributes = useCallback(async () => {
     if (!product) return;
@@ -1075,6 +1208,104 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
               )}
             </div>
           </div>
+
+          {showBadgePublicEditBlock && (
+            <div className={styles.galleryBadgePublicEdit}>
+              <div className={styles.galleryBadgePublicEditHeader}>
+                <span className={styles.galleryBadgePublicEditLabel}>Бэйджи слева от фото</span>
+                <div className={styles.attributesToolbar}>
+                  {!isEditingPublicBadges ? (
+                    <button
+                      type="button"
+                      className={styles.attributesEditBtn}
+                      onClick={() => {
+                        touchPublicSiteEditModeActivity();
+                        const ids = catalogBadgeIdsFromProduct(product);
+                        badgesEditBaselineRef.current = JSON.stringify(ids);
+                        setDraftCatalogBadgeIds([...ids]);
+                        setIsEditingPublicBadges(true);
+                      }}
+                      title="Редактировать бэйджи"
+                      aria-label="Редактировать бэйджи"
+                    >
+                      <PencilSquareIcon className={styles.attributesEditIcon} aria-hidden />
+                    </button>
+                  ) : (
+                    <div className={styles.publicEditToolbarActions}>
+                      <button
+                        type="button"
+                        className={styles.attributesCancelBtn}
+                        onClick={exitPublicBadgesEdit}
+                        disabled={savingPublicBadges}
+                        title="Закрыть без сохранения"
+                        aria-label="Закрыть без сохранения"
+                      >
+                        <XMarkIcon className={styles.attributesCancelIcon} aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.attributesSaveBtn}
+                        onClick={() => void handleSavePublicCatalogBadges()}
+                        disabled={savingPublicBadges || !isPublicBadgesDirty}
+                        title={savingPublicBadges ? 'Сохранение...' : 'Сохранить'}
+                        aria-label={savingPublicBadges ? 'Сохранение...' : 'Сохранить'}
+                      >
+                        <CheckIcon className={styles.attributesSaveIcon} aria-hidden />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {isEditingPublicBadges && (
+                <>
+                  <p className={styles.galleryBadgeHint}>
+                    Выбрано: {draftCatalogBadgeIds.length} / 5. На карточке в каталоге показываются
+                    только бэйджи с загруженной картинкой.
+                  </p>
+                  <div className={styles.galleryBadgePickGrid}>
+                    {badgeDefinitions.map((b) => {
+                      const id = String(b.id);
+                      const checked = draftCatalogBadgeIds.some((x) => String(x) === id);
+                      return (
+                        <div
+                          key={id}
+                          className={styles.galleryBadgePickItem}
+                          role="checkbox"
+                          aria-checked={checked}
+                          tabIndex={0}
+                          aria-label={b.label}
+                          onClick={() => toggleDraftCatalogBadgeId(id)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              toggleDraftCatalogBadgeId(id);
+                            }
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            className={styles.galleryBadgePickCheckbox}
+                            checked={checked}
+                            tabIndex={-1}
+                            aria-hidden
+                            onChange={() => {
+                              /* переключение только через onClick строки — избегаем двойного change у <label>+controlled checkbox */
+                            }}
+                          />
+                          {b.imageUrl ? (
+                            <span className={styles.galleryBadgePickThumb}>
+                              <img src={publicUploadUrl(b.imageUrl)} alt="" />
+                            </span>
+                          ) : null}
+                          <span>{b.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           {product.images.length > 1 && (
             <div className={styles.thumbnails}>

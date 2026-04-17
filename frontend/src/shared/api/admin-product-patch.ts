@@ -82,6 +82,36 @@ export async function patchProductPricing(
   return { ok: true, data };
 }
 
+export async function patchProductCatalogBadges(
+  productId: string,
+  catalogBadgeIds: string[]
+): Promise<{ ok: true; data: unknown } | { ok: false; message: string }> {
+  const token = getBearer();
+  if (!token) {
+    return { ok: false, message: 'Нет авторизации' };
+  }
+
+  const res = await fetch(`${API_URL}/products/${encodeURIComponent(productId)}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ catalogBadgeIds }),
+  });
+
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { message?: string | string[] };
+    const msg = Array.isArray(data.message)
+      ? data.message.join(', ')
+      : data.message || `Ошибка сохранения (${res.status})`;
+    return { ok: false, message: msg };
+  }
+
+  const data = await res.json();
+  return { ok: true, data };
+}
+
 export async function patchProductDescription(
   productId: string,
   description: string | null
