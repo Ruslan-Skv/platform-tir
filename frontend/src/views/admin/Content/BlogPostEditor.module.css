@@ -1,0 +1,116 @@
+.editorWrap {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.editorShell {
+  min-height: 320px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.toolbarSep {
+  width: 1px;
+  height: 1.25rem;
+  margin: 0 0.2rem;
+  background: #d1d5db;
+}
+
+.toolbarButton {
+  min-width: 2rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #374151;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.toolbarButton:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.toolbarButtonActive {
+  color: #1d4ed8;
+  background: rgb(59 130 246 / 12%);
+  border-color: rgb(59 130 246 / 45%);
+}
+
+.editorContent {
+  position: relative;
+}
+
+/* TipTap root */
+.proseMirror {
+  min-height: 280px;
+  max-height: min(70vh, 720px);
+  overflow-y: auto;
+  padding: 0.75rem 1rem 1rem;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: #111827;
+  outline: none;
+}
+
+.proseMirror:focus {
+  outline: none;
+}
+
+.proseMirror :global(p) {
+  margin: 0 0 0.65rem;
+}
+
+.proseMirror :global(ul),
+.proseMirror :global(ol) {
+  margin: 0 0 0.65rem;
+  padding-left: 1.5rem;
+}
+
+.proseMirror :global(h2) {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 1rem 0 0.5rem;
+}
+
+.proseMirror :global(h3) {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0.85rem 0 0.45rem;
+}
+
+.proseMirror :global(blockquote) {
+  margin: 0.5rem 0;
+  padding-left: 0.75rem;
+  border-left: 3px solid #d1d5db;
+  color: #4b5563;
+}
+
+.proseMirror :global(hr) {
+  margin: 1rem 0;
+  border: none;
+  border-top: 1px solid #e5e7eb;
+}
+
+.proseMirror :global(a) {
+  color: #2563eb;
+  text-decoration: underline;
+}

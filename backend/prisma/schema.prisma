@@ -643,10 +643,11 @@ model Page {
 }
 
 model BlogPost {
-  id                 String         @id @default(cuid())
+  id                 String           @id @default(cuid())
   title              String
-  slug               String         @unique
+  slug               String           @unique
   content            String
+  contentAlign       BlogContentAlign @default(JUSTIFY)
   excerpt            String?
   featuredImage      String?
   featuredImageAlt   String         @default("")
@@ -668,8 +669,33 @@ model BlogPost {
   category       BlogCategory?  @relation(fields: [categoryId], references: [id])
   comments       Comment[]
   likes          BlogPostLike[]
+  blocks         BlogPostBlock[]
 
   @@map("blog_posts")
+}
+
+model BlogPostBlock {
+  id        String               @id @default(cuid())
+  postId    String
+  sortOrder Int                  @default(0)
+  bodyHtml  String               @db.Text
+  post      BlogPost             @relation(fields: [postId], references: [id], onDelete: Cascade)
+  images    BlogPostBlockImage[]
+
+  @@index([postId])
+  @@map("blog_post_blocks")
+}
+
+model BlogPostBlockImage {
+  id        String        @id @default(cuid())
+  blockId   String
+  sortOrder Int           @default(0)
+  url       String
+  alt       String        @default("")
+  block     BlogPostBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
+
+  @@index([blockId])
+  @@map("blog_post_block_images")
 }
 
 model BlogPostLike {
@@ -2013,6 +2039,13 @@ enum PageStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
+}
+
+enum BlogContentAlign {
+  LEFT
+  JUSTIFY
+  CENTER
+  RIGHT
 }
 
 enum CommentStatus {

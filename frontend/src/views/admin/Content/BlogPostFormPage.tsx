@@ -17,8 +17,13 @@ import {
   updateBlogPost,
   uploadBlogFeaturedImage,
 } from '@/shared/api/admin-blog';
+import type { BlogContentAlign } from '@/shared/api/blog';
+import { blockHasTextOrImages, isTrivialEmptyBlogHtml } from '@/shared/lib/blog-content';
 import { computeBlogReadingTimeMinutes } from '@/shared/lib/blog-reading-time';
+import { computeBlogSeoPreview } from '@/shared/lib/blog-seo';
 
+import { BlogPostBlocksEditor, type LocalBlock } from './BlogPostBlocksEditor';
+import { BlogPostEditor } from './BlogPostEditor';
 import styles from './BlogPostFormPage.module.css';
 
 interface BlogPostFormPageProps {
@@ -85,6 +90,9 @@ export function BlogPostFormPage({ postId }: BlogPostFormPageProps) {
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [content, setContent] = useState('');
+  const [contentAlign, setContentAlign] = useState<BlogContentAlign>('JUSTIFY');
+  const [useBlocks, setUseBlocks] = useState(false);
+  const [blocks, setBlocks] = useState<LocalBlock[]>([]);
   const [excerpt, setExcerpt] = useState('');
   const [featuredImage, setFeaturedImage] = useState('');
   const [status, setStatus] = useState<'DRAFT' | 'PUBLISHED' | 'ARCHIVED'>('DRAFT');
@@ -97,7 +105,13 @@ export function BlogPostFormPage({ postId }: BlogPostFormPageProps) {
   const [sortOrder, setSortOrder] = useState(0);
   const [authorByline, setAuthorByline] = useState('');
 
-  const readingTimePreview = useMemo(() => computeBlogReadingTimeMinutes(content), [content]);
+  const mergedArticleHtml = useMemo(() => {
+    return useBlocks && blocks.length > 0 ? blocks.map((b) => b.bodyHtml).join('') : content;
+  }, [useBlocks, blocks, content]);
+
+  const readingTimePreview = useMemo(() => {
+    return computeBlogReadingTimeMinutes(mergedArticleHtml);
+  }, [mergedArticleHtml]);
 
   const presetLabels = useMemo(() => badgePresets.map((p) => p.label), [badgePresets]);
 
@@ -122,6 +136,20 @@ export function BlogPostFormPage({ postId }: BlogPostFormPageProps) {
       setTitle(post.title);
       setSlug(post.slug);
       setContent(post.content);
+      setContentAlign(post.contentAlign ?? 'JUSTIFY');
+      if (post.blocks?.length) {
+        setUseBlocks(true);
+        setBlocks(
+          post.blocks.map((b) => ({
+            clientId: b.id,
+            bodyHtml: b.bodyHtml,
+            images: b.images.map((img) => ({ url: img.url, alt: img.alt ?? '' })),
+          }))
+        );
+      } else {
+        setUseBlocks(false);
+        setBlocks([]);
+      }
       setExcerpt(post.excerpt || '');
       setFeaturedImage(post.featuredImage || '');
       setStatus(post.status as 'DRAFT' | 'PUBLISHED' | 'ARCHIVED');
@@ -223,10 +251,76 @@ export function BlogPostFormPage({ postId }: BlogPostFormPageProps) {
     if (!postId) setSlug(slugify(value));
   };
 
+  const handleSeoAutofill = () => {
+    const { seoTitle: st, seoDescription: sd } = computeBlogSeoPreview({
+      title: title.trim(),
+      contentHtml: mergedArticleHtml,
+      excerpt: excerpt.trim() || undefined,
+    });
+    setSeoTitle(st);
+    setSeoDescription(sd);
+  };
+
+  const handleUseBlocksChange = (next: boolean) => {
+    if (next) {
+      setUseBlocks(true);
+      if (blocks.length === 0) {
+        if (!isTrivialEmptyBlogHtml(content)) {
+          setBlocks([
+            {
+              clientId:
+                typeof crypto !== 'undefined' && crypto.randomUUID
+                  ? crypto.randomUUID()
+                  : `b-${Date.now()}`,
+              bodyHtml: content,
+              images: [],
+            },
+          ]);
+        } else {
+          setBlocks([
+            {
+              clientId:
+                typeof crypto !== 'undefined' && crypto.randomUUID
+                  ? crypto.randomUUID()
+                  : `b-${Date.now()}`,
+              bodyHtml: '<p></p>',
+              images: [],
+            },
+          ]);
+        }
+      }
+    } else {
+      setUseBlocks(false);
+      if (blocks.length > 0) {
+        setContent(blocks.map((b) => b.bodyHtml).join(''));
+      }
+      setBlocks([]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !slug.trim() || !content.trim()) {
-      showMessage('error', 'Заполните заголовок, slug и контент');
+    if (!title.trim() || !slug.trim()) {
+      showMessage('error', 'Заполните заголовок и slug');
+      return;
+    }
+    if (useBlocks) {
+      if (!blocks.length) {
+        showMessage('error', 'Добавьте хотя бы один блок или отключите режим блоков');
+        return;
+      }
+      for (let i = 0; i < blocks.length; i++) {
+        const b = blocks[i];
+        if (!blockHasTextOrImages(b.bodyHtml, b.images)) {
+          showMessage(
+            'error',
+            `Блок ${i + 1}: укажите текст или хотя бы одно изображение с адресом`
+          );
+          return;
+        }
+      }
+    } else if (isTrivialEmptyBlogHtml(content)) {
+      showMessage('error', 'Заполните контент статьи');
       return;
     }
     if (featuredImage.trim() && !featuredImageAlt.trim()) {
@@ -235,10 +329,26 @@ export function BlogPostFormPage({ postId }: BlogPostFormPageProps) {
     }
     setSaving(true);
     try {
+      const mergedFromBlocks = mergedArticleHtml.trim();
+
       const dto = {
         title: title.trim(),
         slug: slug.trim(),
-        content: content.trim(),
+        content: mergedFromBlocks,
+        contentAlign,
+        blocks: useBlocks
+          ? blocks.map((b, i) => ({
+              sortOrder: i,
+              bodyHtml: b.bodyHtml,
+              images: b.images
+                .filter((img) => img.url.trim())
+                .map((img, j) => ({
+                  url: img.url.trim(),
+                  alt: img.alt.trim(),
+                  sortOrder: j,
+                })),
+            }))
+          : [],
         excerpt: excerpt.trim() || undefined,
         featuredImage: featuredImage.trim() || undefined,
         featuredImageAlt: featuredImageAlt.trim(),
@@ -251,11 +361,13 @@ export function BlogPostFormPage({ postId }: BlogPostFormPageProps) {
           .split(',')
           .map((t) => t.trim())
           .filter(Boolean),
-        seoTitle: seoTitle.trim() || undefined,
-        seoDescription: seoDescription.trim() || undefined,
+        seoTitle: seoTitle.trim(),
+        seoDescription: seoDescription.trim(),
       };
       if (postId) {
-        await updateBlogPost(postId, dto);
+        const saved = (await updateBlogPost(postId, dto)) as AdminBlogPost;
+        setSeoTitle(saved.seoTitle ?? '');
+        setSeoDescription(saved.seoDescription ?? '');
         showMessage('success', 'Статья обновлена');
       } else {
         await createBlogPost(dto);
@@ -316,15 +428,61 @@ export function BlogPostFormPage({ postId }: BlogPostFormPageProps) {
         </div>
 
         <div className={styles.row}>
-          <label className={styles.label}>
-            Контент *
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className={styles.textarea}
-              rows={15}
-              required
+          <label className={styles.checkboxRow}>
+            <input
+              type="checkbox"
+              checked={useBlocks}
+              onChange={(e) => handleUseBlocksChange(e.target.checked)}
             />
+            <span>Разбить статью на блоки с фотоматериалами (в каждом блоке — текст и фото)</span>
+          </label>
+        </div>
+
+        {useBlocks ? (
+          <div className={styles.row}>
+            <label className={styles.label}>
+              Блоки статьи *
+              <BlogPostBlocksEditor
+                blocks={blocks}
+                onChange={setBlocks}
+                onError={(msg) => showMessage('error', msg)}
+              />
+              <span className={styles.fieldHint}>
+                Каждый блок — отдельный раздел: сначала текст, ниже галерея фото. Можно добавить URL
+                или загрузить файл (до 10 МБ).
+              </span>
+            </label>
+          </div>
+        ) : (
+          <div className={styles.row}>
+            <label className={styles.label}>
+              Контент *
+              <BlogPostEditor key={postId ?? 'new'} value={content} onChange={setContent} />
+              <span className={styles.fieldHint}>
+                Панель инструментов: абзацы (Enter), подзаголовки, маркированный и нумерованный
+                списки, цитата, ссылка. Текст сохраняется как HTML.
+              </span>
+            </label>
+          </div>
+        )}
+
+        <div className={styles.row}>
+          <label className={styles.label}>
+            Выравнивание текста на сайте
+            <select
+              value={contentAlign}
+              onChange={(e) => setContentAlign(e.target.value as BlogContentAlign)}
+              className={styles.select}
+            >
+              <option value="JUSTIFY">По ширине</option>
+              <option value="LEFT">По левому краю</option>
+              <option value="CENTER">По центру</option>
+              <option value="RIGHT">По правому краю</option>
+            </select>
+            <span className={styles.fieldHint}>
+              Применяется ко всему тексту статьи на публичной странице (списки и цитаты — по левому
+              краю при выравнивании по ширине или по центру).
+            </span>
           </label>
         </div>
 
@@ -519,27 +677,43 @@ export function BlogPostFormPage({ postId }: BlogPostFormPageProps) {
         </div>
 
         <div className={styles.row}>
-          <label className={styles.label}>
-            SEO заголовок
-            <input
-              type="text"
-              value={seoTitle}
-              onChange={(e) => setSeoTitle(e.target.value)}
-              className={styles.input}
-            />
-          </label>
-        </div>
-
-        <div className={styles.row}>
-          <label className={styles.label}>
-            SEO описание
-            <textarea
-              value={seoDescription}
-              onChange={(e) => setSeoDescription(e.target.value)}
-              className={styles.textarea}
-              rows={2}
-            />
-          </label>
+          <div className={styles.seoBlock}>
+            <div className={styles.seoBlockHeader}>
+              <span className={styles.seoBlockTitle}>SEO (поисковики)</span>
+              <button
+                type="button"
+                className={styles.seoAutofillButton}
+                onClick={handleSeoAutofill}
+              >
+                Подставить из статьи
+              </button>
+            </div>
+            <p className={styles.fieldHint}>
+              Если оставить поля пустыми и сохранить, сервер подставит заголовок из названия статьи
+              (до ~60 символов), а описание — из краткого описания или из текста статьи (~155
+              символов).
+            </p>
+            <label className={styles.label}>
+              SEO заголовок
+              <input
+                type="text"
+                value={seoTitle}
+                onChange={(e) => setSeoTitle(e.target.value)}
+                className={styles.input}
+                placeholder="Пусто — как у заголовка статьи"
+              />
+            </label>
+            <label className={styles.label}>
+              SEO описание
+              <textarea
+                value={seoDescription}
+                onChange={(e) => setSeoDescription(e.target.value)}
+                className={styles.textarea}
+                rows={2}
+                placeholder="Пусто — из краткого описания или текста"
+              />
+            </label>
+          </div>
         </div>
 
         <div className={styles.actions}>

@@ -55,6 +55,23 @@
   gap: 1rem;
 }
 
+.checkboxRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+}
+
+.checkboxRow input {
+  margin-top: 0.2rem;
+  width: 1.05rem;
+  height: 1.05rem;
+  flex-shrink: 0;
+}
+
 .readingTimeHint {
   margin: 0;
   font-size: 0.875rem;
@@ -260,6 +277,43 @@
 }
 
 /* Тёмная тема — форма поста блога */
+.seoBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: 100%;
+}
+
+.seoBlockHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.seoBlockTitle {
+  font-weight: 700;
+  font-size: 0.9375rem;
+  color: #111827;
+}
+
+.seoAutofillButton {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1d4ed8;
+  background: rgb(59 130 246 / 10%);
+  border: 1px solid rgb(59 130 246 / 35%);
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.seoAutofillButton:hover {
+  background: rgb(59 130 246 / 18%);
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .blogPostFormPage {
   color: #e5e7eb;
 }
@@ -278,6 +332,16 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .label {
   color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .seoBlockTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .seoAutofillButton {
+  color: #93c5fd;
+  background: rgb(59 130 246 / 15%);
+  border-color: rgb(59 130 246 / 40%);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input,

@@ -16,11 +16,29 @@ export interface BlogCategory {
   _count?: { posts: number };
 }
 
+export type BlogContentAlign = 'LEFT' | 'JUSTIFY' | 'CENTER' | 'RIGHT';
+
+export interface BlogPostBlockImage {
+  id: string;
+  sortOrder: number;
+  url: string;
+  alt: string;
+}
+
+export interface BlogPostBlock {
+  id: string;
+  sortOrder: number;
+  bodyHtml: string;
+  images: BlogPostBlockImage[];
+}
+
 export interface BlogPost {
   id: string;
   title: string;
   slug: string;
   content: string;
+  /** После миграции всегда приходит с API; для старых ответов — по умолчанию JUSTIFY на странице */
+  contentAlign?: BlogContentAlign;
   excerpt: string | null;
   featuredImage: string | null;
   featuredImageAlt: string;
@@ -40,6 +58,8 @@ export interface BlogPost {
   seoDescription: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Если есть — статья из блоков с фотоматериалами */
+  blocks?: BlogPostBlock[];
 }
 
 export interface BlogPostsResponse {
@@ -53,17 +73,31 @@ export interface BlogPostsResponse {
 export async function getBlogPosts(params?: {
   category?: string;
   search?: string;
+  /** Точное совпадение с одним из тегов статьи */
+  tag?: string;
   page?: number;
   limit?: number;
 }): Promise<BlogPostsResponse> {
   const searchParams = new URLSearchParams();
   if (params?.category) searchParams.set('category', params.category);
   if (params?.search) searchParams.set('search', params.search);
+  if (params?.tag) searchParams.set('tag', params.tag);
   if (params?.page) searchParams.set('page', String(params.page));
   if (params?.limit) searchParams.set('limit', String(params.limit));
 
   const res = await fetch(`${API_URL}/blog/posts?${searchParams}`);
   if (!res.ok) throw new Error('Не удалось загрузить записи блога');
+  return res.json();
+}
+
+export interface BlogTagStat {
+  tag: string;
+  count: number;
+}
+
+export async function getBlogTagStats(): Promise<BlogTagStat[]> {
+  const res = await fetch(`${API_URL}/blog/tags`);
+  if (!res.ok) throw new Error('Не удалось загрузить теги');
   return res.json();
 }
 

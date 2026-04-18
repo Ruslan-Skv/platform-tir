@@ -16,15 +16,23 @@ export class BlogPublicController {
   getPublishedPosts(
     @Query('category') categorySlug?: string,
     @Query('search') search?: string,
+    @Query('tag') tag?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
     return this.blogService.getPublishedPosts({
       categorySlug,
       search,
+      tag,
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 12,
     });
+  }
+
+  @Get('tags')
+  @ApiOperation({ summary: 'Теги опубликованных статей с количеством' })
+  getPublishedTagStats() {
+    return this.blogService.getPublishedTagStats();
   }
 
   @Get('posts/slug/:slug')

@@ -1,10 +1,19 @@
 import { Type } from 'class-transformer';
-import { IsString, IsEnum, IsOptional, IsArray, IsInt } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsArray, IsInt, ValidateNested } from 'class-validator';
+
+import { BlogPostBlockDto } from './blog-post-block.dto';
 
 export enum PostStatus {
   DRAFT = 'DRAFT',
   PUBLISHED = 'PUBLISHED',
   ARCHIVED = 'ARCHIVED',
+}
+
+export enum BlogContentAlign {
+  LEFT = 'LEFT',
+  JUSTIFY = 'JUSTIFY',
+  CENTER = 'CENTER',
+  RIGHT = 'RIGHT',
 }
 
 export class CreateBlogPostDto {
@@ -16,6 +25,10 @@ export class CreateBlogPostDto {
 
   @IsString()
   content: string;
+
+  @IsEnum(BlogContentAlign)
+  @IsOptional()
+  contentAlign?: BlogContentAlign;
 
   @IsString()
   @IsOptional()
@@ -65,4 +78,11 @@ export class CreateBlogPostDto {
   @IsString()
   @IsOptional()
   seoDescription?: string;
+
+  /** Блоки с текстом и фотоматериалами; пустой массив — только поле content */
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BlogPostBlockDto)
+  blocks?: BlogPostBlockDto[];
 }

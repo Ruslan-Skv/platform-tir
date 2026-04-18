@@ -3,32 +3,64 @@
 import React, { useCallback, useEffect, useState } from 'react';
 
 import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import {
   type BlogCategory,
   type BlogPost,
+  type BlogTagStat,
   getBlogCategories,
   getBlogPosts,
+  getBlogTagStats,
 } from '@/shared/api/blog';
 
 import styles from './BlogPage.module.css';
 
+function buildListUrl(
+  pathname: string,
+  opts: { search?: string; tag?: string | null; page?: number }
+): string {
+  const p = new URLSearchParams();
+  if (opts.search?.trim()) p.set('search', opts.search.trim());
+  if (opts.tag?.trim()) p.set('tag', opts.tag.trim());
+  if (opts.page && opts.page > 1) p.set('page', String(opts.page));
+  const q = p.toString();
+  return q ? `${pathname}?${q}` : pathname;
+}
+
 export const BlogPage: React.FC = () => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const tagFilter = searchParams.get('tag');
+  const searchFromUrl = searchParams.get('search') ?? '';
+
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [categories, setCategories] = useState<BlogCategory[]>([]);
+  const [tagStats, setTagStats] = useState<BlogTagStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
-  const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+
+  const pageFromUrl = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
+
+  useEffect(() => {
+    setSearch(searchFromUrl);
+  }, [searchFromUrl]);
 
   const loadPosts = useCallback(async () => {
     setLoading(true);
     try {
+      const q = (searchParams.get('search') ?? '').trim();
+      const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
+      const t = searchParams.get('tag');
       const res = await getBlogPosts({
         category: selectedCategory || undefined,
-        search: search || undefined,
-        page: currentPage,
+        search: q || undefined,
+        tag: t || undefined,
+        page,
         limit: 12,
       });
       setPosts(res.data);
@@ -38,7 +70,7 @@ export const BlogPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, selectedCategory, search]);
+  }, [selectedCategory, searchParams]);
 
   useEffect(() => {
     loadPosts();
@@ -50,9 +82,46 @@ export const BlogPage: React.FC = () => {
       .catch(() => setCategories([]));
   }, []);
 
+  useEffect(() => {
+    getBlogTagStats()
+      .then(setTagStats)
+      .catch(() => setTagStats([]));
+  }, []);
+
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+    const url = buildListUrl(pathname, {
+      search: search.trim() || undefined,
+      tag: tagFilter,
+      page: page > 1 ? page : undefined,
+    });
+    router.push(url, { scroll: false });
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const url = buildListUrl(pathname, {
+      search: search.trim() || undefined,
+      tag: tagFilter,
+    });
+    router.push(url);
+  };
+
+  const handleCategoryClick = (slug: string | null) => {
+    setSelectedCategory(slug);
+    const url = buildListUrl(pathname, {
+      search: search.trim() || undefined,
+      tag: tagFilter,
+    });
+    router.push(url);
+  };
+
+  const clearTagFilter = () => {
+    const url = buildListUrl(pathname, {
+      search: search.trim() || undefined,
+      tag: null,
+    });
+    router.push(url);
   };
 
   const formatDate = (dateStr: string) => {
@@ -62,6 +131,11 @@ export const BlogPage: React.FC = () => {
       year: 'numeric',
     });
   };
+
+  const emptyMessage =
+    tagFilter || search.trim()
+      ? 'Ничего не найдено. Попробуйте другой запрос или сбросьте фильтры.'
+      : 'Записей пока нет.';
 
   return (
     <div className={styles.blogPage}>
@@ -82,6 +156,17 @@ export const BlogPage: React.FC = () => {
         <p className={styles.subtitle}>Советы и материалы от Территории интерьерных решений</p>
       </header>
 
+      {tagFilter ? (
+        <div className={styles.activeFilters} role="status">
+          <span className={styles.activeFilterLabel}>
+            Фильтр по тегу: <strong>{tagFilter}</strong>
+          </span>
+          <button type="button" className={styles.filterReset} onClick={clearTagFilter}>
+            Сбросить тег
+          </button>
+        </div>
+      ) : null}
+
       <div className={styles.content}>
         <aside className={styles.sidebar}>
           <div className={styles.sidebarSection}>
@@ -91,10 +176,7 @@ export const BlogPage: React.FC = () => {
                 <button
                   type="button"
                   className={`${styles.categoryItem} ${!selectedCategory ? styles.active : ''}`}
-                  onClick={() => {
-                    setSelectedCategory(null);
-                    setCurrentPage(1);
-                  }}
+                  onClick={() => handleCategoryClick(null)}
                 >
                   Все записи
                 </button>
@@ -104,10 +186,7 @@ export const BlogPage: React.FC = () => {
                   <button
                     type="button"
                     className={`${styles.categoryItem} ${selectedCategory === cat.slug ? styles.active : ''}`}
-                    onClick={() => {
-                      setSelectedCategory(cat.slug);
-                      setCurrentPage(1);
-                    }}
+                    onClick={() => handleCategoryClick(cat.slug)}
                   >
                     {cat.name}
                     {cat._count?.posts != null && (
@@ -120,18 +199,34 @@ export const BlogPage: React.FC = () => {
           </div>
 
           <div className={styles.sidebarSection}>
+            <h3 className={styles.sidebarTitle}>Теги</h3>
+            {tagStats.length === 0 ? (
+              <p className={styles.tagSidebarEmpty}>
+                Теги появятся после публикации статей с метками.
+              </p>
+            ) : (
+              <ul className={styles.tagList}>
+                {tagStats.map(({ tag, count }) => (
+                  <li key={tag}>
+                    <Link
+                      href={buildListUrl(pathname, { tag, search: search.trim() || undefined })}
+                      className={`${styles.tagItem} ${tagFilter === tag ? styles.tagItemActive : ''}`}
+                    >
+                      <span className={styles.tagItemLabel}>{tag}</span>
+                      <span className={styles.tagItemCount}>{count}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className={styles.sidebarSection}>
             <h3 className={styles.sidebarTitle}>Поиск</h3>
-            <form
-              className={styles.searchForm}
-              onSubmit={(e) => {
-                e.preventDefault();
-                setCurrentPage(1);
-                loadPosts();
-              }}
-            >
+            <form className={styles.searchForm} onSubmit={handleSearchSubmit}>
               <input
                 type="search"
-                placeholder="Поиск по статьям..."
+                placeholder="Поиск по статьям и тегам…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className={styles.searchInput}
@@ -140,6 +235,9 @@ export const BlogPage: React.FC = () => {
                 Найти
               </button>
             </form>
+            <p className={styles.searchHint}>
+              Ищет по заголовку, тексту, краткому описанию и по вхождению в теги.
+            </p>
           </div>
         </aside>
 
@@ -148,7 +246,12 @@ export const BlogPage: React.FC = () => {
             <div className={styles.loading}>Загрузка...</div>
           ) : posts.length === 0 ? (
             <div className={styles.empty}>
-              <p>Записей пока нет.</p>
+              <p>{emptyMessage}</p>
+              {(tagFilter || search.trim()) && (
+                <Link href={pathname} className={styles.emptyResetLink}>
+                  Показать все записи
+                </Link>
+              )}
             </div>
           ) : (
             <>
@@ -191,6 +294,22 @@ export const BlogPage: React.FC = () => {
                         </div>
                       </div>
                     </Link>
+                    {post.tags && post.tags.length > 0 ? (
+                      <div className={styles.cardTags} onClick={(e) => e.stopPropagation()}>
+                        {post.tags.slice(0, 6).map((t) => (
+                          <Link
+                            key={t}
+                            href={buildListUrl(pathname, {
+                              tag: t,
+                              search: search.trim() || undefined,
+                            })}
+                            className={styles.cardTag}
+                          >
+                            {t}
+                          </Link>
+                        ))}
+                      </div>
+                    ) : null}
                   </article>
                 ))}
               </div>
@@ -200,19 +319,19 @@ export const BlogPage: React.FC = () => {
                   <button
                     type="button"
                     className={styles.paginationButton}
-                    disabled={currentPage <= 1}
-                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={pageFromUrl <= 1}
+                    onClick={() => handlePageChange(pageFromUrl - 1)}
                   >
                     ← Назад
                   </button>
                   <span className={styles.paginationInfo}>
-                    Страница {currentPage} из {totalPages}
+                    Страница {pageFromUrl} из {totalPages}
                   </span>
                   <button
                     type="button"
                     className={styles.paginationButton}
-                    disabled={currentPage >= totalPages}
-                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={pageFromUrl >= totalPages}
+                    onClick={() => handlePageChange(pageFromUrl + 1)}
                   >
                     Вперёд →
                   </button>

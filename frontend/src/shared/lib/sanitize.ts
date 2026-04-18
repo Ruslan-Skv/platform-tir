@@ -36,7 +36,7 @@ const ALLOWED_BLOG_TAGS = [
 ];
 
 /** Разрешённые атрибуты для ссылок и изображений */
-const ALLOWED_ATTR = ['href', 'src', 'alt', 'title', 'class'];
+const ALLOWED_ATTR = ['href', 'src', 'alt', 'title', 'class', 'target', 'rel'];
 
 /**
  * Лёгкая санитизация на сервере (без jsdom, без ReDoS).

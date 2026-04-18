@@ -1,3 +1,5 @@
+import type { BlogContentAlign, BlogPostBlock } from './blog';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAuthHeaders(): HeadersInit {
@@ -26,6 +28,7 @@ export interface AdminBlogPost {
   title: string;
   slug: string;
   content: string;
+  contentAlign: BlogContentAlign;
   excerpt: string | null;
   featuredImage: string | null;
   featuredImageAlt: string;
@@ -43,6 +46,7 @@ export interface AdminBlogPost {
   seoDescription: string | null;
   createdAt: string;
   updatedAt: string;
+  blocks?: BlogPostBlock[];
 }
 
 export interface AdminBlogCategory {
@@ -55,10 +59,24 @@ export interface AdminBlogCategory {
   _count?: { posts: number };
 }
 
+export interface CreateBlogPostBlockImageDto {
+  url: string;
+  alt?: string;
+  sortOrder?: number;
+}
+
+export interface CreateBlogPostBlockDto {
+  bodyHtml: string;
+  sortOrder?: number;
+  images?: CreateBlogPostBlockImageDto[];
+}
+
 export interface CreateBlogPostDto {
   title: string;
   slug: string;
   content: string;
+  contentAlign?: BlogContentAlign;
+  blocks?: CreateBlogPostBlockDto[];
   excerpt?: string;
   featuredImage?: string;
   featuredImageAlt?: string;

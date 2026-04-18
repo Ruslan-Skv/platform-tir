@@ -1,7 +1,13 @@
+import { Suspense } from 'react';
+
 import { BlogPage } from '@/views/blog/ui/BlogPage';
 
 export default function BlogListPage() {
-  return <BlogPage />;
+  return (
+    <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>Загрузка…</div>}>
+      <BlogPage />
+    </Suspense>
+  );
 }
 
 export function generateMetadata() {

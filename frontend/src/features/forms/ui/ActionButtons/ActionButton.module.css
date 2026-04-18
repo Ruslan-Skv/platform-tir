@@ -49,28 +49,26 @@
 
 .button.callback,
 .button.outline.callback {
-  background-color: #ffffff80 !important;
-  border: 1px solid rgb(81 81 81 / 25%) !important;
-  color: #515151 !important;
+  background: var(--gradient-accent) !important;
+  border: none !important;
+  color: var(--color-accent-contrast) !important;
   transition:
-    background-color 0.35s ease,
-    border-color 0.35s ease,
-    color 0.35s ease;
+    background 0.3s ease,
+    color 0.3s ease;
 }
 
 .button.callback:hover:not(.disabled),
 .button.callback:active:not(.disabled),
 .button.outline.callback:hover:not(.disabled),
 .button.outline.callback:active:not(.disabled) {
-  background-color: #f9fafb !important;
-  border-color: rgb(81 81 81 / 45%) !important;
+  background: var(--gradient-accent-hover) !important;
   box-shadow: none;
-  color: var(--color-accent) !important;
+  color: var(--color-accent-contrast) !important;
 }
 
 .button.callback:focus-visible,
 .button.outline.callback:focus-visible {
-  box-shadow: var(--focus-ring-accent);
+  box-shadow: var(--focus-ring-accent-strong);
 }
 
 /* Отключаем glow эффект для callback */
@@ -89,9 +87,9 @@
 
 :where(html[data-theme='light'], [data-app-theme='light']) .button.callback,
 :where(html[data-theme='light'], [data-app-theme='light']) .button.outline.callback {
-  background-color: #ffffff80 !important;
-  border: 1px solid rgb(81 81 81 / 25%) !important;
-  color: #515151 !important;
+  background: var(--gradient-accent) !important;
+  border: none !important;
+  color: var(--color-accent-contrast) !important;
 }
 
 /* Темная тема - кнопка "Записаться на замер" */
@@ -112,9 +110,9 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .button.callback,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .button.outline.callback {
-  background-color: rgb(31 41 55 / 50%) !important;
-  border: 1px solid rgb(156 163 175 / 60%) !important;
-  color: #d1d5db !important;
+  background: var(--gradient-accent) !important;
+  border: none !important;
+  color: var(--color-accent-contrast) !important;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .button.callback:hover:not(.disabled),
@@ -123,10 +121,9 @@
   .button.outline.callback:hover:not(.disabled),
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .button.outline.callback:active:not(.disabled) {
-  background-color: rgb(55 65 81 / 60%) !important;
-  border-color: rgb(156 163 175 / 80%) !important;
+  background: var(--gradient-accent-hover) !important;
   box-shadow: none;
-  color: var(--color-accent) !important;
+  color: var(--color-accent-contrast) !important;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .button.callback:focus-visible,
@@ -136,13 +133,17 @@
 
 @media (width <= 480px) {
   .button.measurement,
-  .button.outline.measurement {
+  .button.outline.measurement,
+  .button.callback,
+  .button.outline.callback {
     background: var(--gradient-accent) !important;
     color: var(--color-accent-contrast) !important;
   }
 
   :where(html[data-theme='dark'], [data-app-theme='dark']) .button.measurement,
-  :where(html[data-theme='dark'], [data-app-theme='dark']) .button.outline.measurement {
+  :where(html[data-theme='dark'], [data-app-theme='dark']) .button.outline.measurement,
+  :where(html[data-theme='dark'], [data-app-theme='dark']) .button.callback,
+  :where(html[data-theme='dark'], [data-app-theme='dark']) .button.outline.callback {
     background: var(--gradient-accent) !important;
     color: var(--color-accent-contrast) !important;
   }

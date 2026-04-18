@@ -9,9 +9,11 @@ import * as path from 'path';
 import { extname } from 'path';
 import { PrismaService } from '../../database/prisma.service';
 import { uploadsBaseUrl } from '../../common/utils/uploads-url';
+import { BlogPostBlockDto } from './dto/blog-post-block.dto';
 import { CreateBlogPostDto, PostStatus } from './dto/create-blog-post.dto';
 import { UpdateBlogPostDto } from './dto/update-blog-post.dto';
 import { CreateBlogCategoryDto } from './dto/create-blog-category.dto';
+import { deriveSeoTitle, resolveSeoDescription } from './blog-seo.util';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -36,6 +38,49 @@ export class BlogService {
     }
   }
 
+  private assertBlogBlocks(blocks: BlogPostBlockDto[] | undefined) {
+    if (!blocks?.length) return;
+    blocks.forEach((b, i) => {
+      const text = (b.bodyHtml ?? '')
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const hasImages = (b.images?.length ?? 0) > 0;
+      if (!text && !hasImages) {
+        throw new BadRequestException(`Блок ${i + 1}: добавьте текст или хотя бы одно изображение`);
+      }
+      for (const img of b.images ?? []) {
+        if (!img.url?.trim()) {
+          throw new BadRequestException(`Блок ${i + 1}: пустой URL изображения`);
+        }
+      }
+    });
+  }
+
+  private mergeContentFromBlocks(blocks: BlogPostBlockDto[]): string {
+    return [...blocks]
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      .map((b) => b.bodyHtml)
+      .join('');
+  }
+
+  /** Вложенный create для Prisma (тип BlogPostBlock после `prisma generate`). */
+  private mapBlocksForCreate(blocks: BlogPostBlockDto[]) {
+    const sorted = [...blocks].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    return sorted.map((block, idx) => ({
+      sortOrder: block.sortOrder ?? idx,
+      bodyHtml: block.bodyHtml,
+      images: {
+        create: (block.images ?? []).map((img, j) => ({
+          url: img.url.trim(),
+          alt: (img.alt ?? '').trim(),
+          sortOrder: img.sortOrder ?? j,
+        })),
+      },
+    }));
+  }
+
   // Blog Posts
   async createPost(authorId: string, createBlogPostDto: CreateBlogPostDto) {
     const existing = await this.prisma.blogPost.findUnique({
@@ -50,13 +95,27 @@ export class BlogService {
     const featuredImageAlt = (createBlogPostDto.featuredImageAlt ?? '').trim();
     this.assertFeaturedImageAlt(featuredImage, featuredImageAlt);
 
-    const readingTimeMinutes = this.computeReadingTimeMinutes(createBlogPostDto.content);
+    const blocksPayload = createBlogPostDto.blocks ?? [];
+    this.assertBlogBlocks(blocksPayload.length ? blocksPayload : undefined);
+
+    const mergedContent = blocksPayload.length
+      ? this.mergeContentFromBlocks(blocksPayload)
+      : createBlogPostDto.content;
+    const readingTimeMinutes = this.computeReadingTimeMinutes(mergedContent);
+
+    const seoTitle = deriveSeoTitle(createBlogPostDto.title, createBlogPostDto.seoTitle);
+    const seoDescription = resolveSeoDescription(
+      mergedContent,
+      createBlogPostDto.excerpt ?? null,
+      createBlogPostDto.seoDescription,
+    );
 
     return this.prisma.blogPost.create({
       data: {
         title: createBlogPostDto.title,
         slug: createBlogPostDto.slug,
-        content: createBlogPostDto.content,
+        content: mergedContent,
+        contentAlign: createBlogPostDto.contentAlign ?? 'JUSTIFY',
         excerpt: createBlogPostDto.excerpt,
         featuredImage,
         featuredImageAlt,
@@ -67,11 +126,18 @@ export class BlogService {
         status: createBlogPostDto.status ?? PostStatus.DRAFT,
         categoryId: createBlogPostDto.categoryId?.trim() || undefined,
         tags: createBlogPostDto.tags ?? [],
-        seoTitle: createBlogPostDto.seoTitle,
-        seoDescription: createBlogPostDto.seoDescription,
+        seoTitle,
+        seoDescription,
         authorId,
         publishedAt: createBlogPostDto.status === PostStatus.PUBLISHED ? new Date() : null,
-      },
+        ...(blocksPayload.length
+          ? {
+              blocks: {
+                create: this.mapBlocksForCreate(blocksPayload),
+              },
+            }
+          : {}),
+      } as unknown as Prisma.BlogPostCreateInput,
       include: {
         author: {
           select: {
@@ -81,12 +147,16 @@ export class BlogService {
           },
         },
         category: true,
+        blocks: {
+          orderBy: { sortOrder: 'asc' },
+          include: { images: { orderBy: { sortOrder: 'asc' } } },
+        },
         _count: {
           select: {
             comments: true,
           },
         },
-      },
+      } as unknown as Prisma.BlogPostInclude,
     });
   }
 
@@ -170,7 +240,11 @@ export class BlogService {
           },
         },
         category: true,
-      },
+        blocks: {
+          orderBy: { sortOrder: 'asc' },
+          include: { images: { orderBy: { sortOrder: 'asc' } } },
+        },
+      } as Prisma.BlogPostInclude,
     });
 
     if (!post) {
@@ -203,7 +277,9 @@ export class BlogService {
         : post.featuredImageAlt;
     this.assertFeaturedImageAlt(mergedFeaturedImage, mergedFeaturedImageAlt);
 
-    const data: Prisma.BlogPostUpdateInput = { ...updateBlogPostDto };
+    const { blocks: blocksPayload, ...updateRest } = updateBlogPostDto;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- вложенные blocks после prisma generate
+    const data: any = { ...updateRest };
 
     if (updateBlogPostDto.featuredImage !== undefined) {
       data.featuredImage = mergedFeaturedImage;
@@ -221,8 +297,39 @@ export class BlogService {
       data.sortOrder = updateBlogPostDto.sortOrder;
     }
 
-    if (updateBlogPostDto.content !== undefined) {
+    if (blocksPayload !== undefined) {
+      this.assertBlogBlocks(blocksPayload.length ? blocksPayload : undefined);
+      if (blocksPayload.length) {
+        const merged = this.mergeContentFromBlocks(blocksPayload);
+        data.content = merged;
+        data.readingTimeMinutes = this.computeReadingTimeMinutes(merged);
+        data.blocks = {
+          deleteMany: {},
+          create: this.mapBlocksForCreate(blocksPayload),
+        };
+      } else {
+        data.blocks = { deleteMany: {} };
+        if (updateBlogPostDto.content !== undefined) {
+          data.readingTimeMinutes = this.computeReadingTimeMinutes(updateBlogPostDto.content);
+        }
+      }
+    } else if (updateBlogPostDto.content !== undefined) {
       data.readingTimeMinutes = this.computeReadingTimeMinutes(updateBlogPostDto.content);
+    }
+
+    const mergedTitle = String(data.title !== undefined ? data.title : post.title);
+    const mergedContentHtml = String(data.content !== undefined ? data.content : post.content);
+    const mergedExcerpt = data.excerpt !== undefined ? data.excerpt : post.excerpt;
+
+    if (updateBlogPostDto.seoTitle !== undefined) {
+      data.seoTitle = deriveSeoTitle(mergedTitle, updateBlogPostDto.seoTitle);
+    }
+    if (updateBlogPostDto.seoDescription !== undefined) {
+      data.seoDescription = resolveSeoDescription(
+        mergedContentHtml,
+        mergedExcerpt,
+        updateBlogPostDto.seoDescription,
+      );
     }
 
     if (updateBlogPostDto.status === PostStatus.PUBLISHED && post.status !== 'PUBLISHED') {
@@ -241,7 +348,11 @@ export class BlogService {
           },
         },
         category: true,
-      },
+        blocks: {
+          orderBy: { sortOrder: 'asc' },
+          include: { images: { orderBy: { sortOrder: 'asc' } } },
+        },
+      } as Prisma.BlogPostInclude,
     });
   }
 
@@ -348,14 +459,52 @@ export class BlogService {
     return { imageUrl: `${prefix}${rel}` };
   }
 
+  /** ID опубликованных постов, у которых хотя бы один тег подходит по ILIKE. */
+  private async findPublishedPostIdsMatchingTagIlike(search: string): Promise<string[]> {
+    const term = search.trim();
+    if (!term) return [];
+    const escaped = term.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+    const pattern = `%${escaped}%`;
+    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT DISTINCT bp.id
+      FROM blog_posts bp
+      WHERE bp.status = 'PUBLISHED'
+      AND EXISTS (
+        SELECT 1 FROM unnest(bp.tags) AS t
+        WHERE t::text ILIKE ${pattern}
+      )
+    `;
+    return rows.map((r) => String(r.id));
+  }
+
+  /** Список тегов с количеством публикаций (для сайдбара блога). */
+  async getPublishedTagStats() {
+    const posts = await this.prisma.blogPost.findMany({
+      where: { status: 'PUBLISHED' },
+      select: { tags: true },
+    });
+    const counts = new Map<string, number>();
+    for (const p of posts) {
+      for (const raw of p.tags) {
+        const t = raw.trim();
+        if (!t) continue;
+        counts.set(t, (counts.get(t) ?? 0) + 1);
+      }
+    }
+    return [...counts.entries()]
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag, 'ru'));
+  }
+
   // Public API (published posts only)
   async getPublishedPosts(params?: {
     categorySlug?: string;
     search?: string;
+    tag?: string;
     page?: number;
     limit?: number;
   }) {
-    const { categorySlug, search, page = 1, limit = 12 } = params || {};
+    const { categorySlug, search, tag, page = 1, limit = 12 } = params || {};
     const skip = (page - 1) * limit;
 
     const where: Prisma.BlogPostWhereInput = { status: 'PUBLISHED' };
@@ -364,13 +513,25 @@ export class BlogService {
       where.category = { slug: categorySlug };
     }
 
-    if (search) {
-      where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { content: { contains: search, mode: 'insensitive' } },
-        { excerpt: { contains: search, mode: 'insensitive' } },
-        { tags: { has: search } },
+    const tagTrim = tag?.trim();
+    if (tagTrim) {
+      where.tags = { has: tagTrim };
+    }
+
+    if (search?.trim()) {
+      const s = search.trim();
+      const tagIds = await this.findPublishedPostIdsMatchingTagIlike(s);
+      const or: Prisma.BlogPostWhereInput[] = [
+        { title: { contains: s, mode: 'insensitive' } },
+        { content: { contains: s, mode: 'insensitive' } },
+        { excerpt: { contains: s, mode: 'insensitive' } },
       ];
+      if (tagIds.length) {
+        or.push({ id: { in: tagIds } });
+      }
+      const prevAnd = where.AND;
+      const andList = Array.isArray(prevAnd) ? prevAnd : prevAnd ? [prevAnd] : [];
+      where.AND = [...andList, { OR: or }];
     }
 
     const [posts, total] = await Promise.all([
@@ -430,7 +591,11 @@ export class BlogService {
           },
         },
         category: true,
-      },
+        blocks: {
+          orderBy: { sortOrder: 'asc' },
+          include: { images: { orderBy: { sortOrder: 'asc' } } },
+        },
+      } as Prisma.BlogPostInclude,
     });
 
     if (!post) {

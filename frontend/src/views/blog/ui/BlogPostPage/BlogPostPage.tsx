@@ -1,11 +1,14 @@
 'use client';
 
+import clsx from 'clsx';
+
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
 
 import { useFormContext } from '@/features/forms';
 import { type BlogPost, getBlogPostBySlug, toggleBlogPostLike } from '@/shared/api/blog';
+import { plainTextToBlogHtml } from '@/shared/lib/blog-content';
 import { sanitizeHtml, stripHtmlToText } from '@/shared/lib/sanitize';
 
 import styles from './BlogPostPage.module.css';
@@ -100,7 +103,10 @@ export const BlogPostPage: React.FC<BlogPostPageProps> = ({ slug }) => {
   const handleListen = () => {
     if (!post || typeof window === 'undefined' || !window.speechSynthesis) return;
 
-    const text = stripHtml(post.content);
+    const speechHtml = post.blocks?.length
+      ? post.blocks.map((b) => b.bodyHtml).join('\n')
+      : post.content;
+    const text = stripHtml(speechHtml);
     if (!text) return;
 
     if (isListening) {
@@ -161,8 +167,19 @@ export const BlogPostPage: React.FC<BlogPostPageProps> = ({ slug }) => {
 
   const authorByline = post.authorByline?.trim();
 
+  const alignClass =
+    {
+      LEFT: styles.alignLeft,
+      JUSTIFY: styles.alignJustify,
+      CENTER: styles.alignCenter,
+      RIGHT: styles.alignRight,
+    }[post.contentAlign ?? 'JUSTIFY'] ?? styles.alignJustify;
+
+  const legacyContentHtml = sanitizeHtml(plainTextToBlogHtml(post.content));
+  const hasBlocks = Boolean(post.blocks?.length);
+
   return (
-    <div className={styles.blogPostPage}>
+    <div className={clsx(styles.blogPostPage, alignClass)}>
       <nav className={styles.breadcrumbs} aria-label="Хлебные крошки">
         <ol className={styles.breadcrumbsList}>
           <li>
@@ -206,10 +223,36 @@ export const BlogPostPage: React.FC<BlogPostPageProps> = ({ slug }) => {
           </div>
         )}
 
-        <div
-          className={styles.content}
-          dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }}
-        />
+        {hasBlocks && post.blocks ? (
+          <div className={styles.blocks}>
+            {post.blocks.map((block) => (
+              <section key={block.id} className={styles.articleBlock}>
+                <div
+                  className={styles.content}
+                  dangerouslySetInnerHTML={{
+                    __html: sanitizeHtml(plainTextToBlogHtml(block.bodyHtml)),
+                  }}
+                />
+                {block.images.length > 0 ? (
+                  <div className={styles.blockGallery} aria-label="Фотоматериалы к разделу">
+                    {block.images.map((img) => (
+                      <figure key={img.id} className={styles.blockFigure}>
+                        <img
+                          src={img.url}
+                          alt={img.alt?.trim() || ''}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </figure>
+                    ))}
+                  </div>
+                ) : null}
+              </section>
+            ))}
+          </div>
+        ) : (
+          <div className={styles.content} dangerouslySetInnerHTML={{ __html: legacyContentHtml }} />
+        )}
 
         <section className={styles.callbackCta} aria-labelledby="article-cta-title">
           <h2 id="article-cta-title" className={styles.callbackCtaTitle}>
@@ -259,9 +302,9 @@ export const BlogPostPage: React.FC<BlogPostPageProps> = ({ slug }) => {
         {post.tags.length > 0 && (
           <div className={styles.tags}>
             {post.tags.map((tag) => (
-              <span key={tag} className={styles.tag}>
+              <Link key={tag} href={`/blog?tag=${encodeURIComponent(tag)}`} className={styles.tag}>
                 {tag}
-              </span>
+              </Link>
             ))}
           </div>
         )}
