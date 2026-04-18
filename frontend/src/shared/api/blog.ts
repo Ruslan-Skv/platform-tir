@@ -23,6 +23,11 @@ export interface BlogPost {
   content: string;
   excerpt: string | null;
   featuredImage: string | null;
+  featuredImageAlt: string;
+  badge: string | null;
+  readingTimeMinutes: number;
+  sortOrder: number;
+  authorByline: string | null;
   status: string;
   publishedAt: string | null;
   author: BlogAuthor;
@@ -33,24 +38,8 @@ export interface BlogPost {
   isLiked?: boolean;
   seoTitle: string | null;
   seoDescription: string | null;
-  allowComments: boolean;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface BlogPostWithComments extends BlogPost {
-  comments: BlogComment[];
-}
-
-export interface BlogComment {
-  id: string;
-  content: string;
-  status: string;
-  createdAt: string;
-  author: BlogAuthor | null;
-  authorName: string | null;
-  authorEmail: string | null;
-  replies?: BlogComment[];
 }
 
 export interface BlogPostsResponse {
@@ -78,7 +67,7 @@ export async function getBlogPosts(params?: {
   return res.json();
 }
 
-export async function getBlogPostBySlug(slug: string): Promise<BlogPostWithComments> {
+export async function getBlogPostBySlug(slug: string): Promise<BlogPost> {
   return getBlogPostBySlugWithGuest(slug, typeof window !== 'undefined' ? getGuestId() : undefined);
 }
 
@@ -111,7 +100,7 @@ function getGuestId(): string {
 export async function getBlogPostBySlugWithGuest(
   slug: string,
   guestId?: string
-): Promise<BlogPostWithComments> {
+): Promise<BlogPost> {
   const params = new URLSearchParams();
   if (guestId) params.set('guestId', guestId);
   const url = `${API_URL}/blog/posts/slug/${slug}${params.toString() ? `?${params}` : ''}`;
@@ -135,28 +124,5 @@ export async function toggleBlogPostLike(
     body: JSON.stringify({ guestId: guestId || getGuestId() }),
   });
   if (!res.ok) throw new Error('Не удалось поставить лайк');
-  return res.json();
-}
-
-export interface CreateCommentDto {
-  content: string;
-  authorName?: string;
-  authorEmail?: string;
-  parentId?: string;
-}
-
-export async function createBlogComment(
-  postId: string,
-  dto: CreateCommentDto
-): Promise<BlogComment> {
-  const res = await fetch(`${API_URL}/blog/posts/${postId}/comments`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(dto),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || 'Не удалось отправить комментарий');
-  }
   return res.json();
 }

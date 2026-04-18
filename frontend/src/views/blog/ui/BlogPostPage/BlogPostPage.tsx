@@ -4,12 +4,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
 
-import {
-  type BlogPostWithComments,
-  createBlogComment,
-  getBlogPostBySlug,
-  toggleBlogPostLike,
-} from '@/shared/api/blog';
+import { useFormContext } from '@/features/forms';
+import { type BlogPost, getBlogPostBySlug, toggleBlogPostLike } from '@/shared/api/blog';
 import { sanitizeHtml, stripHtmlToText } from '@/shared/lib/sanitize';
 
 import styles from './BlogPostPage.module.css';
@@ -24,18 +20,13 @@ function stripHtml(html: string): string {
 }
 
 export const BlogPostPage: React.FC<BlogPostPageProps> = ({ slug }) => {
-  const [post, setPost] = useState<BlogPostWithComments | null>(null);
+  const { callbackModal } = useFormContext();
+  const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [likeCount, setLikeCount] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const [liking, setLiking] = useState(false);
-  const [commentContent, setCommentContent] = useState('');
-  const [commentName, setCommentName] = useState('');
-  const [commentEmail, setCommentEmail] = useState('');
-  const [submittingComment, setSubmittingComment] = useState(false);
-  const [commentError, setCommentError] = useState<string | null>(null);
-  const [commentSuccess, setCommentSuccess] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -130,33 +121,6 @@ export const BlogPostPage: React.FC<BlogPostPageProps> = ({ slug }) => {
     setIsListening(true);
   };
 
-  const handleSubmitComment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!post || !commentContent.trim() || submittingComment) return;
-
-    setSubmittingComment(true);
-    setCommentError(null);
-    setCommentSuccess(false);
-
-    try {
-      await createBlogComment(post.id, {
-        content: commentContent.trim(),
-        authorName: commentName.trim() || undefined,
-        authorEmail: commentEmail.trim() || undefined,
-      });
-      setCommentContent('');
-      setCommentName('');
-      setCommentEmail('');
-      setCommentSuccess(true);
-      setTimeout(() => setCommentSuccess(false), 3000);
-      loadPost();
-    } catch (err) {
-      setCommentError(err instanceof Error ? err.message : 'Ошибка отправки');
-    } finally {
-      setSubmittingComment(false);
-    }
-  };
-
   useEffect(() => {
     return () => {
       if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -180,7 +144,7 @@ export const BlogPostPage: React.FC<BlogPostPageProps> = ({ slug }) => {
           <h2>Запись не найдена</h2>
           <p>{error || 'Запрашиваемая запись не существует или была удалена.'}</p>
           <Link href="/blog" className={styles.backLink}>
-            ← Вернуться к блогу
+            ← К полезным статьям
           </Link>
         </div>
       </div>
@@ -195,10 +159,7 @@ export const BlogPostPage: React.FC<BlogPostPageProps> = ({ slug }) => {
     });
   };
 
-  const getAuthorName = () => {
-    const { firstName, lastName } = post.author;
-    return [firstName, lastName].filter(Boolean).join(' ') || 'Автор';
-  };
+  const authorByline = post.authorByline?.trim();
 
   return (
     <div className={styles.blogPostPage}>
@@ -209,7 +170,7 @@ export const BlogPostPage: React.FC<BlogPostPageProps> = ({ slug }) => {
             <span className={styles.separator}>/</span>
           </li>
           <li>
-            <Link href="/blog">Блог</Link>
+            <Link href="/blog">Полезные статьи</Link>
             <span className={styles.separator}>/</span>
           </li>
           <li>
@@ -225,17 +186,23 @@ export const BlogPostPage: React.FC<BlogPostPageProps> = ({ slug }) => {
               {post.category.name}
             </Link>
           )}
-          <h1 className={styles.title}>{post.title}</h1>
+          <h1 className={styles.title}>
+            {post.badge?.trim() && <span className={styles.headerBadge}>{post.badge.trim()}</span>}
+            {post.title}
+          </h1>
           <div className={styles.meta}>
-            <span>{getAuthorName()}</span>
+            {authorByline ? <span>{authorByline}</span> : null}
             <span>{formatDate(post.publishedAt || post.createdAt)}</span>
+            {post.readingTimeMinutes != null && post.readingTimeMinutes > 0 && (
+              <span>{post.readingTimeMinutes} мин чтения</span>
+            )}
             {post.viewCount > 0 && <span>{post.viewCount} просмотров</span>}
           </div>
         </header>
 
         {post.featuredImage && (
           <div className={styles.featuredImage}>
-            <img src={post.featuredImage} alt="" />
+            <img src={post.featuredImage} alt={post.featuredImageAlt?.trim() || post.title} />
           </div>
         )}
 
@@ -243,6 +210,18 @@ export const BlogPostPage: React.FC<BlogPostPageProps> = ({ slug }) => {
           className={styles.content}
           dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }}
         />
+
+        <section className={styles.callbackCta} aria-labelledby="article-cta-title">
+          <h2 id="article-cta-title" className={styles.callbackCtaTitle}>
+            Остались вопросы?
+          </h2>
+          <p className={styles.callbackCtaText}>
+            Закажите обратный звонок — мы перезвоним и поможем с подбором решений.
+          </p>
+          <button type="button" className={styles.callbackCtaButton} onClick={callbackModal.open}>
+            Заказать звонок
+          </button>
+        </section>
 
         <div className={styles.actionsBar}>
           <button
@@ -289,91 +268,10 @@ export const BlogPostPage: React.FC<BlogPostPageProps> = ({ slug }) => {
 
         <footer className={styles.footer}>
           <Link href="/blog" className={styles.backLink}>
-            ← Все записи блога
+            ← Все полезные статьи
           </Link>
         </footer>
       </article>
-
-      {post.allowComments && (
-        <section className={styles.comments}>
-          <h2 className={styles.commentsTitle}>Комментарии</h2>
-
-          <form onSubmit={handleSubmitComment} className={styles.commentForm}>
-            <textarea
-              value={commentContent}
-              onChange={(e) => setCommentContent(e.target.value)}
-              placeholder="Ваш комментарий *"
-              className={styles.commentTextarea}
-              rows={4}
-              required
-            />
-            <div className={styles.commentFormRow}>
-              <input
-                type="text"
-                value={commentName}
-                onChange={(e) => setCommentName(e.target.value)}
-                placeholder="Ваше имя"
-                className={styles.commentInput}
-              />
-              <input
-                type="email"
-                value={commentEmail}
-                onChange={(e) => setCommentEmail(e.target.value)}
-                placeholder="Email (для гостей)"
-                className={styles.commentInput}
-              />
-            </div>
-            {commentError && <p className={styles.commentError}>{commentError}</p>}
-            {commentSuccess && (
-              <p className={styles.commentSuccess}>Комментарий отправлен на модерацию. Спасибо!</p>
-            )}
-            <button type="submit" className={styles.commentSubmit} disabled={submittingComment}>
-              {submittingComment ? 'Отправка...' : 'Отправить'}
-            </button>
-          </form>
-
-          {post.comments && post.comments.length > 0 && (
-            <ul className={styles.commentsList}>
-              {post.comments.map((comment) => (
-                <li key={comment.id} className={styles.comment}>
-                  <div className={styles.commentHeader}>
-                    <span className={styles.commentAuthor}>
-                      {comment.author
-                        ? [comment.author.firstName, comment.author.lastName]
-                            .filter(Boolean)
-                            .join(' ')
-                        : comment.authorName || 'Гость'}
-                    </span>
-                    <span className={styles.commentDate}>{formatDate(comment.createdAt)}</span>
-                  </div>
-                  <div className={styles.commentContent}>{comment.content}</div>
-                  {comment.replies && comment.replies.length > 0 && (
-                    <ul className={styles.replies}>
-                      {comment.replies.map((reply) => (
-                        <li key={reply.id} className={styles.reply}>
-                          <div className={styles.commentHeader}>
-                            <span className={styles.commentAuthor}>
-                              {reply.author
-                                ? [reply.author.firstName, reply.author.lastName]
-                                    .filter(Boolean)
-                                    .join(' ')
-                                : reply.authorName || 'Гость'}
-                            </span>
-                            <span className={styles.commentDate}>
-                              {formatDate(reply.createdAt)}
-                            </span>
-                          </div>
-                          <div className={styles.commentContent}>{reply.content}</div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
     </div>
   );
 };

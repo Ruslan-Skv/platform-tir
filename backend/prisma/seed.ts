@@ -792,7 +792,7 @@ async function main() {
         authorId: adminUser.id,
         categoryId: blogCategory.id,
         tags: ['двери', 'мебель', 'ремонт', 'советы'],
-        allowComments: true,
+        featuredImageAlt: 'Как выбрать входные двери и мебель для дома',
       },
     });
     console.log('✅ Blog: тестовая статья создана');

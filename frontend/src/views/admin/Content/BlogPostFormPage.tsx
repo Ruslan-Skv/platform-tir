@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -8,11 +8,16 @@ import { useRouter } from 'next/navigation';
 import {
   type AdminBlogCategory,
   type AdminBlogPost,
+  type BlogBadgePreset,
+  createBlogBadgePreset,
   createBlogPost,
   getAdminBlogCategories,
   getAdminBlogPost,
+  getBlogBadgePresets,
   updateBlogPost,
+  uploadBlogFeaturedImage,
 } from '@/shared/api/admin-blog';
+import { computeBlogReadingTimeMinutes } from '@/shared/lib/blog-reading-time';
 
 import styles from './BlogPostFormPage.module.css';
 
@@ -71,6 +76,11 @@ export function BlogPostFormPage({ postId }: BlogPostFormPageProps) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [categories, setCategories] = useState<AdminBlogCategory[]>([]);
+  const [badgePresets, setBadgePresets] = useState<BlogBadgePreset[]>([]);
+  const [newBadgeLabel, setNewBadgeLabel] = useState('');
+  const [addingBadge, setAddingBadge] = useState(false);
+  const [uploadingFeatured, setUploadingFeatured] = useState(false);
+  const featuredFileInputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
@@ -82,7 +92,22 @@ export function BlogPostFormPage({ postId }: BlogPostFormPageProps) {
   const [tags, setTags] = useState('');
   const [seoTitle, setSeoTitle] = useState('');
   const [seoDescription, setSeoDescription] = useState('');
-  const [allowComments, setAllowComments] = useState(true);
+  const [featuredImageAlt, setFeaturedImageAlt] = useState('');
+  const [badge, setBadge] = useState('');
+  const [sortOrder, setSortOrder] = useState(0);
+  const [authorByline, setAuthorByline] = useState('');
+
+  const readingTimePreview = useMemo(() => computeBlogReadingTimeMinutes(content), [content]);
+
+  const presetLabels = useMemo(() => badgePresets.map((p) => p.label), [badgePresets]);
+
+  const badgeSelectOptions = useMemo(() => {
+    const b = badge.trim();
+    if (b && !presetLabels.includes(b)) {
+      return [...presetLabels, b];
+    }
+    return presetLabels;
+  }, [presetLabels, badge]);
 
   const showMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
@@ -104,7 +129,10 @@ export function BlogPostFormPage({ postId }: BlogPostFormPageProps) {
       setTags(post.tags?.join(', ') || '');
       setSeoTitle(post.seoTitle || '');
       setSeoDescription(post.seoDescription || '');
-      setAllowComments(post.allowComments ?? true);
+      setFeaturedImageAlt(post.featuredImageAlt ?? '');
+      setBadge(post.badge?.trim() || '');
+      setSortOrder(post.sortOrder ?? 0);
+      setAuthorByline(post.authorByline || '');
     } catch {
       showMessage('error', 'Ошибка загрузки поста');
     } finally {
@@ -121,6 +149,15 @@ export function BlogPostFormPage({ postId }: BlogPostFormPageProps) {
     }
   }, []);
 
+  const loadBadgePresets = useCallback(async () => {
+    try {
+      const data = await getBlogBadgePresets();
+      setBadgePresets(data);
+    } catch {
+      showMessage('error', 'Не удалось загрузить список плашек');
+    }
+  }, []);
+
   useEffect(() => {
     loadPost();
   }, [loadPost]);
@@ -128,6 +165,58 @@ export function BlogPostFormPage({ postId }: BlogPostFormPageProps) {
   useEffect(() => {
     loadCategories();
   }, [loadCategories]);
+
+  useEffect(() => {
+    loadBadgePresets();
+  }, [loadBadgePresets]);
+
+  const handleAddBadgePreset = async () => {
+    const t = newBadgeLabel.trim();
+    if (!t || addingBadge) return;
+    setAddingBadge(true);
+    try {
+      await createBlogBadgePreset(t);
+      await loadBadgePresets();
+      setBadge(t);
+      setNewBadgeLabel('');
+      showMessage('success', 'Плашка добавлена в список');
+    } catch (err) {
+      showMessage('error', err instanceof Error ? err.message : 'Не удалось добавить плашку');
+    } finally {
+      setAddingBadge(false);
+    }
+  };
+
+  const MAX_FEATURED_BYTES = 10 * 1024 * 1024;
+
+  const handleFeaturedFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || uploadingFeatured) return;
+    if (!/\.(jpe?g|png|webp|gif)$/i.test(file.name)) {
+      showMessage('error', 'Допустимы только JPG, PNG, WebP и GIF');
+      return;
+    }
+    if (file.size > MAX_FEATURED_BYTES) {
+      showMessage('error', 'Размер файла не больше 10 МБ');
+      return;
+    }
+    setUploadingFeatured(true);
+    try {
+      const { imageUrl } = await uploadBlogFeaturedImage(file);
+      setFeaturedImage(imageUrl);
+      setFeaturedImageAlt((prev) => {
+        if (prev.trim()) return prev;
+        const fromTitle = title.trim().slice(0, 200);
+        return fromTitle || prev;
+      });
+      showMessage('success', 'Изображение загружено');
+    } catch (err) {
+      showMessage('error', err instanceof Error ? err.message : 'Ошибка загрузки');
+    } finally {
+      setUploadingFeatured(false);
+    }
+  };
 
   const handleTitleChange = (value: string) => {
     setTitle(value);
@@ -140,6 +229,10 @@ export function BlogPostFormPage({ postId }: BlogPostFormPageProps) {
       showMessage('error', 'Заполните заголовок, slug и контент');
       return;
     }
+    if (featuredImage.trim() && !featuredImageAlt.trim()) {
+      showMessage('error', 'Укажите alt-текст для изображения (SEO и доступность)');
+      return;
+    }
     setSaving(true);
     try {
       const dto = {
@@ -148,6 +241,10 @@ export function BlogPostFormPage({ postId }: BlogPostFormPageProps) {
         content: content.trim(),
         excerpt: excerpt.trim() || undefined,
         featuredImage: featuredImage.trim() || undefined,
+        featuredImageAlt: featuredImageAlt.trim(),
+        badge: badge.trim() || undefined,
+        sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
+        authorByline: authorByline.trim() || undefined,
         status,
         categoryId: categoryId || undefined,
         tags: tags
@@ -156,14 +253,13 @@ export function BlogPostFormPage({ postId }: BlogPostFormPageProps) {
           .filter(Boolean),
         seoTitle: seoTitle.trim() || undefined,
         seoDescription: seoDescription.trim() || undefined,
-        allowComments,
       };
       if (postId) {
         await updateBlogPost(postId, dto);
-        showMessage('success', 'Пост обновлён');
+        showMessage('success', 'Статья обновлена');
       } else {
         await createBlogPost(dto);
-        showMessage('success', 'Пост создан');
+        showMessage('success', 'Статья создана');
         router.push('/admin/content/blog');
       }
     } catch (err) {
@@ -185,9 +281,9 @@ export function BlogPostFormPage({ postId }: BlogPostFormPageProps) {
     <div className={styles.blogPostFormPage}>
       <div className={styles.header}>
         <Link href="/admin/content/blog" className={styles.backLink}>
-          ← К списку постов
+          ← К списку статей
         </Link>
-        <h1 className={styles.title}>{postId ? 'Редактирование поста' : 'Новый пост'}</h1>
+        <h1 className={styles.title}>{postId ? 'Редактирование статьи' : 'Новая статья'}</h1>
       </div>
 
       {message && <div className={`${styles.message} ${styles[message.type]}`}>{message.text}</div>}
@@ -232,6 +328,10 @@ export function BlogPostFormPage({ postId }: BlogPostFormPageProps) {
           </label>
         </div>
 
+        <p className={styles.readingTimeHint}>
+          Время чтения (рассчитывается автоматически): <strong>{readingTimePreview} мин.</strong>
+        </p>
+
         <div className={styles.row}>
           <label className={styles.label}>
             Краткое описание
@@ -246,14 +346,131 @@ export function BlogPostFormPage({ postId }: BlogPostFormPageProps) {
 
         <div className={styles.row}>
           <label className={styles.label}>
-            Изображение (URL)
+            Изображение обложки
+            <div className={styles.featuredImageRow}>
+              <input
+                type="text"
+                value={featuredImage}
+                onChange={(e) => setFeaturedImage(e.target.value)}
+                className={styles.input}
+                placeholder="https://… или загрузите файл"
+              />
+              <input
+                ref={featuredFileInputRef}
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif"
+                className={styles.hiddenFileInput}
+                onChange={handleFeaturedFileChange}
+              />
+              <button
+                type="button"
+                className={styles.imageUploadButton}
+                disabled={uploadingFeatured}
+                onClick={() => featuredFileInputRef.current?.click()}
+              >
+                {uploadingFeatured ? 'Загрузка…' : 'Загрузить файл'}
+              </button>
+            </div>
+            {featuredImage.trim() ? (
+              <div className={styles.featuredPreview}>
+                <img src={featuredImage} alt="" />
+              </div>
+            ) : null}
+            <span className={styles.fieldHint}>
+              Ссылка на картинку или загрузка с компьютера (jpg, png, webp, gif, до 10 МБ). После
+              загрузки alt подставится из заголовка, если поле ниже пустое.
+            </span>
+          </label>
+        </div>
+
+        <div className={styles.row}>
+          <label className={styles.label}>
+            Alt-текст изображения{featuredImage.trim() ? ' *' : ''}
             <input
               type="text"
-              value={featuredImage}
-              onChange={(e) => setFeaturedImage(e.target.value)}
+              value={featuredImageAlt}
+              onChange={(e) => setFeaturedImageAlt(e.target.value)}
               className={styles.input}
-              placeholder="https://..."
+              placeholder="Кратко опишите изображение для SEO и скринридеров"
+              required={!!featuredImage.trim()}
             />
+          </label>
+        </div>
+
+        <div className={styles.rowGrid}>
+          <div className={styles.label}>
+            Плашка / метка
+            <select
+              value={badge.trim()}
+              onChange={(e) => setBadge(e.target.value)}
+              className={styles.select}
+            >
+              <option value="">— Без плашки —</option>
+              {badgeSelectOptions.map((lbl) => (
+                <option key={lbl} value={lbl}>
+                  {lbl}
+                </option>
+              ))}
+            </select>
+            {badge.trim() && !presetLabels.includes(badge.trim()) && (
+              <p className={styles.badgeOrphanHint}>
+                Текущее значение не из списка; оно сохранится. Выберите его в списке выше или
+                добавьте как новый вариант.
+              </p>
+            )}
+            <div className={styles.badgeAddRow}>
+              <input
+                type="text"
+                value={newBadgeLabel}
+                onChange={(e) => setNewBadgeLabel(e.target.value)}
+                className={styles.input}
+                placeholder="Новая плашка для списка"
+                maxLength={120}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    void handleAddBadgePreset();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className={styles.badgeAddButton}
+                disabled={addingBadge || !newBadgeLabel.trim()}
+                onClick={() => void handleAddBadgePreset()}
+              >
+                {addingBadge ? 'Добавление…' : 'Добавить в список'}
+              </button>
+            </div>
+            <span className={styles.fieldHint}>
+              Список общий для всех редакторов. Новый вариант сразу можно выбрать для этой статьи.
+            </span>
+          </div>
+          <label className={styles.label}>
+            Автор (подпись)
+            <input
+              type="text"
+              value={authorByline}
+              onChange={(e) => setAuthorByline(e.target.value)}
+              className={styles.input}
+              placeholder="Необязательно; если пусто — на сайте автор не показывается"
+            />
+          </label>
+        </div>
+
+        <div className={styles.row}>
+          <label className={styles.label}>
+            Порядок сортировки
+            <input
+              type="number"
+              value={sortOrder}
+              onChange={(e) => setSortOrder(parseInt(e.target.value, 10) || 0)}
+              className={styles.input}
+              step={1}
+            />
+            <span className={styles.fieldHint}>
+              Меньше — выше в списке. При равенстве — по дате.
+            </span>
           </label>
         </div>
 
@@ -322,17 +539,6 @@ export function BlogPostFormPage({ postId }: BlogPostFormPageProps) {
               className={styles.textarea}
               rows={2}
             />
-          </label>
-        </div>
-
-        <div className={styles.row}>
-          <label className={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={allowComments}
-              onChange={(e) => setAllowComments(e.target.checked)}
-            />
-            Разрешить комментарии
           </label>
         </div>
 

@@ -55,7 +55,9 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       description,
       type: 'article',
       publishedTime: post.publishedAt,
-      images: post.featuredImage ? [{ url: post.featuredImage, alt: post.title }] : undefined,
+      images: post.featuredImage
+        ? [{ url: post.featuredImage, alt: post.featuredImageAlt?.trim() || post.title }]
+        : undefined,
     },
     twitter: {
       card: 'summary_large_image',

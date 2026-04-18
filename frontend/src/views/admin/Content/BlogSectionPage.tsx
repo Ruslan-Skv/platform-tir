@@ -106,7 +106,7 @@ export function BlogSectionPage() {
     try {
       if (deleteTarget.type === 'post') {
         await deleteBlogPost(deleteTarget.id);
-        showMessage('success', 'Пост удалён');
+        showMessage('success', 'Статья удалена');
       } else {
         await deleteBlogCategory(deleteTarget.id);
         showMessage('success', 'Категория удалена');
@@ -125,7 +125,7 @@ export function BlogSectionPage() {
   const handlePublish = async (id: string) => {
     try {
       await publishBlogPost(id);
-      showMessage('success', 'Пост опубликован');
+      showMessage('success', 'Статья опубликована');
       loadPosts();
       loadStats();
     } catch (e) {
@@ -217,12 +217,17 @@ export function BlogSectionPage() {
     });
   };
 
+  const getPostAuthorDisplay = (p: AdminBlogPost) => {
+    const byline = p.authorByline?.trim();
+    return byline || '—';
+  };
+
   return (
     <div className={styles.blogSectionPage}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Блог</h1>
+        <h1 className={styles.title}>Полезные статьи</h1>
         <Link href="/admin/content/blog/new" className={styles.createButton}>
-          + Создать пост
+          + Создать статью
         </Link>
       </div>
 
@@ -232,7 +237,7 @@ export function BlogSectionPage() {
         <div className={styles.stats}>
           <div className={styles.stat}>
             <span className={styles.statValue}>{stats.totalPosts}</span>
-            <span className={styles.statLabel}>Всего постов</span>
+            <span className={styles.statLabel}>Всего статей</span>
           </div>
           <div className={styles.stat}>
             <span className={styles.statValue}>{stats.publishedPosts}</span>
@@ -290,10 +295,28 @@ export function BlogSectionPage() {
               key: 'title',
               title: 'Заголовок',
               render: (p) => (
-                <Link href={`/admin/content/blog/${p.id}/edit`} className={styles.postLink}>
-                  {p.title}
-                </Link>
+                <div className={styles.titleCell}>
+                  {p.badge?.trim() && <span className={styles.badge}>{p.badge.trim()}</span>}
+                  <Link href={`/admin/content/blog/${p.id}/edit`} className={styles.postLink}>
+                    {p.title}
+                  </Link>
+                </div>
               ),
+            },
+            {
+              key: 'sortOrder',
+              title: 'Порядок',
+              render: (p) => p.sortOrder ?? 0,
+            },
+            {
+              key: 'reading',
+              title: 'Чтение',
+              render: (p) => `${p.readingTimeMinutes ?? 1} мин`,
+            },
+            {
+              key: 'authorLine',
+              title: 'Автор',
+              render: (p) => getPostAuthorDisplay(p),
             },
             {
               key: 'status',
@@ -356,7 +379,7 @@ export function BlogSectionPage() {
           ]}
           keyExtractor={(p) => p.id}
           loading={loading}
-          emptyMessage="Постов пока нет"
+          emptyMessage="Статей пока нет"
           pagination={
             totalPages > 1
               ? {

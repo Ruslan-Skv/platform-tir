@@ -10,6 +10,17 @@ function getAuthHeaders(): HeadersInit {
   return headers;
 }
 
+/** Для FormData не задаём Content-Type — нужен boundary. */
+function getAuthHeadersMultipart(): HeadersInit {
+  if (typeof window === 'undefined') return {};
+  const token = localStorage.getItem('admin_token');
+  const headers: HeadersInit = {};
+  if (token) {
+    (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
 export interface AdminBlogPost {
   id: string;
   title: string;
@@ -17,6 +28,11 @@ export interface AdminBlogPost {
   content: string;
   excerpt: string | null;
   featuredImage: string | null;
+  featuredImageAlt: string;
+  badge: string | null;
+  readingTimeMinutes: number;
+  sortOrder: number;
+  authorByline: string | null;
   status: string;
   publishedAt: string | null;
   author: { id: string; firstName: string | null; lastName: string | null };
@@ -25,7 +41,6 @@ export interface AdminBlogPost {
   viewCount: number;
   seoTitle: string | null;
   seoDescription: string | null;
-  allowComments: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -46,12 +61,15 @@ export interface CreateBlogPostDto {
   content: string;
   excerpt?: string;
   featuredImage?: string;
+  featuredImageAlt?: string;
+  badge?: string;
+  sortOrder?: number;
+  authorByline?: string;
   status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   categoryId?: string;
   tags?: string[];
   seoTitle?: string;
   seoDescription?: string;
-  allowComments?: boolean;
 }
 
 export interface CreateBlogCategoryDto {
@@ -142,6 +160,49 @@ export async function getAdminBlogCategories() {
   return res.json();
 }
 
+export interface BlogBadgePreset {
+  id: string;
+  label: string;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export async function getBlogBadgePresets(): Promise<BlogBadgePreset[]> {
+  const res = await fetch(`${API_URL}/admin/blog/badge-presets`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить список плашек');
+  return res.json();
+}
+
+export async function createBlogBadgePreset(label: string): Promise<BlogBadgePreset> {
+  const res = await fetch(`${API_URL}/admin/blog/badge-presets`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ label }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось добавить плашку');
+  }
+  return res.json();
+}
+
+export async function uploadBlogFeaturedImage(file: File): Promise<{ imageUrl: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${API_URL}/admin/blog/upload`, {
+    method: 'POST',
+    headers: getAuthHeadersMultipart(),
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось загрузить изображение');
+  }
+  return res.json();
+}
+
 export async function createBlogCategory(dto: CreateBlogCategoryDto) {
   const res = await fetch(`${API_URL}/admin/blog/categories`, {
     method: 'POST',
@@ -178,95 +239,5 @@ export async function getAdminBlogStats() {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить статистику');
-  return res.json();
-}
-
-// Admin comments API
-export interface AdminBlogComment {
-  id: string;
-  postId: string;
-  authorId: string | null;
-  authorName: string | null;
-  authorEmail: string | null;
-  content: string;
-  status: string;
-  parentId: string | null;
-  createdAt: string;
-  updatedAt: string;
-  post: { id: string; title: string; slug: string };
-  author?: { id: string; firstName: string | null; lastName: string | null };
-  replies?: AdminBlogComment[];
-}
-
-export async function getAdminBlogComments(params?: {
-  status?: string;
-  postId?: string;
-  page?: number;
-  limit?: number;
-}): Promise<{
-  data: AdminBlogComment[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}> {
-  const searchParams = new URLSearchParams();
-  if (params?.status) searchParams.set('status', params.status);
-  if (params?.postId) searchParams.set('postId', params.postId);
-  if (params?.page) searchParams.set('page', String(params.page));
-  if (params?.limit) searchParams.set('limit', String(params.limit));
-
-  const res = await fetch(`${API_URL}/admin/blog/comments?${searchParams}`, {
-    headers: getAuthHeaders(),
-  });
-  if (!res.ok) throw new Error('Не удалось загрузить комментарии');
-  return res.json();
-}
-
-export async function approveBlogComment(id: string) {
-  const res = await fetch(`${API_URL}/admin/blog/comments/${id}/approve`, {
-    method: 'PATCH',
-    headers: getAuthHeaders(),
-  });
-  if (!res.ok) throw new Error('Не удалось одобрить комментарий');
-  return res.json();
-}
-
-export async function rejectBlogComment(id: string) {
-  const res = await fetch(`${API_URL}/admin/blog/comments/${id}/reject`, {
-    method: 'PATCH',
-    headers: getAuthHeaders(),
-  });
-  if (!res.ok) throw new Error('Не удалось отклонить комментарий');
-  return res.json();
-}
-
-export async function markBlogCommentAsSpam(id: string) {
-  const res = await fetch(`${API_URL}/admin/blog/comments/${id}/spam`, {
-    method: 'PATCH',
-    headers: getAuthHeaders(),
-  });
-  if (!res.ok) throw new Error('Не удалось пометить как спам');
-  return res.json();
-}
-
-export async function deleteBlogComment(id: string) {
-  const res = await fetch(`${API_URL}/admin/blog/comments/${id}`, {
-    method: 'DELETE',
-    headers: getAuthHeaders(),
-  });
-  if (!res.ok) throw new Error('Не удалось удалить комментарий');
-}
-
-export async function replyToBlogComment(id: string, content: string): Promise<AdminBlogComment> {
-  const res = await fetch(`${API_URL}/admin/blog/comments/${id}/reply`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify({ content }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || 'Не удалось отправить ответ');
-  }
   return res.json();
 }

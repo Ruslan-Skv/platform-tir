@@ -9,16 +9,38 @@ import {
   Query,
   UseGuards,
   Request,
+  UseInterceptors,
+  UploadedFile,
+  Req,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import * as fs from 'fs';
+import * as path from 'path';
+import { extname } from 'path';
+import type { Request as ExpressRequest } from 'express';
 import { BlogService } from './blog.service';
 import { CreateBlogPostDto } from './dto/create-blog-post.dto';
-import { ReplyCommentDto } from './dto/reply-comment.dto';
+import { CreateBlogBadgePresetDto } from './dto/create-blog-badge-preset.dto';
 import { UpdateBlogPostDto } from './dto/update-blog-post.dto';
 import { CreateBlogCategoryDto } from './dto/create-blog-category.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RequestWithUser } from '../../common/types/request-with-user.types';
+
+const blogUploadDir = path.join(process.cwd(), 'uploads', 'blog');
+
+const blogUploadStorage = diskStorage({
+  destination: (_req, _file, cb) => {
+    if (!fs.existsSync(blogUploadDir)) fs.mkdirSync(blogUploadDir, { recursive: true });
+    cb(null, blogUploadDir);
+  },
+  filename: (_req, file, cb) => {
+    cb(null, `temp-${Date.now()}${extname(file.originalname) || '.jpg'}`);
+  },
+});
 
 @Controller('admin/blog')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -92,49 +114,34 @@ export class BlogController {
     return this.blogService.removeCategory(id);
   }
 
-  // Comments
-  @Get('comments')
-  findAllComments(
-    @Query('status') status?: string,
-    @Query('postId') postId?: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-  ) {
-    return this.blogService.findAllComments({
-      status,
-      postId,
-      page: page ? parseInt(page, 10) : 1,
-      limit: limit ? parseInt(limit, 10) : 20,
-    });
+  @Get('badge-presets')
+  findAllBadgePresets() {
+    return this.blogService.findAllBadgePresets();
   }
 
-  @Patch('comments/:id/approve')
-  approveComment(@Param('id') id: string) {
-    return this.blogService.approveComment(id);
+  @Post('badge-presets')
+  createBadgePreset(@Body() dto: CreateBlogBadgePresetDto) {
+    return this.blogService.createBadgePreset(dto.label);
   }
 
-  @Patch('comments/:id/reject')
-  rejectComment(@Param('id') id: string) {
-    return this.blogService.rejectComment(id);
-  }
-
-  @Patch('comments/:id/spam')
-  markCommentAsSpam(@Param('id') id: string) {
-    return this.blogService.markCommentAsSpam(id);
-  }
-
-  @Delete('comments/:id')
-  removeComment(@Param('id') id: string) {
-    return this.blogService.removeComment(id);
-  }
-
-  @Post('comments/:id/reply')
-  replyToComment(
-    @Param('id') id: string,
-    @Body() dto: ReplyCommentDto,
-    @Request() req: RequestWithUser,
-  ) {
-    return this.blogService.replyToComment(id, dto.content, req.user.id);
+  @Post('upload')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: blogUploadStorage,
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const allowed = /\.(jpe?g|png|webp|gif)$/i.test(file.originalname);
+        if (!allowed) {
+          cb(new BadRequestException('Допустимы только изображения: jpg, png, webp, gif'), false);
+          return;
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  uploadFeaturedImage(@UploadedFile() file: Express.Multer.File, @Req() req: ExpressRequest) {
+    const baseUrl = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
+    return this.blogService.uploadFeaturedImage(file, baseUrl);
   }
 
   // Stats

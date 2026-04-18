@@ -2,7 +2,6 @@ import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nest
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { OriginGuard } from '../../common/guards/origin.guard';
 import { BlogService } from './blog.service';
-import { CreateCommentDto } from './dto/create-comment.dto';
 import { ToggleLikeDto } from './dto/toggle-like.dto';
 import { OptionalJwtAuthGuard } from '../../auth/guards/optional-jwt-auth.guard';
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
@@ -51,27 +50,6 @@ export class BlogPublicController {
   ) {
     const userId = req?.user?.id;
     return this.blogService.toggleLike(postId, userId, dto.guestId);
-  }
-
-  @Post('posts/:postId/comments')
-  @UseGuards(OriginGuard, OptionalJwtAuthGuard)
-  @ApiOperation({ summary: 'Добавить комментарий к посту' })
-  createComment(
-    @Param('postId') postId: string,
-    @Body() dto: CreateCommentDto,
-    @Req() req?: RequestWithUser,
-  ) {
-    const userId = req?.user?.id;
-    return this.blogService.createComment(
-      postId,
-      {
-        content: dto.content,
-        authorName: dto.authorName,
-        authorEmail: dto.authorEmail,
-        parentId: dto.parentId,
-      },
-      userId,
-    );
   }
 
   @Get('categories')

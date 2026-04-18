@@ -153,11 +153,15 @@ const baseNavItems: NavItem[] = [
         ],
       },
       { label: 'Страницы', href: '/admin/content/home', resourceId: 'admin.content.home' },
-      { label: 'Блог', href: '/admin/content/blog', resourceId: 'admin.content.blog' },
+      {
+        label: 'Полезные статьи',
+        href: '/admin/content/blog',
+        resourceId: 'admin.content.blog',
+      },
       { label: 'Акции', href: '/admin/content/promotions', resourceId: 'admin.content.promotions' },
       { label: 'Наши работы', href: '/admin/content/photo', resourceId: 'admin.content.photo' },
       {
-        label: 'Комментарии',
+        label: 'Отзывы',
         href: '/admin/content/comments',
         resourceId: 'admin.content.comments',
       },

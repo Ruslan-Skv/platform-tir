@@ -1,5 +1,14 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
+import * as fs from 'fs';
+import * as path from 'path';
+import { extname } from 'path';
 import { PrismaService } from '../../database/prisma.service';
+import { uploadsBaseUrl } from '../../common/utils/uploads-url';
 import { CreateBlogPostDto, PostStatus } from './dto/create-blog-post.dto';
 import { UpdateBlogPostDto } from './dto/update-blog-post.dto';
 import { CreateBlogCategoryDto } from './dto/create-blog-category.dto';
@@ -8,6 +17,24 @@ import { Prisma } from '@prisma/client';
 @Injectable()
 export class BlogService {
   constructor(private prisma: PrismaService) {}
+
+  /** ~200 слов/мин для русскоязычного текста; не менее 1 мин. */
+  computeReadingTimeMinutes(content: string): number {
+    const text = content
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!text) return 1;
+    const words = text.split(/\s+/).filter(Boolean).length;
+    return Math.max(1, Math.ceil(words / 200));
+  }
+
+  private assertFeaturedImageAlt(featuredImage: string | null, featuredImageAlt: string) {
+    if (featuredImage && !featuredImageAlt.trim()) {
+      throw new BadRequestException('Alt-текст обязателен при указании изображения статьи');
+    }
+  }
 
   // Blog Posts
   async createPost(authorId: string, createBlogPostDto: CreateBlogPostDto) {
@@ -19,9 +46,29 @@ export class BlogService {
       throw new ConflictException(`Post with slug "${createBlogPostDto.slug}" already exists`);
     }
 
+    const featuredImage = createBlogPostDto.featuredImage?.trim() || null;
+    const featuredImageAlt = (createBlogPostDto.featuredImageAlt ?? '').trim();
+    this.assertFeaturedImageAlt(featuredImage, featuredImageAlt);
+
+    const readingTimeMinutes = this.computeReadingTimeMinutes(createBlogPostDto.content);
+
     return this.prisma.blogPost.create({
       data: {
-        ...createBlogPostDto,
+        title: createBlogPostDto.title,
+        slug: createBlogPostDto.slug,
+        content: createBlogPostDto.content,
+        excerpt: createBlogPostDto.excerpt,
+        featuredImage,
+        featuredImageAlt,
+        badge: createBlogPostDto.badge?.trim() || null,
+        sortOrder: createBlogPostDto.sortOrder ?? 0,
+        authorByline: createBlogPostDto.authorByline?.trim() || null,
+        readingTimeMinutes,
+        status: createBlogPostDto.status ?? PostStatus.DRAFT,
+        categoryId: createBlogPostDto.categoryId?.trim() || undefined,
+        tags: createBlogPostDto.tags ?? [],
+        seoTitle: createBlogPostDto.seoTitle,
+        seoDescription: createBlogPostDto.seoDescription,
         authorId,
         publishedAt: createBlogPostDto.status === PostStatus.PUBLISHED ? new Date() : null,
       },
@@ -96,7 +143,7 @@ export class BlogService {
         },
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
       }),
       this.prisma.blogPost.count({ where }),
     ]);
@@ -123,30 +170,6 @@ export class BlogService {
           },
         },
         category: true,
-        comments: {
-          include: {
-            author: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
-            replies: {
-              include: {
-                author: {
-                  select: {
-                    id: true,
-                    firstName: true,
-                    lastName: true,
-                  },
-                },
-              },
-            },
-          },
-          where: { parentId: null },
-          orderBy: { createdAt: 'desc' },
-        },
       },
     });
 
@@ -170,7 +193,37 @@ export class BlogService {
       }
     }
 
+    const mergedFeaturedImage =
+      updateBlogPostDto.featuredImage !== undefined
+        ? updateBlogPostDto.featuredImage?.trim() || null
+        : post.featuredImage;
+    const mergedFeaturedImageAlt =
+      updateBlogPostDto.featuredImageAlt !== undefined
+        ? (updateBlogPostDto.featuredImageAlt ?? '').trim()
+        : post.featuredImageAlt;
+    this.assertFeaturedImageAlt(mergedFeaturedImage, mergedFeaturedImageAlt);
+
     const data: Prisma.BlogPostUpdateInput = { ...updateBlogPostDto };
+
+    if (updateBlogPostDto.featuredImage !== undefined) {
+      data.featuredImage = mergedFeaturedImage;
+    }
+    if (updateBlogPostDto.featuredImageAlt !== undefined) {
+      data.featuredImageAlt = mergedFeaturedImageAlt;
+    }
+    if (updateBlogPostDto.badge !== undefined) {
+      data.badge = updateBlogPostDto.badge?.trim() || null;
+    }
+    if (updateBlogPostDto.authorByline !== undefined) {
+      data.authorByline = updateBlogPostDto.authorByline?.trim() || null;
+    }
+    if (updateBlogPostDto.sortOrder !== undefined) {
+      data.sortOrder = updateBlogPostDto.sortOrder;
+    }
+
+    if (updateBlogPostDto.content !== undefined) {
+      data.readingTimeMinutes = this.computeReadingTimeMinutes(updateBlogPostDto.content);
+    }
 
     if (updateBlogPostDto.status === PostStatus.PUBLISHED && post.status !== 'PUBLISHED') {
       data.publishedAt = new Date();
@@ -253,126 +306,46 @@ export class BlogService {
     });
   }
 
-  // Comments Management
-  async findAllComments(params?: {
-    status?: string;
-    postId?: string;
-    page?: number;
-    limit?: number;
-  }) {
-    const { status, postId, page = 1, limit = 20 } = params || {};
-    const skip = (page - 1) * limit;
+  async findAllBadgePresets() {
+    return this.prisma.blogBadgePreset.findMany({
+      orderBy: [{ sortOrder: 'asc' }, { label: 'asc' }],
+    });
+  }
 
-    const where: Prisma.CommentWhereInput = { parentId: null };
-
-    if (status) {
-      where.status = status as 'PENDING' | 'APPROVED' | 'REJECTED' | 'SPAM';
+  async createBadgePreset(label: string) {
+    const t = label.trim();
+    if (!t) {
+      throw new BadRequestException('Укажите текст плашки');
     }
-
-    if (postId) {
-      where.postId = postId;
+    const existing = await this.prisma.blogBadgePreset.findUnique({
+      where: { label: t },
+    });
+    if (existing) {
+      throw new ConflictException('Такая плашка уже есть в списке');
     }
-
-    const [comments, total] = await Promise.all([
-      this.prisma.comment.findMany({
-        where,
-        include: {
-          post: {
-            select: {
-              id: true,
-              title: true,
-              slug: true,
-            },
-          },
-          author: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-            },
-          },
-          replies: {
-            include: {
-              author: {
-                select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true,
-                },
-              },
-            },
-            orderBy: { createdAt: 'asc' },
-          },
-        },
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.prisma.comment.count({ where }),
-    ]);
-
-    return {
-      data: comments,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
-  }
-
-  async approveComment(id: string) {
-    return this.prisma.comment.update({
-      where: { id },
-      data: { status: 'APPROVED' },
+    return this.prisma.blogBadgePreset.create({
+      data: { label: t },
     });
   }
 
-  async rejectComment(id: string) {
-    return this.prisma.comment.update({
-      where: { id },
-      data: { status: 'REJECTED' },
-    });
-  }
-
-  async markCommentAsSpam(id: string) {
-    return this.prisma.comment.update({
-      where: { id },
-      data: { status: 'SPAM' },
-    });
-  }
-
-  async removeComment(id: string) {
-    return this.prisma.comment.delete({
-      where: { id },
-    });
-  }
-
-  async replyToComment(commentId: string, content: string, authorId: string) {
-    const parent = await this.prisma.comment.findUnique({
-      where: { id: commentId },
-      include: { post: true },
-    });
-    if (!parent) {
-      throw new NotFoundException('Комментарий не найден');
+  async uploadFeaturedImage(
+    file: Express.Multer.File,
+    baseUrl: string,
+  ): Promise<{ imageUrl: string }> {
+    if (!file?.path) {
+      throw new BadRequestException('Файл не загружен');
     }
-    return this.prisma.comment.create({
-      data: {
-        postId: parent.postId,
-        content: content.trim(),
-        authorId,
-        parentId: commentId,
-        status: 'APPROVED',
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-    });
+    const uploadsDir = path.join(process.cwd(), 'uploads', 'blog');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+    const ext = extname(file.originalname) || '.jpg';
+    const filename = `blog-${Date.now()}${ext}`;
+    const destPath = path.join(uploadsDir, filename);
+    fs.renameSync(file.path, destPath);
+    const rel = `/uploads/blog/${filename}`;
+    const prefix = uploadsBaseUrl(baseUrl);
+    return { imageUrl: `${prefix}${rel}` };
   }
 
   // Public API (published posts only)
@@ -415,7 +388,7 @@ export class BlogService {
         },
         skip,
         take: limit,
-        orderBy: { publishedAt: 'desc' },
+        orderBy: [{ sortOrder: 'asc' }, { publishedAt: 'desc' }],
       }),
       this.prisma.blogPost.count({ where }),
     ]);
@@ -457,32 +430,6 @@ export class BlogService {
           },
         },
         category: true,
-        comments: {
-          where: { status: 'APPROVED', parentId: null },
-          include: {
-            author: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
-            replies: {
-              where: { status: 'APPROVED' },
-              include: {
-                author: {
-                  select: {
-                    id: true,
-                    firstName: true,
-                    lastName: true,
-                  },
-                },
-              },
-              orderBy: { createdAt: 'asc' },
-            },
-          },
-          orderBy: { createdAt: 'asc' },
-        },
       },
     });
 
@@ -510,10 +457,8 @@ export class BlogService {
       where: { postId: post.id },
     });
 
-    const { comments, ...postData } = post;
     return {
-      ...postData,
-      comments,
+      ...post,
       viewCount: post.viewCount + 1,
       likeCount,
       isLiked,
@@ -552,34 +497,6 @@ export class BlogService {
     }
   }
 
-  async createComment(
-    postId: string,
-    dto: { content: string; authorName?: string; authorEmail?: string; parentId?: string },
-    userId?: string,
-  ) {
-    const post = await this.prisma.blogPost.findUnique({
-      where: { id: postId, status: 'PUBLISHED' },
-    });
-    if (!post) {
-      throw new NotFoundException('Пост не найден');
-    }
-    if (!post.allowComments) {
-      throw new ConflictException('Комментарии отключены для этого поста');
-    }
-
-    return this.prisma.comment.create({
-      data: {
-        postId,
-        content: dto.content.trim(),
-        authorId: userId,
-        authorName: dto.authorName?.trim(),
-        authorEmail: dto.authorEmail?.trim(),
-        parentId: dto.parentId,
-        status: 'PENDING',
-      },
-    });
-  }
-
   async getPublicCategories() {
     return this.prisma.blogCategory.findMany({
       include: {
@@ -595,18 +512,18 @@ export class BlogService {
 
   // Stats
   async getStats() {
-    const [totalPosts, publishedPosts, draftPosts, pendingComments] = await Promise.all([
+    const [totalPosts, publishedPosts, draftPosts] = await Promise.all([
       this.prisma.blogPost.count(),
       this.prisma.blogPost.count({ where: { status: 'PUBLISHED' } }),
       this.prisma.blogPost.count({ where: { status: 'DRAFT' } }),
-      this.prisma.comment.count({ where: { status: 'PENDING' } }),
     ]);
 
     return {
       totalPosts,
       publishedPosts,
       draftPosts,
-      pendingComments,
+      /** Комментарии к статьям отключены; поле сохранено для совместимости API. */
+      pendingComments: 0,
     };
   }
 }

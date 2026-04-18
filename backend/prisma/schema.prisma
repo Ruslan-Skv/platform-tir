@@ -643,23 +643,27 @@ model Page {
 }
 
 model BlogPost {
-  id             String         @id @default(cuid())
-  title          String
-  slug           String         @unique
-  content        String
-  excerpt        String?
-  featuredImage  String?
-  status         PageStatus     @default(DRAFT)
-  publishedAt    DateTime?
-  authorId       String
-  categoryId     String?
-  tags           String[]
-  viewCount      Int            @default(0)
-  seoTitle       String?
-  seoDescription String?
-  allowComments  Boolean        @default(true)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                 String         @id @default(cuid())
+  title              String
+  slug               String         @unique
+  content            String
+  excerpt            String?
+  featuredImage      String?
+  featuredImageAlt   String         @default("")
+  badge              String?
+  readingTimeMinutes Int            @default(1)
+  sortOrder          Int            @default(0)
+  authorByline       String?
+  status             PageStatus     @default(DRAFT)
+  publishedAt        DateTime?
+  authorId           String
+  categoryId         String?
+  tags               String[]
+  viewCount          Int            @default(0)
+  seoTitle           String?
+  seoDescription     String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
   author         User           @relation(fields: [authorId], references: [id])
   category       BlogCategory?  @relation(fields: [categoryId], references: [id])
   comments       Comment[]
@@ -692,6 +696,16 @@ model BlogCategory {
   posts       BlogPost[]
 
   @@map("blog_categories")
+}
+
+// Варианты плашек для статей (админка: выпадающий список + добавление)
+model BlogBadgePreset {
+  id        String   @id @default(cuid())
+  label     String   @unique
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("blog_badge_presets")
 }
 
 model PhotoCategory {

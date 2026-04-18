@@ -63,11 +63,6 @@ export const BlogPage: React.FC = () => {
     });
   };
 
-  const getAuthorName = (post: BlogPost) => {
-    const { firstName, lastName } = post.author;
-    return [firstName, lastName].filter(Boolean).join(' ') || 'Автор';
-  };
-
   return (
     <div className={styles.blogPage}>
       <nav className={styles.breadcrumbs} aria-label="Хлебные крошки">
@@ -77,16 +72,14 @@ export const BlogPage: React.FC = () => {
             <span className={styles.separator}>/</span>
           </li>
           <li>
-            <span className={styles.current}>Блог</span>
+            <span className={styles.current}>Полезные статьи</span>
           </li>
         </ol>
       </nav>
 
       <header className={styles.header}>
-        <h1 className={styles.title}>Блог</h1>
-        <p className={styles.subtitle}>
-          Полезные статьи, советы и новости от Территории интерьерных решений
-        </p>
+        <h1 className={styles.title}>Полезные статьи</h1>
+        <p className={styles.subtitle}>Советы и материалы от Территории интерьерных решений</p>
       </header>
 
       <div className={styles.content}>
@@ -138,7 +131,7 @@ export const BlogPage: React.FC = () => {
             >
               <input
                 type="search"
-                placeholder="Поиск по блогу..."
+                placeholder="Поиск по статьям..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className={styles.searchInput}
@@ -165,7 +158,10 @@ export const BlogPage: React.FC = () => {
                     <Link href={`/blog/${post.slug}`} className={styles.cardLink}>
                       {post.featuredImage ? (
                         <div className={styles.cardImage}>
-                          <img src={post.featuredImage} alt="" />
+                          <img
+                            src={post.featuredImage}
+                            alt={post.featuredImageAlt?.trim() || post.title}
+                          />
                         </div>
                       ) : (
                         <div className={styles.cardImagePlaceholder} />
@@ -174,11 +170,21 @@ export const BlogPage: React.FC = () => {
                         {post.category && (
                           <span className={styles.cardCategory}>{post.category.name}</span>
                         )}
-                        <h2 className={styles.cardTitle}>{post.title}</h2>
+                        <h2 className={styles.cardTitle}>
+                          {post.badge?.trim() && (
+                            <span className={styles.cardBadge}>{post.badge.trim()}</span>
+                          )}
+                          {post.title}
+                        </h2>
                         {post.excerpt && <p className={styles.cardExcerpt}>{post.excerpt}</p>}
                         <div className={styles.cardMeta}>
-                          <span>{getAuthorName(post)}</span>
+                          {post.authorByline?.trim() ? (
+                            <span>{post.authorByline.trim()}</span>
+                          ) : null}
                           <span>{formatDate(post.publishedAt || post.createdAt)}</span>
+                          {post.readingTimeMinutes != null && post.readingTimeMinutes > 0 && (
+                            <span>{post.readingTimeMinutes} мин чтения</span>
+                          )}
                           {post.likeCount != null && post.likeCount > 0 && (
                             <span>❤️ {post.likeCount}</span>
                           )}

@@ -75,10 +75,25 @@
 }
 
 .title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
   font-size: 2rem;
   font-weight: 700;
   margin: 0 0 0.75rem;
   line-height: 1.2;
+}
+
+.headerBadge {
+  flex-shrink: 0;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: rgb(255 255 255 / 95%);
+  background: rgb(59 130 246 / 45%);
+  border-radius: 6px;
 }
 
 .meta {
@@ -151,6 +166,45 @@
   color: rgb(255 255 255 / 80%);
 }
 
+.callbackCta {
+  margin: 1.75rem 0 0;
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  background: rgb(59 130 246 / 12%);
+  border: 1px solid rgb(59 130 246 / 35%);
+}
+
+.callbackCtaTitle {
+  margin: 0 0 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.callbackCtaText {
+  margin: 0 0 1rem;
+  font-size: 0.9375rem;
+  color: rgb(255 255 255 / 78%);
+  line-height: 1.5;
+}
+
+.callbackCtaButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #fff;
+  background: rgb(37 99 235);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.callbackCtaButton:hover {
+  background: rgb(29 78 216);
+}
+
 .actionsBar {
   display: flex;
   flex-wrap: wrap;
@@ -221,145 +275,4 @@
 .backLink:hover {
   text-decoration: underline;
   color: rgb(255 255 255);
-}
-
-.comments {
-  margin-top: 2rem;
-  padding-top: 2rem;
-  border-top: 1px solid rgb(255 255 255 / 10%);
-}
-
-.commentsTitle {
-  font-size: 1.25rem;
-  margin: 0 0 1rem;
-}
-
-.commentForm {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: rgb(255 255 255 / 5%);
-  border-radius: 8px;
-}
-
-.commentTextarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: 6px;
-  background: rgb(0 0 0 / 20%);
-  color: inherit;
-  font-size: 0.9375rem;
-  resize: vertical;
-  margin-bottom: 0.75rem;
-}
-
-.commentTextarea::placeholder {
-  color: rgb(255 255 255 / 50%);
-}
-
-.commentFormRow {
-  display: flex;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.commentInput {
-  flex: 1;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: 6px;
-  background: rgb(0 0 0 / 20%);
-  color: inherit;
-  font-size: 0.9375rem;
-}
-
-.commentInput::placeholder {
-  color: rgb(255 255 255 / 50%);
-}
-
-.commentError {
-  color: rgb(239 68 68);
-  font-size: 0.875rem;
-  margin: 0 0 0.5rem;
-}
-
-.commentSuccess {
-  color: rgb(34 197 94);
-  font-size: 0.875rem;
-  margin: 0 0 0.5rem;
-}
-
-.commentSubmit {
-  padding: 0.5rem 1.25rem;
-  background: rgb(59 130 246);
-  border: none;
-  border-radius: 6px;
-  color: white;
-  font-size: 0.9375rem;
-  cursor: pointer;
-}
-
-.commentSubmit:hover:not(:disabled) {
-  background: rgb(37 99 235);
-}
-
-.commentSubmit:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.commentsList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.comment {
-  padding: 1rem 0;
-  border-bottom: 1px solid rgb(255 255 255 / 8%);
-}
-
-.comment:last-child {
-  border-bottom: none;
-}
-
-.commentHeader {
-  display: flex;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
-}
-
-.commentAuthor {
-  font-weight: 600;
-  font-size: 0.9375rem;
-}
-
-.commentDate {
-  font-size: 0.8125rem;
-  color: rgb(255 255 255 / 50%);
-}
-
-.commentContent {
-  font-size: 0.9375rem;
-  line-height: 1.5;
-  color: rgb(255 255 255 / 85%);
-}
-
-.replies {
-  list-style: none;
-  margin: 0.5rem 0 0 1.5rem;
-  padding: 0;
-  border-left: 2px solid rgb(255 255 255 / 15%);
-}
-
-.reply {
-  padding: 0.75rem 0 0.75rem 1rem;
-}
-
-.reply .commentHeader {
-  margin-bottom: 0.25rem;
-}
-
-.reply .commentContent {
-  font-size: 0.875rem;
 }
