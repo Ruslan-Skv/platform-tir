@@ -79,9 +79,11 @@
   margin-bottom: 2rem;
 }
 
+/* Как заголовок каталога (ProductsGrid .title): единый масштаб разделов */
 .title {
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.25;
   margin: 0 0 0.5rem;
   color: var(--blog-text);
 }
@@ -101,6 +103,42 @@
 @media (max-width: 768px) {
   .content {
     grid-template-columns: 1fr;
+  }
+
+  .header {
+    margin-bottom: 1.5rem;
+  }
+
+  .breadcrumbsList {
+    font-size: 0.8125rem;
+  }
+
+  .title {
+    font-size: 1.25rem;
+    line-height: 1.25;
+  }
+
+  .subtitle {
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+}
+
+@media (max-width: 480px) {
+  .subtitle {
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+
+  .cardExcerpt {
+    font-size: 0.6875rem;
+  }
+}
+
+@media (max-width: 320px) {
+  .subtitle {
+    font-size: 0.75rem;
+    line-height: 1.4;
   }
 }
 
@@ -289,6 +327,73 @@
   color: var(--blog-text-muted);
 }
 
+@media (max-width: 768px) {
+  .sidebar {
+    gap: 0.65rem;
+  }
+
+  .sidebarSection {
+    padding: 0.55rem 0.65rem;
+    border-radius: 6px;
+  }
+
+  .sidebarTitle {
+    font-size: 0.9375rem;
+    margin: 0 0 0.35rem;
+  }
+
+  .categoryItem {
+    padding: 0.28rem 0;
+    font-size: 0.875rem;
+  }
+
+  .searchForm {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.4rem;
+  }
+
+  .searchInput {
+    flex: 1;
+    min-width: 0;
+    padding: 0.4rem 0.55rem;
+    font-size: 0.875rem;
+  }
+
+  .searchButton {
+    flex-shrink: 0;
+    padding: 0.4rem 0.65rem;
+    font-size: 0.8125rem;
+  }
+
+  .searchHint {
+    flex-basis: 100%;
+    margin: 0.3rem 0 0;
+    font-size: 0.6875rem;
+    line-height: 1.35;
+  }
+
+  .tagList {
+    max-height: 200px;
+    gap: 0.1rem;
+  }
+
+  .tagItem {
+    padding: 0.25rem 0.4rem;
+    font-size: 0.8125rem;
+  }
+
+  .tagItemCount {
+    font-size: 0.6875rem;
+  }
+
+  .tagSidebarEmpty {
+    font-size: 0.75rem;
+    line-height: 1.35;
+  }
+}
+
 .emptyResetLink {
   display: inline-block;
   margin-top: 0.75rem;
@@ -400,15 +505,19 @@
   border-radius: 4px;
 }
 
+/* Абзац внутри <Link>: не наследовать font-weight: 500 от глобального `a` */
 .cardExcerpt {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
+  font-weight: 400;
   color: var(--blog-text-secondary);
   margin: 0 0 0.75rem;
-  line-height: 1.5;
+  line-height: 1.45;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 .cardMeta {

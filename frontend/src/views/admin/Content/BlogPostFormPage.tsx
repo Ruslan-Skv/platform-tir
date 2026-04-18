@@ -459,8 +459,9 @@ export function BlogPostFormPage({ postId }: BlogPostFormPageProps) {
               Контент *
               <BlogPostEditor key={postId ?? 'new'} value={content} onChange={setContent} />
               <span className={styles.fieldHint}>
-                Панель инструментов: абзацы (Enter), подзаголовки, маркированный и нумерованный
-                списки, цитата, ссылка. Текст сохраняется как HTML.
+                Панель инструментов: абзацы (Enter), подзаголовки H2–H6 и обычный текст (¶), красная
+                строка (⇥) для отступа первой строки абзаца, маркированный и нумерованный списки,
+                цитата, ссылка. Текст сохраняется как HTML.
               </span>
             </label>
           </div>

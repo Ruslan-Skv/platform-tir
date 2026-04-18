@@ -79,6 +79,10 @@
   margin: 0 0 0.65rem;
 }
 
+.proseMirror :global(p.blog-paragraph-indent) {
+  text-indent: 1.5em;
+}
+
 .proseMirror :global(ul),
 .proseMirror :global(ol) {
   margin: 0 0 0.65rem;
@@ -95,6 +99,24 @@
   font-size: 1.1rem;
   font-weight: 700;
   margin: 0.85rem 0 0.45rem;
+}
+
+.proseMirror :global(h4) {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0.75rem 0 0.4rem;
+}
+
+.proseMirror :global(h5) {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0.65rem 0 0.35rem;
+}
+
+.proseMirror :global(h6) {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 0.55rem 0 0.3rem;
 }
 
 .proseMirror :global(blockquote) {

@@ -8,6 +8,7 @@ import StarterKit from '@tiptap/starter-kit';
 import React from 'react';
 
 import styles from './BlogPostEditor.module.css';
+import { BLOG_PARAGRAPH_INDENT_CLASS, BlogParagraph } from './blogParagraphExtension';
 
 interface BlogPostEditorProps {
   value: string;
@@ -25,8 +26,10 @@ export function BlogPostEditor({
     shouldRerenderOnTransaction: true,
     extensions: [
       StarterKit.configure({
-        heading: { levels: [2, 3] },
+        paragraph: false,
+        heading: { levels: [2, 3, 4, 5, 6] },
       }),
+      BlogParagraph,
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
@@ -51,6 +54,28 @@ export function BlogPostEditor({
   if (!editor) {
     return <div className={styles.editorShell} aria-hidden />;
   }
+
+  const toggleFirstLineIndent = () => {
+    if (!editor.isActive('paragraph')) return;
+    const raw = editor.getAttributes('paragraph').class;
+    const cls = typeof raw === 'string' ? raw : '';
+    const parts = cls.split(/\s+/).filter(Boolean);
+    const has = parts.includes(BLOG_PARAGRAPH_INDENT_CLASS);
+    const next = has
+      ? parts.filter((c) => c !== BLOG_PARAGRAPH_INDENT_CLASS).join(' ')
+      : [...parts, BLOG_PARAGRAPH_INDENT_CLASS].join(' ');
+    editor
+      .chain()
+      .focus()
+      .updateAttributes('paragraph', { class: next || null })
+      .run();
+  };
+
+  const paraClass = editor.getAttributes('paragraph').class;
+  const firstLineIndentActive =
+    editor.isActive('paragraph') &&
+    typeof paraClass === 'string' &&
+    paraClass.split(/\s+/).includes(BLOG_PARAGRAPH_INDENT_CLASS);
 
   const setLink = () => {
     const prev = editor.getAttributes('link').href as string | undefined;
@@ -110,6 +135,36 @@ export function BlogPostEditor({
           editor.isActive('heading', { level: 3 }),
           () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
           'Подзаголовок 3'
+        )}
+        {btn(
+          'H4',
+          editor.isActive('heading', { level: 4 }),
+          () => editor.chain().focus().toggleHeading({ level: 4 }).run(),
+          'Подзаголовок 4'
+        )}
+        {btn(
+          'H5',
+          editor.isActive('heading', { level: 5 }),
+          () => editor.chain().focus().toggleHeading({ level: 5 }).run(),
+          'Подзаголовок 5'
+        )}
+        {btn(
+          'H6',
+          editor.isActive('heading', { level: 6 }),
+          () => editor.chain().focus().toggleHeading({ level: 6 }).run(),
+          'Подзаголовок 6'
+        )}
+        {btn(
+          '¶',
+          editor.isActive('paragraph'),
+          () => editor.chain().focus().setParagraph().run(),
+          'Обычный абзац (снять заголовок)'
+        )}
+        {btn(
+          '⇥',
+          firstLineIndentActive,
+          toggleFirstLineIndent,
+          'Красная строка: отступ первой строки абзаца (повторное нажатие — убрать)'
         )}
         <span className={styles.toolbarSep} aria-hidden />
         {btn(

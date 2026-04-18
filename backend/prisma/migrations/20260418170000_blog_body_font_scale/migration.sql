@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "blog_posts" ADD COLUMN "bodyFontScale" DOUBLE PRECISION NOT NULL DEFAULT 1;
