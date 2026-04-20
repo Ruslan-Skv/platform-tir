@@ -31,6 +31,7 @@ export function useCatalogFilters(
     }
 
     let cancelled = false;
+    setData(null);
     setLoading(true);
 
     fetch(`${API_URL}/products/category/${encodeURIComponent(filtersSlug)}/filters`)

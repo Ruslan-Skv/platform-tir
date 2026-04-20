@@ -103,30 +103,30 @@ export function ServiceCatalogPage() {
         <div className={styles.grid}>
           {data.categories.map((cat) => {
             const IconComponent = !cat.image && cat.icon ? serviceCatalogIconMap[cat.icon] : null;
+            const positionCount = cat.totalWorkTypes ?? cat.items.length;
             return (
               <Link
                 key={cat.id}
                 href={getSafeHref(`/catalog/services/${cat.slug}`)}
                 className={styles.categoryCard}
               >
-                {cat.image ? (
-                  <span className={styles.categoryCardIcon}>
-                    <img src={cat.image} alt="" className={styles.categoryCardImage} />
-                  </span>
-                ) : IconComponent ? (
-                  <span className={styles.categoryCardIcon}>
-                    <IconComponent className={styles.categoryCardIconSvg} />
-                  </span>
-                ) : null}
-                <h2 className={styles.categoryCardTitle}>{cat.name}</h2>
-                {cat.description && (
-                  <p className={styles.categoryCardDescription}>{cat.description}</p>
-                )}
-                {(cat.totalWorkTypes ?? cat.items.length) > 0 && (
-                  <span className={styles.categoryCardCount}>
-                    ({cat.totalWorkTypes ?? cat.items.length})
-                  </span>
-                )}
+                <div className={styles.categoryCardMain}>
+                  {cat.image ? (
+                    <span className={styles.categoryCardIcon}>
+                      <img src={cat.image} alt="" className={styles.categoryCardImage} />
+                    </span>
+                  ) : IconComponent ? (
+                    <span className={styles.categoryCardIcon}>
+                      <IconComponent className={styles.categoryCardIconSvg} />
+                    </span>
+                  ) : null}
+                  <div className={styles.categoryCardText}>
+                    <h2 className={styles.categoryCardTitle}>{cat.name}</h2>
+                    {positionCount > 0 ? (
+                      <span className={styles.categoryCardCount}>{positionCount}</span>
+                    ) : null}
+                  </div>
+                </div>
               </Link>
             );
           })}

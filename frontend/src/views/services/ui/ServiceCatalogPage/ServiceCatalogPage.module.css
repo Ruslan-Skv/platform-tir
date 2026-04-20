@@ -51,26 +51,27 @@
 .title {
   font-size: 1.5rem;
   font-weight: 600;
-  margin: 0 0 1.5rem;
+  margin: 0 0 1rem;
   color: #111827;
 }
 
 .grid {
   display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.65rem;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   align-items: stretch;
 }
 
 .categoryCard {
   display: flex;
-  flex-direction: column;
-  padding: 1.25rem;
+  align-items: stretch;
+  padding: 0.55rem 0.75rem;
   background: #fff;
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border-radius: 10px;
   text-decoration: none;
   color: inherit;
+  min-width: 0;
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
@@ -78,56 +79,74 @@
 
 .categoryCard:hover {
   border-color: rgb(var(--color-accent-rgb) / 0.4);
-  box-shadow: 0 4px 12px rgb(0 0 0 / 0.06);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.05);
+}
+
+.categoryCardMain {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  gap: 0.65rem;
+  min-width: 0;
 }
 
 .categoryCardIcon {
-  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  margin-bottom: 1rem;
   background: #f3f4f6;
-  border-radius: 10px;
+  border-radius: 8px;
+  display: flex;
+  flex-shrink: 0;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
 }
 
 .categoryCardIconSvg {
-  width: 24px;
-  height: 24px;
   color: #6b7280;
+  height: 20px;
+  width: 20px;
 }
 
 .categoryCardImage {
-  width: 100%;
+  border-radius: 8px;
   height: 100%;
   object-fit: cover;
-  border-radius: 10px;
+  width: 100%;
 }
 
 .categoryCard:hover .categoryCardIconSvg {
   color: var(--color-accent);
 }
 
-.categoryCardTitle {
-  font-size: 1.0625rem;
-  font-weight: 400;
-  margin: 0 0 0.5rem;
-  color: #111827;
+.categoryCardText {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  gap: 0.35rem;
+  min-width: 0;
 }
 
-.categoryCardDescription {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin: 0 0 auto;
-  line-height: 1.5;
-  flex: 1;
+.categoryCardTitle {
+  color: #111827;
+  flex: 1 1 auto;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.25;
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .categoryCardCount {
-  font-size: 0.8125rem;
   color: #9ca3af;
-  margin-top: 0.75rem;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  margin: 0;
 }
 
 .loading,
@@ -166,81 +185,76 @@
    * иначе тёмная тема ниже по файлу перебивает flex/фон и ломает вёрстку.
    */
   .mainContent .grid {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    gap: 0;
-    width: 100%;
-    min-width: 0;
+    gap: 0.35rem;
     max-width: 100%;
-    box-sizing: border-box;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    overflow: hidden;
-    background: #fff;
+    min-width: 0;
+    overflow: visible;
+    width: 100%;
   }
 
   .mainContent .categoryCard {
-    flex-direction: row;
-    align-items: center;
-    gap: 0.65rem;
-    padding: 0.55rem 0.65rem;
-    border: none;
-    border-radius: 0;
-    border-bottom: 1px solid #e5e7eb;
+    align-items: stretch;
     background: #fff;
+    border: none;
+    border-radius: 10px;
     box-shadow: none;
-    min-width: 0;
-    max-width: 100%;
     box-sizing: border-box;
-  }
-
-  .mainContent .categoryCard:last-child {
-    border-bottom: none;
+    max-width: 100%;
+    min-width: 0;
+    padding: 0.45rem 0.6rem;
   }
 
   .mainContent .categoryCard:hover,
   .mainContent .categoryCard:focus-visible {
-    box-shadow: none;
     background: #f9fafb;
+    box-shadow: none;
+  }
+
+  .mainContent .categoryCardMain {
+    gap: 0.55rem;
   }
 
   .mainContent .categoryCardIcon {
-    width: 34px;
+    border-radius: 7px;
+    flex-shrink: 0;
     height: 34px;
     min-width: 34px;
-    margin-bottom: 0;
-    border-radius: 8px;
-    flex-shrink: 0;
+    width: 34px;
   }
 
   .mainContent .categoryCardIconSvg {
-    width: 18px;
     height: 18px;
+    width: 18px;
+  }
+
+  .mainContent .categoryCardText {
+    flex: 1 1 auto;
+    gap: 0.3rem;
+    min-width: 0;
   }
 
   .mainContent .categoryCardTitle {
-    flex: 1 1 auto;
-    min-width: 0;
-    font-size: 0.9375rem;
-    margin: 0;
+    font-size: 0.875rem;
     line-height: 1.25;
+    margin: 0;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .mainContent .categoryCardDescription {
-    display: none;
-  }
-
   .mainContent .categoryCardCount {
     flex-shrink: 0;
-    margin-top: 0;
-    font-size: 0.8125rem;
+    font-size: 0.6875rem;
     line-height: 1.2;
-    text-align: right;
+    margin: 0;
     white-space: nowrap;
-    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -292,10 +306,6 @@
   color: #d1d5db;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardDescription {
-  color: #9ca3af;
-}
-
 :where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardCount {
   color: #6b7280;
 }
@@ -307,13 +317,13 @@
 
 @media (width <= 768px) {
   :where(html[data-theme='dark'], [data-app-theme='dark']) .mainContent .grid {
-    border-color: #374151;
-    background: #171717;
+    background: transparent;
+    border: none;
   }
 
   :where(html[data-theme='dark'], [data-app-theme='dark']) .mainContent .categoryCard {
-    border-bottom-color: #374151;
     background: #171717;
+    border: none;
   }
 
   :where(html[data-theme='dark'], [data-app-theme='dark']) .mainContent .categoryCard:hover,

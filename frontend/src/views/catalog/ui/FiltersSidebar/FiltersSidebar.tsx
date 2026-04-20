@@ -614,7 +614,11 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
     return null;
   };
 
-  if (loading) {
+  /** Не схлопывать панель в «Загрузка…» при смене ветки: иначе колонка дергается, пока грузятся фасеты. */
+  const showCompactLoadingOnly =
+    loading && filters.length === 0 && !priceBounds && categoryOptions.length === 0;
+
+  if (showCompactLoadingOnly) {
     return (
       <div
         className={`${styles.filtersSidebar} ${mobileOpen ? styles.filtersSidebarMobileOpen : ''}`}
@@ -634,6 +638,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
   return (
     <div
       className={`${styles.filtersSidebar} ${mobileOpen ? styles.filtersSidebarMobileOpen : ''}`}
+      aria-busy={loading}
     >
       <div className={styles.header}>
         <h2 className={styles.title}>Фильтры</h2>
