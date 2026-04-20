@@ -54,11 +54,14 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
   const searchFromUrl = searchParams.get('search') ?? '';
   const prevSearchFromUrlRef = useRef<string | null>(null);
 
+  const facetBranchSlug =
+    categorySlug === 'all' ? searchParams.get('branch')?.trim() || null : null;
+
   const {
     filters: catalogFilters,
     loading: filtersLoading,
     hasFacets,
-  } = useCatalogFilters(categorySlug);
+  } = useCatalogFilters(categorySlug, facetBranchSlug);
   const showFilterColumn = Boolean(
     filtersLoading || hasFacets || priceBounds || categoryFilterOptions.length > 0
   );
@@ -176,6 +179,8 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
               loading={filtersLoading}
               priceBounds={priceBounds}
               categoryOptions={categoryFilterOptions}
+              parentCategoryRadioMode={categorySlug === 'all'}
+              catalogBranchRadioGroupSuffix="desktop"
             />
           </aside>
         ) : null}
@@ -196,6 +201,8 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
                 loading={filtersLoading}
                 priceBounds={priceBounds}
                 categoryOptions={categoryFilterOptions}
+                parentCategoryRadioMode={categorySlug === 'all'}
+                catalogBranchRadioGroupSuffix="mobile"
               />
             </div>
           </div>

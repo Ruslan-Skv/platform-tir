@@ -1,10 +1,13 @@
 'use client';
 
 import {
+  CalendarDaysIcon,
+  ChatBubbleLeftRightIcon,
   Cog6ToothIcon,
   EllipsisHorizontalIcon,
   HeartIcon,
   HomeIcon,
+  PhoneIcon,
   RectangleGroupIcon,
   ShoppingCartIcon,
   Squares2X2Icon,
@@ -17,8 +20,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { useUserAuth } from '@/features/auth/context/UserAuthContext';
+import { useFormContext } from '@/features/forms';
 import { useSitePublicConfig } from '@/shared/lib/contexts/SitePublicConfigContext';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
+import { useChatSupportOpen } from '@/widgets/chat-support';
 
 import styles from './MobileBottomNav.module.css';
 import { OurWorksNavIcon, UsefulArticlesNavIcon } from './mobileBottomNavIcons';
@@ -35,20 +40,33 @@ const primaryNavItems: Array<{
   { href: '/cart', label: 'Корзина', Icon: ShoppingCartIcon },
 ];
 
-type MoreEntry = {
+type MoreLinkEntry = {
+  kind: 'link';
   href: string;
   label: string;
   Icon: React.ComponentType<{ className?: string }>;
 };
 
+type MoreActionEntry = {
+  kind: 'action';
+  id: string;
+  label: string;
+  Icon: React.ComponentType<{ className?: string }>;
+  onSelect: () => void;
+};
+
+type MoreEntry = MoreLinkEntry | MoreActionEntry;
+
 export function MobileBottomNav() {
   const pathname = usePathname();
   const path = pathname ?? '';
+  const { measurementModal, callbackModal } = useFormContext();
+  const chatSupport = useChatSupportOpen();
   const [moreOpen, setMoreOpen] = useState(false);
   const moreBtnRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
-  const { user } = useUserAuth();
+  const { isAuthenticated, user } = useUserAuth();
   const { rolesShowAdminLinkMobile } = useSitePublicConfig();
   const isAdmin =
     !!user?.role &&
@@ -59,9 +77,36 @@ export function MobileBottomNav() {
   const { count: wishlistCount } = useWishlist();
 
   const moreItems: MoreEntry[] = [
-    { href: '/blog', label: 'Полезные статьи', Icon: UsefulArticlesNavIcon },
-    { href: '/photo', label: 'Наши работы', Icon: OurWorksNavIcon },
-    ...(isAdmin ? [{ href: '/admin', label: 'Админка', Icon: Cog6ToothIcon }] : []),
+    { kind: 'link', href: '/blog', label: 'Полезные статьи', Icon: UsefulArticlesNavIcon },
+    { kind: 'link', href: '/photo', label: 'Наши работы', Icon: OurWorksNavIcon },
+    ...(isAuthenticated && chatSupport
+      ? [
+          {
+            kind: 'action' as const,
+            id: 'chat-support',
+            label: 'Чат поддержки',
+            Icon: ChatBubbleLeftRightIcon,
+            onSelect: () => chatSupport.openChat(),
+          },
+        ]
+      : []),
+    {
+      kind: 'action',
+      id: 'measurement',
+      label: 'Записаться на замер',
+      Icon: CalendarDaysIcon,
+      onSelect: () => measurementModal.open(),
+    },
+    {
+      kind: 'action',
+      id: 'callback',
+      label: 'Заказать обратный звонок',
+      Icon: PhoneIcon,
+      onSelect: () => callbackModal.open(),
+    },
+    ...(isAdmin
+      ? [{ kind: 'link' as const, href: '/admin', label: 'Админка', Icon: Cog6ToothIcon }]
+      : []),
   ];
 
   const closeMore = useCallback(() => setMoreOpen(false), []);
@@ -108,13 +153,15 @@ export function MobileBottomNav() {
     return path === href || path.startsWith(`${href}/`);
   };
 
-  const isMoreRouteActive = moreItems.some(({ href }) =>
-    href === '/blog'
+  const isMoreRouteActive = moreItems.some((entry) => {
+    if (entry.kind !== 'link') return false;
+    const { href } = entry;
+    return href === '/blog'
       ? path === '/blog' || path.startsWith('/blog/')
       : href === '/photo'
         ? path === '/photo' || path.startsWith('/photo/')
-        : path === href || path.startsWith(`${href}/`)
-  );
+        : path === href || path.startsWith(`${href}/`);
+  });
 
   return (
     <nav className={styles.bottomNav} aria-label="Мобильная навигация">
@@ -136,7 +183,26 @@ export function MobileBottomNav() {
           aria-label="Дополнительные разделы"
         >
           <ul className={styles.moreList}>
-            {moreItems.map(({ href, label, Icon }) => {
+            {moreItems.map((entry) => {
+              if (entry.kind === 'action') {
+                const { id, label, Icon, onSelect } = entry;
+                return (
+                  <li key={id}>
+                    <button
+                      type="button"
+                      className={styles.moreLink}
+                      onClick={() => {
+                        onSelect();
+                        closeMore();
+                      }}
+                    >
+                      <Icon className={styles.moreIcon} />
+                      <span>{label}</span>
+                    </button>
+                  </li>
+                );
+              }
+              const { href, label, Icon } = entry;
               const isActive =
                 href === '/blog'
                   ? path === '/blog' || path.startsWith('/blog/')

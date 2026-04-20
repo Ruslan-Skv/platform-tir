@@ -1,17 +1,30 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { CatalogFiltersResponse } from './catalogFilters.types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
-export function useCatalogFilters(categorySlug: string | undefined) {
+/**
+ * @param categorySlug slug страницы каталога или «all»
+ * @param facetBranchSlug при «all»: slug родительской категории из ?branch=… — подгрузка фасетов API
+ */
+export function useCatalogFilters(
+  categorySlug: string | undefined,
+  facetBranchSlug?: string | null
+) {
   const [data, setData] = useState<CatalogFiltersResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const filtersSlug = useMemo(() => {
+    if (categorySlug && categorySlug !== 'all') return categorySlug;
+    const b = facetBranchSlug?.trim();
+    return b ? b : null;
+  }, [categorySlug, facetBranchSlug]);
+
   useEffect(() => {
-    if (!categorySlug || categorySlug === 'all') {
+    if (!filtersSlug) {
       setData(null);
       setLoading(false);
       return;
@@ -20,7 +33,7 @@ export function useCatalogFilters(categorySlug: string | undefined) {
     let cancelled = false;
     setLoading(true);
 
-    fetch(`${API_URL}/products/category/${encodeURIComponent(categorySlug)}/filters`)
+    fetch(`${API_URL}/products/category/${encodeURIComponent(filtersSlug)}/filters`)
       .then((res) => (res.ok ? res.json() : null))
       .then((json: CatalogFiltersResponse | null) => {
         if (!cancelled && json && Array.isArray(json.filters)) {
@@ -39,7 +52,7 @@ export function useCatalogFilters(categorySlug: string | undefined) {
     return () => {
       cancelled = true;
     };
-  }, [categorySlug]);
+  }, [filtersSlug]);
 
   const filters = data?.filters ?? [];
   const hasFacets = filters.length > 0;

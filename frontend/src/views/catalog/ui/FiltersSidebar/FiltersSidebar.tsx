@@ -28,6 +28,16 @@ export interface FiltersSidebarProps {
   priceBounds?: { min: number; max: number } | null;
   /** Подкатегории по текущей выборке товаров (из сетки); пусто — блок не показываем */
   categoryOptions?: CategoryFilterOption[];
+  /**
+   * Страница «весь каталог» (/catalog/products): родительские категории — радио,
+   * выбор задаёт ?branch=slug и подгружает фасеты категории; подкатегории остаются чекбоксами.
+   */
+  parentCategoryRadioMode?: boolean;
+  /**
+   * Уникальный суффикс для name у радио (на странице два экземпляра сайдбара — десктоп и мобильный drawer).
+   * Без него все радио с одним name образуют одну группу в документе и ломают отображение :checked.
+   */
+  catalogBranchRadioGroupSuffix?: string;
 }
 
 const PRICE_STEP = 100;
@@ -126,7 +136,8 @@ function clearCatalogFilterKeys(params: URLSearchParams): void {
       k === 'mfr' ||
       k === 'price_min' ||
       k === 'price_max' ||
-      k === 'cat'
+      k === 'cat' ||
+      k === 'branch'
     ) {
       toRemove.add(k);
     }
@@ -142,10 +153,34 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
   loading,
   priceBounds,
   categoryOptions = [],
+  parentCategoryRadioMode = false,
+  catalogBranchRadioGroupSuffix = 'main',
 }) => {
+  const branchRadioName = `catalog-parent-branch-${catalogBranchRadioGroupSuffix}`;
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  const branchFromUrl = searchParams.get('branch')?.trim() || null;
+  /** Пока Next.js обновляет URL после router.replace, держим выбранную ветку здесь — иначе радио «заливается» только со 2-го клика */
+  const [branchDisplayPending, setBranchDisplayPending] = useState<string | null | undefined>(
+    undefined
+  );
+  const displayCatalogBranch: string | null =
+    branchDisplayPending !== undefined ? branchDisplayPending : branchFromUrl;
+
+  useEffect(() => {
+    if (branchDisplayPending === undefined) return;
+    if (branchFromUrl === branchDisplayPending) {
+      setBranchDisplayPending(undefined);
+    }
+  }, [branchFromUrl, branchDisplayPending]);
+
+  useEffect(() => {
+    if (!parentCategoryRadioMode) {
+      setBranchDisplayPending(undefined);
+    }
+  }, [parentCategoryRadioMode]);
 
   const replaceParams = useCallback(
     (mutate: (p: URLSearchParams) => void) => {
@@ -157,6 +192,24 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
     [pathname, router, searchParams]
   );
 
+  /** Режим «весь каталог»: выбор родительской ветки + сброс прочих фильтров и пагинации */
+  const selectCatalogBranch = useCallback(
+    (slug: string | null) => {
+      const slugNorm = slug?.trim() || null;
+      if (parentCategoryRadioMode) {
+        setBranchDisplayPending(slugNorm);
+      }
+      replaceParams((p) => {
+        clearCatalogFilterKeys(p);
+        if (slugNorm) {
+          p.set('branch', slugNorm);
+          p.append('cat', slugNorm);
+        }
+      });
+    },
+    [parentCategoryRadioMode, replaceParams]
+  );
+
   /** После blur ждём, пока selected* из URL догонит clamp — иначе эффект перезапишет поле старым числом. */
   const pendingMinRef = useRef<number | null>(null);
   const pendingMaxRef = useRef<number | null>(null);
@@ -164,6 +217,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
   const handleClear = useCallback(() => {
     pendingMinRef.current = null;
     pendingMaxRef.current = null;
+    setBranchDisplayPending(undefined);
     replaceParams((p) => clearCatalogFilterKeys(p));
   }, [replaceParams]);
 
@@ -211,23 +265,11 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
   );
 
   const isCatChecked = useCallback(
-    (slug: string) => searchParams.getAll('cat').includes(slug),
-    [searchParams]
-  );
-
-  const toggleCat = useCallback(
-    (slug: string, checked: boolean) => {
-      replaceParams((p) => {
-        const prev = p.getAll('cat');
-        p.delete('cat');
-        const merged = checked
-          ? [...prev.filter((x) => x !== slug), slug]
-          : prev.filter((x) => x !== slug);
-        merged.forEach((v) => p.append('cat', v));
-        p.delete('page');
-      });
+    (slug: string) => {
+      const n = slug.trim();
+      return searchParams.getAll('cat').some((x) => x.trim() === n);
     },
-    [replaceParams]
+    [searchParams]
   );
 
   const selectAllCategories = useCallback(() => {
@@ -286,7 +328,8 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
         k === 'mfr' ||
         k === 'price_min' ||
         k === 'price_max' ||
-        k === 'cat'
+        k === 'cat' ||
+        k === 'branch'
       )
         return true;
     }
@@ -317,18 +360,40 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
     {}
   );
 
+  /** Порядок slug в списке может меняться при пересчёте — сортируем, чтобы не дёргать expanded без нужды */
   const categoryOptionsFingerprint = useMemo(
-    () => categoryOptions.map((o) => o.slug).join('\0'),
+    () =>
+      [...categoryOptions]
+        .map((o) => o.slug)
+        .sort()
+        .join('\0'),
     [categoryOptions]
   );
 
   useEffect(() => {
+    if (parentCategoryRadioMode) return;
     setExpandedCategoryParents({});
-  }, [categoryOptionsFingerprint]);
+  }, [categoryOptionsFingerprint, parentCategoryRadioMode]);
 
   const categoryGroups = useMemo(
     () => buildCategoryFilterGroups(categoryOptions),
     [categoryOptions]
+  );
+
+  const toggleCat = useCallback(
+    (slug: string, checked: boolean) => {
+      const slugNorm = slug.trim();
+      replaceParams((p) => {
+        const prev = p.getAll('cat');
+        p.delete('cat');
+        const merged = checked
+          ? [...prev.filter((x) => x.trim() !== slugNorm), slugNorm]
+          : prev.filter((x) => x.trim() !== slugNorm);
+        merged.forEach((v) => p.append('cat', v));
+        p.delete('page');
+      });
+    },
+    [replaceParams]
   );
 
   const toggleCategoryParentExpanded = useCallback((parentSlug: string) => {
@@ -667,31 +732,71 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
             isOpen={isSectionOpen('category')}
             onToggle={() => toggleSection('category')}
           >
-            <div className={styles.categoryBulkRow}>
-              <button
-                type="button"
-                className={styles.categoryBulkBtn}
-                onClick={selectAllCategories}
-                disabled={categoryBulkState.allSelected}
-              >
-                Выделить все
-              </button>
-              <span className={styles.categoryBulkSep} aria-hidden>
-                ·
-              </span>
-              <button
-                type="button"
-                className={styles.categoryBulkBtn}
-                onClick={clearAllCategories}
-                disabled={categoryBulkState.noneSelected}
-              >
-                Сбросить все
-              </button>
-            </div>
+            {parentCategoryRadioMode ? (
+              <p className={styles.categoryRadioHint}>
+                Выберите раздел каталога — появятся все фильтры этой категории. Подкатегории можно
+                уточнить чекбоксами только у выбранного раздела; при смене раздела сбрасывается
+                выбор подкатегорий у предыдущего.
+              </p>
+            ) : null}
+            {!parentCategoryRadioMode ? (
+              <div className={styles.categoryBulkRow}>
+                <button
+                  type="button"
+                  className={styles.categoryBulkBtn}
+                  onClick={selectAllCategories}
+                  disabled={categoryBulkState.allSelected}
+                >
+                  Выделить все
+                </button>
+                <span className={styles.categoryBulkSep} aria-hidden>
+                  ·
+                </span>
+                <button
+                  type="button"
+                  className={styles.categoryBulkBtn}
+                  onClick={clearAllCategories}
+                  disabled={categoryBulkState.noneSelected}
+                >
+                  Сбросить все
+                </button>
+              </div>
+            ) : null}
             <div className={styles.options}>
+              {parentCategoryRadioMode ? (
+                <label className={`${styles.option} ${styles.categoryOptionParentLabel}`}>
+                  <input
+                    type="radio"
+                    name={branchRadioName}
+                    checked={displayCatalogBranch === null}
+                    onChange={() => selectCatalogBranch(null)}
+                  />
+                  <span className={styles.optionText}>Все категории</span>
+                </label>
+              ) : null}
               {categoryGroups.map((group) => {
                 if (group.type === 'single') {
                   const opt = group.opt;
+                  if (parentCategoryRadioMode && opt.depth !== 1) {
+                    return (
+                      <label
+                        key={opt.slug}
+                        className={`${styles.option} ${opt.depth === 1 ? styles.categoryOptionNested : ''}`}
+                      >
+                        <input
+                          type="radio"
+                          name={branchRadioName}
+                          checked={displayCatalogBranch === opt.slug}
+                          onChange={() => selectCatalogBranch(opt.slug)}
+                        />
+                        <span
+                          className={`${styles.optionText} ${opt.depth === 1 ? styles.categoryOptionNestedLabel : opt.depth === 0 ? styles.categoryOptionParentLabel : ''}`}
+                        >
+                          {formatFilterOptionLabel(opt.label, opt.count)}
+                        </span>
+                      </label>
+                    );
+                  }
                   return (
                     <label
                       key={opt.slug}
@@ -712,55 +817,92 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
                 }
                 const { parent, children } = group;
                 const childrenExpanded = expandedCategoryParents[parent.slug] === true;
+                const branchShowsChildren =
+                  parentCategoryRadioMode && displayCatalogBranch === parent.slug;
+                const showChildCheckboxes =
+                  children.length > 0 &&
+                  (branchShowsChildren || (!parentCategoryRadioMode && childrenExpanded));
                 return (
                   <div key={parent.slug} className={styles.categoryParentGroup}>
                     <div className={styles.categoryParentRow}>
                       <label className={`${styles.option} ${styles.categoryParentLabelRow}`}>
-                        <input
-                          type="checkbox"
-                          checked={isCatChecked(parent.slug)}
-                          onChange={(e) => toggleCat(parent.slug, e.target.checked)}
-                        />
+                        {parentCategoryRadioMode ? (
+                          <input
+                            type="radio"
+                            name={branchRadioName}
+                            checked={displayCatalogBranch === parent.slug}
+                            onChange={() => selectCatalogBranch(parent.slug)}
+                          />
+                        ) : (
+                          <input
+                            type="checkbox"
+                            checked={isCatChecked(parent.slug)}
+                            onChange={(e) => toggleCat(parent.slug, e.target.checked)}
+                          />
+                        )}
                         <span
                           className={`${styles.optionText} ${styles.categoryOptionParentLabel}`}
                         >
                           {formatFilterOptionLabel(parent.label, parent.count)}
                         </span>
                       </label>
-                      <button
-                        type="button"
-                        className={styles.categoryExpandBtn}
-                        aria-expanded={childrenExpanded}
-                        aria-label={
-                          childrenExpanded ? 'Свернуть подкатегории' : 'Развернуть подкатегории'
-                        }
-                        onClick={() => toggleCategoryParentExpanded(parent.slug)}
-                      >
-                        <ChevronDownIcon
-                          className={`${styles.categoryExpandChevron} ${childrenExpanded ? styles.categoryExpandChevronOpen : ''}`}
-                          aria-hidden
-                        />
-                      </button>
+                      {!parentCategoryRadioMode && children.length > 0 ? (
+                        <button
+                          type="button"
+                          className={styles.categoryExpandBtn}
+                          aria-expanded={childrenExpanded}
+                          aria-label={
+                            childrenExpanded ? 'Свернуть подкатегории' : 'Развернуть подкатегории'
+                          }
+                          onClick={() => toggleCategoryParentExpanded(parent.slug)}
+                        >
+                          <ChevronDownIcon
+                            className={`${styles.categoryExpandChevron} ${childrenExpanded ? styles.categoryExpandChevronOpen : ''}`}
+                            aria-hidden
+                          />
+                        </button>
+                      ) : null}
                     </div>
-                    {childrenExpanded ? (
+                    {showChildCheckboxes ? (
                       <div className={styles.categoryChildrenWrap}>
-                        {children.map((opt) => (
-                          <label
-                            key={opt.slug}
-                            className={`${styles.option} ${styles.categoryOptionNested}`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isCatChecked(opt.slug)}
-                              onChange={(e) => toggleCat(opt.slug, e.target.checked)}
-                            />
-                            <span
-                              className={`${styles.optionText} ${styles.categoryOptionNestedLabel}`}
+                        {children.map((opt) => {
+                          const subCatInputId = `catalog-subcat-${catalogBranchRadioGroupSuffix}--${encodeURIComponent(parent.slug)}--${encodeURIComponent(opt.slug)}`;
+                          return parentCategoryRadioMode ? (
+                            <div
+                              key={opt.slug}
+                              className={`${styles.option} ${styles.categoryOptionNested}`}
                             >
-                              {formatFilterOptionLabel(opt.label, opt.count)}
-                            </span>
-                          </label>
-                        ))}
+                              <input
+                                id={subCatInputId}
+                                type="checkbox"
+                                checked={isCatChecked(opt.slug)}
+                                onChange={(e) => toggleCat(opt.slug, e.target.checked)}
+                              />
+                              <label
+                                htmlFor={subCatInputId}
+                                className={`${styles.optionText} ${styles.categoryOptionNestedLabel}`}
+                              >
+                                {formatFilterOptionLabel(opt.label, opt.count)}
+                              </label>
+                            </div>
+                          ) : (
+                            <label
+                              key={opt.slug}
+                              className={`${styles.option} ${styles.categoryOptionNested}`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isCatChecked(opt.slug)}
+                                onChange={(e) => toggleCat(opt.slug, e.target.checked)}
+                              />
+                              <span
+                                className={`${styles.optionText} ${styles.categoryOptionNestedLabel}`}
+                              >
+                                {formatFilterOptionLabel(opt.label, opt.count)}
+                              </span>
+                            </label>
+                          );
+                        })}
                       </div>
                     ) : null}
                   </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { HomeIcon, MoonIcon, PencilSquareIcon, SunIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, MoonIcon, PencilSquareIcon, SunIcon } from '@heroicons/react/24/outline';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -315,6 +315,15 @@ export function AdminHeader() {
 
   return (
     <header className={styles.header}>
+      <Link
+        href={getSafeHref('/', '/')}
+        className={styles.backToPublicLink}
+        title="Вернуться на публичный сайт"
+        aria-label="Вернуться на публичный сайт"
+      >
+        <ArrowLeftIcon className={styles.backToPublicIcon} aria-hidden />
+        <span className={styles.backToPublicText}>На сайт</span>
+      </Link>
       <div className={styles.searchWrapper}>
         <input
           type="search"
@@ -325,14 +334,6 @@ export function AdminHeader() {
       </div>
 
       <div className={styles.actions}>
-        <Link
-          href={getSafeHref('/', '/')}
-          className={`${styles.iconButton} ${styles.toPublicSiteLink}`}
-          title="На сайт"
-          aria-label="Перейти на публичный сайт"
-        >
-          <HomeIcon className={styles.themeIcon} aria-hidden />
-        </Link>
         <AdminOnlineAvatars />
         {canTogglePublicSiteEdit && (
           <button

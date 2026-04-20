@@ -3,7 +3,6 @@
 import {
   ArrowLeftIcon,
   Bars3Icon,
-  ChatBubbleLeftRightIcon,
   MagnifyingGlassIcon,
   MoonIcon,
   PhoneIcon,
@@ -20,7 +19,6 @@ import { useUserAuth } from '@/features/auth/context/UserAuthContext';
 import { useTheme } from '@/features/theme';
 import { getAvatarUrl, getInitials } from '@/shared/lib/avatar';
 import { Logo } from '@/shared/ui/Logo';
-import { useChatSupportOpen } from '@/widgets/chat-support';
 
 import { ActionButtons } from '../ActionButtons';
 import { Navigation } from '../Navigation';
@@ -163,7 +161,6 @@ function HeaderChrome({
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
-  const chatSupport = useChatSupportOpen();
   const { isAuthenticated, user } = useUserAuth();
   const { isDarkTheme, toggleTheme } = useTheme();
   const [headerAvatarLoadError, setHeaderAvatarLoadError] = useState(false);
@@ -194,16 +191,6 @@ function HeaderChrome({
                 <a href={PHONE_LINK} className={styles.mobileHeaderIcon} aria-label="Позвонить">
                   <PhoneIcon className={styles.mobileHeaderIconSvg} />
                 </a>
-                {isAuthenticated ? (
-                  <button
-                    type="button"
-                    className={styles.mobileHeaderIcon}
-                    onClick={() => chatSupport?.openChat()}
-                    aria-label="Чат поддержки"
-                  >
-                    <ChatBubbleLeftRightIcon className={styles.mobileHeaderIconSvg} />
-                  </button>
-                ) : null}
                 <button
                   type="button"
                   className={styles.mobileHeaderIcon}

@@ -142,6 +142,16 @@
     color 0.15s;
 }
 
+button.moreLink {
+  appearance: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  width: 100%;
+}
+
 .moreLink:hover {
   background: #f3f4f6;
 }

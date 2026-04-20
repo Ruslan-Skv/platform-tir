@@ -8,7 +8,7 @@ const ATTR_PARAM_PREFIX = 'attr_';
 
 /** Ключи query-параметров фильтров (кроме page, search). */
 export function catalogFilterParamKeys(): string[] {
-  return ['avail', 'mfr', 'price_min', 'price_max', 'cat'];
+  return ['avail', 'mfr', 'price_min', 'price_max', 'cat', 'branch'];
 }
 
 export function buildAttrParamKey(filterId: string): string {
@@ -25,7 +25,8 @@ export function filterSearchSignature(params: URLSearchParams): string {
       k === 'mfr' ||
       k === 'price_min' ||
       k === 'price_max' ||
-      k === 'cat'
+      k === 'cat' ||
+      k === 'branch'
     ) {
       pairs.push(`${k}=${v}`);
     }

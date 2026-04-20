@@ -2,12 +2,61 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   padding: 8px 12px;
   background: #fff;
   border-bottom: 1px solid #e5e7eb;
   position: sticky;
   top: 0;
   z-index: 50;
+}
+
+/* На узких экранах сайдбар уезжает за край — переход на сайт дублируем в шапке */
+.backToPublicLink {
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  color: #374151;
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+.backToPublicLink:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.backToPublicLink:focus {
+  outline: none;
+}
+
+.backToPublicLink:focus-visible {
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
+}
+
+.backToPublicIcon {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+}
+
+.backToPublicText {
+  line-height: 1;
+  white-space: nowrap;
+}
+
+@media (max-width: 1024px) {
+  .backToPublicLink {
+    display: inline-flex;
+  }
 }
 
 .searchWrapper {
@@ -210,19 +259,6 @@
 
 .iconButton:active {
   opacity: 0.9;
-}
-
-/* Сайдбар с «На сайт» скрыт в drawer до 1024px — дублируем переход в шапке только на мобильной вёрстке */
-.toPublicSiteLink {
-  display: none;
-  text-decoration: none;
-  color: inherit;
-}
-
-@media (max-width: 1024px) {
-  .toPublicSiteLink {
-    display: flex;
-  }
 }
 
 .themeIcon {
@@ -490,6 +526,16 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .header {
   background: #1f2937;
   border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backToPublicLink {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backToPublicLink:hover {
+  background: #4b5563;
+  color: #f9fafb;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput {
