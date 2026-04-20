@@ -5,8 +5,8 @@ export const GROUP_ZHALJUZI: RemontKvartirGroupDef = {
   name: 'Жалюзи',
   slug: 'zhaljuzi',
   icon: 'ViewColumns',
-  description:
-    'На данный момент услуги отсутствуют. Ниже — примеры позиций, которые можно добавить позднее.',
+  // description:
+  //   'На данный момент услуги отсутствуют. Ниже — примеры позиций, которые можно добавить позднее.',
   subcategories: [
     {
       name: 'Примеры позиций (заполните по мере появления прайса)',

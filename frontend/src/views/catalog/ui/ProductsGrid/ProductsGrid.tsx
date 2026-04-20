@@ -11,7 +11,7 @@ import React, {
   useSyncExternalStore,
 } from 'react';
 
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 
 import type { Product } from '@/entities/product/types';
 import { useMobileCatalogColumns } from '@/shared/lib/hooks';
@@ -28,6 +28,7 @@ import {
   type CatalogApiProduct,
   mapCatalogApiProductToProduct,
 } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
+import { newURLSearchParamsLive } from '@/views/catalog/lib/newURLSearchParamsLive';
 
 import { ProductCard } from './ProductCard';
 import styles from './ProductsGrid.module.css';
@@ -141,6 +142,7 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
   showMobileFiltersButton = false,
   onMobileFiltersOpen,
 }) => {
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const catalogSearchRaw = searchParams.get('search');
   const catalogSearch = catalogSearchRaw?.trim() ?? '';
@@ -259,9 +261,19 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
     }
     if (prevFilterSigRef.current !== sig) {
       prevFilterSigRef.current = sig;
-      onSortChange?.();
+      /**
+       * Уже на 1-й странице — не вызываем replacePageInUrl(1): второй router.replace
+       * часто идёт с устаревшим useSearchParams() и затирает только что выставленные ?cat=…
+       * (типичный кейс: чекбоксы дочерних категорий на /catalog/products).
+       * Номер страницы берём из window — после toggleCat там уже сброшен ?page=.
+       */
+      const live = newURLSearchParamsLive(pathname, searchParams.toString());
+      const page = Number.parseInt(live.get('page') || '1', 10);
+      if (Number.isFinite(page) && page > 1) {
+        onSortChange?.();
+      }
     }
-  }, [searchParams, onSortChange]);
+  }, [pathname, searchParams, onSortChange]);
 
   const filteredSortedProducts = useMemo(() => {
     const filtered = applyCatalogFilters(originalProducts, searchParams, catalogFilters ?? []);

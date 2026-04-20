@@ -13,6 +13,7 @@ import {
   buildCategoryFilterGroups,
 } from '@/views/catalog/lib/buildCategoryFilterOptions';
 import type { CatalogFilterFacet } from '@/views/catalog/lib/catalogFilters.types';
+import { newURLSearchParamsLive } from '@/views/catalog/lib/newURLSearchParamsLive';
 
 import styles from './FiltersSidebar.module.css';
 
@@ -184,7 +185,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
 
   const replaceParams = useCallback(
     (mutate: (p: URLSearchParams) => void) => {
-      const next = new URLSearchParams(searchParams.toString());
+      const next = newURLSearchParamsLive(pathname, searchParams.toString());
       mutate(next);
       const q = next.toString();
       router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
@@ -383,17 +384,38 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
   const toggleCat = useCallback(
     (slug: string, checked: boolean) => {
       const slugNorm = slug.trim();
+      /** В режиме ветки в cat кладётся slug родителя — он матчит всех детей по parentCategorySlug, поэтому без снятия родителя чекбоксы подкатегорий на фильтр не влияют. */
+      const branchForNarrow =
+        parentCategoryRadioMode && displayCatalogBranch?.trim()
+          ? displayCatalogBranch.trim()
+          : null;
+
       replaceParams((p) => {
-        const prev = p.getAll('cat');
+        const prev = p
+          .getAll('cat')
+          .map((x) => x.trim())
+          .filter(Boolean);
         p.delete('cat');
-        const merged = checked
-          ? [...prev.filter((x) => x.trim() !== slugNorm), slugNorm]
-          : prev.filter((x) => x.trim() !== slugNorm);
+        let merged: string[];
+
+        if (checked) {
+          merged = [...prev.filter((x) => x !== slugNorm), slugNorm];
+          if (branchForNarrow && slugNorm !== branchForNarrow && merged.includes(branchForNarrow)) {
+            merged = merged.filter((x) => x !== branchForNarrow);
+          }
+        } else {
+          merged = prev.filter((x) => x !== slugNorm);
+        }
+
+        if (branchForNarrow && merged.length === 0) {
+          merged = [branchForNarrow];
+        }
+
         merged.forEach((v) => p.append('cat', v));
         p.delete('page');
       });
     },
-    [replaceParams]
+    [replaceParams, parentCategoryRadioMode, displayCatalogBranch]
   );
 
   const toggleCategoryParentExpanded = useCallback((parentSlug: string) => {

@@ -5,8 +5,8 @@ export const GROUP_PROCHIE: RemontKvartirGroupDef = {
   name: 'Прочие работы',
   slug: 'prochie',
   icon: 'Home',
-  description:
-    'То, что не вошло в другие группы, но должно быть доступно в каталоге.',
+  // description:
+  //   'То, что не вошло в другие группы, но должно быть доступно в каталоге.',
   subcategories: [
     {
       name: 'Вентиляция',

@@ -4,6 +4,7 @@ import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } fr
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
+import { newURLSearchParamsLive } from '@/views/catalog/lib/newURLSearchParamsLive';
 import { useCatalogFilters } from '@/views/catalog/lib/useCatalogFilters';
 
 import { Breadcrumbs } from '../Breadcrumbs';
@@ -80,7 +81,7 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
 
   const replacePageInUrl = useCallback(
     (page: number, scrollToTop: boolean) => {
-      const params = new URLSearchParams(searchParams.toString());
+      const params = newURLSearchParamsLive(pathname, searchParams.toString());
       if (page <= 1) {
         params.delete('page');
       } else {
