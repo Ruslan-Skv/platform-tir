@@ -2,49 +2,53 @@
 
 import {
   Cog6ToothIcon,
+  EllipsisHorizontalIcon,
   HeartIcon,
   HomeIcon,
   RectangleGroupIcon,
   ShoppingCartIcon,
   Squares2X2Icon,
-  UserIcon,
 } from '@heroicons/react/24/outline';
 
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { useUserAuth } from '@/features/auth/context/UserAuthContext';
-import { getAvatarUrl, getInitials } from '@/shared/lib/avatar';
 import { useSitePublicConfig } from '@/shared/lib/contexts/SitePublicConfigContext';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 
 import styles from './MobileBottomNav.module.css';
+import { OurWorksNavIcon, UsefulArticlesNavIcon } from './mobileBottomNavIcons';
 
-const navItems: Array<{
+const primaryNavItems: Array<{
   href: string;
   label: string;
   Icon: React.ComponentType<{ className?: string }>;
-  authHref?: string;
 }> = [
   { href: '/catalog/products', label: 'Каталог', Icon: RectangleGroupIcon },
   { href: '/catalog/services', label: 'Ремонт квартир', Icon: HomeIcon },
   { href: '/compare', label: 'Сравнить', Icon: Squares2X2Icon },
   { href: '/favorites', label: 'Избранное', Icon: HeartIcon },
   { href: '/cart', label: 'Корзина', Icon: ShoppingCartIcon },
-  { href: '/profile', label: 'Кабинет', Icon: UserIcon, authHref: '/login' },
 ];
+
+type MoreEntry = {
+  href: string;
+  label: string;
+  Icon: React.ComponentType<{ className?: string }>;
+};
 
 export function MobileBottomNav() {
   const pathname = usePathname();
-  const [avatarLoadError, setAvatarLoadError] = useState(false);
-  const { isAuthenticated, user } = useUserAuth();
-
-  useEffect(() => {
-    setAvatarLoadError(false);
-  }, [user?.avatar]);
+  const path = pathname ?? '';
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreBtnRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const panelId = useId();
+  const { user } = useUserAuth();
   const { rolesShowAdminLinkMobile } = useSitePublicConfig();
   const isAdmin =
     !!user?.role &&
@@ -54,6 +58,43 @@ export function MobileBottomNav() {
   const { count: compareCount } = useCompare();
   const { count: wishlistCount } = useWishlist();
 
+  const moreItems: MoreEntry[] = [
+    { href: '/blog', label: 'Полезные статьи', Icon: UsefulArticlesNavIcon },
+    { href: '/photo', label: 'Наши работы', Icon: OurWorksNavIcon },
+    ...(isAdmin ? [{ href: '/admin', label: 'Админка', Icon: Cog6ToothIcon }] : []),
+  ];
+
+  const closeMore = useCallback(() => setMoreOpen(false), []);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeMore();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [moreOpen, closeMore]);
+
+  useEffect(() => {
+    closeMore();
+  }, [path, closeMore]);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onPointer = (e: MouseEvent | TouchEvent) => {
+      const t = e.target as Node;
+      if (moreBtnRef.current?.contains(t)) return;
+      if (panelRef.current?.contains(t)) return;
+      closeMore();
+    };
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('touchstart', onPointer, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', onPointer);
+      document.removeEventListener('touchstart', onPointer);
+    };
+  }, [moreOpen, closeMore]);
+
   const getCount = (href: string): number => {
     if (href === '/compare') return compareCount;
     if (href === '/cart') return cartCount;
@@ -61,68 +102,108 @@ export function MobileBottomNav() {
     return 0;
   };
 
-  const items: Array<{
-    href: string;
-    label: string;
-    Icon: React.ComponentType<{ className?: string }>;
-    authHref?: string;
-  }> = [
-    ...navItems,
-    ...(isAdmin ? [{ href: '/admin', label: 'Админка', Icon: Cog6ToothIcon }] : []),
-  ];
+  const isPrimaryActive = (href: string): boolean => {
+    if (href === '/catalog/products') return path.startsWith('/catalog/products');
+    if (href === '/catalog/services') return path.startsWith('/catalog/services');
+    return path === href || path.startsWith(`${href}/`);
+  };
 
-  const path = pathname ?? '';
+  const isMoreRouteActive = moreItems.some(({ href }) =>
+    href === '/blog'
+      ? path === '/blog' || path.startsWith('/blog/')
+      : href === '/photo'
+        ? path === '/photo' || path.startsWith('/photo/')
+        : path === href || path.startsWith(`${href}/`)
+  );
 
   return (
     <nav className={styles.bottomNav} aria-label="Мобильная навигация">
-      <ul className={styles.list}>
-        {items.map(({ href, label, Icon, authHref }) => {
-          const linkHref = authHref && !isAuthenticated ? authHref : href;
-          const isActive =
-            href === '/catalog/products'
-              ? path.startsWith('/catalog/products')
-              : href === '/catalog/services'
-                ? path.startsWith('/catalog/services')
-                : path === href || path.startsWith(href + '/');
-          const count = getCount(href);
-          const showCount = count > 0;
+      {moreOpen ? (
+        <button
+          type="button"
+          className={styles.moreBackdrop}
+          aria-label="Закрыть меню"
+          onClick={closeMore}
+        />
+      ) : null}
 
-          const showProfileAvatar =
-            href === '/profile' && isAuthenticated && user && linkHref === '/profile';
+      {moreOpen ? (
+        <div
+          id={panelId}
+          ref={panelRef}
+          className={styles.morePanel}
+          role="dialog"
+          aria-label="Дополнительные разделы"
+        >
+          <ul className={styles.moreList}>
+            {moreItems.map(({ href, label, Icon }) => {
+              const isActive =
+                href === '/blog'
+                  ? path === '/blog' || path.startsWith('/blog/')
+                  : href === '/photo'
+                    ? path === '/photo' || path.startsWith('/photo/')
+                    : path === href || path.startsWith(`${href}/`);
+              return (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    className={`${styles.moreLink} ${isActive ? styles.moreLinkActive : ''}`}
+                    aria-current={isActive ? 'page' : undefined}
+                    onClick={closeMore}
+                  >
+                    <Icon className={styles.moreIcon} />
+                    <span>{label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
 
-          return (
-            <li key={href} className={styles.item}>
-              <Link
-                href={linkHref}
-                className={`${styles.link} ${isActive ? styles.linkActive : ''}`}
-                aria-current={isActive ? 'page' : undefined}
-              >
-                <span className={styles.iconWrap}>
-                  {showProfileAvatar ? (
-                    user.avatar && !avatarLoadError ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={getAvatarUrl(user.avatar) ?? ''}
-                        alt=""
-                        className={styles.profileAvatar}
-                        onError={() => setAvatarLoadError(true)}
-                      />
-                    ) : (
-                      <span className={styles.profileInitials}>
-                        {getInitials(user.firstName, user.lastName, user.email)}
-                      </span>
-                    )
-                  ) : (
+      <div className={styles.barRow}>
+        <ul className={styles.list}>
+          {primaryNavItems.map(({ href, label, Icon }) => {
+            const isActive = isPrimaryActive(href);
+            const count = getCount(href);
+            const showCount = count > 0;
+            return (
+              <li key={href} className={styles.item}>
+                <Link
+                  href={href}
+                  className={`${styles.link} ${isActive ? styles.linkActive : ''}`}
+                  aria-current={isActive ? 'page' : undefined}
+                >
+                  <span className={styles.iconWrap}>
                     <Icon className={styles.icon} />
-                  )}
-                  {showCount && <span className={styles.badge}>{count > 99 ? '99+' : count}</span>}
-                </span>
-                <span className={styles.label}>{label}</span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+                    {showCount ? (
+                      <span className={styles.badge}>{count > 99 ? '99+' : count}</span>
+                    ) : null}
+                  </span>
+                  <span className={styles.label}>{label}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className={styles.moreSlot}>
+          <button
+            ref={moreBtnRef}
+            type="button"
+            className={`${styles.moreTrigger} ${isMoreRouteActive && !moreOpen ? styles.linkActive : ''} ${moreOpen ? styles.moreTriggerOpen : ''}`}
+            aria-expanded={moreOpen}
+            aria-controls={panelId}
+            aria-haspopup="dialog"
+            onClick={() => setMoreOpen((o) => !o)}
+          >
+            <span className={styles.iconWrap}>
+              <EllipsisHorizontalIcon className={styles.icon} />
+            </span>
+            <span className={styles.label}>Прочее</span>
+          </button>
+        </div>
+      </div>
     </nav>
   );
 }

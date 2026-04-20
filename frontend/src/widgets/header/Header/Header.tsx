@@ -8,14 +8,17 @@ import {
   MoonIcon,
   PhoneIcon,
   SunIcon,
+  UserIcon,
 } from '@heroicons/react/24/outline';
 
 import React, { Suspense, useEffect, useState } from 'react';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useUserAuth } from '@/features/auth/context/UserAuthContext';
 import { useTheme } from '@/features/theme';
+import { getAvatarUrl, getInitials } from '@/shared/lib/avatar';
 import { Logo } from '@/shared/ui/Logo';
 import { useChatSupportOpen } from '@/widgets/chat-support';
 
@@ -161,12 +164,17 @@ function HeaderChrome({
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
   const chatSupport = useChatSupportOpen();
-  const { isAuthenticated } = useUserAuth();
+  const { isAuthenticated, user } = useUserAuth();
   const { isDarkTheme, toggleTheme } = useTheme();
+  const [headerAvatarLoadError, setHeaderAvatarLoadError] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    setHeaderAvatarLoadError(false);
+  }, [user?.avatar]);
 
   return (
     <header className={styles.header}>
@@ -208,9 +216,32 @@ function HeaderChrome({
                     <MoonIcon className={styles.mobileHeaderIconSvg} />
                   )}
                 </button>
+                <Link
+                  href={isAuthenticated ? '/profile' : '/login'}
+                  className={styles.mobileHeaderIcon}
+                  aria-label="Личный кабинет"
+                >
+                  {isAuthenticated && user ? (
+                    user.avatar && !headerAvatarLoadError ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={getAvatarUrl(user.avatar) ?? ''}
+                        alt=""
+                        className={styles.mobileHeaderProfileAvatar}
+                        onError={() => setHeaderAvatarLoadError(true)}
+                      />
+                    ) : (
+                      <span className={styles.mobileHeaderProfileInitials}>
+                        {getInitials(user.firstName, user.lastName, user.email)}
+                      </span>
+                    )
+                  ) : (
+                    <UserIcon className={styles.mobileHeaderIconSvg} />
+                  )}
+                </Link>
                 <button
                   type="button"
-                  className={`${styles.mobileHeaderIcon} ${styles.mobileHeaderIconBurger}`}
+                  className={`${styles.mobileHeaderIcon} ${styles.mobileHeaderIconBurger} ${styles.mobileHeaderIconBurgerHidden}`}
                   onClick={() => setMobileMenuOpen((prev) => !prev)}
                   aria-label="Открыть меню"
                 >

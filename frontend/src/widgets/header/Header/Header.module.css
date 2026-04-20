@@ -98,6 +98,37 @@
   color: #fff;
 }
 
+/* Бургер оставлен в разметке на будущее; на мобильной шапке не показываем */
+.mobileHeaderIconBurgerHidden {
+  display: none !important;
+}
+
+.mobileHeaderProfileAvatar {
+  border-radius: 50%;
+  display: block;
+  height: 1.25rem;
+  object-fit: cover;
+  width: 1.25rem;
+}
+
+.mobileHeaderProfileInitials {
+  align-items: center;
+  background: #e5e7eb;
+  border-radius: 50%;
+  color: #374151;
+  display: flex;
+  font-size: 0.5rem;
+  font-weight: 600;
+  height: 1.25rem;
+  justify-content: center;
+  width: 1.25rem;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileHeaderProfileInitials {
+  background: #4b5563;
+  color: #e5e7eb;
+}
+
 .mobileHeaderIcon:focus {
   outline: none;
 }
