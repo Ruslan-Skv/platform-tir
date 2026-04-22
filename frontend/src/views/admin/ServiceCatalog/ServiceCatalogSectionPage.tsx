@@ -508,6 +508,9 @@ export function ServiceCatalogSectionPage() {
                               ))}
                           </select>
                         </label>
+                        <span className={styles.fieldHint}>
+                          Иконка из набора или своя картинка («Картинка» справа).
+                        </span>
                         <div className={styles.iconPickerWrapper}>
                           <button
                             type="button"
@@ -834,6 +837,10 @@ export function ServiceCatalogSectionPage() {
 
               <div className={styles.createFormGroup}>
                 <label className={styles.label}>Иконка или изображение</label>
+                <span className={styles.fieldHint}>
+                  Значок из набора ниже или своё изображение — кнопка «Загрузить картинку» справа
+                  (на сайте показывается картинка, если она задана).
+                </span>
                 <div className={styles.createIconImageRow}>
                   <div className={styles.iconPickerWrapper}>
                     <button

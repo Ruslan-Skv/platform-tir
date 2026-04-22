@@ -240,8 +240,8 @@
 }
 
 .iconButtonSvg {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   color: #374151;
 }
 
@@ -257,21 +257,25 @@
   background: white;
   border: 1px solid #d1d5db;
   border-radius: 12px;
-  padding: 12px;
+  padding: 14px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   z-index: 100;
-  min-width: 220px;
+  min-width: min(440px, calc(100vw - 2rem));
+  max-width: min(520px, calc(100vw - 2rem));
+  max-height: min(420px, 70vh);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .iconGrid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
 }
 
 .iconOption {
-  width: 36px;
-  height: 36px;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -293,8 +297,8 @@
 }
 
 .iconOptionSvg {
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   color: #374151;
 }
 
@@ -946,6 +950,15 @@
 
 .createFormGroup {
   margin-bottom: 16px;
+}
+
+.fieldHint {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: #6b7280;
+  font-weight: 400;
 }
 
 .label {

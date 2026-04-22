@@ -1,42 +1,21 @@
 import {
-  BoltIcon,
-  BuildingOfficeIcon,
-  CubeIcon,
   CubeTransparentIcon,
-  DocumentTextIcon,
-  HomeIcon,
-  LightBulbIcon,
   MoonIcon,
-  PaintBrushIcon,
-  RectangleStackIcon,
-  Square3Stack3DIcon,
-  Squares2X2Icon,
   TableCellsIcon,
   TagIcon,
-  ViewColumnsIcon,
-  WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline';
 
 import React from 'react';
 
-/** Имена иконок из админки / констант → компоненты Heroicons */
-const navigationIconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  RectangleStack: RectangleStackIcon,
-  WrenchScrewdriver: WrenchScrewdriverIcon,
-  Squares2X2: Squares2X2Icon,
-  ViewColumns: ViewColumnsIcon,
-  Cube: CubeIcon,
-  Home: HomeIcon,
+import { serviceCatalogIconMap } from '@/shared/lib/serviceCatalogIcons';
+
+/** Иконки навигации: каталог услуг + доп. ключи только для меню */
+export const navigationIconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  ...serviceCatalogIconMap,
   TableCells: TableCellsIcon,
   Moon: MoonIcon,
   CubeTransparent: CubeTransparentIcon,
-  LightBulb: LightBulbIcon,
-  PaintBrush: PaintBrushIcon,
-  Bolt: BoltIcon,
-  Square3Stack3D: Square3Stack3DIcon,
   Tag: TagIcon,
-  DocumentText: DocumentTextIcon,
-  BuildingOffice: BuildingOfficeIcon,
 };
 
 /**
