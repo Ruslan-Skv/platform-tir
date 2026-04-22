@@ -65,13 +65,17 @@
 .categoryCard {
   display: flex;
   align-items: stretch;
-  padding: 0.55rem 0.75rem;
+  padding: 0.825rem 0.9rem;
   background: #fff;
   border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  border-radius: 12px;
   text-decoration: none;
   color: inherit;
   min-width: 0;
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
@@ -82,23 +86,44 @@
   box-shadow: 0 2px 8px rgb(0 0 0 / 0.05);
 }
 
+.categoryCardHasBg {
+  border-color: rgb(0 0 0 / 0.08);
+}
+
+.categoryCardBgScrim {
+  border-radius: inherit;
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+  background: linear-gradient(
+    115deg,
+    rgb(255 255 255 / 0.94) 0%,
+    rgb(255 255 255 / 0.78) 42%,
+    rgb(255 255 255 / 0.55) 100%
+  );
+}
+
 .categoryCardMain {
   align-items: center;
   display: flex;
   flex: 1;
   gap: 0.65rem;
   min-width: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .categoryCardIcon {
   align-items: center;
-  background: #f3f4f6;
+  background: rgb(243 244 246 / 0.92);
   border-radius: 8px;
   display: flex;
   flex-shrink: 0;
   height: 40px;
   justify-content: center;
   width: 40px;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.04);
 }
 
 .categoryCardIconSvg {
@@ -210,9 +235,14 @@
     padding: 0.45rem 0.6rem;
   }
 
-  .mainContent .categoryCard:hover,
-  .mainContent .categoryCard:focus-visible {
+  .mainContent .categoryCard:not(.categoryCardHasBg):hover,
+  .mainContent .categoryCard:not(.categoryCardHasBg):focus-visible {
     background: #f9fafb;
+    box-shadow: none;
+  }
+
+  .mainContent .categoryCardHasBg:hover,
+  .mainContent .categoryCardHasBg:focus-visible {
     box-shadow: none;
   }
 
@@ -285,13 +315,22 @@
   color: #d1d5db;
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardBgScrim {
+  background: linear-gradient(
+    115deg,
+    rgb(23 23 23 / 0.92) 0%,
+    rgb(23 23 23 / 0.78) 45%,
+    rgb(23 23 23 / 0.55) 100%
+  );
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCard:hover {
   border-color: rgb(var(--color-accent-rgb) / 0.5);
   box-shadow: 0 4px 12px rgb(0 0 0 / 0.3);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardIcon {
-  background: #374151;
+  background: rgb(55 65 81 / 0.92);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCardIconSvg {
@@ -326,11 +365,20 @@
     border: none;
   }
 
-  :where(html[data-theme='dark'], [data-app-theme='dark']) .mainContent .categoryCard:hover,
   :where(html[data-theme='dark'], [data-app-theme='dark'])
     .mainContent
-    .categoryCard:focus-visible {
+    .categoryCard:not(.categoryCardHasBg):hover,
+  :where(html[data-theme='dark'], [data-app-theme='dark'])
+    .mainContent
+    .categoryCard:not(.categoryCardHasBg):focus-visible {
     box-shadow: none;
     background: #1f2937;
+  }
+
+  :where(html[data-theme='dark'], [data-app-theme='dark']) .mainContent .categoryCardHasBg:hover,
+  :where(html[data-theme='dark'], [data-app-theme='dark'])
+    .mainContent
+    .categoryCardHasBg:focus-visible {
+    box-shadow: none;
   }
 }

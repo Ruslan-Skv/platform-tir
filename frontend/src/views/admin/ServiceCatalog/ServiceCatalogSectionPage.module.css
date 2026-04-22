@@ -407,6 +407,50 @@
   color: currentColor;
 }
 
+.cardBgField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.cardBgRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Предпросмотр фона: без растягивания на всю ширину формы, пропорции как у файла */
+.cardBgPreviewImg {
+  display: block;
+  margin-top: 8px;
+  max-width: min(100%, 280px);
+  max-height: 120px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #f3f4f6;
+}
+
+.clearCardBgButton {
+  padding: 6px 10px;
+  font-size: 0.8125rem;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.clearCardBgButton:hover {
+  background: #fee2e2;
+}
+
 .categoryName {
   font-weight: 500;
   color: #1f2937;
@@ -1147,6 +1191,11 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .createPreviewSection {
   border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cardBgPreviewImg {
+  border-color: #4b5563;
+  background: #1f2937;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .modalFooterCancel {

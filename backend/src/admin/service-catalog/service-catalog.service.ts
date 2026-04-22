@@ -195,6 +195,7 @@ export class ServiceCatalogService {
         description: dto.description,
         icon: dto.icon ?? null,
         image: dto.image ?? null,
+        cardBackgroundImage: dto.cardBackgroundImage ?? null,
         priceMarkupPercent: new Prisma.Decimal(dto.priceMarkupPercent ?? 0),
         showPricesInPublic: dto.showPricesInPublic ?? true,
         sortOrder: dto.sortOrder ?? 0,
@@ -334,6 +335,7 @@ export class ServiceCatalogService {
     if (dto.description !== undefined) data.description = dto.description;
     if (dto.icon !== undefined) data.icon = dto.icon;
     if (dto.image !== undefined) data.image = dto.image;
+    if (dto.cardBackgroundImage !== undefined) data.cardBackgroundImage = dto.cardBackgroundImage;
     if (dto.showPricesInPublic !== undefined) data.showPricesInPublic = dto.showPricesInPublic;
     if (dto.priceMarkupPercent !== undefined) {
       data.priceMarkupPercent = new Prisma.Decimal(dto.priceMarkupPercent);
@@ -563,6 +565,7 @@ export class ServiceCatalogService {
         description: c.description,
         icon: c.icon,
         image: c.image,
+        cardBackgroundImage: c.cardBackgroundImage,
         showPricesInPublic: c.showPricesInPublic,
         items: ownItems,
         totalWorkTypes,
@@ -616,6 +619,7 @@ export class ServiceCatalogService {
         description: true,
         icon: true,
         image: true,
+        cardBackgroundImage: true,
         showPricesInPublic: true,
         parent: { select: { id: true, name: true, slug: true } },
       },
@@ -678,6 +682,7 @@ export class ServiceCatalogService {
         description: ch.description,
         icon: ch.icon,
         image: ch.image,
+        cardBackgroundImage: ch.cardBackgroundImage,
         itemsCount: this.countActiveItemsInCategorySubtree(ch as CategoryTreeNode),
       })) ?? [];
 
@@ -688,6 +693,7 @@ export class ServiceCatalogService {
       description: rootNode.description,
       icon: rootNode.icon,
       image: rootNode.image,
+      cardBackgroundImage: rootNode.cardBackgroundImage,
       items,
       itemSections,
       showPricesInPublic: rootNode.showPricesInPublic,

@@ -22,6 +22,8 @@ interface NewServiceCategoryForm {
   parentId: string;
   icon: ServiceIconOptionValue | '';
   image: string;
+  /** Фон карточки на странице «Ремонт квартир» (корневые категории в сетке). */
+  cardBackgroundImage: string;
   showPricesInPublic: boolean;
   /** Наценка на группу, % к базовой цене видов работ (может быть отрицательной). */
   priceMarkupPercent: number;
@@ -45,6 +47,7 @@ interface ServiceCatalogCategory {
   description: string | null;
   icon: string | null;
   image: string | null;
+  cardBackgroundImage?: string | null;
   showPricesInPublic: boolean;
   priceMarkupPercent?: number;
   sortOrder: number;
@@ -130,6 +133,7 @@ const INITIAL_NEW_SERVICE_CATEGORY: NewServiceCategoryForm = {
   parentId: '',
   icon: '',
   image: '',
+  cardBackgroundImage: '',
   showPricesInPublic: true,
   priceMarkupPercent: 0,
 };
@@ -203,6 +207,7 @@ export function ServiceCatalogSectionPage() {
   const [expandedCategoryIds, setExpandedCategoryIds] = useState<Set<string>>(new Set());
   const [showNewIconPicker, setShowNewIconPicker] = useState(false);
   const newCategoryFileInputRef = useRef<HTMLInputElement>(null);
+  const newCategoryCardBgFileInputRef = useRef<HTMLInputElement>(null);
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [showEditIconPicker, setShowEditIconPicker] = useState(false);
   const [editCategoryData, setEditCategoryData] = useState<{
@@ -210,11 +215,13 @@ export function ServiceCatalogSectionPage() {
     slug: string;
     icon: string;
     image: string;
+    cardBackgroundImage: string;
     showPricesInPublic: boolean;
     priceMarkupPercent: number;
     parentId: string | null;
   } | null>(null);
   const editCategoryFileInputRef = useRef<HTMLInputElement>(null);
+  const editCategoryCardBgFileInputRef = useRef<HTMLInputElement>(null);
   const showMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
     setTimeout(() => setMessage(null), 3000);
@@ -280,6 +287,7 @@ export function ServiceCatalogSectionPage() {
     setShowNewIconPicker(false);
     setCreateMessage(null);
     if (newCategoryFileInputRef.current) newCategoryFileInputRef.current.value = '';
+    if (newCategoryCardBgFileInputRef.current) newCategoryCardBgFileInputRef.current.value = '';
     setShowCreateModal(true);
   }, []);
 
@@ -319,6 +327,38 @@ export function ServiceCatalogSectionPage() {
     editCategoryFileInputRef.current && (editCategoryFileInputRef.current.value = '');
   };
 
+  const handleNewCategoryCardBgSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () =>
+        setNewCategory((prev) => ({ ...prev, cardBackgroundImage: reader.result as string }));
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const clearNewCategoryCardBg = () => {
+    setNewCategory((prev) => ({ ...prev, cardBackgroundImage: '' }));
+    if (newCategoryCardBgFileInputRef.current) newCategoryCardBgFileInputRef.current.value = '';
+  };
+
+  const handleEditCategoryCardBgSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && editCategoryData) {
+      const reader = new FileReader();
+      reader.onloadend = () =>
+        setEditCategoryData((p) =>
+          p ? { ...p, cardBackgroundImage: reader.result as string } : p
+        );
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const clearEditCategoryCardBg = () => {
+    setEditCategoryData((p) => (p ? { ...p, cardBackgroundImage: '' } : p));
+    if (editCategoryCardBgFileInputRef.current) editCategoryCardBgFileInputRef.current.value = '';
+  };
+
   const handleAddCategory = async () => {
     if (!newCategory.name.trim() || !newCategory.slug.trim()) {
       setCreateMessage({ type: 'error', text: 'Заполните название и slug' });
@@ -346,6 +386,9 @@ export function ServiceCatalogSectionPage() {
     if (newCategory.image.trim()) {
       body.image = newCategory.image.trim();
     }
+    if (newCategory.cardBackgroundImage.trim()) {
+      body.cardBackgroundImage = newCategory.cardBackgroundImage.trim();
+    }
     body.priceMarkupPercent = Number(newCategory.priceMarkupPercent) || 0;
 
     try {
@@ -362,6 +405,7 @@ export function ServiceCatalogSectionPage() {
         });
         setNewCategory({ ...INITIAL_NEW_SERVICE_CATEGORY });
         if (newCategoryFileInputRef.current) newCategoryFileInputRef.current.value = '';
+        if (newCategoryCardBgFileInputRef.current) newCategoryCardBgFileInputRef.current.value = '';
         load();
 
         setTimeout(() => {
@@ -390,6 +434,7 @@ export function ServiceCatalogSectionPage() {
         slug: editCategoryData.slug,
         icon: editCategoryData.icon || undefined,
         image: editCategoryData.image?.trim() || null,
+        cardBackgroundImage: editCategoryData.cardBackgroundImage?.trim() || null,
         showPricesInPublic: editCategoryData.showPricesInPublic,
         priceMarkupPercent: Number(editCategoryData.priceMarkupPercent) || 0,
         parentId: editCategoryData.parentId,
@@ -606,6 +651,40 @@ export function ServiceCatalogSectionPage() {
                             ) : null}
                           </div>
                         )}
+                        <div className={styles.cardBgField}>
+                          <span className={styles.parentFieldLabel}>
+                            Фон карточки на странице «Ремонт квартир»
+                          </span>
+                          <div className={styles.cardBgRow}>
+                            <input
+                              type="file"
+                              ref={editCategoryCardBgFileInputRef}
+                              accept="image/*"
+                              onChange={handleEditCategoryCardBgSelect}
+                              className={styles.fileInput}
+                              id="edit-category-card-bg"
+                            />
+                            <label htmlFor="edit-category-card-bg" className={styles.uploadButton}>
+                              🖼 Фон карточки
+                            </label>
+                            {editCategoryData.cardBackgroundImage ? (
+                              <button
+                                type="button"
+                                className={styles.clearCardBgButton}
+                                onClick={clearEditCategoryCardBg}
+                              >
+                                Сбросить фон
+                              </button>
+                            ) : null}
+                          </div>
+                          {editCategoryData.cardBackgroundImage ? (
+                            <img
+                              src={editCategoryData.cardBackgroundImage}
+                              alt=""
+                              className={styles.cardBgPreviewImg}
+                            />
+                          ) : null}
+                        </div>
                         <label className={styles.checkbox}>
                           <input
                             type="checkbox"
@@ -653,6 +732,9 @@ export function ServiceCatalogSectionPage() {
                             setEditingCategory(null);
                             setEditCategoryData(null);
                             setShowEditIconPicker(false);
+                            if (editCategoryCardBgFileInputRef.current) {
+                              editCategoryCardBgFileInputRef.current.value = '';
+                            }
                           }}
                         >
                           Отмена
@@ -710,6 +792,7 @@ export function ServiceCatalogSectionPage() {
                                 slug: cat.slug,
                                 icon: cat.icon || '',
                                 image: cat.image || '',
+                                cardBackgroundImage: cat.cardBackgroundImage || '',
                                 showPricesInPublic: cat.showPricesInPublic ?? true,
                                 priceMarkupPercent: Number(cat.priceMarkupPercent ?? 0),
                                 parentId: cat.parentId ?? null,
@@ -937,6 +1020,43 @@ export function ServiceCatalogSectionPage() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              <div className={styles.createFormGroup}>
+                <label className={styles.label}>Фон карточки на странице «Ремонт квартир»</label>
+                <span className={styles.fieldHint}>
+                  Необязательно. Широкая фотография для фона плитки категории в общем списке (иконка
+                  и название остаются поверх затемнённого слоя).
+                </span>
+                <div className={styles.cardBgRow}>
+                  <input
+                    type="file"
+                    ref={newCategoryCardBgFileInputRef}
+                    accept="image/*"
+                    onChange={handleNewCategoryCardBgSelect}
+                    className={styles.fileInput}
+                    id="new-category-card-bg-modal"
+                  />
+                  <label htmlFor="new-category-card-bg-modal" className={styles.uploadButton}>
+                    🖼 Загрузить фон
+                  </label>
+                  {newCategory.cardBackgroundImage ? (
+                    <button
+                      type="button"
+                      className={styles.clearCardBgButton}
+                      onClick={clearNewCategoryCardBg}
+                    >
+                      Сбросить фон
+                    </button>
+                  ) : null}
+                </div>
+                {newCategory.cardBackgroundImage ? (
+                  <img
+                    src={newCategory.cardBackgroundImage}
+                    alt=""
+                    className={styles.cardBgPreviewImg}
+                  />
+                ) : null}
               </div>
 
               <label className={styles.checkbox}>

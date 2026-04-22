@@ -27,6 +27,7 @@ interface ServiceCatalogCategory {
   description?: string | null;
   icon?: string | null;
   image?: string | null;
+  cardBackgroundImage?: string | null;
   items: ServiceCatalogItem[];
   children?: ServiceCatalogCategory[];
   /** Всего видов работ в этой категории и во всех вложенных */
@@ -104,12 +105,15 @@ export function ServiceCatalogPage() {
           {data.categories.map((cat) => {
             const IconComponent = !cat.image && cat.icon ? serviceCatalogIconMap[cat.icon] : null;
             const positionCount = cat.totalWorkTypes ?? cat.items.length;
+            const cardBg = cat.cardBackgroundImage?.trim();
             return (
               <Link
                 key={cat.id}
                 href={getSafeHref(`/catalog/services/${cat.slug}`)}
-                className={styles.categoryCard}
+                className={`${styles.categoryCard} ${cardBg ? styles.categoryCardHasBg : ''}`}
+                style={cardBg ? { backgroundImage: `url(${cardBg})` } : undefined}
               >
+                {cardBg ? <span className={styles.categoryCardBgScrim} aria-hidden /> : null}
                 <div className={styles.categoryCardMain}>
                   {cat.image ? (
                     <span className={styles.categoryCardIcon}>

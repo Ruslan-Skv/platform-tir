@@ -26,6 +26,10 @@ export class CreateServiceCatalogCategoryDto {
   @IsOptional()
   image?: string;
 
+  @IsString()
+  @IsOptional()
+  cardBackgroundImage?: string;
+
   @IsBoolean()
   @IsOptional()
   showPricesInPublic?: boolean;
