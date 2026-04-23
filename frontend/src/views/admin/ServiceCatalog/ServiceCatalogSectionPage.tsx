@@ -25,6 +25,8 @@ interface NewServiceCategoryForm {
   image: string;
   /** Фон карточки на странице «Ремонт квартир» (корневые категории в сетке). */
   cardBackgroundImage: string;
+  /** Без белой/тёмной заливки плитки на публичке */
+  cardBackgroundTransparent: boolean;
   showPricesInPublic: boolean;
   /** Наценка на группу, % к базовой цене видов работ (может быть отрицательной). */
   priceMarkupPercent: number;
@@ -49,6 +51,7 @@ interface ServiceCatalogCategory {
   icon: string | null;
   image: string | null;
   cardBackgroundImage?: string | null;
+  cardBackgroundTransparent?: boolean;
   showPricesInPublic: boolean;
   priceMarkupPercent?: number;
   sortOrder: number;
@@ -135,6 +138,7 @@ const INITIAL_NEW_SERVICE_CATEGORY: NewServiceCategoryForm = {
   icon: '',
   image: '',
   cardBackgroundImage: '',
+  cardBackgroundTransparent: false,
   showPricesInPublic: true,
   priceMarkupPercent: 0,
 };
@@ -217,6 +221,7 @@ export function ServiceCatalogSectionPage() {
     icon: string;
     image: string;
     cardBackgroundImage: string;
+    cardBackgroundTransparent: boolean;
     showPricesInPublic: boolean;
     priceMarkupPercent: number;
     parentId: string | null;
@@ -393,6 +398,7 @@ export function ServiceCatalogSectionPage() {
     if (newCategory.cardBackgroundImage.trim()) {
       body.cardBackgroundImage = newCategory.cardBackgroundImage.trim();
     }
+    body.cardBackgroundTransparent = newCategory.cardBackgroundTransparent;
     body.priceMarkupPercent = Number(newCategory.priceMarkupPercent) || 0;
 
     try {
@@ -439,6 +445,7 @@ export function ServiceCatalogSectionPage() {
         icon: editCategoryData.icon || undefined,
         image: editCategoryData.image?.trim() || null,
         cardBackgroundImage: editCategoryData.cardBackgroundImage?.trim() || null,
+        cardBackgroundTransparent: editCategoryData.cardBackgroundTransparent,
         showPricesInPublic: editCategoryData.showPricesInPublic,
         priceMarkupPercent: Number(editCategoryData.priceMarkupPercent) || 0,
         parentId: editCategoryData.parentId,
@@ -692,6 +699,22 @@ export function ServiceCatalogSectionPage() {
                         <label className={styles.checkbox}>
                           <input
                             type="checkbox"
+                            checked={editCategoryData.cardBackgroundTransparent}
+                            onChange={(e) =>
+                              setEditCategoryData((p) =>
+                                p ? { ...p, cardBackgroundTransparent: e.target.checked } : p
+                              )
+                            }
+                          />
+                          Прозрачный фон карточки на «Ремонт квартир»
+                        </label>
+                        <span className={styles.fieldHint}>
+                          Без белой/тёмной заливки плитки — виден фон страницы. Если задан
+                          фон-картинка, затемнение для текста слабее.
+                        </span>
+                        <label className={styles.checkbox}>
+                          <input
+                            type="checkbox"
                             checked={editCategoryData.showPricesInPublic}
                             onChange={(e) =>
                               setEditCategoryData((p) =>
@@ -797,6 +820,7 @@ export function ServiceCatalogSectionPage() {
                                 icon: cat.icon || '',
                                 image: cat.image || '',
                                 cardBackgroundImage: cat.cardBackgroundImage || '',
+                                cardBackgroundTransparent: Boolean(cat.cardBackgroundTransparent),
                                 showPricesInPublic: cat.showPricesInPublic ?? true,
                                 priceMarkupPercent: Number(cat.priceMarkupPercent ?? 0),
                                 parentId: cat.parentId ?? null,
@@ -1062,6 +1086,23 @@ export function ServiceCatalogSectionPage() {
                   />
                 ) : null}
               </div>
+
+              <label className={styles.checkbox}>
+                <input
+                  type="checkbox"
+                  checked={newCategory.cardBackgroundTransparent}
+                  onChange={(e) =>
+                    setNewCategory((prev) => ({
+                      ...prev,
+                      cardBackgroundTransparent: e.target.checked,
+                    }))
+                  }
+                />
+                Прозрачный фон карточки на «Ремонт квартир»
+              </label>
+              <span className={styles.fieldHint}>
+                Без заливки плитки на сайте; при фоновой картинке — более лёгкий слой под текстом.
+              </span>
 
               <label className={styles.checkbox}>
                 <input

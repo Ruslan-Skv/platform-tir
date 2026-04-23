@@ -29,6 +29,8 @@ interface ServiceCatalogCategory {
   icon?: string | null;
   image?: string | null;
   cardBackgroundImage?: string | null;
+  /** Без заливки карточки — фон страницы; при картинке фона — слабее градиент */
+  cardBackgroundTransparent?: boolean;
   items: ServiceCatalogItem[];
   children?: ServiceCatalogCategory[];
   /** Всего видов работ в этой категории и во всех вложенных */
@@ -107,11 +109,12 @@ export function ServiceCatalogPage() {
             const IconComponent = !cat.image && cat.icon ? serviceCatalogIconMap[cat.icon] : null;
             const positionCount = cat.totalWorkTypes ?? cat.items.length;
             const cardBg = cat.cardBackgroundImage?.trim();
+            const transparentCard = Boolean(cat.cardBackgroundTransparent);
             return (
               <Link
                 key={cat.id}
                 href={getSafeHref(`/catalog/services/${cat.slug}`)}
-                className={`${styles.categoryCard} ${cardBg ? styles.categoryCardHasBg : ''}`}
+                className={`${styles.categoryCard} ${cardBg ? styles.categoryCardHasBg : ''} ${transparentCard ? styles.categoryCardTransparent : ''}`}
                 style={cardBg ? { backgroundImage: `url(${cardBg})` } : undefined}
               >
                 {cardBg ? <span className={styles.categoryCardBgScrim} aria-hidden /> : null}

@@ -32,6 +32,10 @@ export class CreateServiceCatalogCategoryDto {
 
   @IsBoolean()
   @IsOptional()
+  cardBackgroundTransparent?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
   showPricesInPublic?: boolean;
 
   /** Наценка на группу, % к базовой цене вида работ (может быть отрицательной). 0 — брать наценку у родительской категории. */

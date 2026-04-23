@@ -458,6 +458,8 @@ model ServiceCatalogCategory {
   image              String? // URL или base64 — при наличии показывается вместо иконки
   /// Фон карточки категории на странице «Ремонт квартир» (URL или data URL)
   cardBackgroundImage String?
+  /// Публичная плитка категории без заливки (#fff / тёмный фон) — виден фон страницы; при фоновой картинке слой затемнения слабее
+  cardBackgroundTransparent Boolean @default(false)
   /// Наценка на все виды работ в этой категории, % к базовой цене позиции (может быть отрицательной). 0 — наследовать у родителя; ненулевое — своя наценка. Публичка показывает только итог.
   priceMarkupPercent Decimal   @default(0) @db.Decimal(10, 2)
   showPricesInPublic Boolean   @default(true) // Показывать стоимость в публичной части
