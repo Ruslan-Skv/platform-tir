@@ -20,8 +20,6 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [inputsUnlocked, setInputsUnlocked] = useState(false);
-
   // Redirect if already authenticated
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
@@ -74,7 +72,7 @@ export default function AdminLoginPage() {
           <p>Административная панель</p>
         </div>
 
-        <form onSubmit={handleSubmit} className={styles.form} autoComplete="off">
+        <form onSubmit={handleSubmit} className={styles.form} autoComplete="on">
           <h2 className={styles.title}>Вход в систему</h2>
 
           {error && <div className={styles.error}>{error}</div>}
@@ -84,13 +82,13 @@ export default function AdminLoginPage() {
             <input
               type="email"
               id="email"
+              name="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="admin@example.com"
               required
-              autoComplete="off"
-              readOnly={!inputsUnlocked}
-              onFocus={() => setInputsUnlocked(true)}
+              autoComplete="username"
+              title="Если вы уже входили с этого компьютера, браузер может предложить сохранённые email и пароль — откройте подсказки кликом в поле или стрелкой справа."
               className={styles.input}
             />
           </div>
@@ -100,13 +98,12 @@ export default function AdminLoginPage() {
             <input
               type="password"
               id="password"
+              name="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
-              autoComplete="new-password"
-              readOnly={!inputsUnlocked}
-              onFocus={() => setInputsUnlocked(true)}
+              autoComplete="current-password"
               className={styles.input}
             />
           </div>

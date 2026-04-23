@@ -87,6 +87,7 @@ model User {
   serviceOrders              ServiceOrder[]   @relation
   serviceOrdersCreated       ServiceOrder[]   @relation("ServiceOrdersCreatedByManager")
   passwordResetTokens        PasswordResetToken[]
+  refreshSessions            UserRefreshToken[]
   productsCreated            Product[]             @relation("ProductCreatedBy")
   productsUpdated            Product[]             @relation("ProductUpdatedBy")
   categoriesCreated          Category[]            @relation("CategoryCreatedBy")
@@ -108,6 +109,21 @@ model PasswordResetToken {
   @@index([userId])
   @@index([expiresAt])
   @@map("password_reset_tokens")
+}
+
+/// Долгоживущая сессия: в БД хранится только SHA-256 от opaque refresh-токена (как у reset-ссылок).
+model UserRefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("user_refresh_tokens")
 }
 
 model AdminResourcePermission {

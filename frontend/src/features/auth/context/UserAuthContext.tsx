@@ -2,6 +2,15 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
+import {
+  ADMIN_REFRESH_KEY,
+  type TokenLoginPayload,
+  USER_REFRESH_KEY,
+  getJwtExpMs,
+  persistTokenResponse,
+  refreshAccessTokenSilently,
+  revokeRefreshOnServer,
+} from '@/shared/lib/auth-session';
 import { setPublicSiteEditMode } from '@/shared/lib/public-site-edit-mode';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
@@ -97,6 +106,10 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     if (typeof window !== 'undefined') {
+      const rt = localStorage.getItem(USER_REFRESH_KEY) || localStorage.getItem(ADMIN_REFRESH_KEY);
+      void revokeRefreshOnServer(rt);
+      localStorage.removeItem(USER_REFRESH_KEY);
+      localStorage.removeItem(ADMIN_REFRESH_KEY);
       localStorage.removeItem(USER_TOKEN_KEY);
       localStorage.removeItem(USER_DATA_KEY);
       localStorage.removeItem(ADMIN_TOKEN_KEY);
@@ -115,31 +128,103 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     return loadedToken;
   }, []);
 
+  const persistProfileUser = useCallback((userData: User, authToken: string) => {
+    setUser(userData);
+    const isFromAdmin = localStorage.getItem(ADMIN_TOKEN_KEY) === authToken;
+    if (isFromAdmin) {
+      localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(userData));
+      localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
+    } else {
+      localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
+    }
+  }, []);
+
+  const verifyToken = useCallback(
+    async (tokenToVerify: string): Promise<boolean> => {
+      try {
+        const response = await fetch(`${API_URL}/auth/profile`, {
+          headers: {
+            Authorization: `Bearer ${tokenToVerify}`,
+          },
+        });
+        if (response.ok) {
+          const userData = (await response.json()) as User;
+          persistProfileUser(userData, tokenToVerify);
+          return true;
+        }
+        if (response.status === 401) {
+          const refreshed = await refreshAccessTokenSilently();
+          if (!refreshed) return false;
+          const next =
+            localStorage.getItem(USER_TOKEN_KEY) || localStorage.getItem(ADMIN_TOKEN_KEY);
+          if (!next) return false;
+          const retry = await fetch(`${API_URL}/auth/profile`, {
+            headers: { Authorization: `Bearer ${next}` },
+          });
+          if (!retry.ok) return false;
+          const userData = (await retry.json()) as User;
+          persistProfileUser(userData, next);
+          return true;
+        }
+        return false;
+      } catch {
+        return false;
+      }
+    },
+    [persistProfileUser]
+  );
+
   // Load auth state on mount: user_token first, fallback to admin_token (админ в публичке)
   useEffect(() => {
-    const loadedToken = applyAuthFromStorage();
+    void (async () => {
+      applyAuthFromStorage();
+      let access = localStorage.getItem(USER_TOKEN_KEY) || localStorage.getItem(ADMIN_TOKEN_KEY);
+      const userJson = localStorage.getItem(USER_DATA_KEY) || localStorage.getItem(ADMIN_USER_KEY);
 
-    if (loadedToken) {
-      const isAdminSource = localStorage.getItem(ADMIN_TOKEN_KEY) === loadedToken;
-      verifyToken(loadedToken).then((isValid) => {
-        if (!isValid) {
-          const { token: current } = loadAuthFromStorage();
-          if (current === loadedToken) {
-            setToken(null);
-            setUser(null);
-            if (isAdminSource) {
-              localStorage.removeItem(ADMIN_TOKEN_KEY);
-              localStorage.removeItem(ADMIN_USER_KEY);
-            } else {
+      if (access && userJson) {
+        try {
+          const exp = getJwtExpMs(access);
+          if (exp && exp <= Date.now() + 5_000) {
+            await refreshAccessTokenSilently();
+            applyAuthFromStorage();
+            access =
+              localStorage.getItem(USER_TOKEN_KEY) ||
+              localStorage.getItem(ADMIN_TOKEN_KEY) ||
+              access;
+          }
+          setToken(access);
+          setUser(JSON.parse(userJson) as User);
+
+          const isValid = await verifyToken(access);
+          if (!isValid) {
+            const current =
+              localStorage.getItem(USER_TOKEN_KEY) || localStorage.getItem(ADMIN_TOKEN_KEY);
+            if (current === access) {
+              setToken(null);
+              setUser(null);
               localStorage.removeItem(USER_TOKEN_KEY);
               localStorage.removeItem(USER_DATA_KEY);
+              localStorage.removeItem(ADMIN_TOKEN_KEY);
+              localStorage.removeItem(ADMIN_USER_KEY);
+              localStorage.removeItem(USER_REFRESH_KEY);
+              localStorage.removeItem(ADMIN_REFRESH_KEY);
+            }
+          } else {
+            const latest =
+              localStorage.getItem(USER_TOKEN_KEY) || localStorage.getItem(ADMIN_TOKEN_KEY);
+            if (latest && latest !== access) {
+              setToken(latest);
+              applyAuthFromStorage();
             }
           }
+        } catch {
+          setToken(null);
+          setUser(null);
         }
-      });
-    }
-    setIsLoading(false);
-  }, [applyAuthFromStorage]);
+      }
+      setIsLoading(false);
+    })();
+  }, [applyAuthFromStorage, verifyToken]);
 
   // Синхронизация при смене токена (вход/выход в админке или другой вкладке)
   useEffect(() => {
@@ -152,7 +237,9 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         e.key === USER_TOKEN_KEY ||
         e.key === USER_DATA_KEY ||
         e.key === ADMIN_TOKEN_KEY ||
-        e.key === ADMIN_USER_KEY
+        e.key === ADMIN_USER_KEY ||
+        e.key === USER_REFRESH_KEY ||
+        e.key === ADMIN_REFRESH_KEY
       ) {
         handleAuthChange();
       }
@@ -161,30 +248,6 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener('auth-token-changed', handleAuthChange);
     };
   }, [applyAuthFromStorage]);
-
-  const verifyToken = useCallback(async (tokenToVerify: string): Promise<boolean> => {
-    try {
-      const response = await fetch(`${API_URL}/auth/profile`, {
-        headers: {
-          Authorization: `Bearer ${tokenToVerify}`,
-        },
-      });
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-        const isFromAdmin = localStorage.getItem(ADMIN_TOKEN_KEY) === tokenToVerify;
-        if (isFromAdmin) {
-          localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(userData));
-        } else {
-          localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
-        }
-        return true;
-      }
-      return false;
-    } catch {
-      return false;
-    }
-  }, []);
 
   const refreshUser = useCallback(async () => {
     const savedToken =
@@ -229,37 +292,14 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
 
       const data = await response.json();
 
-      const adminRoles = [
-        'SUPER_ADMIN',
-        'ADMIN',
-        'CONTENT_MANAGER',
-        'MODERATOR',
-        'SUPPORT',
-        'PARTNER',
-        'BRIGADIER',
-        'LEAD_SPECIALIST_FURNITURE',
-        'LEAD_SPECIALIST_WINDOWS_DOORS',
-        'SURVEYOR',
-        'DRIVER',
-        'INSTALLER',
-      ];
-      const isAdmin = adminRoles.includes(data.user?.role);
+      if (!data.access_token || !data.refresh_token || !data.user) {
+        return { success: false, error: 'Некорректный ответ сервера' };
+      }
 
-      // Save to state and localStorage
-      setToken(data.access_token);
-      setUser(data.user);
-      localStorage.setItem(USER_TOKEN_KEY, data.access_token);
-      localStorage.setItem(USER_DATA_KEY, JSON.stringify(data.user));
-      if (isAdmin) {
-        localStorage.setItem(ADMIN_TOKEN_KEY, data.access_token);
-        localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(data.user));
-      } else {
-        localStorage.removeItem(ADMIN_TOKEN_KEY);
-        localStorage.removeItem(ADMIN_USER_KEY);
-      }
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('auth-token-changed'));
-      }
+      const payload = data as TokenLoginPayload;
+      persistTokenResponse(payload);
+      setToken(payload.access_token);
+      setUser(payload.user as User);
 
       return { success: true };
     } catch (error) {
@@ -292,37 +332,14 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
 
         const data = await response.json();
 
-        const adminRoles = [
-          'SUPER_ADMIN',
-          'ADMIN',
-          'CONTENT_MANAGER',
-          'MODERATOR',
-          'SUPPORT',
-          'PARTNER',
-          'BRIGADIER',
-          'LEAD_SPECIALIST_FURNITURE',
-          'LEAD_SPECIALIST_WINDOWS_DOORS',
-          'SURVEYOR',
-          'DRIVER',
-          'INSTALLER',
-        ];
-        const isAdmin = adminRoles.includes(data.user?.role);
+        if (!data.access_token || !data.refresh_token || !data.user) {
+          return { success: false, error: 'Некорректный ответ сервера' };
+        }
 
-        // Save to state and localStorage
-        setToken(data.access_token);
-        setUser(data.user);
-        localStorage.setItem(USER_TOKEN_KEY, data.access_token);
-        localStorage.setItem(USER_DATA_KEY, JSON.stringify(data.user));
-        if (isAdmin) {
-          localStorage.setItem(ADMIN_TOKEN_KEY, data.access_token);
-          localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(data.user));
-        } else {
-          localStorage.removeItem(ADMIN_TOKEN_KEY);
-          localStorage.removeItem(ADMIN_USER_KEY);
-        }
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new Event('auth-token-changed'));
-        }
+        const payload = data as TokenLoginPayload;
+        persistTokenResponse(payload);
+        setToken(payload.access_token);
+        setUser(payload.user as User);
 
         return { success: true };
       } catch (error) {
@@ -454,6 +471,24 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       return { Authorization: `Bearer ${token}` };
     }
     return {} as Record<string, string>;
+  }, [token]);
+
+  useEffect(() => {
+    const tick = () => {
+      const t =
+        typeof window !== 'undefined'
+          ? localStorage.getItem(USER_TOKEN_KEY) || localStorage.getItem(ADMIN_TOKEN_KEY)
+          : null;
+      if (!t) return;
+      const exp = getJwtExpMs(t);
+      if (!exp) return;
+      if (exp - Date.now() < 120_000) {
+        void refreshAccessTokenSilently();
+      }
+    };
+    const id = window.setInterval(tick, 60_000);
+    tick();
+    return () => window.clearInterval(id);
   }, [token]);
 
   const value: UserAuthContextType = {

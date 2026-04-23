@@ -93,7 +93,7 @@ describe('UsersService', () => {
         lastName: 'User',
       });
 
-      expect(bcrypt.hash).toHaveBeenCalledWith('plain-password', 10);
+      expect(bcrypt.hash).toHaveBeenCalledWith('plain-password', 12);
       expect(mockPrisma.user.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({

@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { seedRemontKvartirCatalog } from './seed-remont-kvartir-catalog';
 import { seedProductCardBadges } from './seed-product-card-badges';
-import * as bcrypt from 'bcrypt';
+import { hashPassword } from '../src/auth/password-crypto';
 import { config } from 'dotenv';
 import * as path from 'path';
 
@@ -39,7 +39,7 @@ const TEST_USERS = [
 async function main() {
   console.log('🌱 Seeding database...');
 
-  const hashedPassword = await bcrypt.hash(TEST_PASSWORD, 10);
+  const hashedPassword = await hashPassword(TEST_PASSWORD);
 
   for (const u of TEST_USERS) {
     const user = await prisma.user.upsert({

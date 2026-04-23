@@ -69,7 +69,9 @@ services:
       CORS_ORIGIN: http://localhost:3000
       API_BASE_URL: ${API_BASE_URL:-http://localhost:3001}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-30d}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-}
       SITE_URL: ${SITE_URL:-http://localhost:3000}
       # Письма уходят в MailHog (просмотр: http://localhost:8025)
       MAIL_FROM: ${MAIL_FROM:-noreply@localhost}

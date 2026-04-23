@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../database/prisma.service';
+import { hashPassword, verifyPassword } from '../auth/password-crypto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -11,7 +11,7 @@ export class UsersService {
   async create(createUserDto: CreateUserDto) {
     const data = { ...createUserDto };
     if (data.password) {
-      data.password = await bcrypt.hash(data.password, 10);
+      data.password = await hashPassword(data.password);
     }
     return this.prisma.user.create({
       data,
@@ -83,10 +83,7 @@ export class UsersService {
     if (existing) {
       return existing; // Используем существующего пользователя (гость или зарегистрированный)
     }
-    const randomPassword = await bcrypt.hash(
-      `guest_${Date.now()}_${Math.random().toString(36)}`,
-      10,
-    );
+    const randomPassword = await hashPassword(`guest_${Date.now()}_${Math.random().toString(36)}`);
     return this.prisma.user.create({
       data: {
         email: normalizedEmail,
@@ -113,7 +110,7 @@ export class UsersService {
     if (!user || !user.isGuest) {
       return null;
     }
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await hashPassword(password);
     return this.prisma.user.update({
       where: { id: user.id },
       data: {
@@ -140,9 +137,9 @@ export class UsersService {
     await this.findOne(id);
     const data = { ...updateUserDto };
     if (data.password) {
-      data.password = await bcrypt.hash(data.password, 10);
+      data.password = await hashPassword(data.password);
     }
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id },
       data,
       select: {
@@ -157,6 +154,10 @@ export class UsersService {
         updatedAt: true,
       },
     });
+    if (data.password) {
+      await this.prisma.userRefreshToken.deleteMany({ where: { userId: id } });
+    }
+    return updated;
   }
 
   async remove(id: string) {
@@ -250,19 +251,19 @@ export class UsersService {
     }
 
     // Verify current password
-    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    const isPasswordValid = await verifyPassword(currentPassword, user.password);
     if (!isPasswordValid) {
       throw new BadRequestException('Текущий пароль неверен');
     }
 
-    // Hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await hashPassword(newPassword);
 
-    // Update password
     await this.prisma.user.update({
       where: { id },
       data: { password: hashedPassword },
     });
+
+    await this.prisma.userRefreshToken.deleteMany({ where: { userId: id } });
 
     return { message: 'Пароль успешно изменён' };
   }

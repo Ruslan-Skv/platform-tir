@@ -2,6 +2,15 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
+import {
+  ADMIN_REFRESH_KEY,
+  type TokenLoginPayload,
+  USER_REFRESH_KEY,
+  getJwtExpMs,
+  persistTokenResponse,
+  refreshAccessTokenSilently,
+  revokeRefreshOnServer,
+} from '@/shared/lib/auth-session';
 import { setPublicSiteEditMode } from '@/shared/lib/public-site-edit-mode';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
@@ -70,6 +79,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     if (typeof window !== 'undefined') {
+      const rt = localStorage.getItem(USER_REFRESH_KEY) || localStorage.getItem(ADMIN_REFRESH_KEY);
+      void revokeRefreshOnServer(rt);
+      localStorage.removeItem(USER_REFRESH_KEY);
+      localStorage.removeItem(ADMIN_REFRESH_KEY);
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
       localStorage.removeItem(USER_TOKEN_KEY);
@@ -107,19 +120,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (savedToken && savedUser) {
-      try {
-        const parsedUser = JSON.parse(savedUser);
-        setToken(savedToken);
-        setUser(parsedUser);
+      void (async () => {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          let access = savedToken;
+          const exp = getJwtExpMs(access);
+          if (exp && exp <= Date.now() + 5_000) {
+            await refreshAccessTokenSilently();
+            access =
+              localStorage.getItem(TOKEN_KEY) || localStorage.getItem(USER_TOKEN_KEY) || access;
+          }
+          setToken(access);
+          const userAfterRefresh =
+            localStorage.getItem(USER_KEY) || localStorage.getItem(USER_DATA_KEY);
+          setUser(userAfterRefresh ? JSON.parse(userAfterRefresh) : parsedUser);
 
-        verifyToken(savedToken).then((isValid) => {
+          const isValid = await verifyToken(access);
           if (!isValid) {
             logout();
+          } else {
+            const latest = localStorage.getItem(TOKEN_KEY) || localStorage.getItem(USER_TOKEN_KEY);
+            if (latest && latest !== access) {
+              setToken(latest);
+            }
           }
-        });
-      } catch {
-        logout();
-      }
+        } catch {
+          logout();
+        } finally {
+          setIsLoading(false);
+        }
+      })();
+      return;
     }
     setIsLoading(false);
   }, [logout]);
@@ -131,7 +162,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           Authorization: `Bearer ${tokenToVerify}`,
         },
       });
-      return response.ok;
+      if (response.ok) return true;
+      if (response.status === 401) {
+        const refreshed = await refreshAccessTokenSilently();
+        if (!refreshed) return false;
+        const next = localStorage.getItem(TOKEN_KEY) || localStorage.getItem(USER_TOKEN_KEY);
+        if (!next) return false;
+        const retry = await fetch(`${API_URL}/auth/profile`, {
+          headers: { Authorization: `Bearer ${next}` },
+        });
+        return retry.ok;
+      }
+      return false;
     } catch {
       return false;
     }
@@ -183,16 +225,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      // Save to state and localStorage — один вход даёт доступ и в ЛК, и в админку
-      setToken(data.access_token);
-      setUser(data.user);
-      localStorage.setItem(TOKEN_KEY, data.access_token);
-      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-      localStorage.setItem('user_token', data.access_token);
-      localStorage.setItem('user_data', JSON.stringify(data.user));
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('auth-token-changed'));
-      }
+      const payload = data as TokenLoginPayload;
+      persistTokenResponse(payload);
+      setToken(payload.access_token);
+      setUser(payload.user);
 
       return { success: true };
     } catch (error) {
@@ -258,7 +294,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         e.key === USER_KEY ||
         e.key === USER_DATA_KEY ||
         e.key === TOKEN_KEY ||
-        e.key === USER_TOKEN_KEY
+        e.key === USER_TOKEN_KEY ||
+        e.key === USER_REFRESH_KEY ||
+        e.key === ADMIN_REFRESH_KEY
       ) {
         handleUserUpdate();
       }
@@ -270,6 +308,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener('storage', handleStorage);
     };
   }, []);
+
+  // Продление access по refresh до истечения JWT (access короткоживущий).
+  useEffect(() => {
+    const tick = () => {
+      const t =
+        typeof window !== 'undefined'
+          ? localStorage.getItem(TOKEN_KEY) || localStorage.getItem(USER_TOKEN_KEY)
+          : null;
+      if (!t) return;
+      const exp = getJwtExpMs(t);
+      if (!exp) return;
+      if (exp - Date.now() < 120_000) {
+        void refreshAccessTokenSilently();
+      }
+    };
+    const id = window.setInterval(tick, 60_000);
+    tick();
+    return () => window.clearInterval(id);
+  }, [token]);
 
   const value: AuthContextType = {
     user,

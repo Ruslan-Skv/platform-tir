@@ -27,6 +27,12 @@ describe('AuthService', () => {
   const mockPrisma = {
     passwordResetToken: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
     user: { update: jest.fn() },
+    userRefreshToken: {
+      create: jest.fn().mockResolvedValue({}),
+      delete: jest.fn().mockResolvedValue({}),
+      deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      findUnique: jest.fn(),
+    },
     $transaction: jest.fn((fns) => Promise.all(fns.map((fn: () => unknown) => fn()))),
   };
 
@@ -105,6 +111,8 @@ describe('AuthService', () => {
         lastName: 'Doe',
       });
       expect(result.access_token).toBe('jwt-token');
+      expect(typeof result.refresh_token).toBe('string');
+      expect(result.refresh_token.length).toBeGreaterThan(32);
       expect(result.user).toEqual(
         expect.objectContaining({
           id: 'u1',
@@ -116,7 +124,9 @@ describe('AuthService', () => {
       );
       expect(mockJwtService.sign).toHaveBeenCalledWith(
         expect.objectContaining({ email: 'user@test.com', sub: 'u1' }),
+        expect.objectContaining({ expiresIn: expect.any(String) }),
       );
+      expect(mockPrisma.userRefreshToken.create).toHaveBeenCalled();
     });
   });
 
@@ -156,7 +166,7 @@ describe('AuthService', () => {
       expect(usersService.create).toHaveBeenCalledWith(
         expect.objectContaining({
           email: 'new@test.com',
-          password: 'hashed',
+          password: 'password123',
           firstName: 'New',
           lastName: 'User',
         }),

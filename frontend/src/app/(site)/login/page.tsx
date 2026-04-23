@@ -18,8 +18,6 @@ export default function LoginPage() {
   const [lastName, setLastName] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [inputsUnlocked, setInputsUnlocked] = useState(false);
-
   const { login, register } = useUserAuth();
   const router = useRouter();
   const [yandexLoading, setYandexLoading] = useState(false);
@@ -27,7 +25,9 @@ export default function LoginPage() {
   const handleYandexLogin = async () => {
     setYandexLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/auth/yandex`);
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/auth/yandex`
+      );
       if (res.ok) {
         const { url } = await res.json();
         if (url) window.location.href = url;
@@ -108,7 +108,7 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className={styles.form} autoComplete="off">
+        <form onSubmit={handleSubmit} className={styles.form} autoComplete="on">
           {!isLogin && (
             <>
               <div className={styles.field}>
@@ -147,15 +147,19 @@ export default function LoginPage() {
             </label>
             <input
               id="email"
+              name="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={styles.input}
               placeholder="Введите email"
               required
-              autoComplete="off"
-              readOnly={!inputsUnlocked}
-              onFocus={() => setInputsUnlocked(true)}
+              autoComplete={isLogin ? 'username' : 'email'}
+              title={
+                isLogin
+                  ? 'Если вы уже входили с этого компьютера, браузер может предложить сохранённые email и пароль — откройте подсказки кликом в поле или стрелкой справа.'
+                  : undefined
+              }
             />
           </div>
 
@@ -165,6 +169,7 @@ export default function LoginPage() {
             </label>
             <input
               id="password"
+              name="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -173,9 +178,7 @@ export default function LoginPage() {
               required
               minLength={6}
               aria-describedby={!isLogin ? 'password-hint' : undefined}
-              autoComplete={isLogin ? 'off' : 'new-password'}
-              readOnly={!inputsUnlocked}
-              onFocus={() => setInputsUnlocked(true)}
+              autoComplete={isLogin ? 'current-password' : 'new-password'}
             />
             {!isLogin && (
               <div id="password-hint" className={styles.passwordHintBlock}>
@@ -208,6 +211,7 @@ export default function LoginPage() {
               </label>
               <input
                 id="confirmPassword"
+                name="confirmPassword"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -215,6 +219,7 @@ export default function LoginPage() {
                 placeholder="Повторите пароль"
                 required
                 minLength={6}
+                autoComplete="new-password"
               />
             </div>
           )}
@@ -259,7 +264,6 @@ export default function LoginPage() {
               setError('');
               setPassword('');
               setConfirmPassword('');
-              setInputsUnlocked(false);
             }}
             className={styles.switchButton}
           >

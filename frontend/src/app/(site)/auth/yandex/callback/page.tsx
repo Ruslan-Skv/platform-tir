@@ -5,29 +5,11 @@ import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+import { type TokenLoginPayload, persistTokenResponse } from '@/shared/lib/auth-session';
+
 import styles from '../../../login/page.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-
-const USER_TOKEN_KEY = 'user_token';
-const USER_DATA_KEY = 'user_data';
-const ADMIN_TOKEN_KEY = 'admin_token';
-const ADMIN_USER_KEY = 'admin_user';
-
-const ADMIN_ROLES = [
-  'SUPER_ADMIN',
-  'ADMIN',
-  'CONTENT_MANAGER',
-  'MODERATOR',
-  'SUPPORT',
-  'PARTNER',
-  'BRIGADIER',
-  'LEAD_SPECIALIST_FURNITURE',
-  'LEAD_SPECIALIST_WINDOWS_DOORS',
-  'SURVEYOR',
-  'DRIVER',
-  'INSTALLER',
-];
 
 function YandexCallbackContent() {
   const searchParams = useSearchParams();
@@ -70,18 +52,13 @@ function YandexCallbackContent() {
         return;
       }
 
-      const isAdmin = data.user && ADMIN_ROLES.includes(data.user.role);
-
-      localStorage.setItem(USER_TOKEN_KEY, data.access_token);
-      localStorage.setItem(USER_DATA_KEY, JSON.stringify(data.user));
-      if (isAdmin) {
-        localStorage.setItem(ADMIN_TOKEN_KEY, data.access_token);
-        localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(data.user));
-      } else {
-        localStorage.removeItem(ADMIN_TOKEN_KEY);
-        localStorage.removeItem(ADMIN_USER_KEY);
+      if (!data.access_token || !data.refresh_token || !data.user) {
+        setStatus('error');
+        setErrorMessage('Некорректный ответ сервера');
+        return;
       }
-      window.dispatchEvent(new Event('auth-token-changed'));
+
+      persistTokenResponse(data as TokenLoginPayload);
 
       setStatus('success');
       router.replace('/profile');

@@ -13,7 +13,7 @@ require('dotenv').config({ path: require('path').resolve(process.cwd(), '../.env
 require('dotenv').config({ path: require('path').resolve(process.cwd(), '.env') });
 
 import { PrismaClient } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import { hashPassword } from '../src/auth/password-crypto';
 
 const prisma = new PrismaClient();
 
@@ -24,7 +24,7 @@ async function main() {
   const email = process.env.SUPER_ADMIN_EMAIL || DEFAULT_EMAIL;
   const password = process.env.SUPER_ADMIN_PASSWORD || DEFAULT_PASSWORD;
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await hashPassword(password);
 
   const user = await prisma.user.upsert({
     where: { email },

@@ -9,6 +9,8 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { LogoutDto } from './dto/logout.dto';
 import { YandexCallbackDto } from './dto/yandex-callback.dto';
 import { YandexAuthService } from './yandex-auth.service';
 import type { RequestWithUser } from '../common/types/request-with-user.types';
@@ -49,6 +51,23 @@ export class AuthController {
   @ApiOperation({ summary: 'Получить профиль текущего пользователя' })
   getProfile(@Request() req: RequestWithUser) {
     return req.user;
+  }
+
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @UseGuards(OriginGuard)
+  @Post('refresh')
+  @ApiOperation({ summary: 'Обновить access-токен по refresh (ротация refresh)' })
+  async refresh(@Body() dto: RefreshTokenDto) {
+    return this.authService.refreshTokens(dto.refresh_token);
+  }
+
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @UseGuards(OriginGuard)
+  @Post('logout')
+  @ApiOperation({ summary: 'Выход: отозвать refresh-токен текущей сессии' })
+  async logout(@Body() dto: LogoutDto) {
+    await this.authService.revokeRefreshToken(dto.refresh_token);
+    return { ok: true };
   }
 
   @Throttle({ default: { limit: 3, ttl: 60_000 } })

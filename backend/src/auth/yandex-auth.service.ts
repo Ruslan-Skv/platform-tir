@@ -1,8 +1,8 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { AuthService } from './auth.service';
+import { hashPassword } from './password-crypto';
 import { UsersService } from '../users/users.service';
 import { PrismaService } from '../database/prisma.service';
 
@@ -121,7 +121,7 @@ export class YandexAuthService {
     if (existing) {
       if (existing.isGuest) {
         const randomPassword = `yandex_${Date.now()}_${crypto.randomBytes(16).toString('hex')}`;
-        const hashedPassword = await bcrypt.hash(randomPassword, 10);
+        const hashedPassword = await hashPassword(randomPassword);
         const updated = await this.prisma.user.update({
           where: { id: existing.id },
           data: {
