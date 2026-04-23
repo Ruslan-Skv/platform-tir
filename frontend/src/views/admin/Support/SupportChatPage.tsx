@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import styles from './SupportChatPage.module.css';
 
@@ -57,7 +58,7 @@ export function SupportChatPage() {
     try {
       const params = new URLSearchParams({ asSupport: 'true' });
       if (statusFilter) params.set('status', statusFilter);
-      const res = await fetch(`${API_URL}/support/conversations?${params}`, {
+      const res = await apiFetch(`${API_URL}/support/conversations?${params}`, {
         headers: getAuthHeaders(),
       });
       if (res.ok) {
@@ -79,7 +80,7 @@ export function SupportChatPage() {
     async (conversationId: string) => {
       setLoadingMessages(true);
       try {
-        const res = await fetch(`${API_URL}/support/conversations/${conversationId}/messages`, {
+        const res = await apiFetch(`${API_URL}/support/conversations/${conversationId}/messages`, {
           headers: getAuthHeaders(),
         });
         if (res.ok) {
@@ -113,7 +114,7 @@ export function SupportChatPage() {
     setSending(true);
     setInput('');
     try {
-      const res = await fetch(`${API_URL}/support/conversations/${selected.id}/messages`, {
+      const res = await apiFetch(`${API_URL}/support/conversations/${selected.id}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ content: text }),

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { getAvatarUrl } from '@/shared/lib/avatar';
 
 import styles from './profile.module.css';
@@ -63,7 +64,7 @@ export default function AdminProfilePage() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`${API_URL}/users/me/avatar`, {
+      const response = await apiFetch(`${API_URL}/users/me/avatar`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: formData,
@@ -91,7 +92,7 @@ export default function AdminProfilePage() {
     setProfileError('');
     setSavingProfile(true);
     try {
-      const response = await fetch(`${API_URL}/users/me`, {
+      const response = await apiFetch(`${API_URL}/users/me`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -125,7 +126,7 @@ export default function AdminProfilePage() {
     setSavingProfile(true);
 
     try {
-      const response = await fetch(`${API_URL}/users/me`, {
+      const response = await apiFetch(`${API_URL}/users/me`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -169,7 +170,7 @@ export default function AdminProfilePage() {
     setSavingPassword(true);
 
     try {
-      const response = await fetch(`${API_URL}/users/${user?.id}/password`, {
+      const response = await apiFetch(`${API_URL}/users/${user?.id}/password`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

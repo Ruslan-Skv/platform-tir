@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAuthHeaders(): HeadersInit {
@@ -56,7 +58,7 @@ export async function uploadPromotionImage(file: File): Promise<{ imageUrl: stri
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  const res = await fetch(`${API_URL}/admin/promotions/upload`, {
+  const res = await apiFetch(`${API_URL}/admin/promotions/upload`, {
     method: 'POST',
     headers,
     body: formData,
@@ -69,7 +71,7 @@ export async function uploadPromotionImage(file: File): Promise<{ imageUrl: stri
 }
 
 export async function getAdminPromotion(id: string): Promise<AdminPromotion> {
-  const res = await fetch(`${API_URL}/admin/promotions/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/promotions/${id}`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить акцию');
@@ -83,7 +85,7 @@ export async function getAdminPromotions(params?: {
   const searchParams = new URLSearchParams();
   if (params?.page) searchParams.set('page', String(params.page));
   if (params?.limit) searchParams.set('limit', String(params.limit));
-  const res = await fetch(`${API_URL}/admin/promotions?${searchParams}`, {
+  const res = await apiFetch(`${API_URL}/admin/promotions?${searchParams}`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить акции');
@@ -91,7 +93,7 @@ export async function getAdminPromotions(params?: {
 }
 
 export async function createPromotion(dto: CreatePromotionDto) {
-  const res = await fetch(`${API_URL}/admin/promotions`, {
+  const res = await apiFetch(`${API_URL}/admin/promotions`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(dto),
@@ -104,7 +106,7 @@ export async function createPromotion(dto: CreatePromotionDto) {
 }
 
 export async function updatePromotion(id: string, dto: UpdatePromotionDto) {
-  const res = await fetch(`${API_URL}/admin/promotions/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/promotions/${id}`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
     body: JSON.stringify(dto),
@@ -117,7 +119,7 @@ export async function updatePromotion(id: string, dto: UpdatePromotionDto) {
 }
 
 export async function deletePromotion(id: string) {
-  const res = await fetch(`${API_URL}/admin/promotions/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/promotions/${id}`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });

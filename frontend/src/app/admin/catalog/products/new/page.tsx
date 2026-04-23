@@ -1,3 +1,4 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { ProductCreatePage } from '@/views/admin/Catalog/Products/ProductCreatePage';
 import {
   type CategoryAttributeForCopy,
@@ -26,7 +27,7 @@ export default async function NewProductPage({
 
   if (copyFromId) {
     try {
-      const productRes = await fetch(`${API_URL}/products/${copyFromId}`, {
+      const productRes = await apiFetch(`${API_URL}/products/${copyFromId}`, {
         cache: 'no-store',
       });
       if (!productRes.ok) {
@@ -36,7 +37,7 @@ export default async function NewProductPage({
         const catId = product.categoryId || product.category?.id;
         let categoryAttributes: CategoryAttributeForCopy[] = [];
         if (catId) {
-          const attrsRes = await fetch(`${API_URL}/categories/${catId}/attributes`, {
+          const attrsRes = await apiFetch(`${API_URL}/categories/${catId}/attributes`, {
             cache: 'no-store',
           });
           if (attrsRes.ok) {
@@ -49,7 +50,7 @@ export default async function NewProductPage({
         }
         let rawComponents: unknown = [];
         try {
-          const compRes = await fetch(`${API_URL}/product-components/product/${copyFromId}`, {
+          const compRes = await apiFetch(`${API_URL}/product-components/product/${copyFromId}`, {
             cache: 'no-store',
           });
           if (compRes.ok) {

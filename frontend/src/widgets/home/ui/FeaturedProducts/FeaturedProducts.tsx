@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import type { Product } from '@/entities/product/types';
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { ProductCard } from '@/views/catalog/ui/ProductsGrid';
 
 import styles from './FeaturedProducts.module.css';
@@ -136,7 +137,7 @@ export const FeaturedProducts: React.FC = () => {
   useEffect(() => {
     const fetchBlock = async () => {
       try {
-        const res = await fetch(`${API_URL}/home/featured-products`);
+        const res = await apiFetch(`${API_URL}/home/featured-products`);
         if (res.ok) {
           const data = await res.json();
           setBlock({
@@ -156,7 +157,7 @@ export const FeaturedProducts: React.FC = () => {
   useEffect(() => {
     const fetchPartnerSettings = async () => {
       try {
-        const res = await fetch(`${API_URL}/home/partner-products`);
+        const res = await apiFetch(`${API_URL}/home/partner-products`);
         if (res.ok) {
           const data = await res.json();
           setPartnerSettings({
@@ -180,7 +181,7 @@ export const FeaturedProducts: React.FC = () => {
           primaryFilter: block.primaryFilter,
           secondaryOrder: block.secondaryOrder,
         });
-        const response = await fetch(`${API_URL}/products/featured?${params}`);
+        const response = await apiFetch(`${API_URL}/products/featured?${params}`);
         if (!response.ok) return;
         const data: { products: ApiProduct[] } = await response.json();
         const mapped = (data.products || []).map((p, i) => mapApiProductToProduct(p, i));

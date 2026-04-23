@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export interface CartItem {
@@ -66,7 +68,7 @@ function getAuthHeaders(): HeadersInit {
 }
 
 export async function getCart(): Promise<CartItem[]> {
-  const response = await fetch(`${API_URL}/cart`, {
+  const response = await apiFetch(`${API_URL}/cart`, {
     method: 'GET',
     headers: getAuthHeaders(),
   });
@@ -82,7 +84,7 @@ export async function getCart(): Promise<CartItem[]> {
 }
 
 export async function getCartCount(): Promise<number> {
-  const response = await fetch(`${API_URL}/cart/count`, {
+  const response = await apiFetch(`${API_URL}/cart/count`, {
     method: 'GET',
     headers: getAuthHeaders(),
   });
@@ -106,7 +108,7 @@ export async function addToCart(
   openingSide?: string,
   cardVariantId?: string
 ): Promise<CartItem> {
-  const response = await fetch(`${API_URL}/cart/${productId}`, {
+  const response = await apiFetch(`${API_URL}/cart/${productId}`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({ quantity, size, openingSide, cardVariantId }),
@@ -129,7 +131,7 @@ export async function updateCartItemQuantityById(
   itemId: string,
   quantity: number
 ): Promise<CartItem> {
-  const response = await fetch(`${API_URL}/cart/item/${itemId}`, {
+  const response = await apiFetch(`${API_URL}/cart/item/${itemId}`, {
     method: 'PUT',
     headers: getAuthHeaders(),
     body: JSON.stringify({ quantity: Number(quantity) }),
@@ -152,7 +154,7 @@ export async function updateCartItemQuantity(
   productId: string,
   quantity: number
 ): Promise<CartItem> {
-  const response = await fetch(`${API_URL}/cart/${productId}`, {
+  const response = await apiFetch(`${API_URL}/cart/${productId}`, {
     method: 'PUT',
     headers: getAuthHeaders(),
     body: JSON.stringify({ quantity: Number(quantity) }),
@@ -172,7 +174,7 @@ export async function updateCartItemQuantity(
 }
 
 export async function removeCartItemById(itemId: string): Promise<void> {
-  const response = await fetch(`${API_URL}/cart/item/${itemId}`, {
+  const response = await apiFetch(`${API_URL}/cart/item/${itemId}`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });
@@ -189,7 +191,7 @@ export async function removeCartItemById(itemId: string): Promise<void> {
 }
 
 export async function removeFromCart(productId: string): Promise<void> {
-  const response = await fetch(`${API_URL}/cart/${productId}`, {
+  const response = await apiFetch(`${API_URL}/cart/${productId}`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });
@@ -206,7 +208,7 @@ export async function removeFromCart(productId: string): Promise<void> {
 }
 
 export async function clearCart(): Promise<void> {
-  const response = await fetch(`${API_URL}/cart`, {
+  const response = await apiFetch(`${API_URL}/cart`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });
@@ -223,7 +225,7 @@ export async function addComponentToCart(
   componentId: string,
   quantity: number = 1
 ): Promise<CartItem> {
-  const response = await fetch(`${API_URL}/cart/component/${componentId}`, {
+  const response = await apiFetch(`${API_URL}/cart/component/${componentId}`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({ quantity }),
@@ -246,7 +248,7 @@ export async function updateComponentQuantity(
   componentId: string,
   quantity: number
 ): Promise<CartItem> {
-  const response = await fetch(`${API_URL}/cart/component/${componentId}`, {
+  const response = await apiFetch(`${API_URL}/cart/component/${componentId}`, {
     method: 'PUT',
     headers: getAuthHeaders(),
     body: JSON.stringify({ quantity: Number(quantity) }),
@@ -304,7 +306,7 @@ export interface CartServiceItem {
 }
 
 export async function getCartServiceItems(): Promise<CartServiceItem[]> {
-  const response = await fetch(`${API_URL}/cart/service-items`, {
+  const response = await apiFetch(`${API_URL}/cart/service-items`, {
     method: 'GET',
     headers: getAuthHeaders(),
   });
@@ -321,7 +323,7 @@ export async function addServiceToCart(
     | { items: { itemId: string; quantity: number }[] }
     | { rooms: { name: string; items: { itemId: string; quantity: number }[] }[] }
 ): Promise<CartServiceItem> {
-  const response = await fetch(`${API_URL}/cart/service`, {
+  const response = await apiFetch(`${API_URL}/cart/service`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({ categoryId, ...payload }),
@@ -339,7 +341,7 @@ export async function addServiceToCart(
 }
 
 export async function removeCartServiceItemById(itemId: string): Promise<void> {
-  const response = await fetch(`${API_URL}/cart/service/${itemId}`, {
+  const response = await apiFetch(`${API_URL}/cart/service/${itemId}`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });
@@ -352,7 +354,7 @@ export async function removeCartServiceItemById(itemId: string): Promise<void> {
 }
 
 export async function removeComponentFromCart(componentId: string): Promise<void> {
-  const response = await fetch(`${API_URL}/cart/component/${componentId}`, {
+  const response = await apiFetch(`${API_URL}/cart/component/${componentId}`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });

@@ -10,6 +10,7 @@ import { LocalStrategy } from './strategies/local.strategy';
 import { UsersModule } from '../users/users.module';
 import { PasswordResetMailService } from './password-reset-mail.service';
 import { YandexAuthService } from './yandex-auth.service';
+import { RefreshCookieService } from './refresh-cookie.service';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { YandexAuthService } from './yandex-auth.service';
     AuthService,
     PasswordResetMailService,
     YandexAuthService,
+    RefreshCookieService,
     JwtStrategy,
     LocalStrategy,
     OriginGuard,

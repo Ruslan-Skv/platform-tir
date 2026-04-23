@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 import type { CatalogFiltersResponse } from './catalogFilters.types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
@@ -34,7 +36,7 @@ export function useCatalogFilters(
     setData(null);
     setLoading(true);
 
-    fetch(`${API_URL}/products/category/${encodeURIComponent(filtersSlug)}/filters`)
+    apiFetch(`${API_URL}/products/category/${encodeURIComponent(filtersSlug)}/filters`)
       .then((res) => (res.ok ? res.json() : null))
       .then((json: CatalogFiltersResponse | null) => {
         if (!cancelled && json && Array.isArray(json.filters)) {

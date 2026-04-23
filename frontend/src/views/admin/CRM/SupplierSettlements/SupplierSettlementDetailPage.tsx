@@ -9,6 +9,7 @@ import { useParams } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
 import { getSupplierSettlements, saveSupplierSettlements } from '@/shared/api/admin-crm';
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import styles from './SupplierSettlementDetailPage.module.css';
 import { SupplierSettlementHistoryModal } from './SupplierSettlementHistoryModal';
@@ -175,7 +176,7 @@ export function SupplierSettlementDetailPage() {
     if (!supplierId) return;
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/admin/catalog/suppliers/${supplierId}`, {
+      const response = await apiFetch(`${API_URL}/admin/catalog/suppliers/${supplierId}`, {
         headers: getAuthHeaders(),
       });
       if (response.ok) {

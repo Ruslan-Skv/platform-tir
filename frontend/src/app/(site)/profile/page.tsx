@@ -19,6 +19,7 @@ import type {
   UserNotificationSettings,
 } from '@/shared/api/user-notifications';
 import { type UserOrder, getUserOrders } from '@/shared/api/user-orders';
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { getAvatarUrl, getInitials } from '@/shared/lib/avatar';
 import { getSafeHref } from '@/shared/lib/sanitize';
 
@@ -302,7 +303,7 @@ export default function ProfilePage() {
     setIsSavingPassword(true);
     try {
       const token = localStorage.getItem('user_token') || localStorage.getItem('admin_token');
-      const res = await fetch(`${API_URL}/users/${user?.id}/password`, {
+      const res = await apiFetch(`${API_URL}/users/${user?.id}/password`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

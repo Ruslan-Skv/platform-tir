@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import styles from './CategoryAttributesPage.module.css';
 
@@ -286,9 +287,9 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
       }
       try {
         const [categoryRes, attrsRes, allAttrsRes] = await Promise.all([
-          fetch(`${API_URL}/categories/${categoryId}`),
-          fetch(`${API_URL}/categories/${categoryId}/attributes`),
-          fetch(`${API_URL}/categories/attributes/all`),
+          apiFetch(`${API_URL}/categories/${categoryId}`),
+          apiFetch(`${API_URL}/categories/${categoryId}/attributes`),
+          apiFetch(`${API_URL}/categories/attributes/all`),
         ]);
 
         if (categoryRes.ok) {
@@ -331,7 +332,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
       setReordering(true);
       await Promise.all(
         items.map(({ attributeId, order }) =>
-          fetch(`${API_URL}/categories/${categoryId}/attributes/${attributeId}`, {
+          apiFetch(`${API_URL}/categories/${categoryId}/attributes/${attributeId}`, {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json',
@@ -395,7 +396,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
 
     setSaving(true);
     try {
-      const response = await fetch(`${API_URL}/categories/${categoryId}/attributes/bulk`, {
+      const response = await apiFetch(`${API_URL}/categories/${categoryId}/attributes/bulk`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -427,7 +428,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
     if (!confirm('Удалить атрибут из категории?')) return;
 
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_URL}/categories/${categoryId}/attributes/${attributeId}`,
         {
           method: 'DELETE',
@@ -448,7 +449,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
 
   const handleToggleRequired = async (attributeId: string, currentValue: boolean) => {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_URL}/categories/${categoryId}/attributes/${attributeId}`,
         {
           method: 'PATCH',
@@ -494,7 +495,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
         ? newAttribute.optionRows.map((v) => v.trim()).filter(Boolean)
         : undefined;
 
-      const response = await fetch(`${API_URL}/categories/attributes`, {
+      const response = await apiFetch(`${API_URL}/categories/attributes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -524,7 +525,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
         });
 
         // Add to category automatically
-        await fetch(`${API_URL}/categories/${categoryId}/attributes`, {
+        await apiFetch(`${API_URL}/categories/${categoryId}/attributes`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -562,7 +563,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
         defaultValue: defaultValues[attrId] || '',
       }));
 
-      const response = await fetch(`${API_URL}/categories/${categoryId}/attributes/apply`, {
+      const response = await apiFetch(`${API_URL}/categories/${categoryId}/attributes/apply`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -598,7 +599,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
 
     setInheriting(true);
     try {
-      const response = await fetch(`${API_URL}/categories/${categoryId}/attributes/inherit`, {
+      const response = await apiFetch(`${API_URL}/categories/${categoryId}/attributes/inherit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -657,7 +658,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
         ? editForm.optionRows.map((v) => v.trim()).filter(Boolean)
         : [];
 
-      const response = await fetch(`${API_URL}/attributes/${editingAttribute.id}`, {
+      const response = await apiFetch(`${API_URL}/attributes/${editingAttribute.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -700,7 +701,7 @@ export function CategoryAttributesPage({ categoryId }: CategoryAttributesPagePro
     }
 
     try {
-      const response = await fetch(`${API_URL}/attributes/${attributeId}`, {
+      const response = await apiFetch(`${API_URL}/attributes/${attributeId}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });

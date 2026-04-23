@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAuthHeaders(): HeadersInit {
@@ -23,7 +25,7 @@ export interface RolesShowAdminLinkByDevicePayload {
 }
 
 export async function getAdminSitePublicSettings(): Promise<AdminSitePublicSettings> {
-  const res = await fetch(`${API_URL}/admin/site-public/settings`, {
+  const res = await apiFetch(`${API_URL}/admin/site-public/settings`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить настройки');
@@ -34,7 +36,7 @@ export async function updateAdminSitePublicSettings(data: {
   rolesShowAdminLink?: string[] | null;
   rolesShowAdminLinkByDevice?: RolesShowAdminLinkByDevicePayload | null;
 }): Promise<AdminSitePublicSettings> {
-  const res = await fetch(`${API_URL}/admin/site-public/settings`, {
+  const res = await apiFetch(`${API_URL}/admin/site-public/settings`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
     body: JSON.stringify(data),

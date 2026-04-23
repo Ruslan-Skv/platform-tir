@@ -2,8 +2,10 @@
 
 import React, { Suspense, useCallback, useEffect, useState } from 'react';
 
-import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import styles from '../login/page.module.css';
 
@@ -40,7 +42,7 @@ function ResetPasswordContent() {
 
       setIsLoading(true);
       try {
-        const res = await fetch(`${API_URL}/auth/reset-password`, {
+        const res = await apiFetch(`${API_URL}/auth/reset-password`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token, newPassword: password }),

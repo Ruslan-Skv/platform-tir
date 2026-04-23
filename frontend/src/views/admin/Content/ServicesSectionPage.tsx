@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import { SectionVisibilityCheckbox } from './SectionVisibilityCheckbox';
 import styles from './ServicesSectionPage.module.css';
@@ -66,7 +67,7 @@ export function ServicesSectionPage() {
     const load = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/admin/home/services`, {
+        const res = await apiFetch(`${API_URL}/admin/home/services`, {
           headers: getAuthHeaders(),
         });
         if (!cancelled && res.ok) {
@@ -99,7 +100,7 @@ export function ServicesSectionPage() {
     if (!data) return;
     setSaving(true);
     try {
-      const res = await fetch(`${API_URL}/admin/home/services`, {
+      const res = await apiFetch(`${API_URL}/admin/home/services`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify(data.block),
@@ -133,7 +134,7 @@ export function ServicesSectionPage() {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch(`${API_URL}/admin/home/services/items/image`, {
+      const res = await apiFetch(`${API_URL}/admin/home/services/items/image`, {
         method: 'POST',
         headers: getAuthHeaders() as Record<string, string>,
         body: formData,
@@ -170,7 +171,7 @@ export function ServicesSectionPage() {
     const features = parseFeatures(newItem.features);
     if (!newItem.title.trim() || !newItem.description.trim() || !newItem.price.trim()) return;
     try {
-      const res = await fetch(`${API_URL}/admin/home/services/items`, {
+      const res = await apiFetch(`${API_URL}/admin/home/services/items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({
@@ -212,7 +213,7 @@ export function ServicesSectionPage() {
     }
   ) => {
     try {
-      const res = await fetch(`${API_URL}/admin/home/services/items/${id}`, {
+      const res = await apiFetch(`${API_URL}/admin/home/services/items/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify(item),
@@ -239,7 +240,7 @@ export function ServicesSectionPage() {
   const handleDeleteItem = async (id: string) => {
     if (!confirm('Удалить эту услугу?')) return;
     try {
-      const res = await fetch(`${API_URL}/admin/home/services/items/${id}`, {
+      const res = await apiFetch(`${API_URL}/admin/home/services/items/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });

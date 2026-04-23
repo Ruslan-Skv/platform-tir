@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 
 import styles from './ProductsPage.module.css';
@@ -291,7 +292,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch(`${API_URL}/categories?includeInactive=true`);
+        const response = await apiFetch(`${API_URL}/categories?includeInactive=true`);
         if (response.ok) {
           const data = await response.json();
           setCategories(data);
@@ -307,7 +308,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
-        const response = await fetch(`${API_URL}/admin/catalog/suppliers?limit=1000`, {
+        const response = await apiFetch(`${API_URL}/admin/catalog/suppliers?limit=1000`, {
           headers: getAuthHeaders(),
         });
         if (response.ok) {
@@ -379,7 +380,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       for (const catId of categoryIdsForAttributes) {
         if (cancelled) return;
         try {
-          const response = await fetch(`${API_URL}/categories/${catId}/attributes`);
+          const response = await apiFetch(`${API_URL}/categories/${catId}/attributes`);
           if (response.ok) {
             const attrs = await response.json();
             allAttrsArrays.push(attrs);
@@ -450,7 +451,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
   const fetchProducts = useCallback(async (mode: 'full' | 'refresh' | 'silent' = 'full') => {
     if (mode === 'silent') {
       try {
-        const response = await fetch(`${API_URL}/products/admin/all?_=${Date.now()}`, {
+        const response = await apiFetch(`${API_URL}/products/admin/all?_=${Date.now()}`, {
           headers: getAuthHeaders(),
           cache: 'no-store',
         });
@@ -469,7 +470,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       setLoading(true);
     }
     try {
-      const response = await fetch(`${API_URL}/products/admin/all?_=${Date.now()}`, {
+      const response = await apiFetch(`${API_URL}/products/admin/all?_=${Date.now()}`, {
         headers: getAuthHeaders(),
         cache: 'no-store',
       });
@@ -713,7 +714,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
     const action = isActive ? 'активированы' : 'деактивированы';
 
     try {
-      const response = await fetch(`${API_URL}/admin/catalog/products/bulk/activate`, {
+      const response = await apiFetch(`${API_URL}/admin/catalog/products/bulk/activate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -747,7 +748,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
     if (!hasSelection) return;
     setDeleting(true);
     try {
-      const response = await fetch(`${API_URL}/admin/catalog/products/bulk/delete`, {
+      const response = await apiFetch(`${API_URL}/admin/catalog/products/bulk/delete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -786,7 +787,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
         formData.append('skuPrefix', importSkuPrefix);
       }
 
-      const response = await fetch(`${API_URL}/admin/catalog/products/import/file`, {
+      const response = await apiFetch(`${API_URL}/admin/catalog/products/import/file`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: formData,
@@ -1116,7 +1117,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
           edits.supplierId = edits.supplier;
           delete edits.supplier;
         }
-        const response = await fetch(`${API_URL}/products/${productId}`, {
+        const response = await apiFetch(`${API_URL}/products/${productId}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -1664,14 +1665,17 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
               setUpdatingSupplierPrices(true);
               setSyncSupplierPricesMessage(null);
               try {
-                const response = await fetch(`${API_URL}/products/admin/update-supplier-prices`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    ...getAuthHeaders(),
-                  },
-                  body: JSON.stringify({ productIds: selectedIds }),
-                });
+                const response = await apiFetch(
+                  `${API_URL}/products/admin/update-supplier-prices`,
+                  {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      ...getAuthHeaders(),
+                    },
+                    body: JSON.stringify({ productIds: selectedIds }),
+                  }
+                );
                 if (!response.ok) {
                   const err = await response.json().catch(() => ({}));
                   throw new Error(err.message || 'Ошибка обновления цен');
@@ -1713,7 +1717,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
               setSyncingSupplierPrices(true);
               setSyncSupplierPricesMessage(null);
               try {
-                const response = await fetch(`${API_URL}/products/admin/apply-supplier-prices`, {
+                const response = await apiFetch(`${API_URL}/products/admin/apply-supplier-prices`, {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',

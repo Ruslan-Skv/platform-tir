@@ -1,6 +1,6 @@
 'use client';
 
-import { MoonIcon, SunIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon, MoonIcon, SunIcon } from '@heroicons/react/24/outline';
 
 import { useEffect, useState } from 'react';
 
@@ -20,6 +20,7 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   // Redirect if already authenticated
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
@@ -72,7 +73,7 @@ export default function AdminLoginPage() {
           <p>Административная панель</p>
         </div>
 
-        <form onSubmit={handleSubmit} className={styles.form} autoComplete="on">
+        <form onSubmit={handleSubmit} className={styles.form} autoComplete="off">
           <h2 className={styles.title}>Вход в систему</h2>
 
           {error && <div className={styles.error}>{error}</div>}
@@ -87,25 +88,40 @@ export default function AdminLoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="admin@example.com"
               required
-              autoComplete="username"
-              title="Если вы уже входили с этого компьютера, браузер может предложить сохранённые email и пароль — откройте подсказки кликом в поле или стрелкой справа."
+              autoComplete="off"
               className={styles.input}
             />
           </div>
 
           <div className={styles.formGroup}>
             <label htmlFor="password">Пароль</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              autoComplete="current-password"
-              className={styles.input}
-            />
+            <div className={styles.passwordWrap}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                name="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                autoComplete="off"
+                className={`${styles.input} ${styles.inputWithToggle}`}
+              />
+              <button
+                type="button"
+                className={styles.passwordToggle}
+                onClick={() => setShowPassword((v) => !v)}
+                tabIndex={-1}
+                aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+                title={showPassword ? 'Скрыть' : 'Показать'}
+              >
+                {showPassword ? (
+                  <EyeSlashIcon className={styles.passwordToggleIcon} aria-hidden />
+                ) : (
+                  <EyeIcon className={styles.passwordToggleIcon} aria-hidden />
+                )}
+              </button>
+            </div>
           </div>
 
           <button type="submit" disabled={isSubmitting} className={styles.submitButton}>
@@ -115,6 +131,8 @@ export default function AdminLoginPage() {
 
         <div className={styles.footer}>
           <p className={styles.hint}>
+            Пароль в приложении не хранится: если поля заполняются сами — это браузер (сохранённые
+            логины). На чужом ПК отключите автозаполнение для этого сайта в настройках браузера.
             Регистрировались через Яндекс? Задайте пароль через{' '}
             <Link href="/forgot-password" className={styles.inlineLink}>
               восстановление пароля

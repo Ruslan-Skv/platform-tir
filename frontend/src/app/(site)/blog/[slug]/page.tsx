@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { getServerApiBaseUrl } from '@/shared/lib/server-api-base-url';
 import { BlogPostPage } from '@/views/blog/ui/BlogPostPage';
 
@@ -12,7 +13,7 @@ interface BlogPostPageProps {
 
 async function getBlogPost(slug: string) {
   try {
-    const response = await fetch(`${API_URL}/blog/posts/slug/${slug}`, {
+    const response = await apiFetch(`${API_URL}/blog/posts/slug/${slug}`, {
       next: { revalidate: 60 },
     });
 

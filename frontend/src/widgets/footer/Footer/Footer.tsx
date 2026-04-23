@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 import styles from './Footer.module.css';
 import { FooterBottom } from './FooterBottom';
 import { FooterSections } from './FooterSections';
@@ -89,7 +91,7 @@ export const Footer: React.FC = () => {
     let cancelled = false;
     const fetchData = async () => {
       try {
-        const res = await fetch(`${API_URL}/home/footer`);
+        const res = await apiFetch(`${API_URL}/home/footer`);
         if (!cancelled && res.ok) {
           const d = await res.json();
           setData(d);

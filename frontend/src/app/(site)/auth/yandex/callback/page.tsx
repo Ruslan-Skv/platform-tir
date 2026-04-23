@@ -5,11 +5,14 @@ import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import { type TokenLoginPayload, persistTokenResponse } from '@/shared/lib/auth-session';
+import { apiFetch } from '@/shared/lib/api-fetch';
+import {
+  type TokenLoginPayload,
+  getApiBaseUrl,
+  persistTokenResponse,
+} from '@/shared/lib/auth-session';
 
 import styles from '../../../login/page.module.css';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function YandexCallbackContent() {
   const searchParams = useSearchParams();
@@ -38,7 +41,7 @@ function YandexCallbackContent() {
     }
 
     try {
-      const res = await fetch(`${API_URL}/auth/yandex/callback`, {
+      const res = await apiFetch(`${getApiBaseUrl()}/auth/yandex/callback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),
@@ -52,7 +55,7 @@ function YandexCallbackContent() {
         return;
       }
 
-      if (!data.access_token || !data.refresh_token || !data.user) {
+      if (!data.access_token || !data.user) {
         setStatus('error');
         setErrorMessage('Некорректный ответ сервера');
         return;

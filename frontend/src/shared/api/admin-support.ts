@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export interface AdminSupportConversation {
@@ -24,7 +26,7 @@ export async function getAdminSupportConversations(
 ): Promise<AdminSupportConversation[]> {
   const params = new URLSearchParams({ asSupport: 'true' });
   if (status) params.set('status', status);
-  const res = await fetch(`${API_URL}/support/conversations?${params}`, {
+  const res = await apiFetch(`${API_URL}/support/conversations?${params}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить диалоги');

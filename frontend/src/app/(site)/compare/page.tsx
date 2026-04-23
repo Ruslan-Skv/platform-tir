@@ -6,6 +6,7 @@ import Link from 'next/link';
 
 import type { ProductCharacteristic } from '@/entities/product';
 import * as compareApi from '@/shared/api/compare';
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { useCompare } from '@/shared/lib/hooks';
 import {
   PRODUCT_AVAILABILITY_LABEL,
@@ -131,7 +132,7 @@ export default function ComparePage() {
   useEffect(() => {
     const fetchPartnerSettings = async () => {
       try {
-        const res = await fetch(`${API_URL}/home/partner-products`);
+        const res = await apiFetch(`${API_URL}/home/partner-products`);
         if (res.ok) {
           const data = await res.json();
           setPartnerSettings({

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import styles from './PartnerEditPage.module.css';
 
@@ -47,7 +48,7 @@ export function PartnerEditPage({ partnerId }: PartnerEditPageProps) {
     setError(null);
 
     try {
-      const response = await fetch(`${API_URL}/admin/partners/${partnerId}`, {
+      const response = await apiFetch(`${API_URL}/admin/partners/${partnerId}`, {
         headers: getAuthHeaders(),
       });
 
@@ -124,7 +125,7 @@ export function PartnerEditPage({ partnerId }: PartnerEditPageProps) {
     const formDataUpload = new FormData();
     formDataUpload.append('file', file);
     try {
-      const res = await fetch(`${API_URL}/admin/partners/upload/logo`, {
+      const res = await apiFetch(`${API_URL}/admin/partners/upload/logo`, {
         method: 'POST',
         headers: getAuthHeaders() as Record<string, string>,
         body: formDataUpload,
@@ -184,7 +185,7 @@ export function PartnerEditPage({ partnerId }: PartnerEditPageProps) {
         ? `${API_URL}/admin/partners/${partnerId}`
         : `${API_URL}/admin/partners`;
 
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method: isEditMode ? 'PATCH' : 'POST',
         headers: {
           'Content-Type': 'application/json',

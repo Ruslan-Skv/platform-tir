@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -43,7 +45,7 @@ export async function fetchAdminWeatherstripsList(
   }
   const base = getAdminAuthHeaders() as Record<string, string>;
   const extra = headersOverride ? (headersOverride as Record<string, string>) : {};
-  const res = await fetch(`${API_URL}/admin/catalog/weatherstrips?${search}`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/weatherstrips?${search}`, {
     headers: { ...base, ...extra },
     cache: 'no-store',
   });
@@ -60,7 +62,7 @@ export async function createAdminWeatherstrip(body: {
   slug: string;
   isActive?: boolean;
 }): Promise<AdminWeatherstrip> {
-  const res = await fetch(`${API_URL}/admin/catalog/weatherstrips`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/weatherstrips`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(body),
@@ -76,7 +78,7 @@ export async function updateAdminWeatherstrip(
   id: string,
   body: Partial<{ name: string; slug: string; isActive: boolean }>
 ): Promise<AdminWeatherstrip> {
-  const res = await fetch(`${API_URL}/admin/catalog/weatherstrips/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/weatherstrips/${id}`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(body),
@@ -89,7 +91,7 @@ export async function updateAdminWeatherstrip(
 }
 
 export async function deleteAdminWeatherstrip(id: string): Promise<void> {
-  const res = await fetch(`${API_URL}/admin/catalog/weatherstrips/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/weatherstrips/${id}`, {
     method: 'DELETE',
     headers: getAdminAuthHeaders(),
   });

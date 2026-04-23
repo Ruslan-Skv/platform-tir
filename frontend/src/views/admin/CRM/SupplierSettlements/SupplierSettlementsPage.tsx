@@ -6,6 +6,7 @@ import Link from 'next/link';
 
 import { useAuth } from '@/features/auth';
 import { getSupplierSettlementTotals } from '@/shared/api/admin-crm';
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import styles from './SupplierSettlementsPage.module.css';
 
@@ -51,7 +52,7 @@ export function SupplierSettlementsPage() {
     setLoading(true);
     try {
       const [suppliersRes, totalsData] = await Promise.all([
-        fetch(`${API_URL}/admin/catalog/suppliers?limit=1000`, {
+        apiFetch(`${API_URL}/admin/catalog/suppliers?limit=1000`, {
           headers: getAuthHeaders(),
         }),
         getSupplierSettlementTotals(),

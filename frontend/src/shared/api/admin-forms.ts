@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export interface AdminFormSubmission {
@@ -38,7 +40,7 @@ export async function getAdminFormSubmissions(
 }> {
   const params = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (type) params.set('type', type);
-  const res = await fetch(`${API_URL}/admin/forms?${params}`, {
+  const res = await apiFetch(`${API_URL}/admin/forms?${params}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить заявки');

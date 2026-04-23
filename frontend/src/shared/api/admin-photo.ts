@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAuthHeaders(): HeadersInit {
@@ -81,7 +83,7 @@ export async function uploadPhoto(file: File): Promise<{ imageUrl: string }> {
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  const res = await fetch(`${API_URL}/admin/photo/upload`, {
+  const res = await apiFetch(`${API_URL}/admin/photo/upload`, {
     method: 'POST',
     headers,
     body: formData,
@@ -94,7 +96,7 @@ export async function uploadPhoto(file: File): Promise<{ imageUrl: string }> {
 }
 
 export async function getAdminPhotoCategories(): Promise<AdminPhotoCategory[]> {
-  const res = await fetch(`${API_URL}/admin/photo/categories`, {
+  const res = await apiFetch(`${API_URL}/admin/photo/categories`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить категории');
@@ -102,7 +104,7 @@ export async function getAdminPhotoCategories(): Promise<AdminPhotoCategory[]> {
 }
 
 export async function createPhotoCategory(dto: CreatePhotoCategoryDto) {
-  const res = await fetch(`${API_URL}/admin/photo/categories`, {
+  const res = await apiFetch(`${API_URL}/admin/photo/categories`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(dto),
@@ -115,7 +117,7 @@ export async function createPhotoCategory(dto: CreatePhotoCategoryDto) {
 }
 
 export async function updatePhotoCategory(id: string, data: Partial<CreatePhotoCategoryDto>) {
-  const res = await fetch(`${API_URL}/admin/photo/categories/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/photo/categories/${id}`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
     body: JSON.stringify(data),
@@ -125,7 +127,7 @@ export async function updatePhotoCategory(id: string, data: Partial<CreatePhotoC
 }
 
 export async function deletePhotoCategory(id: string) {
-  const res = await fetch(`${API_URL}/admin/photo/categories/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/photo/categories/${id}`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });
@@ -150,7 +152,7 @@ export async function getAdminProjects(params?: {
   if (params?.page) searchParams.set('page', String(params.page));
   if (params?.limit) searchParams.set('limit', String(params.limit));
 
-  const res = await fetch(`${API_URL}/admin/photo/projects?${searchParams}`, {
+  const res = await apiFetch(`${API_URL}/admin/photo/projects?${searchParams}`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить объекты');
@@ -158,7 +160,7 @@ export async function getAdminProjects(params?: {
 }
 
 export async function createPhotoProject(dto: CreatePhotoProjectDto) {
-  const res = await fetch(`${API_URL}/admin/photo/projects`, {
+  const res = await apiFetch(`${API_URL}/admin/photo/projects`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(dto),
@@ -171,7 +173,7 @@ export async function createPhotoProject(dto: CreatePhotoProjectDto) {
 }
 
 export async function getAdminProject(id: string): Promise<AdminPhotoProject> {
-  const res = await fetch(`${API_URL}/admin/photo/projects/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/photo/projects/${id}`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить объект');
@@ -179,7 +181,7 @@ export async function getAdminProject(id: string): Promise<AdminPhotoProject> {
 }
 
 export async function updatePhotoProject(id: string, data: Partial<CreatePhotoProjectDto>) {
-  const res = await fetch(`${API_URL}/admin/photo/projects/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/photo/projects/${id}`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
     body: JSON.stringify(data),
@@ -189,7 +191,7 @@ export async function updatePhotoProject(id: string, data: Partial<CreatePhotoPr
 }
 
 export async function deletePhotoProject(id: string) {
-  const res = await fetch(`${API_URL}/admin/photo/projects/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/photo/projects/${id}`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });
@@ -197,7 +199,7 @@ export async function deletePhotoProject(id: string) {
 }
 
 export async function createPhotos(projectId: string, imageUrls: string[]) {
-  const res = await fetch(`${API_URL}/admin/photo/photos/batch`, {
+  const res = await apiFetch(`${API_URL}/admin/photo/photos/batch`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({ projectId, imageUrls }),
@@ -210,7 +212,7 @@ export async function createPhotos(projectId: string, imageUrls: string[]) {
 }
 
 export async function createPhoto(dto: CreatePhotoDto) {
-  const res = await fetch(`${API_URL}/admin/photo/photos`, {
+  const res = await apiFetch(`${API_URL}/admin/photo/photos`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(dto),
@@ -223,7 +225,7 @@ export async function createPhoto(dto: CreatePhotoDto) {
 }
 
 export async function updatePhoto(id: string, data: Partial<CreatePhotoDto>) {
-  const res = await fetch(`${API_URL}/admin/photo/photos/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/photo/photos/${id}`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
     body: JSON.stringify(data),
@@ -233,7 +235,7 @@ export async function updatePhoto(id: string, data: Partial<CreatePhotoDto>) {
 }
 
 export async function deletePhoto(id: string) {
-  const res = await fetch(`${API_URL}/admin/photo/photos/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/photo/photos/${id}`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });

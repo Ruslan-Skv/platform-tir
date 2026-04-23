@@ -13,6 +13,8 @@ import {
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 const SUGGEST_MIN_CHARS = 2;
 const SUGGEST_DEBOUNCE_MS = 280;
@@ -148,7 +150,7 @@ export function useCatalogHeaderSearch() {
       abortRef.current = ac;
       setLoadingSug(true);
       try {
-        const res = await fetch(
+        const res = await apiFetch(
           `${API_URL}/products/search/suggestions?q=${encodeURIComponent(q)}&limit=8`,
           { signal: ac.signal }
         );

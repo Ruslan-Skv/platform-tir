@@ -2,18 +2,17 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
+import { apiFetch } from '@/shared/lib/api-fetch';
 import {
-  ADMIN_REFRESH_KEY,
   type TokenLoginPayload,
-  USER_REFRESH_KEY,
+  getApiBaseUrl,
   getJwtExpMs,
   persistTokenResponse,
   refreshAccessTokenSilently,
   revokeRefreshOnServer,
 } from '@/shared/lib/auth-session';
+import { formatAuthHttpError } from '@/shared/lib/nest-error-message';
 import { setPublicSiteEditMode } from '@/shared/lib/public-site-edit-mode';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 type AdminRole =
   | 'SUPER_ADMIN'
@@ -79,10 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     if (typeof window !== 'undefined') {
-      const rt = localStorage.getItem(USER_REFRESH_KEY) || localStorage.getItem(ADMIN_REFRESH_KEY);
-      void revokeRefreshOnServer(rt);
-      localStorage.removeItem(USER_REFRESH_KEY);
-      localStorage.removeItem(ADMIN_REFRESH_KEY);
+      void revokeRefreshOnServer();
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
       localStorage.removeItem(USER_TOKEN_KEY);
@@ -157,7 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const verifyToken = async (tokenToVerify: string): Promise<boolean> => {
     try {
-      const response = await fetch(`${API_URL}/auth/profile`, {
+      const response = await apiFetch(`${getApiBaseUrl()}/auth/profile`, {
         headers: {
           Authorization: `Bearer ${tokenToVerify}`,
         },
@@ -168,7 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!refreshed) return false;
         const next = localStorage.getItem(TOKEN_KEY) || localStorage.getItem(USER_TOKEN_KEY);
         if (!next) return false;
-        const retry = await fetch(`${API_URL}/auth/profile`, {
+        const retry = await apiFetch(`${getApiBaseUrl()}/auth/profile`, {
           headers: { Authorization: `Bearer ${next}` },
         });
         return retry.ok;
@@ -181,7 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await apiFetch(`${getApiBaseUrl()}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -191,14 +187,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        const rawMessage = error.message || '';
-        const friendlyMessage =
-          rawMessage === 'Unauthorized'
-            ? 'Неверный email или пароль'
-            : rawMessage || 'Неверный email или пароль';
         return {
           success: false,
-          error: friendlyMessage,
+          error: formatAuthHttpError(response, error, {
+            unauthorizedFallback: 'Неверный email или пароль',
+            defaultFallback: 'Не удалось войти',
+          }),
         };
       }
 
@@ -228,7 +222,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const payload = data as TokenLoginPayload;
       persistTokenResponse(payload);
       setToken(payload.access_token);
-      setUser(payload.user);
+      setUser({
+        ...payload.user,
+        firstName: payload.user.firstName ?? null,
+        lastName: payload.user.lastName ?? null,
+      } as User);
 
       return { success: true };
     } catch (error) {
@@ -244,7 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const savedToken = localStorage.getItem(TOKEN_KEY) || localStorage.getItem(USER_TOKEN_KEY);
     if (!savedToken) return;
     try {
-      const response = await fetch(`${API_URL}/auth/profile`, {
+      const response = await apiFetch(`${getApiBaseUrl()}/auth/profile`, {
         headers: { Authorization: `Bearer ${savedToken}` },
       });
       if (response.ok) {
@@ -294,9 +292,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         e.key === USER_KEY ||
         e.key === USER_DATA_KEY ||
         e.key === TOKEN_KEY ||
-        e.key === USER_TOKEN_KEY ||
-        e.key === USER_REFRESH_KEY ||
-        e.key === ADMIN_REFRESH_KEY
+        e.key === USER_TOKEN_KEY
       ) {
         handleUserUpdate();
       }

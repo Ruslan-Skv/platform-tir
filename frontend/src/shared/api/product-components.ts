@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAdminBearer(): string | null {
@@ -20,7 +22,7 @@ export interface ProductComponent {
 }
 
 export async function getProductComponents(productId: string): Promise<ProductComponent[]> {
-  const response = await fetch(`${API_URL}/product-components/product/${productId}`);
+  const response = await apiFetch(`${API_URL}/product-components/product/${productId}`);
 
   if (!response.ok) {
     throw new Error('Не удалось загрузить комплектующие');
@@ -52,7 +54,7 @@ export async function patchProductComponent(
     return { ok: false, message: 'Нет авторизации' };
   }
 
-  const res = await fetch(`${API_URL}/product-components/${encodeURIComponent(componentId)}`, {
+  const res = await apiFetch(`${API_URL}/product-components/${encodeURIComponent(componentId)}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',

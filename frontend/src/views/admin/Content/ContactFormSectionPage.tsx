@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/features/auth';
 import type { ContactFormBlock } from '@/shared/api/contact-form';
 import { getAdminContactFormBlock, updateAdminContactFormBlock } from '@/shared/api/contact-form';
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import styles from './FeaturedProductsSectionPage.module.css';
 import { SectionVisibilityCheckbox } from './SectionVisibilityCheckbox';
@@ -78,7 +79,7 @@ export function ContactFormSectionPage() {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch(`${API_URL}/admin/home/contact-form/upload`, {
+      const res = await apiFetch(`${API_URL}/admin/home/contact-form/upload`, {
         method: 'POST',
         headers: getAuthHeaders() as Record<string, string>,
         body: formData,

@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
 import { cancelOrderByCustomer, getUserOrder } from '@/shared/api/user-orders';
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { isAuthRequiredForCartError } from '@/shared/lib/cart-auth-required';
 import { useApprovedOrderGuard } from '@/shared/lib/contexts/ApprovedOrderGuardContext';
 import { useCart } from '@/shared/lib/hooks';
@@ -480,7 +481,7 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/service-catalog/categories/${slug}`);
+      const res = await apiFetch(`${API_URL}/service-catalog/categories/${slug}`);
       if (res.ok) {
         const d = await res.json();
         setData(d);
@@ -717,7 +718,7 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
   };
 
   const calculateForLines = async (lines: CalculatorLine[]) => {
-    const res = await fetch(`${API_URL}/service-catalog/calculate`, {
+    const res = await apiFetch(`${API_URL}/service-catalog/calculate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

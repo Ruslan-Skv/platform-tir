@@ -1,6 +1,17 @@
-import { Controller, Post, Body, UseGuards, Request, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+  Get,
+  Res,
+  Req,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import type { Request as ExpressRequest, Response } from 'express';
 import { OriginGuard } from '../common/guards/origin.guard';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
@@ -9,10 +20,9 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { LogoutDto } from './dto/logout.dto';
 import { YandexCallbackDto } from './dto/yandex-callback.dto';
 import { YandexAuthService } from './yandex-auth.service';
+import { RefreshCookieService } from './refresh-cookie.service';
 import type { RequestWithUser } from '../common/types/request-with-user.types';
 
 @ApiTags('auth')
@@ -21,28 +31,37 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly yandexAuthService: YandexAuthService,
+    private readonly refreshCookie: RefreshCookieService,
   ) {}
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @UseGuards(OriginGuard, LocalAuthGuard)
   @Post('login')
-  @ApiOperation({ summary: 'Вход в систему' })
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async login(@Request() req: RequestWithUser, @Body() _loginDto: LoginDto) {
-    return this.authService.login(req.user);
+  @ApiOperation({ summary: 'Вход в систему (refresh в httpOnly cookie)' })
+  async login(
+    @Request() req: RequestWithUser,
+    @Res({ passthrough: true }) res: Response,
+    @Body() loginDto: LoginDto,
+  ) {
+    void loginDto; // ValidationPipe; аутентификация по email/паролю — в LocalAuthGuard
+    const data = await this.authService.login(req.user);
+    this.refreshCookie.attach(res, data.refresh_token);
+    return { access_token: data.access_token, user: data.user };
   }
 
   @Throttle({ default: { limit: 3, ttl: 60_000 } })
   @UseGuards(OriginGuard)
   @Post('register')
-  @ApiOperation({ summary: 'Регистрация нового пользователя' })
-  async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(
+  @ApiOperation({ summary: 'Регистрация (refresh в httpOnly cookie)' })
+  async register(@Res({ passthrough: true }) res: Response, @Body() registerDto: RegisterDto) {
+    const data = await this.authService.register(
       registerDto.email,
       registerDto.password,
       registerDto.firstName,
       registerDto.lastName,
     );
+    this.refreshCookie.attach(res, data.refresh_token);
+    return { access_token: data.access_token, user: data.user };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -56,17 +75,33 @@ export class AuthController {
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @UseGuards(OriginGuard)
   @Post('refresh')
-  @ApiOperation({ summary: 'Обновить access-токен по refresh (ротация refresh)' })
-  async refresh(@Body() dto: RefreshTokenDto) {
-    return this.authService.refreshTokens(dto.refresh_token);
+  @ApiOperation({ summary: 'Обновить access по refresh из httpOnly cookie' })
+  async refresh(@Req() req: ExpressRequest, @Res({ passthrough: true }) res: Response) {
+    const raw = this.refreshCookie.read(req);
+    if (!raw) {
+      this.refreshCookie.clear(res);
+      throw new UnauthorizedException('Нет сессии. Войдите снова.');
+    }
+    try {
+      const data = await this.authService.refreshTokens(raw);
+      this.refreshCookie.attach(res, data.refresh_token);
+      return { access_token: data.access_token, user: data.user };
+    } catch (e) {
+      this.refreshCookie.clear(res);
+      throw e;
+    }
   }
 
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @UseGuards(OriginGuard)
   @Post('logout')
-  @ApiOperation({ summary: 'Выход: отозвать refresh-токен текущей сессии' })
-  async logout(@Body() dto: LogoutDto) {
-    await this.authService.revokeRefreshToken(dto.refresh_token);
+  @ApiOperation({ summary: 'Выход: отозвать refresh и очистить cookie' })
+  async logout(@Req() req: ExpressRequest, @Res({ passthrough: true }) res: Response) {
+    const raw = this.refreshCookie.read(req);
+    if (raw) {
+      await this.authService.revokeRefreshToken(raw);
+    }
+    this.refreshCookie.clear(res);
     return { ok: true };
   }
 
@@ -96,8 +131,10 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseGuards(OriginGuard)
   @Post('yandex/callback')
-  @ApiOperation({ summary: 'Обмен кода Яндекс на JWT (вызывается с frontend после redirect)' })
-  async yandexCallback(@Body() dto: YandexCallbackDto) {
-    return this.yandexAuthService.exchangeCodeForUser(dto.code);
+  @ApiOperation({ summary: 'Обмен кода Яндекс на JWT (refresh в cookie)' })
+  async yandexCallback(@Res({ passthrough: true }) res: Response, @Body() dto: YandexCallbackDto) {
+    const data = await this.yandexAuthService.exchangeCodeForUser(dto.code);
+    this.refreshCookie.attach(res, data.refresh_token);
+    return { access_token: data.access_token, user: data.user };
   }
 }

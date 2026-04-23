@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import Link from 'next/link';
 
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { getSafeHref } from '@/shared/lib/sanitize';
 import { serviceCatalogIconMap } from '@/shared/lib/serviceCatalogIcons';
 
@@ -46,7 +47,7 @@ export function ServiceCatalogPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/service-catalog`);
+      const res = await apiFetch(`${API_URL}/service-catalog`);
       if (res.ok) {
         const d = await res.json();
         setData(d);

@@ -27,6 +27,7 @@ import {
   getUserOrders,
   submitOrderFromCart,
 } from '@/shared/api/user-orders';
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { useApprovedOrderGuard } from '@/shared/lib/contexts/ApprovedOrderGuardContext';
 import { useCart } from '@/shared/lib/hooks';
 import {
@@ -282,7 +283,7 @@ export default function CartPage() {
               cartItem.category?.slug === slug || cartItem.category?.name === category.categoryName
           );
           if (alreadyInCart) continue;
-          const res = await fetch(
+          const res = await apiFetch(
             `${API_URL}/service-catalog/categories/${encodeURIComponent(slug)}`
           );
           if (!res.ok) continue;

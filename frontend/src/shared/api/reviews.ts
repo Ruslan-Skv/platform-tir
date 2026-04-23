@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export interface Review {
@@ -42,7 +44,7 @@ function getAuthHeaders(): HeadersInit {
 }
 
 export async function getReviewsSettings(): Promise<ReviewsSettings> {
-  const res = await fetch(`${API_URL}/reviews/settings`);
+  const res = await apiFetch(`${API_URL}/reviews/settings`);
   if (!res.ok) throw new Error('Не удалось загрузить настройки отзывов');
   return res.json();
 }
@@ -60,13 +62,13 @@ export async function getProductReviews(
   averageRating: number;
 }> {
   const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-  const res = await fetch(`${API_URL}/reviews/product/${productId}?${params}`);
+  const res = await apiFetch(`${API_URL}/reviews/product/${productId}?${params}`);
   if (!res.ok) throw new Error('Не удалось загрузить отзывы');
   return res.json();
 }
 
 export async function createReview(productId: string, dto: CreateReviewDto): Promise<Review> {
-  const res = await fetch(`${API_URL}/reviews/product/${productId}`, {
+  const res = await apiFetch(`${API_URL}/reviews/product/${productId}`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(dto),

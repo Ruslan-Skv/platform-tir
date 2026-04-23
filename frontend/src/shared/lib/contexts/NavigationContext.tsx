@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 import { type NavItemFromApi, mapApiItemToNavItem } from '@/shared/api/navigation';
 import { navigation as defaultNavigation } from '@/shared/constants/navigation';
+import { apiFetch } from '@/shared/lib/api-fetch';
 import type { NavigationItem } from '@/shared/types/navigation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
@@ -48,7 +49,7 @@ export function NavigationProvider({ children, initialItems }: NavigationProvide
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_URL}/navigation`, { cache: 'no-store' })
+    apiFetch(`${API_URL}/navigation`, { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error('Failed to fetch'))))
       .then((data: NavItemFromApi[]) => {
         if (cancelled) return;

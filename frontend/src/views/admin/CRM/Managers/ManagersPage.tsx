@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 import { type CrmUser, getCrmUsers } from '@/shared/api/admin-crm';
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { Modal } from '@/shared/ui/Modal';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 
@@ -212,7 +213,7 @@ function AddManagerModal({
     }
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}/users`, {
+      const res = await apiFetch(`${API_URL}/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

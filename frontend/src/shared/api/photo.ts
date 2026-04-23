@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export interface PhotoCategory {
@@ -75,8 +77,8 @@ export async function fetchPhotoGalleryInitialData(
 
   try {
     const [projectsRes, categoriesRes] = await Promise.all([
-      fetch(`${apiBaseUrl}/photo?${searchParams}`, cache),
-      fetch(`${apiBaseUrl}/photo/categories`, { next: { revalidate: 120 } }),
+      apiFetch(`${apiBaseUrl}/photo?${searchParams}`, cache),
+      apiFetch(`${apiBaseUrl}/photo/categories`, { next: { revalidate: 120 } }),
     ]);
     if (!projectsRes.ok) return null;
     const projectsJson: ProjectsResponse = await projectsRes.json();
@@ -93,7 +95,7 @@ export async function fetchPhotoGalleryInitialData(
 }
 
 export async function getPhotoCategories(): Promise<PhotoCategory[]> {
-  const res = await fetch(`${API_URL}/photo/categories`);
+  const res = await apiFetch(`${API_URL}/photo/categories`);
   if (!res.ok) throw new Error('Не удалось загрузить категории');
   return res.json();
 }
@@ -113,7 +115,7 @@ export async function getPhotoProjects(params?: {
   if (params?.page) searchParams.set('page', String(params.page));
   if (params?.limit) searchParams.set('limit', String(params.limit));
 
-  const res = await fetch(`${API_URL}/photo?${searchParams}`);
+  const res = await apiFetch(`${API_URL}/photo?${searchParams}`);
   if (!res.ok) throw new Error('Не удалось загрузить объекты');
   return res.json();
 }

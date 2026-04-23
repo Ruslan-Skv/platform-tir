@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export interface ServiceCategoryForNav {
@@ -18,7 +20,7 @@ export function useDynamicServiceCategories() {
 
   const fetchServiceCategories = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/service-catalog`);
+      const res = await apiFetch(`${API_URL}/service-catalog`);
       if (!res.ok) return;
       const data = await res.json();
       const categories = data?.categories ?? [];

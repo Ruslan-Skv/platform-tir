@@ -1,3 +1,4 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
 import type { CatalogApiProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
@@ -84,7 +85,7 @@ export function clearGuestCompareIds(): void {
 
 async function fetchCompareProductsByIds(ids: string[]): Promise<CatalogApiProduct[]> {
   if (ids.length === 0) return [];
-  const response = await fetch(`${API_URL}/products/compare-list`, {
+  const response = await apiFetch(`${API_URL}/products/compare-list`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ productIds: ids }),
@@ -97,7 +98,7 @@ async function fetchCompareProductsByIds(ids: string[]): Promise<CatalogApiProdu
 
 export async function getCompare(): Promise<CatalogApiProduct[]> {
   if (hasSiteAuthToken()) {
-    const response = await fetch(`${API_URL}/compare`, {
+    const response = await apiFetch(`${API_URL}/compare`, {
       method: 'GET',
       headers: getAuthHeaders(),
     });
@@ -118,7 +119,7 @@ export async function getCompare(): Promise<CatalogApiProduct[]> {
 
 export async function getCompareCount(): Promise<number> {
   if (hasSiteAuthToken()) {
-    const response = await fetch(`${API_URL}/compare/count`, {
+    const response = await apiFetch(`${API_URL}/compare/count`, {
       method: 'GET',
       headers: getAuthHeaders(),
     });
@@ -164,7 +165,7 @@ export async function addToCompare(productId: string): Promise<CompareItem> {
     };
   }
 
-  const response = await fetch(`${API_URL}/compare/${productId}`, {
+  const response = await apiFetch(`${API_URL}/compare/${productId}`, {
     method: 'POST',
     headers: getAuthHeaders(),
   });
@@ -192,7 +193,7 @@ export async function removeFromCompare(productId: string): Promise<void> {
     return;
   }
 
-  const response = await fetch(`${API_URL}/compare/${productId}`, {
+  const response = await apiFetch(`${API_URL}/compare/${productId}`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });
@@ -213,7 +214,7 @@ export async function checkInCompare(productId: string): Promise<boolean> {
     return readGuestCompareIds().includes(productId);
   }
 
-  const response = await fetch(`${API_URL}/compare/check/${productId}`, {
+  const response = await apiFetch(`${API_URL}/compare/check/${productId}`, {
     method: 'GET',
     headers: getAuthHeaders(),
   });

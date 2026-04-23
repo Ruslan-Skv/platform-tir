@@ -72,6 +72,9 @@ services:
       JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-30d}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-}
+      REFRESH_COOKIE_NAME: ${REFRESH_COOKIE_NAME:-rt}
+      REFRESH_COOKIE_SECURE: ${REFRESH_COOKIE_SECURE:-false}
+      REFRESH_COOKIE_DOMAIN: ${REFRESH_COOKIE_DOMAIN:-}
       SITE_URL: ${SITE_URL:-http://localhost:3000}
       # Письма уходят в MailHog (просмотр: http://localhost:8025)
       MAIL_FROM: ${MAIL_FROM:-noreply@localhost}

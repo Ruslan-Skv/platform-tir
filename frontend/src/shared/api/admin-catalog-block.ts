@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAuthHeaders(): HeadersInit {
@@ -17,7 +19,7 @@ export interface CatalogBlockSettings {
 }
 
 export async function getAdminCatalogBlockSettings(): Promise<CatalogBlockSettings> {
-  const res = await fetch(`${API_URL}/admin/catalog-block/settings`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog-block/settings`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить настройки каталога');
@@ -27,7 +29,7 @@ export async function getAdminCatalogBlockSettings(): Promise<CatalogBlockSettin
 export async function updateAdminCatalogBlockSettings(data: {
   defaultMobileCatalogColumns?: 1 | 2;
 }): Promise<CatalogBlockSettings> {
-  const res = await fetch(`${API_URL}/admin/catalog-block/settings`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog-block/settings`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
     body: JSON.stringify(data),

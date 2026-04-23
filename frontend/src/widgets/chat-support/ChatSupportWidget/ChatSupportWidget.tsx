@@ -10,6 +10,7 @@ import {
   getUserNotificationSettings,
   updateUserNotificationSettings,
 } from '@/shared/api/user-notifications';
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import { useChatSupportOpen } from '../context/ChatSupportOpenContext';
 import styles from './ChatSupportWidget.module.css';
@@ -65,7 +66,7 @@ export function ChatSupportWidget() {
     if (!isAuthenticated) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/support/conversations`, {
+      const res = await apiFetch(`${API_URL}/support/conversations`, {
         headers: getAuthHeaders(),
       });
       if (res.ok) {
@@ -83,7 +84,7 @@ export function ChatSupportWidget() {
     async (conversationId: string) => {
       setLoadingMessages(true);
       try {
-        const res = await fetch(`${API_URL}/support/conversations/${conversationId}/messages`, {
+        const res = await apiFetch(`${API_URL}/support/conversations/${conversationId}/messages`, {
           headers: getAuthHeaders(),
         });
         if (res.ok) {
@@ -194,7 +195,7 @@ export function ChatSupportWidget() {
 
   const startConversation = async () => {
     try {
-      const res = await fetch(`${API_URL}/support/conversations`, {
+      const res = await apiFetch(`${API_URL}/support/conversations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       });
@@ -214,7 +215,7 @@ export function ChatSupportWidget() {
     setSending(true);
     setInput('');
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_URL}/support/conversations/${currentConversation.id}/messages`,
         {
           method: 'POST',

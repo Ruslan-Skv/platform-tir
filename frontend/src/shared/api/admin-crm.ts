@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -20,7 +22,7 @@ export interface CrmDirection {
 }
 
 export async function getCrmDirections(): Promise<CrmDirection[]> {
-  const res = await fetch(`${API_URL}/admin/crm-directions`, {
+  const res = await apiFetch(`${API_URL}/admin/crm-directions`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить направления');
@@ -36,7 +38,7 @@ export interface CrmUser {
 }
 
 export async function getCrmUsers(): Promise<CrmUser[]> {
-  const res = await fetch(`${API_URL}/admin/crm-directions/users/list`, {
+  const res = await apiFetch(`${API_URL}/admin/crm-directions/users/list`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить список сотрудников');
@@ -53,7 +55,7 @@ export interface FunnelStageStat {
 export async function getFunnelStats(managerId?: string): Promise<FunnelStageStat[]> {
   const url = new URL(`${API_URL}/admin/customers/funnel`);
   if (managerId) url.searchParams.set('managerId', managerId);
-  const res = await fetch(String(url), { headers: getAdminAuthHeaders() });
+  const res = await apiFetch(String(url), { headers: getAdminAuthHeaders() });
   if (!res.ok) throw new Error('Не удалось загрузить воронку продаж');
   return res.json();
 }
@@ -84,7 +86,7 @@ export interface ComplexObject {
 }
 
 export async function getComplexObjects(): Promise<ComplexObject[]> {
-  const res = await fetch(`${API_URL}/admin/complex-objects`, {
+  const res = await apiFetch(`${API_URL}/admin/complex-objects`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить комплексные объекты');
@@ -92,7 +94,7 @@ export async function getComplexObjects(): Promise<ComplexObject[]> {
 }
 
 export async function getComplexObject(id: string): Promise<ComplexObject> {
-  const res = await fetch(`${API_URL}/admin/complex-objects/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/complex-objects/${id}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить комплексный объект');
@@ -108,7 +110,7 @@ export async function createComplexObject(data: {
   officeId?: string;
   managerId?: string;
 }): Promise<ComplexObject> {
-  const res = await fetch(`${API_URL}/admin/complex-objects`, {
+  const res = await apiFetch(`${API_URL}/admin/complex-objects`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
@@ -134,7 +136,7 @@ export async function updateComplexObject(
     managerId: string | null;
   }>
 ): Promise<ComplexObject> {
-  const res = await fetch(`${API_URL}/admin/complex-objects/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/complex-objects/${id}`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
@@ -144,7 +146,7 @@ export async function updateComplexObject(
 }
 
 export async function deleteComplexObject(id: string): Promise<void> {
-  const res = await fetch(`${API_URL}/admin/complex-objects/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/complex-objects/${id}`, {
     method: 'DELETE',
     headers: getAdminAuthHeaders(),
   });
@@ -152,7 +154,7 @@ export async function deleteComplexObject(id: string): Promise<void> {
 }
 
 export async function getComplexObjectContracts(id: string): Promise<Contract[]> {
-  const res = await fetch(`${API_URL}/admin/complex-objects/${id}/contracts`, {
+  const res = await apiFetch(`${API_URL}/admin/complex-objects/${id}/contracts`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить договоры объекта');
@@ -171,7 +173,7 @@ export interface ComplexObjectHistoryEntry {
 export async function getComplexObjectHistory(
   complexObjectId: string
 ): Promise<ComplexObjectHistoryEntry[]> {
-  const res = await fetch(`${API_URL}/admin/complex-objects/${complexObjectId}/history`, {
+  const res = await apiFetch(`${API_URL}/admin/complex-objects/${complexObjectId}/history`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить историю');
@@ -182,7 +184,7 @@ export async function rollbackComplexObject(
   complexObjectId: string,
   historyId: string
 ): Promise<ComplexObject> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${API_URL}/admin/complex-objects/${complexObjectId}/rollback/${historyId}`,
     { method: 'POST', headers: getAdminAuthHeaders() }
   );
@@ -206,7 +208,7 @@ export interface Office {
 
 export async function getOffices(includeInactive = false): Promise<Office[]> {
   const params = includeInactive ? '?includeInactive=true' : '';
-  const res = await fetch(`${API_URL}/admin/offices${params}`, {
+  const res = await apiFetch(`${API_URL}/admin/offices${params}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить офисы');
@@ -214,7 +216,7 @@ export async function getOffices(includeInactive = false): Promise<Office[]> {
 }
 
 export async function getOffice(id: string): Promise<Office> {
-  const res = await fetch(`${API_URL}/admin/offices/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/offices/${id}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить офис');
@@ -229,7 +231,7 @@ export async function createOffice(data: {
   isActive?: boolean;
   sortOrder?: number;
 }): Promise<Office> {
-  const res = await fetch(`${API_URL}/admin/offices`, {
+  const res = await apiFetch(`${API_URL}/admin/offices`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
@@ -252,7 +254,7 @@ export async function updateOffice(
     sortOrder: number;
   }>
 ): Promise<Office> {
-  const res = await fetch(`${API_URL}/admin/offices/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/offices/${id}`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
@@ -262,7 +264,7 @@ export async function updateOffice(
 }
 
 export async function deleteOffice(id: string): Promise<void> {
-  const res = await fetch(`${API_URL}/admin/offices/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/offices/${id}`, {
     method: 'DELETE',
     headers: getAdminAuthHeaders(),
   });
@@ -279,7 +281,7 @@ export interface OfficeHistoryEntry {
 }
 
 export async function getOfficeHistory(officeId: string): Promise<OfficeHistoryEntry[]> {
-  const res = await fetch(`${API_URL}/admin/offices/${officeId}/history`, {
+  const res = await apiFetch(`${API_URL}/admin/offices/${officeId}/history`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить историю');
@@ -287,7 +289,7 @@ export async function getOfficeHistory(officeId: string): Promise<OfficeHistoryE
 }
 
 export async function rollbackOffice(officeId: string, historyId: string): Promise<Office> {
-  const res = await fetch(`${API_URL}/admin/offices/${officeId}/rollback/${historyId}`, {
+  const res = await apiFetch(`${API_URL}/admin/offices/${officeId}/rollback/${historyId}`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
   });
@@ -321,7 +323,7 @@ export interface SupplierSettlementHistoryEntry {
 export async function getSupplierSettlementTotals(): Promise<
   Record<string, { amountSum: number; paymentSum: number; total: number }>
 > {
-  const res = await fetch(`${API_URL}/admin/catalog/suppliers/settlement-totals`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/suppliers/settlement-totals`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить итоги расчётов');
@@ -331,7 +333,7 @@ export async function getSupplierSettlementTotals(): Promise<
 export async function getSupplierSettlements(
   supplierId: string
 ): Promise<SupplierSettlementRowApi[]> {
-  const res = await fetch(`${API_URL}/admin/catalog/suppliers/${supplierId}/settlements`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/suppliers/${supplierId}/settlements`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить расчёты');
@@ -350,7 +352,7 @@ export async function saveSupplierSettlements(
     sortOrder?: number;
   }>
 ): Promise<SupplierSettlementRowApi[]> {
-  const res = await fetch(`${API_URL}/admin/catalog/suppliers/${supplierId}/settlements`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/suppliers/${supplierId}/settlements`, {
     method: 'PUT',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify({ rows }),
@@ -365,9 +367,12 @@ export async function saveSupplierSettlements(
 export async function getSupplierSettlementHistory(
   supplierId: string
 ): Promise<SupplierSettlementHistoryEntry[]> {
-  const res = await fetch(`${API_URL}/admin/catalog/suppliers/${supplierId}/settlements/history`, {
-    headers: getAdminAuthHeaders(),
-  });
+  const res = await apiFetch(
+    `${API_URL}/admin/catalog/suppliers/${supplierId}/settlements/history`,
+    {
+      headers: getAdminAuthHeaders(),
+    }
+  );
   if (!res.ok) throw new Error('Не удалось загрузить историю');
   return res.json();
 }
@@ -376,7 +381,7 @@ export async function rollbackSupplierSettlement(
   supplierId: string,
   historyId: string
 ): Promise<SupplierSettlementRowApi[]> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${API_URL}/admin/catalog/suppliers/${supplierId}/settlements/rollback/${historyId}`,
     { method: 'POST', headers: getAdminAuthHeaders() }
   );
@@ -455,7 +460,7 @@ export async function getTasks(params?: {
   if (params?.overdue) search.set('overdue', 'true');
   search.set('page', String(params?.page ?? 1));
   search.set('limit', String(params?.limit ?? 20));
-  const res = await fetch(`${API_URL}/admin/tasks?${search}`, {
+  const res = await apiFetch(`${API_URL}/admin/tasks?${search}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить задачи');
@@ -463,7 +468,7 @@ export async function getTasks(params?: {
 }
 
 export async function getTask(id: string): Promise<Task> {
-  const res = await fetch(`${API_URL}/admin/tasks/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/tasks/${id}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить задачу');
@@ -479,7 +484,7 @@ export async function createTask(data: {
   customerId?: string;
   assigneeId?: string;
 }): Promise<Task> {
-  const res = await fetch(`${API_URL}/admin/tasks`, {
+  const res = await apiFetch(`${API_URL}/admin/tasks`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
@@ -504,7 +509,7 @@ export async function updateTask(
     assigneeId: string | null;
   }>
 ): Promise<Task> {
-  const res = await fetch(`${API_URL}/admin/tasks/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/tasks/${id}`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
@@ -514,7 +519,7 @@ export async function updateTask(
 }
 
 export async function completeTask(id: string): Promise<Task> {
-  const res = await fetch(`${API_URL}/admin/tasks/${id}/complete`, {
+  const res = await apiFetch(`${API_URL}/admin/tasks/${id}/complete`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
   });
@@ -523,7 +528,7 @@ export async function completeTask(id: string): Promise<Task> {
 }
 
 export async function deleteTask(id: string): Promise<void> {
-  const res = await fetch(`${API_URL}/admin/tasks/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/tasks/${id}`, {
     method: 'DELETE',
     headers: getAdminAuthHeaders(),
   });
@@ -531,7 +536,7 @@ export async function deleteTask(id: string): Promise<void> {
 }
 
 export async function getTaskHistory(taskId: string): Promise<TaskHistoryEntry[]> {
-  const res = await fetch(`${API_URL}/admin/tasks/${taskId}/history`, {
+  const res = await apiFetch(`${API_URL}/admin/tasks/${taskId}/history`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить историю');
@@ -539,7 +544,7 @@ export async function getTaskHistory(taskId: string): Promise<TaskHistoryEntry[]
 }
 
 export async function rollbackTask(taskId: string, historyId: string): Promise<Task> {
-  const res = await fetch(`${API_URL}/admin/tasks/${taskId}/rollback/${historyId}`, {
+  const res = await apiFetch(`${API_URL}/admin/tasks/${taskId}/rollback/${historyId}`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
   });
@@ -554,7 +559,7 @@ export async function getTaskStats(assigneeId?: string): Promise<TaskStats> {
   const url = assigneeId
     ? `${API_URL}/admin/tasks/stats?assigneeId=${encodeURIComponent(assigneeId)}`
     : `${API_URL}/admin/tasks/stats`;
-  const res = await fetch(url, { headers: getAdminAuthHeaders() });
+  const res = await apiFetch(url, { headers: getAdminAuthHeaders() });
   if (!res.ok) throw new Error('Не удалось загрузить статистику');
   return res.json();
 }
@@ -565,7 +570,7 @@ export async function createCrmDirection(data: {
   isActive?: boolean;
   sortOrder?: number;
 }): Promise<CrmDirection> {
-  const res = await fetch(`${API_URL}/admin/crm-directions`, {
+  const res = await apiFetch(`${API_URL}/admin/crm-directions`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
@@ -621,7 +626,7 @@ export async function getMeasurements(params?: {
   searchParams.set('page', String(params?.page ?? 1));
   searchParams.set('limit', String(params?.limit ?? 20));
 
-  const res = await fetch(`${API_URL}/admin/measurements?${searchParams}`, {
+  const res = await apiFetch(`${API_URL}/admin/measurements?${searchParams}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить замеры');
@@ -629,7 +634,7 @@ export async function getMeasurements(params?: {
 }
 
 export async function getMeasurement(id: string): Promise<Measurement> {
-  const res = await fetch(`${API_URL}/admin/measurements/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/measurements/${id}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить замер');
@@ -649,7 +654,7 @@ export async function createMeasurement(data: {
   status?: string;
   customerId?: string;
 }): Promise<Measurement> {
-  const res = await fetch(`${API_URL}/admin/measurements`, {
+  const res = await apiFetch(`${API_URL}/admin/measurements`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
@@ -666,7 +671,7 @@ export async function updateMeasurement(
   id: string,
   data: Partial<Parameters<typeof createMeasurement>[0]>
 ): Promise<Measurement> {
-  const res = await fetch(`${API_URL}/admin/measurements/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/measurements/${id}`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
@@ -676,7 +681,7 @@ export async function updateMeasurement(
 }
 
 export async function deleteMeasurement(id: string): Promise<void> {
-  const res = await fetch(`${API_URL}/admin/measurements/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/measurements/${id}`, {
     method: 'DELETE',
     headers: getAdminAuthHeaders(),
   });
@@ -695,7 +700,7 @@ export interface MeasurementHistoryEntry {
 export async function getMeasurementHistory(
   measurementId: string
 ): Promise<MeasurementHistoryEntry[]> {
-  const res = await fetch(`${API_URL}/admin/measurements/${measurementId}/history`, {
+  const res = await apiFetch(`${API_URL}/admin/measurements/${measurementId}/history`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить историю');
@@ -706,10 +711,13 @@ export async function rollbackMeasurement(
   measurementId: string,
   historyId: string
 ): Promise<Measurement> {
-  const res = await fetch(`${API_URL}/admin/measurements/${measurementId}/rollback/${historyId}`, {
-    method: 'POST',
-    headers: getAdminAuthHeaders(),
-  });
+  const res = await apiFetch(
+    `${API_URL}/admin/measurements/${measurementId}/rollback/${historyId}`,
+    {
+      method: 'POST',
+      headers: getAdminAuthHeaders(),
+    }
+  );
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { message?: string };
     throw new Error(err.message || 'Не удалось откатить изменения');
@@ -791,7 +799,7 @@ export async function getContracts(params?: {
   searchParams.set('page', String(params?.page ?? 1));
   searchParams.set('limit', String(params?.limit ?? 20));
 
-  const res = await fetch(`${API_URL}/admin/contracts?${searchParams}`, {
+  const res = await apiFetch(`${API_URL}/admin/contracts?${searchParams}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить договоры');
@@ -799,7 +807,7 @@ export async function getContracts(params?: {
 }
 
 export async function getContract(id: string): Promise<Contract> {
-  const res = await fetch(`${API_URL}/admin/contracts/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/contracts/${id}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить договор');
@@ -807,7 +815,7 @@ export async function getContract(id: string): Promise<Contract> {
 }
 
 export async function createContract(data: Record<string, unknown>): Promise<Contract> {
-  const res = await fetch(`${API_URL}/admin/contracts`, {
+  const res = await apiFetch(`${API_URL}/admin/contracts`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
@@ -820,7 +828,7 @@ export async function createContract(data: Record<string, unknown>): Promise<Con
 }
 
 export async function updateContract(id: string, data: Record<string, unknown>): Promise<Contract> {
-  const res = await fetch(`${API_URL}/admin/contracts/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/contracts/${id}`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
@@ -830,7 +838,7 @@ export async function updateContract(id: string, data: Record<string, unknown>):
 }
 
 export async function deleteContract(id: string): Promise<void> {
-  const res = await fetch(`${API_URL}/admin/contracts/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/contracts/${id}`, {
     method: 'DELETE',
     headers: getAdminAuthHeaders(),
   });
@@ -854,7 +862,7 @@ export async function getContractCustomers(
 ): Promise<{ customers: ContractCustomer[] }> {
   const url = new URL(`${API_URL}/admin/contracts/customers`);
   if (search?.trim()) url.searchParams.set('search', search.trim());
-  const res = await fetch(String(url), { headers: getAdminAuthHeaders() });
+  const res = await apiFetch(String(url), { headers: getAdminAuthHeaders() });
   if (!res.ok) throw new Error('Не удалось загрузить клиентов');
   return res.json();
 }
@@ -869,7 +877,7 @@ export interface ContractHistoryEntry {
 }
 
 export async function getContractHistory(contractId: string): Promise<ContractHistoryEntry[]> {
-  const res = await fetch(`${API_URL}/admin/contracts/${contractId}/history`, {
+  const res = await apiFetch(`${API_URL}/admin/contracts/${contractId}/history`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить историю');
@@ -877,7 +885,7 @@ export async function getContractHistory(contractId: string): Promise<ContractHi
 }
 
 export async function rollbackContract(contractId: string, historyId: string): Promise<Contract> {
-  const res = await fetch(`${API_URL}/admin/contracts/${contractId}/rollback/${historyId}`, {
+  const res = await apiFetch(`${API_URL}/admin/contracts/${contractId}/rollback/${historyId}`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
   });
@@ -900,7 +908,7 @@ export async function addContractAdvance(
   contractId: string,
   data: { amount: number; paidAt: string; notes?: string }
 ): Promise<ContractAdvance> {
-  const res = await fetch(`${API_URL}/admin/contracts/${contractId}/advances`, {
+  const res = await apiFetch(`${API_URL}/admin/contracts/${contractId}/advances`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
@@ -921,7 +929,7 @@ export async function uploadContractActImage(
   formData.append('file', file);
   const headers = getAdminAuthHeaders() as Record<string, string>;
   delete headers['Content-Type'];
-  const res = await fetch(
+  const res = await apiFetch(
     `${API_URL}/admin/contracts/${contractId}/upload-act-image?type=${type}`,
     {
       method: 'POST',
@@ -960,7 +968,7 @@ export async function addContractAmendment(
     notes?: string;
   }
 ): Promise<ContractAmendment> {
-  const res = await fetch(`${API_URL}/admin/contracts/${contractId}/amendments`, {
+  const res = await apiFetch(`${API_URL}/admin/contracts/${contractId}/amendments`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
@@ -985,7 +993,7 @@ export async function updateContractAmendment(
     notes?: string | null;
   }
 ): Promise<ContractAmendment> {
-  const res = await fetch(`${API_URL}/admin/contracts/${contractId}/amendments/${amendmentId}`, {
+  const res = await apiFetch(`${API_URL}/admin/contracts/${contractId}/amendments/${amendmentId}`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
@@ -1002,7 +1010,7 @@ export async function removeContractAmendment(
   contractId: string,
   amendmentId: string
 ): Promise<void> {
-  const res = await fetch(`${API_URL}/admin/contracts/${contractId}/amendments/${amendmentId}`, {
+  const res = await apiFetch(`${API_URL}/admin/contracts/${contractId}/amendments/${amendmentId}`, {
     method: 'DELETE',
     headers: getAdminAuthHeaders(),
   });
@@ -1010,7 +1018,7 @@ export async function removeContractAmendment(
 }
 
 export async function removeContractAdvance(contractId: string, advanceId: string): Promise<void> {
-  const res = await fetch(`${API_URL}/admin/contracts/${contractId}/advances/${advanceId}`, {
+  const res = await apiFetch(`${API_URL}/admin/contracts/${contractId}/advances/${advanceId}`, {
     method: 'DELETE',
     headers: getAdminAuthHeaders(),
   });
@@ -1049,7 +1057,7 @@ export interface ContractPayment {
 }
 
 export async function canEditContractPaymentIncassation(): Promise<{ canEdit: boolean }> {
-  const res = await fetch(`${API_URL}/admin/contract-payments/can-edit-incassation`, {
+  const res = await apiFetch(`${API_URL}/admin/contract-payments/can-edit-incassation`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) return { canEdit: false };
@@ -1084,7 +1092,7 @@ export async function getContractPayments(params?: {
   searchParams.set('page', String(params?.page ?? 1));
   searchParams.set('limit', String(params?.limit ?? 20));
 
-  const res = await fetch(`${API_URL}/admin/contract-payments?${searchParams}`, {
+  const res = await apiFetch(`${API_URL}/admin/contract-payments?${searchParams}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить оплаты');
@@ -1100,7 +1108,7 @@ export async function createContractPayment(data: {
   managerId?: string;
   notes?: string;
 }): Promise<ContractPayment> {
-  const res = await fetch(`${API_URL}/admin/contract-payments`, {
+  const res = await apiFetch(`${API_URL}/admin/contract-payments`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
@@ -1116,7 +1124,7 @@ export async function updateContractPaymentCollection(
   id: string,
   collectionAmount: number | null
 ): Promise<ContractPayment> {
-  const res = await fetch(`${API_URL}/admin/contract-payments/${id}/collection-amount`, {
+  const res = await apiFetch(`${API_URL}/admin/contract-payments/${id}/collection-amount`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify({ collectionAmount }),
@@ -1129,7 +1137,7 @@ export async function updateContractPaymentCollection(
 }
 
 export async function deleteContractPayment(id: string): Promise<void> {
-  const res = await fetch(`${API_URL}/admin/contract-payments/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/contract-payments/${id}`, {
     method: 'DELETE',
     headers: getAdminAuthHeaders(),
   });
@@ -1185,7 +1193,7 @@ export async function getOfficeCashSummary(
   const search = new URLSearchParams({ officeId });
   if (params?.dateFrom) search.set('dateFrom', params.dateFrom);
   if (params?.dateTo) search.set('dateTo', params.dateTo);
-  const res = await fetch(`${API_URL}/admin/office-cash/summary?${search}`, {
+  const res = await apiFetch(`${API_URL}/admin/office-cash/summary?${search}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить сводку по кассе');
@@ -1199,7 +1207,7 @@ export async function getOfficeOtherExpenses(
   const search = new URLSearchParams({ officeId });
   if (params?.dateFrom) search.set('dateFrom', params.dateFrom);
   if (params?.dateTo) search.set('dateTo', params.dateTo);
-  const res = await fetch(`${API_URL}/admin/office-cash/other-expenses?${search}`, {
+  const res = await apiFetch(`${API_URL}/admin/office-cash/other-expenses?${search}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить прочие расходы');
@@ -1210,11 +1218,14 @@ export async function updateOfficeOtherExpenseCollection(
   id: string,
   collectionAmount: number | null
 ): Promise<OfficeOtherExpenseItem> {
-  const res = await fetch(`${API_URL}/admin/office-cash/other-expenses/${id}/collection-amount`, {
-    method: 'PATCH',
-    headers: getAdminAuthHeaders(),
-    body: JSON.stringify({ collectionAmount }),
-  });
+  const res = await apiFetch(
+    `${API_URL}/admin/office-cash/other-expenses/${id}/collection-amount`,
+    {
+      method: 'PATCH',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify({ collectionAmount }),
+    }
+  );
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as { message?: string }).message || 'Не удалось обновить инкассацию');
@@ -1228,7 +1239,7 @@ export async function createOfficeOtherExpense(data: {
   expenseDate: string;
   description?: string;
 }): Promise<OfficeOtherExpenseItem> {
-  const res = await fetch(`${API_URL}/admin/office-cash/other-expenses`, {
+  const res = await apiFetch(`${API_URL}/admin/office-cash/other-expenses`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
@@ -1247,7 +1258,7 @@ export async function getOfficeIncassations(
   const search = new URLSearchParams({ officeId });
   if (params?.dateFrom) search.set('dateFrom', params.dateFrom);
   if (params?.dateTo) search.set('dateTo', params.dateTo);
-  const res = await fetch(`${API_URL}/admin/office-cash/incassations?${search}`, {
+  const res = await apiFetch(`${API_URL}/admin/office-cash/incassations?${search}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить инкассации');
@@ -1261,7 +1272,7 @@ export async function createOfficeIncassation(data: {
   incassator?: string;
   notes?: string;
 }): Promise<OfficeIncassationItem> {
-  const res = await fetch(`${API_URL}/admin/office-cash/incassations`, {
+  const res = await apiFetch(`${API_URL}/admin/office-cash/incassations`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),

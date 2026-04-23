@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export interface CategoryFromAPI {
@@ -46,7 +48,7 @@ export function useDynamicCategories() {
   const fetchCategories = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/categories`);
+      const response = await apiFetch(`${API_URL}/categories`);
 
       if (!response.ok) {
         throw new Error('Failed to fetch categories');

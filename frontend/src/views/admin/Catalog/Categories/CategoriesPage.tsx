@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import styles from './CategoriesPage.module.css';
 
@@ -99,7 +100,7 @@ export function CategoriesPage() {
     setLoading(true);
     try {
       // Загружаем все категории включая неактивные для админки
-      const response = await fetch(`${API_URL}/categories?includeInactive=true`);
+      const response = await apiFetch(`${API_URL}/categories?includeInactive=true`);
       if (response.ok) {
         const data = await response.json();
         setCategories(data);
@@ -248,7 +249,7 @@ export function CategoriesPage() {
         categoryData.image = newCategory.image.trim();
       }
 
-      const response = await fetch(`${API_URL}/categories`, {
+      const response = await apiFetch(`${API_URL}/categories`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -312,7 +313,7 @@ export function CategoriesPage() {
     setDeleteError(null);
 
     try {
-      const response = await fetch(`${API_URL}/categories/${deleteModal.category.id}`, {
+      const response = await apiFetch(`${API_URL}/categories/${deleteModal.category.id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });

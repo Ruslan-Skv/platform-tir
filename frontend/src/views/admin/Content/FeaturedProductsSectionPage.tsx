@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import styles from './FeaturedProductsSectionPage.module.css';
 import { SectionVisibilityCheckbox } from './SectionVisibilityCheckbox';
@@ -37,7 +38,7 @@ export function FeaturedProductsSectionPage() {
     const load = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/admin/home/featured-products`, {
+        const res = await apiFetch(`${API_URL}/admin/home/featured-products`, {
           headers: getAuthHeaders(),
         });
         if (!cancelled && res.ok) {
@@ -67,7 +68,7 @@ export function FeaturedProductsSectionPage() {
     if (!data) return;
     setSaving(true);
     try {
-      const res = await fetch(`${API_URL}/admin/home/featured-products`, {
+      const res = await apiFetch(`${API_URL}/admin/home/featured-products`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify(data),

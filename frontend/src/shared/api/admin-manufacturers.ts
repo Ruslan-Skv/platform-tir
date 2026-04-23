@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -45,7 +47,7 @@ export async function fetchAdminManufacturersList(
   }
   const base = getAdminAuthHeaders() as Record<string, string>;
   const extra = headersOverride ? (headersOverride as Record<string, string>) : {};
-  const res = await fetch(`${API_URL}/admin/catalog/manufacturers?${search}`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/manufacturers?${search}`, {
     headers: { ...base, ...extra },
     cache: 'no-store',
   });
@@ -63,7 +65,7 @@ export async function createAdminManufacturer(body: {
   country?: string;
   isActive?: boolean;
 }): Promise<AdminManufacturer> {
-  const res = await fetch(`${API_URL}/admin/catalog/manufacturers`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/manufacturers`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(body),
@@ -79,7 +81,7 @@ export async function updateAdminManufacturer(
   id: string,
   body: Partial<{ name: string; slug: string; country: string | null; isActive: boolean }>
 ): Promise<AdminManufacturer> {
-  const res = await fetch(`${API_URL}/admin/catalog/manufacturers/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/manufacturers/${id}`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(body),
@@ -92,7 +94,7 @@ export async function updateAdminManufacturer(
 }
 
 export async function deleteAdminManufacturer(id: string): Promise<void> {
-  const res = await fetch(`${API_URL}/admin/catalog/manufacturers/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/manufacturers/${id}`, {
     method: 'DELETE',
     headers: getAdminAuthHeaders(),
   });

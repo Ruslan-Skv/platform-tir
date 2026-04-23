@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export interface BlogAuthor {
@@ -85,7 +87,7 @@ export async function getBlogPosts(params?: {
   if (params?.page) searchParams.set('page', String(params.page));
   if (params?.limit) searchParams.set('limit', String(params.limit));
 
-  const res = await fetch(`${API_URL}/blog/posts?${searchParams}`);
+  const res = await apiFetch(`${API_URL}/blog/posts?${searchParams}`);
   if (!res.ok) throw new Error('Не удалось загрузить записи блога');
   return res.json();
 }
@@ -96,7 +98,7 @@ export interface BlogTagStat {
 }
 
 export async function getBlogTagStats(): Promise<BlogTagStat[]> {
-  const res = await fetch(`${API_URL}/blog/tags`);
+  const res = await apiFetch(`${API_URL}/blog/tags`);
   if (!res.ok) throw new Error('Не удалось загрузить теги');
   return res.json();
 }
@@ -106,7 +108,7 @@ export async function getBlogPostBySlug(slug: string): Promise<BlogPost> {
 }
 
 export async function getBlogCategories(): Promise<BlogCategory[]> {
-  const res = await fetch(`${API_URL}/blog/categories`);
+  const res = await apiFetch(`${API_URL}/blog/categories`);
   if (!res.ok) throw new Error('Не удалось загрузить категории блога');
   return res.json();
 }
@@ -138,7 +140,7 @@ export async function getBlogPostBySlugWithGuest(
   const params = new URLSearchParams();
   if (guestId) params.set('guestId', guestId);
   const url = `${API_URL}/blog/posts/slug/${slug}${params.toString() ? `?${params}` : ''}`;
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) {
@@ -152,7 +154,7 @@ export async function toggleBlogPostLike(
   postId: string,
   guestId?: string
 ): Promise<{ liked: boolean; likeCount: number }> {
-  const res = await fetch(`${API_URL}/blog/posts/${postId}/like`, {
+  const res = await apiFetch(`${API_URL}/blog/posts/${postId}/like`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({ guestId: guestId || getGuestId() }),

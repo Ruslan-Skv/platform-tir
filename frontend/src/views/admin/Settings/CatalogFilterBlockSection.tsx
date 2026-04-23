@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import styles from './CatalogFilterBlockSection.module.css';
 import baseStyles from './SettingsPage.module.css';
@@ -130,7 +131,7 @@ export function CatalogFilterBlockSection() {
   const [categoryAttrs, setCategoryAttrs] = useState<CategoryAttrRow[]>([]);
 
   const loadBlocks = useCallback(async () => {
-    const res = await fetch(`${API_URL}/admin/catalog-filter-blocks`, {
+    const res = await apiFetch(`${API_URL}/admin/catalog-filter-blocks`, {
       headers: getAuthHeaders(),
     });
     if (!res.ok) throw new Error('Не удалось загрузить блоки');
@@ -139,7 +140,7 @@ export function CatalogFilterBlockSection() {
   }, [getAuthHeaders]);
 
   const loadFlatCats = useCallback(async () => {
-    const res = await fetch(`${API_URL}/categories/flat`);
+    const res = await apiFetch(`${API_URL}/categories/flat`);
     if (!res.ok) return;
     const data = await res.json();
     setFlatCats(Array.isArray(data) ? data : []);
@@ -169,7 +170,7 @@ export function CatalogFilterBlockSection() {
       return;
     }
     let cancelled = false;
-    fetch(`${API_URL}/categories/${encodeURIComponent(categoryId)}/attributes`)
+    apiFetch(`${API_URL}/categories/${encodeURIComponent(categoryId)}/attributes`)
       .then((r) => (r.ok ? r.json() : []))
       .then((rows: CategoryAttrRow[]) => {
         if (!cancelled) setCategoryAttrs(Array.isArray(rows) ? rows : []);
@@ -271,7 +272,7 @@ export function CatalogFilterBlockSection() {
         editingId != null
           ? `${API_URL}/admin/catalog-filter-blocks/${editingId}`
           : `${API_URL}/admin/catalog-filter-blocks`;
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method: editingId != null ? 'PATCH' : 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -296,7 +297,7 @@ export function CatalogFilterBlockSection() {
     if (!confirm('Удалить блок фильтров для этой категории?')) return;
     setSaving(true);
     try {
-      const res = await fetch(`${API_URL}/admin/catalog-filter-blocks/${id}`, {
+      const res = await apiFetch(`${API_URL}/admin/catalog-filter-blocks/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });

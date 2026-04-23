@@ -13,6 +13,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { serviceCatalogIconMap } from '@/shared/lib/serviceCatalogIcons';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
@@ -430,7 +431,7 @@ export function ServiceCatalogItemsPage() {
         setLoading(true);
       }
       try {
-        const res = await fetch(
+        const res = await apiFetch(
           `${API_URL}/admin/service-catalog/categories?includeInactive=true`,
           {
             headers: getAuthHeaders(),
@@ -465,7 +466,7 @@ export function ServiceCatalogItemsPage() {
     setReorderBusyKey(`cat:${cat.id}`);
     try {
       const headers = { 'Content-Type': 'application/json', ...getAuthHeaders() };
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_URL}/admin/service-catalog/categories/${cat.id}/reorder?includeInactive=true`,
         {
           method: 'POST',
@@ -515,7 +516,7 @@ export function ServiceCatalogItemsPage() {
       const results: Response[] = [];
       for (const u of updates) {
         results.push(
-          await fetch(`${API_URL}/admin/service-catalog/items/${u.id}`, {
+          await apiFetch(`${API_URL}/admin/service-catalog/items/${u.id}`, {
             method: 'PATCH',
             headers,
             body: JSON.stringify({ sortOrder: u.sortOrder }),
@@ -542,7 +543,7 @@ export function ServiceCatalogItemsPage() {
       return;
     }
     try {
-      const res = await fetch(`${API_URL}/admin/service-catalog/items`, {
+      const res = await apiFetch(`${API_URL}/admin/service-catalog/items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({
@@ -581,7 +582,7 @@ export function ServiceCatalogItemsPage() {
       if (editItemData.name !== undefined) body.name = editItemData.name;
       if (editItemData.price !== undefined) body.price = editItemData.price;
       if (editItemData.unit !== undefined) body.unit = editItemData.unit;
-      const res = await fetch(`${API_URL}/admin/service-catalog/items/${id}`, {
+      const res = await apiFetch(`${API_URL}/admin/service-catalog/items/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify(body),
@@ -603,7 +604,7 @@ export function ServiceCatalogItemsPage() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      const res = await fetch(`${API_URL}/admin/service-catalog/items/${deleteTarget.id}`, {
+      const res = await apiFetch(`${API_URL}/admin/service-catalog/items/${deleteTarget.id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });

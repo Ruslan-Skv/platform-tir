@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/features/auth';
 import { getAdminUserCabinetData } from '@/shared/api/admin-user-cabinet';
 import type { UserCabinetData } from '@/shared/api/admin-user-cabinet';
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
 import { DataTable } from '@/shared/ui/admin/DataTable';
@@ -49,7 +50,7 @@ export function UsersPage() {
     if (!canManageUsers) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/users`, {
+      const res = await apiFetch(`${API_URL}/users`, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       });
       if (!res.ok) throw new Error('Ошибка загрузки пользователей');
@@ -281,7 +282,7 @@ export function UsersPage() {
           onConfirm={async () => {
             if (!deleteUser) return;
             try {
-              const res = await fetch(`${API_URL}/users/${deleteUser.id}`, {
+              const res = await apiFetch(`${API_URL}/users/${deleteUser.id}`, {
                 method: 'DELETE',
                 headers: getAuthHeaders(),
               });
@@ -491,7 +492,7 @@ function CreateUserModal({
     }
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}/users`, {
+      const res = await apiFetch(`${API_URL}/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -633,7 +634,7 @@ function EditUserModal({
     }
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}/users/${user.id}`, {
+      const res = await apiFetch(`${API_URL}/users/${user.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

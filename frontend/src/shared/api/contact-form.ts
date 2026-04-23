@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAuthHeaders(): HeadersInit {
@@ -18,13 +20,13 @@ export interface ContactFormBlock {
 }
 
 export async function getContactFormBlock(): Promise<ContactFormBlock> {
-  const res = await fetch(`${API_URL}/home/contact-form`);
+  const res = await apiFetch(`${API_URL}/home/contact-form`);
   if (!res.ok) throw new Error('Не удалось загрузить блок');
   return res.json();
 }
 
 export async function getAdminContactFormBlock(): Promise<ContactFormBlock> {
-  const res = await fetch(`${API_URL}/admin/home/contact-form`, {
+  const res = await apiFetch(`${API_URL}/admin/home/contact-form`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить блок');
@@ -34,7 +36,7 @@ export async function getAdminContactFormBlock(): Promise<ContactFormBlock> {
 export async function updateAdminContactFormBlock(
   data: Partial<ContactFormBlock>
 ): Promise<ContactFormBlock> {
-  const res = await fetch(`${API_URL}/admin/home/contact-form`, {
+  const res = await apiFetch(`${API_URL}/admin/home/contact-form`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
     body: JSON.stringify(data),

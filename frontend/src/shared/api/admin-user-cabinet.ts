@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAuthHeaders(): HeadersInit {
@@ -22,7 +24,7 @@ export interface UserCabinetSettings {
 }
 
 export async function getAdminUserCabinetSettings(): Promise<UserCabinetSettings> {
-  const res = await fetch(`${API_URL}/admin/user-cabinet/settings`, {
+  const res = await apiFetch(`${API_URL}/admin/user-cabinet/settings`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить настройки');
@@ -62,7 +64,7 @@ export interface UserCabinetData {
 }
 
 export async function getAdminUserCabinetData(userId: string): Promise<UserCabinetData> {
-  const res = await fetch(`${API_URL}/admin/user-cabinet/user/${userId}`, {
+  const res = await apiFetch(`${API_URL}/admin/user-cabinet/user/${userId}`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить данные');
@@ -70,7 +72,7 @@ export async function getAdminUserCabinetData(userId: string): Promise<UserCabin
 }
 
 export async function updateAdminUserCabinetSettings(data: Partial<UserCabinetSettings>) {
-  const res = await fetch(`${API_URL}/admin/user-cabinet/settings`, {
+  const res = await apiFetch(`${API_URL}/admin/user-cabinet/settings`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
     body: JSON.stringify(data),

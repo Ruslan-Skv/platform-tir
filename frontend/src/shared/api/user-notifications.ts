@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export interface UserNotificationSettings {
@@ -21,7 +23,7 @@ function getUserAuthHeaders(): HeadersInit {
 }
 
 export async function getUserNotificationSettings(): Promise<UserNotificationSettings> {
-  const res = await fetch(`${API_URL}/users/me/notification-settings`, {
+  const res = await apiFetch(`${API_URL}/users/me/notification-settings`, {
     headers: getUserAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить настройки');
@@ -31,7 +33,7 @@ export async function getUserNotificationSettings(): Promise<UserNotificationSet
 export async function updateUserNotificationSettings(
   data: Partial<Pick<UserNotificationSettings, 'notifyOnSupportChatReply' | 'mobileCatalogColumns'>>
 ): Promise<UserNotificationSettings> {
-  const res = await fetch(`${API_URL}/users/me/notification-settings`, {
+  const res = await apiFetch(`${API_URL}/users/me/notification-settings`, {
     method: 'PATCH',
     headers: getUserAuthHeaders(),
     body: JSON.stringify(data),
@@ -73,7 +75,7 @@ export async function getUserNotificationHistory(params?: {
   if (params?.limit != null) searchParams.set('limit', String(params.limit));
   const query = searchParams.toString();
   const url = `${API_URL}/users/me/notifications${query ? `?${query}` : ''}`;
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     headers: getUserAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить историю уведомлений');
@@ -84,7 +86,7 @@ export async function checkNewSupportReplies(
   since: string
 ): Promise<{ conversationIds: string[] }> {
   const params = new URLSearchParams({ since });
-  const res = await fetch(`${API_URL}/support/conversations/check-new-replies?${params}`, {
+  const res = await apiFetch(`${API_URL}/support/conversations/check-new-replies?${params}`, {
     headers: getUserAuthHeaders(),
   });
   if (!res.ok) return { conversationIds: [] };

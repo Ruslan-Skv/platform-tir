@@ -4,6 +4,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { json, urlencoded } from 'express';
 import * as express from 'express';
+import cookieParser = require('cookie-parser');
 import { join } from 'path';
 import { AppModule } from './app.module';
 
@@ -20,6 +21,7 @@ async function bootstrap() {
   // Для base64-изображений в JSON; увеличение — только при явной необходимости
   app.use(json({ limit: '20mb' }));
   app.use(urlencoded({ limit: '20mb', extended: true }));
+  app.use(cookieParser());
 
   // Global prefix
   const apiPrefix = process.env.API_PREFIX || 'api/v1';

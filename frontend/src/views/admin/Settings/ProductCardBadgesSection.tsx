@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
@@ -43,7 +44,9 @@ export function ProductCardBadgesSection() {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/product-card-badges/definitions`, { cache: 'no-store' });
+      const res = await apiFetch(`${API_URL}/product-card-badges/definitions`, {
+        cache: 'no-store',
+      });
       if (!res.ok) throw new Error('Не удалось загрузить список');
       const data = (await res.json()) as ProductCardBadgeDefinition[];
       const list = Array.isArray(data) ? data : [];
@@ -71,7 +74,7 @@ export function ProductCardBadgesSection() {
     try {
       const fd = new FormData();
       fd.append('file', file);
-      const res = await fetch(`${API_URL}/admin/product-card-badges/definitions/${id}/upload`, {
+      const res = await apiFetch(`${API_URL}/admin/product-card-badges/definitions/${id}/upload`, {
         method: 'POST',
         headers: { ...getAuthHeaders() },
         body: fd,
@@ -92,7 +95,7 @@ export function ProductCardBadgesSection() {
   const handleSaveDescription = async (id: string, description: string) => {
     setUploadingId(id);
     try {
-      const res = await fetch(`${API_URL}/admin/product-card-badges/definitions/${id}`, {
+      const res = await apiFetch(`${API_URL}/admin/product-card-badges/definitions/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -113,7 +116,7 @@ export function ProductCardBadgesSection() {
   const performRemoveIcon = async (id: string) => {
     setUploadingId(id);
     try {
-      const res = await fetch(`${API_URL}/admin/product-card-badges/definitions/${id}`, {
+      const res = await apiFetch(`${API_URL}/admin/product-card-badges/definitions/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

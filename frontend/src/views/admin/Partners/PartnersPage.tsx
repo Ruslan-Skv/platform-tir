@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { getSafeHref } from '@/shared/lib/sanitize';
 
 import styles from './PartnersPage.module.css';
@@ -228,7 +229,7 @@ export function PartnersPage() {
     try {
       const params = new URLSearchParams();
       if (search) params.append('search', search);
-      const response = await fetch(`${API_URL}/admin/partners?${params.toString()}`, {
+      const response = await apiFetch(`${API_URL}/admin/partners?${params.toString()}`, {
         headers: getAuthHeaders(),
       });
       if (response.ok) {
@@ -256,7 +257,7 @@ export function PartnersPage() {
     setDeleting(true);
     setDeleteError(null);
     try {
-      const response = await fetch(`${API_URL}/admin/partners/${deleteModal.partner.id}`, {
+      const response = await apiFetch(`${API_URL}/admin/partners/${deleteModal.partner.id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });

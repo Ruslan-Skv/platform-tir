@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -31,7 +33,7 @@ export async function getCatalogActivity(from: Date, to: Date): Promise<CatalogA
     from: from.toISOString(),
     to: to.toISOString(),
   });
-  const res = await fetch(`${API_URL}/admin/dashboard/catalog-activity?${params}`, {
+  const res = await apiFetch(`${API_URL}/admin/dashboard/catalog-activity?${params}`, {
     headers: getAdminAuthHeaders(),
     cache: 'no-store',
   });

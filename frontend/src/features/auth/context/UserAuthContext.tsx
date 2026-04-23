@@ -2,18 +2,17 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
+import { apiFetch } from '@/shared/lib/api-fetch';
 import {
-  ADMIN_REFRESH_KEY,
   type TokenLoginPayload,
-  USER_REFRESH_KEY,
+  getApiBaseUrl,
   getJwtExpMs,
   persistTokenResponse,
   refreshAccessTokenSilently,
   revokeRefreshOnServer,
 } from '@/shared/lib/auth-session';
+import { formatAuthHttpError } from '@/shared/lib/nest-error-message';
 import { setPublicSiteEditMode } from '@/shared/lib/public-site-edit-mode';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export type UserRole =
   | 'SUPER_ADMIN'
@@ -106,10 +105,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     if (typeof window !== 'undefined') {
-      const rt = localStorage.getItem(USER_REFRESH_KEY) || localStorage.getItem(ADMIN_REFRESH_KEY);
-      void revokeRefreshOnServer(rt);
-      localStorage.removeItem(USER_REFRESH_KEY);
-      localStorage.removeItem(ADMIN_REFRESH_KEY);
+      void revokeRefreshOnServer();
       localStorage.removeItem(USER_TOKEN_KEY);
       localStorage.removeItem(USER_DATA_KEY);
       localStorage.removeItem(ADMIN_TOKEN_KEY);
@@ -142,7 +138,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
   const verifyToken = useCallback(
     async (tokenToVerify: string): Promise<boolean> => {
       try {
-        const response = await fetch(`${API_URL}/auth/profile`, {
+        const response = await apiFetch(`${getApiBaseUrl()}/auth/profile`, {
           headers: {
             Authorization: `Bearer ${tokenToVerify}`,
           },
@@ -158,7 +154,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
           const next =
             localStorage.getItem(USER_TOKEN_KEY) || localStorage.getItem(ADMIN_TOKEN_KEY);
           if (!next) return false;
-          const retry = await fetch(`${API_URL}/auth/profile`, {
+          const retry = await apiFetch(`${getApiBaseUrl()}/auth/profile`, {
             headers: { Authorization: `Bearer ${next}` },
           });
           if (!retry.ok) return false;
@@ -206,8 +202,6 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
               localStorage.removeItem(USER_DATA_KEY);
               localStorage.removeItem(ADMIN_TOKEN_KEY);
               localStorage.removeItem(ADMIN_USER_KEY);
-              localStorage.removeItem(USER_REFRESH_KEY);
-              localStorage.removeItem(ADMIN_REFRESH_KEY);
             }
           } else {
             const latest =
@@ -237,9 +231,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         e.key === USER_TOKEN_KEY ||
         e.key === USER_DATA_KEY ||
         e.key === ADMIN_TOKEN_KEY ||
-        e.key === ADMIN_USER_KEY ||
-        e.key === USER_REFRESH_KEY ||
-        e.key === ADMIN_REFRESH_KEY
+        e.key === ADMIN_USER_KEY
       ) {
         handleAuthChange();
       }
@@ -254,7 +246,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.getItem(USER_TOKEN_KEY) || localStorage.getItem(ADMIN_TOKEN_KEY);
     if (!savedToken) return;
     try {
-      const response = await fetch(`${API_URL}/auth/profile`, {
+      const response = await apiFetch(`${getApiBaseUrl()}/auth/profile`, {
         headers: { Authorization: `Bearer ${savedToken}` },
       });
       if (response.ok) {
@@ -274,7 +266,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await apiFetch(`${getApiBaseUrl()}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -286,13 +278,16 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         const error = await response.json().catch(() => ({}));
         return {
           success: false,
-          error: error.message || 'Неверный email или пароль',
+          error: formatAuthHttpError(response, error, {
+            unauthorizedFallback: 'Неверный email или пароль',
+            defaultFallback: 'Не удалось войти',
+          }),
         };
       }
 
       const data = await response.json();
 
-      if (!data.access_token || !data.refresh_token || !data.user) {
+      if (!data.access_token || !data.user) {
         return { success: false, error: 'Некорректный ответ сервера' };
       }
 
@@ -314,7 +309,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
   const register = useCallback(
     async (email: string, password: string, firstName?: string, lastName?: string) => {
       try {
-        const response = await fetch(`${API_URL}/auth/register`, {
+        const response = await apiFetch(`${getApiBaseUrl()}/auth/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -326,13 +321,16 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
           const error = await response.json().catch(() => ({}));
           return {
             success: false,
-            error: error.message || 'Ошибка при регистрации',
+            error: formatAuthHttpError(response, error, {
+              unauthorizedFallback: 'Неверный email или пароль',
+              defaultFallback: 'Ошибка при регистрации',
+            }),
           };
         }
 
         const data = await response.json();
 
-        if (!data.access_token || !data.refresh_token || !data.user) {
+        if (!data.access_token || !data.user) {
           return { success: false, error: 'Некорректный ответ сервера' };
         }
 
@@ -368,7 +366,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const response = await fetch(`${API_URL}/users/me`, {
+        const response = await apiFetch(`${getApiBaseUrl()}/users/me`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -424,7 +422,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await fetch(`${API_URL}/users/me/avatar`, {
+        const response = await apiFetch(`${getApiBaseUrl()}/users/me/avatar`, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,

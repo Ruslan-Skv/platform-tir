@@ -14,6 +14,7 @@ import React, {
 import { usePathname, useSearchParams } from 'next/navigation';
 
 import type { Product } from '@/entities/product/types';
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { useMobileCatalogColumns } from '@/shared/lib/hooks';
 import {
   applyCatalogFilters,
@@ -188,7 +189,7 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
             ? `${API_URL}/products/catalog/all`
             : `${API_URL}/products/category/${encodeURIComponent(categorySlug)}`;
         const endpoint = queryString ? `${basePath}?${queryString}` : basePath;
-        const response = await fetch(endpoint);
+        const response = await apiFetch(endpoint);
 
         if (!response.ok) {
           throw new Error('Не удалось загрузить товары');
@@ -216,7 +217,7 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
   useEffect(() => {
     const fetchPartnerSettings = async () => {
       try {
-        const res = await fetch(`${API_URL}/home/partner-products`);
+        const res = await apiFetch(`${API_URL}/home/partner-products`);
         if (res.ok) {
           const data = await res.json();
           setPartnerSettings({

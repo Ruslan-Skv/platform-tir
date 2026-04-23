@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import styles from './HeroSectionPage.module.css';
 import { SectionVisibilityCheckbox } from './SectionVisibilityCheckbox';
@@ -71,7 +72,7 @@ export function HeroSectionPage() {
     const load = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/admin/home/hero`, {
+        const res = await apiFetch(`${API_URL}/admin/home/hero`, {
           headers: getAuthHeaders(),
         });
         if (!cancelled && res.ok) {
@@ -107,7 +108,7 @@ export function HeroSectionPage() {
     if (!data) return;
     setSaving(true);
     try {
-      const res = await fetch(`${API_URL}/admin/home/hero`, {
+      const res = await apiFetch(`${API_URL}/admin/home/hero`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify(data.block),
@@ -143,7 +144,7 @@ export function HeroSectionPage() {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch(`${API_URL}/admin/home/hero/slides`, {
+      const res = await apiFetch(`${API_URL}/admin/home/hero/slides`, {
         method: 'POST',
         headers: getAuthHeaders() as Record<string, string>,
         body: formData,
@@ -171,7 +172,7 @@ export function HeroSectionPage() {
   const handleDeleteSlide = async (id: string) => {
     setDeletingSlide(true);
     try {
-      const res = await fetch(`${API_URL}/admin/home/hero/slides/${id}`, {
+      const res = await apiFetch(`${API_URL}/admin/home/hero/slides/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });
@@ -194,7 +195,7 @@ export function HeroSectionPage() {
   const handleAddFeature = async () => {
     if (!newFeature.icon.trim() || !newFeature.title.trim()) return;
     try {
-      const res = await fetch(`${API_URL}/admin/home/hero/features`, {
+      const res = await apiFetch(`${API_URL}/admin/home/hero/features`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify(newFeature),
@@ -219,7 +220,7 @@ export function HeroSectionPage() {
 
   const handleUpdateFeature = async (id: string, icon: string, title: string) => {
     try {
-      const res = await fetch(`${API_URL}/admin/home/hero/features/${id}`, {
+      const res = await apiFetch(`${API_URL}/admin/home/hero/features/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ icon, title }),
@@ -250,7 +251,7 @@ export function HeroSectionPage() {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch(`${API_URL}/admin/home/hero/features/icon`, {
+      const res = await apiFetch(`${API_URL}/admin/home/hero/features/icon`, {
         method: 'POST',
         headers: getAuthHeaders() as Record<string, string>,
         body: formData,
@@ -286,7 +287,7 @@ export function HeroSectionPage() {
   const handleDeleteFeature = async (id: string) => {
     if (!confirm('Удалить это преимущество?')) return;
     try {
-      const res = await fetch(`${API_URL}/admin/home/hero/features/${id}`, {
+      const res = await apiFetch(`${API_URL}/admin/home/hero/features/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });

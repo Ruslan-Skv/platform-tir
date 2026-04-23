@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAuthHeaders(): HeadersInit {
@@ -19,7 +21,7 @@ export interface CreateServiceOrderDto {
 }
 
 export async function canPlaceServiceOrder(): Promise<{ canPlace: boolean }> {
-  const res = await fetch(`${API_URL}/orders/can-place-service-order`, {
+  const res = await apiFetch(`${API_URL}/orders/can-place-service-order`, {
     headers: getAuthHeaders(),
   });
   if (res.status === 401) {
@@ -34,7 +36,7 @@ export async function canPlaceServiceOrder(): Promise<{ canPlace: boolean }> {
 export async function createServiceOrder(
   dto: CreateServiceOrderDto
 ): Promise<{ id: string; orderNumber: string; total: number }> {
-  const res = await fetch(`${API_URL}/admin/orders/service-order`, {
+  const res = await apiFetch(`${API_URL}/admin/orders/service-order`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(dto),

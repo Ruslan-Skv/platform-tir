@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -52,7 +54,7 @@ export interface AdminUserItem {
 }
 
 export async function getAdminAccessResources(): Promise<AdminResourceItem[]> {
-  const res = await fetch(`${API_URL}/admin/access/resources`, {
+  const res = await apiFetch(`${API_URL}/admin/access/resources`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить список ресурсов');
@@ -60,7 +62,7 @@ export async function getAdminAccessResources(): Promise<AdminResourceItem[]> {
 }
 
 export async function getAdminAccessUsers(): Promise<AdminUserItem[]> {
-  const res = await fetch(`${API_URL}/admin/access/users`, {
+  const res = await apiFetch(`${API_URL}/admin/access/users`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить список пользователей');
@@ -70,7 +72,7 @@ export async function getAdminAccessUsers(): Promise<AdminUserItem[]> {
 export async function getResourcePermissions(
   resourceId: string
 ): Promise<ResourcePermissionsResponse> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${API_URL}/admin/access/resources/${encodeURIComponent(resourceId)}/permissions`,
     { headers: getAdminAuthHeaders() }
   );
@@ -79,7 +81,7 @@ export async function getResourcePermissions(
 }
 
 export async function getMyAccessibleResources(): Promise<string[]> {
-  const res = await fetch(`${API_URL}/admin/access/my-resources`, {
+  const res = await apiFetch(`${API_URL}/admin/access/my-resources`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить список доступных разделов');
@@ -91,7 +93,7 @@ export async function setResourcePermission(
   userId: string,
   permission: 'VIEW' | 'EDIT' | 'DENIED'
 ): Promise<ResourcePermissionsResponse> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${API_URL}/admin/access/resources/${encodeURIComponent(resourceId)}/permissions`,
     {
       method: 'POST',
@@ -107,7 +109,7 @@ export async function revokeResourcePermission(
   resourceId: string,
   userId: string
 ): Promise<ResourcePermissionsResponse> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${API_URL}/admin/access/resources/${encodeURIComponent(resourceId)}/permissions/${encodeURIComponent(userId)}`,
     { method: 'DELETE', headers: getAdminAuthHeaders() }
   );
@@ -121,7 +123,7 @@ export interface AdminRoleItem {
 }
 
 export async function getAdminAccessRoles(): Promise<AdminRoleItem[]> {
-  const res = await fetch(`${API_URL}/admin/access/roles`, {
+  const res = await apiFetch(`${API_URL}/admin/access/roles`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить список ролей');
@@ -133,7 +135,7 @@ export async function setRolePermission(
   role: string,
   permission: 'VIEW' | 'EDIT' | 'DENIED'
 ): Promise<ResourcePermissionsResponse> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${API_URL}/admin/access/resources/${encodeURIComponent(resourceId)}/role-permissions`,
     {
       method: 'POST',
@@ -149,7 +151,7 @@ export async function revokeRolePermission(
   resourceId: string,
   role: string
 ): Promise<ResourcePermissionsResponse> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${API_URL}/admin/access/resources/${encodeURIComponent(resourceId)}/role-permissions/${encodeURIComponent(role)}`,
     { method: 'DELETE', headers: getAdminAuthHeaders() }
   );

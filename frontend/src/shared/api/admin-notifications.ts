@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export type NotificationSoundType = 'beep' | 'ding' | 'chime' | 'bell' | 'custom';
@@ -30,7 +32,7 @@ function getAdminAuthHeaders(): HeadersInit {
 }
 
 export async function getAdminNotificationsSettings(): Promise<AdminNotificationsSettings> {
-  const res = await fetch(`${API_URL}/admin/notifications/settings`, {
+  const res = await apiFetch(`${API_URL}/admin/notifications/settings`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить настройки');
@@ -42,7 +44,7 @@ export async function getAdminNotificationsSettingsByRole(
 ): Promise<AdminNotificationsSettings> {
   const params = new URLSearchParams();
   params.set('role', role === null ? 'default' : role);
-  const res = await fetch(`${API_URL}/admin/notifications/settings/by-role?${params}`, {
+  const res = await apiFetch(`${API_URL}/admin/notifications/settings/by-role?${params}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить настройки');
@@ -66,7 +68,7 @@ export interface CustomerNotificationSettings {
 }
 
 export async function getAdminNotificationCustomers(): Promise<AdminNotificationUser[]> {
-  const res = await fetch(`${API_URL}/admin/notifications/customers`, {
+  const res = await apiFetch(`${API_URL}/admin/notifications/customers`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) return [];
@@ -77,7 +79,7 @@ export async function getAdminNotificationCustomers(): Promise<AdminNotification
 export async function getAdminCustomerNotificationSettings(
   userId: string
 ): Promise<CustomerNotificationSettings> {
-  const res = await fetch(`${API_URL}/admin/notifications/customers/${userId}/settings`, {
+  const res = await apiFetch(`${API_URL}/admin/notifications/customers/${userId}/settings`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить настройки');
@@ -88,7 +90,7 @@ export async function updateAdminCustomerNotificationSettings(
   userId: string,
   data: { notifyOnSupportChatReply?: boolean }
 ): Promise<CustomerNotificationSettings> {
-  const res = await fetch(`${API_URL}/admin/notifications/customers/${userId}/settings`, {
+  const res = await apiFetch(`${API_URL}/admin/notifications/customers/${userId}/settings`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
@@ -107,7 +109,7 @@ export async function updateAdminCustomerNotificationSettings(
 export async function updateAllAdminCustomerNotificationSettings(data: {
   notifyOnSupportChatReply?: boolean;
 }): Promise<{ updated: number }> {
-  const res = await fetch(`${API_URL}/admin/notifications/customers/bulk`, {
+  const res = await apiFetch(`${API_URL}/admin/notifications/customers/bulk`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
@@ -124,7 +126,7 @@ export async function updateAllAdminCustomerNotificationSettings(data: {
 }
 
 export async function getAdminNotificationUsers(): Promise<AdminNotificationUser[]> {
-  const res = await fetch(`${API_URL}/admin/notifications/users`, {
+  const res = await apiFetch(`${API_URL}/admin/notifications/users`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) return [];
@@ -135,7 +137,7 @@ export async function getAdminNotificationUsers(): Promise<AdminNotificationUser
 export async function getAdminNotificationsSettingsByUser(
   userId: string
 ): Promise<AdminNotificationsSettings> {
-  const res = await fetch(`${API_URL}/admin/notifications/settings/by-user/${userId}`, {
+  const res = await apiFetch(`${API_URL}/admin/notifications/settings/by-user/${userId}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить настройки');
@@ -159,7 +161,7 @@ export async function updateAdminNotificationsSettingsByUser(
     notifyOnMeasurementForm: data.notifyOnMeasurementForm,
     notifyOnCallbackForm: data.notifyOnCallbackForm,
   };
-  const res = await fetch(`${API_URL}/admin/notifications/settings/by-user/${userId}`, {
+  const res = await apiFetch(`${API_URL}/admin/notifications/settings/by-user/${userId}`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(body),
@@ -176,7 +178,7 @@ export async function updateAdminNotificationsSettingsByUser(
 }
 
 export async function getAllAdminNotificationsSettings(): Promise<AdminNotificationsSettings[]> {
-  const res = await fetch(`${API_URL}/admin/notifications/settings/all`, {
+  const res = await apiFetch(`${API_URL}/admin/notifications/settings/all`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить настройки');
@@ -200,7 +202,7 @@ export async function updateAdminNotificationsSettings(
     notifyOnMeasurementForm: data.notifyOnMeasurementForm,
     notifyOnCallbackForm: data.notifyOnCallbackForm,
   };
-  const res = await fetch(`${API_URL}/admin/notifications/settings`, {
+  const res = await apiFetch(`${API_URL}/admin/notifications/settings`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(body),
@@ -224,7 +226,7 @@ export interface NotificationSound {
 }
 
 export async function getAdminNotificationSounds(): Promise<NotificationSound[]> {
-  const res = await fetch(`${API_URL}/admin/notifications/sounds`, {
+  const res = await apiFetch(`${API_URL}/admin/notifications/sounds`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить звуки');
@@ -250,7 +252,7 @@ export async function uploadAdminNotificationSound(
     (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_URL}/admin/notifications/sounds`, {
+  const res = await apiFetch(`${API_URL}/admin/notifications/sounds`, {
     method: 'POST',
     headers,
     body: formData,
@@ -267,7 +269,7 @@ export async function uploadAdminNotificationSound(
 }
 
 export async function deleteAdminNotificationSound(id: string): Promise<void> {
-  const res = await fetch(`${API_URL}/admin/notifications/sounds/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/notifications/sounds/${id}`, {
     method: 'DELETE',
     headers: getAdminAuthHeaders(),
   });

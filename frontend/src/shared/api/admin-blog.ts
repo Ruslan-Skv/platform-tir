@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 import type { BlogContentAlign, BlogPostBlock } from './blog';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
@@ -112,7 +114,7 @@ export async function getAdminBlogPosts(params?: {
   if (params?.page) searchParams.set('page', String(params.page));
   if (params?.limit) searchParams.set('limit', String(params.limit));
 
-  const res = await fetch(`${API_URL}/admin/blog/posts?${searchParams}`, {
+  const res = await apiFetch(`${API_URL}/admin/blog/posts?${searchParams}`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить посты');
@@ -120,7 +122,7 @@ export async function getAdminBlogPosts(params?: {
 }
 
 export async function getAdminBlogPost(id: string) {
-  const res = await fetch(`${API_URL}/admin/blog/posts/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/blog/posts/${id}`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить пост');
@@ -128,7 +130,7 @@ export async function getAdminBlogPost(id: string) {
 }
 
 export async function createBlogPost(dto: CreateBlogPostDto) {
-  const res = await fetch(`${API_URL}/admin/blog/posts`, {
+  const res = await apiFetch(`${API_URL}/admin/blog/posts`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(dto),
@@ -141,7 +143,7 @@ export async function createBlogPost(dto: CreateBlogPostDto) {
 }
 
 export async function updateBlogPost(id: string, dto: Partial<CreateBlogPostDto>) {
-  const res = await fetch(`${API_URL}/admin/blog/posts/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/blog/posts/${id}`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
     body: JSON.stringify(dto),
@@ -154,7 +156,7 @@ export async function updateBlogPost(id: string, dto: Partial<CreateBlogPostDto>
 }
 
 export async function deleteBlogPost(id: string) {
-  const res = await fetch(`${API_URL}/admin/blog/posts/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/blog/posts/${id}`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });
@@ -162,7 +164,7 @@ export async function deleteBlogPost(id: string) {
 }
 
 export async function publishBlogPost(id: string) {
-  const res = await fetch(`${API_URL}/admin/blog/posts/${id}/publish`, {
+  const res = await apiFetch(`${API_URL}/admin/blog/posts/${id}/publish`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
   });
@@ -171,7 +173,7 @@ export async function publishBlogPost(id: string) {
 }
 
 export async function getAdminBlogCategories() {
-  const res = await fetch(`${API_URL}/admin/blog/categories`, {
+  const res = await apiFetch(`${API_URL}/admin/blog/categories`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить категории');
@@ -186,7 +188,7 @@ export interface BlogBadgePreset {
 }
 
 export async function getBlogBadgePresets(): Promise<BlogBadgePreset[]> {
-  const res = await fetch(`${API_URL}/admin/blog/badge-presets`, {
+  const res = await apiFetch(`${API_URL}/admin/blog/badge-presets`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить список плашек');
@@ -194,7 +196,7 @@ export async function getBlogBadgePresets(): Promise<BlogBadgePreset[]> {
 }
 
 export async function createBlogBadgePreset(label: string): Promise<BlogBadgePreset> {
-  const res = await fetch(`${API_URL}/admin/blog/badge-presets`, {
+  const res = await apiFetch(`${API_URL}/admin/blog/badge-presets`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({ label }),
@@ -209,7 +211,7 @@ export async function createBlogBadgePreset(label: string): Promise<BlogBadgePre
 export async function uploadBlogFeaturedImage(file: File): Promise<{ imageUrl: string }> {
   const formData = new FormData();
   formData.append('file', file);
-  const res = await fetch(`${API_URL}/admin/blog/upload`, {
+  const res = await apiFetch(`${API_URL}/admin/blog/upload`, {
     method: 'POST',
     headers: getAuthHeadersMultipart(),
     body: formData,
@@ -222,7 +224,7 @@ export async function uploadBlogFeaturedImage(file: File): Promise<{ imageUrl: s
 }
 
 export async function createBlogCategory(dto: CreateBlogCategoryDto) {
-  const res = await fetch(`${API_URL}/admin/blog/categories`, {
+  const res = await apiFetch(`${API_URL}/admin/blog/categories`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(dto),
@@ -235,7 +237,7 @@ export async function createBlogCategory(dto: CreateBlogCategoryDto) {
 }
 
 export async function updateBlogCategory(id: string, dto: Partial<CreateBlogCategoryDto>) {
-  const res = await fetch(`${API_URL}/admin/blog/categories/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/blog/categories/${id}`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
     body: JSON.stringify(dto),
@@ -245,7 +247,7 @@ export async function updateBlogCategory(id: string, dto: Partial<CreateBlogCate
 }
 
 export async function deleteBlogCategory(id: string) {
-  const res = await fetch(`${API_URL}/admin/blog/categories/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/blog/categories/${id}`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });
@@ -253,7 +255,7 @@ export async function deleteBlogCategory(id: string) {
 }
 
 export async function getAdminBlogStats() {
-  const res = await fetch(`${API_URL}/admin/blog/stats`, {
+  const res = await apiFetch(`${API_URL}/admin/blog/stats`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить статистику');

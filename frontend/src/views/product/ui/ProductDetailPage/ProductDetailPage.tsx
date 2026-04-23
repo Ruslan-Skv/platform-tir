@@ -22,6 +22,7 @@ import {
   patchProductComponent,
 } from '@/shared/api/product-components';
 import type { Review } from '@/shared/api/reviews';
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { isAuthRequiredForCartError } from '@/shared/lib/cart-auth-required';
 import { emitCompareLimitExceeded } from '@/shared/lib/compare-limit-notify';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
@@ -427,7 +428,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
         setError(null);
 
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-        const response = await fetch(`${apiUrl}/products/slug/${slug}`, {
+        const response = await apiFetch(`${apiUrl}/products/slug/${slug}`, {
           cache: 'no-store',
         });
 
@@ -462,7 +463,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     const fetchCategoryAttributes = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-        const res = await fetch(`${apiUrl}/categories/${categoryId}/attributes`);
+        const res = await apiFetch(`${apiUrl}/categories/${categoryId}/attributes`);
         if (!res.ok) {
           if (!cancelled) setCategoryAttributes([]);
           return;
@@ -493,7 +494,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
     const load = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-        const res = await fetch(`${apiUrl}/product-card-badges/definitions`);
+        const res = await apiFetch(`${apiUrl}/product-card-badges/definitions`);
         if (!res.ok) {
           if (!cancelled) setBadgeDefinitions([]);
           return;
@@ -844,7 +845,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
       }
       const slugForRevalidate = product.slug?.trim();
       if (slugForRevalidate) {
-        fetch('/api/revalidate', {
+        apiFetch('/api/revalidate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

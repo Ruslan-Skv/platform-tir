@@ -1,3 +1,4 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
 import type { CatalogApiProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
 
 import { hasSiteAuthToken } from './compare';
@@ -80,7 +81,7 @@ async function fetchWishlistProductsByIds(ids: string[]): Promise<CatalogApiProd
 
   const batches = await Promise.all(
     chunks.map(async (chunk) => {
-      const response = await fetch(`${API_URL}/products/wishlist-list`, {
+      const response = await apiFetch(`${API_URL}/products/wishlist-list`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productIds: chunk }),
@@ -97,7 +98,7 @@ async function fetchWishlistProductsByIds(ids: string[]): Promise<CatalogApiProd
 
 export async function getWishlist(): Promise<CatalogApiProduct[]> {
   if (hasSiteAuthToken()) {
-    const response = await fetch(`${API_URL}/wishlist`, {
+    const response = await apiFetch(`${API_URL}/wishlist`, {
       method: 'GET',
       headers: getAuthHeaders(),
     });
@@ -118,7 +119,7 @@ export async function getWishlist(): Promise<CatalogApiProduct[]> {
 
 export async function getWishlistCount(): Promise<number> {
   if (hasSiteAuthToken()) {
-    const response = await fetch(`${API_URL}/wishlist/count`, {
+    const response = await apiFetch(`${API_URL}/wishlist/count`, {
       method: 'GET',
       headers: getAuthHeaders(),
     });
@@ -164,7 +165,7 @@ export async function addToWishlist(productId: string): Promise<WishlistItem> {
     };
   }
 
-  const response = await fetch(`${API_URL}/wishlist/${productId}`, {
+  const response = await apiFetch(`${API_URL}/wishlist/${productId}`, {
     method: 'POST',
     headers: getAuthHeaders(),
   });
@@ -188,7 +189,7 @@ export async function removeFromWishlist(productId: string): Promise<void> {
     return;
   }
 
-  const response = await fetch(`${API_URL}/wishlist/${productId}`, {
+  const response = await apiFetch(`${API_URL}/wishlist/${productId}`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });
@@ -209,7 +210,7 @@ export async function checkInWishlist(productId: string): Promise<boolean> {
     return readGuestWishlistIds().includes(productId);
   }
 
-  const response = await fetch(`${API_URL}/wishlist/check/${productId}`, {
+  const response = await apiFetch(`${API_URL}/wishlist/check/${productId}`, {
     method: 'GET',
     headers: getAuthHeaders(),
   });

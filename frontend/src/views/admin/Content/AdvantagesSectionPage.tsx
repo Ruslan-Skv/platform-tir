@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import styles from './HeroSectionPage.module.css';
 import { SectionVisibilityCheckbox } from './SectionVisibilityCheckbox';
@@ -50,7 +51,7 @@ export function AdvantagesSectionPage() {
     const load = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/admin/home/advantages`, {
+        const res = await apiFetch(`${API_URL}/admin/home/advantages`, {
           headers: getAuthHeaders(),
         });
         if (!cancelled && res.ok) {
@@ -86,7 +87,7 @@ export function AdvantagesSectionPage() {
     if (!data) return;
     setSaving(true);
     try {
-      const res = await fetch(`${API_URL}/admin/home/advantages`, {
+      const res = await apiFetch(`${API_URL}/admin/home/advantages`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify(data.block),
@@ -120,7 +121,7 @@ export function AdvantagesSectionPage() {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch(`${API_URL}/admin/home/advantages/items/icon`, {
+      const res = await apiFetch(`${API_URL}/admin/home/advantages/items/icon`, {
         method: 'POST',
         headers: getAuthHeaders() as Record<string, string>,
         body: formData,
@@ -156,7 +157,7 @@ export function AdvantagesSectionPage() {
   const handleAddItem = async () => {
     if (!newItem.icon.trim() || !newItem.title.trim() || !newItem.description.trim()) return;
     try {
-      const res = await fetch(`${API_URL}/admin/home/advantages/items`, {
+      const res = await apiFetch(`${API_URL}/admin/home/advantages/items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify(newItem),
@@ -183,7 +184,7 @@ export function AdvantagesSectionPage() {
 
   const handleUpdateItem = async (id: string, icon: string, title: string, description: string) => {
     try {
-      const res = await fetch(`${API_URL}/admin/home/advantages/items/${id}`, {
+      const res = await apiFetch(`${API_URL}/admin/home/advantages/items/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ icon, title, description }),
@@ -212,7 +213,7 @@ export function AdvantagesSectionPage() {
   const handleDeleteItem = async (id: string) => {
     if (!confirm('Удалить это преимущество?')) return;
     try {
-      const res = await fetch(`${API_URL}/admin/home/advantages/items/${id}`, {
+      const res = await apiFetch(`${API_URL}/admin/home/advantages/items/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });

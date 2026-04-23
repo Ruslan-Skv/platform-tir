@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -43,7 +45,7 @@ export async function fetchAdminDoorThicknessesList(
   }
   const base = getAdminAuthHeaders() as Record<string, string>;
   const extra = headersOverride ? (headersOverride as Record<string, string>) : {};
-  const res = await fetch(`${API_URL}/admin/catalog/door-thicknesses?${search}`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/door-thicknesses?${search}`, {
     headers: { ...base, ...extra },
     cache: 'no-store',
   });
@@ -60,7 +62,7 @@ export async function createAdminDoorThickness(body: {
   slug: string;
   isActive?: boolean;
 }): Promise<AdminDoorThickness> {
-  const res = await fetch(`${API_URL}/admin/catalog/door-thicknesses`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/door-thicknesses`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(body),
@@ -76,7 +78,7 @@ export async function updateAdminDoorThickness(
   id: string,
   body: Partial<{ name: string; slug: string; isActive: boolean }>
 ): Promise<AdminDoorThickness> {
-  const res = await fetch(`${API_URL}/admin/catalog/door-thicknesses/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/door-thicknesses/${id}`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(body),
@@ -89,7 +91,7 @@ export async function updateAdminDoorThickness(
 }
 
 export async function deleteAdminDoorThickness(id: string): Promise<void> {
-  const res = await fetch(`${API_URL}/admin/catalog/door-thicknesses/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/door-thicknesses/${id}`, {
     method: 'DELETE',
     headers: getAdminAuthHeaders(),
   });

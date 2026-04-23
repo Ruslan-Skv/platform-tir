@@ -107,6 +107,53 @@
   box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
 }
 
+.passwordWrap {
+  position: relative;
+}
+
+.inputWithToggle {
+  padding-right: 2.75rem;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.1rem;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    background 0.2s;
+}
+
+.passwordToggle:hover {
+  color: #374151;
+  background: rgb(0 0 0 / 0.04);
+}
+
+.passwordToggle:focus {
+  outline: none;
+}
+
+.passwordToggle:focus-visible {
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.25);
+}
+
+.passwordToggleIcon {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
 .passwordHintBlock {
   margin-top: 0.25rem;
 }
@@ -405,6 +452,19 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input:focus-visible {
   border-color: rgb(var(--color-accent-rgb-dark-legacy) / 0.5);
   box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb-dark-legacy) / 0.25);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .passwordToggle {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .passwordToggle:hover {
+  color: #e5e7eb;
+  background: rgb(255 255 255 / 0.06);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .passwordToggle:focus-visible {
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb-dark-legacy) / 0.3);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .passwordHint {

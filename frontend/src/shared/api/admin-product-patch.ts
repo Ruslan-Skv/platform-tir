@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export type ProductAttributePayload = { name: string; value: string; slug?: string };
@@ -31,7 +33,7 @@ export async function patchProductAttributes(
     return { ok: false, message: 'Нет авторизации' };
   }
 
-  const res = await fetch(`${API_URL}/products/${encodeURIComponent(productId)}`, {
+  const res = await apiFetch(`${API_URL}/products/${encodeURIComponent(productId)}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -61,7 +63,7 @@ export async function patchProductPricing(
     return { ok: false, message: 'Нет авторизации' };
   }
 
-  const res = await fetch(`${API_URL}/products/${encodeURIComponent(productId)}`, {
+  const res = await apiFetch(`${API_URL}/products/${encodeURIComponent(productId)}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -91,7 +93,7 @@ export async function patchProductCatalogBadges(
     return { ok: false, message: 'Нет авторизации' };
   }
 
-  const res = await fetch(`${API_URL}/products/${encodeURIComponent(productId)}`, {
+  const res = await apiFetch(`${API_URL}/products/${encodeURIComponent(productId)}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -121,7 +123,7 @@ export async function patchProductDescription(
     return { ok: false, message: 'Нет авторизации' };
   }
 
-  const res = await fetch(`${API_URL}/products/${encodeURIComponent(productId)}`, {
+  const res = await apiFetch(`${API_URL}/products/${encodeURIComponent(productId)}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',

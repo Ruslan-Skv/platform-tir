@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export interface CatalogSettings {
@@ -7,7 +9,7 @@ export interface CatalogSettings {
 }
 
 export async function getCatalogSettings(): Promise<CatalogSettings> {
-  const res = await fetch(`${API_URL}/catalog/settings`);
+  const res = await apiFetch(`${API_URL}/catalog/settings`);
   if (!res.ok) throw new Error('Не удалось загрузить настройки каталога');
   return res.json();
 }

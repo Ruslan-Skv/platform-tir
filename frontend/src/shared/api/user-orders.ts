@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAuthHeaders(): HeadersInit {
@@ -149,7 +151,7 @@ export interface DeliverySettlementsResponse {
 
 /** Список населённых пунктов и режим оплаты доставки для корзины. */
 export async function getDeliverySettlements(): Promise<DeliverySettlementsResponse> {
-  const res = await fetch(`${API_URL}/orders/delivery-settlements`, {
+  const res = await apiFetch(`${API_URL}/orders/delivery-settlements`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить список городов');
@@ -158,7 +160,7 @@ export async function getDeliverySettlements(): Promise<DeliverySettlementsRespo
 
 /** Список способов доставки для корзины. */
 export async function getShippingMethods(): Promise<ShippingMethod[]> {
-  const res = await fetch(`${API_URL}/orders/shipping-methods`, {
+  const res = await apiFetch(`${API_URL}/orders/shipping-methods`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить способы доставки');
@@ -193,7 +195,7 @@ export async function calculateDelivery(params: {
   deliveryFloor?: number;
   deliveryHasElevator?: boolean;
 }): Promise<CalculateDeliveryResult> {
-  const res = await fetch(`${API_URL}/orders/calculate-delivery`, {
+  const res = await apiFetch(`${API_URL}/orders/calculate-delivery`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({
@@ -259,7 +261,7 @@ export async function submitOrderFromCart(payload?: SubmitFromCartFullPayload): 
   if (payload?.addToPendingReview === true) {
     body.addToPendingReview = true;
   }
-  const res = await fetch(`${API_URL}/orders/submit-from-cart`, {
+  const res = await apiFetch(`${API_URL}/orders/submit-from-cart`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(body),
@@ -273,7 +275,7 @@ export async function submitOrderFromCart(payload?: SubmitFromCartFullPayload): 
 
 /** Отменить проверку заказа (покупатель). Заказ переходит в «Отменён», можно снова отправить корзину или продолжить покупки. */
 export async function cancelOrderByCustomer(orderId: string): Promise<UserOrder> {
-  const res = await fetch(`${API_URL}/orders/${orderId}/cancel-by-customer`, {
+  const res = await apiFetch(`${API_URL}/orders/${orderId}/cancel-by-customer`, {
     method: 'POST',
     headers: getAuthHeaders(),
   });
@@ -286,7 +288,7 @@ export async function cancelOrderByCustomer(orderId: string): Promise<UserOrder>
 
 /** Добавить позицию из корзины в заказ на проверке. Позиция удаляется из корзины. */
 export async function addCartItemToOrder(orderId: string, cartItemId: string): Promise<UserOrder> {
-  const res = await fetch(`${API_URL}/orders/${orderId}/add-cart-item`, {
+  const res = await apiFetch(`${API_URL}/orders/${orderId}/add-cart-item`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({ cartItemId }),
@@ -299,7 +301,7 @@ export async function addCartItemToOrder(orderId: string, cartItemId: string): P
 }
 
 export async function getUserOrders(): Promise<UserOrder[]> {
-  const res = await fetch(`${API_URL}/orders`, {
+  const res = await apiFetch(`${API_URL}/orders`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить заказы');
@@ -307,7 +309,7 @@ export async function getUserOrders(): Promise<UserOrder[]> {
 }
 
 export async function getUserOrder(id: string): Promise<UserOrder> {
-  const res = await fetch(`${API_URL}/orders/${id}`, {
+  const res = await apiFetch(`${API_URL}/orders/${id}`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить заказ');
@@ -316,7 +318,7 @@ export async function getUserOrder(id: string): Promise<UserOrder> {
 
 /** Получить заказ по токену из письма (публично, без авторизации). */
 export async function getUserOrderByToken(token: string): Promise<UserOrder> {
-  const res = await fetch(`${API_URL}/orders/view-by-token?token=${encodeURIComponent(token)}`);
+  const res = await apiFetch(`${API_URL}/orders/view-by-token?token=${encodeURIComponent(token)}`);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as { message?: string }).message ?? 'Не удалось загрузить заказ');
@@ -326,7 +328,7 @@ export async function getUserOrderByToken(token: string): Promise<UserOrder> {
 
 /** Может ли текущий пользователь отправлять заказ на email клиента (только менеджеры). */
 export async function canResendOrderToEmail(): Promise<boolean> {
-  const res = await fetch(`${API_URL}/orders/can-resend-order-to-email`, {
+  const res = await apiFetch(`${API_URL}/orders/can-resend-order-to-email`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) return false;
@@ -338,7 +340,7 @@ export async function canResendOrderToEmail(): Promise<boolean> {
 export async function resendOrderToCustomerEmail(
   token: string
 ): Promise<{ sent: boolean; error?: string }> {
-  const res = await fetch(`${API_URL}/orders/resend-to-email`, {
+  const res = await apiFetch(`${API_URL}/orders/resend-to-email`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({ token }),

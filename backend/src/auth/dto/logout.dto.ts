@@ -1,9 +1,11 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString, MinLength } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString, MinLength } from 'class-validator';
 
+/** Refresh в httpOnly cookie; поле опционально для совместимости со старыми клиентами. */
 export class LogoutDto {
-  @ApiProperty({ description: 'Refresh-токен текущей сессии (будет отозван)' })
+  @ApiPropertyOptional({ description: 'Устарело: refresh в cookie' })
+  @IsOptional()
   @IsString()
   @MinLength(32)
-  refresh_token!: string;
+  refresh_token?: string;
 }

@@ -1,3 +1,4 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { getServerApiBaseUrl } from '@/shared/lib/server-api-base-url';
 import { CatalogPage } from '@/views/catalog/ui/CatalogPage';
 
@@ -26,7 +27,7 @@ interface CategoryPageProps {
 
 async function getCategoryNameBySlug(slug: string): Promise<string | null> {
   try {
-    const res = await fetch(`${API_URL}/categories/slug/${encodeURIComponent(slug)}`, {
+    const res = await apiFetch(`${API_URL}/categories/slug/${encodeURIComponent(slug)}`, {
       // Ответ категории может быть >2 MB (Next Data Cache не пишет такие ответы — шум в логах).
       cache: 'no-store',
     });

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { getSafeHref } from '@/shared/lib/sanitize';
 
 import styles from './SuppliersPage.module.css';
@@ -435,7 +436,7 @@ export function SuppliersPage() {
         params.append('search', search);
       }
 
-      const response = await fetch(`${API_URL}/admin/catalog/suppliers?${params.toString()}`, {
+      const response = await apiFetch(`${API_URL}/admin/catalog/suppliers?${params.toString()}`, {
         headers: getAuthHeaders(),
       });
 
@@ -471,7 +472,7 @@ export function SuppliersPage() {
     setDeleteError(null);
 
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_URL}/admin/catalog/suppliers/${deleteModal.supplier.id}`,
         {
           method: 'DELETE',

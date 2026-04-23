@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import styles from './SupplierEditPage.module.css';
 
@@ -62,7 +63,7 @@ export function SupplierEditPage({ supplierId }: SupplierEditPageProps) {
     setError(null);
 
     try {
-      const response = await fetch(`${API_URL}/admin/catalog/suppliers/${supplierId}`, {
+      const response = await apiFetch(`${API_URL}/admin/catalog/suppliers/${supplierId}`, {
         headers: getAuthHeaders(),
       });
 
@@ -168,7 +169,7 @@ export function SupplierEditPage({ supplierId }: SupplierEditPageProps) {
         ? `${API_URL}/admin/catalog/suppliers/${supplierId}`
         : `${API_URL}/admin/catalog/suppliers`;
 
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method: isEditMode ? 'PATCH' : 'POST',
         headers: {
           'Content-Type': 'application/json',

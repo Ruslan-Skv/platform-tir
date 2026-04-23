@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import styles from './NavigationSectionPage.module.css';
 
@@ -110,7 +111,7 @@ export function NavigationSectionPage() {
   const loadCatalogCategories = useCallback(async () => {
     setCatalogCategoriesLoading(true);
     try {
-      const res = await fetch(`${API_URL}/categories?includeInactive=true`, {
+      const res = await apiFetch(`${API_URL}/categories?includeInactive=true`, {
         headers: getAuthHeaders(),
       });
       if (res.ok) {
@@ -134,7 +135,7 @@ export function NavigationSectionPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/admin/navigation`, { headers: getAuthHeaders() });
+      const res = await apiFetch(`${API_URL}/admin/navigation`, { headers: getAuthHeaders() });
       if (res.ok) {
         const data = await res.json();
         setItems(Array.isArray(data) ? data : []);
@@ -195,7 +196,7 @@ export function NavigationSectionPage() {
   const saveEdit = async () => {
     if (!editingId) return;
     try {
-      const res = await fetch(`${API_URL}/admin/navigation/${editingId}`, {
+      const res = await apiFetch(`${API_URL}/admin/navigation/${editingId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({
@@ -259,7 +260,7 @@ export function NavigationSectionPage() {
     setDeleteInProgress(true);
     try {
       if (deleteModal.type === 'nav') {
-        const res = await fetch(`${API_URL}/admin/navigation/${deleteModal.id}`, {
+        const res = await apiFetch(`${API_URL}/admin/navigation/${deleteModal.id}`, {
           method: 'DELETE',
           headers: getAuthHeaders(),
         });
@@ -271,7 +272,7 @@ export function NavigationSectionPage() {
           showMessage('error', 'Ошибка удаления');
         }
       } else if (deleteModal.type === 'dropdown') {
-        const res = await fetch(`${API_URL}/admin/navigation/dropdown-items/${deleteModal.id}`, {
+        const res = await apiFetch(`${API_URL}/admin/navigation/dropdown-items/${deleteModal.id}`, {
           method: 'DELETE',
           headers: getAuthHeaders(),
         });
@@ -283,7 +284,7 @@ export function NavigationSectionPage() {
           showMessage('error', 'Ошибка удаления');
         }
       } else {
-        const res = await fetch(
+        const res = await apiFetch(
           `${API_URL}/admin/navigation/dropdown-items/sub-items/${deleteModal.id}`,
           { method: 'DELETE', headers: getAuthHeaders() }
         );
@@ -315,7 +316,7 @@ export function NavigationSectionPage() {
     reordered.splice(newIndex, 0, removed);
     const ids = reordered.map((i) => i.id);
     try {
-      const res = await fetch(`${API_URL}/admin/navigation/reorder`, {
+      const res = await apiFetch(`${API_URL}/admin/navigation/reorder`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ ids }),
@@ -335,7 +336,7 @@ export function NavigationSectionPage() {
   const handleAdd = async () => {
     if (!newItem.name.trim()) return;
     try {
-      const res = await fetch(`${API_URL}/admin/navigation`, {
+      const res = await apiFetch(`${API_URL}/admin/navigation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({
@@ -363,7 +364,7 @@ export function NavigationSectionPage() {
   const addDropdownItem = async (navId: string) => {
     if (!newDropdownItem.name.trim()) return;
     try {
-      const res = await fetch(`${API_URL}/admin/navigation/${navId}/dropdown-items`, {
+      const res = await apiFetch(`${API_URL}/admin/navigation/${navId}/dropdown-items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({
@@ -393,15 +394,18 @@ export function NavigationSectionPage() {
   const saveDropdownItem = async () => {
     if (!editingDropdownId) return;
     try {
-      const res = await fetch(`${API_URL}/admin/navigation/dropdown-items/${editingDropdownId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-        body: JSON.stringify({
-          name: editDropdownForm.name,
-          href: editDropdownForm.href || '#',
-          icon: editDropdownForm.icon || null,
-        }),
-      });
+      const res = await apiFetch(
+        `${API_URL}/admin/navigation/dropdown-items/${editingDropdownId}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+          body: JSON.stringify({
+            name: editDropdownForm.name,
+            href: editDropdownForm.href || '#',
+            icon: editDropdownForm.icon || null,
+          }),
+        }
+      );
       if (res.ok) {
         await load();
         setEditingDropdownId(null);
@@ -416,7 +420,7 @@ export function NavigationSectionPage() {
 
   const reorderDropdownItems = async (navId: string, ids: string[]) => {
     try {
-      const res = await fetch(`${API_URL}/admin/navigation/${navId}/dropdown-items/reorder`, {
+      const res = await apiFetch(`${API_URL}/admin/navigation/${navId}/dropdown-items/reorder`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ ids }),
@@ -436,7 +440,7 @@ export function NavigationSectionPage() {
   const addSubItem = async (dropdownId: string) => {
     if (!newSubItem.name.trim()) return;
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_URL}/admin/navigation/dropdown-items/${dropdownId}/sub-items`,
         {
           method: 'POST',
@@ -468,7 +472,7 @@ export function NavigationSectionPage() {
   const saveSubItem = async () => {
     if (!editingSubId) return;
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_URL}/admin/navigation/dropdown-items/sub-items/${editingSubId}`,
         {
           method: 'PATCH',
@@ -493,7 +497,7 @@ export function NavigationSectionPage() {
 
   const reorderSubItems = async (dropdownId: string, ids: string[]) => {
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_URL}/admin/navigation/dropdown-items/${dropdownId}/sub-items/reorder`,
         {
           method: 'PATCH',

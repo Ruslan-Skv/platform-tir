@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export interface ReviewsBlockSettings {
@@ -34,7 +36,7 @@ function getAdminAuthHeaders(): HeadersInit {
 }
 
 export async function getAdminReviewsSettings(): Promise<ReviewsBlockSettings> {
-  const res = await fetch(`${API_URL}/admin/reviews/settings`, {
+  const res = await apiFetch(`${API_URL}/admin/reviews/settings`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить настройки');
@@ -51,7 +53,7 @@ export async function updateAdminReviewsSettings(
     allowGuestReviews: data.allowGuestReviews,
     requireModeration: data.requireModeration,
   };
-  const res = await fetch(`${API_URL}/admin/reviews/settings`, {
+  const res = await apiFetch(`${API_URL}/admin/reviews/settings`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(body),
@@ -82,7 +84,7 @@ export async function getAdminReviews(
   const params = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (productId) params.set('productId', productId);
   if (isApproved !== undefined) params.set('isApproved', String(isApproved));
-  const res = await fetch(`${API_URL}/admin/reviews?${params}`, {
+  const res = await apiFetch(`${API_URL}/admin/reviews?${params}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить отзывы');
@@ -90,7 +92,7 @@ export async function getAdminReviews(
 }
 
 export async function approveReview(reviewId: string): Promise<void> {
-  const res = await fetch(`${API_URL}/admin/catalog/products/reviews/${reviewId}/approve`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/products/reviews/${reviewId}/approve`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
   });
@@ -98,7 +100,7 @@ export async function approveReview(reviewId: string): Promise<void> {
 }
 
 export async function deleteReview(reviewId: string): Promise<void> {
-  const res = await fetch(`${API_URL}/admin/catalog/products/reviews/${reviewId}`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/products/reviews/${reviewId}`, {
     method: 'DELETE',
     headers: getAdminAuthHeaders(),
   });
@@ -106,7 +108,7 @@ export async function deleteReview(reviewId: string): Promise<void> {
 }
 
 export async function replyToReview(reviewId: string, adminReply: string): Promise<AdminReview> {
-  const res = await fetch(`${API_URL}/admin/reviews/${reviewId}/reply`, {
+  const res = await apiFetch(`${API_URL}/admin/reviews/${reviewId}/reply`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify({ adminReply }),

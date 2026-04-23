@@ -1,11 +1,15 @@
 'use client';
 
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+
 import React, { useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useUserAuth } from '@/features/auth/context/UserAuthContext';
+import { apiFetch } from '@/shared/lib/api-fetch';
+import { getApiBaseUrl } from '@/shared/lib/auth-session';
 
 import styles from './page.module.css';
 
@@ -21,13 +25,13 @@ export default function LoginPage() {
   const { login, register } = useUserAuth();
   const router = useRouter();
   const [yandexLoading, setYandexLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleYandexLogin = async () => {
     setYandexLoading(true);
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/auth/yandex`
-      );
+      const res = await apiFetch(`${getApiBaseUrl()}/auth/yandex`);
       if (res.ok) {
         const { url } = await res.json();
         if (url) window.location.href = url;
@@ -108,7 +112,7 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className={styles.form} autoComplete="on">
+        <form onSubmit={handleSubmit} className={styles.form} autoComplete={isLogin ? 'off' : 'on'}>
           {!isLogin && (
             <>
               <div className={styles.field}>
@@ -154,12 +158,7 @@ export default function LoginPage() {
               className={styles.input}
               placeholder="Введите email"
               required
-              autoComplete={isLogin ? 'username' : 'email'}
-              title={
-                isLogin
-                  ? 'Если вы уже входили с этого компьютера, браузер может предложить сохранённые email и пароль — откройте подсказки кликом в поле или стрелкой справа.'
-                  : undefined
-              }
+              autoComplete={isLogin ? 'off' : 'email'}
             />
           </div>
 
@@ -167,19 +166,35 @@ export default function LoginPage() {
             <label htmlFor="password" className={styles.label}>
               Пароль
             </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={styles.input}
-              placeholder={isLogin ? 'Введите пароль' : 'Придумайте пароль'}
-              required
-              minLength={6}
-              aria-describedby={!isLogin ? 'password-hint' : undefined}
-              autoComplete={isLogin ? 'current-password' : 'new-password'}
-            />
+            <div className={styles.passwordWrap}>
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={`${styles.input} ${styles.inputWithToggle}`}
+                placeholder={isLogin ? 'Введите пароль' : 'Придумайте пароль'}
+                required
+                minLength={6}
+                aria-describedby={!isLogin ? 'password-hint' : undefined}
+                autoComplete={isLogin ? 'off' : 'new-password'}
+              />
+              <button
+                type="button"
+                className={styles.passwordToggle}
+                onClick={() => setShowPassword((v) => !v)}
+                tabIndex={-1}
+                aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+                title={showPassword ? 'Скрыть' : 'Показать'}
+              >
+                {showPassword ? (
+                  <EyeSlashIcon className={styles.passwordToggleIcon} aria-hidden />
+                ) : (
+                  <EyeIcon className={styles.passwordToggleIcon} aria-hidden />
+                )}
+              </button>
+            </div>
             {!isLogin && (
               <div id="password-hint" className={styles.passwordHintBlock}>
                 <p className={styles.passwordHint}>Пароль должен содержать:</p>
@@ -209,18 +224,36 @@ export default function LoginPage() {
               <label htmlFor="confirmPassword" className={styles.label}>
                 Подтвердите пароль
               </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className={styles.input}
-                placeholder="Повторите пароль"
-                required
-                minLength={6}
-                autoComplete="new-password"
-              />
+              <div className={styles.passwordWrap}>
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={`${styles.input} ${styles.inputWithToggle}`}
+                  placeholder="Повторите пароль"
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  className={styles.passwordToggle}
+                  onClick={() => setShowConfirmPassword((v) => !v)}
+                  tabIndex={-1}
+                  aria-label={
+                    showConfirmPassword ? 'Скрыть подтверждение' : 'Показать подтверждение'
+                  }
+                  title={showConfirmPassword ? 'Скрыть' : 'Показать'}
+                >
+                  {showConfirmPassword ? (
+                    <EyeSlashIcon className={styles.passwordToggleIcon} aria-hidden />
+                  ) : (
+                    <EyeIcon className={styles.passwordToggleIcon} aria-hidden />
+                  )}
+                </button>
+              </div>
             </div>
           )}
 
@@ -264,6 +297,8 @@ export default function LoginPage() {
               setError('');
               setPassword('');
               setConfirmPassword('');
+              setShowPassword(false);
+              setShowConfirmPassword(false);
             }}
             className={styles.switchButton}
           >
@@ -274,6 +309,11 @@ export default function LoginPage() {
               <Link href="/forgot-password" className={styles.forgotPasswordLink}>
                 Забыли пароль?
               </Link>
+            </p>
+          )}
+          {isLogin && (
+            <p className={styles.hint}>
+              Сайт не хранит пароль в поле: автозаполнение делает браузер, если вы сохраняли вход.
             </p>
           )}
         </div>

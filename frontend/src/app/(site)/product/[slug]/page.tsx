@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { getServerApiBaseUrl } from '@/shared/lib/server-api-base-url';
 import { ProductDetailPage } from '@/views/product/ui/ProductDetailPage';
 
@@ -14,7 +15,7 @@ const SITE_NAME = 'Территория интерьерных решений';
 // Функция загрузки товара для метаданных
 async function getProduct(slug: string) {
   try {
-    const response = await fetch(`${getServerApiBaseUrl()}/products/slug/${slug}`, {
+    const response = await apiFetch(`${getServerApiBaseUrl()}/products/slug/${slug}`, {
       cache: 'no-store',
     });
 

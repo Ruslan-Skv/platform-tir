@@ -11,6 +11,7 @@ import { fetchAdminDoorThicknessesList } from '@/shared/api/admin-door-thickness
 import { fetchAdminManufacturersList } from '@/shared/api/admin-manufacturers';
 import { fetchAdminWeatherstripsList } from '@/shared/api/admin-weatherstrips';
 import { getApiErrorMessage, isNetworkFetchError } from '@/shared/lib/api-error';
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import { ImageUrlModal } from './ImageUrlModal';
 import componentStyles from './ProductComponentsSection.module.css';
@@ -373,7 +374,7 @@ export function ProductCreatePage({
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_URL}/product-card-badges/definitions`, { cache: 'no-store' })
+    apiFetch(`${API_URL}/product-card-badges/definitions`, { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : []))
       .then((data: unknown) => {
         if (cancelled || !Array.isArray(data)) return;
@@ -416,7 +417,7 @@ export function ProductCreatePage({
         params.set('supplierId', supplierId);
         params.set('categoryId', categoryId);
         params.set('url', trimmed);
-        const response = await fetch(`${API_URL}/products/scrape/parser?${params.toString()}`, {
+        const response = await apiFetch(`${API_URL}/products/scrape/parser?${params.toString()}`, {
           headers: getAuthHeadersRef.current(),
           signal: ac.signal,
         });
@@ -475,7 +476,7 @@ export function ProductCreatePage({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(
+        const res = await apiFetch(
           `${API_URL}/product-components/admin/all?productId=${encodeURIComponent(copyFromProductId)}`,
           { headers: getAuthHeadersRef.current(), cache: 'no-store' }
         );
@@ -500,7 +501,7 @@ export function ProductCreatePage({
     let cancelled = false;
     const load = async () => {
       try {
-        const productRes = await fetch(`${API_URL}/products/${copyFromProductId}`, {
+        const productRes = await apiFetch(`${API_URL}/products/${copyFromProductId}`, {
           cache: 'no-store',
         });
         if (!productRes.ok) {
@@ -513,7 +514,7 @@ export function ProductCreatePage({
         const catId = product.categoryId || product.category?.id;
         let categoryAttrsForCopy: CategoryAttributeForCopy[] = [];
         if (catId) {
-          const attrsRes = await fetch(`${API_URL}/categories/${catId}/attributes`, {
+          const attrsRes = await apiFetch(`${API_URL}/categories/${catId}/attributes`, {
             cache: 'no-store',
           });
           if (attrsRes.ok) {
@@ -526,7 +527,7 @@ export function ProductCreatePage({
         }
         let rawComponents: unknown = [];
         try {
-          const componentsRes = await fetch(
+          const componentsRes = await apiFetch(
             `${API_URL}/product-components/admin/all?productId=${encodeURIComponent(copyFromProductId)}`,
             {
               headers: getAuthHeadersRef.current(),
@@ -568,7 +569,7 @@ export function ProductCreatePage({
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch(`${API_URL}/categories`);
+        const response = await apiFetch(`${API_URL}/categories`);
         if (response.ok) {
           const data = await response.json();
           setCategories(data);
@@ -584,7 +585,7 @@ export function ProductCreatePage({
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
-        const response = await fetch(`${API_URL}/admin/catalog/suppliers?limit=1000`, {
+        const response = await apiFetch(`${API_URL}/admin/catalog/suppliers?limit=1000`, {
           headers: getAuthHeaders(),
         });
         if (response.ok) {
@@ -602,7 +603,7 @@ export function ProductCreatePage({
   useEffect(() => {
     const fetchPartners = async () => {
       try {
-        const response = await fetch(`${API_URL}/admin/partners?limit=1000`, {
+        const response = await apiFetch(`${API_URL}/admin/partners?limit=1000`, {
           headers: getAuthHeaders(),
         });
         if (response.ok) {
@@ -679,7 +680,7 @@ export function ProductCreatePage({
       return;
     }
     let cancelled = false;
-    fetch(
+    apiFetch(
       `${API_URL}/products/admin/sizes-by-category?categoryId=${encodeURIComponent(formData.categoryId)}`,
       { headers: getAuthHeaders() }
     )
@@ -711,7 +712,7 @@ export function ProductCreatePage({
       categoryId: root.id,
       includeSubtree: '1',
     });
-    fetch(`${API_URL}/product-components/admin/names-by-category?${params.toString()}`, {
+    apiFetch(`${API_URL}/product-components/admin/names-by-category?${params.toString()}`, {
       headers: getAuthHeaders(),
     })
       .then((res) => (res.ok ? res.json() : []))
@@ -735,7 +736,7 @@ export function ProductCreatePage({
       }
 
       try {
-        const response = await fetch(`${API_URL}/categories/${formData.categoryId}/attributes`);
+        const response = await apiFetch(`${API_URL}/categories/${formData.categoryId}/attributes`);
         if (response.ok) {
           const data: CategoryAttribute[] = await response.json();
           // Сортируем по order для гарантии правильного порядка
@@ -1254,7 +1255,7 @@ export function ProductCreatePage({
         catalogBadgeIds: formData.catalogBadgeIds,
       };
 
-      const response = await fetch(`${API_URL}/products`, {
+      const response = await apiFetch(`${API_URL}/products`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1283,7 +1284,7 @@ export function ProductCreatePage({
           };
           if (comp.image) payload.image = comp.image;
           try {
-            const compRes = await fetch(
+            const compRes = await apiFetch(
               `${API_URL}/product-components/product/${createdProduct.id}`,
               {
                 method: 'POST',
@@ -1308,7 +1309,7 @@ export function ProductCreatePage({
       if (createdProduct.slug) {
         revalidatePaths.push(`/product/${createdProduct.slug}`);
       }
-      fetch('/api/revalidate', {
+      apiFetch('/api/revalidate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ paths: revalidatePaths }),
@@ -1555,7 +1556,7 @@ export function ProductCreatePage({
                         try {
                           setFetchingPrice(true);
                           setError(null);
-                          const response = await fetch(
+                          const response = await apiFetch(
                             `${API_URL}/products/scrape/price?url=${encodeURIComponent(formData.supplierProductUrl)}&supplierId=${encodeURIComponent(formData.supplierId || '')}&categoryId=${encodeURIComponent(formData.categoryId || '')}`,
                             {
                               headers: getAuthHeaders(),

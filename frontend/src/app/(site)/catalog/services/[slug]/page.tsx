@@ -1,3 +1,4 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { getServerApiBaseUrl } from '@/shared/lib/server-api-base-url';
 import { ServiceCategoryPage } from '@/views/services/ui/ServiceCategoryPage';
 
@@ -13,7 +14,7 @@ export default async function ServiceCategoryRoutePage({ params }: PageProps) {
 export async function generateMetadata({ params }: PageProps) {
   const { slug } = await params;
   try {
-    const res = await fetch(`${getServerApiBaseUrl()}/service-catalog/categories/${slug}`, {
+    const res = await apiFetch(`${getServerApiBaseUrl()}/service-catalog/categories/${slug}`, {
       next: { revalidate: 60 },
     });
     if (res.ok) {

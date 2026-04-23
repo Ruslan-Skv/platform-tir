@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export interface MeasurementFormSettings {
@@ -9,7 +11,7 @@ export interface MeasurementFormSettings {
 export async function getAdminMeasurementFormSettings(
   getAuthHeaders: () => Record<string, string>
 ): Promise<MeasurementFormSettings> {
-  const res = await fetch(`${API_URL}/admin/forms/measurement-form-settings`, {
+  const res = await apiFetch(`${API_URL}/admin/forms/measurement-form-settings`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить настройки');
@@ -20,7 +22,7 @@ export async function updateAdminMeasurementFormSettings(
   data: { recipientEmail?: string | null; telegramChatId?: string | null },
   getAuthHeaders: () => Record<string, string>
 ): Promise<MeasurementFormSettings> {
-  const res = await fetch(`${API_URL}/admin/forms/measurement-form-settings`, {
+  const res = await apiFetch(`${API_URL}/admin/forms/measurement-form-settings`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',

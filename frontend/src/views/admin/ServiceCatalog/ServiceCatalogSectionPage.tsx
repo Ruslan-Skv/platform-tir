@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { serviceCatalogIconMap } from '@/shared/lib/serviceCatalogIcons';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
@@ -230,9 +231,12 @@ export function ServiceCatalogSectionPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/admin/service-catalog/categories?includeInactive=true`, {
-        headers: getAuthHeaders(),
-      });
+      const res = await apiFetch(
+        `${API_URL}/admin/service-catalog/categories?includeInactive=true`,
+        {
+          headers: getAuthHeaders(),
+        }
+      );
       if (res.ok) {
         const c = await res.json();
         setCategories(c);
@@ -392,7 +396,7 @@ export function ServiceCatalogSectionPage() {
     body.priceMarkupPercent = Number(newCategory.priceMarkupPercent) || 0;
 
     try {
-      const res = await fetch(`${API_URL}/admin/service-catalog/categories`, {
+      const res = await apiFetch(`${API_URL}/admin/service-catalog/categories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify(body),
@@ -439,7 +443,7 @@ export function ServiceCatalogSectionPage() {
         priceMarkupPercent: Number(editCategoryData.priceMarkupPercent) || 0,
         parentId: editCategoryData.parentId,
       };
-      const res = await fetch(`${API_URL}/admin/service-catalog/categories/${id}`, {
+      const res = await apiFetch(`${API_URL}/admin/service-catalog/categories/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify(payload),
@@ -463,7 +467,7 @@ export function ServiceCatalogSectionPage() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      const res = await fetch(`${API_URL}/admin/service-catalog/categories/${deleteTarget.id}`, {
+      const res = await apiFetch(`${API_URL}/admin/service-catalog/categories/${deleteTarget.id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });

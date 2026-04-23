@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -43,7 +45,7 @@ export async function fetchAdminCanvasTypesList(
   }
   const base = getAdminAuthHeaders() as Record<string, string>;
   const extra = headersOverride ? (headersOverride as Record<string, string>) : {};
-  const res = await fetch(`${API_URL}/admin/catalog/canvas-types?${search}`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/canvas-types?${search}`, {
     headers: { ...base, ...extra },
     cache: 'no-store',
   });
@@ -60,7 +62,7 @@ export async function createAdminCanvasType(body: {
   slug: string;
   isActive?: boolean;
 }): Promise<AdminCanvasType> {
-  const res = await fetch(`${API_URL}/admin/catalog/canvas-types`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/canvas-types`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(body),
@@ -76,7 +78,7 @@ export async function updateAdminCanvasType(
   id: string,
   body: Partial<{ name: string; slug: string; isActive: boolean }>
 ): Promise<AdminCanvasType> {
-  const res = await fetch(`${API_URL}/admin/catalog/canvas-types/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/canvas-types/${id}`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(body),
@@ -89,7 +91,7 @@ export async function updateAdminCanvasType(
 }
 
 export async function deleteAdminCanvasType(id: string): Promise<void> {
-  const res = await fetch(`${API_URL}/admin/catalog/canvas-types/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/canvas-types/${id}`, {
     method: 'DELETE',
     headers: getAdminAuthHeaders(),
   });

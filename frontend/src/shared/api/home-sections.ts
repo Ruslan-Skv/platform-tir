@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAuthHeaders(): HeadersInit {
@@ -20,13 +22,13 @@ export interface HomeSectionsVisibility {
 }
 
 export async function getHomeSectionsVisibility(): Promise<HomeSectionsVisibility> {
-  const res = await fetch(`${API_URL}/home/sections`);
+  const res = await apiFetch(`${API_URL}/home/sections`);
   if (!res.ok) throw new Error('Не удалось загрузить настройки секций');
   return res.json();
 }
 
 export async function getAdminHomeSectionsVisibility(): Promise<HomeSectionsVisibility> {
-  const res = await fetch(`${API_URL}/admin/home/sections`, {
+  const res = await apiFetch(`${API_URL}/admin/home/sections`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить настройки секций');
@@ -36,7 +38,7 @@ export async function getAdminHomeSectionsVisibility(): Promise<HomeSectionsVisi
 export async function updateAdminHomeSectionsVisibility(
   data: Partial<HomeSectionsVisibility>
 ): Promise<HomeSectionsVisibility> {
-  const res = await fetch(`${API_URL}/admin/home/sections`, {
+  const res = await apiFetch(`${API_URL}/admin/home/sections`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
     body: JSON.stringify(data),

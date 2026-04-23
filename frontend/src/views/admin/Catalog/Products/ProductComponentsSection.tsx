@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import { ImageUrlModal } from './ImageUrlModal';
 import styles from './ProductComponentsSection.module.css';
@@ -100,7 +101,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
     if (componentNamesIncludeSubtree) {
       params.set('includeSubtree', '1');
     }
-    fetch(`${API_URL}/product-components/admin/names-by-category?${params.toString()}`, {
+    apiFetch(`${API_URL}/product-components/admin/names-by-category?${params.toString()}`, {
       headers: getAuthHeaders(),
     })
       .then((res) => (res.ok ? res.json() : []))
@@ -118,7 +119,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
   const fetchComponents = async () => {
     try {
       setLoading(true);
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_URL}/product-components/admin/all?productId=${productId}`,
         {
           headers: getAuthHeaders(),
@@ -209,7 +210,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
         // Update
         const requestBody = JSON.stringify(submitData);
 
-        const response = await fetch(`${API_URL}/product-components/${editingId}`, {
+        const response = await apiFetch(`${API_URL}/product-components/${editingId}`, {
           method: 'PATCH',
           headers: {
             ...getAuthHeaders(),
@@ -250,7 +251,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
         // Create
         const requestBody = JSON.stringify(submitData);
 
-        const response = await fetch(`${API_URL}/product-components/product/${productId}`, {
+        const response = await apiFetch(`${API_URL}/product-components/product/${productId}`, {
           method: 'POST',
           headers: {
             ...getAuthHeaders(),
@@ -372,7 +373,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
       }
 
       const requestBody = JSON.stringify(submitData);
-      const response = await fetch(`${API_URL}/product-components/${componentId}`, {
+      const response = await apiFetch(`${API_URL}/product-components/${componentId}`, {
         method: 'PATCH',
         headers: {
           ...getAuthHeaders(),
@@ -414,7 +415,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
       return;
     }
     try {
-      const response = await fetch(`${API_URL}/product-components/${id}`, {
+      const response = await apiFetch(`${API_URL}/product-components/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });

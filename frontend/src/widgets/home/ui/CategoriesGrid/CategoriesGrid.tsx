@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 import { type Category, categories } from '../../lib/constants';
 import { DEFAULT_DIRECTION_IMAGES } from '../../lib/constants/homeConstants';
 import styles from './CategoriesGrid.module.css';
@@ -40,7 +42,7 @@ export const CategoriesGrid: React.FC = () => {
   );
 
   useEffect(() => {
-    fetch(`${API_URL}/home/directions/images`)
+    apiFetch(`${API_URL}/home/directions/images`)
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error('Not ok'))))
       .then((data: Record<string, string>) => {
         const next = data && typeof data === 'object' ? data : {};

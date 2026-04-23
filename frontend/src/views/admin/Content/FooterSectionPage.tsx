@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import styles from './FooterSectionPage.module.css';
 
@@ -62,7 +63,7 @@ export function FooterSectionPage() {
     const load = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/admin/home/footer`, {
+        const res = await apiFetch(`${API_URL}/admin/home/footer`, {
           headers: getAuthHeaders(),
         });
         if (!cancelled && res.ok) {
@@ -99,7 +100,7 @@ export function FooterSectionPage() {
         vkHref: data.block.socialLinks.vk.href,
         vkIcon: data.block.socialLinks.vk.icon,
       };
-      const res = await fetch(`${API_URL}/admin/home/footer`, {
+      const res = await apiFetch(`${API_URL}/admin/home/footer`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify(payload),
@@ -123,7 +124,7 @@ export function FooterSectionPage() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch(`${API_URL}/admin/home/footer/vk-icon`, {
+      const res = await apiFetch(`${API_URL}/admin/home/footer/vk-icon`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: formData,
@@ -187,7 +188,7 @@ export function FooterSectionPage() {
   const handleAddSection = async () => {
     if (!newSectionTitle.trim()) return;
     try {
-      const res = await fetch(`${API_URL}/admin/home/footer/sections`, {
+      const res = await apiFetch(`${API_URL}/admin/home/footer/sections`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ title: newSectionTitle.trim() }),
@@ -214,7 +215,7 @@ export function FooterSectionPage() {
 
   const handleUpdateSection = async (id: string, title: string) => {
     try {
-      const res = await fetch(`${API_URL}/admin/home/footer/sections/${id}`, {
+      const res = await apiFetch(`${API_URL}/admin/home/footer/sections/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ title }),
@@ -241,7 +242,7 @@ export function FooterSectionPage() {
   const handleDeleteSection = async (id: string) => {
     if (!confirm('Удалить эту секцию и все её ссылки?')) return;
     try {
-      const res = await fetch(`${API_URL}/admin/home/footer/sections/${id}`, {
+      const res = await apiFetch(`${API_URL}/admin/home/footer/sections/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });
@@ -261,7 +262,7 @@ export function FooterSectionPage() {
   const handleAddLink = async (sectionId: string) => {
     if (!newLink.name.trim() || !newLink.href.trim()) return;
     try {
-      const res = await fetch(`${API_URL}/admin/home/footer/sections/${sectionId}/links`, {
+      const res = await apiFetch(`${API_URL}/admin/home/footer/sections/${sectionId}/links`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify(newLink),
@@ -301,7 +302,7 @@ export function FooterSectionPage() {
     href: string
   ) => {
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_URL}/admin/home/footer/sections/${sectionId}/links/${linkId}`,
         {
           method: 'PATCH',
@@ -338,7 +339,7 @@ export function FooterSectionPage() {
   const handleDeleteLink = async (sectionId: string, linkId: string) => {
     if (!confirm('Удалить эту ссылку?')) return;
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_URL}/admin/home/footer/sections/${sectionId}/links/${linkId}`,
         {
           method: 'DELETE',

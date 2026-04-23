@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import styles from './SettingsPage.module.css';
 
@@ -19,7 +20,7 @@ export function PartnerProductsSection() {
 
   const fetchSettings = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/admin/home/partner-products`, {
+      const res = await apiFetch(`${API_URL}/admin/home/partner-products`, {
         headers: getAuthHeaders(),
       });
       if (res.ok) {
@@ -41,7 +42,7 @@ export function PartnerProductsSection() {
     setSaving(true);
     setSaved(false);
     try {
-      const res = await fetch(`${API_URL}/admin/home/partner-products`, {
+      const res = await apiFetch(`${API_URL}/admin/home/partner-products`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

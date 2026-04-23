@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export interface AdminOrderSummary {
@@ -66,7 +68,7 @@ export async function getAdminOrders(
   if (options?.manager) params.set('manager', options.manager);
   if (options?.paymentStatus) params.set('paymentStatus', options.paymentStatus);
   if (options?.hasDelivery) params.set('hasDelivery', 'true');
-  const res = await fetch(`${API_URL}/admin/orders?${params}`, {
+  const res = await apiFetch(`${API_URL}/admin/orders?${params}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить заказы');
@@ -76,7 +78,7 @@ export async function getAdminOrders(
 export async function getAdminOrder(
   id: string
 ): Promise<AdminOrderSummary & { items?: unknown[] }> {
-  const res = await fetch(`${API_URL}/admin/orders/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/orders/${id}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить заказ');
@@ -84,7 +86,7 @@ export async function getAdminOrder(
 }
 
 export async function deleteAdminOrder(id: string): Promise<{ id: string }> {
-  const res = await fetch(`${API_URL}/admin/orders/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/orders/${id}`, {
     method: 'DELETE',
     headers: getAdminAuthHeaders(),
   });
@@ -99,7 +101,7 @@ export async function updateAdminOrderStatus(
   id: string,
   status: string
 ): Promise<AdminOrderSummary> {
-  const res = await fetch(`${API_URL}/admin/orders/${id}/status`, {
+  const res = await apiFetch(`${API_URL}/admin/orders/${id}/status`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify({ status }),
@@ -117,7 +119,7 @@ export async function updateAdminOrderItem(
   itemId: string,
   body: UpdateOrderItemBody
 ): Promise<AdminOrderSummary & { items?: unknown[] }> {
-  const res = await fetch(`${API_URL}/admin/orders/${orderId}/items/${itemId}`, {
+  const res = await apiFetch(`${API_URL}/admin/orders/${orderId}/items/${itemId}`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(body),
@@ -156,7 +158,7 @@ export interface SubmitFromCartForCustomerDto {
 export async function submitOrderFromCartForCustomer(
   dto: SubmitFromCartForCustomerDto
 ): Promise<AdminOrderSummary & { items?: unknown[] }> {
-  const res = await fetch(`${API_URL}/admin/orders/submit-from-cart-for-customer`, {
+  const res = await apiFetch(`${API_URL}/admin/orders/submit-from-cart-for-customer`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(dto),
@@ -171,7 +173,7 @@ export async function submitOrderFromCartForCustomer(
 export async function sendOrderToCustomerEmail(
   orderId: string
 ): Promise<{ sent: boolean; error?: string }> {
-  const res = await fetch(`${API_URL}/admin/orders/${orderId}/send-to-email`, {
+  const res = await apiFetch(`${API_URL}/admin/orders/${orderId}/send-to-email`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
   });
@@ -219,7 +221,7 @@ export async function getServiceOrders(params?: {
   if (params?.status) q.set('status', params.status);
   if (params?.page) q.set('page', String(params.page));
   if (params?.limit) q.set('limit', String(params.limit));
-  const res = await fetch(`${API_URL}/admin/orders/service-orders?${q}`, {
+  const res = await apiFetch(`${API_URL}/admin/orders/service-orders?${q}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить заказы на услуги');
@@ -227,7 +229,7 @@ export async function getServiceOrders(params?: {
 }
 
 export async function getServiceOrder(id: string): Promise<ServiceOrderSummary> {
-  const res = await fetch(`${API_URL}/admin/orders/service-order/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/orders/service-order/${id}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Заказ на услуги не найден');
@@ -243,7 +245,7 @@ export async function updateServiceOrderCustomer(
     customerPhone?: string | null;
   }
 ): Promise<ServiceOrderSummary> {
-  const res = await fetch(`${API_URL}/admin/orders/service-order/${id}/customer`, {
+  const res = await apiFetch(`${API_URL}/admin/orders/service-order/${id}/customer`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
@@ -267,7 +269,7 @@ export async function updateAdminOrderCustomer(
     customerLastName?: string | null;
   }
 ): Promise<AdminOrderSummary & { items?: unknown[] }> {
-  const res = await fetch(`${API_URL}/admin/orders/${orderId}/customer`, {
+  const res = await apiFetch(`${API_URL}/admin/orders/${orderId}/customer`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
@@ -283,7 +285,7 @@ export async function sendBackOrderToCustomer(
   orderId: string,
   comment?: string
 ): Promise<AdminOrderSummary & { items?: unknown[] }> {
-  const res = await fetch(`${API_URL}/admin/orders/${orderId}/send-back`, {
+  const res = await apiFetch(`${API_URL}/admin/orders/${orderId}/send-back`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify({ comment: comment || undefined }),
@@ -301,7 +303,7 @@ export async function updateAdminOrderDelivery(
     plannedDeliveryDate?: string | null;
   }
 ): Promise<AdminOrderSummary & { items?: unknown[] }> {
-  const res = await fetch(`${API_URL}/admin/orders/${orderId}/delivery`, {
+  const res = await apiFetch(`${API_URL}/admin/orders/${orderId}/delivery`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
@@ -326,7 +328,7 @@ export async function getProductsForReplacement(search?: string): Promise<Produc
   const params = new URLSearchParams();
   if (search) params.set('search', search);
   params.set('limit', '80');
-  const res = await fetch(`${API_URL}/admin/orders/products-for-replacement?${params}`, {
+  const res = await apiFetch(`${API_URL}/admin/orders/products-for-replacement?${params}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить список товаров');
@@ -358,7 +360,7 @@ export interface DeliveryConfigDto {
 }
 
 export async function getDeliveryConfig(): Promise<DeliveryConfigDto> {
-  const res = await fetch(`${API_URL}/admin/orders/delivery-config`, {
+  const res = await apiFetch(`${API_URL}/admin/orders/delivery-config`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить настройки доставки');
@@ -378,7 +380,7 @@ export async function updateDeliveryConfig(data: {
   /** Время действия статуса «Заказ проверен» (минуты). 1–1440. */
   approvalValidMinutes?: number;
 }): Promise<DeliveryConfigDto> {
-  const res = await fetch(`${API_URL}/admin/orders/delivery-config`, {
+  const res = await apiFetch(`${API_URL}/admin/orders/delivery-config`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),

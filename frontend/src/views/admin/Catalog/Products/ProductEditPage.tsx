@@ -11,6 +11,7 @@ import { fetchAdminDoorThicknessesList } from '@/shared/api/admin-door-thickness
 import { fetchAdminManufacturersList } from '@/shared/api/admin-manufacturers';
 import { fetchAdminWeatherstripsList } from '@/shared/api/admin-weatherstrips';
 import { getApiErrorMessage, isNetworkFetchError } from '@/shared/lib/api-error';
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import { ImageUrlModal } from './ImageUrlModal';
 import { ProductComponentsSection } from './ProductComponentsSection';
@@ -395,7 +396,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_URL}/product-card-badges/definitions`, { cache: 'no-store' })
+    apiFetch(`${API_URL}/product-card-badges/definitions`, { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : []))
       .then((data: unknown) => {
         if (cancelled || !Array.isArray(data)) return;
@@ -466,7 +467,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         params.set('supplierId', supplierId);
         params.set('categoryId', categoryId);
         params.set('url', trimmed);
-        const response = await fetch(`${API_URL}/products/scrape/parser?${params.toString()}`, {
+        const response = await apiFetch(`${API_URL}/products/scrape/parser?${params.toString()}`, {
           headers: getAuthHeadersRef.current(),
           signal: ac.signal,
         });
@@ -549,7 +550,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch(`${API_URL}/categories`);
+        const response = await apiFetch(`${API_URL}/categories`);
         if (response.ok) {
           const data = await response.json();
           setCategories(data);
@@ -565,7 +566,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
-        const response = await fetch(`${API_URL}/admin/catalog/suppliers?limit=1000`, {
+        const response = await apiFetch(`${API_URL}/admin/catalog/suppliers?limit=1000`, {
           headers: getAuthHeaders(),
         });
         if (response.ok) {
@@ -583,7 +584,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   useEffect(() => {
     const fetchPartners = async () => {
       try {
-        const response = await fetch(`${API_URL}/admin/partners?limit=1000`, {
+        const response = await apiFetch(`${API_URL}/admin/partners?limit=1000`, {
           headers: getAuthHeaders(),
         });
         if (response.ok) {
@@ -692,7 +693,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     const run = async () => {
       try {
         const productUrl = `${API_URL}/products/${encodeURIComponent(productId)}?t=${Date.now()}`;
-        const response = await fetch(productUrl, {
+        const response = await apiFetch(productUrl, {
           cache: 'no-store',
           signal: ac.signal,
         });
@@ -720,7 +721,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         if (product.categoryId) {
           try {
             const attrsUrl = `${API_URL}/categories/${encodeURIComponent(product.categoryId)}/attributes?t=${Date.now()}`;
-            const attrsResponse = await fetch(attrsUrl, {
+            const attrsResponse = await apiFetch(attrsUrl, {
               cache: 'no-store',
               signal: ac.signal,
             });
@@ -899,7 +900,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
       return;
     }
     let cancelled = false;
-    fetch(
+    apiFetch(
       `${API_URL}/products/admin/sizes-by-category?categoryId=${encodeURIComponent(formData.categoryId)}`,
       { headers: getAuthHeaders() }
     )
@@ -923,7 +924,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         return;
       }
       try {
-        const response = await fetch(
+        const response = await apiFetch(
           `${API_URL}/categories/${encodeURIComponent(formData.categoryId)}/attributes?t=${Date.now()}`,
           { cache: 'no-store' }
         );
@@ -1378,7 +1379,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
       const hasSizes = cleanedSizes.length > 0;
       const hasOpeningSide = formData.openingSide.length > 0;
 
-      const response = await fetch(`${API_URL}/products/${productId}`, {
+      const response = await apiFetch(`${API_URL}/products/${productId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -1477,7 +1478,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
       // Сброс кэша публичных страниц (товар и каталог), чтобы изменения отображались без двойной перезагрузки
       const slug = formData.slug?.trim();
       if (slug) {
-        fetch('/api/revalidate', {
+        apiFetch('/api/revalidate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1776,7 +1777,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                           try {
                             setFetchingPrice(true);
                             setError(null);
-                            const response = await fetch(
+                            const response = await apiFetch(
                               `${API_URL}/products/scrape/price?url=${encodeURIComponent(formData.supplierProductUrl)}&supplierId=${encodeURIComponent(formData.supplierId || '')}&categoryId=${encodeURIComponent(formData.categoryId || '')}`,
                               {
                                 headers: getAuthHeaders(),

@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -20,7 +22,7 @@ export interface AdminOnlineUser {
 }
 
 export async function postAdminPresenceHeartbeat(): Promise<void> {
-  const res = await fetch(`${API_URL}/admin/presence/heartbeat`, {
+  const res = await apiFetch(`${API_URL}/admin/presence/heartbeat`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
   });
@@ -30,7 +32,7 @@ export async function postAdminPresenceHeartbeat(): Promise<void> {
 }
 
 export async function getAdminOnlineAdmins(): Promise<AdminOnlineUser[]> {
-  const res = await fetch(`${API_URL}/admin/presence/online`, {
+  const res = await apiFetch(`${API_URL}/admin/presence/online`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить список онлайн');

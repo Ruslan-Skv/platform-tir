@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import * as wishlistApi from '@/shared/api/wishlist';
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { useWishlist } from '@/shared/lib/hooks';
 import type { CatalogApiProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
 import { mapCatalogApiProductToProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
@@ -43,7 +44,7 @@ export default function FavoritesPage() {
   useEffect(() => {
     const fetchPartnerSettings = async () => {
       try {
-        const res = await fetch(`${API_URL}/home/partner-products`);
+        const res = await apiFetch(`${API_URL}/home/partner-products`);
         if (res.ok) {
           const data = await res.json();
           setPartnerSettings({

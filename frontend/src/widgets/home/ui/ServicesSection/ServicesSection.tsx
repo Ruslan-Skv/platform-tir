@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 import styles from './ServicesSection.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
@@ -34,7 +36,7 @@ export const ServicesSection: React.FC = () => {
   const [data, setData] = useState<ServicesData>(DEFAULT_DATA);
 
   useEffect(() => {
-    fetch(`${API_URL}/home/services`)
+    apiFetch(`${API_URL}/home/services`)
       .then((res) => (res.ok ? res.json() : null))
       .then((d: ServicesData | null) => {
         if (d?.block) setData(d);

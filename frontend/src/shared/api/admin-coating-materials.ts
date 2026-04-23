@@ -1,3 +1,5 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -43,7 +45,7 @@ export async function fetchAdminCoatingMaterialsList(
   }
   const base = getAdminAuthHeaders() as Record<string, string>;
   const extra = headersOverride ? (headersOverride as Record<string, string>) : {};
-  const res = await fetch(`${API_URL}/admin/catalog/coating-materials?${search}`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/coating-materials?${search}`, {
     headers: { ...base, ...extra },
     cache: 'no-store',
   });
@@ -62,7 +64,7 @@ export async function createAdminCoatingMaterial(body: {
   slug: string;
   isActive?: boolean;
 }): Promise<AdminCoatingMaterial> {
-  const res = await fetch(`${API_URL}/admin/catalog/coating-materials`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/coating-materials`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(body),
@@ -78,7 +80,7 @@ export async function updateAdminCoatingMaterial(
   id: string,
   body: Partial<{ name: string; slug: string; isActive: boolean }>
 ): Promise<AdminCoatingMaterial> {
-  const res = await fetch(`${API_URL}/admin/catalog/coating-materials/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/coating-materials/${id}`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(body),
@@ -91,7 +93,7 @@ export async function updateAdminCoatingMaterial(
 }
 
 export async function deleteAdminCoatingMaterial(id: string): Promise<void> {
-  const res = await fetch(`${API_URL}/admin/catalog/coating-materials/${id}`, {
+  const res = await apiFetch(`${API_URL}/admin/catalog/coating-materials/${id}`, {
     method: 'DELETE',
     headers: getAdminAuthHeaders(),
   });

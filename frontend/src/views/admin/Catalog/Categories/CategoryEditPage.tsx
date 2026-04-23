@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 
 import styles from './CategoryEditPage.module.css';
 
@@ -93,7 +94,7 @@ export function CategoryEditPage({ categoryId }: CategoryEditPageProps) {
     setError(null);
 
     try {
-      const response = await fetch(`${API_URL}/categories/${categoryId}`, {
+      const response = await apiFetch(`${API_URL}/categories/${categoryId}`, {
         headers: getAuthHeaders(),
       });
 
@@ -132,7 +133,7 @@ export function CategoryEditPage({ categoryId }: CategoryEditPageProps) {
   // Fetch all categories for parent selector
   const fetchAllCategories = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/categories/flat`);
+      const response = await apiFetch(`${API_URL}/categories/flat`);
       if (response.ok) {
         const data = await response.json();
         // Filter out current category and its children to prevent circular reference
@@ -263,7 +264,7 @@ export function CategoryEditPage({ categoryId }: CategoryEditPageProps) {
         updateData.image = null;
       }
 
-      const response = await fetch(`${API_URL}/categories/${categoryId}`, {
+      const response = await apiFetch(`${API_URL}/categories/${categoryId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

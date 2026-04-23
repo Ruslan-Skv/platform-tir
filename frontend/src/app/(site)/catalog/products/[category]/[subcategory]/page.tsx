@@ -1,3 +1,4 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { getServerApiBaseUrl } from '@/shared/lib/server-api-base-url';
 import { CatalogPage } from '@/views/catalog/ui/CatalogPage';
 
@@ -27,7 +28,7 @@ interface SubcategoryPageProps {
 
 async function getCategoryNameBySlug(slug: string): Promise<string | null> {
   try {
-    const res = await fetch(`${API_URL}/categories/slug/${encodeURIComponent(slug)}`, {
+    const res = await apiFetch(`${API_URL}/categories/slug/${encodeURIComponent(slug)}`, {
       // См. [category]/page.tsx — тяжёлый JSON, не кэшируем в Data Cache Next (лимит ~2 MB).
       cache: 'no-store',
     });

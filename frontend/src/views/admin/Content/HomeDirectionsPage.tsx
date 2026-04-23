@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
+import { apiFetch } from '@/shared/lib/api-fetch';
 import { categories } from '@/widgets/home/lib/constants';
 
 import styles from './HomeDirectionsPage.module.css';
@@ -23,7 +24,7 @@ export function HomeDirectionsPage() {
   const fetchImages = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/admin/home/directions/images`, {
+      const res = await apiFetch(`${API_URL}/admin/home/directions/images`, {
         headers: getAuthHeaders(),
       });
       if (res.ok) {
@@ -56,7 +57,7 @@ export function HomeDirectionsPage() {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch(`${API_URL}/admin/home/directions/upload/${slug}`, {
+      const res = await apiFetch(`${API_URL}/admin/home/directions/upload/${slug}`, {
         method: 'POST',
         headers: getAuthHeaders() as Record<string, string>,
         body: formData,

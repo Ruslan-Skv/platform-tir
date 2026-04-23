@@ -1,8 +1,10 @@
+import { apiFetch } from '@/shared/lib/api-fetch';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 /** Публичные опции формы «Рассчитать стоимость» (виды работ/товаров) */
 export async function getQuoteFormOptions(): Promise<{ options: string[] }> {
-  const res = await fetch(`${API_URL}/forms/quote-form-options`);
+  const res = await apiFetch(`${API_URL}/forms/quote-form-options`);
   if (!res.ok) throw new Error('Не удалось загрузить опции формы');
   return res.json();
 }
@@ -45,7 +47,7 @@ export interface QuoteFormPayload {
 }
 
 export async function submitMeasurementForm(data: MeasurementFormPayload): Promise<void> {
-  const res = await fetch(`${API_URL}/forms/measurement`, {
+  const res = await apiFetch(`${API_URL}/forms/measurement`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -61,7 +63,7 @@ export async function submitMeasurementForm(data: MeasurementFormPayload): Promi
 }
 
 export async function submitCallbackForm(data: CallbackFormPayload): Promise<void> {
-  const res = await fetch(`${API_URL}/forms/callback`, {
+  const res = await apiFetch(`${API_URL}/forms/callback`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -77,7 +79,7 @@ export async function submitCallbackForm(data: CallbackFormPayload): Promise<voi
 }
 
 export async function submitDirectorMessageForm(data: DirectorMessageFormPayload): Promise<void> {
-  const res = await fetch(`${API_URL}/forms/director-message`, {
+  const res = await apiFetch(`${API_URL}/forms/director-message`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -93,7 +95,7 @@ export async function submitDirectorMessageForm(data: DirectorMessageFormPayload
 }
 
 export async function submitQuoteForm(data: QuoteFormPayload): Promise<void> {
-  const res = await fetch(`${API_URL}/forms/quote`, {
+  const res = await apiFetch(`${API_URL}/forms/quote`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
