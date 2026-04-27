@@ -41,6 +41,7 @@ export function CartAuthRequiredModalHost() {
       onClose={onClose}
       title={MODAL_TITLE}
       size="sm"
+      compactOnMobile
       className={styles.cartModalPanel}
       titleClassName={styles.cartModalTitle}
     >
