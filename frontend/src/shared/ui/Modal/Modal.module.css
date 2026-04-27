@@ -189,6 +189,22 @@
     right: 0.5rem;
     top: 0.5rem;
   }
+
+  /* Поверх базовых отступов панели (две классовые специфичности) */
+  .panel.panelCompactMobile {
+    padding: 0.625rem 0.5rem;
+  }
+
+  .header.headerCompactMobile {
+    margin-bottom: 0.625rem;
+  }
+
+  .title.titleCompactMobile {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.25rem;
+    padding-right: 2.25rem;
+  }
 }
 
 /* Для очень маленьких экранов */
@@ -210,6 +226,20 @@
 
   .title {
     font-size: 1rem;
+  }
+
+  .panel.panelCompactMobile {
+    padding: 0.5rem 0.375rem;
+  }
+
+  .header.headerCompactMobile {
+    margin-bottom: 0.5rem;
+  }
+
+  .title.titleCompactMobile {
+    font-size: 0.875rem;
+    line-height: 1.2rem;
+    padding-right: 2rem;
   }
 }
 

@@ -37,6 +37,7 @@ export const FormModals: React.FC = () => {
         onClose={handleCloseMeasurement}
         title="Запись на бесплатный замер"
         size="lg"
+        compactOnMobile
       >
         {formSubmission.success ? (
           <SuccessMessage
@@ -60,6 +61,7 @@ export const FormModals: React.FC = () => {
         onClose={handleCloseCallback}
         title="Заказ обратного звонка"
         size="md"
+        compactOnMobile
       >
         {formSubmission.success ? (
           <SuccessMessage

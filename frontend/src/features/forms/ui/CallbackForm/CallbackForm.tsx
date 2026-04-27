@@ -126,10 +126,16 @@ export const CallbackForm: React.FC<CallbackFormProps> = ({
       </div>
 
       <div className={styles.actions}>
-        <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
+        <Button
+          type="button"
+          variant="outline"
+          className={styles.actionButton}
+          onClick={onCancel}
+          disabled={loading}
+        >
           Отмена
         </Button>
-        <Button type="submit" variant="primary" disabled={loading}>
+        <Button type="submit" variant="primary" className={styles.actionButton} disabled={loading}>
           {loading ? 'Отправка...' : 'Заказать звонок'}
         </Button>
       </div>

@@ -123,7 +123,7 @@ export const MeasurementForm: React.FC<MeasurementFormProps> = ({
 
       <div className={styles.gridRow2}>
         <div className={styles.fieldContainer}>
-          <label className={styles.label}>Дата замера *</label>
+          <label className={styles.label}>Предпочтительная дата замера *</label>
           <select
             name="preferredDate"
             required
@@ -189,10 +189,16 @@ export const MeasurementForm: React.FC<MeasurementFormProps> = ({
       </div>
 
       <div className={styles.actions}>
-        <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
+        <Button
+          type="button"
+          variant="outline"
+          className={styles.actionButton}
+          onClick={onCancel}
+          disabled={loading}
+        >
           Отмена
         </Button>
-        <Button type="submit" variant="primary" disabled={loading}>
+        <Button type="submit" variant="primary" className={styles.actionButton} disabled={loading}>
           {loading ? 'Отправка...' : 'Записаться на замер'}
         </Button>
       </div>
