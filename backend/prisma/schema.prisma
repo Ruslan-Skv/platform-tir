@@ -91,6 +91,8 @@ model User {
   productsCreated            Product[]             @relation("ProductCreatedBy")
   productsUpdated            Product[]             @relation("ProductUpdatedBy")
   categoriesCreated          Category[]            @relation("CategoryCreatedBy")
+  contractDocumentPackagesCreated ContractDocumentPackage[] @relation("ContractDocumentPackagesCreated")
+  contractDocumentGlobalTemplatesUpdated ContractDocumentGlobalTemplate[] @relation("GlobalContractTemplateUpdatedBy")
 
   @@map("users")
 }
@@ -1863,6 +1865,7 @@ model Contract {
   amendments    ContractAmendment[]
   payments      ContractPayment[]
   history       ContractHistory[]
+  documentPackages ContractDocumentPackage[]
 
   @@index([managerId])
   @@index([status])
@@ -1934,6 +1937,52 @@ model ContractPayment {
   @@index([contractId])
   @@index([paymentDate])
   @@map("contract_payments")
+}
+
+/// Пакет документов для оформления договора (аналог книги Excel: вкладка «Данные» + сгенерированные вкладки).
+enum ContractDocumentPackageKind {
+  REPAIR
+  WINDOWS
+  DOORS
+  CEILINGS
+  BLINDS
+  FURNITURE
+}
+
+model ContractDocumentPackage {
+  id             String                      @id @default(cuid())
+  kind           ContractDocumentPackageKind
+  title          String?
+  /// Все редактируемые поля вкладки «Данные» и прочие структурированные данные (смета и т.д.).
+  formData       Json                        @default("{}")
+  /// Связь с договором в CRM («Объекты»).
+  crmContractId  String?
+  createdById    String?
+  createdAt      DateTime                    @default(now())
+  updatedAt      DateTime                    @updatedAt
+
+  createdBy   User?     @relation("ContractDocumentPackagesCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  crmContract Contract? @relation(fields: [crmContractId], references: [id], onDelete: SetNull)
+
+  @@index([kind])
+  @@index([createdAt])
+  @@index([crmContractId])
+  @@map("contract_document_packages")
+}
+
+/// Общий шаблон HTML для вкладки документа (например договор «Ремонт») — подставляется всем пакетам, у которых нет своего переопределения.
+model ContractDocumentGlobalTemplate {
+  id          String                      @id @default(cuid())
+  kind        ContractDocumentPackageKind
+  tab         String
+  html        String                      @db.Text
+  updatedById String?
+  updatedAt   DateTime                    @updatedAt
+
+  updatedBy User? @relation("GlobalContractTemplateUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@unique([kind, tab])
+  @@map("contract_document_global_templates")
 }
 
 enum MeasurementStatus {

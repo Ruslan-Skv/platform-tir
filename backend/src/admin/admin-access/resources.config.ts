@@ -43,6 +43,21 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     label: 'Расчёт з/п — Управление',
     path: '/admin/crm/payroll/management',
   },
+  {
+    id: 'admin.contract-documents',
+    label: 'Оформление договоров',
+    path: '/admin/contract-documents',
+  },
+  {
+    id: 'admin.contract-documents.repair',
+    label: 'Оформление договоров — Ремонт',
+    path: '/admin/contract-documents/repair',
+  },
+  {
+    id: 'admin.contract-documents.instruction',
+    label: 'Оформление договоров — Инструкция',
+    path: '/admin/contract-documents/instruction',
+  },
   { id: 'admin.content', label: 'Контент', path: '/admin/content' },
   { id: 'admin.content.home', label: 'Главная страница', path: '/admin/content/home' },
   { id: 'admin.content.hero', label: 'Первый блок', path: '/admin/content/hero' },

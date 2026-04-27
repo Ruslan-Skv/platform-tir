@@ -1,0 +1,518 @@
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 8px 32px;
+}
+
+.title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 8px;
+}
+
+.subtitle {
+  color: #6b7280;
+  margin: 0 0 20px;
+  font-size: 0.95rem;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.primaryBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #fff;
+  background: #2563eb;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.primaryBtn:hover {
+  background: #1d4ed8;
+}
+
+.secondaryBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #374151;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.secondaryBtn:hover {
+  background: #e5e7eb;
+}
+
+.dangerBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.dangerBtn:hover {
+  background: #fee2e2;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table th,
+.table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.table th {
+  background: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.link {
+  color: #2563eb;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.hubGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.hubCard {
+  display: block;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  text-decoration: none;
+  color: inherit;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.hubCard:hover:not(.hubCardDisabled) {
+  border-color: #93c5fd;
+  box-shadow: 0 4px 14px rgb(37 99 235 / 0.08);
+}
+
+.hubCardDisabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.hubCardTitle {
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin: 0 0 6px;
+}
+
+.hubCardHint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.editorHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.backLink {
+  font-size: 0.9rem;
+  color: #6b7280;
+  text-decoration: none;
+}
+
+.backLink:hover {
+  color: #2563eb;
+}
+
+.tabBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 8px;
+}
+
+.tab {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: #4b5563;
+}
+
+.tab:hover {
+  background: #f3f4f6;
+}
+
+.tabActive {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.field input,
+.field textarea {
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.field textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.sectionTitle {
+  grid-column: 1 / -1;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 16px 0 4px;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.sectionTitle:first-child {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.docPane {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 20px;
+  background: #fff;
+  min-height: 200px;
+}
+
+.docPane :global(.docPrint) {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: #1f2937;
+}
+
+.docPane :global(.docPrint h1) {
+  font-size: 1.15rem;
+  margin: 0 0 12px;
+  text-align: center;
+}
+
+.docPane :global(.docPrint h2) {
+  font-size: 1rem;
+  margin: 16px 0 8px;
+}
+
+.docPane :global(.signTable) {
+  width: 100%;
+  margin-top: 24px;
+  border-collapse: collapse;
+}
+
+.docPane :global(.signTable td) {
+  width: 50%;
+  vertical-align: bottom;
+  padding: 8px;
+}
+
+.docPane :global(.estimatePre) {
+  white-space: pre-wrap;
+  font-family: inherit;
+  background: #f9fafb;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.contractModeBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.contractModeBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #374151;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.contractModeBtn:hover {
+  background: #e5e7eb;
+}
+
+.contractModeBtnActive {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.contractEditGrid {
+  display: grid;
+  grid-template-columns: minmax(200px, 260px) 1fr;
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 900px) {
+  .contractEditGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.placeholderPanel {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  max-height: 520px;
+  overflow-y: auto;
+  background: #fafafa;
+}
+
+.placeholderGroupTitle {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #374151;
+  margin: 10px 0 6px;
+}
+
+.placeholderGroupTitle:first-child {
+  margin-top: 0;
+}
+
+.placeholderChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.placeholderChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #1f2937;
+  cursor: pointer;
+  text-align: left;
+}
+
+.placeholderChip:hover {
+  border-color: #2563eb;
+  color: #1d4ed8;
+}
+
+.placeholderChip code {
+  font-size: 0.7rem;
+  background: transparent;
+  padding: 0;
+}
+
+.contractEditorMain {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.contractEditorLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.contractHtmlTextarea {
+  width: 100%;
+  min-height: 360px;
+  padding: 12px;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.previewBlockTitle {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #374151;
+  margin: 0 0 8px;
+}
+
+.docToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.instructionArticle {
+  max-width: 900px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #1f2937;
+}
+
+.instructionArticle h2 {
+  font-size: 1.15rem;
+  margin: 28px 0 12px;
+  color: #111827;
+}
+
+.instructionArticle h2:first-of-type {
+  margin-top: 8px;
+}
+
+.instructionArticle ul {
+  margin: 8px 0 12px;
+  padding-left: 1.35rem;
+}
+
+.instructionArticle li {
+  margin-bottom: 6px;
+}
+
+.instructionArticle pre {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  margin: 10px 0;
+}
+
+.instructionArticle code {
+  font-size: 0.88em;
+  background: #f3f4f6;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 12px;
+}
+
+.error {
+  color: #b91c1c;
+  font-size: 0.9rem;
+  margin: 8px 0;
+}

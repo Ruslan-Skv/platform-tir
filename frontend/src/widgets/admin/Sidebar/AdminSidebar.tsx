@@ -113,6 +113,24 @@ const baseNavItems: NavItem[] = [
     ],
   },
   {
+    label: 'Оформление договоров',
+    href: '/admin/contract-documents',
+    icon: '📄',
+    resourceId: 'admin.contract-documents',
+    children: [
+      {
+        label: 'Инструкция по работе с разделом',
+        href: '/admin/contract-documents/instruction',
+        resourceId: 'admin.contract-documents.instruction',
+      },
+      {
+        label: 'Ремонт',
+        href: '/admin/contract-documents/repair',
+        resourceId: 'admin.contract-documents.repair',
+      },
+    ],
+  },
+  {
     label: 'Контент',
     href: '/admin/content',
     icon: '📝',
