@@ -263,122 +263,130 @@ export function ChatSupportWidget() {
         <ChatBubbleLeftRightIcon className={styles.fabIcon} />
       </button>
       {open && (
-        <div className={styles.panel}>
-          <div className={styles.header}>
-            {currentConversation ? (
+        <>
+          <button
+            type="button"
+            className={styles.backdrop}
+            aria-label="Закрыть чат поддержки"
+            onClick={() => setOpen(false)}
+          />
+          <div className={styles.panel}>
+            <div className={styles.header}>
+              {currentConversation ? (
+                <>
+                  <button
+                    type="button"
+                    className={styles.backBtn}
+                    onClick={() => setCurrentConversation(null)}
+                  >
+                    ← Назад
+                  </button>
+                  <span>Чат с поддержкой</span>
+                </>
+              ) : (
+                <span>Чат поддержки</span>
+              )}
+              <button type="button" className={styles.closeBtn} onClick={() => setOpen(false)}>
+                ×
+              </button>
+            </div>
+            {!currentConversation ? (
               <>
-                <button
-                  type="button"
-                  className={styles.backBtn}
-                  onClick={() => setCurrentConversation(null)}
-                >
-                  ← Назад
-                </button>
-                <span>Чат с поддержкой</span>
+                {loading ? (
+                  <div className={styles.loading}>Загрузка диалогов...</div>
+                ) : (
+                  <>
+                    <div className={styles.notifyRow}>
+                      <input
+                        type="checkbox"
+                        id="notifySupportReply"
+                        checked={notifyOnSupportReply}
+                        onChange={(e) => handleNotifyToggle(e.target.checked)}
+                        disabled={savingNotify}
+                      />
+                      <label htmlFor="notifySupportReply">Уведомлять при ответе в чате</label>
+                    </div>
+                    <button type="button" className={styles.startNew} onClick={startConversation}>
+                      Начать новый диалог
+                    </button>
+                    <div className={styles.conversationList}>
+                      {conversations.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          className={styles.conversationItem}
+                          onClick={() => setCurrentConversation(c)}
+                        >
+                          Диалог #{c.id.slice(-6)}
+                          {c.messages?.[0] && (
+                            <div className={styles.lastMessage}>{c.messages[0].content}</div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
               </>
             ) : (
-              <span>Чат поддержки</span>
-            )}
-            <button type="button" className={styles.closeBtn} onClick={() => setOpen(false)}>
-              ×
-            </button>
-          </div>
-          {!currentConversation ? (
-            <>
-              {loading ? (
-                <div className={styles.loading}>Загрузка диалогов...</div>
-              ) : (
-                <>
-                  <div className={styles.notifyRow}>
-                    <input
-                      type="checkbox"
-                      id="notifySupportReply"
-                      checked={notifyOnSupportReply}
-                      onChange={(e) => handleNotifyToggle(e.target.checked)}
-                      disabled={savingNotify}
-                    />
-                    <label htmlFor="notifySupportReply">Уведомлять при ответе в чате</label>
+              <div className={styles.messagesArea}>
+                {loadingMessages ? (
+                  <div className={styles.loading}>Загрузка сообщений...</div>
+                ) : messages.length === 0 ? (
+                  <div className={styles.empty}>
+                    Напишите сообщение — специалист поддержки ответит вам.
                   </div>
-                  <button type="button" className={styles.startNew} onClick={startConversation}>
-                    Начать новый диалог
-                  </button>
-                  <div className={styles.conversationList}>
-                    {conversations.map((c) => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        className={styles.conversationItem}
-                        onClick={() => setCurrentConversation(c)}
-                      >
-                        Диалог #{c.id.slice(-6)}
-                        {c.messages?.[0] && (
-                          <div className={styles.lastMessage}>{c.messages[0].content}</div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </>
-          ) : (
-            <div className={styles.messagesArea}>
-              {loadingMessages ? (
-                <div className={styles.loading}>Загрузка сообщений...</div>
-              ) : messages.length === 0 ? (
-                <div className={styles.empty}>
-                  Напишите сообщение — специалист поддержки ответит вам.
-                </div>
-              ) : (
-                <div className={styles.messagesList}>
-                  {messages.map((m) => {
-                    const isMine = m.senderId === user.id;
-                    return (
-                      <div
-                        key={m.id}
-                        className={`${styles.message} ${isMine ? styles.mine : styles.theirs}`}
-                      >
-                        <div>{m.content}</div>
-                        <div className={styles.messageMeta}>
-                          {!isMine && m.sender.firstName && `${m.sender.firstName} · `}
-                          {formatDate(m.createdAt)}
+                ) : (
+                  <div className={styles.messagesList}>
+                    {messages.map((m) => {
+                      const isMine = m.senderId === user.id;
+                      return (
+                        <div
+                          key={m.id}
+                          className={`${styles.message} ${isMine ? styles.mine : styles.theirs}`}
+                        >
+                          <div>{m.content}</div>
+                          <div className={styles.messageMeta}>
+                            {!isMine && m.sender.firstName && `${m.sender.firstName} · `}
+                            {formatDate(m.createdAt)}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
+                )}
+                <div className={styles.notifyRow}>
+                  <input
+                    type="checkbox"
+                    id="notifySupportReplyInChat"
+                    checked={notifyOnSupportReply}
+                    onChange={(e) => handleNotifyToggle(e.target.checked)}
+                    disabled={savingNotify}
+                  />
+                  <label htmlFor="notifySupportReplyInChat">Уведомлять при ответе</label>
                 </div>
-              )}
-              <div className={styles.notifyRow}>
-                <input
-                  type="checkbox"
-                  id="notifySupportReplyInChat"
-                  checked={notifyOnSupportReply}
-                  onChange={(e) => handleNotifyToggle(e.target.checked)}
-                  disabled={savingNotify}
-                />
-                <label htmlFor="notifySupportReplyInChat">Уведомлять при ответе</label>
+                <div className={styles.inputRow}>
+                  <textarea
+                    className={styles.inputField}
+                    placeholder="Введите сообщение..."
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                      }
+                    }}
+                    rows={2}
+                    aria-label="Сообщение"
+                  />
+                  <button type="button" onClick={sendMessage} disabled={sending || !input.trim()}>
+                    Отправить
+                  </button>
+                </div>
               </div>
-              <div className={styles.inputRow}>
-                <textarea
-                  className={styles.inputField}
-                  placeholder="Введите сообщение..."
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      sendMessage();
-                    }
-                  }}
-                  rows={2}
-                  aria-label="Сообщение"
-                />
-                <button type="button" onClick={sendMessage} disabled={sending || !input.trim()}>
-                  Отправить
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </>
       )}
     </>
   );
