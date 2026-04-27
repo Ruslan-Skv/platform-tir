@@ -129,7 +129,8 @@ export const CallbackForm: React.FC<CallbackFormProps> = ({
         <Button
           type="button"
           variant="outline"
-          className={styles.actionButton}
+          size="sm"
+          className={`${styles.actionButton} ${styles.actionButtonCancel}`}
           onClick={onCancel}
           disabled={loading}
         >

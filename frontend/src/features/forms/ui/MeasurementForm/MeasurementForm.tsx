@@ -192,7 +192,8 @@ export const MeasurementForm: React.FC<MeasurementFormProps> = ({
         <Button
           type="button"
           variant="outline"
-          className={styles.actionButton}
+          size="sm"
+          className={`${styles.actionButton} ${styles.actionButtonCancel}`}
           onClick={onCancel}
           disabled={loading}
         >
