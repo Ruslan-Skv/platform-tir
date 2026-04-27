@@ -16,7 +16,6 @@ import {
 import type {
   UserNotification,
   UserNotificationHistoryResponse,
-  UserNotificationSettings,
 } from '@/shared/api/user-notifications';
 import { type UserOrder, getUserOrders } from '@/shared/api/user-orders';
 import { apiFetch } from '@/shared/lib/api-fetch';
@@ -82,11 +81,9 @@ export default function ProfilePage() {
   const [ordersLoading, setOrdersLoading] = useState(false);
 
   // Notifications
-  const [notifSettings, setNotifSettings] = useState<UserNotificationSettings | null>(null);
   const [notifLoading, setNotifLoading] = useState(false);
   const [notifSaving, setNotifSaving] = useState(false);
   const [notifNotifyChat, setNotifNotifyChat] = useState(true);
-  const [notifMobileCatalogColumns, setNotifMobileCatalogColumns] = useState<1 | 2 | null>(null);
 
   // Password
   const [currentPassword, setCurrentPassword] = useState('');
@@ -152,11 +149,9 @@ export default function ProfilePage() {
     setNotifLoading(true);
     try {
       const data = await getUserNotificationSettings();
-      setNotifSettings(data);
       setNotifNotifyChat(data.notifyOnSupportChatReply);
-      setNotifMobileCatalogColumns(data.mobileCatalogColumns ?? null);
     } catch {
-      setNotifSettings(null);
+      // оставляем текущее значение чекбокса
     } finally {
       setNotifLoading(false);
     }
@@ -268,19 +263,10 @@ export default function ProfilePage() {
   const handleSaveNotif = async () => {
     setNotifSaving(true);
     try {
-      await updateUserNotificationSettings({
+      const updated = await updateUserNotificationSettings({
         notifyOnSupportChatReply: notifNotifyChat,
-        mobileCatalogColumns: notifMobileCatalogColumns,
       });
-      setNotifSettings((prev) =>
-        prev
-          ? {
-              ...prev,
-              notifyOnSupportChatReply: notifNotifyChat,
-              mobileCatalogColumns: notifMobileCatalogColumns,
-            }
-          : null
-      );
+      setNotifNotifyChat(updated.notifyOnSupportChatReply);
     } catch {
       // ignore
     } finally {
@@ -598,22 +584,6 @@ export default function ProfilePage() {
                       />
                       Уведомлять при ответе в чате поддержки
                     </label>
-                  </div>
-                  <div className={styles.field}>
-                    <label className={styles.label}>Режим просмотра каталога на мобильном</label>
-                    <select
-                      value={notifMobileCatalogColumns ?? ''}
-                      onChange={(e) =>
-                        setNotifMobileCatalogColumns(
-                          e.target.value === '' ? null : (Number(e.target.value) as 1 | 2)
-                        )
-                      }
-                      className={styles.input}
-                    >
-                      <option value="">По умолчанию (настройка сайта)</option>
-                      <option value={1}>1 карточка в строке</option>
-                      <option value={2}>2 карточки в строке</option>
-                    </select>
                   </div>
                   <button
                     onClick={handleSaveNotif}

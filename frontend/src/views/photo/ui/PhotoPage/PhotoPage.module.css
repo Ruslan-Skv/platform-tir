@@ -193,6 +193,7 @@
 
 .categoryOption input {
   accent-color: var(--color-accent);
+  color-scheme: dark;
   cursor: pointer;
   flex-shrink: 0;
   margin: 0;
@@ -902,9 +903,10 @@
   border-color: white;
 }
 
-:where(html[data-theme='light']) .sidebarSection {
+:where(html[data-theme='light'], [data-app-theme='light']) .sidebarSection {
   background: #f9fafb;
   border: 1px solid #e5e7eb;
+  color-scheme: light;
 }
 
 :where(html[data-theme='light']) .sidebarTitle {
@@ -944,6 +946,15 @@
 
 :where(html[data-theme='light']) .categoryCount {
   color: inherit;
+}
+
+/* Нативный checkbox: в светлой теме на телефоне без явного color-scheme часто рисуется «тёмный» chrome */
+:where(html[data-theme='light'], [data-app-theme='light']) .categoryOption input {
+  accent-color: var(--color-accent);
+  color-scheme: light;
+  flex-shrink: 0;
+  height: 1.0625rem;
+  width: 1.0625rem;
 }
 
 :where(html[data-theme='light']) .loading,
