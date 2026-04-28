@@ -124,6 +124,11 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.contract-documents.instruction',
       },
       {
+        label: 'Наши реквизиты',
+        href: '/admin/contract-documents/requisites',
+        resourceId: 'admin.contract-documents.requisites',
+      },
+      {
         label: 'Ремонт',
         href: '/admin/contract-documents/repair',
         resourceId: 'admin.contract-documents.repair',

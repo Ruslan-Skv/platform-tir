@@ -51,6 +51,20 @@ export interface ContractDocumentPackage {
   crmContract?: ContractDocumentPackageCrmContract | null;
 }
 
+export interface ExecutorRequisiteProfile {
+  title: string;
+  companyName?: string;
+  inn?: string;
+  kpp?: string;
+  ogrn?: string;
+  legalAddress?: string;
+  actualAddress?: string;
+  bankDetails?: string;
+  directorNameNominative?: string;
+  directorNameGenitive?: string;
+  basis?: string;
+}
+
 export async function getContractDocumentPackages(
   kind?: ContractDocumentPackageKind
 ): Promise<ContractDocumentPackage[]> {
@@ -135,6 +149,32 @@ export async function putContractDocumentGlobalTemplate(body: {
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { message?: string };
     throw new Error(err.message || 'Не удалось сохранить общий шаблон');
+  }
+  return res.json();
+}
+
+export async function getContractDocumentExecutorProfiles(
+  kind: ContractDocumentPackageKind
+): Promise<{ items: ExecutorRequisiteProfile[]; updatedAt: string | null }> {
+  const url = new URL(`${API_URL}/admin/contract-document-packages/executor-profiles`);
+  url.searchParams.set('kind', kind);
+  const res = await apiFetch(String(url), { headers: getAdminAuthHeaders() });
+  if (!res.ok) throw new Error('Не удалось загрузить наши реквизиты');
+  return res.json();
+}
+
+export async function putContractDocumentExecutorProfiles(body: {
+  kind: ContractDocumentPackageKind;
+  items: ExecutorRequisiteProfile[];
+}): Promise<{ id: string; kind: string; tab: string; updatedAt: string }> {
+  const res = await apiFetch(`${API_URL}/admin/contract-document-packages/executor-profiles`, {
+    method: 'PUT',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err.message || 'Не удалось сохранить наши реквизиты');
   }
   return res.json();
 }

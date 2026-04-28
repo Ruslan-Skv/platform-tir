@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 
 import {
+  type ExecutorRequisiteProfile,
+  getContractDocumentExecutorProfiles,
   getContractDocumentGlobalTemplate,
   getContractDocumentPackage,
   putContractDocumentGlobalTemplate,
@@ -34,6 +36,18 @@ import { type RepairPackageFormData, mergeRepairPackageFormData } from './repair
 
 /** Встроенный в код шаблон (если в БД нет общего шаблона). */
 const FILE_REPAIR_CONTRACT_TEMPLATE = REPAIR_DOCUMENT_TEMPLATES.contract;
+
+function parseDecimalAmount(raw: string): number | null {
+  const normalized = raw.replace(/\s+/g, '').replace(',', '.');
+  if (!normalized) return null;
+  if (!/^\d+(\.\d{0,2})?$/.test(normalized)) return null;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function formatMoneyValue(value: number): string {
+  return value.toFixed(2).replace('.', ',');
+}
 
 interface RepairContractDocumentEditorPageProps {
   packageId: string;
@@ -68,6 +82,7 @@ export function RepairContractDocumentEditorPage({
     html: string | null;
   }>({ loaded: false, html: null });
   const [publishingGlobal, setPublishingGlobal] = useState(false);
+  const [executorProfiles, setExecutorProfiles] = useState<ExecutorRequisiteProfile[]>([]);
 
   const resolvedContractDefaultTemplate = useMemo(() => {
     if (!globalContractState.loaded) return FILE_REPAIR_CONTRACT_TEMPLATE;
@@ -79,10 +94,14 @@ export function RepairContractDocumentEditorPage({
     setLoading(true);
     setError(null);
     try {
-      const [row, globalTpl] = await Promise.all([
+      const [row, globalTpl, profilesRes] = await Promise.all([
         getContractDocumentPackage(packageId),
         getContractDocumentGlobalTemplate('REPAIR', 'contract').catch(() => ({
           html: null as string | null,
+          updatedAt: null as string | null,
+        })),
+        getContractDocumentExecutorProfiles('REPAIR').catch(() => ({
+          items: [] as ExecutorRequisiteProfile[],
           updatedAt: null as string | null,
         })),
       ]);
@@ -96,6 +115,7 @@ export function RepairContractDocumentEditorPage({
       setForm(mergedForm);
       setTemplateOverrides(ov);
       setGlobalContractState({ loaded: true, html: globalTpl.html });
+      setExecutorProfiles(profilesRes.items ?? []);
       setExcelMessage(null);
       setDirty(false);
     } catch (e) {
@@ -166,7 +186,27 @@ export function RepairContractDocumentEditorPage({
     key: K,
     value: string
   ) => {
-    setForm((p) => ({ ...p, customer: { ...p.customer, [key]: value } }));
+    setForm((p) => {
+      const nextCustomer = { ...p.customer, [key]: value };
+      if (key === 'type') {
+        const nextType = value as RepairPackageFormData['customer']['type'];
+        if (nextType === 'PERSON') {
+          nextCustomer.organizationName = '';
+          nextCustomer.representativeFullNameNominative = '';
+          nextCustomer.representativeFullNameGenitive = '';
+          nextCustomer.representativePositionNominative = '';
+          nextCustomer.representativePositionGenitive = '';
+          nextCustomer.inn = '';
+          nextCustomer.ogrn = '';
+        } else {
+          nextCustomer.fullName = '';
+          nextCustomer.passportSeriesNumber = '';
+          nextCustomer.passportIssuedBy = '';
+          nextCustomer.passportIssueDate = '';
+        }
+      }
+      return { ...p, customer: nextCustomer };
+    });
     setDirty(true);
   };
 
@@ -174,7 +214,42 @@ export function RepairContractDocumentEditorPage({
     key: K,
     value: string
   ) => {
-    setForm((p) => ({ ...p, executor: { ...p.executor, [key]: value } }));
+    setForm((p) => {
+      const nextExecutor = { ...p.executor, [key]: value };
+      // Keep legacy placeholder value in sync for old templates.
+      if (key === 'directorNameNominative') {
+        nextExecutor.directorName = value;
+      }
+      return { ...p, executor: nextExecutor };
+    });
+    setDirty(true);
+  };
+
+  const applyExecutorProfile = (title: string) => {
+    setForm((p) => {
+      const profile = executorProfiles.find((it) => it.title === title);
+      if (!profile) {
+        return { ...p, executor: { ...p.executor, selectedProfileTitle: '' } };
+      }
+      return {
+        ...p,
+        executor: {
+          ...p.executor,
+          selectedProfileTitle: title,
+          companyName: profile.companyName ?? '',
+          inn: profile.inn ?? '',
+          kpp: profile.kpp ?? '',
+          ogrn: profile.ogrn ?? '',
+          legalAddress: profile.legalAddress ?? '',
+          actualAddress: profile.actualAddress ?? '',
+          bankDetails: profile.bankDetails ?? '',
+          directorNameNominative: profile.directorNameNominative ?? '',
+          directorNameGenitive: profile.directorNameGenitive ?? '',
+          directorName: profile.directorNameNominative ?? '',
+          basis: profile.basis ?? '',
+        },
+      };
+    });
     setDirty(true);
   };
 
@@ -191,6 +266,9 @@ export function RepairContractDocumentEditorPage({
       const nextContract = { ...p.contract, [key]: value };
       if (key === 'totalAmount') {
         nextContract.totalAmountWords = amountToRussianWords(value);
+        const parsedAmount = parseDecimalAmount(value);
+        nextContract.recommendedPrepayment =
+          parsedAmount === null ? '' : formatMoneyValue(parsedAmount * 0.7);
       }
       return { ...p, contract: nextContract };
     });
@@ -803,8 +881,20 @@ export function RepairContractDocumentEditorPage({
                     <label htmlFor="ctaw">Сумма прописью</label>
                     <input
                       id="ctaw"
+                      className={styles.autoFilledInput}
                       value={form.contract.totalAmountWords}
                       onChange={(e) => updateContract('totalAmountWords', e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className={styles.contractInlineRow}>
+                  <div className={`${styles.field} ${styles.contractInlineField}`}>
+                    <label htmlFor="crp">Рекомендованная предоплата (70%)</label>
+                    <input
+                      id="crp"
+                      className={styles.autoFilledInput}
+                      value={form.contract.recommendedPrepayment}
+                      readOnly
                     />
                   </div>
                 </div>
@@ -829,165 +919,283 @@ export function RepairContractDocumentEditorPage({
               </div>
             </div>
 
-            <h3 className={styles.sectionTitle}>Заказчик</h3>
-            <div className={styles.field}>
-              <label htmlFor="c_fullName">ФИО</label>
-              <input
-                id="c_fullName"
-                value={form.customer.fullName}
-                onChange={(e) => updateCustomer('fullName', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="c_address">Адрес</label>
-              <input
-                id="c_address"
-                value={form.customer.address}
-                onChange={(e) => updateCustomer('address', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="c_phone">Телефон</label>
-              <input
-                id="c_phone"
-                value={form.customer.phone}
-                onChange={(e) => updateCustomer('phone', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="c_email">E-mail</label>
-              <input
-                id="c_email"
-                value={form.customer.email}
-                onChange={(e) => updateCustomer('email', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="c_passport">Паспорт (серия и номер)</label>
-              <input
-                id="c_passport"
-                value={form.customer.passportSeriesNumber}
-                onChange={(e) => updateCustomer('passportSeriesNumber', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="c_passportBy">Кем выдан</label>
-              <input
-                id="c_passportBy"
-                value={form.customer.passportIssuedBy}
-                onChange={(e) => updateCustomer('passportIssuedBy', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="c_passportDate">Дата выдачи</label>
-              <input
-                id="c_passportDate"
-                value={form.customer.passportIssueDate}
-                onChange={(e) => updateCustomer('passportIssueDate', e.target.value)}
-              />
+            <div className={`${styles.sectionCard} ${styles.sectionCustomer}`}>
+              <h3 className={styles.sectionTitle}>Заказчик</h3>
+              <div className={styles.sectionFields}>
+                <div className={styles.field}>
+                  <label htmlFor="c_type">Тип заказчика</label>
+                  <select
+                    id="c_type"
+                    value={form.customer.type}
+                    onChange={(e) =>
+                      updateCustomer(
+                        'type',
+                        e.target.value as RepairPackageFormData['customer']['type']
+                      )
+                    }
+                  >
+                    <option value="PERSON">Физлицо</option>
+                    <option value="COMPANY">ЮЛ</option>
+                    <option value="ENTREPRENEUR">ИП</option>
+                  </select>
+                </div>
+                {form.customer.type === 'PERSON' ? (
+                  <div className={styles.field}>
+                    <label htmlFor="c_fullName">ФИО</label>
+                    <input
+                      id="c_fullName"
+                      value={form.customer.fullName}
+                      onChange={(e) => updateCustomer('fullName', e.target.value)}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div className={styles.field}>
+                      <label htmlFor="c_repFullNameNom">ФИО представителя (именительный)</label>
+                      <input
+                        id="c_repFullNameNom"
+                        value={form.customer.representativeFullNameNominative}
+                        onChange={(e) =>
+                          updateCustomer('representativeFullNameNominative', e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className={styles.field}>
+                      <label htmlFor="c_repFullNameGen">ФИО представителя (родительный)</label>
+                      <input
+                        id="c_repFullNameGen"
+                        value={form.customer.representativeFullNameGenitive}
+                        onChange={(e) =>
+                          updateCustomer('representativeFullNameGenitive', e.target.value)
+                        }
+                      />
+                    </div>
+                  </>
+                )}
+                {form.customer.type !== 'PERSON' ? (
+                  <>
+                    <div className={styles.field}>
+                      <label htmlFor="c_orgName">Наименование организации</label>
+                      <input
+                        id="c_orgName"
+                        value={form.customer.organizationName}
+                        onChange={(e) => updateCustomer('organizationName', e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.field}>
+                      <label htmlFor="c_posNom">Должность представителя (именительный)</label>
+                      <input
+                        id="c_posNom"
+                        value={form.customer.representativePositionNominative}
+                        onChange={(e) =>
+                          updateCustomer('representativePositionNominative', e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className={styles.field}>
+                      <label htmlFor="c_posGen">Должность представителя (родительный)</label>
+                      <input
+                        id="c_posGen"
+                        value={form.customer.representativePositionGenitive}
+                        onChange={(e) =>
+                          updateCustomer('representativePositionGenitive', e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className={styles.field}>
+                      <label htmlFor="c_inn">ИНН</label>
+                      <input
+                        id="c_inn"
+                        value={form.customer.inn}
+                        onChange={(e) => updateCustomer('inn', e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.field}>
+                      <label htmlFor="c_ogrn">ОГРН</label>
+                      <input
+                        id="c_ogrn"
+                        value={form.customer.ogrn}
+                        onChange={(e) => updateCustomer('ogrn', e.target.value)}
+                      />
+                    </div>
+                  </>
+                ) : null}
+                <div className={styles.field}>
+                  <label htmlFor="c_address">Адрес</label>
+                  <input
+                    id="c_address"
+                    value={form.customer.address}
+                    onChange={(e) => updateCustomer('address', e.target.value)}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="c_phone">Телефон</label>
+                  <input
+                    id="c_phone"
+                    value={form.customer.phone}
+                    onChange={(e) => updateCustomer('phone', e.target.value)}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="c_email">E-mail</label>
+                  <input
+                    id="c_email"
+                    value={form.customer.email}
+                    onChange={(e) => updateCustomer('email', e.target.value)}
+                  />
+                </div>
+                {form.customer.type === 'PERSON' ? (
+                  <>
+                    <div className={styles.field}>
+                      <label htmlFor="c_passport">Паспорт (серия и номер)</label>
+                      <input
+                        id="c_passport"
+                        value={form.customer.passportSeriesNumber}
+                        onChange={(e) => updateCustomer('passportSeriesNumber', e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.field}>
+                      <label htmlFor="c_passportBy">Кем выдан</label>
+                      <input
+                        id="c_passportBy"
+                        value={form.customer.passportIssuedBy}
+                        onChange={(e) => updateCustomer('passportIssuedBy', e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.field}>
+                      <label htmlFor="c_passportDate">Дата выдачи</label>
+                      <input
+                        id="c_passportDate"
+                        value={form.customer.passportIssueDate}
+                        onChange={(e) => updateCustomer('passportIssueDate', e.target.value)}
+                      />
+                    </div>
+                  </>
+                ) : null}
+              </div>
             </div>
 
-            <h3 className={styles.sectionTitle}>Исполнитель</h3>
-            <div className={styles.field}>
-              <label htmlFor="e_company">Наименование организации</label>
-              <input
-                id="e_company"
-                value={form.executor.companyName}
-                onChange={(e) => updateExecutor('companyName', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="e_inn">ИНН</label>
-              <input
-                id="e_inn"
-                value={form.executor.inn}
-                onChange={(e) => updateExecutor('inn', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="e_kpp">КПП</label>
-              <input
-                id="e_kpp"
-                value={form.executor.kpp}
-                onChange={(e) => updateExecutor('kpp', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="e_ogrn">ОГРН</label>
-              <input
-                id="e_ogrn"
-                value={form.executor.ogrn}
-                onChange={(e) => updateExecutor('ogrn', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="e_legal">Юридический адрес</label>
-              <textarea
-                id="e_legal"
-                value={form.executor.legalAddress}
-                onChange={(e) => updateExecutor('legalAddress', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="e_actual">Фактический адрес</label>
-              <textarea
-                id="e_actual"
-                value={form.executor.actualAddress}
-                onChange={(e) => updateExecutor('actualAddress', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="e_bank">Банковские реквизиты</label>
-              <textarea
-                id="e_bank"
-                value={form.executor.bankDetails}
-                onChange={(e) => updateExecutor('bankDetails', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="e_director">Подписант (ФИО, должность)</label>
-              <input
-                id="e_director"
-                value={form.executor.directorName}
-                onChange={(e) => updateExecutor('directorName', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="e_basis">Действует на основании</label>
-              <input
-                id="e_basis"
-                value={form.executor.basis}
-                onChange={(e) => updateExecutor('basis', e.target.value)}
-              />
+            <div className={`${styles.sectionCard} ${styles.sectionExecutor}`}>
+              <h3 className={styles.sectionTitle}>Исполнитель</h3>
+              <div className={styles.sectionFields}>
+                <div className={styles.field}>
+                  <label htmlFor="e_profile">Наши реквизиты (из справочника)</label>
+                  <select
+                    id="e_profile"
+                    value={form.executor.selectedProfileTitle}
+                    onChange={(e) => applyExecutorProfile(e.target.value)}
+                  >
+                    <option value="">— выбрать набор —</option>
+                    {executorProfiles.map((profile) => (
+                      <option key={profile.title} value={profile.title}>
+                        {profile.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="e_company">Наименование организации</label>
+                  <input
+                    id="e_company"
+                    value={form.executor.companyName}
+                    onChange={(e) => updateExecutor('companyName', e.target.value)}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="e_inn">ИНН</label>
+                  <input
+                    id="e_inn"
+                    value={form.executor.inn}
+                    onChange={(e) => updateExecutor('inn', e.target.value)}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="e_kpp">КПП</label>
+                  <input
+                    id="e_kpp"
+                    value={form.executor.kpp}
+                    onChange={(e) => updateExecutor('kpp', e.target.value)}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="e_ogrn">ОГРН</label>
+                  <input
+                    id="e_ogrn"
+                    value={form.executor.ogrn}
+                    onChange={(e) => updateExecutor('ogrn', e.target.value)}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="e_legal">Юридический адрес</label>
+                  <textarea
+                    id="e_legal"
+                    value={form.executor.legalAddress}
+                    onChange={(e) => updateExecutor('legalAddress', e.target.value)}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="e_actual">Фактический адрес</label>
+                  <textarea
+                    id="e_actual"
+                    value={form.executor.actualAddress}
+                    onChange={(e) => updateExecutor('actualAddress', e.target.value)}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="e_bank">Банковские реквизиты</label>
+                  <textarea
+                    id="e_bank"
+                    value={form.executor.bankDetails}
+                    onChange={(e) => updateExecutor('bankDetails', e.target.value)}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="e_directorNom">Подписант (именительный падеж)</label>
+                  <input
+                    id="e_directorNom"
+                    value={form.executor.directorNameNominative}
+                    onChange={(e) => updateExecutor('directorNameNominative', e.target.value)}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="e_directorGen">Подписант (родительный падеж)</label>
+                  <input
+                    id="e_directorGen"
+                    value={form.executor.directorNameGenitive}
+                    onChange={(e) => updateExecutor('directorNameGenitive', e.target.value)}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="e_basis">Действует на основании</label>
+                  <input
+                    id="e_basis"
+                    value={form.executor.basis}
+                    onChange={(e) => updateExecutor('basis', e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
 
-            <h3 className={styles.sectionTitle}>Объект</h3>
-            <div className={styles.field} style={{ gridColumn: '1 / -1' }}>
-              <label htmlFor="o_addr">Адрес объекта</label>
-              <input
-                id="o_addr"
-                value={form.object.objectAddress}
-                onChange={(e) => updateObject('objectAddress', e.target.value)}
-              />
-            </div>
-            <div className={styles.field} style={{ gridColumn: '1 / -1' }}>
-              <label htmlFor="o_desc">Описание работ / объекта</label>
-              <textarea
-                id="o_desc"
-                value={form.object.objectDescription}
-                onChange={(e) => updateObject('objectDescription', e.target.value)}
-              />
-            </div>
-
-            <h3 className={styles.sectionTitle}>Смета (черновик текста)</h3>
-            <div className={styles.field} style={{ gridColumn: '1 / -1' }}>
-              <label htmlFor="est">Текст для вкладки «Смета»</label>
-              <textarea
-                id="est"
-                rows={6}
-                value={form.estimate.notes}
-                onChange={(e) => updateEstimate('notes', e.target.value)}
-              />
+            <div className={`${styles.sectionCard} ${styles.sectionObject}`}>
+              <h3 className={styles.sectionTitle}>Объект</h3>
+              <div className={`${styles.sectionFields} ${styles.objectSectionFields}`}>
+                <div className={styles.field}>
+                  <label htmlFor="o_addr">Адрес объекта</label>
+                  <input
+                    id="o_addr"
+                    value={form.object.objectAddress}
+                    onChange={(e) => updateObject('objectAddress', e.target.value)}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="o_desc">Описание работ / объекта</label>
+                  <textarea
+                    id="o_desc"
+                    value={form.object.objectDescription}
+                    onChange={(e) => updateObject('objectDescription', e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
           </div>
           <p className={styles.hint}>

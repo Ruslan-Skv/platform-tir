@@ -14,7 +14,27 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
   {
     title: 'Заказчик',
     items: [
-      { path: 'customer.fullName', label: 'ФИО' },
+      { path: 'customer.type', label: 'Тип заказчика (ФЛ/ЮЛ/ИП)' },
+      { path: 'customer.fullName', label: 'ФИО заказчика (физлицо)' },
+      {
+        path: 'customer.representativeFullNameNominative',
+        label: 'ФИО представителя (именительный падеж)',
+      },
+      {
+        path: 'customer.representativeFullNameGenitive',
+        label: 'ФИО представителя (родительный падеж)',
+      },
+      { path: 'customer.organizationName', label: 'Наименование организации' },
+      {
+        path: 'customer.representativePositionNominative',
+        label: 'Должность представителя (именительный падеж)',
+      },
+      {
+        path: 'customer.representativePositionGenitive',
+        label: 'Должность представителя (родительный падеж)',
+      },
+      { path: 'customer.inn', label: 'ИНН заказчика' },
+      { path: 'customer.ogrn', label: 'ОГРН заказчика' },
       { path: 'customer.address', label: 'Адрес' },
       { path: 'customer.phone', label: 'Телефон' },
       { path: 'customer.email', label: 'E-mail' },
@@ -33,7 +53,15 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
       { path: 'executor.legalAddress', label: 'Юр. адрес' },
       { path: 'executor.actualAddress', label: 'Факт. адрес' },
       { path: 'executor.bankDetails', label: 'Банк. реквизиты' },
-      { path: 'executor.directorName', label: 'Подписант' },
+      {
+        path: 'executor.directorNameNominative',
+        label: 'Подписант (именительный падеж)',
+      },
+      {
+        path: 'executor.directorNameGenitive',
+        label: 'Подписант (родительный падеж)',
+      },
+      { path: 'executor.directorName', label: 'Подписант (legacy)' },
       { path: 'executor.basis', label: 'Действует на основании' },
     ],
   },
@@ -50,6 +78,7 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
       { path: 'contract.number', label: 'Номер договора' },
       { path: 'contract.date', label: 'Дата договора' },
       { path: 'contract.totalAmount', label: 'Сумма (цифрами)' },
+      { path: 'contract.recommendedPrepayment', label: 'Рекомендованная предоплата (70%)' },
       { path: 'contract.totalAmountWords', label: 'Сумма прописью' },
       { path: 'contract.prepaymentAmount', label: 'Аванс / предоплата' },
       { path: 'contract.workPeriod', label: 'Сроки / период работ' },

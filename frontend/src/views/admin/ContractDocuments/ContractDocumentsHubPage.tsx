@@ -25,6 +25,12 @@ export function ContractDocumentsHubPage() {
             Договор, смета, акты, ПКО, анкеты, заказ-наряды и др.
           </p>
         </Link>
+        <Link className={styles.hubCard} href="/admin/contract-documents/requisites">
+          <h2 className={styles.hubCardTitle}>Наши реквизиты</h2>
+          <p className={styles.hubCardHint}>
+            Наборы реквизитов Исполнителя для быстрого выбора в договоре.
+          </p>
+        </Link>
         <div className={`${styles.hubCard} ${styles.hubCardDisabled}`}>
           <h2 className={styles.hubCardTitle}>Окна</h2>
           <p className={styles.hubCardHint}>Раздел будет добавлен позже.</p>

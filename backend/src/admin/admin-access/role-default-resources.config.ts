@@ -22,6 +22,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.contract-documents',
     'admin.contract-documents.repair',
     'admin.contract-documents.instruction',
+    'admin.contract-documents.requisites',
     'admin.content',
     'admin.content.home',
     'admin.content.hero',
@@ -147,6 +148,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.contract-documents',
     'admin.contract-documents.repair',
     'admin.contract-documents.instruction',
+    'admin.contract-documents.requisites',
   ],
   TECHNOLOGIST: [
     'admin',
@@ -160,6 +162,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.contract-documents',
     'admin.contract-documents.repair',
     'admin.contract-documents.instruction',
+    'admin.contract-documents.requisites',
   ],
   PARTNER: [
     'admin',
@@ -180,6 +183,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.contract-documents',
     'admin.contract-documents.repair',
     'admin.contract-documents.instruction',
+    'admin.contract-documents.requisites',
   ],
   LEAD_SPECIALIST_FURNITURE: [
     'admin',
@@ -192,6 +196,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.contract-documents',
     'admin.contract-documents.repair',
     'admin.contract-documents.instruction',
+    'admin.contract-documents.requisites',
   ],
   LEAD_SPECIALIST_WINDOWS_DOORS: [
     'admin',
@@ -204,6 +209,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.contract-documents',
     'admin.contract-documents.repair',
     'admin.contract-documents.instruction',
+    'admin.contract-documents.requisites',
   ],
   SURVEYOR: ['admin', 'admin.crm', 'admin.crm.measurements', 'admin.crm.customers', 'admin.forms'],
   DRIVER: ['admin', 'admin.crm', 'admin.crm.contracts'],

@@ -1,6 +1,14 @@
 /** Структура вкладки «Данные» для направления «Ремонт» (расширяйте по мере переноса полей из Excel). */
 export interface RepairCustomerBlock {
+  type: 'PERSON' | 'COMPANY' | 'ENTREPRENEUR';
   fullName: string;
+  representativeFullNameNominative: string;
+  representativeFullNameGenitive: string;
+  organizationName: string;
+  representativePositionNominative: string;
+  representativePositionGenitive: string;
+  inn: string;
+  ogrn: string;
   address: string;
   phone: string;
   email: string;
@@ -10,6 +18,7 @@ export interface RepairCustomerBlock {
 }
 
 export interface RepairExecutorBlock {
+  selectedProfileTitle: string;
   companyName: string;
   inn: string;
   kpp: string;
@@ -17,6 +26,8 @@ export interface RepairExecutorBlock {
   legalAddress: string;
   actualAddress: string;
   bankDetails: string;
+  directorNameNominative: string;
+  directorNameGenitive: string;
   directorName: string;
   basis: string;
 }
@@ -30,6 +41,7 @@ export interface RepairContractBlock {
   number: string;
   date: string;
   totalAmount: string;
+  recommendedPrepayment: string;
   totalAmountWords: string;
   prepaymentAmount: string;
   workPeriod: string;
@@ -51,7 +63,15 @@ export interface RepairPackageFormData {
 export function defaultRepairPackageFormData(): RepairPackageFormData {
   return {
     customer: {
+      type: 'PERSON',
       fullName: '',
+      representativeFullNameNominative: '',
+      representativeFullNameGenitive: '',
+      organizationName: '',
+      representativePositionNominative: '',
+      representativePositionGenitive: '',
+      inn: '',
+      ogrn: '',
       address: '',
       phone: '',
       email: '',
@@ -60,6 +80,7 @@ export function defaultRepairPackageFormData(): RepairPackageFormData {
       passportIssueDate: '',
     },
     executor: {
+      selectedProfileTitle: '',
       companyName: '',
       inn: '',
       kpp: '',
@@ -67,6 +88,8 @@ export function defaultRepairPackageFormData(): RepairPackageFormData {
       legalAddress: '',
       actualAddress: '',
       bankDetails: '',
+      directorNameNominative: '',
+      directorNameGenitive: '',
       directorName: '',
       basis: '',
     },
@@ -78,6 +101,7 @@ export function defaultRepairPackageFormData(): RepairPackageFormData {
       number: '',
       date: '',
       totalAmount: '',
+      recommendedPrepayment: '',
       totalAmountWords: '',
       prepaymentAmount: '',
       workPeriod: '',

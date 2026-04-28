@@ -20,6 +20,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
 import { ContractDocumentPackagesService } from './contract-document-packages.service';
 import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
+import { SetGlobalExecutorProfilesDto } from './dto/set-global-executor-profiles.dto';
 import { SetGlobalContractTemplateDto } from './dto/set-global-contract-template.dto';
 import { UpdateContractDocumentPackageDto } from './dto/update-contract-document-package.dto';
 
@@ -71,6 +72,23 @@ export class ContractDocumentPackagesController {
   @Put('global-templates')
   setGlobalTemplate(@Body() dto: SetGlobalContractTemplateDto, @Req() req: RequestWithUser) {
     return this.service.setGlobalTemplate(dto, req.user?.id);
+  }
+
+  @Get('executor-profiles')
+  getGlobalExecutorProfiles(@Query('kind') kind: string) {
+    const allowed = new Set<string>(Object.values(ContractDocumentPackageKind));
+    if (!kind || !allowed.has(kind)) {
+      throw new BadRequestException('Укажите корректный query-параметр kind');
+    }
+    return this.service.getGlobalExecutorProfiles(kind as ContractDocumentPackageKind);
+  }
+
+  @Put('executor-profiles')
+  setGlobalExecutorProfiles(
+    @Body() dto: SetGlobalExecutorProfilesDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.service.setGlobalExecutorProfiles(dto, req.user?.id);
   }
 
   @Get(':id')

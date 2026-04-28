@@ -4,12 +4,17 @@ import { ContractDocumentPackageKind, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { contractDocumentPackageInclude } from './contract-package.include';
 import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
+import {
+  ExecutorProfileDto,
+  SetGlobalExecutorProfilesDto,
+} from './dto/set-global-executor-profiles.dto';
 import { SetGlobalContractTemplateDto } from './dto/set-global-contract-template.dto';
 import { UpdateContractDocumentPackageDto } from './dto/update-contract-document-package.dto';
 
 @Injectable()
 export class ContractDocumentPackagesService {
   constructor(private readonly prisma: PrismaService) {}
+  private static readonly EXECUTOR_PROFILES_TAB = 'executor_profiles';
 
   private async assertCrmContractExists(contractId: string) {
     const row = await this.prisma.contract.findUnique({
@@ -109,6 +114,50 @@ export class ContractDocumentPackagesService {
       },
       update: {
         html: dto.html,
+        updatedById: updatedById ?? null,
+      },
+      select: { id: true, kind: true, tab: true, updatedAt: true },
+    });
+    return row;
+  }
+
+  async getGlobalExecutorProfiles(kind: ContractDocumentPackageKind) {
+    const row = await this.prisma.contractDocumentGlobalTemplate.findUnique({
+      where: {
+        kind_tab: { kind, tab: ContractDocumentPackagesService.EXECUTOR_PROFILES_TAB },
+      },
+      select: { html: true, updatedAt: true },
+    });
+
+    if (!row) {
+      return { items: [] as ExecutorProfileDto[], updatedAt: null as string | null };
+    }
+
+    try {
+      const parsed = JSON.parse(row.html) as { items?: ExecutorProfileDto[] };
+      return {
+        items: Array.isArray(parsed?.items) ? parsed.items : [],
+        updatedAt: row.updatedAt.toISOString(),
+      };
+    } catch {
+      return { items: [] as ExecutorProfileDto[], updatedAt: row.updatedAt.toISOString() };
+    }
+  }
+
+  async setGlobalExecutorProfiles(dto: SetGlobalExecutorProfilesDto, updatedById?: string) {
+    const payload = JSON.stringify({ items: dto.items ?? [] });
+    const row = await this.prisma.contractDocumentGlobalTemplate.upsert({
+      where: {
+        kind_tab: { kind: dto.kind, tab: ContractDocumentPackagesService.EXECUTOR_PROFILES_TAB },
+      },
+      create: {
+        kind: dto.kind,
+        tab: ContractDocumentPackagesService.EXECUTOR_PROFILES_TAB,
+        html: payload,
+        updatedById: updatedById ?? null,
+      },
+      update: {
+        html: payload,
         updatedById: updatedById ?? null,
       },
       select: { id: true, kind: true, tab: true, updatedAt: true },

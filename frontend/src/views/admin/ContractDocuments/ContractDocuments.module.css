@@ -344,6 +344,7 @@
 }
 
 .dataCompact .field input,
+.dataCompact .field select,
 .dataCompact .field textarea {
   padding: 6px 8px;
   font-size: 0.82rem;
@@ -351,6 +352,44 @@
 
 .dataCompact .field textarea {
   min-height: 58px;
+}
+
+.sectionCard {
+  grid-column: 1 / -1;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  padding: 8px;
+}
+
+.sectionFields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px 10px;
+}
+
+.objectSectionFields {
+  grid-template-columns: 1fr;
+}
+
+.sectionCard .sectionTitle {
+  border-top: none;
+  margin: 0 0 6px;
+  padding-top: 0;
+}
+
+.sectionCustomer {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.sectionExecutor {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+}
+
+.sectionObject {
+  background: #ecfeff;
+  border-color: #a5f3fc;
 }
 
 .crmCompactField {
@@ -417,6 +456,7 @@
 }
 
 .field input,
+.field select,
 .field textarea {
   padding: 8px 10px;
   border: 1px solid #d1d5db;
@@ -427,6 +467,16 @@
 .field textarea {
   min-height: 72px;
   resize: vertical;
+}
+
+.autoFilledInput {
+  background: #fffbeb;
+  border-color: #f59e0b;
+}
+
+.autoFilledInput:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
 }
 
 .sectionTitle {
