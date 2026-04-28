@@ -14,9 +14,9 @@ import type { Contract } from '@/shared/api/admin-crm';
 import { getContract, getContracts } from '@/shared/api/admin-crm';
 
 import styles from '../ContractDocuments.module.css';
+import { amountToRussianWords } from './amountToRussianWords';
 import { mergeRepairFormFromCrmContract } from './applyCrmContractToForm';
 import { applyTemplate } from './applyTemplate';
-import { contractHtmlFromExcelArrayBuffer } from './excelToDocPrintHtml';
 import {
   type RepairDocumentTemplateTabId,
   buildPersistedFormData,
@@ -49,6 +49,7 @@ export function RepairContractDocumentEditorPage({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSaveSuccessModalOpen, setIsSaveSuccessModalOpen] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [contractQuery, setContractQuery] = useState('');
   const [contractResults, setContractResults] = useState<Contract[]>([]);
@@ -57,9 +58,11 @@ export function RepairContractDocumentEditorPage({
     Partial<Record<RepairDocumentTemplateTabId, string>>
   >({});
   const [excelMessage, setExcelMessage] = useState<string | null>(null);
-  const contractExcelInputRef = useRef<HTMLInputElement>(null);
   const contractHtmlTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [contractDocView, setContractDocView] = useState<'preview' | 'edit'>('preview');
+  const [formatToolbarLevel, setFormatToolbarLevel] = useState<'basic' | 'advanced'>('basic');
+  const [formatToolbarQuery, setFormatToolbarQuery] = useState('');
+  const [showAllFormatTools, setShowAllFormatTools] = useState(false);
   const [globalContractState, setGlobalContractState] = useState<{
     loaded: boolean;
     html: string | null;
@@ -139,7 +142,7 @@ export function RepairContractDocumentEditorPage({
         crmContractId: draftCrmContractId,
       });
       setDirty(false);
-      await load();
+      setIsSaveSuccessModalOpen(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сохранить');
     } finally {
@@ -184,7 +187,13 @@ export function RepairContractDocumentEditorPage({
     key: K,
     value: string
   ) => {
-    setForm((p) => ({ ...p, contract: { ...p.contract, [key]: value } }));
+    setForm((p) => {
+      const nextContract = { ...p.contract, [key]: value };
+      if (key === 'totalAmount') {
+        nextContract.totalAmountWords = amountToRussianWords(value);
+      }
+      return { ...p, contract: nextContract };
+    });
     setDirty(true);
   };
 
@@ -211,24 +220,6 @@ export function RepairContractDocumentEditorPage({
     }
     return applyTemplate(tpl, form);
   }, [activeTab, form, templateOverrides, globalContractState]);
-
-  const handleContractExcelChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    setExcelMessage(null);
-    setError(null);
-    try {
-      const XLSX = await import('xlsx');
-      const buf = await file.arrayBuffer();
-      const { html, sheetUsed } = contractHtmlFromExcelArrayBuffer(buf, XLSX);
-      setTemplateOverrides((prev) => ({ ...prev, contract: html }));
-      setDirty(true);
-      setExcelMessage(`Загружен лист «${sheetUsed}». Не забудьте нажать «Сохранить».`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось прочитать Excel');
-    }
-  };
 
   const contractTemplateSource = useMemo(
     () =>
@@ -265,6 +256,245 @@ export function RepairContractDocumentEditorPage({
     } else {
       handleContractTemplateChange(cur + token);
     }
+  };
+
+  const updateContractHtmlBySelection = (
+    transform: (
+      selected: string,
+      hasSelection: boolean
+    ) => {
+      content: string;
+      cursorOffset?: number;
+      selectLength?: number;
+    }
+  ) => {
+    const el = contractHtmlTextareaRef.current;
+    const current = contractTemplateSource;
+    if (!el) {
+      const next = transform('', false).content;
+      handleContractTemplateChange(current + next);
+      return;
+    }
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? start;
+    const selected = current.slice(start, end);
+    const hasSelection = start !== end;
+    const result = transform(selected, hasSelection);
+    const next = current.slice(0, start) + result.content + current.slice(end);
+    handleContractTemplateChange(next);
+    const cursor = start + (result.cursorOffset ?? result.content.length);
+    const selectLength = result.selectLength ?? 0;
+    window.requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(cursor, cursor + selectLength);
+    });
+  };
+
+  const wrapSelection = (before: string, after: string, placeholder = 'текст') => {
+    updateContractHtmlBySelection((selected, hasSelection) => ({
+      content: `${before}${hasSelection ? selected : placeholder}${after}`,
+      cursorOffset: hasSelection ? before.length + selected.length + after.length : before.length,
+      selectLength: hasSelection ? 0 : placeholder.length,
+    }));
+  };
+
+  const wrapParagraphWithAlign = (align: 'left' | 'center' | 'right' | 'justify') => {
+    wrapSelection(`<p style="text-align: ${align}; margin: 0 0 8pt;">`, '</p>', 'Новый абзац');
+  };
+
+  const wrapParagraphWithIndent = () => {
+    wrapSelection(
+      '<p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">',
+      '</p>',
+      'Абзац с красной строкой'
+    );
+  };
+
+  const wrapAsHeading = (level: 1 | 2 | 3) => {
+    const tag = `h${level}`;
+    const fontSize = level === 1 ? '14pt' : level === 2 ? '12pt' : '11pt';
+    wrapSelection(
+      `<${tag} style="text-align: center; font-size: ${fontSize}; margin: 14pt 0 8pt;">`,
+      `</${tag}>`,
+      level === 1 ? 'Название договора' : level === 2 ? 'Название раздела' : 'Название подпункта'
+    );
+  };
+
+  const wrapAsList = (ordered: boolean) => {
+    updateContractHtmlBySelection((selected, hasSelection) => {
+      const lines = (hasSelection ? selected : 'Пункт 1\nПункт 2')
+        .split(/\r?\n/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const items = lines.map((line) => `  <li>${line}</li>`).join('\n');
+      const tag = ordered ? 'ol' : 'ul';
+      return {
+        content: `<${tag} style="margin: 0 0 8pt 22px; padding: 0;">\n${items}\n</${tag}>`,
+      };
+    });
+  };
+
+  const insertSectionTemplate = () => {
+    const block = `
+<h2 style="text-align: center; margin: 14pt 0 8pt;">N. НАЗВАНИЕ РАЗДЕЛА</h2>
+<p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">
+  N.1. Первый пункт раздела.
+</p>
+<p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">
+  N.2. Второй пункт раздела.
+</p>`.trim();
+    updateContractHtmlBySelection(() => ({ content: block }));
+  };
+
+  const insertSignatureLines = () => {
+    const block = `
+<table style="width: 100%; border-collapse: collapse; margin-top: 16pt;">
+  <tr>
+    <td style="width: 50%; vertical-align: bottom; padding-right: 10px;">
+      <p style="margin: 0 0 22pt;">Подрядчик _____________________ / {{executor.directorName}}</p>
+    </td>
+    <td style="width: 50%; vertical-align: bottom; padding-left: 10px;">
+      <p style="margin: 0 0 22pt;">Заказчик _____________________ / {{customer.fullName}}</p>
+    </td>
+  </tr>
+</table>`.trim();
+    updateContractHtmlBySelection(() => ({ content: block }));
+  };
+
+  const clearFormattingInSelection = () => {
+    updateContractHtmlBySelection((selected, hasSelection) => {
+      const source = hasSelection ? selected : contractTemplateSource;
+      const cleaned = source.replace(/<[^>]+>/g, '').trim();
+      return { content: cleaned || 'текст' };
+    });
+  };
+
+  const uppercaseSelection = () => {
+    updateContractHtmlBySelection((selected, hasSelection) => ({
+      content: (hasSelection ? selected : 'ТЕКСТ').toUpperCase(),
+    }));
+  };
+
+  const insertHorizontalRule = () => {
+    updateContractHtmlBySelection(() => ({
+      content: '<hr style="border: 0; border-top: 1px solid #999; margin: 12pt 0;" />',
+    }));
+  };
+
+  const insertPageBreak = () => {
+    updateContractHtmlBySelection(() => ({
+      content: '<div style="page-break-after: always;"></div>',
+    }));
+  };
+
+  const insertRequisitesTemplate = () => {
+    const block = `
+<h2 style="text-align: center; margin: 16pt 0 8pt;">РЕКВИЗИТЫ И ПОДПИСИ СТОРОН</h2>
+<table style="width: 100%; border-collapse: collapse; margin-top: 8pt;">
+  <tr>
+    <td style="width: 50%; vertical-align: top; padding: 8px 10px 8px 0; border-right: 1px solid #bbb;">
+      <p style="text-align: center; font-weight: bold; margin: 0 0 8pt;">ПОДРЯДЧИК</p>
+      <p style="margin: 0 0 4pt;">{{executor.companyName}}</p>
+      <p style="margin: 0 0 4pt;">ИНН {{executor.inn}}, КПП {{executor.kpp}}, ОГРН {{executor.ogrn}}</p>
+      <p style="margin: 0 0 4pt;">Юр. адрес: {{executor.legalAddress}}</p>
+      <p style="margin: 0 0 4pt;">Факт. адрес: {{executor.actualAddress}}</p>
+      <p style="margin: 0 0 8pt; white-space: pre-wrap;">{{executor.bankDetails}}</p>
+      <p style="margin: 20pt 0 0;">___________________ / {{executor.directorName}}</p>
+      <p style="margin: 0; font-size: 9pt;">м.п.</p>
+    </td>
+    <td style="width: 50%; vertical-align: top; padding: 8px 0 8px 10px;">
+      <p style="text-align: center; font-weight: bold; margin: 0 0 8pt;">ЗАКАЗЧИК</p>
+      <p style="margin: 0 0 4pt;">{{customer.fullName}}</p>
+      <p style="margin: 0 0 4pt;">Адрес: {{customer.address}}</p>
+      <p style="margin: 0 0 4pt;">Тел.: {{customer.phone}}</p>
+      <p style="margin: 0 0 4pt;">E-mail: {{customer.email}}</p>
+      <p style="margin: 0 0 4pt;">Паспорт: {{customer.passportSeriesNumber}}</p>
+      <p style="margin: 0 0 8pt;">Выдан: {{customer.passportIssuedBy}}, {{customer.passportIssueDate}}</p>
+      <p style="margin: 20pt 0 0;">___________________ / {{customer.fullName}}</p>
+      <p style="margin: 0; font-size: 9pt;">подпись</p>
+    </td>
+  </tr>
+</table>`.trim();
+    updateContractHtmlBySelection(() => ({ content: block }));
+  };
+
+  const wrapParagraphWithSpacing = (lineHeight: number, marginBottomPt: number) => {
+    wrapSelection(
+      `<p style="text-align: justify; line-height: ${lineHeight}; margin: 0 0 ${marginBottomPt}pt;">`,
+      '</p>',
+      'Абзац'
+    );
+  };
+
+  const wrapParagraphWithIndentCm = (indentCm: number) => {
+    wrapSelection(
+      `<p style="text-align: justify; text-indent: ${indentCm}cm; margin: 0 0 8pt;">`,
+      '</p>',
+      'Абзац'
+    );
+  };
+
+  const insertQuoteBlock = () => {
+    const block = `
+<blockquote style="margin: 8pt 0; padding: 8pt 10pt; border-left: 3px solid #94a3b8; background: #f8fafc;">
+  <p style="margin: 0; font-style: italic;">Текст примечания / важного условия.</p>
+</blockquote>`.trim();
+    updateContractHtmlBySelection(() => ({ content: block }));
+  };
+
+  const insertSimpleTable = () => {
+    const block = `
+<table style="width: 100%; border-collapse: collapse; margin: 8pt 0;">
+  <tr>
+    <th style="border: 1px solid #cbd5e1; padding: 6px; text-align: left;">Пункт</th>
+    <th style="border: 1px solid #cbd5e1; padding: 6px; text-align: left;">Содержание</th>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #cbd5e1; padding: 6px;">1</td>
+    <td style="border: 1px solid #cbd5e1; padding: 6px;">Описание</td>
+  </tr>
+</table>`.trim();
+    updateContractHtmlBySelection(() => ({ content: block }));
+  };
+
+  const insertEmptySpacer = () => {
+    updateContractHtmlBySelection(() => ({
+      content: '<div style="height: 10pt;"></div>',
+    }));
+  };
+
+  const convertTextToParagraphs = () => {
+    updateContractHtmlBySelection((selected, hasSelection) => {
+      const source = (hasSelection ? selected : contractTemplateSource).trim();
+      const parts = source
+        .split(/\r?\n/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((line) => `<p style="margin: 0 0 8pt;">${line}</p>`)
+        .join('\n');
+      return {
+        content: parts || '<p style="margin: 0 0 8pt;">Новый абзац</p>',
+      };
+    });
+  };
+
+  const insertTwoColumnsBlock = () => {
+    const block = `
+<table style="width: 100%; border-collapse: collapse; margin-top: 8pt;">
+  <tr>
+    <td style="width: 50%; vertical-align: top; padding: 8px 10px 8px 0; border-right: 1px solid #bbb;">
+      <p style="text-align: center; font-weight: bold; margin: 0 0 8pt;">ЛЕВАЯ КОЛОНКА</p>
+      <p style="margin: 0 0 6pt;">{{customer.fullName}}</p>
+      <p style="margin: 0;">___________________ / подпись</p>
+    </td>
+    <td style="width: 50%; vertical-align: top; padding: 8px 0 8px 10px;">
+      <p style="text-align: center; font-weight: bold; margin: 0 0 8pt;">ПРАВАЯ КОЛОНКА</p>
+      <p style="margin: 0 0 6pt;">{{executor.companyName}}</p>
+      <p style="margin: 0;">___________________ / подпись</p>
+    </td>
+  </tr>
+</table>`.trim();
+    updateContractHtmlBySelection(() => ({ content: block }));
   };
 
   const handlePublishAsGlobalDefault = async () => {
@@ -316,6 +546,17 @@ export function RepairContractDocumentEditorPage({
     }
   }, [activeTab]);
 
+  useEffect(() => {
+    if (contractDocView !== 'edit') {
+      setFormatToolbarLevel('basic');
+    }
+  }, [contractDocView]);
+
+  useEffect(() => {
+    setShowAllFormatTools(false);
+    setFormatToolbarQuery('');
+  }, [formatToolbarLevel]);
+
   if (loading) {
     return (
       <div className={styles.page}>
@@ -324,9 +565,58 @@ export function RepairContractDocumentEditorPage({
     );
   }
 
+  type ToolButton = {
+    label: string;
+    onClick: () => void;
+    secondary?: boolean;
+  };
+
+  const basicTools: ToolButton[] = [
+    { label: 'H1', onClick: () => wrapAsHeading(1) },
+    { label: 'H2', onClick: () => wrapAsHeading(2) },
+    { label: 'Слева', onClick: () => wrapParagraphWithAlign('left') },
+    { label: 'Центр', onClick: () => wrapParagraphWithAlign('center') },
+    { label: 'По ширине', onClick: () => wrapParagraphWithAlign('justify') },
+    { label: 'Абзац+отступ', onClick: wrapParagraphWithIndent },
+    { label: 'Жирный', onClick: () => wrapSelection('<strong>', '</strong>', 'жирный текст') },
+    { label: 'Курсив', onClick: () => wrapSelection('<em>', '</em>', 'курсив') },
+    { label: 'Марк. список', onClick: () => wrapAsList(false) },
+    { label: 'Нум. список', onClick: () => wrapAsList(true) },
+    { label: 'Текст → абзацы', onClick: convertTextToParagraphs },
+    { label: '2 колонки', onClick: insertTwoColumnsBlock },
+    { label: 'Подписи сторон', onClick: insertSignatureLines },
+    { label: 'Реквизиты (готово)', onClick: insertRequisitesTemplate, secondary: true },
+  ];
+
+  const advancedTools: ToolButton[] = [
+    { label: 'H3', onClick: () => wrapAsHeading(3) },
+    { label: 'Справа', onClick: () => wrapParagraphWithAlign('right') },
+    { label: 'Без отступа', onClick: () => wrapParagraphWithIndentCm(0) },
+    { label: 'Отступ 1.25см', onClick: () => wrapParagraphWithIndentCm(1.25) },
+    { label: 'Интервал узкий', onClick: () => wrapParagraphWithSpacing(1.3, 6) },
+    { label: 'Интервал широкий', onClick: () => wrapParagraphWithSpacing(1.6, 10) },
+    { label: 'Подчерк.', onClick: () => wrapSelection('<u>', '</u>', 'подчёркнуто') },
+    { label: 'ВЕРХНИЙ РЕГИСТР', onClick: uppercaseSelection },
+    { label: 'Очистить формат', onClick: clearFormattingInSelection },
+    { label: 'Шаблон раздела', onClick: insertSectionTemplate },
+    { label: 'Цитата / примеч.', onClick: insertQuoteBlock },
+    { label: 'Таблица 2×2', onClick: insertSimpleTable },
+    { label: 'Пустая строка', onClick: insertEmptySpacer, secondary: true },
+    { label: 'Разделитель', onClick: insertHorizontalRule, secondary: true },
+    { label: 'Разрыв страницы', onClick: insertPageBreak, secondary: true },
+  ];
+
+  const sourceTools = formatToolbarLevel === 'basic' ? basicTools : advancedTools;
+  const q = formatToolbarQuery.trim().toLowerCase();
+  const visibleTools = sourceTools.filter((tool) => {
+    if (!showAllFormatTools && tool.secondary) return false;
+    if (!q) return true;
+    return tool.label.toLowerCase().includes(q);
+  });
+
   return (
-    <div className={styles.page}>
-      <div className={styles.editorHeader}>
+    <div className={`${styles.page} ${styles.pageWide}`}>
+      <div className={`${styles.editorHeader} ${styles.blockHeader}`}>
         <div>
           <Link className={styles.backLink} href="/admin/contract-documents/repair">
             ← К списку (Ремонт)
@@ -347,7 +637,7 @@ export function RepairContractDocumentEditorPage({
             ) : null}
           </p>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+        <div className={styles.headerActions}>
           <input
             type="text"
             placeholder="Название черновика"
@@ -356,26 +646,43 @@ export function RepairContractDocumentEditorPage({
               setDraftTitle(e.target.value);
               setDirty(true);
             }}
-            style={{
-              minWidth: 220,
-              padding: '8px 10px',
-              borderRadius: 8,
-              border: '1px solid #d1d5db',
-            }}
+            className={styles.draftTitleInput}
           />
-          <button
-            type="button"
-            className={styles.primaryBtn}
-            disabled={saving || !dirty}
-            onClick={() => void handleSave()}
-          >
-            {saving ? 'Сохранение…' : dirty ? 'Сохранить' : 'Сохранено'}
-          </button>
+          <div className={styles.headerButtonsRow}>
+            {activeTab !== 'data' ? (
+              <button type="button" className={styles.secondaryBtn} onClick={handlePrint}>
+                Печать
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className={styles.primaryBtn}
+              disabled={saving || !dirty}
+              onClick={() => void handleSave()}
+            >
+              {saving ? 'Сохранение…' : dirty ? 'Сохранить' : 'Сохранено'}
+            </button>
+          </div>
         </div>
       </div>
       {error ? <p className={styles.error}>{error}</p> : null}
+      {isSaveSuccessModalOpen ? (
+        <div className={styles.saveModalBackdrop} role="dialog" aria-modal="true">
+          <div className={styles.saveModalCard}>
+            <h3 className={styles.saveModalTitle}>Сохранено</h3>
+            <p className={styles.saveModalText}>Изменения успешно сохранены.</p>
+            <button
+              type="button"
+              className={styles.primaryBtn}
+              onClick={() => setIsSaveSuccessModalOpen(false)}
+            >
+              Ок
+            </button>
+          </div>
+        </div>
+      ) : null}
 
-      <div className={styles.tabBar} role="tablist">
+      <div className={`${styles.tabBar} ${styles.blockTabs}`} role="tablist">
         {REPAIR_DOCUMENT_TAB_IDS.map((id) => (
           <button
             key={id}
@@ -391,74 +698,135 @@ export function RepairContractDocumentEditorPage({
       </div>
 
       {activeTab === 'data' ? (
-        <>
+        <div className={`${styles.blockData} ${styles.dataCompact}`}>
           <div className={styles.formGrid}>
-            <h3 className={styles.sectionTitle}>Связь с CRM</h3>
-            <div className={styles.field} style={{ gridColumn: '1 / -1' }}>
-              <label htmlFor="crm_search">Найти договор (№, ФИО, телефон)</label>
-              <input
-                id="crm_search"
-                value={contractQuery}
-                onChange={(e) => setContractQuery(e.target.value)}
-                placeholder="Начните вводить для поиска…"
-              />
-              <p className={styles.hint} style={{ marginTop: 6 }}>
-                {contractsLoading ? 'Поиск…' : `Найдено: ${contractResults.length}`}
-              </p>
-              {contractResults.length > 0 ? (
-                <ul
-                  style={{ margin: '8px 0 0', paddingLeft: 18, maxHeight: 180, overflowY: 'auto' }}
+            <div className={styles.dataTopRow}>
+              <div className={styles.dataTopBlock}>
+                <h3 className={styles.sectionTitle}>Связь с CRM</h3>
+                <div
+                  className={`${styles.field} ${styles.crmCompactField} ${styles.crmCompactBox}`}
                 >
-                  {contractResults.map((c) => (
-                    <li key={c.id} style={{ marginBottom: 6 }}>
-                      <button
-                        type="button"
-                        className={styles.secondaryBtn}
-                        style={{ textAlign: 'left', width: '100%', justifyContent: 'flex-start' }}
-                        onClick={() => {
-                          setDraftCrmContractId(c.id);
-                          setDirty(true);
-                        }}
-                      >
-                        № {c.contractNumber} · {c.customerName || '—'}{' '}
-                        {draftCrmContractId === c.id ? '(выбран)' : ''}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-            <div
-              className={styles.field}
-              style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: 8 }}
-            >
-              <button
-                type="button"
-                className={styles.secondaryBtn}
-                disabled={!draftCrmContractId}
-                onClick={() => void handlePullFromCrm()}
-              >
-                Подставить данные из CRM в форму
-              </button>
-              <button
-                type="button"
-                className={styles.secondaryBtn}
-                disabled={!draftCrmContractId}
-                onClick={() => {
-                  setDraftCrmContractId(null);
-                  setDirty(true);
-                }}
-              >
-                Отвязать договор
-              </button>
-              {draftCrmContractId ? (
-                <Link
-                  className={styles.secondaryBtn}
-                  href={`/admin/crm/contracts/${draftCrmContractId}`}
+                  <label htmlFor="crm_search">Найти договор (№, ФИО, телефон)</label>
+                  <input
+                    id="crm_search"
+                    value={contractQuery}
+                    onChange={(e) => setContractQuery(e.target.value)}
+                    placeholder="Начните вводить для поиска…"
+                  />
+                  <p className={styles.hint} style={{ marginTop: 2 }}>
+                    {contractsLoading ? 'Поиск…' : `Найдено: ${contractResults.length}`}
+                  </p>
+                  {contractResults.length > 0 ? (
+                    <ul className={styles.crmResultsList}>
+                      {contractResults.map((c) => (
+                        <li key={c.id} className={styles.crmResultItem}>
+                          <button
+                            type="button"
+                            className={`${styles.secondaryBtn} ${styles.crmResultBtn}`}
+                            onClick={() => {
+                              setDraftCrmContractId(c.id);
+                              setDirty(true);
+                            }}
+                          >
+                            № {c.contractNumber} · {c.customerName || '—'}{' '}
+                            {draftCrmContractId === c.id ? '(выбран)' : ''}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+                <div
+                  className={`${styles.field} ${styles.crmCompactField} ${styles.crmCompactBox}`}
+                  style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}
                 >
-                  Открыть карточку в CRM
-                </Link>
-              ) : null}
+                  <button
+                    type="button"
+                    className={styles.secondaryBtn}
+                    disabled={!draftCrmContractId}
+                    onClick={() => void handlePullFromCrm()}
+                  >
+                    Подставить данные из CRM в форму
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.secondaryBtn}
+                    disabled={!draftCrmContractId}
+                    onClick={() => {
+                      setDraftCrmContractId(null);
+                      setDirty(true);
+                    }}
+                  >
+                    Отвязать договор
+                  </button>
+                  {draftCrmContractId ? (
+                    <Link
+                      className={styles.secondaryBtn}
+                      href={`/admin/crm/contracts/${draftCrmContractId}`}
+                    >
+                      Открыть карточку в CRM
+                    </Link>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className={`${styles.dataTopBlock} ${styles.contractCompactBlock}`}>
+                <h3 className={styles.sectionTitle}>Договор (реквизиты для подстановки)</h3>
+                <div className={styles.contractInlineRow}>
+                  <div className={`${styles.field} ${styles.contractInlineField}`}>
+                    <label htmlFor="cn">Номер договора</label>
+                    <input
+                      id="cn"
+                      value={form.contract.number}
+                      onChange={(e) => updateContract('number', e.target.value)}
+                    />
+                  </div>
+                  <div className={`${styles.field} ${styles.contractInlineField}`}>
+                    <label htmlFor="cd">Дата договора</label>
+                    <input
+                      id="cd"
+                      value={form.contract.date}
+                      onChange={(e) => updateContract('date', e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className={`${styles.contractInlineRow} ${styles.contractAmountsRow}`}>
+                  <div className={`${styles.field} ${styles.contractInlineField}`}>
+                    <label htmlFor="cta">Сумма договора (цифрами)</label>
+                    <input
+                      id="cta"
+                      value={form.contract.totalAmount}
+                      onChange={(e) => updateContract('totalAmount', e.target.value)}
+                    />
+                  </div>
+                  <div className={`${styles.field} ${styles.contractInlineField}`}>
+                    <label htmlFor="ctaw">Сумма прописью</label>
+                    <input
+                      id="ctaw"
+                      value={form.contract.totalAmountWords}
+                      onChange={(e) => updateContract('totalAmountWords', e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className={styles.contractInlineRow}>
+                  <div className={`${styles.field} ${styles.contractInlineField}`}>
+                    <label htmlFor="prep">Аванс / предоплата</label>
+                    <input
+                      id="prep"
+                      value={form.contract.prepaymentAmount}
+                      onChange={(e) => updateContract('prepaymentAmount', e.target.value)}
+                    />
+                  </div>
+                  <div className={`${styles.field} ${styles.contractInlineField}`}>
+                    <label htmlFor="wp">Сроки / период работ</label>
+                    <input
+                      id="wp"
+                      value={form.contract.workPeriod}
+                      onChange={(e) => updateContract('workPeriod', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             <h3 className={styles.sectionTitle}>Заказчик</h3>
@@ -611,56 +979,6 @@ export function RepairContractDocumentEditorPage({
               />
             </div>
 
-            <h3 className={styles.sectionTitle}>Договор (реквизиты для подстановки)</h3>
-            <div className={styles.field}>
-              <label htmlFor="cn">Номер договора</label>
-              <input
-                id="cn"
-                value={form.contract.number}
-                onChange={(e) => updateContract('number', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="cd">Дата договора</label>
-              <input
-                id="cd"
-                value={form.contract.date}
-                onChange={(e) => updateContract('date', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="cta">Сумма договора (цифрами)</label>
-              <input
-                id="cta"
-                value={form.contract.totalAmount}
-                onChange={(e) => updateContract('totalAmount', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="ctaw">Сумма прописью</label>
-              <input
-                id="ctaw"
-                value={form.contract.totalAmountWords}
-                onChange={(e) => updateContract('totalAmountWords', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="prep">Аванс / предоплата</label>
-              <input
-                id="prep"
-                value={form.contract.prepaymentAmount}
-                onChange={(e) => updateContract('prepaymentAmount', e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="wp">Сроки / период работ</label>
-              <input
-                id="wp"
-                value={form.contract.workPeriod}
-                onChange={(e) => updateContract('workPeriod', e.target.value)}
-              />
-            </div>
-
             <h3 className={styles.sectionTitle}>Смета (черновик текста)</h3>
             <div className={styles.field} style={{ gridColumn: '1 / -1' }}>
               <label htmlFor="est">Текст для вкладки «Смета»</label>
@@ -677,31 +995,16 @@ export function RepairContractDocumentEditorPage({
             <Link className={styles.link} href="/admin/contract-documents/instruction">
               Оформление договоров → Инструкция
             </Link>
-            . На вкладке «Договор» можно править HTML и вставлять плейсхолдеры, либо загрузить текст
-            из Excel (.xlsx).
+            . На вкладке «Договор» можно править HTML и вставлять плейсхолдеры.
           </p>
-        </>
+        </div>
       ) : activeTab === 'contract' ? (
         <>
           <div
-            className={styles.docToolbar}
+            className={`${styles.docToolbar} ${styles.blockImport}`}
             style={{ flexDirection: 'column', alignItems: 'stretch' }}
           >
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
-              <input
-                ref={contractExcelInputRef}
-                type="file"
-                accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-                className={styles.visuallyHidden}
-                onChange={(e) => void handleContractExcelChange(e)}
-              />
-              <button
-                type="button"
-                className={styles.secondaryBtn}
-                onClick={() => contractExcelInputRef.current?.click()}
-              >
-                Загрузить текст из Excel (.xlsx)
-              </button>
               <button
                 type="button"
                 className={styles.secondaryBtn}
@@ -716,6 +1019,26 @@ export function RepairContractDocumentEditorPage({
                 onClick={() => void handlePublishAsGlobalDefault()}
               >
                 {publishingGlobal ? 'Сохранение…' : 'Сделать шаблоном по умолчанию для всех'}
+              </button>
+              <button
+                type="button"
+                className={
+                  contractDocView === 'preview'
+                    ? styles.contractModeBtnActive
+                    : styles.contractModeBtn
+                }
+                onClick={() => setContractDocView('preview')}
+              >
+                Только препросмотр
+              </button>
+              <button
+                type="button"
+                className={
+                  contractDocView === 'edit' ? styles.contractModeBtnActive : styles.contractModeBtn
+                }
+                onClick={() => setContractDocView('edit')}
+              >
+                Редактировать шаблон и плейсхолдеры
               </button>
               {templateOverrides.contract ? (
                 <span className={styles.hint} style={{ margin: 0 }}>
@@ -733,33 +1056,71 @@ export function RepairContractDocumentEditorPage({
             {excelMessage ? <p className={styles.hint}>{excelMessage}</p> : null}
           </div>
 
-          <div className={styles.contractModeBar}>
-            <button
-              type="button"
-              className={
-                contractDocView === 'preview'
-                  ? styles.contractModeBtnActive
-                  : styles.contractModeBtn
-              }
-              onClick={() => setContractDocView('preview')}
-            >
-              Только препросмотр
-            </button>
-            <button
-              type="button"
-              className={
-                contractDocView === 'edit' ? styles.contractModeBtnActive : styles.contractModeBtn
-              }
-              onClick={() => setContractDocView('edit')}
-            >
-              Редактировать шаблон и плейсхолдеры
-            </button>
-          </div>
-
           {contractDocView === 'edit' ? (
             <>
-              <div className={styles.contractEditGrid}>
-                <aside className={styles.placeholderPanel} aria-label="Плейсхолдеры для вставки">
+              <div className={`${styles.contractTopTools} ${styles.blockTools}`}>
+                <div className={styles.contractEditorMain}>
+                  <div className={styles.formatLevelBar}>
+                    <button
+                      type="button"
+                      className={
+                        formatToolbarLevel === 'basic'
+                          ? styles.formatLevelBtnActive
+                          : styles.formatLevelBtn
+                      }
+                      onClick={() => setFormatToolbarLevel('basic')}
+                    >
+                      Базовые
+                    </button>
+                    <button
+                      type="button"
+                      className={
+                        formatToolbarLevel === 'advanced'
+                          ? styles.formatLevelBtnActive
+                          : styles.formatLevelBtn
+                      }
+                      onClick={() => setFormatToolbarLevel('advanced')}
+                    >
+                      Расширенные
+                    </button>
+                  </div>
+                  <div className={styles.formatToolbarTopRow}>
+                    <input
+                      type="text"
+                      value={formatToolbarQuery}
+                      onChange={(e) => setFormatToolbarQuery(e.target.value)}
+                      placeholder="Поиск инструмента…"
+                      className={styles.formatSearchInput}
+                    />
+                    <button
+                      type="button"
+                      className={
+                        showAllFormatTools ? styles.formatLevelBtnActive : styles.formatLevelBtn
+                      }
+                      onClick={() => setShowAllFormatTools((v) => !v)}
+                    >
+                      {showAllFormatTools ? 'Только частые' : 'Показать все'}
+                    </button>
+                  </div>
+                  <div className={styles.formatToolbar}>
+                    {visibleTools.map((tool) => (
+                      <button
+                        key={tool.label}
+                        type="button"
+                        className={styles.formatBtn}
+                        onClick={tool.onClick}
+                      >
+                        {tool.label}
+                      </button>
+                    ))}
+                    {visibleTools.length === 0 ? (
+                      <span className={styles.hint} style={{ margin: 0 }}>
+                        По запросу ничего не найдено.
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+                <aside className={styles.placeholderPanelTop} aria-label="Плейсхолдеры для вставки">
                   {REPAIR_CONTRACT_PLACEHOLDER_GROUPS.map((group) => (
                     <div key={group.title}>
                       <div className={styles.placeholderGroupTitle}>{group.title}</div>
@@ -779,7 +1140,19 @@ export function RepairContractDocumentEditorPage({
                     </div>
                   ))}
                 </aside>
-                <div className={styles.contractEditorMain}>
+              </div>
+
+              <p className={styles.hint}>
+                Нажмите на поле слева — в шаблон вставится <code>{'{{путь}}'}</code> в позицию
+                курсора. Панель форматирования разделена на уровни: «Базовые» и «Расширенные», есть
+                поиск по названию кнопок и переключатель «Только частые / Показать все». Разрешены
+                теги HTML (<code>&lt;p&gt;</code>, <code>&lt;h1&gt;</code>,{' '}
+                <code>&lt;table&gt;</code> и т.д.). После правок нажмите «Сохранить» вверху
+                страницы.
+              </p>
+
+              <div className={styles.contractLiveGrid}>
+                <div className={styles.contractEditColumn}>
                   <label className={styles.contractEditorLabel} htmlFor="contract_html_source">
                     HTML шаблона договора (подстановка при сохранении вкладки «Данные»)
                   </label>
@@ -792,39 +1165,24 @@ export function RepairContractDocumentEditorPage({
                     onChange={(e) => handleContractTemplateChange(e.target.value)}
                   />
                 </div>
+                <div className={styles.contractPreviewColumn}>
+                  <h3 className={styles.previewBlockTitle}>Предпросмотр с подстановкой данных</h3>
+                  <div className={`${styles.docPane} ${styles.previewResizable}`}>
+                    <div dangerouslySetInnerHTML={{ __html: renderedDoc }} />
+                  </div>
+                </div>
               </div>
-              <p className={styles.hint}>
-                Нажмите на поле слева — в шаблон вставится <code>{'{{путь}}'}</code> в позицию
-                курсора. Разрешены теги HTML (<code>&lt;p&gt;</code>, <code>&lt;h1&gt;</code>,{' '}
-                <code>&lt;table&gt;</code> и т.д.). После правок нажмите «Сохранить» вверху
-                страницы.
-              </p>
-              <h3 className={styles.previewBlockTitle}>Предпросмотр с подстановкой данных</h3>
             </>
-          ) : null}
-
-          <div className={styles.docToolbar}>
-            <button type="button" className={styles.primaryBtn} onClick={handlePrint}>
-              Печать
-            </button>
-            <span className={styles.hint} style={{ margin: 0 }}>
-              Откроется окно печати только с текстом этой вкладки.
-            </span>
-          </div>
-          <div className={styles.docPane}>
-            <div dangerouslySetInnerHTML={{ __html: renderedDoc }} />
-          </div>
+          ) : (
+            <>
+              <div className={styles.docPane}>
+                <div dangerouslySetInnerHTML={{ __html: renderedDoc }} />
+              </div>
+            </>
+          )}
         </>
       ) : (
         <>
-          <div className={styles.docToolbar}>
-            <button type="button" className={styles.primaryBtn} onClick={handlePrint}>
-              Печать
-            </button>
-            <span className={styles.hint} style={{ margin: 0 }}>
-              Откроется окно печати только с текстом этой вкладки.
-            </span>
-          </div>
           <div className={styles.docPane}>
             <div dangerouslySetInnerHTML={{ __html: renderedDoc }} />
           </div>
