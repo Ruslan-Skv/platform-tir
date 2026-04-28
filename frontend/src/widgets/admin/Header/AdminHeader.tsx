@@ -18,6 +18,7 @@ import { getAdminReviews } from '@/shared/api/admin-reviews';
 import type { AdminReview } from '@/shared/api/admin-reviews';
 import { getAdminSupportConversations } from '@/shared/api/admin-support';
 import type { AdminSupportConversation } from '@/shared/api/admin-support';
+import { ensureFreshAccessToken } from '@/shared/lib/auth-session';
 import { getAvatarUrl } from '@/shared/lib/avatar';
 import { canRoleEditCatalogOnPublicSite } from '@/shared/lib/catalog-public-edit';
 import { type NotificationSoundType, playNotificationSound } from '@/shared/lib/notification-sound';
@@ -95,6 +96,7 @@ export function AdminHeader() {
   const loadAllNotifications = useCallback(async () => {
     setNotificationsLoading(true);
     try {
+      await ensureFreshAccessToken();
       const [reviewsRes, ordersRes, supportRes, formsMeasurementRes, formsCallbackRes] =
         await Promise.all([
           notificationSettings?.notifyOnReviews !== false

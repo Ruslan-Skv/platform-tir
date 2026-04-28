@@ -39,6 +39,8 @@ export type TokenLoginPayload = {
   };
 };
 
+let refreshInFlight: Promise<boolean> | null = null;
+
 function base64UrlDecode(segment: string): string {
   const padded = segment.replace(/-/g, '+').replace(/_/g, '/');
   const padLen = (4 - (padded.length % 4)) % 4;
@@ -76,20 +78,37 @@ export function persistTokenResponse(data: TokenLoginPayload): void {
 
 export async function refreshAccessTokenSilently(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
-  try {
-    const res = await apiFetch(`${apiBase()}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: '{}',
-    });
-    if (!res.ok) return false;
-    const data = (await res.json()) as TokenLoginPayload;
-    if (!data.access_token || !data.user) return false;
-    persistTokenResponse(data);
-    return true;
-  } catch {
-    return false;
-  }
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = (async () => {
+    try {
+      const res = await apiFetch(`${apiBase()}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      });
+      if (!res.ok) return false;
+      const data = (await res.json()) as TokenLoginPayload;
+      if (!data.access_token || !data.user) return false;
+      persistTokenResponse(data);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+  return refreshInFlight;
+}
+
+/** Актуализирует access заранее, чтобы фоновые поллеры не ловили 401 в момент экспирации. */
+export async function ensureFreshAccessToken(minTtlMs = 60_000): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  const current = localStorage.getItem('user_token') || localStorage.getItem('admin_token');
+  if (!current) return false;
+  const expMs = getJwtExpMs(current);
+  if (!expMs) return true;
+  if (expMs - Date.now() > minTtlMs) return true;
+  return refreshAccessTokenSilently();
 }
 
 export async function revokeRefreshOnServer(): Promise<void> {

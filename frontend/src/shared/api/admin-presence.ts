@@ -1,4 +1,5 @@
 import { apiFetch } from '@/shared/lib/api-fetch';
+import { ensureFreshAccessToken } from '@/shared/lib/auth-session';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -22,6 +23,7 @@ export interface AdminOnlineUser {
 }
 
 export async function postAdminPresenceHeartbeat(): Promise<void> {
+  await ensureFreshAccessToken();
   const res = await apiFetch(`${API_URL}/admin/presence/heartbeat`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
@@ -32,6 +34,7 @@ export async function postAdminPresenceHeartbeat(): Promise<void> {
 }
 
 export async function getAdminOnlineAdmins(): Promise<AdminOnlineUser[]> {
+  await ensureFreshAccessToken();
   const res = await apiFetch(`${API_URL}/admin/presence/online`, {
     headers: getAdminAuthHeaders(),
   });

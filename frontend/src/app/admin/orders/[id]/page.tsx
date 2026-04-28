@@ -18,6 +18,7 @@ import {
   updateAdminOrderStatus,
 } from '@/shared/api/admin-orders';
 import { formatApprovalCountdown, getApprovalRemainingMs } from '@/shared/api/user-orders';
+import { ensureFreshAccessToken } from '@/shared/lib/auth-session';
 
 import styles from './page.module.css';
 
@@ -411,7 +412,8 @@ export default function AdminOrderDetailPage() {
   useEffect(() => {
     if (!id || !order || loading) return;
     const intervalId = setInterval(() => {
-      getAdminOrder(id)
+      ensureFreshAccessToken()
+        .then(() => getAdminOrder(id))
         .then((data) => setOrder(normalizeOrder(data)))
         .catch(() => {});
     }, POLL_INTERVAL_MS);
@@ -422,7 +424,8 @@ export default function AdminOrderDetailPage() {
   useEffect(() => {
     if (!id || !order) return;
     const onFocus = () => {
-      getAdminOrder(id)
+      ensureFreshAccessToken()
+        .then(() => getAdminOrder(id))
         .then((data) => setOrder(normalizeOrder(data)))
         .catch(() => {});
     };
