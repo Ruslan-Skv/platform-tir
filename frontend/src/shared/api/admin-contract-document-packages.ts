@@ -101,6 +101,8 @@ export interface ContractSignatoryProfile {
 export interface ContractTemplatePreset {
   id: string;
   title: string;
+  /** Вкладка документа (contract, actStart, ...). Для старых записей может отсутствовать (=contract). */
+  tabId?: string;
   html: string;
   isDefault?: boolean;
 }

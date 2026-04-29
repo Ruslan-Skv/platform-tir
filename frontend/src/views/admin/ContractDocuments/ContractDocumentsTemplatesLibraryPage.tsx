@@ -18,6 +18,10 @@ import { applyTemplate } from '@/views/admin/ContractDocuments/repair/applyTempl
 import { printDocumentHtml } from '@/views/admin/ContractDocuments/repair/printDocument';
 import { REPAIR_CONTRACT_PLACEHOLDER_GROUPS } from '@/views/admin/ContractDocuments/repair/repairContractPlaceholders';
 import {
+  REPAIR_DOCUMENT_TAB_LABELS,
+  type RepairDocumentTabId,
+} from '@/views/admin/ContractDocuments/repair/repairDocumentTabs';
+import {
   defaultRepairPackageFormData,
   repairPackageFormForTemplate,
 } from '@/views/admin/ContractDocuments/repair/repairPackageForm';
@@ -27,6 +31,27 @@ import styles from './ContractDocuments.module.css';
 type ToolButton = { label: string; onClick: () => void; secondary?: boolean };
 const TEMPLATES_UI_PREFS_KEY = 'admin.contractDocuments.templates.uiPrefs';
 type NormalizeMode = 'soft' | 'strict';
+type RepairTemplateTabId = Exclude<RepairDocumentTabId, 'data'>;
+const TEMPLATE_TAB_IDS: RepairTemplateTabId[] = [
+  'contract',
+  'estimate',
+  'actStart',
+  'actAcceptance',
+  'cashOrder',
+  'questionnaire1',
+  'questionnaire2',
+  'addendum',
+  'workOrder',
+  'workOrderAddendum',
+  'productionLog',
+];
+
+function normalizeTemplateTabId(value: string | undefined): RepairTemplateTabId {
+  if (!value) return 'contract';
+  return (TEMPLATE_TAB_IDS as string[]).includes(value)
+    ? (value as RepairTemplateTabId)
+    : 'contract';
+}
 
 function escapeHtml(text: string): string {
   return text
@@ -305,6 +330,9 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [items, setItems] = useState<ContractTemplatePreset[]>([]);
+  const [activeTemplateTab, setActiveTemplateTab] = useState<RepairTemplateTabId>('contract');
+  const [showOnlyTabsWithTemplates, setShowOnlyTabsWithTemplates] = useState(false);
+  const [copyTargetTab, setCopyTargetTab] = useState<RepairTemplateTabId>('actStart');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showSaveSuccessModal, setShowSaveSuccessModal] = useState(false);
@@ -540,6 +568,35 @@ export function ContractDocumentsTemplatesLibraryPage() {
     () => applyTemplate(html || '', templateData),
     [html, templateData]
   );
+  const itemsByActiveTab = useMemo(
+    () => items.filter((it) => normalizeTemplateTabId(it.tabId) === activeTemplateTab),
+    [items, activeTemplateTab]
+  );
+  const templatesCountByTab = useMemo(() => {
+    const out: Record<RepairTemplateTabId, number> = {
+      contract: 0,
+      estimate: 0,
+      actStart: 0,
+      actAcceptance: 0,
+      cashOrder: 0,
+      questionnaire1: 0,
+      questionnaire2: 0,
+      addendum: 0,
+      workOrder: 0,
+      workOrderAddendum: 0,
+      productionLog: 0,
+    };
+    for (const it of items) {
+      const tab = normalizeTemplateTabId(it.tabId);
+      out[tab] += 1;
+    }
+    return out;
+  }, [items]);
+  const visibleTemplateTabs = useMemo(() => {
+    if (!showOnlyTabsWithTemplates) return TEMPLATE_TAB_IDS;
+    const onlyNonEmpty = TEMPLATE_TAB_IDS.filter((tab) => templatesCountByTab[tab] > 0);
+    return onlyNonEmpty.length > 0 ? onlyNonEmpty : TEMPLATE_TAB_IDS;
+  }, [showOnlyTabsWithTemplates, templatesCountByTab]);
 
   useEffect(() => {
     void (async () => {
@@ -560,11 +617,17 @@ export function ContractDocumentsTemplatesLibraryPage() {
         if (templatesRes.status !== 'fulfilled') {
           throw new Error('Не удалось загрузить библиотеку шаблонов');
         }
-        const next = templatesRes.value.items ?? [];
+        const next = (templatesRes.value.items ?? []).map((it) => ({
+          ...it,
+          tabId: normalizeTemplateTabId(it.tabId),
+        }));
         setItems(next);
-        const firstId = next.find((it) => it.isDefault)?.id ?? next[0]?.id ?? '';
+        const tabItems = next.filter(
+          (it) => normalizeTemplateTabId(it.tabId) === activeTemplateTab
+        );
+        const firstId = tabItems.find((it) => it.isDefault)?.id ?? tabItems[0]?.id ?? '';
         setEditingId(firstId);
-        const t = next.find((it) => it.id === firstId);
+        const t = tabItems.find((it) => it.id === firstId);
         setTitle(t?.title ?? '');
         setHtml(t?.html ?? '');
         setVisualDraftHtml(t?.html ?? '');
@@ -582,8 +645,9 @@ export function ContractDocumentsTemplatesLibraryPage() {
     setError(null);
     setOk(null);
     try {
-      await putContractDocumentTemplatePresets({ kind: 'REPAIR', items: next });
-      setItems(next);
+      const normalized = next.map((it) => ({ ...it, tabId: normalizeTemplateTabId(it.tabId) }));
+      await putContractDocumentTemplatePresets({ kind: 'REPAIR', items: normalized });
+      setItems(normalized);
       setOk(successText);
       return true;
     } catch (e) {
@@ -596,7 +660,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
 
   const selectTemplate = (id: string) => {
     setEditingId(id);
-    const t = items.find((it) => it.id === id);
+    const t = itemsByActiveTab.find((it) => it.id === id);
     setTitle(t?.title ?? '');
     setHtml(t?.html ?? '');
     setVisualDraftHtml(t?.html ?? '');
@@ -614,8 +678,19 @@ export function ContractDocumentsTemplatesLibraryPage() {
     const id = editingId || `tpl_${Date.now()}`;
     const exists = items.some((it) => it.id === id);
     const next = exists
-      ? items.map((it) => (it.id === id ? { ...it, title: t, html: h } : it))
-      : [...items, { id, title: t, html: h, isDefault: items.length === 0 }];
+      ? items.map((it) =>
+          it.id === id ? { ...it, title: t, html: h, tabId: activeTemplateTab } : it
+        )
+      : [
+          ...items,
+          {
+            id,
+            title: t,
+            html: h,
+            tabId: activeTemplateTab,
+            isDefault: itemsByActiveTab.length === 0,
+          },
+        ];
     const isSaved = await persist(next, 'Шаблон сохранен.');
     if (!isSaved) return;
     setEditingId(id);
@@ -644,18 +719,76 @@ export function ContractDocumentsTemplatesLibraryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editorMode, editingId]);
 
+  useEffect(() => {
+    const firstId =
+      itemsByActiveTab.find((it) => it.isDefault)?.id ?? itemsByActiveTab[0]?.id ?? '';
+    setEditingId(firstId);
+    const t = itemsByActiveTab.find((it) => it.id === firstId);
+    setTitle(t?.title ?? '');
+    setHtml(t?.html ?? '');
+    setVisualDraftHtml(t?.html ?? '');
+    resetVisualHistory(t?.html ?? '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTemplateTab, items.length]);
+
+  useEffect(() => {
+    if (visibleTemplateTabs.includes(activeTemplateTab)) return;
+    setActiveTemplateTab(visibleTemplateTabs[0] ?? 'contract');
+  }, [visibleTemplateTabs, activeTemplateTab]);
+
   const deleteTemplate = async () => {
     if (!isSuperAdmin || !editingId) return;
     const next = items.filter((it) => it.id !== editingId);
     await persist(next, 'Шаблон удален.');
-    const fallback = next.find((it) => it.isDefault)?.id ?? next[0]?.id ?? '';
+    const fallbackItems = next.filter(
+      (it) => normalizeTemplateTabId(it.tabId) === activeTemplateTab
+    );
+    const fallback = fallbackItems.find((it) => it.isDefault)?.id ?? fallbackItems[0]?.id ?? '';
     selectTemplate(fallback);
   };
 
   const setDefault = async () => {
     if (!isSuperAdmin || !editingId) return;
-    const next = items.map((it) => ({ ...it, isDefault: it.id === editingId }));
+    const next = items.map((it) => ({
+      ...it,
+      isDefault:
+        normalizeTemplateTabId(it.tabId) === activeTemplateTab
+          ? it.id === editingId
+          : Boolean(it.isDefault),
+    }));
     await persist(next, 'Шаблон по умолчанию обновлен.');
+  };
+
+  const copyTemplateToAnotherTab = async () => {
+    if (!isSuperAdmin) return;
+    const source = itemsByActiveTab.find((it) => it.id === editingId) ?? itemsByActiveTab[0];
+    if (!source) {
+      setError('Выберите шаблон для копирования.');
+      return;
+    }
+    if (copyTargetTab === activeTemplateTab) {
+      setError('Выберите другую вкладку назначения.');
+      return;
+    }
+    const targetItems = items.filter((it) => normalizeTemplateTabId(it.tabId) === copyTargetTab);
+    const copied: ContractTemplatePreset = {
+      id: `tpl_${Date.now()}`,
+      title: `${source.title} (копия)`,
+      html: source.html,
+      tabId: copyTargetTab,
+      isDefault: targetItems.length === 0,
+    };
+    const okSaved = await persist(
+      [...items, copied],
+      `Шаблон скопирован в «${REPAIR_DOCUMENT_TAB_LABELS[copyTargetTab]}».`
+    );
+    if (!okSaved) return;
+    setActiveTemplateTab(copyTargetTab);
+    setEditingId(copied.id);
+    setTitle(copied.title);
+    setHtml(copied.html);
+    setVisualDraftHtml(copied.html);
+    resetVisualHistory(copied.html);
   };
 
   const updateHtmlBySelection = (
@@ -1056,7 +1189,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     <div className={`${styles.page} ${styles.pageWide}`}>
       <div className={styles.editorHeader}>
         <div>
-          <h1 className={styles.title}>Библиотека шаблонов договоров</h1>
+          <h1 className={styles.title}>Библиотека шаблонов документов</h1>
           <p className={styles.subtitle}>
             Управление шаблонами договоров направления «Ремонт». Менеджеры в карточке пакета
             выбирают только готовый шаблон.
@@ -1078,14 +1211,40 @@ export function ContractDocumentsTemplatesLibraryPage() {
       <div className={styles.sectionCard}>
         <div className={styles.sectionFields}>
           <div className={styles.field}>
+            <label>Тип документа</label>
+            <select
+              value={activeTemplateTab}
+              onChange={(e) => setActiveTemplateTab(normalizeTemplateTabId(e.target.value))}
+            >
+              {visibleTemplateTabs.map((tab) => (
+                <option key={tab} value={tab}>
+                  {REPAIR_DOCUMENT_TAB_LABELS[tab]} ({templatesCountByTab[tab]})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className={styles.field}>
+            <label>Фильтр вкладок</label>
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              onClick={() => setShowOnlyTabsWithTemplates((v) => !v)}
+              style={{ justifyContent: 'flex-start' }}
+            >
+              {showOnlyTabsWithTemplates
+                ? 'Показывать все вкладки'
+                : 'Показывать только вкладки с шаблонами'}
+            </button>
+          </div>
+          <div className={styles.field}>
             <label>Шаблон</label>
             <select
               value={editingId}
-              disabled={loading || items.length === 0}
+              disabled={loading || itemsByActiveTab.length === 0}
               onChange={(e) => selectTemplate(e.target.value)}
             >
-              {items.length === 0 ? <option value="">— нет шаблонов —</option> : null}
-              {items.map((it) => (
+              {itemsByActiveTab.length === 0 ? <option value="">— нет шаблонов —</option> : null}
+              {itemsByActiveTab.map((it) => (
                 <option key={it.id} value={it.id}>
                   {it.title}
                   {it.isDefault ? ' (по умолчанию)' : ''}
@@ -1117,9 +1276,35 @@ export function ContractDocumentsTemplatesLibraryPage() {
               type="button"
               className={styles.secondaryBtn}
               onClick={() => createTemplate('copy')}
+              disabled={!editingId}
             >
               Создать копию
             </button>
+            <label
+              className={styles.field}
+              style={{ minWidth: 280, gap: 6, flexDirection: 'row', alignItems: 'center' }}
+            >
+              <span style={{ whiteSpace: 'nowrap' }}>Копировать в</span>
+              <select
+                value={copyTargetTab}
+                onChange={(e) => setCopyTargetTab(normalizeTemplateTabId(e.target.value))}
+                style={{ minWidth: 170 }}
+              >
+                {TEMPLATE_TAB_IDS.map((tab) => (
+                  <option key={tab} value={tab} disabled={tab === activeTemplateTab}>
+                    {REPAIR_DOCUMENT_TAB_LABELS[tab]}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className={styles.secondaryBtn}
+                onClick={() => void copyTemplateToAnotherTab()}
+                disabled={!editingId || copyTargetTab === activeTemplateTab}
+              >
+                Копировать
+              </button>
+            </label>
             <button
               type="button"
               className={styles.secondaryBtn}
@@ -1147,7 +1332,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
               type="button"
               className={styles.secondaryBtn}
               onClick={() =>
-                printDocumentHtml(renderedPreview, `Шаблон договора: ${title || 'без названия'}`)
+                printDocumentHtml(
+                  renderedPreview,
+                  `Шаблон: ${REPAIR_DOCUMENT_TAB_LABELS[activeTemplateTab]} / ${title || 'без названия'}`
+                )
               }
             >
               Печать предпросмотра

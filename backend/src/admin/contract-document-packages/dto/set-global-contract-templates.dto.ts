@@ -20,6 +20,11 @@ export class ContractTemplatePresetDto {
   @MaxLength(160)
   title: string;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  tabId?: string;
+
   @IsString()
   html: string;
 

@@ -45,6 +45,17 @@ import {
 
 /** Встроенный в код шаблон (если в БД нет общего шаблона). */
 const FILE_REPAIR_CONTRACT_TEMPLATE = REPAIR_DOCUMENT_TEMPLATES.contract;
+const TEMPLATE_TAB_IDS = REPAIR_DOCUMENT_TAB_IDS.filter((id) => id !== 'data') as Exclude<
+  RepairDocumentTabId,
+  'data'
+>[];
+
+function normalizeTemplateTabId(value: string | undefined): Exclude<RepairDocumentTabId, 'data'> {
+  if (!value) return 'contract';
+  return (TEMPLATE_TAB_IDS as string[]).includes(value)
+    ? (value as Exclude<RepairDocumentTabId, 'data'>)
+    : 'contract';
+}
 
 function parseDecimalAmount(raw: string): number | null {
   const normalized = raw.replace(/\s+/g, '').replace(',', '.');
@@ -97,25 +108,40 @@ export function RepairContractDocumentEditorPage({
   const [contractTemplatePresets, setContractTemplatePresets] = useState<ContractTemplatePreset[]>(
     []
   );
-  const [selectedContractTemplateId, setSelectedContractTemplateId] = useState<string>('');
+  const [selectedTemplateIds, setSelectedTemplateIds] = useState<
+    Partial<Record<RepairDocumentTemplateTabId, string>>
+  >({});
   const [editingTemplateId, setEditingTemplateId] = useState<string>('');
   const [templateDraftTitle, setTemplateDraftTitle] = useState('');
   const [templateDraftHtml, setTemplateDraftHtml] = useState('');
   const [templateSaving, setTemplateSaving] = useState(false);
 
-  const selectedContractTemplate = useMemo(
-    () => contractTemplatePresets.find((it) => it.id === selectedContractTemplateId) ?? null,
-    [contractTemplatePresets, selectedContractTemplateId]
+  const templatePresetsByTab = useMemo(() => {
+    const map = new Map<RepairDocumentTemplateTabId, ContractTemplatePreset[]>();
+    for (const tab of TEMPLATE_TAB_IDS) map.set(tab, []);
+    for (const item of contractTemplatePresets) {
+      const tab = normalizeTemplateTabId(item.tabId);
+      map.set(tab, [...(map.get(tab) ?? []), { ...item, tabId: tab }]);
+    }
+    return map;
+  }, [contractTemplatePresets]);
+
+  const resolveTemplateHtml = useCallback(
+    (tab: RepairDocumentTemplateTabId): string => {
+      const list = templatePresetsByTab.get(tab) ?? [];
+      const selectedId = selectedTemplateIds[tab] ?? '';
+      const selected = list.find((it) => it.id === selectedId);
+      if (selected?.html?.trim()) return selected.html;
+      const fallback = list.find((it) => it.isDefault) ?? list[0];
+      if (fallback?.html?.trim()) return fallback.html;
+      if (tab === 'contract') {
+        if (!globalContractState.loaded) return FILE_REPAIR_CONTRACT_TEMPLATE;
+        if (globalContractState.html !== null) return globalContractState.html;
+      }
+      return REPAIR_DOCUMENT_TEMPLATES[tab];
+    },
+    [templatePresetsByTab, selectedTemplateIds, globalContractState]
   );
-  const resolvedContractDefaultTemplate = useMemo(() => {
-    if (selectedContractTemplate?.html?.trim()) return selectedContractTemplate.html;
-    const fallback =
-      contractTemplatePresets.find((it) => it.isDefault) ?? contractTemplatePresets[0];
-    if (fallback?.html?.trim()) return fallback.html;
-    if (!globalContractState.loaded) return FILE_REPAIR_CONTRACT_TEMPLATE;
-    if (globalContractState.html !== null) return globalContractState.html;
-    return FILE_REPAIR_CONTRACT_TEMPLATE;
-  }, [contractTemplatePresets, selectedContractTemplate, globalContractState]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -150,6 +176,7 @@ export function RepairContractDocumentEditorPage({
         form: mergedForm,
         templateOverrides: ov,
         contractTemplateId,
+        templatePresetIds,
       } = mergeFormDataFromStorage(row.formData);
       setForm(mergedForm);
       setTemplateOverrides(ov);
@@ -157,12 +184,27 @@ export function RepairContractDocumentEditorPage({
       setExecutorProfiles(profilesRes.items ?? []);
       setSignatoryProfiles(signatoryRes.items ?? []);
       const templates = templateRes.items ?? [];
-      setContractTemplatePresets(templates);
-      const initialTemplateId =
-        contractTemplateId ?? templates.find((it) => it.isDefault)?.id ?? templates[0]?.id ?? '';
-      setSelectedContractTemplateId(initialTemplateId);
+      const normalizedTemplates = templates.map((it) => ({
+        ...it,
+        tabId: normalizeTemplateTabId(it.tabId),
+      }));
+      setContractTemplatePresets(normalizedTemplates);
+      const selectedIds = { ...templatePresetIds };
+      if (contractTemplateId && !selectedIds.contract) {
+        selectedIds.contract = contractTemplateId;
+      }
+      for (const tab of TEMPLATE_TAB_IDS) {
+        if (!selectedIds[tab]) {
+          const tabItems = normalizedTemplates.filter(
+            (it) => normalizeTemplateTabId(it.tabId) === tab
+          );
+          selectedIds[tab] = tabItems.find((it) => it.isDefault)?.id ?? tabItems[0]?.id ?? '';
+        }
+      }
+      setSelectedTemplateIds(selectedIds);
+      const initialTemplateId = selectedIds.contract ?? '';
       setEditingTemplateId(initialTemplateId);
-      const initialTpl = templates.find((it) => it.id === initialTemplateId);
+      const initialTpl = normalizedTemplates.find((it) => it.id === initialTemplateId);
       setTemplateDraftTitle(initialTpl?.title ?? '');
       setTemplateDraftHtml(initialTpl?.html ?? '');
       setExcelMessage(null);
@@ -207,11 +249,7 @@ export function RepairContractDocumentEditorPage({
     try {
       await updateContractDocumentPackage(packageId, {
         title: draftTitle.trim() || null,
-        formData: buildPersistedFormData(
-          form,
-          templateOverrides,
-          selectedContractTemplateId || null
-        ),
+        formData: buildPersistedFormData(form, templateOverrides, selectedTemplateIds),
         crmContractId: draftCrmContractId,
       });
       setDirty(false);
@@ -367,10 +405,10 @@ export function RepairContractDocumentEditorPage({
     setDirty(true);
   };
 
-  const contractTemplateSource = useMemo(
-    () => (activeTab === 'contract' ? templateDraftHtml || resolvedContractDefaultTemplate : ''),
-    [activeTab, templateDraftHtml, resolvedContractDefaultTemplate]
-  );
+  const contractTemplateSource = useMemo(() => {
+    if (activeTab !== 'contract') return '';
+    return templateDraftHtml || resolveTemplateHtml('contract');
+  }, [activeTab, templateDraftHtml, resolveTemplateHtml]);
 
   const renderedDoc = useMemo(() => {
     if (activeTab === 'data') return '';
@@ -380,27 +418,39 @@ export function RepairContractDocumentEditorPage({
       tpl =
         isSuperAdmin && contractDocView === 'edit'
           ? contractTemplateSource
-          : (templateOverrides.contract ?? resolvedContractDefaultTemplate);
+          : (templateOverrides.contract ?? resolveTemplateHtml('contract'));
     } else {
-      tpl = templateOverrides[tab] ?? REPAIR_DOCUMENT_TEMPLATES[tab];
+      tpl = templateOverrides[tab] ?? resolveTemplateHtml(tab);
     }
     return applyTemplate(tpl, repairPackageFormForTemplate(form));
   }, [
     activeTab,
     form,
     templateOverrides,
-    resolvedContractDefaultTemplate,
+    resolveTemplateHtml,
     isSuperAdmin,
     contractDocView,
     contractTemplateSource,
   ]);
+
+  const activeTemplateTab = useMemo(
+    () => (activeTab === 'data' ? null : (activeTab as RepairDocumentTemplateTabId)),
+    [activeTab]
+  );
+
+  const activeTabTemplatePresets = useMemo(() => {
+    if (!activeTemplateTab) return [] as ContractTemplatePreset[];
+    return templatePresetsByTab.get(activeTemplateTab) ?? [];
+  }, [activeTemplateTab, templatePresetsByTab]);
 
   const persistContractTemplatePresets = async (items: ContractTemplatePreset[]) => {
     setTemplateSaving(true);
     setError(null);
     try {
       await putContractDocumentTemplatePresets({ kind: 'REPAIR', items });
-      setContractTemplatePresets(items);
+      setContractTemplatePresets(
+        items.map((it) => ({ ...it, tabId: normalizeTemplateTabId(it.tabId) }))
+      );
       setExcelMessage('Шаблоны договора сохранены.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сохранить шаблоны договора');
@@ -413,8 +463,8 @@ export function RepairContractDocumentEditorPage({
     setTemplateDraftHtml(value);
   };
 
-  const handleSelectTemplateForPackage = (templateId: string) => {
-    setSelectedContractTemplateId(templateId);
+  const handleSelectTemplateForPackage = (tab: RepairDocumentTemplateTabId, templateId: string) => {
+    setSelectedTemplateIds((p) => ({ ...p, [tab]: templateId }));
     setDirty(true);
   };
 
@@ -438,17 +488,29 @@ export function RepairContractDocumentEditorPage({
       return;
     }
     const id = editingTemplateId || `tpl_${Date.now()}`;
-    const next = contractTemplatePresets.map((it) => (it.id === id ? { ...it, title, html } : it));
+    const currentTab: RepairDocumentTemplateTabId = 'contract';
+    const next = contractTemplatePresets.map((it) =>
+      it.id === id ? { ...it, title, html, tabId: currentTab } : it
+    );
     const exists = next.some((it) => it.id === id);
     const finalItems = exists
       ? next
       : [
           ...contractTemplatePresets,
-          { id, title, html, isDefault: contractTemplatePresets.length === 0 },
+          {
+            id,
+            title,
+            html,
+            tabId: currentTab,
+            isDefault:
+              contractTemplatePresets.filter(
+                (it) => normalizeTemplateTabId(it.tabId) === currentTab
+              ).length === 0,
+          },
         ];
     await persistContractTemplatePresets(finalItems);
     setEditingTemplateId(id);
-    if (!selectedContractTemplateId) setSelectedContractTemplateId(id);
+    setSelectedTemplateIds((p) => ({ ...p, [currentTab]: p[currentTab] || id }));
   };
 
   const handleCreateTemplate = (mode: 'blank' | 'copy') => {
@@ -483,7 +545,7 @@ export function RepairContractDocumentEditorPage({
 
   const insertContractPlaceholder = (path: string) => {
     const el = contractHtmlTextareaRef.current;
-    const cur = templateDraftHtml || resolvedContractDefaultTemplate;
+    const cur = templateDraftHtml || resolveTemplateHtml('contract');
     const token = `{{${path}}}`;
     if (el) {
       const start = el.selectionStart ?? cur.length;
@@ -1436,7 +1498,7 @@ export function RepairContractDocumentEditorPage({
             . На вкладке «Договор» можно править HTML и вставлять плейсхолдеры.
           </p>
         </div>
-      ) : activeTab === 'contract' ? (
+      ) : (
         <>
           <div
             className={`${styles.docToolbar} ${styles.blockImport}`}
@@ -1444,15 +1506,23 @@ export function RepairContractDocumentEditorPage({
           >
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
               <label className={styles.field} style={{ minWidth: 340 }}>
-                <span>Шаблон договора для этого пакета</span>
+                <span>
+                  Шаблон «
+                  {activeTemplateTab ? REPAIR_DOCUMENT_TAB_LABELS[activeTemplateTab] : 'документа'}»
+                  для этого пакета
+                </span>
                 <select
-                  value={selectedContractTemplateId}
-                  onChange={(e) => handleSelectTemplateForPackage(e.target.value)}
+                  value={activeTemplateTab ? (selectedTemplateIds[activeTemplateTab] ?? '') : ''}
+                  onChange={(e) =>
+                    activeTemplateTab
+                      ? handleSelectTemplateForPackage(activeTemplateTab, e.target.value)
+                      : undefined
+                  }
                 >
-                  {contractTemplatePresets.length === 0 ? (
+                  {activeTabTemplatePresets.length === 0 ? (
                     <option value="">— шаблоны не настроены —</option>
                   ) : null}
-                  {contractTemplatePresets.map((tpl) => (
+                  {activeTabTemplatePresets.map((tpl) => (
                     <option key={tpl.id} value={tpl.id}>
                       {tpl.title}
                       {tpl.isDefault ? ' (по умолчанию)' : ''}
@@ -1461,24 +1531,15 @@ export function RepairContractDocumentEditorPage({
                 </select>
               </label>
               <Link className={styles.secondaryBtn} href="/admin/contract-documents/templates">
-                Библиотека шаблонов договоров
+                Библиотека шаблонов документов
               </Link>
               <span className={styles.hint} style={{ margin: 0 }}>
-                Здесь можно только выбрать готовый шаблон. Редактирование выполняется на отдельной
-                странице библиотеки.
+                Здесь можно только выбрать готовый шаблон. Создание и редактирование выполняется в
+                отдельной библиотеке.
               </span>
             </div>
             {excelMessage ? <p className={styles.hint}>{excelMessage}</p> : null}
           </div>
-
-          <>
-            <div className={styles.docPane}>
-              <div dangerouslySetInnerHTML={{ __html: renderedDoc }} />
-            </div>
-          </>
-        </>
-      ) : (
-        <>
           <div className={styles.docPane}>
             <div dangerouslySetInnerHTML={{ __html: renderedDoc }} />
           </div>
