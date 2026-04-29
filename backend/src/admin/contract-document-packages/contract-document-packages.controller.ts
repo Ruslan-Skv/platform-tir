@@ -21,6 +21,8 @@ import type { RequestWithUser } from '../../common/types/request-with-user.types
 import { ContractDocumentPackagesService } from './contract-document-packages.service';
 import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
 import { SetGlobalExecutorProfilesDto } from './dto/set-global-executor-profiles.dto';
+import { SetGlobalContractTemplatesDto } from './dto/set-global-contract-templates.dto';
+import { SetGlobalSignatoryProfilesDto } from './dto/set-global-signatory-profiles.dto';
 import { SetGlobalContractTemplateDto } from './dto/set-global-contract-template.dto';
 import { UpdateContractDocumentPackageDto } from './dto/update-contract-document-package.dto';
 
@@ -70,8 +72,27 @@ export class ContractDocumentPackagesController {
   }
 
   @Put('global-templates')
+  @Roles('SUPER_ADMIN')
   setGlobalTemplate(@Body() dto: SetGlobalContractTemplateDto, @Req() req: RequestWithUser) {
     return this.service.setGlobalTemplate(dto, req.user?.id);
+  }
+
+  @Get('contract-templates')
+  getGlobalContractTemplates(@Query('kind') kind: string) {
+    const allowed = new Set<string>(Object.values(ContractDocumentPackageKind));
+    if (!kind || !allowed.has(kind)) {
+      throw new BadRequestException('Укажите корректный query-параметр kind');
+    }
+    return this.service.getGlobalContractTemplates(kind as ContractDocumentPackageKind);
+  }
+
+  @Put('contract-templates')
+  @Roles('SUPER_ADMIN')
+  setGlobalContractTemplates(
+    @Body() dto: SetGlobalContractTemplatesDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.service.setGlobalContractTemplates(dto, req.user?.id);
   }
 
   @Get('executor-profiles')
@@ -89,6 +110,23 @@ export class ContractDocumentPackagesController {
     @Req() req: RequestWithUser,
   ) {
     return this.service.setGlobalExecutorProfiles(dto, req.user?.id);
+  }
+
+  @Get('signatory-profiles')
+  getGlobalSignatoryProfiles(@Query('kind') kind: string) {
+    const allowed = new Set<string>(Object.values(ContractDocumentPackageKind));
+    if (!kind || !allowed.has(kind)) {
+      throw new BadRequestException('Укажите корректный query-параметр kind');
+    }
+    return this.service.getGlobalSignatoryProfiles(kind as ContractDocumentPackageKind);
+  }
+
+  @Put('signatory-profiles')
+  setGlobalSignatoryProfiles(
+    @Body() dto: SetGlobalSignatoryProfilesDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.service.setGlobalSignatoryProfiles(dto, req.user?.id);
   }
 
   @Get(':id')

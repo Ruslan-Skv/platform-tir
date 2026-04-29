@@ -1,3 +1,6 @@
+/** ЮЛ — ОГРН и КПП; ИП — ОГРНИП (КПП в форме обычно пустой). */
+export type RepairExecutorKind = 'COMPANY' | 'ENTREPRENEUR';
+
 /** Структура вкладки «Данные» для направления «Ремонт» (расширяйте по мере переноса полей из Excel). */
 export interface RepairCustomerBlock {
   type: 'PERSON' | 'COMPANY' | 'ENTREPRENEUR';
@@ -19,21 +22,31 @@ export interface RepairCustomerBlock {
 
 export interface RepairExecutorBlock {
   selectedProfileTitle: string;
+  executorKind: RepairExecutorKind;
   companyName: string;
   inn: string;
   kpp: string;
   ogrn: string;
+  ogrnip: string;
   legalAddress: string;
   actualAddress: string;
   bankDetails: string;
+  email: string;
+  /** Карточка из справочника «Подписанты». */
+  selectedSignatoryProfileTitle: string;
+  /** Id пользователя CRM из карточки подписанта (для связи с «Менеджерами»). */
+  signatoryCrmUserId: string;
   directorNameNominative: string;
   directorNameGenitive: string;
   directorName: string;
   basis: string;
+  salesOffice: string;
+  officePhone: string;
 }
 
 export interface RepairObjectBlock {
   objectAddress: string;
+  objectFloor: string;
   objectDescription: string;
 }
 
@@ -81,20 +94,28 @@ export function defaultRepairPackageFormData(): RepairPackageFormData {
     },
     executor: {
       selectedProfileTitle: '',
+      executorKind: 'COMPANY',
       companyName: '',
       inn: '',
       kpp: '',
       ogrn: '',
+      ogrnip: '',
       legalAddress: '',
       actualAddress: '',
       bankDetails: '',
+      email: '',
+      selectedSignatoryProfileTitle: '',
+      signatoryCrmUserId: '',
       directorNameNominative: '',
       directorNameGenitive: '',
       directorName: '',
       basis: '',
+      salesOffice: '',
+      officePhone: '',
     },
     object: {
       objectAddress: '',
+      objectFloor: '',
       objectDescription: '',
     },
     contract: {
@@ -137,4 +158,33 @@ export function mergeRepairPackageFormData(raw: unknown): RepairPackageFormData 
     base as unknown as Record<string, unknown>,
     raw
   ) as unknown as RepairPackageFormData;
+}
+
+/** Данные для подстановки в HTML: добавляет вычисляемое поле `executor.innKppRegLine`. */
+export function repairPackageFormForTemplate(form: RepairPackageFormData): RepairPackageFormData & {
+  executor: RepairExecutorBlock & { innKppRegLine: string };
+} {
+  const { executor } = form;
+  const isIp = executor.executorKind === 'ENTREPRENEUR';
+  const innKppRegLine = isIp
+    ? [
+        executor.inn ? `ИНН ${executor.inn}` : '',
+        executor.ogrnip ? `ОГРНИП ${executor.ogrnip}` : '',
+      ]
+        .filter(Boolean)
+        .join(', ')
+    : [
+        executor.inn ? `ИНН ${executor.inn}` : '',
+        executor.kpp ? `КПП ${executor.kpp}` : '',
+        executor.ogrn ? `ОГРН ${executor.ogrn}` : '',
+      ]
+        .filter(Boolean)
+        .join(', ');
+  return {
+    ...form,
+    executor: {
+      ...executor,
+      innKppRegLine,
+    },
+  };
 }

@@ -368,7 +368,7 @@
 }
 
 .objectSectionFields {
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
 }
 
 .sectionCard .sectionTitle {
@@ -416,6 +416,10 @@
 
   .contractAmountsRow {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .objectSectionFields {
+    grid-template-columns: 1fr;
   }
 }
 

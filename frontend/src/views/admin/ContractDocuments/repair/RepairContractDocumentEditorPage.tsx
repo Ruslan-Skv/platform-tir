@@ -4,12 +4,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Link from 'next/link';
 
+import { useAuth } from '@/features/auth';
 import {
+  type ContractSignatoryProfile,
+  type ContractTemplatePreset,
   type ExecutorRequisiteProfile,
   getContractDocumentExecutorProfiles,
   getContractDocumentGlobalTemplate,
   getContractDocumentPackage,
-  putContractDocumentGlobalTemplate,
+  getContractDocumentSignatoryProfiles,
+  getContractDocumentTemplatePresets,
+  putContractDocumentTemplatePresets,
   updateContractDocumentPackage,
 } from '@/shared/api/admin-contract-document-packages';
 import type { Contract } from '@/shared/api/admin-crm';
@@ -32,7 +37,11 @@ import {
   REPAIR_DOCUMENT_TEMPLATES,
   type RepairDocumentTabId,
 } from './repairDocumentTemplates';
-import { type RepairPackageFormData, mergeRepairPackageFormData } from './repairPackageForm';
+import {
+  type RepairPackageFormData,
+  mergeRepairPackageFormData,
+  repairPackageFormForTemplate,
+} from './repairPackageForm';
 
 /** Встроенный в код шаблон (если в БД нет общего шаблона). */
 const FILE_REPAIR_CONTRACT_TEMPLATE = REPAIR_DOCUMENT_TEMPLATES.contract;
@@ -56,6 +65,8 @@ interface RepairContractDocumentEditorPageProps {
 export function RepairContractDocumentEditorPage({
   packageId,
 }: RepairContractDocumentEditorPageProps) {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [activeTab, setActiveTab] = useState<RepairDocumentTabId>('data');
   const [draftTitle, setDraftTitle] = useState('');
   const [draftCrmContractId, setDraftCrmContractId] = useState<string | null>(null);
@@ -81,20 +92,36 @@ export function RepairContractDocumentEditorPage({
     loaded: boolean;
     html: string | null;
   }>({ loaded: false, html: null });
-  const [publishingGlobal, setPublishingGlobal] = useState(false);
   const [executorProfiles, setExecutorProfiles] = useState<ExecutorRequisiteProfile[]>([]);
+  const [signatoryProfiles, setSignatoryProfiles] = useState<ContractSignatoryProfile[]>([]);
+  const [contractTemplatePresets, setContractTemplatePresets] = useState<ContractTemplatePreset[]>(
+    []
+  );
+  const [selectedContractTemplateId, setSelectedContractTemplateId] = useState<string>('');
+  const [editingTemplateId, setEditingTemplateId] = useState<string>('');
+  const [templateDraftTitle, setTemplateDraftTitle] = useState('');
+  const [templateDraftHtml, setTemplateDraftHtml] = useState('');
+  const [templateSaving, setTemplateSaving] = useState(false);
 
+  const selectedContractTemplate = useMemo(
+    () => contractTemplatePresets.find((it) => it.id === selectedContractTemplateId) ?? null,
+    [contractTemplatePresets, selectedContractTemplateId]
+  );
   const resolvedContractDefaultTemplate = useMemo(() => {
+    if (selectedContractTemplate?.html?.trim()) return selectedContractTemplate.html;
+    const fallback =
+      contractTemplatePresets.find((it) => it.isDefault) ?? contractTemplatePresets[0];
+    if (fallback?.html?.trim()) return fallback.html;
     if (!globalContractState.loaded) return FILE_REPAIR_CONTRACT_TEMPLATE;
     if (globalContractState.html !== null) return globalContractState.html;
     return FILE_REPAIR_CONTRACT_TEMPLATE;
-  }, [globalContractState]);
+  }, [contractTemplatePresets, selectedContractTemplate, globalContractState]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [row, globalTpl, profilesRes] = await Promise.all([
+      const [row, globalTpl, profilesRes, signatoryRes, templateRes] = await Promise.all([
         getContractDocumentPackage(packageId),
         getContractDocumentGlobalTemplate('REPAIR', 'contract').catch(() => ({
           html: null as string | null,
@@ -104,6 +131,14 @@ export function RepairContractDocumentEditorPage({
           items: [] as ExecutorRequisiteProfile[],
           updatedAt: null as string | null,
         })),
+        getContractDocumentSignatoryProfiles('REPAIR').catch(() => ({
+          items: [] as ContractSignatoryProfile[],
+          updatedAt: null as string | null,
+        })),
+        getContractDocumentTemplatePresets('REPAIR').catch(() => ({
+          items: [] as ContractTemplatePreset[],
+          updatedAt: null as string | null,
+        })),
       ]);
       if (row.kind !== 'REPAIR') {
         setError('Этот пакет относится к другому направлению.');
@@ -111,11 +146,25 @@ export function RepairContractDocumentEditorPage({
       }
       setDraftTitle(row.title ?? '');
       setDraftCrmContractId(row.crmContractId ?? null);
-      const { form: mergedForm, templateOverrides: ov } = mergeFormDataFromStorage(row.formData);
+      const {
+        form: mergedForm,
+        templateOverrides: ov,
+        contractTemplateId,
+      } = mergeFormDataFromStorage(row.formData);
       setForm(mergedForm);
       setTemplateOverrides(ov);
       setGlobalContractState({ loaded: true, html: globalTpl.html });
       setExecutorProfiles(profilesRes.items ?? []);
+      setSignatoryProfiles(signatoryRes.items ?? []);
+      const templates = templateRes.items ?? [];
+      setContractTemplatePresets(templates);
+      const initialTemplateId =
+        contractTemplateId ?? templates.find((it) => it.isDefault)?.id ?? templates[0]?.id ?? '';
+      setSelectedContractTemplateId(initialTemplateId);
+      setEditingTemplateId(initialTemplateId);
+      const initialTpl = templates.find((it) => it.id === initialTemplateId);
+      setTemplateDraftTitle(initialTpl?.title ?? '');
+      setTemplateDraftHtml(initialTpl?.html ?? '');
       setExcelMessage(null);
       setDirty(false);
     } catch (e) {
@@ -158,7 +207,11 @@ export function RepairContractDocumentEditorPage({
     try {
       await updateContractDocumentPackage(packageId, {
         title: draftTitle.trim() || null,
-        formData: buildPersistedFormData(form, templateOverrides),
+        formData: buildPersistedFormData(
+          form,
+          templateOverrides,
+          selectedContractTemplateId || null
+        ),
         crmContractId: draftCrmContractId,
       });
       setDirty(false);
@@ -215,7 +268,14 @@ export function RepairContractDocumentEditorPage({
     value: string
   ) => {
     setForm((p) => {
-      const nextExecutor = { ...p.executor, [key]: value };
+      let nextExecutor = { ...p.executor, [key]: value } as RepairPackageFormData['executor'];
+      if (key === 'executorKind') {
+        if (value === 'ENTREPRENEUR') {
+          nextExecutor = { ...nextExecutor, kpp: '', ogrn: '' };
+        } else {
+          nextExecutor = { ...nextExecutor, ogrnip: '' };
+        }
+      }
       // Keep legacy placeholder value in sync for old templates.
       if (key === 'directorNameNominative') {
         nextExecutor.directorName = value;
@@ -231,22 +291,46 @@ export function RepairContractDocumentEditorPage({
       if (!profile) {
         return { ...p, executor: { ...p.executor, selectedProfileTitle: '' } };
       }
+      const kind = profile.kind === 'ENTREPRENEUR' ? 'ENTREPRENEUR' : 'COMPANY';
       return {
         ...p,
         executor: {
           ...p.executor,
           selectedProfileTitle: title,
+          executorKind: kind,
           companyName: profile.companyName ?? '',
           inn: profile.inn ?? '',
-          kpp: profile.kpp ?? '',
-          ogrn: profile.ogrn ?? '',
+          kpp: kind === 'ENTREPRENEUR' ? '' : (profile.kpp ?? ''),
+          ogrn: kind === 'ENTREPRENEUR' ? '' : (profile.ogrn ?? ''),
+          ogrnip: kind === 'ENTREPRENEUR' ? (profile.ogrnip ?? '') : '',
           legalAddress: profile.legalAddress ?? '',
           actualAddress: profile.actualAddress ?? '',
           bankDetails: profile.bankDetails ?? '',
+          email: profile.email ?? '',
+        },
+      };
+    });
+    setDirty(true);
+  };
+
+  const applySignatoryProfile = (title: string) => {
+    setForm((p) => {
+      const profile = signatoryProfiles.find((it) => it.title === title);
+      if (!profile) {
+        return { ...p, executor: { ...p.executor, selectedSignatoryProfileTitle: '' } };
+      }
+      return {
+        ...p,
+        executor: {
+          ...p.executor,
+          selectedSignatoryProfileTitle: title,
+          signatoryCrmUserId: profile.crmUserId ?? '',
           directorNameNominative: profile.directorNameNominative ?? '',
           directorNameGenitive: profile.directorNameGenitive ?? '',
           directorName: profile.directorNameNominative ?? '',
           basis: profile.basis ?? '',
+          salesOffice: profile.salesOffice ?? '',
+          officePhone: profile.officePhone ?? '',
         },
       };
     });
@@ -283,43 +367,123 @@ export function RepairContractDocumentEditorPage({
     setDirty(true);
   };
 
+  const contractTemplateSource = useMemo(
+    () => (activeTab === 'contract' ? templateDraftHtml || resolvedContractDefaultTemplate : ''),
+    [activeTab, templateDraftHtml, resolvedContractDefaultTemplate]
+  );
+
   const renderedDoc = useMemo(() => {
     if (activeTab === 'data') return '';
     const tab = activeTab as RepairDocumentTemplateTabId;
     let tpl: string;
     if (tab === 'contract') {
       tpl =
-        templateOverrides.contract ??
-        (globalContractState.loaded && globalContractState.html !== null
-          ? globalContractState.html
-          : FILE_REPAIR_CONTRACT_TEMPLATE);
+        isSuperAdmin && contractDocView === 'edit'
+          ? contractTemplateSource
+          : (templateOverrides.contract ?? resolvedContractDefaultTemplate);
     } else {
       tpl = templateOverrides[tab] ?? REPAIR_DOCUMENT_TEMPLATES[tab];
     }
-    return applyTemplate(tpl, form);
-  }, [activeTab, form, templateOverrides, globalContractState]);
+    return applyTemplate(tpl, repairPackageFormForTemplate(form));
+  }, [
+    activeTab,
+    form,
+    templateOverrides,
+    resolvedContractDefaultTemplate,
+    isSuperAdmin,
+    contractDocView,
+    contractTemplateSource,
+  ]);
 
-  const contractTemplateSource = useMemo(
-    () =>
-      activeTab === 'contract'
-        ? (templateOverrides.contract ?? resolvedContractDefaultTemplate)
-        : '',
-    [activeTab, templateOverrides.contract, resolvedContractDefaultTemplate]
-  );
+  const persistContractTemplatePresets = async (items: ContractTemplatePreset[]) => {
+    setTemplateSaving(true);
+    setError(null);
+    try {
+      await putContractDocumentTemplatePresets({ kind: 'REPAIR', items });
+      setContractTemplatePresets(items);
+      setExcelMessage('Шаблоны договора сохранены.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось сохранить шаблоны договора');
+    } finally {
+      setTemplateSaving(false);
+    }
+  };
 
   const handleContractTemplateChange = (value: string) => {
-    setTemplateOverrides((prev) => {
-      const next = { ...prev };
-      if (value === resolvedContractDefaultTemplate) delete next.contract;
-      else next.contract = value;
-      return next;
-    });
+    setTemplateDraftHtml(value);
+  };
+
+  const handleSelectTemplateForPackage = (templateId: string) => {
+    setSelectedContractTemplateId(templateId);
     setDirty(true);
+  };
+
+  const handleEditTemplateSelect = (templateId: string) => {
+    setEditingTemplateId(templateId);
+    const t = contractTemplatePresets.find((it) => it.id === templateId);
+    setTemplateDraftTitle(t?.title ?? '');
+    setTemplateDraftHtml(t?.html ?? '');
+  };
+
+  const handleSaveTemplateDraft = async () => {
+    if (!isSuperAdmin) return;
+    const title = templateDraftTitle.trim();
+    if (!title) {
+      setError('Укажите имя шаблона.');
+      return;
+    }
+    const html = templateDraftHtml.trim();
+    if (!html) {
+      setError('HTML шаблона не может быть пустым.');
+      return;
+    }
+    const id = editingTemplateId || `tpl_${Date.now()}`;
+    const next = contractTemplatePresets.map((it) => (it.id === id ? { ...it, title, html } : it));
+    const exists = next.some((it) => it.id === id);
+    const finalItems = exists
+      ? next
+      : [
+          ...contractTemplatePresets,
+          { id, title, html, isDefault: contractTemplatePresets.length === 0 },
+        ];
+    await persistContractTemplatePresets(finalItems);
+    setEditingTemplateId(id);
+    if (!selectedContractTemplateId) setSelectedContractTemplateId(id);
+  };
+
+  const handleCreateTemplate = (mode: 'blank' | 'copy') => {
+    if (!isSuperAdmin) return;
+    const sourceHtml = mode === 'copy' ? contractTemplateSource : '<div class="docPrint"></div>';
+    const id = `tpl_${Date.now()}`;
+    setEditingTemplateId(id);
+    setTemplateDraftTitle(mode === 'copy' ? 'Копия шаблона' : 'Новый шаблон');
+    setTemplateDraftHtml(sourceHtml);
+  };
+
+  const handleDeleteTemplate = async () => {
+    if (!isSuperAdmin || !editingTemplateId) return;
+    const next = contractTemplatePresets.filter((it) => it.id !== editingTemplateId);
+    await persistContractTemplatePresets(next);
+    const fallbackId = next.find((it) => it.isDefault)?.id ?? next[0]?.id ?? '';
+    setEditingTemplateId(fallbackId);
+    setSelectedContractTemplateId((prev) => (prev === editingTemplateId ? fallbackId : prev));
+    const fallback = next.find((it) => it.id === fallbackId);
+    setTemplateDraftTitle(fallback?.title ?? '');
+    setTemplateDraftHtml(fallback?.html ?? '');
+  };
+
+  const handleSetDefaultTemplate = async () => {
+    if (!isSuperAdmin || !editingTemplateId) return;
+    const next = contractTemplatePresets.map((it) => ({
+      ...it,
+      isDefault: it.id === editingTemplateId,
+    }));
+    await persistContractTemplatePresets(next);
   };
 
   const insertContractPlaceholder = (path: string) => {
     const el = contractHtmlTextareaRef.current;
-    const cur = templateOverrides.contract ?? resolvedContractDefaultTemplate;
+    const cur = templateDraftHtml || resolvedContractDefaultTemplate;
     const token = `{{${path}}}`;
     if (el) {
       const start = el.selectionStart ?? cur.length;
@@ -473,9 +637,10 @@ export function RepairContractDocumentEditorPage({
     <td style="width: 50%; vertical-align: top; padding: 8px 10px 8px 0; border-right: 1px solid #bbb;">
       <p style="text-align: center; font-weight: bold; margin: 0 0 8pt;">ПОДРЯДЧИК</p>
       <p style="margin: 0 0 4pt;">{{executor.companyName}}</p>
-      <p style="margin: 0 0 4pt;">ИНН {{executor.inn}}, КПП {{executor.kpp}}, ОГРН {{executor.ogrn}}</p>
+      <p style="margin: 0 0 4pt;">{{executor.innKppRegLine}}</p>
+      <p style="margin: 0 0 4pt;">E-mail: {{executor.email}}</p>
       <p style="margin: 0 0 4pt;">Юр. адрес: {{executor.legalAddress}}</p>
-      <p style="margin: 0 0 4pt;">Факт. адрес: {{executor.actualAddress}}</p>
+      <p style="margin: 0 0 4pt;">Адрес для корреспонденции: {{executor.actualAddress}}</p>
       <p style="margin: 0 0 8pt; white-space: pre-wrap;">{{executor.bankDetails}}</p>
       <p style="margin: 20pt 0 0;">___________________ / {{executor.directorName}}</p>
       <p style="margin: 0; font-size: 9pt;">м.п.</p>
@@ -575,42 +740,11 @@ export function RepairContractDocumentEditorPage({
     updateContractHtmlBySelection(() => ({ content: block }));
   };
 
-  const handlePublishAsGlobalDefault = async () => {
-    const msg =
-      'Текущий HTML договора (как в поле редактора / предпросмотре) будет сохранён как шаблон по умолчанию для всех новых пакетов «Ремонт» и для пакетов без своего текста договора. Продолжить?';
-    if (typeof window !== 'undefined' && !window.confirm(msg)) return;
-    setPublishingGlobal(true);
-    setError(null);
-    try {
-      const html = contractTemplateSource;
-      await putContractDocumentGlobalTemplate({ kind: 'REPAIR', tab: 'contract', html });
-      setGlobalContractState({ loaded: true, html });
-      setTemplateOverrides((prev) => {
-        if (prev.contract === html) {
-          const next = { ...prev };
-          delete next.contract;
-          return next;
-        }
-        return prev;
-      });
-      setExcelMessage(
-        'Общий шаблон по умолчанию обновлён в системе. Пакеты без своего переопределения увидят его после перезагрузки страницы.'
-      );
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось сохранить общий шаблон');
-    } finally {
-      setPublishingGlobal(false);
-    }
-  };
-
   const handleResetContractTemplate = () => {
-    setTemplateOverrides((prev) => {
-      const next = { ...prev };
-      delete next.contract;
-      return next;
-    });
+    const t = contractTemplatePresets.find((it) => it.id === editingTemplateId);
+    setTemplateDraftTitle(t?.title ?? '');
+    setTemplateDraftHtml(t?.html ?? '');
     setExcelMessage(null);
-    setDirty(true);
   };
 
   const handlePrint = () => {
@@ -1094,6 +1228,17 @@ export function RepairContractDocumentEditorPage({
                   </select>
                 </div>
                 <div className={styles.field}>
+                  <label htmlFor="e_exec_kind">Тип исполнителя</label>
+                  <select
+                    id="e_exec_kind"
+                    value={form.executor.executorKind}
+                    onChange={(e) => updateExecutor('executorKind', e.target.value)}
+                  >
+                    <option value="COMPANY">Юридическое лицо (ЮЛ)</option>
+                    <option value="ENTREPRENEUR">Индивидуальный предприниматель (ИП)</option>
+                  </select>
+                </div>
+                <div className={styles.field}>
                   <label htmlFor="e_company">Наименование организации</label>
                   <input
                     id="e_company"
@@ -1109,20 +1254,43 @@ export function RepairContractDocumentEditorPage({
                     onChange={(e) => updateExecutor('inn', e.target.value)}
                   />
                 </div>
+                {form.executor.executorKind === 'COMPANY' ? (
+                  <div className={styles.field}>
+                    <label htmlFor="e_kpp">КПП</label>
+                    <input
+                      id="e_kpp"
+                      value={form.executor.kpp}
+                      onChange={(e) => updateExecutor('kpp', e.target.value)}
+                    />
+                  </div>
+                ) : null}
+                {form.executor.executorKind === 'COMPANY' ? (
+                  <div className={styles.field}>
+                    <label htmlFor="e_ogrn">ОГРН</label>
+                    <input
+                      id="e_ogrn"
+                      value={form.executor.ogrn}
+                      onChange={(e) => updateExecutor('ogrn', e.target.value)}
+                    />
+                  </div>
+                ) : (
+                  <div className={styles.field}>
+                    <label htmlFor="e_ogrnip">ОГРНИП</label>
+                    <input
+                      id="e_ogrnip"
+                      value={form.executor.ogrnip}
+                      onChange={(e) => updateExecutor('ogrnip', e.target.value)}
+                    />
+                  </div>
+                )}
                 <div className={styles.field}>
-                  <label htmlFor="e_kpp">КПП</label>
+                  <label htmlFor="e_email">E-mail</label>
                   <input
-                    id="e_kpp"
-                    value={form.executor.kpp}
-                    onChange={(e) => updateExecutor('kpp', e.target.value)}
-                  />
-                </div>
-                <div className={styles.field}>
-                  <label htmlFor="e_ogrn">ОГРН</label>
-                  <input
-                    id="e_ogrn"
-                    value={form.executor.ogrn}
-                    onChange={(e) => updateExecutor('ogrn', e.target.value)}
+                    id="e_email"
+                    type="email"
+                    autoComplete="email"
+                    value={form.executor.email}
+                    onChange={(e) => updateExecutor('email', e.target.value)}
                   />
                 </div>
                 <div className={styles.field}>
@@ -1134,7 +1302,7 @@ export function RepairContractDocumentEditorPage({
                   />
                 </div>
                 <div className={styles.field}>
-                  <label htmlFor="e_actual">Фактический адрес</label>
+                  <label htmlFor="e_actual">Адрес для корреспонденции</label>
                   <textarea
                     id="e_actual"
                     value={form.executor.actualAddress}
@@ -1149,6 +1317,34 @@ export function RepairContractDocumentEditorPage({
                     onChange={(e) => updateExecutor('bankDetails', e.target.value)}
                   />
                 </div>
+              </div>
+            </div>
+
+            <div className={`${styles.sectionCard} ${styles.sectionExecutor}`}>
+              <h3 className={styles.sectionTitle}>Подписант</h3>
+              <div className={styles.sectionFields}>
+                <div className={styles.field}>
+                  <label htmlFor="s_profile">Карточка подписанта (из справочника)</label>
+                  <select
+                    id="s_profile"
+                    value={form.executor.selectedSignatoryProfileTitle}
+                    onChange={(e) => applySignatoryProfile(e.target.value)}
+                  >
+                    <option value="">— выбрать карточку —</option>
+                    {signatoryProfiles.map((profile) => (
+                      <option key={profile.title} value={profile.title}>
+                        {profile.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {form.executor.signatoryCrmUserId ? (
+                  <p className={styles.hint} style={{ gridColumn: '1 / -1', marginTop: 0 }}>
+                    Связь с CRM: id сотрудника{' '}
+                    <code style={{ fontSize: '0.9em' }}>{form.executor.signatoryCrmUserId}</code> —
+                    тот же пользователь, что в разделе «Менеджеры».
+                  </p>
+                ) : null}
                 <div className={styles.field}>
                   <label htmlFor="e_directorNom">Подписант (именительный падеж)</label>
                   <input
@@ -1173,6 +1369,22 @@ export function RepairContractDocumentEditorPage({
                     onChange={(e) => updateExecutor('basis', e.target.value)}
                   />
                 </div>
+                <div className={styles.field}>
+                  <label htmlFor="e_sales_office">Офис продаж</label>
+                  <input
+                    id="e_sales_office"
+                    value={form.executor.salesOffice}
+                    onChange={(e) => updateExecutor('salesOffice', e.target.value)}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="e_office_phone">Телефон офиса</label>
+                  <input
+                    id="e_office_phone"
+                    value={form.executor.officePhone}
+                    onChange={(e) => updateExecutor('officePhone', e.target.value)}
+                  />
+                </div>
               </div>
             </div>
 
@@ -1185,6 +1397,14 @@ export function RepairContractDocumentEditorPage({
                     id="o_addr"
                     value={form.object.objectAddress}
                     onChange={(e) => updateObject('objectAddress', e.target.value)}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="o_floor">Этаж</label>
+                  <input
+                    id="o_floor"
+                    value={form.object.objectFloor}
+                    onChange={(e) => updateObject('objectFloor', e.target.value)}
                   />
                 </div>
                 <div className={styles.field}>
@@ -1213,181 +1433,39 @@ export function RepairContractDocumentEditorPage({
             style={{ flexDirection: 'column', alignItems: 'stretch' }}
           >
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
-              <button
-                type="button"
-                className={styles.secondaryBtn}
-                onClick={handleResetContractTemplate}
-              >
-                Сбросить к шаблону по умолчанию
-              </button>
-              <button
-                type="button"
-                className={styles.secondaryBtn}
-                disabled={publishingGlobal}
-                onClick={() => void handlePublishAsGlobalDefault()}
-              >
-                {publishingGlobal ? 'Сохранение…' : 'Сделать шаблоном по умолчанию для всех'}
-              </button>
-              <button
-                type="button"
-                className={
-                  contractDocView === 'preview'
-                    ? styles.contractModeBtnActive
-                    : styles.contractModeBtn
-                }
-                onClick={() => setContractDocView('preview')}
-              >
-                Только препросмотр
-              </button>
-              <button
-                type="button"
-                className={
-                  contractDocView === 'edit' ? styles.contractModeBtnActive : styles.contractModeBtn
-                }
-                onClick={() => setContractDocView('edit')}
-              >
-                Редактировать шаблон и плейсхолдеры
-              </button>
-              {templateOverrides.contract ? (
-                <span className={styles.hint} style={{ margin: 0 }}>
-                  У пакета свой текст договора. Если он совпадает с текущим «шаблоном по умолчанию»
-                  (общим или из кода), переопределение снимется при сохранении поля.
-                </span>
-              ) : (
-                <span className={styles.hint} style={{ margin: 0 }}>
-                  Без своего текста используется общий шаблон из системы (если задан), иначе —
-                  встроенный из кода. Кнопка «Сделать шаблоном по умолчанию для всех» сохраняет
-                  текущий HTML для всех пакетов без своего текста.
-                </span>
-              )}
+              <label className={styles.field} style={{ minWidth: 340 }}>
+                <span>Шаблон договора для этого пакета</span>
+                <select
+                  value={selectedContractTemplateId}
+                  onChange={(e) => handleSelectTemplateForPackage(e.target.value)}
+                >
+                  {contractTemplatePresets.length === 0 ? (
+                    <option value="">— шаблоны не настроены —</option>
+                  ) : null}
+                  {contractTemplatePresets.map((tpl) => (
+                    <option key={tpl.id} value={tpl.id}>
+                      {tpl.title}
+                      {tpl.isDefault ? ' (по умолчанию)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <Link className={styles.secondaryBtn} href="/admin/contract-documents/templates">
+                Библиотека шаблонов договоров
+              </Link>
+              <span className={styles.hint} style={{ margin: 0 }}>
+                Здесь можно только выбрать готовый шаблон. Редактирование выполняется на отдельной
+                странице библиотеки.
+              </span>
             </div>
             {excelMessage ? <p className={styles.hint}>{excelMessage}</p> : null}
           </div>
 
-          {contractDocView === 'edit' ? (
-            <>
-              <div className={`${styles.contractTopTools} ${styles.blockTools}`}>
-                <div className={styles.contractEditorMain}>
-                  <div className={styles.formatLevelBar}>
-                    <button
-                      type="button"
-                      className={
-                        formatToolbarLevel === 'basic'
-                          ? styles.formatLevelBtnActive
-                          : styles.formatLevelBtn
-                      }
-                      onClick={() => setFormatToolbarLevel('basic')}
-                    >
-                      Базовые
-                    </button>
-                    <button
-                      type="button"
-                      className={
-                        formatToolbarLevel === 'advanced'
-                          ? styles.formatLevelBtnActive
-                          : styles.formatLevelBtn
-                      }
-                      onClick={() => setFormatToolbarLevel('advanced')}
-                    >
-                      Расширенные
-                    </button>
-                  </div>
-                  <div className={styles.formatToolbarTopRow}>
-                    <input
-                      type="text"
-                      value={formatToolbarQuery}
-                      onChange={(e) => setFormatToolbarQuery(e.target.value)}
-                      placeholder="Поиск инструмента…"
-                      className={styles.formatSearchInput}
-                    />
-                    <button
-                      type="button"
-                      className={
-                        showAllFormatTools ? styles.formatLevelBtnActive : styles.formatLevelBtn
-                      }
-                      onClick={() => setShowAllFormatTools((v) => !v)}
-                    >
-                      {showAllFormatTools ? 'Только частые' : 'Показать все'}
-                    </button>
-                  </div>
-                  <div className={styles.formatToolbar}>
-                    {visibleTools.map((tool) => (
-                      <button
-                        key={tool.label}
-                        type="button"
-                        className={styles.formatBtn}
-                        onClick={tool.onClick}
-                      >
-                        {tool.label}
-                      </button>
-                    ))}
-                    {visibleTools.length === 0 ? (
-                      <span className={styles.hint} style={{ margin: 0 }}>
-                        По запросу ничего не найдено.
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-                <aside className={styles.placeholderPanelTop} aria-label="Плейсхолдеры для вставки">
-                  {REPAIR_CONTRACT_PLACEHOLDER_GROUPS.map((group) => (
-                    <div key={group.title}>
-                      <div className={styles.placeholderGroupTitle}>{group.title}</div>
-                      <div className={styles.placeholderChips}>
-                        {group.items.map((item) => (
-                          <button
-                            key={item.path}
-                            type="button"
-                            className={styles.placeholderChip}
-                            title={`Вставить {{${item.path}}}`}
-                            onClick={() => insertContractPlaceholder(item.path)}
-                          >
-                            {item.label} <code>{`{{${item.path}}}`}</code>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </aside>
-              </div>
-
-              <p className={styles.hint}>
-                Нажмите на поле слева — в шаблон вставится <code>{'{{путь}}'}</code> в позицию
-                курсора. Панель форматирования разделена на уровни: «Базовые» и «Расширенные», есть
-                поиск по названию кнопок и переключатель «Только частые / Показать все». Разрешены
-                теги HTML (<code>&lt;p&gt;</code>, <code>&lt;h1&gt;</code>,{' '}
-                <code>&lt;table&gt;</code> и т.д.). После правок нажмите «Сохранить» вверху
-                страницы.
-              </p>
-
-              <div className={styles.contractLiveGrid}>
-                <div className={styles.contractEditColumn}>
-                  <label className={styles.contractEditorLabel} htmlFor="contract_html_source">
-                    HTML шаблона договора (подстановка при сохранении вкладки «Данные»)
-                  </label>
-                  <textarea
-                    id="contract_html_source"
-                    ref={contractHtmlTextareaRef}
-                    className={styles.contractHtmlTextarea}
-                    spellCheck={false}
-                    value={contractTemplateSource}
-                    onChange={(e) => handleContractTemplateChange(e.target.value)}
-                  />
-                </div>
-                <div className={styles.contractPreviewColumn}>
-                  <h3 className={styles.previewBlockTitle}>Предпросмотр с подстановкой данных</h3>
-                  <div className={`${styles.docPane} ${styles.previewResizable}`}>
-                    <div dangerouslySetInnerHTML={{ __html: renderedDoc }} />
-                  </div>
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className={styles.docPane}>
-                <div dangerouslySetInnerHTML={{ __html: renderedDoc }} />
-              </div>
-            </>
-          )}
+          <>
+            <div className={styles.docPane}>
+              <div dangerouslySetInnerHTML={{ __html: renderedDoc }} />
+            </div>
+          </>
         </>
       ) : (
         <>

@@ -8,6 +8,14 @@ import {
   ExecutorProfileDto,
   SetGlobalExecutorProfilesDto,
 } from './dto/set-global-executor-profiles.dto';
+import {
+  ContractTemplatePresetDto,
+  SetGlobalContractTemplatesDto,
+} from './dto/set-global-contract-templates.dto';
+import {
+  SetGlobalSignatoryProfilesDto,
+  SignatoryProfileDto,
+} from './dto/set-global-signatory-profiles.dto';
 import { SetGlobalContractTemplateDto } from './dto/set-global-contract-template.dto';
 import { UpdateContractDocumentPackageDto } from './dto/update-contract-document-package.dto';
 
@@ -15,6 +23,8 @@ import { UpdateContractDocumentPackageDto } from './dto/update-contract-document
 export class ContractDocumentPackagesService {
   constructor(private readonly prisma: PrismaService) {}
   private static readonly EXECUTOR_PROFILES_TAB = 'executor_profiles';
+  private static readonly SIGNATORY_PROFILES_TAB = 'signatory_profiles';
+  private static readonly CONTRACT_TEMPLATES_TAB = 'contract_templates';
 
   private async assertCrmContractExists(contractId: string) {
     const row = await this.prisma.contract.findUnique({
@@ -121,6 +131,48 @@ export class ContractDocumentPackagesService {
     return row;
   }
 
+  async getGlobalContractTemplates(kind: ContractDocumentPackageKind) {
+    const row = await this.prisma.contractDocumentGlobalTemplate.findUnique({
+      where: {
+        kind_tab: { kind, tab: ContractDocumentPackagesService.CONTRACT_TEMPLATES_TAB },
+      },
+      select: { html: true, updatedAt: true },
+    });
+    if (!row) {
+      return { items: [] as ContractTemplatePresetDto[], updatedAt: null as string | null };
+    }
+    try {
+      const parsed = JSON.parse(row.html) as { items?: ContractTemplatePresetDto[] };
+      return {
+        items: Array.isArray(parsed?.items) ? parsed.items : [],
+        updatedAt: row.updatedAt.toISOString(),
+      };
+    } catch {
+      return { items: [] as ContractTemplatePresetDto[], updatedAt: row.updatedAt.toISOString() };
+    }
+  }
+
+  async setGlobalContractTemplates(dto: SetGlobalContractTemplatesDto, updatedById?: string) {
+    const payload = JSON.stringify({ items: dto.items ?? [] });
+    const row = await this.prisma.contractDocumentGlobalTemplate.upsert({
+      where: {
+        kind_tab: { kind: dto.kind, tab: ContractDocumentPackagesService.CONTRACT_TEMPLATES_TAB },
+      },
+      create: {
+        kind: dto.kind,
+        tab: ContractDocumentPackagesService.CONTRACT_TEMPLATES_TAB,
+        html: payload,
+        updatedById: updatedById ?? null,
+      },
+      update: {
+        html: payload,
+        updatedById: updatedById ?? null,
+      },
+      select: { id: true, kind: true, tab: true, updatedAt: true },
+    });
+    return row;
+  }
+
   async getGlobalExecutorProfiles(kind: ContractDocumentPackageKind) {
     const row = await this.prisma.contractDocumentGlobalTemplate.findUnique({
       where: {
@@ -153,6 +205,50 @@ export class ContractDocumentPackagesService {
       create: {
         kind: dto.kind,
         tab: ContractDocumentPackagesService.EXECUTOR_PROFILES_TAB,
+        html: payload,
+        updatedById: updatedById ?? null,
+      },
+      update: {
+        html: payload,
+        updatedById: updatedById ?? null,
+      },
+      select: { id: true, kind: true, tab: true, updatedAt: true },
+    });
+    return row;
+  }
+
+  async getGlobalSignatoryProfiles(kind: ContractDocumentPackageKind) {
+    const row = await this.prisma.contractDocumentGlobalTemplate.findUnique({
+      where: {
+        kind_tab: { kind, tab: ContractDocumentPackagesService.SIGNATORY_PROFILES_TAB },
+      },
+      select: { html: true, updatedAt: true },
+    });
+
+    if (!row) {
+      return { items: [] as SignatoryProfileDto[], updatedAt: null as string | null };
+    }
+
+    try {
+      const parsed = JSON.parse(row.html) as { items?: SignatoryProfileDto[] };
+      return {
+        items: Array.isArray(parsed?.items) ? parsed.items : [],
+        updatedAt: row.updatedAt.toISOString(),
+      };
+    } catch {
+      return { items: [] as SignatoryProfileDto[], updatedAt: row.updatedAt.toISOString() };
+    }
+  }
+
+  async setGlobalSignatoryProfiles(dto: SetGlobalSignatoryProfilesDto, updatedById?: string) {
+    const payload = JSON.stringify({ items: dto.items ?? [] });
+    const row = await this.prisma.contractDocumentGlobalTemplate.upsert({
+      where: {
+        kind_tab: { kind: dto.kind, tab: ContractDocumentPackagesService.SIGNATORY_PROFILES_TAB },
+      },
+      create: {
+        kind: dto.kind,
+        tab: ContractDocumentPackagesService.SIGNATORY_PROFILES_TAB,
         html: payload,
         updatedById: updatedById ?? null,
       },

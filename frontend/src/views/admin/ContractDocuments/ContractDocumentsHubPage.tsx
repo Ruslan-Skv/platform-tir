@@ -31,6 +31,18 @@ export function ContractDocumentsHubPage() {
             Наборы реквизитов Исполнителя для быстрого выбора в договоре.
           </p>
         </Link>
+        <Link className={styles.hubCard} href="/admin/contract-documents/signatories">
+          <h2 className={styles.hubCardTitle}>Подписанты</h2>
+          <p className={styles.hubCardHint}>
+            Подписанты, основание полномочий, офис продаж и связь с сотрудниками CRM.
+          </p>
+        </Link>
+        <Link className={styles.hubCard} href="/admin/contract-documents/templates">
+          <h2 className={styles.hubCardTitle}>Библиотека шаблонов договоров</h2>
+          <p className={styles.hubCardHint}>
+            Именованные шаблоны договора «Ремонт»: создание, копирование и настройка по умолчанию.
+          </p>
+        </Link>
         <div className={`${styles.hubCard} ${styles.hubCardDisabled}`}>
           <h2 className={styles.hubCardTitle}>Окна</h2>
           <p className={styles.hubCardHint}>Раздел будет добавлен позже.</p>

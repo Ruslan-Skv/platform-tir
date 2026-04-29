@@ -46,13 +46,17 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
   {
     title: 'Исполнитель',
     items: [
+      { path: 'executor.executorKind', label: 'Тип исполнителя (COMPANY / ENTREPRENEUR)' },
       { path: 'executor.companyName', label: 'Наименование' },
       { path: 'executor.inn', label: 'ИНН' },
-      { path: 'executor.kpp', label: 'КПП' },
-      { path: 'executor.ogrn', label: 'ОГРН' },
+      { path: 'executor.innKppRegLine', label: 'ИНН, КПП, ОГРН или ИНН, ОГРНИП (одной строкой)' },
+      { path: 'executor.kpp', label: 'КПП (ЮЛ)' },
+      { path: 'executor.ogrn', label: 'ОГРН (ЮЛ)' },
+      { path: 'executor.ogrnip', label: 'ОГРНИП (ИП)' },
       { path: 'executor.legalAddress', label: 'Юр. адрес' },
-      { path: 'executor.actualAddress', label: 'Факт. адрес' },
+      { path: 'executor.actualAddress', label: 'Адрес для корреспонденции' },
       { path: 'executor.bankDetails', label: 'Банк. реквизиты' },
+      { path: 'executor.email', label: 'E-mail исполнителя' },
       {
         path: 'executor.directorNameNominative',
         label: 'Подписант (именительный падеж)',
@@ -63,12 +67,15 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
       },
       { path: 'executor.directorName', label: 'Подписант (legacy)' },
       { path: 'executor.basis', label: 'Действует на основании' },
+      { path: 'executor.salesOffice', label: 'Офис продаж' },
+      { path: 'executor.officePhone', label: 'Телефон офиса' },
     ],
   },
   {
     title: 'Объект',
     items: [
       { path: 'object.objectAddress', label: 'Адрес объекта' },
+      { path: 'object.objectFloor', label: 'Этаж' },
       { path: 'object.objectDescription', label: 'Описание работ / объекта' },
     ],
   },

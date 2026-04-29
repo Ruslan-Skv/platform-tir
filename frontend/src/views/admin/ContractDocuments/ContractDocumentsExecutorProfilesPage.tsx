@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 import {
+  type ExecutorRequisiteKind,
   type ExecutorRequisiteProfile,
   getContractDocumentExecutorProfiles,
   putContractDocumentExecutorProfiles,
@@ -14,16 +15,16 @@ import styles from './ContractDocuments.module.css';
 
 const EMPTY_PROFILE: ExecutorRequisiteProfile = {
   title: '',
+  kind: 'COMPANY',
   companyName: '',
   inn: '',
   kpp: '',
   ogrn: '',
+  ogrnip: '',
   legalAddress: '',
   actualAddress: '',
   bankDetails: '',
-  directorNameNominative: '',
-  directorNameGenitive: '',
-  basis: '',
+  email: '',
 };
 
 export function ContractDocumentsExecutorProfilesPage() {
@@ -76,9 +77,14 @@ export function ContractDocumentsExecutorProfilesPage() {
       return;
     }
     const next = [...items];
-    const normalized = {
+    const kind: ExecutorRequisiteKind = draft.kind === 'ENTREPRENEUR' ? 'ENTREPRENEUR' : 'COMPANY';
+    const normalized: ExecutorRequisiteProfile = {
       ...draft,
       title: draft.title.trim(),
+      kind,
+      kpp: kind === 'ENTREPRENEUR' ? '' : (draft.kpp ?? ''),
+      ogrn: kind === 'ENTREPRENEUR' ? '' : (draft.ogrn ?? ''),
+      ogrnip: kind === 'ENTREPRENEUR' ? (draft.ogrnip ?? '') : '',
     };
     if (editingIndex === null) next.push(normalized);
     else next[editingIndex] = normalized;
@@ -98,8 +104,11 @@ export function ContractDocumentsExecutorProfilesPage() {
         <div>
           <h1 className={styles.title}>Наши реквизиты</h1>
           <p className={styles.subtitle}>
-            Создайте наборы реквизитов Исполнителя. В договоре менеджер сможет выбрать их из
-            выпадающего списка.
+            Создайте наборы реквизитов Исполнителя. Подписанта и офис продаж настройте в разделе{' '}
+            <Link className={styles.link} href="/admin/contract-documents/signatories">
+              Подписанты
+            </Link>
+            . В договоре менеджер выберет наборы из списков.
           </p>
         </div>
         <Link className={styles.secondaryBtn} href="/admin/contract-documents/repair">
@@ -121,6 +130,23 @@ export function ContractDocumentsExecutorProfilesPage() {
             />
           </div>
           <div className={styles.field}>
+            <label>Тип исполнителя</label>
+            <select
+              value={draft.kind === 'ENTREPRENEUR' ? 'ENTREPRENEUR' : 'COMPANY'}
+              onChange={(e) => {
+                const kind = e.target.value === 'ENTREPRENEUR' ? 'ENTREPRENEUR' : 'COMPANY';
+                setDraft((p) =>
+                  kind === 'ENTREPRENEUR'
+                    ? { ...p, kind, kpp: '', ogrn: '' }
+                    : { ...p, kind, ogrnip: '' }
+                );
+              }}
+            >
+              <option value="COMPANY">Юридическое лицо (ЮЛ)</option>
+              <option value="ENTREPRENEUR">Индивидуальный предприниматель (ИП)</option>
+            </select>
+          </div>
+          <div className={styles.field}>
             <label>Наименование организации</label>
             <input
               value={draft.companyName ?? ''}
@@ -134,39 +160,39 @@ export function ContractDocumentsExecutorProfilesPage() {
               onChange={(e) => setDraft((p) => ({ ...p, inn: e.target.value }))}
             />
           </div>
+          {draft.kind === 'ENTREPRENEUR' ? null : (
+            <div className={styles.field}>
+              <label>КПП</label>
+              <input
+                value={draft.kpp ?? ''}
+                onChange={(e) => setDraft((p) => ({ ...p, kpp: e.target.value }))}
+              />
+            </div>
+          )}
+          {draft.kind === 'ENTREPRENEUR' ? (
+            <div className={styles.field}>
+              <label>ОГРНИП</label>
+              <input
+                value={draft.ogrnip ?? ''}
+                onChange={(e) => setDraft((p) => ({ ...p, ogrnip: e.target.value }))}
+              />
+            </div>
+          ) : (
+            <div className={styles.field}>
+              <label>ОГРН</label>
+              <input
+                value={draft.ogrn ?? ''}
+                onChange={(e) => setDraft((p) => ({ ...p, ogrn: e.target.value }))}
+              />
+            </div>
+          )}
           <div className={styles.field}>
-            <label>КПП</label>
+            <label>E-mail</label>
             <input
-              value={draft.kpp ?? ''}
-              onChange={(e) => setDraft((p) => ({ ...p, kpp: e.target.value }))}
-            />
-          </div>
-          <div className={styles.field}>
-            <label>ОГРН</label>
-            <input
-              value={draft.ogrn ?? ''}
-              onChange={(e) => setDraft((p) => ({ ...p, ogrn: e.target.value }))}
-            />
-          </div>
-          <div className={styles.field}>
-            <label>Подписант (именительный)</label>
-            <input
-              value={draft.directorNameNominative ?? ''}
-              onChange={(e) => setDraft((p) => ({ ...p, directorNameNominative: e.target.value }))}
-            />
-          </div>
-          <div className={styles.field}>
-            <label>Подписант (родительный)</label>
-            <input
-              value={draft.directorNameGenitive ?? ''}
-              onChange={(e) => setDraft((p) => ({ ...p, directorNameGenitive: e.target.value }))}
-            />
-          </div>
-          <div className={styles.field}>
-            <label>Действует на основании</label>
-            <input
-              value={draft.basis ?? ''}
-              onChange={(e) => setDraft((p) => ({ ...p, basis: e.target.value }))}
+              type="email"
+              autoComplete="email"
+              value={draft.email ?? ''}
+              onChange={(e) => setDraft((p) => ({ ...p, email: e.target.value }))}
             />
           </div>
           <div className={styles.field}>
@@ -177,7 +203,7 @@ export function ContractDocumentsExecutorProfilesPage() {
             />
           </div>
           <div className={styles.field}>
-            <label>Фактический адрес</label>
+            <label>Адрес для корреспонденции</label>
             <textarea
               value={draft.actualAddress ?? ''}
               onChange={(e) => setDraft((p) => ({ ...p, actualAddress: e.target.value }))}
@@ -213,6 +239,7 @@ export function ContractDocumentsExecutorProfilesPage() {
           <thead>
             <tr>
               <th>Название</th>
+              <th>Тип</th>
               <th>Организация</th>
               <th>ИНН</th>
               <th>Действия</th>
@@ -221,16 +248,17 @@ export function ContractDocumentsExecutorProfilesPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={4}>Загрузка…</td>
+                <td colSpan={5}>Загрузка…</td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={4}>Наборы реквизитов пока не добавлены.</td>
+                <td colSpan={5}>Наборы реквизитов пока не добавлены.</td>
               </tr>
             ) : (
               items.map((item, idx) => (
                 <tr key={`${item.title}-${idx}`}>
                   <td>{item.title}</td>
+                  <td>{item.kind === 'ENTREPRENEUR' ? 'ИП' : 'ЮЛ'}</td>
                   <td>{item.companyName || '—'}</td>
                   <td>{item.inn || '—'}</td>
                   <td>
@@ -239,7 +267,10 @@ export function ContractDocumentsExecutorProfilesPage() {
                         type="button"
                         className={styles.secondaryBtn}
                         onClick={() => {
-                          setDraft(item);
+                          setDraft({
+                            ...item,
+                            kind: item.kind === 'ENTREPRENEUR' ? 'ENTREPRENEUR' : 'COMPANY',
+                          });
                           setEditingIndex(idx);
                         }}
                       >

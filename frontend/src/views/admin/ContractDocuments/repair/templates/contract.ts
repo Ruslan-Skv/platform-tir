@@ -1,4 +1,4 @@
-/** Шаблон вкладки «Договор» (ремонт). Плейсхолдеры: {{customer.*}}, {{executor.*}}, {{object.*}}, {{contract.*}} */
+/** Шаблон вкладки «Договор» (ремонт). Плейсхолдеры: {{customer.*}}, {{executor.*}}, {{object.*}}, {{contract.*}}. Для реквизитов Исполнителя удобно {{executor.innKppRegLine}} (ЮЛ: ИНН, КПП, ОГРН; ИП: ИНН, ОГРНИП). */
 export const repairTemplateContract = `
 <div class="docPrint">
   <h1 style="text-align: center; font-size: 14pt; margin: 0 0 12pt;">
@@ -22,6 +22,9 @@ export const repairTemplateContract = `
     1.1. Заказчик поручает, а Подрядчик принимает на себя обязательство выполнить работы по объекту, расположенному
     по адресу: <strong>{{object.objectAddress}}</strong>, в объёме и на условиях, предусмотренных настоящим Договором,
     проектной и иной документацией (при наличии), а также локальными сметами и актами.
+  </p>
+  <p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">
+    1.1.1. Этаж: {{object.objectFloor}}.
   </p>
   <p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">
     1.2. Наименование, состав и описание работ: {{object.objectDescription}}
@@ -116,8 +119,9 @@ export const repairTemplateContract = `
         <p style="text-align: center; font-weight: bold; margin: 0 0 10pt;">ПОДРЯДЧИК</p>
         <p style="margin: 0 0 6pt;"><strong>{{executor.companyName}}</strong></p>
         <p style="margin: 0 0 4pt;">Юридический адрес: {{executor.legalAddress}}</p>
-        <p style="margin: 0 0 4pt;">Фактический адрес: {{executor.actualAddress}}</p>
-        <p style="margin: 0 0 4pt;">ИНН {{executor.inn}}, КПП {{executor.kpp}}, ОГРН {{executor.ogrn}}</p>
+        <p style="margin: 0 0 4pt;">Адрес для корреспонденции: {{executor.actualAddress}}</p>
+        <p style="margin: 0 0 4pt;">{{executor.innKppRegLine}}</p>
+        <p style="margin: 0 0 4pt;">E-mail: {{executor.email}}</p>
         <p style="margin: 0 0 4pt;">Банковские реквизиты:</p>
         <p style="margin: 0 0 12pt; white-space: pre-wrap;">{{executor.bankDetails}}</p>
         <p style="margin: 24pt 0 4pt;">________________________ / {{executor.directorName}}</p>

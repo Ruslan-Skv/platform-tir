@@ -3,7 +3,6 @@ import {
   ArrayMaxSize,
   IsArray,
   IsEnum,
-  IsIn,
   IsOptional,
   IsString,
   MaxLength,
@@ -11,60 +10,45 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class ExecutorProfileDto {
+export class SignatoryProfileDto {
   @IsString()
   @MaxLength(160)
   title: string;
 
+  /** Связь с пользователем CRM (та же сущность, что в разделе «Менеджеры»). */
   @IsOptional()
-  @IsIn(['COMPANY', 'ENTREPRENEUR'])
-  kind?: 'COMPANY' | 'ENTREPRENEUR';
+  @IsString()
+  @MaxLength(40)
+  crmUserId?: string;
 
   @IsOptional()
   @IsString()
-  companyName?: string;
+  directorNameNominative?: string;
 
   @IsOptional()
   @IsString()
-  inn?: string;
+  directorNameGenitive?: string;
 
   @IsOptional()
   @IsString()
-  kpp?: string;
+  basis?: string;
 
   @IsOptional()
   @IsString()
-  ogrn?: string;
+  salesOffice?: string;
 
   @IsOptional()
   @IsString()
-  ogrnip?: string;
-
-  @IsOptional()
-  @IsString()
-  legalAddress?: string;
-
-  @IsOptional()
-  @IsString()
-  actualAddress?: string;
-
-  @IsOptional()
-  @IsString()
-  bankDetails?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(320)
-  email?: string;
+  officePhone?: string;
 }
 
-export class SetGlobalExecutorProfilesDto {
+export class SetGlobalSignatoryProfilesDto {
   @IsEnum(ContractDocumentPackageKind)
   kind: ContractDocumentPackageKind;
 
   @IsArray()
-  @ArrayMaxSize(50)
+  @ArrayMaxSize(80)
   @ValidateNested({ each: true })
-  @Type(() => ExecutorProfileDto)
-  items: ExecutorProfileDto[];
+  @Type(() => SignatoryProfileDto)
+  items: SignatoryProfileDto[];
 }

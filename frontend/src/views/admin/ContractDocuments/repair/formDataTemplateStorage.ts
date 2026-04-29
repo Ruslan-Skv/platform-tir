@@ -42,23 +42,35 @@ export function parseTemplateOverrides(
 /** Убирает служебные ключи перед merge полей «Данные». */
 export function stripInternalFormDataKeys(raw: unknown): unknown {
   if (!raw || typeof raw !== 'object') return raw;
-  const { _templateOverrides: _t, ...rest } = raw as Record<string, unknown>;
+  const {
+    _templateOverrides: _t,
+    _contractTemplateId: _ct,
+    ...rest
+  } = raw as Record<string, unknown>;
   return rest;
 }
 
 export function mergeFormDataFromStorage(raw: unknown): {
   form: RepairPackageFormData;
   templateOverrides: Partial<Record<RepairDocumentTemplateTabId, string>>;
+  contractTemplateId: string | null;
 } {
+  const root = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : null;
+  const contractTemplateId =
+    root && typeof root._contractTemplateId === 'string' && root._contractTemplateId.trim()
+      ? root._contractTemplateId.trim()
+      : null;
   return {
     form: mergeRepairPackageFormData(stripInternalFormDataKeys(raw)),
     templateOverrides: parseTemplateOverrides(raw),
+    contractTemplateId,
   };
 }
 
 export function buildPersistedFormData(
   form: RepairPackageFormData,
-  templateOverrides: Partial<Record<RepairDocumentTemplateTabId, string>>
+  templateOverrides: Partial<Record<RepairDocumentTemplateTabId, string>>,
+  contractTemplateId?: string | null
 ): Record<string, unknown> {
   const base = { ...(form as unknown as Record<string, unknown>) };
   const cleaned = Object.fromEntries(
@@ -68,6 +80,9 @@ export function buildPersistedFormData(
   ) as Record<string, string>;
   if (Object.keys(cleaned).length > 0) {
     base._templateOverrides = cleaned;
+  }
+  if (contractTemplateId && contractTemplateId.trim()) {
+    base._contractTemplateId = contractTemplateId.trim();
   }
   return base;
 }

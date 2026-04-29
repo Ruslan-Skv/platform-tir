@@ -63,6 +63,16 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     label: 'Оформление договоров — Наши реквизиты',
     path: '/admin/contract-documents/requisites',
   },
+  {
+    id: 'admin.contract-documents.signatories',
+    label: 'Оформление договоров — Подписанты',
+    path: '/admin/contract-documents/signatories',
+  },
+  {
+    id: 'admin.contract-documents.templates',
+    label: 'Оформление договоров — Библиотека шаблонов',
+    path: '/admin/contract-documents/templates',
+  },
   { id: 'admin.content', label: 'Контент', path: '/admin/content' },
   { id: 'admin.content.home', label: 'Главная страница', path: '/admin/content/home' },
   { id: 'admin.content.hero', label: 'Первый блок', path: '/admin/content/hero' },
