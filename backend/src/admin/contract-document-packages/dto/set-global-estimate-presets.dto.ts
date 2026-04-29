@@ -1,0 +1,65 @@
+import { ContractDocumentPackageKind } from '@prisma/client';
+import { Type } from 'class-transformer';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsEnum,
+  IsObject,
+  IsOptional,
+  IsString,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
+
+export class ContractEstimatePresetDto {
+  @IsOptional()
+  @IsObject()
+  snapshot?: {
+    total: number;
+    rooms: Array<{
+      name: string;
+      total: number;
+      lines: Array<{
+        name: string;
+        unit: string;
+        quantity: number;
+        price: number;
+        amount: number;
+      }>;
+    }>;
+  } | null;
+
+  @IsString()
+  @MaxLength(80)
+  id: string;
+
+  @IsString()
+  @MaxLength(160)
+  title: string;
+
+  @IsString()
+  @MaxLength(120)
+  categorySlug: string;
+
+  @IsString()
+  @MaxLength(200)
+  categoryName: string;
+
+  @IsString()
+  calculatorDraft: string;
+
+  @IsOptional()
+  @IsString()
+  updatedAt?: string;
+}
+
+export class SetGlobalEstimatePresetsDto {
+  @IsEnum(ContractDocumentPackageKind)
+  kind: ContractDocumentPackageKind;
+
+  @IsArray()
+  @ArrayMaxSize(200)
+  @ValidateNested({ each: true })
+  @Type(() => ContractEstimatePresetDto)
+  items: ContractEstimatePresetDto[];
+}

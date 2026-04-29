@@ -16,6 +16,10 @@ import {
   SetGlobalSignatoryProfilesDto,
   SignatoryProfileDto,
 } from './dto/set-global-signatory-profiles.dto';
+import {
+  ContractEstimatePresetDto,
+  SetGlobalEstimatePresetsDto,
+} from './dto/set-global-estimate-presets.dto';
 import { SetGlobalContractTemplateDto } from './dto/set-global-contract-template.dto';
 import { UpdateContractDocumentPackageDto } from './dto/update-contract-document-package.dto';
 
@@ -25,6 +29,7 @@ export class ContractDocumentPackagesService {
   private static readonly EXECUTOR_PROFILES_TAB = 'executor_profiles';
   private static readonly SIGNATORY_PROFILES_TAB = 'signatory_profiles';
   private static readonly CONTRACT_TEMPLATES_TAB = 'contract_templates';
+  private static readonly ESTIMATE_PRESETS_TAB = 'estimate_presets';
 
   private async assertCrmContractExists(contractId: string) {
     const row = await this.prisma.contract.findUnique({
@@ -93,7 +98,18 @@ export class ContractDocumentPackagesService {
   }
 
   private assertGlobalTab(tab: string) {
-    const allowed = new Set(['contract']);
+    const allowed = new Set([
+      'contract',
+      'actStart',
+      'actAcceptance',
+      'cashOrder',
+      'questionnaire1',
+      'questionnaire2',
+      'addendum',
+      'workOrder',
+      'workOrderAddendum',
+      'productionLog',
+    ]);
     if (!allowed.has(tab)) {
       throw new BadRequestException(`Недопустимый tab: ${tab}`);
     }
@@ -249,6 +265,48 @@ export class ContractDocumentPackagesService {
       create: {
         kind: dto.kind,
         tab: ContractDocumentPackagesService.SIGNATORY_PROFILES_TAB,
+        html: payload,
+        updatedById: updatedById ?? null,
+      },
+      update: {
+        html: payload,
+        updatedById: updatedById ?? null,
+      },
+      select: { id: true, kind: true, tab: true, updatedAt: true },
+    });
+    return row;
+  }
+
+  async getGlobalEstimatePresets(kind: ContractDocumentPackageKind) {
+    const row = await this.prisma.contractDocumentGlobalTemplate.findUnique({
+      where: {
+        kind_tab: { kind, tab: ContractDocumentPackagesService.ESTIMATE_PRESETS_TAB },
+      },
+      select: { html: true, updatedAt: true },
+    });
+    if (!row) {
+      return { items: [] as ContractEstimatePresetDto[], updatedAt: null as string | null };
+    }
+    try {
+      const parsed = JSON.parse(row.html) as { items?: ContractEstimatePresetDto[] };
+      return {
+        items: Array.isArray(parsed?.items) ? parsed.items : [],
+        updatedAt: row.updatedAt.toISOString(),
+      };
+    } catch {
+      return { items: [] as ContractEstimatePresetDto[], updatedAt: row.updatedAt.toISOString() };
+    }
+  }
+
+  async setGlobalEstimatePresets(dto: SetGlobalEstimatePresetsDto, updatedById?: string) {
+    const payload = JSON.stringify({ items: dto.items ?? [] });
+    const row = await this.prisma.contractDocumentGlobalTemplate.upsert({
+      where: {
+        kind_tab: { kind: dto.kind, tab: ContractDocumentPackagesService.ESTIMATE_PRESETS_TAB },
+      },
+      create: {
+        kind: dto.kind,
+        tab: ContractDocumentPackagesService.ESTIMATE_PRESETS_TAB,
         html: payload,
         updatedById: updatedById ?? null,
       },

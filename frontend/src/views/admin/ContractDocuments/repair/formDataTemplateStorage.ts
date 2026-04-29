@@ -7,7 +7,6 @@ export type RepairDocumentTemplateTabId = Exclude<RepairDocumentTabId, 'data'>;
 
 const TEMPLATE_TAB_IDS: RepairDocumentTemplateTabId[] = [
   'contract',
-  'estimate',
   'actStart',
   'actAcceptance',
   'cashOrder',

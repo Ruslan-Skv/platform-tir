@@ -26,6 +26,9 @@ function escapeHtml(text: string): string {
 }
 
 function formatTemplateValue(path: string, raw: string, plainCustomer: boolean): string {
+  if (path === 'estimate.roomsHtml') {
+    return raw || '';
+  }
   const trimmed = raw.trim();
   const fallback = path.startsWith('customer.') && !trimmed ? 'Не предоставлено' : trimmed;
   const safe = escapeHtml(fallback || '__________');

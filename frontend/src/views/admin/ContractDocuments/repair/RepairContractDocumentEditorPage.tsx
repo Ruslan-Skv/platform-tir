@@ -6,12 +6,15 @@ import Link from 'next/link';
 
 import { useAuth } from '@/features/auth';
 import {
+  type ContractEstimatePreset,
   type ContractSignatoryProfile,
   type ContractTemplatePreset,
   type ExecutorRequisiteProfile,
+  getContractDocumentEstimatePresets,
   getContractDocumentExecutorProfiles,
   getContractDocumentGlobalTemplate,
   getContractDocumentPackage,
+  getContractDocumentPackages,
   getContractDocumentSignatoryProfiles,
   getContractDocumentTemplatePresets,
   putContractDocumentTemplatePresets,
@@ -45,15 +48,16 @@ import {
 
 /** Встроенный в код шаблон (если в БД нет общего шаблона). */
 const FILE_REPAIR_CONTRACT_TEMPLATE = REPAIR_DOCUMENT_TEMPLATES.contract;
-const TEMPLATE_TAB_IDS = REPAIR_DOCUMENT_TAB_IDS.filter((id) => id !== 'data') as Exclude<
-  RepairDocumentTabId,
-  'data'
->[];
+const TEMPLATE_TAB_IDS = REPAIR_DOCUMENT_TAB_IDS.filter(
+  (id) => id !== 'data' && id !== 'estimate'
+) as Exclude<RepairDocumentTabId, 'data' | 'estimate'>[];
 
-function normalizeTemplateTabId(value: string | undefined): Exclude<RepairDocumentTabId, 'data'> {
+function normalizeTemplateTabId(
+  value: string | undefined
+): Exclude<RepairDocumentTabId, 'data' | 'estimate'> {
   if (!value) return 'contract';
   return (TEMPLATE_TAB_IDS as string[]).includes(value)
-    ? (value as Exclude<RepairDocumentTabId, 'data'>)
+    ? (value as Exclude<RepairDocumentTabId, 'data' | 'estimate'>)
     : 'contract';
 }
 
@@ -71,6 +75,157 @@ function formatMoneyValue(value: number): string {
 
 interface RepairContractDocumentEditorPageProps {
   packageId: string;
+}
+
+type EstimateSnapshotLine = {
+  name: string;
+  unit: string;
+  quantity: number;
+  price: number;
+  amount: number;
+};
+
+type EstimateSnapshotRoom = {
+  name: string;
+  total: number;
+  lines: EstimateSnapshotLine[];
+};
+
+type EstimateSnapshot = {
+  total: number;
+  rooms: EstimateSnapshotRoom[];
+};
+
+function mergeEstimateSnapshots(
+  parts: Array<{ presetTitle: string; snapshot: EstimateSnapshot | null }>
+): EstimateSnapshot | null {
+  const rooms: EstimateSnapshotRoom[] = [];
+  let total = 0;
+  for (const part of parts) {
+    if (!part.snapshot) continue;
+    total += part.snapshot.total;
+    for (const room of part.snapshot.rooms) {
+      rooms.push({
+        ...room,
+        name: `${part.presetTitle} — ${room.name}`,
+      });
+    }
+  }
+  if (rooms.length === 0) return null;
+  return { total, rooms };
+}
+
+function formatCombinedEstimateNotes(
+  selectedPresets: ContractEstimatePreset[],
+  mergedSnapshot: EstimateSnapshot | null
+): string {
+  if (selectedPresets.length === 0) return '';
+  const blocks: string[] = selectedPresets.map((preset, idx) => {
+    const localSnapshot = preset.snapshot ?? parseEstimateSnapshotFromDraft(preset.calculatorDraft);
+    const localText = formatEstimateSnapshotNotes(preset, localSnapshot);
+    return `${idx + 1}) ${localText}`;
+  });
+  if (!mergedSnapshot) return blocks.join('\n\n');
+  return [
+    `Объединённая смета (${selectedPresets.length} расч.): ${formatMoneyValue(mergedSnapshot.total)}`,
+    '',
+    ...blocks,
+  ].join('\n');
+}
+
+function estimateTotalToContractFields(total: number | null): {
+  totalAmount: string;
+  totalAmountWords: string;
+  recommendedPrepayment: string;
+} {
+  if (total === null) {
+    return {
+      totalAmount: '',
+      totalAmountWords: '',
+      recommendedPrepayment: '',
+    };
+  }
+  const totalAmount = total.toFixed(2).replace('.', ',');
+  return {
+    totalAmount,
+    totalAmountWords: amountToRussianWords(totalAmount),
+    recommendedPrepayment: formatMoneyValue(total * 0.7),
+  };
+}
+
+type PersistedCalculatorDraftV1 = {
+  v: 1;
+  activeCalcId: string;
+  calcs: Array<{
+    id: string;
+    name: string;
+    collapsed: boolean;
+    lines: Array<{ itemId: string; quantity: number }>;
+  }>;
+};
+
+function parseEstimateSnapshotFromDraft(draftRaw: string): EstimateSnapshot | null {
+  try {
+    const parsed = JSON.parse(draftRaw) as PersistedCalculatorDraftV1;
+    if (!parsed || parsed.v !== 1 || !Array.isArray(parsed.calcs)) return null;
+
+    const rooms: EstimateSnapshotRoom[] = [];
+    for (const calc of parsed.calcs) {
+      const roomLines: EstimateSnapshotLine[] = [];
+      for (const rawLine of calc.lines ?? []) {
+        if (!rawLine?.itemId || typeof rawLine.quantity !== 'number' || rawLine.quantity <= 0)
+          continue;
+        const quantity = Number(rawLine.quantity);
+        roomLines.push({
+          name: `Позиция ${rawLine.itemId}`,
+          unit: 'ед.',
+          quantity,
+          price: 0,
+          amount: 0,
+        });
+      }
+      const roomTotal = roomLines.reduce((sum, line) => sum + line.amount, 0);
+      if (roomLines.length > 0) {
+        rooms.push({
+          name: calc.name?.trim() || 'Помещение',
+          total: roomTotal,
+          lines: roomLines,
+        });
+      }
+    }
+
+    if (rooms.length === 0) return null;
+    return {
+      rooms,
+      total: rooms.reduce((sum, room) => sum + room.total, 0),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function formatEstimateSnapshotNotes(
+  preset: ContractEstimatePreset,
+  snapshot: EstimateSnapshot | null
+): string {
+  if (!snapshot) {
+    return `Выбранный расчёт: ${preset.title} (${preset.categoryName}).`;
+  }
+  const lines: string[] = [];
+  lines.push(`Расчёт: ${preset.title}`);
+  lines.push(`Категория: ${preset.categoryName}`);
+  lines.push(`Итого: ${formatMoneyValue(snapshot.total)}`);
+  lines.push('');
+  snapshot.rooms.forEach((room, roomIndex) => {
+    lines.push(`${roomIndex + 1}. ${room.name} — ${formatMoneyValue(room.total)}`);
+    room.lines.forEach((line) => {
+      lines.push(
+        `   - ${line.name}: ${line.quantity} ${line.unit} × ${formatMoneyValue(line.price)} = ${formatMoneyValue(line.amount)}`
+      );
+    });
+    lines.push('');
+  });
+  return lines.join('\n').trim();
 }
 
 export function RepairContractDocumentEditorPage({
@@ -115,6 +270,18 @@ export function RepairContractDocumentEditorPage({
   const [templateDraftTitle, setTemplateDraftTitle] = useState('');
   const [templateDraftHtml, setTemplateDraftHtml] = useState('');
   const [templateSaving, setTemplateSaving] = useState(false);
+  const [estimatePresets, setEstimatePresets] = useState<ContractEstimatePreset[]>([]);
+  const [showOnlyUnboundEstimates, setShowOnlyUnboundEstimates] = useState(false);
+  const [estimatePresetToAttach, setEstimatePresetToAttach] = useState('');
+  const [draggingEstimatePresetId, setDraggingEstimatePresetId] = useState<string | null>(null);
+  const [repairPackages, setRepairPackages] = useState<
+    Array<{
+      id: string;
+      title: string | null;
+      formData: Record<string, unknown>;
+      crmContract?: { contractNumber: string; contractDate: string } | null;
+    }>
+  >([]);
 
   const templatePresetsByTab = useMemo(() => {
     const map = new Map<RepairDocumentTemplateTabId, ContractTemplatePreset[]>();
@@ -147,25 +314,31 @@ export function RepairContractDocumentEditorPage({
     setLoading(true);
     setError(null);
     try {
-      const [row, globalTpl, profilesRes, signatoryRes, templateRes] = await Promise.all([
-        getContractDocumentPackage(packageId),
-        getContractDocumentGlobalTemplate('REPAIR', 'contract').catch(() => ({
-          html: null as string | null,
-          updatedAt: null as string | null,
-        })),
-        getContractDocumentExecutorProfiles('REPAIR').catch(() => ({
-          items: [] as ExecutorRequisiteProfile[],
-          updatedAt: null as string | null,
-        })),
-        getContractDocumentSignatoryProfiles('REPAIR').catch(() => ({
-          items: [] as ContractSignatoryProfile[],
-          updatedAt: null as string | null,
-        })),
-        getContractDocumentTemplatePresets('REPAIR').catch(() => ({
-          items: [] as ContractTemplatePreset[],
-          updatedAt: null as string | null,
-        })),
-      ]);
+      const [row, globalTpl, profilesRes, signatoryRes, templateRes, estimateRes, packagesRes] =
+        await Promise.all([
+          getContractDocumentPackage(packageId),
+          getContractDocumentGlobalTemplate('REPAIR', 'contract').catch(() => ({
+            html: null as string | null,
+            updatedAt: null as string | null,
+          })),
+          getContractDocumentExecutorProfiles('REPAIR').catch(() => ({
+            items: [] as ExecutorRequisiteProfile[],
+            updatedAt: null as string | null,
+          })),
+          getContractDocumentSignatoryProfiles('REPAIR').catch(() => ({
+            items: [] as ContractSignatoryProfile[],
+            updatedAt: null as string | null,
+          })),
+          getContractDocumentTemplatePresets('REPAIR').catch(() => ({
+            items: [] as ContractTemplatePreset[],
+            updatedAt: null as string | null,
+          })),
+          getContractDocumentEstimatePresets('REPAIR').catch(() => ({
+            items: [] as ContractEstimatePreset[],
+            updatedAt: null as string | null,
+          })),
+          getContractDocumentPackages('REPAIR').catch(() => []),
+        ]);
       if (row.kind !== 'REPAIR') {
         setError('Этот пакет относится к другому направлению.');
         return;
@@ -178,12 +351,45 @@ export function RepairContractDocumentEditorPage({
         contractTemplateId,
         templatePresetIds,
       } = mergeFormDataFromStorage(row.formData);
-      setForm(mergedForm);
+      const normalizedEstimateIds = [
+        ...new Set([
+          ...(Array.isArray(mergedForm.estimate.selectedPresetIds)
+            ? mergedForm.estimate.selectedPresetIds.filter(
+                (x): x is string => typeof x === 'string' && x.trim().length > 0
+              )
+            : []),
+          ...(mergedForm.estimate.selectedPresetId?.trim()
+            ? [mergedForm.estimate.selectedPresetId.trim()]
+            : []),
+        ]),
+      ];
+      setForm({
+        ...mergedForm,
+        estimate: {
+          ...mergedForm.estimate,
+          selectedPresetIds: normalizedEstimateIds,
+          selectedPresetId: normalizedEstimateIds[0] ?? '',
+        },
+      });
       setTemplateOverrides(ov);
       setGlobalContractState({ loaded: true, html: globalTpl.html });
       setExecutorProfiles(profilesRes.items ?? []);
       setSignatoryProfiles(signatoryRes.items ?? []);
       const templates = templateRes.items ?? [];
+      setEstimatePresets(estimateRes.items ?? []);
+      setRepairPackages(
+        (packagesRes ?? []).map((p) => ({
+          id: p.id,
+          title: p.title ?? null,
+          formData: (p.formData ?? {}) as Record<string, unknown>,
+          crmContract: p.crmContract
+            ? {
+                contractNumber: p.crmContract.contractNumber,
+                contractDate: p.crmContract.contractDate,
+              }
+            : null,
+        }))
+      );
       const normalizedTemplates = templates.map((it) => ({
         ...it,
         tabId: normalizeTemplateTabId(it.tabId),
@@ -405,6 +611,121 @@ export function RepairContractDocumentEditorPage({
     setDirty(true);
   };
 
+  const estimateUsageById = useMemo(() => {
+    const map = new Map<
+      string,
+      Array<{
+        packageId: string;
+        packageTitle: string;
+        contractNumber: string;
+        contractDate: string;
+      }>
+    >();
+    for (const pkg of repairPackages) {
+      const estimateRaw = (pkg.formData?.estimate ?? null) as Record<string, unknown> | null;
+      const ids: string[] = [];
+      if (estimateRaw && typeof estimateRaw.selectedPresetId === 'string') {
+        const legacy = estimateRaw.selectedPresetId.trim();
+        if (legacy) ids.push(legacy);
+      }
+      if (estimateRaw && Array.isArray(estimateRaw.selectedPresetIds)) {
+        for (const id of estimateRaw.selectedPresetIds) {
+          if (typeof id === 'string' && id.trim()) ids.push(id.trim());
+        }
+      }
+      const uniqueIds = [...new Set(ids)];
+      if (uniqueIds.length === 0 || pkg.id === packageId) continue;
+      const row = {
+        packageId: pkg.id,
+        packageTitle: pkg.title?.trim() || `Пакет ${pkg.id.slice(0, 8)}`,
+        contractNumber: pkg.crmContract?.contractNumber ?? '—',
+        contractDate: pkg.crmContract?.contractDate
+          ? new Date(pkg.crmContract.contractDate).toLocaleDateString('ru-RU')
+          : '—',
+      };
+      for (const presetId of uniqueIds) {
+        map.set(presetId, [...(map.get(presetId) ?? []), row]);
+      }
+    }
+    return map;
+  }, [repairPackages, packageId]);
+  const visibleEstimatePresets = useMemo(
+    () =>
+      estimatePresets.filter((preset) => {
+        if (!showOnlyUnboundEstimates) return true;
+        return (estimateUsageById.get(preset.id)?.length ?? 0) === 0;
+      }),
+    [estimatePresets, showOnlyUnboundEstimates, estimateUsageById]
+  );
+
+  const applyEstimatePresetIdsToForm = (presetIds: string[]) => {
+    const uniqueIds = [...new Set(presetIds.filter(Boolean))];
+    if (uniqueIds.length === 0) {
+      setForm((p) => ({
+        ...p,
+        estimate: {
+          ...p.estimate,
+          selectedPresetId: '',
+          selectedPresetIds: [],
+          snapshot: null,
+          notes: '',
+        },
+      }));
+      setDirty(true);
+      return;
+    }
+    const selectedPresets = uniqueIds
+      .map((id) => estimatePresets.find((it) => it.id === id))
+      .filter((x): x is ContractEstimatePreset => Boolean(x));
+    const mergedSnapshot = mergeEstimateSnapshots(
+      selectedPresets.map((preset) => ({
+        presetTitle: preset.title,
+        snapshot: preset.snapshot ?? parseEstimateSnapshotFromDraft(preset.calculatorDraft),
+      }))
+    );
+    const notes = formatCombinedEstimateNotes(selectedPresets, mergedSnapshot);
+    const contractTotals = estimateTotalToContractFields(mergedSnapshot?.total ?? null);
+    setForm((p) => ({
+      ...p,
+      contract: {
+        ...p.contract,
+        totalAmount: contractTotals.totalAmount,
+        totalAmountWords: contractTotals.totalAmountWords,
+        recommendedPrepayment: contractTotals.recommendedPrepayment,
+      },
+      estimate: {
+        ...p.estimate,
+        selectedPresetId: uniqueIds[0] ?? '',
+        selectedPresetIds: uniqueIds,
+        snapshot: mergedSnapshot,
+        notes,
+      },
+    }));
+    setDirty(true);
+  };
+
+  const addEstimatePresetToForm = (presetId: string) => {
+    if (!presetId) return;
+    applyEstimatePresetIdsToForm([...(form.estimate.selectedPresetIds ?? []), presetId]);
+  };
+
+  const removeEstimatePresetFromForm = (presetId: string) => {
+    applyEstimatePresetIdsToForm(
+      (form.estimate.selectedPresetIds ?? []).filter((id) => id !== presetId)
+    );
+  };
+
+  const moveEstimatePresetInForm = (sourceId: string, targetId: string) => {
+    if (!sourceId || !targetId || sourceId === targetId) return;
+    const ids = [...(form.estimate.selectedPresetIds ?? [])];
+    const from = ids.indexOf(sourceId);
+    const to = ids.indexOf(targetId);
+    if (from < 0 || to < 0) return;
+    const [moved] = ids.splice(from, 1);
+    ids.splice(to, 0, moved);
+    applyEstimatePresetIdsToForm(ids);
+  };
+
   const contractTemplateSource = useMemo(() => {
     if (activeTab !== 'contract') return '';
     return templateDraftHtml || resolveTemplateHtml('contract');
@@ -528,7 +849,10 @@ export function RepairContractDocumentEditorPage({
     await persistContractTemplatePresets(next);
     const fallbackId = next.find((it) => it.isDefault)?.id ?? next[0]?.id ?? '';
     setEditingTemplateId(fallbackId);
-    setSelectedContractTemplateId((prev) => (prev === editingTemplateId ? fallbackId : prev));
+    setSelectedTemplateIds((prev) => ({
+      ...prev,
+      contract: prev.contract === editingTemplateId ? fallbackId : prev.contract,
+    }));
     const fallback = next.find((it) => it.id === fallbackId);
     setTemplateDraftTitle(fallback?.title ?? '');
     setTemplateDraftHtml(fallback?.html ?? '');
@@ -1072,7 +1396,8 @@ export function RepairContractDocumentEditorPage({
                     <input
                       id="cta"
                       value={form.contract.totalAmount}
-                      onChange={(e) => updateContract('totalAmount', e.target.value)}
+                      readOnly
+                      className={styles.autoFilledInput}
                     />
                   </div>
                   <div className={`${styles.field} ${styles.contractInlineField}`}>
@@ -1497,6 +1822,155 @@ export function RepairContractDocumentEditorPage({
             </Link>
             . На вкладке «Договор» можно править HTML и вставлять плейсхолдеры.
           </p>
+        </div>
+      ) : activeTab === 'estimate' ? (
+        <div className={`${styles.blockData} ${styles.dataCompact}`}>
+          <div className={styles.formGrid}>
+            <div className={styles.sectionCard}>
+              <h3 className={styles.sectionTitle}>Смета</h3>
+              <div className={styles.sectionFields}>
+                <div className={styles.field}>
+                  <label htmlFor="estimate_select">Добавить расчёт в договор</label>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+                    <button
+                      type="button"
+                      className={showOnlyUnboundEstimates ? styles.primaryBtn : styles.secondaryBtn}
+                      onClick={() => setShowOnlyUnboundEstimates((prev) => !prev)}
+                    >
+                      {showOnlyUnboundEstimates ? 'Показывать все' : 'Только непривязанные'}
+                    </button>
+                  </div>
+                  <select
+                    id="estimate_select"
+                    value={estimatePresetToAttach}
+                    onChange={(e) => setEstimatePresetToAttach(e.target.value)}
+                  >
+                    <option value="">— выбрать расчёт —</option>
+                    {visibleEstimatePresets.map((preset) => (
+                      <option key={preset.id} value={preset.id}>
+                        {preset.title} · {preset.categoryName} ·{' '}
+                        {(estimateUsageById.get(preset.id)?.length ?? 0) > 0
+                          ? `Привязан (${estimateUsageById.get(preset.id)?.length ?? 0})`
+                          : 'Не привязан'}
+                      </option>
+                    ))}
+                  </select>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                    <button
+                      type="button"
+                      className={styles.primaryBtn}
+                      disabled={!estimatePresetToAttach}
+                      onClick={() => {
+                        addEstimatePresetToForm(estimatePresetToAttach);
+                        setEstimatePresetToAttach('');
+                      }}
+                    >
+                      Прикрепить расчёт
+                    </button>
+                  </div>
+                  {visibleEstimatePresets.length === 0 ? (
+                    <p className={styles.hint} style={{ margin: '4px 0 0' }}>
+                      Нет расчётов для текущего фильтра.
+                    </p>
+                  ) : null}
+                </div>
+                {(form.estimate.selectedPresetIds?.length ?? 0) > 0 ? (
+                  <div className={`${styles.field} ${styles.fieldSpanAll}`}>
+                    <label>Прикреплённые расчёты</label>
+                    <div style={{ display: 'grid', gap: 6 }}>
+                      {(form.estimate.selectedPresetIds ?? []).map((presetId) => {
+                        const preset = estimatePresets.find((x) => x.id === presetId);
+                        const usageCount = estimateUsageById.get(presetId)?.length ?? 0;
+                        return (
+                          <div
+                            key={presetId}
+                            draggable
+                            onDragStart={() => setDraggingEstimatePresetId(presetId)}
+                            onDragEnd={() => setDraggingEstimatePresetId(null)}
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              if (draggingEstimatePresetId) {
+                                moveEstimatePresetInForm(draggingEstimatePresetId, presetId);
+                              }
+                              setDraggingEstimatePresetId(null);
+                            }}
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              gap: 8,
+                              alignItems: 'center',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: 8,
+                              padding: '6px 8px',
+                              cursor: 'grab',
+                              opacity: draggingEstimatePresetId === presetId ? 0.6 : 1,
+                            }}
+                          >
+                            <div style={{ minWidth: 0 }}>
+                              <strong>{preset?.title ?? presetId}</strong>
+                              <span className={styles.hint}>
+                                {' '}
+                                · {preset?.categoryName ?? 'Категория не определена'} ·{' '}
+                                {usageCount > 0 ? `Привязан (${usageCount})` : 'Не привязан'}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              className={styles.secondaryBtn}
+                              onClick={() => removeEstimatePresetFromForm(presetId)}
+                            >
+                              Убрать
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+                {form.estimate.selectedPresetIds?.length ? (
+                  <p className={styles.hint} style={{ gridColumn: '1 / -1', margin: 0 }}>
+                    {(form.estimate.selectedPresetIds ?? []).every(
+                      (id) => (estimateUsageById.get(id)?.length ?? 0) === 0
+                    )
+                      ? 'Все прикреплённые расчёты не привязаны к другим договорам.'
+                      : `Есть расчёты, уже привязанные к договорам: ${[
+                          ...new Set(
+                            (form.estimate.selectedPresetIds ?? [])
+                              .flatMap((id) => estimateUsageById.get(id) ?? [])
+                              .map((u) => `№ ${u.contractNumber} от ${u.contractDate}`)
+                          ),
+                        ].join('; ')}`}
+                  </p>
+                ) : null}
+                <div className={`${styles.field} ${styles.fieldSpanAll}`}>
+                  <label>Содержимое объединённой сметы</label>
+                  <div
+                    className={styles.docPane}
+                    style={{ minHeight: 160, whiteSpace: 'pre-wrap' }}
+                  >
+                    {form.estimate.notes || 'Расчёты не прикреплены.'}
+                  </div>
+                </div>
+                <div className={`${styles.field} ${styles.fieldSpanAll}`}>
+                  <label htmlFor="estimate_notes">Комментарий к смете</label>
+                  <textarea
+                    id="estimate_notes"
+                    value={form.estimate.notes}
+                    onChange={(e) => updateEstimate('notes', e.target.value)}
+                    placeholder="При необходимости добавьте комментарий для коллег"
+                  />
+                </div>
+                <p className={styles.hint} style={{ margin: 0 }}>
+                  Создание и редактирование расчётов выполняется в разделе{' '}
+                  <Link className={styles.link} href="/admin/contract-documents/estimates">
+                    «Расчёты»
+                  </Link>
+                  .
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
         <>

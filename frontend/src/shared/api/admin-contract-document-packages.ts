@@ -107,6 +107,29 @@ export interface ContractTemplatePreset {
   isDefault?: boolean;
 }
 
+export interface ContractEstimatePreset {
+  id: string;
+  title: string;
+  categorySlug: string;
+  categoryName: string;
+  calculatorDraft: string;
+  snapshot?: {
+    total: number;
+    rooms: Array<{
+      name: string;
+      total: number;
+      lines: Array<{
+        name: string;
+        unit: string;
+        quantity: number;
+        price: number;
+        amount: number;
+      }>;
+    }>;
+  } | null;
+  updatedAt?: string;
+}
+
 export async function getContractDocumentPackages(
   kind?: ContractDocumentPackageKind
 ): Promise<ContractDocumentPackage[]> {
@@ -283,6 +306,35 @@ export async function putContractDocumentTemplatePresets(body: {
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { message?: string };
     throw new Error(err.message || 'Не удалось сохранить шаблоны договора');
+  }
+  return res.json();
+}
+
+export async function getContractDocumentEstimatePresets(
+  kind: ContractDocumentPackageKind
+): Promise<{ items: ContractEstimatePreset[]; updatedAt: string | null }> {
+  const qs = new URLSearchParams({ kind });
+  const url = `${getApiBaseUrl()}/admin/contract-document-packages/estimate-presets?${qs}`;
+  const res = await apiFetch(url, { headers: getAdminAuthHeaders() });
+  if (!res.ok) throw new Error('Не удалось загрузить расчёты');
+  return res.json();
+}
+
+export async function putContractDocumentEstimatePresets(body: {
+  kind: ContractDocumentPackageKind;
+  items: ContractEstimatePreset[];
+}): Promise<{ id: string; kind: string; tab: string; updatedAt: string }> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/estimate-presets`,
+    {
+      method: 'PUT',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err.message || 'Не удалось сохранить расчёты');
   }
   return res.json();
 }

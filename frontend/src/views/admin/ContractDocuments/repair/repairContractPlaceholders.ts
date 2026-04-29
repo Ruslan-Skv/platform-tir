@@ -97,6 +97,13 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
   },
   {
     title: 'Смета',
-    items: [{ path: 'estimate.notes', label: 'Текст сметы (вкладка «Данные»)' }],
+    items: [
+      { path: 'estimate.notes', label: 'Текст сметы (автосводка/комментарий)' },
+      { path: 'estimate.total', label: 'Итоговая сумма сметы' },
+      { path: 'estimate.rooms', label: 'Список помещений и позиций (текстом)' },
+      { path: 'estimate.roomsHtml', label: 'Смета таблицей (готовый HTML-блок)' },
+      { path: 'estimate.roomsCount', label: 'Количество помещений в смете' },
+      { path: 'estimate.linesCount', label: 'Количество позиций в смете' },
+    ],
   },
 ];

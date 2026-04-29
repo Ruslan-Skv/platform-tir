@@ -24,6 +24,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.contract-documents.instruction',
     'admin.contract-documents.requisites',
     'admin.contract-documents.signatories',
+    'admin.contract-documents.estimates',
     'admin.content',
     'admin.content.home',
     'admin.content.hero',
@@ -151,6 +152,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.contract-documents.instruction',
     'admin.contract-documents.requisites',
     'admin.contract-documents.signatories',
+    'admin.contract-documents.estimates',
   ],
   TECHNOLOGIST: [
     'admin',
@@ -166,6 +168,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.contract-documents.instruction',
     'admin.contract-documents.requisites',
     'admin.contract-documents.signatories',
+    'admin.contract-documents.estimates',
   ],
   PARTNER: [
     'admin',
@@ -188,6 +191,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.contract-documents.instruction',
     'admin.contract-documents.requisites',
     'admin.contract-documents.signatories',
+    'admin.contract-documents.estimates',
   ],
   LEAD_SPECIALIST_FURNITURE: [
     'admin',
@@ -202,6 +206,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.contract-documents.instruction',
     'admin.contract-documents.requisites',
     'admin.contract-documents.signatories',
+    'admin.contract-documents.estimates',
   ],
   LEAD_SPECIALIST_WINDOWS_DOORS: [
     'admin',
@@ -216,6 +221,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.contract-documents.instruction',
     'admin.contract-documents.requisites',
     'admin.contract-documents.signatories',
+    'admin.contract-documents.estimates',
   ],
   SURVEYOR: ['admin', 'admin.crm', 'admin.crm.measurements', 'admin.crm.customers', 'admin.forms'],
   DRIVER: ['admin', 'admin.crm', 'admin.crm.contracts'],

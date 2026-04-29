@@ -23,6 +23,7 @@ import { CreateContractDocumentPackageDto } from './dto/create-contract-document
 import { SetGlobalExecutorProfilesDto } from './dto/set-global-executor-profiles.dto';
 import { SetGlobalContractTemplatesDto } from './dto/set-global-contract-templates.dto';
 import { SetGlobalSignatoryProfilesDto } from './dto/set-global-signatory-profiles.dto';
+import { SetGlobalEstimatePresetsDto } from './dto/set-global-estimate-presets.dto';
 import { SetGlobalContractTemplateDto } from './dto/set-global-contract-template.dto';
 import { UpdateContractDocumentPackageDto } from './dto/update-contract-document-package.dto';
 
@@ -93,6 +94,20 @@ export class ContractDocumentPackagesController {
     @Req() req: RequestWithUser,
   ) {
     return this.service.setGlobalContractTemplates(dto, req.user?.id);
+  }
+
+  @Get('estimate-presets')
+  getGlobalEstimatePresets(@Query('kind') kind: string) {
+    const allowed = new Set<string>(Object.values(ContractDocumentPackageKind));
+    if (!kind || !allowed.has(kind)) {
+      throw new BadRequestException('Укажите корректный query-параметр kind');
+    }
+    return this.service.getGlobalEstimatePresets(kind as ContractDocumentPackageKind);
+  }
+
+  @Put('estimate-presets')
+  setGlobalEstimatePresets(@Body() dto: SetGlobalEstimatePresetsDto, @Req() req: RequestWithUser) {
+    return this.service.setGlobalEstimatePresets(dto, req.user?.id);
   }
 
   @Get('executor-profiles')

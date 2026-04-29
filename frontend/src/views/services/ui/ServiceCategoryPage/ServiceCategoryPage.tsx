@@ -368,7 +368,13 @@ const removeDetachedServiceCategory = (
   window.dispatchEvent(new Event('cart-service-restored'));
 };
 
-export function ServiceCategoryPage({ slug }: { slug: string }) {
+export function ServiceCategoryPage({
+  slug,
+  hideAddToCart = false,
+}: {
+  slug: string;
+  hideAddToCart?: boolean;
+}) {
   const searchParams = useSearchParams();
   const roomsParam = searchParams.get('rooms');
   const orderIdParam = searchParams.get('orderId');
@@ -1227,29 +1233,33 @@ export function ServiceCategoryPage({ slug }: { slug: string }) {
                 </div>
               ))}
             </div>
-            <button
-              type="button"
-              className={`${styles.addToCartButton} ${isInCart ? styles.addToCartButtonSuccess : ''}`}
-              onClick={handleAddToCart}
-              disabled={addToCartLoading || isInCart || !hasAnyCalcLines}
-              title={
-                isInCart
-                  ? 'Уже в корзине'
-                  : 'Добавить перечень работ в корзину (1 позиция = 1 категория)'
-              }
-            >
-              {isInCart ? (
-                <CheckCircleIconSolid className={styles.addToCartIcon} />
-              ) : (
-                <ShoppingCartIcon className={styles.addToCartIcon} />
-              )}
-              {addToCartLoading
-                ? 'Добавление...'
-                : isInCart
-                  ? `В корзине${lastAddedTotal != null ? ` · ${formatPrice(lastAddedTotal)}` : ''}`
-                  : 'В корзину'}
-            </button>
-            {addToCartError && <p className={styles.orderError}>{addToCartError}</p>}
+            {!hideAddToCart ? (
+              <>
+                <button
+                  type="button"
+                  className={`${styles.addToCartButton} ${isInCart ? styles.addToCartButtonSuccess : ''}`}
+                  onClick={handleAddToCart}
+                  disabled={addToCartLoading || isInCart || !hasAnyCalcLines}
+                  title={
+                    isInCart
+                      ? 'Уже в корзине'
+                      : 'Добавить перечень работ в корзину (1 позиция = 1 категория)'
+                  }
+                >
+                  {isInCart ? (
+                    <CheckCircleIconSolid className={styles.addToCartIcon} />
+                  ) : (
+                    <ShoppingCartIcon className={styles.addToCartIcon} />
+                  )}
+                  {addToCartLoading
+                    ? 'Добавление...'
+                    : isInCart
+                      ? `В корзине${lastAddedTotal != null ? ` · ${formatPrice(lastAddedTotal)}` : ''}`
+                      : 'В корзину'}
+                </button>
+                {addToCartError && <p className={styles.orderError}>{addToCartError}</p>}
+              </>
+            ) : null}
           </aside>
         )}
       </div>

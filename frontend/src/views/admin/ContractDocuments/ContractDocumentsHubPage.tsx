@@ -43,6 +43,12 @@ export function ContractDocumentsHubPage() {
             Именованные шаблоны договора «Ремонт»: создание, копирование и настройка по умолчанию.
           </p>
         </Link>
+        <Link className={styles.hubCard} href="/admin/contract-documents/estimates">
+          <h2 className={styles.hubCardTitle}>Расчёты</h2>
+          <p className={styles.hubCardHint}>
+            Единый серверный список смет для команды: расчёт в калькуляторе, сохранение и выбор.
+          </p>
+        </Link>
         <div className={`${styles.hubCard} ${styles.hubCardDisabled}`}>
           <h2 className={styles.hubCardTitle}>Окна</h2>
           <p className={styles.hubCardHint}>Раздел будет добавлен позже.</p>

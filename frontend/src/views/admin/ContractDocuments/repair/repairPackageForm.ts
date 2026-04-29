@@ -62,7 +62,26 @@ export interface RepairContractBlock {
 }
 
 export interface RepairEstimateBlock {
-  /** Свободный текст или позже — строки сметы в JSON */
+  /** ID сохранённого серверного расчёта из раздела «Расчёты». */
+  selectedPresetId: string;
+  /** IDs прикреплённых расчётов (для объединения нескольких смет в один договор). */
+  selectedPresetIds: string[];
+  /** Снимок расчёта для договора: сумма и строки по помещениям. */
+  snapshot: {
+    total: number;
+    rooms: Array<{
+      name: string;
+      total: number;
+      lines: Array<{
+        name: string;
+        unit: string;
+        quantity: number;
+        price: number;
+        amount: number;
+      }>;
+    }>;
+  } | null;
+  /** Свободный текст комментария к выбранному расчёту. */
   notes: string;
 }
 
@@ -130,6 +149,9 @@ export function defaultRepairPackageFormData(): RepairPackageFormData {
       workPeriod: '',
     },
     estimate: {
+      selectedPresetId: '',
+      selectedPresetIds: [],
+      snapshot: null,
       notes: '',
     },
   };
@@ -165,8 +187,16 @@ export function mergeRepairPackageFormData(raw: unknown): RepairPackageFormData 
 /** Данные для подстановки в HTML: добавляет вычисляемое поле `executor.innKppRegLine`. */
 export function repairPackageFormForTemplate(form: RepairPackageFormData): RepairPackageFormData & {
   executor: RepairExecutorBlock & { innKppRegLine: string };
+  estimate: RepairEstimateBlock & {
+    total: string;
+    rooms: string;
+    roomsHtml: string;
+    roomsCount: string;
+    linesCount: string;
+  };
 } {
   const { executor } = form;
+  const { estimate } = form;
   const isIp = executor.executorKind === 'ENTREPRENEUR';
   const innKppRegLine = isIp
     ? [
@@ -182,11 +212,90 @@ export function repairPackageFormForTemplate(form: RepairPackageFormData): Repai
       ]
         .filter(Boolean)
         .join(', ');
+
+  const snapshot = estimate.snapshot;
+  const totalValue = snapshot?.total ?? 0;
+  const total = totalValue > 0 ? totalValue.toFixed(2).replace('.', ',') : '';
+  const roomsCount = String(snapshot?.rooms.length ?? 0);
+  const linesCount = String(snapshot?.rooms.reduce((sum, room) => sum + room.lines.length, 0) ?? 0);
+  const rooms = snapshot
+    ? snapshot.rooms
+        .map((room, roomIndex) => {
+          const roomHeader = `${roomIndex + 1}. ${room.name} — ${room.total
+            .toFixed(2)
+            .replace('.', ',')}`;
+          const roomLines = room.lines.map(
+            (line) =>
+              `- ${line.name}: ${line.quantity} ${line.unit} × ${line.price
+                .toFixed(2)
+                .replace('.', ',')} = ${line.amount.toFixed(2).replace('.', ',')}`
+          );
+          return [roomHeader, ...roomLines].join('\n');
+        })
+        .join('\n\n')
+    : '';
+
+  const escapeHtml = (value: string): string =>
+    value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  const roomsHtml = snapshot
+    ? `<table style="width:100%; border-collapse:collapse; margin:8pt 0;">
+  <thead>
+    <tr>
+      <th style="border:1px solid #cbd5e1; padding:6px; text-align:left;">Помещение / позиция</th>
+      <th style="border:1px solid #cbd5e1; padding:6px; text-align:right;">Кол-во</th>
+      <th style="border:1px solid #cbd5e1; padding:6px; text-align:right;">Цена</th>
+      <th style="border:1px solid #cbd5e1; padding:6px; text-align:right;">Сумма</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${snapshot.rooms
+      .map((room) => {
+        const roomHeader = `<tr>
+      <td colspan="4" style="border:1px solid #cbd5e1; padding:6px; font-weight:700; background:#f8fafc;">${escapeHtml(
+        room.name
+      )} — ${room.total.toFixed(2).replace('.', ',')}</td>
+    </tr>`;
+        const roomLines = room.lines
+          .map(
+            (line) => `<tr>
+      <td style="border:1px solid #cbd5e1; padding:6px;">${escapeHtml(line.name)}</td>
+      <td style="border:1px solid #cbd5e1; padding:6px; text-align:right;">${line.quantity} ${escapeHtml(line.unit)}</td>
+      <td style="border:1px solid #cbd5e1; padding:6px; text-align:right;">${line.price.toFixed(2).replace('.', ',')}</td>
+      <td style="border:1px solid #cbd5e1; padding:6px; text-align:right;">${line.amount.toFixed(2).replace('.', ',')}</td>
+    </tr>`
+          )
+          .join('');
+        return `${roomHeader}${roomLines}`;
+      })
+      .join('')}
+    <tr>
+      <td colspan="3" style="border:1px solid #cbd5e1; padding:6px; text-align:right; font-weight:700;">Итого</td>
+      <td style="border:1px solid #cbd5e1; padding:6px; text-align:right; font-weight:700;">${snapshot.total
+        .toFixed(2)
+        .replace('.', ',')}</td>
+    </tr>
+  </tbody>
+</table>`
+    : '';
+
   return {
     ...form,
     executor: {
       ...executor,
       innKppRegLine,
+    },
+    estimate: {
+      ...estimate,
+      total,
+      rooms,
+      roomsHtml,
+      roomsCount,
+      linesCount,
     },
   };
 }

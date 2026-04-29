@@ -109,7 +109,16 @@ export const repairTemplateContract = `
   <h2 style="text-align: center; font-size: 12pt; margin: 16pt 0 8pt;">10. ПРИЛОЖЕНИЯ</h2>
   <p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">
     10.1. Неотъемлемой частью Договора являются: локальная смета / калькуляция (при наличии), иные приложения по
-    согласованию Сторон. Текст из вкладки «Смета» (черновик): <em>{{estimate.notes}}</em>
+    согласованию Сторон.
+  </p>
+  <p style="text-align: justify; margin: 0 0 8pt;">
+    Итоговая сумма сметы: <strong>{{estimate.total}}</strong>
+  </p>
+  <div style="margin: 0 0 10pt;">
+    {{estimate.roomsHtml}}
+  </div>
+  <p style="text-align: justify; margin: 0 0 8pt;">
+    Примечание к смете: <em>{{estimate.notes}}</em>
   </p>
 
   <h2 style="text-align: center; font-size: 12pt; margin: 20pt 0 10pt;">11. РЕКВИЗИТЫ И ПОДПИСИ СТОРОН</h2>

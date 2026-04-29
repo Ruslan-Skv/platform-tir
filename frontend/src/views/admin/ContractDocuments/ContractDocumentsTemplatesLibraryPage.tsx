@@ -34,7 +34,6 @@ type NormalizeMode = 'soft' | 'strict';
 type RepairTemplateTabId = Exclude<RepairDocumentTabId, 'data'>;
 const TEMPLATE_TAB_IDS: RepairTemplateTabId[] = [
   'contract',
-  'estimate',
   'actStart',
   'actAcceptance',
   'cashOrder',

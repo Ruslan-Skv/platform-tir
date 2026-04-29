@@ -73,6 +73,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     label: 'Оформление договоров — Библиотека шаблонов',
     path: '/admin/contract-documents/templates',
   },
+  {
+    id: 'admin.contract-documents.estimates',
+    label: 'Оформление договоров — Расчёты',
+    path: '/admin/contract-documents/estimates',
+  },
   { id: 'admin.content', label: 'Контент', path: '/admin/content' },
   { id: 'admin.content.home', label: 'Главная страница', path: '/admin/content/home' },
   { id: 'admin.content.hero', label: 'Первый блок', path: '/admin/content/hero' },
