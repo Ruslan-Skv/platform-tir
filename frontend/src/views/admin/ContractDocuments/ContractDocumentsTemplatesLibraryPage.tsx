@@ -22,6 +22,25 @@ import styles from './ContractDocuments.module.css';
 
 type ToolButton = { label: string; onClick: () => void; secondary?: boolean };
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function plainTextToParagraphHtml(text: string): string {
+  const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+  if (!normalized) return '';
+  const paragraphs = normalized
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => `<p style="margin: 0 0 8pt;">${escapeHtml(p).replace(/\n/g, '<br />')}</p>`);
+  return paragraphs.join('\n');
+}
+
 export function ContractDocumentsTemplatesLibraryPage() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
@@ -36,7 +55,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const [formatToolbarLevel, setFormatToolbarLevel] = useState<'basic' | 'advanced'>('basic');
   const [formatToolbarQuery, setFormatToolbarQuery] = useState('');
   const [showAllFormatTools, setShowAllFormatTools] = useState(false);
+  const [editorMode, setEditorMode] = useState<'html' | 'visual'>('html');
+  const [visualDraftHtml, setVisualDraftHtml] = useState('');
   const htmlTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const visualEditorRef = useRef<HTMLDivElement>(null);
 
   const templateData = useMemo(
     () =>
@@ -93,6 +115,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
         const t = next.find((it) => it.id === firstId);
         setTitle(t?.title ?? '');
         setHtml(t?.html ?? '');
+        setVisualDraftHtml(t?.html ?? '');
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Не удалось загрузить библиотеку шаблонов');
       } finally {
@@ -121,6 +144,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     const t = items.find((it) => it.id === id);
     setTitle(t?.title ?? '');
     setHtml(t?.html ?? '');
+    setVisualDraftHtml(t?.html ?? '');
   };
 
   const saveTemplate = async () => {
@@ -144,8 +168,16 @@ export function ContractDocumentsTemplatesLibraryPage() {
     if (!isSuperAdmin) return;
     setEditingId(`tpl_${Date.now()}`);
     setTitle(mode === 'copy' ? 'Копия шаблона' : 'Новый шаблон');
-    setHtml(mode === 'copy' ? html : '<div class="docPrint"></div>');
+    const next = mode === 'copy' ? html : '<div class="docPrint"></div>';
+    setHtml(next);
+    setVisualDraftHtml(next);
   };
+
+  useEffect(() => {
+    if (editorMode === 'visual' && visualEditorRef.current) {
+      visualEditorRef.current.innerHTML = visualDraftHtml || '';
+    }
+  }, [editorMode, visualDraftHtml, editingId]);
 
   const deleteTemplate = async () => {
     if (!isSuperAdmin || !editingId) return;
@@ -349,6 +381,58 @@ export function ContractDocumentsTemplatesLibraryPage() {
       content:
         '<table style="width: 100%; border-collapse: collapse; margin: 8pt 0;"><tr><th style="border: 1px solid #cbd5e1; padding: 6px; text-align: left;">Пункт</th><th style="border: 1px solid #cbd5e1; padding: 6px; text-align: left;">Содержание</th></tr><tr><td style="border: 1px solid #cbd5e1; padding: 6px;">1</td><td style="border: 1px solid #cbd5e1; padding: 6px;">Описание</td></tr></table>',
     }));
+  const handlePasteContractTextFromClipboard = async () => {
+    if (!isSuperAdmin) return;
+    try {
+      const fromClipboard = await navigator.clipboard.readText();
+      const next = plainTextToParagraphHtml(fromClipboard);
+      if (!next) {
+        setError('Буфер обмена пустой.');
+        return;
+      }
+      setVisualDraftHtml(next);
+      setHtml(next);
+      if (visualEditorRef.current) visualEditorRef.current.innerHTML = next;
+      setOk('Текст из буфера вставлен и разбит на абзацы.');
+    } catch {
+      const manual = window.prompt('Вставьте текст договора:');
+      if (!manual) return;
+      const next = plainTextToParagraphHtml(manual);
+      if (!next) return;
+      setVisualDraftHtml(next);
+      setHtml(next);
+      if (visualEditorRef.current) visualEditorRef.current.innerHTML = next;
+      setOk('Текст вставлен и разбит на абзацы.');
+    }
+  };
+  const handleAppendContractTextFromClipboard = async () => {
+    if (!isSuperAdmin) return;
+    try {
+      const fromClipboard = await navigator.clipboard.readText();
+      const chunk = plainTextToParagraphHtml(fromClipboard);
+      if (!chunk) {
+        setError('Буфер обмена пустой.');
+        return;
+      }
+      const base = (visualEditorRef.current?.innerHTML ?? visualDraftHtml ?? '').trim();
+      const next = base ? `${base}\n${chunk}` : chunk;
+      setVisualDraftHtml(next);
+      setHtml(next);
+      if (visualEditorRef.current) visualEditorRef.current.innerHTML = next;
+      setOk('Текст из буфера добавлен в конец шаблона.');
+    } catch {
+      const manual = window.prompt('Вставьте текст договора для добавления в конец:');
+      if (!manual) return;
+      const chunk = plainTextToParagraphHtml(manual);
+      if (!chunk) return;
+      const base = (visualEditorRef.current?.innerHTML ?? visualDraftHtml ?? '').trim();
+      const next = base ? `${base}\n${chunk}` : chunk;
+      setVisualDraftHtml(next);
+      setHtml(next);
+      if (visualEditorRef.current) visualEditorRef.current.innerHTML = next;
+      setOk('Текст добавлен в конец шаблона.');
+    }
+  };
 
   const basicTools: ToolButton[] = [
     { label: 'H1', onClick: () => wrapAsHeading(1) },
@@ -488,12 +572,66 @@ export function ContractDocumentsTemplatesLibraryPage() {
             >
               Печать предпросмотра
             </button>
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              disabled={!isSuperAdmin}
+              onClick={() => {
+                if (editorMode === 'visual') {
+                  const next = visualEditorRef.current?.innerHTML ?? visualDraftHtml;
+                  setVisualDraftHtml(next);
+                  setHtml(next);
+                } else {
+                  setVisualDraftHtml(html);
+                }
+              }}
+            >
+              {editorMode === 'visual'
+                ? 'Сформировать HTML из конструктора'
+                : 'Загрузить HTML в конструктор'}
+            </button>
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              disabled={!isSuperAdmin || editorMode !== 'visual'}
+              onClick={() => void handlePasteContractTextFromClipboard()}
+            >
+              Вставить текст договора (из буфера) → авто-разбивка на абзацы
+            </button>
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              disabled={!isSuperAdmin || editorMode !== 'visual'}
+              onClick={() => void handleAppendContractTextFromClipboard()}
+            >
+              Добавить текст из буфера в конец текущего шаблона
+            </button>
           </div>
         ) : null}
       </div>
 
       <div className={`${styles.contractTopTools} ${styles.blockTools}`} style={{ marginTop: 12 }}>
         <div className={styles.contractEditorMain}>
+          <div className={styles.formatLevelBar}>
+            <button
+              type="button"
+              className={
+                editorMode === 'html' ? styles.formatLevelBtnActive : styles.formatLevelBtn
+              }
+              onClick={() => setEditorMode('html')}
+            >
+              HTML
+            </button>
+            <button
+              type="button"
+              className={
+                editorMode === 'visual' ? styles.formatLevelBtnActive : styles.formatLevelBtn
+              }
+              onClick={() => setEditorMode('visual')}
+            >
+              Визуальный конструктор
+            </button>
+          </div>
           <div className={styles.formatLevelBar}>
             <button
               type="button"
@@ -571,18 +709,34 @@ export function ContractDocumentsTemplatesLibraryPage() {
 
       <div className={styles.contractLiveGrid}>
         <div className={styles.contractEditColumn}>
-          <label className={styles.contractEditorLabel} htmlFor="contract_template_html_source">
-            HTML шаблона договора
-          </label>
-          <textarea
-            id="contract_template_html_source"
-            ref={htmlTextareaRef}
-            className={styles.contractHtmlTextarea}
-            spellCheck={false}
-            value={html}
-            onChange={(e) => setHtml(e.target.value)}
-            disabled={!isSuperAdmin}
-          />
+          {editorMode === 'html' ? (
+            <>
+              <label className={styles.contractEditorLabel} htmlFor="contract_template_html_source">
+                HTML шаблона договора
+              </label>
+              <textarea
+                id="contract_template_html_source"
+                ref={htmlTextareaRef}
+                className={styles.contractHtmlTextarea}
+                spellCheck={false}
+                value={html}
+                onChange={(e) => setHtml(e.target.value)}
+                disabled={!isSuperAdmin}
+              />
+            </>
+          ) : (
+            <>
+              <label className={styles.contractEditorLabel}>Визуальный конструктор</label>
+              <div
+                ref={visualEditorRef}
+                className={styles.contractHtmlTextarea}
+                contentEditable={isSuperAdmin}
+                suppressContentEditableWarning
+                onInput={(e) => setVisualDraftHtml((e.currentTarget as HTMLDivElement).innerHTML)}
+                style={{ whiteSpace: 'normal', overflow: 'auto' }}
+              />
+            </>
+          )}
         </div>
         <div className={styles.contractPreviewColumn}>
           <h3 className={styles.previewBlockTitle}>Предпросмотр с подстановкой данных</h3>
