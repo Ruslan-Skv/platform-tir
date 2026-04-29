@@ -113,11 +113,11 @@ export const repairTemplateContract = `
   </p>
 
   <h2 style="text-align: center; font-size: 12pt; margin: 20pt 0 10pt;">11. РЕКВИЗИТЫ И ПОДПИСИ СТОРОН</h2>
-  <table style="width: 100%; border-collapse: collapse; font-size: 10pt; margin-top: 6pt;">
+  <table class="contractRequisitesBlock" style="width: 100%; border-collapse: collapse; font-size: 10pt; margin-top: 6pt;">
     <tr>
       <td style="width: 50%; vertical-align: top; padding: 10px 12px 10px 0; border-right: 1px solid #bbb;">
-        <p style="text-align: center; font-weight: bold; margin: 0 0 10pt;">ПОДРЯДЧИК</p>
-        <p style="margin: 0 0 6pt;"><strong>{{executor.companyName}}</strong></p>
+        <p style="text-align: center; margin: 0 0 10pt;">ПОДРЯДЧИК</p>
+        <p style="margin: 0 0 6pt;">{{executor.companyName}}</p>
         <p style="margin: 0 0 4pt;">Юридический адрес: {{executor.legalAddress}}</p>
         <p style="margin: 0 0 4pt;">Адрес для корреспонденции: {{executor.actualAddress}}</p>
         <p style="margin: 0 0 4pt;">{{executor.innKppRegLine}}</p>
@@ -128,14 +128,16 @@ export const repairTemplateContract = `
         <p style="margin: 0; font-size: 9pt;">м.п.</p>
       </td>
       <td style="width: 50%; vertical-align: top; padding: 10px 0 10px 12px;">
-        <p style="text-align: center; font-weight: bold; margin: 0 0 10pt;">ЗАКАЗЧИК</p>
-        <p style="margin: 0 0 6pt;"><strong>{{customer.fullName}}</strong></p>
-        <p style="margin: 0 0 4pt;">Адрес: {{customer.address}}</p>
-        <p style="margin: 0 0 4pt;">Тел.: {{customer.phone}}</p>
-        <p style="margin: 0 0 4pt;">E-mail: {{customer.email}}</p>
-        <p style="margin: 0 0 4pt;">Паспорт: {{customer.passportSeriesNumber}}</p>
-        <p style="margin: 0 0 4pt;">Выдан: {{customer.passportIssuedBy}}, {{customer.passportIssueDate}}</p>
-        <p style="margin: 24pt 0 4pt;">________________________ / {{customer.fullName}}</p>
+        <p style="text-align: center; margin: 0 0 10pt;">ЗАКАЗЧИК</p>
+        <p style="margin: 0 0 6pt;">{{customer.fullName|plain}}</p>
+        <p style="margin: 0 0 4pt;">Адрес: {{customer.address|plain}}</p>
+        <p style="margin: 0 0 4pt;">Тел.: {{customer.phone|plain}}</p>
+        <p style="margin: 0 0 4pt;">E-mail: {{customer.email|plain}}</p>
+        <p style="margin: 0 0 4pt;">Банковские реквизиты:</p>
+        <p style="margin: 0 0 4pt; white-space: pre-wrap;">{{customer.bankDetails|plain}}</p>
+        <p style="margin: 0 0 4pt;">Паспорт: {{customer.passportSeriesNumber|plain}}</p>
+        <p style="margin: 0 0 4pt;">Выдан: {{customer.passportIssuedBy|plain}}, {{customer.passportIssueDate|plain}}</p>
+        <p style="margin: 24pt 0 4pt;">________________________ / {{customer.fullName|plain}}</p>
         <p style="margin: 0; font-size: 9pt;">подпись</p>
       </td>
     </tr>

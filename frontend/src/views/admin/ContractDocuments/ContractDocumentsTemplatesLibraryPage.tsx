@@ -439,9 +439,17 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const applyVisualSnapshot = (htmlSnapshot: string) => {
     setVisualDraftHtml(htmlSnapshot);
     setHtml(htmlSnapshot);
-    if (visualEditorRef.current) {
-      visualEditorRef.current.innerHTML = htmlSnapshot;
-    }
+    const editor = visualEditorRef.current;
+    if (!editor) return;
+    const prevScrollTop = editor.scrollTop;
+    const wasFocused = window.document.activeElement === editor;
+    editor.innerHTML = htmlSnapshot;
+    window.requestAnimationFrame(() => {
+      editor.scrollTop = prevScrollTop;
+      if (wasFocused) {
+        editor.focus({ preventScroll: true });
+      }
+    });
   };
 
   const captureVisualSelection = () => {
@@ -835,10 +843,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const insertRequisitesTemplate = () =>
     updateHtmlBySelection(() => ({
       content: `<h2 style="text-align: center; margin: 16pt 0 8pt;">РЕКВИЗИТЫ И ПОДПИСИ СТОРОН</h2>
-<table style="width: 100%; border-collapse: collapse; margin-top: 8pt;">
+<table class="contractRequisitesBlock" style="width: 100%; border-collapse: collapse; margin-top: 8pt;">
   <tr>
     <td style="width: 50%; vertical-align: top; padding: 8px 10px 8px 0; border-right: 1px solid #bbb;">
-      <p style="text-align: center; font-weight: bold; margin: 0 0 8pt;">ПОДРЯДЧИК</p>
+      <p style="text-align: center; margin: 0 0 8pt;">ПОДРЯДЧИК</p>
       <p style="margin: 0 0 4pt;">{{executor.companyName}}</p>
       <p style="margin: 0 0 4pt;">{{executor.innKppRegLine}}</p>
       <p style="margin: 0 0 4pt;">E-mail: {{executor.email}}</p>
@@ -848,10 +856,13 @@ export function ContractDocumentsTemplatesLibraryPage() {
       <p style="margin: 20pt 0 0;">___________________ / {{executor.directorName}}</p>
     </td>
     <td style="width: 50%; vertical-align: top; padding: 8px 0 8px 10px;">
-      <p style="text-align: center; font-weight: bold; margin: 0 0 8pt;">ЗАКАЗЧИК</p>
-      <p style="margin: 0 0 4pt;">{{customer.fullName}}</p>
-      <p style="margin: 0 0 4pt;">Адрес: {{customer.address}}</p>
-      <p style="margin: 0 0 4pt;">Тел.: {{customer.phone}}</p>
+      <p style="text-align: center; margin: 0 0 8pt;">ЗАКАЗЧИК</p>
+      <p style="margin: 0 0 4pt;">{{customer.fullName|plain}}</p>
+      <p style="margin: 0 0 4pt;">Адрес: {{customer.address|plain}}</p>
+      <p style="margin: 0 0 4pt;">Тел.: {{customer.phone|plain}}</p>
+      <p style="margin: 0 0 4pt;">E-mail: {{customer.email|plain}}</p>
+      <p style="margin: 0 0 4pt;">Банковские реквизиты:</p>
+      <p style="margin: 0 0 4pt; white-space: pre-wrap;">{{customer.bankDetails|plain}}</p>
     </td>
   </tr>
 </table>`,
@@ -961,7 +972,6 @@ export function ContractDocumentsTemplatesLibraryPage() {
     visualHistoryIndexRef.current = nextIndex;
     setVisualHistoryIndex(nextIndex);
     applyVisualSnapshot(snapshot);
-    visualEditorRef.current?.focus();
   };
   const handleVisualRedo = () => {
     if (!isSuperAdmin || editorMode !== 'visual') return;
@@ -976,7 +986,6 @@ export function ContractDocumentsTemplatesLibraryPage() {
     visualHistoryIndexRef.current = nextIndex;
     setVisualHistoryIndex(nextIndex);
     applyVisualSnapshot(snapshot);
-    visualEditorRef.current?.focus();
   };
   const normalizeTemplateText = (mode: NormalizeMode) => {
     const source = editorMode === 'visual' ? (visualEditorRef.current?.innerHTML ?? html) : html;

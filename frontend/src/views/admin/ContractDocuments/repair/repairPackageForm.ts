@@ -15,6 +15,7 @@ export interface RepairCustomerBlock {
   address: string;
   phone: string;
   email: string;
+  bankDetails: string;
   passportSeriesNumber: string;
   passportIssuedBy: string;
   passportIssueDate: string;
@@ -88,6 +89,7 @@ export function defaultRepairPackageFormData(): RepairPackageFormData {
       address: '',
       phone: '',
       email: '',
+      bankDetails: '',
       passportSeriesNumber: '',
       passportIssuedBy: '',
       passportIssueDate: '',

@@ -1,4 +1,7 @@
-/** Группы плейсхолдеров для вставки в шаблон договора (пути совпадают с `repairPackageForm.ts`). */
+/**
+ * Группы плейсхолдеров для вставки в шаблон договора (пути совпадают с `repairPackageForm.ts`).
+ * Для заказчика без жирного в предпросмотре: `{{customer.field|plain}}` (см. `applyTemplate`).
+ */
 
 export interface RepairContractPlaceholderItem {
   path: string;
@@ -38,6 +41,7 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
       { path: 'customer.address', label: 'Адрес' },
       { path: 'customer.phone', label: 'Телефон' },
       { path: 'customer.email', label: 'E-mail' },
+      { path: 'customer.bankDetails', label: 'Банковские реквизиты заказчика' },
       { path: 'customer.passportSeriesNumber', label: 'Паспорт (серия и номер)' },
       { path: 'customer.passportIssuedBy', label: 'Паспорт кем выдан' },
       { path: 'customer.passportIssueDate', label: 'Паспорт дата выдачи' },

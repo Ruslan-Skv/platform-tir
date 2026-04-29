@@ -2,6 +2,7 @@ const PRINT_STYLES = `
   @page { margin: 16mm; size: A4; }
   html, body { margin: 0; padding: 0; font-family: "Times New Roman", Times, serif; color: #111; }
   .docPrint { font-size: 12pt; line-height: 1.45; }
+  .docPrint a { color: #111 !important; text-decoration: none; }
   .docPrint h1 { font-size: 14pt; text-align: center; margin: 0 0 12pt; }
   .docPrint h2 { font-size: 12pt; margin: 14pt 0 6pt; }
   .docPrint p { margin: 0 0 8pt; }
@@ -14,6 +15,11 @@ const PRINT_STYLES = `
     padding: 10pt;
     border: 1px solid #e5e7eb;
     margin: 0;
+  }
+  .contractRequisitesBlock strong,
+  .contractRequisitesBlock em {
+    font-weight: normal !important;
+    font-style: normal !important;
   }
 `;
 

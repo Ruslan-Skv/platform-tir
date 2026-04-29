@@ -632,10 +632,10 @@ export function RepairContractDocumentEditorPage({
   const insertRequisitesTemplate = () => {
     const block = `
 <h2 style="text-align: center; margin: 16pt 0 8pt;">РЕКВИЗИТЫ И ПОДПИСИ СТОРОН</h2>
-<table style="width: 100%; border-collapse: collapse; margin-top: 8pt;">
+<table class="contractRequisitesBlock" style="width: 100%; border-collapse: collapse; margin-top: 8pt;">
   <tr>
     <td style="width: 50%; vertical-align: top; padding: 8px 10px 8px 0; border-right: 1px solid #bbb;">
-      <p style="text-align: center; font-weight: bold; margin: 0 0 8pt;">ПОДРЯДЧИК</p>
+      <p style="text-align: center; margin: 0 0 8pt;">ПОДРЯДЧИК</p>
       <p style="margin: 0 0 4pt;">{{executor.companyName}}</p>
       <p style="margin: 0 0 4pt;">{{executor.innKppRegLine}}</p>
       <p style="margin: 0 0 4pt;">E-mail: {{executor.email}}</p>
@@ -646,14 +646,16 @@ export function RepairContractDocumentEditorPage({
       <p style="margin: 0; font-size: 9pt;">м.п.</p>
     </td>
     <td style="width: 50%; vertical-align: top; padding: 8px 0 8px 10px;">
-      <p style="text-align: center; font-weight: bold; margin: 0 0 8pt;">ЗАКАЗЧИК</p>
-      <p style="margin: 0 0 4pt;">{{customer.fullName}}</p>
-      <p style="margin: 0 0 4pt;">Адрес: {{customer.address}}</p>
-      <p style="margin: 0 0 4pt;">Тел.: {{customer.phone}}</p>
-      <p style="margin: 0 0 4pt;">E-mail: {{customer.email}}</p>
-      <p style="margin: 0 0 4pt;">Паспорт: {{customer.passportSeriesNumber}}</p>
-      <p style="margin: 0 0 8pt;">Выдан: {{customer.passportIssuedBy}}, {{customer.passportIssueDate}}</p>
-      <p style="margin: 20pt 0 0;">___________________ / {{customer.fullName}}</p>
+      <p style="text-align: center; margin: 0 0 8pt;">ЗАКАЗЧИК</p>
+      <p style="margin: 0 0 4pt;">{{customer.fullName|plain}}</p>
+      <p style="margin: 0 0 4pt;">Адрес: {{customer.address|plain}}</p>
+      <p style="margin: 0 0 4pt;">Тел.: {{customer.phone|plain}}</p>
+      <p style="margin: 0 0 4pt;">E-mail: {{customer.email|plain}}</p>
+      <p style="margin: 0 0 4pt;">Банковские реквизиты:</p>
+      <p style="margin: 0 0 4pt; white-space: pre-wrap;">{{customer.bankDetails|plain}}</p>
+      <p style="margin: 0 0 4pt;">Паспорт: {{customer.passportSeriesNumber|plain}}</p>
+      <p style="margin: 0 0 8pt;">Выдан: {{customer.passportIssuedBy|plain}}, {{customer.passportIssueDate|plain}}</p>
+      <p style="margin: 20pt 0 0;">___________________ / {{customer.fullName|plain}}</p>
       <p style="margin: 0; font-size: 9pt;">подпись</p>
     </td>
   </tr>
@@ -1176,6 +1178,14 @@ export function RepairContractDocumentEditorPage({
                     id="c_email"
                     value={form.customer.email}
                     onChange={(e) => updateCustomer('email', e.target.value)}
+                  />
+                </div>
+                <div className={`${styles.field} ${styles.fieldSpanAll}`}>
+                  <label htmlFor="c_bank_details">Банковские реквизиты</label>
+                  <textarea
+                    id="c_bank_details"
+                    value={form.customer.bankDetails}
+                    onChange={(e) => updateCustomer('bankDetails', e.target.value)}
                   />
                 </div>
                 {form.customer.type === 'PERSON' ? (

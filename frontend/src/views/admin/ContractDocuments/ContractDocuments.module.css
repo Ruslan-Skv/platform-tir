@@ -545,6 +545,18 @@
   color: #1f2937;
 }
 
+.docPane :global(.docPrint a) {
+  color: #1f2937 !important;
+  text-decoration: none;
+}
+
+/* Блок реквизитов: убираем визуальное жирное/курсив у <strong>/<em> (заголовки колонок — через style на <p>). */
+.docPane :global(.contractRequisitesBlock) :global(strong),
+.docPane :global(.contractRequisitesBlock) :global(em) {
+  font-weight: normal !important;
+  font-style: normal !important;
+}
+
 .docPane :global(.docPrint h1) {
   font-size: 1.15rem;
   margin: 0 0 12px;
