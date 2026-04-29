@@ -6,7 +6,11 @@ import Link from 'next/link';
 
 import { useAuth } from '@/features/auth';
 import {
+  type ContractSignatoryProfile,
   type ContractTemplatePreset,
+  type ExecutorRequisiteProfile,
+  getContractDocumentExecutorProfiles,
+  getContractDocumentSignatoryProfiles,
   getContractDocumentTemplatePresets,
   putContractDocumentTemplatePresets,
 } from '@/shared/api/admin-contract-document-packages';
@@ -21,6 +25,8 @@ import {
 import styles from './ContractDocuments.module.css';
 
 type ToolButton = { label: string; onClick: () => void; secondary?: boolean };
+const TEMPLATES_UI_PREFS_KEY = 'admin.contractDocuments.templates.uiPrefs';
+type NormalizeMode = 'soft' | 'strict';
 
 function escapeHtml(text: string): string {
   return text
@@ -41,12 +47,267 @@ function plainTextToParagraphHtml(text: string): string {
   return paragraphs.join('\n');
 }
 
+function clampInt(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, Math.trunc(value)));
+}
+
+function normalizeTextWhitespace(input: string): string {
+  return input
+    .replace(/\u00A0/g, ' ')
+    .replace(/[ \t\r\f\v]+/g, ' ')
+    .replace(/[ \t]*\n+[ \t]*/g, ' ')
+    .replace(/\s+([,.;:!?])/g, '$1')
+    .replace(/\(\s+/g, '(')
+    .replace(/\s+\)/g, ')')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+function normalizeTemplateHtmlWhitespace(sourceHtml: string, mode: NormalizeMode): string {
+  if (typeof window === 'undefined') return sourceHtml;
+  const container = window.document.createElement('div');
+  container.innerHTML = sourceHtml || '';
+
+  const walker = window.document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  const textNodes: Text[] = [];
+  let node = walker.nextNode();
+  while (node) {
+    textNodes.push(node as Text);
+    node = walker.nextNode();
+  }
+  for (const textNode of textNodes) {
+    const normalized = normalizeTextWhitespace(textNode.nodeValue ?? '');
+    textNode.nodeValue = normalized;
+  }
+
+  const blocks = Array.from(container.querySelectorAll('p, div, li'));
+  for (const el of blocks) {
+    if (el.classList.contains('docPrint')) continue;
+    const hasMeaningfulChild = !!el.querySelector('table, img, hr, ul, ol, blockquote');
+    const normalizedText = normalizeTextWhitespace(el.textContent ?? '');
+    if (!hasMeaningfulChild && !normalizedText) {
+      el.remove();
+    }
+  }
+
+  if (mode === 'strict') {
+    const isSimpleTextBlock = (el: Element): el is HTMLDivElement | HTMLParagraphElement => {
+      const tag = el.tagName.toLowerCase();
+      if (tag !== 'p' && tag !== 'div') return false;
+      if ((el as HTMLElement).classList.contains('docPrint')) return false;
+      return !el.querySelector('table, ul, ol, li, blockquote, img, hr');
+    };
+
+    const normalizeBlockText = (el: Element): string => {
+      const clone = el.cloneNode(true) as HTMLElement;
+      for (const br of Array.from(clone.querySelectorAll('br'))) {
+        br.replaceWith(window.document.createTextNode(' '));
+      }
+      return normalizeTextWhitespace(clone.textContent ?? '');
+    };
+
+    const mergeSimpleBlocksIn = (root: ParentNode) => {
+      const nodes = Array.from(root.childNodes);
+      let i = 0;
+      while (i < nodes.length) {
+        const node = nodes[i];
+        if (!(node instanceof HTMLElement) || !isSimpleTextBlock(node)) {
+          i += 1;
+          continue;
+        }
+        const group: HTMLElement[] = [node];
+        let j = i + 1;
+        while (j < nodes.length) {
+          const next = nodes[j];
+          if (!(next instanceof HTMLElement) || !isSimpleTextBlock(next)) break;
+          group.push(next);
+          j += 1;
+        }
+        if (group.length > 1) {
+          const merged = normalizeTextWhitespace(
+            group
+              .map((el) => normalizeBlockText(el))
+              .filter(Boolean)
+              .join(' ')
+          );
+          group[0].textContent = merged;
+          group[0].setAttribute(
+            'style',
+            'text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;'
+          );
+          for (let k = 1; k < group.length; k += 1) {
+            group[k].remove();
+          }
+        }
+        i = j;
+      }
+    };
+
+    mergeSimpleBlocksIn(container);
+    for (const printable of Array.from(container.querySelectorAll('.docPrint'))) {
+      mergeSimpleBlocksIn(printable);
+    }
+
+    const normalizeCellText = (cell: HTMLTableCellElement): string => {
+      const clone = cell.cloneNode(true) as HTMLElement;
+      for (const br of Array.from(clone.querySelectorAll('br'))) {
+        br.replaceWith(window.document.createTextNode(' '));
+      }
+      return normalizeTextWhitespace(clone.textContent ?? '');
+    };
+
+    const tables = Array.from(container.querySelectorAll('table'));
+    for (const table of tables) {
+      const getRows = () => Array.from(table.querySelectorAll('tr'));
+      const getMaxCols = (rows: HTMLTableRowElement[]) =>
+        rows.reduce((acc, row) => {
+          const cols = Array.from(row.querySelectorAll('td, th')).reduce((sum, el) => {
+            const span = Number((el as HTMLTableCellElement).getAttribute('colspan') ?? '1');
+            return sum + (Number.isFinite(span) && span > 0 ? span : 1);
+          }, 0);
+          return Math.max(acc, cols);
+        }, 1);
+
+      const initialRows = getRows();
+      if (initialRows.length === 0) continue;
+      const rowTexts = initialRows.map((row) => {
+        const cells = Array.from(row.querySelectorAll('td, th')) as HTMLTableCellElement[];
+        return normalizeTextWhitespace(cells.map((c) => normalizeCellText(c)).join(' '));
+      });
+      const introStartIdx = rowTexts.findIndex((text) => text.includes('{{executor.companyName}}'));
+      const introEndIdx = rowTexts.findIndex(
+        (text) =>
+          text.includes('далее «Заказчик»') ||
+          text.includes('далее "Заказчик"') ||
+          text.includes('далее Заказчик')
+      );
+      if (introStartIdx >= 0 && introEndIdx >= introStartIdx) {
+        const mergedText = normalizeTextWhitespace(
+          rowTexts
+            .slice(introStartIdx, introEndIdx + 1)
+            .filter(Boolean)
+            .join(' ')
+        );
+        if (mergedText) {
+          const maxCols = getMaxCols(initialRows);
+          const replacementRow = window.document.createElement('tr');
+          const replacementCell = window.document.createElement('td');
+          replacementCell.setAttribute('colspan', String(maxCols));
+          replacementCell.setAttribute('style', 'text-align: justify; padding: 2px 0;');
+          replacementCell.textContent = mergedText;
+          replacementRow.appendChild(replacementCell);
+          const first = initialRows[introStartIdx];
+          first.replaceWith(replacementRow);
+          for (let i = introStartIdx + 1; i <= introEndIdx; i += 1) {
+            initialRows[i]?.remove();
+          }
+        }
+      }
+
+      const rows = getRows();
+      const maxCols = getMaxCols(rows);
+      const extractPointNumber = (text: string): string | null => {
+        const normalized = normalizeTextWhitespace(text);
+        const match = normalized.match(/^(\d+(?:\.\d+)+)\b/);
+        return match ? match[1] : null;
+      };
+      let i = 0;
+      while (i < rows.length) {
+        const row = rows[i];
+        const cells = Array.from(row.querySelectorAll('td, th')) as HTMLTableCellElement[];
+        if (cells.length < 2) {
+          i += 1;
+          continue;
+        }
+        const firstCellText = normalizeCellText(cells[0]);
+        const pointNumber = extractPointNumber(firstCellText);
+        if (!pointNumber) {
+          i += 1;
+          continue;
+        }
+
+        const chunk: string[] = [];
+        const markerTail = normalizeTextWhitespace(firstCellText.replace(/^(\d+(?:\.\d+)+)\b/, ''));
+        if (markerTail) chunk.push(markerTail);
+        const firstBody = normalizeTextWhitespace(
+          cells
+            .slice(1)
+            .map((c) => normalizeCellText(c))
+            .join(' ')
+        );
+        if (firstBody) chunk.push(firstBody);
+        let j = i + 1;
+        while (j < rows.length) {
+          const nextCells = Array.from(
+            rows[j].querySelectorAll('td, th')
+          ) as HTMLTableCellElement[];
+          if (nextCells.length === 0) break;
+          const marker = normalizeCellText(nextCells[0]);
+          if (extractPointNumber(marker)) break;
+          const nextJoined = normalizeTextWhitespace(
+            nextCells.map((c) => normalizeCellText(c)).join(' ')
+          );
+          if (/^\d+\.\s+[А-ЯA-ZЁ]/.test(nextJoined)) break;
+          const nextBody = normalizeTextWhitespace(
+            (marker ? [marker] : [])
+              .concat(nextCells.slice(1).map((c) => normalizeCellText(c)))
+              .join(' ')
+          );
+          if (nextBody) chunk.push(nextBody);
+          j += 1;
+        }
+        const mergedPointText = normalizeTextWhitespace(chunk.join(' '));
+        const replacementRow = window.document.createElement('tr');
+        const numberCell = window.document.createElement('td');
+        numberCell.textContent = pointNumber;
+        numberCell.setAttribute(
+          'style',
+          'text-align: justify; padding: 2px 0; vertical-align: top;'
+        );
+        const bodyCell = window.document.createElement('td');
+        bodyCell.setAttribute('colspan', String(Math.max(1, maxCols - 1)));
+        bodyCell.setAttribute('style', 'text-align: justify; padding: 2px 0;');
+        bodyCell.textContent = mergedPointText;
+        replacementRow.append(numberCell, bodyCell);
+        row.replaceWith(replacementRow);
+        if (j - i > 1) {
+          for (let k = i + 1; k < j; k += 1) {
+            rows[k]?.remove();
+          }
+        }
+        i = j;
+      }
+    }
+
+    const paragraphs = Array.from(container.querySelectorAll('p'));
+    for (const p of paragraphs) {
+      if (p.classList.contains('docPrint')) continue;
+      const brNodes = Array.from(p.querySelectorAll('br'));
+      for (const br of brNodes) {
+        br.replaceWith(window.document.createTextNode(' '));
+      }
+      p.setAttribute('style', 'text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;');
+      p.textContent = normalizeTextWhitespace(p.textContent ?? '');
+    }
+
+    const spans = Array.from(container.querySelectorAll('span'));
+    for (const span of spans) {
+      if (span.attributes.length === 0) {
+        span.replaceWith(...Array.from(span.childNodes));
+      }
+    }
+  }
+
+  return container.innerHTML;
+}
+
 export function ContractDocumentsTemplatesLibraryPage() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [items, setItems] = useState<ContractTemplatePreset[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showSaveSuccessModal, setShowSaveSuccessModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [editingId, setEditingId] = useState('');
@@ -57,45 +318,215 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const [showAllFormatTools, setShowAllFormatTools] = useState(false);
   const [editorMode, setEditorMode] = useState<'html' | 'visual'>('html');
   const [visualDraftHtml, setVisualDraftHtml] = useState('');
+  const [visualHistory, setVisualHistory] = useState<string[]>([]);
+  const [visualHistoryIndex, setVisualHistoryIndex] = useState(-1);
+  const [firstExecutorProfile, setFirstExecutorProfile] = useState<ExecutorRequisiteProfile | null>(
+    null
+  );
+  const [firstSignatoryProfile, setFirstSignatoryProfile] =
+    useState<ContractSignatoryProfile | null>(null);
+  const [previewFontSizePx, setPreviewFontSizePx] = useState(12);
+  const [previewZoomPct, setPreviewZoomPct] = useState(100);
+  const [visualZoomPct, setVisualZoomPct] = useState(100);
+  const [visualEditorHeightPx, setVisualEditorHeightPx] = useState<number | null>(null);
+  const [previewPaneHeightPx, setPreviewPaneHeightPx] = useState<number | null>(null);
   const htmlTextareaRef = useRef<HTMLTextAreaElement>(null);
   const visualEditorRef = useRef<HTMLDivElement>(null);
+  const previewPaneRef = useRef<HTMLDivElement>(null);
+  const visualSelectionRangeRef = useRef<Range | null>(null);
+  const visualHistoryRef = useRef<string[]>([]);
+  const visualHistoryIndexRef = useRef(-1);
+  const uiPrefsLoadedRef = useRef(false);
 
-  const templateData = useMemo(
-    () =>
-      repairPackageFormForTemplate({
-        ...defaultRepairPackageFormData(),
-        customer: {
-          ...defaultRepairPackageFormData().customer,
-          fullName: 'Иванов Иван Иванович',
-          address: 'г. Краснодар, ул. Примерная, д. 1',
-          phone: '+7 900 000-00-00',
-        },
-        executor: {
-          ...defaultRepairPackageFormData().executor,
-          companyName: 'ООО Территория ИР',
-          inn: '2312345678',
-          kpp: '231201001',
-          ogrn: '1232300000000',
-          email: 'info@example.com',
-          directorName: 'Петров Петр Петрович',
-          basis: 'Устава',
-        },
-        object: {
-          ...defaultRepairPackageFormData().object,
-          objectAddress: 'г. Краснодар, ул. Строителей, д. 10',
-          objectFloor: '5',
-          objectDescription: 'Косметический ремонт квартиры',
-        },
-        contract: {
-          ...defaultRepairPackageFormData().contract,
-          number: 'R-001/26',
-          date: '2026-04-29',
-          totalAmount: '250000',
-          totalAmountWords: 'двести пятьдесят тысяч рублей',
-        },
-      }),
-    []
-  );
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem(TEMPLATES_UI_PREFS_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {
+        previewFontSizePx?: number;
+        previewZoomPct?: number;
+        visualZoomPct?: number;
+        visualEditorHeightPx?: number;
+        previewPaneHeightPx?: number;
+      };
+      if (typeof parsed.previewFontSizePx === 'number') {
+        setPreviewFontSizePx(clampInt(parsed.previewFontSizePx, 10, 20));
+      }
+      if (typeof parsed.previewZoomPct === 'number') {
+        setPreviewZoomPct(clampInt(parsed.previewZoomPct, 70, 130));
+      }
+      if (typeof parsed.visualZoomPct === 'number') {
+        setVisualZoomPct(clampInt(parsed.visualZoomPct, 60, 150));
+      }
+      if (typeof parsed.visualEditorHeightPx === 'number') {
+        setVisualEditorHeightPx(clampInt(parsed.visualEditorHeightPx, 220, 2400));
+      }
+      if (typeof parsed.previewPaneHeightPx === 'number') {
+        setPreviewPaneHeightPx(clampInt(parsed.previewPaneHeightPx, 220, 2400));
+      }
+    } catch {
+      // ignore broken localStorage payload
+    } finally {
+      uiPrefsLoadedRef.current = true;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!uiPrefsLoadedRef.current) return;
+    try {
+      window.localStorage.setItem(
+        TEMPLATES_UI_PREFS_KEY,
+        JSON.stringify({
+          previewFontSizePx,
+          previewZoomPct,
+          visualZoomPct,
+          visualEditorHeightPx,
+          previewPaneHeightPx,
+        })
+      );
+    } catch {
+      // ignore localStorage write issues
+    }
+  }, [previewFontSizePx, previewZoomPct, visualZoomPct, visualEditorHeightPx, previewPaneHeightPx]);
+
+  const captureVisualEditorHeight = () => {
+    const h = visualEditorRef.current?.offsetHeight;
+    if (!h) return;
+    setVisualEditorHeightPx(clampInt(h, 220, 2400));
+  };
+
+  const capturePreviewPaneHeight = () => {
+    const h = previewPaneRef.current?.offsetHeight;
+    if (!h) return;
+    setPreviewPaneHeightPx(clampInt(h, 220, 2400));
+  };
+
+  useEffect(() => {
+    visualHistoryRef.current = visualHistory;
+  }, [visualHistory]);
+
+  useEffect(() => {
+    if (!showSaveSuccessModal) return;
+    const timer = window.setTimeout(() => setShowSaveSuccessModal(false), 2200);
+    return () => window.clearTimeout(timer);
+  }, [showSaveSuccessModal]);
+
+  useEffect(() => {
+    visualHistoryIndexRef.current = visualHistoryIndex;
+  }, [visualHistoryIndex]);
+
+  const pushVisualHistory = (nextHtml: string) => {
+    const prev = visualHistoryRef.current;
+    const idx = visualHistoryIndexRef.current;
+    const base = idx >= 0 ? prev.slice(0, idx + 1) : [];
+    if (base.length > 0 && base[base.length - 1] === nextHtml) return;
+    const next = [...base, nextHtml];
+    visualHistoryRef.current = next;
+    visualHistoryIndexRef.current = next.length - 1;
+    setVisualHistory(next);
+    setVisualHistoryIndex(next.length - 1);
+  };
+
+  const resetVisualHistory = (htmlSnapshot: string) => {
+    visualHistoryRef.current = [htmlSnapshot];
+    visualHistoryIndexRef.current = 0;
+    setVisualHistory([htmlSnapshot]);
+    setVisualHistoryIndex(0);
+  };
+
+  const applyVisualSnapshot = (htmlSnapshot: string) => {
+    setVisualDraftHtml(htmlSnapshot);
+    setHtml(htmlSnapshot);
+    if (visualEditorRef.current) {
+      visualEditorRef.current.innerHTML = htmlSnapshot;
+    }
+  };
+
+  const captureVisualSelection = () => {
+    const editor = visualEditorRef.current;
+    if (!editor) return;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+    if (!editor.contains(range.commonAncestorContainer)) return;
+    visualSelectionRangeRef.current = range.cloneRange();
+  };
+
+  const restoreVisualSelection = (): Range | null => {
+    const editor = visualEditorRef.current;
+    if (!editor) return null;
+    const sel = window.getSelection();
+    if (!sel) return null;
+    const saved = visualSelectionRangeRef.current;
+    if (saved && editor.contains(saved.commonAncestorContainer)) {
+      sel.removeAllRanges();
+      sel.addRange(saved);
+      return saved;
+    }
+    const range = document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    return range;
+  };
+
+  const templateData = useMemo(() => {
+    const base = defaultRepairPackageFormData();
+    const executorKind = firstExecutorProfile?.kind === 'ENTREPRENEUR' ? 'ENTREPRENEUR' : 'COMPANY';
+    const directorName =
+      firstSignatoryProfile?.directorNameNominative ||
+      firstSignatoryProfile?.directorNameGenitive ||
+      'Петров Петр Петрович';
+
+    return repairPackageFormForTemplate({
+      ...base,
+      customer: {
+        ...base.customer,
+        fullName: 'Иванов Иван Иванович',
+        address: 'г. Краснодар, ул. Примерная, д. 1',
+        phone: '+7 900 000-00-00',
+      },
+      executor: {
+        ...base.executor,
+        selectedProfileTitle: firstExecutorProfile?.title ?? '',
+        executorKind,
+        companyName: firstExecutorProfile?.companyName || 'ООО Территория ИР',
+        inn: firstExecutorProfile?.inn || '2312345678',
+        kpp: executorKind === 'ENTREPRENEUR' ? '' : (firstExecutorProfile?.kpp ?? '231201001'),
+        ogrn:
+          executorKind === 'ENTREPRENEUR' ? '' : (firstExecutorProfile?.ogrn ?? '1232300000000'),
+        ogrnip: executorKind === 'ENTREPRENEUR' ? (firstExecutorProfile?.ogrnip ?? '') : '',
+        legalAddress: firstExecutorProfile?.legalAddress || '',
+        actualAddress: firstExecutorProfile?.actualAddress || '',
+        bankDetails: firstExecutorProfile?.bankDetails || '',
+        email: firstExecutorProfile?.email || 'info@example.com',
+        selectedSignatoryProfileTitle: firstSignatoryProfile?.title ?? '',
+        signatoryCrmUserId: firstSignatoryProfile?.crmUserId ?? '',
+        directorNameNominative: firstSignatoryProfile?.directorNameNominative ?? '',
+        directorNameGenitive: firstSignatoryProfile?.directorNameGenitive ?? '',
+        directorName,
+        basis: firstSignatoryProfile?.basis || 'Устава',
+        salesOffice: firstSignatoryProfile?.salesOffice ?? '',
+        officePhone: firstSignatoryProfile?.officePhone ?? '',
+      },
+      object: {
+        ...base.object,
+        objectAddress: 'г. Краснодар, ул. Строителей, д. 10',
+        objectFloor: '5',
+        objectDescription: 'Косметический ремонт квартиры',
+      },
+      contract: {
+        ...base.contract,
+        number: 'R-001/26',
+        date: '2026-04-29',
+        totalAmount: '250000',
+        totalAmountWords: 'двести пятьдесят тысяч рублей',
+      },
+    });
+  }, [firstExecutorProfile, firstSignatoryProfile]);
 
   const renderedPreview = useMemo(
     () => applyTemplate(html || '', templateData),
@@ -107,8 +538,21 @@ export function ContractDocumentsTemplatesLibraryPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await getContractDocumentTemplatePresets('REPAIR');
-        const next = res.items ?? [];
+        const [templatesRes, executorRes, signatoryRes] = await Promise.allSettled([
+          getContractDocumentTemplatePresets('REPAIR'),
+          getContractDocumentExecutorProfiles('REPAIR'),
+          getContractDocumentSignatoryProfiles('REPAIR'),
+        ]);
+        if (executorRes.status === 'fulfilled') {
+          setFirstExecutorProfile(executorRes.value.items?.[0] ?? null);
+        }
+        if (signatoryRes.status === 'fulfilled') {
+          setFirstSignatoryProfile(signatoryRes.value.items?.[0] ?? null);
+        }
+        if (templatesRes.status !== 'fulfilled') {
+          throw new Error('Не удалось загрузить библиотеку шаблонов');
+        }
+        const next = templatesRes.value.items ?? [];
         setItems(next);
         const firstId = next.find((it) => it.isDefault)?.id ?? next[0]?.id ?? '';
         setEditingId(firstId);
@@ -116,6 +560,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
         setTitle(t?.title ?? '');
         setHtml(t?.html ?? '');
         setVisualDraftHtml(t?.html ?? '');
+        resetVisualHistory(t?.html ?? '');
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Не удалось загрузить библиотеку шаблонов');
       } finally {
@@ -124,7 +569,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     })();
   }, []);
 
-  const persist = async (next: ContractTemplatePreset[], successText: string) => {
+  const persist = async (next: ContractTemplatePreset[], successText: string): Promise<boolean> => {
     setSaving(true);
     setError(null);
     setOk(null);
@@ -132,8 +577,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
       await putContractDocumentTemplatePresets({ kind: 'REPAIR', items: next });
       setItems(next);
       setOk(successText);
+      return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сохранить шаблоны');
+      return false;
     } finally {
       setSaving(false);
     }
@@ -145,6 +592,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     setTitle(t?.title ?? '');
     setHtml(t?.html ?? '');
     setVisualDraftHtml(t?.html ?? '');
+    resetVisualHistory(t?.html ?? '');
   };
 
   const saveTemplate = async () => {
@@ -160,8 +608,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
     const next = exists
       ? items.map((it) => (it.id === id ? { ...it, title: t, html: h } : it))
       : [...items, { id, title: t, html: h, isDefault: items.length === 0 }];
-    await persist(next, 'Шаблон сохранен.');
+    const isSaved = await persist(next, 'Шаблон сохранен.');
+    if (!isSaved) return;
     setEditingId(id);
+    setShowSaveSuccessModal(true);
   };
 
   const createTemplate = (mode: 'copy' | 'blank') => {
@@ -171,13 +621,20 @@ export function ContractDocumentsTemplatesLibraryPage() {
     const next = mode === 'copy' ? html : '<div class="docPrint"></div>';
     setHtml(next);
     setVisualDraftHtml(next);
+    resetVisualHistory(next);
   };
 
   useEffect(() => {
     if (editorMode === 'visual' && visualEditorRef.current) {
       visualEditorRef.current.innerHTML = visualDraftHtml || '';
+      if (visualHistoryRef.current.length === 0) {
+        resetVisualHistory(visualDraftHtml || '');
+      }
     }
-  }, [editorMode, visualDraftHtml, editingId]);
+    // Важно: НЕ зависим от visualDraftHtml, иначе при каждом onInput перезаписываем DOM
+    // и курсор прыгает в начало.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editorMode, editingId]);
 
   const deleteTemplate = async () => {
     if (!isSuperAdmin || !editingId) return;
@@ -199,6 +656,47 @@ export function ContractDocumentsTemplatesLibraryPage() {
       hasSelection: boolean
     ) => { content: string; cursorOffset?: number; selectLength?: number }
   ) => {
+    if (editorMode === 'visual') {
+      const el = visualEditorRef.current;
+      if (!el) return;
+      el.focus();
+      const sel = window.getSelection();
+      if (!sel) return;
+
+      let range: Range;
+      let selected = '';
+      let hasSelection = false;
+
+      if (sel.rangeCount > 0 && el.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+        range = sel.getRangeAt(0);
+        hasSelection = !range.collapsed;
+        selected = range.toString();
+      } else {
+        range = restoreVisualSelection() ?? document.createRange();
+        hasSelection = !range.collapsed;
+        selected = range.toString();
+      }
+
+      const result = transform(selected, hasSelection);
+      range.deleteContents();
+      const fragment = range.createContextualFragment(result.content);
+      const lastNode = fragment.lastChild;
+      range.insertNode(fragment);
+      if (lastNode) {
+        range.setStartAfter(lastNode);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+        visualSelectionRangeRef.current = range.cloneRange();
+      }
+
+      const next = el.innerHTML;
+      setVisualDraftHtml(next);
+      setHtml(next);
+      pushVisualHistory(next);
+      return;
+    }
+
     const el = htmlTextareaRef.current;
     const current = html;
     if (!el) {
@@ -235,6 +733,24 @@ export function ContractDocumentsTemplatesLibraryPage() {
   };
 
   const wrapParagraphWithAlign = (align: 'left' | 'center' | 'right' | 'justify') => {
+    if (editorMode === 'visual') {
+      const cmd =
+        align === 'left'
+          ? 'justifyLeft'
+          : align === 'center'
+            ? 'justifyCenter'
+            : align === 'right'
+              ? 'justifyRight'
+              : 'justifyFull';
+      visualEditorRef.current?.focus();
+      document.execCommand(cmd);
+      const next = visualEditorRef.current?.innerHTML ?? '';
+      setVisualDraftHtml(next);
+      setHtml(next);
+      pushVisualHistory(next);
+      captureVisualSelection();
+      return;
+    }
     wrapSelection(`<p style="text-align: ${align}; margin: 0 0 8pt;">`, '</p>', 'Новый абзац');
   };
   const wrapParagraphWithIndent = () => {
@@ -393,6 +909,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
       setVisualDraftHtml(next);
       setHtml(next);
       if (visualEditorRef.current) visualEditorRef.current.innerHTML = next;
+      pushVisualHistory(next);
       setOk('Текст из буфера вставлен и разбит на абзацы.');
     } catch {
       const manual = window.prompt('Вставьте текст договора:');
@@ -402,6 +919,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
       setVisualDraftHtml(next);
       setHtml(next);
       if (visualEditorRef.current) visualEditorRef.current.innerHTML = next;
+      pushVisualHistory(next);
       setOk('Текст вставлен и разбит на абзацы.');
     }
   };
@@ -419,6 +937,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
       setVisualDraftHtml(next);
       setHtml(next);
       if (visualEditorRef.current) visualEditorRef.current.innerHTML = next;
+      pushVisualHistory(next);
       setOk('Текст из буфера добавлен в конец шаблона.');
     } catch {
       const manual = window.prompt('Вставьте текст договора для добавления в конец:');
@@ -430,8 +949,53 @@ export function ContractDocumentsTemplatesLibraryPage() {
       setVisualDraftHtml(next);
       setHtml(next);
       if (visualEditorRef.current) visualEditorRef.current.innerHTML = next;
+      pushVisualHistory(next);
       setOk('Текст добавлен в конец шаблона.');
     }
+  };
+  const handleVisualUndo = () => {
+    if (!isSuperAdmin || editorMode !== 'visual') return;
+    if (visualHistoryIndexRef.current <= 0) return;
+    const nextIndex = visualHistoryIndexRef.current - 1;
+    const snapshot = visualHistoryRef.current[nextIndex] ?? '';
+    visualHistoryIndexRef.current = nextIndex;
+    setVisualHistoryIndex(nextIndex);
+    applyVisualSnapshot(snapshot);
+    visualEditorRef.current?.focus();
+  };
+  const handleVisualRedo = () => {
+    if (!isSuperAdmin || editorMode !== 'visual') return;
+    if (
+      visualHistoryIndexRef.current < 0 ||
+      visualHistoryIndexRef.current >= visualHistoryRef.current.length - 1
+    ) {
+      return;
+    }
+    const nextIndex = visualHistoryIndexRef.current + 1;
+    const snapshot = visualHistoryRef.current[nextIndex] ?? '';
+    visualHistoryIndexRef.current = nextIndex;
+    setVisualHistoryIndex(nextIndex);
+    applyVisualSnapshot(snapshot);
+    visualEditorRef.current?.focus();
+  };
+  const normalizeTemplateText = (mode: NormalizeMode) => {
+    const source = editorMode === 'visual' ? (visualEditorRef.current?.innerHTML ?? html) : html;
+    const next = normalizeTemplateHtmlWhitespace(source, mode);
+    if (!next || next === source) {
+      setOk('Лишние пробелы и пустые строки не обнаружены.');
+      return;
+    }
+    setVisualDraftHtml(next);
+    setHtml(next);
+    if (visualEditorRef.current) {
+      visualEditorRef.current.innerHTML = next;
+    }
+    pushVisualHistory(next);
+    setOk(
+      mode === 'strict'
+        ? 'Выполнена строгая нормализация: очищены пробелы, пустые строки и выровнены абзацы.'
+        : 'Выполнена мягкая нормализация: убраны лишние пробелы и пустые строки.'
+    );
   };
 
   const basicTools: ToolButton[] = [
@@ -446,6 +1010,8 @@ export function ContractDocumentsTemplatesLibraryPage() {
     { label: 'Марк. список', onClick: () => wrapAsList(false) },
     { label: 'Нум. список', onClick: () => wrapAsList(true) },
     { label: 'Текст → абзацы', onClick: convertTextToParagraphs },
+    { label: 'Нормализовать (мягко)', onClick: () => normalizeTemplateText('soft') },
+    { label: 'Нормализовать (строго)', onClick: () => normalizeTemplateText('strict') },
     { label: '2 колонки', onClick: insertTwoColumnsBlock },
     { label: 'Подписи сторон', onClick: insertSignatureLines },
     { label: 'Реквизиты (готово)', onClick: insertRequisitesTemplate, secondary: true },
@@ -460,6 +1026,8 @@ export function ContractDocumentsTemplatesLibraryPage() {
     { label: 'Подчерк.', onClick: () => wrapSelection('<u>', '</u>', 'подчёркнуто') },
     { label: 'ВЕРХНИЙ РЕГИСТР', onClick: uppercaseSelection },
     { label: 'Очистить формат', onClick: clearFormattingInSelection },
+    { label: 'Нормализовать (мягко)', onClick: () => normalizeTemplateText('soft') },
+    { label: 'Нормализовать (строго)', onClick: () => normalizeTemplateText('strict') },
     { label: 'Шаблон раздела', onClick: insertSectionTemplate },
     { label: 'Цитата / примеч.', onClick: insertQuoteBlock },
     { label: 'Таблица 2×2', onClick: insertSimpleTable },
@@ -490,8 +1058,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
         </Link>
       </div>
 
-      {error ? <p className={styles.error}>{error}</p> : null}
-      {ok ? <p className={styles.hint}>{ok}</p> : null}
+      <div style={{ minHeight: 46 }}>
+        {error ? <p className={styles.error}>{error}</p> : null}
+        {!error && ok ? <p className={styles.hint}>{ok}</p> : null}
+      </div>
       {!isSuperAdmin ? (
         <p className={styles.hint}>Изменение библиотеки шаблонов доступно только супер-админу.</p>
       ) : null}
@@ -530,6 +1100,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
               className={styles.primaryBtn}
               disabled={saving}
               onClick={() => void saveTemplate()}
+              style={{ minWidth: 150 }}
             >
               {saving ? 'Сохранение…' : 'Сохранить шаблон'}
             </button>
@@ -581,8 +1152,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
                   const next = visualEditorRef.current?.innerHTML ?? visualDraftHtml;
                   setVisualDraftHtml(next);
                   setHtml(next);
+                  pushVisualHistory(next);
                 } else {
                   setVisualDraftHtml(html);
+                  resetVisualHistory(html);
                 }
               }}
             >
@@ -677,6 +1250,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
                 type="button"
                 className={styles.formatBtn}
                 onClick={tool.onClick}
+                onMouseDown={(e) => e.preventDefault()}
                 disabled={!isSuperAdmin}
               >
                 {tool.label}
@@ -696,6 +1270,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
                     className={styles.placeholderChip}
                     title={`Вставить {{${item.path}}}`}
                     onClick={() => insertPlaceholder(item.path)}
+                    onMouseDown={(e) => e.preventDefault()}
                     disabled={!isSuperAdmin}
                   >
                     {item.label} <code>{`{{${item.path}}}`}</code>
@@ -726,25 +1301,205 @@ export function ContractDocumentsTemplatesLibraryPage() {
             </>
           ) : (
             <>
-              <label className={styles.contractEditorLabel}>Визуальный конструктор</label>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                  marginBottom: 6,
+                }}
+              >
+                <label className={styles.contractEditorLabel} style={{ marginBottom: 0 }}>
+                  Визуальный конструктор
+                </label>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <label
+                    className={styles.field}
+                    style={{ minWidth: 150, gap: 4, flexDirection: 'row', alignItems: 'center' }}
+                  >
+                    <span style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+                      Масштаб: {visualZoomPct}%
+                    </span>
+                    <input
+                      type="number"
+                      min={60}
+                      max={150}
+                      step={5}
+                      value={visualZoomPct}
+                      onChange={(e) => {
+                        const n = Number(e.target.value);
+                        if (!Number.isFinite(n)) return;
+                        setVisualZoomPct(Math.max(60, Math.min(150, n)));
+                      }}
+                      style={{ height: 24, padding: '2px 6px', width: 66 }}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className={styles.secondaryBtn}
+                    disabled={!isSuperAdmin || editorMode !== 'visual'}
+                    onClick={handleVisualUndo}
+                    title="Назад"
+                    style={{ padding: '2px 8px', minWidth: 32, lineHeight: 1 }}
+                    aria-label="Назад"
+                  >
+                    ↶
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.secondaryBtn}
+                    disabled={!isSuperAdmin || editorMode !== 'visual'}
+                    onClick={handleVisualRedo}
+                    title="Вперёд"
+                    style={{ padding: '2px 8px', minWidth: 32, lineHeight: 1 }}
+                    aria-label="Вперёд"
+                  >
+                    ↷
+                  </button>
+                </div>
+              </div>
               <div
                 ref={visualEditorRef}
-                className={styles.contractHtmlTextarea}
+                className={`${styles.contractHtmlTextarea} ${styles.visualEditor} ${styles.visualEditorScrollable}`}
                 contentEditable={isSuperAdmin}
                 suppressContentEditableWarning
-                onInput={(e) => setVisualDraftHtml((e.currentTarget as HTMLDivElement).innerHTML)}
-                style={{ whiteSpace: 'normal', overflow: 'auto' }}
+                onInput={(e) => {
+                  const next = (e.currentTarget as HTMLDivElement).innerHTML;
+                  setVisualDraftHtml(next);
+                  setHtml(next);
+                  pushVisualHistory(next);
+                  captureVisualSelection();
+                }}
+                onKeyUp={captureVisualSelection}
+                onMouseUp={captureVisualSelection}
+                onFocus={captureVisualSelection}
+                onBlur={captureVisualEditorHeight}
+                style={{
+                  whiteSpace: 'normal',
+                  zoom: `${visualZoomPct}%`,
+                  height: visualEditorHeightPx ? `${visualEditorHeightPx}px` : undefined,
+                }}
               />
             </>
           )}
         </div>
         <div className={styles.contractPreviewColumn}>
-          <h3 className={styles.previewBlockTitle}>Предпросмотр с подстановкой данных</h3>
-          <div className={`${styles.docPane} ${styles.previewResizable}`}>
-            <div dangerouslySetInnerHTML={{ __html: renderedPreview }} />
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              marginBottom: 8,
+            }}
+          >
+            <h3 className={styles.previewBlockTitle} style={{ margin: 0 }}>
+              Предпросмотр
+            </h3>
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'nowrap',
+                gap: 10,
+                alignItems: 'center',
+                fontSize: 12,
+              }}
+            >
+              <label
+                className={styles.field}
+                style={{ minWidth: 180, gap: 6, flexDirection: 'row', alignItems: 'center' }}
+              >
+                <span style={{ fontSize: 12, lineHeight: 1.1, whiteSpace: 'nowrap' }}>
+                  Текст: {previewFontSizePx}px
+                </span>
+                <input
+                  type="number"
+                  min={10}
+                  max={20}
+                  step={1}
+                  value={previewFontSizePx}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    if (!Number.isFinite(n)) return;
+                    setPreviewFontSizePx(Math.max(10, Math.min(20, n)));
+                  }}
+                  style={{ height: 24, padding: '2px 6px', width: 64 }}
+                />
+              </label>
+              <label
+                className={styles.field}
+                style={{ minWidth: 190, gap: 6, flexDirection: 'row', alignItems: 'center' }}
+              >
+                <span style={{ fontSize: 12, lineHeight: 1.1, whiteSpace: 'nowrap' }}>
+                  Масштаб: {previewZoomPct}%
+                </span>
+                <input
+                  type="number"
+                  min={60}
+                  max={150}
+                  step={5}
+                  value={previewZoomPct}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    if (!Number.isFinite(n)) return;
+                    setPreviewZoomPct(Math.max(60, Math.min(150, n)));
+                  }}
+                  style={{ height: 24, padding: '2px 6px', width: 68 }}
+                />
+              </label>
+            </div>
+          </div>
+          <div
+            ref={previewPaneRef}
+            className={`${styles.docPane} ${styles.previewResizable}`}
+            style={{ height: previewPaneHeightPx ? `${previewPaneHeightPx}px` : undefined }}
+            onMouseUp={capturePreviewPaneHeight}
+            onTouchEnd={capturePreviewPaneHeight}
+          >
+            <div
+              style={{
+                fontSize: `${previewFontSizePx}px`,
+                zoom: `${previewZoomPct}%`,
+                width: '100%',
+                overflowX: 'hidden',
+              }}
+              dangerouslySetInnerHTML={{ __html: renderedPreview }}
+            />
           </div>
         </div>
       </div>
+      {showSaveSuccessModal ? (
+        <div
+          style={{
+            position: 'fixed',
+            right: 18,
+            bottom: 18,
+            zIndex: 2000,
+            background: '#111827',
+            color: '#fff',
+            borderRadius: 10,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.22)',
+            padding: '10px 12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            fontSize: 13,
+          }}
+          role="status"
+          aria-live="polite"
+        >
+          <span>Шаблон успешно сохранен.</span>
+          <button
+            type="button"
+            className={styles.secondaryBtn}
+            onClick={() => setShowSaveSuccessModal(false)}
+            style={{ padding: '4px 8px', minHeight: 24 }}
+          >
+            Закрыть
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

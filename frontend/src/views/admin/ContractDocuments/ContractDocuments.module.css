@@ -514,6 +514,31 @@
   max-height: 85vh;
 }
 
+.visualEditor {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.visualEditorScrollable {
+  resize: vertical;
+  min-height: 220px;
+  max-height: 85vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.visualEditor :global(table) {
+  width: 100% !important;
+  max-width: 100%;
+  table-layout: fixed;
+}
+
+.visualEditor :global(td),
+.visualEditor :global(th) {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
 .docPane :global(.docPrint) {
   font-size: 0.72rem;
   line-height: 1.35;

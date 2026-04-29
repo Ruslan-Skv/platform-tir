@@ -27,6 +27,23 @@ const EMPTY_PROFILE: ExecutorRequisiteProfile = {
   email: '',
 };
 
+const normalizeExecutorProfile = (raw: ExecutorRequisiteProfile): ExecutorRequisiteProfile => {
+  const kind: ExecutorRequisiteKind = raw.kind === 'ENTREPRENEUR' ? 'ENTREPRENEUR' : 'COMPANY';
+  return {
+    title: raw.title ?? '',
+    kind,
+    companyName: raw.companyName ?? '',
+    inn: raw.inn ?? '',
+    kpp: kind === 'ENTREPRENEUR' ? '' : (raw.kpp ?? ''),
+    ogrn: kind === 'ENTREPRENEUR' ? '' : (raw.ogrn ?? ''),
+    ogrnip: kind === 'ENTREPRENEUR' ? (raw.ogrnip ?? '') : '',
+    legalAddress: raw.legalAddress ?? '',
+    actualAddress: raw.actualAddress ?? '',
+    bankDetails: raw.bankDetails ?? '',
+    email: raw.email ?? '',
+  };
+};
+
 export function ContractDocumentsExecutorProfilesPage() {
   const [items, setItems] = useState<ExecutorRequisiteProfile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -42,7 +59,7 @@ export function ContractDocumentsExecutorProfilesPage() {
       setError(null);
       try {
         const res = await getContractDocumentExecutorProfiles('REPAIR');
-        setItems(res.items ?? []);
+        setItems((res.items ?? []).map(normalizeExecutorProfile));
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Не удалось загрузить реквизиты');
       } finally {
@@ -61,8 +78,9 @@ export function ContractDocumentsExecutorProfilesPage() {
     setError(null);
     setOk(null);
     try {
-      await putContractDocumentExecutorProfiles({ kind: 'REPAIR', items: nextItems });
-      setItems(nextItems);
+      const normalizedItems = nextItems.map(normalizeExecutorProfile);
+      await putContractDocumentExecutorProfiles({ kind: 'REPAIR', items: normalizedItems });
+      setItems(normalizedItems);
       setOk('Сохранено.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сохранить реквизиты');
@@ -77,15 +95,10 @@ export function ContractDocumentsExecutorProfilesPage() {
       return;
     }
     const next = [...items];
-    const kind: ExecutorRequisiteKind = draft.kind === 'ENTREPRENEUR' ? 'ENTREPRENEUR' : 'COMPANY';
-    const normalized: ExecutorRequisiteProfile = {
+    const normalized: ExecutorRequisiteProfile = normalizeExecutorProfile({
       ...draft,
       title: draft.title.trim(),
-      kind,
-      kpp: kind === 'ENTREPRENEUR' ? '' : (draft.kpp ?? ''),
-      ogrn: kind === 'ENTREPRENEUR' ? '' : (draft.ogrn ?? ''),
-      ogrnip: kind === 'ENTREPRENEUR' ? (draft.ogrnip ?? '') : '',
-    };
+    });
     if (editingIndex === null) next.push(normalized);
     else next[editingIndex] = normalized;
     await saveAll(next);

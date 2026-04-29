@@ -16,11 +16,29 @@ function flattenForTemplate(obj: unknown, prefix = ''): Record<string, string> {
   return out;
 }
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatTemplateValue(path: string, raw: string): string {
+  const trimmed = raw.trim();
+  const fallback = path.startsWith('customer.') && !trimmed ? 'Не предоставлено' : trimmed;
+  const safe = escapeHtml(fallback || '__________');
+  if (path.startsWith('customer.')) {
+    return `<strong><em>${safe}</em></strong>`;
+  }
+  return safe;
+}
+
 /** Подстановка плейсхолдеров вида `{{customer.fullName}}` из вложенного объекта данных. */
 export function applyTemplate(template: string, data: unknown): string {
   const flat = flattenForTemplate(data);
-  return template.replace(
-    /\{\{\s*([\w.]+)\s*\}\}/g,
-    (_, path: string) => flat[path] ?? '__________'
+  return template.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, path: string) =>
+    formatTemplateValue(path, flat[path] ?? '')
   );
 }
