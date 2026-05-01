@@ -134,6 +134,32 @@ function ensureRequisitesTableClass(html: string): string {
   return out;
 }
 
+/**
+ * В шаблоне «Реквизиты» из редактора подписи уже в ячейках (м.п. / подпись и линия «___ / ФИО»).
+ * Тогда не дублируем блок `contractPageSignatures` в конце.
+ */
+function requisitesTableHasInlinePartySignatures(tableHtml: string): boolean {
+  if (!/\bcontractRequisitesBlock\b/i.test(tableHtml)) return false;
+  if (!tableHtml.includes('ПОДРЯДЧИК') || !tableHtml.includes('ЗАКАЗЧИК')) return false;
+  /* «м.п.» — без \b: в JS \b не работает с кириллицей рядом с > */
+  const hasMp = /м\s*\.\s*п/i.test(tableHtml);
+  const hasPodpis = /подпись/i.test(tableHtml);
+  const hasUnderscoreSlash = /_{4,}\s*\//.test(tableHtml);
+  const longUnderlineLines = (tableHtml.match(/_{10,}/g) ?? []).length;
+  return (hasMp && hasPodpis && hasUnderscoreSlash) || longUnderlineLines >= 2;
+}
+
+function htmlHasRequisitesWithEmbeddedSignatures(html: string): boolean {
+  let from = 0;
+  for (;;) {
+    const found = findNextTableBlock(html, from);
+    if (!found) break;
+    if (requisitesTableHasInlinePartySignatures(found.block)) return true;
+    from = found.end;
+  }
+  return false;
+}
+
 /** Убирает HTML-ссылки, оставляя только их текст (часто прилетают из Excel). */
 function stripAnchorTags(html: string): string {
   return html.replace(/<a\b[^>]*>/gi, '').replace(/<\/a>/gi, '');
@@ -265,6 +291,8 @@ function addPageSignatures(html: string, flat: Record<string, string>): string {
 /** Компактные подписи в конце договора (после раздела с реквизитами). */
 function ensureFinalSignaturesRow(html: string, flat: Record<string, string>): string {
   if (html.includes(FINAL_SIGNATURES_ATTR)) return html;
+  if (/data-contract-signatures-embedded\s*=\s*(["'])1\1/i.test(html)) return html;
+  if (htmlHasRequisitesWithEmbeddedSignatures(html)) return html;
   const block = buildPageSignaturesBlock(flat, 'documentFooter');
   return insertInsideRootDocPrint(html, block);
 }

@@ -1088,7 +1088,7 @@ export function RepairContractDocumentEditorPage({
   const insertRequisitesTemplate = () => {
     const block = `
 <h2 style="text-align: center; margin: 16pt 0 8pt;">РЕКВИЗИТЫ И ПОДПИСИ СТОРОН</h2>
-<table class="contractRequisitesBlock" style="width: 100%; border-collapse: collapse; margin-top: 8pt;">
+<table class="contractRequisitesBlock" data-contract-signatures-embedded="1" style="width: 100%; border-collapse: collapse; margin-top: 8pt;">
   <tr>
     <td style="width: 50%; vertical-align: top; padding: 8px 10px 8px 0; border-right: 1px solid #bbb;">
       <p style="text-align: center; margin: 0 0 8pt;">ПОДРЯДЧИК</p>
