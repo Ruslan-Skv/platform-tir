@@ -105,6 +105,10 @@ export interface ContractTemplatePreset {
   tabId?: string;
   html: string;
   isDefault?: boolean;
+  /** Защита от удаления и от архивации без предварительного снятия. */
+  isProtected?: boolean;
+  /** Архив (скрыт из выбора; восстанавливается из библиотеки). */
+  archived?: boolean;
 }
 
 /** Объект (здание / проект): группа расчётов в списке команды. */

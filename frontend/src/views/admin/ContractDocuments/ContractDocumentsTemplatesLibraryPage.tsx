@@ -55,6 +55,15 @@ function normalizeTemplateTabId(value: string | undefined): RepairTemplateTabId 
     : 'contract';
 }
 
+function normalizeContractTemplatePreset(it: ContractTemplatePreset): ContractTemplatePreset {
+  return {
+    ...it,
+    tabId: normalizeTemplateTabId(it.tabId),
+    isProtected: Boolean(it.isProtected),
+    archived: Boolean(it.archived),
+  };
+}
+
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')
@@ -333,7 +342,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [items, setItems] = useState<ContractTemplatePreset[]>([]);
   const [activeTemplateTab, setActiveTemplateTab] = useState<RepairTemplateTabId>('contract');
-  const [showOnlyTabsWithTemplates, setShowOnlyTabsWithTemplates] = useState(false);
+  const [showArchivedTemplates, setShowArchivedTemplates] = useState(false);
   const [copyTargetTab, setCopyTargetTab] = useState<RepairTemplateTabId>('actStart');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -524,8 +533,12 @@ export function ContractDocumentsTemplatesLibraryPage() {
     [html, templateData]
   );
   const itemsByActiveTab = useMemo(
-    () => items.filter((it) => normalizeTemplateTabId(it.tabId) === activeTemplateTab),
-    [items, activeTemplateTab]
+    () =>
+      items.filter((it) => {
+        if (normalizeTemplateTabId(it.tabId) !== activeTemplateTab) return false;
+        return showArchivedTemplates ? Boolean(it.archived) : !it.archived;
+      }),
+    [items, activeTemplateTab, showArchivedTemplates]
   );
   const templatesCountByTab = useMemo(() => {
     const out: Record<RepairTemplateTabId, number> = {
@@ -542,17 +555,12 @@ export function ContractDocumentsTemplatesLibraryPage() {
       productionLog: 0,
     };
     for (const it of items) {
+      if (it.archived) continue;
       const tab = normalizeTemplateTabId(it.tabId);
       out[tab] += 1;
     }
     return out;
   }, [items]);
-  const visibleTemplateTabs = useMemo(() => {
-    if (!showOnlyTabsWithTemplates) return TEMPLATE_TAB_IDS;
-    const onlyNonEmpty = TEMPLATE_TAB_IDS.filter((tab) => templatesCountByTab[tab] > 0);
-    return onlyNonEmpty.length > 0 ? onlyNonEmpty : TEMPLATE_TAB_IDS;
-  }, [showOnlyTabsWithTemplates, templatesCountByTab]);
-
   useEffect(() => {
     void (async () => {
       setLoading(true);
@@ -572,13 +580,12 @@ export function ContractDocumentsTemplatesLibraryPage() {
         if (templatesRes.status !== 'fulfilled') {
           throw new Error('Не удалось загрузить библиотеку шаблонов');
         }
-        const next = (templatesRes.value.items ?? []).map((it) => ({
-          ...it,
-          tabId: normalizeTemplateTabId(it.tabId),
-        }));
+        const next = (templatesRes.value.items ?? []).map((it) =>
+          normalizeContractTemplatePreset(it)
+        );
         setItems(next);
         const tabItems = next.filter(
-          (it) => normalizeTemplateTabId(it.tabId) === activeTemplateTab
+          (it) => normalizeTemplateTabId(it.tabId) === activeTemplateTab && !it.archived
         );
         const firstId = tabItems.find((it) => it.isDefault)?.id ?? tabItems[0]?.id ?? '';
         setEditingId(firstId);
@@ -600,7 +607,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     setError(null);
     setOk(null);
     try {
-      const normalized = next.map((it) => ({ ...it, tabId: normalizeTemplateTabId(it.tabId) }));
+      const normalized = next.map((it) => normalizeContractTemplatePreset(it));
       await putContractDocumentTemplatePresets({ kind: 'REPAIR', items: normalized });
       setItems(normalized);
       setOk(successText);
@@ -644,6 +651,8 @@ export function ContractDocumentsTemplatesLibraryPage() {
             html: h,
             tabId: activeTemplateTab,
             isDefault: itemsByActiveTab.length === 0,
+            archived: false,
+            isProtected: false,
           },
         ];
     const isSaved = await persist(next, 'Шаблон сохранен.');
@@ -684,26 +693,85 @@ export function ContractDocumentsTemplatesLibraryPage() {
     setVisualDraftHtml(t?.html ?? '');
     resetVisualHistory(t?.html ?? '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTemplateTab, items.length]);
-
-  useEffect(() => {
-    if (visibleTemplateTabs.includes(activeTemplateTab)) return;
-    setActiveTemplateTab(visibleTemplateTabs[0] ?? 'contract');
-  }, [visibleTemplateTabs, activeTemplateTab]);
+  }, [activeTemplateTab, items.length, showArchivedTemplates]);
 
   const deleteTemplate = async () => {
     if (!isSuperAdmin || !editingId) return;
-    const next = items.filter((it) => it.id !== editingId);
-    await persist(next, 'Шаблон удален.');
-    const fallbackItems = next.filter(
-      (it) => normalizeTemplateTabId(it.tabId) === activeTemplateTab
+    const current = items.find((it) => it.id === editingId);
+    if (!current) return;
+    if (current.isProtected) {
+      setError(
+        'Шаблон защищён от удаления. Снимите защиту (чекбокс ниже), сохраните при необходимости, затем снова нажмите «В архив».'
+      );
+      return;
+    }
+    if (current.archived) {
+      setError('Этот шаблон уже в архиве.');
+      return;
+    }
+    const name = (current.title ?? title).trim() || 'без названия';
+    const ok = window.confirm(
+      `Шаблон «${name}» будет перенесён в архив (не в списке выбора). Его можно восстановить, включив показ архива. Продолжить?`
     );
-    const fallback = fallbackItems.find((it) => it.isDefault)?.id ?? fallbackItems[0]?.id ?? '';
-    selectTemplate(fallback);
+    if (!ok) return;
+    const tab = activeTemplateTab;
+    let next = items.map((it) =>
+      it.id === editingId ? { ...it, archived: true, isDefault: false } : it
+    );
+    let activeOnTab = next.filter((it) => normalizeTemplateTabId(it.tabId) === tab && !it.archived);
+    if (activeOnTab.length > 0 && !activeOnTab.some((it) => it.isDefault)) {
+      const pickId = activeOnTab[0].id;
+      next = next.map((it) =>
+        normalizeTemplateTabId(it.tabId) !== tab
+          ? it
+          : { ...it, isDefault: !it.archived && it.id === pickId }
+      );
+      activeOnTab = next.filter((it) => normalizeTemplateTabId(it.tabId) === tab && !it.archived);
+    }
+    const saved = await persist(next, 'Шаблон перенесён в архив.');
+    if (!saved) return;
+    const fallback = activeOnTab.find((it) => it.isDefault)?.id ?? activeOnTab[0]?.id ?? '';
+    if (fallback) selectTemplate(fallback);
+    else {
+      setEditingId('');
+      setTitle('');
+      setHtml('');
+      setVisualDraftHtml('');
+      resetVisualHistory('');
+    }
+  };
+
+  const restoreArchivedTemplate = async () => {
+    if (!isSuperAdmin || !editingId) return;
+    const current = items.find((it) => it.id === editingId);
+    if (!current?.archived) return;
+    const next = items.map((it) => (it.id === editingId ? { ...it, archived: false } : it));
+    await persist(next, 'Шаблон восстановлен из архива.');
+  };
+
+  const toggleTemplateProtected = async (value: boolean) => {
+    if (!isSuperAdmin || !editingId) return;
+    const current = items.find((it) => it.id === editingId);
+    if (current?.archived) {
+      setError('Восстановите шаблон из архива, чтобы менять защиту.');
+      return;
+    }
+    const next = items.map((it) => (it.id === editingId ? { ...it, isProtected: value } : it));
+    await persist(
+      next,
+      value
+        ? 'Включена защита от удаления и архивации.'
+        : 'Защита снята. Шаблон можно перенести в архив.'
+    );
   };
 
   const setDefault = async () => {
     if (!isSuperAdmin || !editingId) return;
+    const cur = items.find((it) => it.id === editingId);
+    if (cur?.archived) {
+      setError('Нельзя сделать архивный шаблон по умолчанию. Сначала восстановите его из архива.');
+      return;
+    }
     const next = items.map((it) => ({
       ...it,
       isDefault:
@@ -725,13 +793,17 @@ export function ContractDocumentsTemplatesLibraryPage() {
       setError('Выберите другую вкладку назначения.');
       return;
     }
-    const targetItems = items.filter((it) => normalizeTemplateTabId(it.tabId) === copyTargetTab);
+    const targetItems = items.filter(
+      (it) => normalizeTemplateTabId(it.tabId) === copyTargetTab && !it.archived
+    );
     const copied: ContractTemplatePreset = {
       id: `tpl_${Date.now()}`,
       title: `${source.title} (копия)`,
       html: source.html,
       tabId: copyTargetTab,
       isDefault: targetItems.length === 0,
+      archived: false,
+      isProtected: false,
     };
     const okSaved = await persist(
       [...items, copied],
@@ -1141,21 +1213,17 @@ export function ContractDocumentsTemplatesLibraryPage() {
   });
 
   return (
-    <div className={`${styles.page} ${styles.pageWide}`}>
+    <div className={`${styles.page} ${styles.pageWide} ${styles.templatesLibraryPage}`}>
       <div className={styles.editorHeader}>
         <div>
           <h1 className={styles.title}>Библиотека шаблонов документов</h1>
-          <p className={styles.subtitle}>
-            Управление шаблонами договоров направления «Ремонт». Менеджеры в карточке пакета
-            выбирают только готовый шаблон.
-          </p>
         </div>
         <Link className={styles.secondaryBtn} href="/admin/contract-documents/repair">
           К разделу «Ремонт»
         </Link>
       </div>
 
-      <div style={{ minHeight: 46 }}>
+      <div className={styles.templatesLibraryMessages}>
         {error ? <p className={styles.error}>{error}</p> : null}
         {!error && ok ? <p className={styles.hint}>{ok}</p> : null}
       </div>
@@ -1163,33 +1231,20 @@ export function ContractDocumentsTemplatesLibraryPage() {
         <p className={styles.hint}>Изменение библиотеки шаблонов доступно только супер-админу.</p>
       ) : null}
 
-      <div className={styles.sectionCard}>
-        <div className={styles.sectionFields}>
+      <div className={`${styles.sectionCard} ${styles.templatesLibraryControls}`}>
+        <div className={styles.templatesLibraryMeta}>
           <div className={styles.field}>
-            <label>Тип документа</label>
+            <label>Тип</label>
             <select
               value={activeTemplateTab}
               onChange={(e) => setActiveTemplateTab(normalizeTemplateTabId(e.target.value))}
             >
-              {visibleTemplateTabs.map((tab) => (
+              {TEMPLATE_TAB_IDS.map((tab) => (
                 <option key={tab} value={tab}>
                   {REPAIR_DOCUMENT_TAB_LABELS[tab]} ({templatesCountByTab[tab]})
                 </option>
               ))}
             </select>
-          </div>
-          <div className={styles.field}>
-            <label>Фильтр вкладок</label>
-            <button
-              type="button"
-              className={styles.secondaryBtn}
-              onClick={() => setShowOnlyTabsWithTemplates((v) => !v)}
-              style={{ justifyContent: 'flex-start' }}
-            >
-              {showOnlyTabsWithTemplates
-                ? 'Показывать все вкладки'
-                : 'Показывать только вкладки с шаблонами'}
-            </button>
           </div>
           <div className={styles.field}>
             <label>Шаблон</label>
@@ -1198,34 +1253,65 @@ export function ContractDocumentsTemplatesLibraryPage() {
               disabled={loading || itemsByActiveTab.length === 0}
               onChange={(e) => selectTemplate(e.target.value)}
             >
-              {itemsByActiveTab.length === 0 ? <option value="">— нет шаблонов —</option> : null}
+              {itemsByActiveTab.length === 0 ? <option value="">— нет —</option> : null}
               {itemsByActiveTab.map((it) => (
                 <option key={it.id} value={it.id}>
                   {it.title}
-                  {it.isDefault ? ' (по умолчанию)' : ''}
+                  {it.isDefault ? ' (по умолч.)' : ''}
+                  {it.archived ? ' [арх.]' : ''}
                 </option>
               ))}
             </select>
           </div>
           <div className={styles.field}>
-            <label>Имя шаблона</label>
+            <label>Имя</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               disabled={!isSuperAdmin}
             />
           </div>
+          <div className={styles.templatesLibraryMetaRow}>
+            {isSuperAdmin && editingId ? (
+              <label
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  cursor: 'pointer',
+                  fontSize: '0.72rem',
+                  fontWeight: 600,
+                  color: '#374151',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={Boolean(items.find((it) => it.id === editingId)?.isProtected)}
+                  disabled={Boolean(items.find((it) => it.id === editingId)?.archived) || saving}
+                  onChange={(e) => void toggleTemplateProtected(e.target.checked)}
+                />
+                Защита от удаления
+              </label>
+            ) : null}
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              onClick={() => setShowArchivedTemplates((v) => !v)}
+              style={{ justifyContent: 'flex-start' }}
+            >
+              {showArchivedTemplates ? 'Активные' : 'Архив'}
+            </button>
+          </div>
         </div>
         {isSuperAdmin ? (
-          <div className={styles.toolbar} style={{ marginTop: 10, marginBottom: 0 }}>
+          <div className={styles.templatesLibraryToolbar}>
             <button
               type="button"
               className={styles.primaryBtn}
               disabled={saving}
               onClick={() => void saveTemplate()}
-              style={{ minWidth: 150 }}
             >
-              {saving ? 'Сохранение…' : 'Сохранить шаблон'}
+              {saving ? 'Сохранение…' : 'Сохранить'}
             </button>
             <button
               type="button"
@@ -1233,17 +1319,13 @@ export function ContractDocumentsTemplatesLibraryPage() {
               onClick={() => createTemplate('copy')}
               disabled={!editingId}
             >
-              Создать копию
+              Копия
             </button>
-            <label
-              className={styles.field}
-              style={{ minWidth: 280, gap: 6, flexDirection: 'row', alignItems: 'center' }}
-            >
-              <span style={{ whiteSpace: 'nowrap' }}>Копировать в</span>
+            <div className={styles.templatesLibraryCopyRow}>
+              <span>Вкладка</span>
               <select
                 value={copyTargetTab}
                 onChange={(e) => setCopyTargetTab(normalizeTemplateTabId(e.target.value))}
-                style={{ minWidth: 170 }}
               >
                 {TEMPLATE_TAB_IDS.map((tab) => (
                   <option key={tab} value={tab} disabled={tab === activeTemplateTab}>
@@ -1259,30 +1341,50 @@ export function ContractDocumentsTemplatesLibraryPage() {
               >
                 Копировать
               </button>
-            </label>
+            </div>
             <button
               type="button"
               className={styles.secondaryBtn}
               onClick={() => createTemplate('blank')}
             >
-              Новый пустой
+              Пустой
             </button>
             <button
               type="button"
               className={styles.secondaryBtn}
-              disabled={!editingId}
+              disabled={!editingId || Boolean(items.find((it) => it.id === editingId)?.archived)}
               onClick={() => void setDefault()}
             >
-              Сделать по умолчанию
+              По умолчанию
             </button>
-            <button
-              type="button"
-              className={styles.dangerBtn}
-              disabled={!editingId}
-              onClick={() => void deleteTemplate()}
-            >
-              Удалить
-            </button>
+            {items.find((it) => it.id === editingId)?.archived ? (
+              <button
+                type="button"
+                className={styles.secondaryBtn}
+                disabled={!editingId || saving}
+                onClick={() => void restoreArchivedTemplate()}
+              >
+                Из архива
+              </button>
+            ) : (
+              <button
+                type="button"
+                className={styles.dangerBtn}
+                disabled={
+                  !editingId ||
+                  Boolean(items.find((it) => it.id === editingId)?.isProtected) ||
+                  saving
+                }
+                title={
+                  items.find((it) => it.id === editingId)?.isProtected
+                    ? 'Снимите защиту, чтобы перенести шаблон в архив'
+                    : undefined
+                }
+                onClick={() => void deleteTemplate()}
+              >
+                В архив
+              </button>
+            )}
             <button
               type="button"
               className={styles.secondaryBtn}
@@ -1294,12 +1396,17 @@ export function ContractDocumentsTemplatesLibraryPage() {
                 )
               }
             >
-              Печать предпросмотра
+              Печать
             </button>
             <button
               type="button"
               className={styles.secondaryBtn}
               disabled={!isSuperAdmin}
+              title={
+                editorMode === 'visual'
+                  ? 'Сформировать HTML из визуального конструктора'
+                  : 'Загрузить HTML из поля в визуальный конструктор'
+              }
               onClick={() => {
                 if (editorMode === 'visual') {
                   const next = visualEditorRef.current?.innerHTML ?? visualDraftHtml;
@@ -1312,31 +1419,31 @@ export function ContractDocumentsTemplatesLibraryPage() {
                 }
               }}
             >
-              {editorMode === 'visual'
-                ? 'Сформировать HTML из конструктора'
-                : 'Загрузить HTML в конструктор'}
+              {editorMode === 'visual' ? 'HTML ← конструктор' : 'HTML → конструктор'}
             </button>
             <button
               type="button"
               className={styles.secondaryBtn}
               disabled={!isSuperAdmin || editorMode !== 'visual'}
+              title="Вставить текст договора из буфера с авто-разбивкой на абзацы"
               onClick={() => void handlePasteContractTextFromClipboard()}
             >
-              Вставить текст договора (из буфера) → авто-разбивка на абзацы
+              Текст → абзацы
             </button>
             <button
               type="button"
               className={styles.secondaryBtn}
               disabled={!isSuperAdmin || editorMode !== 'visual'}
+              title="Добавить текст из буфера в конец шаблона"
               onClick={() => void handleAppendContractTextFromClipboard()}
             >
-              Добавить текст из буфера в конец текущего шаблона
+              + текст в конец
             </button>
           </div>
         ) : null}
       </div>
 
-      <div className={`${styles.contractTopTools} ${styles.blockTools}`} style={{ marginTop: 12 }}>
+      <div className={`${styles.contractTopTools} ${styles.blockTools}`}>
         <div className={styles.contractEditorMain}>
           <div className={styles.formatLevelBar}>
             <button
@@ -1459,8 +1566,8 @@ export function ContractDocumentsTemplatesLibraryPage() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: 8,
-                  marginBottom: 6,
+                  gap: 6,
+                  marginBottom: 3,
                 }}
               >
                 <label className={styles.contractEditorLabel} style={{ marginBottom: 0 }}>
@@ -1543,8 +1650,8 @@ export function ContractDocumentsTemplatesLibraryPage() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: 12,
-              marginBottom: 8,
+              gap: 6,
+              marginBottom: 3,
             }}
           >
             <h3 className={styles.previewBlockTitle} style={{ margin: 0 }}>

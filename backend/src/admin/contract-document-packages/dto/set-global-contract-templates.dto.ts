@@ -31,6 +31,16 @@ export class ContractTemplatePresetDto {
   @IsOptional()
   @IsBoolean()
   isDefault?: boolean;
+
+  /** Нельзя удалить из списка и нельзя архивировать, пока включено (снимается отдельно). */
+  @IsOptional()
+  @IsBoolean()
+  isProtected?: boolean;
+
+  /** Мягкое удаление: не показывается в списках выбора, остаётся в JSON. */
+  @IsOptional()
+  @IsBoolean()
+  archived?: boolean;
 }
 
 export class SetGlobalContractTemplatesDto {

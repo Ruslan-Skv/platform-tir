@@ -74,6 +74,15 @@ function normalizeTemplateTabId(
     : 'contract';
 }
 
+function normalizeContractTemplatePreset(it: ContractTemplatePreset): ContractTemplatePreset {
+  return {
+    ...it,
+    tabId: normalizeTemplateTabId(it.tabId),
+    isProtected: Boolean(it.isProtected),
+    archived: Boolean(it.archived),
+  };
+}
+
 function parseDecimalAmount(raw: string): number | null {
   const normalized = raw.replace(/\s+/g, '').replace(',', '.');
   if (!normalized) return null;
@@ -237,6 +246,7 @@ export function RepairContractDocumentEditorPage({
     const map = new Map<RepairDocumentTemplateTabId, ContractTemplatePreset[]>();
     for (const tab of TEMPLATE_TAB_IDS) map.set(tab, []);
     for (const item of contractTemplatePresets) {
+      if (item.archived) continue;
       const tab = normalizeTemplateTabId(item.tabId);
       map.set(tab, [...(map.get(tab) ?? []), { ...item, tabId: tab }]);
     }
@@ -362,20 +372,18 @@ export function RepairContractDocumentEditorPage({
             : null,
         }))
       );
-      const normalizedTemplates = templates.map((it) => ({
-        ...it,
-        tabId: normalizeTemplateTabId(it.tabId),
-      }));
+      const normalizedTemplates = templates.map((it) => normalizeContractTemplatePreset(it));
       setContractTemplatePresets(normalizedTemplates);
       const selectedIds = { ...templatePresetIds };
       if (contractTemplateId && !selectedIds.contract) {
         selectedIds.contract = contractTemplateId;
       }
       for (const tab of TEMPLATE_TAB_IDS) {
-        if (!selectedIds[tab]) {
-          const tabItems = normalizedTemplates.filter(
-            (it) => normalizeTemplateTabId(it.tabId) === tab
-          );
+        const tabItems = normalizedTemplates.filter(
+          (it) => normalizeTemplateTabId(it.tabId) === tab && !it.archived
+        );
+        const sid = selectedIds[tab];
+        if (!sid || !tabItems.some((it) => it.id === sid)) {
           selectedIds[tab] = tabItems.find((it) => it.isDefault)?.id ?? tabItems[0]?.id ?? '';
         }
       }
@@ -844,9 +852,7 @@ export function RepairContractDocumentEditorPage({
     setError(null);
     try {
       await putContractDocumentTemplatePresets({ kind: 'REPAIR', items });
-      setContractTemplatePresets(
-        items.map((it) => ({ ...it, tabId: normalizeTemplateTabId(it.tabId) }))
-      );
+      setContractTemplatePresets(items.map((it) => normalizeContractTemplatePreset(it)));
       setExcelMessage('Шаблоны договора сохранены.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сохранить шаблоны договора');
@@ -895,8 +901,10 @@ export function RepairContractDocumentEditorPage({
             tabId: currentTab,
             isDefault:
               contractTemplatePresets.filter(
-                (it) => normalizeTemplateTabId(it.tabId) === currentTab
+                (it) => normalizeTemplateTabId(it.tabId) === currentTab && !it.archived
               ).length === 0,
+            archived: false,
+            isProtected: false,
           },
         ];
     await persistContractTemplatePresets(finalItems);
@@ -915,9 +923,39 @@ export function RepairContractDocumentEditorPage({
 
   const handleDeleteTemplate = async () => {
     if (!isSuperAdmin || !editingTemplateId) return;
-    const next = contractTemplatePresets.filter((it) => it.id !== editingTemplateId);
+    const current = contractTemplatePresets.find((it) => it.id === editingTemplateId);
+    if (!current) return;
+    if (current.isProtected) {
+      setError(
+        'Шаблон защищён. Снимите защиту в библиотеке шаблонов, затем можно перенести его в архив.'
+      );
+      return;
+    }
+    if (current.archived) return;
+    const name = (current.title ?? '').trim() || 'без названия';
+    if (
+      !window.confirm(
+        `Шаблон «${name}» будет перенесён в архив глобальной библиотеки (не пропадёт, но скроется из выбора). Продолжить?`
+      )
+    ) {
+      return;
+    }
+    const tab = normalizeTemplateTabId(current.tabId);
+    let next = contractTemplatePresets.map((it) =>
+      it.id === editingTemplateId ? { ...it, archived: true, isDefault: false } : it
+    );
+    let activeOnTab = next.filter((it) => normalizeTemplateTabId(it.tabId) === tab && !it.archived);
+    if (activeOnTab.length > 0 && !activeOnTab.some((it) => it.isDefault)) {
+      const pickId = activeOnTab[0].id;
+      next = next.map((it) =>
+        normalizeTemplateTabId(it.tabId) !== tab
+          ? it
+          : { ...it, isDefault: !it.archived && it.id === pickId }
+      );
+      activeOnTab = next.filter((it) => normalizeTemplateTabId(it.tabId) === tab && !it.archived);
+    }
     await persistContractTemplatePresets(next);
-    const fallbackId = next.find((it) => it.isDefault)?.id ?? next[0]?.id ?? '';
+    const fallbackId = activeOnTab.find((it) => it.isDefault)?.id ?? activeOnTab[0]?.id ?? '';
     setEditingTemplateId(fallbackId);
     setSelectedTemplateIds((prev) => ({
       ...prev,
@@ -930,6 +968,11 @@ export function RepairContractDocumentEditorPage({
 
   const handleSetDefaultTemplate = async () => {
     if (!isSuperAdmin || !editingTemplateId) return;
+    const cur = contractTemplatePresets.find((it) => it.id === editingTemplateId);
+    if (cur?.archived) {
+      setError('Нельзя сделать архивный шаблон по умолчанию.');
+      return;
+    }
     const next = contractTemplatePresets.map((it) => ({
       ...it,
       isDefault: it.id === editingTemplateId,

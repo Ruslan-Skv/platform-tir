@@ -222,7 +222,33 @@ export class ContractDocumentPackagesService {
     }
   }
 
+  private assertContractTemplatesProtectedRules(
+    previous: ContractTemplatePresetDto[],
+    incoming: ContractTemplatePresetDto[],
+  ): void {
+    const incomingById = new Map(incoming.map((it) => [it.id, it]));
+    for (const prev of previous) {
+      const wasProtected = Boolean(prev.isProtected) && !Boolean(prev.archived);
+      if (!wasProtected) continue;
+      const next = incomingById.get(prev.id);
+      if (!next) {
+        throw new BadRequestException(
+          'Нельзя удалить защищённый шаблон из хранилища. Снимите защиту в библиотеке шаблонов, затем перенесите в архив или измените.',
+        );
+      }
+      const nextProtected = Boolean(next.isProtected);
+      const nextArchived = Boolean(next.archived);
+      if (nextProtected && nextArchived) {
+        throw new BadRequestException(
+          'Нельзя архивировать защищённый шаблон, пока включена защита. Сначала снимите защиту.',
+        );
+      }
+    }
+  }
+
   async setGlobalContractTemplates(dto: SetGlobalContractTemplatesDto, updatedById?: string) {
+    const previous = await this.getGlobalContractTemplates(dto.kind);
+    this.assertContractTemplatesProtectedRules(previous.items, dto.items ?? []);
     const payload = JSON.stringify({ items: dto.items ?? [] });
     const row = await this.prisma.contractDocumentGlobalTemplate.upsert({
       where: {
