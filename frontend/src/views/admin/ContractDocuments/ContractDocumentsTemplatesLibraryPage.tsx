@@ -15,14 +15,17 @@ import {
   putContractDocumentTemplatePresets,
 } from '@/shared/api/admin-contract-document-packages';
 import { applyTemplate } from '@/views/admin/ContractDocuments/repair/applyTemplate';
-import { printDocumentHtml } from '@/views/admin/ContractDocuments/repair/printDocument';
+import {
+  pickPrintMarginFooterNames,
+  printDocumentHtml,
+} from '@/views/admin/ContractDocuments/repair/printDocument';
 import { REPAIR_CONTRACT_PLACEHOLDER_GROUPS } from '@/views/admin/ContractDocuments/repair/repairContractPlaceholders';
 import {
   REPAIR_DOCUMENT_TAB_LABELS,
   type RepairDocumentTabId,
 } from '@/views/admin/ContractDocuments/repair/repairDocumentTabs';
 import {
-  defaultRepairPackageFormData,
+  buildRepairTemplatePreviewFallbackData,
   repairPackageFormForTemplate,
 } from '@/views/admin/ContractDocuments/repair/repairPackageForm';
 
@@ -508,60 +511,13 @@ export function ContractDocumentsTemplatesLibraryPage() {
     return range;
   };
 
-  const templateData = useMemo(() => {
-    const base = defaultRepairPackageFormData();
-    const executorKind = firstExecutorProfile?.kind === 'ENTREPRENEUR' ? 'ENTREPRENEUR' : 'COMPANY';
-    const directorName =
-      firstSignatoryProfile?.directorNameNominative ||
-      firstSignatoryProfile?.directorNameGenitive ||
-      'Петров Петр Петрович';
-
-    return repairPackageFormForTemplate({
-      ...base,
-      customer: {
-        ...base.customer,
-        fullName: 'Иванов Иван Иванович',
-        address: 'г. Краснодар, ул. Примерная, д. 1',
-        phone: '+7 900 000-00-00',
-      },
-      executor: {
-        ...base.executor,
-        selectedProfileTitle: firstExecutorProfile?.title ?? '',
-        executorKind,
-        companyName: firstExecutorProfile?.companyName || 'ООО Территория ИР',
-        inn: firstExecutorProfile?.inn || '2312345678',
-        kpp: executorKind === 'ENTREPRENEUR' ? '' : (firstExecutorProfile?.kpp ?? '231201001'),
-        ogrn:
-          executorKind === 'ENTREPRENEUR' ? '' : (firstExecutorProfile?.ogrn ?? '1232300000000'),
-        ogrnip: executorKind === 'ENTREPRENEUR' ? (firstExecutorProfile?.ogrnip ?? '') : '',
-        legalAddress: firstExecutorProfile?.legalAddress || '',
-        actualAddress: firstExecutorProfile?.actualAddress || '',
-        bankDetails: firstExecutorProfile?.bankDetails || '',
-        email: firstExecutorProfile?.email || 'info@example.com',
-        selectedSignatoryProfileTitle: firstSignatoryProfile?.title ?? '',
-        signatoryCrmUserId: firstSignatoryProfile?.crmUserId ?? '',
-        directorNameNominative: firstSignatoryProfile?.directorNameNominative ?? '',
-        directorNameGenitive: firstSignatoryProfile?.directorNameGenitive ?? '',
-        directorName,
-        basis: firstSignatoryProfile?.basis || 'Устава',
-        salesOffice: firstSignatoryProfile?.salesOffice ?? '',
-        officePhone: firstSignatoryProfile?.officePhone ?? '',
-      },
-      object: {
-        ...base.object,
-        objectAddress: 'г. Краснодар, ул. Строителей, д. 10',
-        objectFloor: '5',
-        objectDescription: 'Косметический ремонт квартиры',
-      },
-      contract: {
-        ...base.contract,
-        number: 'R-001/26',
-        date: '2026-04-29',
-        totalAmount: '250000',
-        totalAmountWords: 'двести пятьдесят тысяч рублей',
-      },
-    });
-  }, [firstExecutorProfile, firstSignatoryProfile]);
+  const templateData = useMemo(
+    () =>
+      repairPackageFormForTemplate(
+        buildRepairTemplatePreviewFallbackData(firstExecutorProfile, firstSignatoryProfile)
+      ),
+    [firstExecutorProfile, firstSignatoryProfile]
+  );
 
   const renderedPreview = useMemo(
     () => applyTemplate(html || '', templateData),
@@ -1333,7 +1289,8 @@ export function ContractDocumentsTemplatesLibraryPage() {
               onClick={() =>
                 printDocumentHtml(
                   renderedPreview,
-                  `Шаблон: ${REPAIR_DOCUMENT_TAB_LABELS[activeTemplateTab]} / ${title || 'без названия'}`
+                  `Шаблон: ${REPAIR_DOCUMENT_TAB_LABELS[activeTemplateTab]} / ${title || 'без названия'}`,
+                  { marginFooter: pickPrintMarginFooterNames(templateData) }
                 )
               }
             >

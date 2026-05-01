@@ -1,12 +1,7 @@
 import type { Contract } from '@/shared/api/admin-crm';
 
+import { isoOrCrmDateToContractDdMmYyyy } from './contractDateFormat';
 import type { RepairPackageFormData } from './repairPackageForm';
-
-function formatDate(iso: string | null | undefined): string {
-  if (!iso) return '';
-  const s = String(iso);
-  return s.length >= 10 ? s.slice(0, 10) : s;
-}
 
 function formatMoney(v: string | number | null | undefined): string {
   if (v === null || v === undefined) return '';
@@ -39,7 +34,7 @@ export function mergeRepairFormFromCrmContract(
     contract: {
       ...prev.contract,
       number: c.contractNumber || prev.contract.number,
-      date: formatDate(c.contractDate) || prev.contract.date,
+      date: isoOrCrmDateToContractDdMmYyyy(c.contractDate) || prev.contract.date,
       totalAmount: total || prev.contract.totalAmount,
       prepaymentAmount: advance || prev.contract.prepaymentAmount,
     },

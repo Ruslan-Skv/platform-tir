@@ -51,6 +51,27 @@ export class ContractEstimatePresetDto {
   @IsOptional()
   @IsString()
   updatedAt?: string;
+
+  /** Объект (группа расчётов), опционально. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(48)
+  groupId?: string;
+}
+
+/** Логический объект: несколько расчётов одного здания / проекта. */
+export class ContractEstimateGroupDto {
+  @IsString()
+  @MaxLength(48)
+  id: string;
+
+  @IsString()
+  @MaxLength(200)
+  title: string;
+
+  @IsOptional()
+  @IsString()
+  updatedAt?: string;
 }
 
 export class SetGlobalEstimatePresetsDto {
@@ -62,4 +83,11 @@ export class SetGlobalEstimatePresetsDto {
   @ValidateNested({ each: true })
   @Type(() => ContractEstimatePresetDto)
   items: ContractEstimatePresetDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(80)
+  @ValidateNested({ each: true })
+  @Type(() => ContractEstimateGroupDto)
+  groups?: ContractEstimateGroupDto[];
 }

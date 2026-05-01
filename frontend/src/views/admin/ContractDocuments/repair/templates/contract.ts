@@ -114,15 +114,15 @@ export const repairTemplateContract = `
   <p style="text-align: justify; margin: 0 0 8pt;">
     Итоговая сумма сметы: <strong>{{estimate.total}}</strong>
   </p>
-  <div style="margin: 0 0 10pt;">
+  <div class="estimateRoomsEmbed" style="margin: 0 0 10pt;">
     {{estimate.roomsHtml}}
   </div>
   <p style="text-align: justify; margin: 0 0 8pt;">
     Примечание к смете: <em>{{estimate.notes}}</em>
   </p>
 
-  <h2 style="text-align: center; font-size: 12pt; margin: 20pt 0 10pt;">11. РЕКВИЗИТЫ И ПОДПИСИ СТОРОН</h2>
-  <table class="contractRequisitesBlock" style="width: 100%; border-collapse: collapse; font-size: 10pt; margin-top: 6pt;">
+  <h2 style="text-align: center; font-size: 12pt; margin: 16pt 0 8pt;">11. РЕКВИЗИТЫ И ПОДПИСИ СТОРОН</h2>
+  <table class="contractRequisitesBlock" style="width: 100%; border-collapse: collapse; font-size: 10pt; margin-top: 6pt; page-break-inside: auto;">
     <tr>
       <td style="width: 50%; vertical-align: top; padding: 10px 12px 10px 0; border-right: 1px solid #bbb;">
         <p style="text-align: center; margin: 0 0 10pt;">ПОДРЯДЧИК</p>
@@ -133,8 +133,6 @@ export const repairTemplateContract = `
         <p style="margin: 0 0 4pt;">E-mail: {{executor.email}}</p>
         <p style="margin: 0 0 4pt;">Банковские реквизиты:</p>
         <p style="margin: 0 0 12pt; white-space: pre-wrap;">{{executor.bankDetails}}</p>
-        <p style="margin: 24pt 0 4pt;">________________________ / {{executor.directorName}}</p>
-        <p style="margin: 0; font-size: 9pt;">м.п.</p>
       </td>
       <td style="width: 50%; vertical-align: top; padding: 10px 0 10px 12px;">
         <p style="text-align: center; margin: 0 0 10pt;">ЗАКАЗЧИК</p>
@@ -146,8 +144,6 @@ export const repairTemplateContract = `
         <p style="margin: 0 0 4pt; white-space: pre-wrap;">{{customer.bankDetails|plain}}</p>
         <p style="margin: 0 0 4pt;">Паспорт: {{customer.passportSeriesNumber|plain}}</p>
         <p style="margin: 0 0 4pt;">Выдан: {{customer.passportIssuedBy|plain}}, {{customer.passportIssueDate|plain}}</p>
-        <p style="margin: 24pt 0 4pt;">________________________ / {{customer.fullName|plain}}</p>
-        <p style="margin: 0; font-size: 9pt;">подпись</p>
       </td>
     </tr>
   </table>

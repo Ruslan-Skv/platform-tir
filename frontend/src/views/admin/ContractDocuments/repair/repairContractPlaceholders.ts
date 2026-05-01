@@ -87,7 +87,7 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
     title: 'Договор (реквизиты)',
     items: [
       { path: 'contract.number', label: 'Номер договора' },
-      { path: 'contract.date', label: 'Дата договора' },
+      { path: 'contract.date', label: 'Дата договора (дд.мм.гггг)' },
       { path: 'contract.totalAmount', label: 'Сумма (цифрами)' },
       { path: 'contract.recommendedPrepayment', label: 'Рекомендованная предоплата (70%)' },
       { path: 'contract.totalAmountWords', label: 'Сумма прописью' },

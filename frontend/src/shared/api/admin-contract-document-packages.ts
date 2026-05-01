@@ -107,12 +107,21 @@ export interface ContractTemplatePreset {
   isDefault?: boolean;
 }
 
+/** Объект (здание / проект): группа расчётов в списке команды. */
+export interface ContractEstimateGroup {
+  id: string;
+  title: string;
+  updatedAt?: string;
+}
+
 export interface ContractEstimatePreset {
   id: string;
   title: string;
   categorySlug: string;
   categoryName: string;
   calculatorDraft: string;
+  /** Ссылка на `ContractEstimateGroup.id`, если расчёт входит в объект. */
+  groupId?: string;
   snapshot?: {
     total: number;
     rooms: Array<{
@@ -312,17 +321,31 @@ export async function putContractDocumentTemplatePresets(body: {
 
 export async function getContractDocumentEstimatePresets(
   kind: ContractDocumentPackageKind
-): Promise<{ items: ContractEstimatePreset[]; updatedAt: string | null }> {
+): Promise<{
+  items: ContractEstimatePreset[];
+  groups: ContractEstimateGroup[];
+  updatedAt: string | null;
+}> {
   const qs = new URLSearchParams({ kind });
   const url = `${getApiBaseUrl()}/admin/contract-document-packages/estimate-presets?${qs}`;
   const res = await apiFetch(url, { headers: getAdminAuthHeaders() });
   if (!res.ok) throw new Error('Не удалось загрузить расчёты');
-  return res.json();
+  const data = (await res.json()) as {
+    items?: ContractEstimatePreset[];
+    groups?: ContractEstimateGroup[];
+    updatedAt?: string | null;
+  };
+  return {
+    items: Array.isArray(data.items) ? data.items : [],
+    groups: Array.isArray(data.groups) ? data.groups : [],
+    updatedAt: data.updatedAt ?? null,
+  };
 }
 
 export async function putContractDocumentEstimatePresets(body: {
   kind: ContractDocumentPackageKind;
   items: ContractEstimatePreset[];
+  groups?: ContractEstimateGroup[];
 }): Promise<{ id: string; kind: string; tab: string; updatedAt: string }> {
   const res = await apiFetch(
     `${getApiBaseUrl()}/admin/contract-document-packages/estimate-presets`,

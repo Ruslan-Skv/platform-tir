@@ -1,3 +1,8 @@
+import type {
+  ContractSignatoryProfile,
+  ExecutorRequisiteProfile,
+} from '@/shared/api/admin-contract-document-packages';
+
 /** ЮЛ — ОГРН и КПП; ИП — ОГРНИП (КПП в форме обычно пустой). */
 export type RepairExecutorKind = 'COMPANY' | 'ENTREPRENEUR';
 
@@ -184,6 +189,175 @@ export function mergeRepairPackageFormData(raw: unknown): RepairPackageFormData 
   ) as unknown as RepairPackageFormData;
 }
 
+function pickStr(formVal: string, fallbackVal: string): string {
+  return formVal.trim() !== '' ? formVal : fallbackVal;
+}
+
+/**
+ * Те же примерные данные, что в превью библиотеки шаблонов (плюс реквизиты из карточек).
+ * Используется, чтобы пустые поля пакета не давали «пустой» договор при тех же {{…}} в HTML.
+ */
+export function buildRepairTemplatePreviewFallbackData(
+  executorProfile: ExecutorRequisiteProfile | null | undefined,
+  signatoryProfile: ContractSignatoryProfile | null | undefined
+): RepairPackageFormData {
+  const base = defaultRepairPackageFormData();
+  const executorKind = executorProfile?.kind === 'ENTREPRENEUR' ? 'ENTREPRENEUR' : 'COMPANY';
+  const directorName =
+    signatoryProfile?.directorNameNominative ||
+    signatoryProfile?.directorNameGenitive ||
+    'Петров Петр Петрович';
+
+  return {
+    ...base,
+    customer: {
+      ...base.customer,
+      fullName: 'Иванов Иван Иванович',
+      address: 'г. Краснодар, ул. Примерная, д. 1',
+      phone: '+7 900 000-00-00',
+    },
+    executor: {
+      ...base.executor,
+      selectedProfileTitle: executorProfile?.title ?? '',
+      executorKind,
+      companyName: executorProfile?.companyName || 'ООО Территория ИР',
+      inn: executorProfile?.inn || '2312345678',
+      kpp: executorKind === 'ENTREPRENEUR' ? '' : (executorProfile?.kpp ?? '231201001'),
+      ogrn: executorKind === 'ENTREPRENEUR' ? '' : (executorProfile?.ogrn ?? '1232300000000'),
+      ogrnip: executorKind === 'ENTREPRENEUR' ? (executorProfile?.ogrnip ?? '') : '',
+      legalAddress: executorProfile?.legalAddress || '',
+      actualAddress: executorProfile?.actualAddress || '',
+      bankDetails: executorProfile?.bankDetails || '',
+      email: executorProfile?.email || 'info@example.com',
+      selectedSignatoryProfileTitle: signatoryProfile?.title ?? '',
+      signatoryCrmUserId: signatoryProfile?.crmUserId ?? '',
+      directorNameNominative: signatoryProfile?.directorNameNominative ?? '',
+      directorNameGenitive: signatoryProfile?.directorNameGenitive ?? '',
+      directorName,
+      basis: signatoryProfile?.basis || 'Устава',
+      salesOffice: signatoryProfile?.salesOffice ?? '',
+      officePhone: signatoryProfile?.officePhone ?? '',
+    },
+    object: {
+      ...base.object,
+      objectAddress: 'г. Краснодар, ул. Строителей, д. 10',
+      objectFloor: '5',
+      objectDescription: 'Косметический ремонт квартиры',
+    },
+    contract: {
+      ...base.contract,
+      number: 'R-001/26',
+      date: '2026-04-29',
+      totalAmount: '250000',
+      totalAmountWords: 'двести пятьдесят тысяч рублей',
+    },
+  };
+}
+
+/** Непустые значения из `form` сохраняются; пустые строки берутся из `fallback` (превью библиотеки). */
+export function mergeRepairPackageFormWithPreviewFallback(
+  form: RepairPackageFormData,
+  fallback: RepairPackageFormData
+): RepairPackageFormData {
+  return {
+    customer: {
+      ...form.customer,
+      type: form.customer.type,
+      fullName: pickStr(form.customer.fullName, fallback.customer.fullName),
+      representativeFullNameNominative: pickStr(
+        form.customer.representativeFullNameNominative,
+        fallback.customer.representativeFullNameNominative
+      ),
+      representativeFullNameGenitive: pickStr(
+        form.customer.representativeFullNameGenitive,
+        fallback.customer.representativeFullNameGenitive
+      ),
+      organizationName: pickStr(form.customer.organizationName, fallback.customer.organizationName),
+      representativePositionNominative: pickStr(
+        form.customer.representativePositionNominative,
+        fallback.customer.representativePositionNominative
+      ),
+      representativePositionGenitive: pickStr(
+        form.customer.representativePositionGenitive,
+        fallback.customer.representativePositionGenitive
+      ),
+      inn: pickStr(form.customer.inn, fallback.customer.inn),
+      ogrn: pickStr(form.customer.ogrn, fallback.customer.ogrn),
+      address: pickStr(form.customer.address, fallback.customer.address),
+      phone: pickStr(form.customer.phone, fallback.customer.phone),
+      email: pickStr(form.customer.email, fallback.customer.email),
+      bankDetails: pickStr(form.customer.bankDetails, fallback.customer.bankDetails),
+      passportSeriesNumber: pickStr(
+        form.customer.passportSeriesNumber,
+        fallback.customer.passportSeriesNumber
+      ),
+      passportIssuedBy: pickStr(form.customer.passportIssuedBy, fallback.customer.passportIssuedBy),
+      passportIssueDate: pickStr(
+        form.customer.passportIssueDate,
+        fallback.customer.passportIssueDate
+      ),
+    },
+    executor: {
+      ...form.executor,
+      executorKind: form.executor.executorKind,
+      selectedProfileTitle: pickStr(
+        form.executor.selectedProfileTitle,
+        fallback.executor.selectedProfileTitle
+      ),
+      companyName: pickStr(form.executor.companyName, fallback.executor.companyName),
+      inn: pickStr(form.executor.inn, fallback.executor.inn),
+      kpp: pickStr(form.executor.kpp, fallback.executor.kpp),
+      ogrn: pickStr(form.executor.ogrn, fallback.executor.ogrn),
+      ogrnip: pickStr(form.executor.ogrnip, fallback.executor.ogrnip),
+      legalAddress: pickStr(form.executor.legalAddress, fallback.executor.legalAddress),
+      actualAddress: pickStr(form.executor.actualAddress, fallback.executor.actualAddress),
+      bankDetails: pickStr(form.executor.bankDetails, fallback.executor.bankDetails),
+      email: pickStr(form.executor.email, fallback.executor.email),
+      selectedSignatoryProfileTitle: pickStr(
+        form.executor.selectedSignatoryProfileTitle,
+        fallback.executor.selectedSignatoryProfileTitle
+      ),
+      signatoryCrmUserId: pickStr(
+        form.executor.signatoryCrmUserId,
+        fallback.executor.signatoryCrmUserId
+      ),
+      directorNameNominative: pickStr(
+        form.executor.directorNameNominative,
+        fallback.executor.directorNameNominative
+      ),
+      directorNameGenitive: pickStr(
+        form.executor.directorNameGenitive,
+        fallback.executor.directorNameGenitive
+      ),
+      directorName: pickStr(form.executor.directorName, fallback.executor.directorName),
+      basis: pickStr(form.executor.basis, fallback.executor.basis),
+      salesOffice: pickStr(form.executor.salesOffice, fallback.executor.salesOffice),
+      officePhone: pickStr(form.executor.officePhone, fallback.executor.officePhone),
+    },
+    object: {
+      objectAddress: pickStr(form.object.objectAddress, fallback.object.objectAddress),
+      objectFloor: pickStr(form.object.objectFloor, fallback.object.objectFloor),
+      objectDescription: pickStr(form.object.objectDescription, fallback.object.objectDescription),
+    },
+    contract: {
+      number: pickStr(form.contract.number, fallback.contract.number),
+      date: pickStr(form.contract.date, fallback.contract.date),
+      totalAmount: pickStr(form.contract.totalAmount, fallback.contract.totalAmount),
+      recommendedPrepayment: pickStr(
+        form.contract.recommendedPrepayment,
+        fallback.contract.recommendedPrepayment
+      ),
+      totalAmountWords: pickStr(form.contract.totalAmountWords, fallback.contract.totalAmountWords),
+      prepaymentAmount: pickStr(form.contract.prepaymentAmount, fallback.contract.prepaymentAmount),
+      workPeriod: pickStr(form.contract.workPeriod, fallback.contract.workPeriod),
+    },
+    estimate: {
+      ...form.estimate,
+      notes: pickStr(form.estimate.notes, fallback.estimate.notes),
+    },
+  };
+}
+
 /** Данные для подстановки в HTML: добавляет вычисляемое поле `executor.innKppRegLine`. */
 export function repairPackageFormForTemplate(form: RepairPackageFormData): RepairPackageFormData & {
   executor: RepairExecutorBlock & { innKppRegLine: string };
@@ -243,7 +417,7 @@ export function repairPackageFormForTemplate(form: RepairPackageFormData): Repai
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
   const roomsHtml = snapshot
-    ? `<table style="width:100%; border-collapse:collapse; margin:8pt 0;">
+    ? `<table style="width:100%;border-collapse:collapse;margin:8pt 0;page-break-inside:auto;break-inside:auto;">
   <thead>
     <tr>
       <th style="border:1px solid #cbd5e1; padding:6px; text-align:left;">Помещение / позиция</th>

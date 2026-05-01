@@ -139,41 +139,134 @@ function stripAnchorTags(html: string): string {
   return html.replace(/<a\b[^>]*>/gi, '').replace(/<\/a>/gi, '');
 }
 
-function buildPageSignaturesBlock(flat: Record<string, string>): string {
+const FINAL_SIGNATURES_ATTR = 'data-contract-final-signatures="1"';
+const INLINE_PAGE_SIGNATURES_ATTR = 'data-contract-inline-page-signatures="1"';
+
+/** Конец открывающего тега `<div ...>` от позиции `<`, учитывая кавычки в атрибутах (в т.ч. перенос строк внутри тега). */
+function findOpeningTagEnd(html: string, ltIndex: number): number {
+  let i = ltIndex + 1;
+  let quote: "'" | '"' | null = null;
+  while (i < html.length) {
+    const c = html[i];
+    if (quote) {
+      if (c === quote) quote = null;
+      i++;
+      continue;
+    }
+    if (c === '"' || c === "'") {
+      quote = c;
+      i++;
+      continue;
+    }
+    if (c === '>') return i;
+    i++;
+  }
+  return -1;
+}
+
+/**
+ * Вставка непосредственно перед закрытием корневого `.docPrint`.
+ * Нельзя использовать `lastIndexOf('</div>')`: в полях договора может быть HTML с закрывающими `</div>`.
+ * Открывающий тег ищется по атрибуту class с учётом многострочной разметки.
+ */
+function insertInsideRootDocPrint(html: string, insertion: string): string {
+  const lower = html.toLowerCase();
+  let searchFrom = 0;
+  while (searchFrom < html.length) {
+    const divIdx = lower.indexOf('<div', searchFrom);
+    if (divIdx < 0) break;
+    const openEnd = findOpeningTagEnd(html, divIdx);
+    if (openEnd < 0) break;
+    const openTag = html.slice(divIdx, openEnd + 1);
+    const classMatch = /\bclass\s*=\s*(["'])([\s\S]*?)\1/i.exec(openTag);
+    if (!classMatch || !/\bdocPrint\b/i.test(classMatch[2])) {
+      searchFrom = divIdx + 4;
+      continue;
+    }
+    let depth = 1;
+    let pos = openEnd + 1;
+    while (pos < html.length && depth > 0) {
+      const nextOpen = lower.indexOf('<div', pos);
+      const nextClose = lower.indexOf('</div', pos);
+      if (nextClose < 0) break;
+      const openFirst = nextOpen >= 0 && nextOpen < nextClose;
+      if (openFirst) {
+        depth++;
+        pos = nextOpen + 4;
+      } else {
+        const closeGt = html.indexOf('>', nextClose);
+        if (closeGt < 0) break;
+        depth--;
+        if (depth === 0) {
+          return html.slice(0, nextClose) + insertion + html.slice(nextClose);
+        }
+        pos = closeGt + 1;
+      }
+    }
+    searchFrom = divIdx + 4;
+  }
+  return `${html}${insertion}`;
+}
+
+function buildPageSignaturesBlock(
+  flat: Record<string, string>,
+  placement: 'inlineBeforeBreak' | 'documentFooter' = 'inlineBeforeBreak'
+): string {
   const exec = escapeHtml((flat['executor.directorName'] ?? '').trim() || '____________________');
   const customer = escapeHtml((flat['customer.fullName'] ?? '').trim() || '____________________');
-  return `<table class="${PAGE_SIGNATURES_CLASS}" style="width: 100%; border-collapse: collapse; margin-top: 14pt; page-break-inside: avoid;">
+  const dataAttr =
+    placement === 'documentFooter'
+      ? ` ${FINAL_SIGNATURES_ATTR}`
+      : ` ${INLINE_PAGE_SIGNATURES_ATTR}`;
+  const marginTop = placement === 'documentFooter' ? '14pt' : '8pt';
+  return `<table${dataAttr} class="${PAGE_SIGNATURES_CLASS}" style="width:100%;border-collapse:collapse;margin-top:${marginTop};padding-top:8pt;border-top:1px solid #bbb;page-break-inside:avoid;font-size:9pt;line-height:1.15;color:#111;">
   <tr>
-    <td style="width: 50%; vertical-align: bottom; padding: 6pt 10pt 0 0;">
-      <p style="margin: 0 0 4pt;">Подрядчик _____________________ / ${exec}</p>
-      <p style="margin: 0; font-size: 9pt;">м.п.</p>
+    <td style="width:50%;vertical-align:bottom;padding:1pt 6pt 0 0;">
+      <p style="margin:0;">Подрядчик ________________ / ${exec}</p>
+      <p style="margin:0;font-size:7.5pt;line-height:1.1;">м.п.</p>
     </td>
-    <td style="width: 50%; vertical-align: bottom; padding: 6pt 0 0 10pt;">
-      <p style="margin: 0 0 4pt;">Заказчик _____________________ / ${customer}</p>
-      <p style="margin: 0; font-size: 9pt;">подпись</p>
+    <td style="width:50%;vertical-align:bottom;padding:1pt 0 0 6pt;">
+      <p style="margin:0;">Заказчик ________________ / ${customer}</p>
+      <p style="margin:0;font-size:7.5pt;line-height:1.1;">подпись</p>
     </td>
   </tr>
 </table>`;
 }
 
+/**
+ * Пустой `<div style="…"> </div>` из кнопки «Разрыв страницы» (без вложенных тегов внутри),
+ * иначе жадный `[\s\S]` схватит чужой закрывающий `</div>`.
+ */
+const PAGE_BREAK_MARKER_DIV_RE =
+  /<div\b[\s\S]*?\bstyle\s*=\s*(["'])([\s\S]*?)\1[\s\S]*?>\s*<\/div\s*>/gi;
+
+function styleSignalsManualPageBreak(styleValue: string): boolean {
+  const s = styleValue.toLowerCase();
+  return /page-break-after\s*:\s*always\b/.test(s) || /\bbreak-after\s*:\s*page\b/.test(s);
+}
+
+/**
+ * Компактные подписи перед каждым ручным разрывом страницы (строго перед маркером из редактора).
+ * Не опирается на `contractPageSignatures` в шаблоне — только на маркеры разрыва и защитный data-атрибут.
+ */
 function addPageSignatures(html: string, flat: Record<string, string>): string {
-  if (!/page-break-after\s*:\s*always/i.test(html)) return html;
-  if (html.includes(PAGE_SIGNATURES_CLASS)) return html;
-  const sign = buildPageSignaturesBlock(flat);
-  let out = html.replace(
-    /(<div\b[^>]*style\s*=\s*["'][^"']*page-break-after\s*:\s*always[^"']*["'][^>]*>\s*<\/div>)/gi,
-    `${sign}$1`
-  );
-  if (!out.includes(sign)) return out;
-  if (/<div\b[^>]*class\s*=\s*["'][^"']*\bdocPrint\b[^"']*["'][^>]*>\s*<\/div>\s*$/i.test(out)) {
-    out = out.replace(
-      /(<div\b[^>]*class\s*=\s*["'][^"']*\bdocPrint\b[^"']*["'][^>]*>\s*<\/div>\s*)$/i,
-      `${sign}$1`
-    );
-  } else {
-    out = `${out}${sign}`;
-  }
-  return out;
+  if (html.includes(INLINE_PAGE_SIGNATURES_ATTR)) return html;
+
+  const sign = buildPageSignaturesBlock(flat, 'inlineBeforeBreak');
+  let replacedAny = false;
+  const out = html.replace(PAGE_BREAK_MARKER_DIV_RE, (full, _q: string, styleInner: string) => {
+    if (!styleSignalsManualPageBreak(styleInner)) return full;
+    replacedAny = true;
+    return `${sign}${full}`;
+  });
+  return replacedAny ? out : html;
+}
+
+/** Компактные подписи в конце договора (после раздела с реквизитами). */
+function ensureFinalSignaturesRow(html: string, flat: Record<string, string>): string {
+  if (html.includes(FINAL_SIGNATURES_ATTR)) return html;
+  const block = buildPageSignaturesBlock(flat, 'documentFooter');
+  return insertInsideRootDocPrint(html, block);
 }
 
 /**
@@ -187,8 +280,10 @@ export function applyTemplate(template: string, data: unknown): string {
     (_, path: string, plainMod: string) =>
       formatTemplateValue(path, flat[path] ?? '', Boolean(plainMod))
   );
-  return addPageSignatures(
-    ensureRequisitesTableClass(balanceStrongEmTags(stripAnchorTags(replaced))),
-    flat
-  );
+  let html = ensureRequisitesTableClass(balanceStrongEmTags(stripAnchorTags(replaced)));
+  html = html.replace(/page-break-before\s*:\s*always/gi, 'auto');
+  html = html.replace(/\bbreak-before\s*:\s*page\b/gi, 'auto');
+  html = addPageSignatures(html, flat);
+  html = ensureFinalSignaturesRow(html, flat);
+  return html;
 }

@@ -17,6 +17,7 @@ import {
   SignatoryProfileDto,
 } from './dto/set-global-signatory-profiles.dto';
 import {
+  ContractEstimateGroupDto,
   ContractEstimatePresetDto,
   SetGlobalEstimatePresetsDto,
 } from './dto/set-global-estimate-presets.dto';
@@ -41,9 +42,59 @@ export class ContractDocumentPackagesService {
     }
   }
 
+  /** Id сохранённых расчётов из formData.estimate (мульти + legacy). */
+  private extractRepairEstimatePresetIds(formData: unknown): string[] {
+    if (!formData || typeof formData !== 'object') return [];
+    const est = (formData as Record<string, unknown>).estimate;
+    if (!est || typeof est !== 'object') return [];
+    const e = est as Record<string, unknown>;
+    const ids: string[] = [];
+    if (typeof e.selectedPresetId === 'string' && e.selectedPresetId.trim()) {
+      ids.push(e.selectedPresetId.trim());
+    }
+    if (Array.isArray(e.selectedPresetIds)) {
+      for (const x of e.selectedPresetIds) {
+        if (typeof x === 'string' && x.trim()) ids.push(x.trim());
+      }
+    }
+    return [...new Set(ids)];
+  }
+
+  /**
+   * Один расчёт (preset) не может быть прикреплён к двум пакетам ремонта одновременно.
+   * @param currentPackageId пакет при update; null при create
+   */
+  private async assertRepairEstimatePresetsExclusive(
+    currentPackageId: string | null,
+    formData: unknown,
+  ): Promise<void> {
+    const ids = this.extractRepairEstimatePresetIds(formData);
+    if (ids.length === 0) return;
+
+    const others = await this.prisma.contractDocumentPackage.findMany({
+      where: {
+        kind: ContractDocumentPackageKind.REPAIR,
+        ...(currentPackageId ? { NOT: { id: currentPackageId } } : {}),
+      },
+      select: { id: true, formData: true },
+    });
+    for (const pkg of others) {
+      const otherIds = this.extractRepairEstimatePresetIds(pkg.formData);
+      const conflict = ids.find((id) => otherIds.includes(id));
+      if (conflict) {
+        throw new BadRequestException(
+          'Этот расчёт уже прикреплён к другому договору. Сначала отвяжите его в том пакете или выберите другой расчёт.',
+        );
+      }
+    }
+  }
+
   async create(dto: CreateContractDocumentPackageDto, createdById?: string) {
     if (dto.crmContractId) {
       await this.assertCrmContractExists(dto.crmContractId);
+    }
+    if (dto.kind === ContractDocumentPackageKind.REPAIR && dto.formData !== undefined) {
+      await this.assertRepairEstimatePresetsExclusive(null, dto.formData);
     }
     return this.prisma.contractDocumentPackage.create({
       data: {
@@ -77,9 +128,12 @@ export class ContractDocumentPackagesService {
   }
 
   async update(id: string, dto: UpdateContractDocumentPackageDto) {
-    await this.findOne(id);
+    const row = await this.findOne(id);
     if (dto.crmContractId) {
       await this.assertCrmContractExists(dto.crmContractId);
+    }
+    if (dto.formData !== undefined && row.kind === ContractDocumentPackageKind.REPAIR) {
+      await this.assertRepairEstimatePresetsExclusive(id, dto.formData);
     }
     return this.prisma.contractDocumentPackage.update({
       where: { id },
@@ -285,21 +339,36 @@ export class ContractDocumentPackagesService {
       select: { html: true, updatedAt: true },
     });
     if (!row) {
-      return { items: [] as ContractEstimatePresetDto[], updatedAt: null as string | null };
+      return {
+        items: [] as ContractEstimatePresetDto[],
+        groups: [] as ContractEstimateGroupDto[],
+        updatedAt: null as string | null,
+      };
     }
     try {
-      const parsed = JSON.parse(row.html) as { items?: ContractEstimatePresetDto[] };
+      const parsed = JSON.parse(row.html) as {
+        items?: ContractEstimatePresetDto[];
+        groups?: ContractEstimateGroupDto[];
+      };
       return {
         items: Array.isArray(parsed?.items) ? parsed.items : [],
+        groups: Array.isArray(parsed?.groups) ? parsed.groups : [],
         updatedAt: row.updatedAt.toISOString(),
       };
     } catch {
-      return { items: [] as ContractEstimatePresetDto[], updatedAt: row.updatedAt.toISOString() };
+      return {
+        items: [] as ContractEstimatePresetDto[],
+        groups: [] as ContractEstimateGroupDto[],
+        updatedAt: row.updatedAt.toISOString(),
+      };
     }
   }
 
   async setGlobalEstimatePresets(dto: SetGlobalEstimatePresetsDto, updatedById?: string) {
-    const payload = JSON.stringify({ items: dto.items ?? [] });
+    const payload = JSON.stringify({
+      items: dto.items ?? [],
+      groups: dto.groups ?? [],
+    });
     const row = await this.prisma.contractDocumentGlobalTemplate.upsert({
       where: {
         kind_tab: { kind: dto.kind, tab: ContractDocumentPackagesService.ESTIMATE_PRESETS_TAB },
