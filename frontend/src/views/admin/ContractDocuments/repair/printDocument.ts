@@ -164,6 +164,43 @@ function buildPrintStylesheet(marginFooter?: PrintMarginFooterNames): string {
       break-inside: avoid !important;
     }
   }
+  .docPrint.docPrintWordCompact .WordSection1 table.MsoNormalTable {
+    border-collapse: collapse !important;
+  }
+  .docPrint.docPrintWordCompact .WordSection1 table.MsoNormalTable td,
+  .docPrint.docPrintWordCompact .WordSection1 table.MsoNormalTable th {
+    padding: 0 0.5pt !important;
+    line-height: 1.06 !important;
+    vertical-align: top !important;
+  }
+  .docPrint.docPrintWordCompact .WordSection1 p.MsoNormal,
+  .docPrint.docPrintWordCompact .WordSection1 p {
+    margin: 0 !important;
+    line-height: 1.06 !important;
+  }
+  .docPrint.docPrintWordCompact .WordSection1 tr[style*="height"] {
+    height: auto !important;
+  }
+  .docPrint .WordSection1 table.MsoNormalTable td.koTearGuideCell {
+    width: 11pt !important;
+    max-width: 11pt !important;
+    min-width: 8pt !important;
+    padding-left: 0 !important;
+    padding-right: 1pt !important;
+    box-sizing: border-box !important;
+  }
+  .docPrint .WordSection1 table.MsoNormalTable td.koTearGuideCell span {
+    letter-spacing: 0.12em !important;
+    font-size: 8pt !important;
+  }
+  .docPrint .WordSection1 table.MsoNormalTable td.koTearGuideCell + td {
+    width: 4pt !important;
+    max-width: 5pt !important;
+    min-width: 3pt !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    box-sizing: border-box !important;
+  }
 `;
 }
 

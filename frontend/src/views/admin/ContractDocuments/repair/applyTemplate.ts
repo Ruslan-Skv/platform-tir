@@ -297,21 +297,44 @@ function ensureFinalSignaturesRow(html: string, flat: Record<string, string>): s
   return insertInsideRootDocPrint(html, block);
 }
 
+export type ApplyTemplateOptions = {
+  /**
+   * Компактный блок подписей перед каждым ручным разрывом страницы и строка в конце `.docPrint`.
+   * Нужно только для многостраничного **договора**; для актов и остальных разделов — `false`.
+   */
+  autoInsertContractSignatures?: boolean;
+  /**
+   * Не оборачивать плейсхолдеры `customer.*` в `<strong><em>` (как при `|plain` в шаблоне).
+   * Удобно для актов, где реквизиты заказчика должны быть обычным начертанием.
+   */
+  plainCustomerPlaceholders?: boolean;
+};
+
 /**
  * Подстановка плейсхолдеров вида `{{customer.fullName}}`.
  * Для обычного текста без жирного/курсива у заказчика: `{{customer.fullName|plain}}`.
+ * Служебные поля из `repairPackageFormForTemplate`, например `{{meta.currentDate}}` (дд.мм.гггг).
  */
-export function applyTemplate(template: string, data: unknown): string {
+export function applyTemplate(
+  template: string,
+  data: unknown,
+  options?: ApplyTemplateOptions
+): string {
   const flat = flattenForTemplate(data);
+  const plainCustomerDefault = Boolean(options?.plainCustomerPlaceholders);
   const replaced = template.replace(
     /\{\{\s*([\w.]+)\s*(\|\s*plain\s*)?\}\}/g,
-    (_, path: string, plainMod: string) =>
-      formatTemplateValue(path, flat[path] ?? '', Boolean(plainMod))
+    (_, path: string, plainMod: string) => {
+      const plain = Boolean(plainMod) || (plainCustomerDefault && path.startsWith('customer.'));
+      return formatTemplateValue(path, flat[path] ?? '', plain);
+    }
   );
   let html = ensureRequisitesTableClass(balanceStrongEmTags(stripAnchorTags(replaced)));
   html = html.replace(/page-break-before\s*:\s*always/gi, 'auto');
   html = html.replace(/\bbreak-before\s*:\s*page\b/gi, 'auto');
-  html = addPageSignatures(html, flat);
-  html = ensureFinalSignaturesRow(html, flat);
+  if (options?.autoInsertContractSignatures) {
+    html = addPageSignatures(html, flat);
+    html = ensureFinalSignaturesRow(html, flat);
+  }
   return html;
 }

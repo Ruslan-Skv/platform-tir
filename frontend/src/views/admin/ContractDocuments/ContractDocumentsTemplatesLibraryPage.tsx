@@ -19,6 +19,11 @@ import {
   pickPrintMarginFooterNames,
   printDocumentHtml,
 } from '@/views/admin/ContractDocuments/repair/printDocument';
+import {
+  isRepairActTwinOneSheetTab,
+  isRepairPlainCustomerTab,
+  wrapRepairActTwinCopiesOnOnePageHtml,
+} from '@/views/admin/ContractDocuments/repair/repairActTwinCopiesOnOnePageHtml';
 import { REPAIR_CONTRACT_PLACEHOLDER_GROUPS } from '@/views/admin/ContractDocuments/repair/repairContractPlaceholders';
 import {
   REPAIR_DOCUMENT_TAB_LABELS,
@@ -28,6 +33,10 @@ import {
   buildRepairTemplatePreviewFallbackData,
   repairPackageFormForTemplate,
 } from '@/views/admin/ContractDocuments/repair/repairPackageForm';
+import {
+  applyWordImportedDocPrintCompact,
+  readWordHtmlExportFileAsString,
+} from '@/views/admin/ContractDocuments/repair/wordHtmlImport';
 
 import styles from './ContractDocuments.module.css';
 
@@ -47,6 +56,10 @@ const TEMPLATE_TAB_IDS: RepairTemplateTabId[] = [
   'workOrderAddendum',
   'productionLog',
 ];
+
+/** Только экран редактора и предпросмотра; на сохранённый HTML и печать не влияет. */
+const TEMPLATE_EDITOR_ZOOM_MIN_PCT = 40;
+const TEMPLATE_EDITOR_ZOOM_MAX_PCT = 150;
 
 function normalizeTemplateTabId(value: string | undefined): RepairTemplateTabId {
   if (!value) return 'contract';
@@ -337,6 +350,28 @@ function normalizeTemplateHtmlWhitespace(sourceHtml: string, mode: NormalizeMode
   return container.innerHTML;
 }
 
+function stripDangerousInlineScripts(html: string): string {
+  return html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
+}
+
+function extractHtmlBodyInner(full: string): string {
+  const match = full.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  return stripDangerousInlineScripts((match ? match[1] : full).trim());
+}
+
+/** Импорт из Word «Веб-страница»: оборачиваем в `.docPrint`, если корня ещё нет. */
+function ensureDocPrintRootWrapper(inner: string): string {
+  const t = extractHtmlBodyInner(inner);
+  if (!t) return '<div class="docPrint"></div>';
+  if (
+    /<div\b[^>]*\bclass\s*=\s*["'][^"']*\bdocPrint\b/i.test(t) ||
+    /<div\b[^>]*\bclass\s*=\s*docPrint\b/i.test(t)
+  ) {
+    return t;
+  }
+  return `<div class="docPrint">\n${t}\n</div>`;
+}
+
 export function ContractDocumentsTemplatesLibraryPage() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
@@ -370,6 +405,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const [visualEditorHeightPx, setVisualEditorHeightPx] = useState<number | null>(null);
   const [previewPaneHeightPx, setPreviewPaneHeightPx] = useState<number | null>(null);
   const htmlTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const templateHtmlFileInputRef = useRef<HTMLInputElement>(null);
   const visualEditorRef = useRef<HTMLDivElement>(null);
   const previewPaneRef = useRef<HTMLDivElement>(null);
   const visualSelectionRangeRef = useRef<Range | null>(null);
@@ -393,10 +429,18 @@ export function ContractDocumentsTemplatesLibraryPage() {
         setPreviewFontSizePx(clampInt(parsed.previewFontSizePx, 10, 20));
       }
       if (typeof parsed.previewZoomPct === 'number') {
-        setPreviewZoomPct(clampInt(parsed.previewZoomPct, 70, 130));
+        setPreviewZoomPct(
+          clampInt(
+            parsed.previewZoomPct,
+            TEMPLATE_EDITOR_ZOOM_MIN_PCT,
+            TEMPLATE_EDITOR_ZOOM_MAX_PCT
+          )
+        );
       }
       if (typeof parsed.visualZoomPct === 'number') {
-        setVisualZoomPct(clampInt(parsed.visualZoomPct, 60, 150));
+        setVisualZoomPct(
+          clampInt(parsed.visualZoomPct, TEMPLATE_EDITOR_ZOOM_MIN_PCT, TEMPLATE_EDITOR_ZOOM_MAX_PCT)
+        );
       }
       if (typeof parsed.visualEditorHeightPx === 'number') {
         setVisualEditorHeightPx(clampInt(parsed.visualEditorHeightPx, 220, 2400));
@@ -475,6 +519,29 @@ export function ContractDocumentsTemplatesLibraryPage() {
     setVisualHistoryIndex(0);
   };
 
+  const handleTemplateHtmlFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file || !isSuperAdmin) return;
+    setError(null);
+    setOk(null);
+    try {
+      const raw = await readWordHtmlExportFileAsString(file);
+      const wrapped = ensureDocPrintRootWrapper(raw);
+      const next = applyWordImportedDocPrintCompact(wrapped);
+      setHtml(next);
+      setEditorMode('html');
+      setVisualDraftHtml(next);
+      resetVisualHistory(next);
+      setOk(
+        `Файл «${file.name}» загружен в поле HTML (кодировка windows-1251/UTF-8 определяется автоматически). Для фрагментов Word с классом WordSection1 добавлены более плотные отступы и печать с тем же классом docPrintWordCompact. Ползунок «Масштаб» у конструктора/предпросмотра меняет только отображение на экране, не печать. Для правок в конструкторе нажмите «HTML → конструктор».`
+      );
+    } catch {
+      setError('Не удалось прочитать файл');
+    }
+  };
+
   const applyVisualSnapshot = (htmlSnapshot: string) => {
     setVisualDraftHtml(htmlSnapshot);
     setHtml(htmlSnapshot);
@@ -529,8 +596,20 @@ export function ContractDocumentsTemplatesLibraryPage() {
   );
 
   const renderedPreview = useMemo(
-    () => applyTemplate(html || '', templateData),
-    [html, templateData]
+    () =>
+      applyTemplate(html || '', templateData, {
+        autoInsertContractSignatures: activeTemplateTab === 'contract',
+        plainCustomerPlaceholders: isRepairPlainCustomerTab(activeTemplateTab),
+      }),
+    [html, templateData, activeTemplateTab]
+  );
+
+  const renderedPreviewDisplay = useMemo(
+    () =>
+      isRepairActTwinOneSheetTab(activeTemplateTab)
+        ? wrapRepairActTwinCopiesOnOnePageHtml(renderedPreview)
+        : renderedPreview,
+    [renderedPreview, activeTemplateTab]
   );
   const itemsByActiveTab = useMemo(
     () =>
@@ -1388,13 +1467,22 @@ export function ContractDocumentsTemplatesLibraryPage() {
             <button
               type="button"
               className={styles.secondaryBtn}
-              onClick={() =>
+              onClick={() => {
+                const actTwinTab = isRepairActTwinOneSheetTab(activeTemplateTab);
+                const printBody = actTwinTab
+                  ? wrapRepairActTwinCopiesOnOnePageHtml(renderedPreview)
+                  : renderedPreview;
+                const printDocTitle = actTwinTab
+                  ? ''
+                  : `Шаблон: ${REPAIR_DOCUMENT_TAB_LABELS[activeTemplateTab]} / ${title || 'без названия'}`;
                 printDocumentHtml(
-                  renderedPreview,
-                  `Шаблон: ${REPAIR_DOCUMENT_TAB_LABELS[activeTemplateTab]} / ${title || 'без названия'}`,
-                  { marginFooter: pickPrintMarginFooterNames(templateData) }
-                )
-              }
+                  printBody,
+                  printDocTitle,
+                  activeTemplateTab === 'contract'
+                    ? { marginFooter: pickPrintMarginFooterNames(templateData) }
+                    : {}
+                );
+              }}
             >
               Печать
             </button>
@@ -1549,6 +1637,38 @@ export function ContractDocumentsTemplatesLibraryPage() {
               <label className={styles.contractEditorLabel} htmlFor="contract_template_html_source">
                 HTML шаблона договора
               </label>
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 8,
+                  alignItems: 'center',
+                  marginBottom: 8,
+                }}
+              >
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  disabled={!isSuperAdmin}
+                  title="Загрузить .html / .htm (например, файл «Веб-страница, отфильтрованная» из Word). RTF и .docx сюда не подходят — сначала сохраните как отфильтрованную веб-страницу."
+                  onClick={() => templateHtmlFileInputRef.current?.click()}
+                >
+                  Импорт из HTML-файла…
+                </button>
+                <input
+                  ref={templateHtmlFileInputRef}
+                  type="file"
+                  accept=".html,.htm,text/html,application/xhtml+xml"
+                  style={{ display: 'none' }}
+                  onChange={(ev) => void handleTemplateHtmlFileImport(ev)}
+                />
+                <span className={styles.hint} style={{ margin: 0, fontSize: 12, maxWidth: '100%' }}>
+                  ПКО из Word: «Файл» → «Сохранить как» → тип «Веб-страница, отфильтрованная
+                  (*.html)» — затем импорт сюда. Вставка RTF или сложной вёрстки в визуальный
+                  редактор в браузере даёт плохой результат; правьте при необходимости в режиме
+                  HTML.
+                </span>
+              </div>
               <textarea
                 id="contract_template_html_source"
                 ref={htmlTextareaRef}
@@ -1583,14 +1703,19 @@ export function ContractDocumentsTemplatesLibraryPage() {
                     </span>
                     <input
                       type="number"
-                      min={60}
-                      max={150}
+                      min={TEMPLATE_EDITOR_ZOOM_MIN_PCT}
+                      max={TEMPLATE_EDITOR_ZOOM_MAX_PCT}
                       step={5}
                       value={visualZoomPct}
                       onChange={(e) => {
                         const n = Number(e.target.value);
                         if (!Number.isFinite(n)) return;
-                        setVisualZoomPct(Math.max(60, Math.min(150, n)));
+                        setVisualZoomPct(
+                          Math.max(
+                            TEMPLATE_EDITOR_ZOOM_MIN_PCT,
+                            Math.min(TEMPLATE_EDITOR_ZOOM_MAX_PCT, n)
+                          )
+                        );
                       }}
                       style={{ height: 24, padding: '2px 6px', width: 66 }}
                     />
@@ -1696,14 +1821,19 @@ export function ContractDocumentsTemplatesLibraryPage() {
                 </span>
                 <input
                   type="number"
-                  min={60}
-                  max={150}
+                  min={TEMPLATE_EDITOR_ZOOM_MIN_PCT}
+                  max={TEMPLATE_EDITOR_ZOOM_MAX_PCT}
                   step={5}
                   value={previewZoomPct}
                   onChange={(e) => {
                     const n = Number(e.target.value);
                     if (!Number.isFinite(n)) return;
-                    setPreviewZoomPct(Math.max(60, Math.min(150, n)));
+                    setPreviewZoomPct(
+                      Math.max(
+                        TEMPLATE_EDITOR_ZOOM_MIN_PCT,
+                        Math.min(TEMPLATE_EDITOR_ZOOM_MAX_PCT, n)
+                      )
+                    );
                   }}
                   style={{ height: 24, padding: '2px 6px', width: 68 }}
                 />
@@ -1724,7 +1854,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
                 width: '100%',
                 overflowX: 'hidden',
               }}
-              dangerouslySetInnerHTML={{ __html: renderedPreview }}
+              dangerouslySetInnerHTML={{ __html: renderedPreviewDisplay }}
             />
           </div>
         </div>

@@ -421,7 +421,8 @@
 }
 
 .contractCompactBlock {
-  max-width: 360px;
+  width: 100%;
+  max-width: min(520px, 100%);
   justify-self: start;
   gap: 6px;
 }
@@ -447,8 +448,29 @@
   gap: 8px;
 }
 
-.contractAmountsRow {
-  grid-template-columns: 1fr 1fr;
+/* Номер | дата | срок договора — одна строка (срок правее, без наезда на соседние ячейки) */
+.contractHeaderMetaRow {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.5fr);
+  column-gap: 12px;
+}
+
+/* Базовое правило .contractCompactBlock .field input задаёт min-width: 150px — в три колонки
+   это ломает сетку; здесь явно сбрасываем, чтобы инпуты ужимались внутри ячеек */
+.contractCompactBlock .contractHeaderMetaRow .field input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Пара «цифры | пропись»: пропись шире (~2.5× первой колонки), одна строка */
+.contractSumAndWordsRow {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.5fr);
+}
+
+.contractCompactBlock .contractSumAndWordsRow .field input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .contractInlineField {
@@ -458,6 +480,16 @@
 .contractInlineField input {
   width: 100%;
   min-width: 0;
+}
+
+/* «Основание»: на всю ширину блока договора (≈ вдвине шире одной колонки сетки 1fr 1fr) */
+.contractPaymentBasisRow {
+  grid-template-columns: 1fr;
+}
+
+.contractCompactBlock .contractPaymentBasisField input {
+  width: 100%;
+  max-width: 100%;
 }
 
 .dataTopBlock .sectionTitle {
@@ -555,7 +587,7 @@
 
 .templatesLibraryPage .placeholderPanelTop {
   padding: 5px 7px;
-  max-height: 120px;
+  max-height: 180px;
 }
 
 .templatesLibraryPage .placeholderGroupTitle {
@@ -955,8 +987,12 @@
     grid-template-columns: 1fr;
   }
 
-  .contractAmountsRow {
-    grid-template-columns: 1fr 1fr;
+  .contractSumAndWordsRow {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr);
+  }
+
+  .contractHeaderMetaRow {
+    grid-template-columns: 1fr;
   }
 
   .objectSectionFields {
@@ -1113,6 +1149,96 @@
   margin: 16px 0 8px;
 }
 
+/* Импорт Word (WordSection1, КО и т.п.): плотнее по вертикали; тот же класс учитывается в printDocument.ts */
+.docPane :global(.docPrint.docPrintWordCompact .WordSection1 table.MsoNormalTable) {
+  border-collapse: collapse !important;
+}
+
+.docPane :global(.docPrint.docPrintWordCompact .WordSection1 table.MsoNormalTable td),
+.docPane :global(.docPrint.docPrintWordCompact .WordSection1 table.MsoNormalTable th) {
+  padding: 0 0.5pt !important;
+  line-height: 1.06 !important;
+  vertical-align: top !important;
+}
+
+.docPane :global(.docPrint.docPrintWordCompact .WordSection1 p.MsoNormal),
+.docPane :global(.docPrint.docPrintWordCompact .WordSection1 p) {
+  margin: 0 !important;
+  line-height: 1.06 !important;
+}
+
+.docPane :global(.docPrint.docPrintWordCompact .WordSection1 tr[style*='height']) {
+  height: auto !important;
+}
+
+.visualEditor :global(.docPrint.docPrintWordCompact .WordSection1 table.MsoNormalTable) {
+  border-collapse: collapse !important;
+}
+
+.visualEditor :global(.docPrint.docPrintWordCompact .WordSection1 table.MsoNormalTable td),
+.visualEditor :global(.docPrint.docPrintWordCompact .WordSection1 table.MsoNormalTable th) {
+  padding: 0 0.5pt !important;
+  line-height: 1.06 !important;
+  vertical-align: top !important;
+}
+
+.visualEditor :global(.docPrint.docPrintWordCompact .WordSection1 p.MsoNormal),
+.visualEditor :global(.docPrint.docPrintWordCompact .WordSection1 p) {
+  margin: 0 !important;
+  line-height: 1.06 !important;
+}
+
+.visualEditor :global(.docPrint.docPrintWordCompact .WordSection1 tr[style*='height']) {
+  height: auto !important;
+}
+
+/* Колонка «Линия отреза» + соседняя узкая полоса с рамкой (КО-1), класс ставится при импорте */
+.docPane :global(.docPrint .WordSection1 table.MsoNormalTable td.koTearGuideCell) {
+  width: 11pt !important;
+  max-width: 11pt !important;
+  min-width: 8pt !important;
+  padding-left: 0 !important;
+  padding-right: 1pt !important;
+  box-sizing: border-box !important;
+}
+
+.docPane :global(.docPrint .WordSection1 table.MsoNormalTable td.koTearGuideCell span) {
+  letter-spacing: 0.12em !important;
+  font-size: 8pt !important;
+}
+
+.docPane :global(.docPrint .WordSection1 table.MsoNormalTable td.koTearGuideCell + td) {
+  width: 4pt !important;
+  max-width: 5pt !important;
+  min-width: 3pt !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.visualEditor :global(.docPrint .WordSection1 table.MsoNormalTable td.koTearGuideCell) {
+  width: 11pt !important;
+  max-width: 11pt !important;
+  min-width: 8pt !important;
+  padding-left: 0 !important;
+  padding-right: 1pt !important;
+  box-sizing: border-box !important;
+}
+
+.visualEditor :global(.docPrint .WordSection1 table.MsoNormalTable td.koTearGuideCell span) {
+  letter-spacing: 0.12em !important;
+  font-size: 8pt !important;
+}
+
+.visualEditor :global(.docPrint .WordSection1 table.MsoNormalTable td.koTearGuideCell + td) {
+  width: 4pt !important;
+  max-width: 5pt !important;
+  min-width: 3pt !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
 .docPane :global(.signTable) {
   width: 100%;
   margin-top: 24px;
@@ -1194,12 +1320,20 @@
   border-top: 1px solid #e5e7eb;
 }
 
+/* Акты начала работ / приёмки: два экземпляра на одном листе A4 (экономия бумаги) */
+.estimateA4Sheet.repairActTwinSheet {
+  min-height: auto;
+}
+
 .estimateA4Wrap {
   overflow-x: auto;
   padding: 12px;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
   background: #f3f4f6;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
 }
 
 .estimateA4Sheet {

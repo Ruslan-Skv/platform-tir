@@ -43,11 +43,15 @@ import {
 import { getDisplayContractDate, getDisplayContractNumber } from './packageContractDisplay';
 import { pickPrintMarginFooterNames, printDocumentHtml } from './printDocument';
 import {
+  isRepairActTwinOneSheetTab,
+  isRepairPlainCustomerTab,
+  wrapRepairActTwinCopiesOnOnePageHtml,
+} from './repairActTwinCopiesOnOnePageHtml';
+import {
   type EstimateSnapshotRoom,
   applyEstimatePresetIdsToRepairForm,
   parseEstimateSnapshotFromDraft,
 } from './repairApplyEstimatePresetIds';
-import { REPAIR_CONTRACT_PLACEHOLDER_GROUPS } from './repairContractPlaceholders';
 import {
   REPAIR_DOCUMENT_TAB_IDS,
   REPAIR_DOCUMENT_TAB_LABELS,
@@ -212,9 +216,7 @@ export function RepairContractDocumentEditorPage({
   const [draftCrmContractId, setDraftCrmContractId] = useState<string | null>(null);
   const [form, setForm] = useState<RepairPackageFormData>(() => mergeRepairPackageFormData({}));
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isSaveSuccessModalOpen, setIsSaveSuccessModalOpen] = useState(false);
   const [isRevertStatusConfirmModalOpen, setIsRevertStatusConfirmModalOpen] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [contractQuery, setContractQuery] = useState('');
@@ -225,7 +227,7 @@ export function RepairContractDocumentEditorPage({
   >({});
   const [excelMessage, setExcelMessage] = useState<string | null>(null);
   const contractHtmlTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const estimatePrintSheetRef = useRef<HTMLArticleElement | null>(null);
+  const estimatePrintSheetRef = useRef<HTMLElement | null>(null);
   const [contractDocView, setContractDocView] = useState<'preview' | 'edit'>('preview');
   const [formatToolbarLevel, setFormatToolbarLevel] = useState<'basic' | 'advanced'>('basic');
   const [formatToolbarQuery, setFormatToolbarQuery] = useState('');
@@ -260,7 +262,7 @@ export function RepairContractDocumentEditorPage({
       crmContract?: { contractNumber: string; contractDate: string } | null;
     }>
   >([]);
-  const [estimateDataRefreshing, setEstimateDataRefreshing] = useState(false);
+  const [packageRefreshing, setPackageRefreshing] = useState(false);
   const [packageFlowStatus, setPackageFlowStatus] =
     useState<ContractDocumentPackageStatus>('IN_PROGRESS');
   /** После «Договор заключен» вкладки «Договор» и «Смета» только для просмотра. */
@@ -289,7 +291,8 @@ export function RepairContractDocumentEditorPage({
   draftTitleRef.current = draftTitle;
   const draftCrmContractIdRef = useRef(draftCrmContractId);
   draftCrmContractIdRef.current = draftCrmContractId;
-  const persistRepairPackageDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** В браузере `setTimeout` возвращает `number`; при подмешанных типах Node — не `NodeJS.Timeout`. */
+  const persistRepairPackageDebounceRef = useRef<number | null>(null);
 
   const schedulePersistRepairPackageDebounced = useCallback(() => {
     if (loading) return;
@@ -321,6 +324,12 @@ export function RepairContractDocumentEditorPage({
       })();
     }, 300);
   }, [loading, packageId]);
+
+  /** Любые правки данных пакета: помечаем «грязным» и откладываем запись на сервер (~300 мс). */
+  const touchPackageData = useCallback(() => {
+    setDirty(true);
+    schedulePersistRepairPackageDebounced();
+  }, [schedulePersistRepairPackageDebounced]);
 
   const handleRepairTabDragStart = useCallback(
     (id: RepairDocumentTabId, e: React.DragEvent<HTMLButtonElement>) => {
@@ -443,167 +452,189 @@ export function RepairContractDocumentEditorPage({
     [packageId]
   );
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    setPackageVersions([]);
-    try {
-      const [row, globalTpl, profilesRes, signatoryRes, templateRes, estimateRes, packagesRes] =
-        await Promise.all([
-          getContractDocumentPackage(packageId),
-          getContractDocumentGlobalTemplate('REPAIR', 'contract').catch(() => ({
-            html: null as string | null,
-            updatedAt: null as string | null,
-          })),
-          getContractDocumentExecutorProfiles('REPAIR').catch(() => ({
-            items: [] as ExecutorRequisiteProfile[],
-            updatedAt: null as string | null,
-          })),
-          getContractDocumentSignatoryProfiles('REPAIR').catch(() => ({
-            items: [] as ContractSignatoryProfile[],
-            updatedAt: null as string | null,
-          })),
-          getContractDocumentTemplatePresets('REPAIR').catch(() => ({
-            items: [] as ContractTemplatePreset[],
-            updatedAt: null as string | null,
-          })),
-          getContractDocumentEstimatePresets('REPAIR').catch(() => ({
-            items: [] as ContractEstimatePreset[],
-            groups: [],
-            updatedAt: null as string | null,
-          })),
-          getContractDocumentPackages('REPAIR').catch(() => []),
-        ]);
-      if (row.kind !== 'REPAIR') {
-        setError('Этот пакет относится к другому направлению.');
-        return;
+  const load = useCallback(
+    async (opts?: { mode?: 'initial' | 'refresh' }) => {
+      const isRefresh = opts?.mode === 'refresh';
+      if (isRefresh) {
+        setPackageRefreshing(true);
+      } else {
+        setLoading(true);
       }
-      setDraftTitle(row.title ?? '');
-      setDraftCrmContractId(row.crmContractId ?? null);
-      setPackageFlowStatus(
-        row.status === 'CONTRACT_CONCLUDED' ? 'CONTRACT_CONCLUDED' : 'IN_PROGRESS'
-      );
-      const {
-        form: mergedForm,
-        templateOverrides: ov,
-        contractTemplateId,
-        templatePresetIds,
-      } = mergeFormDataFromStorage(row.formData);
-      const normalizedEstimateIds = [
-        ...new Set([
-          ...(Array.isArray(mergedForm.estimate.selectedPresetIds)
-            ? mergedForm.estimate.selectedPresetIds.filter(
-                (x): x is string => typeof x === 'string' && x.trim().length > 0
-              )
-            : []),
-          ...(mergedForm.estimate.selectedPresetId?.trim()
-            ? [mergedForm.estimate.selectedPresetId.trim()]
-            : []),
-        ]),
-      ];
-      const rawStoredDate = mergedForm.contract.date?.trim() ?? '';
-      const normalizedStoredDate = rawStoredDate ? contractDateToDdMmYyyy(rawStoredDate) : '';
-      const contractDateAutofill = !normalizedStoredDate;
-      const dateMigratedFromLegacy = Boolean(
-        rawStoredDate && normalizedStoredDate && normalizedStoredDate !== rawStoredDate
-      );
-      const contractDate = contractDateAutofill
-        ? todayContractDateDdMmYyyy()
-        : normalizedStoredDate;
-      const persistContractDate = contractDateAutofill || dateMigratedFromLegacy;
-
-      const formPayload: RepairPackageFormData = {
-        ...mergedForm,
-        contract: {
-          ...mergedForm.contract,
-          date: contractDate,
-        },
-        estimate: {
-          ...mergedForm.estimate,
-          selectedPresetIds: normalizedEstimateIds,
-          selectedPresetId: normalizedEstimateIds[0] ?? '',
-        },
-      };
-      setForm(formPayload);
-      const overridesSansContract = { ...ov };
-      delete overridesSansContract.contract;
-      setTemplateOverrides(overridesSansContract);
-      setGlobalContractState({ loaded: true, html: globalTpl.html });
-      setExecutorProfiles(profilesRes.items ?? []);
-      setSignatoryProfiles(signatoryRes.items ?? []);
-      const templates = templateRes.items ?? [];
-      setEstimatePresets(estimateRes.items ?? []);
-      setEstimateGroups(estimateRes.groups ?? []);
-      setEstimateAttachGroupKey('');
-      setEstimatePresetToAttach('');
-      setRepairPackages(
-        (packagesRes ?? []).map((p) => ({
-          id: p.id,
-          title: p.title ?? null,
-          formData: (p.formData ?? {}) as Record<string, unknown>,
-          crmContract: p.crmContract
-            ? {
-                contractNumber: p.crmContract.contractNumber,
-                contractDate: p.crmContract.contractDate,
-              }
-            : null,
-        }))
-      );
-      const normalizedTemplates = templates.map((it) => normalizeContractTemplatePreset(it));
-      setContractTemplatePresets(normalizedTemplates);
-      const selectedIds = { ...templatePresetIds };
-      if (contractTemplateId && !selectedIds.contract) {
-        selectedIds.contract = contractTemplateId;
+      setError(null);
+      if (!isRefresh) {
+        setPackageVersions([]);
       }
-      for (const tab of TEMPLATE_TAB_IDS) {
-        const tabItems = normalizedTemplates.filter(
-          (it) => normalizeTemplateTabId(it.tabId) === tab && !it.archived
+      try {
+        const [row, globalTpl, profilesRes, signatoryRes, templateRes, estimateRes, packagesRes] =
+          await Promise.all([
+            getContractDocumentPackage(packageId),
+            getContractDocumentGlobalTemplate('REPAIR', 'contract').catch(() => ({
+              html: null as string | null,
+              updatedAt: null as string | null,
+            })),
+            getContractDocumentExecutorProfiles('REPAIR').catch(() => ({
+              items: [] as ExecutorRequisiteProfile[],
+              updatedAt: null as string | null,
+            })),
+            getContractDocumentSignatoryProfiles('REPAIR').catch(() => ({
+              items: [] as ContractSignatoryProfile[],
+              updatedAt: null as string | null,
+            })),
+            getContractDocumentTemplatePresets('REPAIR').catch(() => ({
+              items: [] as ContractTemplatePreset[],
+              updatedAt: null as string | null,
+            })),
+            getContractDocumentEstimatePresets('REPAIR').catch(() => ({
+              items: [] as ContractEstimatePreset[],
+              groups: [],
+              updatedAt: null as string | null,
+            })),
+            getContractDocumentPackages('REPAIR').catch(() => []),
+          ]);
+        if (row.kind !== 'REPAIR') {
+          setError('Этот пакет относится к другому направлению.');
+          return;
+        }
+        setDraftTitle(row.title ?? '');
+        setDraftCrmContractId(row.crmContractId ?? null);
+        setPackageFlowStatus(
+          row.status === 'CONTRACT_CONCLUDED' ? 'CONTRACT_CONCLUDED' : 'IN_PROGRESS'
         );
-        const sid = selectedIds[tab];
-        if (!sid || !tabItems.some((it) => it.id === sid)) {
-          selectedIds[tab] = tabItems.find((it) => it.isDefault)?.id ?? tabItems[0]?.id ?? '';
+        const {
+          form: mergedForm,
+          templateOverrides: ov,
+          contractTemplateId,
+          templatePresetIds,
+        } = mergeFormDataFromStorage(row.formData);
+        const normalizedEstimateIds = [
+          ...new Set([
+            ...(Array.isArray(mergedForm.estimate.selectedPresetIds)
+              ? mergedForm.estimate.selectedPresetIds.filter(
+                  (x): x is string => typeof x === 'string' && x.trim().length > 0
+                )
+              : []),
+            ...(mergedForm.estimate.selectedPresetId?.trim()
+              ? [mergedForm.estimate.selectedPresetId.trim()]
+              : []),
+          ]),
+        ];
+        const rawStoredDate = mergedForm.contract.date?.trim() ?? '';
+        const normalizedStoredDate = rawStoredDate ? contractDateToDdMmYyyy(rawStoredDate) : '';
+        const contractDateAutofill = !normalizedStoredDate;
+        const dateMigratedFromLegacy = Boolean(
+          rawStoredDate && normalizedStoredDate && normalizedStoredDate !== rawStoredDate
+        );
+        const contractDate = contractDateAutofill
+          ? todayContractDateDdMmYyyy()
+          : normalizedStoredDate;
+        const persistContractDate = contractDateAutofill || dateMigratedFromLegacy;
+
+        const mergedContractNumber = mergedForm.contract.number?.trim() ?? '';
+        const crmContractNumber = row.crmContract?.contractNumber?.trim() ?? '';
+        /** Как в шаблонах `{{contract.number}}`: приоритет у поля пакета; если пусто — номер из CRM. */
+        const contractNumber = mergedContractNumber || crmContractNumber;
+        const numberHydratedFromCrm = !mergedContractNumber && Boolean(crmContractNumber);
+        const persistContractMeta = persistContractDate || numberHydratedFromCrm;
+
+        const formPayload: RepairPackageFormData = {
+          ...mergedForm,
+          contract: {
+            ...mergedForm.contract,
+            number: contractNumber,
+            date: contractDate,
+          },
+          estimate: {
+            ...mergedForm.estimate,
+            selectedPresetIds: normalizedEstimateIds,
+            selectedPresetId: normalizedEstimateIds[0] ?? '',
+          },
+        };
+        setForm(formPayload);
+        const overridesSansContract = { ...ov };
+        delete overridesSansContract.contract;
+        setTemplateOverrides(overridesSansContract);
+        setGlobalContractState({ loaded: true, html: globalTpl.html });
+        setExecutorProfiles(profilesRes.items ?? []);
+        setSignatoryProfiles(signatoryRes.items ?? []);
+        const templates = templateRes.items ?? [];
+        setEstimatePresets(estimateRes.items ?? []);
+        setEstimateGroups(estimateRes.groups ?? []);
+        setEstimateAttachGroupKey('');
+        setEstimatePresetToAttach('');
+        setRepairPackages(
+          (packagesRes ?? []).map((p) => ({
+            id: p.id,
+            title: p.title ?? null,
+            formData: (p.formData ?? {}) as Record<string, unknown>,
+            crmContract: p.crmContract
+              ? {
+                  contractNumber: p.crmContract.contractNumber,
+                  contractDate: p.crmContract.contractDate,
+                }
+              : null,
+          }))
+        );
+        const normalizedTemplates = templates.map((it) => normalizeContractTemplatePreset(it));
+        setContractTemplatePresets(normalizedTemplates);
+        const selectedIds = { ...templatePresetIds };
+        if (contractTemplateId && !selectedIds.contract) {
+          selectedIds.contract = contractTemplateId;
         }
-      }
-      setSelectedTemplateIds(selectedIds);
-      const initialTemplateId = selectedIds.contract ?? '';
-      setEditingTemplateId(initialTemplateId);
-      const initialTpl = normalizedTemplates.find((it) => it.id === initialTemplateId);
-      setTemplateDraftTitle(initialTpl?.title ?? '');
-      setTemplateDraftHtml(initialTpl?.html ?? '');
-      setExcelMessage(null);
-      if (persistContractDate) {
-        try {
-          await updateContractDocumentPackage(packageId, {
-            title: row.title?.trim() || null,
-            formData: buildPersistedFormData(formPayload, overridesSansContract, selectedIds),
-            crmContractId: row.crmContractId ?? null,
-          });
-          setRepairPackages((prev) =>
-            prev.map((p) =>
-              p.id === packageId
-                ? {
-                    ...p,
-                    formData: buildPersistedFormData(
-                      formPayload,
-                      overridesSansContract,
-                      selectedIds
-                    ) as Record<string, unknown>,
-                  }
-                : p
-            )
+        for (const tab of TEMPLATE_TAB_IDS) {
+          const tabItems = normalizedTemplates.filter(
+            (it) => normalizeTemplateTabId(it.tabId) === tab && !it.archived
           );
-        } catch {
-          /* оставляем дату в форме; пользователь сможет сохранить вручную */
+          const sid = selectedIds[tab];
+          if (!sid || !tabItems.some((it) => it.id === sid)) {
+            selectedIds[tab] = tabItems.find((it) => it.isDefault)?.id ?? tabItems[0]?.id ?? '';
+          }
+        }
+        setSelectedTemplateIds(selectedIds);
+        const initialTemplateId = selectedIds.contract ?? '';
+        setEditingTemplateId(initialTemplateId);
+        const initialTpl = normalizedTemplates.find((it) => it.id === initialTemplateId);
+        setTemplateDraftTitle(initialTpl?.title ?? '');
+        setTemplateDraftHtml(initialTpl?.html ?? '');
+        setExcelMessage(null);
+        if (persistContractMeta) {
+          try {
+            await updateContractDocumentPackage(packageId, {
+              title: row.title?.trim() || null,
+              formData: buildPersistedFormData(formPayload, overridesSansContract, selectedIds),
+              crmContractId: row.crmContractId ?? null,
+            });
+            setRepairPackages((prev) =>
+              prev.map((p) =>
+                p.id === packageId
+                  ? {
+                      ...p,
+                      formData: buildPersistedFormData(
+                        formPayload,
+                        overridesSansContract,
+                        selectedIds
+                      ) as Record<string, unknown>,
+                    }
+                  : p
+              )
+            );
+          } catch {
+            /* оставляем дату в форме; при следующем изменении сработает автосохранение */
+          }
+        }
+        await refreshPackageVersions({ skipSpinner: true });
+        setDirty(false);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Ошибка загрузки');
+      } finally {
+        if (isRefresh) {
+          setPackageRefreshing(false);
+        } else {
+          setLoading(false);
         }
       }
-      await refreshPackageVersions({ skipSpinner: true });
-      setDirty(false);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка загрузки');
-    } finally {
-      setLoading(false);
-    }
-  }, [packageId, refreshPackageVersions]);
+    },
+    [packageId, refreshPackageVersions]
+  );
 
   useEffect(() => {
     void load();
@@ -630,40 +661,6 @@ export function RepairContractDocumentEditorPage({
     };
   }, [isVersionsHistoryOpen]);
 
-  const refreshEstimateListsFromServer = useCallback(async () => {
-    setEstimateDataRefreshing(true);
-    setError(null);
-    try {
-      const [estimateRes, packagesRes] = await Promise.all([
-        getContractDocumentEstimatePresets('REPAIR').catch(() => ({
-          items: [] as ContractEstimatePreset[],
-          groups: [] as ContractEstimateGroup[],
-          updatedAt: null as string | null,
-        })),
-        getContractDocumentPackages('REPAIR').catch(() => []),
-      ]);
-      setEstimatePresets(estimateRes.items ?? []);
-      setEstimateGroups(estimateRes.groups ?? []);
-      setRepairPackages(
-        (packagesRes ?? []).map((p) => ({
-          id: p.id,
-          title: p.title ?? null,
-          formData: (p.formData ?? {}) as Record<string, unknown>,
-          crmContract: p.crmContract
-            ? {
-                contractNumber: p.crmContract.contractNumber,
-                contractDate: p.crmContract.contractDate,
-              }
-            : null,
-        }))
-      );
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось обновить списки расчётов');
-    } finally {
-      setEstimateDataRefreshing(false);
-    }
-  }, []);
-
   const searchContracts = useCallback(async (q: string) => {
     setContractsLoading(true);
     try {
@@ -686,26 +683,6 @@ export function RepairContractDocumentEditorPage({
     }, 350);
     return () => window.clearTimeout(t);
   }, [contractQuery, searchContracts]);
-
-  const handleSave = async () => {
-    setSaving(true);
-    setError(null);
-    try {
-      await updateContractDocumentPackage(packageId, {
-        title: draftTitle.trim() || null,
-        formData: buildPersistedFormData(form, templateOverrides, selectedTemplateIds),
-        crmContractId: draftCrmContractId,
-        recordVersion: true,
-      });
-      setDirty(false);
-      await refreshPackageVersions({ skipSpinner: true });
-      setIsSaveSuccessModalOpen(true);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось сохранить');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleMarkContractConcluded = async () => {
     setSavingPackageStatus(true);
@@ -776,7 +753,7 @@ export function RepairContractDocumentEditorPage({
     try {
       const c = await getContract(draftCrmContractId);
       setForm((prev) => mergeRepairFormFromCrmContract(c, prev));
-      setDirty(true);
+      touchPackageData();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось загрузить договор CRM');
     }
@@ -807,7 +784,7 @@ export function RepairContractDocumentEditorPage({
       }
       return { ...p, customer: nextCustomer };
     });
-    setDirty(true);
+    touchPackageData();
   };
 
   const updateExecutor = <K extends keyof RepairPackageFormData['executor']>(
@@ -829,7 +806,7 @@ export function RepairContractDocumentEditorPage({
       }
       return { ...p, executor: nextExecutor };
     });
-    setDirty(true);
+    touchPackageData();
   };
 
   const applyExecutorProfile = (title: string) => {
@@ -857,7 +834,7 @@ export function RepairContractDocumentEditorPage({
         },
       };
     });
-    setDirty(true);
+    touchPackageData();
   };
 
   const applySignatoryProfile = (title: string) => {
@@ -881,12 +858,12 @@ export function RepairContractDocumentEditorPage({
         },
       };
     });
-    setDirty(true);
+    touchPackageData();
   };
 
   const updateObject = <K extends keyof RepairPackageFormData['object']>(key: K, value: string) => {
     setForm((p) => ({ ...p, object: { ...p.object, [key]: value } }));
-    setDirty(true);
+    touchPackageData();
   };
 
   const updateContract = <K extends keyof RepairPackageFormData['contract']>(
@@ -901,10 +878,23 @@ export function RepairContractDocumentEditorPage({
         nextContract.recommendedPrepayment =
           parsedAmount === null ? '' : formatMoneyValue(parsedAmount * 0.7);
       }
+      if (key === 'prepaymentAmount') {
+        nextContract.prepaymentAmountWords = value.trim() ? amountToRussianWords(value) : '';
+      }
       return { ...p, contract: nextContract };
     });
-    setDirty(true);
+    touchPackageData();
   };
+
+  /** «Оплата прописью» всегда выводится из суммы «Оплата» (в т.ч. после загрузки пакета / CRM). */
+  useEffect(() => {
+    setForm((p) => {
+      const raw = p.contract.prepaymentAmount;
+      const nextWords = raw.trim() ? amountToRussianWords(raw) : '';
+      if (p.contract.prepaymentAmountWords === nextWords) return p;
+      return { ...p, contract: { ...p.contract, prepaymentAmountWords: nextWords } };
+    });
+  }, [form.contract.prepaymentAmount]);
 
   const estimateUsageById = useMemo(() => {
     const map = new Map<
@@ -1101,7 +1091,10 @@ export function RepairContractDocumentEditorPage({
     } else {
       tpl = templateOverrides[tab] ?? resolveTemplateHtml(tab);
     }
-    return applyTemplate(tpl, repairPackageFormForTemplate(formMergedForTemplate));
+    return applyTemplate(tpl, repairPackageFormForTemplate(formMergedForTemplate), {
+      autoInsertContractSignatures: activeTab === 'contract',
+      plainCustomerPlaceholders: isRepairPlainCustomerTab(activeTab),
+    });
   }, [
     activeTab,
     formMergedForTemplate,
@@ -1537,10 +1530,20 @@ export function RepairContractDocumentEditorPage({
       return;
     }
     if (!renderedDoc) return;
-    const printTitle = activeTab === 'contract' ? '' : REPAIR_DOCUMENT_TAB_LABELS[activeTab];
-    printDocumentHtml(renderedDoc, printTitle, {
-      marginFooter: pickPrintMarginFooterNames(formMergedForTemplate),
-    });
+    const printTitle =
+      activeTab === 'contract' || isRepairActTwinOneSheetTab(activeTab)
+        ? ''
+        : REPAIR_DOCUMENT_TAB_LABELS[activeTab];
+    const printBody = isRepairActTwinOneSheetTab(activeTab)
+      ? wrapRepairActTwinCopiesOnOnePageHtml(renderedDoc)
+      : renderedDoc;
+    printDocumentHtml(
+      printBody,
+      printTitle,
+      activeTab === 'contract'
+        ? { marginFooter: pickPrintMarginFooterNames(formMergedForTemplate) }
+        : {}
+    );
   };
 
   useEffect(() => {
@@ -1669,12 +1672,53 @@ export function RepairContractDocumentEditorPage({
             value={draftTitle}
             onChange={(e) => {
               setDraftTitle(e.target.value);
-              setDirty(true);
-              schedulePersistRepairPackageDebounced();
+              touchPackageData();
             }}
             className={styles.draftTitleInput}
           />
           <div className={styles.headerButtonsRow}>
+            <button
+              type="button"
+              className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn}`}
+              disabled={
+                packageRefreshing ||
+                savingPackageStatus ||
+                versionRestoreBusy ||
+                (activeTab === 'data' && dirty)
+              }
+              aria-busy={packageRefreshing}
+              aria-label={
+                packageRefreshing
+                  ? 'Обновление данных'
+                  : activeTab === 'data' && dirty
+                    ? 'Сначала сохраните изменения на вкладке «Данные»'
+                    : 'Обновить данные с сервера'
+              }
+              title={
+                activeTab === 'data' && dirty
+                  ? 'Сначала сохраните изменения на вкладке «Данные»'
+                  : 'Обновить данные с сервера'
+              }
+              onClick={() => void load({ mode: 'refresh' })}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width={18}
+                height={18}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={packageRefreshing ? styles.estimatesRefreshIconSpinning : undefined}
+                aria-hidden
+              >
+                <path d="M23 4v6h-6" />
+                <path d="M1 20v-6h6" />
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+              </svg>
+            </button>
             {packageFlowStatus !== 'CONTRACT_CONCLUDED' ? (
               <button
                 type="button"
@@ -1697,16 +1741,6 @@ export function RepairContractDocumentEditorPage({
             {activeTab !== 'data' ? (
               <button type="button" className={styles.secondaryBtn} onClick={handlePrint}>
                 Печать
-              </button>
-            ) : null}
-            {activeTab === 'data' ? (
-              <button
-                type="button"
-                className={styles.primaryBtn}
-                disabled={saving || !dirty}
-                onClick={() => void handleSave()}
-              >
-                {saving ? 'Сохранение…' : dirty ? 'Сохранить' : 'Сохранено'}
               </button>
             ) : null}
           </div>
@@ -1732,10 +1766,11 @@ export function RepairContractDocumentEditorPage({
               История версий
             </h3>
             <p className={styles.packageVersionsHint}>
-              Снимок создаётся при нажатии «Сохранить» на вкладке «Данные», при смене статуса
-              договора и при отвязке расчёта от пакета. Фоновое автосохранение полей версий не
-              добавляет. «Откатить к версии» подставляет данные выбранного снимка: текущее состояние
-              пакета сначала сохраняется в историю как новая версия, затем применяется выбранная.
+              Снимок создаётся при смене статуса договора и при отвязке расчёта от пакета; данные
+              вкладки «Данные» сохраняются на сервер автоматически (без отдельной кнопки) и в
+              историю версий при этом не попадают. «Откатить к версии» подставляет данные выбранного
+              снимка: текущее состояние пакета сначала сохраняется в историю как новая версия, затем
+              применяется выбранная.
             </p>
             <div>
               <button
@@ -1846,22 +1881,6 @@ export function RepairContractDocumentEditorPage({
           </div>
         </div>
       ) : null}
-      {isSaveSuccessModalOpen ? (
-        <div className={styles.saveModalBackdrop} role="dialog" aria-modal="true">
-          <div className={styles.saveModalCard}>
-            <h3 className={styles.saveModalTitle}>Сохранено</h3>
-            <p className={styles.saveModalText}>Изменения успешно сохранены.</p>
-            <button
-              type="button"
-              className={styles.primaryBtn}
-              onClick={() => setIsSaveSuccessModalOpen(false)}
-            >
-              Ок
-            </button>
-          </div>
-        </div>
-      ) : null}
-
       <ConfirmModal
         isOpen={isRevertStatusConfirmModalOpen}
         onClose={() => setIsRevertStatusConfirmModalOpen(false)}
@@ -1951,7 +1970,7 @@ export function RepairContractDocumentEditorPage({
                             className={`${styles.secondaryBtn} ${styles.crmResultBtn}`}
                             onClick={() => {
                               setDraftCrmContractId(c.id);
-                              setDirty(true);
+                              touchPackageData();
                             }}
                           >
                             № {c.contractNumber} · {c.customerName || '—'}{' '}
@@ -1980,7 +1999,7 @@ export function RepairContractDocumentEditorPage({
                     disabled={!draftCrmContractId}
                     onClick={() => {
                       setDraftCrmContractId(null);
-                      setDirty(true);
+                      touchPackageData();
                     }}
                   >
                     Отвязать договор
@@ -1997,18 +2016,19 @@ export function RepairContractDocumentEditorPage({
               </div>
 
               <div className={`${styles.dataTopBlock} ${styles.contractCompactBlock}`}>
-                <h3 className={styles.sectionTitle}>Договор (реквизиты для подстановки)</h3>
-                <div className={styles.contractInlineRow}>
+                <h3 className={styles.sectionTitle}>Договор</h3>
+                <div className={`${styles.contractInlineRow} ${styles.contractHeaderMetaRow}`}>
                   <div className={`${styles.field} ${styles.contractInlineField}`}>
                     <label htmlFor="cn">Номер договора</label>
                     <input
                       id="cn"
                       value={form.contract.number}
                       onChange={(e) => updateContract('number', e.target.value)}
+                      autoComplete="off"
                     />
                   </div>
                   <div className={`${styles.field} ${styles.contractInlineField}`}>
-                    <label htmlFor="cd">Дата договора (дд.мм.гггг)</label>
+                    <label htmlFor="cd">Дата договора</label>
                     <input
                       id="cd"
                       value={form.contract.date}
@@ -2017,10 +2037,22 @@ export function RepairContractDocumentEditorPage({
                       autoComplete="off"
                     />
                   </div>
-                </div>
-                <div className={`${styles.contractInlineRow} ${styles.contractAmountsRow}`}>
                   <div className={`${styles.field} ${styles.contractInlineField}`}>
-                    <label htmlFor="cta">Сумма договора (цифрами)</label>
+                    <label htmlFor="wp">Срок договора (дней)</label>
+                    <input
+                      id="wp"
+                      inputMode="numeric"
+                      value={form.contract.workPeriod}
+                      onChange={(e) => updateContract('workPeriod', e.target.value)}
+                      placeholder="60"
+                      title="Календарных дней; в шаблоне: {{contract.workPeriod}}"
+                      autoComplete="off"
+                    />
+                  </div>
+                </div>
+                <div className={`${styles.contractInlineRow} ${styles.contractSumAndWordsRow}`}>
+                  <div className={`${styles.field} ${styles.contractInlineField}`}>
+                    <label htmlFor="cta">Стоимость дог.</label>
                     <input
                       id="cta"
                       value={form.contract.totalAmount}
@@ -2029,7 +2061,7 @@ export function RepairContractDocumentEditorPage({
                     />
                   </div>
                   <div className={`${styles.field} ${styles.contractInlineField}`}>
-                    <label htmlFor="ctaw">Сумма прописью</label>
+                    <label htmlFor="ctaw">Стоимость договора прописью</label>
                     <input
                       id="ctaw"
                       className={styles.autoFilledInput}
@@ -2049,21 +2081,37 @@ export function RepairContractDocumentEditorPage({
                     />
                   </div>
                 </div>
-                <div className={styles.contractInlineRow}>
+                <div className={`${styles.contractInlineRow} ${styles.contractSumAndWordsRow}`}>
                   <div className={`${styles.field} ${styles.contractInlineField}`}>
-                    <label htmlFor="prep">Аванс / предоплата</label>
+                    <label htmlFor="prep">Оплата</label>
                     <input
                       id="prep"
                       value={form.contract.prepaymentAmount}
                       onChange={(e) => updateContract('prepaymentAmount', e.target.value)}
+                      autoComplete="off"
                     />
                   </div>
                   <div className={`${styles.field} ${styles.contractInlineField}`}>
-                    <label htmlFor="wp">Сроки / период работ</label>
+                    <label htmlFor="prepw">Оплата прописью</label>
                     <input
-                      id="wp"
-                      value={form.contract.workPeriod}
-                      onChange={(e) => updateContract('workPeriod', e.target.value)}
+                      id="prepw"
+                      readOnly
+                      className={styles.autoFilledInput}
+                      value={form.contract.prepaymentAmountWords}
+                      title="Заполняется автоматически из поля «Оплата»; в шаблоне: {{contract.prepaymentAmountWords}}"
+                    />
+                  </div>
+                </div>
+                <div className={`${styles.contractInlineRow} ${styles.contractPaymentBasisRow}`}>
+                  <div
+                    className={`${styles.field} ${styles.contractInlineField} ${styles.contractPaymentBasisField}`}
+                  >
+                    <label htmlFor="paybasis">Основание</label>
+                    <input
+                      id="paybasis"
+                      value={form.contract.paymentBasis}
+                      onChange={(e) => updateContract('paymentBasis', e.target.value)}
+                      placeholder="Например: по договору подряда № … от …"
                     />
                   </div>
                 </div>
@@ -2463,41 +2511,6 @@ export function RepairContractDocumentEditorPage({
               ) : null}
               <div className={styles.estimateSectionHeader}>
                 <h3 className={`${styles.sectionTitle} ${styles.estimateSectionTitle}`}>Смета</h3>
-                <div className={styles.headerButtonsRow}>
-                  <button
-                    type="button"
-                    className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn}`}
-                    disabled={saving || estimateDataRefreshing}
-                    aria-busy={estimateDataRefreshing}
-                    aria-label={
-                      estimateDataRefreshing
-                        ? 'Обновление списков расчётов'
-                        : 'Обновить списки расчётов'
-                    }
-                    title="Обновить"
-                    onClick={() => void refreshEstimateListsFromServer()}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width={18}
-                      height={18}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className={
-                        estimateDataRefreshing ? styles.estimatesRefreshIconSpinning : undefined
-                      }
-                      aria-hidden
-                    >
-                      <path d="M23 4v6h-6" />
-                      <path d="M1 20v-6h6" />
-                      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-                    </svg>
-                  </button>
-                </div>
               </div>
               <div className={styles.sectionFields}>
                 <div className={`${styles.estimatePickAndAttachedRow} ${styles.fieldSpanAll}`}>
@@ -2743,7 +2756,9 @@ export function RepairContractDocumentEditorPage({
                           </section>
                           <p className={styles.estimateA4Total}>
                             Итого по смете:{' '}
-                            <strong>{formatMoneyValue(form.estimate.snapshot.total)} руб.</strong>
+                            <strong>
+                              {formatMoneyValue(form.estimate.snapshot?.total ?? 0)} руб.
+                            </strong>
                           </p>
                           <RepairEstimateSignaturesBlock
                             directorName={formMergedForTemplate.executor.directorName}
@@ -2788,12 +2803,26 @@ export function RepairContractDocumentEditorPage({
           ) : null}
           {activeTab === 'contract' || activeTab === 'actStart' || activeTab === 'actAcceptance' ? (
             <div className={styles.estimateA4Wrap}>
-              <article className={styles.estimateA4Sheet}>
-                <div
-                  className={styles.contractA4Preview}
-                  dangerouslySetInnerHTML={{ __html: renderedDoc }}
-                />
-              </article>
+              {isRepairActTwinOneSheetTab(activeTab) ? (
+                <article
+                  className={`${styles.estimateA4Sheet} ${styles.repairActTwinSheet}`}
+                  aria-label="Два экземпляра акта на одном листе"
+                >
+                  <div
+                    className={styles.contractA4Preview}
+                    dangerouslySetInnerHTML={{
+                      __html: wrapRepairActTwinCopiesOnOnePageHtml(renderedDoc),
+                    }}
+                  />
+                </article>
+              ) : (
+                <article className={styles.estimateA4Sheet}>
+                  <div
+                    className={styles.contractA4Preview}
+                    dangerouslySetInnerHTML={{ __html: renderedDoc }}
+                  />
+                </article>
+              )}
             </div>
           ) : (
             <div className={styles.docPane}>

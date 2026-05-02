@@ -40,8 +40,9 @@ export function ContractDocumentsInstructionPage() {
             <strong>менеджер</strong> использует их в пакетах.
           </li>
           <li>
-            После любых изменений нажимайте <strong>«Сохранить»</strong>, иначе данные не попадут в
-            базу и не откроются у коллег.
+            Данные пакета на вкладке <strong>«Данные»</strong> (название черновика, связь с CRM,
+            поля формы, прикреплённые расчёты) сохраняются на сервер <strong>автоматически</strong>{' '}
+            с небольшой задержкой после правок — отдельная кнопка сохранения не нужна.
           </li>
         </ul>
 
@@ -65,7 +66,7 @@ export function ContractDocumentsInstructionPage() {
           В HTML шаблонах и в тексте, загруженном из Excel, можно использовать подстановки в виде
           двойных фигурных скобок и <strong>латинского</strong> пути к полю через точку:
         </p>
-        <pre>{`{{customer.fullName}}    {{contract.number}}    {{object.objectAddress}}`}</pre>
+        <pre>{`{{customer.fullName}}    {{contract.number}}    {{object.objectAddress}}    {{meta.currentDate}}`}</pre>
         <ul>
           <li>
             Пробелы внутри допустимы: <code>{'{{ customer.phone }}'}</code>.
@@ -87,7 +88,8 @@ export function ContractDocumentsInstructionPage() {
 {{executor.companyName}}       {{executor.innKppRegLine}}       {{executor.directorName}}
 {{object.objectAddress}}       {{object.objectFloor}}            {{object.objectDescription}}
 {{contract.number}}            {{contract.date}}                {{contract.totalAmount}}
-{{contract.totalAmountWords}}  {{contract.prepaymentAmount}}    {{contract.workPeriod}}
+{{contract.totalAmountWords}}  {{contract.prepaymentAmount}}    {{contract.prepaymentAmountWords}}
+{{contract.paymentBasis}}      {{contract.workPeriod}}          {{contract.recommendedPrepayment}}
 {{estimate.notes}}`}</pre>
 
         <h2>4. Где лежат шаблоны</h2>
@@ -181,7 +183,7 @@ export function ContractDocumentsInstructionPage() {
           </li>
           <li>
             В ячейках можно сразу писать плейсхолдеры, например:{' '}
-            <code>{'{{customer.fullName}}'}</code> — после сохранения и на вкладке «Договор» они
+            <code>{'{{customer.fullName}}'}</code> — после записи в пакет и на вкладке «Договор» они
             подставятся из «Данных».
           </li>
           <li>
@@ -190,7 +192,8 @@ export function ContractDocumentsInstructionPage() {
             сложную вёрстку лучше задавать в шаблоне в коде или доработать функцию загрузки.
           </li>
           <li>
-            Нажмите <strong>«Сохранить»</strong>. Текст договора хранится{' '}
+            После загрузки из Excel текст попадает в данные пакета (при необходимости сохранится
+            автоматически вместе с остальными полями). Он хранится{' '}
             <strong>только в этом пакете</strong> (в данных формы), глобальный шаблон в коде не
             меняется.
           </li>

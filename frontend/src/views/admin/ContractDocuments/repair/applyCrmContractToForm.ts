@@ -1,5 +1,6 @@
 import type { Contract } from '@/shared/api/admin-crm';
 
+import { amountToRussianWords } from './amountToRussianWords';
 import { isoOrCrmDateToContractDdMmYyyy } from './contractDateFormat';
 import type { RepairPackageFormData } from './repairPackageForm';
 
@@ -18,6 +19,7 @@ export function mergeRepairFormFromCrmContract(
   const customerPhone = c.customerPhone?.trim();
   const total = formatMoney(c.totalAmount);
   const advance = formatMoney(c.advanceAmount);
+  const nextPrepayment = advance.trim() ? advance : prev.contract.prepaymentAmount;
 
   return {
     ...prev,
@@ -36,7 +38,8 @@ export function mergeRepairFormFromCrmContract(
       number: c.contractNumber || prev.contract.number,
       date: isoOrCrmDateToContractDdMmYyyy(c.contractDate) || prev.contract.date,
       totalAmount: total || prev.contract.totalAmount,
-      prepaymentAmount: advance || prev.contract.prepaymentAmount,
+      prepaymentAmount: nextPrepayment,
+      prepaymentAmountWords: nextPrepayment.trim() ? amountToRussianWords(nextPrepayment) : '',
     },
   };
 }

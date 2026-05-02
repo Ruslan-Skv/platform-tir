@@ -40,7 +40,8 @@ export const repairTemplateContract = `
     обязанность по НДС предусмотрена законодательством РФ.
   </p>
   <p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">
-    2.2. Порядок и сроки оплаты: аванс / предоплата — <strong>{{contract.prepaymentAmount}}</strong>; окончательный
+    2.2. Порядок и сроки оплаты: аванс / предоплата — <strong>{{contract.prepaymentAmount}}</strong>
+    ({{contract.prepaymentAmountWords}}); основание перечисления: {{contract.paymentBasis}}; окончательный
     расчёт — по факту подписания акта приёма выполненных работ (или иной порядок, согласованный Сторонами).
   </p>
   <p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">
@@ -50,7 +51,8 @@ export const repairTemplateContract = `
 
   <h2 style="text-align: center; font-size: 12pt; margin: 16pt 0 8pt;">3. СРОКИ ВЫПОЛНЕНИЯ РАБОТ</h2>
   <p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">
-    3.1. Сроки начала и окончания работ, этапы: <strong>{{contract.workPeriod}}</strong>.
+    3.1. Срок выполнения работ по Договору: <strong>{{contract.workPeriod}}</strong> календарных дней (если иное не
+    согласовано дополнительным соглашением).
   </p>
   <p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">
     3.2. Сроки могут быть изменены по соглашению Сторон оформленным дополнительным соглашением либо актом фиксации

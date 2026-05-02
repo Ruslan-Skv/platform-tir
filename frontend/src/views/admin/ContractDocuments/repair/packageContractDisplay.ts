@@ -14,25 +14,31 @@ function repairFormContractBlock(
   return root as Record<string, unknown>;
 }
 
-/** Номер договора: из CRM или из вкладки «Данные» пакета (поле «Номер договора»). */
+/**
+ * Номер для подписей в списках: то же, что подставляется как `{{contract.number}}` — сначала
+ * значение из данных пакета («Номер договора»), иначе номер из привязанной карточки CRM.
+ */
 export function getDisplayContractNumber(pkg: PackageContractSource): string {
-  const crm = pkg.crmContract?.contractNumber?.trim();
-  if (crm) return crm;
   const c = repairFormContractBlock(pkg.formData);
-  const num = typeof c?.number === 'string' ? c.number.trim() : '';
-  return num || '—';
+  const formNum = typeof c?.number === 'string' ? c.number.trim() : '';
+  if (formNum) return formNum;
+  const crm = pkg.crmContract?.contractNumber?.trim();
+  return crm || '—';
 }
 
-/** Дата договора для подписи в списках (дд.мм.гггг). */
+/**
+ * Дата для списков: как `{{contract.date}}` — сначала дата из формы пакета, иначе из CRM.
+ */
 export function getDisplayContractDate(pkg: PackageContractSource): string {
-  if (pkg.crmContract?.contractDate) {
-    const dt = new Date(pkg.crmContract.contractDate);
-    if (Number.isNaN(dt.getTime())) return '—';
-    return formatContractDateDdMmYyyy(dt);
-  }
   const c = repairFormContractBlock(pkg.formData);
   const dateRaw = typeof c?.date === 'string' ? c.date.trim() : '';
-  if (!dateRaw) return '—';
-  const normalized = contractDateToDdMmYyyy(dateRaw);
-  return normalized.trim() || '—';
+  if (dateRaw) {
+    const normalized = contractDateToDdMmYyyy(dateRaw);
+    if (normalized.trim()) return normalized.trim();
+  }
+  if (pkg.crmContract?.contractDate) {
+    const dt = new Date(pkg.crmContract.contractDate);
+    if (!Number.isNaN(dt.getTime())) return formatContractDateDdMmYyyy(dt);
+  }
+  return '—';
 }

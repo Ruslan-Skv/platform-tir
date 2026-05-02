@@ -3,6 +3,9 @@ import type {
   ExecutorRequisiteProfile,
 } from '@/shared/api/admin-contract-document-packages';
 
+import { amountToRussianWords } from './amountToRussianWords';
+import { todayContractDateDdMmYyyy } from './contractDateFormat';
+
 /** ЮЛ — ОГРН и КПП; ИП — ОГРНИП (КПП в форме обычно пустой). */
 export type RepairExecutorKind = 'COMPANY' | 'ENTREPRENEUR';
 
@@ -63,6 +66,11 @@ export interface RepairContractBlock {
   recommendedPrepayment: string;
   totalAmountWords: string;
   prepaymentAmount: string;
+  /** Та же сумма, что «Аванс / предоплата», прописью (для ПКО и т.п.). */
+  prepaymentAmountWords: string;
+  /** Основание платежа / перечисления (текст для подстановки в документы). */
+  paymentBasis: string;
+  /** Срок договора в календарных днях (число строкой, напр. «60»); в шаблоне `{{contract.workPeriod}}`. */
   workPeriod: string;
 }
 
@@ -151,6 +159,8 @@ export function defaultRepairPackageFormData(): RepairPackageFormData {
       recommendedPrepayment: '',
       totalAmountWords: '',
       prepaymentAmount: '',
+      prepaymentAmountWords: '',
+      paymentBasis: '',
       workPeriod: '',
     },
     estimate: {
@@ -247,9 +257,14 @@ export function buildRepairTemplatePreviewFallbackData(
     contract: {
       ...base.contract,
       number: 'R-001/26',
-      date: '2026-04-29',
+      date: '29.04.2026',
       totalAmount: '250000',
+      recommendedPrepayment: '175000,00',
       totalAmountWords: 'двести пятьдесят тысяч рублей',
+      prepaymentAmount: '175000,00',
+      prepaymentAmountWords: 'сто семьдесят пять тысяч рублей',
+      paymentBasis: 'по договору подряда № R-001/26 от 29.04.2026',
+      workPeriod: '60',
     },
   };
 }
@@ -349,6 +364,11 @@ export function mergeRepairPackageFormWithPreviewFallback(
       ),
       totalAmountWords: pickStr(form.contract.totalAmountWords, fallback.contract.totalAmountWords),
       prepaymentAmount: pickStr(form.contract.prepaymentAmount, fallback.contract.prepaymentAmount),
+      prepaymentAmountWords: pickStr(
+        form.contract.prepaymentAmountWords,
+        fallback.contract.prepaymentAmountWords
+      ),
+      paymentBasis: pickStr(form.contract.paymentBasis, fallback.contract.paymentBasis),
       workPeriod: pickStr(form.contract.workPeriod, fallback.contract.workPeriod),
     },
     estimate: {
@@ -457,8 +477,21 @@ export function repairPackageFormForTemplate(form: RepairPackageFormData): Repai
 </table>`
     : '';
 
+  const prepaymentRaw = form.contract.prepaymentAmount.trim();
+  const prepaymentAmountWords = prepaymentRaw
+    ? amountToRussianWords(form.contract.prepaymentAmount)
+    : '';
+
   return {
     ...form,
+    meta: {
+      /** Текущая календарная дата в формате дд.мм.гггг (момент предпросмотра/печати). Шаблон: `{{meta.currentDate}}`. */
+      currentDate: todayContractDateDdMmYyyy(),
+    },
+    contract: {
+      ...form.contract,
+      prepaymentAmountWords,
+    },
     executor: {
       ...executor,
       innKppRegLine,

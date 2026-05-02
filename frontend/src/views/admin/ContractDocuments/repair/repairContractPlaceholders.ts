@@ -1,6 +1,7 @@
 /**
  * Группы плейсхолдеров для вставки в шаблон договора (пути совпадают с `repairPackageForm.ts`).
  * Для заказчика без жирного в предпросмотре: `{{customer.field|plain}}` (см. `applyTemplate`).
+ * `meta.currentDate` подставляется из `repairPackageFormForTemplate` (дата на момент рендера).
  */
 
 export interface RepairContractPlaceholderItem {
@@ -91,8 +92,22 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
       { path: 'contract.totalAmount', label: 'Сумма (цифрами)' },
       { path: 'contract.recommendedPrepayment', label: 'Рекомендованная предоплата (70%)' },
       { path: 'contract.totalAmountWords', label: 'Сумма прописью' },
-      { path: 'contract.prepaymentAmount', label: 'Аванс / предоплата' },
-      { path: 'contract.workPeriod', label: 'Сроки / период работ' },
+      { path: 'contract.prepaymentAmount', label: 'Оплата (сумма)' },
+      {
+        path: 'contract.prepaymentAmountWords',
+        label: 'Оплата прописью (из поля «Оплата»)',
+      },
+      { path: 'contract.paymentBasis', label: 'Основание (платёж / перечисление)' },
+      { path: 'contract.workPeriod', label: 'Срок договора (календарных дней, число)' },
+    ],
+  },
+  {
+    title: 'Дата',
+    items: [
+      {
+        path: 'meta.currentDate',
+        label: 'Сегодняшняя дата (дд.мм.гггг, на момент предпросмотра или печати)',
+      },
     ],
   },
   {
