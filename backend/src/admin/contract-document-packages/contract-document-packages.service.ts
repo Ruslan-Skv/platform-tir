@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { ContractDocumentPackageKind, Prisma } from '@prisma/client';
+import { ContractDocumentPackageKind, ContractDocumentPackageStatus, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
 import { contractDocumentPackageInclude } from './contract-package.include';
@@ -96,7 +96,7 @@ export class ContractDocumentPackagesService {
     if (dto.kind === ContractDocumentPackageKind.REPAIR && dto.formData !== undefined) {
       await this.assertRepairEstimatePresetsExclusive(null, dto.formData);
     }
-    return this.prisma.contractDocumentPackage.create({
+    const created = await this.prisma.contractDocumentPackage.create({
       data: {
         kind: dto.kind,
         title: dto.title ?? null,
@@ -106,6 +106,17 @@ export class ContractDocumentPackagesService {
       },
       include: contractDocumentPackageInclude,
     });
+    await this.appendPackageVersion(
+      created.id,
+      {
+        title: created.title,
+        formData: created.formData as Prisma.InputJsonValue,
+        crmContractId: created.crmContractId,
+        status: created.status,
+      },
+      createdById ?? null,
+    );
+    return this.findOne(created.id);
   }
 
   findAll(kind?: ContractDocumentPackageKind) {
@@ -127,7 +138,7 @@ export class ContractDocumentPackagesService {
     return row;
   }
 
-  async update(id: string, dto: UpdateContractDocumentPackageDto) {
+  async update(id: string, dto: UpdateContractDocumentPackageDto, savedById?: string | null) {
     const row = await this.findOne(id);
     if (dto.crmContractId) {
       await this.assertCrmContractExists(dto.crmContractId);
@@ -135,12 +146,125 @@ export class ContractDocumentPackagesService {
     if (dto.formData !== undefined && row.kind === ContractDocumentPackageKind.REPAIR) {
       await this.assertRepairEstimatePresetsExclusive(id, dto.formData);
     }
-    return this.prisma.contractDocumentPackage.update({
+    const recordVersion = dto.recordVersion === true;
+    const updated = await this.prisma.contractDocumentPackage.update({
       where: { id },
       data: {
         ...(dto.title !== undefined ? { title: dto.title } : {}),
         ...(dto.formData !== undefined ? { formData: dto.formData as Prisma.InputJsonValue } : {}),
         ...(dto.crmContractId !== undefined ? { crmContractId: dto.crmContractId } : {}),
+        ...(dto.status !== undefined ? { status: dto.status } : {}),
+      },
+      include: contractDocumentPackageInclude,
+    });
+    if (recordVersion) {
+      await this.appendPackageVersion(
+        id,
+        {
+          title: updated.title,
+          formData: updated.formData as Prisma.InputJsonValue,
+          crmContractId: updated.crmContractId,
+          status: updated.status,
+        },
+        savedById ?? null,
+      );
+    }
+    return this.findOne(id);
+  }
+
+  private async appendPackageVersion(
+    packageId: string,
+    snapshot: {
+      title: string | null;
+      formData: Prisma.InputJsonValue;
+      crmContractId: string | null;
+      status: ContractDocumentPackageStatus;
+    },
+    savedById?: string | null,
+  ) {
+    await this.prisma.$transaction(async (tx) => {
+      const agg = await tx.contractDocumentPackageVersion.aggregate({
+        where: { packageId },
+        _max: { versionNumber: true },
+      });
+      const next = (agg._max.versionNumber ?? 0) + 1;
+      await tx.contractDocumentPackageVersion.create({
+        data: {
+          packageId,
+          versionNumber: next,
+          title: snapshot.title,
+          formData: snapshot.formData,
+          crmContractId: snapshot.crmContractId,
+          status: snapshot.status,
+          savedById: savedById ?? null,
+        },
+      });
+    });
+  }
+
+  async listVersions(packageId: string) {
+    await this.findOne(packageId);
+    return this.prisma.contractDocumentPackageVersion.findMany({
+      where: { packageId },
+      orderBy: { versionNumber: 'desc' },
+      select: {
+        id: true,
+        packageId: true,
+        versionNumber: true,
+        title: true,
+        status: true,
+        crmContractId: true,
+        createdAt: true,
+        savedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
+      },
+    });
+  }
+
+  async getVersion(packageId: string, versionId: string) {
+    await this.findOne(packageId);
+    const row = await this.prisma.contractDocumentPackageVersion.findFirst({
+      where: { id: versionId, packageId },
+      include: {
+        savedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
+      },
+    });
+    if (!row) {
+      throw new NotFoundException('Версия не найдена');
+    }
+    return row;
+  }
+
+  async restoreVersion(packageId: string, versionId: string, savedById?: string | null) {
+    const pkg = await this.findOne(packageId);
+    const ver = await this.prisma.contractDocumentPackageVersion.findFirst({
+      where: { id: versionId, packageId },
+    });
+    if (!ver) {
+      throw new NotFoundException('Версия не найдена');
+    }
+    if (ver.crmContractId) {
+      await this.assertCrmContractExists(ver.crmContractId);
+    }
+    if (pkg.kind === ContractDocumentPackageKind.REPAIR) {
+      await this.assertRepairEstimatePresetsExclusive(packageId, ver.formData);
+    }
+    await this.appendPackageVersion(
+      packageId,
+      {
+        title: pkg.title,
+        formData: pkg.formData as Prisma.InputJsonValue,
+        crmContractId: pkg.crmContractId,
+        status: pkg.status,
+      },
+      savedById ?? null,
+    );
+    return this.prisma.contractDocumentPackage.update({
+      where: { id: packageId },
+      data: {
+        title: ver.title,
+        formData: ver.formData as Prisma.InputJsonValue,
+        crmContractId: ver.crmContractId,
+        status: ver.status,
       },
       include: contractDocumentPackageInclude,
     });

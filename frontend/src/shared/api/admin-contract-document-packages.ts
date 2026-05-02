@@ -39,6 +39,9 @@ export type ContractDocumentPackageKind =
   | 'BLINDS'
   | 'FURNITURE';
 
+/** Стадия пакета: «в работе» или договор заключён (фиксирует менеджер). */
+export type ContractDocumentPackageStatus = 'IN_PROGRESS' | 'CONTRACT_CONCLUDED';
+
 export interface ContractDocumentPackageUserRef {
   id: string;
   email: string;
@@ -61,6 +64,8 @@ export interface ContractDocumentPackage {
   id: string;
   kind: ContractDocumentPackageKind;
   title: string | null;
+  /** По умолчанию на старых ответах API — «в работе». */
+  status?: ContractDocumentPackageStatus;
   formData: Record<string, unknown>;
   crmContractId: string | null;
   createdById: string | null;
@@ -68,6 +73,23 @@ export interface ContractDocumentPackage {
   updatedAt: string;
   createdBy?: ContractDocumentPackageUserRef | null;
   crmContract?: ContractDocumentPackageCrmContract | null;
+}
+
+/** Краткая запись в списке истории версий пакета (без тела formData). */
+export interface ContractDocumentPackageVersionListItem {
+  id: string;
+  packageId: string;
+  versionNumber: number;
+  title: string | null;
+  status: ContractDocumentPackageStatus;
+  crmContractId: string | null;
+  createdAt: string;
+  savedBy?: ContractDocumentPackageUserRef | null;
+}
+
+/** Полная версия для просмотра JSON. */
+export interface ContractDocumentPackageVersionDetail extends ContractDocumentPackageVersionListItem {
+  formData: Record<string, unknown>;
 }
 
 export type ExecutorRequisiteKind = 'COMPANY' | 'ENTREPRENEUR';
@@ -164,6 +186,41 @@ export async function getContractDocumentPackage(id: string): Promise<ContractDo
   return res.json();
 }
 
+export async function getContractDocumentPackageVersions(
+  packageId: string
+): Promise<ContractDocumentPackageVersionListItem[]> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/versions`,
+    { headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) throw new Error('Не удалось загрузить историю версий');
+  return res.json();
+}
+
+export async function getContractDocumentPackageVersion(
+  packageId: string,
+  versionId: string
+): Promise<ContractDocumentPackageVersionDetail> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/versions/${versionId}`,
+    { headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) throw new Error('Не удалось загрузить версию');
+  return res.json();
+}
+
+export async function restoreContractDocumentPackageVersion(
+  packageId: string,
+  versionId: string
+): Promise<ContractDocumentPackage> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/versions/${versionId}/restore`,
+    { method: 'POST', headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) throw new Error('Не удалось восстановить версию');
+  return res.json();
+}
+
 export async function createContractDocumentPackage(body: {
   kind: ContractDocumentPackageKind;
   title?: string;
@@ -185,6 +242,9 @@ export async function updateContractDocumentPackage(
     title?: string | null;
     formData?: Record<string, unknown>;
     crmContractId?: string | null;
+    status?: ContractDocumentPackageStatus;
+    /** Сохранить снимок в историю версий после успешного PATCH. */
+    recordVersion?: boolean;
   }
 ): Promise<ContractDocumentPackage> {
   const res = await apiFetch(`${getApiBaseUrl()}/admin/contract-document-packages/${id}`, {

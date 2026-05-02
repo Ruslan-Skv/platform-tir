@@ -93,6 +93,7 @@ model User {
   categoriesCreated          Category[]            @relation("CategoryCreatedBy")
   contractDocumentPackagesCreated ContractDocumentPackage[] @relation("ContractDocumentPackagesCreated")
   contractDocumentGlobalTemplatesUpdated ContractDocumentGlobalTemplate[] @relation("GlobalContractTemplateUpdatedBy")
+  contractDocumentPackageVersionsSaved ContractDocumentPackageVersion[] @relation("ContractDocumentPackageVersionSavedBy")
 
   @@map("users")
 }
@@ -1949,10 +1950,17 @@ enum ContractDocumentPackageKind {
   FURNITURE
 }
 
+/// Стадия оформления пакета (например «договор заключён» — для учёта менеджером).
+enum ContractDocumentPackageStatus {
+  IN_PROGRESS
+  CONTRACT_CONCLUDED
+}
+
 model ContractDocumentPackage {
   id             String                      @id @default(cuid())
   kind           ContractDocumentPackageKind
   title          String?
+  status         ContractDocumentPackageStatus @default(IN_PROGRESS)
   /// Все редактируемые поля вкладки «Данные» и прочие структурированные данные (смета и т.д.).
   formData       Json                        @default("{}")
   /// Связь с договором в CRM («Объекты»).
@@ -1963,11 +1971,32 @@ model ContractDocumentPackage {
 
   createdBy   User?     @relation("ContractDocumentPackagesCreated", fields: [createdById], references: [id], onDelete: SetNull)
   crmContract Contract? @relation(fields: [crmContractId], references: [id], onDelete: SetNull)
+  versions    ContractDocumentPackageVersion[]
 
   @@index([kind])
   @@index([createdAt])
   @@index([crmContractId])
   @@map("contract_document_packages")
+}
+
+/// Снимок пакета документов (история версий при явном сохранении и при восстановлении).
+model ContractDocumentPackageVersion {
+  id            String                        @id @default(cuid())
+  packageId     String
+  versionNumber Int
+  title         String?
+  status        ContractDocumentPackageStatus
+  formData      Json                          @default("{}")
+  crmContractId String?
+  savedById     String?
+  createdAt     DateTime                      @default(now())
+
+  package ContractDocumentPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  savedBy User?                   @relation("ContractDocumentPackageVersionSavedBy", fields: [savedById], references: [id], onDelete: SetNull)
+
+  @@unique([packageId, versionNumber])
+  @@index([packageId, createdAt])
+  @@map("contract_document_package_versions")
 }
 
 /// Общий шаблон HTML для вкладки документа (например договор «Ремонт») — подставляется всем пакетам, у которых нет своего переопределения.

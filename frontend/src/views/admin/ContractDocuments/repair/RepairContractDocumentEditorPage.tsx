@@ -6,6 +6,8 @@ import Link from 'next/link';
 
 import { useAuth } from '@/features/auth';
 import {
+  type ContractDocumentPackageStatus,
+  type ContractDocumentPackageVersionListItem,
   type ContractEstimateGroup,
   type ContractEstimatePreset,
   type ContractSignatoryProfile,
@@ -15,14 +17,18 @@ import {
   getContractDocumentExecutorProfiles,
   getContractDocumentGlobalTemplate,
   getContractDocumentPackage,
+  getContractDocumentPackageVersion,
+  getContractDocumentPackageVersions,
   getContractDocumentPackages,
   getContractDocumentSignatoryProfiles,
   getContractDocumentTemplatePresets,
   putContractDocumentTemplatePresets,
+  restoreContractDocumentPackageVersion,
   updateContractDocumentPackage,
 } from '@/shared/api/admin-contract-document-packages';
 import type { Contract } from '@/shared/api/admin-crm';
 import { getContract, getContracts } from '@/shared/api/admin-crm';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
 import styles from '../ContractDocuments.module.css';
 import { amountToRussianWords } from './amountToRussianWords';
@@ -45,8 +51,11 @@ import { REPAIR_CONTRACT_PLACEHOLDER_GROUPS } from './repairContractPlaceholders
 import {
   REPAIR_DOCUMENT_TAB_IDS,
   REPAIR_DOCUMENT_TAB_LABELS,
+  REPAIR_DOCUMENT_TAB_LABELS_SHORT,
+  REPAIR_DOCUMENT_TAB_ORDER_STORAGE_KEY,
   REPAIR_DOCUMENT_TEMPLATES,
   type RepairDocumentTabId,
+  normalizeRepairDocumentTabOrder,
 } from './repairDocumentTemplates';
 import {
   type RepairPackageFormData,
@@ -126,6 +135,63 @@ function RepairEstimateSignaturesBlock({
   );
 }
 
+function formatPackageVersionDate(iso: string) {
+  try {
+    return new Date(iso).toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return iso;
+  }
+}
+
+/** Иконка «история / версии» в шапке пакета. */
+function PackageVersionsHistoryTriggerIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+      <path d="M3 3v5h5" />
+      <path d="M12 7v5l3 3" />
+    </svg>
+  );
+}
+
+function RepairTabLockIcon() {
+  return (
+    <svg
+      className={styles.repairTabLockIcon}
+      xmlns="http://www.w3.org/2000/svg"
+      width={12}
+      height={12}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x={3} y={11} width={18} height={11} rx={2} ry={2} />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
 interface RepairContractDocumentEditorPageProps {
   packageId: string;
 }
@@ -136,6 +202,12 @@ export function RepairContractDocumentEditorPage({
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [activeTab, setActiveTab] = useState<RepairDocumentTabId>('data');
+  const [repairTabOrder, setRepairTabOrder] = useState<RepairDocumentTabId[]>(() => [
+    ...REPAIR_DOCUMENT_TAB_IDS,
+  ]);
+  /** Пропускаем первую запись в LS до применения порядка из хранилища (избегаем перезаписи дефолтом). */
+  const skipRepairTabOrderPersistRef = useRef(true);
+  const suppressRepairTabClickAfterReorderRef = useRef(false);
   const [draftTitle, setDraftTitle] = useState('');
   const [draftCrmContractId, setDraftCrmContractId] = useState<string | null>(null);
   const [form, setForm] = useState<RepairPackageFormData>(() => mergeRepairPackageFormData({}));
@@ -143,6 +215,7 @@ export function RepairContractDocumentEditorPage({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaveSuccessModalOpen, setIsSaveSuccessModalOpen] = useState(false);
+  const [isRevertStatusConfirmModalOpen, setIsRevertStatusConfirmModalOpen] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [contractQuery, setContractQuery] = useState('');
   const [contractResults, setContractResults] = useState<Contract[]>([]);
@@ -188,6 +261,22 @@ export function RepairContractDocumentEditorPage({
     }>
   >([]);
   const [estimateDataRefreshing, setEstimateDataRefreshing] = useState(false);
+  const [packageFlowStatus, setPackageFlowStatus] =
+    useState<ContractDocumentPackageStatus>('IN_PROGRESS');
+  /** После «Договор заключен» вкладки «Договор» и «Смета» только для просмотра. */
+  const contractAndEstimateLocked = packageFlowStatus === 'CONTRACT_CONCLUDED';
+  const [savingPackageStatus, setSavingPackageStatus] = useState(false);
+  const [packageVersions, setPackageVersions] = useState<ContractDocumentPackageVersionListItem[]>(
+    []
+  );
+  const [versionsBusy, setVersionsBusy] = useState(false);
+  const [versionJsonText, setVersionJsonText] = useState<string | null>(null);
+  const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<{ id: string; versionNumber: number } | null>(
+    null
+  );
+  const [versionRestoreBusy, setVersionRestoreBusy] = useState(false);
+  const [isVersionsHistoryOpen, setIsVersionsHistoryOpen] = useState(false);
 
   /** Актуальная форма для отложенного сохранения (после setState ref обновится на следующем рендере). */
   const formRef = useRef(form);
@@ -233,6 +322,75 @@ export function RepairContractDocumentEditorPage({
     }, 300);
   }, [loading, packageId]);
 
+  const handleRepairTabDragStart = useCallback(
+    (id: RepairDocumentTabId, e: React.DragEvent<HTMLButtonElement>) => {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('application/x-repair-tab', id);
+      e.dataTransfer.setData('text/plain', id);
+    },
+    []
+  );
+
+  const handleRepairTabDragOver = useCallback((e: React.DragEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const handleRepairTabDrop = useCallback((targetId: RepairDocumentTabId) => {
+    return (e: React.DragEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      const raw =
+        e.dataTransfer.getData('application/x-repair-tab') || e.dataTransfer.getData('text/plain');
+      const fromId =
+        raw && (REPAIR_DOCUMENT_TAB_IDS as readonly string[]).includes(raw)
+          ? (raw as RepairDocumentTabId)
+          : null;
+      if (!fromId || fromId === targetId) return;
+      suppressRepairTabClickAfterReorderRef.current = true;
+      setRepairTabOrder((order) => {
+        const next = order.filter((tid) => tid !== fromId);
+        const insertAt = next.indexOf(targetId);
+        if (insertAt < 0) return order;
+        next.splice(insertAt, 0, fromId);
+        return next;
+      });
+    };
+  }, []);
+
+  const handleRepairTabActivate = useCallback((id: RepairDocumentTabId) => {
+    if (suppressRepairTabClickAfterReorderRef.current) {
+      suppressRepairTabClickAfterReorderRef.current = false;
+      return;
+    }
+    setActiveTab(id);
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = JSON.parse(
+        window.localStorage.getItem(REPAIR_DOCUMENT_TAB_ORDER_STORAGE_KEY) ?? 'null'
+      );
+      setRepairTabOrder(normalizeRepairDocumentTabOrder(raw));
+    } catch {
+      /* keep default */
+    }
+    queueMicrotask(() => {
+      skipRepairTabOrderPersistRef.current = false;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (skipRepairTabOrderPersistRef.current) return;
+    try {
+      window.localStorage.setItem(
+        REPAIR_DOCUMENT_TAB_ORDER_STORAGE_KEY,
+        JSON.stringify(repairTabOrder)
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [repairTabOrder]);
+
   useEffect(() => {
     return () => {
       if (persistRepairPackageDebounceRef.current !== null) {
@@ -270,9 +428,25 @@ export function RepairContractDocumentEditorPage({
     [templatePresetsByTab, selectedTemplateIds, globalContractState]
   );
 
+  const refreshPackageVersions = useCallback(
+    async (opts?: { skipSpinner?: boolean }) => {
+      if (!opts?.skipSpinner) setVersionsBusy(true);
+      try {
+        const list = await getContractDocumentPackageVersions(packageId);
+        setPackageVersions(list);
+      } catch {
+        setPackageVersions([]);
+      } finally {
+        if (!opts?.skipSpinner) setVersionsBusy(false);
+      }
+    },
+    [packageId]
+  );
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setPackageVersions([]);
     try {
       const [row, globalTpl, profilesRes, signatoryRes, templateRes, estimateRes, packagesRes] =
         await Promise.all([
@@ -306,6 +480,9 @@ export function RepairContractDocumentEditorPage({
       }
       setDraftTitle(row.title ?? '');
       setDraftCrmContractId(row.crmContractId ?? null);
+      setPackageFlowStatus(
+        row.status === 'CONTRACT_CONCLUDED' ? 'CONTRACT_CONCLUDED' : 'IN_PROGRESS'
+      );
       const {
         form: mergedForm,
         templateOverrides: ov,
@@ -419,17 +596,39 @@ export function RepairContractDocumentEditorPage({
           /* оставляем дату в форме; пользователь сможет сохранить вручную */
         }
       }
+      await refreshPackageVersions({ skipSpinner: true });
       setDirty(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ошибка загрузки');
     } finally {
       setLoading(false);
     }
-  }, [packageId]);
+  }, [packageId, refreshPackageVersions]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (isVersionsHistoryOpen && !loading) {
+      void refreshPackageVersions({ skipSpinner: true });
+    }
+  }, [isVersionsHistoryOpen, loading, refreshPackageVersions]);
+
+  useEffect(() => {
+    if (!isVersionsHistoryOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    const prevPaddingRight = document.body.style.paddingRight;
+    const scrollbarGap = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.overflow = 'hidden';
+    if (scrollbarGap > 0) {
+      document.body.style.paddingRight = `${scrollbarGap}px`;
+    }
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.body.style.paddingRight = prevPaddingRight;
+    };
+  }, [isVersionsHistoryOpen]);
 
   const refreshEstimateListsFromServer = useCallback(async () => {
     setEstimateDataRefreshing(true);
@@ -496,13 +695,78 @@ export function RepairContractDocumentEditorPage({
         title: draftTitle.trim() || null,
         formData: buildPersistedFormData(form, templateOverrides, selectedTemplateIds),
         crmContractId: draftCrmContractId,
+        recordVersion: true,
       });
       setDirty(false);
+      await refreshPackageVersions({ skipSpinner: true });
       setIsSaveSuccessModalOpen(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сохранить');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleMarkContractConcluded = async () => {
+    setSavingPackageStatus(true);
+    setError(null);
+    try {
+      await updateContractDocumentPackage(packageId, {
+        status: 'CONTRACT_CONCLUDED',
+        recordVersion: true,
+      });
+      setPackageFlowStatus('CONTRACT_CONCLUDED');
+      await refreshPackageVersions({ skipSpinner: true });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось обновить статус пакета');
+    } finally {
+      setSavingPackageStatus(false);
+    }
+  };
+
+  const confirmRevertContractConcluded = async () => {
+    setSavingPackageStatus(true);
+    setError(null);
+    try {
+      await updateContractDocumentPackage(packageId, {
+        status: 'IN_PROGRESS',
+        recordVersion: true,
+      });
+      setPackageFlowStatus('IN_PROGRESS');
+      await refreshPackageVersions({ skipSpinner: true });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось снять отметку');
+    } finally {
+      setSavingPackageStatus(false);
+    }
+  };
+
+  const openPackageVersionDetail = async (versionId: string) => {
+    setIsVersionsHistoryOpen(false);
+    setDetailLoadingId(versionId);
+    setError(null);
+    try {
+      const v = await getContractDocumentPackageVersion(packageId, versionId);
+      setVersionJsonText(JSON.stringify(v, null, 2));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось загрузить версию');
+    } finally {
+      setDetailLoadingId(null);
+    }
+  };
+
+  const handleConfirmRestoreVersion = async () => {
+    const t = restoreTarget;
+    if (!t) return;
+    setError(null);
+    setVersionRestoreBusy(true);
+    try {
+      await restoreContractDocumentPackageVersion(packageId, t.id);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось откатить пакет к выбранной версии');
+    } finally {
+      setVersionRestoreBusy(false);
     }
   };
 
@@ -764,6 +1028,7 @@ export function RepairContractDocumentEditorPage({
   }, [form.contract.number, form.contract.date]);
 
   const applyEstimatePresetIdsToForm = (presetIds: string[]) => {
+    if (contractAndEstimateLocked) return;
     setForm((p) => {
       const uniqueIds = [...new Set(presetIds.filter(Boolean))];
       const nextForm = applyEstimatePresetIdsToRepairForm(p, uniqueIds, estimatePresets);
@@ -830,7 +1095,7 @@ export function RepairContractDocumentEditorPage({
     let tpl: string;
     if (tab === 'contract') {
       tpl =
-        isSuperAdmin && contractDocView === 'edit'
+        isSuperAdmin && contractDocView === 'edit' && !contractAndEstimateLocked
           ? contractTemplateSource
           : resolveTemplateHtml('contract');
     } else {
@@ -845,9 +1110,11 @@ export function RepairContractDocumentEditorPage({
     isSuperAdmin,
     contractDocView,
     contractTemplateSource,
+    contractAndEstimateLocked,
   ]);
 
   const persistContractTemplatePresets = async (items: ContractTemplatePreset[]) => {
+    if (contractAndEstimateLocked) return;
     setTemplateSaving(true);
     setError(null);
     try {
@@ -862,10 +1129,12 @@ export function RepairContractDocumentEditorPage({
   };
 
   const handleContractTemplateChange = (value: string) => {
+    if (contractAndEstimateLocked) return;
     setTemplateDraftHtml(value);
   };
 
   const handleEditTemplateSelect = (templateId: string) => {
+    if (contractAndEstimateLocked) return;
     setEditingTemplateId(templateId);
     const t = contractTemplatePresets.find((it) => it.id === templateId);
     setTemplateDraftTitle(t?.title ?? '');
@@ -874,6 +1143,7 @@ export function RepairContractDocumentEditorPage({
 
   const handleSaveTemplateDraft = async () => {
     if (!isSuperAdmin) return;
+    if (contractAndEstimateLocked) return;
     const title = templateDraftTitle.trim();
     if (!title) {
       setError('Укажите имя шаблона.');
@@ -914,6 +1184,7 @@ export function RepairContractDocumentEditorPage({
 
   const handleCreateTemplate = (mode: 'blank' | 'copy') => {
     if (!isSuperAdmin) return;
+    if (contractAndEstimateLocked) return;
     const sourceHtml = mode === 'copy' ? contractTemplateSource : '<div class="docPrint"></div>';
     const id = `tpl_${Date.now()}`;
     setEditingTemplateId(id);
@@ -923,6 +1194,7 @@ export function RepairContractDocumentEditorPage({
 
   const handleDeleteTemplate = async () => {
     if (!isSuperAdmin || !editingTemplateId) return;
+    if (contractAndEstimateLocked) return;
     const current = contractTemplatePresets.find((it) => it.id === editingTemplateId);
     if (!current) return;
     if (current.isProtected) {
@@ -968,6 +1240,7 @@ export function RepairContractDocumentEditorPage({
 
   const handleSetDefaultTemplate = async () => {
     if (!isSuperAdmin || !editingTemplateId) return;
+    if (contractAndEstimateLocked) return;
     const cur = contractTemplatePresets.find((it) => it.id === editingTemplateId);
     if (cur?.archived) {
       setError('Нельзя сделать архивный шаблон по умолчанию.');
@@ -981,6 +1254,7 @@ export function RepairContractDocumentEditorPage({
   };
 
   const insertContractPlaceholder = (path: string) => {
+    if (contractAndEstimateLocked) return;
     const el = contractHtmlTextareaRef.current;
     const cur = templateDraftHtml || resolveTemplateHtml('contract');
     const token = `{{${path}}}`;
@@ -1009,6 +1283,7 @@ export function RepairContractDocumentEditorPage({
       selectLength?: number;
     }
   ) => {
+    if (contractAndEstimateLocked) return;
     const el = contractHtmlTextareaRef.current;
     const current = contractTemplateSource;
     if (!el) {
@@ -1242,6 +1517,7 @@ export function RepairContractDocumentEditorPage({
   };
 
   const handleResetContractTemplate = () => {
+    if (contractAndEstimateLocked) return;
     const t = contractTemplatePresets.find((it) => it.id === editingTemplateId);
     setTemplateDraftTitle(t?.title ?? '');
     setTemplateDraftHtml(t?.html ?? '');
@@ -1272,6 +1548,12 @@ export function RepairContractDocumentEditorPage({
       setContractDocView('preview');
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (contractAndEstimateLocked) {
+      setContractDocView('preview');
+    }
+  }, [contractAndEstimateLocked]);
 
   useEffect(() => {
     if (contractDocView !== 'edit') {
@@ -1348,9 +1630,25 @@ export function RepairContractDocumentEditorPage({
           <Link className={styles.backLink} href="/admin/contract-documents/repair">
             ← К списку (Ремонт)
           </Link>
-          <h1 className={styles.title} style={{ marginTop: 8 }}>
-            Пакет документов
-          </h1>
+          <div className={styles.editorHeaderTitleRow}>
+            <h1 className={styles.title}>Пакет документов</h1>
+            {packageFlowStatus === 'CONTRACT_CONCLUDED' ? (
+              <span className={styles.packageFlowStatusBadge} role="status">
+                Договор заключен
+              </span>
+            ) : null}
+            {!loading ? (
+              <button
+                type="button"
+                className={`${styles.versionsHistoryIconBtn} ${styles.editorHeaderHistoryBtn}`}
+                onClick={() => setIsVersionsHistoryOpen(true)}
+                title="История версий и откат к предыдущему снимку"
+                aria-label="Открыть историю версий пакета и откат"
+              >
+                <PackageVersionsHistoryTriggerIcon />
+              </button>
+            ) : null}
+          </div>
           <p className={styles.subtitle} style={{ marginBottom: 0 }}>
             ID: {packageId}
             {draftCrmContractId ? (
@@ -1377,6 +1675,25 @@ export function RepairContractDocumentEditorPage({
             className={styles.draftTitleInput}
           />
           <div className={styles.headerButtonsRow}>
+            {packageFlowStatus !== 'CONTRACT_CONCLUDED' ? (
+              <button
+                type="button"
+                className={styles.secondaryBtn}
+                disabled={savingPackageStatus}
+                onClick={() => void handleMarkContractConcluded()}
+              >
+                {savingPackageStatus ? 'Сохранение…' : 'Договор заключен'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className={styles.secondaryBtn}
+                disabled={savingPackageStatus}
+                onClick={() => setIsRevertStatusConfirmModalOpen(true)}
+              >
+                {savingPackageStatus ? 'Сохранение…' : 'Снять статус «Договор заключен»'}
+              </button>
+            )}
             {activeTab !== 'data' ? (
               <button type="button" className={styles.secondaryBtn} onClick={handlePrint}>
                 Печать
@@ -1397,6 +1714,138 @@ export function RepairContractDocumentEditorPage({
       </div>
       {error ? <p className={styles.error}>{error}</p> : null}
       {excelMessage ? <p className={styles.hint}>{excelMessage}</p> : null}
+      {isVersionsHistoryOpen ? (
+        <div
+          className={`${styles.saveModalBackdrop} ${styles.packageVersionsModalBackdrop}`}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="package-versions-history-title"
+          onClick={() => setIsVersionsHistoryOpen(false)}
+        >
+          <div
+            className={styles.packageVersionsModalCard}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <h3 className={styles.packageVersionsTitle} id="package-versions-history-title">
+              История версий
+            </h3>
+            <p className={styles.packageVersionsHint}>
+              Снимок создаётся при нажатии «Сохранить» на вкладке «Данные», при смене статуса
+              договора и при отвязке расчёта от пакета. Фоновое автосохранение полей версий не
+              добавляет. «Откатить к версии» подставляет данные выбранного снимка: текущее состояние
+              пакета сначала сохраняется в историю как новая версия, затем применяется выбранная.
+            </p>
+            <div>
+              <button
+                type="button"
+                className={styles.secondaryBtn}
+                disabled={versionsBusy}
+                onClick={() => void refreshPackageVersions()}
+              >
+                {versionsBusy ? 'Загрузка…' : 'Обновить список'}
+              </button>
+            </div>
+            {packageVersions.length === 0 && !versionsBusy ? (
+              <p className={styles.hint}>Пока нет сохранённых версий.</p>
+            ) : null}
+            {packageVersions.length > 0 ? (
+              <div className={styles.tableWrap}>
+                <table className={styles.packageVersionsTable}>
+                  <thead>
+                    <tr>
+                      <th>Версия</th>
+                      <th>Дата</th>
+                      <th>Название черновика</th>
+                      <th>Автор снимка</th>
+                      <th>Действия</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {packageVersions.map((v) => {
+                      const author =
+                        v.savedBy &&
+                        [v.savedBy.lastName, v.savedBy.firstName].filter(Boolean).join(' ').trim();
+                      return (
+                        <tr key={v.id}>
+                          <td>{v.versionNumber}</td>
+                          <td>{formatPackageVersionDate(v.createdAt)}</td>
+                          <td>{v.title?.trim() || '—'}</td>
+                          <td>{author || v.savedBy?.email || '—'}</td>
+                          <td>
+                            <div className={styles.packageVersionsActions}>
+                              <button
+                                type="button"
+                                className={styles.secondaryBtn}
+                                disabled={detailLoadingId === v.id || versionRestoreBusy}
+                                onClick={() => void openPackageVersionDetail(v.id)}
+                              >
+                                {detailLoadingId === v.id ? 'Загрузка…' : 'Содержимое'}
+                              </button>
+                              <button
+                                type="button"
+                                className={styles.secondaryBtn}
+                                disabled={versionRestoreBusy}
+                                title="Подставить данные этой версии в пакет (текущее состояние останется в истории)"
+                                onClick={() => {
+                                  setIsVersionsHistoryOpen(false);
+                                  setRestoreTarget({ id: v.id, versionNumber: v.versionNumber });
+                                }}
+                              >
+                                Откатить к версии
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+            <div className={styles.saveModalActionsRow}>
+              <button
+                type="button"
+                className={styles.primaryBtn}
+                onClick={() => setIsVersionsHistoryOpen(false)}
+              >
+                Закрыть
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {versionJsonText !== null ? (
+        <div
+          className={styles.saveModalBackdrop}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="package-version-json-title"
+          onClick={() => setVersionJsonText(null)}
+        >
+          <div
+            className={styles.saveModalCard}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <h3 className={styles.saveModalTitle} id="package-version-json-title">
+              Снимок версии
+            </h3>
+            <pre className={styles.versionJsonPre}>{versionJsonText}</pre>
+            <div className={styles.saveModalActionsRow}>
+              <button
+                type="button"
+                className={styles.primaryBtn}
+                onClick={() => setVersionJsonText(null)}
+              >
+                Закрыть
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {isSaveSuccessModalOpen ? (
         <div className={styles.saveModalBackdrop} role="dialog" aria-modal="true">
           <div className={styles.saveModalCard}>
@@ -1413,17 +1862,63 @@ export function RepairContractDocumentEditorPage({
         </div>
       ) : null}
 
-      <div className={`${styles.tabBar} ${styles.blockTabs}`} role="tablist">
-        {REPAIR_DOCUMENT_TAB_IDS.map((id) => (
+      <ConfirmModal
+        isOpen={isRevertStatusConfirmModalOpen}
+        onClose={() => setIsRevertStatusConfirmModalOpen(false)}
+        onConfirm={() => {
+          void confirmRevertContractConcluded();
+        }}
+        title="Снять статус «Договор заключен»"
+        message="Снять статус «Договор заключен»? Пакет снова будет отображаться как в оформлении."
+        confirmText="Снять статус «Договор заключен»"
+        cancelText="Отмена"
+      />
+
+      <ConfirmModal
+        isOpen={restoreTarget !== null}
+        onClose={() => setRestoreTarget(null)}
+        onConfirm={() => {
+          void handleConfirmRestoreVersion();
+        }}
+        title="Откат к выбранной версии"
+        message={
+          restoreTarget
+            ? `Откатить пакет к версии ${restoreTarget.versionNumber}? Текущее состояние сначала будет сохранено в истории как новая версия, затем подставятся данные выбранного снимка.`
+            : ''
+        }
+        confirmText="Откатить"
+        cancelText="Отмена"
+      />
+
+      <div
+        className={`${styles.tabBar} ${styles.blockTabs} ${styles.repairPackageTabBarCompact}`}
+        role="tablist"
+        aria-label="Разделы пакета. Перетащите вкладку, чтобы изменить порядок."
+      >
+        {repairTabOrder.map((id) => (
           <button
             key={id}
             type="button"
             role="tab"
+            draggable
             aria-selected={activeTab === id}
+            title={
+              contractAndEstimateLocked && (id === 'contract' || id === 'estimate')
+                ? `${REPAIR_DOCUMENT_TAB_LABELS[id]} — только просмотр (договор заключён)`
+                : `${REPAIR_DOCUMENT_TAB_LABELS[id]} — перетащите для смены порядка`
+            }
             className={`${styles.tab} ${activeTab === id ? styles.tabActive : ''}`}
-            onClick={() => setActiveTab(id)}
+            onClick={() => handleRepairTabActivate(id)}
+            onDragStart={(e) => handleRepairTabDragStart(id, e)}
+            onDragOver={handleRepairTabDragOver}
+            onDrop={handleRepairTabDrop(id)}
           >
-            {REPAIR_DOCUMENT_TAB_LABELS[id]}
+            <span className={styles.repairTabLabelInner}>
+              {contractAndEstimateLocked && (id === 'contract' || id === 'estimate') ? (
+                <RepairTabLockIcon />
+              ) : null}
+              <span>{REPAIR_DOCUMENT_TAB_LABELS_SHORT[id]}</span>
+            </span>
           </button>
         ))}
       </div>
@@ -1960,6 +2455,12 @@ export function RepairContractDocumentEditorPage({
         <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
           <div className={styles.formGrid}>
             <div className={styles.sectionCard}>
+              {contractAndEstimateLocked ? (
+                <p className={`${styles.hint} ${styles.estimateLockNotice}`}>
+                  Договор заключён: состав сметы и прикреплённые расчёты доступны только для
+                  просмотра и печати.
+                </p>
+              ) : null}
               <div className={styles.estimateSectionHeader}>
                 <h3 className={`${styles.sectionTitle} ${styles.estimateSectionTitle}`}>Смета</h3>
                 <div className={styles.headerButtonsRow}>
@@ -2007,6 +2508,7 @@ export function RepairContractDocumentEditorPage({
                         <select
                           id="estimate_group_select"
                           value={estimateAttachGroupKey}
+                          disabled={contractAndEstimateLocked}
                           onChange={(e) => {
                             setEstimateAttachGroupKey(e.target.value);
                             setEstimatePresetToAttach('');
@@ -2028,7 +2530,7 @@ export function RepairContractDocumentEditorPage({
                         <select
                           id="estimate_select"
                           value={estimatePresetToAttach}
-                          disabled={!estimateAttachGroupKey}
+                          disabled={contractAndEstimateLocked || !estimateAttachGroupKey}
                           onChange={(e) => setEstimatePresetToAttach(e.target.value)}
                         >
                           <option value="">
@@ -2047,7 +2549,7 @@ export function RepairContractDocumentEditorPage({
                         <button
                           type="button"
                           className={`${styles.primaryBtn} ${styles.estimateAttachPrimaryBtn}`}
-                          disabled={!estimatePresetToAttach}
+                          disabled={contractAndEstimateLocked || !estimatePresetToAttach}
                           onClick={() => {
                             addEstimatePresetToForm(estimatePresetToAttach);
                             setEstimatePresetToAttach('');
@@ -2077,12 +2579,18 @@ export function RepairContractDocumentEditorPage({
                           return (
                             <div
                               key={presetId}
-                              draggable
-                              onDragStart={() => setDraggingEstimatePresetId(presetId)}
+                              draggable={!contractAndEstimateLocked}
+                              onDragStart={() => {
+                                if (!contractAndEstimateLocked)
+                                  setDraggingEstimatePresetId(presetId);
+                              }}
                               onDragEnd={() => setDraggingEstimatePresetId(null)}
-                              onDragOver={(e) => e.preventDefault()}
+                              onDragOver={(e) => {
+                                if (!contractAndEstimateLocked) e.preventDefault();
+                              }}
                               onDrop={(e) => {
                                 e.preventDefault();
+                                if (contractAndEstimateLocked) return;
                                 if (draggingEstimatePresetId) {
                                   moveEstimatePresetInForm(draggingEstimatePresetId, presetId);
                                 }
@@ -2106,6 +2614,7 @@ export function RepairContractDocumentEditorPage({
                                 className={`${styles.secondaryBtn} ${styles.estimateAttachedRemoveBtn}`}
                                 aria-label="Убрать расчёт из сметы"
                                 title="Убрать"
+                                disabled={contractAndEstimateLocked}
                                 onClick={() => removeEstimatePresetFromForm(presetId)}
                               >
                                 ×
@@ -2272,7 +2781,12 @@ export function RepairContractDocumentEditorPage({
         </div>
       ) : (
         <>
-          {activeTab === 'contract' ? (
+          {activeTab === 'contract' && contractAndEstimateLocked ? (
+            <p className={`${styles.hint} ${styles.contractLockNotice}`}>
+              Договор заключён: текст договора на этой вкладке только для просмотра и печати.
+            </p>
+          ) : null}
+          {activeTab === 'contract' || activeTab === 'actStart' || activeTab === 'actAcceptance' ? (
             <div className={styles.estimateA4Wrap}>
               <article className={styles.estimateA4Sheet}>
                 <div

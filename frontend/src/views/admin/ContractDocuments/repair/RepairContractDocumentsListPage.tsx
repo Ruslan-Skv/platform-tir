@@ -135,12 +135,19 @@ export function RepairContractDocumentsListPage() {
                   return (
                     <tr key={r.id}>
                       <td>
-                        <Link
-                          className={styles.link}
-                          href={`/admin/contract-documents/repair/${r.id}`}
-                        >
-                          {label}
-                        </Link>
+                        <div className={styles.packageTitleCell}>
+                          <Link
+                            className={styles.link}
+                            href={`/admin/contract-documents/repair/${r.id}`}
+                          >
+                            {label}
+                          </Link>
+                          {r.status === 'CONTRACT_CONCLUDED' ? (
+                            <span className={styles.packageFlowStatusBadge} role="status">
+                              Договор заключен
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
                       <td>
                         {r.crmContract ? (

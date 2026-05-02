@@ -144,14 +144,37 @@ export class ContractDocumentPackagesController {
     return this.service.setGlobalSignatoryProfiles(dto, req.user?.id);
   }
 
+  @Get(':id/versions')
+  listVersions(@Param('id') id: string) {
+    return this.service.listVersions(id);
+  }
+
+  @Get(':id/versions/:versionId')
+  getVersion(@Param('id') id: string, @Param('versionId') versionId: string) {
+    return this.service.getVersion(id, versionId);
+  }
+
+  @Post(':id/versions/:versionId/restore')
+  restoreVersion(
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.service.restoreVersion(id, versionId, req.user?.id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateContractDocumentPackageDto) {
-    return this.service.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateContractDocumentPackageDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.service.update(id, dto, req.user?.id);
   }
 
   @Delete(':id')

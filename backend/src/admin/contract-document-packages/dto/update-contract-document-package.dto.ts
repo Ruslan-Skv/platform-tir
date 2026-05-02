@@ -1,4 +1,5 @@
-import { IsObject, IsOptional, IsString, ValidateIf } from 'class-validator';
+import { ContractDocumentPackageStatus } from '@prisma/client';
+import { IsBoolean, IsEnum, IsObject, IsOptional, IsString, ValidateIf } from 'class-validator';
 
 export class UpdateContractDocumentPackageDto {
   @IsOptional()
@@ -14,4 +15,13 @@ export class UpdateContractDocumentPackageDto {
   @ValidateIf((_, v) => v !== null && v !== undefined)
   @IsString()
   crmContractId?: string | null;
+
+  @IsOptional()
+  @IsEnum(ContractDocumentPackageStatus)
+  status?: ContractDocumentPackageStatus;
+
+  /** Если true — после сохранения добавляется запись в историю версий пакета. */
+  @IsOptional()
+  @IsBoolean()
+  recordVersion?: boolean;
 }
