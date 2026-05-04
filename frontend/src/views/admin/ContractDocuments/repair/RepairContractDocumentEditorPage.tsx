@@ -31,6 +31,9 @@ import { getContract, getContracts } from '@/shared/api/admin-crm';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
 import styles from '../ContractDocuments.module.css';
+import { RepairAddendumEstimateBlock } from './RepairAddendumEstimateBlock';
+import { RepairManagerQuestionnaire1Tab } from './RepairManagerQuestionnaire1Tab';
+import { RepairPostWorkQuestionnaire2Tab } from './RepairPostWorkQuestionnaire2Tab';
 import { amountToRussianWords } from './amountToRussianWords';
 import { mergeRepairFormFromCrmContract } from './applyCrmContractToForm';
 import { applyTemplate } from './applyTemplate';
@@ -40,7 +43,9 @@ import {
   buildPersistedFormData,
   mergeFormDataFromStorage,
 } from './formDataTemplateStorage';
+import { buildManagerQuestionnaire1PrintHtml } from './managerQuestionnaire1Print';
 import { getDisplayContractDate, getDisplayContractNumber } from './packageContractDisplay';
+import { buildPostWorkQuestionnaire2PrintHtml } from './postWorkQuestionnaire2Print';
 import { pickPrintMarginFooterNames, printDocumentHtml } from './printDocument';
 import {
   isRepairActTwinOneSheetTab,
@@ -49,7 +54,9 @@ import {
 } from './repairActTwinCopiesOnOnePageHtml';
 import {
   type EstimateSnapshotRoom,
+  applyEstimatePresetIdsToAddendumSlot,
   applyEstimatePresetIdsToRepairForm,
+  getContractEstimateObjectGroupKey,
   parseEstimateSnapshotFromDraft,
 } from './repairApplyEstimatePresetIds';
 import {
@@ -59,10 +66,15 @@ import {
   REPAIR_DOCUMENT_TAB_ORDER_STORAGE_KEY,
   REPAIR_DOCUMENT_TEMPLATES,
   type RepairDocumentTabId,
+  isRepairAddendumTab,
+  isRepairAddendumTabVisible,
+  normalizeLegacyRepairTabId,
   normalizeRepairDocumentTabOrder,
 } from './repairDocumentTemplates';
 import {
+  type RepairManagerQuestionnaire1Block,
   type RepairPackageFormData,
+  type RepairPostWorkQuestionnaire2Block,
   buildRepairTemplatePreviewFallbackData,
   mergeRepairPackageFormData,
   mergeRepairPackageFormWithPreviewFallback,
@@ -82,8 +94,9 @@ function normalizeTemplateTabId(
   value: string | undefined
 ): Exclude<RepairDocumentTabId, 'data' | 'estimate'> {
   if (!value) return 'contract';
-  return (TEMPLATE_TAB_IDS as string[]).includes(value)
-    ? (value as Exclude<RepairDocumentTabId, 'data' | 'estimate'>)
+  const v = normalizeLegacyRepairTabId(value);
+  return (TEMPLATE_TAB_IDS as string[]).includes(v)
+    ? (v as Exclude<RepairDocumentTabId, 'data' | 'estimate'>)
     : 'contract';
 }
 
@@ -94,6 +107,35 @@ function normalizeContractTemplatePreset(it: ContractTemplatePreset): ContractTe
     isProtected: Boolean(it.isProtected),
     archived: Boolean(it.archived),
   };
+}
+
+/** ID расчётов из сметы пакета и из всех слотов Д/с (для учёта «ещё в пакетах»). */
+function collectEstimatePresetIdsFromRepairFormData(formData: Record<string, unknown>): string[] {
+  const ids: string[] = [];
+  const est = formData.estimate;
+  if (est && typeof est === 'object') {
+    const e = est as Record<string, unknown>;
+    if (typeof e.selectedPresetId === 'string' && e.selectedPresetId.trim()) {
+      ids.push(e.selectedPresetId.trim());
+    }
+    if (Array.isArray(e.selectedPresetIds)) {
+      for (const id of e.selectedPresetIds) {
+        if (typeof id === 'string' && id.trim()) ids.push(id.trim());
+      }
+    }
+  }
+  const slots = formData.addendumSlots;
+  if (Array.isArray(slots)) {
+    for (const sl of slots) {
+      if (!sl || typeof sl !== 'object') continue;
+      const arr = (sl as Record<string, unknown>).selectedPresetIds;
+      if (!Array.isArray(arr)) continue;
+      for (const id of arr) {
+        if (typeof id === 'string' && id.trim()) ids.push(id.trim());
+      }
+    }
+  }
+  return [...new Set(ids)];
 }
 
 function parseDecimalAmount(raw: string): number | null {
@@ -206,6 +248,11 @@ export function RepairContractDocumentEditorPage({
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [activeTab, setActiveTab] = useState<RepairDocumentTabId>('data');
+  const activeAddendumSlot = useMemo(() => {
+    const m = /^addendum([1-5])$/.exec(activeTab);
+    return m ? Number(m[1]) : null;
+  }, [activeTab]);
+
   const [repairTabOrder, setRepairTabOrder] = useState<RepairDocumentTabId[]>(() => [
     ...REPAIR_DOCUMENT_TAB_IDS,
   ]);
@@ -254,6 +301,10 @@ export function RepairContractDocumentEditorPage({
   const [estimateAttachGroupKey, setEstimateAttachGroupKey] = useState('');
   const [estimatePresetToAttach, setEstimatePresetToAttach] = useState('');
   const [draggingEstimatePresetId, setDraggingEstimatePresetId] = useState<string | null>(null);
+  const [addendumPresetToAttach, setAddendumPresetToAttach] = useState('');
+  const [draggingAddendumEstimatePresetId, setDraggingAddendumEstimatePresetId] = useState<
+    string | null
+  >(null);
   const [repairPackages, setRepairPackages] = useState<
     Array<{
       id: string;
@@ -350,9 +401,10 @@ export function RepairContractDocumentEditorPage({
       e.preventDefault();
       const raw =
         e.dataTransfer.getData('application/x-repair-tab') || e.dataTransfer.getData('text/plain');
+      const normalized = raw ? normalizeLegacyRepairTabId(raw) : '';
       const fromId =
-        raw && (REPAIR_DOCUMENT_TAB_IDS as readonly string[]).includes(raw)
-          ? (raw as RepairDocumentTabId)
+        normalized && (REPAIR_DOCUMENT_TAB_IDS as readonly string[]).includes(normalized)
+          ? (normalized as RepairDocumentTabId)
           : null;
       if (!fromId || fromId === targetId) return;
       suppressRepairTabClickAfterReorderRef.current = true;
@@ -399,6 +451,15 @@ export function RepairContractDocumentEditorPage({
       /* ignore */
     }
   }, [repairTabOrder]);
+
+  useEffect(() => {
+    const m = /^addendum(\d+)$/.exec(activeTab);
+    if (!m) return;
+    const n = Number(m[1]);
+    if (!Number.isFinite(n) || n <= form.addendumSlotCount) return;
+    const fallback = `addendum${form.addendumSlotCount}` as RepairDocumentTabId;
+    setActiveTab(fallback);
+  }, [activeTab, form.addendumSlotCount]);
 
   useEffect(() => {
     return () => {
@@ -866,6 +927,86 @@ export function RepairContractDocumentEditorPage({
     touchPackageData();
   };
 
+  const patchManagerQuestionnaire1 = useCallback(
+    (patch: Partial<RepairManagerQuestionnaire1Block>) => {
+      setForm((p) => ({
+        ...p,
+        managerQuestionnaire1: { ...p.managerQuestionnaire1, ...patch },
+      }));
+      touchPackageData();
+    },
+    [touchPackageData]
+  );
+
+  const patchPostWorkQuestionnaire2 = useCallback(
+    (patch: Partial<RepairPostWorkQuestionnaire2Block>) => {
+      setForm((p) => {
+        const cur = p.postWorkQuestionnaire2;
+        const next: RepairPostWorkQuestionnaire2Block = {
+          ...cur,
+          ...patch,
+          ratingTrades: patch.ratingTrades
+            ? { ...cur.ratingTrades, ...patch.ratingTrades }
+            : cur.ratingTrades,
+        };
+        return { ...p, postWorkQuestionnaire2: next };
+      });
+      touchPackageData();
+    },
+    [touchPackageData]
+  );
+
+  const toggleManagerQuestionnaire1Need = useCallback(
+    (id: string) => {
+      setForm((p) => {
+        const ids = [...p.managerQuestionnaire1.clientNeedsCheckedIds];
+        const idx = ids.indexOf(id);
+        if (idx >= 0) ids.splice(idx, 1);
+        else ids.push(id);
+        return {
+          ...p,
+          managerQuestionnaire1: { ...p.managerQuestionnaire1, clientNeedsCheckedIds: ids },
+        };
+      });
+      touchPackageData();
+    },
+    [touchPackageData]
+  );
+
+  const toggleManagerQuestionnaire1Traffic = useCallback(
+    (id: string) => {
+      setForm((p) => {
+        const ids = [...p.managerQuestionnaire1.trafficSourceCheckedIds];
+        const idx = ids.indexOf(id);
+        if (idx >= 0) ids.splice(idx, 1);
+        else ids.push(id);
+        return {
+          ...p,
+          managerQuestionnaire1: { ...p.managerQuestionnaire1, trafficSourceCheckedIds: ids },
+        };
+      });
+      touchPackageData();
+    },
+    [touchPackageData]
+  );
+
+  const toggleManagerQuestionnaire1WhyChosen = useCallback(
+    (id: string) => {
+      setForm((p) => {
+        const ids = [...p.managerQuestionnaire1.whyChosenCheckedIds];
+        const idx = ids.indexOf(id);
+        if (idx >= 0) ids.splice(idx, 1);
+        else ids.push(id);
+        return {
+          ...p,
+          managerQuestionnaire1: { ...p.managerQuestionnaire1, whyChosenCheckedIds: ids },
+        };
+      });
+      touchPackageData();
+    },
+    [touchPackageData]
+  );
+
   const updateContract = <K extends keyof RepairPackageFormData['contract']>(
     key: K,
     value: string
@@ -907,18 +1048,8 @@ export function RepairContractDocumentEditorPage({
       }>
     >();
     for (const pkg of repairPackages) {
-      const estimateRaw = (pkg.formData?.estimate ?? null) as Record<string, unknown> | null;
-      const ids: string[] = [];
-      if (estimateRaw && typeof estimateRaw.selectedPresetId === 'string') {
-        const legacy = estimateRaw.selectedPresetId.trim();
-        if (legacy) ids.push(legacy);
-      }
-      if (estimateRaw && Array.isArray(estimateRaw.selectedPresetIds)) {
-        for (const id of estimateRaw.selectedPresetIds) {
-          if (typeof id === 'string' && id.trim()) ids.push(id.trim());
-        }
-      }
-      const uniqueIds = [...new Set(ids)];
+      const fd = (pkg.formData ?? {}) as Record<string, unknown>;
+      const uniqueIds = collectEstimatePresetIdsFromRepairFormData(fd);
       if (uniqueIds.length === 0 || pkg.id === packageId) continue;
       const row = {
         packageId: pkg.id,
@@ -935,30 +1066,94 @@ export function RepairContractDocumentEditorPage({
   /** Расчёты, доступные для прикрепления: не в этом пакете и ни в каком другом пакете договора. */
   const attachableEstimatePresets = useMemo(() => {
     const selected = new Set(form.estimate.selectedPresetIds ?? []);
+    const usedOnAddenda = new Set<string>();
+    for (const sl of form.addendumSlots) {
+      for (const id of sl.selectedPresetIds ?? []) {
+        if (id.trim()) usedOnAddenda.add(id.trim());
+      }
+    }
     return estimatePresets.filter((preset) => {
       if (selected.has(preset.id)) return false;
+      if (usedOnAddenda.has(preset.id)) return false;
       return (estimateUsageById.get(preset.id)?.length ?? 0) === 0;
     });
-  }, [estimatePresets, estimateUsageById, form.estimate.selectedPresetIds]);
+  }, [estimatePresets, estimateUsageById, form.estimate.selectedPresetIds, form.addendumSlots]);
+
+  const contractEstimateObjectKey = useMemo(
+    () => getContractEstimateObjectGroupKey(form, estimatePresets),
+    [form, estimatePresets]
+  );
 
   const attachEstimatePickMeta = useMemo(() => {
     const hasUngrouped = attachableEstimatePresets.some((p) => !p.groupId);
     const groupIdsWithAttachable = new Set(
       attachableEstimatePresets.map((p) => p.groupId).filter((id): id is string => Boolean(id))
     );
+    const lockedKey =
+      (form.estimate.selectedPresetIds?.length ?? 0) > 0 ? contractEstimateObjectKey : '';
+    if (lockedKey && lockedKey !== '__ungrouped__') {
+      groupIdsWithAttachable.add(lockedKey);
+    }
     const groupsOrdered = [...estimateGroups]
       .filter((g) => groupIdsWithAttachable.has(g.id))
       .sort((a, b) => a.title.localeCompare(b.title, 'ru'));
     return { hasUngrouped, groupsOrdered };
-  }, [attachableEstimatePresets, estimateGroups]);
+  }, [
+    attachableEstimatePresets,
+    estimateGroups,
+    form.estimate.selectedPresetIds?.length,
+    contractEstimateObjectKey,
+  ]);
 
   const attachableForSelectedGroup = useMemo(() => {
-    if (!estimateAttachGroupKey) return [];
-    if (estimateAttachGroupKey === '__ungrouped__') {
+    const key =
+      (form.estimate.selectedPresetIds?.length ?? 0) > 0
+        ? contractEstimateObjectKey
+        : estimateAttachGroupKey || contractEstimateObjectKey;
+    if (!key) return [];
+    if (key === '__ungrouped__') {
       return attachableEstimatePresets.filter((p) => !p.groupId);
     }
-    return attachableEstimatePresets.filter((p) => p.groupId === estimateAttachGroupKey);
-  }, [estimateAttachGroupKey, attachableEstimatePresets]);
+    return attachableEstimatePresets.filter((p) => p.groupId === key);
+  }, [
+    form.estimate.selectedPresetIds?.length,
+    contractEstimateObjectKey,
+    estimateAttachGroupKey,
+    attachableEstimatePresets,
+  ]);
+
+  const attachableAddendumEstimatePresets = useMemo(() => {
+    if (activeAddendumSlot === null) return [];
+    const objectKey = contractEstimateObjectKey;
+    if (!objectKey) return [];
+    const slotIndex0 = activeAddendumSlot - 1;
+    const usedElsewhere = new Set<string>();
+    for (const id of form.estimate.selectedPresetIds ?? []) {
+      if (id.trim()) usedElsewhere.add(id.trim());
+    }
+    form.addendumSlots.forEach((sl, i) => {
+      if (i === slotIndex0) return;
+      for (const id of sl.selectedPresetIds ?? []) {
+        if (id.trim()) usedElsewhere.add(id.trim());
+      }
+    });
+    return estimatePresets
+      .filter((p) => {
+        if (usedElsewhere.has(p.id)) return false;
+        if ((estimateUsageById.get(p.id)?.length ?? 0) !== 0) return false;
+        const g = p.groupId ? p.groupId : '__ungrouped__';
+        return g === objectKey;
+      })
+      .slice()
+      .sort((a, b) => a.title.localeCompare(b.title, 'ru'));
+  }, [
+    activeAddendumSlot,
+    contractEstimateObjectKey,
+    form.estimate.selectedPresetIds,
+    form.addendumSlots,
+    estimatePresets,
+    estimateUsageById,
+  ]);
 
   useEffect(() => {
     if (
@@ -983,6 +1178,37 @@ export function RepairContractDocumentEditorPage({
       setEstimatePresetToAttach('');
     }
   }, [attachEstimatePickMeta, estimateAttachGroupKey]);
+
+  useEffect(() => {
+    if (
+      addendumPresetToAttach &&
+      !attachableAddendumEstimatePresets.some((p) => p.id === addendumPresetToAttach)
+    ) {
+      setAddendumPresetToAttach('');
+    }
+  }, [attachableAddendumEstimatePresets, addendumPresetToAttach]);
+
+  useEffect(() => {
+    setAddendumPresetToAttach('');
+    setDraggingAddendumEstimatePresetId(null);
+  }, [activeAddendumSlot]);
+
+  useEffect(() => {
+    if ((form.estimate.selectedPresetIds?.length ?? 0) > 0) {
+      const k = contractEstimateObjectKey;
+      if (k && k !== estimateAttachGroupKey) setEstimateAttachGroupKey(k);
+      return;
+    }
+    const k = (form.estimateObjectGroupKey || '').trim();
+    if (k && k !== estimateAttachGroupKey) {
+      setEstimateAttachGroupKey(k);
+    }
+  }, [
+    form.estimate.selectedPresetIds,
+    form.estimateObjectGroupKey,
+    contractEstimateObjectKey,
+    estimateAttachGroupKey,
+  ]);
 
   const selectedEstimateSections = useMemo(() => {
     const sectionMap = new Map<
@@ -1051,6 +1277,20 @@ export function RepairContractDocumentEditorPage({
     applyEstimatePresetIdsToForm(ids);
   };
 
+  const markAddendumSlotSigned = useCallback(
+    (slotIndex0: number) => {
+      setForm((p) => {
+        const slots = [...p.addendumSlots] as RepairPackageFormData['addendumSlots'];
+        const cur = slots[slotIndex0];
+        if (!cur || cur.status === 'SIGNED') return p;
+        slots[slotIndex0] = { ...cur, status: 'SIGNED' };
+        return { ...p, addendumSlots: slots };
+      });
+      touchPackageData();
+    },
+    [touchPackageData]
+  );
+
   const contractTemplateSource = useMemo(() => {
     if (activeTab !== 'contract') return '';
     return templateDraftHtml || resolveTemplateHtml('contract');
@@ -1079,8 +1319,41 @@ export function RepairContractDocumentEditorPage({
     [form, templatePreviewFallback]
   );
 
+  const repairFormForActiveTemplate = useMemo(
+    () =>
+      repairPackageFormForTemplate(formMergedForTemplate, {
+        templateTab: activeTab,
+        estimatePresets,
+      }),
+    [formMergedForTemplate, activeTab, estimatePresets]
+  );
+
+  const patchAddendumDocumentDate = useCallback(
+    (slotIndex0: number, value: string) => {
+      setForm((p) => {
+        const next: [string, string, string, string, string] = [...p.addendumDocumentDates] as [
+          string,
+          string,
+          string,
+          string,
+          string,
+        ];
+        if (slotIndex0 >= 0 && slotIndex0 < 5) next[slotIndex0] = value;
+        return { ...p, addendumDocumentDates: next };
+      });
+      touchPackageData();
+    },
+    [touchPackageData]
+  );
+
   const renderedDoc = useMemo(() => {
     if (activeTab === 'data') return '';
+    if (activeTab === 'questionnaire1') {
+      return buildManagerQuestionnaire1PrintHtml(repairFormForActiveTemplate);
+    }
+    if (activeTab === 'questionnaire2') {
+      return buildPostWorkQuestionnaire2PrintHtml(repairFormForActiveTemplate);
+    }
     const tab = activeTab as RepairDocumentTemplateTabId;
     let tpl: string;
     if (tab === 'contract') {
@@ -1091,13 +1364,13 @@ export function RepairContractDocumentEditorPage({
     } else {
       tpl = templateOverrides[tab] ?? resolveTemplateHtml(tab);
     }
-    return applyTemplate(tpl, repairPackageFormForTemplate(formMergedForTemplate), {
+    return applyTemplate(tpl, repairFormForActiveTemplate, {
       autoInsertContractSignatures: activeTab === 'contract',
       plainCustomerPlaceholders: isRepairPlainCustomerTab(activeTab),
     });
   }, [
     activeTab,
-    formMergedForTemplate,
+    repairFormForActiveTemplate,
     templateOverrides,
     resolveTemplateHtml,
     isSuperAdmin,
@@ -1909,37 +2182,71 @@ export function RepairContractDocumentEditorPage({
         cancelText="Отмена"
       />
 
-      <div
-        className={`${styles.tabBar} ${styles.blockTabs} ${styles.repairPackageTabBarCompact}`}
-        role="tablist"
-        aria-label="Разделы пакета. Перетащите вкладку, чтобы изменить порядок."
-      >
-        {repairTabOrder.map((id) => (
+      <div className={styles.repairPackageTabBarRow}>
+        <div
+          className={`${styles.tabBar} ${styles.blockTabs} ${styles.repairPackageTabBarCompact}`}
+          role="tablist"
+          aria-label="Разделы пакета. Перетащите вкладку, чтобы изменить порядок."
+        >
+          {repairTabOrder
+            .filter((id) => isRepairAddendumTabVisible(id, form.addendumSlotCount))
+            .map((id) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                draggable
+                aria-selected={activeTab === id}
+                title={
+                  contractAndEstimateLocked && (id === 'contract' || id === 'estimate')
+                    ? `${REPAIR_DOCUMENT_TAB_LABELS[id]} — только просмотр (договор заключён)`
+                    : `${REPAIR_DOCUMENT_TAB_LABELS[id]} — перетащите для смены порядка`
+                }
+                className={`${styles.tab} ${activeTab === id ? styles.tabActive : ''}`}
+                onClick={() => handleRepairTabActivate(id)}
+                onDragStart={(e) => handleRepairTabDragStart(id, e)}
+                onDragOver={handleRepairTabDragOver}
+                onDrop={handleRepairTabDrop(id)}
+              >
+                <span className={styles.repairTabLabelInner}>
+                  {contractAndEstimateLocked && (id === 'contract' || id === 'estimate') ? (
+                    <RepairTabLockIcon />
+                  ) : null}
+                  <span>{REPAIR_DOCUMENT_TAB_LABELS_SHORT[id]}</span>
+                </span>
+              </button>
+            ))}
+        </div>
+        {form.addendumSlotCount < 5 ? (
           <button
-            key={id}
             type="button"
-            role="tab"
-            draggable
-            aria-selected={activeTab === id}
+            className={`${styles.secondaryBtn} ${styles.repairAddAddendumTabBtn}`}
             title={
-              contractAndEstimateLocked && (id === 'contract' || id === 'estimate')
-                ? `${REPAIR_DOCUMENT_TAB_LABELS[id]} — только просмотр (договор заключён)`
-                : `${REPAIR_DOCUMENT_TAB_LABELS[id]} — перетащите для смены порядка`
+              contractAndEstimateLocked &&
+              form.addendumSlots[form.addendumSlotCount - 1]?.status !== 'SIGNED'
+                ? 'Сначала отметьте текущее Д/с как подписанное'
+                : 'Показать ещё одну вкладку дополнительного соглашения (до пяти)'
             }
-            className={`${styles.tab} ${activeTab === id ? styles.tabActive : ''}`}
-            onClick={() => handleRepairTabActivate(id)}
-            onDragStart={(e) => handleRepairTabDragStart(id, e)}
-            onDragOver={handleRepairTabDragOver}
-            onDrop={handleRepairTabDrop(id)}
+            disabled={
+              contractAndEstimateLocked &&
+              form.addendumSlots[form.addendumSlotCount - 1]?.status !== 'SIGNED'
+            }
+            onClick={() => {
+              if (
+                contractAndEstimateLocked &&
+                form.addendumSlots[form.addendumSlotCount - 1]?.status !== 'SIGNED'
+              ) {
+                return;
+              }
+              const next = form.addendumSlotCount + 1;
+              setForm((f) => ({ ...f, addendumSlotCount: next }));
+              touchPackageData();
+              setActiveTab(`addendum${next}` as RepairDocumentTabId);
+            }}
           >
-            <span className={styles.repairTabLabelInner}>
-              {contractAndEstimateLocked && (id === 'contract' || id === 'estimate') ? (
-                <RepairTabLockIcon />
-              ) : null}
-              <span>{REPAIR_DOCUMENT_TAB_LABELS_SHORT[id]}</span>
-            </span>
+            + Д/с №{form.addendumSlotCount + 1}
           </button>
-        ))}
+        ) : null}
       </div>
 
       {activeTab === 'data' ? (
@@ -2505,13 +2812,20 @@ export function RepairContractDocumentEditorPage({
             <div className={styles.sectionCard}>
               {contractAndEstimateLocked ? (
                 <p className={`${styles.hint} ${styles.estimateLockNotice}`}>
-                  Договор заключён: состав сметы и прикреплённые расчёты доступны только для
-                  просмотра и печати.
+                  Договор заключён: смета договора и прикреплённые к ней расчёты только для
+                  просмотра и печати. Дополнительные объёмы оформляйте на вкладках «Д/с №1»…«Д/с
+                  №5»: там можно прикрепить новые расчёты к соответствующему дополнительному
+                  соглашению.
                 </p>
               ) : null}
               <div className={styles.estimateSectionHeader}>
                 <h3 className={`${styles.sectionTitle} ${styles.estimateSectionTitle}`}>Смета</h3>
               </div>
+              <p className={styles.hint} style={{ marginTop: 0 }}>
+                Объект выбирается только здесь: все расчёты основной сметы и доп. соглашений должны
+                относиться к одному объекту. После первого прикреплённого расчёта объект фиксируется
+                автоматически.
+              </p>
               <div className={styles.sectionFields}>
                 <div className={`${styles.estimatePickAndAttachedRow} ${styles.fieldSpanAll}`}>
                   <div className={styles.estimatePickColumn}>
@@ -2520,11 +2834,26 @@ export function RepairContractDocumentEditorPage({
                         <label htmlFor="estimate_group_select">Объект</label>
                         <select
                           id="estimate_group_select"
-                          value={estimateAttachGroupKey}
-                          disabled={contractAndEstimateLocked}
+                          value={
+                            (form.estimate.selectedPresetIds?.length ?? 0) > 0
+                              ? contractEstimateObjectKey
+                              : estimateAttachGroupKey
+                          }
+                          disabled={
+                            contractAndEstimateLocked ||
+                            (form.estimate.selectedPresetIds?.length ?? 0) > 0
+                          }
                           onChange={(e) => {
-                            setEstimateAttachGroupKey(e.target.value);
+                            const v = e.target.value;
+                            setEstimateAttachGroupKey(v);
                             setEstimatePresetToAttach('');
+                            if (
+                              !contractAndEstimateLocked &&
+                              (form.estimate.selectedPresetIds?.length ?? 0) === 0
+                            ) {
+                              setForm((p) => ({ ...p, estimateObjectGroupKey: v }));
+                              touchPackageData();
+                            }
                           }}
                         >
                           <option value="">— объект —</option>
@@ -2543,11 +2872,20 @@ export function RepairContractDocumentEditorPage({
                         <select
                           id="estimate_select"
                           value={estimatePresetToAttach}
-                          disabled={contractAndEstimateLocked || !estimateAttachGroupKey}
+                          disabled={
+                            contractAndEstimateLocked ||
+                            !((form.estimate.selectedPresetIds?.length ?? 0) > 0
+                              ? contractEstimateObjectKey
+                              : estimateAttachGroupKey || contractEstimateObjectKey)
+                          }
                           onChange={(e) => setEstimatePresetToAttach(e.target.value)}
                         >
                           <option value="">
-                            {!estimateAttachGroupKey ? '— сначала объект —' : '— расчёт —'}
+                            {(form.estimate.selectedPresetIds?.length ?? 0) > 0
+                              ? '— расчёт —'
+                              : estimateAttachGroupKey || contractEstimateObjectKey
+                                ? '— расчёт —'
+                                : '— сначала выберите объект —'}
                           </option>
                           {attachableForSelectedGroup.map((preset) => (
                             <option key={preset.id} value={preset.id}>
@@ -2577,7 +2915,8 @@ export function RepairContractDocumentEditorPage({
                         </p>
                       ) : (
                         <p className={`${styles.hint} ${styles.estimateTabHint}`}>
-                          Объект → расчёт → «Прикрепить». Справа — порядок в смете (перетаскивание).
+                          Сначала объект, затем расчёт → «Прикрепить». Нельзя смешивать расчёты
+                          разных объектов. Справа — порядок в смете (перетаскивание).
                         </p>
                       )}
                     </div>
@@ -2794,14 +3133,144 @@ export function RepairContractDocumentEditorPage({
             </div>
           </div>
         </div>
+      ) : activeTab === 'questionnaire1' ? (
+        <div className={`${styles.blockData} ${styles.dataCompact}`}>
+          <RepairManagerQuestionnaire1Tab
+            form={form}
+            onPatch={patchManagerQuestionnaire1}
+            onToggleTrafficSource={toggleManagerQuestionnaire1Traffic}
+            onToggleWhyChosen={toggleManagerQuestionnaire1WhyChosen}
+            onToggleClientNeed={toggleManagerQuestionnaire1Need}
+          />
+          <div className={styles.estimateA4Wrap}>
+            <article className={styles.estimateA4Sheet}>
+              <div
+                className={styles.contractA4Preview}
+                dangerouslySetInnerHTML={{ __html: renderedDoc }}
+              />
+            </article>
+          </div>
+        </div>
+      ) : activeTab === 'questionnaire2' ? (
+        <div className={`${styles.blockData} ${styles.dataCompact}`}>
+          <RepairPostWorkQuestionnaire2Tab form={form} onPatch={patchPostWorkQuestionnaire2} />
+          <div className={styles.estimateA4Wrap}>
+            <article className={styles.estimateA4Sheet}>
+              <div
+                className={styles.contractA4Preview}
+                dangerouslySetInnerHTML={{ __html: renderedDoc }}
+              />
+            </article>
+          </div>
+        </div>
       ) : (
         <>
+          {activeAddendumSlot !== null ? (
+            contractAndEstimateLocked ? (
+              <RepairAddendumEstimateBlock
+                slotOrdinal={activeAddendumSlot}
+                slot={form.addendumSlots[activeAddendumSlot - 1]}
+                documentDate={form.addendumDocumentDates[activeAddendumSlot - 1] ?? ''}
+                onDocumentDateChange={(v) => patchAddendumDocumentDate(activeAddendumSlot - 1, v)}
+                estimatePresets={estimatePresets}
+                contractEstimateObjectLabel={
+                  contractEstimateObjectKey
+                    ? contractEstimateObjectKey === '__ungrouped__'
+                      ? 'Вне объекта'
+                      : (estimateGroups.find((g) => g.id === contractEstimateObjectKey)?.title ??
+                        contractEstimateObjectKey)
+                    : ''
+                }
+                addendumAttachablePresets={attachableAddendumEstimatePresets}
+                presetToAttach={addendumPresetToAttach}
+                setPresetToAttach={setAddendumPresetToAttach}
+                onAttachPreset={() => {
+                  if (!addendumPresetToAttach || activeAddendumSlot === null) return;
+                  const idx = activeAddendumSlot - 1;
+                  const pid = addendumPresetToAttach;
+                  setForm((p) => {
+                    const next = applyEstimatePresetIdsToAddendumSlot(
+                      p,
+                      idx,
+                      [...(p.addendumSlots[idx].selectedPresetIds ?? []), pid],
+                      estimatePresets
+                    );
+                    formRef.current = next;
+                    schedulePersistRepairPackageDebounced();
+                    return next;
+                  });
+                  setDirty(true);
+                  setAddendumPresetToAttach('');
+                }}
+                onRemovePreset={(presetId) => {
+                  if (activeAddendumSlot === null) return;
+                  const idx = activeAddendumSlot - 1;
+                  setForm((p) => {
+                    const next = applyEstimatePresetIdsToAddendumSlot(
+                      p,
+                      idx,
+                      (p.addendumSlots[idx].selectedPresetIds ?? []).filter(
+                        (id) => id !== presetId
+                      ),
+                      estimatePresets
+                    );
+                    formRef.current = next;
+                    schedulePersistRepairPackageDebounced();
+                    return next;
+                  });
+                  setDirty(true);
+                }}
+                onReorderPresets={(sourceId, targetId) => {
+                  if (activeAddendumSlot === null) return;
+                  const idx = activeAddendumSlot - 1;
+                  setForm((p) => {
+                    const ids = [...(p.addendumSlots[idx].selectedPresetIds ?? [])];
+                    const from = ids.indexOf(sourceId);
+                    const to = ids.indexOf(targetId);
+                    if (from < 0 || to < 0) return p;
+                    const [moved] = ids.splice(from, 1);
+                    ids.splice(to, 0, moved);
+                    const next = applyEstimatePresetIdsToAddendumSlot(p, idx, ids, estimatePresets);
+                    formRef.current = next;
+                    schedulePersistRepairPackageDebounced();
+                    return next;
+                  });
+                  setDirty(true);
+                }}
+                estimateUsageById={estimateUsageById}
+                draggingPresetId={draggingAddendumEstimatePresetId}
+                setDraggingPresetId={setDraggingAddendumEstimatePresetId}
+                onMarkSigned={() => markAddendumSlotSigned(activeAddendumSlot - 1)}
+              />
+            ) : (
+              <div className={`${styles.field} ${styles.repairAddendumDateFieldRow}`}>
+                <label htmlFor={`repair_addendum_date_${activeAddendumSlot}`}>
+                  Дата доп. соглашения (в шапке слева; полный ввод расчётов — после статуса «Договор
+                  заключён»)
+                </label>
+                <input
+                  id={`repair_addendum_date_${activeAddendumSlot}`}
+                  type="text"
+                  value={form.addendumDocumentDates[activeAddendumSlot - 1] ?? ''}
+                  onChange={(e) =>
+                    patchAddendumDocumentDate(activeAddendumSlot - 1, e.target.value)
+                  }
+                  placeholder="напр. 04.05.2026"
+                  autoComplete="off"
+                />
+              </div>
+            )
+          ) : null}
           {activeTab === 'contract' && contractAndEstimateLocked ? (
             <p className={`${styles.hint} ${styles.contractLockNotice}`}>
               Договор заключён: текст договора на этой вкладке только для просмотра и печати.
             </p>
           ) : null}
-          {activeTab === 'contract' || activeTab === 'actStart' || activeTab === 'actAcceptance' ? (
+          {activeTab === 'contract' ||
+          isRepairActTwinOneSheetTab(activeTab) ||
+          activeTab === 'cashOrder' ||
+          activeTab === 'productionLog' ||
+          isRepairAddendumTab(activeTab) ? (
             <div className={styles.estimateA4Wrap}>
               {isRepairActTwinOneSheetTab(activeTab) ? (
                 <article

@@ -1,8 +1,14 @@
 export const repairTemplateAddendum = `
 <div class="docPrint">
-  <h1>Дополнительное соглашение №___</h1>
-  <p>к договору подряда № {{contract.number}} от {{contract.date}}</p>
-  <p>между {{executor.companyName}} и {{customer.fullName}}.</p>
-  <p>Стороны согласовали изменения к объёму/срокам/стоимости работ по объекту {{object.objectAddress}}.</p>
+  <div class="repairAddendumHeaderBlock">
+    <h1 class="repairAddendumHeaderTitle">{{addendum.headerMain|plain}}</h1>
+    <p class="repairAddendumHeaderSub">{{addendum.headerSub|plain}}</p>
+  </div>
+  <div class="repairAddendumMetaRow">
+    <span class="repairAddendumMetaDate">{{addendum.documentDate|plain}}</span>
+    <span class="repairAddendumMetaCity">г. Мурманск</span>
+  </div>
+  <h2 class="repairAddendumEstimateHeading">Смета дополнительных ремонтно-отделочных работ</h2>
+  <div class="repairAddendumEstimateBody">{{addendum.roomsHtml}}</div>
 </div>
 `.trim();

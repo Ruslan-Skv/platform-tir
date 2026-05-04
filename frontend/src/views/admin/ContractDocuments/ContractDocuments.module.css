@@ -367,6 +367,40 @@
   font-size: 0.72rem;
 }
 
+.repairPackageTabBarRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.repairPackageTabBarRow > .tabBar {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.repairAddAddendumTabBtn {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+.repairAddendumDateFieldRow {
+  max-width: 320px;
+  margin: 0 0 10px;
+}
+
+.repairAddendumEstimateHeading {
+  font-size: 11pt;
+  margin: 12pt 0 6pt;
+  text-align: center;
+}
+
+.repairAddendumEstimateBody {
+  margin-bottom: 8pt;
+}
+
 .repairTabLabelInner {
   display: inline-flex;
   align-items: center;
@@ -1149,6 +1183,46 @@
   margin: 16px 0 8px;
 }
 
+/* Д/с: шапка из HTML-шаблона (innerHTML — только :global). */
+.docPane :global(.docPrint .repairAddendumHeaderBlock) {
+  margin: 0 0 10px;
+}
+
+.docPane :global(.docPrint h1.repairAddendumHeaderTitle) {
+  text-align: center;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+
+.docPane :global(.docPrint .repairAddendumHeaderSub) {
+  margin: 0 0 12px;
+  text-align: center;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  font-weight: normal;
+}
+
+.docPane :global(.docPrint .repairAddendumMetaRow) {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  width: 100%;
+  align-items: baseline;
+  margin: 0 0 14px;
+  font-size: 0.72rem;
+}
+
+.docPane :global(.docPrint .repairAddendumMetaDate) {
+  text-align: left;
+}
+
+.docPane :global(.docPrint .repairAddendumMetaCity) {
+  text-align: right;
+}
+
+.docPane :global(.docPrint h2.repairAddendumEstimateHeading) {
+  text-align: center;
+}
+
 /* Импорт Word (WordSection1, КО и т.п.): плотнее по вертикали; тот же класс учитывается в printDocument.ts */
 .docPane :global(.docPrint.docPrintWordCompact .WordSection1 table.MsoNormalTable) {
   border-collapse: collapse !important;
@@ -1293,6 +1367,45 @@
   margin: 14px 0 8px;
 }
 
+.contractA4Preview :global(.docPrint .repairAddendumHeaderBlock) {
+  margin: 0 0 10px;
+}
+
+.contractA4Preview :global(.docPrint h1.repairAddendumHeaderTitle) {
+  text-align: center;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+
+.contractA4Preview :global(.docPrint .repairAddendumHeaderSub) {
+  margin: 0 0 12px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: normal;
+}
+
+.contractA4Preview :global(.docPrint .repairAddendumMetaRow) {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  width: 100%;
+  align-items: baseline;
+  margin: 0 0 14px;
+  font-size: 12px;
+}
+
+.contractA4Preview :global(.docPrint .repairAddendumMetaDate) {
+  text-align: left;
+}
+
+.contractA4Preview :global(.docPrint .repairAddendumMetaCity) {
+  text-align: right;
+}
+
+.contractA4Preview :global(.docPrint h2.repairAddendumEstimateHeading) {
+  text-align: center;
+}
+
 .contractA4Preview :global(.signTable) {
   width: 100%;
   margin-top: 20px;
@@ -1397,6 +1510,7 @@
 .estimateA4Table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .estimateA4Table th,
@@ -1406,6 +1520,44 @@
   text-align: left;
   vertical-align: top;
   line-height: 1.28;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Единая сетка колонок для всех таблиц помещений на листе сметы (наименование шире — меньше переносов) */
+.estimateA4Table th:nth-child(1),
+.estimateA4Table td:nth-child(1) {
+  width: 3%;
+  text-align: center;
+}
+
+.estimateA4Table th:nth-child(2),
+.estimateA4Table td:nth-child(2) {
+  width: 52%;
+}
+
+.estimateA4Table th:nth-child(3),
+.estimateA4Table td:nth-child(3) {
+  width: 6%;
+  text-align: right;
+}
+
+.estimateA4Table th:nth-child(4),
+.estimateA4Table td:nth-child(4) {
+  width: 9%;
+  text-align: right;
+}
+
+.estimateA4Table th:nth-child(5),
+.estimateA4Table td:nth-child(5) {
+  width: 12%;
+  text-align: right;
+}
+
+.estimateA4Table th:nth-child(6),
+.estimateA4Table td:nth-child(6) {
+  width: 18%;
+  text-align: right;
 }
 
 .estimateA4Table th {
@@ -1509,6 +1661,224 @@
 .estimateA4Empty {
   margin: 0;
   color: #6b7280;
+}
+
+/* Встроенная смета в HTML договора/Д/с (innerHTML): те же классы, что на вкладке «Смета». */
+.docPane :global(.docPrint .estimateA4DocPrintEmbed),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed) {
+  line-height: 1.32;
+  color: #111827;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4CategorySection),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4CategorySection) {
+  margin-bottom: 6px;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Meta),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Meta) {
+  margin: 0 0 6px;
+  color: #374151;
+  line-height: 1.35;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Room),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Room) {
+  margin-bottom: 10px;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4RoomHeader),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4RoomHeader) {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 3px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table) {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th),
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td) {
+  border: 1px solid #9ca3af;
+  padding: 2px 5px;
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.28;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(1)),
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(1)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(1)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(1)) {
+  width: 3%;
+  text-align: center;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(2)),
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(2)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(2)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(2)) {
+  width: 52%;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(3)),
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(3)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(3)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(3)) {
+  width: 6%;
+  text-align: right;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(4)),
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(4)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(4)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(4)) {
+  width: 9%;
+  text-align: right;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(5)),
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(5)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(5)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(5)) {
+  width: 12%;
+  text-align: right;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(6)),
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(6)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(6)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(6)) {
+  width: 18%;
+  text-align: right;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th) {
+  background: #f9fafb;
+  font-weight: 700;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Summary),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Summary) {
+  margin-top: 5px;
+  border-top: 1px solid #d1d5db;
+  padding-top: 6px;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SummaryTitle),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SummaryTitle) {
+  margin: 0 0 3px;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SummaryList),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SummaryList) {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SummaryList li),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SummaryList li) {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Total),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Total) {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.3;
+  text-align: right;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Signatures),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Signatures) {
+  margin-top: 12px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesTable),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesTable) {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesCellLeft),
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesCellRight),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesCellLeft),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesCellRight) {
+  width: 50%;
+  vertical-align: bottom;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesCellLeft),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesCellLeft) {
+  padding-right: 10px;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesCellRight),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesCellRight) {
+  padding-left: 10px;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturePartyLine),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturePartyLine) {
+  margin: 0 0 4px;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignNote),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignNote) {
+  margin: 0;
+  font-size: 9pt;
+  color: #374151;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4HandwritingNote),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4HandwritingNote) {
+  margin-top: 14px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4HandwritingNoteLabel),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4HandwritingNoteLabel) {
+  margin: 0 0 5px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4HandwritingLines),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4HandwritingLines) {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4HandwritingLine),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4HandwritingLine) {
+  min-height: 1.1em;
+  border-bottom: 1px solid #111827;
 }
 
 .visuallyHidden {
@@ -2322,6 +2692,71 @@
   display: block;
   width: 14px;
   height: 14px;
+}
+
+.managerQuestionnaireNeedsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px 16px;
+}
+
+.managerQuestionnaireNeedRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: #1f2937;
+  cursor: pointer;
+}
+
+.managerQuestionnaireNeedRow input {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.postWorkQ2RatingRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.postWorkQ2RatingRow:last-of-type {
+  border-bottom: none;
+}
+
+.postWorkQ2RatingQuestion {
+  flex: 1 1 220px;
+  min-width: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.postWorkQ2RatingScale {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  flex-shrink: 0;
+}
+
+.postWorkQ2RatingOption {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: #374151;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.postWorkQ2RatingOption input {
+  margin: 0;
 }
 
 /*

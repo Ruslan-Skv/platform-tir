@@ -51,7 +51,11 @@ const TEMPLATE_TAB_IDS: RepairTemplateTabId[] = [
   'cashOrder',
   'questionnaire1',
   'questionnaire2',
-  'addendum',
+  'addendum1',
+  'addendum2',
+  'addendum3',
+  'addendum4',
+  'addendum5',
   'workOrder',
   'workOrderAddendum',
   'productionLog',
@@ -63,9 +67,8 @@ const TEMPLATE_EDITOR_ZOOM_MAX_PCT = 150;
 
 function normalizeTemplateTabId(value: string | undefined): RepairTemplateTabId {
   if (!value) return 'contract';
-  return (TEMPLATE_TAB_IDS as string[]).includes(value)
-    ? (value as RepairTemplateTabId)
-    : 'contract';
+  const v = value === 'addendum' ? 'addendum1' : value;
+  return (TEMPLATE_TAB_IDS as string[]).includes(v) ? (v as RepairTemplateTabId) : 'contract';
 }
 
 function normalizeContractTemplatePreset(it: ContractTemplatePreset): ContractTemplatePreset {
@@ -590,9 +593,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const templateData = useMemo(
     () =>
       repairPackageFormForTemplate(
-        buildRepairTemplatePreviewFallbackData(firstExecutorProfile, firstSignatoryProfile)
+        buildRepairTemplatePreviewFallbackData(firstExecutorProfile, firstSignatoryProfile),
+        { templateTab: activeTemplateTab }
       ),
-    [firstExecutorProfile, firstSignatoryProfile]
+    [firstExecutorProfile, firstSignatoryProfile, activeTemplateTab]
   );
 
   const renderedPreview = useMemo(
@@ -628,7 +632,11 @@ export function ContractDocumentsTemplatesLibraryPage() {
       cashOrder: 0,
       questionnaire1: 0,
       questionnaire2: 0,
-      addendum: 0,
+      addendum1: 0,
+      addendum2: 0,
+      addendum3: 0,
+      addendum4: 0,
+      addendum5: 0,
       workOrder: 0,
       workOrderAddendum: 0,
       productionLog: 0,

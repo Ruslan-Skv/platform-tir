@@ -46,6 +46,33 @@ export function parseContractDate(raw: string | null | undefined): Date | null {
   return null;
 }
 
+const RU_MONTH_NAMES_GENITIVE = [
+  'января',
+  'февраля',
+  'марта',
+  'апреля',
+  'мая',
+  'июня',
+  'июля',
+  'августа',
+  'сентября',
+  'октября',
+  'ноября',
+  'декабря',
+] as const;
+
+/** Дата для анкет и писем: «15 января 2026 г.»; при нераспознанной строке — как есть или «—». */
+export function formatContractDateRuLong(raw: string | null | undefined): string {
+  const t = (raw ?? '').trim();
+  if (!t) return '—';
+  const p = parseContractDate(t);
+  if (!p) return t;
+  const day = p.getDate();
+  const month = RU_MONTH_NAMES_GENITIVE[p.getMonth()];
+  const year = p.getFullYear();
+  return `${day} ${month} ${year} г.`;
+}
+
 /** Приводит строку к дд.мм.гггг; нераспознанное возвращает как есть (trim). */
 export function contractDateToDdMmYyyy(raw: string): string {
   const t = raw.trim();

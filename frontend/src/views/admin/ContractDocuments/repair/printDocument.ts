@@ -99,6 +99,92 @@ function buildPrintStylesheet(marginFooter?: PrintMarginFooterNames): string {
   .docPrint h1 { font-size: 14pt; text-align: center; margin: 0 0 12pt; }
   .docPrint h2 { font-size: 12pt; margin: 14pt 0 6pt; }
   .docPrint p { margin: 0 0 8pt; }
+  .docPrint .repairAddendumHeaderBlock { margin: 0 0 10pt; }
+  .docPrint h1.repairAddendumHeaderTitle { margin: 0 0 4pt; }
+  .docPrint .repairAddendumHeaderSub {
+    margin: 0 0 12pt;
+    text-align: center;
+    font-size: 12pt;
+    line-height: 1.35;
+    font-weight: normal;
+  }
+  .docPrint .repairAddendumMetaRow {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    width: 100%;
+    align-items: baseline;
+    margin: 0 0 14pt;
+    font-size: 12pt;
+  }
+  .docPrint .repairAddendumMetaDate { text-align: left; }
+  .docPrint .repairAddendumMetaCity { text-align: right; }
+  .docPrint h2.repairAddendumEstimateHeading { text-align: center; }
+  .docPrint .estimateA4DocPrintEmbed { line-height: 1.32; color: #111; }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4CategorySection { margin-bottom: 6pt; }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Meta { margin: 0 0 6pt; color: #333; line-height: 1.35; }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Room { margin-bottom: 10pt; }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4RoomHeader {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 10pt;
+    margin-bottom: 3pt; font-weight: 700; line-height: 1.25;
+  }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Table {
+    width: 100%; border-collapse: collapse; table-layout: fixed;
+  }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Table th,
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Table td {
+    border: 1px solid #9ca3af; padding: 2pt 5pt; text-align: left; vertical-align: top;
+    line-height: 1.28; overflow-wrap: break-word; word-break: break-word;
+  }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(1),
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(1) { width: 3%; text-align: center; }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(2),
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(2) { width: 52%; }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(3),
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(3) { width: 6%; text-align: right; }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(4),
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(4) { width: 9%; text-align: right; }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(5),
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(5) { width: 12%; text-align: right; }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(6),
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(6) { width: 18%; text-align: right; }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Table th {
+    background: #f9fafb; font-weight: 700; padding-top: 3pt; padding-bottom: 3pt;
+  }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Summary {
+    margin-top: 5pt; border-top: 1px solid #d1d5db; padding-top: 6pt;
+  }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4SummaryTitle { margin: 0 0 3pt; font-size: 11pt; line-height: 1.25; }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4SummaryList {
+    list-style: none; margin: 0; padding: 0; display: grid; gap: 2pt;
+  }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4SummaryList li {
+    display: flex; justify-content: space-between; gap: 10pt;
+  }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Total {
+    margin: 10pt 0 0; font-size: 12pt; line-height: 1.3; text-align: right;
+  }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Signatures {
+    margin-top: 12pt; page-break-inside: avoid; break-inside: avoid;
+  }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesTable { width: 100%; border-collapse: collapse; }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesCellLeft,
+  .docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesCellRight {
+    width: 50%; vertical-align: bottom;
+  }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesCellLeft { padding-right: 10pt; }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesCellRight { padding-left: 10pt; }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4SignaturePartyLine { margin: 0 0 4pt; }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4SignNote { margin: 0; font-size: 9pt; color: #333; }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4HandwritingNote {
+    margin-top: 14pt; page-break-inside: avoid; break-inside: avoid;
+  }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4HandwritingNoteLabel { margin: 0 0 5pt; font-weight: 600; line-height: 1.25; }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4HandwritingLines {
+    display: flex; flex-direction: column; gap: 5pt;
+  }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4HandwritingLine {
+    min-height: 1.1em; border-bottom: 1px solid #111;
+  }
   .signTable { width: 100%; border-collapse: collapse; margin-top: 18pt; }
   .signTable td { width: 50%; vertical-align: bottom; padding: 6pt; }
   .estimatePre {

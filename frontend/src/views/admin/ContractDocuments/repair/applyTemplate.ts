@@ -26,7 +26,7 @@ function escapeHtml(text: string): string {
 }
 
 function formatTemplateValue(path: string, raw: string, plainCustomer: boolean): string {
-  if (path === 'estimate.roomsHtml') {
+  if (path === 'estimate.roomsHtml' || path === 'addendum.roomsHtml') {
     return raw || '';
   }
   const trimmed = raw.trim();

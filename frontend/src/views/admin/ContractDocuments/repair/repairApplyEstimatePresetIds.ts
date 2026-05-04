@@ -158,6 +158,24 @@ export function parseEstimateSnapshotFromDraft(draftRaw: string): EstimateSnapsh
   }
 }
 
+function presetObjectGroupKey(preset: ContractEstimatePreset): string {
+  return preset.groupId ? preset.groupId : '__ungrouped__';
+}
+
+/** Объект сметы договора: по первому прикреплённому расчёту или по полю формы до прикрепления. */
+export function getContractEstimateObjectGroupKey(
+  form: RepairPackageFormData,
+  presets: ContractEstimatePreset[]
+): string {
+  const ids = form.estimate.selectedPresetIds ?? [];
+  if (ids.length > 0) {
+    const p0 = presets.find((p) => p.id === ids[0]);
+    if (!p0) return '';
+    return presetObjectGroupKey(p0);
+  }
+  return (form.estimateObjectGroupKey || '').trim();
+}
+
 /** Пересчёт блока estimate + сумм договора по списку id пресетов (как в редакторе пакета). */
 export function applyEstimatePresetIdsToRepairForm(
   previous: RepairPackageFormData,
@@ -168,6 +186,7 @@ export function applyEstimatePresetIdsToRepairForm(
   if (uniqueIds.length === 0) {
     return {
       ...previous,
+      estimateObjectGroupKey: '',
       estimate: {
         ...previous.estimate,
         selectedPresetId: '',
@@ -177,9 +196,38 @@ export function applyEstimatePresetIdsToRepairForm(
       },
     };
   }
-  const selectedPresets = uniqueIds
+  const selectedPresetsRaw = uniqueIds
     .map((id) => presets.find((it) => it.id === id))
     .filter((x): x is ContractEstimatePreset => Boolean(x));
+  if (selectedPresetsRaw.length === 0) {
+    return {
+      ...previous,
+      estimateObjectGroupKey: '',
+      estimate: {
+        ...previous.estimate,
+        selectedPresetId: '',
+        selectedPresetIds: [],
+        snapshot: null,
+        notes: '',
+      },
+    };
+  }
+  const groupKey = presetObjectGroupKey(selectedPresetsRaw[0]);
+  const selectedPresets = selectedPresetsRaw.filter((p) => presetObjectGroupKey(p) === groupKey);
+  const coercedIds = selectedPresets.map((p) => p.id);
+  if (selectedPresets.length === 0) {
+    return {
+      ...previous,
+      estimateObjectGroupKey: '',
+      estimate: {
+        ...previous.estimate,
+        selectedPresetId: '',
+        selectedPresetIds: [],
+        snapshot: null,
+        notes: '',
+      },
+    };
+  }
   const mergedSnapshot = mergeEstimateSnapshots(
     selectedPresets.map((preset) => ({
       presetTitle: preset.title,
@@ -190,6 +238,7 @@ export function applyEstimatePresetIdsToRepairForm(
   const contractTotals = estimateTotalToContractFields(mergedSnapshot?.total ?? null);
   return {
     ...previous,
+    estimateObjectGroupKey: groupKey,
     contract: {
       ...previous.contract,
       totalAmount: contractTotals.totalAmount,
@@ -198,10 +247,59 @@ export function applyEstimatePresetIdsToRepairForm(
     },
     estimate: {
       ...previous.estimate,
-      selectedPresetId: uniqueIds[0] ?? '',
-      selectedPresetIds: uniqueIds,
+      selectedPresetId: coercedIds[0] ?? '',
+      selectedPresetIds: coercedIds,
       snapshot: mergedSnapshot,
       notes,
     },
   };
+}
+
+/** Прикрепление расчётов к слоту Д/с №1…5 (без изменения сумм основного договора). */
+export function applyEstimatePresetIdsToAddendumSlot(
+  previous: RepairPackageFormData,
+  slotIndex0: number,
+  presetIds: string[],
+  presets: ContractEstimatePreset[]
+): RepairPackageFormData {
+  if (slotIndex0 < 0 || slotIndex0 > 4) return previous;
+  const slot = previous.addendumSlots[slotIndex0];
+  if (!slot || slot.status === 'SIGNED') return previous;
+
+  const objectKey = getContractEstimateObjectGroupKey(previous, presets);
+  if (!objectKey) return previous;
+
+  const uniqueIds = [...new Set(presetIds.filter(Boolean))].filter((id) => {
+    const pr = presets.find((x) => x.id === id);
+    return pr && presetObjectGroupKey(pr) === objectKey;
+  });
+  const nextSlots = [...previous.addendumSlots] as RepairPackageFormData['addendumSlots'];
+
+  if (uniqueIds.length === 0) {
+    nextSlots[slotIndex0] = {
+      ...slot,
+      selectedPresetIds: [],
+      snapshot: null,
+      notes: '',
+    };
+    return { ...previous, addendumSlots: nextSlots };
+  }
+
+  const selectedPresets = uniqueIds
+    .map((id) => presets.find((it) => it.id === id))
+    .filter((x): x is ContractEstimatePreset => Boolean(x));
+  const mergedSnapshot = mergeEstimateSnapshots(
+    selectedPresets.map((preset) => ({
+      presetTitle: preset.title,
+      snapshot: preset.snapshot ?? parseEstimateSnapshotFromDraft(preset.calculatorDraft),
+    }))
+  );
+  const notes = formatCombinedEstimateNotes(selectedPresets, mergedSnapshot);
+  nextSlots[slotIndex0] = {
+    ...slot,
+    selectedPresetIds: uniqueIds,
+    snapshot: mergedSnapshot,
+    notes,
+  };
+  return { ...previous, addendumSlots: nextSlots };
 }

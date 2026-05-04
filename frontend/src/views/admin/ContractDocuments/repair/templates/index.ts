@@ -6,7 +6,6 @@ import { repairTemplateCashOrder } from './cashOrder';
 import { repairTemplateContract } from './contract';
 import { repairTemplateEstimate } from './estimate';
 import { repairTemplateProductionLog } from './productionLog';
-import { repairTemplateQuestionnaire } from './questionnaire';
 import { repairTemplateWorkOrder } from './workOrder';
 import { repairTemplateWorkOrderAddendum } from './workOrderAddendum';
 
@@ -16,9 +15,14 @@ export const REPAIR_DOCUMENT_TEMPLATES: Record<Exclude<RepairDocumentTabId, 'dat
   actStart: repairTemplateActStart,
   actAcceptance: repairTemplateActAcceptance,
   cashOrder: repairTemplateCashOrder,
-  questionnaire1: repairTemplateQuestionnaire('1'),
-  questionnaire2: repairTemplateQuestionnaire('2'),
-  addendum: repairTemplateAddendum,
+  /** Анкета 1 в пакете — онлайн-форма в редакторе; заглушка для совместимости выбора в библиотеке. */
+  questionnaire1: `<div class="docPrint"><p>Содержимое анкеты формируется на вкладке пакета «Анкета менеджера» из полей формы.</p></div>`,
+  questionnaire2: `<div class="docPrint"><p>Содержимое анкеты формируется на вкладке пакета «Анкета после работ» из полей формы.</p></div>`,
+  addendum1: repairTemplateAddendum,
+  addendum2: repairTemplateAddendum,
+  addendum3: repairTemplateAddendum,
+  addendum4: repairTemplateAddendum,
+  addendum5: repairTemplateAddendum,
   workOrder: repairTemplateWorkOrder,
   workOrderAddendum: repairTemplateWorkOrderAddendum,
   productionLog: repairTemplateProductionLog,
