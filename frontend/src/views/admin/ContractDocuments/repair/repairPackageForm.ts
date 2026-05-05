@@ -8,6 +8,7 @@ import { amountToRussianWords } from './amountToRussianWords';
 import { todayContractDateDdMmYyyy } from './contractDateFormat';
 import {
   buildEstimateDocPrintEmbedHtml,
+  buildEstimateDocPrintFooterHtml,
   buildEstimateSectionsFromPresetIds,
 } from './repairEstimateDocPrintEmbedHtml';
 
@@ -235,9 +236,14 @@ export type RepairAddendumSlotStatus = 'OPEN' | 'SIGNED';
 /** Расчёты, прикреплённые к конкретному Д/с (№1…№5). */
 export interface RepairAddendumSlotEstimateBlock {
   status: RepairAddendumSlotStatus;
+  /** Время установки статуса SIGNED (ISO), нужно для окна отмены 24 часа. */
+  signedAt: string;
   selectedPresetIds: string[];
   snapshot: RepairEstimateBlock['snapshot'];
+  excludedSelectedPresetIds: string[];
+  excludedSnapshot: RepairEstimateBlock['snapshot'];
   notes: string;
+  excludedNotes: string;
 }
 
 export type RepairAddendumSlotsTuple = [
@@ -270,6 +276,8 @@ export interface RepairPackageFormData {
   addendumDocumentDates: [string, string, string, string, string];
   /** По одному слоту на «Д/с №1»…«Д/с №5»: расчёты и статус подписания. */
   addendumSlots: RepairAddendumSlotsTuple;
+  /** Время установки статуса «Договор заключен» (ISO), окно отмены — 24 часа. */
+  contractConcludedAt: string;
 }
 
 export function defaultRepairPackageFormData(): RepairPackageFormData {
@@ -341,11 +349,21 @@ export function defaultRepairPackageFormData(): RepairPackageFormData {
     addendumSlotCount: 1,
     addendumDocumentDates: ['', '', '', '', ''],
     addendumSlots: defaultAddendumSlots(),
+    contractConcludedAt: '',
   };
 }
 
 function defaultAddendumSlot(): RepairAddendumSlotEstimateBlock {
-  return { status: 'OPEN', selectedPresetIds: [], snapshot: null, notes: '' };
+  return {
+    status: 'OPEN',
+    signedAt: '',
+    selectedPresetIds: [],
+    snapshot: null,
+    excludedSelectedPresetIds: [],
+    excludedSnapshot: null,
+    notes: '',
+    excludedNotes: '',
+  };
 }
 
 function defaultAddendumSlots(): RepairAddendumSlotsTuple {
@@ -375,6 +393,11 @@ function normalizeAddendumSlots(raw: unknown): RepairAddendumSlotsTuple {
           .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
           .map((x) => x.trim())
       : [];
+    const excludedIds = Array.isArray(o.excludedSelectedPresetIds)
+      ? o.excludedSelectedPresetIds
+          .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+          .map((x) => x.trim())
+      : [];
     let snapshot: RepairEstimateBlock['snapshot'] = null;
     if (o.snapshot && typeof o.snapshot === 'object' && !Array.isArray(o.snapshot)) {
       const s = o.snapshot as { total?: unknown; rooms?: unknown };
@@ -385,11 +408,29 @@ function normalizeAddendumSlots(raw: unknown): RepairAddendumSlotsTuple {
         };
       }
     }
+    let excludedSnapshot: RepairEstimateBlock['snapshot'] = null;
+    if (
+      o.excludedSnapshot &&
+      typeof o.excludedSnapshot === 'object' &&
+      !Array.isArray(o.excludedSnapshot)
+    ) {
+      const s = o.excludedSnapshot as { total?: unknown; rooms?: unknown };
+      if (typeof s.total === 'number' && Number.isFinite(s.total) && Array.isArray(s.rooms)) {
+        excludedSnapshot = {
+          total: s.total,
+          rooms: s.rooms as NonNullable<RepairEstimateBlock['snapshot']>['rooms'],
+        };
+      }
+    }
     out[i] = {
       status: normalizeAddendumSlotStatus(o.status),
+      signedAt: typeof o.signedAt === 'string' ? o.signedAt : '',
       selectedPresetIds: ids,
       snapshot,
+      excludedSelectedPresetIds: excludedIds,
+      excludedSnapshot,
       notes: typeof o.notes === 'string' ? o.notes : '',
+      excludedNotes: typeof o.excludedNotes === 'string' ? o.excludedNotes : '',
     };
   }
   return out as RepairAddendumSlotsTuple;
@@ -774,11 +815,22 @@ export function mergeRepairPackageFormWithPreviewFallback(
         (fm.selectedPresetIds?.length ?? 0) > 0 ? fm.selectedPresetIds : fb.selectedPresetIds;
       return {
         status: fm.status,
+        signedAt: fm.status === 'SIGNED' ? pickStr(fm.signedAt, fb.signedAt) : '',
         selectedPresetIds: ids,
         snapshot: (fm.selectedPresetIds?.length ?? 0) > 0 ? fm.snapshot : fb.snapshot,
+        excludedSelectedPresetIds:
+          (fm.excludedSelectedPresetIds?.length ?? 0) > 0
+            ? fm.excludedSelectedPresetIds
+            : fb.excludedSelectedPresetIds,
+        excludedSnapshot:
+          (fm.excludedSelectedPresetIds?.length ?? 0) > 0
+            ? fm.excludedSnapshot
+            : fb.excludedSnapshot,
         notes: pickStr(fm.notes, fb.notes),
+        excludedNotes: pickStr(fm.excludedNotes, fb.excludedNotes),
       };
     }) as RepairAddendumSlotsTuple,
+    contractConcludedAt: pickStr(form.contractConcludedAt, fallback.contractConcludedAt),
   };
 }
 
@@ -917,14 +969,64 @@ export function repairPackageFormForTemplate(
     addendumPresetIds,
     options?.estimatePresets ?? []
   );
+  const addendumExcludedPresetIds =
+    addendumSlotIdx !== null
+      ? form.addendumSlots[addendumSlotIdx]?.excludedSelectedPresetIds
+      : undefined;
+  const addendumExcludedSections = buildEstimateSectionsFromPresetIds(
+    addendumExcludedPresetIds,
+    options?.estimatePresets ?? []
+  );
+  const addendumExcludedSnap =
+    addendumSlot !== null && addendumSlot >= 1 && addendumSlot <= 5
+      ? (form.addendumSlots[addendumSlot - 1]?.excludedSnapshot ?? null)
+      : null;
   const addendumRoomsHtml =
-    addendumSlotSnap && addendumSlot
-      ? buildEstimateDocPrintEmbedHtml({
-          sections: addendumSections,
-          snapshot: addendumSlotSnap,
-          directorName: form.executor.directorName,
-          customerFullName: form.customer.fullName,
-        })
+    addendumSlot && (addendumSlotSnap || addendumExcludedSnap)
+      ? (() => {
+          const additionalHtml = addendumSlotSnap
+            ? buildEstimateDocPrintEmbedHtml({
+                sections: addendumSections,
+                snapshot: addendumSlotSnap,
+                directorName: form.executor.directorName,
+                customerFullName: form.customer.fullName,
+                includeFooter: false,
+              })
+            : '';
+          const excludedHtml = addendumExcludedSnap
+            ? buildEstimateDocPrintEmbedHtml({
+                sections: addendumExcludedSections,
+                snapshot: addendumExcludedSnap,
+                directorName: form.executor.directorName,
+                customerFullName: form.customer.fullName,
+                includeFooter: false,
+              })
+            : '';
+          const additionalTotal = addendumSlotSnap?.total ?? 0;
+          const excludedTotal = addendumExcludedSnap?.total ?? 0;
+          const summaryTotal = additionalTotal - excludedTotal;
+          const formatMoney = (value: number) => value.toFixed(2).replace('.', ',');
+          const sectionsHtml: string[] = [];
+          if (additionalHtml) {
+            sectionsHtml.push(
+              `<section><h2 class="repairAddendumEstimateHeading">Смета дополнительных ремонтно-отделочных работ</h2>${additionalHtml}<p class="estimateA4Total">Итог по разделу: <strong>${formatMoney(additionalTotal)} руб.</strong></p></section>`
+            );
+          }
+          if (excludedHtml) {
+            sectionsHtml.push(
+              `<section><h2 class="repairAddendumEstimateHeading">Непроводимые ремонтно-отделочные работы</h2>${excludedHtml}<p class="estimateA4Total">Итог по разделу: <strong>${formatMoney(excludedTotal)} руб.</strong></p></section>`
+            );
+          }
+          if (sectionsHtml.length === 0) return '';
+          return [
+            ...sectionsHtml,
+            `<p class="estimateA4Total"><strong>Общий итог по дополнительному соглашению: ${formatMoney(summaryTotal)} руб.</strong></p>`,
+            buildEstimateDocPrintFooterHtml({
+              directorName: form.executor.directorName,
+              customerFullName: form.customer.fullName,
+            }),
+          ].join('');
+        })()
       : '';
   const addendumForTemplate =
     addendumSlot !== null && Number.isFinite(addendumSlot) && addendumSlot >= 1 && addendumSlot <= 5

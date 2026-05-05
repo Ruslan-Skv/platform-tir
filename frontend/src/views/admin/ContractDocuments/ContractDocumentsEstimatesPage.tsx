@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import {
+  type ContractDocumentPackageStatus,
   type ContractEstimateGroup,
   type ContractEstimatePreset,
   getContractDocumentEstimatePresets,
@@ -17,12 +18,42 @@ import styles from './ContractDocuments.module.css';
 import { getDisplayContractDate, getDisplayContractNumber } from './repair/packageContractDisplay';
 import { persistRepairPackageAfterRemovingEstimatePreset } from './repair/repairDetachEstimatePresetFromPackages';
 
-type EstimatePackageUsage = {
-  packageId: string;
-  packageTitle: string;
-  contractNumber: string;
-  contractDate: string;
-};
+type EstimatePackageUsage =
+  | {
+      packageId: string;
+      packageTitle: string;
+      kind: 'contract';
+      packageStatus: ContractDocumentPackageStatus;
+      contractNumber: string;
+      contractDate: string;
+    }
+  | {
+      packageId: string;
+      packageTitle: string;
+      kind: 'addendum';
+      addendumOrdinal: number;
+      addendumStatus: 'OPEN' | 'SIGNED';
+      /** Дата из шапки Д/с (как в пакете документов), часто дд.мм.гггг */
+      addendumDate: string;
+      contractNumber: string;
+      contractDate: string;
+    };
+
+function isUsageLocked(u: EstimatePackageUsage): boolean {
+  if (u.kind === 'contract') {
+    return u.packageStatus === 'CONTRACT_CONCLUDED';
+  }
+  return u.addendumStatus === 'SIGNED';
+}
+
+function formatEstimatePackageUsageLabel(u: EstimatePackageUsage): string {
+  if (u.kind === 'contract') {
+    return `Договор № ${u.contractNumber} от ${u.contractDate}`;
+  }
+  const d = u.addendumDate.trim();
+  const datePart = d ? `${d} г.` : '—';
+  return `Д/с №${u.addendumOrdinal} от ${datePart} к договору № ${u.contractNumber} от ${u.contractDate}`;
+}
 
 function sortEstimateGroupsByTitle(gs: ContractEstimateGroup[]) {
   return [...gs].sort((a, b) => a.title.localeCompare(b.title, 'ru'));
@@ -53,6 +84,7 @@ export function ContractDocumentsEstimatesPage() {
     Array<{
       id: string;
       title: string | null;
+      status: ContractDocumentPackageStatus;
       formData: Record<string, unknown>;
       crmContract?: { contractNumber: string; contractDate: string } | null;
     }>
@@ -81,6 +113,7 @@ export function ContractDocumentsEstimatesPage() {
       (packagesRes ?? []).map((p) => ({
         id: p.id,
         title: p.title ?? null,
+        status: p.status === 'CONTRACT_CONCLUDED' ? 'CONTRACT_CONCLUDED' : 'IN_PROGRESS',
         formData: (p.formData ?? {}) as Record<string, unknown>,
         crmContract: p.crmContract
           ? {
@@ -211,6 +244,7 @@ export function ContractDocumentsEstimatesPage() {
         (packagesRes ?? []).map((p) => ({
           id: p.id,
           title: p.title ?? null,
+          status: p.status === 'CONTRACT_CONCLUDED' ? 'CONTRACT_CONCLUDED' : 'IN_PROGRESS',
           formData: (p.formData ?? {}) as Record<string, unknown>,
           crmContract: p.crmContract
             ? {
@@ -253,6 +287,7 @@ export function ContractDocumentsEstimatesPage() {
         (packagesRes ?? []).map((p) => ({
           id: p.id,
           title: p.title ?? null,
+          status: p.status === 'CONTRACT_CONCLUDED' ? 'CONTRACT_CONCLUDED' : 'IN_PROGRESS',
           formData: (p.formData ?? {}) as Record<string, unknown>,
           crmContract: p.crmContract
             ? {
@@ -299,28 +334,82 @@ export function ContractDocumentsEstimatesPage() {
 
   const usageByEstimateId = useMemo(() => {
     const map = new Map<string, EstimatePackageUsage[]>();
+    const pushUsage = (presetId: string, usage: EstimatePackageUsage) => {
+      map.set(presetId, [...(map.get(presetId) ?? []), usage]);
+    };
+
     for (const pkg of repairPackages) {
+      const baseMeta = {
+        packageId: pkg.id,
+        packageTitle: pkg.title?.trim() || `Пакет ${pkg.id.slice(0, 8)}`,
+      };
+      const contractNumber = getDisplayContractNumber(pkg);
+      const contractDate = getDisplayContractDate(pkg);
+
       const estimateRaw = (pkg.formData?.estimate ?? null) as Record<string, unknown> | null;
-      const ids: string[] = [];
+      const contractIds: string[] = [];
       if (estimateRaw && typeof estimateRaw.selectedPresetId === 'string') {
         const legacy = estimateRaw.selectedPresetId.trim();
-        if (legacy) ids.push(legacy);
+        if (legacy) contractIds.push(legacy);
       }
       if (estimateRaw && Array.isArray(estimateRaw.selectedPresetIds)) {
         for (const id of estimateRaw.selectedPresetIds) {
-          if (typeof id === 'string' && id.trim()) ids.push(id.trim());
+          if (typeof id === 'string' && id.trim()) contractIds.push(id.trim());
         }
       }
-      const uniqueIds = [...new Set(ids)];
-      if (uniqueIds.length === 0) continue;
-      const row = {
-        packageId: pkg.id,
-        packageTitle: pkg.title?.trim() || `Пакет ${pkg.id.slice(0, 8)}`,
-        contractNumber: getDisplayContractNumber(pkg),
-        contractDate: getDisplayContractDate(pkg),
-      };
-      for (const presetId of uniqueIds) {
-        map.set(presetId, [...(map.get(presetId) ?? []), row]);
+      const contractUnique = [...new Set(contractIds)];
+      if (contractUnique.length > 0) {
+        const contractRow: EstimatePackageUsage = {
+          ...baseMeta,
+          kind: 'contract',
+          packageStatus: pkg.status,
+          contractNumber,
+          contractDate,
+        };
+        for (const presetId of contractUnique) {
+          pushUsage(presetId, contractRow);
+        }
+      }
+
+      const addendumDatesRaw = pkg.formData?.addendumDocumentDates;
+      const addendumDates: [string, string, string, string, string] = ['', '', '', '', ''];
+      if (Array.isArray(addendumDatesRaw)) {
+        for (let i = 0; i < 5; i++) {
+          const d = addendumDatesRaw[i];
+          addendumDates[i] = typeof d === 'string' ? d.trim() : '';
+        }
+      }
+
+      const addendumSlotsRaw = pkg.formData?.addendumSlots;
+      if (Array.isArray(addendumSlotsRaw)) {
+        addendumSlotsRaw.forEach((slot, slotIndex0) => {
+          if (slotIndex0 > 4) return;
+          if (!slot || typeof slot !== 'object') return;
+          const s = slot as Record<string, unknown>;
+          const slotIds: string[] = [];
+          const collect = (value: unknown) => {
+            if (!Array.isArray(value)) return;
+            for (const id of value) {
+              if (typeof id === 'string' && id.trim()) slotIds.push(id.trim());
+            }
+          };
+          collect(s.selectedPresetIds);
+          collect(s.excludedSelectedPresetIds);
+          const uniqueSlotIds = [...new Set(slotIds)];
+          if (uniqueSlotIds.length === 0) return;
+          const addendumRow: EstimatePackageUsage = {
+            ...baseMeta,
+            kind: 'addendum',
+            addendumOrdinal: slotIndex0 + 1,
+            addendumStatus: s.status === 'SIGNED' ? 'SIGNED' : 'OPEN',
+            addendumDate: addendumDates[slotIndex0] ?? '',
+            contractNumber,
+            contractDate,
+          };
+          for (const presetId of uniqueSlotIds) {
+            pushUsage(presetId, addendumRow);
+          }
+        });
       }
     }
     return map;
@@ -359,17 +448,28 @@ export function ContractDocumentsEstimatesPage() {
   const renderEstimateCard = (it: ContractEstimatePreset) => {
     const usages = usageByEstimateId.get(it.id) ?? [];
     const isBound = usages.length > 0;
+    const hasLockedUsage = usages.some((u) => isUsageLocked(u));
     const primaryUsage = usages[0];
+    const primaryLabel = primaryUsage ? formatEstimatePackageUsageLabel(primaryUsage) : '';
     const boundBadgeText = primaryUsage
       ? usages.length > 1
-        ? `Договор № ${primaryUsage.contractNumber} от ${primaryUsage.contractDate} (+${usages.length - 1})`
-        : `Договор № ${primaryUsage.contractNumber} от ${primaryUsage.contractDate}`
+        ? `${primaryLabel} (+${usages.length - 1})`
+        : primaryLabel
       : 'Не привязан';
     return (
       <div key={it.id} className={styles.estimatesCard}>
         <div className={styles.estimatesCardMain}>
           <div className={styles.estimatesCardTitleRow}>
             <strong className={styles.estimatesCardTitle}>{it.title}</strong>
+            {hasLockedUsage ? (
+              <span
+                className={styles.estimatesBadge}
+                title="Расчёт нельзя редактировать: договор заключён или Д/с подписано"
+                aria-label="Расчёт заблокирован для редактирования"
+              >
+                🔒
+              </span>
+            ) : null}
             <span
               className={`${styles.estimatesBadge} ${isBound ? styles.estimatesBadgeBound : styles.estimatesBadgeFree}`}
             >
@@ -401,9 +501,14 @@ export function ContractDocumentsEstimatesPage() {
             type="button"
             className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
             aria-label="Редактировать"
-            title="Редактировать"
-            disabled={saving}
+            title={
+              hasLockedUsage
+                ? 'Редактирование запрещено: договор заключён или Д/с подписано'
+                : 'Редактировать'
+            }
+            disabled={saving || hasLockedUsage}
             onClick={() => {
+              if (hasLockedUsage) return;
               if (usages.length > 0) {
                 setDetachEditModal({
                   estimateId: it.id,
@@ -464,9 +569,12 @@ export function ContractDocumentsEstimatesPage() {
             type="button"
             className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
             aria-label="Удалить"
-            title="Удалить"
-            disabled={saving}
+            title={
+              hasLockedUsage ? 'Удаление запрещено: договор заключён или Д/с подписано' : 'Удалить'
+            }
+            disabled={saving || hasLockedUsage}
             onClick={() => {
+              if (hasLockedUsage) return;
               if (usages.length > 0) {
                 setDetachDeleteModal({
                   estimateId: it.id,
@@ -722,9 +830,9 @@ export function ContractDocumentsEstimatesPage() {
               Редактирование расчёта
             </h3>
             <p className={styles.saveModalText}>
-              Этот расчёт прикреплён к смете договора. После сохранения изменений его нужно будет
-              заново прикрепить в пакете документов. Текущая привязка к смете будет снята
-              автоматически. Продолжить?
+              Этот расчёт прикреплён к смете договора или к дополнительному соглашению. После
+              сохранения изменений его нужно будет заново прикрепить в пакете документов. Текущая
+              привязка будет снята автоматически. Продолжить?
             </p>
             <div
               style={{
@@ -773,9 +881,9 @@ export function ContractDocumentsEstimatesPage() {
               Удаление расчёта
             </h3>
             <p className={styles.saveModalText}>
-              Этот расчёт прикреплён к смете договора. При удалении привязка к смете будет снята
-              автоматически, расчёт исчезнет из общего списка. Его нужно будет заново создать и
-              прикрепить в пакете документов, если он снова понадобится. Удалить?
+              Этот расчёт прикреплён к смете договора или к дополнительному соглашению. При удалении
+              привязка будет снята автоматически, расчёт исчезнет из общего списка. Его нужно будет
+              заново создать и прикрепить в пакете документов, если он снова понадобится. Удалить?
             </p>
             <div
               style={{

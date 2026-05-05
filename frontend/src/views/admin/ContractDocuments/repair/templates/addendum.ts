@@ -8,7 +8,6 @@ export const repairTemplateAddendum = `
     <span class="repairAddendumMetaDate">{{addendum.documentDate|plain}}</span>
     <span class="repairAddendumMetaCity">г. Мурманск</span>
   </div>
-  <h2 class="repairAddendumEstimateHeading">Смета дополнительных ремонтно-отделочных работ</h2>
   <div class="repairAddendumEstimateBody">{{addendum.roomsHtml}}</div>
 </div>
 `.trim();

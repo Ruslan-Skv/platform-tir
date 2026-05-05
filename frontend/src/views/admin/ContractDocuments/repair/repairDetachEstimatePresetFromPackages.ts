@@ -5,7 +5,10 @@ import {
 } from '@/shared/api/admin-contract-document-packages';
 
 import { buildPersistedFormData, mergeFormDataFromStorage } from './formDataTemplateStorage';
-import { applyEstimatePresetIdsToRepairForm } from './repairApplyEstimatePresetIds';
+import {
+  applyEstimatePresetIdsToAddendumSlot,
+  applyEstimatePresetIdsToRepairForm,
+} from './repairApplyEstimatePresetIds';
 
 function normalizedEstimateIdsFromForm(form: {
   estimate: { selectedPresetIds?: string[]; selectedPresetId?: string };
@@ -31,7 +34,20 @@ export async function persistRepairPackageAfterRemovingEstimatePreset(
   const row = await getContractDocumentPackage(packageId);
   const { form, templateOverrides, templatePresetIds } = mergeFormDataFromStorage(row.formData);
   const nextIds = normalizedEstimateIdsFromForm(form).filter((id) => id !== presetIdToRemove);
-  const nextForm = applyEstimatePresetIdsToRepairForm(form, nextIds, presets);
+  let nextForm = applyEstimatePresetIdsToRepairForm(form, nextIds, presets);
+  for (let i = 0; i < 5; i++) {
+    const slot = nextForm.addendumSlots[i];
+    const add = [...(slot.selectedPresetIds ?? [])].filter((id) => id !== presetIdToRemove);
+    const exc = [...(slot.excludedSelectedPresetIds ?? [])].filter((id) => id !== presetIdToRemove);
+    if (
+      add.length === (slot.selectedPresetIds?.length ?? 0) &&
+      exc.length === (slot.excludedSelectedPresetIds?.length ?? 0)
+    ) {
+      continue;
+    }
+    nextForm = applyEstimatePresetIdsToAddendumSlot(nextForm, i, add, presets, 'additional', true);
+    nextForm = applyEstimatePresetIdsToAddendumSlot(nextForm, i, exc, presets, 'excluded', true);
+  }
   const formData = buildPersistedFormData(nextForm, templateOverrides, templatePresetIds);
   await updateContractDocumentPackage(packageId, {
     title: row.title?.trim() || null,

@@ -16,7 +16,7 @@ type Props = {
   onToggleClientNeed: (id: string) => void;
 };
 
-export function RepairManagerQuestionnaire1Tab({
+function RepairManagerQuestionnaire1Tab({
   form,
   onPatch,
   onToggleTrafficSource,
@@ -312,3 +312,5 @@ export function RepairManagerQuestionnaire1Tab({
     </div>
   );
 }
+
+export { RepairManagerQuestionnaire1Tab };

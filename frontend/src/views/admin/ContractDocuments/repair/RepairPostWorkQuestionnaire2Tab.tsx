@@ -58,7 +58,7 @@ function RatingRow({
   );
 }
 
-export function RepairPostWorkQuestionnaire2Tab({ form, onPatch }: Props) {
+function RepairPostWorkQuestionnaire2Tab({ form, onPatch }: Props) {
   const q = form.postWorkQuestionnaire2;
   const { contract } = form;
 
@@ -164,3 +164,5 @@ export function RepairPostWorkQuestionnaire2Tab({ form, onPatch }: Props) {
     </div>
   );
 }
+
+export { RepairPostWorkQuestionnaire2Tab };

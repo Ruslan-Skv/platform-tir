@@ -260,11 +260,14 @@ export function applyEstimatePresetIdsToAddendumSlot(
   previous: RepairPackageFormData,
   slotIndex0: number,
   presetIds: string[],
-  presets: ContractEstimatePreset[]
+  presets: ContractEstimatePreset[],
+  target: 'additional' | 'excluded' = 'additional',
+  /** Снятие расчёта из списка «Расчёты» и т.п.: разрешает менять слот даже при статусе SIGNED. */
+  force = false
 ): RepairPackageFormData {
   if (slotIndex0 < 0 || slotIndex0 > 4) return previous;
   const slot = previous.addendumSlots[slotIndex0];
-  if (!slot || slot.status === 'SIGNED') return previous;
+  if (!slot || (!force && slot.status === 'SIGNED')) return previous;
 
   const objectKey = getContractEstimateObjectGroupKey(previous, presets);
   if (!objectKey) return previous;
@@ -278,9 +281,9 @@ export function applyEstimatePresetIdsToAddendumSlot(
   if (uniqueIds.length === 0) {
     nextSlots[slotIndex0] = {
       ...slot,
-      selectedPresetIds: [],
-      snapshot: null,
-      notes: '',
+      ...(target === 'additional'
+        ? { selectedPresetIds: [], snapshot: null, notes: '' }
+        : { excludedSelectedPresetIds: [], excludedSnapshot: null, excludedNotes: '' }),
     };
     return { ...previous, addendumSlots: nextSlots };
   }
@@ -297,9 +300,13 @@ export function applyEstimatePresetIdsToAddendumSlot(
   const notes = formatCombinedEstimateNotes(selectedPresets, mergedSnapshot);
   nextSlots[slotIndex0] = {
     ...slot,
-    selectedPresetIds: uniqueIds,
-    snapshot: mergedSnapshot,
-    notes,
+    ...(target === 'additional'
+      ? { selectedPresetIds: uniqueIds, snapshot: mergedSnapshot, notes }
+      : {
+          excludedSelectedPresetIds: uniqueIds,
+          excludedSnapshot: mergedSnapshot,
+          excludedNotes: notes,
+        }),
   };
   return { ...previous, addendumSlots: nextSlots };
 }

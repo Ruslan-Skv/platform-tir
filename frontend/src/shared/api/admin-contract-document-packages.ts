@@ -146,6 +146,10 @@ export interface ContractEstimatePreset {
   categorySlug: string;
   categoryName: string;
   calculatorDraft: string;
+  /** Для общего расчёта в админке: черновики по нескольким выбранным категориям. */
+  calculatorDraftByCategory?: Record<string, string>;
+  /** Для общего расчёта в админке: список категорий, вошедших в расчёт. */
+  multiCategorySlugs?: string[];
   /** Ссылка на `ContractEstimateGroup.id`, если расчёт входит в объект. */
   groupId?: string;
   snapshot?: {

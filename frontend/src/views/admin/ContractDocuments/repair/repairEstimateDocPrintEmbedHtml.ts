@@ -11,6 +11,21 @@ export type EstimateEmbedSection = {
   rooms: EstimateSnapshotRoom[];
 };
 
+type DraftMultiCategoryMeta = {
+  categories?: Array<{ slug: string; name: string; roomCount: number; total: number }>;
+};
+
+function parseDraftMultiCategoryMeta(draftRaw: string): DraftMultiCategoryMeta | null {
+  try {
+    const parsed = JSON.parse(draftRaw) as Record<string, unknown>;
+    const raw = parsed.__adminMultiCategory;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+    return raw as DraftMultiCategoryMeta;
+  } catch {
+    return null;
+  }
+}
+
 /** Как на вкладке «Смета»: группировка помещений по категориям выбранных расчётов. */
 export function buildEstimateSectionsFromPresetIds(
   presetIds: string[] | undefined | null,
@@ -20,8 +35,35 @@ export function buildEstimateSectionsFromPresetIds(
   for (const presetId of presetIds ?? []) {
     const preset = estimatePresets.find((row) => row.id === presetId);
     if (!preset) continue;
-    const categoryName = preset.categoryName.trim() || '—';
     const snapshot = preset.snapshot ?? parseEstimateSnapshotFromDraft(preset.calculatorDraft);
+    const meta = parseDraftMultiCategoryMeta(preset.calculatorDraft);
+    const categories = meta?.categories ?? [];
+    if (snapshot?.rooms?.length && categories.length > 1) {
+      let cursor = 0;
+      for (const cat of categories) {
+        const count = Math.max(0, Number(cat.roomCount) || 0);
+        const rooms = snapshot.rooms.slice(cursor, cursor + count);
+        cursor += count;
+        if (rooms.length === 0) continue;
+        const categoryName = (cat.name || '').trim() || '—';
+        const existing = sectionMap.get(categoryName);
+        if (existing) existing.rooms.push(...rooms);
+        else sectionMap.set(categoryName, { categoryName, rooms: [...rooms] });
+      }
+      if (cursor < snapshot.rooms.length) {
+        const fallbackCategoryName = preset.categoryName.trim() || '—';
+        const existing = sectionMap.get(fallbackCategoryName);
+        const tailRooms = snapshot.rooms.slice(cursor);
+        if (existing) existing.rooms.push(...tailRooms);
+        else
+          sectionMap.set(fallbackCategoryName, {
+            categoryName: fallbackCategoryName,
+            rooms: tailRooms,
+          });
+      }
+      continue;
+    }
+    const categoryName = preset.categoryName.trim() || '—';
     const existing = sectionMap.get(categoryName);
     if (existing) {
       existing.rooms.push(...(snapshot?.rooms ?? []));
@@ -86,8 +128,9 @@ export function buildEstimateDocPrintEmbedHtml(options: {
   snapshot: EstimateSnapshot | null;
   directorName: string;
   customerFullName: string;
+  includeFooter?: boolean;
 }): string {
-  const { snapshot, directorName, customerFullName } = options;
+  const { snapshot, directorName, customerFullName, includeFooter = true } = options;
   if (!snapshot?.rooms?.length) return '';
 
   let sections = options.sections.filter((s) => s.rooms.length > 0);
@@ -152,12 +195,24 @@ export function buildEstimateDocPrintEmbedHtml(options: {
   </ul>`
       : '';
 
-  return `<div class="estimateA4DocPrintEmbed estimateRoomsEmbed">
+  const bodyHtml = `<div class="estimateA4DocPrintEmbed estimateRoomsEmbed">
 ${categoriesHtml}
 <section class="estimateA4Summary">
 ${summaryInner}
 </section>
 <p class="estimateA4Total">Итого по смете: <strong>${formatMoney(snapshot.total)} руб.</strong></p>
+</div>`;
+  if (!includeFooter) return bodyHtml;
+  return `${bodyHtml}
+${buildEstimateDocPrintFooterHtml({ directorName, customerFullName })}`;
+}
+
+export function buildEstimateDocPrintFooterHtml(options: {
+  directorName: string;
+  customerFullName: string;
+}): string {
+  const { directorName, customerFullName } = options;
+  return `<div class="estimateA4DocPrintEmbed estimateRoomsEmbed">
 ${buildSignaturesHtml(directorName, customerFullName)}
 ${buildHandwritingNoteHtml()}
 ${buildSignaturesHtml(directorName, customerFullName)}

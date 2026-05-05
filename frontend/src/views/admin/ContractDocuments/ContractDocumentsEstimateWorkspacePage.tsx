@@ -20,9 +20,9 @@ import { buildEstimateSnapshot } from './repair/contractDocumentsEstimateSnapsho
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
-function applyPresetToLocalCalculator(preset: ContractEstimatePreset) {
-  const key = `public.service-catalog.category.calculator-draft.${encodeURIComponent(preset.categorySlug)}`;
-  window.localStorage.setItem(key, preset.calculatorDraft);
+function applyDraftToLocalCalculator(categorySlug: string, draft: string) {
+  const key = calculatorDraftStorageKey(categorySlug);
+  window.localStorage.setItem(key, draft);
 }
 
 function calculatorDraftStorageKey(categorySlug: string) {
@@ -49,10 +49,164 @@ function clearStoredCalculatorStateForNewEstimate(categorySlugs: string[]) {
 }
 
 type WorkspaceBaseline = {
-  categorySlug: string;
+  categorySlugs: string[];
   name: string;
-  draft: string | null;
+  draftsByCategory: Record<string, string | null>;
 };
+
+type AdminMultiCategoryMeta = {
+  slugs: string[];
+  draftsByCategory: Record<string, string>;
+  categories?: Array<{ slug: string; name: string; roomCount: number; total: number }>;
+};
+
+type PersistedCalculatorDraftV1 = {
+  v: 1;
+  activeCalcId: string;
+  calcs: Array<{
+    id: string;
+    name: string;
+    collapsed: boolean;
+    lines: Array<{ itemId: string; quantity: number }>;
+  }>;
+  __adminMultiCategory?: unknown;
+};
+
+function normalizeUniqueCategorySlugs(slugs: string[]): string[] {
+  return [...new Set(slugs.map((x) => x.trim()).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b, 'ru')
+  );
+}
+
+function parsePersistedCalculatorDraft(draft: string | null): PersistedCalculatorDraftV1 | null {
+  if (!draft) return null;
+  try {
+    const parsed = JSON.parse(draft) as PersistedCalculatorDraftV1;
+    if (!parsed || parsed.v !== 1 || !Array.isArray(parsed.calcs)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function extractRoomNamesFromDraft(draft: string | null): string[] {
+  const parsed = parsePersistedCalculatorDraft(draft);
+  if (!parsed) return [];
+  return parsed.calcs.map((c) => (typeof c.name === 'string' ? c.name.trim() : '')).filter(Boolean);
+}
+
+function shouldAutofillTargetRooms(targetDraft: string | null): boolean {
+  const parsed = parsePersistedCalculatorDraft(targetDraft);
+  if (!parsed) return true;
+  if (parsed.calcs.length === 0) return true;
+  // Не трогаем категорию, если уже есть введённые позиции.
+  if (parsed.calcs.some((c) => Array.isArray(c.lines) && c.lines.length > 0)) return false;
+  // Один дефолтный пустой calc можно заменить.
+  if (parsed.calcs.length === 1) {
+    const name = (parsed.calcs[0].name || '').trim().toLowerCase();
+    return !name || name === 'помещение' || name === 'помещение 1';
+  }
+  // Несколько пустых помещений считаем уже осознанной структурой — не перезаписываем.
+  return false;
+}
+
+function buildDraftWithRoomNames(roomNames: string[]): string {
+  const ts = Date.now();
+  const calcs = roomNames.map((name, idx) => ({
+    id: `calc_${ts}_${idx + 1}`,
+    name,
+    collapsed: false,
+    lines: [] as Array<{ itemId: string; quantity: number }>,
+  }));
+  const payload: PersistedCalculatorDraftV1 = {
+    v: 1,
+    activeCalcId: calcs[0]?.id ?? '',
+    calcs,
+  };
+  return JSON.stringify(payload);
+}
+
+function mergeRoomStructureIntoDraft(
+  targetDraft: string | null,
+  sourceRoomNames: string[]
+): string | null {
+  const parsed = parsePersistedCalculatorDraft(targetDraft);
+  if (!parsed) {
+    return buildDraftWithRoomNames(sourceRoomNames);
+  }
+  if (sourceRoomNames.length === 0) return targetDraft;
+
+  const nextCalcs = [...parsed.calcs];
+  let changed = false;
+  const ts = Date.now();
+
+  for (let i = 0; i < sourceRoomNames.length; i++) {
+    const sourceName = sourceRoomNames[i];
+    const cur = nextCalcs[i];
+    if (!cur) {
+      nextCalcs.push({
+        id: `calc_${ts}_${i + 1}`,
+        name: sourceName,
+        collapsed: false,
+        lines: [],
+      });
+      changed = true;
+      continue;
+    }
+    if ((cur.name || '') !== sourceName) {
+      nextCalcs[i] = { ...cur, name: sourceName };
+      changed = true;
+    }
+  }
+
+  if (!changed) return targetDraft;
+  const nextPayload: PersistedCalculatorDraftV1 = {
+    ...parsed,
+    calcs: nextCalcs,
+    activeCalcId:
+      parsed.activeCalcId && nextCalcs.some((c) => c.id === parsed.activeCalcId)
+        ? parsed.activeCalcId
+        : (nextCalcs[0]?.id ?? ''),
+  };
+  return JSON.stringify(nextPayload);
+}
+
+function extractMultiCategoryMetaFromDraft(draft: string): AdminMultiCategoryMeta | null {
+  try {
+    const parsed = JSON.parse(draft) as Record<string, unknown>;
+    const raw = parsed.__adminMultiCategory;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+    const m = raw as { slugs?: unknown; draftsByCategory?: unknown };
+    if (!Array.isArray(m.slugs) || !m.draftsByCategory || typeof m.draftsByCategory !== 'object') {
+      return null;
+    }
+    const slugs = normalizeUniqueCategorySlugs(
+      m.slugs.filter((x): x is string => typeof x === 'string')
+    );
+    const draftsByCategory: Record<string, string> = {};
+    for (const slug of slugs) {
+      const v = (m.draftsByCategory as Record<string, unknown>)[slug];
+      if (typeof v === 'string' && v.trim()) draftsByCategory[slug] = v;
+    }
+    return Object.keys(draftsByCategory).length > 0 ? { slugs, draftsByCategory } : null;
+  } catch {
+    return null;
+  }
+}
+
+function encodePrimaryDraftWithMultiMeta(
+  primaryDraft: string,
+  meta: AdminMultiCategoryMeta | null
+): string {
+  if (!meta || meta.slugs.length <= 1) return primaryDraft;
+  try {
+    const parsed = JSON.parse(primaryDraft) as Record<string, unknown>;
+    parsed.__adminMultiCategory = meta;
+    return JSON.stringify(parsed);
+  } catch {
+    return primaryDraft;
+  }
+}
 
 const ESTIMATES_LIST_HREF = '/admin/contract-documents/estimates';
 
@@ -71,7 +225,8 @@ function ContractDocumentsEstimateWorkspaceInner() {
   const [estimateCategories, setEstimateCategories] = useState<
     Array<{ slug: string; name: string }>
   >([]);
-  const [estimateCategorySlug, setEstimateCategorySlug] = useState('');
+  const [estimateCategorySlugs, setEstimateCategorySlugs] = useState<string[]>([]);
+  const [activeCategorySlug, setActiveCategorySlug] = useState('');
   const [estimateNameDraft, setEstimateNameDraft] = useState('');
   const [selectedEstimateId, setSelectedEstimateId] = useState('');
   const [baseline, setBaseline] = useState<WorkspaceBaseline | null>(null);
@@ -107,19 +262,28 @@ function ContractDocumentsEstimateWorkspaceInner() {
           setEstimateCategories(cats);
         }
 
-        let baselineSlug = '';
+        let baselineSlugs: string[] = [];
         let baselineName = '';
 
         if (copyFromId) {
           const source = loadedItems.find((item) => item.id === copyFromId);
           if (source) {
             clearStoredCalculatorStateForNewEstimate(cats.map((c) => c.slug));
-            applyPresetToLocalCalculator(source);
-            setEstimateCategorySlug(source.categorySlug);
+            const sourceMeta = extractMultiCategoryMetaFromDraft(source.calculatorDraft);
+            const sourceSlugs = normalizeUniqueCategorySlugs(
+              sourceMeta?.slugs?.length ? sourceMeta.slugs : [source.categorySlug]
+            );
+            for (const slug of sourceSlugs) {
+              const draftByCategory =
+                sourceMeta?.draftsByCategory?.[slug] ?? source.calculatorDraft;
+              if (draftByCategory) applyDraftToLocalCalculator(slug, draftByCategory);
+            }
+            setEstimateCategorySlugs(sourceSlugs);
+            setActiveCategorySlug(sourceSlugs[0] ?? '');
             const copyTitle = `${source.title.trim() || 'Расчёт'} (копия)`;
             setEstimateNameDraft(copyTitle);
             setSelectedEstimateId('');
-            baselineSlug = source.categorySlug;
+            baselineSlugs = sourceSlugs;
             baselineName = copyTitle;
             setCopySessionPendingSave(true);
           } else {
@@ -127,42 +291,56 @@ function ContractDocumentsEstimateWorkspaceInner() {
             clearStoredCalculatorStateForNewEstimate(cats.map((c) => c.slug));
             setSelectedEstimateId('');
             setEstimateNameDraft('');
-            if (cats[0]) setEstimateCategorySlug(cats[0].slug);
-            baselineSlug = cats[0]?.slug ?? '';
+            if (cats[0]) setEstimateCategorySlugs([cats[0].slug]);
+            setActiveCategorySlug(cats[0]?.slug ?? '');
+            baselineSlugs = cats[0] ? [cats[0].slug] : [];
             baselineName = '';
           }
         } else if (estimateIdFromUrl) {
           const preset = loadedItems.find((it) => it.id === estimateIdFromUrl);
           if (preset) {
-            applyPresetToLocalCalculator(preset);
-            setEstimateCategorySlug(preset.categorySlug);
+            const presetMeta = extractMultiCategoryMetaFromDraft(preset.calculatorDraft);
+            const presetSlugs = normalizeUniqueCategorySlugs(
+              presetMeta?.slugs?.length ? presetMeta.slugs : [preset.categorySlug]
+            );
+            for (const slug of presetSlugs) {
+              const draftByCategory =
+                presetMeta?.draftsByCategory?.[slug] ?? preset.calculatorDraft;
+              if (draftByCategory) applyDraftToLocalCalculator(slug, draftByCategory);
+            }
+            setEstimateCategorySlugs(presetSlugs);
+            setActiveCategorySlug(presetSlugs[0] ?? '');
             setEstimateNameDraft(preset.title);
             setSelectedEstimateId(preset.id);
-            baselineSlug = preset.categorySlug;
+            baselineSlugs = presetSlugs;
             baselineName = preset.title;
           } else {
             setError('Расчёт не найден. Вернитесь к списку и обновите страницу.');
             setSelectedEstimateId('');
             setEstimateNameDraft('');
-            if (cats[0]) setEstimateCategorySlug(cats[0].slug);
-            baselineSlug = cats[0]?.slug ?? '';
+            if (cats[0]) setEstimateCategorySlugs([cats[0].slug]);
+            setActiveCategorySlug(cats[0]?.slug ?? '');
+            baselineSlugs = cats[0] ? [cats[0].slug] : [];
             baselineName = '';
           }
         } else {
           clearStoredCalculatorStateForNewEstimate(cats.map((c) => c.slug));
           setSelectedEstimateId('');
           setEstimateNameDraft('');
-          if (cats[0]) setEstimateCategorySlug(cats[0].slug);
-          baselineSlug = cats[0]?.slug ?? '';
+          if (cats[0]) setEstimateCategorySlugs([cats[0].slug]);
+          setActiveCategorySlug(cats[0]?.slug ?? '');
+          baselineSlugs = cats[0] ? [cats[0].slug] : [];
           baselineName = '';
         }
-
-        const baselineKey = baselineSlug ? calculatorDraftStorageKey(baselineSlug) : '';
-        const baselineDraft = baselineKey ? window.localStorage.getItem(baselineKey) : null;
+        const baselineDraftsByCategory: Record<string, string | null> = {};
+        for (const slug of baselineSlugs) {
+          const baselineKey = calculatorDraftStorageKey(slug);
+          baselineDraftsByCategory[slug] = window.localStorage.getItem(baselineKey);
+        }
         setBaseline({
-          categorySlug: baselineSlug,
+          categorySlugs: baselineSlugs,
           name: baselineName,
-          draft: baselineDraft,
+          draftsByCategory: baselineDraftsByCategory,
         });
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Не удалось загрузить данные');
@@ -171,6 +349,16 @@ function ContractDocumentsEstimateWorkspaceInner() {
       }
     })();
   }, [estimateIdFromUrl, copyFromId]);
+
+  useEffect(() => {
+    if (estimateCategorySlugs.length === 0) {
+      if (activeCategorySlug) setActiveCategorySlug('');
+      return;
+    }
+    if (!estimateCategorySlugs.includes(activeCategorySlug)) {
+      setActiveCategorySlug(estimateCategorySlugs[0]);
+    }
+  }, [estimateCategorySlugs, activeCategorySlug]);
 
   useEffect(() => {
     const id = window.setInterval(() => setDraftPollTick((n) => n + 1), 400);
@@ -186,40 +374,80 @@ function ContractDocumentsEstimateWorkspaceInner() {
         return;
       }
       if (!baseline) return;
-      const key = estimateCategorySlug ? calculatorDraftStorageKey(estimateCategorySlug) : '';
-      const draft = key ? window.localStorage.getItem(key) : null;
-      const isDirty =
-        estimateCategorySlug !== baseline.categorySlug ||
-        estimateNameDraft !== baseline.name ||
-        (draft ?? '') !== (baseline.draft ?? '');
+      const selectedSlugs = normalizeUniqueCategorySlugs(estimateCategorySlugs);
+      const baselineSlugs = normalizeUniqueCategorySlugs(baseline.categorySlugs);
+      const sameSlugs =
+        selectedSlugs.length === baselineSlugs.length &&
+        selectedSlugs.every((slug, idx) => slug === baselineSlugs[idx]);
+      let draftsDirty = false;
+      for (const slug of selectedSlugs) {
+        const currentDraft = window.localStorage.getItem(calculatorDraftStorageKey(slug));
+        const baselineDraft = baseline.draftsByCategory[slug] ?? null;
+        if ((currentDraft ?? '') !== (baselineDraft ?? '')) {
+          draftsDirty = true;
+          break;
+        }
+      }
+      const isDirty = !sameSlugs || estimateNameDraft !== baseline.name || draftsDirty;
       if (!isDirty) return;
       e.preventDefault();
       e.returnValue = '';
     };
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [baseline, copySessionPendingSave, estimateCategorySlug, estimateNameDraft]);
+  }, [baseline, copySessionPendingSave, estimateCategorySlugs, estimateNameDraft]);
 
   const dirty = useMemo(() => {
     if (copySessionPendingSave) return true;
     if (!baseline) return false;
-    const key = estimateCategorySlug ? calculatorDraftStorageKey(estimateCategorySlug) : '';
-    const draft = key ? window.localStorage.getItem(key) : null;
-    return (
-      estimateCategorySlug !== baseline.categorySlug ||
-      estimateNameDraft !== baseline.name ||
-      (draft ?? '') !== (baseline.draft ?? '')
-    );
-  }, [copySessionPendingSave, baseline, estimateCategorySlug, estimateNameDraft, draftPollTick]);
+    const selectedSlugs = normalizeUniqueCategorySlugs(estimateCategorySlugs);
+    const baselineSlugs = normalizeUniqueCategorySlugs(baseline.categorySlugs);
+    const sameSlugs =
+      selectedSlugs.length === baselineSlugs.length &&
+      selectedSlugs.every((slug, idx) => slug === baselineSlugs[idx]);
+    if (!sameSlugs) return true;
+    if (estimateNameDraft !== baseline.name) return true;
+    for (const slug of selectedSlugs) {
+      const currentDraft = window.localStorage.getItem(calculatorDraftStorageKey(slug));
+      const baselineDraft = baseline.draftsByCategory[slug] ?? null;
+      if ((currentDraft ?? '') !== (baselineDraft ?? '')) return true;
+    }
+    return false;
+  }, [copySessionPendingSave, baseline, estimateCategorySlugs, estimateNameDraft, draftPollTick]);
 
   const isEditingExisting =
     Boolean(selectedEstimateId) && items.some((it) => it.id === selectedEstimateId);
 
+  const prepareRoomsForCategorySwitch = (fromSlug: string, toSlug: string) => {
+    if (!fromSlug || !toSlug || fromSlug === toSlug) return;
+    const sourceDraft = window.localStorage.getItem(calculatorDraftStorageKey(fromSlug));
+    const roomNames = extractRoomNamesFromDraft(sourceDraft);
+    if (roomNames.length === 0) return;
+    // Синхронизируем структуру помещений во все выбранные категории:
+    // новые помещения и переименования должны появляться везде, но строки расчёта не теряем.
+    for (const slug of estimateCategorySlugs) {
+      if (!slug || slug === fromSlug) continue;
+      const key = calculatorDraftStorageKey(slug);
+      const curDraft = window.localStorage.getItem(key);
+      if (shouldAutofillTargetRooms(curDraft)) {
+        window.localStorage.setItem(key, buildDraftWithRoomNames(roomNames));
+        continue;
+      }
+      const merged = mergeRoomStructureIntoDraft(curDraft, roomNames);
+      if (merged && merged !== curDraft) {
+        window.localStorage.setItem(key, merged);
+      }
+    }
+  };
+
   const abandonChangesAndLeave = () => {
-    if (baseline?.categorySlug) {
-      const k = calculatorDraftStorageKey(baseline.categorySlug);
-      if (baseline.draft !== null) window.localStorage.setItem(k, baseline.draft);
-      else window.localStorage.removeItem(k);
+    if (baseline) {
+      for (const slug of baseline.categorySlugs) {
+        const k = calculatorDraftStorageKey(slug);
+        const d = baseline.draftsByCategory[slug] ?? null;
+        if (d !== null) window.localStorage.setItem(k, d);
+        else window.localStorage.removeItem(k);
+      }
     }
     setExitConfirmOpen(false);
     router.push(ESTIMATES_LIST_HREF);
@@ -230,9 +458,20 @@ function ContractDocumentsEstimateWorkspaceInner() {
     setError(null);
     setOk(null);
     try {
+      const payloadItems = next.map((it) => {
+        const {
+          calculatorDraftByCategory: _draftByCategory,
+          multiCategorySlugs: _multiCategorySlugs,
+          ...rest
+        } = it as ContractEstimatePreset & {
+          calculatorDraftByCategory?: Record<string, string>;
+          multiCategorySlugs?: string[];
+        };
+        return rest;
+      });
       await putContractDocumentEstimatePresets({
         kind: 'REPAIR',
-        items: next,
+        items: payloadItems,
         groups: estimateGroups,
       });
       setItems(next);
@@ -247,31 +486,73 @@ function ContractDocumentsEstimateWorkspaceInner() {
   };
 
   const saveCurrentEstimate = async () => {
-    if (!estimateCategorySlug) {
-      setError('Выберите категорию работ.');
+    const selectedSlugs = normalizeUniqueCategorySlugs(estimateCategorySlugs);
+    if (selectedSlugs.length === 0) {
+      setError('Выберите хотя бы одну категорию работ.');
       return;
     }
-    const key = `public.service-catalog.category.calculator-draft.${encodeURIComponent(estimateCategorySlug)}`;
-    const draft = window.localStorage.getItem(key);
-    if (!draft) {
-      setError('Нет данных калькулятора для выбранной категории.');
+    const draftsByCategory: Record<string, string> = {};
+    for (const slug of selectedSlugs) {
+      const draft = window.localStorage.getItem(calculatorDraftStorageKey(slug));
+      if (!draft) continue;
+      draftsByCategory[slug] = draft;
+    }
+    const draftSlugs = Object.keys(draftsByCategory);
+    if (draftSlugs.length === 0) {
+      setError('Нет данных калькулятора по выбранным категориям.');
       return;
     }
-    const categoryName =
-      estimateCategories.find((c) => c.slug === estimateCategorySlug)?.name ?? estimateCategorySlug;
+    const categoryNames = draftSlugs.map(
+      (slug) => estimateCategories.find((c) => c.slug === slug)?.name ?? slug
+    );
+    const primarySlug = draftSlugs[0];
+    const primaryDraft = draftsByCategory[primarySlug];
+    const isMultiCategory = draftSlugs.length > 1;
+    const categoryName = isMultiCategory
+      ? `Комплексный расчёт: ${categoryNames.join(', ')}`
+      : categoryNames[0];
     const title = estimateNameDraft.trim() || `Расчёт ${new Date().toLocaleString('ru-RU')}`;
 
     const existing = selectedEstimateId
       ? items.find((it) => it.id === selectedEstimateId)
       : undefined;
 
+    const snapshots = await Promise.all(
+      draftSlugs.map((slug) => buildEstimateSnapshot(draftsByCategory[slug]))
+    );
+    const mergedRooms = snapshots.flatMap((s) => s?.rooms ?? []);
+    const mergedSnapshot =
+      mergedRooms.length > 0
+        ? {
+            rooms: mergedRooms,
+            total: snapshots.reduce((sum, s) => sum + (s?.total ?? 0), 0),
+          }
+        : null;
+
+    const categorySummaries = draftSlugs.map((slug, idx) => {
+      const snap = snapshots[idx];
+      return {
+        slug,
+        name: estimateCategories.find((c) => c.slug === slug)?.name ?? slug,
+        roomCount: snap?.rooms.length ?? 0,
+        total: snap?.total ?? 0,
+      };
+    });
+    const primaryDraftWithMeta = encodePrimaryDraftWithMultiMeta(
+      primaryDraft,
+      isMultiCategory
+        ? { slugs: draftSlugs, draftsByCategory, categories: categorySummaries }
+        : null
+    );
     const nextItem: ContractEstimatePreset = {
       id: existing?.id ?? `est_${Date.now()}`,
       title,
-      categorySlug: estimateCategorySlug,
+      categorySlug: primarySlug,
       categoryName,
-      calculatorDraft: draft,
-      snapshot: await buildEstimateSnapshot(draft),
+      calculatorDraft: primaryDraftWithMeta,
+      calculatorDraftByCategory: draftsByCategory,
+      multiCategorySlugs: draftSlugs,
+      snapshot: mergedSnapshot,
       updatedAt: new Date().toISOString(),
       ...(existing?.groupId ? { groupId: existing.groupId } : {}),
     };
@@ -330,18 +611,36 @@ function ContractDocumentsEstimateWorkspaceInner() {
       {ok ? <p className={styles.success}>{ok}</p> : null}
 
       <div className={`${styles.docToolbar} ${styles.blockImport}`} style={{ marginBottom: 12 }}>
-        <label className={styles.field} style={{ minWidth: 260 }}>
-          <span>Категория работ</span>
-          <select
-            value={estimateCategorySlug}
-            onChange={(e) => setEstimateCategorySlug(e.target.value)}
+        <label className={styles.field} style={{ minWidth: 340 }}>
+          <span>Категории работ (можно выбрать несколько)</span>
+          <div
+            style={{
+              maxHeight: 160,
+              overflow: 'auto',
+              border: '1px solid #d1d5db',
+              borderRadius: 8,
+              padding: '6px 8px',
+              background: '#fff',
+              display: 'grid',
+              gap: 4,
+            }}
           >
             {estimateCategories.map((c) => (
-              <option key={c.slug} value={c.slug}>
-                {c.name}
-              </option>
+              <label key={c.slug} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={estimateCategorySlugs.includes(c.slug)}
+                  onChange={(e) => {
+                    setEstimateCategorySlugs((prev) => {
+                      if (e.target.checked) return normalizeUniqueCategorySlugs([...prev, c.slug]);
+                      return prev.filter((x) => x !== c.slug);
+                    });
+                  }}
+                />
+                <span>{c.name}</span>
+              </label>
             ))}
-          </select>
+          </div>
         </label>
         <label className={styles.field} style={{ minWidth: 280 }}>
           <span>Название расчёта</span>
@@ -378,18 +677,44 @@ function ContractDocumentsEstimateWorkspaceInner() {
       </div>
 
       <div className={styles.docPane}>
-        {estimateCategorySlug ? (
+        {estimateCategorySlugs.length > 0 ? (
           <CartProvider>
-            <ApprovedOrderGuardProvider>
-              <ServiceCategoryPage
-                key={estimateCategorySlug}
-                slug={estimateCategorySlug}
-                hideAddToCart
-              />
-            </ApprovedOrderGuardProvider>
+            <div className={styles.tabBar} style={{ marginBottom: 10 }}>
+              {estimateCategorySlugs.map((slug) => (
+                <button
+                  key={slug}
+                  type="button"
+                  className={
+                    slug === activeCategorySlug ? `${styles.tab} ${styles.tabActive}` : styles.tab
+                  }
+                  onClick={() => {
+                    prepareRoomsForCategorySwitch(activeCategorySlug, slug);
+                    setActiveCategorySlug(slug);
+                  }}
+                >
+                  {estimateCategories.find((c) => c.slug === slug)?.name ?? slug}
+                </button>
+              ))}
+            </div>
+            {activeCategorySlug ? (
+              <div>
+                <p style={{ margin: '0 0 8px', fontWeight: 700 }}>
+                  Категория:{' '}
+                  {estimateCategories.find((c) => c.slug === activeCategorySlug)?.name ??
+                    activeCategorySlug}
+                </p>
+                <ApprovedOrderGuardProvider>
+                  <ServiceCategoryPage
+                    key={activeCategorySlug}
+                    slug={activeCategorySlug}
+                    hideAddToCart
+                  />
+                </ApprovedOrderGuardProvider>
+              </div>
+            ) : null}
           </CartProvider>
         ) : (
-          <p className={styles.hint}>Выберите категорию для работы с калькулятором.</p>
+          <p className={styles.hint}>Выберите минимум одну категорию для работы с калькулятором.</p>
         )}
       </div>
 

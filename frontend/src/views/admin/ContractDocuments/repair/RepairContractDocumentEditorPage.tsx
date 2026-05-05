@@ -83,6 +83,14 @@ import {
 
 /** Класс на `document.body` при печати сметы — см. `@media print` в ContractDocuments.module.css */
 const BODY_PRINT_ESTIMATE_CLASS = 'body-print-estimate-sheet';
+const STATUS_REVERT_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+function isWithinRevertWindow(iso: string | null | undefined): boolean {
+  if (!iso) return false;
+  const ts = Date.parse(iso);
+  if (!Number.isFinite(ts)) return false;
+  return Date.now() - ts <= STATUS_REVERT_WINDOW_MS;
+}
 
 /** Встроенный в код шаблон (если в БД нет общего шаблона). */
 const FILE_REPAIR_CONTRACT_TEMPLATE = REPAIR_DOCUMENT_TEMPLATES.contract;
@@ -128,14 +136,31 @@ function collectEstimatePresetIdsFromRepairFormData(formData: Record<string, unk
   if (Array.isArray(slots)) {
     for (const sl of slots) {
       if (!sl || typeof sl !== 'object') continue;
-      const arr = (sl as Record<string, unknown>).selectedPresetIds;
-      if (!Array.isArray(arr)) continue;
-      for (const id of arr) {
-        if (typeof id === 'string' && id.trim()) ids.push(id.trim());
-      }
+      const slot = sl as Record<string, unknown>;
+      const addIdsFrom = (value: unknown) => {
+        if (!Array.isArray(value)) return;
+        for (const id of value) {
+          if (typeof id === 'string' && id.trim()) ids.push(id.trim());
+        }
+      };
+      addIdsFrom(slot.selectedPresetIds);
+      addIdsFrom(slot.excludedSelectedPresetIds);
     }
   }
   return [...new Set(ids)];
+}
+
+function collectAddendumSlotPresetIds(
+  slot: RepairPackageFormData['addendumSlots'][number]
+): Set<string> {
+  const ids = new Set<string>();
+  for (const id of slot.selectedPresetIds ?? []) {
+    if (id.trim()) ids.add(id.trim());
+  }
+  for (const id of slot.excludedSelectedPresetIds ?? []) {
+    if (id.trim()) ids.add(id.trim());
+  }
+  return ids;
 }
 
 function parseDecimalAmount(raw: string): number | null {
@@ -302,9 +327,12 @@ export function RepairContractDocumentEditorPage({
   const [estimatePresetToAttach, setEstimatePresetToAttach] = useState('');
   const [draggingEstimatePresetId, setDraggingEstimatePresetId] = useState<string | null>(null);
   const [addendumPresetToAttach, setAddendumPresetToAttach] = useState('');
+  const [addendumExcludedPresetToAttach, setAddendumExcludedPresetToAttach] = useState('');
   const [draggingAddendumEstimatePresetId, setDraggingAddendumEstimatePresetId] = useState<
     string | null
   >(null);
+  const [draggingAddendumExcludedEstimatePresetId, setDraggingAddendumExcludedEstimatePresetId] =
+    useState<string | null>(null);
   const [repairPackages, setRepairPackages] = useState<
     Array<{
       id: string;
@@ -318,6 +346,15 @@ export function RepairContractDocumentEditorPage({
     useState<ContractDocumentPackageStatus>('IN_PROGRESS');
   /** После «Договор заключен» вкладки «Договор» и «Смета» только для просмотра. */
   const contractAndEstimateLocked = packageFlowStatus === 'CONTRACT_CONCLUDED';
+  const canRevertContractConcluded =
+    packageFlowStatus === 'CONTRACT_CONCLUDED' && isWithinRevertWindow(form.contractConcludedAt);
+  const signedAddendumOrdinals = useMemo(
+    () =>
+      form.addendumSlots
+        .map((slot, i) => (slot.status === 'SIGNED' ? i + 1 : null))
+        .filter((v): v is number => v !== null),
+    [form.addendumSlots]
+  );
   const [savingPackageStatus, setSavingPackageStatus] = useState(false);
   const [packageVersions, setPackageVersions] = useState<ContractDocumentPackageVersionListItem[]>(
     []
@@ -749,11 +786,21 @@ export function RepairContractDocumentEditorPage({
     setSavingPackageStatus(true);
     setError(null);
     try {
+      const nowIso = new Date().toISOString();
+      const nextForm = { ...formRef.current, contractConcludedAt: nowIso };
+      const formData = buildPersistedFormData(
+        nextForm,
+        templateOverridesRef.current,
+        selectedTemplateIdsRef.current
+      );
       await updateContractDocumentPackage(packageId, {
         status: 'CONTRACT_CONCLUDED',
+        formData,
         recordVersion: true,
       });
       setPackageFlowStatus('CONTRACT_CONCLUDED');
+      setForm(nextForm);
+      formRef.current = nextForm;
       await refreshPackageVersions({ skipSpinner: true });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось обновить статус пакета');
@@ -763,14 +810,27 @@ export function RepairContractDocumentEditorPage({
   };
 
   const confirmRevertContractConcluded = async () => {
+    if (!canRevertContractConcluded) {
+      setError('Снять статус «Договор заключен» можно только в течение 24 часов после установки.');
+      return;
+    }
     setSavingPackageStatus(true);
     setError(null);
     try {
+      const nextForm = { ...formRef.current, contractConcludedAt: '' };
+      const formData = buildPersistedFormData(
+        nextForm,
+        templateOverridesRef.current,
+        selectedTemplateIdsRef.current
+      );
       await updateContractDocumentPackage(packageId, {
         status: 'IN_PROGRESS',
+        formData,
         recordVersion: true,
       });
       setPackageFlowStatus('IN_PROGRESS');
+      setForm(nextForm);
+      formRef.current = nextForm;
       await refreshPackageVersions({ skipSpinner: true });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось снять отметку');
@@ -1126,15 +1186,13 @@ export function RepairContractDocumentEditorPage({
     if (activeAddendumSlot === null) return [];
     const objectKey = contractEstimateObjectKey;
     if (!objectKey) return [];
-    const slotIndex0 = activeAddendumSlot - 1;
     const usedElsewhere = new Set<string>();
     for (const id of form.estimate.selectedPresetIds ?? []) {
       if (id.trim()) usedElsewhere.add(id.trim());
     }
-    form.addendumSlots.forEach((sl, i) => {
-      if (i === slotIndex0) return;
-      for (const id of sl.selectedPresetIds ?? []) {
-        if (id.trim()) usedElsewhere.add(id.trim());
+    form.addendumSlots.forEach((sl) => {
+      for (const id of collectAddendumSlotPresetIds(sl)) {
+        usedElsewhere.add(id);
       }
     });
     return estimatePresets
@@ -1154,6 +1212,7 @@ export function RepairContractDocumentEditorPage({
     estimatePresets,
     estimateUsageById,
   ]);
+  const attachableAddendumExcludedEstimatePresets = attachableAddendumEstimatePresets;
 
   useEffect(() => {
     if (
@@ -1187,10 +1246,22 @@ export function RepairContractDocumentEditorPage({
       setAddendumPresetToAttach('');
     }
   }, [attachableAddendumEstimatePresets, addendumPresetToAttach]);
+  useEffect(() => {
+    if (
+      addendumExcludedPresetToAttach &&
+      !attachableAddendumExcludedEstimatePresets.some(
+        (p) => p.id === addendumExcludedPresetToAttach
+      )
+    ) {
+      setAddendumExcludedPresetToAttach('');
+    }
+  }, [attachableAddendumExcludedEstimatePresets, addendumExcludedPresetToAttach]);
 
   useEffect(() => {
     setAddendumPresetToAttach('');
+    setAddendumExcludedPresetToAttach('');
     setDraggingAddendumEstimatePresetId(null);
+    setDraggingAddendumExcludedEstimatePresetId(null);
   }, [activeAddendumSlot]);
 
   useEffect(() => {
@@ -1283,7 +1354,21 @@ export function RepairContractDocumentEditorPage({
         const slots = [...p.addendumSlots] as RepairPackageFormData['addendumSlots'];
         const cur = slots[slotIndex0];
         if (!cur || cur.status === 'SIGNED') return p;
-        slots[slotIndex0] = { ...cur, status: 'SIGNED' };
+        slots[slotIndex0] = { ...cur, status: 'SIGNED', signedAt: new Date().toISOString() };
+        return { ...p, addendumSlots: slots };
+      });
+      touchPackageData();
+    },
+    [touchPackageData]
+  );
+  const unmarkAddendumSlotSigned = useCallback(
+    (slotIndex0: number) => {
+      setForm((p) => {
+        const slots = [...p.addendumSlots] as RepairPackageFormData['addendumSlots'];
+        const cur = slots[slotIndex0];
+        if (!cur || cur.status !== 'SIGNED') return p;
+        if (!isWithinRevertWindow(cur.signedAt)) return p;
+        slots[slotIndex0] = { ...cur, status: 'OPEN', signedAt: '' };
         return { ...p, addendumSlots: slots };
       });
       touchPackageData();
@@ -1913,6 +1998,15 @@ export function RepairContractDocumentEditorPage({
                 Договор заключен
               </span>
             ) : null}
+            {signedAddendumOrdinals.map((n) => (
+              <span
+                key={`signed-addendum-${n}`}
+                className={styles.packageFlowStatusBadge}
+                role="status"
+              >
+                Д/с №{n} подписано
+              </span>
+            ))}
             {!loading ? (
               <button
                 type="button"
@@ -2005,7 +2099,12 @@ export function RepairContractDocumentEditorPage({
               <button
                 type="button"
                 className={styles.secondaryBtn}
-                disabled={savingPackageStatus}
+                disabled={savingPackageStatus || !canRevertContractConcluded}
+                title={
+                  canRevertContractConcluded
+                    ? undefined
+                    : 'Снять статус можно только в течение 24 часов после установки'
+                }
                 onClick={() => setIsRevertStatusConfirmModalOpen(true)}
               >
                 {savingPackageStatus ? 'Сохранение…' : 'Снять статус «Договор заключен»'}
@@ -3182,8 +3281,11 @@ export function RepairContractDocumentEditorPage({
                     : ''
                 }
                 addendumAttachablePresets={attachableAddendumEstimatePresets}
+                addendumExcludedAttachablePresets={attachableAddendumExcludedEstimatePresets}
                 presetToAttach={addendumPresetToAttach}
                 setPresetToAttach={setAddendumPresetToAttach}
+                excludedPresetToAttach={addendumExcludedPresetToAttach}
+                setExcludedPresetToAttach={setAddendumExcludedPresetToAttach}
                 onAttachPreset={() => {
                   if (!addendumPresetToAttach || activeAddendumSlot === null) return;
                   const idx = activeAddendumSlot - 1;
@@ -3193,7 +3295,8 @@ export function RepairContractDocumentEditorPage({
                       p,
                       idx,
                       [...(p.addendumSlots[idx].selectedPresetIds ?? []), pid],
-                      estimatePresets
+                      estimatePresets,
+                      'additional'
                     );
                     formRef.current = next;
                     schedulePersistRepairPackageDebounced();
@@ -3201,6 +3304,25 @@ export function RepairContractDocumentEditorPage({
                   });
                   setDirty(true);
                   setAddendumPresetToAttach('');
+                }}
+                onAttachExcludedPreset={() => {
+                  if (!addendumExcludedPresetToAttach || activeAddendumSlot === null) return;
+                  const idx = activeAddendumSlot - 1;
+                  const pid = addendumExcludedPresetToAttach;
+                  setForm((p) => {
+                    const next = applyEstimatePresetIdsToAddendumSlot(
+                      p,
+                      idx,
+                      [...(p.addendumSlots[idx].excludedSelectedPresetIds ?? []), pid],
+                      estimatePresets,
+                      'excluded'
+                    );
+                    formRef.current = next;
+                    schedulePersistRepairPackageDebounced();
+                    return next;
+                  });
+                  setDirty(true);
+                  setAddendumExcludedPresetToAttach('');
                 }}
                 onRemovePreset={(presetId) => {
                   if (activeAddendumSlot === null) return;
@@ -3212,7 +3334,27 @@ export function RepairContractDocumentEditorPage({
                       (p.addendumSlots[idx].selectedPresetIds ?? []).filter(
                         (id) => id !== presetId
                       ),
-                      estimatePresets
+                      estimatePresets,
+                      'additional'
+                    );
+                    formRef.current = next;
+                    schedulePersistRepairPackageDebounced();
+                    return next;
+                  });
+                  setDirty(true);
+                }}
+                onRemoveExcludedPreset={(presetId) => {
+                  if (activeAddendumSlot === null) return;
+                  const idx = activeAddendumSlot - 1;
+                  setForm((p) => {
+                    const next = applyEstimatePresetIdsToAddendumSlot(
+                      p,
+                      idx,
+                      (p.addendumSlots[idx].excludedSelectedPresetIds ?? []).filter(
+                        (id) => id !== presetId
+                      ),
+                      estimatePresets,
+                      'excluded'
                     );
                     formRef.current = next;
                     schedulePersistRepairPackageDebounced();
@@ -3230,7 +3372,36 @@ export function RepairContractDocumentEditorPage({
                     if (from < 0 || to < 0) return p;
                     const [moved] = ids.splice(from, 1);
                     ids.splice(to, 0, moved);
-                    const next = applyEstimatePresetIdsToAddendumSlot(p, idx, ids, estimatePresets);
+                    const next = applyEstimatePresetIdsToAddendumSlot(
+                      p,
+                      idx,
+                      ids,
+                      estimatePresets,
+                      'additional'
+                    );
+                    formRef.current = next;
+                    schedulePersistRepairPackageDebounced();
+                    return next;
+                  });
+                  setDirty(true);
+                }}
+                onReorderExcludedPresets={(sourceId, targetId) => {
+                  if (activeAddendumSlot === null) return;
+                  const idx = activeAddendumSlot - 1;
+                  setForm((p) => {
+                    const ids = [...(p.addendumSlots[idx].excludedSelectedPresetIds ?? [])];
+                    const from = ids.indexOf(sourceId);
+                    const to = ids.indexOf(targetId);
+                    if (from < 0 || to < 0) return p;
+                    const [moved] = ids.splice(from, 1);
+                    ids.splice(to, 0, moved);
+                    const next = applyEstimatePresetIdsToAddendumSlot(
+                      p,
+                      idx,
+                      ids,
+                      estimatePresets,
+                      'excluded'
+                    );
                     formRef.current = next;
                     schedulePersistRepairPackageDebounced();
                     return next;
@@ -3240,7 +3411,13 @@ export function RepairContractDocumentEditorPage({
                 estimateUsageById={estimateUsageById}
                 draggingPresetId={draggingAddendumEstimatePresetId}
                 setDraggingPresetId={setDraggingAddendumEstimatePresetId}
+                draggingExcludedPresetId={draggingAddendumExcludedEstimatePresetId}
+                setDraggingExcludedPresetId={setDraggingAddendumExcludedEstimatePresetId}
                 onMarkSigned={() => markAddendumSlotSigned(activeAddendumSlot - 1)}
+                canUnmarkSigned={isWithinRevertWindow(
+                  form.addendumSlots[activeAddendumSlot - 1]?.signedAt
+                )}
+                onUnmarkSigned={() => unmarkAddendumSlotSigned(activeAddendumSlot - 1)}
               />
             ) : (
               <div className={`${styles.field} ${styles.repairAddendumDateFieldRow}`}>

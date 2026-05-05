@@ -20,15 +20,25 @@ export function RepairAddendumEstimateBlock({
   estimatePresets,
   contractEstimateObjectLabel,
   addendumAttachablePresets,
+  addendumExcludedAttachablePresets,
   presetToAttach,
   setPresetToAttach,
+  excludedPresetToAttach,
+  setExcludedPresetToAttach,
   onAttachPreset,
+  onAttachExcludedPreset,
   onRemovePreset,
+  onRemoveExcludedPreset,
   onReorderPresets,
+  onReorderExcludedPresets,
   estimateUsageById,
   draggingPresetId,
   setDraggingPresetId,
+  draggingExcludedPresetId,
+  setDraggingExcludedPresetId,
   onMarkSigned,
+  canUnmarkSigned,
+  onUnmarkSigned,
 }: {
   slotOrdinal: number;
   slot: RepairAddendumSlotEstimateBlock;
@@ -38,17 +48,29 @@ export function RepairAddendumEstimateBlock({
   /** Подпись объекта из вкладки «Смета» (пусто — объект ещё не задан). */
   contractEstimateObjectLabel: string;
   addendumAttachablePresets: ContractEstimatePreset[];
+  addendumExcludedAttachablePresets: ContractEstimatePreset[];
   presetToAttach: string;
   setPresetToAttach: (v: string) => void;
+  excludedPresetToAttach: string;
+  setExcludedPresetToAttach: (v: string) => void;
   onAttachPreset: () => void;
+  onAttachExcludedPreset: () => void;
   onRemovePreset: (presetId: string) => void;
+  onRemoveExcludedPreset: (presetId: string) => void;
   onReorderPresets: (sourceId: string, targetId: string) => void;
+  onReorderExcludedPresets: (sourceId: string, targetId: string) => void;
   estimateUsageById: Map<string, EstimateUsageRow[]>;
   draggingPresetId: string | null;
   setDraggingPresetId: (v: string | null) => void;
+  draggingExcludedPresetId: string | null;
+  setDraggingExcludedPresetId: (v: string | null) => void;
   onMarkSigned: () => void;
+  canUnmarkSigned: boolean;
+  onUnmarkSigned: () => void;
 }) {
   const readOnly = slot.status === 'SIGNED';
+  const hasAnyAttachedPresets =
+    (slot.selectedPresetIds?.length ?? 0) > 0 || (slot.excludedSelectedPresetIds?.length ?? 0) > 0;
 
   return (
     <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
@@ -58,11 +80,6 @@ export function RepairAddendumEstimateBlock({
             <h3 className={`${styles.sectionTitle} ${styles.estimateSectionTitle}`}>
               Дополнительное соглашение №{slotOrdinal}
             </h3>
-            {slot.status === 'SIGNED' ? (
-              <span className={styles.packageFlowStatusBadge} role="status">
-                Д/с №{slotOrdinal} подписано
-              </span>
-            ) : null}
           </div>
           <div className={`${styles.field} ${styles.repairAddendumDateFieldRow}`}>
             <label htmlFor={`repair_addendum_date_${slotOrdinal}`}>
@@ -97,7 +114,9 @@ export function RepairAddendumEstimateBlock({
               <div className={styles.estimatePickColumn}>
                 <div className={styles.estimateSelectsRow}>
                   <div className={`${styles.field} ${styles.fieldSpanAll}`}>
-                    <label htmlFor={`addendum_${slotOrdinal}_preset`}>Расчёт</label>
+                    <label htmlFor={`addendum_${slotOrdinal}_preset`}>
+                      Расчёт для дополнительных работ
+                    </label>
                     <select
                       id={`addendum_${slotOrdinal}_preset`}
                       value={presetToAttach}
@@ -105,7 +124,9 @@ export function RepairAddendumEstimateBlock({
                       onChange={(e) => setPresetToAttach(e.target.value)}
                     >
                       <option value="">
-                        {!contractEstimateObjectLabel ? '— сначала смета договора —' : '— расчёт —'}
+                        {!contractEstimateObjectLabel
+                          ? '— сначала смета договора —'
+                          : '— расчёт дополнительных работ —'}
                       </option>
                       {addendumAttachablePresets.map((preset) => (
                         <option key={preset.id} value={preset.id}>
@@ -125,33 +146,44 @@ export function RepairAddendumEstimateBlock({
                         onAttachPreset();
                       }}
                     >
-                      Прикрепить к Д/с
+                      Добавить в раздел "Смета дополнительных..."
                     </button>
                     {!readOnly ? (
                       <button
                         type="button"
                         className={styles.secondaryBtn}
                         onClick={onMarkSigned}
-                        disabled={slot.selectedPresetIds.length === 0}
+                        disabled={!hasAnyAttachedPresets}
                         title={
-                          slot.selectedPresetIds.length === 0
+                          !hasAnyAttachedPresets
                             ? 'Сначала прикрепите хотя бы один расчёт'
                             : undefined
                         }
                       >
                         Д/с №{slotOrdinal} подписано
                       </button>
+                    ) : canUnmarkSigned ? (
+                      <button
+                        type="button"
+                        className={styles.secondaryBtn}
+                        onClick={onUnmarkSigned}
+                        title="Отменить статус «Д/с подписано» (доступно 24 часа)"
+                      >
+                        Отменить статус «Д/с подписано»
+                      </button>
                     ) : null}
                   </div>
                   {addendumAttachablePresets.length === 0 && contractEstimateObjectLabel ? (
                     <p className={`${styles.hint} ${styles.estimateTabHint}`}>
-                      Нет свободных расчётов этого объекта для прикрепления к Д/с.
+                      Нет свободных расчётов этого объекта для раздела дополнительных работ.
                     </p>
                   ) : null}
                 </div>
               </div>
               <aside className={styles.estimateAttachedColumn}>
-                <div className={styles.estimateAttachedColumnTitle}>Прикреплённые к Д/с</div>
+                <div className={styles.estimateAttachedColumnTitle}>
+                  Раздел 1: Смета дополнительных работ
+                </div>
                 {(slot.selectedPresetIds?.length ?? 0) > 0 ? (
                   <div className={styles.estimateAttachedPresetList}>
                     {(slot.selectedPresetIds ?? []).map((presetId) => {
@@ -225,6 +257,108 @@ export function RepairAddendumEstimateBlock({
                 ].join('; ')}
               </p>
             ) : null}
+            <div className={`${styles.estimatePickAndAttachedRow} ${styles.fieldSpanAll}`}>
+              <div className={styles.estimatePickColumn}>
+                <div className={styles.estimateSelectsRow}>
+                  <div className={`${styles.field} ${styles.fieldSpanAll}`}>
+                    <label htmlFor={`addendum_${slotOrdinal}_excluded_preset`}>
+                      Расчёт для непроводимых работ
+                    </label>
+                    <select
+                      id={`addendum_${slotOrdinal}_excluded_preset`}
+                      value={excludedPresetToAttach}
+                      disabled={readOnly || !contractEstimateObjectLabel}
+                      onChange={(e) => setExcludedPresetToAttach(e.target.value)}
+                    >
+                      <option value="">
+                        {!contractEstimateObjectLabel
+                          ? '— сначала смета договора —'
+                          : '— расчёт непроводимых работ —'}
+                      </option>
+                      {addendumExcludedAttachablePresets.map((preset) => (
+                        <option key={preset.id} value={preset.id}>
+                          {preset.title} · {preset.categoryName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className={styles.estimateAttachBlock}>
+                  <div className={styles.estimateAttachActionsRow}>
+                    <button
+                      type="button"
+                      className={`${styles.primaryBtn} ${styles.estimateAttachPrimaryBtn}`}
+                      disabled={readOnly || !excludedPresetToAttach}
+                      onClick={onAttachExcludedPreset}
+                    >
+                      Добавить в раздел "Непроводимые..."
+                    </button>
+                  </div>
+                  {addendumExcludedAttachablePresets.length === 0 && contractEstimateObjectLabel ? (
+                    <p className={`${styles.hint} ${styles.estimateTabHint}`}>
+                      Нет свободных расчётов этого объекта для раздела непроводимых работ.
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+              <aside className={styles.estimateAttachedColumn}>
+                <div className={styles.estimateAttachedColumnTitle}>
+                  Раздел 2: Непроводимые ремонтно-отделочные работы
+                </div>
+                {(slot.excludedSelectedPresetIds?.length ?? 0) > 0 ? (
+                  <div className={styles.estimateAttachedPresetList}>
+                    {(slot.excludedSelectedPresetIds ?? []).map((presetId) => {
+                      const preset = estimatePresets.find((x) => x.id === presetId);
+                      const usageCount = estimateUsageById.get(presetId)?.length ?? 0;
+                      return (
+                        <div
+                          key={presetId}
+                          draggable={!readOnly}
+                          onDragStart={() => {
+                            if (!readOnly) setDraggingExcludedPresetId(presetId);
+                          }}
+                          onDragEnd={() => setDraggingExcludedPresetId(null)}
+                          onDragOver={(e) => {
+                            if (!readOnly) e.preventDefault();
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            if (readOnly) return;
+                            if (draggingExcludedPresetId) {
+                              onReorderExcludedPresets(draggingExcludedPresetId, presetId);
+                            }
+                            setDraggingExcludedPresetId(null);
+                          }}
+                          className={styles.estimateAttachedPresetRow}
+                          style={{ opacity: draggingExcludedPresetId === presetId ? 0.6 : 1 }}
+                        >
+                          <div className={styles.estimateAttachedPresetMain}>
+                            <strong>{preset?.title ?? presetId}</strong>
+                            <span className={styles.estimateAttachedPresetMeta}>
+                              {' '}
+                              · {preset?.categoryName ?? '—'}
+                              {usageCount > 0 ? ` · ещё в пакетах: ${usageCount}` : null}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            className={`${styles.secondaryBtn} ${styles.estimateAttachedRemoveBtn}`}
+                            aria-label="Убрать расчёт из раздела непроводимых работ"
+                            title="Убрать"
+                            disabled={readOnly}
+                            onClick={() => onRemoveExcludedPreset(presetId)}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className={styles.estimateAttachedEmpty}>Пока нет</p>
+                )}
+              </aside>
+            </div>
           </div>
         </div>
       </div>
