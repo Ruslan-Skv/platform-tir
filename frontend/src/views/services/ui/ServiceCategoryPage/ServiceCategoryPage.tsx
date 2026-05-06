@@ -371,9 +371,13 @@ const removeDetachedServiceCategory = (
 export function ServiceCategoryPage({
   slug,
   hideAddToCart = false,
+  hideBreadcrumbs = false,
+  hideTitleBlock = false,
 }: {
   slug: string;
   hideAddToCart?: boolean;
+  hideBreadcrumbs?: boolean;
+  hideTitleBlock?: boolean;
 }) {
   const searchParams = useSearchParams();
   const roomsParam = searchParams.get('rooms');
@@ -967,22 +971,28 @@ export function ServiceCategoryPage({
 
   return (
     <div className={styles.container}>
-      <nav className={styles.breadcrumb}>
-        <Link href="/catalog/services">Ремонт квартир</Link>
-        <span className={styles.breadcrumbSep}>/</span>
-        {data.parent && (
-          <>
-            <Link href={getSafeHref(`/catalog/services/${data.parent.slug}`)}>
-              {data.parent.name}
-            </Link>
-            <span className={styles.breadcrumbSep}>/</span>
-          </>
-        )}
-        <span>{data.name}</span>
-      </nav>
+      {!hideBreadcrumbs ? (
+        <nav className={styles.breadcrumb}>
+          <Link href="/catalog/services">Ремонт квартир</Link>
+          <span className={styles.breadcrumbSep}>/</span>
+          {data.parent && (
+            <>
+              <Link href={getSafeHref(`/catalog/services/${data.parent.slug}`)}>
+                {data.parent.name}
+              </Link>
+              <span className={styles.breadcrumbSep}>/</span>
+            </>
+          )}
+          <span>{data.name}</span>
+        </nav>
+      ) : null}
 
-      <h1 className={styles.title}>{data.name}</h1>
-      {data.description && <p className={styles.description}>{data.description}</p>}
+      {!hideTitleBlock ? (
+        <>
+          <h1 className={styles.title}>{data.name}</h1>
+          {data.description && <p className={styles.description}>{data.description}</p>}
+        </>
+      ) : null}
 
       <div className={styles.content}>
         <section className={styles.itemsSection} aria-label="Виды работ">

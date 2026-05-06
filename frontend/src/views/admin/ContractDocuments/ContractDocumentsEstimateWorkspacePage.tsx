@@ -11,6 +11,7 @@ import {
   getContractDocumentEstimatePresets,
   putContractDocumentEstimatePresets,
 } from '@/shared/api/admin-contract-document-packages';
+import { getMeasurement } from '@/shared/api/admin-crm';
 import { ApprovedOrderGuardProvider } from '@/shared/lib/contexts/ApprovedOrderGuardContext';
 import { CartProvider } from '@/shared/lib/contexts/CartContext';
 import { ServiceCategoryPage } from '@/views/services/ui/ServiceCategoryPage/ServiceCategoryPage';
@@ -19,6 +20,7 @@ import styles from './ContractDocuments.module.css';
 import { buildEstimateSnapshot } from './repair/contractDocumentsEstimateSnapshot';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const REPAIR_MEASUREMENT_DATA_MARKER = '[REPAIR_MEASUREMENT_DATA_V1]';
 
 function applyDraftToLocalCalculator(categorySlug: string, draft: string) {
   const key = calculatorDraftStorageKey(categorySlug);
@@ -71,6 +73,132 @@ type PersistedCalculatorDraftV1 = {
   }>;
   __adminMultiCategory?: unknown;
 };
+
+type MeasurementRoomDraft = {
+  name?: string;
+  ceilingHeight?: string;
+  floorArea?: string;
+  wallSegments?: string[];
+  doors?: Array<{ width?: string; height?: string }>;
+  windows?: Array<{ width?: string; height?: string }>;
+  selectedWorkItemIds?: string[];
+  workItemQuantities?: Record<string, string>;
+};
+
+function parsePositive(raw: string | undefined): number {
+  const parsed = Number((raw ?? '').replace(',', '.').trim());
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function parseMeasurementRooms(comments: string | null | undefined): MeasurementRoomDraft[] {
+  const source = comments ?? '';
+  const markerIndex = source.indexOf(REPAIR_MEASUREMENT_DATA_MARKER);
+  if (markerIndex < 0) return [];
+  const jsonRaw = source.slice(markerIndex + REPAIR_MEASUREMENT_DATA_MARKER.length).trim();
+  try {
+    const parsed = JSON.parse(jsonRaw) as { rooms?: MeasurementRoomDraft[] };
+    return Array.isArray(parsed.rooms) ? parsed.rooms : [];
+  } catch {
+    return [];
+  }
+}
+
+function buildRoomMetrics(room: MeasurementRoomDraft) {
+  const floorArea = parsePositive(room.floorArea);
+  const perimeter = (room.wallSegments ?? []).reduce((sum, seg) => sum + parsePositive(seg), 0);
+  const ceilingHeight = parsePositive(room.ceilingHeight);
+  const doors = room.doors ?? [];
+  const windows = room.windows ?? [];
+  const doorsArea = doors.reduce(
+    (sum, d) => sum + parsePositive(d.width) * parsePositive(d.height),
+    0
+  );
+  const windowsArea = windows.reduce(
+    (sum, w) => sum + parsePositive(w.width) * parsePositive(w.height),
+    0
+  );
+  const grossWallArea = perimeter * ceilingHeight;
+  const netWallArea = Math.max(0, grossWallArea - doorsArea - windowsArea);
+  const baseboardPerimeter = Math.max(
+    0,
+    perimeter - doors.reduce((sum, d) => sum + parsePositive(d.width), 0)
+  );
+  return { floorArea, perimeter, netWallArea, baseboardPerimeter, doorsArea, windowsArea };
+}
+
+function resolveAutoQuantityByName(
+  itemName: string,
+  metrics: ReturnType<typeof buildRoomMetrics>
+): number {
+  const name = itemName.toLowerCase();
+  if (name.includes('плинтус')) return metrics.baseboardPerimeter;
+  if (name.includes('пол')) return metrics.floorArea;
+  if (name.includes('откос')) return metrics.doorsArea + metrics.windowsArea;
+  if (name.includes('стен')) return metrics.netWallArea;
+  return 0;
+}
+
+async function buildDraftsFromMeasurement(
+  rooms: MeasurementRoomDraft[],
+  categorySlugs: string[]
+): Promise<{ draftSlugs: string[]; draftsByCategory: Record<string, string> }> {
+  const itemIdToSlug = new Map<string, string>();
+  const itemIdToName = new Map<string, string>();
+  await Promise.all(
+    categorySlugs.map(async (slug) => {
+      try {
+        const res = await fetch(`${API_URL}/service-catalog/categories/${slug}`);
+        if (!res.ok) return;
+        const data = (await res.json()) as { items?: Array<{ id: string; name: string }> };
+        for (const item of data.items ?? []) {
+          itemIdToSlug.set(item.id, slug);
+          itemIdToName.set(item.id, item.name);
+        }
+      } catch {
+        // ignore category fetch errors
+      }
+    })
+  );
+
+  const bySlug = new Map<string, PersistedCalculatorDraftV1>();
+  for (const room of rooms) {
+    const roomName = (room.name ?? '').trim() || 'Помещение';
+    const selectedIds = Array.isArray(room.selectedWorkItemIds) ? room.selectedWorkItemIds : [];
+    const quantities = room.workItemQuantities ?? {};
+    const metrics = buildRoomMetrics(room);
+    for (const itemId of selectedIds) {
+      const slug = itemIdToSlug.get(itemId);
+      if (!slug) continue;
+      const manualQuantity = parsePositive(quantities[itemId]);
+      const autoQuantity = resolveAutoQuantityByName(itemIdToName.get(itemId) ?? '', metrics);
+      const quantity = manualQuantity > 0 ? manualQuantity : autoQuantity > 0 ? autoQuantity : 1;
+      if (!bySlug.has(slug)) bySlug.set(slug, { v: 1, activeCalcId: '', calcs: [] });
+      const draft = bySlug.get(slug)!;
+      let calc = draft.calcs.find((c) => c.name === roomName);
+      if (!calc) {
+        calc = {
+          id: `calc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          name: roomName,
+          collapsed: false,
+          lines: [],
+        };
+        draft.calcs.push(calc);
+      }
+      const existingLine = calc.lines.find((line) => line.itemId === itemId);
+      if (existingLine) existingLine.quantity += quantity;
+      else calc.lines.push({ itemId, quantity });
+      if (!draft.activeCalcId) draft.activeCalcId = calc.id;
+    }
+  }
+
+  const draftsByCategory = Object.fromEntries(
+    [...bySlug.entries()].map(([slug, draft]) => [slug, JSON.stringify(draft)])
+  ) as Record<string, string>;
+  return {
+    draftSlugs: normalizeUniqueCategorySlugs(Object.keys(draftsByCategory)),
+    draftsByCategory,
+  };
+}
 
 function normalizeUniqueCategorySlugs(slugs: string[]): string[] {
   return [...new Set(slugs.map((x) => x.trim()).filter(Boolean))].sort((a, b) =>
@@ -208,6 +336,24 @@ function encodePrimaryDraftWithMultiMeta(
   }
 }
 
+function clampWithEllipsis(value: string, max: number): string {
+  const normalized = value.trim();
+  if (normalized.length <= max) return normalized;
+  if (max <= 1) return normalized.slice(0, max);
+  return `${normalized.slice(0, max - 1)}…`;
+}
+
+function sanitizeEstimatePresetForApi(input: ContractEstimatePreset): ContractEstimatePreset {
+  return {
+    ...input,
+    id: clampWithEllipsis(input.id || `est_${Date.now()}`, 80),
+    title: clampWithEllipsis(input.title || 'Расчёт', 160),
+    categorySlug: clampWithEllipsis(input.categorySlug || 'repair', 120),
+    categoryName: clampWithEllipsis(input.categoryName || 'Расчёт', 200),
+    groupId: input.groupId ? clampWithEllipsis(input.groupId, 48) : undefined,
+  };
+}
+
 const ESTIMATES_LIST_HREF = '/admin/contract-documents/estimates';
 
 function ContractDocumentsEstimateWorkspaceInner() {
@@ -215,6 +361,7 @@ function ContractDocumentsEstimateWorkspaceInner() {
   const searchParams = useSearchParams();
   const estimateIdFromUrl = searchParams.get('id');
   const copyFromId = searchParams.get('copyFrom');
+  const fromMeasurementId = searchParams.get('fromMeasurement');
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -323,6 +470,55 @@ function ContractDocumentsEstimateWorkspaceInner() {
             baselineSlugs = cats[0] ? [cats[0].slug] : [];
             baselineName = '';
           }
+        } else if (fromMeasurementId) {
+          try {
+            const measurement = await getMeasurement(fromMeasurementId);
+            const rooms = parseMeasurementRooms(measurement.comments);
+            if (rooms.length === 0) {
+              setError('В выбранном замере нет данных для автогенерации расчёта.');
+              clearStoredCalculatorStateForNewEstimate(cats.map((c) => c.slug));
+              setSelectedEstimateId('');
+              setEstimateNameDraft('');
+              if (cats[0]) setEstimateCategorySlugs([cats[0].slug]);
+              setActiveCategorySlug(cats[0]?.slug ?? '');
+              baselineSlugs = cats[0] ? [cats[0].slug] : [];
+              baselineName = '';
+            } else {
+              clearStoredCalculatorStateForNewEstimate(cats.map((c) => c.slug));
+              const { draftSlugs, draftsByCategory } = await buildDraftsFromMeasurement(
+                rooms,
+                cats.map((c) => c.slug)
+              );
+              if (draftSlugs.length === 0) {
+                setError('В замере нет выбранных работ для автогенерации расчёта.');
+                if (cats[0]) setEstimateCategorySlugs([cats[0].slug]);
+                setActiveCategorySlug(cats[0]?.slug ?? '');
+                baselineSlugs = cats[0] ? [cats[0].slug] : [];
+                baselineName = '';
+              } else {
+                for (const slug of draftSlugs) {
+                  applyDraftToLocalCalculator(slug, draftsByCategory[slug]);
+                }
+                setEstimateCategorySlugs(draftSlugs);
+                setActiveCategorySlug(draftSlugs[0] ?? '');
+                const autoTitle = `Расчёт по замеру: ${measurement.customerName || measurement.id.slice(0, 8)}`;
+                setEstimateNameDraft(autoTitle);
+                setSelectedEstimateId('');
+                baselineSlugs = draftSlugs;
+                baselineName = autoTitle;
+                setCopySessionPendingSave(true);
+              }
+            }
+          } catch (e) {
+            setError(e instanceof Error ? e.message : 'Не удалось создать расчёт из замера');
+            clearStoredCalculatorStateForNewEstimate(cats.map((c) => c.slug));
+            setSelectedEstimateId('');
+            setEstimateNameDraft('');
+            if (cats[0]) setEstimateCategorySlugs([cats[0].slug]);
+            setActiveCategorySlug(cats[0]?.slug ?? '');
+            baselineSlugs = cats[0] ? [cats[0].slug] : [];
+            baselineName = '';
+          }
         } else {
           clearStoredCalculatorStateForNewEstimate(cats.map((c) => c.slug));
           setSelectedEstimateId('');
@@ -348,7 +544,7 @@ function ContractDocumentsEstimateWorkspaceInner() {
         setLoading(false);
       }
     })();
-  }, [estimateIdFromUrl, copyFromId]);
+  }, [estimateIdFromUrl, copyFromId, fromMeasurementId]);
 
   useEffect(() => {
     if (estimateCategorySlugs.length === 0) {
@@ -467,12 +663,17 @@ function ContractDocumentsEstimateWorkspaceInner() {
           calculatorDraftByCategory?: Record<string, string>;
           multiCategorySlugs?: string[];
         };
-        return rest;
+        return sanitizeEstimatePresetForApi(rest as ContractEstimatePreset);
       });
+      const payloadGroups = estimateGroups.map((g) => ({
+        ...g,
+        id: clampWithEllipsis(g.id || `grp_${Date.now()}`, 48),
+        title: clampWithEllipsis(g.title || 'Объект', 200),
+      }));
       await putContractDocumentEstimatePresets({
         kind: 'REPAIR',
         items: payloadItems,
-        groups: estimateGroups,
+        groups: payloadGroups,
       });
       setItems(next);
       setOk('Сохранено.');
@@ -508,10 +709,14 @@ function ContractDocumentsEstimateWorkspaceInner() {
     const primarySlug = draftSlugs[0];
     const primaryDraft = draftsByCategory[primarySlug];
     const isMultiCategory = draftSlugs.length > 1;
-    const categoryName = isMultiCategory
+    const categoryNameRaw = isMultiCategory
       ? `Комплексный расчёт: ${categoryNames.join(', ')}`
       : categoryNames[0];
-    const title = estimateNameDraft.trim() || `Расчёт ${new Date().toLocaleString('ru-RU')}`;
+    const categoryName = clampWithEllipsis(categoryNameRaw, 200);
+    const title = clampWithEllipsis(
+      estimateNameDraft.trim() || `Расчёт ${new Date().toLocaleString('ru-RU')}`,
+      160
+    );
 
     const existing = selectedEstimateId
       ? items.find((it) => it.id === selectedEstimateId)
@@ -555,6 +760,11 @@ function ContractDocumentsEstimateWorkspaceInner() {
       snapshot: mergedSnapshot,
       updatedAt: new Date().toISOString(),
       ...(existing?.groupId ? { groupId: existing.groupId } : {}),
+      ...(existing?.sourceMeasurementId
+        ? { sourceMeasurementId: existing.sourceMeasurementId }
+        : fromMeasurementId
+          ? { sourceMeasurementId: fromMeasurementId }
+          : {}),
     };
 
     const next = existing
@@ -578,7 +788,7 @@ function ContractDocumentsEstimateWorkspaceInner() {
   }
 
   return (
-    <div className={`${styles.page} ${styles.pageWide}`}>
+    <div className={`${styles.page} ${styles.pageWide} ${styles.estimateWorkspacePage}`}>
       <div className={styles.editorHeader}>
         <div>
           <Link
@@ -593,93 +803,92 @@ function ContractDocumentsEstimateWorkspaceInner() {
           >
             ← К списку расчётов
           </Link>
-          <h1 className={styles.title} style={{ marginTop: 8 }}>
+          <h1 className={`${styles.title} ${styles.estimateWorkspaceTitle}`}>
             {estimateIdFromUrl
               ? 'Редактирование расчёта'
               : copyFromId
                 ? 'Новый расчёт по копии'
-                : 'Новый расчёт'}
+                : fromMeasurementId
+                  ? 'Новый расчёт по выполненному замеру'
+                  : 'Новый расчёт'}
           </h1>
-          <p className={styles.subtitle}>
+          <p className={`${styles.subtitle} ${styles.estimateWorkspaceSubtitle}`}>
             Калькулятор сметы. Сохранение появляется только при изменениях в названии, категории или
             смете; затем вы вернётесь к списку общих расчётов.
           </p>
+        </div>
+        <div className={styles.estimateWorkspaceHeaderControls}>
+          <label className={`${styles.field} ${styles.estimateWorkspaceHeaderNameField}`}>
+            <span>Название расчёта</span>
+            <input
+              value={estimateNameDraft}
+              onChange={(e) => setEstimateNameDraft(e.target.value)}
+              placeholder="Например: ЖК Парк, кв. 54"
+            />
+          </label>
+          {dirty ? (
+            <div className={styles.estimateWorkspaceActions}>
+              <button
+                type="button"
+                className={styles.primaryBtn}
+                disabled={saving}
+                onClick={() => void saveCurrentEstimate()}
+              >
+                {saving
+                  ? 'Сохранение…'
+                  : isEditingExisting
+                    ? 'Сохранить изменения'
+                    : 'Сохранить расчёт'}
+              </button>
+              <button
+                type="button"
+                className={`${styles.secondaryBtn} ${styles.estimateWorkspaceExitBtn}`}
+                disabled={saving}
+                onClick={() => setExitConfirmOpen(true)}
+              >
+                Выйти без сохранения
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
 
       {error ? <p className={styles.error}>{error}</p> : null}
       {ok ? <p className={styles.success}>{ok}</p> : null}
 
-      <div className={`${styles.docToolbar} ${styles.blockImport}`} style={{ marginBottom: 12 }}>
-        <label className={styles.field} style={{ minWidth: 340 }}>
+      <div
+        className={`${styles.docToolbar} ${styles.blockImport} ${styles.estimateWorkspaceToolbar}`}
+      >
+        <label className={`${styles.field} ${styles.estimateWorkspaceFieldWide}`}>
           <span>Категории работ (можно выбрать несколько)</span>
-          <div
-            style={{
-              maxHeight: 160,
-              overflow: 'auto',
-              border: '1px solid #d1d5db',
-              borderRadius: 8,
-              padding: '6px 8px',
-              background: '#fff',
-              display: 'grid',
-              gap: 4,
-            }}
-          >
+          <div className={styles.estimateWorkspaceCategoryChips}>
             {estimateCategories.map((c) => (
-              <label key={c.slug} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input
-                  type="checkbox"
-                  checked={estimateCategorySlugs.includes(c.slug)}
-                  onChange={(e) => {
-                    setEstimateCategorySlugs((prev) => {
-                      if (e.target.checked) return normalizeUniqueCategorySlugs([...prev, c.slug]);
-                      return prev.filter((x) => x !== c.slug);
-                    });
-                  }}
-                />
-                <span>{c.name}</span>
-              </label>
+              <button
+                key={c.slug}
+                type="button"
+                className={`${styles.estimateWorkspaceCategoryChip} ${
+                  estimateCategorySlugs.includes(c.slug)
+                    ? styles.estimateWorkspaceCategoryChipActive
+                    : ''
+                }`}
+                onClick={() => {
+                  setEstimateCategorySlugs((prev) => {
+                    if (prev.includes(c.slug)) return prev.filter((x) => x !== c.slug);
+                    return normalizeUniqueCategorySlugs([...prev, c.slug]);
+                  });
+                }}
+              >
+                {c.name}
+              </button>
             ))}
           </div>
         </label>
-        <label className={styles.field} style={{ minWidth: 280 }}>
-          <span>Название расчёта</span>
-          <input
-            value={estimateNameDraft}
-            onChange={(e) => setEstimateNameDraft(e.target.value)}
-            placeholder="Например: ЖК Парк, кв. 54"
-          />
-        </label>
-        {dirty ? (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-            <button
-              type="button"
-              className={styles.primaryBtn}
-              disabled={saving}
-              onClick={() => void saveCurrentEstimate()}
-            >
-              {saving
-                ? 'Сохранение…'
-                : isEditingExisting
-                  ? 'Сохранить изменения'
-                  : 'Сохранить расчёт'}
-            </button>
-            <button
-              type="button"
-              className={styles.secondaryBtn}
-              disabled={saving}
-              onClick={() => setExitConfirmOpen(true)}
-            >
-              Выйти без сохранения
-            </button>
-          </div>
-        ) : null}
       </div>
 
       <div className={styles.docPane}>
         {estimateCategorySlugs.length > 0 ? (
           <CartProvider>
-            <div className={styles.tabBar} style={{ marginBottom: 10 }}>
+            <div className={`${styles.tabBar} ${styles.estimateWorkspaceTabBar}`}>
               {estimateCategorySlugs.map((slug) => (
                 <button
                   key={slug}
@@ -698,16 +907,13 @@ function ContractDocumentsEstimateWorkspaceInner() {
             </div>
             {activeCategorySlug ? (
               <div>
-                <p style={{ margin: '0 0 8px', fontWeight: 700 }}>
-                  Категория:{' '}
-                  {estimateCategories.find((c) => c.slug === activeCategorySlug)?.name ??
-                    activeCategorySlug}
-                </p>
                 <ApprovedOrderGuardProvider>
                   <ServiceCategoryPage
                     key={activeCategorySlug}
                     slug={activeCategorySlug}
                     hideAddToCart
+                    hideBreadcrumbs
+                    hideTitleBlock
                   />
                 </ApprovedOrderGuardProvider>
               </div>

@@ -190,6 +190,95 @@ function isAddendumSlotEmpty(
   );
 }
 
+type FinalEstimateSummaryRow = {
+  roomName: string;
+  workName: string;
+  unit: string;
+  quantity: number;
+  amount: number;
+  includedQuantity: number;
+  excludedQuantity: number;
+};
+
+function buildFinalEstimateSummary(form: RepairPackageFormData): {
+  rows: FinalEstimateSummaryRow[];
+  totalAmount: number;
+} {
+  type Agg = {
+    roomName: string;
+    workName: string;
+    unit: string;
+    includedQuantity: number;
+    includedAmount: number;
+    excludedQuantity: number;
+    excludedAmount: number;
+  };
+  const acc = new Map<string, Agg>();
+  const addSnapshot = (
+    snapshot: RepairPackageFormData['estimate']['snapshot'] | null | undefined,
+    kind: 'included' | 'excluded'
+  ) => {
+    if (!snapshot?.rooms?.length) return;
+    for (const room of snapshot.rooms) {
+      const roomName = (room.name || '').trim() || 'Помещение';
+      for (const line of room.lines ?? []) {
+        const workName = (line.name || '').trim();
+        if (!workName) continue;
+        const unit = (line.unit || '').trim();
+        const key = `${roomName}::${workName}::${unit}`;
+        const quantity = Number.isFinite(Number(line.quantity)) ? Number(line.quantity) : 0;
+        const amount = Number.isFinite(Number(line.amount)) ? Number(line.amount) : 0;
+        const prev =
+          acc.get(key) ??
+          ({
+            roomName,
+            workName,
+            unit,
+            includedQuantity: 0,
+            includedAmount: 0,
+            excludedQuantity: 0,
+            excludedAmount: 0,
+          } satisfies Agg);
+        if (kind === 'included') {
+          prev.includedQuantity += quantity;
+          prev.includedAmount += amount;
+        } else {
+          prev.excludedQuantity += quantity;
+          prev.excludedAmount += amount;
+        }
+        acc.set(key, prev);
+      }
+    }
+  };
+
+  addSnapshot(form.estimate.snapshot, 'included');
+  for (const slot of form.addendumSlots.slice(0, form.addendumSlotCount)) {
+    addSnapshot(slot.snapshot, 'included');
+    addSnapshot(slot.excludedSnapshot, 'excluded');
+  }
+
+  const rows: FinalEstimateSummaryRow[] = [];
+  for (const item of acc.values()) {
+    const quantity = Math.max(0, item.includedQuantity - item.excludedQuantity);
+    const amount = Math.max(0, item.includedAmount - item.excludedAmount);
+    if (quantity <= 0 && amount <= 0) continue;
+    rows.push({
+      roomName: item.roomName,
+      workName: item.workName,
+      unit: item.unit,
+      quantity,
+      amount,
+      includedQuantity: item.includedQuantity,
+      excludedQuantity: item.excludedQuantity,
+    });
+  }
+  rows.sort(
+    (a, b) =>
+      a.roomName.localeCompare(b.roomName, 'ru') || a.workName.localeCompare(b.workName, 'ru')
+  );
+  return { rows, totalAmount: rows.reduce((sum, row) => sum + row.amount, 0) };
+}
+
 function parseDecimalAmount(raw: string): number | null {
   const normalized = raw.replace(/\s+/g, '').replace(',', '.');
   if (!normalized) return null;
@@ -200,6 +289,19 @@ function parseDecimalAmount(raw: string): number | null {
 
 function formatMoneyValue(value: number): string {
   return value.toFixed(2).replace('.', ',');
+}
+
+function parsePercentForWorkOrder(raw: string): number {
+  const normalized = raw.replace(/\s+/g, '').replace(',', '.');
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed)) return 0;
+  if (parsed < 0) return 0;
+  if (parsed > 100) return 100;
+  return parsed;
+}
+
+function normalizeWorkOrderGrade(v: unknown): 0 | 5 | 10 {
+  return v === 5 || v === 10 ? v : 0;
 }
 
 function RepairEstimateSignaturesBlock({
@@ -249,6 +351,7 @@ function formatPackageVersionDate(iso: string) {
 
 const PACKAGE_VERSION_MOMENT_LABELS: Record<string, string> = {
   packageCreated: 'Создание пакета',
+  packageRollbackApplied: 'Откат к предыдущему снимку',
   packageFormDataUpdated: 'Изменены данные пакета',
   packageCustomerUpdated: 'Изменены данные заказчика',
   packageEstimateUpdated: 'Изменена смета',
@@ -263,25 +366,25 @@ function formatPackageVersionKeyMoments(keyMoments: string[] | undefined): strin
   return labels.join(', ');
 }
 
+function formatPackageVersionAction(action: 'CREATE' | 'UPDATE' | 'ROLLBACK' | undefined): string {
+  switch (action) {
+    case 'CREATE':
+      return 'Создание';
+    case 'ROLLBACK':
+      return 'Откат';
+    case 'UPDATE':
+      return 'Изменение';
+    default:
+      return 'Изменение';
+  }
+}
+
 /** Иконка «история / версии» в шапке пакета. */
 function PackageVersionsHistoryTriggerIcon() {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={20}
-      height={20}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-      <path d="M3 3v5h5" />
-      <path d="M12 7v5l3 3" />
-    </svg>
+    <span className={styles.versionsHistoryEmojiIcon} aria-hidden>
+      📋
+    </span>
   );
 }
 
@@ -1431,6 +1534,73 @@ export function RepairContractDocumentEditorPage({
     return { num, date };
   }, [form.contract.number, form.contract.date]);
 
+  const finalEstimateSummary = useMemo(() => buildFinalEstimateSummary(form), [form]);
+  const finalEstimateRooms = useMemo(() => {
+    const roomMap = new Map<
+      string,
+      {
+        name: string;
+        total: number;
+        lines: Array<{
+          name: string;
+          unit: string;
+          quantity: number;
+          price: number;
+          amount: number;
+          includedQuantity: number;
+          excludedQuantity: number;
+        }>;
+      }
+    >();
+    for (const row of finalEstimateSummary.rows) {
+      const room = roomMap.get(row.roomName) ?? {
+        name: row.roomName,
+        total: 0,
+        lines: [],
+      };
+      const price = row.quantity > 0 ? row.amount / row.quantity : 0;
+      room.lines.push({
+        name: row.workName,
+        unit: row.unit,
+        quantity: row.quantity,
+        price,
+        amount: row.amount,
+        includedQuantity: row.includedQuantity,
+        excludedQuantity: row.excludedQuantity,
+      });
+      room.total += row.amount;
+      roomMap.set(row.roomName, room);
+    }
+    return [...roomMap.values()];
+  }, [finalEstimateSummary.rows]);
+
+  const finalWorkOrderComputed = useMemo(() => {
+    const taxPercent = parsePercentForWorkOrder(form.workOrder.taxPercent);
+    const markupPercent = parsePercentForWorkOrder(form.workOrder.markupPercent);
+    const gradeIncreasePercent = normalizeWorkOrderGrade(form.workOrder.gradeIncreasePercent);
+    const gradeFactor = 1 + gradeIncreasePercent / 100;
+    const roomTotals: number[] = [];
+    const rooms = finalEstimateRooms.map((room) => {
+      const lines = room.lines.map((line) => {
+        const adjustedPrice =
+          line.price * (1 - taxPercent / 100) * (1 - markupPercent / 100) * gradeFactor;
+        const adjustedAmount =
+          line.amount * (1 - taxPercent / 100) * (1 - markupPercent / 100) * gradeFactor;
+        return { ...line, adjustedPrice, adjustedAmount };
+      });
+      const adjustedTotal = lines.reduce((sum, line) => sum + line.adjustedAmount, 0);
+      roomTotals.push(adjustedTotal);
+      return { ...room, lines, adjustedTotal };
+    });
+    const total = roomTotals.reduce((sum, x) => sum + x, 0);
+    return { rooms, total };
+  }, [
+    finalEstimateRooms,
+    form.workOrder.taxPercent,
+    form.workOrder.markupPercent,
+    form.workOrder.gradeIncreasePercent,
+  ]);
+
   const applyEstimatePresetIdsToForm = (presetIds: string[]) => {
     if (contractAndEstimateLocked) return;
     setForm((p) => {
@@ -1556,7 +1726,12 @@ export function RepairContractDocumentEditorPage({
   const repairFormForActiveTemplate = useMemo(
     () =>
       repairPackageFormForTemplate(formMergedForTemplate, {
-        templateTab: activeTab,
+        templateTab:
+          activeTab === 'finalEstimate'
+            ? 'estimate'
+            : activeTab === 'finalWorkOrder'
+              ? 'workOrder'
+              : activeTab,
         estimatePresets,
       }),
     [formMergedForTemplate, activeTab, estimatePresets]
@@ -1582,6 +1757,7 @@ export function RepairContractDocumentEditorPage({
 
   const renderedDoc = useMemo(() => {
     if (activeTab === 'data') return '';
+    if (activeTab === 'finalEstimate' || activeTab === 'finalWorkOrder') return '';
     if (activeTab === 'questionnaire1') {
       return buildManagerQuestionnaire1PrintHtml(repairFormForActiveTemplate);
     }
@@ -2036,6 +2212,7 @@ export function RepairContractDocumentEditorPage({
       window.print();
       return;
     }
+    if (activeTab === 'finalEstimate' || activeTab === 'finalWorkOrder') return;
     if (!renderedDoc) return;
     const printTitle =
       activeTab === 'contract' || isRepairActTwinOneSheetTab(activeTab)
@@ -2083,6 +2260,15 @@ export function RepairContractDocumentEditorPage({
       </div>
     );
   }
+
+  const visibleRepairTabs = repairTabOrder.filter((id) =>
+    isRepairAddendumTabVisible(id, form.addendumSlotCount)
+  );
+  const summaryTabs: RepairDocumentTabId[] = ['finalEstimate', 'finalWorkOrder'];
+  const orderedVisibleRepairTabs = [
+    ...visibleRepairTabs.filter((id) => !summaryTabs.includes(id)),
+    ...summaryTabs.filter((id) => visibleRepairTabs.includes(id)),
+  ];
 
   type ToolButton = {
     label: string;
@@ -2299,7 +2485,9 @@ export function RepairContractDocumentEditorPage({
                 </button>
               </>
             )}
-            {activeTab !== 'data' ? (
+            {activeTab !== 'data' &&
+            activeTab !== 'finalEstimate' &&
+            activeTab !== 'finalWorkOrder' ? (
               <button type="button" className={styles.secondaryBtn} onClick={handlePrint}>
                 Печать
               </button>
@@ -2353,6 +2541,7 @@ export function RepairContractDocumentEditorPage({
                     <tr>
                       <th>Версия</th>
                       <th>Дата</th>
+                      <th>Тип события</th>
                       <th>Название черновика</th>
                       <th>Ключевые изменения</th>
                       <th>Автор снимка</th>
@@ -2368,6 +2557,7 @@ export function RepairContractDocumentEditorPage({
                         <tr key={v.id}>
                           <td>{v.versionNumber}</td>
                           <td>{formatPackageVersionDate(v.createdAt)}</td>
+                          <td>{formatPackageVersionAction(v.action)}</td>
                           <td>{v.title?.trim() || '—'}</td>
                           <td>{formatPackageVersionKeyMoments(v.keyMoments)}</td>
                           <td>{author || v.savedBy?.email || '—'}</td>
@@ -2478,34 +2668,36 @@ export function RepairContractDocumentEditorPage({
           role="tablist"
           aria-label="Разделы пакета. Перетащите вкладку, чтобы изменить порядок."
         >
-          {repairTabOrder
-            .filter((id) => isRepairAddendumTabVisible(id, form.addendumSlotCount))
-            .map((id) => (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                draggable
-                aria-selected={activeTab === id}
-                title={
-                  contractAndEstimateLocked && (id === 'contract' || id === 'estimate')
-                    ? `${REPAIR_DOCUMENT_TAB_LABELS[id]} — только просмотр (договор заключён)`
-                    : `${REPAIR_DOCUMENT_TAB_LABELS[id]} — перетащите для смены порядка`
-                }
-                className={`${styles.tab} ${activeTab === id ? styles.tabActive : ''}`}
-                onClick={() => handleRepairTabActivate(id)}
-                onDragStart={(e) => handleRepairTabDragStart(id, e)}
-                onDragOver={handleRepairTabDragOver}
-                onDrop={handleRepairTabDrop(id)}
-              >
-                <span className={styles.repairTabLabelInner}>
-                  {contractAndEstimateLocked && (id === 'contract' || id === 'estimate') ? (
-                    <RepairTabLockIcon />
-                  ) : null}
-                  <span>{REPAIR_DOCUMENT_TAB_LABELS_SHORT[id]}</span>
-                </span>
-              </button>
-            ))}
+          {orderedVisibleRepairTabs.map((id) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              draggable
+              aria-selected={activeTab === id}
+              title={
+                contractAndEstimateLocked && (id === 'contract' || id === 'estimate')
+                  ? `${REPAIR_DOCUMENT_TAB_LABELS[id]} — только просмотр (договор заключён)`
+                  : `${REPAIR_DOCUMENT_TAB_LABELS[id]} — перетащите для смены порядка`
+              }
+              className={`${styles.tab} ${activeTab === id ? styles.tabActive : ''} ${
+                id === 'finalEstimate' || id === 'finalWorkOrder' ? styles.summaryTab : ''
+              } ${id === 'finalEstimate' ? styles.summaryTabFirst : ''} ${
+                id === 'finalWorkOrder' ? styles.summaryTabLast : ''
+              }`}
+              onClick={() => handleRepairTabActivate(id)}
+              onDragStart={(e) => handleRepairTabDragStart(id, e)}
+              onDragOver={handleRepairTabDragOver}
+              onDrop={handleRepairTabDrop(id)}
+            >
+              <span className={styles.repairTabLabelInner}>
+                {contractAndEstimateLocked && (id === 'contract' || id === 'estimate') ? (
+                  <RepairTabLockIcon />
+                ) : null}
+                <span>{REPAIR_DOCUMENT_TAB_LABELS_SHORT[id]}</span>
+              </span>
+            </button>
+          ))}
         </div>
         {form.addendumSlotCount < 5 ? (
           <button
@@ -3485,6 +3677,230 @@ export function RepairContractDocumentEditorPage({
                   </Link>
                   .
                 </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : activeTab === 'finalEstimate' ? (
+        <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
+          <div className={styles.formGrid}>
+            <div className={styles.sectionCard}>
+              <h3 className={`${styles.sectionTitle} ${styles.estimateSectionTitle}`}>
+                Итоговая смета
+              </h3>
+              <p className={styles.hint} style={{ marginTop: 0 }}>
+                Итог формируется из основной сметы и всех доп. соглашений. Одинаковые работы в одном
+                помещении суммируются, а работы из блока «Непроводимые ремонтно-отделочные работы»
+                вычитаются по количеству и сумме.
+              </p>
+              <div className={styles.estimateA4Wrap}>
+                <article className={styles.estimateA4Sheet}>
+                  <p className={styles.estimateA4AppendixRef}>
+                    Приложение №1 к договору № {estimateAppendixContractRef.num} от{' '}
+                    {estimateAppendixContractRef.date}
+                  </p>
+                  {finalEstimateRooms.length === 0 ? (
+                    <p className={styles.estimateA4Empty}>Нет данных для итоговой сметы.</p>
+                  ) : (
+                    <>
+                      <h4 className={styles.estimateA4Title}>Итоговая смета работ</h4>
+                      <p className={styles.estimateA4Meta}>
+                        Помещений: {finalEstimateRooms.length}
+                      </p>
+                      {finalEstimateRooms.map((room, roomIndex) => (
+                        <section
+                          key={`final-estimate-room-${room.name}-${roomIndex}`}
+                          className={styles.estimateA4Room}
+                        >
+                          <div className={styles.estimateA4RoomHeader}>
+                            <span>
+                              {roomIndex + 1}. {room.name}
+                            </span>
+                            <strong>{formatMoneyValue(room.total)} руб.</strong>
+                          </div>
+                          <table className={styles.estimateA4Table}>
+                            <thead>
+                              <tr>
+                                <th>№</th>
+                                <th>Наименование</th>
+                                <th>Ед.</th>
+                                <th>Кол-во</th>
+                                <th>Цена</th>
+                                <th>Сумма</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {room.lines.map((line, lineIndex) => (
+                                <tr key={`${room.name}-${line.name}-${lineIndex}`}>
+                                  <td>{lineIndex + 1}</td>
+                                  <td>
+                                    {line.name}
+                                    {line.excludedQuantity > 0 ? (
+                                      <div className={styles.estimateAttachedPresetMeta}>
+                                        Вычет: {formatMoneyValue(line.excludedQuantity)} из{' '}
+                                        {formatMoneyValue(line.includedQuantity)}
+                                      </div>
+                                    ) : null}
+                                  </td>
+                                  <td>{line.unit || '—'}</td>
+                                  <td>{formatMoneyValue(line.quantity)}</td>
+                                  <td>{formatMoneyValue(line.price)}</td>
+                                  <td>{formatMoneyValue(line.amount)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </section>
+                      ))}
+                      <p className={styles.estimateA4Total}>
+                        Итого по итоговой смете:{' '}
+                        <strong>{formatMoneyValue(finalEstimateSummary.totalAmount)} руб.</strong>
+                      </p>
+                    </>
+                  )}
+                </article>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : activeTab === 'finalWorkOrder' ? (
+        <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
+          <div
+            className={styles.formGrid}
+            style={{ gap: '2px 6px', display: 'flex', alignItems: 'flex-end', flexWrap: 'nowrap' }}
+          >
+            <h3 className={styles.sectionTitle} style={{ margin: '0 0 1px', fontSize: '0.78rem' }}>
+              Параметры итогового заказ-наряда
+            </h3>
+            <div className={styles.field} style={{ gap: 1, minWidth: 240 }}>
+              <label style={{ fontSize: '0.62rem' }}>Разряд (после налога и наценки)</label>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  style={
+                    form.workOrder.gradeIncreasePercent === 0
+                      ? {
+                          background: '#dbeafe',
+                          borderColor: '#93c5fd',
+                          color: '#1d4ed8',
+                          padding: '3px 8px',
+                          fontSize: '0.72rem',
+                        }
+                      : { padding: '3px 8px', fontSize: '0.72rem' }
+                  }
+                  onClick={() => updateWorkOrder('gradeIncreasePercent', 0)}
+                >
+                  4 разряд
+                </button>
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  style={
+                    form.workOrder.gradeIncreasePercent === 5
+                      ? {
+                          background: '#f59e0b',
+                          borderColor: '#d97706',
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          boxShadow: '0 0 0 2px rgba(245, 158, 11, 0.35)',
+                          padding: '3px 8px',
+                          fontSize: '0.72rem',
+                        }
+                      : { padding: '3px 8px', fontSize: '0.72rem' }
+                  }
+                  onClick={() => updateWorkOrder('gradeIncreasePercent', 5)}
+                >
+                  5 разряд
+                </button>
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  style={
+                    form.workOrder.gradeIncreasePercent === 10
+                      ? {
+                          background: '#ef4444',
+                          borderColor: '#dc2626',
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          boxShadow: '0 0 0 2px rgba(239, 68, 68, 0.35)',
+                          padding: '3px 8px',
+                          fontSize: '0.72rem',
+                        }
+                      : { padding: '3px 8px', fontSize: '0.72rem' }
+                  }
+                  onClick={() => updateWorkOrder('gradeIncreasePercent', 10)}
+                >
+                  6 разряд
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className={styles.formGrid}>
+            <div className={styles.sectionCard}>
+              <h3 className={`${styles.sectionTitle} ${styles.estimateSectionTitle}`}>
+                Итоговый заказ-наряд
+              </h3>
+              <p className={styles.hint} style={{ marginTop: 0 }}>
+                Формируется из итоговой сметы: включает все проводимые работы по основной смете и
+                доп. соглашениям, с вычетом работ из блока «Непроводимые ремонтно-отделочные
+                работы».
+              </p>
+              <div className={styles.estimateA4Wrap}>
+                <article className={styles.estimateA4Sheet}>
+                  <p className={styles.estimateA4AppendixRef}>
+                    Приложение к договору № {estimateAppendixContractRef.num} от{' '}
+                    {estimateAppendixContractRef.date}
+                  </p>
+                  {finalWorkOrderComputed.rooms.length === 0 ? (
+                    <p className={styles.estimateA4Empty}>Нет данных для итогового заказ-наряда.</p>
+                  ) : (
+                    <>
+                      <h4 className={styles.estimateA4Title}>Итоговый заказ-наряд</h4>
+                      {finalWorkOrderComputed.rooms.map((room, roomIndex) => (
+                        <section
+                          key={`final-work-order-room-${room.name}-${roomIndex}`}
+                          className={styles.estimateA4Room}
+                        >
+                          <div className={styles.estimateA4RoomHeader}>
+                            <span>
+                              {roomIndex + 1}. {room.name}
+                            </span>
+                            <strong>{formatMoneyValue(room.adjustedTotal)} руб.</strong>
+                          </div>
+                          <table className={styles.estimateA4Table}>
+                            <thead>
+                              <tr>
+                                <th>№</th>
+                                <th>Вид работ</th>
+                                <th>Кол-во</th>
+                                {form.workOrder.showLineAmounts ? <th>Стоимость</th> : null}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {room.lines.map((line, lineIndex) => (
+                                <tr key={`${room.name}-${line.name}-wo-${lineIndex}`}>
+                                  <td>{lineIndex + 1}</td>
+                                  <td>{line.name}</td>
+                                  <td>
+                                    {formatMoneyValue(line.quantity)} {line.unit || ''}
+                                  </td>
+                                  {form.workOrder.showLineAmounts ? (
+                                    <td>{formatMoneyValue(line.adjustedAmount)}</td>
+                                  ) : null}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </section>
+                      ))}
+                      <p className={styles.estimateA4Total}>
+                        Итого по итоговому заказ-наряду:{' '}
+                        <strong>{formatMoneyValue(finalWorkOrderComputed.total)} руб.</strong>
+                      </p>
+                    </>
+                  )}
+                </article>
               </div>
             </div>
           </div>

@@ -94,6 +94,7 @@ model User {
   contractDocumentPackagesCreated ContractDocumentPackage[] @relation("ContractDocumentPackagesCreated")
   contractDocumentGlobalTemplatesUpdated ContractDocumentGlobalTemplate[] @relation("GlobalContractTemplateUpdatedBy")
   contractDocumentPackageVersionsSaved ContractDocumentPackageVersion[] @relation("ContractDocumentPackageVersionSavedBy")
+  contractDocumentEstimatePresetsHistory ContractDocumentEstimatePresetsHistory[] @relation("ContractDocumentEstimatePresetsHistoryChangedBy")
 
   @@map("users")
 }
@@ -1997,6 +1998,24 @@ model ContractDocumentPackageVersion {
   @@unique([packageId, versionNumber])
   @@index([packageId, createdAt])
   @@map("contract_document_package_versions")
+}
+
+/// История изменений общего списка расчётов по направлению (например, "Ремонт").
+model ContractDocumentEstimatePresetsHistory {
+  id            String                      @id @default(cuid())
+  kind          ContractDocumentPackageKind
+  items         Json                        @default("[]")
+  groups        Json                        @default("[]")
+  changedFields String[]                    @default([])
+  action        String                      // CREATE | UPDATE | ROLLBACK
+  changedAt     DateTime                    @default(now())
+  changedById   String?
+
+  changedBy User? @relation("ContractDocumentEstimatePresetsHistoryChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
+
+  @@index([kind, changedAt])
+  @@index([changedById])
+  @@map("contract_document_estimate_presets_history")
 }
 
 /// Общий шаблон HTML для вкладки документа (например договор «Ремонт») — подставляется всем пакетам, у которых нет своего переопределения.

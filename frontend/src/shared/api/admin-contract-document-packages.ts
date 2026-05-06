@@ -49,6 +49,15 @@ export interface ContractDocumentPackageUserRef {
   lastName: string | null;
 }
 
+export interface ContractEstimatePresetsHistoryEntry {
+  id: string;
+  kind: ContractDocumentPackageKind;
+  changedFields: string[];
+  action: 'CREATE' | 'UPDATE' | 'ROLLBACK';
+  changedAt: string;
+  changedBy?: ContractDocumentPackageUserRef | null;
+}
+
 /** Краткие поля связанного договора CRM (для списка и подписей). */
 export interface ContractDocumentPackageCrmContract {
   id: string;
@@ -154,6 +163,8 @@ export interface ContractEstimatePreset {
   multiCategorySlugs?: string[];
   /** Ссылка на `ContractEstimateGroup.id`, если расчёт входит в объект. */
   groupId?: string;
+  /** Замер-источник, если расчёт был создан из выполненного замера. */
+  sourceMeasurementId?: string;
   snapshot?: {
     total: number;
     rooms: Array<{
@@ -412,6 +423,16 @@ export async function getContractDocumentEstimatePresets(
   };
 }
 
+export async function getContractDocumentEstimatePresetsHistory(
+  kind: ContractDocumentPackageKind
+): Promise<ContractEstimatePresetsHistoryEntry[]> {
+  const qs = new URLSearchParams({ kind });
+  const url = `${getApiBaseUrl()}/admin/contract-document-packages/estimate-presets/history?${qs}`;
+  const res = await apiFetch(url, { headers: getAdminAuthHeaders() });
+  if (!res.ok) throw new Error('Не удалось загрузить историю изменений расчётов');
+  return res.json();
+}
+
 export async function putContractDocumentEstimatePresets(body: {
   kind: ContractDocumentPackageKind;
   items: ContractEstimatePreset[];
@@ -426,8 +447,9 @@ export async function putContractDocumentEstimatePresets(body: {
     }
   );
   if (!res.ok) {
-    const err = (await res.json().catch(() => ({}))) as { message?: string };
-    throw new Error(err.message || 'Не удалось сохранить расчёты');
+    const err = (await res.json().catch(() => ({}))) as { message?: string | string[] };
+    const msg = Array.isArray(err.message) ? err.message.join('. ') : err.message;
+    throw new Error(msg || 'Не удалось сохранить расчёты');
   }
   return res.json();
 }

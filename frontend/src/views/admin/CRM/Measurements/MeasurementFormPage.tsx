@@ -20,13 +20,18 @@ import styles from './MeasurementFormPage.module.css';
 import { MeasurementHistoryModal } from './MeasurementHistoryModal';
 
 const STATUS_OPTIONS = [
-  { value: 'NEW', label: 'Новый' },
-  { value: 'ASSIGNED', label: 'Назначен' },
-  { value: 'IN_PROGRESS', label: 'В работе' },
+  { value: 'NEW', label: 'Принят' },
   { value: 'COMPLETED', label: 'Выполнен' },
-  { value: 'CANCELLED', label: 'Отменён' },
-  { value: 'CONVERTED', label: 'В договор' },
+  { value: 'CANCELLED', label: 'Отказ' },
+  { value: 'CONVERTED', label: 'Договор подписан' },
 ];
+
+const STATUS_SELECT_CLASS_BY_VALUE: Record<string, string> = {
+  NEW: 'statusSelectNew',
+  COMPLETED: 'statusSelectCompleted',
+  CANCELLED: 'statusSelectCancelled',
+  CONVERTED: 'statusSelectConverted',
+};
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 const REPAIR_MEASUREMENT_DATA_MARKER = '[REPAIR_MEASUREMENT_DATA_V1]';
@@ -565,6 +570,15 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
     });
   };
 
+  const handleMarkMeasurementCompleted = useCallback(() => {
+    const hasAnyRoomData = repairMeasurementData.rooms.some((room) => isRoomFilled(room));
+    if (!hasAnyRoomData) {
+      showMessage('error', 'Сначала заполните блок «Замеры помещений»');
+      return;
+    }
+    setStatus('COMPLETED');
+  }, [repairMeasurementData.rooms, showMessage]);
+
   if (loading) {
     return (
       <div className={styles.page}>
@@ -585,6 +599,8 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
     ].includes(u.role)
   );
   const surveyors = users.filter((u) => u.role === 'SURVEYOR');
+  const isAutosaveMessage =
+    message?.type === 'success' && message.text === 'Сохранено автоматически';
 
   return (
     <div className={styles.page}>
@@ -596,20 +612,46 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
           <h1 className={styles.title}>
             {measurementId ? 'Редактирование замера' : 'Новый замер'}
           </h1>
-          {measurementId && (
-            <button
-              type="button"
-              className={styles.historyButton}
-              onClick={() => setShowHistory(true)}
-              title="История изменений"
-            >
-              📋 История
-            </button>
-          )}
+          <div className={styles.titleControls}>
+            {measurementId && (
+              <button
+                type="button"
+                className={styles.historyButton}
+                onClick={() => setShowHistory(true)}
+                title="История изменений"
+              >
+                📋 История
+              </button>
+            )}
+            <label className={styles.statusInlineLabel}>
+              <span className={styles.statusInlineText}>Статус</span>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className={`${styles.select} ${styles.statusInlineSelect} ${
+                  styles[STATUS_SELECT_CLASS_BY_VALUE[status] ?? '']
+                }`}
+              >
+                {STATUS_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </div>
+        <div
+          className={`${styles.headerAutosaveFloating} ${
+            isAutosaveMessage ? styles.headerAutosaveFloatingVisible : ''
+          }`}
+          aria-live="polite"
+        >
+          Сохранено автоматически
         </div>
       </div>
 
-      {message && (
+      {message && !isAutosaveMessage && (
         <div className={`${styles.message} ${styles[`message${message.type}`]}`}>
           {message.text}
         </div>
@@ -798,21 +840,6 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
               </span>
             )}
           </div>
-
-          <div className={styles.row}>
-            <label className={styles.label}>Статус</label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className={styles.select}
-            >
-              {STATUS_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
 
         <div className={`${styles.row} ${styles.zoneCommentMain}`}>
@@ -829,14 +856,26 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
         <section className={styles.measurementsSection}>
           <div className={styles.measurementsSectionHeader}>
             <h2 className={styles.measurementsTitle}>Замеры помещений</h2>
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              onClick={addRoom}
-              disabled={repairMeasurementData.rooms.length >= MAX_ROOMS_COUNT}
-            >
-              + Добавить помещение
-            </button>
+            <div className={styles.measurementsHeaderActions}>
+              <button
+                type="button"
+                className={`${styles.secondaryButton} ${styles.completeMeasurementButton} ${
+                  status === 'COMPLETED' ? styles.completeMeasurementButtonDone : ''
+                }`}
+                onClick={handleMarkMeasurementCompleted}
+                disabled={status === 'COMPLETED'}
+              >
+                Замер выполнен
+              </button>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={addRoom}
+                disabled={repairMeasurementData.rooms.length >= MAX_ROOMS_COUNT}
+              >
+                + Добавить помещение
+              </button>
+            </div>
           </div>
           <p className={styles.measurementsHint}>
             Помещений: {repairMeasurementData.rooms.length} / {MAX_ROOMS_COUNT}. Периметр, площадь

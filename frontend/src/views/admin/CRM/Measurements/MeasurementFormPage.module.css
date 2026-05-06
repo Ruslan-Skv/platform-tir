@@ -8,15 +8,16 @@
 }
 
 .header {
-  margin-bottom: 10px;
+  position: relative;
+  margin-bottom: 6px;
 }
 
 .backLink {
   display: inline-block;
   color: #6b7280;
   text-decoration: none;
-  font-size: 0.85rem;
-  margin-bottom: 4px;
+  font-size: 0.8rem;
+  margin-bottom: 2px;
 }
 
 .backLink:hover {
@@ -26,19 +27,89 @@
 .titleRow {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.headerAutosaveFloating {
+  position: absolute;
+  right: 0;
+  top: 2px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 0.16s ease;
+  padding: 3px 6px;
+  border-radius: 5px;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  border: 1px solid #bbf7d0;
+  background: #ecfdf3;
+  color: #166534;
+}
+
+.headerAutosaveFloatingVisible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.titleControls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.statusInlineLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.statusInlineText {
+  font-size: 0.74rem;
+  color: #4b5563;
+  font-weight: 600;
+}
+
+.statusInlineSelect {
+  min-width: 150px;
+}
+
+.statusSelectNew {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1e3a8a;
+}
+
+.statusSelectCompleted {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.statusSelectCancelled {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.statusSelectConverted {
+  background: #ede9fe;
+  border-color: #c4b5fd;
+  color: #5b21b6;
 }
 
 .title {
-  font-size: 1.35rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: #1f2937;
   margin: 0;
 }
 
 .historyButton {
-  padding: 6px 12px;
-  font-size: 0.85rem;
+  padding: 4px 10px;
+  font-size: 0.78rem;
   background: #f3f4f6;
   color: #374151;
   border: 1px solid #e5e7eb;
@@ -78,26 +149,26 @@
 .form {
   background: #fff;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 8px 12px;
+  border-radius: 7px;
+  padding: 6px 9px;
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(170px, 1fr));
-  gap: 0 12px;
+  gap: 0 8px;
 }
 
 .row {
-  margin-bottom: 5px;
+  margin-bottom: 3px;
 }
 
 .label {
   display: block;
   font-weight: 500;
   color: #374151;
-  margin-bottom: 2px;
-  font-size: 0.8rem;
+  margin-bottom: 1px;
+  font-size: 0.75rem;
 }
 
 .emphasisLabel {
@@ -113,10 +184,10 @@
 .select,
 .textarea {
   width: 100%;
-  padding: 5px 8px;
+  padding: 4px 7px;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
-  font-size: 0.84rem;
+  font-size: 0.78rem;
 }
 
 .input:focus,
@@ -151,7 +222,7 @@
 
 .textarea {
   resize: vertical;
-  min-height: 44px;
+  min-height: 38px;
 }
 
 .actions {
@@ -213,8 +284,8 @@
 }
 
 .measurementsSection {
-  margin-top: 10px;
-  padding-top: 8px;
+  margin-top: 6px;
+  padding-top: 6px;
   border-top: 1px solid #e5e7eb;
 }
 
@@ -222,27 +293,73 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 3px;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.measurementsHeaderActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.completeMeasurementButton {
+  border: 1px solid #f59e0b !important;
+  background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%) !important;
+  color: #78350f !important;
+  font-weight: 700;
+  font-size: 0.8rem !important;
+  padding: 5px 10px !important;
+  border-radius: 7px;
+  box-shadow: 0 2px 8px rgb(245 158 11 / 28%);
+  letter-spacing: 0.01em;
+}
+
+.completeMeasurementButton:hover:not(:disabled) {
+  border-color: #d97706 !important;
+  background: linear-gradient(180deg, #fde68a 0%, #fcd34d 100%) !important;
+  box-shadow: 0 3px 10px rgb(245 158 11 / 35%);
+}
+
+.completeMeasurementButtonDone {
+  border-color: #15803d !important;
+  background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgb(34 197 94 / 42%);
+}
+
+.completeMeasurementButtonDone:hover:not(:disabled) {
+  border-color: #166534 !important;
+  background: linear-gradient(180deg, #16a34a 0%, #15803d 100%) !important;
+  box-shadow: 0 4px 12px rgb(22 163 74 / 48%);
+}
+
+.completeMeasurementButton:disabled {
+  border-color: #15803d !important;
+  background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgb(34 197 94 / 42%);
+  opacity: 1;
+  cursor: not-allowed;
 }
 
 .measurementsTitle {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: #111827;
 }
 
 .measurementsHint {
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   color: #6b7280;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
 }
 
 .roomCard {
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 6px;
-  margin-bottom: 6px;
+  border-radius: 7px;
+  padding: 5px;
+  margin-bottom: 4px;
   background: #f9fafb;
 }
 
@@ -250,7 +367,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .roomTabButton {
@@ -258,8 +375,8 @@
   background: #ffffff;
   color: #334155;
   border-radius: 6px;
-  padding: 3px 8px;
-  font-size: 0.74rem;
+  padding: 2px 7px;
+  font-size: 0.7rem;
   cursor: pointer;
 }
 
@@ -273,7 +390,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .roomActions {
@@ -301,8 +418,8 @@
 .inlineRow {
   display: grid;
   grid-template-columns: 1fr auto auto;
-  gap: 4px;
-  margin-bottom: 4px;
+  gap: 3px;
+  margin-bottom: 3px;
 }
 
 .openingSizeRow {
@@ -339,31 +456,31 @@
 }
 
 .calculatedBlock {
-  margin: 6px 0;
-  padding: 6px 8px;
+  margin: 4px 0;
+  padding: 4px 6px;
   border-radius: 6px;
   background: #eef2ff;
   color: #1f2937;
   display: grid;
   grid-template-columns: repeat(3, minmax(180px, 1fr));
-  gap: 3px 10px;
-  font-size: 0.8rem;
+  gap: 2px 8px;
+  font-size: 0.74rem;
 }
 
 .workItemsGrid {
   border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  border-radius: 5px;
   background: #fff;
-  padding: 8px;
+  padding: 6px;
   column-count: 3;
-  column-gap: 16px;
+  column-gap: 12px;
 }
 
 .workCategoryButtons {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: 4px;
+  margin-bottom: 6px;
 }
 
 .workCategoryButton {
@@ -371,8 +488,8 @@
   background: #ffffff;
   color: #374151;
   border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 0.8rem;
+  padding: 3px 8px;
+  font-size: 0.74rem;
   cursor: pointer;
 }
 
@@ -389,13 +506,29 @@
   font-weight: 700;
 }
 
+.workCategoryButtonActive.workCategoryButtonMarked {
+  border-color: #166534;
+  background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+  color: #ffffff;
+  box-shadow: 0 0 0 2px rgb(34 197 94 / 26%);
+}
+
+.workCategoryButtonActive.workCategoryButtonMarked::after {
+  content: '●';
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 0.62rem;
+  line-height: 1;
+  color: #dcfce7;
+}
+
 .checkboxLabel {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
-  font-size: 0.85rem;
+  gap: 4px;
+  font-size: 0.78rem;
   break-inside: avoid;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   justify-content: space-between;
 }
 
@@ -411,18 +544,18 @@
 }
 
 .itemQuantityInput {
-  width: 86px;
-  padding: 3px 6px;
-  font-size: 0.78rem;
+  width: 76px;
+  padding: 2px 5px;
+  font-size: 0.72rem;
 }
 
 .secondaryButton {
   border: 1px solid #d1d5db;
   background: #fff;
   color: #374151;
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 0.78rem;
+  border-radius: 5px;
+  padding: 3px 7px;
+  font-size: 0.72rem;
   cursor: pointer;
 }
 
@@ -435,9 +568,9 @@
   border: 1px solid #fecaca;
   background: #fff1f2;
   color: #b91c1c;
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 0.8rem;
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 0.74rem;
   cursor: pointer;
 }
 
@@ -458,17 +591,17 @@
 .zoneOpenings,
 .zoneNotes {
   border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  padding: 6px 8px;
-  margin-bottom: 6px;
+  border-radius: 5px;
+  padding: 5px 6px;
+  margin-bottom: 4px;
 }
 
 .zoneMeta,
 .zoneCommentMain {
   border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  padding: 8px;
-  margin-bottom: 8px;
+  border-radius: 5px;
+  padding: 6px;
+  margin-bottom: 6px;
 }
 
 .zoneMeta {
@@ -506,6 +639,40 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
   color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusInlineText {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusSelectNew {
+  background: rgb(59 130 246 / 0.22);
+  border-color: #60a5fa;
+  color: #bfdbfe;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusSelectCompleted {
+  background: rgb(34 197 94 / 0.2);
+  border-color: #4ade80;
+  color: #bbf7d0;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusSelectCancelled {
+  background: rgb(239 68 68 / 0.2);
+  border-color: #f87171;
+  color: #fecaca;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusSelectConverted {
+  background: rgb(139 92 246 / 0.2);
+  border-color: #a78bfa;
+  color: #ddd6fe;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .headerAutosaveFloating {
+  border-color: #22c55e;
+  background: rgb(34 197 94 / 0.18);
+  color: #dcfce7;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
@@ -722,8 +889,42 @@
   color: #dcfce7;
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workCategoryButtonActive.workCategoryButtonMarked {
+  border-color: #4ade80;
+  background: linear-gradient(180deg, #15803d 0%, #166534 100%);
+  color: #ffffff;
+  box-shadow: 0 0 0 2px rgb(74 222 128 / 32%);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workCategoryButtonActive.workCategoryButtonMarked::after {
+  color: #bbf7d0;
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryButton {
   border-color: #4b5563;
   background: #1f2937;
   color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .completeMeasurementButton {
+  border-color: #fbbf24 !important;
+  background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%) !important;
+  color: #422006 !important;
+  box-shadow: 0 2px 10px rgb(250 204 21 / 32%);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .completeMeasurementButtonDone {
+  border-color: #4ade80 !important;
+  background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgb(34 197 94 / 45%);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .completeMeasurementButton:disabled {
+  border-color: #4ade80 !important;
+  background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgb(34 197 94 / 45%);
 }

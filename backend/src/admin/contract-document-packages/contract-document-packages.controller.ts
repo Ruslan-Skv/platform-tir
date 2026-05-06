@@ -105,6 +105,15 @@ export class ContractDocumentPackagesController {
     return this.service.getGlobalEstimatePresets(kind as ContractDocumentPackageKind);
   }
 
+  @Get('estimate-presets/history')
+  listGlobalEstimatePresetsHistory(@Query('kind') kind: string) {
+    const allowed = new Set<string>(Object.values(ContractDocumentPackageKind));
+    if (!kind || !allowed.has(kind)) {
+      throw new BadRequestException('Укажите корректный query-параметр kind');
+    }
+    return this.service.listGlobalEstimatePresetsHistory(kind as ContractDocumentPackageKind);
+  }
+
   @Put('estimate-presets')
   setGlobalEstimatePresets(@Body() dto: SetGlobalEstimatePresetsDto, @Req() req: RequestWithUser) {
     return this.service.setGlobalEstimatePresets(dto, req.user?.id);

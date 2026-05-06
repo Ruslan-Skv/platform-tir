@@ -79,6 +79,36 @@
   color: #4338ca;
 }
 
+.refreshButton {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  padding: 8px !important;
+  min-width: 40px;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: #2563eb;
+}
+
+.refreshButton:hover:not(:disabled) {
+  border-color: #2563eb !important;
+  background: linear-gradient(180deg, #dbeafe 0%, #bfdbfe 100%) !important;
+  color: #1e40af !important;
+}
+
+.refreshIconSpinning {
+  animation: refreshSpin 0.85s linear infinite;
+}
+
+@keyframes refreshSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .saveMessage {
   padding: 8px 12px;
   border-radius: 6px;
@@ -202,6 +232,31 @@
   color: #f59e0b;
   font-size: 0.75rem;
   margin-right: 2px;
+}
+
+.muted {
+  color: #6b7280;
+  font-size: 0.78rem;
+}
+
+.linkStateOk,
+.linkStateDone,
+.linkStatePending {
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.linkStateOk {
+  color: #1d4ed8;
+}
+
+.linkStateDone {
+  color: #15803d;
+}
+
+.linkStatePending {
+  color: #b45309;
 }
 
 .editableInput {

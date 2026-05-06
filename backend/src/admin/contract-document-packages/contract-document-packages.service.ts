@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { ContractDocumentPackageKind, ContractDocumentPackageStatus, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
@@ -37,6 +38,7 @@ export class ContractDocumentPackagesService {
   private static readonly VERSION_MOMENT_STATUS_UPDATED = 'packageStatusUpdated';
   private static readonly VERSION_MOMENT_TITLE_UPDATED = 'packageTitleUpdated';
   private static readonly VERSION_MOMENT_CRM_CONTRACT_UPDATED = 'packageCrmContractUpdated';
+  private static readonly VERSION_MOMENT_ROLLBACK = 'packageRollbackApplied';
 
   private async assertCrmContractExists(contractId: string) {
     const row = await this.prisma.contract.findUnique({
@@ -265,6 +267,41 @@ export class ContractDocumentPackagesService {
       : [ContractDocumentPackagesService.VERSION_MOMENT_FORM_DATA_UPDATED];
   }
 
+  private buildVersionSnapshotSignature(snapshot: {
+    title: string | null;
+    status: ContractDocumentPackageStatus;
+    crmContractId: string | null;
+    formData: unknown;
+  }): string {
+    return JSON.stringify({
+      title: snapshot.title ?? null,
+      status: snapshot.status,
+      crmContractId: snapshot.crmContractId ?? null,
+      formData: snapshot.formData ?? {},
+    });
+  }
+
+  private resolveVersionAction(args: {
+    index: number;
+    versions: Array<{
+      title: string | null;
+      status: ContractDocumentPackageStatus;
+      crmContractId: string | null;
+      formData: unknown;
+    }>;
+  }): 'CREATE' | 'UPDATE' | 'ROLLBACK' {
+    const { index, versions } = args;
+    if (index === versions.length - 1) return 'CREATE';
+    const current = versions[index];
+    const currentSignature = this.buildVersionSnapshotSignature(current);
+    for (let i = index + 2; i < versions.length; i += 1) {
+      if (this.buildVersionSnapshotSignature(versions[i]) === currentSignature) {
+        return 'ROLLBACK';
+      }
+    }
+    return 'UPDATE';
+  }
+
   async listVersions(packageId: string) {
     await this.findOne(packageId);
     const versions = await this.prisma.contractDocumentPackageVersion.findMany({
@@ -284,25 +321,30 @@ export class ContractDocumentPackagesService {
     });
     return versions.map(({ formData, ...compactVersion }, index) => {
       const previous = versions[index + 1] ?? null;
+      const action = this.resolveVersionAction({ index, versions });
+      const keyMoments = this.buildVersionKeyMoments({
+        previous: previous
+          ? {
+              title: previous.title,
+              status: previous.status,
+              crmContractId: previous.crmContractId,
+              formData: previous.formData,
+            }
+          : null,
+        current: {
+          title: compactVersion.title,
+          status: compactVersion.status,
+          crmContractId: compactVersion.crmContractId,
+          formData,
+        },
+      });
       return {
         ...compactVersion,
-        action: previous ? 'UPDATE' : 'CREATE',
-        keyMoments: this.buildVersionKeyMoments({
-          previous: previous
-            ? {
-                title: previous.title,
-                status: previous.status,
-                crmContractId: previous.crmContractId,
-                formData: previous.formData,
-              }
-            : null,
-          current: {
-            title: compactVersion.title,
-            status: compactVersion.status,
-            crmContractId: compactVersion.crmContractId,
-            formData,
-          },
-        }),
+        action,
+        keyMoments:
+          action === 'ROLLBACK'
+            ? [ContractDocumentPackagesService.VERSION_MOMENT_ROLLBACK, ...keyMoments]
+            : keyMoments,
       };
     });
   }
@@ -601,10 +643,105 @@ export class ContractDocumentPackagesService {
     }
   }
 
+  private buildEstimatePresetsChangedFields(args: {
+    previousItems: ContractEstimatePresetDto[];
+    previousGroups: ContractEstimateGroupDto[];
+    nextItems: ContractEstimatePresetDto[];
+    nextGroups: ContractEstimateGroupDto[];
+  }): string[] {
+    const { previousItems, previousGroups, nextItems, nextGroups } = args;
+    const changed: string[] = [];
+    if (previousItems.length !== nextItems.length) {
+      changed.push('estimateItemsCountChanged');
+    }
+    if (previousGroups.length !== nextGroups.length) {
+      changed.push('estimateGroupsCountChanged');
+    }
+    if (JSON.stringify(previousItems) !== JSON.stringify(nextItems)) {
+      changed.push('estimateItemsUpdated');
+    }
+    if (JSON.stringify(previousGroups) !== JSON.stringify(nextGroups)) {
+      changed.push('estimateGroupsUpdated');
+    }
+    return changed.length > 0 ? changed : ['estimateDataUpdated'];
+  }
+
+  async listGlobalEstimatePresetsHistory(kind: ContractDocumentPackageKind) {
+    let rows: Array<{
+      id: string;
+      kind: ContractDocumentPackageKind;
+      changedFields: string[];
+      action: string;
+      changedAt: Date;
+      changedById: string | null;
+      changedByEmail: string | null;
+      changedByFirstName: string | null;
+      changedByLastName: string | null;
+    }> = [];
+    try {
+      rows = await this.prisma.$queryRaw<
+        Array<{
+          id: string;
+          kind: ContractDocumentPackageKind;
+          changedFields: string[];
+          action: string;
+          changedAt: Date;
+          changedById: string | null;
+          changedByEmail: string | null;
+          changedByFirstName: string | null;
+          changedByLastName: string | null;
+        }>
+      >(Prisma.sql`
+        SELECT
+          h.id,
+          h.kind,
+          h.changed_fields as "changedFields",
+          h.action,
+          h.changed_at as "changedAt",
+          u.id as "changedById",
+          u.email as "changedByEmail",
+          u.first_name as "changedByFirstName",
+          u.last_name as "changedByLastName"
+        FROM contract_document_estimate_presets_history h
+        LEFT JOIN users u ON u.id = h.changed_by_id
+        WHERE h.kind = ${kind}
+        ORDER BY h.changed_at DESC
+      `);
+    } catch {
+      // Таблица истории могла ещё не быть применена миграцией — не валим UI.
+      return [];
+    }
+    return rows.map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      changedFields: Array.isArray(row.changedFields) ? row.changedFields : [],
+      action: row.action,
+      changedAt: row.changedAt,
+      changedBy: row.changedById
+        ? {
+            id: row.changedById,
+            email: row.changedByEmail ?? '',
+            firstName: row.changedByFirstName,
+            lastName: row.changedByLastName,
+          }
+        : null,
+    }));
+  }
+
   async setGlobalEstimatePresets(dto: SetGlobalEstimatePresetsDto, updatedById?: string) {
+    const previous = await this.getGlobalEstimatePresets(dto.kind);
+    const nextItems = dto.items ?? [];
+    const nextGroups = dto.groups ?? [];
+    const changedFields = this.buildEstimatePresetsChangedFields({
+      previousItems: previous.items,
+      previousGroups: previous.groups,
+      nextItems,
+      nextGroups,
+    });
+    const action: 'CREATE' | 'UPDATE' = previous.updatedAt ? 'UPDATE' : 'CREATE';
     const payload = JSON.stringify({
-      items: dto.items ?? [],
-      groups: dto.groups ?? [],
+      items: nextItems,
+      groups: nextGroups,
     });
     const row = await this.prisma.contractDocumentGlobalTemplate.upsert({
       where: {
@@ -622,6 +759,25 @@ export class ContractDocumentPackagesService {
       },
       select: { id: true, kind: true, tab: true, updatedAt: true },
     });
+    try {
+      await this.prisma.$executeRaw(Prisma.sql`
+        INSERT INTO contract_document_estimate_presets_history
+          (id, kind, items, groups, changed_fields, action, changed_by_id, changed_at)
+        VALUES
+          (
+            ${randomUUID()},
+            ${dto.kind}::"ContractDocumentPackageKind",
+            ${JSON.stringify(nextItems)}::jsonb,
+            ${JSON.stringify(nextGroups)}::jsonb,
+            ${changedFields}::text[],
+            ${action},
+            ${updatedById ?? null},
+            NOW()
+          )
+      `);
+    } catch {
+      // Не блокируем сохранение расчётов, если таблица истории ещё не создана.
+    }
     return row;
   }
 }

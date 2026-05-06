@@ -9,10 +9,13 @@ import {
   type ContractDocumentPackageStatus,
   type ContractEstimateGroup,
   type ContractEstimatePreset,
+  type ContractEstimatePresetsHistoryEntry,
   getContractDocumentEstimatePresets,
+  getContractDocumentEstimatePresetsHistory,
   getContractDocumentPackages,
   putContractDocumentEstimatePresets,
 } from '@/shared/api/admin-contract-document-packages';
+import { getMeasurements } from '@/shared/api/admin-crm';
 
 import styles from './ContractDocuments.module.css';
 import { getDisplayContractDate, getDisplayContractNumber } from './repair/packageContractDisplay';
@@ -100,6 +103,91 @@ export function ContractDocumentsEstimatesPage() {
     usages: EstimatePackageUsage[];
   } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [historyBusy, setHistoryBusy] = useState(false);
+  const [historyRows, setHistoryRows] = useState<ContractEstimatePresetsHistoryEntry[]>([]);
+  const [isGenerateFromMeasurementOpen, setIsGenerateFromMeasurementOpen] = useState(false);
+  const [completedMeasurements, setCompletedMeasurements] = useState<
+    Array<{
+      id: string;
+      customerName: string;
+      customerAddress: string | null;
+      receptionDate: string;
+    }>
+  >([]);
+  const [completedMeasurementsBusy, setCompletedMeasurementsBusy] = useState(false);
+  const [selectedMeasurementId, setSelectedMeasurementId] = useState('');
+
+  const loadEstimateHistory = useCallback(async () => {
+    setHistoryBusy(true);
+    try {
+      const rows = await getContractDocumentEstimatePresetsHistory('REPAIR');
+      setHistoryRows(rows);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось загрузить историю изменений расчётов');
+    } finally {
+      setHistoryBusy(false);
+    }
+  }, []);
+
+  const openGenerateFromMeasurementModal = useCallback(async () => {
+    setIsGenerateFromMeasurementOpen(true);
+    setCompletedMeasurementsBusy(true);
+    setSelectedMeasurementId('');
+    try {
+      const res = await getMeasurements({ status: 'COMPLETED', page: 1, limit: 200 });
+      const rows = (res.data ?? [])
+        .filter((m) => (m.comments ?? '').includes('[REPAIR_MEASUREMENT_DATA_V1]'))
+        .map((m) => ({
+          id: m.id,
+          customerName: m.customerName || 'Без имени',
+          customerAddress: m.customerAddress ?? null,
+          receptionDate: m.receptionDate,
+        }));
+      setCompletedMeasurements(rows);
+      if (rows.length > 0) setSelectedMeasurementId(rows[0].id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось загрузить выполненные замеры');
+    } finally {
+      setCompletedMeasurementsBusy(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isHistoryOpen) return;
+    void loadEstimateHistory();
+  }, [isHistoryOpen, loadEstimateHistory]);
+
+  const formatHistoryDate = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return iso;
+    }
+  };
+
+  const HISTORY_FIELD_LABELS: Record<string, string> = {
+    estimateItemsCountChanged: 'Изменилось количество расчётов',
+    estimateGroupsCountChanged: 'Изменилось количество объектов',
+    estimateItemsUpdated: 'Изменены расчёты',
+    estimateGroupsUpdated: 'Изменены объекты',
+    estimateDataUpdated: 'Изменены данные расчётов',
+  };
+
+  const formatHistoryFields = (fields: string[]) =>
+    fields.map((field) => HISTORY_FIELD_LABELS[field] ?? field).join(', ');
+
+  const formatHistoryAction = (action: ContractEstimatePresetsHistoryEntry['action']) => {
+    if (action === 'CREATE') return 'Создание';
+    if (action === 'ROLLBACK') return 'Откат';
+    return 'Изменение';
+  };
 
   const fetchEstimatesFromServer = useCallback(async () => {
     const [presetsRes, packagesRes] = await Promise.all([
@@ -634,6 +722,15 @@ export function ContractDocumentsEstimatesPage() {
         <div className={styles.headerButtonsRow}>
           <button
             type="button"
+            className={styles.secondaryBtn}
+            disabled={saving || refreshing}
+            onClick={() => setIsHistoryOpen(true)}
+            title="История изменений расчётов"
+          >
+            История изменений
+          </button>
+          <button
+            type="button"
             className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn}`}
             disabled={saving || refreshing}
             aria-busy={refreshing}
@@ -671,13 +768,23 @@ export function ContractDocumentsEstimatesPage() {
       >
         <div className={styles.estimatesToolbar}>
           <h3 className={styles.estimatesToolbarTitle}>Список расчётов</h3>
-          <Link
-            className={`${styles.primaryBtn} ${styles.estimatesCompactPrimaryLink}`}
-            href="/admin/contract-documents/estimates/workspace"
-            style={{ textDecoration: 'none' }}
-          >
-            Создать новый расчёт
-          </Link>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              disabled={saving || refreshing}
+              onClick={() => void openGenerateFromMeasurementModal()}
+            >
+              Создать из выполненного замера
+            </button>
+            <Link
+              className={`${styles.primaryBtn} ${styles.estimatesCompactPrimaryLink}`}
+              href="/admin/contract-documents/estimates/workspace"
+              style={{ textDecoration: 'none' }}
+            >
+              Создать новый расчёт
+            </Link>
+          </div>
         </div>
         <div className={styles.estimatesFilterRow}>
           <button
@@ -703,7 +810,7 @@ export function ContractDocumentsEstimatesPage() {
           </button>
           <button
             type="button"
-            className={styles.secondaryBtn}
+            className={`${styles.secondaryBtn} ${styles.estimatesAddObjectBtn}`}
             disabled={saving}
             onClick={createObjectGroup}
           >
@@ -776,15 +883,17 @@ export function ContractDocumentsEstimatesPage() {
                       <span className={styles.estimatesGroupCount}>
                         Расчётов: {totalInGroup} · привязано: {boundInGroup}
                       </span>
-                      <button
-                        type="button"
-                        className={`${styles.dangerBtn} ${styles.estimatesGroupDangerBtn}`}
-                        disabled={saving}
-                        title="Удалить объект; расчёты останутся в списке без группы"
-                        onClick={() => removeObjectGroup(section.group.id)}
-                      >
-                        Удалить
-                      </button>
+                      {totalInGroup === 0 ? (
+                        <button
+                          type="button"
+                          className={`${styles.dangerBtn} ${styles.estimatesGroupDangerBtn}`}
+                          disabled={saving}
+                          title="Удалить пустой объект"
+                          onClick={() => removeObjectGroup(section.group.id)}
+                        >
+                          Удалить
+                        </button>
+                      ) : null}
                     </div>
                     {!groupCollapsed ? (
                       <div className={styles.estimatesCardsStack}>
@@ -909,6 +1018,126 @@ export function ContractDocumentsEstimatesPage() {
                 onClick={() => void handleConfirmDetachDelete()}
               >
                 {saving ? 'Подождите…' : 'Удалить'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isHistoryOpen ? (
+        <div
+          className={`${styles.saveModalBackdrop} ${styles.packageVersionsModalBackdrop}`}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="estimate-history-title"
+          onClick={() => setIsHistoryOpen(false)}
+        >
+          <div className={styles.packageVersionsModalCard} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.packageVersionsTitle} id="estimate-history-title">
+              История изменений расчётов
+            </h3>
+            {historyRows.length === 0 && !historyBusy ? (
+              <p className={styles.hint}>Пока нет записей истории.</p>
+            ) : null}
+            {historyRows.length > 0 ? (
+              <div className={styles.tableWrap}>
+                <table className={styles.packageVersionsTable}>
+                  <thead>
+                    <tr>
+                      <th>Дата</th>
+                      <th>Тип события</th>
+                      <th>Ключевые изменения</th>
+                      <th>Автор</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {historyRows.map((row) => {
+                      const author =
+                        row.changedBy &&
+                        [row.changedBy.lastName, row.changedBy.firstName]
+                          .filter(Boolean)
+                          .join(' ')
+                          .trim();
+                      return (
+                        <tr key={row.id}>
+                          <td>{formatHistoryDate(row.changedAt)}</td>
+                          <td>{formatHistoryAction(row.action)}</td>
+                          <td>{formatHistoryFields(row.changedFields)}</td>
+                          <td>{author || row.changedBy?.email || '—'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+            <div className={styles.saveModalActionsRow}>
+              <button
+                type="button"
+                className={styles.primaryBtn}
+                onClick={() => setIsHistoryOpen(false)}
+              >
+                Закрыть
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isGenerateFromMeasurementOpen ? (
+        <div
+          className={styles.saveModalBackdrop}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="generate-from-measurement-title"
+          onClick={() => setIsGenerateFromMeasurementOpen(false)}
+        >
+          <div className={styles.saveModalCard} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.saveModalTitle} id="generate-from-measurement-title">
+              Создание расчёта из выполненного замера
+            </h3>
+            {completedMeasurementsBusy ? (
+              <p className={styles.hint}>Загрузка выполненных замеров…</p>
+            ) : completedMeasurements.length === 0 ? (
+              <p className={styles.hint}>
+                Нет выполненных замеров с данными раздела «Замеры помещений».
+              </p>
+            ) : (
+              <label className={styles.field}>
+                <span>Выберите выполненный замер</span>
+                <select
+                  value={selectedMeasurementId}
+                  onChange={(e) => setSelectedMeasurementId(e.target.value)}
+                >
+                  {completedMeasurements.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.customerName} · {new Date(m.receptionDate).toLocaleDateString('ru-RU')}
+                      {m.customerAddress ? ` · ${m.customerAddress}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <div className={styles.saveModalActionsRow}>
+              <button
+                type="button"
+                className={styles.secondaryBtn}
+                onClick={() => setIsGenerateFromMeasurementOpen(false)}
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                className={styles.primaryBtn}
+                disabled={!selectedMeasurementId || completedMeasurementsBusy}
+                onClick={() => {
+                  if (!selectedMeasurementId) return;
+                  router.push(
+                    `/admin/contract-documents/estimates/workspace?fromMeasurement=${encodeURIComponent(selectedMeasurementId)}`
+                  );
+                }}
+              >
+                Создать расчёт
               </button>
             </div>
           </div>

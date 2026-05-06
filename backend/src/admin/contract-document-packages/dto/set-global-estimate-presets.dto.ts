@@ -57,6 +57,12 @@ export class ContractEstimatePresetDto {
   @IsString()
   @MaxLength(48)
   groupId?: string;
+
+  /** Замер-источник (если расчёт создан из замера). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  sourceMeasurementId?: string;
 }
 
 /** Логический объект: несколько расчётов одного здания / проекта. */

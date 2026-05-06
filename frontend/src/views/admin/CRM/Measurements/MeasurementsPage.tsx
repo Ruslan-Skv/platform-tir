@@ -6,6 +6,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import {
+  type ContractDocumentPackage,
+  type ContractEstimatePreset,
+  getContractDocumentEstimatePresets,
+  getContractDocumentPackages,
+} from '@/shared/api/admin-contract-document-packages';
+import {
   type CrmDirection,
   type CrmUser,
   type Measurement,
@@ -52,6 +58,13 @@ interface EditableColumnConfig {
   optionsKey?: 'managers' | 'surveyors' | 'directions' | 'status';
 }
 
+interface MeasurementLinksInfo {
+  estimateId: string;
+  estimateTitle: string;
+  packageId?: string;
+  packageTitle?: string;
+}
+
 const EDITABLE_COLUMNS: EditableColumnConfig[] = [
   { key: 'receptionDate', title: 'Дата приёма', type: 'date' },
   { key: 'executionDate', title: 'Дата выполнения', type: 'date' },
@@ -62,7 +75,6 @@ const EDITABLE_COLUMNS: EditableColumnConfig[] = [
   { key: 'customerAddress', title: 'Адрес', type: 'text' },
   { key: 'customerPhone', title: 'Телефон', type: 'text' },
   { key: 'status', title: 'Статус', type: 'select', optionsKey: 'status' },
-  { key: 'comments', title: 'Комментарии', type: 'text' },
 ];
 
 function formatDate(s: string | null | undefined) {
@@ -103,6 +115,9 @@ export function MeasurementsPage() {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [saveMessageType, setSaveMessageType] = useState<'success' | 'error'>('success');
   const [historyMeasurementId, setHistoryMeasurementId] = useState<string | null>(null);
+  const [linksByMeasurementId, setLinksByMeasurementId] = useState<
+    Record<string, MeasurementLinksInfo>
+  >({});
   const hasSelection = selectedIds.length > 0;
 
   const managers = users.filter((u) =>
@@ -117,6 +132,80 @@ export function MeasurementsPage() {
     ].includes(u.role)
   );
   const surveyors = users.filter((u) => u.role === 'SURVEYOR');
+
+  const extractEstimatePresetIdsFromPackageForm = (formData: unknown): string[] => {
+    if (!formData || typeof formData !== 'object') return [];
+    const estimate = (formData as Record<string, unknown>).estimate;
+    if (!estimate || typeof estimate !== 'object') return [];
+    const rawIds = (estimate as Record<string, unknown>).estimatePresetIds;
+    if (!Array.isArray(rawIds)) return [];
+    return rawIds
+      .filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
+      .map((id) => id.trim());
+  };
+
+  const chooseLatestByUpdatedAt = <T extends { updatedAt?: string }>(items: T[]): T | null => {
+    if (items.length === 0) return null;
+    return [...items].sort((a, b) => {
+      const da = new Date(a.updatedAt ?? 0).getTime();
+      const db = new Date(b.updatedAt ?? 0).getTime();
+      return db - da;
+    })[0];
+  };
+
+  const loadMeasurementLinks = useCallback(async (measurements: Measurement[]) => {
+    const measurementIds = new Set(measurements.map((m) => m.id));
+    if (measurementIds.size === 0) {
+      setLinksByMeasurementId({});
+      return;
+    }
+    try {
+      const [{ items: estimates }, packages] = await Promise.all([
+        getContractDocumentEstimatePresets('REPAIR'),
+        getContractDocumentPackages('REPAIR'),
+      ]);
+      const estimatesByMeasurement = new Map<string, ContractEstimatePreset[]>();
+      for (const estimate of estimates) {
+        const sourceMeasurementId = estimate.sourceMeasurementId?.trim();
+        if (!sourceMeasurementId || !measurementIds.has(sourceMeasurementId)) continue;
+        const bucket = estimatesByMeasurement.get(sourceMeasurementId) ?? [];
+        bucket.push(estimate);
+        estimatesByMeasurement.set(sourceMeasurementId, bucket);
+      }
+
+      const packagesByEstimateId = new Map<string, ContractDocumentPackage[]>();
+      for (const pkg of packages) {
+        const estimateIds = extractEstimatePresetIdsFromPackageForm(pkg.formData);
+        for (const estimateId of estimateIds) {
+          const bucket = packagesByEstimateId.get(estimateId) ?? [];
+          bucket.push(pkg);
+          packagesByEstimateId.set(estimateId, bucket);
+        }
+      }
+
+      const nextMap: Record<string, MeasurementLinksInfo> = {};
+      for (const measurement of measurements) {
+        const relatedEstimates = estimatesByMeasurement.get(measurement.id) ?? [];
+        const latestEstimate = chooseLatestByUpdatedAt(relatedEstimates);
+        if (!latestEstimate) continue;
+        const relatedPackages = packagesByEstimateId.get(latestEstimate.id) ?? [];
+        const latestPackage = chooseLatestByUpdatedAt(relatedPackages);
+        nextMap[measurement.id] = {
+          estimateId: latestEstimate.id,
+          estimateTitle: latestEstimate.title || 'Расчёт',
+          ...(latestPackage
+            ? {
+                packageId: latestPackage.id,
+                packageTitle: latestPackage.title || 'Пакет документов',
+              }
+            : {}),
+        };
+      }
+      setLinksByMeasurementId(nextMap);
+    } catch {
+      setLinksByMeasurementId({});
+    }
+  }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -133,14 +222,26 @@ export function MeasurementsPage() {
       });
       setData(res.data);
       setTotal(res.total);
+      await loadMeasurementLinks(res.data);
     } catch (err) {
       console.error(err);
       setData([]);
       setTotal(0);
+      setLinksByMeasurementId({});
     } finally {
       setLoading(false);
     }
-  }, [page, limit, statusFilter, managerFilter, directionFilter, search, dateFrom, dateTo]);
+  }, [
+    page,
+    limit,
+    statusFilter,
+    managerFilter,
+    directionFilter,
+    search,
+    dateFrom,
+    dateTo,
+    loadMeasurementLinks,
+  ]);
 
   useEffect(() => {
     fetchData();
@@ -371,6 +472,26 @@ export function MeasurementsPage() {
   const columnsWithActions = [
     ...columns,
     {
+      key: 'links',
+      title: 'Связи',
+      render: (m: Measurement) => {
+        const links = linksByMeasurementId[m.id];
+        if (!links) {
+          return <span className={styles.muted}>Нет связанного расчёта</span>;
+        }
+        return (
+          <div>
+            <div className={styles.linkStateOk}>Расчёт создан</div>
+            {links.packageId ? (
+              <div className={styles.linkStateDone}>Договор создан</div>
+            ) : (
+              <div className={styles.linkStatePending}>Договор не создан</div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
       key: 'actions',
       title: '',
       width: '90px',
@@ -408,6 +529,31 @@ export function MeasurementsPage() {
           <span className={styles.count}>{total} замеров</span>
         </div>
         <div className={styles.headerActions}>
+          <button
+            className={`${styles.secondaryButton} ${styles.refreshButton}`}
+            onClick={() => void fetchData()}
+            disabled={loading}
+            title="Обновить список замеров"
+            aria-label="Обновить список замеров"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width={18}
+              height={18}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={loading ? styles.refreshIconSpinning : undefined}
+              aria-hidden
+            >
+              <path d="M23 4v6h-6" />
+              <path d="M1 20v-6h6" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+          </button>
           <button
             className={`${styles.secondaryButton} ${editMode ? styles.active : ''}`}
             onClick={() => {
