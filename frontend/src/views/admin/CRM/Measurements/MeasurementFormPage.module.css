@@ -1,10 +1,14 @@
 .page {
-  max-width: 720px;
+  width: 100%;
+  max-width: 1680px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  overflow-x: clip;
   margin: 0 auto;
 }
 
 .header {
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .backLink {
@@ -55,10 +59,10 @@
 }
 
 .message {
-  padding: 8px 12px;
+  padding: 6px 10px;
   border-radius: 6px;
-  margin-bottom: 12px;
-  font-size: 0.9rem;
+  margin-bottom: 8px;
+  font-size: 0.82rem;
 }
 
 .messageerror {
@@ -75,25 +79,30 @@
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  padding: 12px 16px;
+  padding: 8px 12px;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 20px;
+  grid-template-columns: repeat(4, minmax(170px, 1fr));
+  gap: 0 12px;
 }
 
 .row {
-  margin-bottom: 8px;
+  margin-bottom: 5px;
 }
 
 .label {
   display: block;
   font-weight: 500;
   color: #374151;
-  margin-bottom: 4px;
-  font-size: 0.85rem;
+  margin-bottom: 2px;
+  font-size: 0.8rem;
+}
+
+.emphasisLabel {
+  font-weight: 700;
+  color: #111827;
 }
 
 .required {
@@ -104,10 +113,10 @@
 .select,
 .textarea {
   width: 100%;
-  padding: 6px 10px;
+  padding: 5px 8px;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: 0.84rem;
 }
 
 .input:focus,
@@ -135,14 +144,14 @@
 
 .fieldError {
   display: block;
-  margin-top: 4px;
-  font-size: 0.8rem;
+  margin-top: 2px;
+  font-size: 0.74rem;
   color: #dc2626;
 }
 
 .textarea {
   resize: vertical;
-  min-height: 56px;
+  min-height: 44px;
 }
 
 .actions {
@@ -187,8 +196,303 @@
   }
 }
 
+@media (max-width: 1280px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(160px, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(150px, 1fr));
+  }
+}
+
 .cancelLink:hover {
   color: #374151;
+}
+
+.measurementsSection {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.measurementsSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.measurementsTitle {
+  margin: 0;
+  font-size: 1rem;
+  color: #111827;
+}
+
+.measurementsHint {
+  margin: 0 0 6px;
+  color: #6b7280;
+  font-size: 0.78rem;
+}
+
+.roomCard {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 6px;
+  margin-bottom: 6px;
+  background: #f9fafb;
+}
+
+.roomTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.roomTabButton {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 0.74rem;
+  cursor: pointer;
+}
+
+.roomTabButtonActive {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.roomCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.roomActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.roomIconBtn {
+  padding: 3px !important;
+  min-width: 26px;
+  min-height: 26px;
+  border-radius: 5px;
+  line-height: 0;
+}
+
+.roomIconCopy {
+  color: #0d9488;
+}
+
+.roomIconDelete {
+  color: #dc2626;
+}
+
+.inlineRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.openingSizeRow {
+  grid-template-columns: 88px 88px auto;
+  justify-content: start;
+}
+
+.wallSegmentsSection {
+  max-width: none;
+  width: 100%;
+}
+
+.wallSegmentsList {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 3px;
+  align-items: center;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.wallSegmentItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px;
+  align-items: center;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.wallSegmentsList > .secondaryButton {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.calculatedBlock {
+  margin: 6px 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #eef2ff;
+  color: #1f2937;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 3px 10px;
+  font-size: 0.8rem;
+}
+
+.workItemsGrid {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  padding: 8px;
+  column-count: 3;
+  column-gap: 16px;
+}
+
+.workCategoryButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.workCategoryButton {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #374151;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.workCategoryButtonActive {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  color: #ffffff;
+}
+
+.workCategoryButtonMarked {
+  border-color: #15803d;
+  background: #dcfce7;
+  color: #14532d;
+  font-weight: 700;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.85rem;
+  break-inside: avoid;
+  margin-bottom: 6px;
+  justify-content: space-between;
+}
+
+.checkboxLabel > span {
+  flex: 1 1 auto;
+}
+
+.itemQuantityWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.itemQuantityInput {
+  width: 86px;
+  padding: 3px 6px;
+  font-size: 0.78rem;
+}
+
+.secondaryButton {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.secondaryButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dangerButton {
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #b91c1c;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.roomTopGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(130px, 1fr));
+  gap: 0 8px;
+}
+
+.roomOpeningsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 10px;
+}
+
+.zonePrimary,
+.zoneGeometry,
+.zoneOpenings,
+.zoneNotes {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin-bottom: 6px;
+}
+
+.zoneMeta,
+.zoneCommentMain {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
+.zoneMeta {
+  background: #f8fafc;
+}
+
+.zoneCommentMain {
+  background: #f0fdf4;
+}
+
+.zonePrimary {
+  background: #f8fafc;
+}
+
+.zoneGeometry {
+  background: #f5f3ff;
+}
+
+.zoneOpenings {
+  background: #ecfeff;
+}
+
+.zoneNotes {
+  background: #fff7ed;
 }
 
 /* Тёмная тема */
@@ -225,6 +529,10 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .label {
   color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .emphasisLabel {
+  color: #f9fafb;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input,
@@ -282,4 +590,140 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .historyButton:hover {
   background: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .measurementsSection {
+  border-top-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .measurementsTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .measurementsHint {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .roomCard {
+  border-color: #4b5563;
+  background: #111827;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .roomTabButton {
+  border-color: #475569;
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .roomTabButtonActive {
+  border-color: #818cf8;
+  background: #6366f1;
+  color: #ffffff;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .roomIconCopy {
+  color: #2dd4bf;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .roomIconDelete {
+  color: #f87171;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .zonePrimary,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .zoneGeometry,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .zoneOpenings,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .zoneNotes,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .zoneMeta,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .zoneCommentMain {
+  border-color: #4b5563;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .zonePrimary {
+  background: rgb(148 163 184 / 0.08);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .zoneGeometry {
+  background: rgb(139 92 246 / 0.12);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .zoneOpenings {
+  background: rgb(6 182 212 / 0.12);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .zoneNotes {
+  background: rgb(249 115 22 / 0.12);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .zoneMeta {
+  background: rgb(148 163 184 / 0.08);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .zoneCommentMain {
+  background: rgb(34 197 94 / 0.12);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .calculatedBlock {
+  background: rgb(99 102 241 / 0.2);
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .workItemsGrid {
+  border-color: #4b5563;
+  background: #1f2937;
+}
+
+@media (max-width: 1100px) {
+  .workItemsGrid {
+    column-count: 2;
+  }
+
+  .roomTopGrid {
+    grid-template-columns: repeat(3, minmax(130px, 1fr));
+  }
+
+  .calculatedBlock {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .workItemsGrid {
+    column-count: 1;
+  }
+
+  .roomTopGrid {
+    grid-template-columns: repeat(2, minmax(130px, 1fr));
+  }
+
+  .roomOpeningsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .calculatedBlock {
+    grid-template-columns: 1fr;
+  }
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .workCategoryButton {
+  border-color: #4b5563;
+  background: #111827;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .workCategoryButtonActive {
+  border-color: #818cf8;
+  background: #6366f1;
+  color: #ffffff;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .workCategoryButtonMarked {
+  border-color: #22c55e;
+  background: rgb(34 197 94 / 0.2);
+  color: #dcfce7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryButton {
+  border-color: #4b5563;
+  background: #1f2937;
+  color: #e5e7eb;
 }

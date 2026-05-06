@@ -40,8 +40,8 @@ export class MeasurementsController {
   constructor(private readonly measurementsService: MeasurementsService) {}
 
   @Post()
-  create(@Body() createMeasurementDto: CreateMeasurementDto) {
-    return this.measurementsService.create(createMeasurementDto);
+  create(@Body() createMeasurementDto: CreateMeasurementDto, @Req() req: RequestWithUser) {
+    return this.measurementsService.create(createMeasurementDto, req.user?.id);
   }
 
   @Get()

@@ -690,7 +690,7 @@ export async function deleteMeasurement(id: string): Promise<void> {
 
 export interface MeasurementHistoryEntry {
   id: string;
-  action: 'UPDATE' | 'ROLLBACK';
+  action: 'CREATE' | 'UPDATE' | 'ROLLBACK';
   changedAt: string;
   changedBy: { id: string; firstName: string | null; lastName: string | null; email: string };
   changedFields: string[];

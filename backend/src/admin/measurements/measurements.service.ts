@@ -17,13 +17,137 @@ const MEASUREMENT_SNAPSHOT_FIELDS = {
   status: true,
   customerId: true,
 } as const;
+const REPAIR_MEASUREMENT_DATA_MARKER = '[REPAIR_MEASUREMENT_DATA_V1]';
+
+type ParsedMeasurementData = {
+  rooms: Array<{
+    id?: string;
+    name?: string;
+    ceilingHeight?: string;
+    wallThickness?: string;
+    slopeThickness?: string;
+    floorArea?: string;
+    wallSegments?: string[];
+    doors?: Array<{ width?: string; height?: string }>;
+    windows?: Array<{ width?: string; height?: string }>;
+    selectedWorkItemIds?: string[];
+    workItemQuantities?: Record<string, string>;
+    notes?: string;
+  }>;
+};
+
+function parseMeasurementDataFromComments(
+  value: string | null | undefined,
+): ParsedMeasurementData | null {
+  if (!value) return null;
+  const idx = value.indexOf(REPAIR_MEASUREMENT_DATA_MARKER);
+  if (idx < 0) return null;
+  const raw = value.slice(idx + REPAIR_MEASUREMENT_DATA_MARKER.length).trim();
+  try {
+    const parsed = JSON.parse(raw) as ParsedMeasurementData;
+    if (!parsed || !Array.isArray(parsed.rooms)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function hasRoomGeometry(room: NonNullable<ParsedMeasurementData>['rooms'][number]): boolean {
+  if ((room.ceilingHeight ?? '').trim() !== '') return true;
+  if ((room.wallThickness ?? '').trim() !== '') return true;
+  if ((room.slopeThickness ?? '').trim() !== '') return true;
+  if ((room.floorArea ?? '').trim() !== '') return true;
+  if ((room.wallSegments ?? []).some((x) => (x ?? '').trim() !== '')) return true;
+  if (
+    (room.doors ?? []).some((d) => (d.width ?? '').trim() !== '' || (d.height ?? '').trim() !== '')
+  )
+    return true;
+  if (
+    (room.windows ?? []).some(
+      (w) => (w.width ?? '').trim() !== '' || (w.height ?? '').trim() !== '',
+    )
+  )
+    return true;
+  return false;
+}
+
+function hasRoomWorks(room: NonNullable<ParsedMeasurementData>['rooms'][number]): boolean {
+  return (room.selectedWorkItemIds?.length ?? 0) > 0;
+}
+
+function hasRoomWorkQuantities(room: NonNullable<ParsedMeasurementData>['rooms'][number]): boolean {
+  return Object.values(room.workItemQuantities ?? {}).some((x) => (x ?? '').trim() !== '');
+}
+
+function buildMeasurementKeyMoments(
+  previousComments: string | null,
+  nextComments: string | null,
+): string[] {
+  const prev = parseMeasurementDataFromComments(previousComments);
+  const next = parseMeasurementDataFromComments(nextComments);
+  if (!next) return [];
+  const moments: string[] = [];
+
+  const prevRooms = prev?.rooms ?? [];
+  const nextRooms = next.rooms ?? [];
+  if (nextRooms.length !== prevRooms.length) moments.push('measurementRoomsUpdated');
+
+  let geometryChanged = false;
+  let worksChanged = false;
+  let quantitiesChanged = false;
+
+  for (let i = 0; i < Math.max(prevRooms.length, nextRooms.length); i++) {
+    const a = prevRooms[i];
+    const b = nextRooms[i];
+    if (!b) continue;
+    if (!a) {
+      if (hasRoomGeometry(b)) geometryChanged = true;
+      if (hasRoomWorks(b)) worksChanged = true;
+      if (hasRoomWorkQuantities(b)) quantitiesChanged = true;
+      continue;
+    }
+
+    const prevGeometry = JSON.stringify({
+      ceilingHeight: a.ceilingHeight ?? '',
+      wallThickness: a.wallThickness ?? '',
+      slopeThickness: a.slopeThickness ?? '',
+      floorArea: a.floorArea ?? '',
+      wallSegments: a.wallSegments ?? [],
+      doors: a.doors ?? [],
+      windows: a.windows ?? [],
+    });
+    const nextGeometry = JSON.stringify({
+      ceilingHeight: b.ceilingHeight ?? '',
+      wallThickness: b.wallThickness ?? '',
+      slopeThickness: b.slopeThickness ?? '',
+      floorArea: b.floorArea ?? '',
+      wallSegments: b.wallSegments ?? [],
+      doors: b.doors ?? [],
+      windows: b.windows ?? [],
+    });
+    if (prevGeometry !== nextGeometry) geometryChanged = true;
+
+    const prevWorks = JSON.stringify([...(a.selectedWorkItemIds ?? [])].sort());
+    const nextWorks = JSON.stringify([...(b.selectedWorkItemIds ?? [])].sort());
+    if (prevWorks !== nextWorks) worksChanged = true;
+
+    const prevQty = JSON.stringify(a.workItemQuantities ?? {});
+    const nextQty = JSON.stringify(b.workItemQuantities ?? {});
+    if (prevQty !== nextQty) quantitiesChanged = true;
+  }
+
+  if (geometryChanged) moments.push('measurementGeometryUpdated');
+  if (worksChanged) moments.push('measurementWorksUpdated');
+  if (quantitiesChanged) moments.push('measurementWorkQuantitiesUpdated');
+  return moments;
+}
 
 @Injectable()
 export class MeasurementsService {
   constructor(private prisma: PrismaService) {}
 
-  create(createMeasurementDto: CreateMeasurementDto) {
-    return this.prisma.measurement.create({
+  async create(createMeasurementDto: CreateMeasurementDto, createdById?: string) {
+    const created = await this.prisma.measurement.create({
       data: {
         managerId: createMeasurementDto.managerId,
         receptionDate: new Date(createMeasurementDto.receptionDate),
@@ -45,6 +169,32 @@ export class MeasurementsService {
         direction: { select: { id: true, name: true, slug: true } },
       },
     });
+    if (createdById) {
+      await this.prisma.measurementHistory.create({
+        data: {
+          measurementId: created.id,
+          snapshot: {
+            managerId: created.managerId,
+            receptionDate: created.receptionDate.toISOString().slice(0, 10),
+            executionDate: created.executionDate
+              ? created.executionDate.toISOString().slice(0, 10)
+              : null,
+            surveyorId: created.surveyorId,
+            directionId: created.directionId,
+            customerName: created.customerName,
+            customerAddress: created.customerAddress,
+            customerPhone: created.customerPhone,
+            comments: created.comments,
+            status: created.status,
+            customerId: created.customerId,
+          } as object,
+          changedFields: ['measurementCreated'],
+          action: 'CREATE',
+          changedById: createdById,
+        },
+      });
+    }
+    return created;
   }
 
   async findAll(params?: {
@@ -174,6 +324,15 @@ export class MeasurementsService {
           : null,
       };
       const changedFields = Object.keys(updateData) as string[];
+      if (Object.prototype.hasOwnProperty.call(updateData, 'comments')) {
+        const keyMoments = buildMeasurementKeyMoments(
+          current.comments,
+          updateData.comments as string | null,
+        );
+        for (const moment of keyMoments) {
+          if (!changedFields.includes(moment)) changedFields.push(moment);
+        }
+      }
       await this.prisma.measurementHistory.create({
         data: {
           measurementId: id,

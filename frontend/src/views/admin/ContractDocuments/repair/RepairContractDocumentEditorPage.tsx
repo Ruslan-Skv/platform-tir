@@ -247,6 +247,22 @@ function formatPackageVersionDate(iso: string) {
   }
 }
 
+const PACKAGE_VERSION_MOMENT_LABELS: Record<string, string> = {
+  packageCreated: 'Создание пакета',
+  packageFormDataUpdated: 'Изменены данные пакета',
+  packageCustomerUpdated: 'Изменены данные заказчика',
+  packageEstimateUpdated: 'Изменена смета',
+  packageStatusUpdated: 'Изменён статус пакета',
+  packageTitleUpdated: 'Изменено название черновика',
+  packageCrmContractUpdated: 'Изменён связанный договор CRM',
+};
+
+function formatPackageVersionKeyMoments(keyMoments: string[] | undefined): string {
+  if (!Array.isArray(keyMoments) || keyMoments.length === 0) return '—';
+  const labels = keyMoments.map((key) => PACKAGE_VERSION_MOMENT_LABELS[key] ?? key);
+  return labels.join(', ');
+}
+
 /** Иконка «история / версии» в шапке пакета. */
 function PackageVersionsHistoryTriggerIcon() {
   return (
@@ -437,6 +453,7 @@ export function RepairContractDocumentEditorPage({
             title: draftTitleRef.current.trim() || null,
             formData,
             crmContractId: draftCrmContractIdRef.current,
+            recordVersion: true,
           });
           setDirty(false);
           setRepairPackages((prev) =>
@@ -736,6 +753,7 @@ export function RepairContractDocumentEditorPage({
               title: row.title?.trim() || null,
               formData: buildPersistedFormData(formPayload, overridesSansContract, selectedIds),
               crmContractId: row.crmContractId ?? null,
+              recordVersion: true,
             });
             setRepairPackages((prev) =>
               prev.map((p) =>
@@ -2336,6 +2354,7 @@ export function RepairContractDocumentEditorPage({
                       <th>Версия</th>
                       <th>Дата</th>
                       <th>Название черновика</th>
+                      <th>Ключевые изменения</th>
                       <th>Автор снимка</th>
                       <th>Действия</th>
                     </tr>
@@ -2350,6 +2369,7 @@ export function RepairContractDocumentEditorPage({
                           <td>{v.versionNumber}</td>
                           <td>{formatPackageVersionDate(v.createdAt)}</td>
                           <td>{v.title?.trim() || '—'}</td>
+                          <td>{formatPackageVersionKeyMoments(v.keyMoments)}</td>
                           <td>{author || v.savedBy?.email || '—'}</td>
                           <td>
                             <div className={styles.packageVersionsActions}>

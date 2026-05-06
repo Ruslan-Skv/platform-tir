@@ -23,6 +23,11 @@ const FIELD_LABELS: Record<string, string> = {
   customerPhone: 'Телефон',
   status: 'Статус',
   comments: 'Комментарии',
+  measurementCreated: 'Создан замер',
+  measurementRoomsUpdated: 'Обновлён список помещений',
+  measurementGeometryUpdated: 'Изменены замеры/геометрия помещений',
+  measurementWorksUpdated: 'Обновлены выбранные виды работ',
+  measurementWorkQuantitiesUpdated: 'Изменены расчёты/количества работ',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -165,7 +170,11 @@ export function MeasurementHistoryModal({
                         entry.action === 'ROLLBACK' ? styles.actionRollback : ''
                       }`}
                     >
-                      {entry.action === 'ROLLBACK' ? 'Откат' : 'Изменение'}
+                      {entry.action === 'ROLLBACK'
+                        ? 'Откат'
+                        : entry.action === 'CREATE'
+                          ? 'Создание'
+                          : 'Изменение'}
                     </span>
                     {entry.changedFields.length > 0 && (
                       <span className={styles.entryFields}>

@@ -31,6 +31,12 @@ export class ContractDocumentPackagesService {
   private static readonly SIGNATORY_PROFILES_TAB = 'signatory_profiles';
   private static readonly CONTRACT_TEMPLATES_TAB = 'contract_templates';
   private static readonly ESTIMATE_PRESETS_TAB = 'estimate_presets';
+  private static readonly VERSION_MOMENT_FORM_DATA_UPDATED = 'packageFormDataUpdated';
+  private static readonly VERSION_MOMENT_CUSTOMER_UPDATED = 'packageCustomerUpdated';
+  private static readonly VERSION_MOMENT_ESTIMATE_UPDATED = 'packageEstimateUpdated';
+  private static readonly VERSION_MOMENT_STATUS_UPDATED = 'packageStatusUpdated';
+  private static readonly VERSION_MOMENT_TITLE_UPDATED = 'packageTitleUpdated';
+  private static readonly VERSION_MOMENT_CRM_CONTRACT_UPDATED = 'packageCrmContractUpdated';
 
   private async assertCrmContractExists(contractId: string) {
     const row = await this.prisma.contract.findUnique({
@@ -202,9 +208,66 @@ export class ContractDocumentPackagesService {
     });
   }
 
+  private asObject(value: unknown): Record<string, unknown> {
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+  }
+
+  private buildVersionKeyMoments(args: {
+    previous: {
+      title: string | null;
+      status: ContractDocumentPackageStatus;
+      crmContractId: string | null;
+      formData: unknown;
+    } | null;
+    current: {
+      title: string | null;
+      status: ContractDocumentPackageStatus;
+      crmContractId: string | null;
+      formData: unknown;
+    };
+  }): string[] {
+    const { previous, current } = args;
+    if (!previous) {
+      return ['packageCreated'];
+    }
+
+    const moments: string[] = [];
+    if ((previous.title ?? null) !== (current.title ?? null)) {
+      moments.push(ContractDocumentPackagesService.VERSION_MOMENT_TITLE_UPDATED);
+    }
+    if (previous.status !== current.status) {
+      moments.push(ContractDocumentPackagesService.VERSION_MOMENT_STATUS_UPDATED);
+    }
+    if ((previous.crmContractId ?? null) !== (current.crmContractId ?? null)) {
+      moments.push(ContractDocumentPackagesService.VERSION_MOMENT_CRM_CONTRACT_UPDATED);
+    }
+
+    const prevFormRaw = previous.formData ?? {};
+    const nextFormRaw = current.formData ?? {};
+    const prevFormText = JSON.stringify(prevFormRaw);
+    const nextFormText = JSON.stringify(nextFormRaw);
+    if (prevFormText !== nextFormText) {
+      moments.push(ContractDocumentPackagesService.VERSION_MOMENT_FORM_DATA_UPDATED);
+      const prevForm = this.asObject(prevFormRaw);
+      const nextForm = this.asObject(nextFormRaw);
+      if (JSON.stringify(prevForm.customer ?? {}) !== JSON.stringify(nextForm.customer ?? {})) {
+        moments.push(ContractDocumentPackagesService.VERSION_MOMENT_CUSTOMER_UPDATED);
+      }
+      if (JSON.stringify(prevForm.estimate ?? {}) !== JSON.stringify(nextForm.estimate ?? {})) {
+        moments.push(ContractDocumentPackagesService.VERSION_MOMENT_ESTIMATE_UPDATED);
+      }
+    }
+
+    return moments.length
+      ? moments
+      : [ContractDocumentPackagesService.VERSION_MOMENT_FORM_DATA_UPDATED];
+  }
+
   async listVersions(packageId: string) {
     await this.findOne(packageId);
-    return this.prisma.contractDocumentPackageVersion.findMany({
+    const versions = await this.prisma.contractDocumentPackageVersion.findMany({
       where: { packageId },
       orderBy: { versionNumber: 'desc' },
       select: {
@@ -214,9 +277,33 @@ export class ContractDocumentPackagesService {
         title: true,
         status: true,
         crmContractId: true,
+        formData: true,
         createdAt: true,
         savedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
       },
+    });
+    return versions.map(({ formData, ...compactVersion }, index) => {
+      const previous = versions[index + 1] ?? null;
+      return {
+        ...compactVersion,
+        action: previous ? 'UPDATE' : 'CREATE',
+        keyMoments: this.buildVersionKeyMoments({
+          previous: previous
+            ? {
+                title: previous.title,
+                status: previous.status,
+                crmContractId: previous.crmContractId,
+                formData: previous.formData,
+              }
+            : null,
+          current: {
+            title: compactVersion.title,
+            status: compactVersion.status,
+            crmContractId: compactVersion.crmContractId,
+            formData,
+          },
+        }),
+      };
     });
   }
 

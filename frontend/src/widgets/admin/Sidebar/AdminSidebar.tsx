@@ -151,6 +151,19 @@ const baseNavItems: NavItem[] = [
     ],
   },
   {
+    label: 'Замеры',
+    href: '/admin/measurements',
+    icon: '📏',
+    resourceId: 'admin.crm.measurements',
+    children: [
+      {
+        label: 'Ремонт',
+        href: '/admin/measurements/repair',
+        resourceId: 'admin.crm.measurements',
+      },
+    ],
+  },
+  {
     label: 'Контент',
     href: '/admin/content',
     icon: '📝',

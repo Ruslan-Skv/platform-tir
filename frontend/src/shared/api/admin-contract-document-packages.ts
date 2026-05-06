@@ -83,6 +83,8 @@ export interface ContractDocumentPackageVersionListItem {
   title: string | null;
   status: ContractDocumentPackageStatus;
   crmContractId: string | null;
+  action?: 'CREATE' | 'UPDATE' | 'ROLLBACK';
+  keyMoments?: string[];
   createdAt: string;
   savedBy?: ContractDocumentPackageUserRef | null;
 }
