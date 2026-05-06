@@ -68,6 +68,7 @@ import {
   type RepairDocumentTabId,
   isRepairAddendumTab,
   isRepairAddendumTabVisible,
+  isRepairWorkOrderAddendumTab,
   normalizeLegacyRepairTabId,
   normalizeRepairDocumentTabOrder,
 } from './repairDocumentTemplates';
@@ -161,6 +162,32 @@ function collectAddendumSlotPresetIds(
     if (id.trim()) ids.add(id.trim());
   }
   return ids;
+}
+
+function isAddendumSlotEmpty(
+  slot: RepairPackageFormData['addendumSlots'][number] | undefined,
+  documentDate: string | undefined
+): boolean {
+  if (!slot) return true;
+  const hasDate = (documentDate ?? '').trim() !== '';
+  const hasSelected = (slot.selectedPresetIds?.length ?? 0) > 0;
+  const hasExcluded = (slot.excludedSelectedPresetIds?.length ?? 0) > 0;
+  const hasSnapshot = Boolean(slot.snapshot?.rooms?.length);
+  const hasExcludedSnapshot = Boolean(slot.excludedSnapshot?.rooms?.length);
+  const hasNotes = (slot.notes ?? '').trim() !== '' || (slot.excludedNotes ?? '').trim() !== '';
+  const isSigned =
+    slot.status === 'SIGNED' || slot.status === 'PAID' || (slot.signedAt ?? '').trim() !== '';
+  const isPaid = (slot.paidAt ?? '').trim() !== '';
+  return !(
+    hasDate ||
+    hasSelected ||
+    hasExcluded ||
+    hasSnapshot ||
+    hasExcludedSnapshot ||
+    hasNotes ||
+    isSigned ||
+    isPaid
+  );
 }
 
 function parseDecimalAmount(raw: string): number | null {
@@ -348,10 +375,19 @@ export function RepairContractDocumentEditorPage({
   const contractAndEstimateLocked = packageFlowStatus === 'CONTRACT_CONCLUDED';
   const canRevertContractConcluded =
     packageFlowStatus === 'CONTRACT_CONCLUDED' && isWithinRevertWindow(form.contractConcludedAt);
+  const isContractPaid = (form.contractPaidAt ?? '').trim() !== '';
+  const canRevertContractPaid = isContractPaid && isWithinRevertWindow(form.contractPaidAt);
   const signedAddendumOrdinals = useMemo(
     () =>
       form.addendumSlots
         .map((slot, i) => (slot.status === 'SIGNED' ? i + 1 : null))
+        .filter((v): v is number => v !== null),
+    [form.addendumSlots]
+  );
+  const paidAddendumOrdinals = useMemo(
+    () =>
+      form.addendumSlots
+        .map((slot, i) => (slot.status === 'PAID' ? i + 1 : null))
         .filter((v): v is number => v !== null),
     [form.addendumSlots]
   );
@@ -787,7 +823,7 @@ export function RepairContractDocumentEditorPage({
     setError(null);
     try {
       const nowIso = new Date().toISOString();
-      const nextForm = { ...formRef.current, contractConcludedAt: nowIso };
+      const nextForm = { ...formRef.current, contractConcludedAt: nowIso, contractPaidAt: '' };
       const formData = buildPersistedFormData(
         nextForm,
         templateOverridesRef.current,
@@ -817,7 +853,7 @@ export function RepairContractDocumentEditorPage({
     setSavingPackageStatus(true);
     setError(null);
     try {
-      const nextForm = { ...formRef.current, contractConcludedAt: '' };
+      const nextForm = { ...formRef.current, contractConcludedAt: '', contractPaidAt: '' };
       const formData = buildPersistedFormData(
         nextForm,
         templateOverridesRef.current,
@@ -834,6 +870,61 @@ export function RepairContractDocumentEditorPage({
       await refreshPackageVersions({ skipSpinner: true });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось снять отметку');
+    } finally {
+      setSavingPackageStatus(false);
+    }
+  };
+
+  const handleMarkContractPaid = async () => {
+    if (packageFlowStatus !== 'CONTRACT_CONCLUDED') return;
+    setSavingPackageStatus(true);
+    setError(null);
+    try {
+      const nowIso = new Date().toISOString();
+      const nextForm = { ...formRef.current, contractPaidAt: nowIso };
+      const formData = buildPersistedFormData(
+        nextForm,
+        templateOverridesRef.current,
+        selectedTemplateIdsRef.current
+      );
+      await updateContractDocumentPackage(packageId, {
+        status: packageFlowStatus,
+        formData,
+        recordVersion: true,
+      });
+      setForm(nextForm);
+      formRef.current = nextForm;
+      await refreshPackageVersions({ skipSpinner: true });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось установить статус «Договор оплачен»');
+    } finally {
+      setSavingPackageStatus(false);
+    }
+  };
+  const handleRevertContractPaid = async () => {
+    if (!canRevertContractPaid) {
+      setError('Снять статус «Договор оплачен» можно только в течение 24 часов после установки.');
+      return;
+    }
+    setSavingPackageStatus(true);
+    setError(null);
+    try {
+      const nextForm = { ...formRef.current, contractPaidAt: '' };
+      const formData = buildPersistedFormData(
+        nextForm,
+        templateOverridesRef.current,
+        selectedTemplateIdsRef.current
+      );
+      await updateContractDocumentPackage(packageId, {
+        status: packageFlowStatus,
+        formData,
+        recordVersion: true,
+      });
+      setForm(nextForm);
+      formRef.current = nextForm;
+      await refreshPackageVersions({ skipSpinner: true });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось снять статус «Договор оплачен»');
     } finally {
       setSavingPackageStatus(false);
     }
@@ -984,6 +1075,14 @@ export function RepairContractDocumentEditorPage({
 
   const updateObject = <K extends keyof RepairPackageFormData['object']>(key: K, value: string) => {
     setForm((p) => ({ ...p, object: { ...p.object, [key]: value } }));
+    touchPackageData();
+  };
+
+  const updateWorkOrder = <K extends keyof RepairPackageFormData['workOrder']>(
+    key: K,
+    value: RepairPackageFormData['workOrder'][K]
+  ) => {
+    setForm((p) => ({ ...p, workOrder: { ...p.workOrder, [key]: value } }));
     touchPackageData();
   };
 
@@ -1353,8 +1452,13 @@ export function RepairContractDocumentEditorPage({
       setForm((p) => {
         const slots = [...p.addendumSlots] as RepairPackageFormData['addendumSlots'];
         const cur = slots[slotIndex0];
-        if (!cur || cur.status === 'SIGNED') return p;
-        slots[slotIndex0] = { ...cur, status: 'SIGNED', signedAt: new Date().toISOString() };
+        if (!cur || cur.status !== 'OPEN') return p;
+        slots[slotIndex0] = {
+          ...cur,
+          status: 'SIGNED',
+          signedAt: new Date().toISOString(),
+          paidAt: '',
+        };
         return { ...p, addendumSlots: slots };
       });
       touchPackageData();
@@ -1368,7 +1472,34 @@ export function RepairContractDocumentEditorPage({
         const cur = slots[slotIndex0];
         if (!cur || cur.status !== 'SIGNED') return p;
         if (!isWithinRevertWindow(cur.signedAt)) return p;
-        slots[slotIndex0] = { ...cur, status: 'OPEN', signedAt: '' };
+        slots[slotIndex0] = { ...cur, status: 'OPEN', signedAt: '', paidAt: '' };
+        return { ...p, addendumSlots: slots };
+      });
+      touchPackageData();
+    },
+    [touchPackageData]
+  );
+  const markAddendumSlotPaid = useCallback(
+    (slotIndex0: number) => {
+      setForm((p) => {
+        const slots = [...p.addendumSlots] as RepairPackageFormData['addendumSlots'];
+        const cur = slots[slotIndex0];
+        if (!cur || cur.status !== 'SIGNED') return p;
+        slots[slotIndex0] = { ...cur, status: 'PAID', paidAt: new Date().toISOString() };
+        return { ...p, addendumSlots: slots };
+      });
+      touchPackageData();
+    },
+    [touchPackageData]
+  );
+  const unmarkAddendumSlotPaid = useCallback(
+    (slotIndex0: number) => {
+      setForm((p) => {
+        const slots = [...p.addendumSlots] as RepairPackageFormData['addendumSlots'];
+        const cur = slots[slotIndex0];
+        if (!cur || cur.status !== 'PAID') return p;
+        if (!isWithinRevertWindow(cur.paidAt)) return p;
+        slots[slotIndex0] = { ...cur, status: 'SIGNED', paidAt: '' };
         return { ...p, addendumSlots: slots };
       });
       touchPackageData();
@@ -1998,6 +2129,11 @@ export function RepairContractDocumentEditorPage({
                 Договор заключен
               </span>
             ) : null}
+            {isContractPaid ? (
+              <span className={styles.packageFlowStatusBadge} role="status">
+                Договор оплачен
+              </span>
+            ) : null}
             {signedAddendumOrdinals.map((n) => (
               <span
                 key={`signed-addendum-${n}`}
@@ -2005,6 +2141,15 @@ export function RepairContractDocumentEditorPage({
                 role="status"
               >
                 Д/с №{n} подписано
+              </span>
+            ))}
+            {paidAddendumOrdinals.map((n) => (
+              <span
+                key={`paid-addendum-${n}`}
+                className={styles.packageFlowStatusBadge}
+                role="status"
+              >
+                Д/с №{n} оплачено
               </span>
             ))}
             {!loading ? (
@@ -2096,19 +2241,45 @@ export function RepairContractDocumentEditorPage({
                 {savingPackageStatus ? 'Сохранение…' : 'Договор заключен'}
               </button>
             ) : (
-              <button
-                type="button"
-                className={styles.secondaryBtn}
-                disabled={savingPackageStatus || !canRevertContractConcluded}
-                title={
-                  canRevertContractConcluded
-                    ? undefined
-                    : 'Снять статус можно только в течение 24 часов после установки'
-                }
-                onClick={() => setIsRevertStatusConfirmModalOpen(true)}
-              >
-                {savingPackageStatus ? 'Сохранение…' : 'Снять статус «Договор заключен»'}
-              </button>
+              <>
+                {!isContractPaid ? (
+                  <button
+                    type="button"
+                    className={styles.secondaryBtn}
+                    disabled={savingPackageStatus}
+                    onClick={() => void handleMarkContractPaid()}
+                  >
+                    {savingPackageStatus ? 'Сохранение…' : 'Договор оплачен'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className={styles.secondaryBtn}
+                    disabled={savingPackageStatus || !canRevertContractPaid}
+                    title={
+                      canRevertContractPaid
+                        ? 'Снять статус «Договор оплачен»'
+                        : 'Снять статус можно только в течение 24 часов после установки'
+                    }
+                    onClick={() => void handleRevertContractPaid()}
+                  >
+                    {savingPackageStatus ? 'Сохранение…' : 'Снять статус «Договор оплачен»'}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  disabled={savingPackageStatus || !canRevertContractConcluded}
+                  title={
+                    canRevertContractConcluded
+                      ? undefined
+                      : 'Снять статус можно только в течение 24 часов после установки'
+                  }
+                  onClick={() => setIsRevertStatusConfirmModalOpen(true)}
+                >
+                  {savingPackageStatus ? 'Сохранение…' : 'Снять статус «Договор заключен»'}
+                </button>
+              </>
             )}
             {activeTab !== 'data' ? (
               <button type="button" className={styles.secondaryBtn} onClick={handlePrint}>
@@ -2344,6 +2515,72 @@ export function RepairContractDocumentEditorPage({
             }}
           >
             + Д/с №{form.addendumSlotCount + 1}
+          </button>
+        ) : null}
+        {form.addendumSlotCount > 1 ? (
+          <button
+            type="button"
+            className={`${styles.secondaryBtn} ${styles.repairAddAddendumTabBtn}`}
+            title={
+              isAddendumSlotEmpty(
+                form.addendumSlots[form.addendumSlotCount - 1],
+                form.addendumDocumentDates[form.addendumSlotCount - 1]
+              )
+                ? `Удалить пустое Д/с №${form.addendumSlotCount}`
+                : `Можно удалить только пустое Д/с №${form.addendumSlotCount}`
+            }
+            disabled={
+              !isAddendumSlotEmpty(
+                form.addendumSlots[form.addendumSlotCount - 1],
+                form.addendumDocumentDates[form.addendumSlotCount - 1]
+              )
+            }
+            onClick={() => {
+              const lastIdx = form.addendumSlotCount - 1;
+              if (
+                !isAddendumSlotEmpty(
+                  form.addendumSlots[lastIdx],
+                  form.addendumDocumentDates[lastIdx]
+                )
+              ) {
+                return;
+              }
+              const nextCount = form.addendumSlotCount - 1;
+              setForm((f) => {
+                const nextDates = [
+                  ...f.addendumDocumentDates,
+                ] as RepairPackageFormData['addendumDocumentDates'];
+                nextDates[lastIdx] = '';
+                const nextSlots = [...f.addendumSlots] as RepairPackageFormData['addendumSlots'];
+                nextSlots[lastIdx] = {
+                  status: 'OPEN',
+                  signedAt: '',
+                  paidAt: '',
+                  selectedPresetIds: [],
+                  snapshot: null,
+                  excludedSelectedPresetIds: [],
+                  excludedSnapshot: null,
+                  notes: '',
+                  excludedNotes: '',
+                };
+                return {
+                  ...f,
+                  addendumSlotCount: nextCount,
+                  addendumDocumentDates: nextDates,
+                  addendumSlots: nextSlots,
+                };
+              });
+              touchPackageData();
+              const removedTabs = new Set<string>([
+                `addendum${form.addendumSlotCount}`,
+                `workOrderAddendum${form.addendumSlotCount}`,
+              ]);
+              if (removedTabs.has(activeTab)) {
+                setActiveTab(`addendum${nextCount}` as RepairDocumentTabId);
+              }
+            }}
+          >
+            − Д/с №{form.addendumSlotCount}
           </button>
         ) : null}
       </div>
@@ -3232,6 +3469,141 @@ export function RepairContractDocumentEditorPage({
             </div>
           </div>
         </div>
+      ) : activeTab === 'workOrder' || isRepairWorkOrderAddendumTab(activeTab) ? (
+        <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
+          <div
+            className={styles.formGrid}
+            style={{ gap: '2px 6px', display: 'flex', alignItems: 'flex-end', flexWrap: 'nowrap' }}
+          >
+            <h3 className={styles.sectionTitle} style={{ margin: '0 0 1px', fontSize: '0.78rem' }}>
+              {isRepairWorkOrderAddendumTab(activeTab)
+                ? 'Параметры заказ-наряда к Д/с'
+                : 'Параметры заказ-наряда'}
+            </h3>
+            {!isRepairWorkOrderAddendumTab(activeTab) ? (
+              <>
+                <div className={styles.field} style={{ gap: 0, minWidth: 120 }}>
+                  <label htmlFor="repair_work_order_tax_percent" style={{ fontSize: '0.62rem' }}>
+                    Налог, %
+                  </label>
+                  <input
+                    id="repair_work_order_tax_percent"
+                    type="text"
+                    inputMode="decimal"
+                    value={form.workOrder.taxPercent}
+                    onChange={(e) => updateWorkOrder('taxPercent', e.target.value)}
+                    placeholder="например, 20"
+                    autoComplete="off"
+                    style={{ padding: '3px 6px', fontSize: '0.72rem' }}
+                    disabled={!isSuperAdmin}
+                    title={!isSuperAdmin ? 'Доступно только супер-администратору' : undefined}
+                  />
+                </div>
+                <div className={styles.field} style={{ gap: 0, minWidth: 120 }}>
+                  <label htmlFor="repair_work_order_markup_percent" style={{ fontSize: '0.62rem' }}>
+                    Наценка, %
+                  </label>
+                  <input
+                    id="repair_work_order_markup_percent"
+                    type="text"
+                    inputMode="decimal"
+                    value={form.workOrder.markupPercent}
+                    onChange={(e) => updateWorkOrder('markupPercent', e.target.value)}
+                    placeholder="например, 15"
+                    autoComplete="off"
+                    style={{ padding: '3px 6px', fontSize: '0.72rem' }}
+                    disabled={!isSuperAdmin}
+                    title={!isSuperAdmin ? 'Доступно только супер-администратору' : undefined}
+                  />
+                </div>
+              </>
+            ) : null}
+            <div className={styles.field} style={{ gap: 1, minWidth: 240 }}>
+              <label style={{ fontSize: '0.62rem' }}>Разряд (после налога и наценки)</label>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  style={
+                    form.workOrder.gradeIncreasePercent === 0
+                      ? {
+                          background: '#dbeafe',
+                          borderColor: '#93c5fd',
+                          color: '#1d4ed8',
+                          padding: '3px 8px',
+                          fontSize: '0.72rem',
+                        }
+                      : { padding: '3px 8px', fontSize: '0.72rem' }
+                  }
+                  onClick={() => updateWorkOrder('gradeIncreasePercent', 0)}
+                >
+                  4 разряд
+                </button>
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  style={
+                    form.workOrder.gradeIncreasePercent === 5
+                      ? {
+                          background: '#f59e0b',
+                          borderColor: '#d97706',
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          boxShadow: '0 0 0 2px rgba(245, 158, 11, 0.35)',
+                          padding: '3px 8px',
+                          fontSize: '0.72rem',
+                        }
+                      : { padding: '3px 8px', fontSize: '0.72rem' }
+                  }
+                  onClick={() => updateWorkOrder('gradeIncreasePercent', 5)}
+                >
+                  5 разряд
+                </button>
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  style={
+                    form.workOrder.gradeIncreasePercent === 10
+                      ? {
+                          background: '#ef4444',
+                          borderColor: '#dc2626',
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          boxShadow: '0 0 0 2px rgba(239, 68, 68, 0.35)',
+                          padding: '3px 8px',
+                          fontSize: '0.72rem',
+                        }
+                      : { padding: '3px 8px', fontSize: '0.72rem' }
+                  }
+                  onClick={() => updateWorkOrder('gradeIncreasePercent', 10)}
+                >
+                  6 разряд
+                </button>
+              </div>
+            </div>
+            <label
+              className={styles.managerQuestionnaireNeedRow}
+              htmlFor="repair_work_order_show_amounts"
+              style={{ margin: 0, fontSize: '0.74rem', whiteSpace: 'nowrap' }}
+            >
+              <input
+                id="repair_work_order_show_amounts"
+                type="checkbox"
+                checked={form.workOrder.showLineAmounts}
+                onChange={(e) => updateWorkOrder('showLineAmounts', e.target.checked)}
+              />
+              <span>Показывать стоимость в каждой позиции</span>
+            </label>
+          </div>
+          <div className={styles.estimateA4Wrap}>
+            <article className={styles.estimateA4Sheet}>
+              <div
+                className={styles.contractA4Preview}
+                dangerouslySetInnerHTML={{ __html: renderedDoc }}
+              />
+            </article>
+          </div>
+        </div>
       ) : activeTab === 'questionnaire1' ? (
         <div className={`${styles.blockData} ${styles.dataCompact}`}>
           <RepairManagerQuestionnaire1Tab
@@ -3414,10 +3786,15 @@ export function RepairContractDocumentEditorPage({
                 draggingExcludedPresetId={draggingAddendumExcludedEstimatePresetId}
                 setDraggingExcludedPresetId={setDraggingAddendumExcludedEstimatePresetId}
                 onMarkSigned={() => markAddendumSlotSigned(activeAddendumSlot - 1)}
+                onMarkPaid={() => markAddendumSlotPaid(activeAddendumSlot - 1)}
                 canUnmarkSigned={isWithinRevertWindow(
                   form.addendumSlots[activeAddendumSlot - 1]?.signedAt
                 )}
                 onUnmarkSigned={() => unmarkAddendumSlotSigned(activeAddendumSlot - 1)}
+                canUnmarkPaid={isWithinRevertWindow(
+                  form.addendumSlots[activeAddendumSlot - 1]?.paidAt
+                )}
+                onUnmarkPaid={() => unmarkAddendumSlotPaid(activeAddendumSlot - 1)}
               />
             ) : (
               <div className={`${styles.field} ${styles.repairAddendumDateFieldRow}`}>
@@ -3447,7 +3824,8 @@ export function RepairContractDocumentEditorPage({
           isRepairActTwinOneSheetTab(activeTab) ||
           activeTab === 'cashOrder' ||
           activeTab === 'productionLog' ||
-          isRepairAddendumTab(activeTab) ? (
+          isRepairAddendumTab(activeTab) ||
+          isRepairWorkOrderAddendumTab(activeTab) ? (
             <div className={styles.estimateA4Wrap}>
               {isRepairActTwinOneSheetTab(activeTab) ? (
                 <article

@@ -7,6 +7,7 @@ import type {
 import { amountToRussianWords } from './amountToRussianWords';
 import { todayContractDateDdMmYyyy } from './contractDateFormat';
 import {
+  type EstimateEmbedSection,
   buildEstimateDocPrintEmbedHtml,
   buildEstimateDocPrintFooterHtml,
   buildEstimateSectionsFromPresetIds,
@@ -230,14 +231,27 @@ export interface RepairEstimateBlock {
   notes: string;
 }
 
-/** Статус доп. соглашения: после «подписано» расчёты к этому Д/с не меняются. */
-export type RepairAddendumSlotStatus = 'OPEN' | 'SIGNED';
+export interface RepairWorkOrderBlock {
+  /** Ставка налога в процентах, применяемая к каждой позиции сметы. */
+  taxPercent: string;
+  /** Наценка в процентах, вычитаемая из каждой позиции сметы. */
+  markupPercent: string;
+  /** Показывать ли стоимость по каждой строке работ. */
+  showLineAmounts: boolean;
+  /** Разряд для повышения стоимости после налогов/наценки: 0 / 5 / 10. */
+  gradeIncreasePercent: 0 | 5 | 10;
+}
+
+/** Статус доп. соглашения: после «подписано/оплачено» расчёты к этому Д/с не меняются. */
+export type RepairAddendumSlotStatus = 'OPEN' | 'SIGNED' | 'PAID';
 
 /** Расчёты, прикреплённые к конкретному Д/с (№1…№5). */
 export interface RepairAddendumSlotEstimateBlock {
   status: RepairAddendumSlotStatus;
   /** Время установки статуса SIGNED (ISO), нужно для окна отмены 24 часа. */
   signedAt: string;
+  /** Время установки статуса PAID (ISO). */
+  paidAt: string;
   selectedPresetIds: string[];
   snapshot: RepairEstimateBlock['snapshot'];
   excludedSelectedPresetIds: string[];
@@ -260,6 +274,7 @@ export interface RepairPackageFormData {
   object: RepairObjectBlock;
   contract: RepairContractBlock;
   estimate: RepairEstimateBlock;
+  workOrder: RepairWorkOrderBlock;
   /**
    * Объект (группа расчётов) для сметы договора и всех Д/с: `''` — не выбран, `__ungrouped__` — вне объекта, иначе id группы.
    * При непустой смете фактически совпадает с объектом первого прикреплённого расчёта.
@@ -278,6 +293,8 @@ export interface RepairPackageFormData {
   addendumSlots: RepairAddendumSlotsTuple;
   /** Время установки статуса «Договор заключен» (ISO), окно отмены — 24 часа. */
   contractConcludedAt: string;
+  /** Время установки статуса «Договор оплачен» (ISO). */
+  contractPaidAt: string;
 }
 
 export function defaultRepairPackageFormData(): RepairPackageFormData {
@@ -343,6 +360,12 @@ export function defaultRepairPackageFormData(): RepairPackageFormData {
       snapshot: null,
       notes: '',
     },
+    workOrder: {
+      taxPercent: '',
+      markupPercent: '',
+      showLineAmounts: true,
+      gradeIncreasePercent: 0,
+    },
     estimateObjectGroupKey: '',
     managerQuestionnaire1: defaultRepairManagerQuestionnaire1Block(),
     postWorkQuestionnaire2: defaultRepairPostWorkQuestionnaire2Block(),
@@ -350,6 +373,7 @@ export function defaultRepairPackageFormData(): RepairPackageFormData {
     addendumDocumentDates: ['', '', '', '', ''],
     addendumSlots: defaultAddendumSlots(),
     contractConcludedAt: '',
+    contractPaidAt: '',
   };
 }
 
@@ -357,6 +381,7 @@ function defaultAddendumSlot(): RepairAddendumSlotEstimateBlock {
   return {
     status: 'OPEN',
     signedAt: '',
+    paidAt: '',
     selectedPresetIds: [],
     snapshot: null,
     excludedSelectedPresetIds: [],
@@ -377,7 +402,9 @@ function defaultAddendumSlots(): RepairAddendumSlotsTuple {
 }
 
 function normalizeAddendumSlotStatus(raw: unknown): RepairAddendumSlotStatus {
-  return raw === 'SIGNED' ? 'SIGNED' : 'OPEN';
+  if (raw === 'PAID') return 'PAID';
+  if (raw === 'SIGNED') return 'SIGNED';
+  return 'OPEN';
 }
 
 function normalizeAddendumSlots(raw: unknown): RepairAddendumSlotsTuple {
@@ -425,6 +452,7 @@ function normalizeAddendumSlots(raw: unknown): RepairAddendumSlotsTuple {
     out[i] = {
       status: normalizeAddendumSlotStatus(o.status),
       signedAt: typeof o.signedAt === 'string' ? o.signedAt : '',
+      paidAt: typeof o.paidAt === 'string' ? o.paidAt : '',
       selectedPresetIds: ids,
       snapshot,
       excludedSelectedPresetIds: excludedIds,
@@ -576,6 +604,10 @@ export function mergeRepairPackageFormData(raw: unknown): RepairPackageFormData 
     addendumSlots: normalizeAddendumSlots(
       (merged as unknown as Record<string, unknown>).addendumSlots
     ),
+    contractPaidAt:
+      typeof (merged as unknown as Record<string, unknown>).contractPaidAt === 'string'
+        ? String((merged as unknown as Record<string, unknown>).contractPaidAt)
+        : '',
     estimateObjectGroupKey:
       typeof (merged as unknown as Record<string, unknown>).estimateObjectGroupKey === 'string'
         ? String((merged as unknown as Record<string, unknown>).estimateObjectGroupKey)
@@ -760,6 +792,12 @@ export function mergeRepairPackageFormWithPreviewFallback(
       ...form.estimate,
       notes: pickStr(form.estimate.notes, fallback.estimate.notes),
     },
+    workOrder: {
+      taxPercent: pickStr(form.workOrder.taxPercent, fallback.workOrder.taxPercent),
+      markupPercent: pickStr(form.workOrder.markupPercent, fallback.workOrder.markupPercent),
+      showLineAmounts: form.workOrder.showLineAmounts,
+      gradeIncreasePercent: form.workOrder.gradeIncreasePercent,
+    },
     estimateObjectGroupKey: pickStr(form.estimateObjectGroupKey, fallback.estimateObjectGroupKey),
     managerQuestionnaire1: {
       ...fallback.managerQuestionnaire1,
@@ -815,7 +853,9 @@ export function mergeRepairPackageFormWithPreviewFallback(
         (fm.selectedPresetIds?.length ?? 0) > 0 ? fm.selectedPresetIds : fb.selectedPresetIds;
       return {
         status: fm.status,
-        signedAt: fm.status === 'SIGNED' ? pickStr(fm.signedAt, fb.signedAt) : '',
+        signedAt:
+          fm.status === 'SIGNED' || fm.status === 'PAID' ? pickStr(fm.signedAt, fb.signedAt) : '',
+        paidAt: fm.status === 'PAID' ? pickStr(fm.paidAt, fb.paidAt) : '',
         selectedPresetIds: ids,
         snapshot: (fm.selectedPresetIds?.length ?? 0) > 0 ? fm.snapshot : fb.snapshot,
         excludedSelectedPresetIds:
@@ -831,6 +871,7 @@ export function mergeRepairPackageFormWithPreviewFallback(
       };
     }) as RepairAddendumSlotsTuple,
     contractConcludedAt: pickStr(form.contractConcludedAt, fallback.contractConcludedAt),
+    contractPaidAt: pickStr(form.contractPaidAt, fallback.contractPaidAt),
   };
 }
 
@@ -886,6 +927,225 @@ export function buildEstimateRoomsHtmlFromSnapshot(
 </table>`;
 }
 
+type WorkOrderRoomLine = {
+  name: string;
+  unit: string;
+  quantity: number;
+  originalPrice: number;
+  originalAmount: number;
+  adjustedPrice: number;
+  adjustedAmount: number;
+};
+
+type WorkOrderRoom = {
+  name: string;
+  originalTotal: number;
+  adjustedTotal: number;
+  lines: WorkOrderRoomLine[];
+};
+
+function parsePercent(raw: string): number {
+  const normalized = raw.replace(/\s+/g, '').replace(',', '.');
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed)) return 0;
+  if (parsed < 0) return 0;
+  if (parsed > 100) return 100;
+  return parsed;
+}
+
+function formatMoney(value: number): string {
+  return value.toFixed(2).replace('.', ',');
+}
+
+function toPercentValue(value: string): string {
+  const parsed = parsePercent(value);
+  return parsed > 0 ? String(parsed).replace('.', ',') : '0';
+}
+
+function normalizeGradeIncreasePercent(v: unknown): 0 | 5 | 10 {
+  return v === 5 || v === 10 ? v : 0;
+}
+
+function buildWorkOrderComputed(
+  snapshot: RepairEstimateBlock['snapshot'],
+  taxRaw: string,
+  markupRaw: string,
+  gradeIncreasePercentRaw: unknown
+) {
+  const taxPercent = parsePercent(taxRaw);
+  const markupPercent = parsePercent(markupRaw);
+  const gradeIncreasePercent = normalizeGradeIncreasePercent(gradeIncreasePercentRaw);
+  const gradeFactor = 1 + gradeIncreasePercent / 100;
+  const rooms: WorkOrderRoom[] = (snapshot?.rooms ?? []).map((room) => {
+    const lines = room.lines.map((line) => ({
+      name: line.name,
+      unit: line.unit,
+      quantity: line.quantity,
+      originalPrice: line.price,
+      originalAmount: line.amount,
+      /**
+       * ВАЖНО: расчёт последовательный:
+       * 1) сначала вычитаем налог из исходной суммы
+       * 2) затем вычитаем наценку из остатка
+       * 3) после этого применяем надбавку разряда (5% или 10%)
+       */
+      adjustedPrice: line.price * (1 - taxPercent / 100) * (1 - markupPercent / 100) * gradeFactor,
+      adjustedAmount:
+        line.amount * (1 - taxPercent / 100) * (1 - markupPercent / 100) * gradeFactor,
+    }));
+    const adjustedTotal = lines.reduce((sum, line) => sum + line.adjustedAmount, 0);
+    const originalTotal = lines.reduce((sum, line) => sum + line.originalAmount, 0);
+    return {
+      name: room.name,
+      originalTotal,
+      adjustedTotal,
+      lines,
+    };
+  });
+  const originalTotal = rooms.reduce((sum, room) => sum + room.originalTotal, 0);
+  const adjustedTotal = rooms.reduce((sum, room) => sum + room.adjustedTotal, 0);
+  const taxAmount = originalTotal * (taxPercent / 100);
+  const afterTax = originalTotal - taxAmount;
+  const markupAmount = afterTax * (markupPercent / 100);
+  const reductionAmount = taxAmount + markupAmount;
+  return {
+    taxPercent,
+    markupPercent,
+    gradeIncreasePercent,
+    rooms,
+    originalTotal,
+    adjustedTotal,
+    taxAmount,
+    markupAmount,
+    reductionAmount,
+  };
+}
+
+function buildWorkOrderRoomsHtmlFromSnapshot(
+  snapshot: RepairEstimateBlock['snapshot'],
+  taxRaw: string,
+  markupRaw: string,
+  gradeIncreasePercentRaw: unknown,
+  sections?: EstimateEmbedSection[],
+  showLineAmounts = true
+): string {
+  const escapeHtml = (value: string): string =>
+    value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  const computed = buildWorkOrderComputed(snapshot, taxRaw, markupRaw, gradeIncreasePercentRaw);
+  if (computed.rooms.length === 0) return '';
+  const sectionRooms =
+    sections && sections.length > 0
+      ? sections
+          .map((section) => ({
+            categoryName: section.categoryName,
+            rooms: section.rooms.map((room) => room.name),
+          }))
+          .filter((section) => section.rooms.length > 0)
+      : [];
+
+  let roomCursor = 0;
+  const groupedRooms =
+    sectionRooms.length > 0
+      ? sectionRooms.map((section) => {
+          const rows = computed.rooms.slice(roomCursor, roomCursor + section.rooms.length);
+          roomCursor += section.rooms.length;
+          return {
+            categoryName: section.categoryName,
+            rooms: rows,
+          };
+        })
+      : [{ categoryName: '—', rooms: computed.rooms }];
+  return `<table style="width:100%;border-collapse:collapse;margin:4pt 0;page-break-inside:auto;break-inside:auto;font-size:10px;line-height:1.2;">
+  <thead>
+    <tr>
+      <th style="border:1px solid #cbd5e1; padding:3px 4px; text-align:center;">№</th>
+      <th style="border:1px solid #cbd5e1; padding:3px 4px; text-align:left;">Вид работ</th>
+      <th style="border:1px solid #cbd5e1; padding:3px 4px; text-align:right;">Кол-во</th>
+      ${
+        showLineAmounts
+          ? '<th style="border:1px solid #cbd5e1; padding:3px 4px; text-align:right;">Стоимость</th>'
+          : ''
+      }
+    </tr>
+  </thead>
+  <tbody>
+    ${groupedRooms
+      .map((section) => {
+        const sectionHeader = `<tr>
+      <td colspan="${showLineAmounts ? 4 : 3}" style="border:1px solid #cbd5e1; padding:3px 4px; font-weight:700; background:#eef2ff;">Категория работ: ${escapeHtml(
+        section.categoryName
+      )}</td>
+    </tr>`;
+        const sectionRoomsHtml = section.rooms
+          .map((room) => {
+            const roomHeader = `<tr>
+      <td colspan="${showLineAmounts ? 4 : 3}" style="border:1px solid #cbd5e1; padding:3px 4px; font-weight:700; background:#f8fafc;">
+        ${escapeHtml(room.name)}
+        <span style="float:right;">${formatMoney(room.adjustedTotal)} руб.</span>
+      </td>
+    </tr>`;
+            const roomLines = room.lines
+              .map(
+                (line, index) => `<tr>
+      <td style="border:1px solid #cbd5e1; padding:3px 4px; text-align:center;">${index + 1}</td>
+      <td style="border:1px solid #cbd5e1; padding:3px 4px;">${escapeHtml(line.name)}</td>
+      <td style="border:1px solid #cbd5e1; padding:3px 4px; text-align:right;">${line.quantity} ${escapeHtml(line.unit)}</td>
+      ${
+        showLineAmounts
+          ? `<td style="border:1px solid #cbd5e1; padding:3px 4px; text-align:right;">${formatMoney(line.adjustedAmount)}</td>`
+          : ''
+      }
+    </tr>`
+              )
+              .join('');
+            return `${roomHeader}${roomLines}`;
+          })
+          .join('');
+        return `${sectionHeader}${sectionRoomsHtml}`;
+      })
+      .join('')}
+  </tbody>
+</table>`;
+}
+
+function buildWorkOrderCategoryTotalsHtml(options: {
+  sections: EstimateEmbedSection[];
+  roomTotals: number[];
+}): string {
+  const escapeHtml = (value: string): string =>
+    value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  const { sections, roomTotals } = options;
+  if (sections.length === 0) return '';
+  let cursor = 0;
+  const rows = sections
+    .map((section) => {
+      const count = section.rooms.length;
+      const total = roomTotals.slice(cursor, cursor + count).reduce((sum, x) => sum + x, 0);
+      cursor += count;
+      return `<li style="display:flex;justify-content:space-between;gap:8px;padding:1px 0;">
+  <span>${escapeHtml(section.categoryName || '—')}</span>
+  <strong>${formatMoney(total)} руб.</strong>
+</li>`;
+    })
+    .join('');
+  return `<section style="margin-top:6pt;">
+  <h2 style="margin:0 0 3pt;">Итоги по категориям работ</h2>
+  <ul style="list-style:none;margin:0;padding:0;">
+    ${rows}
+  </ul>
+</section>`;
+}
+
 /** Данные для подстановки в HTML: добавляет вычисляемое поле `executor.innKppRegLine`. */
 export function repairPackageFormForTemplate(
   form: RepairPackageFormData,
@@ -898,6 +1158,26 @@ export function repairPackageFormForTemplate(
     roomsHtml: string;
     roomsCount: string;
     linesCount: string;
+  };
+  workOrder: RepairWorkOrderBlock & {
+    showLineAmounts: boolean;
+    roomsHtml: string;
+    categoryTotalsHtml: string;
+    totalBeforeDeductions: string;
+    taxPercentNormalized: string;
+    markupPercentNormalized: string;
+    taxAmount: string;
+    markupAmount: string;
+    totalReduction: string;
+    totalAfterDeductions: string;
+    roomsCount: string;
+    linesCount: string;
+  };
+  workOrderAddendum?: {
+    slotNumber: string;
+    roomsHtml: string;
+    categoryTotalsHtml: string;
+    totalAfterDeductions: string;
   };
   addendum?: {
     headerMain: string;
@@ -955,7 +1235,8 @@ export function repairPackageFormForTemplate(
     ? amountToRussianWords(form.contract.prepaymentAmount)
     : '';
 
-  const addendumTabMatch = options?.templateTab && /^addendum([1-5])$/.exec(options.templateTab);
+  const addendumTabMatch =
+    options?.templateTab && /^(?:addendum|workOrderAddendum)([1-5])$/.exec(options.templateTab);
   const addendumSlot = addendumTabMatch ? Number(addendumTabMatch[1]) : null;
   const addendumSlotSnap =
     addendumSlot !== null && addendumSlot >= 1 && addendumSlot <= 5
@@ -1042,10 +1323,65 @@ export function repairPackageFormForTemplate(
           };
         })()
       : undefined;
+  const workOrderComputed = buildWorkOrderComputed(
+    form.estimate.snapshot,
+    form.workOrder.taxPercent,
+    form.workOrder.markupPercent,
+    form.workOrder.gradeIncreasePercent
+  );
+  const workOrderSections = buildEstimateSectionsFromPresetIds(
+    form.estimate.selectedPresetIds,
+    options?.estimatePresets ?? []
+  );
+  const workOrderCategoryTotalsHtml = buildWorkOrderCategoryTotalsHtml({
+    sections: workOrderSections,
+    roomTotals: workOrderComputed.rooms.map((room) => room.adjustedTotal),
+  });
+  const workOrderAddendumComputed =
+    addendumSlot !== null && addendumSlot >= 1 && addendumSlot <= 5
+      ? buildWorkOrderComputed(
+          form.addendumSlots[addendumSlot - 1]?.snapshot ?? null,
+          form.workOrder.taxPercent,
+          form.workOrder.markupPercent,
+          form.workOrder.gradeIncreasePercent
+        )
+      : null;
+  const workOrderAddendumSections =
+    addendumSlot !== null && addendumSlot >= 1 && addendumSlot <= 5
+      ? buildEstimateSectionsFromPresetIds(
+          form.addendumSlots[addendumSlot - 1]?.selectedPresetIds ?? [],
+          options?.estimatePresets ?? []
+        )
+      : [];
+  const workOrderAddendumCategoryTotalsHtml = buildWorkOrderCategoryTotalsHtml({
+    sections: workOrderAddendumSections,
+    roomTotals: workOrderAddendumComputed?.rooms.map((room) => room.adjustedTotal) ?? [],
+  });
+  const workOrderAddendumRoomsHtml =
+    addendumSlot !== null && addendumSlot >= 1 && addendumSlot <= 5
+      ? buildWorkOrderRoomsHtmlFromSnapshot(
+          form.addendumSlots[addendumSlot - 1]?.snapshot ?? null,
+          form.workOrder.taxPercent,
+          form.workOrder.markupPercent,
+          form.workOrder.gradeIncreasePercent,
+          workOrderAddendumSections,
+          form.workOrder.showLineAmounts
+        )
+      : '';
+  const workOrderAddendumForTemplate =
+    addendumSlot !== null && addendumSlot >= 1 && addendumSlot <= 5
+      ? {
+          slotNumber: String(addendumSlot),
+          roomsHtml: workOrderAddendumRoomsHtml,
+          categoryTotalsHtml: workOrderAddendumCategoryTotalsHtml,
+          totalAfterDeductions: formatMoney(workOrderAddendumComputed?.adjustedTotal ?? 0),
+        }
+      : undefined;
 
   return {
     ...form,
     ...(addendumForTemplate ? { addendum: addendumForTemplate } : {}),
+    ...(workOrderAddendumForTemplate ? { workOrderAddendum: workOrderAddendumForTemplate } : {}),
     meta: {
       /** Текущая календарная дата в формате дд.мм.гггг (момент предпросмотра/печати). Шаблон: `{{meta.currentDate}}`. */
       currentDate: todayContractDateDdMmYyyy(),
@@ -1065,6 +1401,29 @@ export function repairPackageFormForTemplate(
       roomsHtml,
       roomsCount,
       linesCount,
+    },
+    workOrder: {
+      ...form.workOrder,
+      roomsHtml: buildWorkOrderRoomsHtmlFromSnapshot(
+        form.estimate.snapshot,
+        form.workOrder.taxPercent,
+        form.workOrder.markupPercent,
+        form.workOrder.gradeIncreasePercent,
+        workOrderSections,
+        form.workOrder.showLineAmounts
+      ),
+      categoryTotalsHtml: workOrderCategoryTotalsHtml,
+      showLineAmounts: form.workOrder.showLineAmounts,
+      totalBeforeDeductions: formatMoney(workOrderComputed.originalTotal),
+      taxPercentNormalized: toPercentValue(form.workOrder.taxPercent),
+      markupPercentNormalized: toPercentValue(form.workOrder.markupPercent),
+      taxAmount: formatMoney(workOrderComputed.taxAmount),
+      markupAmount: formatMoney(workOrderComputed.markupAmount),
+      totalReduction: formatMoney(workOrderComputed.reductionAmount),
+      totalAfterDeductions: formatMoney(workOrderComputed.adjustedTotal),
+      roomsCount: String(workOrderComputed.rooms.length),
+      linesCount: String(workOrderComputed.rooms.reduce((sum, room) => sum + room.lines.length, 0)),
+      gradeIncreasePercent: workOrderComputed.gradeIncreasePercent,
     },
   };
 }

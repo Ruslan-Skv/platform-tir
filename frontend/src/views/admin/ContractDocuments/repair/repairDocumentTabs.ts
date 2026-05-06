@@ -13,7 +13,11 @@ export const REPAIR_DOCUMENT_TAB_IDS = [
   'addendum4',
   'addendum5',
   'workOrder',
-  'workOrderAddendum',
+  'workOrderAddendum1',
+  'workOrderAddendum2',
+  'workOrderAddendum3',
+  'workOrderAddendum4',
+  'workOrderAddendum5',
   'productionLog',
 ] as const;
 
@@ -27,14 +31,23 @@ export const REPAIR_ADDENDUM_TAB_IDS = [
   'addendum5',
 ] as const;
 
+export const REPAIR_WORK_ORDER_ADDENDUM_TAB_IDS = [
+  'workOrderAddendum1',
+  'workOrderAddendum2',
+  'workOrderAddendum3',
+  'workOrderAddendum4',
+  'workOrderAddendum5',
+] as const;
+
 /** Вкладка «Д/с №…» показывается, если номер ≤ числу открытых слотов (1–5). */
 export function isRepairAddendumTabVisible(
   id: RepairDocumentTabId,
   addendumSlotCount: number
 ): boolean {
   const m = /^addendum(\d+)$/.exec(id);
-  if (!m) return true;
-  const n = Number(m[1]);
+  const mWorkOrder = /^workOrderAddendum(\d+)$/.exec(id);
+  const n = Number(m?.[1] ?? mWorkOrder?.[1] ?? NaN);
+  if (!Number.isFinite(n)) return true;
   if (!Number.isFinite(n) || n < 1 || n > 5) return false;
   return n <= addendumSlotCount;
 }
@@ -44,9 +57,15 @@ export function isRepairAddendumTab(tab: string): boolean {
   return /^addendum[1-5]$/.test(tab);
 }
 
+export function isRepairWorkOrderAddendumTab(tab: string): boolean {
+  return /^workOrderAddendum[1-5]$/.test(tab);
+}
+
 /** Старые сохранённые порядки вкладок и tabId шаблонов. */
 export function normalizeLegacyRepairTabId(id: string): string {
-  return id === 'addendum' ? 'addendum1' : id;
+  if (id === 'addendum') return 'addendum1';
+  if (id === 'workOrderAddendum') return 'workOrderAddendum1';
+  return id;
 }
 
 export const REPAIR_DOCUMENT_TAB_LABELS: Record<RepairDocumentTabId, string> = {
@@ -64,7 +83,11 @@ export const REPAIR_DOCUMENT_TAB_LABELS: Record<RepairDocumentTabId, string> = {
   addendum4: 'Дополнительное соглашение №4',
   addendum5: 'Дополнительное соглашение №5',
   workOrder: 'Заказ-наряд',
-  workOrderAddendum: 'Заказ-наряд к доп. соглашению',
+  workOrderAddendum1: 'Заказ-наряд к Д/с №1',
+  workOrderAddendum2: 'Заказ-наряд к Д/с №2',
+  workOrderAddendum3: 'Заказ-наряд к Д/с №3',
+  workOrderAddendum4: 'Заказ-наряд к Д/с №4',
+  workOrderAddendum5: 'Заказ-наряд к Д/с №5',
   productionLog: 'Производственный журнал',
 };
 
@@ -84,7 +107,11 @@ export const REPAIR_DOCUMENT_TAB_LABELS_SHORT: Record<RepairDocumentTabId, strin
   addendum4: 'Д/с №4',
   addendum5: 'Д/с №5',
   workOrder: 'З-наряд',
-  workOrderAddendum: 'З-н доп.',
+  workOrderAddendum1: 'З-н Д/с №1',
+  workOrderAddendum2: 'З-н Д/с №2',
+  workOrderAddendum3: 'З-н Д/с №3',
+  workOrderAddendum4: 'З-н Д/с №4',
+  workOrderAddendum5: 'З-н Д/с №5',
   productionLog: 'Пр. журнал',
 };
 

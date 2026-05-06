@@ -18,7 +18,11 @@ const TEMPLATE_TAB_IDS: RepairDocumentTemplateTabId[] = [
   'addendum4',
   'addendum5',
   'workOrder',
-  'workOrderAddendum',
+  'workOrderAddendum1',
+  'workOrderAddendum2',
+  'workOrderAddendum3',
+  'workOrderAddendum4',
+  'workOrderAddendum5',
   'productionLog',
 ];
 
@@ -35,7 +39,8 @@ export function parseTemplateOverrides(
   if (!o || typeof o !== 'object') return {};
   const out: Partial<Record<RepairDocumentTemplateTabId, string>> = {};
   for (const [k, v] of Object.entries(o)) {
-    const key = k === 'addendum' ? 'addendum1' : k;
+    const key =
+      k === 'addendum' ? 'addendum1' : k === 'workOrderAddendum' ? 'workOrderAddendum1' : k;
     if (isTemplateTabId(key) && typeof v === 'string' && v.trim()) {
       out[key] = v;
     }
@@ -70,7 +75,8 @@ export function mergeFormDataFromStorage(raw: unknown): {
   const idsRaw = root?._templatePresetIds;
   if (idsRaw && typeof idsRaw === 'object') {
     for (const [k, v] of Object.entries(idsRaw as Record<string, unknown>)) {
-      const key = k === 'addendum' ? 'addendum1' : k;
+      const key =
+        k === 'addendum' ? 'addendum1' : k === 'workOrderAddendum' ? 'workOrderAddendum1' : k;
       if (isTemplateTabId(key) && typeof v === 'string' && v.trim()) {
         templatePresetIds[key] = v.trim();
       }

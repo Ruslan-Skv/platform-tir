@@ -9,6 +9,7 @@ export {
   REPAIR_DOCUMENT_TAB_ORDER_STORAGE_KEY,
   isRepairAddendumTab,
   isRepairAddendumTabVisible,
+  isRepairWorkOrderAddendumTab,
   normalizeLegacyRepairTabId,
   normalizeRepairDocumentTabOrder,
   type RepairDocumentTabId,

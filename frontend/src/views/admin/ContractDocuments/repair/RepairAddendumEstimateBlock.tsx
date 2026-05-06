@@ -37,8 +37,11 @@ export function RepairAddendumEstimateBlock({
   draggingExcludedPresetId,
   setDraggingExcludedPresetId,
   onMarkSigned,
+  onMarkPaid,
   canUnmarkSigned,
   onUnmarkSigned,
+  canUnmarkPaid,
+  onUnmarkPaid,
 }: {
   slotOrdinal: number;
   slot: RepairAddendumSlotEstimateBlock;
@@ -65,10 +68,13 @@ export function RepairAddendumEstimateBlock({
   draggingExcludedPresetId: string | null;
   setDraggingExcludedPresetId: (v: string | null) => void;
   onMarkSigned: () => void;
+  onMarkPaid: () => void;
   canUnmarkSigned: boolean;
   onUnmarkSigned: () => void;
+  canUnmarkPaid: boolean;
+  onUnmarkPaid: () => void;
 }) {
-  const readOnly = slot.status === 'SIGNED';
+  const readOnly = slot.status === 'SIGNED' || slot.status === 'PAID';
   const hasAnyAttachedPresets =
     (slot.selectedPresetIds?.length ?? 0) > 0 || (slot.excludedSelectedPresetIds?.length ?? 0) > 0;
 
@@ -148,7 +154,7 @@ export function RepairAddendumEstimateBlock({
                     >
                       Добавить в раздел "Смета дополнительных..."
                     </button>
-                    {!readOnly ? (
+                    {slot.status === 'OPEN' ? (
                       <button
                         type="button"
                         className={styles.secondaryBtn}
@@ -162,14 +168,42 @@ export function RepairAddendumEstimateBlock({
                       >
                         Д/с №{slotOrdinal} подписано
                       </button>
-                    ) : canUnmarkSigned ? (
+                    ) : null}
+                    {slot.status === 'SIGNED' ? (
+                      <>
+                        <button
+                          type="button"
+                          className={styles.secondaryBtn}
+                          onClick={onMarkPaid}
+                          title={`Присвоить статус «Д/с №${slotOrdinal} оплачено»`}
+                        >
+                          Д/с №{slotOrdinal} оплачено
+                        </button>
+                        {canUnmarkSigned ? (
+                          <button
+                            type="button"
+                            className={styles.secondaryBtn}
+                            onClick={onUnmarkSigned}
+                            title="Отменить статус «Д/с подписано» (доступно 24 часа)"
+                          >
+                            Отменить статус «Д/с подписано»
+                          </button>
+                        ) : null}
+                      </>
+                    ) : null}
+                    {slot.status === 'PAID' ? (
                       <button
                         type="button"
                         className={styles.secondaryBtn}
-                        onClick={onUnmarkSigned}
-                        title="Отменить статус «Д/с подписано» (доступно 24 часа)"
+                        onClick={onUnmarkPaid}
+                        disabled={!canUnmarkPaid}
+                        title={
+                          canUnmarkPaid
+                            ? 'Снять статус «Д/с оплачено» (доступно 24 часа)'
+                            : 'Снять статус можно только в течение 24 часов после установки'
+                        }
                       >
-                        Отменить статус «Д/с подписано»
+                        Отменить статус «Д/с оплачено»
                       </button>
                     ) : null}
                   </div>

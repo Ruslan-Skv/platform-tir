@@ -24,6 +24,10 @@ export const REPAIR_DOCUMENT_TEMPLATES: Record<Exclude<RepairDocumentTabId, 'dat
   addendum4: repairTemplateAddendum,
   addendum5: repairTemplateAddendum,
   workOrder: repairTemplateWorkOrder,
-  workOrderAddendum: repairTemplateWorkOrderAddendum,
+  workOrderAddendum1: repairTemplateWorkOrderAddendum,
+  workOrderAddendum2: repairTemplateWorkOrderAddendum,
+  workOrderAddendum3: repairTemplateWorkOrderAddendum,
+  workOrderAddendum4: repairTemplateWorkOrderAddendum,
+  workOrderAddendum5: repairTemplateWorkOrderAddendum,
   productionLog: repairTemplateProductionLog,
 };
