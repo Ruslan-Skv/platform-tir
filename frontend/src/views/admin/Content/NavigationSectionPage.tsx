@@ -583,9 +583,15 @@ export function NavigationSectionPage() {
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Кнопки меню</h2>
         {items.length === 0 && !adding ? (
-          <p style={{ color: '#6b7280', marginBottom: 16 }}>
+          <p style={{ color: 'var(--admin-text-muted)', marginBottom: 16 }}>
             Пунктов пока нет. Добавьте первую кнопку ниже или выполните в backend команду{' '}
-            <code style={{ background: '#e5e7eb', padding: '2px 6px', borderRadius: 4 }}>
+            <code
+              style={{
+                background: 'var(--admin-surface-soft)',
+                padding: '2px 6px',
+                borderRadius: 4,
+              }}
+            >
               npx prisma db seed
             </code>
             , чтобы создать пункты по умолчанию (Каталог, Блог и т.д.).
@@ -738,9 +744,11 @@ export function NavigationSectionPage() {
                         Управление категориями каталога
                       </Link>
                       {catalogCategoriesLoading ? (
-                        <p style={{ color: '#6b7280', marginTop: 8 }}>Загрузка разделов…</p>
+                        <p style={{ color: 'var(--admin-text-muted)', marginTop: 8 }}>
+                          Загрузка разделов…
+                        </p>
                       ) : catalogCategories.length === 0 ? (
-                        <p style={{ color: '#6b7280', marginTop: 8 }}>
+                        <p style={{ color: 'var(--admin-text-muted)', marginTop: 8 }}>
                           Категорий пока нет. Добавьте их в разделе Каталог → Категории.
                         </p>
                       ) : (

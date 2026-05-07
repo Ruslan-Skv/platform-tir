@@ -1599,8 +1599,8 @@ export function ProductCreatePage({
                       style={{
                         padding: '0.5rem 1rem',
                         whiteSpace: 'nowrap',
-                        backgroundColor: '#3b82f6',
-                        color: 'white',
+                        backgroundColor: 'var(--admin-info-strong)',
+                        color: 'var(--admin-text-inverse)',
                         border: 'none',
                         borderRadius: '0.375rem',
                         cursor:
@@ -1651,8 +1651,8 @@ export function ProductCreatePage({
                       style={{
                         padding: '0.5rem 1rem',
                         whiteSpace: 'nowrap',
-                        backgroundColor: '#10b981',
-                        color: 'white',
+                        backgroundColor: 'var(--admin-success-emerald)',
+                        color: 'var(--admin-text-inverse)',
                         border: 'none',
                         borderRadius: '0.375rem',
                         cursor: !formData.supplierPrice ? 'not-allowed' : 'pointer',
@@ -3102,7 +3102,13 @@ export function ProductCreatePage({
       />
 
       {/* Кнопка "Назад к списку" в самом низу */}
-      <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
+      <div
+        style={{
+          marginTop: '2rem',
+          paddingTop: '1.5rem',
+          borderTop: '1px solid var(--admin-border)',
+        }}
+      >
         <button
           type="button"
           className={styles.backButtonBottom}

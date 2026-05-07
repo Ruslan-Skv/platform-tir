@@ -92,8 +92,11 @@ export function DirectorMessageSection() {
             style={{
               marginBottom: 16,
               backgroundColor:
-                toast.type === 'success' ? 'rgba(5, 150, 105, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-              borderColor: toast.type === 'success' ? '#059669' : '#ef4444',
+                toast.type === 'success'
+                  ? 'var(--admin-success-bg-soft)'
+                  : 'var(--admin-danger-bg-soft)',
+              borderColor:
+                toast.type === 'success' ? 'var(--admin-success-deep)' : 'var(--admin-danger)',
             }}
           >
             {toast.message}
@@ -117,7 +120,7 @@ export function DirectorMessageSection() {
               width: '100%',
               padding: '8px 12px',
               fontSize: '0.9375rem',
-              border: '1px solid #d1d5db',
+              border: '1px solid var(--admin-border-strong)',
               borderRadius: 6,
             }}
           />
@@ -140,7 +143,7 @@ export function DirectorMessageSection() {
               width: '100%',
               padding: '8px 12px',
               fontSize: '0.9375rem',
-              border: '1px solid #d1d5db',
+              border: '1px solid var(--admin-border-strong)',
               borderRadius: 6,
             }}
           />
@@ -150,8 +153,8 @@ export function DirectorMessageSection() {
           disabled={saving}
           style={{
             padding: '8px 16px',
-            backgroundColor: '#d90652',
-            color: 'white',
+            backgroundColor: 'var(--admin-accent)',
+            color: 'var(--admin-text-inverse)',
             border: 'none',
             borderRadius: 6,
             cursor: saving ? 'not-allowed' : 'pointer',

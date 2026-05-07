@@ -481,15 +481,15 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .section {
-  background: var(--admin-text-primary);
+  background: var(--admin-surface);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sectionHeader {
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
-  color: var(--admin-scrollbar-track);
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .kitCompositionInfo {
@@ -499,12 +499,12 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .form {
-  background: var(--admin-text-secondary);
-  border-color: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .formGroup label {
-  color: var(--admin-border-strong);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .namesHint {
@@ -517,19 +517,19 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .namesHintChip {
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
   border-color: var(--admin-success-bright);
   color: var(--admin-success-lime);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .namesHintChip:hover {
-  background: var(--admin-text-primary);
+  background: var(--admin-surface);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input {
-  background: var(--admin-text-primary);
+  background: var(--admin-surface);
   border-color: var(--admin-sidebar-text);
-  color: var(--admin-surface-muted);
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input::placeholder {
@@ -537,12 +537,12 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .componentItem {
-  background: var(--admin-text-secondary);
-  border-color: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .groupTitle {
-  color: var(--admin-border-strong);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .componentType {
@@ -556,20 +556,20 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .componentImage {
-  background: var(--admin-text-primary);
+  background: var(--admin-surface);
   border-color: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .inlineInput {
-  background: var(--admin-text-primary);
+  background: var(--admin-surface);
   border-color: var(--admin-sidebar-text);
-  color: var(--admin-surface-muted);
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .inlineImageButton {
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
   border-color: var(--admin-sidebar-text);
-  color: var(--admin-border);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .inlineImageButton:hover {
@@ -577,9 +577,9 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .editButton {
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
   border-color: var(--admin-sidebar-text);
-  color: var(--admin-border);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .editButton:hover {
@@ -597,15 +597,15 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .imagePreview {
-  background: var(--admin-text-primary);
+  background: var(--admin-surface);
   border-color: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .uploadButton,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .urlButton {
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
   border-color: var(--admin-sidebar-text);
-  color: var(--admin-border);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .uploadButton:hover,

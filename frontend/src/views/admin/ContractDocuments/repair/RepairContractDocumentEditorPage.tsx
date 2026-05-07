@@ -2069,7 +2069,8 @@ export function RepairContractDocumentEditorPage({
 
   const insertHorizontalRule = () => {
     updateContractHtmlBySelection(() => ({
-      content: '<hr style="border: 0; border-top: 1px solid #999; margin: 12pt 0;" />',
+      content:
+        '<hr style="border: 0; border-top: 1px solid var(--admin-border-strong); margin: 12pt 0;" />',
     }));
   };
 
@@ -2084,7 +2085,7 @@ export function RepairContractDocumentEditorPage({
 <h2 style="text-align: center; margin: 16pt 0 8pt;">РЕКВИЗИТЫ И ПОДПИСИ СТОРОН</h2>
 <table class="contractRequisitesBlock" data-contract-signatures-embedded="1" style="width: 100%; border-collapse: collapse; margin-top: 8pt;">
   <tr>
-    <td style="width: 50%; vertical-align: top; padding: 8px 10px 8px 0; border-right: 1px solid #bbb;">
+    <td style="width: 50%; vertical-align: top; padding: 8px 10px 8px 0; border-right: 1px solid var(--admin-border-strong);">
       <p style="text-align: center; margin: 0 0 8pt;">ПОДРЯДЧИК</p>
       <p style="margin: 0 0 4pt;">{{executor.companyName}}</p>
       <p style="margin: 0 0 4pt;">{{executor.innKppRegLine}}</p>
@@ -2131,7 +2132,7 @@ export function RepairContractDocumentEditorPage({
 
   const insertQuoteBlock = () => {
     const block = `
-<blockquote style="margin: 8pt 0; padding: 8pt 10pt; border-left: 3px solid #94a3b8; background: #f8fafc;">
+<blockquote style="margin: 8pt 0; padding: 8pt 10pt; border-left: 3px solid var(--admin-border-strong); background: var(--admin-surface-muted);">
   <p style="margin: 0; font-style: italic;">Текст примечания / важного условия.</p>
 </blockquote>`.trim();
     updateContractHtmlBySelection(() => ({ content: block }));
@@ -2141,12 +2142,12 @@ export function RepairContractDocumentEditorPage({
     const block = `
 <table style="width: 100%; border-collapse: collapse; margin: 8pt 0;">
   <tr>
-    <th style="border: 1px solid #cbd5e1; padding: 6px; text-align: left;">Пункт</th>
-    <th style="border: 1px solid #cbd5e1; padding: 6px; text-align: left;">Содержание</th>
+    <th style="border: 1px solid var(--admin-border); padding: 6px; text-align: left;">Пункт</th>
+    <th style="border: 1px solid var(--admin-border); padding: 6px; text-align: left;">Содержание</th>
   </tr>
   <tr>
-    <td style="border: 1px solid #cbd5e1; padding: 6px;">1</td>
-    <td style="border: 1px solid #cbd5e1; padding: 6px;">Описание</td>
+    <td style="border: 1px solid var(--admin-border); padding: 6px;">1</td>
+    <td style="border: 1px solid var(--admin-border); padding: 6px;">Описание</td>
   </tr>
 </table>`.trim();
     updateContractHtmlBySelection(() => ({ content: block }));
@@ -2177,7 +2178,7 @@ export function RepairContractDocumentEditorPage({
     const block = `
 <table style="width: 100%; border-collapse: collapse; margin-top: 8pt;">
   <tr>
-    <td style="width: 50%; vertical-align: top; padding: 8px 10px 8px 0; border-right: 1px solid #bbb;">
+    <td style="width: 50%; vertical-align: top; padding: 8px 10px 8px 0; border-right: 1px solid var(--admin-border-strong);">
       <p style="text-align: center; font-weight: bold; margin: 0 0 8pt;">ЛЕВАЯ КОЛОНКА</p>
       <p style="margin: 0 0 6pt;">{{customer.fullName}}</p>
       <p style="margin: 0;">___________________ / подпись</p>
@@ -2802,10 +2803,10 @@ export function RepairContractDocumentEditorPage({
           <div className={styles.formGrid}>
             <div className={styles.dataTopRow}>
               <div className={styles.dataTopBlock}>
-                <h3 className={styles.sectionTitle}>Связь с CRM</h3>
                 <div
                   className={`${styles.field} ${styles.crmCompactField} ${styles.crmCompactBox}`}
                 >
+                  <h3 className={styles.sectionTitle}>Связь с CRM</h3>
                   <label htmlFor="crm_search">Найти договор (№, ФИО, телефон)</label>
                   <input
                     id="crm_search"
@@ -3346,7 +3347,7 @@ export function RepairContractDocumentEditorPage({
               </div>
             </div>
           </div>
-          <p className={styles.hint}>
+          <p className={`${styles.hint} ${styles.contractInstructionHint}`}>
             Полная инструкция:{' '}
             <Link className={styles.link} href="/admin/contract-documents/instruction">
               Оформление договоров → Инструкция
@@ -3766,7 +3767,7 @@ export function RepairContractDocumentEditorPage({
       ) : activeTab === 'finalWorkOrder' ? (
         <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
           <div
-            className={styles.formGrid}
+            className={`${styles.formGrid} ${styles.workOrderParamsBar}`}
             style={{ gap: '2px 6px', display: 'flex', alignItems: 'flex-end', flexWrap: 'nowrap' }}
           >
             <h3 className={styles.sectionTitle} style={{ margin: '0 0 1px', fontSize: '0.78rem' }}>
@@ -3781,9 +3782,9 @@ export function RepairContractDocumentEditorPage({
                   style={
                     form.workOrder.gradeIncreasePercent === 0
                       ? {
-                          background: '#dbeafe',
-                          borderColor: '#93c5fd',
-                          color: '#1d4ed8',
+                          background: 'var(--admin-info-bg-soft)',
+                          borderColor: 'var(--admin-info-border-soft)',
+                          color: 'var(--admin-info-strong)',
                           padding: '3px 8px',
                           fontSize: '0.72rem',
                         }
@@ -3799,9 +3800,9 @@ export function RepairContractDocumentEditorPage({
                   style={
                     form.workOrder.gradeIncreasePercent === 5
                       ? {
-                          background: '#f59e0b',
-                          borderColor: '#d97706',
-                          color: '#ffffff',
+                          background: 'var(--admin-warning-bg)',
+                          borderColor: 'var(--admin-warning-strong)',
+                          color: 'var(--admin-warning-text)',
                           fontWeight: 700,
                           boxShadow: '0 0 0 2px rgba(245, 158, 11, 0.35)',
                           padding: '3px 8px',
@@ -3819,9 +3820,9 @@ export function RepairContractDocumentEditorPage({
                   style={
                     form.workOrder.gradeIncreasePercent === 10
                       ? {
-                          background: '#ef4444',
-                          borderColor: '#dc2626',
-                          color: '#ffffff',
+                          background: 'var(--admin-danger-bg)',
+                          borderColor: 'var(--admin-danger-border-strong)',
+                          color: 'var(--admin-danger-text)',
                           fontWeight: 700,
                           boxShadow: '0 0 0 2px rgba(239, 68, 68, 0.35)',
                           padding: '3px 8px',
@@ -3908,7 +3909,7 @@ export function RepairContractDocumentEditorPage({
       ) : activeTab === 'workOrder' || isRepairWorkOrderAddendumTab(activeTab) ? (
         <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
           <div
-            className={styles.formGrid}
+            className={`${styles.formGrid} ${styles.workOrderParamsBar}`}
             style={{ gap: '2px 6px', display: 'flex', alignItems: 'flex-end', flexWrap: 'nowrap' }}
           >
             <h3 className={styles.sectionTitle} style={{ margin: '0 0 1px', fontSize: '0.78rem' }}>
@@ -3916,44 +3917,6 @@ export function RepairContractDocumentEditorPage({
                 ? 'Параметры заказ-наряда к Д/с'
                 : 'Параметры заказ-наряда'}
             </h3>
-            {!isRepairWorkOrderAddendumTab(activeTab) ? (
-              <>
-                <div className={styles.field} style={{ gap: 0, minWidth: 120 }}>
-                  <label htmlFor="repair_work_order_tax_percent" style={{ fontSize: '0.62rem' }}>
-                    Налог, %
-                  </label>
-                  <input
-                    id="repair_work_order_tax_percent"
-                    type="text"
-                    inputMode="decimal"
-                    value={form.workOrder.taxPercent}
-                    onChange={(e) => updateWorkOrder('taxPercent', e.target.value)}
-                    placeholder="например, 20"
-                    autoComplete="off"
-                    style={{ padding: '3px 6px', fontSize: '0.72rem' }}
-                    disabled={!isSuperAdmin}
-                    title={!isSuperAdmin ? 'Доступно только супер-администратору' : undefined}
-                  />
-                </div>
-                <div className={styles.field} style={{ gap: 0, minWidth: 120 }}>
-                  <label htmlFor="repair_work_order_markup_percent" style={{ fontSize: '0.62rem' }}>
-                    Наценка, %
-                  </label>
-                  <input
-                    id="repair_work_order_markup_percent"
-                    type="text"
-                    inputMode="decimal"
-                    value={form.workOrder.markupPercent}
-                    onChange={(e) => updateWorkOrder('markupPercent', e.target.value)}
-                    placeholder="например, 15"
-                    autoComplete="off"
-                    style={{ padding: '3px 6px', fontSize: '0.72rem' }}
-                    disabled={!isSuperAdmin}
-                    title={!isSuperAdmin ? 'Доступно только супер-администратору' : undefined}
-                  />
-                </div>
-              </>
-            ) : null}
             <div className={styles.field} style={{ gap: 1, minWidth: 240 }}>
               <label style={{ fontSize: '0.62rem' }}>Разряд (после налога и наценки)</label>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -3963,9 +3926,9 @@ export function RepairContractDocumentEditorPage({
                   style={
                     form.workOrder.gradeIncreasePercent === 0
                       ? {
-                          background: '#dbeafe',
-                          borderColor: '#93c5fd',
-                          color: '#1d4ed8',
+                          background: 'var(--admin-info-bg-soft)',
+                          borderColor: 'var(--admin-info-border-soft)',
+                          color: 'var(--admin-info-strong)',
                           padding: '3px 8px',
                           fontSize: '0.72rem',
                         }
@@ -3981,9 +3944,9 @@ export function RepairContractDocumentEditorPage({
                   style={
                     form.workOrder.gradeIncreasePercent === 5
                       ? {
-                          background: '#f59e0b',
-                          borderColor: '#d97706',
-                          color: '#ffffff',
+                          background: 'var(--admin-warning-bg)',
+                          borderColor: 'var(--admin-warning-strong)',
+                          color: 'var(--admin-warning-text)',
                           fontWeight: 700,
                           boxShadow: '0 0 0 2px rgba(245, 158, 11, 0.35)',
                           padding: '3px 8px',
@@ -4001,9 +3964,9 @@ export function RepairContractDocumentEditorPage({
                   style={
                     form.workOrder.gradeIncreasePercent === 10
                       ? {
-                          background: '#ef4444',
-                          borderColor: '#dc2626',
-                          color: '#ffffff',
+                          background: 'var(--admin-danger-bg)',
+                          borderColor: 'var(--admin-danger-border-strong)',
+                          color: 'var(--admin-danger-text)',
                           fontWeight: 700,
                           boxShadow: '0 0 0 2px rgba(239, 68, 68, 0.35)',
                           padding: '3px 8px',

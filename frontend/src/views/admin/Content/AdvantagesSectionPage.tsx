@@ -391,7 +391,13 @@ export function AdvantagesSectionPage() {
                   )}
                   <div style={{ flex: 1 }}>
                     <span className={styles.featureTitle}>{item.title}</span>
-                    <p style={{ margin: '4px 0 0', fontSize: '0.875rem', color: '#6b7280' }}>
+                    <p
+                      style={{
+                        margin: '4px 0 0',
+                        fontSize: '0.875rem',
+                        color: 'var(--admin-text-muted)',
+                      }}
+                    >
                       {item.description}
                     </p>
                   </div>

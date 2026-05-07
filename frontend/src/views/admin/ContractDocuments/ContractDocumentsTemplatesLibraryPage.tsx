@@ -1039,7 +1039,8 @@ export function ContractDocumentsTemplatesLibraryPage() {
   };
   const insertHorizontalRule = () =>
     updateHtmlBySelection(() => ({
-      content: '<hr style="border: 0; border-top: 1px solid #999; margin: 12pt 0;" />',
+      content:
+        '<hr style="border: 0; border-top: 1px solid var(--admin-border-strong); margin: 12pt 0;" />',
     }));
   const insertPageBreak = () =>
     updateHtmlBySelection(() => ({ content: '<div style="page-break-after: always;"></div>' }));
@@ -1092,7 +1093,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
       content: `<h2 style="text-align: center; margin: 16pt 0 8pt;">РЕКВИЗИТЫ И ПОДПИСИ СТОРОН</h2>
 <table class="contractRequisitesBlock" style="width: 100%; border-collapse: collapse; margin-top: 8pt;">
   <tr>
-    <td style="width: 50%; vertical-align: top; padding: 8px 10px 8px 0; border-right: 1px solid #bbb;">
+    <td style="width: 50%; vertical-align: top; padding: 8px 10px 8px 0; border-right: 1px solid var(--admin-border-strong);">
       <p style="text-align: center; margin: 0 0 8pt;">ПОДРЯДЧИК</p>
       <p style="margin: 0 0 4pt;">{{executor.companyName}}</p>
       <p style="margin: 0 0 4pt;">{{executor.innKppRegLine}}</p>
@@ -1116,7 +1117,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     }));
   const insertQuoteBlock = () =>
     updateHtmlBySelection(() => ({
-      content: `<blockquote style="margin: 8pt 0; padding: 8pt 10pt; border-left: 3px solid #94a3b8; background: #f8fafc;">
+      content: `<blockquote style="margin: 8pt 0; padding: 8pt 10pt; border-left: 3px solid var(--admin-border-strong); background: var(--admin-surface-muted);">
   <p style="margin: 0; font-style: italic;">Текст примечания / важного условия.</p>
 </blockquote>`,
     }));
@@ -1137,7 +1138,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     updateHtmlBySelection(() => ({
       content: `<table style="width: 100%; border-collapse: collapse; margin-top: 8pt;">
   <tr>
-    <td style="width: 50%; vertical-align: top; padding: 8px 10px 8px 0; border-right: 1px solid #bbb;">
+    <td style="width: 50%; vertical-align: top; padding: 8px 10px 8px 0; border-right: 1px solid var(--admin-border-strong);">
       <p style="text-align: center; font-weight: bold; margin: 0 0 8pt;">ЛЕВАЯ КОЛОНКА</p>
       <p style="margin: 0 0 6pt;">{{customer.fullName}}</p>
       <p style="margin: 0;">___________________ / подпись</p>
@@ -1153,7 +1154,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const insertSimpleTable = () =>
     updateHtmlBySelection(() => ({
       content:
-        '<table style="width: 100%; border-collapse: collapse; margin: 8pt 0;"><tr><th style="border: 1px solid #cbd5e1; padding: 6px; text-align: left;">Пункт</th><th style="border: 1px solid #cbd5e1; padding: 6px; text-align: left;">Содержание</th></tr><tr><td style="border: 1px solid #cbd5e1; padding: 6px;">1</td><td style="border: 1px solid #cbd5e1; padding: 6px;">Описание</td></tr></table>',
+        '<table style="width: 100%; border-collapse: collapse; margin: 8pt 0;"><tr><th style="border: 1px solid var(--admin-border); padding: 6px; text-align: left;">Пункт</th><th style="border: 1px solid var(--admin-border); padding: 6px; text-align: left;">Содержание</th></tr><tr><td style="border: 1px solid var(--admin-border); padding: 6px;">1</td><td style="border: 1px solid var(--admin-border); padding: 6px;">Описание</td></tr></table>',
     }));
   const handlePasteContractTextFromClipboard = async () => {
     if (!isSuperAdmin) return;
@@ -1368,7 +1369,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
                   cursor: 'pointer',
                   fontSize: '0.72rem',
                   fontWeight: 600,
-                  color: '#374151',
+                  color: 'var(--admin-text-secondary)',
                 }}
               >
                 <input
@@ -1874,8 +1875,8 @@ export function ContractDocumentsTemplatesLibraryPage() {
             right: 18,
             bottom: 18,
             zIndex: 2000,
-            background: '#111827',
-            color: '#fff',
+            background: 'var(--admin-success-deep)',
+            color: 'var(--admin-text-inverse)',
             borderRadius: 10,
             boxShadow: '0 8px 24px rgba(0,0,0,0.22)',
             padding: '10px 12px',

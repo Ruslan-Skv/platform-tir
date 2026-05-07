@@ -374,6 +374,38 @@
   transition: width 0.35s ease;
 }
 
+.chartFillTone0 {
+  background: var(--admin-chart-series-1);
+}
+
+.chartFillTone1 {
+  background: var(--admin-chart-series-2);
+}
+
+.chartFillTone2 {
+  background: var(--admin-chart-series-3);
+}
+
+.chartFillTone3 {
+  background: var(--admin-chart-series-4);
+}
+
+.chartFillTone4 {
+  background: var(--admin-chart-series-5);
+}
+
+.chartFillTone5 {
+  background: var(--admin-chart-series-6);
+}
+
+.chartFillTone6 {
+  background: var(--admin-chart-series-7);
+}
+
+.chartFillTone7 {
+  background: var(--admin-chart-series-8);
+}
+
 .chartNum {
   display: flex;
   flex-direction: column;
@@ -718,8 +750,8 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .toolbar,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .panel,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .quickLink {
-  background: var(--admin-text-secondary);
-  border-color: var(--admin-text-secondary);
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .subtitle {
@@ -727,56 +759,53 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dateInput {
-  background: var(--admin-text-secondary);
-  border-color: var(--admin-sidebar-text);
-  color: var(--admin-surface-muted);
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .panelHead {
-  background: linear-gradient(
-    180deg,
-    var(--admin-text-secondary) 0%,
-    var(--admin-text-primary) 100%
-  );
-  border-bottom-color: var(--admin-text-secondary);
+  background: linear-gradient(180deg, var(--admin-surface-soft) 0%, var(--admin-surface) 100%);
+  border-bottom-color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .panelTitle,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .userName {
-  color: var(--admin-surface-muted);
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .table thead {
-  background: var(--admin-text-primary);
+  background: var(--admin-surface-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .table th {
   color: var(--admin-text-muted);
-  border-bottom-color: var(--admin-text-secondary);
+  border-bottom-color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .table td {
-  border-bottom-color: var(--admin-text-secondary);
+  border-bottom-color: var(--admin-border);
+  color: var(--admin-text-primary);
 }
 
 @media (hover: hover) {
   :where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody tr:hover td {
-    background: var(--admin-text-secondary);
+    background: var(--admin-surface-soft);
   }
 }
 
 @media (max-width: 640px) {
   :where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody tr {
-    background: var(--admin-text-primary);
-    border-color: var(--admin-text-secondary);
+    background: var(--admin-surface-soft);
+    border-color: var(--admin-border);
   }
 
   :where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody td:first-child {
-    border-bottom-color: var(--admin-text-secondary);
+    border-bottom-color: var(--admin-border);
   }
 
   :where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody td:not(:first-child) {
-    border-top-color: var(--admin-text-secondary);
+    border-top-color: var(--admin-border);
   }
 
   @media (hover: hover) {
@@ -795,28 +824,28 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .badgePeriod {
-  background: var(--admin-overlay-color-044);
-  color: var(--admin-chart-teal-soft);
-  border-color: var(--admin-overlay-color-047);
+  background: var(--admin-info-bg-soft);
+  color: var(--admin-info-deep);
+  border-color: var(--admin-info-border-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .badgeTotal {
-  background: var(--admin-overlay-color-098);
-  color: var(--admin-success-lime);
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-deep);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .quickLink {
-  color: var(--admin-chart-teal-soft);
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .quickLink:hover {
-  background: var(--admin-overlay-color-041);
-  border-color: var(--admin-chart-teal);
-  color: var(--admin-chart-teal-border);
+  background: var(--admin-info-bg-soft);
+  border-color: var(--admin-info-border-soft);
+  color: var(--admin-info-deep);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .rangeHint strong {
-  color: var(--admin-border);
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .rangeHint {
@@ -824,19 +853,19 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chip {
-  background: var(--admin-text-secondary);
-  border-color: var(--admin-sidebar-text);
-  color: var(--admin-border);
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chip:hover {
-  background: var(--admin-overlay-color-042);
-  border-color: var(--admin-chart-teal);
-  color: var(--admin-chart-teal-border);
+  background: var(--admin-info-bg-soft);
+  border-color: var(--admin-info-border-soft);
+  color: var(--admin-info-deep);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chartsWrap {
-  border-bottom-color: var(--admin-text-secondary);
+  border-bottom-color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chartTitle {
@@ -844,15 +873,15 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chartName {
-  color: var(--admin-border);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chartTrack {
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chartCount {
-  color: var(--admin-surface-muted);
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chartPct {
@@ -864,5 +893,5 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .pctCell {
-  color: var(--admin-border-strong);
+  color: var(--admin-text-secondary);
 }

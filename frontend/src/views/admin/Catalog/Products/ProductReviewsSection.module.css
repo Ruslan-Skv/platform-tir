@@ -15,8 +15,8 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  background: var(--admin-text-secondary);
-  color: var(--admin-scrollbar-track);
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-primary);
 }
 
 .loading,

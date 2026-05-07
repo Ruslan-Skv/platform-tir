@@ -615,7 +615,7 @@ export function ContractDocumentsEstimatesPage() {
               height={14}
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#2563eb"
+              stroke="var(--admin-chart-series-1)"
               strokeWidth={2}
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -643,7 +643,7 @@ export function ContractDocumentsEstimatesPage() {
               height={14}
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#0d9488"
+              stroke="var(--admin-chart-series-2)"
               strokeWidth={2}
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -679,7 +679,7 @@ export function ContractDocumentsEstimatesPage() {
               height={14}
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#dc2626"
+              stroke="var(--admin-chart-series-6)"
               strokeWidth={2}
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -771,7 +771,7 @@ export function ContractDocumentsEstimatesPage() {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
               type="button"
-              className={styles.secondaryBtn}
+              className={`${styles.secondaryBtn} ${styles.estimatesGenerateFromMeasurementBtn}`}
               disabled={saving || refreshing}
               onClick={() => void openGenerateFromMeasurementModal()}
             >

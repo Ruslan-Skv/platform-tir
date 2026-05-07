@@ -140,11 +140,11 @@ export function SalesAnalyticsPage() {
             <h2 className={styles.cardTitle}>Динамика продаж</h2>
             <div className={styles.chartLegend}>
               <span className={styles.legendItem}>
-                <span className={styles.legendDot} style={{ background: '#6366f1' }} />
+                <span className={`${styles.legendDot} ${styles.legendDotRevenue}`} />
                 Выручка
               </span>
               <span className={styles.legendItem}>
-                <span className={styles.legendDot} style={{ background: '#10b981' }} />
+                <span className={`${styles.legendDot} ${styles.legendDotOrders}`} />
                 Заказы
               </span>
             </div>
@@ -155,10 +155,9 @@ export function SalesAnalyticsPage() {
               {salesByDay.map((day) => (
                 <div key={day.date} className={styles.barGroup}>
                   <div
-                    className={styles.bar}
+                    className={`${styles.bar} ${styles.barRevenue}`}
                     style={{
                       height: `${(day.revenue / 350000) * 100}%`,
-                      background: '#6366f1',
                     }}
                   />
                   <span className={styles.barLabel}>

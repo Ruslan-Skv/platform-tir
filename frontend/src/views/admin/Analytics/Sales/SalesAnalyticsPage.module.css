@@ -159,6 +159,14 @@
   border-radius: 50%;
 }
 
+.legendDotRevenue {
+  background: var(--admin-chart-series-1);
+}
+
+.legendDotOrders {
+  background: var(--admin-chart-series-2);
+}
+
 .chartPlaceholder {
   padding: 20px;
   height: 300px;
@@ -190,6 +198,10 @@
   max-width: 60px;
   border-radius: 6px 6px 0 0;
   transition: height 0.3s ease;
+}
+
+.barRevenue {
+  background: var(--admin-chart-series-1);
 }
 
 .barLabel {

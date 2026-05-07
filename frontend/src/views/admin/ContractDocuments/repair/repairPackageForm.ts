@@ -1077,14 +1077,14 @@ function buildWorkOrderRoomsHtmlFromSnapshot(
     ${groupedRooms
       .map((section) => {
         const sectionHeader = `<tr>
-      <td colspan="${showLineAmounts ? 4 : 3}" style="border:1px solid #cbd5e1; padding:3px 4px; font-weight:700; background:#eef2ff;">Категория работ: ${escapeHtml(
+      <td class="workOrderCategoryRow" colspan="${showLineAmounts ? 4 : 3}" style="border:1px solid #cbd5e1; padding:3px 4px; font-weight:700;">Категория работ: ${escapeHtml(
         section.categoryName
       )}</td>
     </tr>`;
         const sectionRoomsHtml = section.rooms
           .map((room) => {
             const roomHeader = `<tr>
-      <td colspan="${showLineAmounts ? 4 : 3}" style="border:1px solid #cbd5e1; padding:3px 4px; font-weight:700; background:#f8fafc;">
+      <td class="workOrderRoomRow" colspan="${showLineAmounts ? 4 : 3}" style="border:1px solid #cbd5e1; padding:3px 4px; font-weight:700;">
         ${escapeHtml(room.name)}
         <span style="float:right;">${formatMoney(room.adjustedTotal)} руб.</span>
       </td>

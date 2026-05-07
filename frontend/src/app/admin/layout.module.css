@@ -393,6 +393,14 @@
   --admin-overlay-danger-soft: rgb(239 68 68 / 0.2);
   --admin-overlay-danger-medium: rgb(239 68 68 / 0.3);
   --admin-overlay-danger-strong: rgb(239 68 68 / 0.4);
+  --admin-chart-series-1: var(--admin-info-strong);
+  --admin-chart-series-2: var(--admin-success-emerald);
+  --admin-chart-series-3: var(--admin-accent);
+  --admin-chart-series-4: var(--admin-warning-strong);
+  --admin-chart-series-5: var(--admin-link);
+  --admin-chart-series-6: var(--admin-danger-text);
+  --admin-chart-series-7: var(--admin-chart-violet-strong);
+  --admin-chart-series-8: var(--admin-success-deep);
   /* Legacy chart/overlay aliases normalized to core palette */
   --admin-chart-violet: var(--admin-accent);
   --admin-chart-violet-bg: var(--admin-accent-soft);
@@ -741,6 +749,14 @@
   --admin-overlay-danger-soft: rgb(239 68 68 / 0.26);
   --admin-overlay-danger-medium: rgb(239 68 68 / 0.36);
   --admin-overlay-danger-strong: rgb(239 68 68 / 0.46);
+  --admin-chart-series-1: rgb(96 165 250 / 0.95);
+  --admin-chart-series-2: rgb(74 222 128 / 0.96);
+  --admin-chart-series-3: rgb(var(--color-accent-rgb) / 0.95);
+  --admin-chart-series-4: rgb(245 158 11 / 0.95);
+  --admin-chart-series-5: rgb(129 140 248 / 0.95);
+  --admin-chart-series-6: rgb(248 113 113 / 0.95);
+  --admin-chart-series-7: rgb(var(--color-accent-rgb) / 0.78);
+  --admin-chart-series-8: rgb(52 211 153 / 0.95);
   /* Legacy chart/overlay aliases (dark mode) */
   --admin-danger-border-strong: #f87171;
   --admin-danger-text-soft: #fecaca;

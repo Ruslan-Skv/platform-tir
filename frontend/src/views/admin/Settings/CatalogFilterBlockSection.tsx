@@ -349,7 +349,7 @@ export function CatalogFilterBlockSection() {
       </p>
 
       {error ? (
-        <p className={baseStyles.sectionDescription} style={{ color: '#b91c1c' }}>
+        <p className={baseStyles.sectionDescription} style={{ color: 'var(--admin-danger-text)' }}>
           {error}
         </p>
       ) : null}

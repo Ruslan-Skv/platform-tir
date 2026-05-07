@@ -105,8 +105,8 @@ export function PartnerProductsSection() {
           disabled={saving}
           style={{
             padding: '8px 16px',
-            backgroundColor: '#4f46e5',
-            color: 'white',
+            backgroundColor: 'var(--admin-accent)',
+            color: 'var(--admin-text-inverse)',
             border: 'none',
             borderRadius: 6,
             cursor: saving ? 'not-allowed' : 'pointer',
@@ -116,7 +116,9 @@ export function PartnerProductsSection() {
           {saving ? 'Сохранение...' : 'Сохранить'}
         </button>
         {saved && (
-          <span style={{ marginLeft: 12, color: '#059669', fontSize: '0.875rem' }}>
+          <span
+            style={{ marginLeft: 12, color: 'var(--admin-success-deep)', fontSize: '0.875rem' }}
+          >
             ✓ Сохранено
           </span>
         )}

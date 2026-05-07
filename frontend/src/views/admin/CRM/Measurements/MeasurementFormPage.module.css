@@ -662,11 +662,11 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: var(--admin-surface-muted);
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusInlineText {
-  color: var(--admin-border-strong);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusSelectNew {
@@ -714,24 +714,24 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .form {
-  background: var(--admin-text-secondary);
-  border-color: var(--admin-text-secondary);
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .label {
-  color: var(--admin-border-strong);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .emphasisLabel {
-  color: var(--admin-surface-muted);
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .textarea {
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
   border-color: var(--admin-sidebar-text);
-  color: var(--admin-surface-muted);
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input::placeholder,
@@ -774,9 +774,9 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .historyButton {
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
   border-color: var(--admin-sidebar-text);
-  color: var(--admin-border);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .historyButton:hover {
@@ -788,7 +788,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .measurementsTitle {
-  color: var(--admin-surface-muted);
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .measurementsHint {
@@ -797,13 +797,13 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .roomCard {
   border-color: var(--admin-sidebar-text);
-  background: var(--admin-text-primary);
+  background: var(--admin-surface);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .roomTabButton {
   border-color: var(--admin-text-muted);
-  background: var(--admin-text-primary);
-  color: var(--admin-border-strong);
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .roomTabButtonActive {
@@ -855,12 +855,12 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .calculatedBlock {
   background: rgba(var(--admin-overlay-color-144), 0.2);
-  color: var(--admin-border);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .workItemsGrid {
   border-color: var(--admin-sidebar-text);
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface);
 }
 
 @media (max-width: 1100px) {
@@ -897,8 +897,8 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .workCategoryButton {
   border-color: var(--admin-sidebar-text);
-  background: var(--admin-text-primary);
-  color: var(--admin-border);
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .workCategoryButtonActive {
@@ -932,8 +932,8 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryButton {
   border-color: var(--admin-sidebar-text);
-  background: var(--admin-text-secondary);
-  color: var(--admin-border);
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .completeMeasurementButton {

@@ -1217,7 +1217,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: var(--admin-surface-muted);
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
@@ -1230,12 +1230,12 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .notFound {
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface);
   box-shadow: 0 1px 3px var(--admin-overlay-color-152);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .notFound h2 {
-  color: var(--admin-border);
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .notFound p {
@@ -1261,23 +1261,23 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .form {
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface);
   box-shadow: 0 1px 3px var(--admin-overlay-color-152);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .formSection {
-  background: var(--admin-text-primary);
+  background: var(--admin-surface-soft);
   border-radius: 8px;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .productMeta {
-  background: var(--admin-text-primary);
-  border-color: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
   color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .productMetaLabel {
-  color: var(--admin-border-strong);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .productMetaDate {
@@ -1285,13 +1285,13 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
-  background: var(--admin-text-secondary);
-  color: var(--admin-scrollbar-track);
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .subsectionTitle {
-  background: var(--admin-text-secondary);
-  color: var(--admin-border);
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .hintTight {
@@ -1299,15 +1299,15 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .formGroup label {
-  color: var(--admin-border-strong);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .textarea {
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
   border-color: var(--admin-sidebar-text);
-  color: var(--admin-surface-muted);
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .textarea::placeholder,
@@ -1440,7 +1440,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .checkbox span {
-  color: var(--admin-border-strong);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .imageError {
@@ -1450,7 +1450,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dropZone {
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
   border-color: var(--admin-sidebar-text);
 }
 
@@ -1465,7 +1465,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dropZoneText {
-  color: var(--admin-border);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dropZoneLink {
@@ -1477,9 +1477,9 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addUrlButton {
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
   border-color: var(--admin-sidebar-text);
-  color: var(--admin-border);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addUrlButton:hover {
@@ -1488,7 +1488,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .imageItem {
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
   border-color: transparent;
 }
 
@@ -1498,7 +1498,7 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .imageActionBtn {
   background: var(--admin-overlay-color-180);
-  color: var(--admin-border);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .imageActionBtn:hover:not(:disabled) {
@@ -1506,7 +1506,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .noImages {
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
   border-color: var(--admin-sidebar-text);
   color: var(--admin-text-muted);
 }
@@ -1525,28 +1525,28 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sizesHintChip {
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
   border-color: var(--admin-success-bright);
   color: var(--admin-success-lime);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sizesHintChip:hover:not(:disabled) {
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantBlock {
-  background: var(--admin-text-secondary);
-  border-color: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantBlockTitle {
-  background: var(--admin-text-secondary);
-  color: var(--admin-scrollbar-track);
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantImagePreview img {
   border-color: var(--admin-sidebar-text);
-  background: var(--admin-text-primary);
+  background: var(--admin-surface);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantRemoveButton {
@@ -1564,7 +1564,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .backButtonBottom {
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
   border-color: var(--admin-sidebar-text);
   color: var(--admin-accent);
 }
@@ -1575,9 +1575,9 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton {
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
   border-color: var(--admin-sidebar-text);
-  color: var(--admin-border);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton:hover {
@@ -1586,8 +1586,8 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .attributesSubtitle {
-  background: var(--admin-text-secondary);
-  color: var(--admin-border);
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .customAttrHint {
@@ -1595,7 +1595,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .attributeRow {
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
   border-color: var(--admin-sidebar-text);
 }
 
@@ -1635,7 +1635,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .noAttributes {
-  background: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
   border-color: var(--admin-sidebar-text);
   color: var(--admin-text-muted);
 }

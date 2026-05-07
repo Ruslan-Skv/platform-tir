@@ -165,8 +165,8 @@ export function ProductTemplatesSection() {
             style={{
               marginTop: 16,
               padding: '8px 16px',
-              backgroundColor: '#4f46e5',
-              color: 'white',
+              backgroundColor: 'var(--admin-accent)',
+              color: 'var(--admin-text-inverse)',
               border: 'none',
               borderRadius: 6,
               cursor: 'pointer',
@@ -214,8 +214,8 @@ export function ProductTemplatesSection() {
             style={{
               marginTop: 16,
               padding: '8px 16px',
-              backgroundColor: '#4f46e5',
-              color: 'white',
+              backgroundColor: 'var(--admin-accent)',
+              color: 'var(--admin-text-inverse)',
               border: 'none',
               borderRadius: 6,
               cursor: 'pointer',
@@ -233,8 +233,8 @@ export function ProductTemplatesSection() {
           onClick={resetToDefaults}
           style={{
             padding: '8px 16px',
-            backgroundColor: '#6b7280',
-            color: 'white',
+            backgroundColor: 'var(--admin-text-muted)',
+            color: 'var(--admin-text-inverse)',
             border: 'none',
             borderRadius: 6,
             cursor: 'pointer',
@@ -244,7 +244,9 @@ export function ProductTemplatesSection() {
           Сбросить к значениям по умолчанию
         </button>
         {saved && (
-          <span style={{ marginLeft: 12, color: '#059669', fontSize: '0.875rem' }}>
+          <span
+            style={{ marginLeft: 12, color: 'var(--admin-success-deep)', fontSize: '0.875rem' }}
+          >
             ✓ Сохранено
           </span>
         )}

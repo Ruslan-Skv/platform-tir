@@ -2333,7 +2333,7 @@ export function ContractFormPage({ contractId: initialContractId }: ContractForm
                       label: `Заключение договора №${c.contractNumber}`,
                       contractNumber: c.contractNumber,
                       direction: dirName,
-                      color: '#6366f1',
+                      color: 'var(--admin-chart-series-1)',
                     });
                   }
 
@@ -2347,7 +2347,7 @@ export function ContractFormPage({ contractId: initialContractId }: ContractForm
                       label: `Начало монтажа №${c.contractNumber}`,
                       contractNumber: c.contractNumber,
                       direction: dirName,
-                      color: '#10b981',
+                      color: 'var(--admin-chart-series-2)',
                     });
                   }
 
@@ -2364,7 +2364,7 @@ export function ContractFormPage({ contractId: initialContractId }: ContractForm
                       label: `Окончание монтажа №${c.contractNumber}`,
                       contractNumber: c.contractNumber,
                       direction: dirName,
-                      color: '#059669',
+                      color: 'var(--admin-chart-series-8)',
                     });
                   }
                 });

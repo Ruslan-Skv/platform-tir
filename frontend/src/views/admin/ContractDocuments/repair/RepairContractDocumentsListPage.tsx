@@ -122,7 +122,7 @@ export function RepairContractDocumentsListPage() {
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ color: '#6b7280' }}>
+                  <td colSpan={5} style={{ color: 'var(--admin-text-muted)' }}>
                     Пока нет ни одного пакета. Нажмите «Новый пакет документов».
                   </td>
                 </tr>

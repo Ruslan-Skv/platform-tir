@@ -50,11 +50,25 @@ function endOfDayLocal(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
 }
 
-const CHART_BAR_HUES = [250, 265, 280, 220, 200, 310, 235, 295] as const;
-
-function chartBarColor(index: number): string {
-  const h = CHART_BAR_HUES[index % CHART_BAR_HUES.length];
-  return `hsl(${h} 65% 48%)`;
+function chartFillToneClass(index: number): string {
+  switch (index % 8) {
+    case 0:
+      return styles.chartFillTone0;
+    case 1:
+      return styles.chartFillTone1;
+    case 2:
+      return styles.chartFillTone2;
+    case 3:
+      return styles.chartFillTone3;
+    case 4:
+      return styles.chartFillTone4;
+    case 5:
+      return styles.chartFillTone5;
+    case 6:
+      return styles.chartFillTone6;
+    default:
+      return styles.chartFillTone7;
+  }
 }
 
 function ActivityBarChart({
@@ -89,10 +103,9 @@ function ActivityBarChart({
               </span>
               <div className={styles.chartTrack}>
                 <div
-                  className={styles.chartFill}
+                  className={`${styles.chartFill} ${chartFillToneClass(index)}`}
                   style={{
                     width: `${widthPct}%`,
-                    background: chartBarColor(index),
                   }}
                 />
               </div>
@@ -297,10 +310,10 @@ export function Dashboard() {
       <header className={styles.hero}>
         <div className={styles.heroText}>
           <h1 className={styles.title}>Дашборд</h1>
-          <p className={styles.subtitle}>
+          {/* <p className={styles.subtitle}>
             Активность по каталогу: диаграммы и таблица показывают, кто сколько карточек товаров
             создал за выбранный период и за всё время.
-          </p>
+          </p> */}
         </div>
       </header>
 

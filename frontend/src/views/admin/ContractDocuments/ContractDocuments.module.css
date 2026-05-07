@@ -152,14 +152,163 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimateWorkspaceCategoryChip {
   border-color: var(--admin-sidebar-text);
-  background: var(--admin-text-primary);
-  color: var(--admin-border);
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimateWorkspaceCategoryChipActive {
   border-color: var(--admin-accent-soft-strong);
   background: var(--admin-accent);
   color: var(--admin-surface);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .blockTabs {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tab {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tab:hover {
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tabActive {
+  background: var(--admin-overlay-color-014);
+  border-color: var(--admin-accent-soft-strong);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairPackageTabBarCompact .summaryTab {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairPackageTabBarCompact
+  .summaryTabFirst,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairPackageTabBarCompact
+  .summaryTabLast {
+  border-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairPackageTabBarCompact
+  .summaryTab.tabActive {
+  background: var(--admin-overlay-color-014) !important;
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionCustomer,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionExecutor,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionObject,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .blockMode,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .blockTools,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .blockImport {
+  background: var(--admin-surface) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionCustomer,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionObject,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .blockMode,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .blockTools,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .blockImport {
+  border-color: var(--admin-sidebar-text) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox {
+  color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox label,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox p,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox code {
+  color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox .secondaryBtn,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox .crmResultBtn {
+  background: var(--admin-surface-soft) !important;
+  border-color: var(--admin-sidebar-text) !important;
+  color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionCustomer .sectionTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionExecutor .sectionTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionObject .sectionTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox .sectionTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionCustomer .field label,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionExecutor .field label,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionObject .field label,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox .field label {
+  color: var(--admin-text-secondary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionCustomer .field input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionCustomer .field select,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionCustomer .field textarea,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionExecutor .field input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionExecutor .field select,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionExecutor .field textarea,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionObject .field input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionObject .field select,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionObject .field textarea,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox .field input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox .field select,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox .field textarea {
+  background: var(--admin-surface-soft) !important;
+  border-color: var(--admin-sidebar-text) !important;
+  color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionCustomer .autoFilledInput,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionExecutor .autoFilledInput,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionObject .autoFilledInput,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox .autoFilledInput {
+  background: var(--admin-surface-soft) !important;
+  border-color: var(--admin-sidebar-text) !important;
+  color: var(--admin-text-primary) !important;
+  -webkit-text-fill-color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .autoFilledInput {
+  background: var(--admin-surface-soft) !important;
+  border-color: var(--admin-sidebar-text) !important;
+  color: var(--admin-text-primary) !important;
+  -webkit-text-fill-color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesToolbar {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+  border-left-color: var(--admin-info);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesFilterRow {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+  border-left-color: var(--admin-warning-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesSectionsStack {
+  background: var(--admin-surface);
+  border-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesGroupBlock {
+  background: var(--admin-overlay-color-014);
+  border-color: var(--admin-accent-soft-strong);
+  border-left-color: var(--admin-accent);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesGroupHeader {
+  background: var(--admin-overlay-color-014);
+  border-color: var(--admin-accent-soft-strong);
 }
 
 .estimateWorkspacePage .estimateWorkspaceTabBar {
@@ -2125,6 +2274,14 @@
   padding-bottom: 3px;
 }
 
+.contractA4Preview :global(.docPrint td.workOrderCategoryRow) {
+  background: var(--admin-info-bg-soft);
+}
+
+.contractA4Preview :global(.docPrint td.workOrderRoomRow) {
+  background: var(--admin-surface-muted);
+}
+
 .docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Summary),
 .contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Summary) {
   margin-top: 5px;
@@ -2604,6 +2761,10 @@
   margin-top: 4px;
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractInstructionHint {
+  color: var(--admin-bg-page) !important;
+}
+
 .error {
   color: var(--admin-error-text);
   font-size: 0.9rem;
@@ -2776,6 +2937,35 @@
   line-height: 1.25;
   font-weight: 700;
   color: var(--admin-info);
+}
+
+.estimatesGenerateFromMeasurementBtn {
+  border-color: var(--admin-info) !important;
+  background: linear-gradient(
+    180deg,
+    var(--admin-info-bg-soft) 0%,
+    var(--admin-info-bg) 100%
+  ) !important;
+  color: var(--admin-info-strong) !important;
+  font-weight: 700;
+  box-shadow: 0 2px 8px var(--admin-overlay-color-129);
+}
+
+.estimatesGenerateFromMeasurementBtn:hover:not(:disabled) {
+  border-color: var(--admin-info-bright) !important;
+  background: linear-gradient(
+    180deg,
+    var(--admin-info-bg) 0%,
+    var(--admin-info-border-soft) 100%
+  ) !important;
+  color: var(--admin-info-text) !important;
+}
+
+.estimatesGenerateFromMeasurementBtn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--admin-surface),
+    0 0 0 4px rgba(var(--admin-overlay-color-144), 0.35);
 }
 
 .estimatesFilterRow {
@@ -3137,6 +3327,550 @@
 
 .postWorkQ2RatingOption input {
   margin: 0;
+}
+
+/* Тёмная тема: страница /contract-documents/estimates */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .packageVersionsModalCard,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveModalCard {
+  background: var(--admin-surface);
+  border-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .packageVersionsTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveModalTitle {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .packageVersionsHint,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveModalText {
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .packageVersionsTable th {
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .packageVersionsTable td {
+  color: var(--admin-text-primary);
+  border-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .versionJsonPre {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesListSection {
+  background: var(--admin-surface);
+  border-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesToolbar {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+  border-left-color: var(--admin-info);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesToolbarTitle {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesGenerateFromMeasurementBtn {
+  border-color: var(--admin-info-bright) !important;
+  background: linear-gradient(
+    180deg,
+    var(--admin-info) 0%,
+    var(--admin-info-strong) 100%
+  ) !important;
+  color: var(--admin-text-inverse) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesGenerateFromMeasurementBtn:hover:not(:disabled) {
+  border-color: var(--admin-info-bright) !important;
+  background: linear-gradient(
+    180deg,
+    var(--admin-info-strong) 0%,
+    var(--admin-info) 100%
+  ) !important;
+  color: var(--admin-text-inverse) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesFilterRow {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+  border-left-color: var(--admin-warning-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesSectionsStack {
+  background: var(--admin-surface);
+  border-color: var(--admin-sidebar-text);
+  border-left-color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesGroupBlock {
+  background: var(--admin-overlay-color-014);
+  border-color: var(--admin-accent-soft-strong);
+  border-left-color: var(--admin-accent);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesGroupHeader {
+  background: var(--admin-overlay-color-014);
+  border-color: var(--admin-accent-soft-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesGroupTitleField input {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-sidebar-text);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesGroupTitleField
+  input::placeholder {
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesGroupTitleField input:focus {
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 2px rgba(var(--admin-overlay-color-144), 0.25);
+  outline: none;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesGroupTitleField > span,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesGroupCount {
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesGroupBlockHasBound {
+  background: var(--admin-overlay-color-098);
+  border-color: var(--admin-success-border);
+  border-left-color: var(--admin-success);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesGroupBlockHasBound
+  .estimatesGroupHeader {
+  background: var(--admin-overlay-color-097);
+  border-color: var(--admin-success-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesUngroupedBlock,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCard {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardTitle {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesBadgeFree {
+  background: var(--admin-surface);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardMeta,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardGroupField > span {
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesAddObjectBtn {
+  background: linear-gradient(
+    180deg,
+    var(--admin-info) 0%,
+    var(--admin-info-strong) 100%
+  ) !important;
+  border-color: var(--admin-info-bright) !important;
+  color: var(--admin-text-inverse) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesAddObjectBtn:hover:not(:disabled) {
+  background: linear-gradient(
+    180deg,
+    var(--admin-info-strong) 0%,
+    var(--admin-info) 100%
+  ) !important;
+  border-color: var(--admin-info-bright) !important;
+  color: var(--admin-text-inverse) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardGroupField select {
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-sidebar-text);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardGroupField select:focus {
+  outline: none;
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 2px rgba(var(--admin-overlay-color-144), 0.25);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardGroupField select option {
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairPackageTabBarCompact.blockTabs {
+  background: var(--admin-success-bg-soft) !important;
+  border-color: var(--admin-success-border-soft) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairPackageTabBarCompact
+  .tab:not(.tabActive) {
+  color: var(--admin-bg-page) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairPackageTabBarCompact
+  .summaryTab:not(.tabActive) {
+  color: var(--admin-bg-page) !important;
+}
+
+/* Базовый dark-слой для всех вкладок Contract Documents */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subtitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .hint {
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionCard {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionCard .sectionTitle {
+  color: var(--admin-text-primary);
+  border-top-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .blockHeader {
+  background: var(--admin-overlay-color-014);
+  border-color: var(--admin-accent-soft-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .field label {
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .field input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .field select,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .field textarea,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .draftTitleInput {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .field input::placeholder,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .field textarea::placeholder {
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryBtn {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryBtn:hover {
+  background: var(--admin-sidebar-text);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tableWrap {
+  background: var(--admin-surface);
+  border-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .table th {
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
+  border-bottom-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .table td {
+  color: var(--admin-text-primary);
+  border-bottom-color: var(--admin-sidebar-text);
+}
+
+/* Тёмная тема: страница /contract-documents/templates */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .templatesLibraryPage .title {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .templatesLibraryPage .hint,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .templatesLibraryPage .subtitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .templatesLibraryPage .backLink {
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .templatesLibraryControls,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .templatesLibraryPage .blockTools,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractEditColumn,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractPreviewColumn,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .placeholderPanelTop,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .placeholderPanel {
+  background: var(--admin-surface) !important;
+  border-color: var(--admin-sidebar-text) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .templatesLibraryMeta .field label,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractEditorLabel,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .placeholderGroupTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .previewBlockTitle {
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .templatesLibraryMeta .field input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .templatesLibraryMeta .field select,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formatSearchInput,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractHtmlTextarea {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractModeBtn,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formatLevelBtn,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formatBtn,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .placeholderChip {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractModeBtnActive,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formatLevelBtnActive {
+  background: var(--admin-overlay-color-014);
+  border-color: var(--admin-accent-soft-strong);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .workOrderParamsBar .sectionTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .workOrderParamsBar .field label,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .workOrderParamsBar .field span,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workOrderParamsBar
+  .managerQuestionnaireNeedRow,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workOrderParamsBar
+  .managerQuestionnaireNeedRow
+  span {
+  color: var(--admin-bg-page) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .workOrderParamsBar .secondaryBtn {
+  color: var(--admin-bg-page) !important;
+  border-color: var(--admin-border-strong) !important;
+}
+
+/* Точечный dark-фикс для вкладок "Акт начала работ" / "Акт приёмки" */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairActTwinSheet {
+  background: var(--admin-surface) !important;
+  border-color: var(--admin-sidebar-text) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairActTwinSheet .contractA4Preview,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(.docPrint) {
+  color: var(--admin-text-primary) !important;
+  background: transparent !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(h1),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(h2),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(p),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(span),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(strong),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(em),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(td),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(th) {
+  color: var(--admin-text-primary) !important;
+  background: transparent !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(.signTable),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(.signTable tr),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(.signTable td),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(.signTable th) {
+  background: transparent !important;
+  color: var(--admin-text-primary) !important;
+}
+
+/* Точечный dark-фикс: вкладка "Заказ-наряд" (строки категорий/помещений) */
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateTabCompact
+  .contractA4Preview
+  :global(.estimateA4DocPrintEmbed .estimateA4CategorySection),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateTabCompact
+  .contractA4Preview
+  :global(.estimateA4DocPrintEmbed .estimateA4Room),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateTabCompact
+  .contractA4Preview
+  :global(.estimateA4DocPrintEmbed .estimateA4RoomHeader),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateTabCompact
+  .contractA4Preview
+  :global(.estimateA4DocPrintEmbed .estimateA4RoomHeader *) {
+  background: transparent !important;
+  color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateTabCompact
+  .contractA4Preview
+  :global(.estimateA4DocPrintEmbed td[style*='background:#f8fafc']),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateTabCompact
+  .contractA4Preview
+  :global(.estimateA4DocPrintEmbed td[style*='background: #f8fafc']),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateTabCompact
+  .contractA4Preview
+  :global(.estimateA4DocPrintEmbed td[style*='background:#eef2ff']),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateTabCompact
+  .contractA4Preview
+  :global(.estimateA4DocPrintEmbed td[style*='background: #eef2ff']) {
+  background: transparent !important;
+  color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateTabCompact
+  .contractA4Preview
+  :global(td.workOrderCategoryRow),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateTabCompact
+  .contractA4Preview
+  :global(td.workOrderRoomRow) {
+  background: transparent !important;
+  color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .blockData {
+  background: var(--admin-warning-bg) !important;
+  border-color: var(--admin-warning-border-soft) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimateLockNotice,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractLockNotice {
+  background: var(--admin-overlay-color-091);
+  border-color: var(--admin-warning-border);
+  color: var(--admin-bg-page);
+}
+
+/* Точечный фикс: вкладка "Данные" -> блок "Договор" */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock {
+  background: var(--admin-surface) !important;
+  border: 1px solid var(--admin-sidebar-text) !important;
+  border-radius: 10px;
+  padding: 8px;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock .sectionTitle {
+  color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock .field label {
+  color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock .field input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock .field select,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock .field textarea {
+  background: var(--admin-surface-soft) !important;
+  border-color: var(--admin-sidebar-text) !important;
+  color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .contractCompactBlock
+  .field
+  input.autoFilledInput {
+  background: var(--admin-surface-soft) !important;
+  border-color: var(--admin-sidebar-text) !important;
+  color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock input[readonly],
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock textarea[readonly],
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock select[readonly] {
+  background: var(--admin-surface-soft) !important;
+  color: var(--admin-text-primary) !important;
+  -webkit-text-fill-color: var(--admin-text-primary) !important;
+  opacity: 1 !important;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .contractCompactBlock
+  input:-webkit-autofill,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .contractCompactBlock
+  input:-webkit-autofill:hover,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .contractCompactBlock
+  input:-webkit-autofill:focus,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox input:-webkit-autofill,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .crmCompactBox
+  input:-webkit-autofill:hover,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .crmCompactBox
+  input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--admin-text-primary) !important;
+  box-shadow: 0 0 0 1000px var(--admin-surface-soft) inset !important;
+  transition: background-color 9999s ease-out 0s;
 }
 
 /*

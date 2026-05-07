@@ -1820,8 +1820,8 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                         style={{
                           padding: '0.5rem 1rem',
                           whiteSpace: 'nowrap',
-                          backgroundColor: '#3b82f6',
-                          color: 'white',
+                          backgroundColor: 'var(--admin-info-strong)',
+                          color: 'var(--admin-text-inverse)',
                           border: 'none',
                           borderRadius: '0.375rem',
                           cursor:
@@ -1874,8 +1874,8 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                         style={{
                           padding: '0.5rem 1rem',
                           whiteSpace: 'nowrap',
-                          backgroundColor: '#10b981',
-                          color: 'white',
+                          backgroundColor: 'var(--admin-success-emerald)',
+                          color: 'var(--admin-text-inverse)',
                           border: 'none',
                           borderRadius: '0.375rem',
                           cursor: !formData.supplierPrice ? 'not-allowed' : 'pointer',
@@ -3252,7 +3252,11 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
       {/* Нижняя строка: слева "Назад к списку", справа "Отмена" и "Сохранить изменения" */}
       <div
         className={styles.formActions}
-        style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}
+        style={{
+          marginTop: '1rem',
+          paddingTop: '1rem',
+          borderTop: '1px solid var(--admin-border)',
+        }}
       >
         <button
           type="button"

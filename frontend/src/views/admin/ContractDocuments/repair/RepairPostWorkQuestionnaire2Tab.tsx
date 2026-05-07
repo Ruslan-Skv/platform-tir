@@ -99,7 +99,12 @@ function RepairPostWorkQuestionnaire2Tab({ form, onPatch }: Props) {
         />
         <p
           className={styles.postWorkQ2RatingQuestion}
-          style={{ marginTop: 12, marginBottom: 4, borderTop: '1px solid #e5e7eb', paddingTop: 12 }}
+          style={{
+            marginTop: 12,
+            marginBottom: 4,
+            borderTop: '1px solid var(--admin-border)',
+            paddingTop: 12,
+          }}
         >
           4. Оцените пожалуйста работу наших мастеров по пятибалльной шкале:
         </p>
