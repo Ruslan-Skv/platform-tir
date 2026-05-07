@@ -1728,6 +1728,18 @@ model CrmDirection {
   @@map("crm_directions")
 }
 
+model InstallerMaster {
+  id        String   @id @default(cuid())
+  direction String
+  fullName  String
+  grade     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([direction])
+  @@map("installer_masters")
+}
+
 // --- CRM: Замеры ---
 model Measurement {
   id               String            @id @default(cuid())

@@ -45,6 +45,78 @@ export async function getCrmUsers(): Promise<CrmUser[]> {
   return res.json();
 }
 
+export type InstallerDirection =
+  | 'REPAIR'
+  | 'WINDOWS'
+  | 'DOORS'
+  | 'CEILINGS'
+  | 'FURNITURE'
+  | 'BLINDS';
+
+export interface InstallerMaster {
+  id: string;
+  direction: InstallerDirection;
+  fullName: string;
+  grade: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getInstallers(): Promise<InstallerMaster[]> {
+  const res = await apiFetch(`${API_URL}/admin/installers`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить список мастеров');
+  return res.json();
+}
+
+export async function createInstaller(data: {
+  direction: InstallerDirection;
+  fullName: string;
+  grade: string;
+}): Promise<InstallerMaster> {
+  const res = await apiFetch(`${API_URL}/admin/installers`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string | string[] };
+    const msg = Array.isArray(err.message) ? err.message.join(', ') : err.message;
+    throw new Error(msg || 'Не удалось создать мастера');
+  }
+  return res.json();
+}
+
+export async function updateInstaller(
+  id: string,
+  data: Partial<{
+    direction: InstallerDirection;
+    fullName: string;
+    grade: string;
+  }>
+): Promise<InstallerMaster> {
+  const res = await apiFetch(`${API_URL}/admin/installers/${id}`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string | string[] };
+    const msg = Array.isArray(err.message) ? err.message.join(', ') : err.message;
+    throw new Error(msg || 'Не удалось обновить мастера');
+  }
+  return res.json();
+}
+
+export async function deleteInstaller(id: string): Promise<void> {
+  const res = await apiFetch(`${API_URL}/admin/installers/${id}`, {
+    method: 'DELETE',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось удалить мастера');
+}
+
 // --- Sales funnel (Воронка продаж) ---
 export interface FunnelStageStat {
   stage: string;

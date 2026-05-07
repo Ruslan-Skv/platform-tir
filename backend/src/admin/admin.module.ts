@@ -33,6 +33,7 @@ import { AdminDashboardModule } from './dashboard/admin-dashboard.module';
 import { OfficeCashModule } from './office-cash/office-cash.module';
 import { ServiceCatalogModule } from './service-catalog/service-catalog.module';
 import { ContractDocumentPackagesModule } from './contract-document-packages/contract-document-packages.module';
+import { InstallersModule } from './installers/installers.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { ContractDocumentPackagesModule } from './contract-document-packages/con
     // CRM
     CustomersModule,
     CrmDirectionsModule,
+    InstallersModule,
     MeasurementsModule,
     ContractsModule,
     ContractPaymentsModule,
@@ -81,6 +83,7 @@ import { ContractDocumentPackagesModule } from './contract-document-packages/con
     OfficeCashModule,
     CustomersModule,
     CrmDirectionsModule,
+    InstallersModule,
     MeasurementsModule,
     ContractsModule,
     ContractPaymentsModule,

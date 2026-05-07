@@ -32,6 +32,7 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   },
   { id: 'admin.crm.offices', label: 'Офисы', path: '/admin/crm/offices' },
   { id: 'admin.crm.managers', label: 'Менеджеры', path: '/admin/crm/managers' },
+  { id: 'admin.crm.installers', label: 'Мастера (монтажники)', path: '/admin/crm/installers' },
   { id: 'admin.crm.customers', label: 'Клиенты', path: '/admin/crm/customers' },
   { id: 'admin.forms', label: 'Заявки с форм', path: '/admin/forms' },
   { id: 'admin.support', label: 'Чат поддержки', path: '/admin/support' },

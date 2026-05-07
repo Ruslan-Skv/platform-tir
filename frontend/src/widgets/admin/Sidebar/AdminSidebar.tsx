@@ -113,6 +113,12 @@ const baseNavItems: NavItem[] = [
     ],
   },
   {
+    label: 'Мастера (монтажники)',
+    href: '/admin/crm/installers',
+    icon: '🛠️',
+    resourceId: 'admin.crm.installers',
+  },
+  {
     label: 'Оформление договоров',
     href: '/admin/contract-documents',
     icon: '📄',
