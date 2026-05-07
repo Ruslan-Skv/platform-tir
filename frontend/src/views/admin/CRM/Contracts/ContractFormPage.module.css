@@ -6,15 +6,15 @@
 }
 
 .header {
-  margin-bottom: 4px;
+  margin-bottom: var(--admin-space-xs);
 }
 
 .backLink {
   display: inline-block;
   color: var(--admin-text-muted);
   text-decoration: none;
-  font-size: 0.75rem;
-  margin-bottom: 2px;
+  font-size: var(--admin-font-size-xs);
+  margin-bottom: var(--admin-space-2xs);
 }
 
 .backLink:hover {
@@ -24,23 +24,23 @@
 .headerTitleRow {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--admin-space-md);
 }
 
 .title {
-  font-size: 1rem;
+  font-size: var(--admin-font-size-lg);
   font-weight: 600;
   color: var(--admin-text-secondary);
   margin: 0;
 }
 
 .historyButton {
-  padding: 3px 8px;
-  font-size: 0.75rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
   background: var(--admin-surface-soft);
   color: var(--admin-text-secondary);
   border: 1px solid var(--admin-border);
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   cursor: pointer;
 }
 
@@ -49,10 +49,10 @@
 }
 
 .loading {
-  padding: 32px;
+  padding: var(--admin-space-5xl);
   text-align: center;
   color: var(--admin-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .loadingOverlay {
@@ -72,19 +72,19 @@
 }
 
 .loadingSpinner {
-  padding: 16px 32px;
+  padding: var(--admin-space-2xl) var(--admin-space-5xl);
   background: var(--admin-surface);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   box-shadow: 0 4px 12px var(--admin-overlay-color-149);
   color: var(--admin-text-secondary);
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .message {
-  padding: 4px 8px;
-  border-radius: 4px;
-  margin-bottom: 8px;
-  font-size: 0.8rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  border-radius: var(--admin-radius-xs);
+  margin-bottom: var(--admin-space-md);
+  font-size: var(--admin-font-size-sm);
 }
 
 .messageerror {
@@ -100,8 +100,8 @@
 .form {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
-  padding: 8px 12px;
+  border-radius: var(--admin-radius-md);
+  padding: var(--admin-space-md) var(--admin-space-xl);
 }
 
 .grid {
@@ -111,45 +111,45 @@
 }
 
 .row {
-  margin-bottom: 4px;
+  margin-bottom: var(--admin-space-xs);
 }
 
 .rowFull {
   grid-column: 1 / -1;
-  margin-bottom: 4px;
+  margin-bottom: var(--admin-space-xs);
 }
 
 .rowHalf {
   grid-column: span 2;
-  margin-bottom: 4px;
+  margin-bottom: var(--admin-space-xs);
 }
 
 .advancesBlock {
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
-  padding: 6px 10px;
+  border-radius: var(--admin-radius-sm);
+  padding: var(--admin-space-sm) var(--admin-space-lg);
   background: var(--admin-surface-muted);
 }
 
 .advancesSummary {
   display: flex;
-  gap: 12px;
-  margin-bottom: 6px;
+  gap: var(--admin-space-xl);
+  margin-bottom: var(--admin-space-sm);
   font-weight: 500;
-  font-size: 0.8rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .advancesList {
-  margin-bottom: 6px;
+  margin-bottom: var(--admin-space-sm);
 }
 
 .advanceRow {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 0;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-xs) var(--admin-space-0);
   border-bottom: 1px solid var(--admin-border);
-  font-size: 0.8rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .advanceRow:last-child {
@@ -158,7 +158,7 @@
 
 .advanceNotes {
   color: var(--admin-text-muted);
-  font-size: 0.85rem;
+  font-size: var(--admin-font-size-sm);
   font-style: italic;
   max-width: 220px;
   overflow: hidden;
@@ -170,17 +170,17 @@
 
 .advanceActions {
   display: flex;
-  gap: 4px;
+  gap: var(--admin-space-xs);
   margin-left: auto;
 }
 
 .advanceActionBtn {
-  padding: 4px 8px;
+  padding: var(--admin-space-xs) var(--admin-space-md);
   background: transparent;
   border: 1px solid var(--admin-border-strong);
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: var(--admin-font-size-lg);
   opacity: 0.8;
 }
 
@@ -198,24 +198,24 @@
 .editAmendmentForm {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--admin-space-2xl);
 }
 
 .editAmendmentActions {
   display: flex;
-  gap: 12px;
-  margin-top: 8px;
+  gap: var(--admin-space-xl);
+  margin-top: var(--admin-space-md);
 }
 
 .deleteConfirm p {
-  margin: 0 0 20px;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-3xl);
   color: var(--admin-text-muted);
-  font-size: 0.95rem;
+  font-size: var(--admin-font-size-base);
 }
 
 .deleteConfirmActions {
   display: flex;
-  gap: 12px;
+  gap: var(--admin-space-xl);
   justify-content: flex-end;
 }
 
@@ -231,14 +231,14 @@
   margin-left: auto;
   width: 24px;
   height: 24px;
-  padding: 0;
+  padding: var(--admin-space-0);
   border: none;
   background: var(--admin-error-bg-soft);
   color: var(--admin-error-text-strong);
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   cursor: pointer;
-  font-size: 1.1rem;
-  line-height: 1;
+  font-size: var(--admin-font-size-xl);
+  line-height: var(--admin-line-height-flat);
 }
 
 .advanceRemoveBtn:hover {
@@ -247,21 +247,21 @@
 
 .advanceAdd {
   display: flex;
-  gap: 8px;
+  gap: var(--admin-space-md);
   align-items: flex-end;
   flex-wrap: wrap;
 }
 
 .advanceAdd .input {
   width: 90px;
-  padding: 4px 8px;
-  font-size: 0.85rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-sm);
 }
 
 .advanceAdd .select {
   min-width: 100px;
-  padding: 4px 8px;
-  font-size: 0.85rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-sm);
 }
 
 .advanceAddNotes .input {
@@ -270,25 +270,25 @@
 
 .advanceAddLabel {
   display: block;
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   font-weight: 500;
   color: var(--admin-text-muted);
-  margin-bottom: 2px;
+  margin-bottom: var(--admin-space-2xs);
 }
 
 .advanceAddInline {
   display: flex;
-  gap: 6px;
+  gap: var(--admin-space-sm);
   align-items: center;
 }
 
 .advanceAddBtn {
-  padding: 4px 10px;
+  padding: var(--admin-space-xs) var(--admin-space-lg);
   background: var(--admin-accent);
   color: var(--admin-surface);
   border: none;
-  border-radius: 6px;
-  font-size: 0.8rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
   cursor: pointer;
 }
 
@@ -303,7 +303,7 @@
 
 .advancesHint {
   margin: 2px 0 0;
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
 }
 
@@ -311,22 +311,22 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-xs) var(--admin-space-md);
   background: var(--admin-surface-soft);
-  border-radius: 6px;
-  font-size: 0.85rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
 }
 
 .durationTypeRow {
   display: flex;
-  gap: 12px;
+  gap: var(--admin-space-xl);
   margin-bottom: 0;
 }
 
 .durationBlock .input {
-  padding: 4px 8px;
-  font-size: 0.85rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-sm);
   width: 60px;
   flex-shrink: 0;
 }
@@ -334,7 +334,7 @@
 .radioLabel {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--admin-space-sm);
   font-weight: 400;
   cursor: pointer;
 }
@@ -342,29 +342,29 @@
 .durationHint {
   display: inline;
   color: var(--admin-text-muted);
-  font-size: 0.8rem;
-  margin-left: 8px;
+  font-size: var(--admin-font-size-sm);
+  margin-left: var(--admin-space-md);
 }
 
 .discountHint {
   display: block;
   color: var(--admin-text-muted);
-  font-size: 0.8rem;
-  margin-top: 4px;
+  font-size: var(--admin-font-size-sm);
+  margin-top: var(--admin-space-xs);
 }
 
 .readonlyValue {
   display: block;
-  padding: 4px 8px;
+  padding: var(--admin-space-xs) var(--admin-space-md);
   background: var(--admin-surface-soft);
-  border-radius: 6px;
-  font-size: 0.85rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-secondary);
 }
 
 .installationRow {
   display: flex;
-  gap: 12px;
+  gap: var(--admin-space-xl);
   align-items: flex-end;
 }
 
@@ -377,7 +377,7 @@
 .actDatePhotoRow {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: var(--admin-space-xl);
   flex-wrap: wrap;
 }
 
@@ -390,7 +390,7 @@
 .dateInputWithClear {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--admin-space-sm);
 }
 
 .dateInputWithClear .input {
@@ -402,14 +402,14 @@
   flex-shrink: 0;
   width: 28px;
   height: 28px;
-  padding: 0;
+  padding: var(--admin-space-0);
   border: 1px solid var(--admin-border);
   background: var(--admin-surface);
   color: var(--admin-text-muted);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
-  font-size: 1.1rem;
-  line-height: 1;
+  font-size: var(--admin-font-size-xl);
+  line-height: var(--admin-line-height-flat);
 }
 
 .dateClearBtn:hover {
@@ -421,20 +421,20 @@
 .actImagesBlock {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--admin-space-xs);
 }
 
 .actImagesList {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--admin-space-sm);
 }
 
 .actImageThumb {
   position: relative;
   width: 60px;
   height: 60px;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   overflow: hidden;
   border: 1px solid var(--admin-border);
 }
@@ -451,14 +451,14 @@
   right: 4px;
   width: 20px;
   height: 20px;
-  padding: 0;
+  padding: var(--admin-space-0);
   border: none;
   background: var(--admin-overlay-color-009);
   color: var(--admin-surface);
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   cursor: pointer;
-  font-size: 1rem;
-  line-height: 1;
+  font-size: var(--admin-font-size-lg);
+  line-height: var(--admin-line-height-flat);
 }
 
 .actImageRemove:hover {
@@ -468,11 +468,11 @@
 .actImageUploadBtn {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
+  padding: var(--admin-space-xs) var(--admin-space-lg);
   background: var(--admin-surface-soft);
   border: 1px dashed var(--admin-text-muted);
-  border-radius: 6px;
-  font-size: 0.8rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
   cursor: pointer;
   color: var(--admin-text-secondary);
 }
@@ -489,13 +489,13 @@
   display: block;
   font-weight: 500;
   color: var(--admin-text-secondary);
-  margin-bottom: 2px;
-  font-size: 0.8rem;
+  margin-bottom: var(--admin-space-2xs);
+  font-size: var(--admin-font-size-sm);
 }
 
 .labelBold {
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .required {
@@ -506,10 +506,10 @@
 .select,
 .textarea {
   width: 100%;
-  padding: 4px 8px;
+  padding: var(--admin-space-xs) var(--admin-space-md);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
-  font-size: 0.85rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
 }
 
 .input:focus,
@@ -534,8 +534,8 @@
 
 .fieldError {
   display: block;
-  margin-top: 4px;
-  font-size: 0.8rem;
+  margin-top: var(--admin-space-xs);
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-error-strong);
 }
 
@@ -547,20 +547,20 @@
 .actions {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 8px;
+  gap: var(--admin-space-xl);
+  margin-top: var(--admin-space-md);
   padding-top: 8px;
   border-top: 1px solid var(--admin-border);
 }
 
 .submitButton {
-  padding: 6px 14px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: var(--admin-accent);
   color: var(--admin-surface);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   font-weight: 500;
-  font-size: 0.85rem;
+  font-size: var(--admin-font-size-sm);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -577,7 +577,7 @@
 .cancelLink {
   color: var(--admin-text-muted);
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .cancelLink:hover {
@@ -702,7 +702,7 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select:focus,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .textarea:focus {
   border-color: var(--admin-accent);
-  box-shadow: 0 0 0 2px rgba(var(--admin-overlay-color-144), 0.3);
+  box-shadow: var(--admin-shadow-focus);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .inputError {
@@ -783,28 +783,28 @@
 
 /* --- Contract Tabs (Вкладки договоров комплексного объекта) --- */
 .contractTabs {
-  margin-top: 8px;
-  padding: 4px 0;
+  margin-top: var(--admin-space-md);
+  padding: var(--admin-space-xs) var(--admin-space-0);
   border-bottom: 1px solid var(--admin-border);
 }
 
 .complexObjectBadge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
+  gap: var(--admin-space-xs);
+  padding: var(--admin-space-2xs) var(--admin-space-md);
   background: var(--admin-info-bg);
   color: var(--admin-info-text);
-  border-radius: 12px;
-  font-size: 0.75rem;
+  border-radius: var(--admin-radius-xl);
+  font-size: var(--admin-font-size-xs);
   font-weight: 500;
-  margin-bottom: 12px;
+  margin-bottom: var(--admin-space-xl);
 }
 
 .tabsList {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--admin-space-2xs);
   overflow-x: auto;
   padding-bottom: 2px;
   scrollbar-width: thin;
@@ -816,21 +816,21 @@
 
 .tabsList::-webkit-scrollbar-thumb {
   background: var(--admin-border-strong);
-  border-radius: 2px;
+  border-radius: var(--admin-radius-2xs);
 }
 
 .tab {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
+  gap: var(--admin-space-xs);
+  padding: var(--admin-space-xs) var(--admin-space-md);
   background: var(--admin-surface-soft);
   border: 1px solid var(--admin-border);
   border-bottom: 2px solid transparent;
-  border-radius: 4px 4px 0 0;
+  border-radius: var(--admin-radius-tab-top);
   text-decoration: none;
   color: var(--admin-text-muted);
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   font-weight: 500;
   cursor: pointer;
   transition:
@@ -854,7 +854,7 @@
 }
 
 .tabDirection {
-  font-size: 0.65rem;
+  font-size: var(--admin-font-size-2xs);
   color: var(--admin-text-muted);
 }
 
@@ -864,7 +864,7 @@
 
 .tabNumber {
   font-weight: 500;
-  font-size: 0.7rem;
+  font-size: var(--admin-font-size-2xs);
 }
 
 .tabAddButton {
@@ -875,13 +875,13 @@
   height: 20px;
   background: var(--admin-surface-soft);
   border: 1px dashed var(--admin-border-strong);
-  border-radius: 4px;
-  font-size: 0.875rem;
+  border-radius: var(--admin-radius-xs);
+  font-size: var(--admin-font-size-sm);
   font-weight: 600;
   color: var(--admin-text-muted);
   cursor: pointer;
   transition: all 0.15s;
-  margin-left: 4px;
+  margin-left: var(--admin-space-xs);
   flex-shrink: 0;
 }
 
@@ -957,33 +957,33 @@
 .objectInfoForm {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 16px;
+  border-radius: var(--admin-radius-md);
+  padding: var(--admin-space-2xl);
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .sectionTitle {
-  font-size: 1rem;
+  font-size: var(--admin-font-size-lg);
   font-weight: 600;
   color: var(--admin-text-secondary);
-  margin: 0 0 8px;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-md);
 }
 
 .sectionHint {
   color: var(--admin-text-muted);
-  font-size: 0.75rem;
-  margin: 0 0 12px;
+  font-size: var(--admin-font-size-xs);
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl);
 }
 
 .phonesBlock {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--admin-space-md);
 }
 
 .phoneRow {
   display: flex;
-  gap: 8px;
+  gap: var(--admin-space-md);
   align-items: center;
 }
 
@@ -995,14 +995,14 @@
   width: 32px;
   height: 32px;
   border: 1px solid var(--admin-error-bg-soft);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   background: var(--admin-error-bg-soft);
   color: var(--admin-error-strong);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   transition: all 0.15s;
 }
 
@@ -1011,12 +1011,12 @@
 }
 
 .addPhoneBtn {
-  padding: 8px 16px;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-surface-soft);
   border: 1px dashed var(--admin-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   cursor: pointer;
   transition: all 0.15s;
   align-self: flex-start;
@@ -1082,14 +1082,14 @@
 .timelineButton {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
+  gap: var(--admin-space-xs);
+  padding: var(--admin-space-xs) var(--admin-space-lg);
   margin-left: auto;
   background: linear-gradient(135deg, var(--admin-accent) 0%, var(--admin-chart-violet) 100%);
   color: var(--admin-surface);
   border: none;
-  border-radius: 4px;
-  font-size: 0.75rem;
+  border-radius: var(--admin-radius-xs);
+  font-size: var(--admin-font-size-xs);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
@@ -1111,7 +1111,7 @@
   max-width: 800px;
   min-height: auto;
   background: var(--admin-surface);
-  border-radius: 12px;
+  border-radius: var(--admin-radius-xl);
   overflow: visible;
   display: flex;
   flex-direction: column;
@@ -1122,14 +1122,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: var(--admin-space-2xl) var(--admin-space-3xl);
   background: linear-gradient(135deg, var(--admin-accent) 0%, var(--admin-chart-violet) 100%);
   color: var(--admin-surface);
 }
 
 .timelineTitle {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: var(--admin-font-size-xl);
   font-weight: 600;
 }
 
@@ -1139,8 +1139,8 @@
   color: var(--admin-surface);
   width: 28px;
   height: 28px;
-  border-radius: 50%;
-  font-size: 1rem;
+  border-radius: var(--admin-radius-full);
+  font-size: var(--admin-font-size-lg);
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -1150,7 +1150,7 @@
 }
 
 .timelineContent {
-  padding: 16px;
+  padding: var(--admin-space-2xl);
   overflow: visible;
   flex: 1;
 }
@@ -1158,28 +1158,28 @@
 .timelineEmpty {
   text-align: center;
   color: var(--admin-text-muted);
-  padding: 40px;
-  font-size: 0.9rem;
+  padding: var(--admin-space-6xl);
+  font-size: var(--admin-font-size-sm);
 }
 
 .timeline {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--admin-space-3xl);
 }
 
 .timelineScale {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: var(--admin-space-xl);
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
   background: var(--admin-surface-soft);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
 }
 
 .timelineScaleStart,
 .timelineScaleEnd {
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   font-weight: 500;
   color: var(--admin-text-secondary);
   white-space: nowrap;
@@ -1194,14 +1194,14 @@
     var(--admin-success-emerald),
     var(--admin-warning)
   );
-  border-radius: 1px;
+  border-radius: var(--admin-radius-2xs);
 }
 
 .timelineTrack {
   position: relative;
   height: 40px;
   background: var(--admin-surface-muted);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   border: 1px solid var(--admin-border);
 }
 
@@ -1214,7 +1214,7 @@
 .timelineEventDot {
   width: 14px;
   height: 14px;
-  border-radius: 50%;
+  border-radius: var(--admin-radius-full);
   border: 2px solid var(--admin-surface);
   box-shadow: 0 2px 4px var(--admin-overlay-color-149);
   cursor: pointer;
@@ -1228,17 +1228,17 @@
 .timelineList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 8px;
+  gap: var(--admin-space-xl);
+  margin-top: var(--admin-space-md);
 }
 
 .timelineItem {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 12px;
+  gap: var(--admin-space-xl);
+  padding: var(--admin-space-xl);
   background: var(--admin-surface-muted);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   border-left: 3px solid transparent;
   transition: all 0.15s;
 }
@@ -1250,9 +1250,9 @@
 .timelineItemDot {
   width: 10px;
   height: 10px;
-  border-radius: 50%;
+  border-radius: var(--admin-radius-full);
   flex-shrink: 0;
-  margin-top: 4px;
+  margin-top: var(--admin-space-xs);
 }
 
 .timelineItemContent {
@@ -1261,21 +1261,21 @@
 }
 
 .timelineItemDate {
-  font-size: 0.7rem;
+  font-size: var(--admin-font-size-2xs);
   color: var(--admin-text-muted);
-  margin-bottom: 2px;
+  margin-bottom: var(--admin-space-2xs);
 }
 
 .timelineItemLabel {
-  font-size: 0.85rem;
+  font-size: var(--admin-font-size-sm);
   font-weight: 500;
   color: var(--admin-text-secondary);
 }
 
 .timelineItemDirection {
-  font-size: 0.7rem;
+  font-size: var(--admin-font-size-2xs);
   color: var(--admin-text-muted);
-  margin-top: 2px;
+  margin-top: var(--admin-space-2xs);
 }
 
 /* Dark theme for Timeline */

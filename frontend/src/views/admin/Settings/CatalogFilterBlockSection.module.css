@@ -4,14 +4,14 @@
 
 .table {
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-md);
   width: 100%;
 }
 
 .table th,
 .table td {
   border: 1px solid var(--admin-border);
-  padding: 0.5rem 0.75rem;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   text-align: left;
   vertical-align: top;
 }
@@ -23,25 +23,25 @@
 
 .muted {
   color: var(--admin-text-muted);
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  gap: var(--admin-space-xl);
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .primaryBtn {
   background: var(--admin-accent);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   color: var(--admin-surface);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-md);
   font-weight: 600;
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
 }
 
 .primaryBtn:disabled {
@@ -52,96 +52,96 @@
 .secondaryBtn {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   color: var(--admin-text-secondary);
   cursor: pointer;
-  font-size: 0.875rem;
-  padding: 0.35rem 0.75rem;
+  font-size: var(--admin-font-size-md);
+  padding: var(--admin-space-fluid-lg) var(--admin-space-xl);
 }
 
 .dangerBtn {
   background: var(--admin-surface);
   border: 1px solid var(--admin-error-border-soft);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   color: var(--admin-error-text);
   cursor: pointer;
-  font-size: 0.8125rem;
-  padding: 0.35rem 0.65rem;
+  font-size: var(--admin-font-size-sm);
+  padding: var(--admin-space-fluid-lg) var(--admin-space-fluid-2xl);
 }
 
 .formCard {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 12px;
-  margin-bottom: 1.5rem;
-  padding: 1.25rem;
+  border-radius: var(--admin-radius-xl);
+  margin-bottom: var(--admin-space-4xl);
+  padding: var(--admin-space-3xl);
 }
 
 .formGrid {
   display: grid;
-  gap: 1rem;
+  gap: var(--admin-space-2xl);
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  margin-bottom: 1rem;
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .formField label {
   display: block;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-sm);
   font-weight: 500;
-  margin-bottom: 0.35rem;
+  margin-bottom: var(--admin-space-fluid-lg);
 }
 
 .formField input[type='text'],
 .formField input[type='number'],
 .formField select {
   border: 1px solid var(--admin-border-strong);
-  border-radius: 8px;
-  font-size: 0.875rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-md);
   max-width: 100%;
-  padding: 0.45rem 0.65rem;
+  padding: var(--admin-space-fluid-xl) var(--admin-space-fluid-2xl);
   width: 100%;
 }
 
 .checkboxRow {
   align-items: center;
   display: flex;
-  gap: 0.5rem;
+  gap: var(--admin-space-md);
 }
 
 .itemsTitle {
-  font-size: 1rem;
+  font-size: var(--admin-font-size-lg);
   font-weight: 600;
-  margin: 0 0 0.75rem;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl);
 }
 
 .itemBlock {
   border-bottom: 1px solid var(--admin-surface-soft);
-  padding: 0.75rem 0;
+  padding: var(--admin-space-xl) var(--admin-space-0);
 }
 
 .itemRow {
   align-items: flex-end;
   display: grid;
-  gap: 0.75rem;
+  gap: var(--admin-space-xl);
   grid-template-columns: 140px 1fr 1fr 70px 36px;
 }
 
 .itemOptionsRow {
   display: grid;
-  gap: 0.75rem;
+  gap: var(--admin-space-xl);
   grid-template-columns: minmax(220px, 1fr);
-  margin-top: 0.5rem;
+  margin-top: var(--admin-space-md);
   padding-left: 0.25rem;
 }
 
 .itemOptionsRow textarea {
   border: 1px solid var(--admin-border-strong);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   font-family: inherit;
-  font-size: 0.8125rem;
-  line-height: 1.4;
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-md);
   min-height: 5.5rem;
-  padding: 0.5rem 0.65rem;
+  padding: var(--admin-space-md) var(--admin-space-fluid-2xl);
   resize: vertical;
   width: 100%;
 }

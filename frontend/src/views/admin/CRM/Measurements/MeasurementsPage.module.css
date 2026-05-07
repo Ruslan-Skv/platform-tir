@@ -7,17 +7,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .headerLeft {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--admin-space-2xl);
 }
 
 .title {
-  font-size: 1.75rem;
+  font-size: var(--admin-font-size-4xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
   margin: 0;
@@ -25,21 +25,21 @@
 
 .count {
   background: var(--admin-border);
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.9rem;
+  padding: var(--admin-space-xs) var(--admin-space-xl);
+  border-radius: var(--admin-radius-3xl);
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
 }
 
 .addButton {
   display: inline-block;
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: var(--admin-accent);
   color: var(--admin-surface);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   transition: background 0.2s;
   text-decoration: none;
@@ -53,17 +53,17 @@
 .headerActions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--admin-space-lg);
 }
 
 .secondaryButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: var(--admin-surface);
   color: var(--admin-text-secondary);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -83,13 +83,13 @@
   flex-shrink: 0;
   width: 40px;
   height: 40px;
-  padding: 8px !important;
+  padding: var(--admin-space-md) !important;
   min-width: 40px;
   min-height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   color: var(--admin-info);
 }
 
@@ -114,10 +114,10 @@
 }
 
 .saveMessage {
-  padding: 8px 12px;
-  border-radius: 6px;
-  margin-bottom: 12px;
-  font-size: 0.9rem;
+  padding: var(--admin-space-md) var(--admin-space-xl);
+  border-radius: var(--admin-radius-sm);
+  margin-bottom: var(--admin-space-xl);
+  font-size: var(--admin-font-size-sm);
 }
 
 .saveMessageSuccess {
@@ -135,35 +135,35 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
   background: linear-gradient(135deg, var(--admin-accent-soft) 0%, var(--admin-accent-soft) 100%);
   border: 1px solid var(--admin-accent-soft-strong);
-  border-radius: 8px;
-  margin-bottom: 12px;
+  border-radius: var(--admin-radius-md);
+  margin-bottom: var(--admin-space-xl);
 }
 
 .editModeInfo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--admin-space-lg);
 }
 
 .editModeIcon {
-  font-size: 1.1rem;
+  font-size: var(--admin-font-size-xl);
 }
 
 .editModeInfo > span:nth-child(2) {
   font-weight: 600;
   color: var(--admin-accent);
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .editCount {
-  padding: 4px 10px;
+  padding: var(--admin-space-xs) var(--admin-space-lg);
   background: var(--admin-accent);
   color: var(--admin-surface);
-  border-radius: 16px;
-  font-size: 0.8rem;
+  border-radius: var(--admin-radius-2xl);
+  font-size: var(--admin-font-size-sm);
 }
 
 .editCount strong {
@@ -172,17 +172,17 @@
 
 .editModeActions {
   display: flex;
-  gap: 8px;
+  gap: var(--admin-space-md);
 }
 
 .editCancelButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: var(--admin-surface);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-text-secondary);
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
 }
 
@@ -191,13 +191,13 @@
 }
 
 .editSaveButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: var(--admin-accent);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-surface);
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
 }
 
@@ -214,16 +214,16 @@
 .actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--admin-space-xs);
 }
 
 .actionButton {
-  padding: 4px 8px;
+  padding: var(--admin-space-xs) var(--admin-space-md);
   background: transparent;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: var(--admin-font-size-lg);
   opacity: 0.7;
 }
 
@@ -234,21 +234,21 @@
 
 .editedIndicator {
   color: var(--admin-warning);
-  font-size: 0.75rem;
-  margin-right: 2px;
+  font-size: var(--admin-font-size-xs);
+  margin-right: var(--admin-space-2xs);
 }
 
 .muted {
   color: var(--admin-text-muted);
-  font-size: 0.78rem;
+  font-size: var(--admin-font-size-xs);
 }
 
 .linkStateOk,
 .linkStateDone,
 .linkStatePending {
-  font-size: 0.76rem;
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
-  line-height: 1.2;
+  line-height: var(--admin-line-height-xs);
 }
 
 .linkStateOk {
@@ -267,10 +267,10 @@
   width: 100%;
   min-width: 100px;
   max-width: 180px;
-  padding: 4px 8px;
+  padding: var(--admin-space-xs) var(--admin-space-md);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 4px;
-  font-size: 0.85rem;
+  border-radius: var(--admin-radius-xs);
+  font-size: var(--admin-font-size-sm);
   background: var(--admin-surface);
 }
 
@@ -295,18 +295,18 @@
 .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-xl);
 }
 
 .searchInput {
   flex: 1;
   min-width: 160px;
   max-width: 260px;
-  padding: 6px 10px;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
-  font-size: 13px;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
 }
 
 .searchInput:focus {
@@ -315,10 +315,10 @@
 }
 
 .select {
-  padding: 6px 10px;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
-  font-size: 13px;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
   background: var(--admin-surface);
   min-width: 120px;
 }
@@ -326,27 +326,27 @@
 .dateLabel {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--admin-space-sm);
 }
 
 .dateLabelText {
-  font-size: 13px;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
   white-space: nowrap;
 }
 
 .dateInput {
-  padding: 6px 10px;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
-  font-size: 13px;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
 }
 
 .badge {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.75rem;
+  padding: var(--admin-space-2xs) var(--admin-space-md);
+  border-radius: var(--admin-radius-xl);
+  font-size: var(--admin-font-size-xs);
   font-weight: 500;
 }
 
@@ -392,7 +392,7 @@
   .header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 16px;
+    gap: var(--admin-space-2xl);
   }
 }
 

@@ -1,19 +1,19 @@
 .page {
-  padding: 1.5rem;
+  padding: var(--admin-space-4xl);
   max-width: 800px;
   color: var(--admin-text-secondary);
 }
 
 .header {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .backLink {
   display: inline-block;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--admin-space-md);
   color: var(--admin-overlay-color-135);
   text-decoration: none;
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
 }
 
 .backLink:hover {
@@ -21,16 +21,16 @@
 }
 
 .title {
-  font-size: 1.5rem;
+  font-size: var(--admin-font-size-3xl);
   font-weight: 700;
   margin: 0;
   color: var(--admin-text-secondary);
 }
 
 .message {
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-sm);
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .message.success {
@@ -46,35 +46,35 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--admin-space-3xl);
 }
 
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--admin-space-md);
 }
 
 .label {
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   font-weight: 500;
   color: var(--admin-text-secondary);
 }
 
 .fieldHint {
   margin: -0.2rem 0 0;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
-  line-height: 1.35;
+  line-height: var(--admin-line-height-base);
 }
 
 .input,
 .select,
 .textarea {
-  padding: 0.5rem 0.75rem;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
-  font-size: 0.9375rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-base);
   font-family: inherit;
 }
 
@@ -84,11 +84,11 @@
 }
 
 .uploadButton {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-border);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
-  font-size: 0.875rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-md);
   cursor: pointer;
   width: fit-content;
 }
@@ -105,13 +105,13 @@
 .photosGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 0.75rem;
+  gap: var(--admin-space-xl);
 }
 
 .photoItem {
   position: relative;
   aspect-ratio: 1;
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   overflow: hidden;
   background: var(--admin-surface-soft);
 }
@@ -128,17 +128,17 @@
   right: 4px;
   width: 24px;
   height: 24px;
-  font-size: 1.25rem;
-  line-height: 1;
+  font-size: var(--admin-font-size-2xl);
+  line-height: var(--admin-line-height-flat);
   background: var(--admin-overlay-color-009);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  padding: var(--admin-space-0);
 }
 
 .removePhoto:hover {
@@ -147,17 +147,17 @@
 
 .formActions {
   display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: var(--admin-space-2xl);
+  margin-top: var(--admin-space-2xl);
 }
 
 .saveButton {
-  padding: 0.5rem 1.25rem;
+  padding: var(--admin-space-md) var(--admin-space-3xl);
   background: var(--admin-overlay-color-108);
   color: white;
   border: none;
-  border-radius: 6px;
-  font-size: 0.9375rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-base);
   font-weight: 500;
   cursor: pointer;
 }
@@ -172,10 +172,10 @@
 }
 
 .cancelLink {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   color: var(--admin-text-muted);
   text-decoration: none;
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
 }
 
 .cancelLink:hover {
@@ -184,7 +184,7 @@
 
 .loading {
   color: var(--admin-text-muted);
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
 }
 
 /* Тёмная тема — форма проекта фото */

@@ -5,40 +5,40 @@
 .loading,
 .empty {
   color: var(--admin-text-muted);
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   margin: 0;
 }
 
 .section {
-  margin-bottom: 40px;
+  margin-bottom: var(--admin-space-6xl);
 }
 
 .sectionTitle {
-  font-size: 1.25rem;
+  font-size: var(--admin-font-size-2xl);
   font-weight: 600;
   color: var(--admin-text-secondary);
-  margin: 0 0 8px 0;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-md) var(--admin-space-0);
 }
 
 .sectionDescription {
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-muted);
-  margin: 0 0 20px 0;
-  line-height: 1.5;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-3xl) var(--admin-space-0);
+  line-height: var(--admin-line-height-lg);
 }
 
 .form {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 12px;
-  padding: 24px;
+  border-radius: var(--admin-radius-xl);
+  padding: var(--admin-space-4xl);
 }
 
 .checkboxRow {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: var(--admin-space-lg);
+  margin-bottom: var(--admin-space-xl);
 }
 
 .checkboxRow input {
@@ -47,21 +47,21 @@
 }
 
 .checkboxRow label {
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   font-weight: 500;
   color: var(--admin-text-secondary);
   cursor: pointer;
 }
 
 .saveButton {
-  margin-top: 16px;
-  padding: 8px 20px;
-  font-size: 0.9375rem;
+  margin-top: var(--admin-space-2xl);
+  padding: var(--admin-space-md) var(--admin-space-3xl);
+  font-size: var(--admin-font-size-base);
   font-weight: 500;
   color: var(--admin-surface);
   background: var(--admin-accent);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -78,49 +78,49 @@
 .reviewsList {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--admin-space-2xl);
 }
 
 .reviewCard {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: var(--admin-radius-xl);
+  padding: var(--admin-space-2xl);
 }
 
 .reviewHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: var(--admin-space-md);
 }
 
 .reviewAuthor {
   font-weight: 500;
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
 }
 
 .reviewDate {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
 }
 
 .reviewStars {
   color: var(--admin-warning);
-  font-size: 0.875rem;
-  margin-bottom: 4px;
+  font-size: var(--admin-font-size-sm);
+  margin-bottom: var(--admin-space-xs);
 }
 
 .reviewComment {
-  margin: 8px 0;
-  font-size: 0.9375rem;
-  line-height: 1.5;
+  margin: var(--admin-space-md) var(--admin-space-0);
+  font-size: var(--admin-font-size-base);
+  line-height: var(--admin-line-height-lg);
   color: var(--admin-text-secondary);
 }
 
 .reviewProduct {
-  margin: 8px 0;
-  font-size: 0.875rem;
+  margin: var(--admin-space-md) var(--admin-space-0);
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
 }
 
@@ -131,17 +131,17 @@
 
 .reviewActions {
   display: flex;
-  gap: 8px;
-  margin-top: 12px;
+  gap: var(--admin-space-md);
+  margin-top: var(--admin-space-xl);
 }
 
 .approveButton {
-  padding: 6px 14px;
-  font-size: 0.875rem;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-success);
   background: var(--admin-overlay-color-119);
   border: 1px solid var(--admin-success);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -151,12 +151,12 @@
 }
 
 .deleteButton {
-  padding: 6px 14px;
-  font-size: 0.875rem;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-error-strong);
   background: var(--admin-overlay-color-055);
   border: 1px solid var(--admin-error-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -174,17 +174,17 @@
 .pagination {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-top: 20px;
+  gap: var(--admin-space-2xl);
+  margin-top: var(--admin-space-3xl);
 }
 
 .pageButton {
-  padding: 8px 16px;
-  font-size: 0.875rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-accent);
   background: transparent;
   border: 1px solid var(--admin-accent);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -199,7 +199,7 @@
 }
 
 .pageInfo {
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
 }
 
@@ -208,13 +208,13 @@
   position: fixed;
   bottom: 24px;
   right: 24px;
-  padding: 16px 24px;
-  border-radius: 10px;
+  padding: var(--admin-space-2xl) var(--admin-space-4xl);
+  border-radius: var(--admin-radius-lg);
   box-shadow: 0 4px 20px var(--admin-overlay-color-149);
   z-index: 1000;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--admin-space-xl);
   animation: toastSlideIn 0.3s ease-out;
   max-width: 400px;
 }
@@ -230,12 +230,12 @@
 }
 
 .toastIcon {
-  font-size: 1.25rem;
+  font-size: var(--admin-font-size-2xl);
   flex-shrink: 0;
 }
 
 .toastMessage {
-  font-size: 0.95rem;
+  font-size: var(--admin-font-size-base);
   font-weight: 500;
 }
 
@@ -244,10 +244,10 @@
   border: none;
   color: var(--admin-overlay-color-093);
   cursor: pointer;
-  padding: 4px;
+  padding: var(--admin-space-xs);
   margin-left: auto;
-  font-size: 1.1rem;
-  line-height: 1;
+  font-size: var(--admin-font-size-xl);
+  line-height: var(--admin-line-height-flat);
   transition: color 0.15s;
 }
 

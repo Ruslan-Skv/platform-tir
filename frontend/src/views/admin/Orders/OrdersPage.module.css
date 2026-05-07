@@ -83,7 +83,7 @@
 }
 
 .loading {
-  padding: 2rem;
+  padding: var(--admin-space-8xl);
   text-align: center;
   color: var(--admin-text-muted);
 }
@@ -92,17 +92,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .headerLeft {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--admin-space-2xl);
 }
 
 .title {
-  font-size: 1.25rem;
+  font-size: var(--admin-font-size-2xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
   margin: 0;
@@ -110,16 +110,16 @@
 
 .count {
   background: var(--admin-border);
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.9rem;
+  padding: var(--admin-space-xs) var(--admin-space-xl);
+  border-radius: var(--admin-radius-3xl);
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-muted);
 }
 
 .serviceOrdersLink {
   color: var(--admin-info);
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-base);
 }
 
 .serviceOrdersLink:hover {
@@ -129,43 +129,43 @@
 .serviceOrderBadge {
   color: var(--admin-text-muted);
   font-weight: 400;
-  font-size: 0.85em;
+  font-size: var(--admin-font-size-md);
 }
 
 /* Stats */
 .stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: var(--admin-space-2xl);
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .statCard {
   background: var(--admin-surface);
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px var(--admin-overlay-color-148);
+  padding: var(--admin-space-3xl);
+  border-radius: var(--admin-radius-xl);
+  box-shadow: var(--admin-shadow-card);
   display: flex;
   flex-direction: column;
 }
 
 .statValue {
-  font-size: 1.5rem;
+  font-size: var(--admin-font-size-2xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
 }
 
 .statLabel {
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-muted);
-  margin-top: 4px;
+  margin-top: var(--admin-space-xs);
 }
 
 /* Filters */
 .filters {
   display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-2xl);
   flex-wrap: nowrap;
   overflow-x: auto;
 }
@@ -175,23 +175,23 @@
   width: 180px;
   min-width: 160px;
   max-width: 220px;
-  padding: 6px 10px;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
-  font-size: 0.8rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-sm);
 }
 
 .searchInput:focus {
   outline: none;
   border-color: var(--admin-accent);
-  box-shadow: 0 0 0 3px rgba(var(--admin-overlay-color-144), 0.1);
+  box-shadow: var(--admin-shadow-focus-soft);
 }
 
 .select {
-  padding: 6px 10px;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
-  font-size: 0.8rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-sm);
   background: var(--admin-surface);
   min-width: 130px;
 }
@@ -202,10 +202,10 @@
 }
 
 .dateInput {
-  padding: 6px 10px;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
-  font-size: 0.8rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-sm);
   background: var(--admin-surface);
   width: 120px;
 }
@@ -219,11 +219,11 @@
 .bulkActions {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: var(--admin-space-xl);
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
   background: var(--admin-info-bg-soft);
-  border-radius: 8px;
-  margin-bottom: 16px;
+  border-radius: var(--admin-radius-md);
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .bulkActions span {
@@ -232,13 +232,13 @@
 }
 
 .bulkButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   border: 1px solid var(--admin-info-border);
   background: var(--admin-surface);
   color: var(--admin-info-text);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-sm);
   transition: all 0.2s;
 }
 
@@ -250,7 +250,7 @@
 .orderNumber {
   font-weight: 600;
   color: var(--admin-accent);
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 /* Customer Cell */
@@ -262,16 +262,16 @@
 .customerName {
   font-weight: 500;
   color: var(--admin-text-secondary);
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .customerEmail {
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
 }
 
 .addressCell {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-secondary);
   max-width: 200px;
   overflow: hidden;
@@ -280,7 +280,7 @@
 }
 
 .subtitle {
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-muted);
   margin: 0;
 }
@@ -289,9 +289,9 @@
 .statusBadge,
 .paymentBadge {
   display: inline-block;
-  padding: 2px 6px;
-  border-radius: 12px;
-  font-size: 0.7rem;
+  padding: var(--admin-space-2xs) var(--admin-space-sm);
+  border-radius: var(--admin-radius-xl);
+  font-size: var(--admin-font-size-2xs);
   font-weight: 500;
 }
 
@@ -367,7 +367,7 @@
 
 .paymentMuted {
   color: var(--admin-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-md);
 }
 
 /* Total Cell */
@@ -379,23 +379,23 @@
 .totalAmount {
   font-weight: 600;
   color: var(--admin-text-secondary);
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .itemsCount {
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
 }
 
 /* View Button */
 .viewButton {
   display: inline-block;
-  padding: 4px 8px;
+  padding: var(--admin-space-xs) var(--admin-space-md);
   background: var(--admin-surface-soft);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-text-secondary);
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   transition: background 0.2s;
   text-decoration: none;
@@ -437,7 +437,7 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statCard {
   background: var(--admin-text-secondary);
-  box-shadow: 0 1px 3px var(--admin-overlay-color-152);
+  box-shadow: var(--admin-shadow-card-dark);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statValue {

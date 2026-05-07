@@ -4,7 +4,7 @@
 }
 
 .header {
-  margin-bottom: 8px;
+  margin-bottom: var(--admin-space-md);
 }
 
 .backButton {
@@ -12,12 +12,12 @@
   border: none;
   color: var(--admin-accent);
   cursor: pointer;
-  font-size: 0.875rem;
-  padding: 0;
-  margin-bottom: 6px;
+  font-size: var(--admin-font-size-sm);
+  padding: var(--admin-space-0);
+  margin-bottom: var(--admin-space-sm);
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--admin-space-xs);
 }
 
 .backButton:hover {
@@ -25,7 +25,7 @@
 }
 
 .title {
-  font-size: 1.25rem;
+  font-size: var(--admin-font-size-2xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
   margin: 0;
@@ -33,13 +33,13 @@
 
 .loading {
   text-align: center;
-  padding: 32px 16px;
+  padding: var(--admin-space-5xl) var(--admin-space-2xl);
   color: var(--admin-text-muted);
-  font-size: 1.1rem;
+  font-size: var(--admin-font-size-xl);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: var(--admin-space-lg);
 }
 
 .spinner {
@@ -47,7 +47,7 @@
   height: 40px;
   border: 3px solid var(--admin-border);
   border-top-color: var(--admin-accent);
-  border-radius: 50%;
+  border-radius: var(--admin-radius-full);
   animation: spin 0.8s linear infinite;
 }
 
@@ -59,39 +59,39 @@
 
 .notFound {
   text-align: center;
-  padding: 32px 16px;
+  padding: var(--admin-space-5xl) var(--admin-space-2xl);
   background: var(--admin-surface);
-  border-radius: 12px;
-  box-shadow: 0 1px 3px var(--admin-overlay-color-148);
+  border-radius: var(--admin-radius-xl);
+  box-shadow: var(--admin-shadow-card);
 }
 
 .notFound h2 {
-  font-size: 1.5rem;
+  font-size: var(--admin-font-size-3xl);
   color: var(--admin-text-secondary);
-  margin: 0 0 8px;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-md);
 }
 
 .notFound p {
   color: var(--admin-text-muted);
-  margin: 0 0 16px;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-2xl);
 }
 
 .error {
-  padding: 8px 12px;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   background: var(--admin-error-bg-soft);
   border: 1px solid var(--admin-danger-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-error-text-strong);
-  margin-bottom: 12px;
+  margin-bottom: var(--admin-space-xl);
 }
 
 .success {
-  padding: 8px 12px;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   background: var(--admin-success-bg-soft);
   border: 1px solid var(--admin-success-border);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-success-text);
-  margin-bottom: 12px;
+  margin-bottom: var(--admin-space-xl);
 }
 
 /* Обязательные поля карточки: пусто — светло-жёлтый, заполнено — светло-салатовый */
@@ -135,15 +135,15 @@
 }
 
 .fieldHighlightBlockEmpty {
-  padding: 10px 12px;
-  border-radius: 8px;
+  padding: var(--admin-space-lg) var(--admin-space-xl);
+  border-radius: var(--admin-radius-md);
   background-color: var(--admin-warning-bg-soft);
   border: 1px solid var(--admin-warning-border-soft);
 }
 
 .fieldHighlightBlockFilled {
-  padding: 10px 12px;
-  border-radius: 8px;
+  padding: var(--admin-space-lg) var(--admin-space-xl);
+  border-radius: var(--admin-radius-md);
   background-color: var(--admin-chart-teal-bg);
   border: 1px solid var(--admin-chart-teal);
   color: var(--admin-success-text);
@@ -151,14 +151,14 @@
 
 /* Парсер цены по ссылке поставщика — заметный блок вверху формы */
 .parserNotice {
-  padding: 12px 14px;
+  padding: var(--admin-space-xl) var(--admin-space-xl);
   background: var(--admin-info-bg-soft);
   border: 1px solid var(--admin-info-border);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   color: var(--admin-info);
-  margin-bottom: 16px;
-  font-size: 0.9375rem;
-  line-height: 1.45;
+  margin-bottom: var(--admin-space-2xl);
+  font-size: var(--admin-font-size-base);
+  line-height: var(--admin-line-height-md);
 }
 
 .parserNotice strong {
@@ -170,13 +170,13 @@
   position: fixed;
   bottom: 24px;
   right: 24px;
-  padding: 16px 24px;
-  border-radius: 10px;
+  padding: var(--admin-space-2xl) var(--admin-space-4xl);
+  border-radius: var(--admin-radius-lg);
   box-shadow: 0 4px 20px var(--admin-overlay-color-149);
   z-index: 1000;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--admin-space-xl);
   animation: slideIn 0.3s ease-out;
   max-width: 400px;
 }
@@ -192,12 +192,12 @@
 }
 
 .toastIcon {
-  font-size: 1.25rem;
+  font-size: var(--admin-font-size-2xl);
   flex-shrink: 0;
 }
 
 .toastMessage {
-  font-size: 0.95rem;
+  font-size: var(--admin-font-size-base);
   font-weight: 500;
 }
 
@@ -206,10 +206,10 @@
   border: none;
   color: var(--admin-overlay-color-175);
   cursor: pointer;
-  padding: 4px;
+  padding: var(--admin-space-xs);
   margin-left: auto;
-  font-size: 1.1rem;
-  line-height: 1;
+  font-size: var(--admin-font-size-xl);
+  line-height: var(--admin-line-height-flat);
   transition: color 0.15s;
 }
 
@@ -230,29 +230,29 @@
 
 .form {
   background: var(--admin-surface);
-  border-radius: 10px;
-  box-shadow: 0 1px 3px var(--admin-overlay-color-148);
-  padding: 10px;
-  font-size: 13px;
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-card);
+  padding: var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
 }
 
 .productMeta {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem 2rem;
-  padding: 10px 12px;
-  margin-bottom: 12px;
+  padding: var(--admin-space-lg) var(--admin-space-xl);
+  margin-bottom: var(--admin-space-xl);
   background: var(--admin-surface-soft);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   border: 1px solid var(--admin-border);
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-sidebar-text);
 }
 
 .productMetaRow {
   display: flex;
   align-items: baseline;
-  gap: 0.5rem;
+  gap: var(--admin-space-md);
 }
 
 .productMetaLabel {
@@ -263,7 +263,7 @@
 
 .productMetaDate {
   color: var(--admin-text-muted);
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
 }
 
 .form .sectionTitle,
@@ -287,19 +287,27 @@
 .form .customAttrHint,
 .form .unit,
 .form .imageError {
-  font-size: 1em;
+  font-size: var(--admin-font-size-sm);
+}
+
+.form .hint,
+.form .dropZoneHint,
+.form .customAttrHint,
+.form .attrListHint,
+.form .sizesHintLabel {
+  font-size: var(--admin-font-size-xs);
 }
 
 .formGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: var(--admin-space-lg);
 }
 
 .formSection {
   background: var(--admin-surface-muted);
-  border-radius: 6px;
-  padding: 8px;
+  border-radius: var(--admin-radius-sm);
+  padding: var(--admin-space-md);
 }
 
 .formSection:first-child {
@@ -312,22 +320,22 @@
 
 /* Полная ширина + плотнее по вертикали (цена, бэйджи) */
 .formSectionCompact {
-  padding: 6px 10px;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
 }
 
 .formSectionCompact .sectionTitle {
-  font-size: 0.875rem;
-  margin-bottom: 6px;
-  padding: 6px 10px;
+  font-size: var(--admin-font-size-sm);
+  margin-bottom: var(--admin-space-sm);
+  padding: var(--admin-space-sm) var(--admin-space-lg);
 }
 
 .formSectionCompact .formGroup {
-  margin-bottom: 4px;
+  margin-bottom: var(--admin-space-xs);
 }
 
 .formSectionCompact .checkboxGroup {
-  gap: 4px;
-  margin-top: 4px;
+  gap: var(--admin-space-xs);
+  margin-top: var(--admin-space-xs);
 }
 
 /* Все поля блока «Цена и наличие» в одну строку */
@@ -336,7 +344,7 @@
   display: flex;
   flex-wrap: nowrap;
   gap: 6px 10px;
-  margin-top: 2px;
+  margin-top: var(--admin-space-2xs);
   overflow-x: auto;
   padding-bottom: 2px;
   width: 100%;
@@ -354,9 +362,9 @@
   flex: 1 1 0;
   flex-direction: row;
   flex-wrap: nowrap;
-  gap: 10px;
+  gap: var(--admin-space-lg);
   justify-content: flex-start;
-  margin: 0 0 2px;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-2xs);
   min-width: 0;
   padding-left: 4px;
   white-space: nowrap;
@@ -368,17 +376,17 @@
 
 /* Ещё плотнее: мелкие подписи и поля */
 .formSectionPricingTight {
-  padding: 4px 8px;
+  padding: var(--admin-space-xs) var(--admin-space-md);
 }
 
 .formSectionPricingTight .sectionTitle {
-  font-size: 0.8125rem;
-  margin-bottom: 6px;
-  padding: 5px 8px;
+  font-size: var(--admin-font-size-xs);
+  margin-bottom: var(--admin-space-sm);
+  padding: var(--admin-space-sm) var(--admin-space-md);
 }
 
 .formSectionPricingTight .formGroup {
-  margin-bottom: 2px;
+  margin-bottom: var(--admin-space-2xs);
 }
 
 .formSectionPricingTight .pricingOneRow .formGroup {
@@ -386,18 +394,18 @@
 }
 
 .formSectionPricingTight .formGroup label {
-  font-size: 0.6875rem;
-  margin-bottom: 1px;
+  font-size: var(--admin-font-size-2xs);
+  margin-bottom: var(--admin-space-2xs);
 }
 
 .formSectionPricingTight .input {
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   min-height: 28px;
-  padding: 3px 8px;
+  padding: var(--admin-space-xs) var(--admin-space-md);
 }
 
 .formSectionPricingTight .checkbox span {
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
 }
 
 .formSectionPricingTight .checkbox input {
@@ -407,12 +415,12 @@
 
 .subsectionTitle {
   background: var(--admin-scrollbar-track);
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   color: var(--admin-text-secondary);
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
   margin: 0.35rem 0 0.25rem;
-  padding: 6px 10px;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
 }
 
 .subsectionTitleFirst {
@@ -420,54 +428,73 @@
 }
 
 .subsectionTitleSpaced {
-  margin-top: 0.5rem;
+  margin-top: var(--admin-space-md);
 }
 
 .hintTight {
   color: var(--admin-text-muted);
-  font-size: 0.75rem;
-  line-height: 1.35;
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-base);
   margin: 2px 0 0;
 }
 
 .cardBadgesPickGrid {
   display: grid;
-  gap: 0.25rem;
+  gap: var(--admin-space-xs);
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.cardBadgesPickGrid .checkbox {
+  gap: var(--admin-space-sm);
+}
+
+.cardBadgesPickGrid .checkbox input {
+  width: 16px;
+  height: 16px;
+}
+
+.cardBadgesPickGrid .checkbox span {
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+.textBadgesRow .checkbox span {
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
 }
 
 .attributesGrid {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--admin-space-md);
 }
 
 .sectionTitle {
   background: var(--admin-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-text-primary);
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   font-weight: 600;
-  margin: 0 0 10px;
-  padding: 8px 12px;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-lg);
+  padding: var(--admin-space-md) var(--admin-space-xl);
 }
 
 .formGroup {
-  margin-bottom: 8px;
+  margin-bottom: var(--admin-space-md);
 }
 
 .formGroup label {
   display: block;
   font-weight: 500;
   color: var(--admin-text-secondary);
-  margin-bottom: 2px;
-  font-size: 0.8125rem;
+  margin-bottom: var(--admin-space-2xs);
+  font-size: var(--admin-font-size-xs);
 }
 
 .formRow {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  gap: var(--admin-space-md);
 }
 
 .categorySupplierRow {
@@ -478,17 +505,17 @@
 .namePartnerRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: var(--admin-space-md);
 }
 
 .input,
 .select,
 .textarea {
   width: 100%;
-  padding: 6px 10px;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
-  font-size: 0.8125rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
@@ -500,7 +527,7 @@
 .textarea:focus {
   outline: none;
   border-color: var(--admin-accent);
-  box-shadow: 0 0 0 3px rgba(var(--admin-overlay-color-144), 0.1);
+  box-shadow: var(--admin-shadow-focus-soft);
 }
 
 .textarea {
@@ -511,8 +538,8 @@
 .checkboxGroup {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-top: 6px;
+  gap: var(--admin-space-sm);
+  margin-top: var(--admin-space-sm);
 }
 
 .checkboxGroupRow {
@@ -522,15 +549,15 @@
 
 .pricingFlagsRow {
   align-items: center;
-  column-gap: 1.25rem;
+  column-gap: var(--admin-space-3xl);
   flex-wrap: wrap;
-  row-gap: 4px;
+  row-gap: var(--admin-space-xs);
 }
 
 .checkbox {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--admin-space-md);
   cursor: pointer;
 }
 
@@ -543,29 +570,29 @@
 
 .checkbox span {
   color: var(--admin-text-secondary);
-  font-size: 1em;
+  font-size: var(--admin-font-size-base);
 }
 
 /* Image upload section */
 .imageError {
-  padding: 4px 8px;
+  padding: var(--admin-space-xs) var(--admin-space-md);
   background: var(--admin-error-bg-soft);
   border: 1px solid var(--admin-danger-border-strong);
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   color: var(--admin-error-text-strong);
-  margin-bottom: 4px;
-  font-size: 1em;
+  margin-bottom: var(--admin-space-xs);
+  font-size: var(--admin-font-size-base);
 }
 
 .dropZone {
   border: 1px dashed var(--admin-border-strong);
-  border-radius: 4px;
-  padding: 6px 8px;
+  border-radius: var(--admin-radius-xs);
+  padding: var(--admin-space-sm) var(--admin-space-md);
   text-align: center;
   cursor: pointer;
   transition: all 0.2s;
   background: var(--admin-surface);
-  margin-bottom: 4px;
+  margin-bottom: var(--admin-space-xs);
 }
 
 .dropZone:hover {
@@ -584,15 +611,15 @@
 }
 
 .dropZoneIcon {
-  font-size: 1.125rem;
+  font-size: var(--admin-font-size-xl);
   display: block;
-  margin-bottom: 2px;
+  margin-bottom: var(--admin-space-2xs);
 }
 
 .dropZoneText {
   color: var(--admin-text-secondary);
-  font-size: 1em;
-  margin: 0 0 1px;
+  font-size: var(--admin-font-size-base);
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-2xs);
 }
 
 .dropZoneLink {
@@ -602,7 +629,7 @@
 
 .dropZoneHint {
   color: var(--admin-text-muted);
-  font-size: 0.9em;
+  font-size: var(--admin-font-size-sm);
   margin: 0;
 }
 
@@ -611,15 +638,15 @@
 }
 
 .addUrlButton {
-  padding: 4px 8px;
+  padding: var(--admin-space-xs) var(--admin-space-md);
   background: var(--admin-surface-soft);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   color: var(--admin-text-secondary);
-  font-size: 1em;
+  font-size: var(--admin-font-size-base);
   cursor: pointer;
   transition: all 0.15s;
-  margin-bottom: 4px;
+  margin-bottom: var(--admin-space-xs);
 }
 
 .addUrlButton:hover {
@@ -630,8 +657,8 @@
 .imagesGrid {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
-  gap: 6px;
-  margin-top: 4px;
+  gap: var(--admin-space-sm);
+  margin-top: var(--admin-space-xs);
   max-width: 720px;
 }
 
@@ -639,7 +666,7 @@
   position: relative;
   aspect-ratio: 1;
   max-width: 112px;
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   overflow: hidden;
   background: var(--admin-border);
   border: 1px solid transparent;
@@ -661,10 +688,10 @@
   left: 2px;
   background: var(--admin-accent);
   color: white;
-  font-size: 0.55rem;
+  font-size: var(--admin-font-size-2xs);
   font-weight: 600;
-  padding: 1px 3px;
-  border-radius: 2px;
+  padding: var(--admin-space-2xs) var(--admin-space-xs);
+  border-radius: var(--admin-radius-2xs);
   text-transform: uppercase;
 }
 
@@ -675,8 +702,8 @@
   right: 0;
   display: flex;
   justify-content: center;
-  gap: 1px;
-  padding: 2px;
+  gap: var(--admin-space-2xs);
+  padding: var(--admin-space-2xs);
   background: linear-gradient(transparent, var(--admin-overlay-color-157));
   opacity: 0;
   transition: opacity 0.2s;
@@ -690,11 +717,11 @@
   width: 20px;
   height: 20px;
   border: none;
-  border-radius: 3px;
+  border-radius: var(--admin-radius-xs);
   background: var(--admin-overlay-color-177);
   color: var(--admin-text-secondary);
   cursor: pointer;
-  font-size: 0.7rem;
+  font-size: var(--admin-font-size-2xs);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -719,16 +746,16 @@
   color: var(--admin-text-muted);
   font-style: italic;
   text-align: center;
-  padding: 6px 8px;
+  padding: var(--admin-space-sm) var(--admin-space-md);
   background: var(--admin-surface);
   border: 1px dashed var(--admin-border-strong);
-  border-radius: 4px;
-  margin-top: 4px;
-  font-size: 1em;
+  border-radius: var(--admin-radius-xs);
+  margin-top: var(--admin-space-xs);
+  font-size: var(--admin-font-size-base);
 }
 
 .hint {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
   margin: 0;
 }
@@ -737,25 +764,25 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  margin-top: 10px;
+  gap: var(--admin-space-md);
+  margin-top: var(--admin-space-lg);
   padding-top: 8px;
   border-top: 1px solid var(--admin-border);
 }
 
 .formActionsRight {
   display: flex;
-  gap: 8px;
+  gap: var(--admin-space-md);
 }
 
 .backButtonBottom {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-accent);
   font-weight: 500;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -766,13 +793,13 @@
 }
 
 .cancelButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: var(--admin-surface);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-text-secondary);
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -783,13 +810,13 @@
 }
 
 .saveButton {
-  padding: 5px 10px;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
   background: var(--admin-accent);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-surface);
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -834,41 +861,41 @@
 
 /* Attributes / Characteristics section */
 .attributesSection {
-  margin-bottom: 8px;
+  margin-bottom: var(--admin-space-md);
 }
 
 .attributesSubtitle {
   align-items: center;
   background: var(--admin-scrollbar-track);
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   color: var(--admin-text-secondary);
   display: flex;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
-  gap: 4px;
-  margin: 0 0 8px;
-  padding: 6px 10px;
+  gap: var(--admin-space-xs);
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-md);
+  padding: var(--admin-space-sm) var(--admin-space-lg);
 }
 
 .customAttrHint {
   font-weight: 400;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
 }
 
 .attributesList {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 6px;
+  gap: var(--admin-space-sm);
+  margin-bottom: var(--admin-space-sm);
 }
 
 /* Две колонки в блоке характеристик — по 2 поля в ряд */
 .attributesListTwoCol {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-md);
 }
 
 .attributesListTwoCol .attributeRow {
@@ -885,13 +912,13 @@
 .sizesListTwoCol {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  gap: var(--admin-space-md);
 }
 
 .sizesListTwoCol .attributeRow {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--admin-space-sm);
   grid-template-columns: unset;
 }
 
@@ -902,32 +929,32 @@
 
 /* Подсказка размеров из других товаров категории */
 .sizesHint {
-  margin-bottom: 10px;
-  padding: 10px 12px;
+  margin-bottom: var(--admin-space-lg);
+  padding: var(--admin-space-lg) var(--admin-space-xl);
   background: var(--admin-success-bg-soft);
   border: 1px solid var(--admin-success-border-soft);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
 }
 
 .sizesHintLabel {
   display: block;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-success-text-strong);
-  margin-bottom: 8px;
+  margin-bottom: var(--admin-space-md);
 }
 
 .sizesHintChips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--admin-space-sm);
 }
 
 .sizesHintChip {
-  padding: 4px 10px;
-  font-size: 0.8125rem;
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  font-size: var(--admin-font-size-xs);
   background: var(--admin-surface);
   border: 1px solid var(--admin-success-bright);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-success-deep);
   cursor: pointer;
 }
@@ -943,28 +970,28 @@
 }
 
 .cardVariantBlock {
-  padding: 0.5rem 0.75rem;
-  margin-bottom: 0.5rem;
+  padding: var(--admin-space-md) var(--admin-space-xl);
+  margin-bottom: var(--admin-space-md);
   background: var(--admin-surface-muted);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
 }
 
 .cardVariantBlockTitle {
   background: var(--admin-border-strong);
-  border-radius: 6px 6px 0 0;
+  border-radius: var(--admin-radius-card-top);
   color: var(--admin-text-secondary);
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   font-weight: 600;
   margin: -0.5rem -0.75rem 0.5rem -0.75rem;
-  padding: 6px 10px;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
 }
 
 .cardVariantImageRow {
   display: flex;
-  gap: 0.375rem;
+  gap: var(--admin-space-sm);
   align-items: center;
-  margin-bottom: 0.25rem;
+  margin-bottom: var(--admin-space-xs);
 }
 
 .cardVariantImageRow .input {
@@ -973,12 +1000,12 @@
 
 .cardVariantUploadBtn {
   flex-shrink: 0;
-  padding: 0.375rem 0.5rem;
+  padding: var(--admin-space-sm) var(--admin-space-md);
   background: var(--admin-info-bright);
   color: var(--admin-surface);
   border: none;
-  border-radius: 0.375rem;
-  font-size: 0.8125rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -988,26 +1015,26 @@
 }
 
 .cardVariantImagePreview {
-  margin-top: 0.375rem;
+  margin-top: var(--admin-space-sm);
 }
 
 .cardVariantImagePreview img {
   max-height: 64px;
   object-fit: contain;
   border: 1px solid var(--admin-border);
-  border-radius: 0.375rem;
+  border-radius: var(--admin-radius-sm);
 }
 
 .cardVariantRemoveButton {
-  margin-top: 0.375rem;
-  padding: 0.25rem 0.5rem;
+  margin-top: var(--admin-space-sm);
+  padding: var(--admin-space-xs) var(--admin-space-md);
   background: var(--admin-error-bg);
   border: 1px solid var(--admin-error-border-soft);
-  border-radius: 0.375rem;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-error-strong);
   cursor: pointer;
-  font-size: 0.875rem;
-  line-height: 1;
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-flat);
 }
 
 .cardVariantRemoveButton:hover {
@@ -1017,12 +1044,12 @@
 .attributeRow {
   display: grid;
   grid-template-columns: 200px 1fr auto;
-  gap: 8px;
+  gap: var(--admin-space-md);
   align-items: center;
-  padding: 6px 8px;
+  padding: var(--admin-space-sm) var(--admin-space-md);
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
 }
 
 .attributeRow .input,
@@ -1031,12 +1058,12 @@
 }
 
 .attributeLabel {
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-secondary);
   font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--admin-space-xs);
   flex-wrap: wrap;
 }
 
@@ -1046,14 +1073,14 @@
 
 .unit {
   font-weight: 400;
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
 }
 
 .attributeInput {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--admin-space-md);
 }
 
 .attributeRowMulti {
@@ -1067,7 +1094,7 @@
 .multiSelectOptions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--admin-space-md);
   flex: 1;
   min-width: 0;
 }
@@ -1075,8 +1102,8 @@
 .multiSelectOptionLabel {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.875rem;
+  gap: var(--admin-space-md);
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-secondary);
   cursor: pointer;
 }
@@ -1086,9 +1113,9 @@
 }
 
 .attrListHint {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
-  line-height: 1.4;
+  line-height: var(--admin-line-height-md);
 }
 
 .attributeInput .input,
@@ -1104,10 +1131,10 @@
   justify-content: center;
   background: var(--admin-surface-soft);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-text-muted);
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   transition: all 0.15s;
   flex-shrink: 0;
 }
@@ -1121,11 +1148,11 @@
 .addAttrRow {
   display: grid;
   grid-template-columns: 200px 1fr auto;
-  gap: 8px;
-  padding: 6px 8px;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-sm) var(--admin-space-md);
   background: var(--admin-success-bg-soft);
   border: 1px dashed var(--admin-success-lime);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
 }
 
 .addAttrRow .input {
@@ -1137,13 +1164,13 @@
 }
 
 .addAttrButton {
-  padding: 5px 10px;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
   background: var(--admin-success-strong);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
@@ -1166,7 +1193,7 @@
   justify-content: center;
   background: var(--admin-error-bg);
   border: 1px solid var(--admin-error-border-soft);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1180,11 +1207,11 @@
   color: var(--admin-text-muted);
   font-style: italic;
   text-align: center;
-  padding: 8px;
+  padding: var(--admin-space-md);
   background: var(--admin-surface);
   border: 1px dashed var(--admin-border-strong);
-  border-radius: 6px;
-  font-size: 0.8125rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
 }
 
 @media (max-width: 768px) {
@@ -1198,12 +1225,12 @@
 
   .attributeRow {
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: var(--admin-space-md);
   }
 
   .addAttrRow {
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: var(--admin-space-md);
   }
 
   .addAttrButton {
@@ -1231,7 +1258,7 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .notFound {
   background: var(--admin-surface);
-  box-shadow: 0 1px 3px var(--admin-overlay-color-152);
+  box-shadow: var(--admin-shadow-card-dark);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .notFound h2 {
@@ -1262,12 +1289,12 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .form {
   background: var(--admin-surface);
-  box-shadow: 0 1px 3px var(--admin-overlay-color-152);
+  box-shadow: var(--admin-shadow-card-dark);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .formSection {
   background: var(--admin-surface-soft);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .productMeta {

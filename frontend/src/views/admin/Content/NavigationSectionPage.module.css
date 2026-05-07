@@ -3,24 +3,24 @@
   margin: 0 auto;
   background: var(--admin-surface-soft);
   color: var(--admin-text-primary);
-  padding: 24px;
-  border-radius: 12px;
+  padding: var(--admin-space-4xl);
+  border-radius: var(--admin-radius-xl);
   min-height: 60vh;
 }
 
 .header {
-  margin-bottom: 28px;
+  margin-bottom: var(--admin-space-28);
 }
 
 .title {
-  font-size: 1.75rem;
+  font-size: var(--admin-font-size-4xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
-  margin: 0 0 8px 0;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-md) var(--admin-space-0);
 }
 
 .subtitle {
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-muted);
   margin: 0;
 }
@@ -29,23 +29,23 @@
   background: var(--admin-surface);
   color: var(--admin-text-primary);
   border: 1px solid var(--admin-border);
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 24px;
+  border-radius: var(--admin-radius-xl);
+  padding: var(--admin-space-4xl);
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .sectionTitle {
-  font-size: 1.25rem;
+  font-size: var(--admin-font-size-2xl);
   font-weight: 600;
   color: var(--admin-text-secondary);
-  margin: 0 0 16px 0;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-2xl) var(--admin-space-0);
 }
 
 .itemRow {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 0;
+  gap: var(--admin-space-xl);
+  padding: var(--admin-space-xl) var(--admin-space-0);
   border-bottom: 1px solid var(--admin-border);
   flex-wrap: wrap;
 }
@@ -62,42 +62,42 @@
 
 .itemHref {
   flex: 1;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
   min-width: 0;
 }
 
 .itemBadge {
   flex-shrink: 0;
-  font-size: 0.75rem;
-  padding: 2px 8px;
-  border-radius: 4px;
+  font-size: var(--admin-font-size-xs);
+  padding: var(--admin-space-2xs) var(--admin-space-md);
+  border-radius: var(--admin-radius-xs);
   background: var(--admin-border);
   color: var(--admin-text-secondary);
 }
 
 .itemBadgeInactive {
   flex-shrink: 0;
-  font-size: 0.75rem;
-  padding: 2px 8px;
-  border-radius: 4px;
+  font-size: var(--admin-font-size-xs);
+  padding: var(--admin-space-2xs) var(--admin-space-md);
+  border-radius: var(--admin-radius-xs);
   background: var(--admin-warning-bg);
   color: var(--admin-warning-text);
 }
 
 .itemActions {
   display: flex;
-  gap: 8px;
+  gap: var(--admin-space-md);
   flex-shrink: 0;
 }
 
 .input {
   width: 100%;
   min-width: 0;
-  padding: 10px 12px;
+  padding: var(--admin-space-lg) var(--admin-space-xl);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 8px;
-  font-size: 0.9375rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-base);
   box-sizing: border-box;
   background: var(--admin-surface);
   color: var(--admin-text-primary);
@@ -107,20 +107,20 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: var(--admin-space-xl);
   flex: 1 1 560px;
   min-width: 0;
 }
 
 .editActions {
   display: flex;
-  gap: 8px;
+  gap: var(--admin-space-md);
   flex-shrink: 0;
 }
 
 .inputRow {
   display: flex;
-  gap: 8px;
+  gap: var(--admin-space-md);
   align-items: center;
   flex: 1 1 400px;
   min-width: 0;
@@ -142,19 +142,19 @@
 
 .addForm {
   display: flex;
-  gap: 12px;
+  gap: var(--admin-space-xl);
   flex-wrap: wrap;
   align-items: center;
-  margin-top: 16px;
+  margin-top: var(--admin-space-2xl);
   padding-top: 16px;
   border-top: 1px solid var(--admin-border);
 }
 
 .btn {
-  padding: 8px 16px;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-sm);
   font-weight: 500;
   cursor: pointer;
   transition: background 0.2s;
@@ -203,29 +203,29 @@
 }
 
 .btnSmall {
-  padding: 6px 12px;
-  font-size: 0.8125rem;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  font-size: var(--admin-font-size-xs);
 }
 
 .reorderBtn {
-  padding: 4px 8px;
+  padding: var(--admin-space-xs) var(--admin-space-md);
   min-width: 32px;
 }
 
 .success {
-  padding: 12px 16px;
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
   background: var(--admin-success-bg-soft);
   color: var(--admin-success);
-  border-radius: 8px;
-  margin-bottom: 16px;
+  border-radius: var(--admin-radius-md);
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .error {
-  padding: 12px 16px;
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
   background: var(--admin-error-bg-soft);
   color: var(--admin-error-strong);
-  border-radius: 8px;
-  margin-bottom: 16px;
+  border-radius: var(--admin-radius-md);
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .toast {
@@ -247,62 +247,62 @@
   align-items: center;
   justify-content: center;
   z-index: 1100;
-  padding: 16px;
+  padding: var(--admin-space-2xl);
 }
 
 .modal {
   background: var(--admin-surface);
-  border-radius: 12px;
+  border-radius: var(--admin-radius-xl);
   box-shadow: 0 20px 40px var(--admin-overlay-color-150);
   max-width: 440px;
   width: 100%;
-  padding: 24px;
+  padding: var(--admin-space-4xl);
 }
 
 .modalTitle {
-  font-size: 1.25rem;
+  font-size: var(--admin-font-size-2xl);
   font-weight: 600;
   color: var(--admin-text-primary);
-  margin: 0 0 12px 0;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl) var(--admin-space-0);
 }
 
 .modalMessage {
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-secondary);
-  margin: 0 0 16px 0;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-2xl) var(--admin-space-0);
 }
 
 .modalWarning {
   background: var(--admin-warning-bg);
   color: var(--admin-warning-text);
-  font-size: 0.875rem;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  line-height: 1.4;
+  font-size: var(--admin-font-size-sm);
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-md);
+  margin-bottom: var(--admin-space-3xl);
+  line-height: var(--admin-line-height-md);
 }
 
 .modalActions {
   display: flex;
-  gap: 12px;
+  gap: var(--admin-space-xl);
   justify-content: flex-end;
 }
 
 .checkboxLabel {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.875rem;
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-secondary);
   white-space: nowrap;
 }
 
 .select {
   min-width: 120px;
-  padding: 8px 12px;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 8px;
-  font-size: 0.875rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-sm);
   background: var(--admin-surface);
   color: var(--admin-text-primary);
 }
@@ -310,31 +310,31 @@
 /* Блок управления выпадающим меню */
 .dropdownBlock {
   width: 100%;
-  margin-top: 12px;
-  padding: 16px;
+  margin-top: var(--admin-space-xl);
+  padding: var(--admin-space-2xl);
   background: var(--admin-surface-muted);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   margin-left: 0;
   flex-basis: 100%;
 }
 
 .dropdownBlockTitle {
-  font-size: 1rem;
+  font-size: var(--admin-font-size-lg);
   font-weight: 600;
   color: var(--admin-text-secondary);
-  margin: 0 0 12px 0;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl) var(--admin-space-0);
 }
 
 .dropdownBlockNote {
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
-  margin: 0 0 12px 0;
-  line-height: 1.4;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl) var(--admin-space-0);
+  line-height: var(--admin-line-height-md);
 }
 
 .catalogCategoriesList {
-  margin-top: 8px;
+  margin-top: var(--admin-space-md);
 }
 
 .dropdownItemRow {
@@ -342,7 +342,7 @@
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 8px 12px;
-  padding: 10px 0;
+  padding: var(--admin-space-lg) var(--admin-space-0);
   border-bottom: 1px solid var(--admin-border);
 }
 
@@ -360,7 +360,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--admin-space-md);
   width: 100%;
 }
 
@@ -371,8 +371,8 @@
 
 .subList {
   width: 100%;
-  margin-left: 24px;
-  margin-top: 8px;
+  margin-left: var(--admin-space-4xl);
+  margin-top: var(--admin-space-md);
   padding-left: 12px;
   border-left: 2px solid var(--admin-border);
 }
@@ -382,8 +382,8 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 12px;
-  padding: 6px 0;
-  font-size: 0.875rem;
+  padding: var(--admin-space-sm) var(--admin-space-0);
+  font-size: var(--admin-font-size-sm);
 }
 
 .subItemName {

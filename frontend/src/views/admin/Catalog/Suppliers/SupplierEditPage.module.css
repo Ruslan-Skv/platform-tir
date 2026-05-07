@@ -1,17 +1,17 @@
 .page {
   max-width: 1200px;
-  padding: 24px;
+  padding: var(--admin-space-4xl);
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .title {
-  font-size: 1.25rem;
+  font-size: var(--admin-font-size-2xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
   margin: 0;
@@ -20,11 +20,11 @@
 .headerActions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--admin-space-xl);
 }
 
 .settlementsLink {
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-md);
   color: var(--admin-accent);
   text-decoration: none;
   font-weight: 500;
@@ -35,13 +35,13 @@
 }
 
 .backButton {
-  padding: 8px 16px;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: white;
   color: var(--admin-text-secondary);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   font-weight: 500;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-md);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -56,7 +56,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px;
+  padding: var(--admin-space-8xl);
   color: var(--admin-text-muted);
 }
 
@@ -65,9 +65,9 @@
   height: 40px;
   border: 3px solid var(--admin-border);
   border-top-color: var(--admin-accent);
-  border-radius: 50%;
+  border-radius: var(--admin-radius-full);
   animation: spin 0.8s linear infinite;
-  margin-bottom: 16px;
+  margin-bottom: var(--admin-space-2xl);
 }
 
 @keyframes spin {
@@ -80,17 +80,17 @@
   background: var(--admin-error-bg);
   border: 1px solid var(--admin-error-border-soft);
   color: var(--admin-error-strong);
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 24px;
-  font-size: 0.9rem;
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-md);
+  margin-bottom: var(--admin-space-4xl);
+  font-size: var(--admin-font-size-base);
 }
 
 .messageBox {
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 24px;
-  font-size: 0.9rem;
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-md);
+  margin-bottom: var(--admin-space-4xl);
+  font-size: var(--admin-font-size-base);
 }
 
 .messageBox.success {
@@ -107,28 +107,28 @@
 
 .form {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px var(--admin-overlay-color-148);
-  padding: 24px;
+  border-radius: var(--admin-radius-xl);
+  box-shadow: var(--admin-shadow-card);
+  padding: var(--admin-space-4xl);
 }
 
 .formGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 24px;
+  gap: var(--admin-space-4xl);
 }
 
 .formSection {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--admin-space-2xl);
 }
 
 .sectionTitle {
-  font-size: 1.1rem;
+  font-size: var(--admin-font-size-xl);
   font-weight: 600;
   color: var(--admin-text-secondary);
-  margin: 0 0 8px 0;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-md) var(--admin-space-0);
   padding-bottom: 8px;
   border-bottom: 2px solid var(--admin-border);
 }
@@ -136,11 +136,11 @@
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--admin-space-sm);
 }
 
 .formGroup label {
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-base);
   font-weight: 500;
   color: var(--admin-text-secondary);
 }
@@ -152,10 +152,10 @@
 .input,
 .textarea {
   width: 100%;
-  padding: 10px 14px;
+  padding: var(--admin-space-lg) var(--admin-space-xl);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 8px;
-  font-size: 0.95rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-base);
   transition: all 0.15s;
   font-family: inherit;
 }
@@ -169,15 +169,15 @@
 .textarea:focus {
   outline: none;
   border-color: var(--admin-accent);
-  box-shadow: 0 0 0 3px rgba(var(--admin-overlay-color-144), 0.1);
+  box-shadow: var(--admin-shadow-focus-soft);
 }
 
 .checkboxLabel {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--admin-space-md);
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: var(--admin-font-size-base);
   font-weight: 500;
   color: var(--admin-text-secondary);
 }
@@ -190,7 +190,7 @@
 }
 
 .hint {
-  font-size: 0.85rem;
+  font-size: var(--admin-font-size-md);
   color: var(--admin-text-muted);
   margin: 4px 0 0 0;
 }
@@ -198,18 +198,18 @@
 .formActions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 32px;
+  gap: var(--admin-space-xl);
+  margin-top: var(--admin-space-5xl);
   padding-top: 24px;
   border-top: 1px solid var(--admin-border);
 }
 
 .cancelButton {
-  padding: 10px 20px;
+  padding: var(--admin-space-lg) var(--admin-space-3xl);
   background: white;
   color: var(--admin-text-secondary);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
@@ -226,13 +226,13 @@
 }
 
 .submitButton {
-  padding: 8px 16px;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: linear-gradient(135deg, var(--admin-accent), var(--admin-accent));
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   font-weight: 500;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-md);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -249,8 +249,8 @@
 
 .phoneRow {
   display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-md);
   align-items: center;
 }
 
@@ -266,9 +266,9 @@
   justify-content: center;
   background: var(--admin-error-bg);
   border: 1px solid var(--admin-error-border-soft);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-error-strong);
-  font-size: 20px;
+  font-size: var(--admin-font-size-4xl);
   cursor: pointer;
   transition: all 0.15s;
   flex-shrink: 0;
@@ -280,12 +280,12 @@
 }
 
 .addPhoneButton {
-  padding: 8px 16px;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-success-bg-soft);
   border: 1px solid var(--admin-success-border-soft);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-success-strong);
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-base);
   cursor: pointer;
   transition: all 0.15s;
   width: 100%;

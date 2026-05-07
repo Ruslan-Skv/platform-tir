@@ -10,82 +10,82 @@
 }
 
 .badgesHeader {
-  margin-bottom: 14px;
+  margin-bottom: var(--admin-space-xl);
 }
 
 .badgesTitle {
-  font-size: 1.35rem;
+  font-size: var(--admin-font-size-3xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
-  margin: 0 0 4px 0;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xs) var(--admin-space-0);
 }
 
 .badgesSubtitle {
-  font-size: 0.8125rem;
-  line-height: 1.4;
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-md);
   color: var(--admin-text-muted);
   margin: 0;
 }
 
 .badgesBack {
-  margin-top: 0.35rem;
-  font-size: 0.8125rem;
+  margin-top: var(--admin-space-fluid-lg);
+  font-size: var(--admin-font-size-sm);
 }
 
 .header {
-  margin-bottom: 32px;
+  margin-bottom: var(--admin-space-5xl);
 }
 
 .title {
-  font-size: 1.75rem;
+  font-size: var(--admin-font-size-4xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
-  margin: 0 0 8px 0;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-md) var(--admin-space-0);
 }
 
 .subtitle {
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-muted);
   margin: 0;
 }
 
 .section {
-  margin-bottom: 40px;
+  margin-bottom: var(--admin-space-6xl);
 }
 
 .sectionTitle {
-  font-size: 1.25rem;
+  font-size: var(--admin-font-size-2xl);
   font-weight: 600;
   color: var(--admin-text-secondary);
-  margin: 0 0 8px 0;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-md) var(--admin-space-0);
 }
 
 .sectionDescription {
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-muted);
-  margin: 0 0 20px 0;
-  line-height: 1.5;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-3xl) var(--admin-space-0);
+  line-height: var(--admin-line-height-lg);
 }
 
 .sectionDescription code {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-sm);
   background: var(--admin-surface-soft);
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: var(--admin-space-2xs) var(--admin-space-sm);
+  border-radius: var(--admin-radius-xs);
   color: var(--admin-sidebar-text);
 }
 
 .rolesGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  gap: var(--admin-space-3xl);
 }
 
 .roleCard {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: var(--admin-radius-xl);
+  padding: var(--admin-space-3xl);
   color: var(--admin-text-primary);
   transition:
     box-shadow 0.2s,
@@ -108,33 +108,33 @@
 .roleCardHeader {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-lg);
 }
 
 .roleId {
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
   color: var(--admin-text-muted);
   background: var(--admin-surface-soft);
-  padding: 4px 8px;
-  border-radius: 6px;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  border-radius: var(--admin-radius-sm);
   text-transform: uppercase;
 }
 
 .roleLabel {
-  font-size: 1.0625rem;
+  font-size: var(--admin-font-size-xl);
   font-weight: 600;
   color: var(--admin-text-secondary);
   margin: 0;
-  line-height: 1.35;
+  line-height: var(--admin-line-height-base);
 }
 
 .roleDescription {
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-md);
   color: var(--admin-sidebar-text);
-  line-height: 1.5;
-  margin: 0 0 14px 0;
+  line-height: var(--admin-line-height-lg);
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl) var(--admin-space-0);
 }
 
 .permissions {
@@ -143,37 +143,37 @@
 }
 
 .permissionsTitle {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-sm);
   font-weight: 600;
   color: var(--admin-text-muted);
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: var(--admin-space-sm);
 }
 
 .permissionsList {
   margin: 0;
   padding-left: 18px;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-sidebar-text);
-  line-height: 1.6;
+  line-height: var(--admin-line-height-xl);
 }
 
 .permissionsList li {
-  margin-bottom: 2px;
+  margin-bottom: var(--admin-space-2xs);
 }
 
 /* Блок «Как это работает» — информационная панель */
 .infoBlock {
   background: var(--admin-surface-muted);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 24px;
+  border-radius: var(--admin-radius-md);
+  padding: var(--admin-space-3xl);
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .infoBlockTitle {
-  margin: 0 0 12px 0;
-  font-size: 1.0625rem;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl) var(--admin-space-0);
+  font-size: var(--admin-font-size-xl);
   font-weight: 600;
   color: var(--admin-text-primary);
 }
@@ -181,13 +181,13 @@
 .infoBlockList {
   margin: 0;
   padding-left: 24px;
-  line-height: 1.8;
-  font-size: 0.9375rem;
+  line-height: var(--admin-line-height-xl);
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-secondary);
 }
 
 .infoBlockList li {
-  margin-bottom: 6px;
+  margin-bottom: var(--admin-space-sm);
 }
 
 .infoBlockLink {
@@ -203,9 +203,9 @@
 .templateCheckboxLabel {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--admin-space-md);
   cursor: pointer;
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-primary);
   font-weight: 500;
 }
@@ -216,7 +216,7 @@
 }
 
 .templateCheckboxLabelRequired {
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
 }
 

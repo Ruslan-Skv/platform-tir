@@ -7,18 +7,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .headerLeft {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--admin-space-md);
   padding-left: 7px;
 }
 
 .title {
-  font-size: 1.25rem;
+  font-size: var(--admin-font-size-2xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
   margin: 0;
@@ -26,25 +26,25 @@
 
 .count {
   background: var(--admin-border);
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.8125rem;
+  padding: var(--admin-space-xs) var(--admin-space-xl);
+  border-radius: var(--admin-radius-3xl);
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
 }
 
 .headerActions {
   display: flex;
-  gap: 12px;
+  gap: var(--admin-space-xl);
 }
 
 .addButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: var(--admin-accent);
   color: var(--admin-surface);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -54,13 +54,13 @@
 }
 
 .secondaryButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: var(--admin-surface);
   color: var(--admin-text-secondary);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -90,30 +90,30 @@
 
 .filters {
   display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: var(--admin-space-xl);
+  margin-bottom: var(--admin-space-3xl);
 }
 
 .searchInput {
   flex: 1;
   max-width: 400px;
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
-  font-size: 0.8125rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-xs);
 }
 
 .searchInput:focus {
   outline: none;
   border-color: var(--admin-accent);
-  box-shadow: 0 0 0 3px rgba(var(--admin-overlay-color-144), 0.1);
+  box-shadow: var(--admin-shadow-focus-soft);
 }
 
 .select {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
-  font-size: 0.8125rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-xs);
   background: var(--admin-surface);
   min-width: 150px;
 }
@@ -124,10 +124,10 @@
 }
 
 .filterToggleButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
-  font-size: 0.8125rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-xs);
   background: var(--admin-surface);
   cursor: pointer;
   transition: all 0.2s;
@@ -153,37 +153,37 @@
 .advancedFilters {
   background: var(--admin-surface-muted);
   border: 1px solid var(--admin-border);
-  border-radius: 12px;
-  padding: 16px 20px;
-  margin-bottom: 16px;
+  border-radius: var(--admin-radius-xl);
+  padding: var(--admin-space-2xl) var(--admin-space-3xl);
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .filterRow {
   display: flex;
   align-items: flex-end;
-  gap: 16px;
+  gap: var(--admin-space-2xl);
   flex-wrap: wrap;
 }
 
 .filterGroup {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--admin-space-sm);
 }
 
 .filterGroup label {
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   font-weight: 500;
   color: var(--admin-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: var(--admin-letter-spacing-base);
 }
 
 .filterSelect {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
-  font-size: 0.8125rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
   background: var(--admin-surface);
   min-width: 120px;
 }
@@ -194,10 +194,10 @@
 }
 
 .filterInput {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
-  font-size: 0.8125rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
   background: var(--admin-surface);
   width: 100px;
 }
@@ -212,12 +212,12 @@
 }
 
 .resetFiltersButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: var(--admin-error-bg-soft);
   border: 1px solid var(--admin-danger-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-error-strong);
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   transition: all 0.2s;
   margin-left: auto;
@@ -230,11 +230,11 @@
 .bulkActions {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: var(--admin-space-xl);
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
   background: var(--admin-info-bg-soft);
-  border-radius: 8px;
-  margin-bottom: 16px;
+  border-radius: var(--admin-radius-md);
+  margin-bottom: var(--admin-space-2xl);
   flex-wrap: wrap;
 }
 
@@ -244,13 +244,13 @@
 }
 
 .bulkButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   border: 1px solid var(--admin-info-border);
   background: var(--admin-surface);
   color: var(--admin-info-text);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   transition: all 0.2s;
 }
 
@@ -271,13 +271,13 @@
 .productCell {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--admin-space-xl);
 }
 
 .productImage {
   width: 40px;
   height: 40px;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   overflow: hidden;
   background: var(--admin-surface-soft);
   display: flex;
@@ -292,7 +292,7 @@
 }
 
 .noImage {
-  font-size: 1.5rem;
+  font-size: var(--admin-font-size-3xl);
   opacity: 0.5;
 }
 
@@ -308,11 +308,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
 }
 
 .productSku {
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
 }
 
@@ -325,7 +325,7 @@
 .supplierPriceCell {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--admin-space-sm);
 }
 
 .supplierPriceChangedBadge {
@@ -334,13 +334,13 @@
   justify-content: center;
   min-width: 18px;
   height: 18px;
-  padding: 0 4px;
+  padding: var(--admin-space-0) var(--admin-space-xs);
   background: var(--admin-warning);
   color: var(--admin-surface);
-  border-radius: 50%;
-  font-size: 12px;
+  border-radius: var(--admin-radius-full);
+  font-size: var(--admin-font-size-sm);
   font-weight: 700;
-  line-height: 1;
+  line-height: var(--admin-line-height-flat);
 }
 
 /* Подсветка строки: цена поставщика изменилась после «Обновить цены» */
@@ -363,7 +363,7 @@
 }
 
 .comparePrice {
-  font-size: 0.85rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
   text-decoration: line-through;
 }
@@ -385,13 +385,13 @@
 .statusCell {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--admin-space-md);
 }
 
 .statusBadge {
-  padding: 2px 6px;
-  border-radius: 12px;
-  font-size: 0.7rem;
+  padding: var(--admin-space-2xs) var(--admin-space-sm);
+  border-radius: var(--admin-radius-xl);
+  font-size: var(--admin-font-size-2xs);
   font-weight: 500;
 }
 
@@ -406,13 +406,13 @@
 }
 
 .featuredBadge {
-  font-size: 1rem;
+  font-size: var(--admin-font-size-lg);
 }
 
 /* Actions */
 .actions {
   display: flex;
-  gap: 8px;
+  gap: var(--admin-space-md);
 }
 
 .actionButton {
@@ -423,7 +423,7 @@
   justify-content: center;
   background: var(--admin-surface-soft);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -437,19 +437,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
   background: var(--admin-error-bg-soft);
   border: 1px solid var(--admin-danger-border-strong);
-  border-radius: 8px;
-  margin-bottom: 16px;
+  border-radius: var(--admin-radius-md);
+  margin-bottom: var(--admin-space-2xl);
   color: var(--admin-error-text-strong);
 }
 
 .errorBanner button {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: var(--admin-surface);
   border: 1px solid var(--admin-danger-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-error-text-strong);
   cursor: pointer;
 }
@@ -460,13 +460,13 @@
 
 /* Refresh Button */
 .refreshButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   color: var(--admin-text-secondary);
   cursor: pointer;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   transition: all 0.2s;
 }
 
@@ -496,8 +496,8 @@
 
 .modal {
   background: var(--admin-surface);
-  border-radius: 12px;
-  padding: 24px;
+  border-radius: var(--admin-radius-xl);
+  padding: var(--admin-space-4xl);
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
@@ -505,31 +505,31 @@
 }
 
 .modalTitle {
-  font-size: 1.25rem;
+  font-size: var(--admin-font-size-2xl);
   font-weight: 600;
   color: var(--admin-text-secondary);
-  margin: 0 0 20px;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-3xl);
 }
 
 .formGroup {
-  margin-bottom: 16px;
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .formGroup label {
   display: block;
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
   font-weight: 500;
   color: var(--admin-text-secondary);
-  margin-bottom: 6px;
+  margin-bottom: var(--admin-space-sm);
 }
 
 .input,
 .textarea {
   width: 100%;
-  padding: 10px 14px;
+  padding: var(--admin-space-lg) var(--admin-space-xl);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 8px;
-  font-size: 0.95rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-base);
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
@@ -539,7 +539,7 @@
 .textarea:focus {
   outline: none;
   border-color: var(--admin-accent);
-  box-shadow: 0 0 0 3px rgba(var(--admin-overlay-color-144), 0.1);
+  box-shadow: var(--admin-shadow-focus-soft);
 }
 
 .textarea {
@@ -549,9 +549,9 @@
 
 .fileInput {
   width: 100%;
-  padding: 12px;
+  padding: var(--admin-space-xl);
   border: 2px dashed var(--admin-border-strong);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   background: var(--admin-surface-muted);
   cursor: pointer;
 }
@@ -561,25 +561,25 @@
 }
 
 .hint {
-  font-size: 0.8rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
-  margin-top: 4px;
+  margin-top: var(--admin-space-xs);
 }
 
 .radioGroup {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 8px;
+  gap: var(--admin-space-xl);
+  margin-top: var(--admin-space-md);
 }
 
 .radioOption {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--admin-space-lg);
   cursor: pointer;
-  padding: 10px 12px;
-  border-radius: 8px;
+  padding: var(--admin-space-lg) var(--admin-space-xl);
+  border-radius: var(--admin-radius-md);
   border: 1px solid var(--admin-border);
   transition: all 0.15s;
 }
@@ -590,19 +590,19 @@
 }
 
 .radioOption input[type='radio'] {
-  margin-top: 2px;
+  margin-top: var(--admin-space-2xs);
   accent-color: var(--admin-accent);
 }
 
 .radioOption span {
-  font-size: 0.95rem;
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-secondary);
-  line-height: 1.4;
+  line-height: var(--admin-line-height-md);
 }
 
 .scopeHint {
   color: var(--admin-text-muted);
-  font-size: 0.85rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .link {
@@ -616,7 +616,7 @@
 
 .categorySelectWrapper {
   display: flex;
-  gap: 8px;
+  gap: var(--admin-space-md);
 }
 
 .categorySelectWrapper .select {
@@ -628,9 +628,9 @@
   height: 40px;
   background: var(--admin-success-bg-soft);
   border: 1px solid var(--admin-success-border-soft);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   color: var(--admin-success-strong);
-  font-size: 1.25rem;
+  font-size: var(--admin-font-size-2xl);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
@@ -642,19 +642,19 @@
 
 .modalActions {
   display: flex;
-  gap: 12px;
+  gap: var(--admin-space-xl);
   justify-content: flex-end;
-  margin-top: 24px;
+  margin-top: var(--admin-space-4xl);
 }
 
 .cancelButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: var(--admin-surface-soft);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   color: var(--admin-text-secondary);
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -664,13 +664,13 @@
 }
 
 .primaryButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: var(--admin-accent);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   color: white;
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -685,13 +685,13 @@
 }
 
 .dangerButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: var(--admin-error-strong);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   color: white;
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -707,15 +707,15 @@
 
 .deleteConfirmText {
   color: var(--admin-text-secondary);
-  font-size: 0.9375rem;
-  line-height: 1.5;
-  margin: 0 0 20px;
+  font-size: var(--admin-font-size-base);
+  line-height: var(--admin-line-height-lg);
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-3xl);
 }
 
 .message {
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-md);
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .message.success {
@@ -738,8 +738,8 @@
 .resultStats {
   display: flex;
   justify-content: center;
-  gap: 24px;
-  margin-bottom: 24px;
+  gap: var(--admin-space-4xl);
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .resultItem {
@@ -749,7 +749,7 @@
 }
 
 .resultNumber {
-  font-size: 2rem;
+  font-size: var(--admin-font-size-4xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
 }
@@ -767,30 +767,30 @@
 }
 
 .resultItem span:last-child {
-  font-size: 0.85rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
-  margin-top: 4px;
+  margin-top: var(--admin-space-xs);
 }
 
 .errorsList {
   text-align: left;
   background: var(--admin-error-bg);
   border: 1px solid var(--admin-error-border-soft);
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 16px;
+  border-radius: var(--admin-radius-md);
+  padding: var(--admin-space-2xl);
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .errorsList h4 {
-  margin: 0 0 12px;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl);
   color: var(--admin-error-text-strong);
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .errorItem {
-  font-size: 0.85rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-danger-text);
-  margin-bottom: 8px;
+  margin-bottom: var(--admin-space-md);
 }
 
 .errorItem:last-child {
@@ -798,7 +798,7 @@
 }
 
 .moreErrors {
-  font-size: 0.85rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
   margin: 8px 0 0;
 }
@@ -816,7 +816,7 @@
   .header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 16px;
+    gap: var(--admin-space-2xl);
   }
 
   .headerActions {
@@ -827,12 +827,12 @@
 @media (max-width: 600px) {
   .modal {
     width: 95%;
-    padding: 20px;
+    padding: var(--admin-space-3xl);
   }
 
   .resultStats {
     flex-wrap: wrap;
-    gap: 16px;
+    gap: var(--admin-space-2xl);
   }
 }
 
@@ -845,23 +845,23 @@
   position: absolute;
   top: 100%;
   right: 0;
-  margin-top: 8px;
+  margin-top: var(--admin-space-md);
   background: white;
   border: 1px solid var(--admin-border);
-  border-radius: 10px;
-  box-shadow: 0 10px 40px var(--admin-overlay-color-149);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-popover);
   min-width: 280px;
   z-index: 100;
-  padding: 8px 0;
+  padding: var(--admin-space-md) var(--admin-space-0);
 }
 
 .columnSelectorHeader {
-  padding: 10px 16px;
-  font-size: 0.85rem;
+  padding: var(--admin-space-lg) var(--admin-space-2xl);
+  font-size: var(--admin-font-size-sm);
   font-weight: 600;
   color: var(--admin-text-muted);
   border-bottom: 1px solid var(--admin-border);
-  margin-bottom: 4px;
+  margin-bottom: var(--admin-space-xs);
 }
 
 .columnsList {
@@ -872,7 +872,7 @@
 .selectedColumnsSection {
   padding-bottom: 8px;
   border-bottom: 1px solid var(--admin-border);
-  margin-bottom: 8px;
+  margin-bottom: var(--admin-space-md);
 }
 
 .availableColumnsSection {
@@ -880,19 +880,19 @@
 }
 
 .sectionLabel {
-  padding: 6px 16px;
-  font-size: 0.75rem;
+  padding: var(--admin-space-sm) var(--admin-space-2xl);
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
   color: var(--admin-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--admin-letter-spacing-wide);
 }
 
 .columnItem {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   cursor: pointer;
   transition: background 0.15s;
   user-select: none;
@@ -920,7 +920,7 @@
 }
 
 .columnTitle {
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-secondary);
   flex: 1;
 }
@@ -928,10 +928,10 @@
 .dragHandle {
   cursor: grab;
   color: var(--admin-text-muted);
-  font-size: 0.9rem;
-  letter-spacing: 2px;
-  padding: 2px 4px;
-  border-radius: 4px;
+  font-size: var(--admin-font-size-sm);
+  letter-spacing: var(--admin-letter-spacing-logo);
+  padding: var(--admin-space-2xs) var(--admin-space-xs);
+  border-radius: var(--admin-radius-xs);
   transition: all 0.15s;
 }
 
@@ -946,7 +946,7 @@
 
 .columnOrderButtons {
   display: flex;
-  gap: 2px;
+  gap: var(--admin-space-2xs);
   margin-left: auto;
 }
 
@@ -958,9 +958,9 @@
   justify-content: center;
   background: transparent;
   border: 1px solid var(--admin-border);
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
   transition: all 0.15s;
 }
@@ -978,8 +978,8 @@
 .columnOption {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
+  gap: var(--admin-space-lg);
+  padding: var(--admin-space-lg) var(--admin-space-2xl);
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -996,7 +996,7 @@
 }
 
 .columnOption span {
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-secondary);
 }
 
@@ -1013,21 +1013,21 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 20px;
+  padding: var(--admin-space-xl) var(--admin-space-3xl);
   background: linear-gradient(135deg, var(--admin-accent-soft) 0%, var(--admin-accent-soft) 100%);
   border: 1px solid var(--admin-accent-soft-strong);
-  border-radius: 10px;
-  margin-bottom: 16px;
+  border-radius: var(--admin-radius-lg);
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .editModeInfo {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--admin-space-xl);
 }
 
 .editModeIcon {
-  font-size: 1.2rem;
+  font-size: var(--admin-font-size-2xl);
 }
 
 .editModeInfo > span:nth-child(2) {
@@ -1036,11 +1036,11 @@
 }
 
 .editCount {
-  padding: 4px 12px;
+  padding: var(--admin-space-xs) var(--admin-space-xl);
   background: var(--admin-accent);
   color: white;
-  border-radius: 20px;
-  font-size: 0.85rem;
+  border-radius: var(--admin-radius-3xl);
+  font-size: var(--admin-font-size-sm);
 }
 
 .editCount strong {
@@ -1049,17 +1049,17 @@
 
 .editModeActions {
   display: flex;
-  gap: 10px;
+  gap: var(--admin-space-lg);
 }
 
 .editModeActions .cancelButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: white;
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-text-secondary);
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1069,13 +1069,13 @@
 }
 
 .editModeActions .saveButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: var(--admin-accent);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: white;
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1094,10 +1094,10 @@
 .editableInput {
   width: 100%;
   max-width: 120px;
-  padding: 6px 10px;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
-  font-size: 0.9rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
   transition: all 0.15s;
   background: white;
 }
@@ -1126,7 +1126,7 @@
 .editableCheckbox {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--admin-space-md);
   cursor: pointer;
 }
 
@@ -1138,10 +1138,10 @@
 }
 
 .checkboxLabel {
-  font-size: 0.85rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-secondary);
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: var(--admin-space-2xs) var(--admin-space-md);
+  border-radius: var(--admin-radius-xs);
   transition: all 0.15s;
 }
 
@@ -1153,14 +1153,14 @@
 /* Edited Indicator */
 .editedIndicator {
   color: var(--admin-warning);
-  font-size: 0.8rem;
-  margin-right: 4px;
+  font-size: var(--admin-font-size-sm);
+  margin-right: var(--admin-space-xs);
 }
 
 @media (max-width: 1024px) {
   .editModeBar {
     flex-direction: column;
-    gap: 12px;
+    gap: var(--admin-space-xl);
     align-items: flex-start;
   }
 
@@ -1179,13 +1179,13 @@
   position: fixed;
   bottom: 24px;
   right: 24px;
-  padding: 16px 24px;
-  border-radius: 10px;
+  padding: var(--admin-space-2xl) var(--admin-space-4xl);
+  border-radius: var(--admin-radius-lg);
   box-shadow: 0 4px 20px var(--admin-overlay-color-149);
   z-index: 1000;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--admin-space-xl);
   animation: slideIn 0.3s ease-out;
   max-width: 400px;
 }
@@ -1201,7 +1201,7 @@
 }
 
 .toastMessage {
-  font-size: 0.95rem;
+  font-size: var(--admin-font-size-base);
   font-weight: 500;
 }
 
@@ -1210,10 +1210,10 @@
   border: none;
   color: var(--admin-overlay-color-175);
   cursor: pointer;
-  padding: 4px;
+  padding: var(--admin-space-xs);
   margin-left: auto;
-  font-size: 1.1rem;
-  line-height: 1;
+  font-size: var(--admin-font-size-xl);
+  line-height: var(--admin-line-height-flat);
   transition: color 0.15s;
 }
 

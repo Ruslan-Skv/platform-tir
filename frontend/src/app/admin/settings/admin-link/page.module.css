@@ -1,21 +1,21 @@
 .page {
-  padding: 1.5rem;
+  padding: var(--admin-space-4xl);
   max-width: 720px;
 }
 
 .header {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .title {
-  font-size: 1.5rem;
+  font-size: var(--admin-font-size-3xl);
   font-weight: 700;
   color: var(--admin-text-primary);
-  margin: 0 0 0.25rem;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xs);
 }
 
 .subtitle {
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-muted);
   margin: 0;
 }
@@ -33,27 +33,27 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--admin-space-4xl);
 }
 
 .section {
-  padding: 1rem;
+  padding: var(--admin-space-2xl);
   background: var(--admin-surface-muted);
   border: 1px solid var(--admin-border);
-  border-radius: 0.5rem;
+  border-radius: var(--admin-radius-md);
 }
 
 .sectionTitle {
-  font-size: 1rem;
+  font-size: var(--admin-font-size-lg);
   font-weight: 600;
   color: var(--admin-text-primary);
-  margin: 0 0 0.75rem;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl);
 }
 
 .hint {
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
-  margin: 0 0 0.75rem;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl);
 }
 
 .rolesCheckboxList {
@@ -65,8 +65,8 @@
 .roleCheckboxLabel {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9375rem;
+  gap: var(--admin-space-md);
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-secondary);
   cursor: pointer;
 }
@@ -79,9 +79,9 @@
 
 .toastSuccess,
 .toastError {
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-size: 0.9375rem;
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-base);
 }
 
 .toastSuccess {
@@ -97,17 +97,17 @@
 .actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: var(--admin-space-2xl);
 }
 
 .saveButton {
-  padding: 8px 20px;
-  font-size: 0.9375rem;
+  padding: var(--admin-space-md) var(--admin-space-3xl);
+  font-size: var(--admin-font-size-base);
   font-weight: 500;
   color: var(--admin-text-inverse);
   background: var(--admin-accent);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -122,7 +122,7 @@
 }
 
 .previewLink {
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   color: var(--admin-accent);
   text-decoration: none;
 }

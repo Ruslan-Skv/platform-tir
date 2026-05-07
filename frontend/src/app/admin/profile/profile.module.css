@@ -3,30 +3,30 @@
 }
 
 .title {
-  font-size: 1.75rem;
+  font-size: var(--admin-font-size-4xl);
   font-weight: 600;
   color: var(--admin-text-primary);
-  margin: 0 0 24px;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-4xl);
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-  gap: 24px;
+  gap: var(--admin-space-4xl);
 }
 
 .card {
   background: var(--admin-surface);
-  border-radius: 12px;
-  padding: 24px;
+  border-radius: var(--admin-radius-xl);
+  padding: var(--admin-space-4xl);
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
 }
 
 .cardTitle {
-  font-size: 1.1rem;
+  font-size: var(--admin-font-size-xl);
   font-weight: 600;
   color: var(--admin-text-secondary);
-  margin: 0 0 20px;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-3xl);
   padding-bottom: 12px;
   border-bottom: 1px solid var(--admin-border);
 }
@@ -34,17 +34,17 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--admin-space-2xl);
 }
 
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--admin-space-sm);
 }
 
 .formGroup label {
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
   font-weight: 500;
   color: var(--admin-text-secondary);
 }
@@ -52,13 +52,13 @@
 .avatarRow {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--admin-space-2xl);
 }
 
 .avatarPreview {
   width: 80px;
   height: 80px;
-  border-radius: 50%;
+  border-radius: var(--admin-radius-full);
   overflow: hidden;
   background: var(--admin-surface-soft);
   display: flex;
@@ -74,7 +74,7 @@
 }
 
 .avatarPlaceholder {
-  font-size: 2rem;
+  font-size: var(--admin-font-size-4xl);
   font-weight: 600;
   color: var(--admin-accent);
 }
@@ -82,7 +82,7 @@
 .avatarActions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--admin-space-md);
   position: relative;
 }
 
@@ -97,12 +97,12 @@
 }
 
 .avatarButton {
-  padding: 8px 14px;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   background: var(--admin-accent);
   color: var(--admin-text-inverse);
   border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-sm);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -113,12 +113,12 @@
 }
 
 .avatarButtonSecondary {
-  padding: 8px 14px;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   background: var(--admin-surface);
   color: var(--admin-text-secondary);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 8px;
-  font-size: 0.875rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-sm);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -130,17 +130,17 @@
 }
 
 .avatarHint {
-  font-size: 0.8rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
-  margin-top: 4px;
+  margin-top: var(--admin-space-xs);
   display: block;
 }
 
 .input {
-  padding: 10px 14px;
+  padding: var(--admin-space-lg) var(--admin-space-xl);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 8px;
-  font-size: 0.95rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-base);
   transition: all 0.2s;
 }
 
@@ -157,13 +157,13 @@
 }
 
 .button {
-  margin-top: 8px;
-  padding: 12px 20px;
+  margin-top: var(--admin-space-md);
+  padding: var(--admin-space-xl) var(--admin-space-3xl);
   background: var(--admin-accent);
   color: var(--admin-text-inverse);
   border: none;
-  border-radius: 8px;
-  font-size: 0.95rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-base);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -183,18 +183,18 @@
   background: var(--admin-success-bg-soft);
   border: 1px solid var(--admin-success-border-soft);
   color: var(--admin-success-deep);
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 0.9rem;
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-sm);
 }
 
 .error {
   background: var(--admin-danger-bg);
   border: 1px solid var(--admin-danger-border);
   color: var(--admin-danger-text);
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 0.9rem;
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-sm);
 }
 
 @media (max-width: 768px) {

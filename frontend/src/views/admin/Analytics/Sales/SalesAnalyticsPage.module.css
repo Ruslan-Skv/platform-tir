@@ -7,11 +7,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .title {
-  font-size: 1.25rem;
+  font-size: var(--admin-font-size-2xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
   margin: 0;
@@ -20,22 +20,22 @@
 .filters {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--admin-space-xl);
 }
 
 .select {
-  padding: 10px 16px;
+  padding: var(--admin-space-lg) var(--admin-space-2xl);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
-  font-size: 0.95rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-base);
   background: var(--admin-surface);
 }
 
 .dateInput {
-  padding: 10px 16px;
+  padding: var(--admin-space-lg) var(--admin-space-2xl);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
-  font-size: 0.95rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-base);
   background: var(--admin-surface);
 }
 
@@ -43,29 +43,29 @@
 .overviewGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-  margin-bottom: 24px;
+  gap: var(--admin-space-3xl);
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .overviewCard {
   background: var(--admin-surface);
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 1px 3px var(--admin-overlay-color-148);
+  border-radius: var(--admin-radius-xl);
+  padding: var(--admin-space-3xl);
+  box-shadow: var(--admin-shadow-card);
   display: flex;
   align-items: flex-start;
-  gap: 16px;
+  gap: var(--admin-space-2xl);
 }
 
 .overviewIcon {
-  font-size: 2rem;
+  font-size: var(--admin-font-size-4xl);
   width: 48px;
   height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--admin-surface-soft);
-  border-radius: 12px;
+  border-radius: var(--admin-radius-xl);
 }
 
 .overviewContent {
@@ -75,15 +75,15 @@
 }
 
 .overviewValue {
-  font-size: 1.5rem;
+  font-size: var(--admin-font-size-2xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
 }
 
 .overviewLabel {
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-muted);
-  margin-top: 4px;
+  margin-top: var(--admin-space-xs);
 }
 
 .overviewTrend {
@@ -94,24 +94,24 @@
 .trendUp {
   color: var(--admin-success-emerald);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-base);
 }
 
 .trendDown {
   color: var(--admin-danger);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-base);
 }
 
 /* Charts Row */
 .chartsRow {
-  margin-bottom: 24px;
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .chartCard {
   background: var(--admin-surface);
-  border-radius: 12px;
-  box-shadow: 0 1px 3px var(--admin-overlay-color-148);
+  border-radius: var(--admin-radius-xl);
+  box-shadow: var(--admin-shadow-card);
   overflow: hidden;
 }
 
@@ -119,12 +119,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: var(--admin-space-2xl) var(--admin-space-3xl);
   border-bottom: 1px solid var(--admin-border);
 }
 
 .cardTitle {
-  font-size: 1.1rem;
+  font-size: var(--admin-font-size-xl);
   font-weight: 600;
   color: var(--admin-text-secondary);
   margin: 0;
@@ -133,7 +133,7 @@
 .cardLink {
   color: var(--admin-accent);
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-base);
 }
 
 .cardLink:hover {
@@ -142,21 +142,21 @@
 
 .chartLegend {
   display: flex;
-  gap: 16px;
+  gap: var(--admin-space-2xl);
 }
 
 .legendItem {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.85rem;
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-md);
   color: var(--admin-text-muted);
 }
 
 .legendDot {
   width: 10px;
   height: 10px;
-  border-radius: 50%;
+  border-radius: var(--admin-radius-full);
 }
 
 .legendDotRevenue {
@@ -168,7 +168,7 @@
 }
 
 .chartPlaceholder {
-  padding: 20px;
+  padding: var(--admin-space-3xl);
   height: 300px;
   display: flex;
   align-items: flex-end;
@@ -181,7 +181,7 @@
   justify-content: space-around;
   width: 100%;
   height: 100%;
-  gap: 16px;
+  gap: var(--admin-space-2xl);
 }
 
 .barGroup {
@@ -196,7 +196,7 @@
 .bar {
   width: 100%;
   max-width: 60px;
-  border-radius: 6px 6px 0 0;
+  border-radius: var(--admin-radius-card-top);
   transition: height 0.3s ease;
 }
 
@@ -205,8 +205,8 @@
 }
 
 .barLabel {
-  margin-top: 6px;
-  font-size: 0.7rem;
+  margin-top: var(--admin-space-sm);
+  font-size: var(--admin-font-size-2xs);
   color: var(--admin-text-muted);
   text-transform: capitalize;
 }
@@ -215,13 +215,13 @@
 .tablesRow {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
+  gap: var(--admin-space-3xl);
 }
 
 .tableCard {
   background: var(--admin-surface);
-  border-radius: 12px;
-  box-shadow: 0 1px 3px var(--admin-overlay-color-148);
+  border-radius: var(--admin-radius-xl);
+  box-shadow: var(--admin-shadow-card);
   overflow: hidden;
 }
 
@@ -232,23 +232,23 @@
 
 .table th,
 .table td {
-  padding: 8px 6px;
+  padding: var(--admin-space-md) var(--admin-space-sm);
   text-align: left;
   border-bottom: 1px solid var(--admin-border);
 }
 
 .table th {
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--admin-letter-spacing-wider);
   background: var(--admin-surface-muted);
 }
 
 .table td {
   color: var(--admin-text-secondary);
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .table tr:last-child td {
@@ -264,9 +264,9 @@
   background: var(--admin-border);
   color: var(--admin-text-secondary);
   font-weight: 600;
-  font-size: 0.7rem;
-  border-radius: 50%;
-  margin-right: 8px;
+  font-size: var(--admin-font-size-2xs);
+  border-radius: var(--admin-radius-full);
+  margin-right: var(--admin-space-md);
 }
 
 .table tr:nth-child(1) .rank {
@@ -299,7 +299,7 @@
   .header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 16px;
+    gap: var(--admin-space-2xl);
   }
 
   .overviewGrid {

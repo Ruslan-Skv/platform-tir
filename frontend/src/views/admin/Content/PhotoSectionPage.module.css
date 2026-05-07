@@ -1,5 +1,5 @@
 .page {
-  padding: 1.5rem;
+  padding: var(--admin-space-4xl);
   max-width: 1200px;
   color: var(--admin-text-secondary);
 }
@@ -8,28 +8,28 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .headerActions {
   display: flex;
-  gap: 1rem;
+  gap: var(--admin-space-2xl);
 }
 
 .title {
-  font-size: 1.5rem;
+  font-size: var(--admin-font-size-3xl);
   font-weight: 700;
   margin: 0;
   color: var(--admin-text-secondary);
 }
 
 .createButton {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-overlay-color-135);
   color: white;
   text-decoration: none;
-  border-radius: 6px;
-  font-size: 0.9375rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-base);
 }
 
 .createButton:hover {
@@ -37,10 +37,10 @@
 }
 
 .viewLink {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   color: var(--admin-overlay-color-135);
   text-decoration: none;
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
 }
 
 .viewLink:hover {
@@ -48,9 +48,9 @@
 }
 
 .message {
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-sm);
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .message.success {
@@ -64,31 +64,31 @@
 }
 
 .section {
-  margin-bottom: 2rem;
-  padding: 1rem;
+  margin-bottom: var(--admin-space-8xl);
+  padding: var(--admin-space-2xl);
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
 }
 
 .sectionTitle {
-  font-size: 1.125rem;
+  font-size: var(--admin-font-size-xl);
   font-weight: 600;
-  margin: 0 0 1rem;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-2xl);
   color: var(--admin-text-secondary);
 }
 
 .categoriesList {
   list-style: none;
-  margin: 0 0 1rem;
-  padding: 0;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-2xl);
+  padding: var(--admin-space-0);
 }
 
 .categoryItem {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-md) var(--admin-space-0);
   border-bottom: 1px solid var(--admin-surface-soft);
 }
 
@@ -102,21 +102,21 @@
 }
 
 .categoryCount {
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
 }
 
 .addButton,
 .addForm {
-  margin-top: 0.5rem;
+  margin-top: var(--admin-space-md);
 }
 
 .addButton {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-surface-soft);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
-  font-size: 0.875rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
   cursor: pointer;
 }
 
@@ -127,33 +127,33 @@
 .addForm {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--admin-space-md);
   align-items: center;
 }
 
 .input {
-  padding: 0.5rem 0.75rem;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
-  font-size: 0.9375rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-base);
   min-width: 150px;
 }
 
 .select {
-  padding: 0.5rem 0.75rem;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   background: var(--admin-surface);
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
 }
 
 .saveButton {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-overlay-color-108);
   color: white;
   border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
   cursor: pointer;
 }
 
@@ -162,11 +162,11 @@
 }
 
 .cancelButton {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-surface-soft);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
-  font-size: 0.875rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
   cursor: pointer;
 }
 
@@ -175,12 +175,12 @@
 }
 
 .deleteButton {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.8125rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-error-strong);
   background: var(--admin-overlay-color-055);
   border: 1px solid var(--admin-error-strong);
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   cursor: pointer;
   margin-left: auto;
 }
@@ -190,23 +190,23 @@
 }
 
 .filters {
-  margin-bottom: 1rem;
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .photoForm {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
+  margin-bottom: var(--admin-space-4xl);
+  padding: var(--admin-space-2xl);
   background: var(--admin-surface-muted);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--admin-space-xl);
 }
 
 .uploadRow {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: var(--admin-space-2xl);
   flex-wrap: wrap;
 }
 
@@ -215,11 +215,11 @@
 }
 
 .uploadButton {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-border);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
-  font-size: 0.875rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
   cursor: pointer;
 }
 
@@ -236,24 +236,24 @@
   max-width: 120px;
   max-height: 80px;
   object-fit: cover;
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
 }
 
 .formActions {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--admin-space-md);
 }
 
 .projectsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
+  gap: var(--admin-space-4xl);
 }
 
 .projectCard {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -278,61 +278,61 @@
   align-items: center;
   justify-content: center;
   color: var(--admin-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .projectInfo {
-  padding: 1rem;
+  padding: var(--admin-space-2xl);
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--admin-space-xs);
   flex: 1;
 }
 
 .projectTitle {
-  font-size: 1rem;
+  font-size: var(--admin-font-size-lg);
   font-weight: 600;
   margin: 0;
   color: var(--admin-text-secondary);
 }
 
 .projectCategory {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
 }
 
 .projectDisplayMode {
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-accent);
   background: var(--admin-overlay-color-142);
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: var(--admin-space-2xs) var(--admin-space-sm);
+  border-radius: var(--admin-radius-xs);
   width: fit-content;
 }
 
 .projectPhotoCount {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
 }
 
 .projectDescription {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
   margin: 0.5rem 0 0;
-  line-height: 1.4;
+  line-height: var(--admin-line-height-md);
 }
 
 .projectActions {
   display: flex;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
   border-top: 1px solid var(--admin-surface-soft);
 }
 
 .editLink {
   color: var(--admin-overlay-color-135);
   text-decoration: none;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .editLink:hover {
@@ -342,23 +342,23 @@
 .loading,
 .empty {
   color: var(--admin-text-muted);
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   margin: 0;
 }
 
 .pagination {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-top: 1.5rem;
+  gap: var(--admin-space-2xl);
+  margin-top: var(--admin-space-4xl);
 }
 
 .pageButton {
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
+  font-size: var(--admin-font-size-sm);
   background: var(--admin-surface-soft);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
 }
 
@@ -372,7 +372,7 @@
 }
 
 .pageInfo {
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
 }
 

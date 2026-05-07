@@ -1,17 +1,17 @@
 .section {
-  margin-top: 1rem;
+  margin-top: var(--admin-space-2xl);
   padding-top: 0.75rem;
   border-top: 1px solid var(--admin-border);
 }
 
 .title {
   background: var(--admin-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-text-primary);
-  font-size: 1.125rem;
+  font-size: var(--admin-font-size-lg);
   font-weight: 600;
-  margin: 0 0 0.5rem 0;
-  padding: 8px 12px;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-md) var(--admin-space-0);
+  padding: var(--admin-space-md) var(--admin-space-xl);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
@@ -21,7 +21,7 @@
 
 .loading,
 .empty {
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
   margin: 0;
 }
@@ -29,60 +29,60 @@
 .list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--admin-space-md);
 }
 
 .card {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
-  padding: 8px 10px;
+  border-radius: var(--admin-radius-sm);
+  padding: var(--admin-space-md) var(--admin-space-lg);
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px;
+  margin-bottom: var(--admin-space-xs);
 }
 
 .author {
   font-weight: 500;
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-secondary);
 }
 
 .date {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
 }
 
 .stars {
   color: var(--admin-warning);
-  font-size: 0.875rem;
-  margin-bottom: 4px;
+  font-size: var(--admin-font-size-sm);
+  margin-bottom: var(--admin-space-xs);
 }
 
 .comment {
   margin: 4px 0 0;
-  font-size: 0.875rem;
-  line-height: 1.5;
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-lg);
   color: var(--admin-text-secondary);
 }
 
 .actions {
   display: flex;
-  gap: 6px;
-  margin-top: 8px;
+  gap: var(--admin-space-sm);
+  margin-top: var(--admin-space-md);
 }
 
 .approveBtn {
-  padding: 4px 8px;
-  font-size: 0.8125rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-success);
   background: var(--admin-overlay-color-119);
   border: 1px solid var(--admin-success);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
 }
 
@@ -91,12 +91,12 @@
 }
 
 .deleteBtn {
-  padding: 6px 12px;
-  font-size: 0.875rem;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-error-strong);
   background: var(--admin-overlay-color-055);
   border: 1px solid var(--admin-error-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
 }
 
@@ -113,17 +113,17 @@
 .pagination {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-top: 16px;
+  gap: var(--admin-space-2xl);
+  margin-top: var(--admin-space-2xl);
 }
 
 .pageBtn {
-  padding: 6px 14px;
-  font-size: 0.875rem;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-accent);
   background: transparent;
   border: 1px solid var(--admin-accent);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
 }
 
@@ -137,6 +137,6 @@
 }
 
 .pageInfo {
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
 }

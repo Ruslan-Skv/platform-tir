@@ -2010,7 +2010,9 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
               <h3 className={`${styles.subsectionTitle} ${styles.subsectionTitleFirst}`}>
                 Справа от фото (текстовые)
               </h3>
-              <div className={`${styles.checkboxGroup} ${styles.checkboxGroupRow}`}>
+              <div
+                className={`${styles.checkboxGroup} ${styles.checkboxGroupRow} ${styles.textBadgesRow}`}
+              >
                 <label className={styles.checkbox}>
                   <input
                     type="checkbox"

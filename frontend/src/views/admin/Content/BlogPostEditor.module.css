@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   border: 1px solid var(--admin-border-strong);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   background: var(--admin-surface);
   overflow: hidden;
 }
@@ -10,7 +10,7 @@
 .editorShell {
   min-height: 320px;
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   background: var(--admin-surface-muted);
 }
 
@@ -18,8 +18,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.5rem 0.6rem;
+  gap: var(--admin-space-xs);
+  padding: var(--admin-space-md) var(--admin-space-fluid-2xl);
   border-bottom: 1px solid var(--admin-border);
   background: var(--admin-surface-muted);
 }
@@ -33,14 +33,14 @@
 
 .toolbarButton {
   min-width: 2rem;
-  padding: 0.35rem 0.5rem;
-  font-size: 0.8125rem;
+  padding: var(--admin-space-fluid-lg) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
-  line-height: 1.2;
+  line-height: var(--admin-line-height-xs);
   color: var(--admin-text-secondary);
   background: var(--admin-surface);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
 }
 
@@ -64,9 +64,9 @@
   min-height: 280px;
   max-height: min(70vh, 720px);
   overflow-y: auto;
-  padding: 0.75rem 1rem 1rem;
-  font-size: 0.9375rem;
-  line-height: 1.65;
+  padding: var(--admin-space-xl) var(--admin-space-2xl) var(--admin-space-2xl);
+  font-size: var(--admin-font-size-base);
+  line-height: var(--admin-line-height-xl);
   color: var(--admin-text-primary);
   outline: none;
 }
@@ -76,7 +76,7 @@
 }
 
 .proseMirror :global(p) {
-  margin: 0 0 0.65rem;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-fluid-2xl);
 }
 
 .proseMirror :global(p.blog-paragraph-indent) {
@@ -85,49 +85,49 @@
 
 .proseMirror :global(ul),
 .proseMirror :global(ol) {
-  margin: 0 0 0.65rem;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-fluid-2xl);
   padding-left: 1.5rem;
 }
 
 .proseMirror :global(h2) {
-  font-size: 1.25rem;
+  font-size: var(--admin-font-size-2xl);
   font-weight: 700;
   margin: 1rem 0 0.5rem;
 }
 
 .proseMirror :global(h3) {
-  font-size: 1.1rem;
+  font-size: var(--admin-font-size-xl);
   font-weight: 700;
   margin: 0.85rem 0 0.45rem;
 }
 
 .proseMirror :global(h4) {
-  font-size: 1rem;
+  font-size: var(--admin-font-size-lg);
   font-weight: 700;
   margin: 0.75rem 0 0.4rem;
 }
 
 .proseMirror :global(h5) {
-  font-size: 0.95rem;
+  font-size: var(--admin-font-size-base);
   font-weight: 700;
   margin: 0.65rem 0 0.35rem;
 }
 
 .proseMirror :global(h6) {
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
   font-weight: 700;
   margin: 0.55rem 0 0.3rem;
 }
 
 .proseMirror :global(blockquote) {
-  margin: 0.5rem 0;
+  margin: var(--admin-space-md) var(--admin-space-0);
   padding-left: 0.75rem;
   border-left: 3px solid var(--admin-border-strong);
   color: var(--admin-sidebar-text);
 }
 
 .proseMirror :global(hr) {
-  margin: 1rem 0;
+  margin: var(--admin-space-2xl) var(--admin-space-0);
   border: none;
   border-top: 1px solid var(--admin-border);
 }

@@ -1,30 +1,30 @@
 .page {
   max-width: 1400px;
-  padding: 24px;
+  padding: var(--admin-space-4xl);
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .title {
-  font-size: 1.25rem;
+  font-size: var(--admin-font-size-2xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
   margin: 0;
 }
 
 .addButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: linear-gradient(135deg, var(--admin-accent), var(--admin-accent));
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -39,7 +39,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px;
+  padding: var(--admin-space-8xl);
   color: var(--admin-text-muted);
 }
 
@@ -48,9 +48,9 @@
   height: 40px;
   border: 3px solid var(--admin-border);
   border-top-color: var(--admin-accent);
-  border-radius: 50%;
+  border-radius: var(--admin-radius-full);
   animation: spin 0.8s linear infinite;
-  margin-bottom: 16px;
+  margin-bottom: var(--admin-space-2xl);
 }
 
 @keyframes spin {
@@ -60,43 +60,43 @@
 }
 
 .searchSection {
-  margin-bottom: 24px;
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .searchInput {
   width: 100%;
   max-width: 500px;
-  padding: 10px 14px;
+  padding: var(--admin-space-lg) var(--admin-space-xl);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 8px;
-  font-size: 0.95rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-base);
   transition: all 0.15s;
 }
 
 .searchInput:focus {
   outline: none;
   border-color: var(--admin-accent);
-  box-shadow: 0 0 0 3px rgba(var(--admin-overlay-color-144), 0.1);
+  box-shadow: var(--admin-shadow-focus-soft);
 }
 
 .empty {
   text-align: center;
-  padding: 60px 20px;
+  padding: var(--admin-space-8xl) var(--admin-space-3xl);
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px var(--admin-overlay-color-148);
+  border-radius: var(--admin-radius-xl);
+  box-shadow: var(--admin-shadow-card);
 }
 
 .empty p {
   color: var(--admin-text-muted);
-  margin-bottom: 20px;
-  font-size: 1.1rem;
+  margin-bottom: var(--admin-space-3xl);
+  font-size: var(--admin-font-size-xl);
 }
 
 .tableWrapper {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px var(--admin-overlay-color-148);
+  border-radius: var(--admin-radius-xl);
+  box-shadow: var(--admin-shadow-card);
   overflow: hidden;
 }
 
@@ -110,18 +110,18 @@
 }
 
 .table th {
-  padding: 8px 6px;
+  padding: var(--admin-space-md) var(--admin-space-sm);
   text-align: left;
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-secondary);
   border-bottom: 1px solid var(--admin-border);
 }
 
 .table td {
-  padding: 8px 6px;
+  padding: var(--admin-space-md) var(--admin-space-sm);
   border-bottom: 1px solid var(--admin-border);
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
 }
 
 .table tbody tr:hover {
@@ -135,22 +135,22 @@
 .supplierName {
   font-weight: 500;
   color: var(--admin-text-secondary);
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
 }
 
 .code {
   background: var(--admin-surface-soft);
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  border-radius: var(--admin-radius-xs);
   font-family: monospace;
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-secondary);
 }
 
 .websiteLink {
   color: var(--admin-accent);
   text-decoration: none;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
 }
 
 .websiteLink:hover {
@@ -169,13 +169,13 @@
 .phonesList {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--admin-space-xs);
 }
 
 .phoneLink {
   color: var(--admin-accent);
   text-decoration: none;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   font-family: monospace;
   transition: color 0.15s;
 }
@@ -188,9 +188,9 @@
 .productCount {
   background: var(--admin-accent-soft);
   color: var(--admin-accent);
-  padding: 2px 6px;
-  border-radius: 8px;
-  font-size: 0.75rem;
+  padding: var(--admin-space-2xs) var(--admin-space-sm);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-xs);
   font-weight: 500;
   display: inline-block;
 }
@@ -198,24 +198,24 @@
 .activeBadge {
   background: var(--admin-success-bg);
   color: var(--admin-success-strong);
-  padding: 2px 6px;
-  border-radius: 8px;
-  font-size: 0.7rem;
+  padding: var(--admin-space-2xs) var(--admin-space-sm);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-2xs);
   font-weight: 500;
 }
 
 .inactiveBadge {
   background: var(--admin-warning-bg);
   color: var(--admin-warning-text);
-  padding: 2px 6px;
-  border-radius: 8px;
-  font-size: 0.7rem;
+  padding: var(--admin-space-2xs) var(--admin-space-sm);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-2xs);
   font-weight: 500;
 }
 
 .actions {
   display: flex;
-  gap: 8px;
+  gap: var(--admin-space-md);
 }
 
 .settlementsButton {
@@ -226,10 +226,10 @@
   justify-content: center;
   background: var(--admin-success-bg-soft);
   border: 1px solid var(--admin-success-border-soft);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
   transition: all 0.15s;
-  font-size: 14px;
+  font-size: var(--admin-font-size-base);
   text-decoration: none;
   color: inherit;
 }
@@ -247,10 +247,10 @@
   justify-content: center;
   background: var(--admin-surface-soft);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
   transition: all 0.15s;
-  font-size: 14px;
+  font-size: var(--admin-font-size-base);
 }
 
 .editButton:hover {
@@ -265,10 +265,10 @@
   justify-content: center;
   background: var(--admin-error-bg);
   border: 1px solid var(--admin-error-border-soft);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
   transition: all 0.15s;
-  font-size: 14px;
+  font-size: var(--admin-font-size-base);
 }
 
 .deleteButton:hover {
@@ -288,12 +288,12 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 20px;
+  padding: var(--admin-space-3xl);
 }
 
 .modal {
   background: white;
-  border-radius: 16px;
+  border-radius: var(--admin-radius-2xl);
   max-width: 480px;
   width: 100%;
   box-shadow: 0 25px 50px -12px var(--admin-overlay-color-151);
@@ -315,12 +315,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
+  padding: var(--admin-space-3xl) var(--admin-space-4xl);
   border-bottom: 1px solid var(--admin-border);
 }
 
 .modalTitle {
-  font-size: 1.25rem;
+  font-size: var(--admin-font-size-2xl);
   font-weight: 600;
   color: var(--admin-text-secondary);
   margin: 0;
@@ -334,10 +334,10 @@
   justify-content: center;
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: var(--admin-font-size-4xl);
   color: var(--admin-text-muted);
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   transition: all 0.15s;
 }
 
@@ -347,35 +347,35 @@
 }
 
 .modalBody {
-  padding: 24px;
+  padding: var(--admin-space-4xl);
 }
 
 .warningBox {
   background: var(--admin-warning-bg);
   border: 1px solid var(--admin-warning-border);
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: var(--admin-radius-xl);
+  padding: var(--admin-space-2xl);
 }
 
 .warningText {
   color: var(--admin-warning-text);
-  margin: 0 0 8px 0;
-  font-size: 0.95rem;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-md) var(--admin-space-0);
+  font-size: var(--admin-font-size-base);
 }
 
 .supplierToDelete {
   color: var(--admin-text-secondary);
-  font-size: 1.1rem;
+  font-size: var(--admin-font-size-xl);
   font-weight: 600;
-  margin: 0 0 12px 0;
-  padding: 8px 12px;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl) var(--admin-space-0);
+  padding: var(--admin-space-md) var(--admin-space-xl);
   background: white;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
 }
 
 .warningSubtext {
   color: var(--admin-warning-brown);
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
   margin: 8px 0 0 0;
 }
 
@@ -383,30 +383,30 @@
   background: var(--admin-error-bg);
   border: 1px solid var(--admin-error-border-soft);
   color: var(--admin-error-strong);
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-top: 16px;
-  font-size: 0.9rem;
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-md);
+  margin-top: var(--admin-space-2xl);
+  font-size: var(--admin-font-size-sm);
 }
 
 .modalActions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  padding: 16px 24px;
+  gap: var(--admin-space-xl);
+  padding: var(--admin-space-2xl) var(--admin-space-4xl);
   border-top: 1px solid var(--admin-border);
   background: var(--admin-surface-muted);
-  border-radius: 0 0 16px 16px;
+  border-radius: var(--admin-radius-card-bottom);
 }
 
 .cancelButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: white;
   color: var(--admin-text-secondary);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -422,13 +422,13 @@
 }
 
 .dangerButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: linear-gradient(135deg, var(--admin-danger), var(--admin-error-strong));
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -445,18 +445,18 @@
 
 .headerActions {
   display: flex;
-  gap: 12px;
+  gap: var(--admin-space-xl);
   align-items: center;
 }
 
 .secondaryButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: var(--admin-surface);
   color: var(--admin-text-secondary);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -481,23 +481,23 @@
   position: absolute;
   top: 100%;
   right: 0;
-  margin-top: 8px;
+  margin-top: var(--admin-space-md);
   background: white;
   border: 1px solid var(--admin-border);
-  border-radius: 10px;
-  box-shadow: 0 10px 40px var(--admin-overlay-color-149);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-popover);
   min-width: 280px;
   z-index: 100;
-  padding: 8px 0;
+  padding: var(--admin-space-md) var(--admin-space-0);
 }
 
 .columnSelectorHeader {
-  padding: 10px 16px;
-  font-size: 0.85rem;
+  padding: var(--admin-space-lg) var(--admin-space-2xl);
+  font-size: var(--admin-font-size-sm);
   font-weight: 600;
   color: var(--admin-text-muted);
   border-bottom: 1px solid var(--admin-border);
-  margin-bottom: 4px;
+  margin-bottom: var(--admin-space-xs);
 }
 
 .columnsList {
@@ -508,7 +508,7 @@
 .selectedColumnsSection {
   padding-bottom: 8px;
   border-bottom: 1px solid var(--admin-border);
-  margin-bottom: 8px;
+  margin-bottom: var(--admin-space-md);
 }
 
 .availableColumnsSection {
@@ -516,19 +516,19 @@
 }
 
 .sectionLabel {
-  padding: 6px 16px;
-  font-size: 0.75rem;
+  padding: var(--admin-space-sm) var(--admin-space-2xl);
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
   color: var(--admin-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--admin-letter-spacing-wide);
 }
 
 .columnItem {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   cursor: pointer;
   transition: background 0.15s;
   user-select: none;
@@ -556,7 +556,7 @@
 }
 
 .columnTitle {
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-secondary);
   flex: 1;
 }
@@ -564,10 +564,10 @@
 .dragHandle {
   cursor: grab;
   color: var(--admin-text-muted);
-  font-size: 0.9rem;
-  letter-spacing: 2px;
-  padding: 2px 4px;
-  border-radius: 4px;
+  font-size: var(--admin-font-size-sm);
+  letter-spacing: var(--admin-letter-spacing-logo);
+  padding: var(--admin-space-2xs) var(--admin-space-xs);
+  border-radius: var(--admin-radius-xs);
   transition: all 0.15s;
 }
 
@@ -582,7 +582,7 @@
 
 .columnOrderButtons {
   display: flex;
-  gap: 2px;
+  gap: var(--admin-space-2xs);
   margin-left: auto;
 }
 
@@ -594,9 +594,9 @@
   justify-content: center;
   background: transparent;
   border: 1px solid var(--admin-border);
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
   transition: all 0.15s;
 }
@@ -614,7 +614,7 @@
 .emailLink {
   color: var(--admin-accent);
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .emailLink:hover {
@@ -623,19 +623,19 @@
 
 .textValue {
   color: var(--admin-text-secondary);
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
   word-break: break-word;
 }
 
 .modalHint {
   color: var(--admin-text-muted);
-  font-size: 0.9rem;
-  margin: 0 0 16px 0;
+  font-size: var(--admin-font-size-sm);
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-2xl) var(--admin-space-0);
 }
 
 .disabledHint {
   color: var(--admin-text-muted);
-  font-size: 0.8rem;
+  font-size: var(--admin-font-size-sm);
   font-style: italic;
   margin-left: auto;
 }
@@ -662,7 +662,7 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .empty {
   background: var(--admin-text-secondary);
-  box-shadow: 0 1px 3px var(--admin-overlay-color-152);
+  box-shadow: var(--admin-shadow-card-dark);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .empty p {
@@ -671,7 +671,7 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .tableWrapper {
   background: var(--admin-text-secondary);
-  box-shadow: 0 1px 3px var(--admin-overlay-color-152);
+  box-shadow: var(--admin-shadow-card-dark);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .table thead {
@@ -773,7 +773,7 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .columnSelectorDropdown {
   background: var(--admin-text-secondary);
   border-color: var(--admin-text-secondary);
-  box-shadow: 0 10px 40px var(--admin-overlay-color-153);
+  box-shadow: var(--admin-shadow-popover-dark);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .columnSelectorHeader {

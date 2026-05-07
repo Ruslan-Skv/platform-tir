@@ -1,24 +1,24 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--admin-space-2xl);
 }
 
 .toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--admin-space-md);
   align-items: center;
 }
 
 .addBlockButton {
-  padding: 0.45rem 0.9rem;
-  font-size: 0.875rem;
+  padding: var(--admin-space-fluid-xl) var(--admin-space-fluid-3xl);
+  font-size: var(--admin-font-size-sm);
   font-weight: 600;
   color: var(--admin-surface);
   background: var(--admin-info);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   cursor: pointer;
 }
 
@@ -28,14 +28,14 @@
 
 .emptyHint {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
 }
 
 .blockCard {
-  padding: 1rem;
+  padding: var(--admin-space-2xl);
   border: 1px solid var(--admin-border);
-  border-radius: 10px;
+  border-radius: var(--admin-radius-lg);
   background: var(--admin-surface-muted);
 }
 
@@ -49,13 +49,13 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-xl);
 }
 
 .blockTitle {
   font-weight: 700;
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-primary);
 }
 
@@ -63,18 +63,18 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.35rem;
+  gap: var(--admin-space-sm);
 }
 
 .iconButton {
   min-width: 2rem;
-  padding: 0.25rem 0.4rem;
-  font-size: 0.875rem;
-  line-height: 1;
+  padding: var(--admin-space-xs) var(--admin-space-fluid-xl);
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-flat);
   color: var(--admin-text-secondary);
   background: var(--admin-surface);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
 }
 
@@ -84,12 +84,12 @@
 }
 
 .removeBlockButton {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.8125rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-error-text);
   background: transparent;
   border: 1px solid var(--admin-overlay-color-068);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
 }
 
@@ -100,14 +100,14 @@
 .label {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  font-size: 0.875rem;
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
   font-weight: 600;
   color: var(--admin-text-secondary);
 }
 
 .imagesSection {
-  margin-top: 1rem;
+  margin-top: var(--admin-space-2xl);
   padding-top: 1rem;
   border-top: 1px dashed var(--admin-border);
 }
@@ -117,20 +117,20 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-md);
+  font-size: var(--admin-font-size-sm);
   font-weight: 600;
   color: var(--admin-text-secondary);
 }
 
 .addImageButton {
-  padding: 0.3rem 0.65rem;
-  font-size: 0.8125rem;
+  padding: var(--admin-space-fluid-md) var(--admin-space-fluid-2xl);
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-info);
   background: var(--admin-surface);
   border: 1px solid var(--admin-info-border);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
 }
 
@@ -141,27 +141,27 @@
 .imageRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--admin-space-md);
   align-items: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--admin-space-md);
 }
 
 .input {
   flex: 1 1 200px;
   min-width: 0;
-  padding: 0.45rem 0.6rem;
-  font-size: 0.875rem;
+  padding: var(--admin-space-fluid-xl) var(--admin-space-fluid-2xl);
+  font-size: var(--admin-font-size-sm);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
 }
 
 .inputAlt {
   flex: 1 1 160px;
   min-width: 0;
-  padding: 0.45rem 0.6rem;
-  font-size: 0.875rem;
+  padding: var(--admin-space-fluid-xl) var(--admin-space-fluid-2xl);
+  font-size: var(--admin-font-size-sm);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
 }
 
 .hiddenFile {
@@ -169,13 +169,13 @@
 }
 
 .uploadBtn {
-  padding: 0.45rem 0.65rem;
-  font-size: 0.8125rem;
+  padding: var(--admin-space-fluid-xl) var(--admin-space-fluid-2xl);
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
   color: var(--admin-text-secondary);
   background: var(--admin-surface);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -187,12 +187,12 @@
 .removeImgBtn {
   width: 2rem;
   height: 2rem;
-  font-size: 1.25rem;
-  line-height: 1;
+  font-size: var(--admin-font-size-2xl);
+  line-height: var(--admin-line-height-flat);
   color: var(--admin-text-muted);
   background: var(--admin-surface-soft);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
 }
 

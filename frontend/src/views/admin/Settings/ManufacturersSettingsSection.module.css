@@ -7,17 +7,17 @@
   flex-wrap: wrap;
   gap: 0.5rem 0.75rem;
   align-items: flex-end;
-  margin-bottom: 1rem;
-  padding: 0.75rem;
+  margin-bottom: var(--admin-space-2xl);
+  padding: var(--admin-space-xl);
   background: var(--admin-surface-muted);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: var(--admin-space-xs);
 }
 
 /** Поле «Название» в панели добавления — шире остальных. */
@@ -33,29 +33,29 @@
 }
 
 .field label {
-  font-size: 0.7rem;
+  font-size: var(--admin-font-size-2xs);
   font-weight: 600;
   color: var(--admin-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--admin-letter-spacing-wide);
 }
 
 .input {
-  padding: 0.4rem 0.55rem;
+  padding: var(--admin-space-fluid-xl) var(--admin-space-fluid-2xl);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
-  font-size: 0.875rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-md);
   min-width: 160px;
 }
 
 .addBtn {
-  padding: 0.45rem 0.85rem;
+  padding: var(--admin-space-fluid-xl) var(--admin-space-2xl);
   background: var(--color-accent);
   color: var(--admin-surface);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   font-weight: 600;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-sm);
   cursor: pointer;
 }
 
@@ -67,27 +67,27 @@
 .tableWrap {
   overflow-x: auto;
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-md);
 }
 
 .table th,
 .table td {
-  padding: 0.5rem 0.65rem;
+  padding: var(--admin-space-md) var(--admin-space-fluid-2xl);
   text-align: left;
   border-bottom: 1px solid var(--admin-surface-soft);
 }
 
 .table th {
   background: var(--admin-surface-muted);
-  font-size: 0.7rem;
+  font-size: var(--admin-font-size-2xs);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--admin-letter-spacing-wide);
   color: var(--admin-text-muted);
 }
 
@@ -97,7 +97,7 @@
 
 .mono {
   font-family: ui-monospace, monospace;
-  font-size: 0.8rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-sidebar-text);
 }
 
@@ -109,13 +109,13 @@
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: var(--admin-space-sm);
 }
 
 .btn {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  border-radius: var(--admin-radius-xs);
+  font-size: var(--admin-font-size-xs);
   font-weight: 500;
   cursor: pointer;
   border: 1px solid var(--admin-border);
@@ -144,10 +144,10 @@
 .inputInline {
   width: 100%;
   max-width: 220px;
-  padding: 0.3rem 0.45rem;
+  padding: var(--admin-space-fluid-md) var(--admin-space-fluid-xl);
   border: 1px solid var(--admin-border);
-  border-radius: 4px;
-  font-size: 0.8125rem;
+  border-radius: var(--admin-radius-xs);
+  font-size: var(--admin-font-size-sm);
 }
 
 .checkbox {
@@ -156,10 +156,10 @@
 }
 
 .toast {
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  margin-bottom: 0.75rem;
-  font-size: 0.8125rem;
+  padding: var(--admin-space-md) var(--admin-space-xl);
+  border-radius: var(--admin-radius-sm);
+  margin-bottom: var(--admin-space-xl);
+  font-size: var(--admin-font-size-sm);
 }
 
 .toastErr {
@@ -175,19 +175,19 @@
 }
 
 .empty {
-  padding: 1.5rem;
+  padding: var(--admin-space-4xl);
   text-align: center;
   color: var(--admin-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-md);
 }
 
 .loading {
   color: var(--admin-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-md);
 }
 
 .hint {
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
   margin: 0.5rem 0 0;
 }

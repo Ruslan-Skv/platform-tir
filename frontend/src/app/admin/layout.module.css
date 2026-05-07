@@ -13,6 +13,82 @@
   --admin-text-secondary: #374151;
   --admin-text-muted: #6b7280;
   --admin-text-inverse: #f9fafb;
+  --admin-font-size-2xs: 0.65rem;
+  --admin-font-size-xs: 0.75rem;
+  --admin-font-size-sm: 0.8125rem;
+  --admin-font-size-md: 0.875rem;
+  --admin-font-size-base: 0.9375rem;
+  --admin-font-size-lg: 1rem;
+  --admin-font-size-xl: 1.0625rem;
+  --admin-font-size-2xl: 1.25rem;
+  --admin-font-size-3xl: 1.35rem;
+  --admin-font-size-4xl: 1.75rem;
+  --admin-font-size-5xl: 2rem;
+  --admin-line-height-none: 0;
+  --admin-line-height-flat: 1;
+  --admin-line-height-2xs: 1.1;
+  --admin-line-height-xs: 1.2;
+  --admin-line-height-sm: 1.25;
+  --admin-line-height-base: 1.35;
+  --admin-line-height-md: 1.4;
+  --admin-line-height-lg: 1.5;
+  --admin-line-height-xl: 1.6;
+  --admin-letter-spacing-tight: -0.02em;
+  --admin-letter-spacing-base: 0.01em;
+  --admin-letter-spacing-wide: 0.03em;
+  --admin-letter-spacing-wider: 0.05em;
+  --admin-letter-spacing-widest: 0.12em;
+  --admin-letter-spacing-logo: 2px;
+  --admin-radius-2xs: 2px;
+  --admin-radius-xs: 4px;
+  --admin-radius-sm: 6px;
+  --admin-radius-md: 8px;
+  --admin-radius-lg: 10px;
+  --admin-radius-xl: 12px;
+  --admin-radius-2xl: 16px;
+  --admin-radius-3xl: 20px;
+  --admin-radius-pill: 999px;
+  --admin-radius-full: 50%;
+  --admin-radius-tab-top: 4px 4px 0 0;
+  --admin-radius-card-top: 6px 6px 0 0;
+  --admin-radius-card-bottom: 0 0 16px 16px;
+  --admin-shadow-focus-soft: 0 0 0 3px rgba(var(--admin-overlay-color-144), 0.1);
+  --admin-shadow-focus: 0 0 0 2px rgba(var(--admin-overlay-color-144), 0.3);
+  --admin-shadow-card: 0 1px 3px var(--admin-overlay-color-148);
+  --admin-shadow-card-dark: 0 1px 3px var(--admin-overlay-color-152);
+  --admin-shadow-popover: 0 10px 40px var(--admin-overlay-color-149);
+  --admin-shadow-popover-dark: 0 10px 40px var(--admin-overlay-color-153);
+  --admin-shadow-modal: 0 20px 50px var(--admin-overlay-color-150);
+  --admin-shadow-modal-dark: 0 20px 50px var(--admin-overlay-color-154);
+  --admin-space-0: 0;
+  --admin-space-2xs: 2px;
+  --admin-space-xs: 4px;
+  --admin-space-sm: 6px;
+  --admin-space-md: 8px;
+  --admin-space-lg: 10px;
+  --admin-space-xl: 12px;
+  --admin-space-2xl: 16px;
+  --admin-space-3xl: 20px;
+  --admin-space-4xl: 24px;
+  --admin-space-5xl: 32px;
+  --admin-space-6xl: 40px;
+  --admin-space-7xl: 48px;
+  --admin-space-8xl: 60px;
+  --admin-space-9xl: 70px;
+  --admin-space-10xl: 220px;
+  --admin-space-fluid-2xs: 0.12rem;
+  --admin-space-fluid-xs: 0.125rem;
+  --admin-space-fluid-sm: 0.15rem;
+  --admin-space-fluid-md: 0.2rem;
+  --admin-space-fluid-lg: 0.35rem;
+  --admin-space-fluid-xl: 0.45rem;
+  --admin-space-fluid-2xl: 0.65rem;
+  --admin-space-18: 18px;
+  --admin-space-28: 28px;
+  --admin-space-9: 9px;
+  --admin-space-36: 36px;
+  --admin-space-fluid-3xs: 0.28rem;
+  --admin-space-fluid-3xl: 0.9rem;
   --admin-sidebar-text: #4b5563;
   --admin-sidebar-text-strong: #111827;
   --admin-sidebar-bg-start: #f8fafc;
@@ -647,7 +723,7 @@
 
 .mainArea {
   flex: 1;
-  margin-left: 220px;
+  margin-left: var(--admin-space-10xl);
   transition: margin-left 0.3s ease;
   display: flex;
   flex-direction: column;
@@ -655,7 +731,7 @@
 }
 
 .mainArea.expanded {
-  margin-left: 70px;
+  margin-left: var(--admin-space-9xl);
 }
 
 .mainArea.resizing {
@@ -664,7 +740,7 @@
 
 .content {
   flex: 1;
-  padding: 12px 12px 12px 4px;
+  padding: var(--admin-space-xl) var(--admin-space-xl) var(--admin-space-xl) var(--admin-space-xs);
   overflow-x: hidden;
   background-color: var(--admin-bg-page, #f5f7fa);
 }
@@ -678,7 +754,7 @@
 }
 
 .loading {
-  font-size: 18px;
+  font-size: var(--admin-font-size-xl);
   color: var(--admin-text-muted, #6b7280);
 }
 

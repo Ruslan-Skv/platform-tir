@@ -1,6 +1,6 @@
 .tableContainer {
   background: var(--admin-surface);
-  border-radius: 12px;
+  border-radius: var(--admin-radius-xl);
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
   overflow: hidden;
   position: relative;
@@ -51,7 +51,7 @@
     var(--admin-scroll-overlay-fade)
   );
   color: var(--admin-text-secondary);
-  font-size: 1.5rem;
+  font-size: var(--admin-font-size-3xl);
   font-weight: bold;
   cursor: pointer;
   user-select: none;
@@ -116,7 +116,7 @@
 
 .scrollContainer::-webkit-scrollbar-thumb {
   background: var(--admin-scrollbar-thumb);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
 }
 
 .scrollContainer::-webkit-scrollbar-thumb:hover {
@@ -138,7 +138,7 @@
 
 .table th,
 .table td {
-  padding: 8px 6px;
+  padding: var(--admin-space-md) var(--admin-space-sm);
   text-align: center;
   border-bottom: 1px solid var(--admin-border);
 }
@@ -146,16 +146,16 @@
 .table th {
   background: var(--admin-surface-muted);
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--admin-letter-spacing-wider);
   white-space: nowrap;
 }
 
 .table td {
   color: var(--admin-text-secondary);
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
 }
 
 .sortable {
@@ -171,11 +171,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--admin-space-md);
 }
 
 .sortIcon {
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
 }
 
 .row {
@@ -213,7 +213,7 @@
 .loadingCell,
 .emptyCell {
   text-align: center;
-  padding: 40px 20px !important;
+  padding: var(--admin-space-6xl) var(--admin-space-3xl) !important;
   color: var(--admin-text-muted);
 }
 
@@ -221,7 +221,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--admin-space-md);
 }
 
 /* Pagination */
@@ -229,29 +229,29 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
+  padding: var(--admin-space-2xl);
   border-top: 1px solid var(--admin-border);
 }
 
 .paginationInfo {
   color: var(--admin-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .paginationButtons {
   display: flex;
-  gap: 4px;
+  gap: var(--admin-space-xs);
 }
 
 .pageButton {
   min-width: 32px;
   height: 32px;
-  padding: 0 10px;
+  padding: var(--admin-space-0) var(--admin-space-lg);
   border: 1px solid var(--admin-border);
   background: var(--admin-surface);
   color: var(--admin-text-secondary);
-  font-size: 0.8125rem;
-  border-radius: 8px;
+  font-size: var(--admin-font-size-xs);
+  border-radius: var(--admin-radius-md);
   cursor: pointer;
   transition: all 0.2s;
 }

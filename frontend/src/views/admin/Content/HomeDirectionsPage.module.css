@@ -4,18 +4,18 @@
 }
 
 .header {
-  margin-bottom: 28px;
+  margin-bottom: var(--admin-space-28);
 }
 
 .title {
-  font-size: 1.75rem;
+  font-size: var(--admin-font-size-4xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
-  margin: 0 0 8px 0;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-md) var(--admin-space-0);
 }
 
 .subtitle {
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-muted);
   margin: 0;
 }
@@ -23,49 +23,49 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 24px;
+  gap: var(--admin-space-4xl);
 }
 
 .card {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 12px;
+  border-radius: var(--admin-radius-xl);
   overflow: hidden;
-  padding: 16px;
+  padding: var(--admin-space-2xl);
 }
 
 .cardTitle {
-  font-size: 1rem;
+  font-size: var(--admin-font-size-lg);
   font-weight: 600;
   color: var(--admin-text-secondary);
-  margin: 0 0 12px 0;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl) var(--admin-space-0);
 }
 
 .preview {
   width: 100%;
   aspect-ratio: 16 / 10;
   background: var(--admin-surface-soft);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   object-fit: cover;
-  margin-bottom: 12px;
+  margin-bottom: var(--admin-space-xl);
 }
 
 .placeholder {
   width: 100%;
   aspect-ratio: 16 / 10;
   background: var(--admin-border);
-  border-radius: 8px;
-  margin-bottom: 12px;
+  border-radius: var(--admin-radius-md);
+  margin-bottom: var(--admin-space-xl);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--admin-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .actions {
   display: flex;
-  gap: 8px;
+  gap: var(--admin-space-md);
   align-items: center;
 }
 
@@ -74,12 +74,12 @@
 }
 
 .uploadBtn {
-  padding: 8px 14px;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   background: var(--admin-accent);
   color: var(--admin-surface);
   border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-sm);
   font-weight: 500;
   cursor: pointer;
   transition: background 0.2s;
@@ -95,15 +95,15 @@
 }
 
 .error {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-error-strong);
-  margin-top: 8px;
+  margin-top: var(--admin-space-md);
 }
 
 .success {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-success);
-  margin-top: 8px;
+  margin-top: var(--admin-space-md);
 }
 
 /* Тёмная тема — наши направления */

@@ -1,5 +1,5 @@
 .blogSectionPage {
-  padding: 1.5rem;
+  padding: var(--admin-space-4xl);
   max-width: 1200px;
   color: var(--admin-text-secondary);
 }
@@ -8,23 +8,23 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .title {
-  font-size: 1.5rem;
+  font-size: var(--admin-font-size-3xl);
   font-weight: 700;
   margin: 0;
   color: var(--admin-text-secondary);
 }
 
 .createButton {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-overlay-color-135);
   color: white;
   text-decoration: none;
-  border-radius: 6px;
-  font-size: 0.9375rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-base);
 }
 
 .createButton:hover {
@@ -32,9 +32,9 @@
 }
 
 .message {
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-sm);
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .message.success {
@@ -49,12 +49,12 @@
 
 .stats {
   display: flex;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
+  gap: var(--admin-space-4xl);
+  margin-bottom: var(--admin-space-4xl);
+  padding: var(--admin-space-2xl);
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
 }
 
 .stat {
@@ -69,33 +69,33 @@
 }
 
 .statValue {
-  font-size: 1.25rem;
+  font-size: var(--admin-font-size-2xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
 }
 
 .statLabel {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
 }
 
 .filters {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: var(--admin-space-2xl);
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .select {
-  padding: 0.5rem 0.75rem;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   background: var(--admin-surface);
   color: var(--admin-text-secondary);
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
 }
 
 .tableWrapper {
-  margin-bottom: 2rem;
+  margin-bottom: var(--admin-space-8xl);
 }
 
 .postLink {
@@ -111,24 +111,24 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--admin-space-md);
 }
 
 .badge {
   display: inline-block;
-  padding: 0.15rem 0.5rem;
-  font-size: 0.75rem;
+  padding: var(--admin-space-fluid-sm) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
   color: var(--admin-info-strong);
   background: var(--admin-info-bg);
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   white-space: nowrap;
 }
 
 .status {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.8125rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  border-radius: var(--admin-radius-xs);
+  font-size: var(--admin-font-size-sm);
 }
 
 .statusDRAFT {
@@ -149,13 +149,13 @@
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--admin-space-md);
 }
 
 .actionLink {
   color: var(--admin-overlay-color-135);
   text-decoration: none;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-md);
 }
 
 .actionLink:hover {
@@ -163,13 +163,13 @@
 }
 
 .actionButton {
-  padding: 0.25rem 0.5rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
   background: var(--admin-surface-soft);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   color: var(--admin-text-secondary);
   cursor: pointer;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .actionButton:hover {
@@ -177,13 +177,13 @@
 }
 
 .actionButtonDanger {
-  padding: 0.25rem 0.5rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
   background: var(--admin-overlay-color-065);
   border: 1px solid var(--admin-overlay-color-067);
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   color: var(--admin-overlay-color-070);
   cursor: pointer;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .actionButtonDanger:hover {
@@ -191,30 +191,30 @@
 }
 
 .categoriesSection {
-  padding: 1rem;
+  padding: var(--admin-space-2xl);
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
 }
 
 .sectionTitle {
-  font-size: 1.125rem;
+  font-size: var(--admin-font-size-xl);
   font-weight: 600;
-  margin: 0 0 1rem;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-2xl);
   color: var(--admin-text-secondary);
 }
 
 .categoriesList {
   list-style: none;
-  margin: 0 0 1rem;
-  padding: 0;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-2xl);
+  padding: var(--admin-space-0);
 }
 
 .categoryItem {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 0;
+  padding: var(--admin-space-md) var(--admin-space-0);
   border-bottom: 1px solid var(--admin-border);
 }
 
@@ -223,52 +223,52 @@
 }
 
 .categoryName {
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-secondary);
 }
 
 .categoryCount {
   color: var(--admin-text-muted);
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .categoryActions {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--admin-space-md);
 }
 
 .categoryEdit {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--admin-space-md);
   flex-wrap: wrap;
   width: 100%;
 }
 
 .newCategoryForm {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--admin-space-md);
   flex-wrap: wrap;
-  margin-bottom: 1rem;
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .input {
-  padding: 0.5rem 0.75rem;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   background: var(--admin-surface);
   color: var(--admin-text-secondary);
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   min-width: 150px;
 }
 
 .saveButton {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-overlay-color-103);
   border: 1px solid var(--admin-overlay-color-107);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-overlay-color-108);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-md);
 }
 
 .saveButton:hover {
@@ -276,13 +276,13 @@
 }
 
 .cancelButton {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-surface-soft);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-text-secondary);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-md);
 }
 
 .cancelButton:hover {
@@ -290,13 +290,13 @@
 }
 
 .addCategoryButton {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-surface-muted);
   border: 1px dashed var(--admin-text-muted);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-text-muted);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-md);
 }
 
 .addCategoryButton:hover {

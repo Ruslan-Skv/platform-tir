@@ -1,7 +1,7 @@
 .page {
   width: 100%;
   max-width: 1680px;
-  padding: 0 12px;
+  padding: var(--admin-space-0) var(--admin-space-xl);
   box-sizing: border-box;
   overflow-x: clip;
   margin: 0 auto;
@@ -9,15 +9,15 @@
 
 .header {
   position: relative;
-  margin-bottom: 6px;
+  margin-bottom: var(--admin-space-sm);
 }
 
 .backLink {
   display: inline-block;
   color: var(--admin-text-muted);
   text-decoration: none;
-  font-size: 0.8rem;
-  margin-bottom: 2px;
+  font-size: var(--admin-font-size-sm);
+  margin-bottom: var(--admin-space-2xs);
 }
 
 .backLink:hover {
@@ -28,7 +28,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--admin-space-md);
 }
 
 .headerAutosaveFloating {
@@ -39,10 +39,10 @@
   opacity: 0;
   transform: translateY(-2px);
   transition: opacity 0.16s ease;
-  padding: 3px 6px;
-  border-radius: 5px;
-  font-size: 0.7rem;
-  line-height: 1.2;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-2xs);
+  line-height: var(--admin-line-height-xs);
   border: 1px solid var(--admin-success-border-soft);
   background: var(--admin-success-bg-soft);
   color: var(--admin-success-text-strong);
@@ -56,18 +56,18 @@
 .titleControls {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--admin-space-sm);
   margin-left: auto;
 }
 
 .statusInlineLabel {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--admin-space-sm);
 }
 
 .statusInlineText {
-  font-size: 0.74rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-sidebar-text);
   font-weight: 600;
 }
@@ -101,19 +101,19 @@
 }
 
 .title {
-  font-size: 1.15rem;
+  font-size: var(--admin-font-size-xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
   margin: 0;
 }
 
 .historyButton {
-  padding: 4px 10px;
-  font-size: 0.78rem;
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  font-size: var(--admin-font-size-xs);
   background: var(--admin-surface-soft);
   color: var(--admin-text-secondary);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
   font-weight: 500;
 }
@@ -123,17 +123,17 @@
 }
 
 .loading {
-  padding: 32px;
+  padding: var(--admin-space-5xl);
   text-align: center;
   color: var(--admin-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .message {
-  padding: 6px 10px;
-  border-radius: 6px;
-  margin-bottom: 8px;
-  font-size: 0.82rem;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  border-radius: var(--admin-radius-sm);
+  margin-bottom: var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
 }
 
 .messageerror {
@@ -149,8 +149,8 @@
 .form {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 7px;
-  padding: 6px 9px;
+  border-radius: var(--admin-radius-md);
+  padding: var(--admin-space-sm) var(--admin-space-9);
 }
 
 .grid {
@@ -160,15 +160,15 @@
 }
 
 .row {
-  margin-bottom: 3px;
+  margin-bottom: var(--admin-space-xs);
 }
 
 .label {
   display: block;
   font-weight: 500;
   color: var(--admin-text-secondary);
-  margin-bottom: 1px;
-  font-size: 0.75rem;
+  margin-bottom: var(--admin-space-2xs);
+  font-size: var(--admin-font-size-xs);
 }
 
 .emphasisLabel {
@@ -184,10 +184,10 @@
 .select,
 .textarea {
   width: 100%;
-  padding: 4px 7px;
+  padding: var(--admin-space-xs) var(--admin-space-md);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
-  font-size: 0.78rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
 }
 
 .input:focus,
@@ -215,8 +215,8 @@
 
 .fieldError {
   display: block;
-  margin-top: 2px;
-  font-size: 0.74rem;
+  margin-top: var(--admin-space-2xs);
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-error-strong);
 }
 
@@ -228,20 +228,20 @@
 .actions {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 12px;
+  gap: var(--admin-space-xl);
+  margin-top: var(--admin-space-xl);
   padding-top: 10px;
   border-top: 1px solid var(--admin-border);
 }
 
 .submitButton {
-  padding: 8px 16px;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-accent);
   color: var(--admin-surface);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   font-weight: 500;
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -258,7 +258,7 @@
 .cancelLink {
   color: var(--admin-text-muted);
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 @media (max-width: 520px) {
@@ -284,7 +284,7 @@
 }
 
 .measurementsSection {
-  margin-top: 6px;
+  margin-top: var(--admin-space-sm);
   padding-top: 6px;
   border-top: 1px solid var(--admin-border);
 }
@@ -293,14 +293,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
-  margin-bottom: 2px;
+  gap: var(--admin-space-sm);
+  margin-bottom: var(--admin-space-2xs);
 }
 
 .measurementsHeaderActions {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--admin-space-xs);
 }
 
 .completeMeasurementButton {
@@ -312,11 +312,11 @@
   ) !important;
   color: var(--admin-warning-brown) !important;
   font-weight: 700;
-  font-size: 0.8rem !important;
-  padding: 5px 10px !important;
-  border-radius: 7px;
+  font-size: var(--admin-font-size-sm) !important;
+  padding: var(--admin-space-sm) var(--admin-space-lg) !important;
+  border-radius: var(--admin-radius-md);
   box-shadow: 0 2px 8px var(--admin-overlay-color-082);
-  letter-spacing: 0.01em;
+  letter-spacing: var(--admin-letter-spacing-base);
 }
 
 .completeMeasurementButton:hover:not(:disabled) {
@@ -365,38 +365,38 @@
 
 .measurementsTitle {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-primary);
 }
 
 .measurementsHint {
-  margin: 0 0 4px;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xs);
   color: var(--admin-text-muted);
-  font-size: 0.72rem;
+  font-size: var(--admin-font-size-xs);
 }
 
 .roomCard {
   border: 1px solid var(--admin-border);
-  border-radius: 7px;
-  padding: 5px;
-  margin-bottom: 4px;
+  border-radius: var(--admin-radius-md);
+  padding: var(--admin-space-sm);
+  margin-bottom: var(--admin-space-xs);
   background: var(--admin-surface-muted);
 }
 
 .roomTabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 4px;
+  gap: var(--admin-space-xs);
+  margin-bottom: var(--admin-space-xs);
 }
 
 .roomTabButton {
   border: 1px solid var(--admin-border);
   background: var(--admin-surface);
   color: var(--admin-text-secondary);
-  border-radius: 6px;
-  padding: 2px 7px;
-  font-size: 0.7rem;
+  border-radius: var(--admin-radius-sm);
+  padding: var(--admin-space-2xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-2xs);
   cursor: pointer;
 }
 
@@ -410,21 +410,21 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2px;
+  margin-bottom: var(--admin-space-2xs);
 }
 
 .roomActions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--admin-space-xs);
 }
 
 .roomIconBtn {
-  padding: 3px !important;
+  padding: var(--admin-space-xs) !important;
   min-width: 26px;
   min-height: 26px;
-  border-radius: 5px;
-  line-height: 0;
+  border-radius: var(--admin-radius-sm);
+  line-height: var(--admin-line-height-none);
 }
 
 .roomIconCopy {
@@ -438,8 +438,8 @@
 .inlineRow {
   display: grid;
   grid-template-columns: 1fr auto auto;
-  gap: 3px;
-  margin-bottom: 3px;
+  gap: var(--admin-space-xs);
+  margin-bottom: var(--admin-space-xs);
 }
 
 .openingSizeRow {
@@ -455,7 +455,7 @@
 .wallSegmentsList {
   display: flex;
   flex-wrap: nowrap;
-  gap: 3px;
+  gap: var(--admin-space-xs);
   align-items: center;
   overflow: hidden;
   min-width: 0;
@@ -464,7 +464,7 @@
 .wallSegmentItem {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 3px;
+  gap: var(--admin-space-xs);
   align-items: center;
   flex: 1 1 0;
   min-width: 0;
@@ -476,40 +476,40 @@
 }
 
 .calculatedBlock {
-  margin: 4px 0;
-  padding: 4px 6px;
-  border-radius: 6px;
+  margin: var(--admin-space-xs) var(--admin-space-0);
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  border-radius: var(--admin-radius-sm);
   background: var(--admin-accent-soft);
   color: var(--admin-text-secondary);
   display: grid;
   grid-template-columns: repeat(3, minmax(180px, 1fr));
   gap: 2px 8px;
-  font-size: 0.74rem;
+  font-size: var(--admin-font-size-xs);
 }
 
 .workItemsGrid {
   border: 1px solid var(--admin-border);
-  border-radius: 5px;
+  border-radius: var(--admin-radius-sm);
   background: var(--admin-surface);
-  padding: 6px;
+  padding: var(--admin-space-sm);
   column-count: 3;
-  column-gap: 12px;
+  column-gap: var(--admin-space-xl);
 }
 
 .workCategoryButtons {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 6px;
+  gap: var(--admin-space-xs);
+  margin-bottom: var(--admin-space-sm);
 }
 
 .workCategoryButton {
   border: 1px solid var(--admin-border-strong);
   background: var(--admin-surface);
   color: var(--admin-text-secondary);
-  border-radius: 999px;
-  padding: 3px 8px;
-  font-size: 0.74rem;
+  border-radius: var(--admin-radius-pill);
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
 }
 
@@ -540,19 +540,19 @@
 .workCategoryButtonActive.workCategoryButtonMarked::after {
   content: '●';
   display: inline-block;
-  margin-left: 6px;
-  font-size: 0.62rem;
-  line-height: 1;
+  margin-left: var(--admin-space-sm);
+  font-size: var(--admin-font-size-2xs);
+  line-height: var(--admin-line-height-flat);
   color: var(--admin-success-bg);
 }
 
 .checkboxLabel {
   display: flex;
   align-items: flex-start;
-  gap: 4px;
-  font-size: 0.78rem;
+  gap: var(--admin-space-xs);
+  font-size: var(--admin-font-size-xs);
   break-inside: avoid;
-  margin-bottom: 4px;
+  margin-bottom: var(--admin-space-xs);
   justify-content: space-between;
 }
 
@@ -563,23 +563,23 @@
 .itemQuantityWrap {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--admin-space-xs);
   flex: 0 0 auto;
 }
 
 .itemQuantityInput {
   width: 76px;
-  padding: 2px 5px;
-  font-size: 0.72rem;
+  padding: var(--admin-space-2xs) var(--admin-space-sm);
+  font-size: var(--admin-font-size-xs);
 }
 
 .secondaryButton {
   border: 1px solid var(--admin-border-strong);
   background: var(--admin-surface);
   color: var(--admin-text-secondary);
-  border-radius: 5px;
-  padding: 3px 7px;
-  font-size: 0.72rem;
+  border-radius: var(--admin-radius-sm);
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
 }
 
@@ -592,9 +592,9 @@
   border: 1px solid var(--admin-error-border-soft);
   background: var(--admin-danger-bg);
   color: var(--admin-error-text);
-  border-radius: 5px;
-  padding: 3px 8px;
-  font-size: 0.74rem;
+  border-radius: var(--admin-radius-sm);
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
 }
 
@@ -615,17 +615,17 @@
 .zoneOpenings,
 .zoneNotes {
   border: 1px solid var(--admin-border);
-  border-radius: 5px;
-  padding: 5px 6px;
-  margin-bottom: 4px;
+  border-radius: var(--admin-radius-sm);
+  padding: var(--admin-space-sm) var(--admin-space-sm);
+  margin-bottom: var(--admin-space-xs);
 }
 
 .zoneMeta,
 .zoneCommentMain {
   border: 1px solid var(--admin-border);
-  border-radius: 5px;
-  padding: 6px;
-  margin-bottom: 6px;
+  border-radius: var(--admin-radius-sm);
+  padding: var(--admin-space-sm);
+  margin-bottom: var(--admin-space-sm);
 }
 
 .zoneMeta {
@@ -743,7 +743,7 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select:focus,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .textarea:focus {
   border-color: var(--admin-accent);
-  box-shadow: 0 0 0 2px rgba(var(--admin-overlay-color-144), 0.3);
+  box-shadow: var(--admin-shadow-focus);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .inputError,

@@ -1,11 +1,11 @@
 .page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0.75rem 1rem;
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
 }
 
 .header {
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--admin-space-xl);
 }
 
 .headerRow {
@@ -13,24 +13,24 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.25rem;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-xs);
 }
 
 .headerActions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--admin-space-md);
   flex-wrap: wrap;
 }
 
 .refreshButton {
-  padding: 0.4rem 0.75rem;
-  font-size: 0.875rem;
+  padding: var(--admin-space-fluid-xl) var(--admin-space-xl);
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-info-strong);
   background: var(--admin-info-bg-soft);
   border: 1px solid var(--admin-info-border-soft);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
   font-weight: 500;
 }
@@ -46,12 +46,12 @@
 }
 
 .deleteButton {
-  padding: 0.4rem 0.75rem;
-  font-size: 0.875rem;
+  padding: var(--admin-space-fluid-xl) var(--admin-space-xl);
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-danger-text);
   background: var(--admin-danger-bg);
   border: 1px solid var(--admin-danger-border);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
 }
 
@@ -68,18 +68,18 @@
 .topGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-xl);
 }
 
 .compactSection {
-  padding: 0.35rem 0.6rem;
+  padding: var(--admin-space-fluid-lg) var(--admin-space-fluid-2xl);
 }
 
 /* Блок «Клиент» — одна строка на всю ширину */
 .clientSection {
-  margin-bottom: 0.75rem;
-  padding: 0.5rem 0;
+  margin-bottom: var(--admin-space-xl);
+  padding: var(--admin-space-md) var(--admin-space-0);
 }
 
 .clientRow {
@@ -93,26 +93,26 @@
 .clientField {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: var(--admin-space-xs);
   min-width: 0;
   flex: 1 1 120px;
   max-width: 200px;
 }
 
 .clientField .input {
-  padding: 0.35rem 0.5rem;
+  padding: var(--admin-space-fluid-lg) var(--admin-space-md);
 }
 
 .clientPhone {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-secondary);
-  padding: 0.35rem 0;
+  padding: var(--admin-space-fluid-lg) var(--admin-space-0);
 }
 
 .clientActions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--admin-space-md);
   flex: 0 0 auto;
   margin-left: auto;
 }
@@ -120,32 +120,32 @@
 .inputRow {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  margin-bottom: 0.35rem;
+  gap: var(--admin-space-xs);
+  margin-bottom: var(--admin-space-fluid-lg);
 }
 
 .inputLabel {
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
   font-weight: 600;
 }
 
 .input {
-  padding: 0.35rem 0.5rem;
+  padding: var(--admin-space-fluid-lg) var(--admin-space-md);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
-  font-size: 0.8125rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
 }
 
 .saveButton {
-  margin-top: 0.25rem;
-  padding: 0.35rem 0.6rem;
-  border-radius: 6px;
+  margin-top: var(--admin-space-xs);
+  padding: var(--admin-space-fluid-lg) var(--admin-space-fluid-2xl);
+  border-radius: var(--admin-radius-sm);
   border: 1px solid var(--admin-info-border-soft);
   background: var(--admin-info-bg-soft);
   color: var(--admin-info-strong);
   cursor: pointer;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
 }
 
@@ -155,23 +155,23 @@
 }
 
 .inlineSuccess {
-  margin-left: 0.5rem;
-  font-size: 0.75rem;
+  margin-left: var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-success-strong);
   font-weight: 600;
 }
 
 .mutedText {
   color: var(--admin-text-muted);
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
 }
 
 .backLink {
   display: inline-block;
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--admin-space-xl);
   color: var(--admin-text-muted);
   text-decoration: none;
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
 }
 
 .backLink:hover {
@@ -181,18 +181,18 @@
 .titleRow {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--admin-space-md);
   flex-wrap: wrap;
 }
 
 .title {
-  font-size: 1.25rem;
+  font-size: var(--admin-font-size-2xl);
   font-weight: 700;
   margin: 0;
 }
 
 .managerInline {
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
   flex: 0 1 auto;
 }
@@ -203,12 +203,12 @@
 
 /* Иконка истории заказа (как в CRM Объекты) */
 .historyActionButton {
-  padding: 4px 8px;
+  padding: var(--admin-space-xs) var(--admin-space-md);
   background: transparent;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: var(--admin-font-size-lg);
   opacity: 0.7;
 }
 
@@ -219,7 +219,7 @@
 
 .currentStatus {
   margin: 0.35rem 0 0 0;
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-muted);
   font-weight: 500;
 }
@@ -232,9 +232,9 @@
 /* Status Badge — цветные фоны как в списке заказов */
 .statusBadge {
   display: inline-block;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 0.875rem;
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  border-radius: var(--admin-radius-xl);
+  font-size: var(--admin-font-size-sm);
   font-weight: 500;
 }
 
@@ -286,29 +286,29 @@
 .actionsRow {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--admin-space-md);
   flex-wrap: wrap;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--admin-space-md);
 }
 
 .section {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
-  padding: 0.4rem 0.6rem;
-  margin-bottom: 0.5rem;
+  border-radius: var(--admin-radius-sm);
+  padding: var(--admin-space-fluid-xl) var(--admin-space-fluid-2xl);
+  margin-bottom: var(--admin-space-md);
 }
 
 .sectionTitle {
-  font-size: 0.6875rem;
+  font-size: var(--admin-font-size-2xs);
   font-weight: 600;
   color: var(--admin-text-muted);
-  margin: 0 0 0.2rem 0;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-fluid-md) var(--admin-space-0);
 }
 
 .section > p {
   margin: 0.1rem 0 0 0;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
 }
 
 .section > p:first-of-type {
@@ -318,32 +318,32 @@
 .statusRow {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--admin-space-xl);
   flex-wrap: wrap;
 }
 
 .select {
-  padding: 0.5rem 0.75rem;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
-  font-size: 0.9375rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-base);
   min-width: 200px;
 }
 
 .saving {
-  margin-left: 0.5rem;
-  font-size: 0.875rem;
+  margin-left: var(--admin-space-md);
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
 }
 
 .approveButton {
-  padding: 0.5rem 1rem;
-  font-size: 0.9375rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
+  font-size: var(--admin-font-size-base);
   font-weight: 500;
   color: var(--admin-text-inverse);
   background: var(--admin-success);
   border: 1px solid var(--admin-success-deep);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
   transition:
     background-color 0.15s,
@@ -361,13 +361,13 @@
 }
 
 .cancelOrderButton {
-  padding: 0.5rem 1rem;
-  font-size: 0.9375rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
+  font-size: var(--admin-font-size-base);
   font-weight: 500;
   color: var(--admin-danger-text);
   background: var(--admin-danger-bg);
   border: 1px solid var(--admin-danger-border);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
   transition:
     background-color 0.15s,
@@ -386,27 +386,27 @@
 
 .approvedNotice {
   margin: 0.5rem 0 0 0;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
+  padding: var(--admin-space-md) var(--admin-space-xl);
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-success-text);
   background: var(--admin-success-bg-soft);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   border: 1px solid var(--admin-success-border-soft);
 }
 
 .sentToEmailBadge {
   display: inline-block;
-  margin-left: 0.5rem;
-  padding: 0.25rem 0.5rem;
-  font-size: 0.8125rem;
+  margin-left: var(--admin-space-md);
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
   background: var(--admin-surface-soft);
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
 }
 
 .approvalCountdown {
   margin: 0.5rem 0 0 0;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-success-text-strong);
 }
 
@@ -418,14 +418,14 @@
 .reviewTimeline {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: var(--admin-space-sm);
 }
 
 .reviewTimelineRow {
   display: flex;
   align-items: baseline;
-  gap: 0.5rem;
-  font-size: 0.9375rem;
+  gap: var(--admin-space-md);
+  font-size: var(--admin-font-size-base);
 }
 
 .reviewTimelineLabel {
@@ -440,7 +440,7 @@
 /* Модальное окно истории заказа */
 .historyModal {
   background: var(--admin-surface);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   max-width: 640px;
   width: 100%;
   max-height: 85vh;
@@ -455,25 +455,25 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.25rem;
+  padding: var(--admin-space-2xl) var(--admin-space-3xl);
   border-bottom: 1px solid var(--admin-border);
 }
 
 .historyModalTitle {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: var(--admin-font-size-xl);
   font-weight: 600;
 }
 
 .historyModalClose {
-  padding: 0.25rem;
+  padding: var(--admin-space-xs);
   background: transparent;
   border: none;
-  font-size: 1.5rem;
-  line-height: 1;
+  font-size: var(--admin-font-size-3xl);
+  line-height: var(--admin-line-height-flat);
   color: var(--admin-text-muted);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
 }
 
 .historyModalClose:hover {
@@ -482,12 +482,12 @@
 }
 
 .historyModal .orderHistory {
-  padding: 1rem 1.25rem;
+  padding: var(--admin-space-2xl) var(--admin-space-3xl);
   overflow: auto;
 }
 
 .orderHistory {
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .orderHistoryEmpty {
@@ -499,10 +499,10 @@
   display: grid;
   grid-template-columns: 10rem 1fr 10rem 8rem;
   align-items: baseline;
-  gap: 0.5rem;
-  padding: 0 0 0.25rem 0;
-  margin-bottom: 0.2rem;
-  font-size: 0.75rem;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xs) var(--admin-space-0);
+  margin-bottom: var(--admin-space-fluid-md);
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
   color: var(--admin-text-muted);
   border-bottom: 1px solid var(--admin-border);
@@ -515,19 +515,19 @@
 
 .orderHistoryList {
   margin: 0;
-  padding: 0;
+  padding: var(--admin-space-0);
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: var(--admin-space-sm);
 }
 
 .orderHistoryItem {
   display: grid;
   grid-template-columns: 10rem 1fr 6.5rem 8rem;
   align-items: baseline;
-  gap: 0.5rem;
-  padding: 0.25rem 0;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-xs) var(--admin-space-0);
   border-bottom: 1px solid var(--admin-surface-soft);
 }
 
@@ -548,28 +548,28 @@
 .orderHistoryDuration {
   font-variant-numeric: tabular-nums;
   color: var(--admin-text-muted);
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
 }
 
 .orderHistoryAuthor {
   color: var(--admin-text-muted);
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
 }
 
 .email {
   color: var(--admin-text-muted);
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   margin: 0.1rem 0 0 0;
 }
 
 .total {
-  font-size: 1.125rem;
+  font-size: var(--admin-font-size-xl);
   font-weight: 600;
   margin: 0;
 }
 
 .muted {
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
   margin: 0.25rem 0 0 0;
 }
@@ -577,15 +577,15 @@
 .itemsTable {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
 }
 
 .th {
   text-align: left;
-  padding: 0.4rem 0.6rem;
+  padding: var(--admin-space-fluid-xl) var(--admin-space-fluid-2xl);
   border-bottom: 1px solid var(--admin-border);
   font-weight: 600;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-secondary);
 }
 
@@ -594,9 +594,9 @@
 }
 
 .td {
-  padding: 0.4rem 0.6rem;
+  padding: var(--admin-space-fluid-xl) var(--admin-space-fluid-2xl);
   vertical-align: top;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-secondary);
 }
 
@@ -607,9 +607,9 @@
 
 .itemMeta {
   display: block;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
-  margin-top: 0.125rem;
+  margin-top: var(--admin-space-fluid-xs);
 }
 
 .serviceCategoryRow {
@@ -617,8 +617,8 @@
 }
 
 .serviceCategoryCell {
-  padding: 0.45rem 0.6rem;
-  font-size: 0.8125rem;
+  padding: var(--admin-space-fluid-xl) var(--admin-space-fluid-2xl);
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
   color: var(--admin-text-secondary);
   border-bottom: 1px solid var(--admin-border);
@@ -629,8 +629,8 @@
 }
 
 .serviceRoomCell {
-  padding: 0.4rem 0.6rem;
-  font-size: 0.75rem;
+  padding: var(--admin-space-fluid-xl) var(--admin-space-fluid-2xl);
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
   color: var(--admin-text-muted);
   border-bottom: 1px solid var(--admin-border);
@@ -638,7 +638,7 @@
 
 .address {
   margin: 0.15rem 0 0 0;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-secondary);
 }
 
@@ -647,7 +647,7 @@
   grid-template-columns: 1fr auto;
   gap: 0.5rem 1.5rem;
   align-items: start;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
 }
 
 .deliveryCompactLeft p,
@@ -661,8 +661,8 @@
 }
 
 .deliveryDetails {
-  margin-top: 0.35rem;
-  font-size: 0.8125rem;
+  margin-top: var(--admin-space-fluid-lg);
+  font-size: var(--admin-font-size-xs);
 }
 
 .deliveryDetails p {
@@ -670,12 +670,12 @@
 }
 
 .deliveryCost {
-  margin-top: 0.35rem;
+  margin-top: var(--admin-space-fluid-lg);
   font-weight: 600;
 }
 
 .deliveryCostEdit {
-  margin-top: 0.5rem;
+  margin-top: var(--admin-space-md);
   padding-top: 0.5rem;
   border-top: 1px solid var(--admin-border);
   display: grid;
@@ -685,10 +685,10 @@
 }
 
 .deliveryCostEditTitle {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
   color: var(--admin-text-secondary);
-  margin: 0 0 0.25rem 0;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xs) var(--admin-space-0);
   grid-column: 1 / -1;
 }
 
@@ -699,19 +699,19 @@
 .deliveryCostEditLabel {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
-  font-size: 0.75rem;
+  gap: var(--admin-space-2xs);
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
 }
 
 .deliveryCostInput {
   width: 100%;
   max-width: 8rem;
-  padding: 0.25rem 0.35rem;
-  font-size: 0.8125rem;
+  padding: var(--admin-space-xs) var(--admin-space-fluid-lg);
+  font-size: var(--admin-font-size-xs);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
-  font-size: 0.9375rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-base);
 }
 
 .deliveryCostInput:focus {
@@ -722,13 +722,13 @@
 .deliveryCostSaveBtn {
   grid-column: 1 / -1;
   justify-self: start;
-  margin-top: 0.25rem;
-  padding: 0.3rem 0.6rem;
-  font-size: 0.8125rem;
+  margin-top: var(--admin-space-xs);
+  padding: var(--admin-space-fluid-md) var(--admin-space-fluid-2xl);
+  font-size: var(--admin-font-size-xs);
   background: var(--color-accent);
   color: var(--admin-text-inverse);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   cursor: pointer;
 }
 
@@ -742,30 +742,30 @@
 }
 
 .deliveryCostSummary {
-  margin-top: 0.35rem;
-  padding: 0.35rem 0.5rem;
+  margin-top: var(--admin-space-fluid-lg);
+  padding: var(--admin-space-fluid-lg) var(--admin-space-md);
   background: var(--admin-success-bg);
   border: 1px solid var(--admin-success-border-soft);
-  border-radius: 0.25rem;
-  font-size: 0.8125rem;
+  border-radius: var(--admin-radius-xs);
+  font-size: var(--admin-font-size-xs);
 }
 
 .deliveryCostSummaryTitle {
   font-weight: 600;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-success-text-strong);
-  margin: 0 0 0.2rem 0;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-fluid-md) var(--admin-space-0);
 }
 
 .deliveryCostSummaryLine {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-secondary);
-  margin: 0.1rem 0;
+  margin: var(--admin-space-2xs) var(--admin-space-0);
 }
 
 .deliveryCostSummaryTotal {
   font-weight: 600;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-primary);
   margin: 0.25rem 0 0 0;
   padding-top: 0.25rem;
@@ -774,7 +774,7 @@
 
 .loading,
 .error {
-  padding: 2rem;
+  padding: var(--admin-space-8xl);
   text-align: center;
   color: var(--admin-text-muted);
 }
@@ -792,7 +792,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem 1rem;
-  margin-top: 0.35rem;
+  margin-top: var(--admin-space-fluid-lg);
   align-items: start;
 }
 
@@ -802,19 +802,19 @@
 }
 
 .commentLabel {
-  font-size: 0.7rem;
+  font-size: var(--admin-font-size-2xs);
   color: var(--admin-text-muted);
   display: block;
-  margin-bottom: 0.15rem;
+  margin-bottom: var(--admin-space-fluid-sm);
 }
 
 .commentInput {
   width: 100%;
   min-height: 36px;
-  padding: 0.35rem 0.5rem;
+  padding: var(--admin-space-fluid-lg) var(--admin-space-md);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
-  font-size: 0.8125rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
   resize: vertical;
   box-sizing: border-box;
 }
@@ -826,25 +826,25 @@
 
 .replaceSelect {
   width: 100%;
-  padding: 0.35rem 0.5rem;
+  padding: var(--admin-space-fluid-lg) var(--admin-space-md);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
-  font-size: 0.75rem;
-  margin-bottom: 0.25rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
+  margin-bottom: var(--admin-space-xs);
 }
 
 .quantityEdit {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: var(--admin-space-sm);
 }
 
 .quantityInput {
   width: 4rem;
-  padding: 0.35rem 0.5rem;
+  padding: var(--admin-space-fluid-lg) var(--admin-space-md);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
-  font-size: 0.8125rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
   box-sizing: border-box;
 }
 
@@ -855,18 +855,18 @@
 
 .replacedBadge {
   display: inline-block;
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-warning-text);
   background: var(--admin-warning-bg);
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  margin-top: 0.25rem;
+  padding: var(--admin-space-fluid-md) var(--admin-space-md);
+  border-radius: var(--admin-radius-xs);
+  margin-top: var(--admin-space-xs);
 }
 
 .btnSmall {
-  padding: 0.35rem 0.6rem;
-  font-size: 0.75rem;
-  border-radius: 6px;
+  padding: var(--admin-space-fluid-lg) var(--admin-space-fluid-2xl);
+  font-size: var(--admin-font-size-xs);
+  border-radius: var(--admin-radius-sm);
   border: 1px solid var(--admin-border-strong);
   background: var(--admin-surface-muted);
   color: var(--admin-text-secondary);
@@ -887,17 +887,17 @@
 }
 
 .sendBackSection {
-  margin-bottom: 1rem;
+  margin-bottom: var(--admin-space-2xl);
   padding-bottom: 0.5rem;
 }
 
 .sendBackButton {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-accent);
   color: var(--admin-text-inverse);
   border: none;
-  border-radius: 6px;
-  font-size: 0.9375rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-base);
   font-weight: 500;
   cursor: pointer;
   transition:
@@ -928,8 +928,8 @@
 
 .modal {
   background: var(--admin-surface);
-  border-radius: 12px;
-  padding: 1.25rem;
+  border-radius: var(--admin-radius-xl);
+  padding: var(--admin-space-3xl);
   max-width: 420px;
   width: 90%;
   box-shadow:
@@ -938,26 +938,26 @@
 }
 
 .modalTitle {
-  font-size: 1.125rem;
+  font-size: var(--admin-font-size-xl);
   font-weight: 600;
-  margin: 0 0 0.75rem 0;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl) var(--admin-space-0);
   color: var(--admin-text-primary);
 }
 
 .modalText {
-  margin: 0 0 1rem 0;
-  font-size: 0.9375rem;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-2xl) var(--admin-space-0);
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-secondary);
 }
 
 .modalConfirmDelete {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-danger-text);
   color: var(--admin-text-inverse);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   font-weight: 500;
 }
 
@@ -973,39 +973,39 @@
 .modalTextarea {
   width: 100%;
   min-height: 80px;
-  padding: 0.5rem 0.75rem;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
-  font-size: 0.875rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
   resize: vertical;
   box-sizing: border-box;
-  margin-bottom: 1rem;
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .modalActions {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--admin-space-md);
   justify-content: flex-end;
 }
 
 .modalCancel {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-surface-soft);
   color: var(--admin-text-secondary);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .modalConfirm {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-accent);
   color: var(--admin-text-inverse);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   font-weight: 500;
 }
 

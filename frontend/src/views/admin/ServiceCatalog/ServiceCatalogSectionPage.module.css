@@ -1,5 +1,5 @@
 .page {
-  padding: 1.5rem;
+  padding: var(--admin-space-4xl);
   max-width: 1200px;
   color: var(--admin-text-secondary);
 }
@@ -8,26 +8,26 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .headerActions {
   display: flex;
-  gap: 1rem;
+  gap: var(--admin-space-2xl);
 }
 
 .title {
-  font-size: 1.5rem;
+  font-size: var(--admin-font-size-3xl);
   font-weight: 700;
   margin: 0;
   color: var(--admin-text-secondary);
 }
 
 .viewLink {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   color: var(--admin-overlay-color-135);
   text-decoration: none;
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
 }
 
 .viewLink:hover {
@@ -35,9 +35,9 @@
 }
 
 .message {
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-sm);
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .message.success {
@@ -51,52 +51,52 @@
 }
 
 .section {
-  margin-bottom: 2rem;
-  padding: 1rem;
+  margin-bottom: var(--admin-space-8xl);
+  padding: var(--admin-space-2xl);
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
 }
 
 .sectionTitle {
-  font-size: 1.125rem;
+  font-size: var(--admin-font-size-xl);
   font-weight: 600;
-  margin: 0 0 1rem;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-2xl);
   color: var(--admin-text-secondary);
 }
 
 .formRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: var(--admin-space-2xl);
   align-items: flex-start;
-  margin-bottom: 1rem;
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--admin-space-xs);
 }
 
 .formGroup label {
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
 }
 
 .input {
-  padding: 0.5rem 0.75rem;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
-  font-size: 0.9375rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-base);
   min-width: 200px;
 }
 
 .select {
-  padding: 0.5rem 0.75rem;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
-  font-size: 0.9375rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-base);
   background: var(--admin-surface);
   min-width: 140px;
 }
@@ -104,18 +104,18 @@
 .checkbox {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9375rem;
+  gap: var(--admin-space-md);
+  font-size: var(--admin-font-size-base);
   cursor: pointer;
 }
 
 .saveButton {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-overlay-color-108);
   color: white;
   border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
   cursor: pointer;
 }
 
@@ -130,16 +130,16 @@
 
 .categoriesTree {
   background: var(--admin-surface);
-  border-radius: 12px;
-  box-shadow: 0 1px 3px var(--admin-overlay-color-148);
+  border-radius: var(--admin-radius-xl);
+  box-shadow: var(--admin-shadow-card);
   overflow: hidden;
-  margin-bottom: 1rem;
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .categoriesList {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: var(--admin-space-0);
 }
 
 .categoryItem {
@@ -154,7 +154,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px;
+  padding: var(--admin-space-md) var(--admin-space-lg);
   transition: background 0.15s;
 }
 
@@ -165,7 +165,7 @@
 .categoryInfo {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--admin-space-xl);
   flex: 1;
 }
 
@@ -176,14 +176,14 @@
 .treeExpandButton {
   width: 24px;
   height: 28px;
-  padding: 0;
+  padding: var(--admin-space-0);
   border: none;
   background: transparent;
   cursor: pointer;
-  font-size: 0.7rem;
+  font-size: var(--admin-font-size-2xs);
   color: var(--admin-text-muted);
   flex-shrink: 0;
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
 }
 
 .treeExpandButton:hover {
@@ -193,15 +193,15 @@
 
 .parentFieldLabel {
   display: block;
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
-  margin-bottom: 4px;
+  margin-bottom: var(--admin-space-xs);
 }
 
 .categoryIcon {
   display: flex;
   align-items: center;
-  line-height: 1;
+  line-height: var(--admin-line-height-flat);
 }
 
 .categoryIconSvg {
@@ -214,7 +214,7 @@
   width: 24px;
   height: 24px;
   object-fit: cover;
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
 }
 
 .iconPickerWrapper {
@@ -224,13 +224,13 @@
 .iconButton {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-md) var(--admin-space-xl);
   background: var(--admin-surface-soft);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   transition: all 0.15s;
 }
 
@@ -246,18 +246,18 @@
 }
 
 .iconButtonPlaceholder {
-  font-size: 1rem;
+  font-size: var(--admin-font-size-lg);
 }
 
 .iconPicker {
   position: absolute;
   top: 100%;
   left: 0;
-  margin-top: 8px;
+  margin-top: var(--admin-space-md);
   background: white;
   border: 1px solid var(--admin-border-strong);
-  border-radius: 12px;
-  padding: 14px;
+  border-radius: var(--admin-radius-xl);
+  padding: var(--admin-space-xl);
   box-shadow: 0 10px 25px var(--admin-overlay-color-149);
   z-index: 100;
   min-width: min(440px, calc(100vw - 2rem));
@@ -270,7 +270,7 @@
 .iconGrid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 8px;
+  gap: var(--admin-space-md);
 }
 
 .iconOption {
@@ -281,7 +281,7 @@
   justify-content: center;
   background: none;
   border: 2px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -308,13 +308,13 @@
 
 .clearIconButton {
   width: 100%;
-  margin-top: 10px;
-  padding: 8px;
+  margin-top: var(--admin-space-lg);
+  padding: var(--admin-space-md);
   background: var(--admin-error-bg);
   border: 1px solid var(--admin-error-border-soft);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-error-strong);
-  font-size: 0.85rem;
+  font-size: var(--admin-font-size-sm);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -325,7 +325,7 @@
 
 .orDivider {
   color: var(--admin-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   margin: 0 0.25rem;
 }
 
@@ -344,14 +344,14 @@
 .uploadButton {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
+  gap: var(--admin-space-sm);
+  padding: var(--admin-space-md) var(--admin-space-xl);
   background: var(--admin-success-bg-soft);
   border: 1px solid var(--admin-success-border-soft);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   color: var(--admin-success-strong);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   transition: all 0.15s;
 }
 
@@ -375,7 +375,7 @@
   width: 40px;
   height: 40px;
   object-fit: cover;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
 }
 
 .removeImageButton {
@@ -390,10 +390,10 @@
   background: var(--admin-error-strong);
   color: white;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--admin-radius-full);
   cursor: pointer;
-  font-size: 12px;
-  line-height: 1;
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-flat);
 }
 
 .iconPreview {
@@ -410,36 +410,36 @@
 .cardBgField {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--admin-space-sm);
   width: 100%;
-  margin-top: 4px;
+  margin-top: var(--admin-space-xs);
 }
 
 .cardBgRow {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--admin-space-md);
 }
 
 /* Предпросмотр фона: без растягивания на всю ширину формы, пропорции как у файла */
 .cardBgPreviewImg {
   display: block;
-  margin-top: 8px;
+  margin-top: var(--admin-space-md);
   max-width: min(100%, 280px);
   max-height: 120px;
   width: auto;
   height: auto;
   object-fit: contain;
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   border: 1px solid var(--admin-border);
   background: var(--admin-surface-soft);
 }
 
 .clearCardBgButton {
-  padding: 6px 10px;
-  font-size: 0.8125rem;
-  border-radius: 6px;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  font-size: var(--admin-font-size-xs);
+  border-radius: var(--admin-radius-sm);
   border: 1px solid var(--admin-error-border-soft);
   background: var(--admin-error-bg);
   color: var(--admin-error-text);
@@ -464,53 +464,53 @@
 
 .categorySlug {
   color: var(--admin-text-muted);
-  font-size: 0.85rem;
+  font-size: var(--admin-font-size-sm);
   font-family: monospace;
 }
 
 .itemsCount {
   background: var(--admin-accent-soft);
   color: var(--admin-accent);
-  padding: 2px 6px;
-  border-radius: 8px;
-  font-size: 0.7rem;
+  padding: var(--admin-space-2xs) var(--admin-space-sm);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-2xs);
   font-weight: 500;
 }
 
 .categoryActions {
   display: flex;
-  gap: 8px;
+  gap: var(--admin-space-md);
 }
 
 .emptyList {
   text-align: center;
-  padding: 40px;
+  padding: var(--admin-space-6xl);
   color: var(--admin-text-muted);
 }
 
 .addCategoryRow {
-  margin-top: 0.5rem;
+  margin-top: var(--admin-space-md);
 }
 
 .cellActions {
   display: flex;
-  gap: 0.25rem;
+  gap: var(--admin-space-xs);
   align-items: center;
 }
 
 .categoryEditRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--admin-space-md);
   align-items: center;
   width: 100%;
-  padding: 8px 10px;
+  padding: var(--admin-space-md) var(--admin-space-lg);
 }
 
 .categoryBlockIcon {
   display: inline-flex;
   align-items: center;
-  margin-right: 0.25rem;
+  margin-right: var(--admin-space-xs);
 }
 
 .categoryBlockIconSvg {
@@ -523,18 +523,18 @@
   width: 20px;
   height: 20px;
   object-fit: cover;
-  border-radius: 4px;
-  margin-right: 0.25rem;
+  border-radius: var(--admin-radius-xs);
+  margin-right: var(--admin-space-xs);
 }
 
 .addButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: linear-gradient(135deg, var(--admin-accent), var(--admin-accent));
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -547,17 +547,17 @@
 .addForm {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--admin-space-md);
   align-items: center;
-  margin-top: 0.5rem;
+  margin-top: var(--admin-space-md);
 }
 
 .cancelButton {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-surface-soft);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
-  font-size: 0.875rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
   cursor: pointer;
 }
 
@@ -571,12 +571,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  padding: var(--admin-space-0);
   background: var(--admin-surface-soft);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--admin-font-size-base);
 }
 
 .editButton:hover {
@@ -589,12 +589,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  padding: var(--admin-space-0);
   background: var(--admin-error-bg);
   border: 1px solid var(--admin-error-border-soft);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--admin-font-size-base);
 }
 
 .deleteButton:hover {
@@ -603,28 +603,28 @@
 }
 
 .categoryBlock {
-  margin-bottom: 2rem;
-  padding: 1rem;
+  margin-bottom: var(--admin-space-8xl);
+  padding: var(--admin-space-2xl);
   background: var(--admin-surface-muted);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
 }
 
 .categoryBlockTitle {
-  font-size: 1rem;
+  font-size: var(--admin-font-size-lg);
   font-weight: 600;
-  margin: 0 0 0.75rem;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl);
   color: var(--admin-text-secondary);
 }
 
 .itemsTable {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
 }
 
 .itemsTable th,
 .itemsTable td {
-  padding: 0.5rem 0.75rem;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   text-align: left;
   border-bottom: 1px solid var(--admin-border);
 }
@@ -635,13 +635,13 @@
 }
 
 .smallButton {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.8125rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
   background: var(--admin-border);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   cursor: pointer;
-  margin-right: 0.25rem;
+  margin-right: var(--admin-space-xs);
 }
 
 .smallButton:hover {
@@ -651,18 +651,18 @@
 .addItemForm {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--admin-space-md);
   align-items: center;
-  margin-top: 0.75rem;
+  margin-top: var(--admin-space-xl);
 }
 
 .addItemButton {
-  margin-top: 0.5rem;
-  padding: 0.5rem 1rem;
+  margin-top: var(--admin-space-md);
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-border);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
-  font-size: 0.875rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
   cursor: pointer;
 }
 
@@ -672,7 +672,7 @@
 
 .empty {
   color: var(--admin-text-muted);
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   margin: 0;
 }
 
@@ -918,12 +918,12 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 20px;
+  padding: var(--admin-space-3xl);
 }
 
 .createModal {
   background: white;
-  border-radius: 16px;
+  border-radius: var(--admin-radius-2xl);
   max-width: 520px;
   width: 100%;
   max-height: 90vh;
@@ -948,13 +948,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
+  padding: var(--admin-space-3xl) var(--admin-space-4xl);
   border-bottom: 1px solid var(--admin-border);
   flex-shrink: 0;
 }
 
 .modalTitle {
-  font-size: 1.25rem;
+  font-size: var(--admin-font-size-2xl);
   font-weight: 600;
   color: var(--admin-text-secondary);
   margin: 0;
@@ -968,10 +968,10 @@
   justify-content: center;
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: var(--admin-font-size-4xl);
   color: var(--admin-text-muted);
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   transition: all 0.15s;
 }
 
@@ -986,31 +986,31 @@
 }
 
 .modalBody {
-  padding: 24px;
+  padding: var(--admin-space-4xl);
   overflow-y: auto;
   flex: 1;
   min-height: 0;
 }
 
 .createFormGroup {
-  margin-bottom: 16px;
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .fieldHint {
   display: block;
-  margin-top: 6px;
-  font-size: 0.8125rem;
-  line-height: 1.4;
+  margin-top: var(--admin-space-sm);
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-md);
   color: var(--admin-text-muted);
   font-weight: 400;
 }
 
 .label {
   display: block;
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
   font-weight: 500;
   color: var(--admin-text-secondary);
-  margin-bottom: 6px;
+  margin-bottom: var(--admin-space-sm);
 }
 
 .createInput,
@@ -1018,10 +1018,10 @@
 .createTextarea {
   width: 100%;
   box-sizing: border-box;
-  padding: 10px 14px;
+  padding: var(--admin-space-lg) var(--admin-space-xl);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 8px;
-  font-size: 0.95rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-base);
   font-family: inherit;
   transition: all 0.15s;
 }
@@ -1036,47 +1036,47 @@
 .createTextarea:focus {
   outline: none;
   border-color: var(--admin-accent);
-  box-shadow: 0 0 0 3px rgba(var(--admin-overlay-color-144), 0.1);
+  box-shadow: var(--admin-shadow-focus-soft);
 }
 
 .createIconImageRow {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--admin-space-xl);
   flex-wrap: wrap;
 }
 
 .createPreviewSection {
-  margin-top: 12px;
+  margin-top: var(--admin-space-xl);
   padding-top: 12px;
   border-top: 1px solid var(--admin-border);
 }
 
 .previewLabel {
   display: block;
-  font-size: 0.8rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
-  margin-bottom: 8px;
+  margin-bottom: var(--admin-space-md);
 }
 
 .createPreview {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--admin-space-xl);
   flex-wrap: wrap;
 }
 
 .previewName {
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
   font-weight: 500;
   color: var(--admin-text-secondary);
 }
 
 .messageBox {
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  font-size: 0.9rem;
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-md);
+  margin-bottom: var(--admin-space-2xl);
+  font-size: var(--admin-font-size-sm);
 }
 
 .messageBox.success {
@@ -1094,22 +1094,22 @@
 .modalActions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  padding: 16px 24px;
+  gap: var(--admin-space-xl);
+  padding: var(--admin-space-2xl) var(--admin-space-4xl);
   border-top: 1px solid var(--admin-border);
   background: var(--admin-surface-muted);
-  border-radius: 0 0 16px 16px;
+  border-radius: var(--admin-radius-card-bottom);
   flex-shrink: 0;
 }
 
 .modalFooterCancel {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: white;
   color: var(--admin-text-secondary);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1125,13 +1125,13 @@
 }
 
 .primaryButton {
-  padding: 6px 12px;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: linear-gradient(135deg, var(--admin-accent), var(--admin-accent));
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   transition: all 0.15s;
 }

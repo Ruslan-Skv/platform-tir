@@ -4,11 +4,11 @@
 }
 
 .header {
-  margin-bottom: 24px;
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .title {
-  font-size: 1.75rem;
+  font-size: var(--admin-font-size-4xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
   margin: 0;
@@ -17,54 +17,54 @@
 .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: var(--admin-space-2xl);
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .filterLabel {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.875rem;
+  gap: var(--admin-space-md);
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
 }
 
 .filterSelect {
   min-width: 140px;
-  padding: 8px 12px;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
-  font-size: 0.9rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-sm);
   background: var(--admin-surface);
 }
 
 .placeholder {
   background: var(--admin-surface-muted);
   border: 1px solid var(--admin-border);
-  border-radius: 12px;
-  padding: 32px;
+  border-radius: var(--admin-radius-xl);
+  padding: var(--admin-space-5xl);
   text-align: center;
 }
 
 .placeholderText {
-  margin: 0 0 12px 0;
-  font-size: 0.9375rem;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl) var(--admin-space-0);
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-muted);
-  line-height: 1.5;
+  line-height: var(--admin-line-height-lg);
 }
 
 .placeholderPeriod {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   font-weight: 500;
   color: var(--admin-text-secondary);
 }
 
 .managementLink {
   display: inline-block;
-  margin-top: 16px;
-  font-size: 0.9375rem;
+  margin-top: var(--admin-space-2xl);
+  font-size: var(--admin-font-size-base);
   font-weight: 500;
   color: var(--admin-accent);
   text-decoration: none;

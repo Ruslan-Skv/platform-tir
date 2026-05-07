@@ -1,36 +1,36 @@
 .section {
-  margin-top: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  margin-top: var(--admin-space-md);
+  padding: var(--admin-space-md) var(--admin-space-xl);
   background: var(--admin-surface-soft);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
 }
 
 .sectionHeader {
   align-items: center;
   background: var(--admin-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--admin-space-md);
   justify-content: space-between;
-  margin-bottom: 0.5rem;
-  padding: 6px 10px;
+  margin-bottom: var(--admin-space-md);
+  padding: var(--admin-space-sm) var(--admin-space-lg);
 }
 
 .sectionTitle {
   color: var(--admin-text-primary);
-  font-size: 1.125rem;
+  font-size: var(--admin-font-size-lg);
   font-weight: 600;
   margin: 0;
 }
 
 .addButton {
-  padding: 0.375rem 0.75rem;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: var(--admin-info);
   color: white;
   border: none;
-  border-radius: 6px;
-  font-size: 0.8125rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s;
@@ -41,69 +41,69 @@
 }
 
 .kitCompositionInfo {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-secondary);
   background: var(--admin-info-bg-soft);
   border: 1px solid var(--admin-info-border);
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
-  margin-bottom: 0.5rem;
+  border-radius: var(--admin-radius-sm);
+  padding: var(--admin-space-md) var(--admin-space-xl);
+  margin-bottom: var(--admin-space-md);
 }
 
 .form {
   background: white;
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-sm);
+  margin-bottom: var(--admin-space-2xl);
   border: 1px solid var(--admin-border);
 }
 
 .formRow {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-md);
 }
 
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--admin-space-xs);
 }
 
 .formGroup label {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-sm);
   font-weight: 500;
   color: var(--admin-text-secondary);
 }
 
 .namesHint {
-  margin-bottom: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  margin-bottom: var(--admin-space-md);
+  padding: var(--admin-space-md) var(--admin-space-xl);
   background: var(--admin-success-bg-soft);
   border: 1px solid var(--admin-success-border-soft);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
 }
 
 .namesHintLabel {
   display: block;
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-success-text-strong);
-  margin-bottom: 0.35rem;
+  margin-bottom: var(--admin-space-fluid-lg);
 }
 
 .namesHintChips {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: var(--admin-space-sm);
 }
 
 .namesHintChip {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
   background: var(--admin-surface);
   border: 1px solid var(--admin-success-bright);
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   color: var(--admin-success-deep);
   cursor: pointer;
 }
@@ -113,25 +113,25 @@
 }
 
 .input {
-  padding: 0.5rem 0.625rem;
+  padding: var(--admin-space-md) var(--admin-space-fluid-2xl);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 4px;
-  font-size: 0.8125rem;
+  border-radius: var(--admin-radius-xs);
+  font-size: var(--admin-font-size-sm);
 }
 
 .formActions {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+  gap: var(--admin-space-md);
+  margin-top: var(--admin-space-md);
 }
 
 .saveButton {
-  padding: 0.25rem 0.5rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
   background: var(--admin-success);
   color: white;
   border: none;
-  border-radius: 4px;
-  font-size: 0.8125rem;
+  border-radius: var(--admin-radius-xs);
+  font-size: var(--admin-font-size-sm);
   font-weight: 600;
   cursor: pointer;
 }
@@ -141,12 +141,12 @@
 }
 
 .cancelButton {
-  padding: 0.25rem 0.5rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
   background: var(--admin-text-muted);
   color: white;
   border: none;
-  border-radius: 4px;
-  font-size: 0.8125rem;
+  border-radius: var(--admin-radius-xs);
+  font-size: var(--admin-font-size-sm);
   font-weight: 600;
   cursor: pointer;
 }
@@ -156,37 +156,37 @@
 }
 
 .componentGroup {
-  margin-bottom: 0.35rem;
+  margin-bottom: var(--admin-space-fluid-lg);
 }
 
 .groupTitle {
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-sm);
   font-weight: 600;
-  margin-bottom: 0.35rem;
+  margin-bottom: var(--admin-space-fluid-lg);
   color: var(--admin-text-secondary);
 }
 
 .componentsList {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: var(--admin-space-sm);
 }
 
 .componentItem {
   display: flex;
   align-items: center;
-  padding: 0.35rem 0.5rem;
+  padding: var(--admin-space-fluid-lg) var(--admin-space-md);
   background: white;
   border: 1px solid var(--admin-border);
-  border-radius: 4px;
-  gap: 0.5rem;
+  border-radius: var(--admin-radius-xs);
+  gap: var(--admin-space-md);
   min-width: 0;
 }
 
 .componentImageSection {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: var(--admin-space-sm);
   flex-shrink: 0;
 }
 
@@ -194,7 +194,7 @@
   width: 36px;
   height: 36px;
   position: relative;
-  border-radius: 0.25rem;
+  border-radius: var(--admin-radius-xs);
   overflow: hidden;
   background: var(--admin-surface-muted);
   border: 1px solid var(--admin-border);
@@ -215,7 +215,7 @@
   right: 1px;
   width: 16px;
   height: 16px;
-  border-radius: 50%;
+  border-radius: var(--admin-radius-full);
   background: var(--admin-overlay-color-168);
   color: white;
   border: none;
@@ -223,8 +223,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.65rem;
-  line-height: 1;
+  font-size: var(--admin-font-size-2xs);
+  line-height: var(--admin-line-height-flat);
   transition: background 0.2s;
   z-index: 1;
 }
@@ -236,18 +236,18 @@
 .inlineImageControls {
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: var(--admin-space-2xs);
 }
 
 .inlineImageButton {
   width: 24px;
   height: 24px;
-  padding: 0;
+  padding: var(--admin-space-0);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 0.25rem;
+  border-radius: var(--admin-radius-xs);
   background: white;
   cursor: pointer;
-  font-size: 0.7rem;
+  font-size: var(--admin-font-size-2xs);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -267,53 +267,53 @@
   display: grid;
   grid-template-columns: 120px 1fr 120px 100px 100px auto;
   align-items: center;
-  gap: 0.35rem;
+  gap: var(--admin-space-sm);
   width: 100%;
 }
 
 .inlineField {
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: var(--admin-space-2xs);
 }
 
 .inlineLabel {
-  font-size: 0.625rem;
+  font-size: var(--admin-font-size-2xs);
   font-weight: 500;
   color: var(--admin-text-muted);
 }
 
 .componentType {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   font-weight: 500;
   color: var(--admin-text-primary);
   flex-shrink: 0;
 }
 
 .componentPrice {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
   color: var(--admin-info);
   flex-shrink: 0;
 }
 
 .componentStock {
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
   flex-shrink: 0;
 }
 
 .componentSortOrder {
-  font-size: 0.75rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
   flex-shrink: 0;
 }
 
 .inlineInput {
-  padding: 0.2rem 0.4rem;
+  padding: var(--admin-space-fluid-md) var(--admin-space-fluid-xl);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
+  border-radius: var(--admin-radius-xs);
+  font-size: var(--admin-font-size-2xs);
   background: white;
   min-width: 0;
   width: 100%;
@@ -328,11 +328,11 @@
 .inlineCheckbox {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  font-size: 0.75rem;
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-2xs);
   cursor: pointer;
   white-space: nowrap;
-  margin-top: 0.5rem;
+  margin-top: var(--admin-space-md);
 }
 
 .inlineCheckbox input[type='checkbox'] {
@@ -341,30 +341,30 @@
 
 .inactiveBadge {
   display: inline-block;
-  padding: 0.25rem 0.5rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
   background: var(--admin-error-bg-soft);
   color: var(--admin-error-strong);
-  border-radius: 4px;
-  font-size: 0.75rem;
+  border-radius: var(--admin-radius-xs);
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
 }
 
 .componentActions {
   display: flex;
-  gap: 0.35rem;
+  gap: var(--admin-space-sm);
 }
 
 .editButton {
   width: 26px;
   height: 26px;
-  padding: 0;
+  padding: var(--admin-space-0);
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--admin-surface-soft);
   color: var(--admin-text-primary);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 3px;
+  border-radius: var(--admin-radius-xs);
   cursor: pointer;
   flex-shrink: 0;
 }
@@ -376,14 +376,14 @@
 .deleteButton {
   width: 26px;
   height: 26px;
-  padding: 0;
+  padding: var(--admin-space-0);
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--admin-error-bg-soft);
   color: var(--admin-error-strong);
   border: 1px solid var(--admin-error-border-soft);
-  border-radius: 3px;
+  border-radius: var(--admin-radius-xs);
   cursor: pointer;
   flex-shrink: 0;
 }
@@ -394,13 +394,13 @@
 
 .emptyState {
   text-align: center;
-  padding: 2rem;
+  padding: var(--admin-space-8xl);
   color: var(--admin-text-muted);
 }
 
 .loading {
   text-align: center;
-  padding: 2rem;
+  padding: var(--admin-space-8xl);
   color: var(--admin-text-muted);
 }
 
@@ -408,8 +408,8 @@
   position: relative;
   width: 100px;
   height: 100px;
-  margin-bottom: 0.5rem;
-  border-radius: 0.375rem;
+  margin-bottom: var(--admin-space-md);
+  border-radius: var(--admin-radius-sm);
   overflow: hidden;
   border: 1px solid var(--admin-border);
   background: var(--admin-surface-muted);
@@ -427,7 +427,7 @@
   right: 0.25rem;
   width: 24px;
   height: 24px;
-  border-radius: 50%;
+  border-radius: var(--admin-radius-full);
   background: var(--admin-overlay-color-156);
   color: white;
   border: none;
@@ -435,8 +435,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
-  line-height: 1;
+  font-size: var(--admin-font-size-2xl);
+  line-height: var(--admin-line-height-flat);
   transition: background 0.2s;
 }
 
@@ -446,18 +446,18 @@
 
 .imageUploadButtons {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--admin-space-md);
   flex-wrap: wrap;
 }
 
 .uploadButton,
 .urlButton {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-surface-soft);
   color: var(--admin-text-primary);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-md);
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;

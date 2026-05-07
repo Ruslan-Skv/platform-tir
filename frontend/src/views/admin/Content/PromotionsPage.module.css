@@ -1,5 +1,5 @@
 .page {
-  padding: 1.5rem;
+  padding: var(--admin-space-4xl);
   max-width: 1200px;
   color: var(--admin-text-secondary);
 }
@@ -8,28 +8,28 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .headerActions {
   display: flex;
-  gap: 1rem;
+  gap: var(--admin-space-2xl);
 }
 
 .title {
-  font-size: 1.5rem;
+  font-size: var(--admin-font-size-2xl);
   font-weight: 700;
   margin: 0;
   color: var(--admin-text-secondary);
 }
 
 .createButton {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-overlay-color-135);
   color: white;
   text-decoration: none;
-  border-radius: 6px;
-  font-size: 0.9375rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-base);
 }
 
 .createButton:hover {
@@ -37,10 +37,10 @@
 }
 
 .viewLink {
-  padding: 0.5rem 1rem;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   color: var(--admin-overlay-color-135);
   text-decoration: none;
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
 }
 
 .viewLink:hover {
@@ -48,9 +48,9 @@
 }
 
 .message {
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-sm);
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .message.success {
@@ -65,7 +65,7 @@
 
 .loading,
 .empty {
-  padding: 2rem;
+  padding: var(--admin-space-8xl);
   text-align: center;
   color: var(--admin-text-muted);
 }
@@ -73,23 +73,23 @@
 .list {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--admin-space-4xl);
 }
 
 .card {
   display: flex;
-  gap: 1.5rem;
-  padding: 1rem;
+  gap: var(--admin-space-4xl);
+  padding: var(--admin-space-2xl);
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
 }
 
 .cardImage {
   flex-shrink: 0;
   width: 200px;
   height: 140px;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   overflow: hidden;
   background: var(--admin-surface-soft);
 }
@@ -106,16 +106,16 @@
 }
 
 .cardTitle {
-  font-size: 1.125rem;
+  font-size: var(--admin-font-size-xl);
   font-weight: 600;
-  margin: 0 0 0.5rem;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-md);
   color: var(--admin-text-secondary);
 }
 
 .cardDescription {
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-muted);
-  margin: 0 0 0.5rem;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-md);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -123,32 +123,32 @@
 }
 
 .cardSlug {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--admin-space-md);
 }
 
 .inactive {
   display: inline-block;
-  padding: 0.25rem 0.5rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
   background: var(--admin-overlay-color-064);
   color: var(--admin-overlay-color-070);
-  font-size: 0.8125rem;
-  border-radius: 4px;
-  margin-left: 0.5rem;
+  font-size: var(--admin-font-size-xs);
+  border-radius: var(--admin-radius-xs);
+  margin-left: var(--admin-space-md);
 }
 
 .cardActions {
   display: flex;
-  gap: 1rem;
-  margin-top: 0.75rem;
+  gap: var(--admin-space-2xl);
+  margin-top: var(--admin-space-xl);
 }
 
 .editLink {
   color: var(--admin-overlay-color-135);
   text-decoration: none;
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
 }
 
 .editLink:hover {
@@ -156,11 +156,11 @@
 }
 
 .deleteButton {
-  padding: 0;
+  padding: var(--admin-space-0);
   background: none;
   border: none;
   color: var(--admin-overlay-color-070);
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   cursor: pointer;
 }
 

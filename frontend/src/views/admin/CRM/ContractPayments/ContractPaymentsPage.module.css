@@ -7,18 +7,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: var(--admin-space-xl);
 }
 
 .headerLeft {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--admin-space-lg);
   flex-wrap: wrap;
 }
 
 .title {
-  font-size: 1.35rem;
+  font-size: var(--admin-font-size-3xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
   margin: 0;
@@ -26,24 +26,24 @@
 
 .count {
   background: var(--admin-border);
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.9rem;
+  padding: var(--admin-space-xs) var(--admin-space-xl);
+  border-radius: var(--admin-radius-3xl);
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
 }
 
 .syncNote {
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
   margin: -8px 0 16px 0;
-  line-height: 1.45;
+  line-height: var(--admin-line-height-md);
 }
 
 .officeSelect {
-  padding: 5px 10px;
-  font-size: 0.8125rem;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  font-size: var(--admin-font-size-xs);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   background: var(--admin-surface);
   min-width: 160px;
 }
@@ -51,16 +51,16 @@
 .periodLabel {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.8125rem;
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-secondary);
 }
 
 .periodInput {
-  padding: 4px 8px;
-  font-size: 0.8125rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   background: var(--admin-surface);
   width: 120px;
 }
@@ -68,16 +68,16 @@
 .tableFilters {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: var(--admin-space-sm);
+  margin-bottom: var(--admin-space-md);
   align-items: center;
 }
 
 .filterInput {
-  padding: 4px 8px;
-  font-size: 0.75rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   background: var(--admin-surface);
   min-width: 80px;
   max-width: 115px;
@@ -92,17 +92,17 @@
 }
 
 .filteredSum {
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
   color: var(--admin-text-primary);
   margin-left: auto;
 }
 
 .collectionInput {
-  padding: 4px 8px;
-  font-size: 0.8125rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   background: var(--admin-surface);
   min-width: 80px;
   max-width: 100px;
@@ -115,14 +115,14 @@
 .summaryCard {
   background: var(--admin-surface-muted);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 8px;
-  padding: 12px 14px;
-  margin-bottom: 14px;
+  border-radius: var(--admin-radius-md);
+  padding: var(--admin-space-xl) var(--admin-space-xl);
+  margin-bottom: var(--admin-space-xl);
 }
 
 .summaryTitle {
-  margin: 0 0 10px 0;
-  font-size: 1rem;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-lg) var(--admin-space-0);
+  font-size: var(--admin-font-size-lg);
   font-weight: 600;
   color: var(--admin-text-primary);
 }
@@ -130,34 +130,34 @@
 .summaryGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 8px;
+  gap: var(--admin-space-md);
 }
 
 .summaryItem {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--admin-space-2xs);
 }
 
 .summaryLabel {
-  font-size: 0.7rem;
+  font-size: var(--admin-font-size-2xs);
   color: var(--admin-text-muted);
 }
 
 .summaryValue {
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   font-weight: 600;
   color: var(--admin-text-primary);
 }
 
 .summaryValueHighlight {
-  font-size: 1rem;
+  font-size: var(--admin-font-size-lg);
   font-weight: 700;
   color: var(--admin-chart-teal-strong);
 }
 
 .section {
-  margin-bottom: 18px;
+  margin-bottom: var(--admin-space-18);
 }
 
 .sectionHeader {
@@ -165,33 +165,33 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-xl);
 }
 
 .sectionTitle {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   font-weight: 600;
   color: var(--admin-text-secondary);
 }
 
 .emptyText {
   margin: 0;
-  padding: 16px;
+  padding: var(--admin-space-2xl);
   color: var(--admin-text-muted);
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
 }
 
 .simpleTable {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
 }
 
 .simpleTable th,
 .simpleTable td {
-  padding: 6px 10px;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
   text-align: left;
   border-bottom: 1px solid var(--admin-border);
 }
@@ -203,12 +203,12 @@
 }
 
 .smallBtn {
-  padding: 4px 10px;
-  font-size: 0.8125rem;
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-error-strong);
   background: none;
   border: 1px solid var(--admin-error-border-soft);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
 }
 
@@ -219,71 +219,71 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--admin-space-lg);
   min-width: 280px;
 }
 
 .form label {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  font-size: 0.8125rem;
+  gap: var(--admin-space-2xs);
+  font-size: var(--admin-font-size-xs);
   font-weight: 500;
   color: var(--admin-text-secondary);
 }
 
 .form .input {
-  padding: 5px 10px;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
-  font-size: 0.875rem;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
 }
 
 .formHint {
-  margin: 0 0 4px 0;
-  font-size: 0.8125rem;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xs) var(--admin-space-0);
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
-  line-height: 1.4;
+  line-height: var(--admin-line-height-md);
 }
 
 .formActions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  margin-top: 4px;
+  gap: var(--admin-space-md);
+  margin-top: var(--admin-space-xs);
 }
 
 .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: var(--admin-space-xl);
+  margin-bottom: var(--admin-space-3xl);
 }
 
 .select {
-  padding: 10px 16px;
+  padding: var(--admin-space-lg) var(--admin-space-2xl);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
-  font-size: 0.95rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-base);
   background: var(--admin-surface);
   min-width: 140px;
 }
 
 .dateInput {
-  padding: 10px 16px;
+  padding: var(--admin-space-lg) var(--admin-space-2xl);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
-  font-size: 0.95rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-base);
 }
 
 .addBtn {
-  padding: 5px 12px;
-  font-size: 0.8125rem;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  font-size: var(--admin-font-size-xs);
   font-weight: 500;
   color: var(--admin-surface);
   background: var(--admin-accent);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
 }
 
@@ -294,11 +294,11 @@
 .editableCell {
   display: block;
   width: 100%;
-  padding: 4px 8px;
+  padding: var(--admin-space-xs) var(--admin-space-md);
   text-align: left;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
   cursor: pointer;
   font: inherit;
   color: inherit;
@@ -312,51 +312,51 @@
 .inlineInput {
   width: 100%;
   min-width: 80px;
-  padding: 4px 8px;
+  padding: var(--admin-space-xs) var(--admin-space-md);
   font-size: inherit;
   border: 1px solid var(--admin-accent);
-  border-radius: 4px;
+  border-radius: var(--admin-radius-xs);
 }
 
 .addForm {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--admin-space-xl);
   min-width: 360px;
 }
 
 .addForm label {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font-size: 0.875rem;
+  gap: var(--admin-space-xs);
+  font-size: var(--admin-font-size-sm);
   font-weight: 500;
   color: var(--admin-text-secondary);
 }
 
 .addForm .input,
 .addForm .select {
-  padding: 8px 12px;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 8px;
-  font-size: 0.9375rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-base);
 }
 
 .addError {
   margin: 0;
-  padding: 8px 12px;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   background: var(--admin-error-bg);
   color: var(--admin-error-text);
-  font-size: 0.875rem;
-  border-radius: 8px;
+  font-size: var(--admin-font-size-sm);
+  border-radius: var(--admin-radius-md);
 }
 
 .contractList {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: var(--admin-space-0);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   max-height: 200px;
   overflow-y: auto;
 }
@@ -365,11 +365,11 @@
 .contractItemActive {
   display: block;
   width: 100%;
-  padding: 8px 12px;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   text-align: left;
   background: var(--admin-surface);
   border: none;
-  font-size: 0.9375rem;
+  font-size: var(--admin-font-size-base);
   cursor: pointer;
 }
 
@@ -386,17 +386,17 @@
 .addFormActions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 8px;
+  gap: var(--admin-space-xl);
+  margin-top: var(--admin-space-md);
 }
 
 .cancelBtn {
-  padding: 5px 12px;
-  font-size: 0.8125rem;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
   background: var(--admin-surface);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
 }
 
@@ -405,13 +405,13 @@
 }
 
 .submitBtn {
-  padding: 5px 12px;
-  font-size: 0.8125rem;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  font-size: var(--admin-font-size-xs);
   font-weight: 500;
   color: var(--admin-surface);
   background: var(--admin-accent);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   cursor: pointer;
 }
 
@@ -631,6 +631,6 @@
   .header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 16px;
+    gap: var(--admin-space-2xl);
   }
 }

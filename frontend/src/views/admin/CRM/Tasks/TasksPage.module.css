@@ -7,17 +7,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: var(--admin-space-4xl);
 }
 
 .headerLeft {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--admin-space-2xl);
 }
 
 .title {
-  font-size: 1.75rem;
+  font-size: var(--admin-font-size-4xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
   margin: 0;
@@ -25,20 +25,20 @@
 
 .count {
   background: var(--admin-border);
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.9rem;
+  padding: var(--admin-space-xs) var(--admin-space-xl);
+  border-radius: var(--admin-radius-3xl);
+  font-size: var(--admin-font-size-base);
   color: var(--admin-text-muted);
 }
 
 .addButton {
-  padding: 8px 16px;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-accent);
   color: var(--admin-surface);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   font-weight: 500;
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-md);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -55,25 +55,25 @@
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: var(--admin-space-xl);
+  margin-bottom: var(--admin-space-3xl);
 }
 
 .statCard {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 10px;
-  padding: 14px 16px;
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
 }
 
 .statLabel {
-  font-size: 0.8rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
-  margin-bottom: 4px;
+  margin-bottom: var(--admin-space-xs);
 }
 
 .statValue {
-  font-size: 1.5rem;
+  font-size: var(--admin-font-size-2xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
 }
@@ -85,17 +85,17 @@
 .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--admin-space-lg);
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: var(--admin-space-2xl);
 }
 
 .filterInput,
 .filterSelect {
-  padding: 8px 12px;
+  padding: var(--admin-space-md) var(--admin-space-xl);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
-  font-size: 0.9rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-base);
 }
 
 .filterSelect {
@@ -106,17 +106,17 @@
 .filterLabel {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.875rem;
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-md);
   color: var(--admin-text-muted);
   cursor: pointer;
 }
 
 .message {
-  padding: 10px 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  font-size: 0.9rem;
+  padding: var(--admin-space-lg) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-md);
+  margin-bottom: var(--admin-space-2xl);
+  font-size: var(--admin-font-size-base);
 }
 
 .messageSuccess {
@@ -131,9 +131,9 @@
 
 .badge {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.75rem;
+  padding: var(--admin-space-2xs) var(--admin-space-md);
+  border-radius: var(--admin-radius-xl);
+  font-size: var(--admin-font-size-xs);
   font-weight: 500;
 }
 
@@ -172,14 +172,14 @@
 
 .rowActions {
   display: flex;
-  gap: 6px;
+  gap: var(--admin-space-sm);
 }
 
 .smallBtn {
-  padding: 4px 8px;
-  font-size: 0.75rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
   border: 1px solid var(--admin-border);
-  border-radius: 6px;
+  border-radius: var(--admin-radius-sm);
   background: var(--admin-surface);
   cursor: pointer;
   color: var(--admin-text-secondary);
@@ -209,20 +209,20 @@
 }
 
 .form {
-  padding: 20px;
+  padding: var(--admin-space-3xl);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--admin-space-2xl);
 }
 
 .formRow {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--admin-space-sm);
 }
 
 .formRow label {
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-md);
   font-weight: 500;
   color: var(--admin-text-secondary);
 }
@@ -230,10 +230,10 @@
 .formInput,
 .formSelect,
 .formTextarea {
-  padding: 10px 12px;
+  padding: var(--admin-space-lg) var(--admin-space-xl);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
-  font-size: 0.9rem;
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-base);
 }
 
 .formTextarea {
@@ -243,28 +243,28 @@
 
 .formActions {
   display: flex;
-  gap: 10px;
+  gap: var(--admin-space-lg);
   justify-content: flex-end;
   padding-top: 8px;
 }
 
 .cancelBtn {
-  padding: 8px 16px;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   background: var(--admin-surface);
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-base);
 }
 
 .submitBtn {
-  padding: 8px 16px;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
   background: var(--admin-accent);
   color: var(--admin-surface);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--admin-radius-md);
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-base);
   font-weight: 500;
 }
 
@@ -283,9 +283,9 @@
 }
 
 .taskDescription {
-  font-size: 0.8rem;
+  font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
-  margin-top: 2px;
+  margin-top: var(--admin-space-2xs);
 }
 
 /* Тёмная тема */
