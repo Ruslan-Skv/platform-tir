@@ -10,13 +10,13 @@
 .title {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   margin: 0 0 8px 0;
 }
 
 .subtitle {
   font-size: 0.9375rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin: 0;
 }
 
@@ -27,8 +27,8 @@
 }
 
 .card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 12px;
   overflow: hidden;
   padding: 16px;
@@ -37,14 +37,14 @@
 .cardTitle {
   font-size: 1rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   margin: 0 0 12px 0;
 }
 
 .preview {
   width: 100%;
   aspect-ratio: 16 / 10;
-  background: #f3f4f6;
+  background: var(--admin-surface-soft);
   border-radius: 8px;
   object-fit: cover;
   margin-bottom: 12px;
@@ -53,13 +53,13 @@
 .placeholder {
   width: 100%;
   aspect-ratio: 16 / 10;
-  background: #e5e7eb;
+  background: var(--admin-border);
   border-radius: 8px;
   margin-bottom: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9ca3af;
+  color: var(--admin-text-muted);
   font-size: 0.875rem;
 }
 
@@ -75,8 +75,8 @@
 
 .uploadBtn {
   padding: 8px 14px;
-  background: #6366f1;
-  color: #fff;
+  background: var(--admin-accent);
+  color: var(--admin-surface);
   border: none;
   border-radius: 8px;
   font-size: 0.875rem;
@@ -86,57 +86,57 @@
 }
 
 .uploadBtn:hover {
-  background: #4f46e5;
+  background: var(--admin-accent);
 }
 
 .uploadBtn:disabled {
-  background: #9ca3af;
+  background: var(--admin-text-muted);
   cursor: not-allowed;
 }
 
 .error {
   font-size: 0.8125rem;
-  color: #dc2626;
+  color: var(--admin-error-strong);
   margin-top: 8px;
 }
 
 .success {
   font-size: 0.8125rem;
-  color: #059669;
+  color: var(--admin-success);
   margin-top: 8px;
 }
 
 /* Тёмная тема — наши направления */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .subtitle {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .card {
-  background: #1f2937;
-  border-color: #374151;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardTitle {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .preview {
-  background: #374151;
+  background: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .placeholder {
-  background: #374151;
-  color: #9ca3af;
+  background: var(--admin-text-secondary);
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .error {
-  color: #fca5a5;
+  color: var(--admin-danger-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .success {
-  color: #6ee7b7;
+  color: var(--admin-success-border);
 }

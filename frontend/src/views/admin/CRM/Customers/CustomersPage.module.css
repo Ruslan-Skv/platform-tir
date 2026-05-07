@@ -19,22 +19,22 @@
 .title {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   margin: 0;
 }
 
 .count {
-  background: #e5e7eb;
+  background: var(--admin-border);
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 0.9rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .addButton {
   padding: 6px 12px;
-  background: #6366f1;
-  color: #fff;
+  background: var(--admin-accent);
+  color: var(--admin-surface);
   border: none;
   border-radius: 8px;
   font-weight: 500;
@@ -44,7 +44,7 @@
 }
 
 .addButton:hover {
-  background: #4f46e5;
+  background: var(--admin-accent);
 }
 
 .filters {
@@ -57,21 +57,21 @@
   flex: 1;
   max-width: 400px;
   padding: 10px 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   font-size: 0.95rem;
 }
 
 .searchInput:focus {
   outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 3px rgba(var(--admin-overlay-color-144), 0.1);
 }
 
 .searchButton {
   padding: 10px 20px;
-  background: #6366f1;
-  color: #fff;
+  background: var(--admin-accent);
+  color: var(--admin-surface);
   border: none;
   border-radius: 8px;
   font-weight: 500;
@@ -81,27 +81,27 @@
 }
 
 .searchButton:hover {
-  background: #4f46e5;
+  background: var(--admin-accent);
 }
 
 .errorText {
-  color: #dc2626;
+  color: var(--admin-error-strong);
   margin-bottom: 16px;
   font-size: 0.95rem;
 }
 
 .select {
   padding: 10px 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   font-size: 0.95rem;
-  background: #fff;
+  background: var(--admin-surface);
   min-width: 150px;
 }
 
 .select:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--admin-accent);
 }
 
 .bulkActions {
@@ -109,21 +109,21 @@
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: #eff6ff;
+  background: var(--admin-info-bg-soft);
   border-radius: 8px;
   margin-bottom: 16px;
 }
 
 .bulkActions span {
   font-weight: 500;
-  color: #1e40af;
+  color: var(--admin-info-text);
 }
 
 .bulkButton {
   padding: 6px 12px;
-  border: 1px solid #93c5fd;
-  background: #fff;
-  color: #1e40af;
+  border: 1px solid var(--admin-info-border);
+  background: var(--admin-surface);
+  color: var(--admin-info-text);
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.8125rem;
@@ -131,16 +131,16 @@
 }
 
 .bulkButton:hover {
-  background: #dbeafe;
+  background: var(--admin-info-bg);
 }
 
 .bulkButton.danger {
-  border-color: #fca5a5;
-  color: #dc2626;
+  border-color: var(--admin-danger-border-strong);
+  color: var(--admin-error-strong);
 }
 
 .bulkButton.danger:hover {
-  background: #fee2e2;
+  background: var(--admin-error-bg-soft);
 }
 
 /* Customer Cell */
@@ -153,8 +153,8 @@
 .customerAvatar {
   width: 32px;
   height: 32px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: #fff;
+  background: linear-gradient(135deg, var(--admin-accent), var(--admin-chart-violet));
+  color: var(--admin-surface);
   font-weight: 600;
   font-size: 0.75rem;
   border-radius: 8px;
@@ -170,13 +170,13 @@
 
 .customerName {
   font-weight: 500;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   font-size: 0.8125rem;
 }
 
 .customerEmail {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 /* Badges */
@@ -189,189 +189,189 @@
 }
 
 .statusLEAD {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning-text);
 }
 
 .statusPROSPECT {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--admin-info-bg);
+  color: var(--admin-info-text);
 }
 
 .statusCUSTOMER {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text);
 }
 
 .statusINACTIVE {
-  background: #e5e7eb;
-  color: #374151;
+  background: var(--admin-border);
+  color: var(--admin-text-secondary);
 }
 
 .statusCHURNED {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--admin-error-bg-soft);
+  color: var(--admin-error-text-strong);
 }
 
 .stageNEW {
-  background: #e0e7ff;
-  color: #4338ca;
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
 }
 
 .stageCONTACTED {
-  background: #fce7f3;
-  color: #9d174d;
+  background: var(--admin-danger-bg-soft);
+  color: var(--admin-danger);
 }
 
 .stageQUALIFIED {
-  background: #cffafe;
-  color: #0e7490;
+  background: var(--admin-chart-cyan-bg);
+  color: var(--admin-info);
 }
 
 .stagePROPOSAL {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning-text);
 }
 
 .stageNEGOTIATION {
-  background: #fae8ff;
-  color: #86198f;
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
 }
 
 .stageWON {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text);
 }
 
 .stageLOST {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--admin-error-bg-soft);
+  color: var(--admin-error-text-strong);
 }
 
 /* Dark theme */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .count {
-  background: #374151;
-  color: #9ca3af;
+  background: var(--admin-text-secondary);
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput::placeholder {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .errorText {
-  color: #fca5a5;
+  color: var(--admin-danger-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .bulkActions {
-  background: rgb(59 130 246 / 0.15);
-  border: 1px solid #374151;
+  background: var(--admin-overlay-color-121);
+  border: 1px solid var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .bulkActions span {
-  color: #93c5fd;
+  color: var(--admin-info-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .bulkButton {
-  background: #374151;
-  border-color: #4b5563;
-  color: #93c5fd;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-info-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .bulkButton:hover {
-  background: #4b5563;
+  background: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .bulkButton.danger {
-  border-color: #f87171;
-  color: #fca5a5;
+  border-color: var(--admin-danger-text-soft);
+  color: var(--admin-danger-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .bulkButton.danger:hover {
-  background: rgb(239 68 68 / 0.2);
+  background: var(--admin-overlay-color-059);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .customerName {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .customerEmail {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusLEAD {
-  background: rgb(245 158 11 / 0.25);
-  color: #fcd34d;
+  background: var(--admin-overlay-color-078);
+  color: var(--admin-warning-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusPROSPECT {
-  background: rgb(59 130 246 / 0.25);
-  color: #93c5fd;
+  background: var(--admin-overlay-color-124);
+  color: var(--admin-info-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusCUSTOMER {
-  background: rgb(34 197 94 / 0.25);
-  color: #86efac;
+  background: var(--admin-overlay-color-099);
+  color: var(--admin-success-lime);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusINACTIVE {
-  background: #4b5563;
-  color: #d1d5db;
+  background: var(--admin-sidebar-text);
+  color: var(--admin-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusCHURNED {
-  background: rgb(239 68 68 / 0.25);
-  color: #fca5a5;
+  background: var(--admin-overlay-color-060);
+  color: var(--admin-danger-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .stageNEW {
-  background: rgb(99 102 241 / 0.25);
-  color: #a5b4fc;
+  background: rgba(var(--admin-overlay-color-144), 0.25);
+  color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .stageCONTACTED {
-  background: rgb(var(--color-accent-rgb-dark-legacy) / 0.25);
-  color: #f9a8d4;
+  background: rgba(var(--admin-overlay-color-145), 0.25);
+  color: var(--admin-danger-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .stageQUALIFIED {
-  background: rgb(6 182 212 / 0.25);
-  color: #67e8f9;
+  background: var(--admin-overlay-color-137);
+  color: var(--admin-chart-cyan-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .stagePROPOSAL {
-  background: rgb(245 158 11 / 0.25);
-  color: #fcd34d;
+  background: var(--admin-overlay-color-078);
+  color: var(--admin-warning-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .stageNEGOTIATION {
-  background: rgb(192 132 252 / 0.25);
-  color: #e9d5ff;
+  background: var(--admin-overlay-color-038);
+  color: var(--admin-accent-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .stageWON {
-  background: rgb(34 197 94 / 0.25);
-  color: #86efac;
+  background: var(--admin-overlay-color-099);
+  color: var(--admin-success-lime);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .stageLOST {
-  background: rgb(239 68 68 / 0.25);
-  color: #fca5a5;
+  background: var(--admin-overlay-color-060);
+  color: var(--admin-danger-border-strong);
 }
 
 @media (max-width: 768px) {

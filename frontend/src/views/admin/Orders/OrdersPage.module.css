@@ -1,81 +1,81 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .page {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .count {
-  background: #1f2937;
-  color: #9ca3af;
+  background: var(--admin-text-secondary);
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .serviceOrdersLink {
-  color: #93c5fd;
+  color: var(--admin-info-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .serviceOrdersLink:hover {
-  color: #bfdbfe;
+  color: var(--admin-info-border-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dateInput {
-  background: #111827;
-  border-color: #374151;
-  color: #e5e7eb;
+  background: var(--admin-text-primary);
+  border-color: var(--admin-text-secondary);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput::placeholder {
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .bulkActions {
-  background: #1f2937;
+  background: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .bulkActions span {
-  color: #93c5fd;
+  color: var(--admin-info-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .bulkButton {
-  background: #111827;
-  border-color: #374151;
-  color: #93c5fd;
+  background: var(--admin-text-primary);
+  border-color: var(--admin-text-secondary);
+  color: var(--admin-info-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .bulkButton:hover {
-  background: #1f2937;
+  background: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .orderNumber {
-  color: #93c5fd;
+  color: var(--admin-info-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .customerName {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .customerEmail {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .totalAmount {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .itemsCount {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .viewButton {
-  background: #1f2937;
-  color: #e5e7eb;
+  background: var(--admin-text-secondary);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .viewButton:hover {
-  background: #374151;
+  background: var(--admin-text-secondary);
 }
 .page {
   max-width: 1400px;
@@ -85,7 +85,7 @@
 .loading {
   padding: 2rem;
   text-align: center;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .header {
@@ -104,20 +104,20 @@
 .title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   margin: 0;
 }
 
 .count {
-  background: #e5e7eb;
+  background: var(--admin-border);
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 0.9rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .serviceOrdersLink {
-  color: #2563eb;
+  color: var(--admin-info);
   text-decoration: none;
   font-size: 0.9rem;
 }
@@ -127,7 +127,7 @@
 }
 
 .serviceOrderBadge {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-weight: 400;
   font-size: 0.85em;
 }
@@ -141,10 +141,10 @@
 }
 
 .statCard {
-  background: #fff;
+  background: var(--admin-surface);
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px var(--admin-overlay-color-148);
   display: flex;
   flex-direction: column;
 }
@@ -152,12 +152,12 @@
 .statValue {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
 }
 
 .statLabel {
   font-size: 0.9rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin-top: 4px;
 }
 
@@ -176,43 +176,43 @@
   min-width: 160px;
   max-width: 220px;
   padding: 6px 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   font-size: 0.8rem;
 }
 
 .searchInput:focus {
   outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 3px rgba(var(--admin-overlay-color-144), 0.1);
 }
 
 .select {
   padding: 6px 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   font-size: 0.8rem;
-  background: #fff;
+  background: var(--admin-surface);
   min-width: 130px;
 }
 
 .select:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--admin-accent);
 }
 
 .dateInput {
   padding: 6px 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   font-size: 0.8rem;
-  background: #fff;
+  background: var(--admin-surface);
   width: 120px;
 }
 
 .dateInput:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--admin-accent);
 }
 
 /* Bulk Actions */
@@ -221,21 +221,21 @@
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: #eff6ff;
+  background: var(--admin-info-bg-soft);
   border-radius: 8px;
   margin-bottom: 16px;
 }
 
 .bulkActions span {
   font-weight: 500;
-  color: #1e40af;
+  color: var(--admin-info-text);
 }
 
 .bulkButton {
   padding: 6px 12px;
-  border: 1px solid #93c5fd;
-  background: #fff;
-  color: #1e40af;
+  border: 1px solid var(--admin-info-border);
+  background: var(--admin-surface);
+  color: var(--admin-info-text);
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.8125rem;
@@ -243,13 +243,13 @@
 }
 
 .bulkButton:hover {
-  background: #dbeafe;
+  background: var(--admin-info-bg);
 }
 
 /* Order Number */
 .orderNumber {
   font-weight: 600;
-  color: #6366f1;
+  color: var(--admin-accent);
   font-size: 0.8125rem;
 }
 
@@ -261,18 +261,18 @@
 
 .customerName {
   font-weight: 500;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   font-size: 0.8125rem;
 }
 
 .customerEmail {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .addressCell {
   font-size: 0.8125rem;
-  color: #374151;
+  color: var(--admin-text-secondary);
   max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -281,7 +281,7 @@
 
 .subtitle {
   font-size: 0.9375rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin: 0;
 }
 
@@ -296,77 +296,77 @@
 }
 
 .statusPENDING {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning-text);
 }
 
 .statusPENDING_REVIEW {
-  background: #e0e7ff;
-  color: #4338ca;
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
 }
 
 .statusAPPROVED {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text);
 }
 
 .statusRETURNED_FOR_CORRECTION {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning-text);
 }
 
 .statusPROCESSING {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--admin-info-bg);
+  color: var(--admin-info-text);
 }
 
 .statusSHIPPED {
-  background: #e0e7ff;
-  color: #4338ca;
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
 }
 
 .statusDELIVERED {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text);
 }
 
 .statusCANCELLED {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--admin-error-bg-soft);
+  color: var(--admin-error-text-strong);
 }
 
 .statusCONFIRMED {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text);
 }
 
 .statusREFUNDED {
-  background: #fae8ff;
-  color: #86198f;
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
 }
 
 .paymentPENDING {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning-text);
 }
 
 .paymentPAID {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text);
 }
 
 .paymentFAILED {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--admin-error-bg-soft);
+  color: var(--admin-error-text-strong);
 }
 
 .paymentREFUNDED {
-  background: #fae8ff;
-  color: #86198f;
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
 }
 
 .paymentMuted {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
   font-size: 0.875rem;
 }
 
@@ -378,23 +378,23 @@
 
 .totalAmount {
   font-weight: 600;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   font-size: 0.8125rem;
 }
 
 .itemsCount {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 /* View Button */
 .viewButton {
   display: inline-block;
   padding: 4px 8px;
-  background: #f3f4f6;
+  background: var(--admin-surface-soft);
   border: none;
   border-radius: 6px;
-  color: #374151;
+  color: var(--admin-text-secondary);
   font-size: 0.75rem;
   cursor: pointer;
   transition: background 0.2s;
@@ -402,7 +402,7 @@
 }
 
 .viewButton:hover {
-  background: #e5e7eb;
+  background: var(--admin-border);
 }
 
 @media (max-width: 1024px) {
@@ -427,79 +427,79 @@
 
 /* Тёмная тема — заказы */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .count {
-  background: #374151;
-  color: #9ca3af;
+  background: var(--admin-text-secondary);
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statCard {
-  background: #1f2937;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  background: var(--admin-text-secondary);
+  box-shadow: 0 1px 3px var(--admin-overlay-color-152);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statValue {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statLabel {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dateInput {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .bulkActions {
-  background: rgb(99 102 241 / 0.2);
+  background: rgba(var(--admin-overlay-color-144), 0.2);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .bulkActions span {
-  color: #a5b4fc;
+  color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .bulkButton {
-  background: #374151;
-  border-color: #4b5563;
-  color: #a5b4fc;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .bulkButton:hover {
-  background: #4b5563;
+  background: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .customerName {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .customerEmail {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .totalAmount {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .itemsCount {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .viewButton {
-  background: #374151;
-  color: #e5e7eb;
+  background: var(--admin-text-secondary);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .viewButton:hover {
-  background: #4b5563;
+  background: var(--admin-sidebar-text);
 }

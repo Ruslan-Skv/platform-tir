@@ -20,21 +20,21 @@
 .title {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   margin: 0;
 }
 
 .count {
-  background: #e5e7eb;
+  background: var(--admin-border);
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 0.9rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .syncNote {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin: -8px 0 16px 0;
   line-height: 1.45;
 }
@@ -42,9 +42,9 @@
 .officeSelect {
   padding: 5px 10px;
   font-size: 0.8125rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
-  background: #fff;
+  background: var(--admin-surface);
   min-width: 160px;
 }
 
@@ -53,15 +53,15 @@
   align-items: center;
   gap: 6px;
   font-size: 0.8125rem;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .periodInput {
   padding: 4px 8px;
   font-size: 0.8125rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
-  background: #fff;
+  background: var(--admin-surface);
   width: 120px;
 }
 
@@ -76,45 +76,45 @@
 .filterInput {
   padding: 4px 8px;
   font-size: 0.75rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
-  background: #fff;
+  background: var(--admin-surface);
   min-width: 80px;
   max-width: 115px;
 }
 
 .filterInput::placeholder {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 .filterSelectPlaceholder {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 .filteredSum {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--admin-text-primary);
   margin-left: auto;
 }
 
 .collectionInput {
   padding: 4px 8px;
   font-size: 0.8125rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
-  background: #fff;
+  background: var(--admin-surface);
   min-width: 80px;
   max-width: 100px;
 }
 
 .rowDiscrepancy {
-  background: #fef2f2 !important;
+  background: var(--admin-error-bg) !important;
 }
 
 .summaryCard {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--admin-surface-muted);
+  border: 1px solid var(--admin-border-strong);
   border-radius: 8px;
   padding: 12px 14px;
   margin-bottom: 14px;
@@ -124,7 +124,7 @@
   margin: 0 0 10px 0;
   font-size: 1rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--admin-text-primary);
 }
 
 .summaryGrid {
@@ -141,19 +141,19 @@
 
 .summaryLabel {
   font-size: 0.7rem;
-  color: #64748b;
+  color: var(--admin-text-muted);
 }
 
 .summaryValue {
   font-size: 0.9375rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--admin-text-primary);
 }
 
 .summaryValueHighlight {
   font-size: 1rem;
   font-weight: 700;
-  color: #0f766e;
+  color: var(--admin-chart-teal-strong);
 }
 
 .section {
@@ -173,13 +173,13 @@
   margin: 0;
   font-size: 0.9375rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .emptyText {
   margin: 0;
   padding: 16px;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.9375rem;
 }
 
@@ -193,27 +193,27 @@
 .simpleTable td {
   padding: 6px 10px;
   text-align: left;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .simpleTable th {
   font-weight: 600;
-  color: #6b7280;
-  background: #f9fafb;
+  color: var(--admin-text-muted);
+  background: var(--admin-surface-muted);
 }
 
 .smallBtn {
   padding: 4px 10px;
   font-size: 0.8125rem;
-  color: #dc2626;
+  color: var(--admin-error-strong);
   background: none;
-  border: 1px solid #fecaca;
+  border: 1px solid var(--admin-error-border-soft);
   border-radius: 6px;
   cursor: pointer;
 }
 
 .smallBtn:hover {
-  background: #fef2f2;
+  background: var(--admin-error-bg);
 }
 
 .form {
@@ -229,12 +229,12 @@
   gap: 2px;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .form .input {
   padding: 5px 10px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
   font-size: 0.875rem;
 }
@@ -242,7 +242,7 @@
 .formHint {
   margin: 0 0 4px 0;
   font-size: 0.8125rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   line-height: 1.4;
 }
 
@@ -262,16 +262,16 @@
 
 .select {
   padding: 10px 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   font-size: 0.95rem;
-  background: #fff;
+  background: var(--admin-surface);
   min-width: 140px;
 }
 
 .dateInput {
   padding: 10px 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   font-size: 0.95rem;
 }
@@ -280,15 +280,15 @@
   padding: 5px 12px;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: #fff;
-  background: #6366f1;
+  color: var(--admin-surface);
+  background: var(--admin-accent);
   border: none;
   border-radius: 6px;
   cursor: pointer;
 }
 
 .addBtn:hover {
-  background: #4f46e5;
+  background: var(--admin-accent);
 }
 
 .editableCell {
@@ -305,8 +305,8 @@
 }
 
 .editableCell:hover {
-  background: #f3f4f6;
-  border-color: #e5e7eb;
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
 }
 
 .inlineInput {
@@ -314,7 +314,7 @@
   min-width: 80px;
   padding: 4px 8px;
   font-size: inherit;
-  border: 1px solid #6366f1;
+  border: 1px solid var(--admin-accent);
   border-radius: 4px;
 }
 
@@ -331,13 +331,13 @@
   gap: 4px;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .addForm .input,
 .addForm .select {
   padding: 8px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border-strong);
   border-radius: 8px;
   font-size: 0.9375rem;
 }
@@ -345,8 +345,8 @@
 .addError {
   margin: 0;
   padding: 8px 12px;
-  background: #fef2f2;
-  color: #b91c1c;
+  background: var(--admin-error-bg);
+  color: var(--admin-error-text);
   font-size: 0.875rem;
   border-radius: 8px;
 }
@@ -355,7 +355,7 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   max-height: 200px;
   overflow-y: auto;
@@ -367,7 +367,7 @@
   width: 100%;
   padding: 8px 12px;
   text-align: left;
-  background: #fff;
+  background: var(--admin-surface);
   border: none;
   font-size: 0.9375rem;
   cursor: pointer;
@@ -375,12 +375,12 @@
 
 .contractItem:hover,
 .contractItemActive {
-  background: #f3f4f6;
+  background: var(--admin-surface-soft);
 }
 
 .contractItemActive {
-  background: #e0e7ff;
-  color: #4338ca;
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
 }
 
 .addFormActions {
@@ -393,30 +393,30 @@
 .cancelBtn {
   padding: 5px 12px;
   font-size: 0.8125rem;
-  color: #6b7280;
-  background: #fff;
-  border: 1px solid #d1d5db;
+  color: var(--admin-text-muted);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
   cursor: pointer;
 }
 
 .cancelBtn:hover:not(:disabled) {
-  background: #f9fafb;
+  background: var(--admin-surface-muted);
 }
 
 .submitBtn {
   padding: 5px 12px;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: #fff;
-  background: #6366f1;
+  color: var(--admin-surface);
+  background: var(--admin-accent);
   border: none;
   border-radius: 6px;
   cursor: pointer;
 }
 
 .submitBtn:hover:not(:disabled) {
-  background: #4f46e5;
+  background: var(--admin-accent);
 }
 
 .submitBtn:disabled,
@@ -427,64 +427,64 @@
 
 /* Dark theme */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .count {
-  background: #374151;
-  color: #9ca3af;
+  background: var(--admin-text-secondary);
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .syncNote {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .officeSelect {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .periodLabel {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .periodInput {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .filterInput {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .filterInput::placeholder {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .filterSelectPlaceholder {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .filteredSum {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .collectionInput {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .collectionInput::placeholder {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .collectionInput:focus {
-  border-color: #6366f1;
+  border-color: var(--admin-accent);
   outline: none;
 }
 
@@ -494,133 +494,133 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .rowDiscrepancy {
-  background: rgb(127 29 29 / 0.35) !important;
+  background: var(--admin-overlay-color-012) !important;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .summaryCard {
-  background: #1f2937;
-  border-color: #374151;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .summaryTitle {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .summaryLabel {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .summaryValue {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .summaryValueHighlight {
-  color: #34d399;
+  color: var(--admin-success-light);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .emptyText {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .simpleTable th,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .simpleTable td {
-  border-bottom-color: #374151;
-  color: #e5e7eb;
+  border-bottom-color: var(--admin-text-secondary);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .simpleTable th {
-  color: #9ca3af;
-  background: #1f2937;
+  color: var(--admin-text-muted);
+  background: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .smallBtn {
-  color: #fca5a5;
-  border-color: #dc2626;
+  color: var(--admin-danger-border-strong);
+  border-color: var(--admin-error-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .smallBtn:hover {
-  background: rgb(239 68 68 / 0.2);
+  background: var(--admin-overlay-color-059);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .form label {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .form .input {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .formHint {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dateInput {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .editableCell:hover {
-  background: #374151;
-  border-color: #4b5563;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .inlineInput {
-  background: #374151;
-  border-color: #6366f1;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-accent);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addForm label {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addForm .input,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addForm .select {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addError {
-  background: rgb(239 68 68 / 0.2);
-  color: #fca5a5;
+  background: var(--admin-overlay-color-059);
+  color: var(--admin-danger-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractList {
-  border-color: #374151;
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractItem,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractItemActive {
-  background: #1f2937;
-  color: #e5e7eb;
+  background: var(--admin-text-secondary);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractItem:hover {
-  background: #374151;
+  background: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractItemActive {
-  background: #4338ca;
-  color: #e0e7ff;
+  background: var(--admin-accent);
+  color: var(--admin-accent-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cancelBtn {
-  background: #374151;
-  border-color: #4b5563;
-  color: #e5e7eb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cancelBtn:hover:not(:disabled) {
-  background: #4b5563;
+  background: var(--admin-sidebar-text);
 }
 
 @media (max-width: 768px) {

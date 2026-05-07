@@ -1,7 +1,7 @@
 .tableContainer {
-  background: #fff;
+  background: var(--admin-surface);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
   overflow: hidden;
   position: relative;
 }
@@ -18,7 +18,7 @@
   overflow-y: visible;
   flex: 1;
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 #f1f5f9;
+  scrollbar-color: var(--admin-scrollbar-thumb) var(--admin-scrollbar-track);
   position: relative;
   padding-left: 0;
   padding-right: 0;
@@ -45,8 +45,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(to right, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.8));
-  color: #374151;
+  background: linear-gradient(
+    to right,
+    var(--admin-scroll-overlay),
+    var(--admin-scroll-overlay-fade)
+  );
+  color: var(--admin-text-secondary);
   font-size: 1.5rem;
   font-weight: bold;
   cursor: pointer;
@@ -59,53 +63,46 @@
 }
 
 .scrollArrow:hover {
-  background: linear-gradient(to right, rgba(249, 250, 251, 0.95), rgba(249, 250, 251, 0.8));
-  color: var(--color-accent);
+  background: linear-gradient(
+    to right,
+    var(--admin-scroll-overlay-hover),
+    var(--admin-scroll-overlay-hover-fade)
+  );
+  color: var(--admin-accent);
 }
 
 .scrollArrowLeft {
   left: 0;
-  background: linear-gradient(to right, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.8));
+  background: linear-gradient(
+    to right,
+    var(--admin-scroll-overlay),
+    var(--admin-scroll-overlay-fade)
+  );
 }
 
 .scrollArrowLeft:hover {
-  background: linear-gradient(to right, rgba(249, 250, 251, 0.95), rgba(249, 250, 251, 0.8));
+  background: linear-gradient(
+    to right,
+    var(--admin-scroll-overlay-hover),
+    var(--admin-scroll-overlay-hover-fade)
+  );
 }
 
 .scrollArrowRight {
   right: 0;
-  background: linear-gradient(to left, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.8));
+  background: linear-gradient(
+    to left,
+    var(--admin-scroll-overlay),
+    var(--admin-scroll-overlay-fade)
+  );
 }
 
 .scrollArrowRight:hover {
-  background: linear-gradient(to left, rgba(249, 250, 251, 0.95), rgba(249, 250, 251, 0.8));
-}
-
-/* Темная тема для стрелок */
-:where(html[data-theme='dark'], [data-app-theme='dark']) .scrollArrow {
-  background: linear-gradient(to right, rgba(31, 41, 55, 0.95), rgba(31, 41, 55, 0.8));
-  color: #d1d5db;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .scrollArrow:hover {
-  background: linear-gradient(to right, rgba(55, 65, 81, 0.95), rgba(55, 65, 81, 0.8));
-  color: var(--color-accent);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .scrollArrowLeft {
-  background: linear-gradient(to right, rgba(31, 41, 55, 0.95), rgba(31, 41, 55, 0.8));
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .scrollArrowLeft:hover {
-  background: linear-gradient(to right, rgba(55, 65, 81, 0.95), rgba(55, 65, 81, 0.8));
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .scrollArrowRight {
-  background: linear-gradient(to left, rgba(31, 41, 55, 0.95), rgba(31, 41, 55, 0.8));
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .scrollArrowRight:hover {
-  background: linear-gradient(to left, rgba(55, 65, 81, 0.95), rgba(55, 65, 81, 0.8));
+  background: linear-gradient(
+    to left,
+    var(--admin-scroll-overlay-hover),
+    var(--admin-scroll-overlay-hover-fade)
+  );
 }
 
 /* Стилизация скроллбара для WebKit браузеров */
@@ -114,16 +111,16 @@
 }
 
 .scrollContainer::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--admin-scrollbar-track);
 }
 
 .scrollContainer::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--admin-scrollbar-thumb);
   border-radius: 6px;
 }
 
 .scrollContainer::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--admin-scrollbar-thumb-hover);
 }
 
 .table {
@@ -136,28 +133,28 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  background: #f9fafb;
+  background: var(--admin-surface-muted);
 }
 
 .table th,
 .table td {
   padding: 8px 6px;
   text-align: center;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .table th {
-  background: #f9fafb;
+  background: var(--admin-surface-muted);
   font-weight: 600;
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   white-space: nowrap;
 }
 
 .table td {
-  color: #374151;
+  color: var(--admin-text-secondary);
   font-size: 0.8125rem;
 }
 
@@ -167,7 +164,7 @@
 }
 
 .sortable:hover {
-  background: #f3f4f6;
+  background: var(--admin-surface-soft);
 }
 
 .headerContent {
@@ -186,7 +183,7 @@
 }
 
 .row:hover {
-  background: #f9fafb;
+  background: var(--admin-surface-muted);
 }
 
 .row.clickable {
@@ -194,11 +191,11 @@
 }
 
 .row.selected {
-  background: #eff6ff;
+  background: var(--admin-accent-soft);
 }
 
 .row.selected:hover {
-  background: #dbeafe;
+  background: var(--admin-accent-soft-strong);
 }
 
 .checkboxCell {
@@ -210,14 +207,14 @@
   width: 18px;
   height: 18px;
   cursor: pointer;
-  accent-color: #6366f1;
+  accent-color: var(--admin-accent);
 }
 
 .loadingCell,
 .emptyCell {
   text-align: center;
   padding: 40px 20px !important;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .loader {
@@ -233,11 +230,11 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--admin-border);
 }
 
 .paginationInfo {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.9rem;
 }
 
@@ -250,9 +247,9 @@
   min-width: 32px;
   height: 32px;
   padding: 0 10px;
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  color: #374151;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
   font-size: 0.8125rem;
   border-radius: 8px;
   cursor: pointer;
@@ -260,8 +257,8 @@
 }
 
 .pageButton:hover:not(:disabled) {
-  background: #f3f4f6;
-  border-color: #d1d5db;
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border-strong);
 }
 
 .pageButton:disabled {
@@ -270,90 +267,7 @@
 }
 
 .pageButton.active {
-  background: #6366f1;
-  border-color: #6366f1;
-  color: #fff;
-}
-
-/* Тёмная тема — таблица в админке */
-:where(html[data-theme='dark'], [data-app-theme='dark']) .tableContainer {
-  background: #1f2937;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .scrollContainer::-webkit-scrollbar-track {
-  background: #374151;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .scrollContainer::-webkit-scrollbar-thumb {
-  background: #4b5563;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .scrollContainer::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .stickyHeader {
-  background: #111827;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .table th,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .table td {
-  border-bottom-color: #374151;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .table th {
-  background: #111827;
-  color: #9ca3af;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .table td {
-  color: #e5e7eb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .sortable:hover {
-  background: #374151;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .row:hover {
-  background: #374151;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .row.selected {
-  background: rgb(99 102 241 / 0.25);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .row.selected:hover {
-  background: rgb(99 102 241 / 0.35);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .loadingCell,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .emptyCell {
-  color: #9ca3af;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .pagination {
-  border-top-color: #374151;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .paginationInfo {
-  color: #9ca3af;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .pageButton {
-  background: #374151;
-  border-color: #4b5563;
-  color: #e5e7eb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .pageButton:hover:not(:disabled) {
-  background: #4b5563;
-  border-color: #6b7280;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .pageButton.active {
-  background: #6366f1;
-  border-color: #6366f1;
-  color: #fff;
+  background: var(--admin-accent);
+  border-color: var(--admin-accent);
+  color: var(--admin-text-inverse);
 }

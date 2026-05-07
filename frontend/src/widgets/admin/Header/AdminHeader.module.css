@@ -4,8 +4,8 @@
   justify-content: space-between;
   gap: 8px;
   padding: 8px 12px;
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border-bottom: 1px solid var(--admin-border);
   position: sticky;
   top: 0;
   z-index: 50;
@@ -19,8 +19,8 @@
   gap: 6px;
   padding: 6px 10px;
   border-radius: 8px;
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
   text-decoration: none;
   font-size: 0.8125rem;
   font-weight: 600;
@@ -30,8 +30,8 @@
 }
 
 .backToPublicLink:hover {
-  background: #e5e7eb;
-  color: #111827;
+  background: var(--admin-border);
+  color: var(--admin-text-primary);
 }
 
 .backToPublicLink:focus {
@@ -68,14 +68,19 @@
 .searchInput {
   width: 100%;
   padding: 6px 12px 6px 36px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   font-size: 0.8125rem;
-  background: #f9fafb;
+  background: var(--admin-surface-muted);
+  color: var(--admin-text-primary);
   transition:
     border-color 0.35s ease,
     box-shadow 0.35s ease,
     background 0.2s;
+}
+
+.searchInput::placeholder {
+  color: var(--admin-text-muted);
 }
 
 .searchInput:focus {
@@ -84,7 +89,7 @@
 
 .searchInput:focus-visible {
   border-color: rgb(var(--color-accent-rgb) / 0.5);
-  background: #fff;
+  background: var(--admin-surface);
   box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
 }
 
@@ -94,7 +99,8 @@
   top: 50%;
   transform: translateY(-50%);
   font-size: 0.875rem;
-  opacity: 0.5;
+  opacity: 0.65;
+  color: var(--admin-text-muted);
 }
 
 .actions {
@@ -109,9 +115,9 @@
   gap: 6px;
   padding: 6px 10px;
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
-  color: #374151;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface-muted);
+  color: var(--admin-text-secondary);
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
@@ -124,9 +130,9 @@
 }
 
 .publicSiteEditToggle:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
-  color: #111827;
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border-strong);
+  color: var(--admin-text-primary);
 }
 
 .publicSiteEditToggle:focus {
@@ -143,13 +149,13 @@
 }
 
 .publicSiteEditToggleActive {
-  background: rgb(var(--color-accent-rgb) / 0.12);
-  border-color: rgb(var(--color-accent-rgb) / 0.38);
-  color: rgb(var(--color-accent-rgb));
+  background: var(--admin-accent-soft);
+  border-color: var(--admin-accent-border);
+  color: var(--admin-accent);
 }
 
 .publicSiteEditToggleActive:hover {
-  background: rgb(var(--color-accent-rgb) / 0.18);
+  background: var(--admin-accent-soft-strong);
   border-color: rgb(var(--color-accent-rgb) / 0.48);
 }
 
@@ -187,11 +193,11 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  border: 2px solid #fff;
+  border: 2px solid var(--admin-surface);
   margin-left: -10px;
   position: relative;
   overflow: hidden;
-  background: #e5e7eb;
+  background: var(--admin-border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -212,7 +218,7 @@
 .onlineInitials {
   font-size: 0.65rem;
   font-weight: 700;
-  color: #4b5563;
+  color: var(--admin-text-secondary);
   line-height: 1;
 }
 
@@ -224,10 +230,10 @@
   align-items: center;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #6b7280;
-  background: #f3f4f6;
+  color: var(--admin-text-muted);
+  background: var(--admin-surface-soft);
   border-radius: 999px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
 }
 
 .iconButton {
@@ -237,7 +243,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f3f4f6;
+  background: var(--admin-surface-soft);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -246,7 +252,7 @@
 }
 
 .iconButton:hover {
-  background: #e5e7eb;
+  background: var(--admin-border);
 }
 
 .iconButton:focus {
@@ -295,8 +301,8 @@
   min-width: 14px;
   height: 14px;
   padding: 0 3px;
-  background: #ef4444;
-  color: #fff;
+  background: var(--admin-danger);
+  color: var(--admin-text-inverse);
   font-size: 0.65rem;
   font-weight: 600;
   border-radius: 7px;
@@ -315,7 +321,7 @@
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  background: #f3f4f6;
+  background: var(--admin-surface-soft);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -323,14 +329,14 @@
 }
 
 .userButton:hover {
-  background: #e5e7eb;
+  background: var(--admin-border);
 }
 
 .avatar {
   width: 28px;
   height: 28px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: #fff;
+  background: linear-gradient(135deg, var(--admin-accent), rgb(var(--color-accent-rgb) / 0.72));
+  color: var(--admin-text-inverse);
   font-weight: 600;
   font-size: 0.75rem;
   border-radius: 6px;
@@ -357,17 +363,17 @@
 .userName {
   font-weight: 500;
   font-size: 0.8125rem;
-  color: #1f2937;
+  color: var(--admin-text-primary);
 }
 
 .userRole {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .userArrow {
   font-size: 0.65rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .dropdown {
@@ -375,10 +381,10 @@
   top: calc(100% + 8px);
   right: 0;
   min-width: 280px;
-  background: #fff;
+  background: var(--admin-surface);
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  border: 1px solid #e5e7eb;
+  box-shadow: var(--admin-overlay-shadow);
+  border: 1px solid var(--admin-border);
   overflow: hidden;
   z-index: 100;
 }
@@ -388,15 +394,15 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--admin-border);
   font-weight: 600;
-  color: #1f2937;
+  color: var(--admin-text-primary);
 }
 
 .markAllRead {
   background: none;
   border: none;
-  color: #6366f1;
+  color: var(--admin-accent);
   font-size: 0.85rem;
   cursor: pointer;
 }
@@ -413,7 +419,7 @@
 .notificationItem {
   display: block;
   padding: 12px 16px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--admin-surface-soft);
   cursor: pointer;
   transition: background 0.2s;
   text-decoration: none;
@@ -421,37 +427,37 @@
 }
 
 .notificationItem:hover {
-  background: #f9fafb;
+  background: var(--admin-surface-muted);
 }
 
 .notificationItem.unread {
-  background: #f0f9ff;
+  background: var(--admin-info-soft);
 }
 
 .notificationItem.unread:hover {
-  background: #e0f2fe;
+  background: var(--admin-info-soft-hover);
 }
 
 .notificationText {
   font-size: 0.9rem;
-  color: #1f2937;
+  color: var(--admin-text-primary);
   margin: 0 0 4px;
 }
 
 .notificationTime {
   font-size: 0.8rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .dropdownFooter {
   padding: 12px 16px;
   text-align: center;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--admin-border);
 }
 
 .dropdownFooter a,
 .dropdownFooter a:visited {
-  color: #6366f1;
+  color: var(--admin-accent);
   text-decoration: none;
   font-size: 0.9rem;
 }
@@ -462,7 +468,7 @@
 
 .dropdownFooterSep {
   margin: 0 8px;
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 .dropdownItem {
@@ -470,7 +476,7 @@
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  color: #374151;
+  color: var(--admin-text-secondary);
   text-decoration: none;
   background: none;
   border: none;
@@ -482,12 +488,12 @@
 }
 
 .dropdownItem:hover {
-  background: #f3f4f6;
+  background: var(--admin-surface-soft);
 }
 
 .dropdownDivider {
   height: 1px;
-  background: #e5e7eb;
+  background: var(--admin-border);
   margin: 4px 0;
 }
 
@@ -500,12 +506,12 @@
 
 .dropdownUserInfo strong {
   font-size: 0.95rem;
-  color: #1f2937;
+  color: var(--admin-text-primary);
 }
 
 .dropdownUserInfo span {
   font-size: 0.85rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 @media (max-width: 768px) {
@@ -520,183 +526,4 @@
   .userArrow {
     display: none;
   }
-}
-
-/* Тёмная тема — шапка админки */
-:where(html[data-theme='dark'], [data-app-theme='dark']) .header {
-  background: #1f2937;
-  border-bottom-color: #374151;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .backToPublicLink {
-  background: #374151;
-  color: #e5e7eb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .backToPublicLink:hover {
-  background: #4b5563;
-  color: #f9fafb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput::placeholder {
-  color: #9ca3af;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput:focus-visible {
-  background: #4b5563;
-  border-color: rgb(var(--color-accent-rgb) / 0.5);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .searchIcon {
-  opacity: 0.7;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .publicSiteEditToggle {
-  background: #374151;
-  border-color: #4b5563;
-  color: #e5e7eb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .publicSiteEditToggle:hover {
-  background: #4b5563;
-  border-color: #6b7280;
-  color: #f9fafb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .publicSiteEditToggle:focus-visible {
-  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.4);
-  border-color: rgb(var(--color-accent-rgb) / 0.55);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .publicSiteEditToggleActive {
-  background: rgb(var(--color-accent-rgb) / 0.22);
-  border-color: rgb(var(--color-accent-rgb) / 0.5);
-  color: rgb(var(--color-accent-rgb));
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .publicSiteEditToggleActive:hover {
-  background: rgb(var(--color-accent-rgb) / 0.3);
-  border-color: rgb(var(--color-accent-rgb) / 0.62);
-  color: #f9fafb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .iconButton {
-  background: #374151;
-  color: #e5e7eb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .iconButton:hover {
-  background: #4b5563;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .themeIcon {
-  color: inherit;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .userButton {
-  background: #374151;
-  color: #f3f4f6;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .userButton:hover {
-  background: #4b5563;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .userName {
-  color: #f9fafb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .userRole,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .userArrow {
-  color: #9ca3af;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdown {
-  background: #1f2937;
-  border-color: #374151;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownHeader {
-  border-bottom-color: #374151;
-  color: #f9fafb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .notificationItem {
-  border-bottom-color: #374151;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .notificationItem:hover {
-  background: #374151;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .notificationItem.unread {
-  background: rgb(99 102 241 / 0.15);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .notificationItem.unread:hover {
-  background: rgb(99 102 241 / 0.25);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .notificationText {
-  color: #e5e7eb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .notificationTime {
-  color: #9ca3af;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownFooter {
-  border-top-color: #374151;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownFooter a,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownFooter a:visited {
-  color: #a5b4fc;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownFooterSep {
-  color: #6b7280;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownItem {
-  color: #d1d5db;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownItem:hover {
-  background: #374151;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownDivider {
-  background: #374151;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownUserInfo strong {
-  color: #f9fafb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .dropdownUserInfo span {
-  color: #9ca3af;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .onlineFace {
-  border-color: #1f2937;
-  background: #4b5563;
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.08);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .onlineInitials {
-  color: #e5e7eb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .onlineMore {
-  background: #374151;
-  border-color: #4b5563;
-  color: #d1d5db;
 }

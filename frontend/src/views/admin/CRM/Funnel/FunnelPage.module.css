@@ -19,16 +19,16 @@
 .title {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   margin: 0;
 }
 
 .count {
-  background: #e5e7eb;
+  background: var(--admin-border);
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 0.9rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .filters {
@@ -44,22 +44,22 @@
   align-items: center;
   gap: 8px;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .filterSelect {
   min-width: 180px;
   padding: 8px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   font-size: 0.9rem;
-  background: #fff;
+  background: var(--admin-surface);
 }
 
 .refreshBtn {
   padding: 8px 16px;
-  background: #6366f1;
-  color: #fff;
+  background: var(--admin-accent);
+  color: var(--admin-surface);
   border: none;
   border-radius: 8px;
   font-weight: 500;
@@ -69,7 +69,7 @@
 }
 
 .refreshBtn:hover:not(:disabled) {
-  background: #4f46e5;
+  background: var(--admin-accent);
 }
 
 .refreshBtn:disabled {
@@ -82,8 +82,8 @@
   border-radius: 8px;
   margin-bottom: 16px;
   font-size: 0.9rem;
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--admin-error-bg-soft);
+  color: var(--admin-error-text-strong);
 }
 
 .summary {
@@ -94,8 +94,8 @@
 }
 
 .summaryCard {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 10px;
   padding: 16px 20px;
 }
@@ -103,20 +103,20 @@
 .summaryLabel {
   display: block;
   font-size: 0.8rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin-bottom: 6px;
 }
 
 .summaryValue {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
 }
 
 .loading {
   padding: 32px;
   text-align: center;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.95rem;
 }
 
@@ -127,15 +127,15 @@
 }
 
 .stageCard {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 10px;
   padding: 14px 16px;
   transition: box-shadow 0.2s;
 }
 
 .stageCard:hover {
-  box-shadow: 0 2px 8px rgb(0 0 0 / 0.08);
+  box-shadow: 0 2px 8px var(--admin-overlay-color-003);
 }
 
 .stageHeader {
@@ -149,12 +149,12 @@
 .stageName {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .stageCount {
-  background: #e5e7eb;
-  color: #4b5563;
+  background: var(--admin-border);
+  color: var(--admin-sidebar-text);
   padding: 2px 8px;
   border-radius: 12px;
   font-size: 0.8rem;
@@ -164,69 +164,69 @@
 .stageValue {
   font-size: 1rem;
   font-weight: 600;
-  color: #059669;
+  color: var(--admin-success);
 }
 
 /* Dark theme */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .count {
-  background: #374151;
-  color: #9ca3af;
+  background: var(--admin-text-secondary);
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .filterLabel {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .filterSelect {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .messageError {
-  background: rgb(239 68 68 / 0.2);
-  color: #fca5a5;
+  background: var(--admin-overlay-color-059);
+  color: var(--admin-danger-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .summaryCard {
-  background: #1f2937;
-  border-color: #374151;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .summaryLabel {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .summaryValue {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .stageCard {
-  background: #1f2937;
-  border-color: #374151;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .stageCard:hover {
-  box-shadow: 0 2px 8px rgb(0 0 0 / 0.3);
+  box-shadow: 0 2px 8px var(--admin-overlay-color-005);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .stageName {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .stageCount {
-  background: #374151;
-  color: #9ca3af;
+  background: var(--admin-text-secondary);
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .stageValue {
-  color: #34d399;
+  color: var(--admin-success-light);
 }

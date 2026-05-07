@@ -15,33 +15,33 @@
   padding: 0.45rem 0.9rem;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #fff;
-  background: #2563eb;
+  color: var(--admin-surface);
+  background: var(--admin-info);
   border: none;
   border-radius: 8px;
   cursor: pointer;
 }
 
 .addBlockButton:hover {
-  background: #1d4ed8;
+  background: var(--admin-info-strong);
 }
 
 .emptyHint {
   margin: 0;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .blockCard {
   padding: 1rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 10px;
-  background: #fafafa;
+  background: var(--admin-surface-muted);
 }
 
 .blockCardInvalid {
-  border-color: rgb(239 68 68 / 55%);
-  box-shadow: 0 0 0 1px rgb(239 68 68 / 15%);
+  border-color: var(--admin-overlay-color-069);
+  box-shadow: 0 0 0 1px var(--admin-overlay-color-064);
 }
 
 .blockHeader {
@@ -56,7 +56,7 @@
 .blockTitle {
   font-weight: 700;
   font-size: 0.9375rem;
-  color: #111827;
+  color: var(--admin-text-primary);
 }
 
 .blockActions {
@@ -71,9 +71,9 @@
   padding: 0.25rem 0.4rem;
   font-size: 0.875rem;
   line-height: 1;
-  color: #374151;
-  background: #fff;
-  border: 1px solid #d1d5db;
+  color: var(--admin-text-secondary);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
   cursor: pointer;
 }
@@ -86,15 +86,15 @@
 .removeBlockButton {
   padding: 0.25rem 0.5rem;
   font-size: 0.8125rem;
-  color: #b91c1c;
+  color: var(--admin-error-text);
   background: transparent;
-  border: 1px solid rgb(239 68 68 / 45%);
+  border: 1px solid var(--admin-overlay-color-068);
   border-radius: 6px;
   cursor: pointer;
 }
 
 .removeBlockButton:hover {
-  background: rgb(254 226 226 / 60%);
+  background: var(--admin-overlay-color-089);
 }
 
 .label {
@@ -103,13 +103,13 @@
   gap: 0.35rem;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .imagesSection {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px dashed #e5e7eb;
+  border-top: 1px dashed var(--admin-border);
 }
 
 .imagesHeader {
@@ -121,21 +121,21 @@
   margin-bottom: 0.5rem;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .addImageButton {
   padding: 0.3rem 0.65rem;
   font-size: 0.8125rem;
-  color: #2563eb;
-  background: #fff;
-  border: 1px solid #93c5fd;
+  color: var(--admin-info);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-info-border);
   border-radius: 6px;
   cursor: pointer;
 }
 
 .addImageButton:hover {
-  background: rgb(59 130 246 / 8%);
+  background: var(--admin-overlay-color-134);
 }
 
 .imageRow {
@@ -151,7 +151,7 @@
   min-width: 0;
   padding: 0.45rem 0.6rem;
   font-size: 0.875rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
 }
 
@@ -160,7 +160,7 @@
   min-width: 0;
   padding: 0.45rem 0.6rem;
   font-size: 0.875rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
 }
 
@@ -172,9 +172,9 @@
   padding: 0.45rem 0.65rem;
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #374151;
-  background: #fff;
-  border: 1px solid #d1d5db;
+  color: var(--admin-text-secondary);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
   cursor: pointer;
   white-space: nowrap;
@@ -189,14 +189,14 @@
   height: 2rem;
   font-size: 1.25rem;
   line-height: 1;
-  color: #6b7280;
-  background: #f3f4f6;
+  color: var(--admin-text-muted);
+  background: var(--admin-surface-soft);
   border: none;
   border-radius: 6px;
   cursor: pointer;
 }
 
 .removeImgBtn:hover {
-  color: #b91c1c;
-  background: rgb(254 226 226 / 80%);
+  color: var(--admin-error-text);
+  background: var(--admin-overlay-color-090);
 }

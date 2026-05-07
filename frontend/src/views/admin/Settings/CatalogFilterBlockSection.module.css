@@ -10,19 +10,19 @@
 
 .table th,
 .table td {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   padding: 0.5rem 0.75rem;
   text-align: left;
   vertical-align: top;
 }
 
 .table th {
-  background: #f9fafb;
+  background: var(--admin-surface-muted);
   font-weight: 600;
 }
 
 .muted {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.8125rem;
 }
 
@@ -34,10 +34,10 @@
 }
 
 .primaryBtn {
-  background: #4f46e5;
+  background: var(--admin-accent);
   border: none;
   border-radius: 8px;
-  color: #fff;
+  color: var(--admin-surface);
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 600;
@@ -50,28 +50,28 @@
 }
 
 .secondaryBtn {
-  background: #fff;
-  border: 1px solid #d1d5db;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
   border-radius: 8px;
-  color: #374151;
+  color: var(--admin-text-secondary);
   cursor: pointer;
   font-size: 0.875rem;
   padding: 0.35rem 0.75rem;
 }
 
 .dangerBtn {
-  background: #fff;
-  border: 1px solid #fecaca;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-error-border-soft);
   border-radius: 8px;
-  color: #b91c1c;
+  color: var(--admin-error-text);
   cursor: pointer;
   font-size: 0.8125rem;
   padding: 0.35rem 0.65rem;
 }
 
 .formCard {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 12px;
   margin-bottom: 1.5rem;
   padding: 1.25rem;
@@ -94,7 +94,7 @@
 .formField input[type='text'],
 .formField input[type='number'],
 .formField select {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border-strong);
   border-radius: 8px;
   font-size: 0.875rem;
   max-width: 100%;
@@ -115,7 +115,7 @@
 }
 
 .itemBlock {
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--admin-surface-soft);
   padding: 0.75rem 0;
 }
 
@@ -135,7 +135,7 @@
 }
 
 .itemOptionsRow textarea {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border-strong);
   border-radius: 8px;
   font-family: inherit;
   font-size: 0.8125rem;

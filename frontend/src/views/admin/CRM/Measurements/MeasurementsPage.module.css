@@ -19,23 +19,23 @@
 .title {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   margin: 0;
 }
 
 .count {
-  background: #e5e7eb;
+  background: var(--admin-border);
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 0.9rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .addButton {
   display: inline-block;
   padding: 6px 12px;
-  background: #6366f1;
-  color: #fff;
+  background: var(--admin-accent);
+  color: var(--admin-surface);
   border: none;
   border-radius: 8px;
   font-weight: 500;
@@ -46,8 +46,8 @@
 }
 
 .addButton:hover {
-  background: #4f46e5;
-  color: #fff;
+  background: var(--admin-accent);
+  color: var(--admin-surface);
 }
 
 .headerActions {
@@ -58,9 +58,9 @@
 
 .secondaryButton {
   padding: 6px 12px;
-  background: #fff;
-  color: #374151;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   font-weight: 500;
   font-size: 0.8125rem;
@@ -69,14 +69,14 @@
 }
 
 .secondaryButton:hover {
-  background: #f9fafb;
-  border-color: #d1d5db;
+  background: var(--admin-surface-muted);
+  border-color: var(--admin-border-strong);
 }
 
 .secondaryButton.active {
-  background: #eef2ff;
-  border-color: #6366f1;
-  color: #4338ca;
+  background: var(--admin-accent-soft);
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
 }
 
 .refreshButton {
@@ -90,13 +90,17 @@
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  color: #2563eb;
+  color: var(--admin-info);
 }
 
 .refreshButton:hover:not(:disabled) {
-  border-color: #2563eb !important;
-  background: linear-gradient(180deg, #dbeafe 0%, #bfdbfe 100%) !important;
-  color: #1e40af !important;
+  border-color: var(--admin-info) !important;
+  background: linear-gradient(
+    180deg,
+    var(--admin-info-bg) 0%,
+    var(--admin-info-border-soft) 100%
+  ) !important;
+  color: var(--admin-info-text) !important;
 }
 
 .refreshIconSpinning {
@@ -117,13 +121,13 @@
 }
 
 .saveMessageSuccess {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text);
 }
 
 .saveMessageError {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--admin-error-bg-soft);
+  color: var(--admin-error-text-strong);
 }
 
 /* Edit Mode Bar */
@@ -132,8 +136,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
-  border: 1px solid #c7d2fe;
+  background: linear-gradient(135deg, var(--admin-accent-soft) 0%, var(--admin-accent-soft) 100%);
+  border: 1px solid var(--admin-accent-soft-strong);
   border-radius: 8px;
   margin-bottom: 12px;
 }
@@ -150,14 +154,14 @@
 
 .editModeInfo > span:nth-child(2) {
   font-weight: 600;
-  color: #4338ca;
+  color: var(--admin-accent);
   font-size: 0.9rem;
 }
 
 .editCount {
   padding: 4px 10px;
-  background: #6366f1;
-  color: #fff;
+  background: var(--admin-accent);
+  color: var(--admin-surface);
   border-radius: 16px;
   font-size: 0.8rem;
 }
@@ -173,32 +177,32 @@
 
 .editCancelButton {
   padding: 6px 12px;
-  background: #fff;
-  border: 1px solid #d1d5db;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
-  color: #374151;
+  color: var(--admin-text-secondary);
   font-weight: 500;
   font-size: 0.8125rem;
   cursor: pointer;
 }
 
 .editCancelButton:hover:not(:disabled) {
-  background: #f3f4f6;
+  background: var(--admin-surface-soft);
 }
 
 .editSaveButton {
   padding: 6px 12px;
-  background: #6366f1;
+  background: var(--admin-accent);
   border: none;
   border-radius: 6px;
-  color: #fff;
+  color: var(--admin-surface);
   font-weight: 500;
   font-size: 0.8125rem;
   cursor: pointer;
 }
 
 .editSaveButton:hover:not(:disabled) {
-  background: #4f46e5;
+  background: var(--admin-accent);
 }
 
 .editSaveButton:disabled,
@@ -225,17 +229,17 @@
 
 .actionButton:hover {
   opacity: 1;
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(var(--admin-overlay-color-144), 0.1);
 }
 
 .editedIndicator {
-  color: #f59e0b;
+  color: var(--admin-warning);
   font-size: 0.75rem;
   margin-right: 2px;
 }
 
 .muted {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.78rem;
 }
 
@@ -248,15 +252,15 @@
 }
 
 .linkStateOk {
-  color: #1d4ed8;
+  color: var(--admin-info-strong);
 }
 
 .linkStateDone {
-  color: #15803d;
+  color: var(--admin-success-deep);
 }
 
 .linkStatePending {
-  color: #b45309;
+  color: var(--admin-warning-brown);
 }
 
 .editableInput {
@@ -264,20 +268,20 @@
   min-width: 100px;
   max-width: 180px;
   padding: 4px 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border-strong);
   border-radius: 4px;
   font-size: 0.85rem;
-  background: #fff;
+  background: var(--admin-surface);
 }
 
 .editableInput:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--admin-accent);
 }
 
 .editableInput.edited {
-  border-color: #f59e0b;
-  background: #fffbeb;
+  border-color: var(--admin-warning);
+  background: var(--admin-warning-bg);
 }
 
 .editableSelect {
@@ -300,22 +304,22 @@
   min-width: 160px;
   max-width: 260px;
   padding: 6px 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   font-size: 13px;
 }
 
 .searchInput:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--admin-accent);
 }
 
 .select {
   padding: 6px 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   font-size: 13px;
-  background: #fff;
+  background: var(--admin-surface);
   min-width: 120px;
 }
 
@@ -327,13 +331,13 @@
 
 .dateLabelText {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   white-space: nowrap;
 }
 
 .dateInput {
   padding: 6px 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   font-size: 13px;
 }
@@ -347,33 +351,33 @@
 }
 
 .statusNEW {
-  background: #e0e7ff;
-  color: #4338ca;
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
 }
 
 .statusASSIGNED {
-  background: #fce7f3;
-  color: #9d174d;
+  background: var(--admin-danger-bg-soft);
+  color: var(--admin-danger);
 }
 
 .statusIN_PROGRESS {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning-text);
 }
 
 .statusCOMPLETED {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text);
 }
 
 .statusCANCELLED {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--admin-error-bg-soft);
+  color: var(--admin-error-text-strong);
 }
 
 .statusCONVERTED {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--admin-info-bg);
+  color: var(--admin-info-text);
 }
 
 @media (max-width: 768px) {
@@ -394,120 +398,124 @@
 
 /* Тёмная тема */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .count {
-  background: #374151;
-  color: #9ca3af;
+  background: var(--admin-text-secondary);
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addButton:hover {
-  background: #818cf8;
+  background: var(--admin-accent-soft-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput::placeholder {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput:focus {
-  border-color: #6366f1;
+  border-color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dateLabelText {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dateInput {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusNEW {
-  background: rgb(67 56 202 / 0.3);
-  color: #a5b4fc;
+  background: var(--admin-overlay-color-139);
+  color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusASSIGNED {
-  background: rgb(157 23 77 / 0.3);
-  color: #f9a8d4;
+  background: var(--admin-overlay-color-032);
+  color: var(--admin-danger-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusIN_PROGRESS {
-  background: rgb(146 64 14 / 0.3);
-  color: #fcd34d;
+  background: var(--admin-overlay-color-020);
+  color: var(--admin-warning-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusCOMPLETED {
-  background: rgb(6 95 70 / 0.3);
-  color: #6ee7b7;
+  background: var(--admin-overlay-color-138);
+  color: var(--admin-success-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusCANCELLED {
-  background: rgb(153 27 27 / 0.3);
-  color: #fca5a5;
+  background: var(--admin-overlay-color-031);
+  color: var(--admin-danger-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusCONVERTED {
-  background: rgb(30 64 175 / 0.3);
-  color: #93c5fd;
+  background: var(--admin-overlay-color-094);
+  color: var(--admin-info-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryButton {
-  background: #374151;
-  border-color: #4b5563;
-  color: #e5e7eb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryButton:hover {
-  background: #4b5563;
+  background: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryButton.active {
-  background: rgb(67 56 202 / 0.4);
-  border-color: #6366f1;
-  color: #a5b4fc;
+  background: var(--admin-overlay-color-140);
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .editModeBar {
-  background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
-  border-color: #4b5563;
+  background: linear-gradient(
+    135deg,
+    var(--admin-text-secondary) 0%,
+    var(--admin-text-secondary) 100%
+  );
+  border-color: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .editModeInfo > span:nth-child(2) {
-  color: #a5b4fc;
+  color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .editCancelButton {
-  background: #374151;
-  border-color: #4b5563;
-  color: #e5e7eb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .editCancelButton:hover:not(:disabled) {
-  background: #4b5563;
+  background: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .editableInput {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .editableInput.edited {
-  border-color: #f59e0b;
-  background: rgb(245 158 11 / 0.15);
+  border-color: var(--admin-warning);
+  background: var(--admin-overlay-color-075);
 }

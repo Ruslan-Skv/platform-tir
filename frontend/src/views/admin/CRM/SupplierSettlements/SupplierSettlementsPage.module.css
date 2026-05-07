@@ -13,13 +13,13 @@
 .title {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   margin: 0;
 }
 
 .linkToSuppliers {
   font-size: 0.9rem;
-  color: #6366f1;
+  color: var(--admin-accent);
   text-decoration: none;
 }
 
@@ -35,14 +35,14 @@
   justify-content: center;
   min-height: 200px;
   gap: 16px;
-  color: #64748b;
+  color: var(--admin-text-muted);
 }
 
 .spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid #e5e7eb;
-  border-top-color: #6366f1;
+  border: 3px solid var(--admin-border);
+  border-top-color: var(--admin-accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -54,7 +54,7 @@
 }
 
 .addLink {
-  color: #6366f1;
+  color: var(--admin-accent);
   text-decoration: none;
   font-weight: 500;
 }
@@ -66,7 +66,7 @@
 .grandTotal {
   font-size: 1.125rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   margin-bottom: 16px;
 }
 
@@ -77,8 +77,8 @@
 }
 
 .card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   padding: 12px 14px;
   min-height: 80px;
@@ -96,37 +96,37 @@
 }
 
 .card:hover {
-  border-color: #d1d5db;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-color: var(--admin-border-strong);
+  box-shadow: 0 2px 8px var(--admin-overlay-color-146);
 }
 
 .cardZero {
-  background: #dcfce7;
+  background: var(--admin-success-bg);
 }
 
 .cardZero:hover {
-  background: #bbf7d0;
+  background: var(--admin-success-border-soft);
 }
 
 .cardPositive {
-  background: #fce7f3;
+  background: var(--admin-danger-bg-soft);
 }
 
 .cardPositive:hover {
-  background: #fbcfe8;
+  background: var(--admin-danger-bg);
 }
 
 .cardNegative {
-  background: #e0f2fe;
+  background: var(--admin-info-bg);
 }
 
 .cardNegative:hover {
-  background: #bae6fd;
+  background: var(--admin-info-border);
 }
 
 .cardValue {
   font-size: 0.85rem;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   font-weight: 500;
   line-height: 1.35;
   word-break: break-word;
@@ -134,7 +134,7 @@
 
 .cardValueSecondary {
   font-size: 0.8rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   line-height: 1.35;
   word-break: break-word;
 }
@@ -142,6 +142,6 @@
 .cardTotal {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--admin-text-secondary);
   margin-top: 4px;
 }

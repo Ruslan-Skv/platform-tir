@@ -1,7 +1,7 @@
 .page {
   padding: 1.5rem;
   max-width: 1200px;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
 }
 
 .header {
@@ -20,12 +20,12 @@
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
 }
 
 .createButton {
   padding: 0.5rem 1rem;
-  background: rgb(59 130 246);
+  background: var(--admin-overlay-color-135);
   color: white;
   text-decoration: none;
   border-radius: 6px;
@@ -33,12 +33,12 @@
 }
 
 .createButton:hover {
-  background: rgb(37 99 235);
+  background: var(--admin-overlay-color-111);
 }
 
 .viewLink {
   padding: 0.5rem 1rem;
-  color: rgb(59 130 246);
+  color: var(--admin-overlay-color-135);
   text-decoration: none;
   font-size: 0.9375rem;
 }
@@ -54,20 +54,20 @@
 }
 
 .message.success {
-  background: rgb(34 197 94 / 20%);
-  color: rgb(34 197 94);
+  background: var(--admin-overlay-color-101);
+  color: var(--admin-overlay-color-108);
 }
 
 .message.error {
-  background: rgb(239 68 68 / 20%);
-  color: rgb(239 68 68);
+  background: var(--admin-overlay-color-065);
+  color: var(--admin-overlay-color-070);
 }
 
 .loading,
 .empty {
   padding: 2rem;
   text-align: center;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .list {
@@ -80,8 +80,8 @@
   display: flex;
   gap: 1.5rem;
   padding: 1rem;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
 }
 
@@ -91,7 +91,7 @@
   height: 140px;
   border-radius: 6px;
   overflow: hidden;
-  background: #f3f4f6;
+  background: var(--admin-surface-soft);
 }
 
 .cardImage img {
@@ -109,12 +109,12 @@
   font-size: 1.125rem;
   font-weight: 600;
   margin: 0 0 0.5rem;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
 }
 
 .cardDescription {
   font-size: 0.9375rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin: 0 0 0.5rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -124,7 +124,7 @@
 
 .cardSlug {
   font-size: 0.8125rem;
-  color: #9ca3af;
+  color: var(--admin-text-muted);
   display: block;
   margin-bottom: 0.5rem;
 }
@@ -132,8 +132,8 @@
 .inactive {
   display: inline-block;
   padding: 0.25rem 0.5rem;
-  background: rgb(239 68 68 / 15%);
-  color: rgb(239 68 68);
+  background: var(--admin-overlay-color-064);
+  color: var(--admin-overlay-color-070);
   font-size: 0.8125rem;
   border-radius: 4px;
   margin-left: 0.5rem;
@@ -146,7 +146,7 @@
 }
 
 .editLink {
-  color: rgb(59 130 246);
+  color: var(--admin-overlay-color-135);
   text-decoration: none;
   font-size: 0.9375rem;
 }
@@ -159,7 +159,7 @@
   padding: 0;
   background: none;
   border: none;
-  color: rgb(239 68 68);
+  color: var(--admin-overlay-color-070);
   font-size: 0.9375rem;
   cursor: pointer;
 }
@@ -170,52 +170,52 @@
 
 /* Тёмная тема — акции */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .page {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .createButton {
-  background: #6366f1;
+  background: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .createButton:hover {
-  background: #4f46e5;
+  background: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .viewLink,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .editLink {
-  color: #93c5fd;
+  color: var(--admin-info-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .loading,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .empty {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .card {
-  background: #1f2937;
-  border-color: #374151;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardImage {
-  background: #374151;
+  background: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardTitle {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardDescription {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardSlug {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton {
-  color: #fca5a5;
+  color: var(--admin-danger-border-strong);
 }

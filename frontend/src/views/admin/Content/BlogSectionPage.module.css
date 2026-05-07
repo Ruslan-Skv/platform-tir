@@ -1,7 +1,7 @@
 .blogSectionPage {
   padding: 1.5rem;
   max-width: 1200px;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
 }
 
 .header {
@@ -15,12 +15,12 @@
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
 }
 
 .createButton {
   padding: 0.5rem 1rem;
-  background: rgb(59 130 246);
+  background: var(--admin-overlay-color-135);
   color: white;
   text-decoration: none;
   border-radius: 6px;
@@ -28,7 +28,7 @@
 }
 
 .createButton:hover {
-  background: rgb(37 99 235);
+  background: var(--admin-overlay-color-111);
 }
 
 .message {
@@ -38,13 +38,13 @@
 }
 
 .message.success {
-  background: rgb(34 197 94 / 20%);
-  color: rgb(34 197 94);
+  background: var(--admin-overlay-color-101);
+  color: var(--admin-overlay-color-108);
 }
 
 .message.error {
-  background: rgb(239 68 68 / 20%);
-  color: rgb(239 68 68);
+  background: var(--admin-overlay-color-065);
+  color: var(--admin-overlay-color-070);
 }
 
 .stats {
@@ -52,8 +52,8 @@
   gap: 1.5rem;
   margin-bottom: 1.5rem;
   padding: 1rem;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
 }
 
@@ -61,22 +61,22 @@
   display: flex;
   flex-direction: column;
   text-decoration: none;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
 }
 
 .stat:hover {
-  color: #6366f1;
+  color: var(--admin-accent);
 }
 
 .statValue {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
 }
 
 .statLabel {
   font-size: 0.8125rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .filters {
@@ -87,10 +87,10 @@
 
 .select {
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
-  background: #fff;
-  color: #374151;
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
   font-size: 0.9375rem;
 }
 
@@ -99,7 +99,7 @@
 }
 
 .postLink {
-  color: rgb(59 130 246);
+  color: var(--admin-overlay-color-135);
   text-decoration: none;
 }
 
@@ -119,8 +119,8 @@
   padding: 0.15rem 0.5rem;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #1d4ed8;
-  background: #dbeafe;
+  color: var(--admin-info-strong);
+  background: var(--admin-info-bg);
   border-radius: 4px;
   white-space: nowrap;
 }
@@ -132,18 +132,18 @@
 }
 
 .statusDRAFT {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-muted);
 }
 
 .statusPUBLISHED {
-  background: rgb(34 197 94 / 20%);
-  color: rgb(34 197 94);
+  background: var(--admin-overlay-color-101);
+  color: var(--admin-overlay-color-108);
 }
 
 .statusARCHIVED {
-  background: #f3f4f6;
-  color: #9ca3af;
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-muted);
 }
 
 .actions {
@@ -153,7 +153,7 @@
 }
 
 .actionLink {
-  color: rgb(59 130 246);
+  color: var(--admin-overlay-color-135);
   text-decoration: none;
   font-size: 0.875rem;
 }
@@ -164,36 +164,36 @@
 
 .actionButton {
   padding: 0.25rem 0.5rem;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border-strong);
   border-radius: 4px;
-  color: #374151;
+  color: var(--admin-text-secondary);
   cursor: pointer;
   font-size: 0.8125rem;
 }
 
 .actionButton:hover {
-  background: #e5e7eb;
+  background: var(--admin-border);
 }
 
 .actionButtonDanger {
   padding: 0.25rem 0.5rem;
-  background: rgb(239 68 68 / 20%);
-  border: 1px solid rgb(239 68 68 / 40%);
+  background: var(--admin-overlay-color-065);
+  border: 1px solid var(--admin-overlay-color-067);
   border-radius: 4px;
-  color: rgb(239 68 68);
+  color: var(--admin-overlay-color-070);
   cursor: pointer;
   font-size: 0.8125rem;
 }
 
 .actionButtonDanger:hover {
-  background: rgb(239 68 68 / 30%);
+  background: var(--admin-overlay-color-066);
 }
 
 .categoriesSection {
   padding: 1rem;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
 }
 
@@ -201,7 +201,7 @@
   font-size: 1.125rem;
   font-weight: 600;
   margin: 0 0 1rem;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
 }
 
 .categoriesList {
@@ -215,7 +215,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem 0;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .categoryItem:last-child {
@@ -224,11 +224,11 @@
 
 .categoryName {
   font-size: 0.9375rem;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .categoryCount {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.8125rem;
 }
 
@@ -253,175 +253,175 @@
 
 .input {
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
-  background: #fff;
-  color: #374151;
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
   font-size: 0.9375rem;
   min-width: 150px;
 }
 
 .saveButton {
   padding: 0.5rem 1rem;
-  background: rgb(34 197 94 / 30%);
-  border: 1px solid rgb(34 197 94 / 50%);
+  background: var(--admin-overlay-color-103);
+  border: 1px solid var(--admin-overlay-color-107);
   border-radius: 6px;
-  color: rgb(34 197 94);
+  color: var(--admin-overlay-color-108);
   cursor: pointer;
   font-size: 0.875rem;
 }
 
 .saveButton:hover {
-  background: rgb(34 197 94 / 40%);
+  background: var(--admin-overlay-color-104);
 }
 
 .cancelButton {
   padding: 0.5rem 1rem;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
-  color: #374151;
+  color: var(--admin-text-secondary);
   cursor: pointer;
   font-size: 0.875rem;
 }
 
 .cancelButton:hover {
-  background: #e5e7eb;
+  background: var(--admin-border);
 }
 
 .addCategoryButton {
   padding: 0.5rem 1rem;
-  background: #f9fafb;
-  border: 1px dashed #9ca3af;
+  background: var(--admin-surface-muted);
+  border: 1px dashed var(--admin-text-muted);
   border-radius: 6px;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   cursor: pointer;
   font-size: 0.875rem;
 }
 
 .addCategoryButton:hover {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
 }
 
 /* Тёмная тема — блог */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .blogSectionPage {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .createButton {
-  background: #6366f1;
+  background: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .createButton:hover {
-  background: #4f46e5;
+  background: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .stats {
-  background: #1f2937;
-  border-color: #374151;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .stat,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statValue {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .stat:hover {
-  color: #a5b4fc;
+  color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statLabel {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .postLink {
-  color: #93c5fd;
+  color: var(--admin-info-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusDRAFT {
-  background: #374151;
-  color: #9ca3af;
+  background: var(--admin-text-secondary);
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusPUBLISHED {
-  background: rgb(34 197 94 / 0.25);
-  color: #6ee7b7;
+  background: var(--admin-overlay-color-099);
+  color: var(--admin-success-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusARCHIVED {
-  background: #374151;
-  color: #9ca3af;
+  background: var(--admin-text-secondary);
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .actionLink {
-  color: #93c5fd;
+  color: var(--admin-info-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .actionButton {
-  background: #374151;
-  border-color: #4b5563;
-  color: #e5e7eb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .actionButton:hover {
-  background: #4b5563;
+  background: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .categoriesSection {
-  background: #1f2937;
-  border-color: #374151;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .categoryItem {
-  border-bottom-color: #374151;
+  border-bottom-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .categoryName {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .categoryCount {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton {
-  background: #374151;
-  border-color: #4b5563;
-  color: #e5e7eb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton:hover {
-  background: #4b5563;
+  background: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addCategoryButton {
-  background: #374151;
-  border-color: #4b5563;
-  color: #9ca3af;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addCategoryButton:hover {
-  background: #4b5563;
-  color: #e5e7eb;
+  background: var(--admin-sidebar-text);
+  color: var(--admin-border);
 }

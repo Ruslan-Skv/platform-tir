@@ -1,7 +1,7 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--admin-overlay-color-155, rgba(0, 0, 0, 0.5));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -10,13 +10,13 @@
 }
 
 .modal {
-  background: #fff;
+  background: var(--admin-surface);
   border-radius: 12px;
   max-width: 480px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 40px rgb(0 0 0 / 0.2);
 }
 
 .header {
@@ -24,14 +24,14 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .title {
   margin: 0;
   font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--admin-text-primary);
 }
 
 .closeBtn {
@@ -39,21 +39,21 @@
   border: none;
   font-size: 1.5rem;
   line-height: 1;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   cursor: pointer;
   padding: 4px;
   border-radius: 4px;
 }
 
 .closeBtn:hover {
-  color: #111827;
-  background: #f3f4f6;
+  color: var(--admin-text-primary);
+  background: var(--admin-surface-soft);
 }
 
 .loading,
 .empty {
   padding: 24px 20px;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.9375rem;
   margin: 0;
 }
@@ -61,15 +61,15 @@
 .error {
   margin: 12px 20px 0;
   padding: 10px 12px;
-  background: #fef2f2;
-  color: #b91c1c;
+  background: var(--admin-danger-bg);
+  color: var(--admin-danger-text);
   font-size: 0.875rem;
   border-radius: 8px;
 }
 
 .section {
   padding: 16px 20px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--admin-surface-soft);
 }
 
 .section:last-of-type {
@@ -80,7 +80,7 @@
   margin: 0 0 10px 0;
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
@@ -96,7 +96,7 @@
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--admin-surface-soft);
   font-size: 0.9375rem;
 }
 
@@ -109,7 +109,7 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .badge {
@@ -118,8 +118,8 @@
   border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 500;
-  background: #e0e7ff;
-  color: #4338ca;
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
 }
 
 .badgeDenied {
@@ -128,23 +128,23 @@
   border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 500;
-  background: #fee2e2;
-  color: #b91c1c;
+  background: var(--admin-danger-bg-soft);
+  color: var(--admin-danger-text);
 }
 
 .revokeBtn {
   flex-shrink: 0;
   padding: 4px 10px;
   font-size: 0.8125rem;
-  color: #dc2626;
+  color: var(--admin-danger);
   background: none;
-  border: 1px solid #fecaca;
+  border: 1px solid var(--admin-danger-border);
   border-radius: 6px;
   cursor: pointer;
 }
 
 .revokeBtn:hover:not(:disabled) {
-  background: #fef2f2;
+  background: var(--admin-danger-bg);
 }
 
 .revokeBtn:disabled {
@@ -164,19 +164,19 @@
   min-width: 140px;
   padding: 8px 12px;
   font-size: 0.9375rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border-strong);
   border-radius: 8px;
-  background: #fff;
-  color: #111827;
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
 }
 
 .selectPermission {
   padding: 8px 12px;
   font-size: 0.9375rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border-strong);
   border-radius: 8px;
-  background: #fff;
-  color: #111827;
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
   width: 140px;
 }
 
@@ -184,15 +184,15 @@
   padding: 8px 16px;
   font-size: 0.9375rem;
   font-weight: 500;
-  color: #fff;
-  background: #6366f1;
+  color: var(--admin-text-inverse);
+  background: var(--admin-accent);
   border: none;
   border-radius: 8px;
   cursor: pointer;
 }
 
 .addBtn:hover:not(:disabled) {
-  background: #4f46e5;
+  background: var(--color-accent-hover);
 }
 
 .addBtn:disabled {
@@ -202,83 +202,83 @@
 
 /* Тёмная тема */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .overlay {
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--admin-overlay-color-157, rgba(0, 0, 0, 0.7));
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .modal {
-  background: #1f2937;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  background: var(--admin-surface);
+  box-shadow: 0 20px 40px rgb(0 0 0 / 0.5);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .header {
-  border-bottom-color: #374151;
+  border-bottom-color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #f9fafb;
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .closeBtn {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .closeBtn:hover {
-  color: #f9fafb;
-  background: #374151;
+  color: var(--admin-text-primary);
+  background: var(--admin-surface-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .loading,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .empty {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .error {
-  background: #7f1d1d;
-  color: #fecaca;
+  background: var(--admin-danger-bg-strong);
+  color: var(--admin-danger-text-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .section {
-  border-bottom-color: #374151;
+  border-bottom-color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .listItem {
-  border-bottom-color: #374151;
+  border-bottom-color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .userName {
-  color: #d1d5db;
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .badge {
-  background: #3730a3;
-  color: #a5b4fc;
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .badgeDenied {
-  background: #7f1d1d;
-  color: #fecaca;
+  background: var(--admin-danger-bg-strong);
+  color: var(--admin-danger-text-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .revokeBtn {
-  color: #fca5a5;
-  border-color: #991b1b;
+  color: var(--admin-danger-text-soft);
+  border-color: var(--admin-danger-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .revokeBtn:hover:not(:disabled) {
-  background: #7f1d1d;
+  background: var(--admin-danger-bg-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .selectPermission {
-  border-color: #4b5563;
-  background: #111827;
-  color: #e5e7eb;
+  border-color: var(--admin-border-strong);
+  background: var(--admin-surface-muted);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addBtn:hover:not(:disabled) {
-  background: #4f46e5;
+  background: var(--color-accent-hover);
 }

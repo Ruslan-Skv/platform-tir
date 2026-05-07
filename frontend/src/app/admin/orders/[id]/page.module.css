@@ -27,17 +27,17 @@
 .refreshButton {
   padding: 0.4rem 0.75rem;
   font-size: 0.875rem;
-  color: #1d4ed8;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  color: var(--admin-info-strong);
+  background: var(--admin-info-bg-soft);
+  border: 1px solid var(--admin-info-border-soft);
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
 }
 
 .refreshButton:hover:not(:disabled) {
-  background: #dbeafe;
-  border-color: #93c5fd;
+  background: var(--admin-info-bg);
+  border-color: var(--admin-info-border);
 }
 
 .refreshButton:disabled {
@@ -48,16 +48,16 @@
 .deleteButton {
   padding: 0.4rem 0.75rem;
   font-size: 0.875rem;
-  color: #b91c1c;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  color: var(--admin-danger-text);
+  background: var(--admin-danger-bg);
+  border: 1px solid var(--admin-danger-border);
   border-radius: 6px;
   cursor: pointer;
 }
 
 .deleteButton:hover:not(:disabled) {
-  background: #fee2e2;
-  border-color: #f87171;
+  background: var(--admin-danger-bg-soft);
+  border-color: var(--admin-danger-border-strong);
 }
 
 .deleteButton:disabled {
@@ -105,7 +105,7 @@
 
 .clientPhone {
   font-size: 0.8125rem;
-  color: #374151;
+  color: var(--admin-text-secondary);
   padding: 0.35rem 0;
 }
 
@@ -126,13 +126,13 @@
 
 .inputLabel {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-weight: 600;
 }
 
 .input {
   padding: 0.35rem 0.5rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   font-size: 0.8125rem;
 }
@@ -141,9 +141,9 @@
   margin-top: 0.25rem;
   padding: 0.35rem 0.6rem;
   border-radius: 6px;
-  border: 1px solid #dbeafe;
-  background: #eff6ff;
-  color: #1d4ed8;
+  border: 1px solid var(--admin-info-border-soft);
+  background: var(--admin-info-bg-soft);
+  color: var(--admin-info-strong);
   cursor: pointer;
   font-size: 0.8125rem;
   font-weight: 600;
@@ -157,25 +157,25 @@
 .inlineSuccess {
   margin-left: 0.5rem;
   font-size: 0.75rem;
-  color: #16a34a;
+  color: var(--admin-success-strong);
   font-weight: 600;
 }
 
 .mutedText {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.8125rem;
 }
 
 .backLink {
   display: inline-block;
   margin-bottom: 0.75rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   text-decoration: none;
   font-size: 0.9375rem;
 }
 
 .backLink:hover {
-  color: #111827;
+  color: var(--admin-text-primary);
 }
 
 .titleRow {
@@ -193,7 +193,7 @@
 
 .managerInline {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   flex: 0 1 auto;
 }
 
@@ -214,18 +214,18 @@
 
 .historyActionButton:hover {
   opacity: 1;
-  background: rgba(99, 102, 241, 0.1);
+  background: rgb(var(--admin-overlay-color-144) / 0.1);
 }
 
 .currentStatus {
   margin: 0.35rem 0 0 0;
   font-size: 0.9375rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-weight: 500;
 }
 
 .currentStatusHighlight {
-  color: #dc2626;
+  color: var(--admin-danger-text);
   font-weight: 700;
 }
 
@@ -239,48 +239,48 @@
 }
 
 .statusPENDING {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning-text);
 }
 
 .statusPENDING_REVIEW {
-  background: #e0e7ff;
-  color: #4338ca;
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
 }
 
 .statusAPPROVED {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text);
 }
 
 .statusRETURNED_FOR_CORRECTION {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning-text);
 }
 
 .statusPROCESSING {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--admin-info-bg);
+  color: var(--admin-info-text);
 }
 
 .statusSHIPPED {
-  background: #e0e7ff;
-  color: #4338ca;
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
 }
 
 .statusDELIVERED {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text);
 }
 
 .statusCANCELLED {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--admin-danger-bg-soft);
+  color: var(--admin-danger-text);
 }
 
 .statusREFUNDED {
-  background: #fae8ff;
-  color: #86198f;
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
 }
 
 .actionsRow {
@@ -292,8 +292,8 @@
 }
 
 .section {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   padding: 0.4rem 0.6rem;
   margin-bottom: 0.5rem;
@@ -302,7 +302,7 @@
 .sectionTitle {
   font-size: 0.6875rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin: 0 0 0.2rem 0;
 }
 
@@ -324,7 +324,7 @@
 
 .select {
   padding: 0.5rem 0.75rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   font-size: 0.9375rem;
   min-width: 200px;
@@ -333,16 +333,16 @@
 .saving {
   margin-left: 0.5rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .approveButton {
   padding: 0.5rem 1rem;
   font-size: 0.9375rem;
   font-weight: 500;
-  color: #fff;
-  background: #059669;
-  border: 1px solid #047857;
+  color: var(--admin-text-inverse);
+  background: var(--admin-success);
+  border: 1px solid var(--admin-success-deep);
   border-radius: 6px;
   cursor: pointer;
   transition:
@@ -351,8 +351,8 @@
 }
 
 .approveButton:hover:not(:disabled) {
-  background: #047857;
-  border-color: #065f46;
+  background: var(--admin-success-deep);
+  border-color: var(--admin-success-text);
 }
 
 .approveButton:disabled {
@@ -364,9 +364,9 @@
   padding: 0.5rem 1rem;
   font-size: 0.9375rem;
   font-weight: 500;
-  color: #7f1d1d;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  color: var(--admin-danger-text);
+  background: var(--admin-danger-bg);
+  border: 1px solid var(--admin-danger-border);
   border-radius: 6px;
   cursor: pointer;
   transition:
@@ -375,8 +375,8 @@
 }
 
 .cancelOrderButton:hover:not(:disabled) {
-  background: #fee2e2;
-  border-color: #fca5a5;
+  background: var(--admin-danger-bg-soft);
+  border-color: var(--admin-danger-border-strong);
 }
 
 .cancelOrderButton:disabled {
@@ -388,10 +388,10 @@
   margin: 0.5rem 0 0 0;
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
-  color: #065f46;
-  background: #d1fae5;
+  color: var(--admin-success-text);
+  background: var(--admin-success-bg-soft);
   border-radius: 6px;
-  border: 1px solid #a7f3d0;
+  border: 1px solid var(--admin-success-border-soft);
 }
 
 .sentToEmailBadge {
@@ -399,15 +399,15 @@
   margin-left: 0.5rem;
   padding: 0.25rem 0.5rem;
   font-size: 0.8125rem;
-  color: #6b7280;
-  background: #f3f4f6;
+  color: var(--admin-text-muted);
+  background: var(--admin-surface-soft);
   border-radius: 4px;
 }
 
 .approvalCountdown {
   margin: 0.5rem 0 0 0;
   font-size: 0.875rem;
-  color: #166534;
+  color: var(--admin-success-text-strong);
 }
 
 .approvalCountdownTime {
@@ -429,7 +429,7 @@
 }
 
 .reviewTimelineLabel {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   min-width: 12rem;
 }
 
@@ -439,7 +439,7 @@
 
 /* Модальное окно истории заказа */
 .historyModal {
-  background: #fff;
+  background: var(--admin-surface);
   border-radius: 8px;
   max-width: 640px;
   width: 100%;
@@ -456,7 +456,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .historyModalTitle {
@@ -471,14 +471,14 @@
   border: none;
   font-size: 1.5rem;
   line-height: 1;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   cursor: pointer;
   border-radius: 4px;
 }
 
 .historyModalClose:hover {
-  color: #111827;
-  background: #f3f4f6;
+  color: var(--admin-text-primary);
+  background: var(--admin-surface-soft);
 }
 
 .historyModal .orderHistory {
@@ -492,7 +492,7 @@
 
 .orderHistoryEmpty {
   margin: 0;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .orderHistoryHeader {
@@ -504,13 +504,13 @@
   margin-bottom: 0.2rem;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #6b7280;
-  border-bottom: 1px solid #e5e7eb;
+  color: var(--admin-text-muted);
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .orderHistoryHeader span {
   font-weight: 600;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .orderHistoryList {
@@ -528,7 +528,7 @@
   align-items: baseline;
   gap: 0.5rem;
   padding: 0.25rem 0;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--admin-surface-soft);
 }
 
 .orderHistoryItem:last-child {
@@ -537,27 +537,27 @@
 
 .orderHistoryTime {
   font-variant-numeric: tabular-nums;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .orderHistoryLabel {
-  color: #111827;
+  color: var(--admin-text-primary);
   font-weight: 500;
 }
 
 .orderHistoryDuration {
   font-variant-numeric: tabular-nums;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.8125rem;
 }
 
 .orderHistoryAuthor {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.8125rem;
 }
 
 .email {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.8125rem;
   margin: 0.1rem 0 0 0;
 }
@@ -570,7 +570,7 @@
 
 .muted {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin: 0.25rem 0 0 0;
 }
 
@@ -583,21 +583,21 @@
 .th {
   text-align: left;
   padding: 0.4rem 0.6rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--admin-border);
   font-weight: 600;
   font-size: 0.8125rem;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .tr {
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--admin-surface-soft);
 }
 
 .td {
   padding: 0.4rem 0.6rem;
   vertical-align: top;
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .productName {
@@ -608,38 +608,38 @@
 .itemMeta {
   display: block;
   font-size: 0.8125rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin-top: 0.125rem;
 }
 
 .serviceCategoryRow {
-  background: #f9fafb;
+  background: var(--admin-surface-muted);
 }
 
 .serviceCategoryCell {
   padding: 0.45rem 0.6rem;
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #374151;
-  border-bottom: 1px solid #e5e7eb;
+  color: var(--admin-text-secondary);
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .serviceRoomRow {
-  background: #f3f4f6;
+  background: var(--admin-surface-soft);
 }
 
 .serviceRoomCell {
   padding: 0.4rem 0.6rem;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #4b5563;
-  border-bottom: 1px solid #e5e7eb;
+  color: var(--admin-text-muted);
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .address {
   margin: 0.15rem 0 0 0;
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .deliveryCompact {
@@ -677,7 +677,7 @@
 .deliveryCostEdit {
   margin-top: 0.5rem;
   padding-top: 0.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--admin-border);
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 0.35rem 1rem;
@@ -687,7 +687,7 @@
 .deliveryCostEditTitle {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--admin-text-secondary);
   margin: 0 0 0.25rem 0;
   grid-column: 1 / -1;
 }
@@ -701,7 +701,7 @@
   flex-direction: column;
   gap: 0.1rem;
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .deliveryCostInput {
@@ -709,7 +709,7 @@
   max-width: 8rem;
   padding: 0.25rem 0.35rem;
   font-size: 0.8125rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
   font-size: 0.9375rem;
 }
@@ -726,7 +726,7 @@
   padding: 0.3rem 0.6rem;
   font-size: 0.8125rem;
   background: var(--color-accent);
-  color: #fff;
+  color: var(--admin-text-inverse);
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -744,8 +744,8 @@
 .deliveryCostSummary {
   margin-top: 0.35rem;
   padding: 0.35rem 0.5rem;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: var(--admin-success-bg);
+  border: 1px solid var(--admin-success-border-soft);
   border-radius: 0.25rem;
   font-size: 0.8125rem;
 }
@@ -753,34 +753,34 @@
 .deliveryCostSummaryTitle {
   font-weight: 600;
   font-size: 0.8125rem;
-  color: #166534;
+  color: var(--admin-success-text-strong);
   margin: 0 0 0.2rem 0;
 }
 
 .deliveryCostSummaryLine {
   font-size: 0.8125rem;
-  color: #374151;
+  color: var(--admin-text-secondary);
   margin: 0.1rem 0;
 }
 
 .deliveryCostSummaryTotal {
   font-weight: 600;
   font-size: 0.8125rem;
-  color: #111827;
+  color: var(--admin-text-primary);
   margin: 0.25rem 0 0 0;
   padding-top: 0.25rem;
-  border-top: 1px solid #bbf7d0;
+  border-top: 1px solid var(--admin-success-border-soft);
 }
 
 .loading,
 .error {
   padding: 2rem;
   text-align: center;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .error {
-  color: #dc2626;
+  color: var(--admin-danger-text);
 }
 
 /* Комментарий и замена по пункту — компактно в одну строку */
@@ -803,7 +803,7 @@
 
 .commentLabel {
   font-size: 0.7rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   display: block;
   margin-bottom: 0.15rem;
 }
@@ -812,7 +812,7 @@
   width: 100%;
   min-height: 36px;
   padding: 0.35rem 0.5rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   font-size: 0.8125rem;
   resize: vertical;
@@ -821,13 +821,13 @@
 
 .commentInput:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--admin-accent);
 }
 
 .replaceSelect {
   width: 100%;
   padding: 0.35rem 0.5rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   font-size: 0.75rem;
   margin-bottom: 0.25rem;
@@ -842,7 +842,7 @@
 .quantityInput {
   width: 4rem;
   padding: 0.35rem 0.5rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   font-size: 0.8125rem;
   box-sizing: border-box;
@@ -850,14 +850,14 @@
 
 .quantityInput:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--admin-accent);
 }
 
 .replacedBadge {
   display: inline-block;
   font-size: 0.75rem;
-  color: #92400e;
-  background: #fef3c7;
+  color: var(--admin-warning-text);
+  background: var(--admin-warning-bg);
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
   margin-top: 0.25rem;
@@ -867,9 +867,9 @@
   padding: 0.35rem 0.6rem;
   font-size: 0.75rem;
   border-radius: 6px;
-  border: 1px solid #d1d5db;
-  background: #f9fafb;
-  color: #374151;
+  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-surface-muted);
+  color: var(--admin-text-secondary);
   cursor: pointer;
   transition:
     background 0.2s,
@@ -877,8 +877,8 @@
 }
 
 .btnSmall:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-text-muted);
 }
 
 .btnSmall:disabled {
@@ -893,8 +893,8 @@
 
 .sendBackButton {
   padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
-  color: #fff;
+  background: var(--admin-accent);
+  color: var(--admin-text-inverse);
   border: none;
   border-radius: 6px;
   font-size: 0.9375rem;
@@ -906,12 +906,12 @@
 }
 
 .sendBackButton:hover:not(:disabled) {
-  background: linear-gradient(135deg, #4f46e5, #4338ca);
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+  background: var(--color-accent-hover);
+  box-shadow: 0 2px 8px rgb(var(--color-accent-rgb) / 0.35);
 }
 
 .sendBackButton:disabled {
-  background: #9ca3af;
+  background: var(--admin-border-strong);
   cursor: default;
   box-shadow: none;
 }
@@ -919,7 +919,7 @@
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--admin-overlay-color-155, rgba(0, 0, 0, 0.5));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -927,33 +927,33 @@
 }
 
 .modal {
-  background: #fff;
+  background: var(--admin-surface);
   border-radius: 12px;
   padding: 1.25rem;
   max-width: 420px;
   width: 90%;
   box-shadow:
-    0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    0 20px 25px -5px rgb(0 0 0 / 0.1),
+    0 10px 10px -5px rgb(0 0 0 / 0.04);
 }
 
 .modalTitle {
   font-size: 1.125rem;
   font-weight: 600;
   margin: 0 0 0.75rem 0;
-  color: #111827;
+  color: var(--admin-text-primary);
 }
 
 .modalText {
   margin: 0 0 1rem 0;
   font-size: 0.9375rem;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .modalConfirmDelete {
   padding: 0.5rem 1rem;
-  background: #dc2626;
-  color: #fff;
+  background: var(--admin-danger-text);
+  color: var(--admin-text-inverse);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -962,7 +962,7 @@
 }
 
 .modalConfirmDelete:hover:not(:disabled) {
-  background: #b91c1c;
+  background: var(--admin-error-text);
 }
 
 .modalConfirmDelete:disabled {
@@ -974,7 +974,7 @@
   width: 100%;
   min-height: 80px;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   font-size: 0.875rem;
   resize: vertical;
@@ -990,8 +990,8 @@
 
 .modalCancel {
   padding: 0.5rem 1rem;
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -1000,8 +1000,8 @@
 
 .modalConfirm {
   padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
-  color: #fff;
+  background: var(--admin-accent);
+  color: var(--admin-text-inverse);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -1010,340 +1010,7 @@
 }
 
 .modalConfirm:hover {
-  background: linear-gradient(135deg, #4f46e5, #4338ca);
-}
-
-/* Тёмная тема — страница заказа */
-:where(html[data-theme='dark'], [data-app-theme='dark']) .page {
-  color: #e5e7eb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .backLink {
-  color: #9ca3af;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .backLink:hover {
-  color: #f9fafb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .refreshButton {
-  color: #93c5fd;
-  background: #1e3a8a;
-  border-color: #3730a3;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .refreshButton:hover:not(:disabled) {
-  background: #3730a3;
-  border-color: #4f46e5;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #f9fafb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .managerInline {
-  color: #9ca3af;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .clientPhone {
-  color: #e5e7eb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .section {
-  background: #1f2937;
-  border-color: #374151;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
-  color: #9ca3af;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .inputLabel {
-  color: #9ca3af;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .input {
-  background: #111827;
-  border-color: #374151;
-  color: #e5e7eb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .input::placeholder {
-  color: #6b7280;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .saveButton {
-  background: rgba(37, 99, 235, 0.15);
-  border-color: rgba(59, 130, 246, 0.5);
-  color: #93c5fd;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .inlineSuccess {
-  color: #6ee7b7;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .select {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .saving,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .email,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .muted {
-  color: #9ca3af;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .approvedNotice {
-  background: rgba(16, 185, 129, 0.2);
-  color: #6ee7b7;
-  border-color: #059669;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .total,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .address {
-  color: #e5e7eb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .th {
-  border-color: #4b5563;
-  color: #d1d5db;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .tr {
-  border-color: #374151;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .td {
-  color: #e5e7eb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .serviceCategoryRow {
-  background: #111827;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .serviceCategoryCell {
-  background: #111827;
-  border-bottom-color: #374151;
-  color: #e5e7eb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .serviceRoomRow {
-  background: #0f172a;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .serviceRoomCell {
-  background: #0f172a;
-  border-bottom-color: #374151;
-  color: #cbd5f5;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .itemMeta {
-  color: #9ca3af;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .commentInput,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .modalTextarea {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .replaceSelect {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .btnSmall {
-  background: #374151;
-  border-color: #4b5563;
-  color: #e5e7eb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .btnSmall:hover {
-  background: #4b5563;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .replacedBadge {
-  background: #78350f;
-  color: #fcd34d;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .sendBackSection {
-  border-color: #374151;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .sendBackButton {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .sendBackButton:hover:not(:disabled) {
-  background: linear-gradient(135deg, #4f46e5, #4338ca);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .approveButton {
-  background: #059669;
-  border-color: #047857;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .approveButton:hover:not(:disabled) {
-  background: #047857;
-  border-color: #065f46;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .currentStatus {
-  color: #9ca3af;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelOrderButton {
-  color: #fecaca;
-  background: #450a0a;
-  border-color: #7f1d1d;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelOrderButton:hover:not(:disabled) {
-  background: #7f1d1d;
-  border-color: #991b1b;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .modalConfirm {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .modalConfirm:hover {
-  background: linear-gradient(135deg, #4f46e5, #4338ca);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .modal {
-  background: #1f2937;
-  border: 1px solid #374151;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .historyActionButton {
-  color: #f9fafb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .historyActionButton:hover {
-  background: rgba(99, 102, 241, 0.2);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .historyModal {
-  background: #1f2937;
-  border: 1px solid #374151;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .historyModalHeader {
-  border-bottom-color: #374151;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .historyModalTitle {
-  color: #f9fafb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .historyModalClose {
-  color: #9ca3af;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .historyModalClose:hover {
-  color: #e5e7eb;
-  background: #374151;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .modalTitle {
-  color: #f9fafb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .modalCancel {
-  background: #374151;
-  color: #e5e7eb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .orderHistoryItem {
-  border-bottom-color: #374151;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .orderHistoryTime {
-  color: #e5e7eb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .orderHistoryLabel {
-  color: #f9fafb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .orderHistoryDuration {
-  color: #9ca3af;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .orderHistoryAuthor {
-  color: #9ca3af;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .orderHistoryHeader,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .orderHistoryHeader span {
-  color: #9ca3af;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .orderHistoryHeader {
-  border-bottom-color: #374151;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .currentStatusHighlight {
-  color: #f87171;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .orderHistoryEmpty {
-  color: #9ca3af;
-}
-
-/* Блок проверки доставки — тёмная тема */
-:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCompactLeft p,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCompactRight p {
-  color: #e5e7eb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostEdit {
-  border-top-color: #374151;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostEditTitle {
-  color: #d1d5db;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostEditLabel {
-  color: #9ca3af;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostInput {
-  background: #111827;
-  border-color: #4b5563;
-  color: #f9fafb;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostInput:focus {
-  border-color: var(--color-accent);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostInput::placeholder {
-  color: #6b7280;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostSummary {
-  background: #064e3b;
-  border-color: #047857;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostSummaryTitle {
-  color: #6ee7b7;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostSummaryLine {
-  color: #d1d5db;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryCostSummaryTotal {
-  color: #f9fafb;
-  border-top-color: #047857;
+  background: var(--color-accent-hover);
 }
 
 @media (max-width: 768px) {

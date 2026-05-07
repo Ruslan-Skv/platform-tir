@@ -1,7 +1,7 @@
 .page {
   padding: 1.5rem;
   max-width: 800px;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
 }
 
 .header {
@@ -11,7 +11,7 @@
 .backLink {
   display: inline-block;
   margin-bottom: 0.5rem;
-  color: rgb(59 130 246);
+  color: var(--admin-overlay-color-135);
   text-decoration: none;
   font-size: 0.9375rem;
 }
@@ -24,7 +24,7 @@
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
 }
 
 .message {
@@ -34,13 +34,13 @@
 }
 
 .message.success {
-  background: rgb(34 197 94 / 20%);
-  color: rgb(34 197 94);
+  background: var(--admin-overlay-color-101);
+  color: var(--admin-overlay-color-108);
 }
 
 .message.error {
-  background: rgb(239 68 68 / 20%);
-  color: rgb(239 68 68);
+  background: var(--admin-overlay-color-065);
+  color: var(--admin-overlay-color-070);
 }
 
 .form {
@@ -58,13 +58,13 @@
 .label {
   font-size: 0.9375rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .fieldHint {
   margin: -0.2rem 0 0;
   font-size: 0.8125rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   line-height: 1.35;
 }
 
@@ -72,7 +72,7 @@
 .select,
 .textarea {
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
   font-size: 0.9375rem;
   font-family: inherit;
@@ -85,8 +85,8 @@
 
 .uploadButton {
   padding: 0.5rem 1rem;
-  background: #e5e7eb;
-  border: 1px solid #d1d5db;
+  background: var(--admin-border);
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
   font-size: 0.875rem;
   cursor: pointer;
@@ -94,7 +94,7 @@
 }
 
 .uploadButton:hover:not(:disabled) {
-  background: #d1d5db;
+  background: var(--admin-border-strong);
 }
 
 .uploadButton:disabled {
@@ -113,7 +113,7 @@
   aspect-ratio: 1;
   border-radius: 8px;
   overflow: hidden;
-  background: #f3f4f6;
+  background: var(--admin-surface-soft);
 }
 
 .photoItem img {
@@ -130,7 +130,7 @@
   height: 24px;
   font-size: 1.25rem;
   line-height: 1;
-  background: rgb(0 0 0 / 60%);
+  background: var(--admin-overlay-color-009);
   color: white;
   border: none;
   border-radius: 4px;
@@ -142,7 +142,7 @@
 }
 
 .removePhoto:hover {
-  background: rgb(220 38 38);
+  background: var(--admin-overlay-color-057);
 }
 
 .formActions {
@@ -153,7 +153,7 @@
 
 .saveButton {
   padding: 0.5rem 1.25rem;
-  background: rgb(34 197 94);
+  background: var(--admin-overlay-color-108);
   color: white;
   border: none;
   border-radius: 6px;
@@ -163,7 +163,7 @@
 }
 
 .saveButton:hover:not(:disabled) {
-  background: rgb(22 163 74);
+  background: var(--admin-overlay-color-052);
 }
 
 .saveButton:disabled {
@@ -173,71 +173,71 @@
 
 .cancelLink {
   padding: 0.5rem 1rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   text-decoration: none;
   font-size: 0.9375rem;
 }
 
 .cancelLink:hover {
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .loading {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.9375rem;
 }
 
 /* Тёмная тема — форма проекта фото */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .page {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .backLink {
-  color: #93c5fd;
+  color: var(--admin-info-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .label {
-  color: #d1d5db;
+  color: var(--admin-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHint {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .textarea {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .uploadButton {
-  background: #374151;
-  border-color: #4b5563;
-  color: #e5e7eb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .uploadButton:hover:not(:disabled) {
-  background: #4b5563;
+  background: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .photoItem {
-  background: #374151;
+  background: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .saveButton {
-  background: #059669;
+  background: var(--admin-success);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .saveButton:hover:not(:disabled) {
-  background: #047857;
+  background: var(--admin-success-emerald);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cancelLink:hover {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }

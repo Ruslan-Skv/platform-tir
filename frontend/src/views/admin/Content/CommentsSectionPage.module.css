@@ -1,7 +1,7 @@
 .page {
   padding: 1.5rem;
   max-width: 1000px;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
 }
 
 .header {
@@ -12,12 +12,12 @@
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0 0 0.5rem 0;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
 }
 
 .subtitle {
   font-size: 0.9375rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin: 0;
 }
 
@@ -25,14 +25,14 @@
   display: flex;
   gap: 0;
   margin-bottom: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .tab {
   padding: 0.75rem 1.25rem;
   font-size: 0.9375rem;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
@@ -43,12 +43,12 @@
 }
 
 .tab:hover {
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .tab.active {
-  color: #4f46e5;
-  border-bottom-color: #4f46e5;
+  color: var(--admin-accent);
+  border-bottom-color: var(--admin-accent);
 }
 
 .filters {
@@ -61,15 +61,15 @@
 .filterSelect {
   padding: 8px 12px;
   font-size: 0.875rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
-  background: #fff;
-  color: #374151;
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
 }
 
 .loading,
 .empty {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.9375rem;
   margin: 0;
 }
@@ -81,8 +81,8 @@
 }
 
 .card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 12px;
   padding: 16px;
 }
@@ -97,34 +97,34 @@
 .cardAuthor {
   font-weight: 500;
   font-size: 0.9375rem;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
 }
 
 .cardDate {
   font-size: 0.8125rem;
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 .cardContent {
   margin: 8px 0;
   font-size: 0.9375rem;
   line-height: 1.5;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .cardMeta {
   margin: 8px 0;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .link {
-  color: #4f46e5;
+  color: var(--admin-accent);
   text-decoration: underline;
 }
 
 .link:hover {
-  color: #4338ca;
+  color: var(--admin-accent);
 }
 
 .cardActions {
@@ -149,43 +149,43 @@
 }
 
 .btnApprove {
-  color: #059669;
-  background: rgb(5 150 105 / 10%);
-  border-color: #059669;
+  color: var(--admin-success);
+  background: var(--admin-overlay-color-119);
+  border-color: var(--admin-success);
 }
 
 .btnApprove:hover:not(:disabled) {
-  background: rgb(5 150 105 / 20%);
+  background: var(--admin-overlay-color-120);
 }
 
 .btnReject {
-  color: #d97706;
-  background: rgb(217 119 6 / 10%);
-  border-color: #d97706;
+  color: var(--admin-warning-strong);
+  background: var(--admin-overlay-color-049);
+  border-color: var(--admin-warning-strong);
 }
 
 .btnReject:hover:not(:disabled) {
-  background: rgb(217 119 6 / 20%);
+  background: var(--admin-overlay-color-050);
 }
 
 .btnSpam {
-  color: #dc2626;
-  background: rgb(220 38 38 / 10%);
-  border-color: #dc2626;
+  color: var(--admin-error-strong);
+  background: var(--admin-overlay-color-055);
+  border-color: var(--admin-error-strong);
 }
 
 .btnSpam:hover:not(:disabled) {
-  background: rgb(220 38 38 / 20%);
+  background: var(--admin-overlay-color-056);
 }
 
 .btnDelete {
-  color: #dc2626;
-  background: rgb(220 38 38 / 10%);
-  border-color: #dc2626;
+  color: var(--admin-error-strong);
+  background: var(--admin-overlay-color-055);
+  border-color: var(--admin-error-strong);
 }
 
 .btnDelete:hover:not(:disabled) {
-  background: rgb(220 38 38 / 20%);
+  background: var(--admin-overlay-color-056);
 }
 
 .statusBadge {
@@ -198,49 +198,49 @@
 }
 
 .statusPending {
-  background: rgb(245 158 11 / 20%);
-  color: #b45309;
+  background: var(--admin-overlay-color-081);
+  color: var(--admin-warning-brown);
 }
 
 .statusApproved {
-  background: rgb(34 197 94 / 20%);
-  color: #15803d;
+  background: var(--admin-overlay-color-101);
+  color: var(--admin-success-deep);
 }
 
 .statusRejected {
-  background: rgb(239 68 68 / 20%);
-  color: #b91c1c;
+  background: var(--admin-overlay-color-065);
+  color: var(--admin-error-text);
 }
 
 .statusSpam {
-  background: rgb(107 114 128 / 20%);
-  color: #4b5563;
+  background: var(--admin-overlay-color-010);
+  color: var(--admin-sidebar-text);
 }
 
 .replies {
   margin-top: 12px;
   padding-left: 20px;
-  border-left: 2px solid #e5e7eb;
+  border-left: 2px solid var(--admin-border);
 }
 
 .reply {
   margin-bottom: 8px;
   padding: 8px;
-  background: rgb(249 250 251);
+  background: var(--admin-overlay-color-085);
   border-radius: 8px;
 }
 
 .replyAuthor {
   font-size: 0.8125rem;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin-bottom: 4px;
 }
 
 .replyContent {
   font-size: 0.875rem;
   line-height: 1.5;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .replyForm {
@@ -252,7 +252,7 @@
   min-height: 80px;
   padding: 10px 12px;
   font-size: 0.875rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   resize: vertical;
   font-family: inherit;
@@ -260,8 +260,8 @@
 
 .replyTextarea:focus {
   outline: none;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 2px rgb(79 70 229 / 20%);
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 2px var(--admin-overlay-color-143);
 }
 
 .replySubmit {
@@ -269,8 +269,8 @@
   padding: 8px 16px;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #fff;
-  background: #4f46e5;
+  color: var(--admin-surface);
+  background: var(--admin-accent);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -278,7 +278,7 @@
 }
 
 .replySubmit:hover:not(:disabled) {
-  background: #4338ca;
+  background: var(--admin-accent);
 }
 
 .replySubmit:disabled {
@@ -289,26 +289,26 @@
 .adminReply {
   margin-top: 12px;
   padding: 12px;
-  background: rgb(243 232 255);
+  background: var(--admin-overlay-color-071);
   border-radius: 8px;
-  border-left: 3px solid #7c3aed;
+  border-left: 3px solid var(--admin-chart-violet-strong);
 }
 
 .adminReplyLabel {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #6b21a8;
+  color: var(--admin-accent);
   margin-bottom: 4px;
 }
 
 .adminReplyContent {
   font-size: 0.875rem;
   line-height: 1.5;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .reviewStars {
-  color: #f59e0b;
+  color: var(--admin-warning);
   font-size: 0.875rem;
   margin-bottom: 4px;
 }
@@ -323,16 +323,16 @@
 .pageButton {
   padding: 8px 16px;
   font-size: 0.875rem;
-  color: #4f46e5;
+  color: var(--admin-accent);
   background: transparent;
-  border: 1px solid #4f46e5;
+  border: 1px solid var(--admin-accent);
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .pageButton:hover:not(:disabled) {
-  background: rgb(79 70 229 / 10%);
+  background: var(--admin-overlay-color-142);
 }
 
 .pageButton:disabled {
@@ -342,7 +342,7 @@
 
 .pageInfo {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .toast {
@@ -351,7 +351,7 @@
   right: 24px;
   padding: 16px 24px;
   border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 20px var(--admin-overlay-color-149);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -361,12 +361,12 @@
 }
 
 .toastSuccess {
-  background: #065f46;
+  background: var(--admin-success-text);
   color: white;
 }
 
 .toastError {
-  background: #991b1b;
+  background: var(--admin-error-text-strong);
   color: white;
 }
 
@@ -383,7 +383,7 @@
 .toastClose {
   background: none;
   border: none;
-  color: rgb(255 255 255 / 70%);
+  color: var(--admin-overlay-color-093);
   cursor: pointer;
   padding: 4px;
   margin-left: auto;
@@ -409,113 +409,113 @@
 
 /* Тёмная тема — комментарии */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .page {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .subtitle {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .tabs {
-  border-bottom-color: #374151;
+  border-bottom-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .tab {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .tab:hover {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .tab.active {
-  color: #a5b4fc;
-  border-bottom-color: #6366f1;
+  color: var(--admin-accent);
+  border-bottom-color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .filterSelect {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .loading,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .empty {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .card {
-  background: #1f2937;
-  border-color: #374151;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardAuthor {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardDate {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardContent {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardMeta {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .link {
-  color: #a5b4fc;
+  color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .link:hover {
-  color: #818cf8;
+  color: var(--admin-accent-soft-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .replies {
-  border-left-color: #374151;
+  border-left-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .reply {
-  background: #374151;
+  background: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .replyAuthor {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .replyContent {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .replyTextarea {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .adminReply {
-  background: rgb(124 58 237 / 0.2);
-  border-left-color: #a78bfa;
+  background: var(--admin-overlay-color-011);
+  border-left-color: var(--admin-chart-violet-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .adminReplyLabel {
-  color: #c4b5fd;
+  color: var(--admin-chart-violet-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .adminReplyContent {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .reviewStars {
-  color: #fbbf24;
+  color: var(--admin-warning-amber);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .pageInfo {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }

@@ -18,7 +18,7 @@
 
 .backLink,
 .link {
-  color: #2563eb;
+  color: var(--admin-accent);
   text-decoration: none;
   font-size: 0.9375rem;
 }
@@ -34,7 +34,7 @@
 }
 
 .error {
-  color: #dc2626;
+  color: var(--admin-danger-text);
 }
 
 .section {
@@ -49,7 +49,7 @@
 
 .hint {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin: 0 0 1rem;
 }
 
@@ -72,20 +72,20 @@
 }
 
 .required {
-  color: #dc2626;
+  color: var(--admin-danger-text);
 }
 
 .input {
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
   font-size: 0.9375rem;
 }
 
 .saveButton {
   padding: 0.6rem 1.25rem;
-  background: #2563eb;
-  color: white;
+  background: var(--admin-accent);
+  color: var(--admin-text-inverse);
   border: none;
   border-radius: 6px;
   font-weight: 600;
@@ -94,7 +94,7 @@
 }
 
 .saveButton:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: var(--color-accent-hover);
 }
 
 .saveButton:disabled {
@@ -114,7 +114,7 @@
 }
 
 .infoLabel {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   min-width: 140px;
 }
 
@@ -128,11 +128,11 @@
 .table td {
   padding: 0.75rem 1rem;
   text-align: left;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .table th {
   font-weight: 600;
-  color: #6b7280;
-  background: #f9fafb;
+  color: var(--admin-text-muted);
+  background: var(--admin-surface-muted);
 }

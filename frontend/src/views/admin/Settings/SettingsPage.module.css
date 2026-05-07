@@ -16,14 +16,14 @@
 .badgesTitle {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   margin: 0 0 4px 0;
 }
 
 .badgesSubtitle {
   font-size: 0.8125rem;
   line-height: 1.4;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin: 0;
 }
 
@@ -39,13 +39,13 @@
 .title {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   margin: 0 0 8px 0;
 }
 
 .subtitle {
   font-size: 0.9375rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin: 0;
 }
 
@@ -56,23 +56,23 @@
 .sectionTitle {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--admin-text-secondary);
   margin: 0 0 8px 0;
 }
 
 .sectionDescription {
   font-size: 0.9375rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin: 0 0 20px 0;
   line-height: 1.5;
 }
 
 .sectionDescription code {
   font-size: 0.8125rem;
-  background: #f3f4f6;
+  background: var(--admin-surface-soft);
   padding: 2px 6px;
   border-radius: 4px;
-  color: #4b5563;
+  color: var(--admin-sidebar-text);
 }
 
 .rolesGrid {
@@ -82,27 +82,27 @@
 }
 
 .roleCard {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 12px;
   padding: 20px;
-  color: #111827;
+  color: var(--admin-text-primary);
   transition:
     box-shadow 0.2s,
     border-color 0.2s;
 }
 
 .roleCard:hover {
-  border-color: #d1d5db;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-color: var(--admin-border-strong);
+  box-shadow: 0 2px 8px var(--admin-overlay-color-146);
 }
 
 .roleCardAdmin {
-  border-left: 4px solid #6366f1;
+  border-left: 4px solid var(--admin-accent);
 }
 
 .roleCard:not(.roleCardAdmin) {
-  border-left: 4px solid #9ca3af;
+  border-left: 4px solid var(--admin-text-muted);
 }
 
 .roleCardHeader {
@@ -115,8 +115,8 @@
 .roleId {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #6b7280;
-  background: #f3f4f6;
+  color: var(--admin-text-muted);
+  background: var(--admin-surface-soft);
   padding: 4px 8px;
   border-radius: 6px;
   text-transform: uppercase;
@@ -125,27 +125,27 @@
 .roleLabel {
   font-size: 1.0625rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   margin: 0;
   line-height: 1.35;
 }
 
 .roleDescription {
   font-size: 0.875rem;
-  color: #4b5563;
+  color: var(--admin-sidebar-text);
   line-height: 1.5;
   margin: 0 0 14px 0;
 }
 
 .permissions {
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--admin-border);
   padding-top: 12px;
 }
 
 .permissionsTitle {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   display: block;
   margin-bottom: 6px;
 }
@@ -154,7 +154,7 @@
   margin: 0;
   padding-left: 18px;
   font-size: 0.8125rem;
-  color: #4b5563;
+  color: var(--admin-sidebar-text);
   line-height: 1.6;
 }
 
@@ -164,8 +164,8 @@
 
 /* Блок «Как это работает» — информационная панель */
 .infoBlock {
-  background: #f8fafc;
-  border: 1px solid #cbd5e1;
+  background: var(--admin-surface-muted);
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 24px;
@@ -175,7 +175,7 @@
   margin: 0 0 12px 0;
   font-size: 1.0625rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--admin-text-primary);
 }
 
 .infoBlockList {
@@ -183,7 +183,7 @@
   padding-left: 24px;
   line-height: 1.8;
   font-size: 0.9375rem;
-  color: #334155;
+  color: var(--admin-text-secondary);
 }
 
 .infoBlockList li {
@@ -191,12 +191,12 @@
 }
 
 .infoBlockLink {
-  color: #4f46e5;
+  color: var(--admin-accent);
   text-decoration: underline;
 }
 
 .infoBlockLink:hover {
-  color: #4338ca;
+  color: var(--admin-accent);
 }
 
 /* Подписи к чекбоксам в шаблонах товаров */
@@ -206,7 +206,7 @@
   gap: 8px;
   cursor: pointer;
   font-size: 0.9375rem;
-  color: #111827;
+  color: var(--admin-text-primary);
   font-weight: 500;
 }
 
@@ -217,88 +217,88 @@
 
 .templateCheckboxLabelRequired {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 /* Тёмная тема */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .subtitle {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sectionDescription {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sectionDescription code {
-  background: #374151;
-  color: #d1d5db;
+  background: var(--admin-text-secondary);
+  color: var(--admin-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .roleCard {
-  background: #1f2937;
-  border-color: #374151;
-  color: #e5e7eb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .roleCard:hover {
-  border-color: #4b5563;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-color: var(--admin-sidebar-text);
+  box-shadow: 0 2px 8px var(--admin-overlay-color-152);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .roleId {
-  background: #374151;
-  color: #9ca3af;
+  background: var(--admin-text-secondary);
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .roleLabel {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .roleDescription {
-  color: #d1d5db;
+  color: var(--admin-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .permissions {
-  border-top-color: #374151;
+  border-top-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .permissionsTitle {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .permissionsList {
-  color: #d1d5db;
+  color: var(--admin-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .infoBlock {
-  background: #1f2937;
-  border-color: #374151;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .infoBlockTitle {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .infoBlockList {
-  color: #d1d5db;
+  color: var(--admin-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .infoBlockLink {
-  color: #a5b4fc;
+  color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .templateCheckboxLabel {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .templateCheckboxLabelRequired {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }

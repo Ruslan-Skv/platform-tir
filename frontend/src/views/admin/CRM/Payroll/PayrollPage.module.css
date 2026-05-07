@@ -10,7 +10,7 @@
 .title {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   margin: 0;
 }
 
@@ -27,21 +27,21 @@
   align-items: center;
   gap: 8px;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .filterSelect {
   min-width: 140px;
   padding: 8px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   font-size: 0.9rem;
-  background: #fff;
+  background: var(--admin-surface);
 }
 
 .placeholder {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface-muted);
+  border: 1px solid var(--admin-border);
   border-radius: 12px;
   padding: 32px;
   text-align: center;
@@ -50,7 +50,7 @@
 .placeholderText {
   margin: 0 0 12px 0;
   font-size: 0.9375rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   line-height: 1.5;
 }
 
@@ -58,7 +58,7 @@
   margin: 0;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .managementLink {
@@ -66,7 +66,7 @@
   margin-top: 16px;
   font-size: 0.9375rem;
   font-weight: 500;
-  color: #6366f1;
+  color: var(--admin-accent);
   text-decoration: none;
 }
 
@@ -76,32 +76,32 @@
 
 /* Dark theme */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .filterLabel {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .filterSelect {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .placeholder {
-  background: #1f2937;
-  border-color: #374151;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .placeholderText {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .placeholderPeriod {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .managementLink {
-  color: #a5b4fc;
+  color: var(--admin-accent);
 }

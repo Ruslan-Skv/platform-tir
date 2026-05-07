@@ -19,16 +19,16 @@
 .title {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   margin: 0;
 }
 
 .count {
-  background: #e5e7eb;
+  background: var(--admin-border);
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 0.9rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .headerActions {
@@ -42,14 +42,14 @@
   align-items: center;
   gap: 6px;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   cursor: pointer;
 }
 
 .addButton {
   padding: 8px 16px;
-  background: #6366f1;
-  color: #fff;
+  background: var(--admin-accent);
+  color: var(--admin-surface);
   border: none;
   border-radius: 8px;
   font-weight: 500;
@@ -59,7 +59,7 @@
 }
 
 .addButton:hover:not(:disabled) {
-  background: #4f46e5;
+  background: var(--admin-accent);
 }
 
 .addButton:disabled {
@@ -75,18 +75,18 @@
 }
 
 .messagesuccess {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text);
 }
 
 .messageerror {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--admin-error-bg-soft);
+  color: var(--admin-error-text-strong);
 }
 
 .tableWrapper {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -100,16 +100,16 @@
 .table th {
   text-align: left;
   padding: 12px 16px;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--admin-surface-muted);
+  border-bottom: 1px solid var(--admin-border);
   font-weight: 600;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .table td {
   padding: 12px 16px;
-  border-bottom: 1px solid #f3f4f6;
-  color: #1f2937;
+  border-bottom: 1px solid var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
 }
 
 .table tbody tr:last-child td {
@@ -117,11 +117,11 @@
 }
 
 .table tbody tr:hover {
-  background: #f9fafb;
+  background: var(--admin-surface-muted);
 }
 
 .editRow {
-  background: #fffbeb !important;
+  background: var(--admin-warning-bg) !important;
 }
 
 .inactiveRow {
@@ -135,21 +135,21 @@
 .loading,
 .empty {
   text-align: center;
-  color: #9ca3af;
+  color: var(--admin-text-muted);
   padding: 32px 16px !important;
 }
 
 .input {
   width: 100%;
   padding: 6px 10px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
   font-size: 0.875rem;
 }
 
 .input:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--admin-accent);
 }
 
 .rowActions {
@@ -160,15 +160,15 @@
 .historyButton {
   padding: 4px 10px;
   font-size: 0.8rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
-  background: #fff;
+  background: var(--admin-surface);
   cursor: pointer;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .historyButton:hover {
-  background: #f3f4f6;
+  background: var(--admin-surface-soft);
 }
 
 .editButton,
@@ -178,9 +178,9 @@
 .deleteConfirmButton {
   width: 32px;
   height: 32px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
-  background: #fff;
+  background: var(--admin-surface);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -191,37 +191,37 @@
 
 .editButton:hover,
 .deleteButton:hover {
-  background: #f3f4f6;
+  background: var(--admin-surface-soft);
 }
 
 .saveButton {
-  background: #d1fae5;
-  border-color: #10b981;
-  color: #065f46;
+  background: var(--admin-success-bg-soft);
+  border-color: var(--admin-success-emerald);
+  color: var(--admin-success-text);
 }
 
 .saveButton:hover:not(:disabled) {
-  background: #a7f3d0;
+  background: var(--admin-success-border-soft);
 }
 
 .cancelButton {
-  background: #fee2e2;
-  border-color: #ef4444;
-  color: #991b1b;
+  background: var(--admin-error-bg-soft);
+  border-color: var(--admin-danger);
+  color: var(--admin-error-text-strong);
 }
 
 .cancelButton:hover:not(:disabled) {
-  background: #fecaca;
+  background: var(--admin-error-border-soft);
 }
 
 .deleteConfirmButton {
-  background: #ef4444;
-  border-color: #dc2626;
-  color: #fff;
+  background: var(--admin-danger);
+  border-color: var(--admin-error-strong);
+  color: var(--admin-surface);
 }
 
 .deleteConfirmButton:hover:not(:disabled) {
-  background: #dc2626;
+  background: var(--admin-error-strong);
 }
 
 .statusBadge {
@@ -233,66 +233,66 @@
 }
 
 .statusBadge.active {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text);
 }
 
 .statusBadge.inactive {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--admin-error-bg-soft);
+  color: var(--admin-error-text-strong);
 }
 
 /* Dark theme */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .count {
-  background: #374151;
-  color: #9ca3af;
+  background: var(--admin-text-secondary);
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .checkboxLabel {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .tableWrapper {
-  background: #1f2937;
-  border-color: #374151;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .table th {
-  background: #111827;
-  border-bottom-color: #374151;
-  color: #e5e7eb;
+  background: var(--admin-text-primary);
+  border-bottom-color: var(--admin-text-secondary);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .table td {
-  border-bottom-color: #374151;
-  color: #e5e7eb;
+  border-bottom-color: var(--admin-text-secondary);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody tr:hover {
-  background: #374151;
+  background: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .editRow {
-  background: rgb(245 158 11 / 0.1) !important;
+  background: var(--admin-overlay-color-074) !important;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .editButton,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton {
-  background: #374151;
-  border-color: #4b5563;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .editButton:hover,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton:hover {
-  background: #4b5563;
+  background: var(--admin-sidebar-text);
 }

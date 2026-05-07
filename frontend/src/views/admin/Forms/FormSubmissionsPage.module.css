@@ -10,13 +10,13 @@
 .title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   margin: 0 0 8px 0;
 }
 
 .subtitle {
   font-size: 0.9375rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin: 0;
 }
 
@@ -29,7 +29,7 @@
 .select {
   padding: 8px 12px;
   font-size: 0.9375rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border-strong);
   border-radius: 8px;
   min-width: 180px;
 }
@@ -37,7 +37,7 @@
 .refreshButton {
   padding: 8px 16px;
   font-size: 0.9375rem;
-  background: #4f46e5;
+  background: var(--admin-accent);
   color: white;
   border: none;
   border-radius: 8px;
@@ -45,7 +45,7 @@
 }
 
 .refreshButton:hover:not(:disabled) {
-  background: #4338ca;
+  background: var(--admin-accent);
 }
 
 .refreshButton:disabled {
@@ -55,7 +55,7 @@
 
 .loading,
 .empty {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.9375rem;
   margin: 0;
 }
@@ -67,8 +67,8 @@
 }
 
 .card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -78,18 +78,18 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--admin-surface-muted);
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .type {
   font-weight: 600;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .date {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .cardBody {
@@ -99,7 +99,7 @@
 .cardBody p {
   margin: 0 0 8px 0;
   font-size: 0.9375rem;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .cardBody p:last-child {
@@ -109,54 +109,54 @@
 .comment {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid #e5e7eb;
-  color: #6b7280;
+  border-top: 1px solid var(--admin-border);
+  color: var(--admin-text-muted);
   font-style: italic;
 }
 
 /* Тёмная тема */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .subtitle {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .loading,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .empty {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .card {
-  background: #1f2937;
-  border-color: #374151;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardHeader {
-  background: #111827;
-  border-bottom-color: #374151;
+  background: var(--admin-text-primary);
+  border-bottom-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .type {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .date {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardBody p {
-  color: #d1d5db;
+  color: var(--admin-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .comment {
-  border-top-color: #374151;
-  color: #9ca3af;
+  border-top-color: var(--admin-text-secondary);
+  color: var(--admin-text-muted);
 }

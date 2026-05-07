@@ -13,7 +13,7 @@
 .title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   margin: 0;
 }
 
@@ -25,18 +25,18 @@
 
 .select {
   padding: 10px 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   font-size: 0.95rem;
-  background: #fff;
+  background: var(--admin-surface);
 }
 
 .dateInput {
   padding: 10px 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   font-size: 0.95rem;
-  background: #fff;
+  background: var(--admin-surface);
 }
 
 /* Overview Grid */
@@ -48,10 +48,10 @@
 }
 
 .overviewCard {
-  background: #fff;
+  background: var(--admin-surface);
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px var(--admin-overlay-color-148);
   display: flex;
   align-items: flex-start;
   gap: 16px;
@@ -64,7 +64,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f3f4f6;
+  background: var(--admin-surface-soft);
   border-radius: 12px;
 }
 
@@ -77,12 +77,12 @@
 .overviewValue {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
 }
 
 .overviewLabel {
   font-size: 0.9rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin-top: 4px;
 }
 
@@ -92,13 +92,13 @@
 }
 
 .trendUp {
-  color: #10b981;
+  color: var(--admin-success-emerald);
   font-weight: 600;
   font-size: 0.9rem;
 }
 
 .trendDown {
-  color: #ef4444;
+  color: var(--admin-danger);
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -109,9 +109,9 @@
 }
 
 .chartCard {
-  background: #fff;
+  background: var(--admin-surface);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px var(--admin-overlay-color-148);
   overflow: hidden;
 }
 
@@ -120,18 +120,18 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .cardTitle {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   margin: 0;
 }
 
 .cardLink {
-  color: #6366f1;
+  color: var(--admin-accent);
   text-decoration: none;
   font-size: 0.9rem;
 }
@@ -150,7 +150,7 @@
   align-items: center;
   gap: 6px;
   font-size: 0.85rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .legendDot {
@@ -195,7 +195,7 @@
 .barLabel {
   margin-top: 6px;
   font-size: 0.7rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   text-transform: capitalize;
 }
 
@@ -207,9 +207,9 @@
 }
 
 .tableCard {
-  background: #fff;
+  background: var(--admin-surface);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px var(--admin-overlay-color-148);
   overflow: hidden;
 }
 
@@ -222,20 +222,20 @@
 .table td {
   padding: 8px 6px;
   text-align: left;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .table th {
   font-weight: 600;
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  background: #f9fafb;
+  background: var(--admin-surface-muted);
 }
 
 .table td {
-  color: #374151;
+  color: var(--admin-text-secondary);
   font-size: 0.8125rem;
 }
 
@@ -249,8 +249,8 @@
   justify-content: center;
   width: 20px;
   height: 20px;
-  background: #e5e7eb;
-  color: #374151;
+  background: var(--admin-border);
+  color: var(--admin-text-secondary);
   font-weight: 600;
   font-size: 0.7rem;
   border-radius: 50%;
@@ -258,18 +258,18 @@
 }
 
 .table tr:nth-child(1) .rank {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning-text);
 }
 
 .table tr:nth-child(2) .rank {
-  background: #e5e7eb;
-  color: #374151;
+  background: var(--admin-border);
+  color: var(--admin-text-secondary);
 }
 
 .table tr:nth-child(3) .rank {
-  background: #fed7aa;
-  color: #9a3412;
+  background: var(--admin-warning-bg-soft);
+  color: var(--admin-warning-text);
 }
 
 /* Responsive */

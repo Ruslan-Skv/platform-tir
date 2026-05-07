@@ -10,7 +10,7 @@
 .backButton {
   background: none;
   border: none;
-  color: #6366f1;
+  color: var(--admin-accent);
   cursor: pointer;
   font-size: 0.875rem;
   padding: 0;
@@ -27,14 +27,14 @@
 .title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   margin: 0;
 }
 
 .loading {
   text-align: center;
   padding: 32px 16px;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 1.1rem;
   display: flex;
   flex-direction: column;
@@ -45,8 +45,8 @@
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #e5e7eb;
-  border-top-color: #6366f1;
+  border: 3px solid var(--admin-border);
+  border-top-color: var(--admin-accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -60,58 +60,58 @@
 .notFound {
   text-align: center;
   padding: 32px 16px;
-  background: #fff;
+  background: var(--admin-surface);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px var(--admin-overlay-color-148);
 }
 
 .notFound h2 {
   font-size: 1.5rem;
-  color: #374151;
+  color: var(--admin-text-secondary);
   margin: 0 0 8px;
 }
 
 .notFound p {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin: 0 0 16px;
 }
 
 .error {
   padding: 8px 12px;
-  background: #fee2e2;
-  border: 1px solid #fca5a5;
+  background: var(--admin-error-bg-soft);
+  border: 1px solid var(--admin-danger-border-strong);
   border-radius: 6px;
-  color: #991b1b;
+  color: var(--admin-error-text-strong);
   margin-bottom: 12px;
 }
 
 .success {
   padding: 8px 12px;
-  background: #d1fae5;
-  border: 1px solid #6ee7b7;
+  background: var(--admin-success-bg-soft);
+  border: 1px solid var(--admin-success-border);
   border-radius: 6px;
-  color: #065f46;
+  color: var(--admin-success-text);
   margin-bottom: 12px;
 }
 
 /* Обязательные поля карточки: пусто — светло-жёлтый, заполнено — светло-салатовый */
 .fieldHighlightEmpty {
-  background-color: #fff9c4 !important;
+  background-color: var(--admin-warning-bg-soft) !important;
 }
 
 .fieldHighlightFilled {
-  background-color: #ccfbf1 !important;
-  color: #065f46;
-  border-color: #14b8a6;
+  background-color: var(--admin-chart-teal-bg) !important;
+  color: var(--admin-success-text);
+  border-color: var(--admin-chart-teal);
 }
 
 /* Обязательный выпадающий список: «Выберите значение» — тот же жёлтый, что у инпутов; disabled не обесцвечивает */
 .select.fieldHighlightEmpty:disabled {
   opacity: 1;
   cursor: not-allowed;
-  background-color: #fff9c4 !important;
-  color: #78716c;
-  border-color: #d1d5db;
+  background-color: var(--admin-warning-bg-soft) !important;
+  color: var(--admin-warning-brown);
+  border-color: var(--admin-border-strong);
 }
 
 .select.fieldHighlightFilled:disabled {
@@ -122,40 +122,40 @@
 /* Атрибуты категории: селект/инпут в строке — гарантированная подсветка поверх .input/.select */
 .attributeInput .select.fieldHighlightEmpty,
 .attributeInput .input.fieldHighlightEmpty {
-  background-color: #fff9c4 !important;
-  color: #1c1917;
-  border-color: #d1d5db;
+  background-color: var(--admin-warning-bg-soft) !important;
+  color: var(--admin-warning-text);
+  border-color: var(--admin-border-strong);
 }
 
 .attributeInput .select.fieldHighlightFilled,
 .attributeInput .input.fieldHighlightFilled {
-  background-color: #ccfbf1 !important;
-  color: #065f46;
-  border-color: #14b8a6;
+  background-color: var(--admin-chart-teal-bg) !important;
+  color: var(--admin-success-text);
+  border-color: var(--admin-chart-teal);
 }
 
 .fieldHighlightBlockEmpty {
   padding: 10px 12px;
   border-radius: 8px;
-  background-color: #fff9c4;
-  border: 1px solid #fbc02d;
+  background-color: var(--admin-warning-bg-soft);
+  border: 1px solid var(--admin-warning-border-soft);
 }
 
 .fieldHighlightBlockFilled {
   padding: 10px 12px;
   border-radius: 8px;
-  background-color: #ccfbf1;
-  border: 1px solid #14b8a6;
-  color: #065f46;
+  background-color: var(--admin-chart-teal-bg);
+  border: 1px solid var(--admin-chart-teal);
+  color: var(--admin-success-text);
 }
 
 /* Парсер цены по ссылке поставщика — заметный блок вверху формы */
 .parserNotice {
   padding: 12px 14px;
-  background: #eff6ff;
-  border: 1px solid #93c5fd;
+  background: var(--admin-info-bg-soft);
+  border: 1px solid var(--admin-info-border);
   border-radius: 8px;
-  color: #1e3a8a;
+  color: var(--admin-info);
   margin-bottom: 16px;
   font-size: 0.9375rem;
   line-height: 1.45;
@@ -172,7 +172,7 @@
   right: 24px;
   padding: 16px 24px;
   border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 20px var(--admin-overlay-color-149);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -182,12 +182,12 @@
 }
 
 .toastSuccess {
-  background: #065f46;
+  background: var(--admin-success-text);
   color: white;
 }
 
 .toastError {
-  background: #991b1b;
+  background: var(--admin-error-text-strong);
   color: white;
 }
 
@@ -204,7 +204,7 @@
 .toastClose {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--admin-overlay-color-175);
   cursor: pointer;
   padding: 4px;
   margin-left: auto;
@@ -229,9 +229,9 @@
 }
 
 .form {
-  background: #fff;
+  background: var(--admin-surface);
   border-radius: 10px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px var(--admin-overlay-color-148);
   padding: 10px;
   font-size: 13px;
 }
@@ -242,11 +242,11 @@
   gap: 1rem 2rem;
   padding: 10px 12px;
   margin-bottom: 12px;
-  background: #f3f4f6;
+  background: var(--admin-surface-soft);
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   font-size: 0.8125rem;
-  color: #4b5563;
+  color: var(--admin-sidebar-text);
 }
 
 .productMetaRow {
@@ -257,12 +257,12 @@
 
 .productMetaLabel {
   font-weight: 600;
-  color: #374151;
+  color: var(--admin-text-secondary);
   flex-shrink: 0;
 }
 
 .productMetaDate {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.75rem;
 }
 
@@ -297,7 +297,7 @@
 }
 
 .formSection {
-  background: #f9fafb;
+  background: var(--admin-surface-muted);
   border-radius: 6px;
   padding: 8px;
 }
@@ -406,9 +406,9 @@
 }
 
 .subsectionTitle {
-  background: #f1f5f9;
+  background: var(--admin-scrollbar-track);
   border-radius: 4px;
-  color: #334155;
+  color: var(--admin-text-secondary);
   font-size: 0.8125rem;
   font-weight: 600;
   margin: 0.35rem 0 0.25rem;
@@ -424,7 +424,7 @@
 }
 
 .hintTight {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.75rem;
   line-height: 1.35;
   margin: 2px 0 0;
@@ -443,9 +443,9 @@
 }
 
 .sectionTitle {
-  background: #e2e8f0;
+  background: var(--admin-border-strong);
   border-radius: 6px;
-  color: #1e293b;
+  color: var(--admin-text-primary);
   font-size: 0.9375rem;
   font-weight: 600;
   margin: 0 0 10px;
@@ -459,7 +459,7 @@
 .formGroup label {
   display: block;
   font-weight: 500;
-  color: #374151;
+  color: var(--admin-text-secondary);
   margin-bottom: 2px;
   font-size: 0.8125rem;
 }
@@ -486,21 +486,21 @@
 .textarea {
   width: 100%;
   padding: 6px 10px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
   font-size: 0.8125rem;
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
-  background: #fff;
+  background: var(--admin-surface);
 }
 
 .input:focus,
 .select:focus,
 .textarea:focus {
   outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 3px rgba(var(--admin-overlay-color-144), 0.1);
 }
 
 .textarea {
@@ -537,45 +537,45 @@
 .checkbox input {
   width: 18px;
   height: 18px;
-  accent-color: #6366f1;
+  accent-color: var(--admin-accent);
   cursor: pointer;
 }
 
 .checkbox span {
-  color: #374151;
+  color: var(--admin-text-secondary);
   font-size: 1em;
 }
 
 /* Image upload section */
 .imageError {
   padding: 4px 8px;
-  background: #fee2e2;
-  border: 1px solid #fca5a5;
+  background: var(--admin-error-bg-soft);
+  border: 1px solid var(--admin-danger-border-strong);
   border-radius: 4px;
-  color: #991b1b;
+  color: var(--admin-error-text-strong);
   margin-bottom: 4px;
   font-size: 1em;
 }
 
 .dropZone {
-  border: 1px dashed #d1d5db;
+  border: 1px dashed var(--admin-border-strong);
   border-radius: 4px;
   padding: 6px 8px;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s;
-  background: #fff;
+  background: var(--admin-surface);
   margin-bottom: 4px;
 }
 
 .dropZone:hover {
-  border-color: #6366f1;
-  background: #f5f3ff;
+  border-color: var(--admin-accent);
+  background: var(--admin-accent-soft);
 }
 
 .dropZoneActive {
-  border-color: #6366f1;
-  background: #eef2ff;
+  border-color: var(--admin-accent);
+  background: var(--admin-accent-soft);
   border-style: solid;
 }
 
@@ -590,18 +590,18 @@
 }
 
 .dropZoneText {
-  color: #374151;
+  color: var(--admin-text-secondary);
   font-size: 1em;
   margin: 0 0 1px;
 }
 
 .dropZoneLink {
-  color: #6366f1;
+  color: var(--admin-accent);
   font-weight: 500;
 }
 
 .dropZoneHint {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
   font-size: 0.9em;
   margin: 0;
 }
@@ -612,10 +612,10 @@
 
 .addUrlButton {
   padding: 4px 8px;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border-strong);
   border-radius: 4px;
-  color: #374151;
+  color: var(--admin-text-secondary);
   font-size: 1em;
   cursor: pointer;
   transition: all 0.15s;
@@ -623,8 +623,8 @@
 }
 
 .addUrlButton:hover {
-  background: #e5e7eb;
-  border-color: #9ca3af;
+  background: var(--admin-border);
+  border-color: var(--admin-text-muted);
 }
 
 .imagesGrid {
@@ -641,12 +641,12 @@
   max-width: 112px;
   border-radius: 4px;
   overflow: hidden;
-  background: #e5e7eb;
+  background: var(--admin-border);
   border: 1px solid transparent;
 }
 
 .imageItem:first-child {
-  border-color: #6366f1;
+  border-color: var(--admin-accent);
 }
 
 .imageItem img {
@@ -659,7 +659,7 @@
   position: absolute;
   top: 2px;
   left: 2px;
-  background: #6366f1;
+  background: var(--admin-accent);
   color: white;
   font-size: 0.55rem;
   font-weight: 600;
@@ -677,7 +677,7 @@
   justify-content: center;
   gap: 1px;
   padding: 2px;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+  background: linear-gradient(transparent, var(--admin-overlay-color-157));
   opacity: 0;
   transition: opacity 0.2s;
 }
@@ -691,8 +691,8 @@
   height: 20px;
   border: none;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.9);
-  color: #374151;
+  background: var(--admin-overlay-color-177);
+  color: var(--admin-text-secondary);
   cursor: pointer;
   font-size: 0.7rem;
   display: flex;
@@ -711,17 +711,17 @@
 }
 
 .imageDeleteBtn:hover:not(:disabled) {
-  background: #fee2e2;
-  color: #dc2626;
+  background: var(--admin-error-bg-soft);
+  color: var(--admin-error-strong);
 }
 
 .noImages {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-style: italic;
   text-align: center;
   padding: 6px 8px;
-  background: #fff;
-  border: 1px dashed #d1d5db;
+  background: var(--admin-surface);
+  border: 1px dashed var(--admin-border-strong);
   border-radius: 4px;
   margin-top: 4px;
   font-size: 1em;
@@ -729,7 +729,7 @@
 
 .hint {
   font-size: 0.8125rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin: 0;
 }
 
@@ -740,7 +740,7 @@
   gap: 8px;
   margin-top: 10px;
   padding-top: 8px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--admin-border);
 }
 
 .formActionsRight {
@@ -750,10 +750,10 @@
 
 .backButtonBottom {
   padding: 6px 12px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
-  color: #6366f1;
+  color: var(--admin-accent);
   font-weight: 500;
   font-size: 0.875rem;
   cursor: pointer;
@@ -761,16 +761,16 @@
 }
 
 .backButtonBottom:hover {
-  background: #eef2ff;
-  border-color: #c7d2fe;
+  background: var(--admin-accent-soft);
+  border-color: var(--admin-accent-soft-strong);
 }
 
 .cancelButton {
   padding: 6px 12px;
-  background: #fff;
-  border: 1px solid #d1d5db;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
-  color: #374151;
+  color: var(--admin-text-secondary);
   font-weight: 500;
   font-size: 0.8125rem;
   cursor: pointer;
@@ -778,16 +778,16 @@
 }
 
 .cancelButton:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-text-muted);
 }
 
 .saveButton {
   padding: 5px 10px;
-  background: #6366f1;
+  background: var(--admin-accent);
   border: none;
   border-radius: 6px;
-  color: #fff;
+  color: var(--admin-surface);
   font-weight: 500;
   font-size: 0.8125rem;
   cursor: pointer;
@@ -795,7 +795,7 @@
 }
 
 .saveButton:hover:not(:disabled) {
-  background: #4f46e5;
+  background: var(--admin-accent);
 }
 
 .saveButton:disabled {
@@ -839,9 +839,9 @@
 
 .attributesSubtitle {
   align-items: center;
-  background: #f1f5f9;
+  background: var(--admin-scrollbar-track);
   border-radius: 4px;
-  color: #334155;
+  color: var(--admin-text-secondary);
   display: flex;
   font-size: 0.8125rem;
   font-weight: 600;
@@ -853,7 +853,7 @@
 .customAttrHint {
   font-weight: 400;
   font-size: 0.8125rem;
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 .attributesList {
@@ -904,15 +904,15 @@
 .sizesHint {
   margin-bottom: 10px;
   padding: 10px 12px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: var(--admin-success-bg-soft);
+  border: 1px solid var(--admin-success-border-soft);
   border-radius: 8px;
 }
 
 .sizesHintLabel {
   display: block;
   font-size: 0.8125rem;
-  color: #166534;
+  color: var(--admin-success-text-strong);
   margin-bottom: 8px;
 }
 
@@ -925,35 +925,35 @@
 .sizesHintChip {
   padding: 4px 10px;
   font-size: 0.8125rem;
-  background: #fff;
-  border: 1px solid #22c55e;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-success-bright);
   border-radius: 6px;
-  color: #15803d;
+  color: var(--admin-success-deep);
   cursor: pointer;
 }
 
 .sizesHintChip:hover:not(:disabled) {
-  background: #dcfce7;
+  background: var(--admin-success-bg);
 }
 
 .sizesHintChip:disabled {
   opacity: 0.6;
   cursor: default;
-  border-color: #86efac;
+  border-color: var(--admin-success-lime);
 }
 
 .cardVariantBlock {
   padding: 0.5rem 0.75rem;
   margin-bottom: 0.5rem;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--admin-surface-muted);
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
 }
 
 .cardVariantBlockTitle {
-  background: #e2e8f0;
+  background: var(--admin-border-strong);
   border-radius: 6px 6px 0 0;
-  color: #334155;
+  color: var(--admin-text-secondary);
   font-size: 0.875rem;
   font-weight: 600;
   margin: -0.5rem -0.75rem 0.5rem -0.75rem;
@@ -974,8 +974,8 @@
 .cardVariantUploadBtn {
   flex-shrink: 0;
   padding: 0.375rem 0.5rem;
-  background: #3b82f6;
-  color: #fff;
+  background: var(--admin-info-bright);
+  color: var(--admin-surface);
   border: none;
   border-radius: 0.375rem;
   font-size: 0.8125rem;
@@ -984,7 +984,7 @@
 }
 
 .cardVariantUploadBtn:hover {
-  background: #2563eb;
+  background: var(--admin-info);
 }
 
 .cardVariantImagePreview {
@@ -994,24 +994,24 @@
 .cardVariantImagePreview img {
   max-height: 64px;
   object-fit: contain;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 0.375rem;
 }
 
 .cardVariantRemoveButton {
   margin-top: 0.375rem;
   padding: 0.25rem 0.5rem;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--admin-error-bg);
+  border: 1px solid var(--admin-error-border-soft);
   border-radius: 0.375rem;
-  color: #dc2626;
+  color: var(--admin-error-strong);
   cursor: pointer;
   font-size: 0.875rem;
   line-height: 1;
 }
 
 .cardVariantRemoveButton:hover {
-  background: #fee2e2;
+  background: var(--admin-error-bg-soft);
 }
 
 .attributeRow {
@@ -1020,8 +1020,8 @@
   gap: 8px;
   align-items: center;
   padding: 6px 8px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
 }
 
@@ -1032,7 +1032,7 @@
 
 .attributeLabel {
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--admin-text-secondary);
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -1041,13 +1041,13 @@
 }
 
 .required {
-  color: #dc2626;
+  color: var(--admin-error-strong);
 }
 
 .unit {
   font-weight: 400;
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 .attributeInput {
@@ -1077,17 +1077,17 @@
   align-items: center;
   gap: 8px;
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--admin-text-secondary);
   cursor: pointer;
 }
 
 .multiSelectOptionLabel input {
-  accent-color: #6366f1;
+  accent-color: var(--admin-accent);
 }
 
 .attrListHint {
   font-size: 0.8125rem;
-  color: #9ca3af;
+  color: var(--admin-text-muted);
   line-height: 1.4;
 }
 
@@ -1102,10 +1102,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   cursor: pointer;
   font-size: 0.75rem;
   transition: all 0.15s;
@@ -1113,9 +1113,9 @@
 }
 
 .clearAttrButton:hover {
-  background: #fee2e2;
-  border-color: #fca5a5;
-  color: #dc2626;
+  background: var(--admin-error-bg-soft);
+  border-color: var(--admin-danger-border-strong);
+  color: var(--admin-error-strong);
 }
 
 .addAttrRow {
@@ -1123,8 +1123,8 @@
   grid-template-columns: 200px 1fr auto;
   gap: 8px;
   padding: 6px 8px;
-  background: #f0fdf4;
-  border: 1px dashed #86efac;
+  background: var(--admin-success-bg-soft);
+  border: 1px dashed var(--admin-success-lime);
   border-radius: 6px;
 }
 
@@ -1138,7 +1138,7 @@
 
 .addAttrButton {
   padding: 5px 10px;
-  background: #16a34a;
+  background: var(--admin-success-strong);
   color: white;
   border: none;
   border-radius: 6px;
@@ -1150,7 +1150,7 @@
 }
 
 .addAttrButton:hover:not(:disabled) {
-  background: #15803d;
+  background: var(--admin-success-deep);
 }
 
 .addAttrButton:disabled {
@@ -1164,25 +1164,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--admin-error-bg);
+  border: 1px solid var(--admin-error-border-soft);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .removeAttrButton:hover {
-  background: #fee2e2;
-  border-color: #fca5a5;
+  background: var(--admin-error-bg-soft);
+  border-color: var(--admin-danger-border-strong);
 }
 
 .noAttributes {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-style: italic;
   text-align: center;
   padding: 8px;
-  background: #fff;
-  border: 1px dashed #d1d5db;
+  background: var(--admin-surface);
+  border: 1px dashed var(--admin-border-strong);
   border-radius: 6px;
   font-size: 0.8125rem;
 }
@@ -1213,158 +1213,158 @@
 
 /* Тёмная тема — форма редактирования/добавления товара */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .backButton {
-  color: #a5b4fc;
+  color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .spinner {
-  border-color: #374151;
-  border-top-color: #6366f1;
+  border-color: var(--admin-text-secondary);
+  border-top-color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .notFound {
-  background: #1f2937;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  background: var(--admin-text-secondary);
+  box-shadow: 0 1px 3px var(--admin-overlay-color-152);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .notFound h2 {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .notFound p {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .error {
-  background: rgb(239 68 68 / 0.2);
-  border-color: #dc2626;
-  color: #fca5a5;
+  background: var(--admin-overlay-color-059);
+  border-color: var(--admin-error-strong);
+  color: var(--admin-danger-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .success {
-  background: rgb(16 185 129 / 0.2);
-  border-color: #059669;
-  color: #6ee7b7;
+  background: var(--admin-overlay-color-034);
+  border-color: var(--admin-success);
+  color: var(--admin-success-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .parserNotice {
-  background: rgb(37 99 235 / 0.2);
-  border-color: #3b82f6;
-  color: #bfdbfe;
+  background: var(--admin-overlay-color-110);
+  border-color: var(--admin-info-bright);
+  color: var(--admin-info-border-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .form {
-  background: #1f2937;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  background: var(--admin-text-secondary);
+  box-shadow: 0 1px 3px var(--admin-overlay-color-152);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .formSection {
-  background: #111827;
+  background: var(--admin-text-primary);
   border-radius: 8px;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .productMeta {
-  background: #111827;
-  border-color: #374151;
-  color: #9ca3af;
+  background: var(--admin-text-primary);
+  border-color: var(--admin-text-secondary);
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .productMetaLabel {
-  color: #d1d5db;
+  color: var(--admin-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .productMetaDate {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
-  background: #374151;
-  color: #f1f5f9;
+  background: var(--admin-text-secondary);
+  color: var(--admin-scrollbar-track);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .subsectionTitle {
-  background: #1f2937;
-  color: #e5e7eb;
+  background: var(--admin-text-secondary);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .hintTight {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .formGroup label {
-  color: #d1d5db;
+  color: var(--admin-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .textarea {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .textarea::placeholder,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input::placeholder {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 /* Подсветка обязательных полей: светлый фон — тёмный текст (иначе сливается с color инпутов в dark) */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input.fieldHighlightEmpty,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select.fieldHighlightEmpty,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .textarea.fieldHighlightEmpty {
-  color: #1c1917;
-  border-color: #ca8a04;
-  caret-color: #1c1917;
+  color: var(--admin-warning-text);
+  border-color: var(--admin-warning-mustard);
+  caret-color: var(--admin-warning-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input.fieldHighlightFilled,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select.fieldHighlightFilled,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .textarea.fieldHighlightFilled {
-  background-color: #0f766e !important;
-  color: #ecfdf5;
-  border-color: #2dd4bf;
-  caret-color: #ecfdf5;
+  background-color: var(--admin-chart-teal-strong) !important;
+  color: var(--admin-success-bg-soft);
+  border-color: var(--admin-success-border);
+  caret-color: var(--admin-success-bg-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input.fieldHighlightEmpty::placeholder,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .textarea.fieldHighlightEmpty::placeholder {
-  color: #78716c;
+  color: var(--admin-warning-brown);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input.fieldHighlightFilled::placeholder,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .textarea.fieldHighlightFilled::placeholder {
-  color: #5eead4;
+  color: var(--admin-chart-teal-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select.fieldHighlightEmpty option {
-  background: #fffbeb;
-  color: #1c1917;
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select.fieldHighlightFilled option {
-  background: #115e59;
-  color: #ecfdf5;
+  background: var(--admin-chart-teal-text);
+  color: var(--admin-success-bg-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockEmpty {
-  background-color: #fef9c3;
-  border-color: #eab308;
-  color: #1c1917;
+  background-color: var(--admin-warning-bg);
+  border-color: var(--admin-warning-yellow);
+  color: var(--admin-warning-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select.fieldHighlightEmpty:disabled {
-  background-color: #fff9c4 !important;
-  color: #57534e;
-  border-color: #ca8a04;
+  background-color: var(--admin-warning-bg-soft) !important;
+  color: var(--admin-warning-text-soft);
+  border-color: var(--admin-warning-mustard);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
@@ -1373,9 +1373,9 @@
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .attributeInput
   .input.fieldHighlightEmpty {
-  background-color: #fff9c4 !important;
-  color: #1c1917;
-  border-color: #ca8a04;
+  background-color: var(--admin-warning-bg-soft) !important;
+  color: var(--admin-warning-text);
+  border-color: var(--admin-warning-mustard);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
@@ -1384,258 +1384,258 @@
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .attributeInput
   .input.fieldHighlightFilled {
-  background-color: #0f766e !important;
-  color: #ecfdf5;
-  border-color: #2dd4bf;
+  background-color: var(--admin-chart-teal-strong) !important;
+  color: var(--admin-success-bg-soft);
+  border-color: var(--admin-success-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockFilled {
-  background-color: #134e4a;
-  border-color: #14b8a6;
-  color: #ccfbf1;
+  background-color: var(--admin-accent-soft);
+  border-color: var(--admin-chart-teal);
+  color: var(--admin-chart-teal-bg);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockEmpty .hint {
-  color: #57534e;
+  color: var(--admin-warning-text-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockFilled .hint {
-  color: #99f6e4;
+  color: var(--admin-chart-teal-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockEmpty .sizesHint,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockEmpty .sizesHintLabel {
-  color: #44403c;
+  color: var(--admin-warning-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockFilled .sizesHint,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .fieldHighlightBlockFilled
   .sizesHintLabel {
-  color: #5eead4;
+  color: var(--admin-chart-teal-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockEmpty .sizesHintChip {
-  background: #fef08a;
-  border-color: #ca8a04;
-  color: #1c1917;
+  background: var(--admin-warning-bg-soft);
+  border-color: var(--admin-warning-mustard);
+  color: var(--admin-warning-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockFilled .sizesHintChip {
-  background: #0f766e;
-  border-color: #2dd4bf;
-  color: #ecfdf5;
+  background: var(--admin-chart-teal-strong);
+  border-color: var(--admin-success-border);
+  color: var(--admin-success-bg-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockEmpty .noImages {
-  background: rgb(254 252 232 / 0.6);
-  border-color: #ca8a04;
-  color: #57534e;
+  background: var(--admin-overlay-color-091);
+  border-color: var(--admin-warning-mustard);
+  color: var(--admin-warning-text-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .fieldHighlightBlockFilled .noImages {
-  background: rgb(15 118 110 / 0.45);
-  border-color: #14b8a6;
-  color: #99f6e4;
+  background: var(--admin-overlay-color-024);
+  border-color: var(--admin-chart-teal);
+  color: var(--admin-chart-teal-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .checkbox span {
-  color: #d1d5db;
+  color: var(--admin-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .imageError {
-  background: rgb(239 68 68 / 0.2);
-  border-color: #dc2626;
-  color: #fca5a5;
+  background: var(--admin-overlay-color-059);
+  border-color: var(--admin-error-strong);
+  color: var(--admin-danger-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dropZone {
-  background: #374151;
-  border-color: #4b5563;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dropZone:hover {
-  border-color: #6366f1;
-  background: rgb(99 102 241 / 0.15);
+  border-color: var(--admin-accent);
+  background: rgba(var(--admin-overlay-color-144), 0.15);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dropZoneActive {
-  border-color: #6366f1;
-  background: rgb(99 102 241 / 0.2);
+  border-color: var(--admin-accent);
+  background: rgba(var(--admin-overlay-color-144), 0.2);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dropZoneText {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dropZoneLink {
-  color: #a5b4fc;
+  color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dropZoneHint {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addUrlButton {
-  background: #374151;
-  border-color: #4b5563;
-  color: #e5e7eb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addUrlButton:hover {
-  background: #4b5563;
-  border-color: #6b7280;
+  background: var(--admin-sidebar-text);
+  border-color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .imageItem {
-  background: #374151;
+  background: var(--admin-text-secondary);
   border-color: transparent;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .imageItem:first-child {
-  border-color: #6366f1;
+  border-color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .imageActionBtn {
-  background: rgba(55, 65, 81, 0.95);
-  color: #e5e7eb;
+  background: var(--admin-overlay-color-180);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .imageActionBtn:hover:not(:disabled) {
-  background: #4b5563;
+  background: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .noImages {
-  background: #374151;
-  border-color: #4b5563;
-  color: #9ca3af;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .hint {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sizesHint {
-  background: rgba(34, 197, 94, 0.1);
-  border-color: #22c55e;
+  background: var(--admin-overlay-color-178);
+  border-color: var(--admin-success-bright);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sizesHintLabel {
-  color: #86efac;
+  color: var(--admin-success-lime);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sizesHintChip {
-  background: #374151;
-  border-color: #22c55e;
-  color: #86efac;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-success-bright);
+  color: var(--admin-success-lime);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sizesHintChip:hover:not(:disabled) {
-  background: #1f2937;
+  background: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantBlock {
-  background: #1f2937;
-  border-color: #374151;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantBlockTitle {
-  background: #374151;
-  color: #f1f5f9;
+  background: var(--admin-text-secondary);
+  color: var(--admin-scrollbar-track);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantImagePreview img {
-  border-color: #4b5563;
-  background: #111827;
+  border-color: var(--admin-sidebar-text);
+  background: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantRemoveButton {
-  background: rgb(239 68 68 / 0.2);
-  border-color: #dc2626;
-  color: #fca5a5;
+  background: var(--admin-overlay-color-059);
+  border-color: var(--admin-error-strong);
+  color: var(--admin-danger-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cardVariantRemoveButton:hover {
-  background: rgb(239 68 68 / 0.35);
+  background: var(--admin-overlay-color-062);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .formActions {
-  border-top-color: #374151;
+  border-top-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .backButtonBottom {
-  background: #374151;
-  border-color: #4b5563;
-  color: #a5b4fc;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .backButtonBottom:hover {
-  background: #4b5563;
-  border-color: #6366f1;
+  background: var(--admin-sidebar-text);
+  border-color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton {
-  background: #374151;
-  border-color: #4b5563;
-  color: #e5e7eb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton:hover {
-  background: #4b5563;
-  border-color: #6b7280;
+  background: var(--admin-sidebar-text);
+  border-color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .attributesSubtitle {
-  background: #1f2937;
-  color: #e5e7eb;
+  background: var(--admin-text-secondary);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .customAttrHint {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .attributeRow {
-  background: #374151;
-  border-color: #4b5563;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .attributeLabel {
-  color: #d1d5db;
+  color: var(--admin-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .unit {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .clearAttrButton {
-  background: #4b5563;
-  border-color: #6b7280;
-  color: #d1d5db;
+  background: var(--admin-sidebar-text);
+  border-color: var(--admin-text-muted);
+  color: var(--admin-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .clearAttrButton:hover {
-  background: rgb(239 68 68 / 0.3);
-  border-color: #dc2626;
-  color: #fca5a5;
+  background: var(--admin-overlay-color-061);
+  border-color: var(--admin-error-strong);
+  color: var(--admin-danger-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addAttrRow {
-  background: rgb(16 185 129 / 0.15);
-  border-color: #059669;
+  background: var(--admin-overlay-color-033);
+  border-color: var(--admin-success);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .removeAttrButton {
-  background: rgb(239 68 68 / 0.2);
-  border-color: #dc2626;
+  background: var(--admin-overlay-color-059);
+  border-color: var(--admin-error-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .removeAttrButton:hover {
-  background: rgb(239 68 68 / 0.35);
-  border-color: #b91c1c;
+  background: var(--admin-overlay-color-062);
+  border-color: var(--admin-error-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .noAttributes {
-  background: #374151;
-  border-color: #4b5563;
-  color: #9ca3af;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-muted);
 }

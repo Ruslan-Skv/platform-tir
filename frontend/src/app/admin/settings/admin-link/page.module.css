@@ -10,24 +10,24 @@
 .title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--admin-text-primary);
   margin: 0 0 0.25rem;
 }
 
 .subtitle {
   font-size: 0.9375rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin: 0;
 }
 
 .loading,
 .accessDenied {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin: 0;
 }
 
 .accessDenied {
-  color: #dc2626;
+  color: var(--admin-danger-text);
 }
 
 .form {
@@ -38,21 +38,21 @@
 
 .section {
   padding: 1rem;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface-muted);
+  border: 1px solid var(--admin-border);
   border-radius: 0.5rem;
 }
 
 .sectionTitle {
   font-size: 1rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--admin-text-primary);
   margin: 0 0 0.75rem;
 }
 
 .hint {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin: 0 0 0.75rem;
 }
 
@@ -67,14 +67,14 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.9375rem;
-  color: #374151;
+  color: var(--admin-text-secondary);
   cursor: pointer;
 }
 
 .roleCheckboxLabel input {
   width: 1rem;
   height: 1rem;
-  accent-color: #4f46e5;
+  accent-color: var(--admin-accent);
 }
 
 .toastSuccess,
@@ -86,12 +86,12 @@
 
 .toastSuccess {
   background: rgb(34 197 94 / 20%);
-  color: rgb(22 163 74);
+  color: var(--admin-success-strong);
 }
 
 .toastError {
   background: rgb(239 68 68 / 20%);
-  color: rgb(185 28 28);
+  color: var(--admin-danger-text);
 }
 
 .actions {
@@ -104,8 +104,8 @@
   padding: 8px 20px;
   font-size: 0.9375rem;
   font-weight: 500;
-  color: #fff;
-  background: #4f46e5;
+  color: var(--admin-text-inverse);
+  background: var(--admin-accent);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -113,7 +113,7 @@
 }
 
 .saveButton:hover:not(:disabled) {
-  background: #4338ca;
+  background: var(--color-accent-hover);
 }
 
 .saveButton:disabled {
@@ -123,7 +123,7 @@
 
 .previewLink {
   font-size: 0.9375rem;
-  color: rgb(59 130 246);
+  color: var(--admin-accent);
   text-decoration: none;
 }
 

@@ -19,22 +19,22 @@
 .title {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   margin: 0;
 }
 
 .count {
-  background: #e5e7eb;
+  background: var(--admin-border);
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 0.9rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .addButton {
   padding: 8px 16px;
-  background: #6366f1;
-  color: #fff;
+  background: var(--admin-accent);
+  color: var(--admin-surface);
   border: none;
   border-radius: 8px;
   font-weight: 500;
@@ -44,7 +44,7 @@
 }
 
 .addButton:hover:not(:disabled) {
-  background: #4f46e5;
+  background: var(--admin-accent);
 }
 
 .addButton:disabled {
@@ -60,26 +60,26 @@
 }
 
 .statCard {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 10px;
   padding: 14px 16px;
 }
 
 .statLabel {
   font-size: 0.8rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin-bottom: 4px;
 }
 
 .statValue {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
 }
 
 .statCard.overdue .statValue {
-  color: #dc2626;
+  color: var(--admin-error-strong);
 }
 
 .filters {
@@ -93,14 +93,14 @@
 .filterInput,
 .filterSelect {
   padding: 8px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   font-size: 0.9rem;
 }
 
 .filterSelect {
   min-width: 140px;
-  background: #fff;
+  background: var(--admin-surface);
 }
 
 .filterLabel {
@@ -108,7 +108,7 @@
   align-items: center;
   gap: 6px;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   cursor: pointer;
 }
 
@@ -120,13 +120,13 @@
 }
 
 .messageSuccess {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text);
 }
 
 .messageError {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--admin-error-bg-soft);
+  color: var(--admin-error-text-strong);
 }
 
 .badge {
@@ -138,36 +138,36 @@
 }
 
 .badgePENDING {
-  background: #e0e7ff;
-  color: #4338ca;
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
 }
 .badgeIN_PROGRESS {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning-text);
 }
 .badgeCOMPLETED {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text);
 }
 .badgeCANCELLED {
-  background: #e5e7eb;
-  color: #6b7280;
+  background: var(--admin-border);
+  color: var(--admin-text-muted);
 }
 .badgeLOW {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
 }
 .badgeMEDIUM {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--admin-info-bg);
+  color: var(--admin-info-text);
 }
 .badgeHIGH {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning-text);
 }
 .badgeURGENT {
-  background: #fee2e2;
-  color: #dc2626;
+  background: var(--admin-error-bg-soft);
+  color: var(--admin-error-strong);
 }
 
 .rowActions {
@@ -178,34 +178,34 @@
 .smallBtn {
   padding: 4px 8px;
   font-size: 0.75rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
-  background: #fff;
+  background: var(--admin-surface);
   cursor: pointer;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .smallBtn:hover {
-  background: #f3f4f6;
+  background: var(--admin-surface-soft);
 }
 
 .smallBtn.primary {
-  background: #6366f1;
-  color: #fff;
-  border-color: #6366f1;
+  background: var(--admin-accent);
+  color: var(--admin-surface);
+  border-color: var(--admin-accent);
 }
 
 .smallBtn.primary:hover {
-  background: #4f46e5;
+  background: var(--admin-accent);
 }
 
 .smallBtn.danger {
-  border-color: #fca5a5;
-  color: #dc2626;
+  border-color: var(--admin-danger-border-strong);
+  color: var(--admin-error-strong);
 }
 
 .smallBtn.danger:hover {
-  background: #fee2e2;
+  background: var(--admin-error-bg-soft);
 }
 
 .form {
@@ -224,14 +224,14 @@
 .formRow label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .formInput,
 .formSelect,
 .formTextarea {
   padding: 10px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   font-size: 0.9rem;
 }
@@ -250,17 +250,17 @@
 
 .cancelBtn {
   padding: 8px 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--admin-surface);
   cursor: pointer;
   font-size: 0.9rem;
 }
 
 .submitBtn {
   padding: 8px 16px;
-  background: #6366f1;
-  color: #fff;
+  background: var(--admin-accent);
+  color: var(--admin-surface);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -269,7 +269,7 @@
 }
 
 .submitBtn:hover:not(:disabled) {
-  background: #4f46e5;
+  background: var(--admin-accent);
 }
 
 .submitBtn:disabled {
@@ -279,113 +279,113 @@
 
 .taskTitle {
   font-weight: 500;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
 }
 
 .taskDescription {
   font-size: 0.8rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin-top: 2px;
 }
 
 /* Тёмная тема */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .count {
-  background: #374151;
-  color: #9ca3af;
+  background: var(--admin-text-secondary);
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statCard {
-  background: #1f2937;
-  border-color: #374151;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statLabel {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statValue {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statCard.overdue .statValue {
-  color: #f87171;
+  color: var(--admin-danger-text-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .filterInput,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .filterSelect {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .filterLabel {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .messageSuccess {
-  background: rgb(34 197 94 / 0.2);
-  color: #86efac;
+  background: var(--admin-overlay-color-098);
+  color: var(--admin-success-lime);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .messageError {
-  background: rgb(239 68 68 / 0.2);
-  color: #fca5a5;
+  background: var(--admin-overlay-color-059);
+  color: var(--admin-danger-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .smallBtn {
-  background: #374151;
-  border-color: #4b5563;
-  color: #e5e7eb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .smallBtn:hover {
-  background: #4b5563;
+  background: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .smallBtn.danger {
-  border-color: #f87171;
-  color: #fca5a5;
+  border-color: var(--admin-danger-text-soft);
+  color: var(--admin-danger-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .smallBtn.danger:hover {
-  background: rgb(239 68 68 / 0.2);
+  background: var(--admin-overlay-color-059);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .formRow label {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .formInput,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .formSelect,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .formTextarea {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .formInput::placeholder,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .formTextarea::placeholder {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cancelBtn {
-  background: #374151;
-  border-color: #4b5563;
-  color: #e5e7eb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cancelBtn:hover {
-  background: #4b5563;
+  background: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .taskTitle {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .taskDescription {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }

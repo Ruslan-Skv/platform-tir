@@ -4,7 +4,7 @@
 
 .loading,
 .empty {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.9375rem;
   margin: 0;
 }
@@ -16,20 +16,20 @@
 .sectionTitle {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--admin-text-secondary);
   margin: 0 0 8px 0;
 }
 
 .sectionDescription {
   font-size: 0.9375rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin: 0 0 20px 0;
   line-height: 1.5;
 }
 
 .form {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 12px;
   padding: 24px;
 }
@@ -49,7 +49,7 @@
 .checkboxRow label {
   font-size: 0.9375rem;
   font-weight: 500;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   cursor: pointer;
 }
 
@@ -58,8 +58,8 @@
   padding: 8px 20px;
   font-size: 0.9375rem;
   font-weight: 500;
-  color: #fff;
-  background: #4f46e5;
+  color: var(--admin-surface);
+  background: var(--admin-accent);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -67,7 +67,7 @@
 }
 
 .saveButton:hover:not(:disabled) {
-  background: #4338ca;
+  background: var(--admin-accent);
 }
 
 .saveButton:disabled {
@@ -82,8 +82,8 @@
 }
 
 .reviewCard {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 12px;
   padding: 16px;
 }
@@ -102,11 +102,11 @@
 
 .reviewDate {
   font-size: 0.8125rem;
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 .reviewStars {
-  color: #f59e0b;
+  color: var(--admin-warning);
   font-size: 0.875rem;
   margin-bottom: 4px;
 }
@@ -115,17 +115,17 @@
   margin: 8px 0;
   font-size: 0.9375rem;
   line-height: 1.5;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .reviewProduct {
   margin: 8px 0;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .productLink {
-  color: #4f46e5;
+  color: var(--admin-accent);
   text-decoration: underline;
 }
 
@@ -138,31 +138,31 @@
 .approveButton {
   padding: 6px 14px;
   font-size: 0.875rem;
-  color: #059669;
-  background: rgb(5 150 105 / 10%);
-  border: 1px solid #059669;
+  color: var(--admin-success);
+  background: var(--admin-overlay-color-119);
+  border: 1px solid var(--admin-success);
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .approveButton:hover:not(:disabled) {
-  background: rgb(5 150 105 / 20%);
+  background: var(--admin-overlay-color-120);
 }
 
 .deleteButton {
   padding: 6px 14px;
   font-size: 0.875rem;
-  color: #dc2626;
-  background: rgb(220 38 38 / 10%);
-  border: 1px solid #dc2626;
+  color: var(--admin-error-strong);
+  background: var(--admin-overlay-color-055);
+  border: 1px solid var(--admin-error-strong);
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .deleteButton:hover:not(:disabled) {
-  background: rgb(220 38 38 / 20%);
+  background: var(--admin-overlay-color-056);
 }
 
 .approveButton:disabled,
@@ -181,16 +181,16 @@
 .pageButton {
   padding: 8px 16px;
   font-size: 0.875rem;
-  color: #4f46e5;
+  color: var(--admin-accent);
   background: transparent;
-  border: 1px solid #4f46e5;
+  border: 1px solid var(--admin-accent);
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .pageButton:hover:not(:disabled) {
-  background: rgb(79 70 229 / 10%);
+  background: var(--admin-overlay-color-142);
 }
 
 .pageButton:disabled {
@@ -200,7 +200,7 @@
 
 .pageInfo {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 /* Toast notification */
@@ -210,7 +210,7 @@
   right: 24px;
   padding: 16px 24px;
   border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 20px var(--admin-overlay-color-149);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -220,12 +220,12 @@
 }
 
 .toastSuccess {
-  background: #065f46;
+  background: var(--admin-success-text);
   color: white;
 }
 
 .toastError {
-  background: #991b1b;
+  background: var(--admin-error-text-strong);
   color: white;
 }
 
@@ -242,7 +242,7 @@
 .toastClose {
   background: none;
   border: none;
-  color: rgb(255 255 255 / 70%);
+  color: var(--admin-overlay-color-093);
   cursor: pointer;
   padding: 4px;
   margin-left: auto;
@@ -269,102 +269,102 @@
 /* Тёмная тема — отзывы и оценки */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .loading,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .empty {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sectionTitle {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sectionDescription {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .form {
-  background: #1f2937;
-  border-color: #374151;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .checkboxRow label {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .saveButton {
-  background: #6366f1;
+  background: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .saveButton:hover:not(:disabled) {
-  background: #4f46e5;
+  background: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .reviewCard {
-  background: #1f2937;
-  border-color: #374151;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .reviewAuthor {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .reviewDate {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .reviewStars {
-  color: #fbbf24;
+  color: var(--admin-warning-amber);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .reviewComment {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .reviewProduct {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .productLink {
-  color: #a5b4fc;
+  color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .approveButton {
-  color: #6ee7b7;
-  background: rgb(5 150 105 / 0.25);
-  border-color: #059669;
+  color: var(--admin-success-border);
+  background: var(--admin-overlay-color-116);
+  border-color: var(--admin-success);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .approveButton:hover:not(:disabled) {
-  background: rgb(5 150 105 / 0.35);
+  background: var(--admin-overlay-color-118);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton {
-  color: #fca5a5;
-  background: rgb(220 38 38 / 0.25);
-  border-color: #dc2626;
+  color: var(--admin-danger-border-strong);
+  background: var(--admin-overlay-color-053);
+  border-color: var(--admin-error-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton:hover:not(:disabled) {
-  background: rgb(220 38 38 / 0.35);
+  background: var(--admin-overlay-color-054);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .pageButton {
-  color: #a5b4fc;
-  border-color: #6366f1;
+  color: var(--admin-accent);
+  border-color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .pageButton:hover:not(:disabled) {
-  background: rgb(99 102 241 / 0.2);
+  background: rgba(var(--admin-overlay-color-144), 0.2);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .pageInfo {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .toastSuccess {
-  background: #065f46;
+  background: var(--admin-success-text);
   color: white;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .toastError {
-  background: #991b1b;
+  background: var(--admin-error-text-strong);
   color: white;
 }

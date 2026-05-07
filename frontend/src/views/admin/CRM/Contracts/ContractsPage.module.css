@@ -19,23 +19,23 @@
 .title {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
   margin: 0;
 }
 
 .count {
-  background: #e5e7eb;
+  background: var(--admin-border);
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 0.9rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .addButton {
   display: inline-block;
   padding: 6px 12px;
-  background: #6366f1;
-  color: #fff;
+  background: var(--admin-accent);
+  color: var(--admin-surface);
   border: none;
   border-radius: 8px;
   font-weight: 500;
@@ -46,8 +46,8 @@
 }
 
 .addButton:hover {
-  background: #4f46e5;
-  color: #fff;
+  background: var(--admin-accent);
+  color: var(--admin-surface);
 }
 
 .headerActions {
@@ -58,9 +58,9 @@
 
 .secondaryButton {
   padding: 6px 12px;
-  background: #fff;
-  color: #374151;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   font-weight: 500;
   font-size: 0.8125rem;
@@ -69,14 +69,14 @@
 }
 
 .secondaryButton:hover {
-  background: #f9fafb;
-  border-color: #d1d5db;
+  background: var(--admin-surface-muted);
+  border-color: var(--admin-border-strong);
 }
 
 .secondaryButton.active {
-  background: #eef2ff;
-  border-color: #6366f1;
-  color: #4338ca;
+  background: var(--admin-accent-soft);
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
 }
 
 .saveMessage {
@@ -87,13 +87,13 @@
 }
 
 .saveMessageSuccess {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text);
 }
 
 .saveMessageError {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--admin-error-bg-soft);
+  color: var(--admin-error-text-strong);
 }
 
 .editModeBar {
@@ -101,8 +101,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
-  border: 1px solid #c7d2fe;
+  background: linear-gradient(135deg, var(--admin-accent-soft) 0%, var(--admin-accent-soft) 100%);
+  border: 1px solid var(--admin-accent-soft-strong);
   border-radius: 8px;
   margin-bottom: 12px;
 }
@@ -119,14 +119,14 @@
 
 .editModeInfo > span:nth-child(2) {
   font-weight: 600;
-  color: #4338ca;
+  color: var(--admin-accent);
   font-size: 0.9rem;
 }
 
 .editCount {
   padding: 4px 10px;
-  background: #6366f1;
-  color: #fff;
+  background: var(--admin-accent);
+  color: var(--admin-surface);
   border-radius: 16px;
   font-size: 0.8rem;
 }
@@ -142,32 +142,32 @@
 
 .editCancelButton {
   padding: 6px 12px;
-  background: #fff;
-  border: 1px solid #d1d5db;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
-  color: #374151;
+  color: var(--admin-text-secondary);
   font-weight: 500;
   font-size: 0.8125rem;
   cursor: pointer;
 }
 
 .editCancelButton:hover:not(:disabled) {
-  background: #f3f4f6;
+  background: var(--admin-surface-soft);
 }
 
 .editSaveButton {
   padding: 6px 12px;
-  background: #6366f1;
+  background: var(--admin-accent);
   border: none;
   border-radius: 6px;
-  color: #fff;
+  color: var(--admin-surface);
   font-weight: 500;
   font-size: 0.8125rem;
   cursor: pointer;
 }
 
 .editSaveButton:hover:not(:disabled) {
-  background: #4f46e5;
+  background: var(--admin-accent);
 }
 
 .editSaveButton:disabled,
@@ -194,11 +194,11 @@
 
 .actionButton:hover {
   opacity: 1;
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(var(--admin-overlay-color-144), 0.1);
 }
 
 .editedIndicator {
-  color: #f59e0b;
+  color: var(--admin-warning);
   font-size: 0.75rem;
   margin-right: 2px;
 }
@@ -208,20 +208,20 @@
   min-width: 100px;
   max-width: 180px;
   padding: 4px 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border-strong);
   border-radius: 4px;
   font-size: 0.85rem;
-  background: #fff;
+  background: var(--admin-surface);
 }
 
 .editableInput:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--admin-accent);
 }
 
 .editableInput.edited {
-  border-color: #f59e0b;
-  background: #fffbeb;
+  border-color: var(--admin-warning);
+  background: var(--admin-warning-bg);
 }
 
 .editableSelect {
@@ -244,22 +244,22 @@
   min-width: 160px;
   max-width: 260px;
   padding: 6px 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   font-size: 13px;
 }
 
 .searchInput:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--admin-accent);
 }
 
 .select {
   padding: 6px 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   font-size: 13px;
-  background: #fff;
+  background: var(--admin-surface);
   min-width: 120px;
 }
 
@@ -271,13 +271,13 @@
 
 .dateLabelText {
   font-size: 0.9rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   white-space: nowrap;
 }
 
 .dateInput {
   padding: 6px 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   font-size: 13px;
 }
@@ -291,33 +291,33 @@
 }
 
 .statusDRAFT {
-  background: #e5e7eb;
-  color: #374151;
+  background: var(--admin-border);
+  color: var(--admin-text-secondary);
 }
 
 .statusACTIVE {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text);
 }
 
 .statusIN_PROGRESS {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning-text);
 }
 
 .statusCOMPLETED {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--admin-info-bg);
+  color: var(--admin-info-text);
 }
 
 .statusEXPIRED {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--admin-error-bg-soft);
+  color: var(--admin-error-text-strong);
 }
 
 .statusCANCELLED {
-  background: #fecaca;
-  color: #b91c1c;
+  background: var(--admin-error-border-soft);
+  color: var(--admin-error-text);
 }
 
 /* Управление колонками */
@@ -331,9 +331,9 @@
   right: 0;
   margin-top: 8px;
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 10px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 10px 40px var(--admin-overlay-color-149);
   min-width: 280px;
   max-height: 400px;
   overflow-y: auto;
@@ -344,8 +344,8 @@
   padding: 10px 16px;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #6b7280;
-  border-bottom: 1px solid #e5e7eb;
+  color: var(--admin-text-muted);
+  border-bottom: 1px solid var(--admin-border);
   margin-bottom: 4px;
 }
 
@@ -362,7 +362,7 @@
   padding: 4px 16px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #9ca3af;
+  color: var(--admin-text-muted);
   text-transform: uppercase;
 }
 
@@ -377,22 +377,22 @@
 }
 
 .columnItem:hover {
-  background: #f3f4f6;
+  background: var(--admin-surface-soft);
 }
 
 .columnItem.selected {
-  background: #f8fafc;
+  background: var(--admin-surface-muted);
 }
 
 .columnItem.dragging {
   opacity: 0.5;
-  background: #e0e7ff;
+  background: var(--admin-accent-soft);
 }
 
 .columnItem input {
   width: 16px;
   height: 16px;
-  accent-color: #6366f1;
+  accent-color: var(--admin-accent);
   cursor: pointer;
   flex-shrink: 0;
 }
@@ -400,12 +400,12 @@
 .columnTitle {
   flex: 1;
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .dragHandle {
   cursor: grab;
-  color: #9ca3af;
+  color: var(--admin-text-muted);
   font-size: 0.9rem;
   letter-spacing: 2px;
   padding: 2px 4px;
@@ -414,8 +414,8 @@
 }
 
 .dragHandle:hover {
-  background: #e5e7eb;
-  color: #6b7280;
+  background: var(--admin-border);
+  color: var(--admin-text-muted);
 }
 
 .dragHandle:active {
@@ -434,18 +434,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 4px;
-  background: #fff;
-  color: #6b7280;
+  background: var(--admin-surface);
+  color: var(--admin-text-muted);
   font-size: 0.75rem;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .orderButton:hover:not(:disabled) {
-  background: #f3f4f6;
-  border-color: #d1d5db;
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border-strong);
 }
 
 .orderButton:disabled {
@@ -471,142 +471,146 @@
 
 /* Тёмная тема */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .count {
-  background: #374151;
-  color: #9ca3af;
+  background: var(--admin-text-secondary);
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addButton:hover {
-  background: #818cf8;
+  background: var(--admin-accent-soft-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput::placeholder {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dateLabelText {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dateInput {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryButton {
-  background: #374151;
-  border-color: #4b5563;
-  color: #e5e7eb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryButton:hover {
-  background: #4b5563;
+  background: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryButton.active {
-  background: rgb(67 56 202 / 0.4);
-  border-color: #6366f1;
-  color: #a5b4fc;
+  background: var(--admin-overlay-color-140);
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .editModeBar {
-  background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
-  border-color: #4b5563;
+  background: linear-gradient(
+    135deg,
+    var(--admin-text-secondary) 0%,
+    var(--admin-text-secondary) 100%
+  );
+  border-color: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .editModeInfo > span:nth-child(2) {
-  color: #a5b4fc;
+  color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .editCancelButton {
-  background: #374151;
-  border-color: #4b5563;
-  color: #e5e7eb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .editCancelButton:hover:not(:disabled) {
-  background: #4b5563;
+  background: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .editableInput {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .editableInput.edited {
-  border-color: #f59e0b;
-  background: rgb(245 158 11 / 0.15);
+  border-color: var(--admin-warning);
+  background: var(--admin-overlay-color-075);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .columnSelectorDropdown {
-  background: #1f2937;
-  border-color: #374151;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .columnSelectorHeader {
-  color: #9ca3af;
-  border-bottom-color: #374151;
+  color: var(--admin-text-muted);
+  border-bottom-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sectionLabel {
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .columnItem:hover {
-  background: #374151;
+  background: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .columnItem.selected {
-  background: #1f2937;
+  background: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .columnItem.dragging {
-  background: rgb(99 102 241 / 0.2);
+  background: rgba(var(--admin-overlay-color-144), 0.2);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .columnTitle {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dragHandle {
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dragHandle:hover {
-  background: #374151;
-  color: #9ca3af;
+  background: var(--admin-text-secondary);
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .orderButton {
-  background: #374151;
-  border-color: #4b5563;
-  color: #9ca3af;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .orderButton:hover:not(:disabled) {
-  background: #4b5563;
+  background: var(--admin-sidebar-text);
 }
 
 /* --- Иерархическая таблица объектов --- */
 .tableWrapper {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -618,18 +622,18 @@
 }
 
 .table th {
-  background: #f9fafb;
+  background: var(--admin-surface-muted);
   padding: 8px 12px;
   text-align: left;
   font-weight: 600;
-  color: #374151;
-  border-bottom: 1px solid #e5e7eb;
+  color: var(--admin-text-secondary);
+  border-bottom: 1px solid var(--admin-border);
   white-space: nowrap;
 }
 
 .table td {
   padding: 8px 12px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--admin-surface-soft);
   vertical-align: middle;
 }
 
@@ -652,12 +656,12 @@
 .expandButton {
   width: 20px;
   height: 20px;
-  border: 1px solid #d1d5db;
-  background: #fff;
+  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-surface);
   border-radius: 4px;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -666,9 +670,9 @@
 }
 
 .expandButton:hover {
-  background: #f3f4f6;
-  border-color: #6366f1;
-  color: #6366f1;
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
 }
 
 .checkboxCell {
@@ -681,17 +685,17 @@
 
 /* Строка объекта */
 .objectRow {
-  background: #f0f4ff;
+  background: var(--admin-danger-bg-soft);
   cursor: pointer;
   transition: background 0.15s;
 }
 
 .objectRow:hover {
-  background: #e0e7ff;
+  background: var(--admin-accent-soft);
 }
 
 .objectRow.expanded {
-  background: #dbeafe;
+  background: var(--admin-info-bg);
 }
 
 .objectNameCell {
@@ -710,20 +714,20 @@
 
 .objectName {
   font-weight: 600;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
 }
 
 .objectMeta {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.8rem;
 }
 
 .contractCount {
-  background: #e0e7ff;
-  color: #4f46e5;
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
   padding: 2px 8px;
   border-radius: 10px;
   font-size: 0.7rem;
@@ -737,23 +741,23 @@
 }
 
 .contractRow:hover {
-  background: #f9fafb;
+  background: var(--admin-surface-muted);
 }
 
 .contractRow.selected {
-  background: #eff6ff;
+  background: var(--admin-info-bg-soft);
 }
 
 .contractRow.nested {
-  background: #fafbfc;
+  background: var(--admin-surface-soft);
 }
 
 .contractRow.nested:hover {
-  background: #f3f4f6;
+  background: var(--admin-surface-soft);
 }
 
 .nestLine {
-  color: #d1d5db;
+  color: var(--admin-border-strong);
   font-family: monospace;
   font-size: 0.9rem;
 }
@@ -762,7 +766,7 @@
 .empty {
   padding: 40px;
   text-align: center;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 /* Пагинация */
@@ -772,13 +776,13 @@
   justify-content: center;
   gap: 16px;
   padding: 16px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--admin-border);
 }
 
 .paginationButton {
   padding: 6px 12px;
-  background: #fff;
-  border: 1px solid #d1d5db;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
   font-size: 0.85rem;
   cursor: pointer;
@@ -786,8 +790,8 @@
 }
 
 .paginationButton:hover:not(:disabled) {
-  background: #f3f4f6;
-  border-color: #6366f1;
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-accent);
 }
 
 .paginationButton:disabled {
@@ -797,100 +801,100 @@
 
 .paginationInfo {
   font-size: 0.85rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 /* Dark theme для иерархической таблицы */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .tableWrapper {
-  border-color: #374151;
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .table th {
-  background: #1f2937;
-  color: #e5e7eb;
-  border-bottom-color: #374151;
+  background: var(--admin-text-secondary);
+  color: var(--admin-border);
+  border-bottom-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .table td {
-  border-bottom-color: #374151;
+  border-bottom-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .expandButton {
-  background: #374151;
-  border-color: #4b5563;
-  color: #9ca3af;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .expandButton:hover {
-  background: #4b5563;
-  border-color: #6366f1;
-  color: #a5b4fc;
+  background: var(--admin-sidebar-text);
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .objectRow {
-  background: rgb(99 102 241 / 0.1);
+  background: rgba(var(--admin-overlay-color-144), 0.1);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .objectRow:hover {
-  background: rgb(99 102 241 / 0.15);
+  background: rgba(var(--admin-overlay-color-144), 0.15);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .objectRow.expanded {
-  background: rgb(99 102 241 / 0.2);
+  background: rgba(var(--admin-overlay-color-144), 0.2);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .objectName {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .objectMeta {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractCount {
-  background: rgb(99 102 241 / 0.2);
-  color: #a5b4fc;
+  background: rgba(var(--admin-overlay-color-144), 0.2);
+  color: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractRow:hover {
-  background: #374151;
+  background: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractRow.selected {
-  background: rgb(99 102 241 / 0.1);
+  background: rgba(var(--admin-overlay-color-144), 0.1);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractRow.nested {
-  background: #1a1f2e;
+  background: var(--admin-surface-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractRow.nested:hover {
-  background: #242b3d;
+  background: var(--admin-surface);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .nestLine {
-  color: #4b5563;
+  color: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .loading,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .empty {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .pagination {
-  border-top-color: #374151;
+  border-top-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .paginationButton {
-  background: #374151;
-  border-color: #4b5563;
-  color: #e5e7eb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .paginationButton:hover:not(:disabled) {
-  background: #4b5563;
+  background: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .paginationInfo {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }

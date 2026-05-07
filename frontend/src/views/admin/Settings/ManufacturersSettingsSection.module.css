@@ -9,8 +9,8 @@
   align-items: flex-end;
   margin-bottom: 1rem;
   padding: 0.75rem;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface-muted);
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
 }
 
@@ -35,14 +35,14 @@
 .field label {
   font-size: 0.7rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
 
 .input {
   padding: 0.4rem 0.55rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   font-size: 0.875rem;
   min-width: 160px;
@@ -51,7 +51,7 @@
 .addBtn {
   padding: 0.45rem 0.85rem;
   background: var(--color-accent);
-  color: #fff;
+  color: var(--admin-surface);
   border: none;
   border-radius: 6px;
   font-weight: 600;
@@ -66,7 +66,7 @@
 
 .tableWrap {
   overflow-x: auto;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
 }
 
@@ -80,15 +80,15 @@
 .table td {
   padding: 0.5rem 0.65rem;
   text-align: left;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--admin-surface-soft);
 }
 
 .table th {
-  background: #f9fafb;
+  background: var(--admin-surface-muted);
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .table tr:last-child td {
@@ -98,7 +98,7 @@
 .mono {
   font-family: ui-monospace, monospace;
   font-size: 0.8rem;
-  color: #4b5563;
+  color: var(--admin-sidebar-text);
 }
 
 .num {
@@ -118,34 +118,34 @@
   font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
-  border: 1px solid #e5e7eb;
-  background: #fff;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
 }
 
 .btn:hover:not(:disabled) {
-  background: #f3f4f6;
+  background: var(--admin-surface-soft);
 }
 
 .btnPrimary {
   background: var(--color-accent);
-  color: #fff;
+  color: var(--admin-surface);
   border-color: var(--color-accent);
 }
 
 .btnDanger {
-  color: #b91c1c;
-  border-color: #fecaca;
+  color: var(--admin-error-text);
+  border-color: var(--admin-error-border-soft);
 }
 
 .btnDanger:hover:not(:disabled) {
-  background: #fef2f2;
+  background: var(--admin-error-bg);
 }
 
 .inputInline {
   width: 100%;
   max-width: 220px;
   padding: 0.3rem 0.45rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 4px;
   font-size: 0.8125rem;
 }
@@ -163,57 +163,57 @@
 }
 
 .toastErr {
-  background: #fef2f2;
-  color: #b91c1c;
-  border: 1px solid #fecaca;
+  background: var(--admin-error-bg);
+  color: var(--admin-error-text);
+  border: 1px solid var(--admin-error-border-soft);
 }
 
 .toastOk {
-  background: #ecfdf5;
-  color: #047857;
-  border: 1px solid #a7f3d0;
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text);
+  border: 1px solid var(--admin-success-border-soft);
 }
 
 .empty {
   padding: 1.5rem;
   text-align: center;
-  color: #9ca3af;
+  color: var(--admin-text-muted);
   font-size: 0.875rem;
 }
 
 .loading {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.875rem;
 }
 
 .hint {
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: var(--admin-text-muted);
   margin: 0.5rem 0 0;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .toolbar {
-  background: #1f2937;
-  border-color: #374151;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .tableWrap {
-  border-color: #374151;
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .table th {
-  background: #111827;
-  color: #9ca3af;
+  background: var(--admin-text-primary);
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .table td {
-  border-color: #374151;
-  color: #e5e7eb;
+  border-color: var(--admin-text-secondary);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .inputInline {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }

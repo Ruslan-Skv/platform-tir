@@ -1,13 +1,13 @@
 .blogPostFormPage {
   padding: 1.5rem;
   max-width: 900px;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
 }
 
 .loading {
   text-align: center;
   padding: 3rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .header {
@@ -16,7 +16,7 @@
 
 .backLink {
   display: inline-block;
-  color: #2563eb;
+  color: var(--admin-info);
   text-decoration: none;
   font-size: 0.9375rem;
   margin-bottom: 0.5rem;
@@ -30,7 +30,7 @@
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
-  color: #1f2937;
+  color: var(--admin-text-secondary);
 }
 
 .message {
@@ -40,13 +40,13 @@
 }
 
 .message.success {
-  background: rgb(34 197 94 / 20%);
-  color: rgb(34 197 94);
+  background: var(--admin-overlay-color-101);
+  color: var(--admin-overlay-color-108);
 }
 
 .message.error {
-  background: rgb(239 68 68 / 20%);
-  color: rgb(239 68 68);
+  background: var(--admin-overlay-color-065);
+  color: var(--admin-overlay-color-070);
 }
 
 .form {
@@ -61,7 +61,7 @@
   gap: 0.6rem;
   font-size: 0.9375rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--admin-text-secondary);
   cursor: pointer;
 }
 
@@ -75,7 +75,7 @@
 .readingTimeHint {
   margin: 0;
   font-size: 0.875rem;
-  color: #4b5563;
+  color: var(--admin-sidebar-text);
 }
 
 .fieldHint {
@@ -83,7 +83,7 @@
   margin-top: 0.35rem;
   font-size: 0.8125rem;
   font-weight: 400;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .badgeAddRow {
@@ -101,10 +101,10 @@
 
 .badgeAddButton {
   padding: 0.5rem 0.85rem;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
-  color: #374151;
+  color: var(--admin-text-secondary);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -112,7 +112,7 @@
 }
 
 .badgeAddButton:hover:not(:disabled) {
-  background: #e5e7eb;
+  background: var(--admin-border);
 }
 
 .badgeAddButton:disabled {
@@ -123,7 +123,7 @@
 .badgeOrphanHint {
   margin: 0.35rem 0 0;
   font-size: 0.8125rem;
-  color: #b45309;
+  color: var(--admin-warning-brown);
   line-height: 1.4;
 }
 
@@ -154,10 +154,10 @@
 .imageUploadButton {
   flex-shrink: 0;
   padding: 0.5rem 1rem;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
-  color: #374151;
+  color: var(--admin-text-secondary);
   font-size: 0.9375rem;
   font-weight: 500;
   cursor: pointer;
@@ -165,7 +165,7 @@
 }
 
 .imageUploadButton:hover:not(:disabled) {
-  background: #e5e7eb;
+  background: var(--admin-border);
 }
 
 .imageUploadButton:disabled {
@@ -178,8 +178,8 @@
   max-width: 320px;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface-muted);
 }
 
 .featuredPreview img {
@@ -212,17 +212,17 @@
   gap: 0.25rem;
   font-size: 0.9375rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 .input,
 .textarea,
 .select {
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--admin-border-strong);
   border-radius: 6px;
-  background: #fff;
-  color: #374151;
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
   font-size: 0.9375rem;
 }
 
@@ -236,7 +236,7 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.9375rem;
-  color: #374151;
+  color: var(--admin-text-secondary);
   cursor: pointer;
 }
 
@@ -248,7 +248,7 @@
 
 .submitButton {
   padding: 0.5rem 1.5rem;
-  background: rgb(59 130 246);
+  background: var(--admin-overlay-color-135);
   border: none;
   border-radius: 6px;
   color: white;
@@ -257,7 +257,7 @@
 }
 
 .submitButton:hover:not(:disabled) {
-  background: rgb(37 99 235);
+  background: var(--admin-overlay-color-111);
 }
 
 .submitButton:disabled {
@@ -267,13 +267,13 @@
 
 .cancelLink {
   padding: 0.5rem 1rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   text-decoration: none;
   font-size: 0.9375rem;
 }
 
 .cancelLink:hover {
-  color: #374151;
+  color: var(--admin-text-secondary);
 }
 
 /* Тёмная тема — форма поста блога */
@@ -295,75 +295,75 @@
 .seoBlockTitle {
   font-weight: 700;
   font-size: 0.9375rem;
-  color: #111827;
+  color: var(--admin-text-primary);
 }
 
 .seoAutofillButton {
   padding: 0.4rem 0.75rem;
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #1d4ed8;
-  background: rgb(59 130 246 / 10%);
-  border: 1px solid rgb(59 130 246 / 35%);
+  color: var(--admin-info-strong);
+  background: var(--admin-overlay-color-126);
+  border: 1px solid var(--admin-overlay-color-131);
   border-radius: 8px;
   cursor: pointer;
   white-space: nowrap;
 }
 
 .seoAutofillButton:hover {
-  background: rgb(59 130 246 / 18%);
+  background: var(--admin-overlay-color-129);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .blogPostFormPage {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .backLink {
-  color: #93c5fd;
+  color: var(--admin-info-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .label {
-  color: #d1d5db;
+  color: var(--admin-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .seoBlockTitle {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .seoAutofillButton {
-  color: #93c5fd;
-  background: rgb(59 130 246 / 15%);
-  border-color: rgb(59 130 246 / 40%);
+  color: var(--admin-info-border);
+  background: var(--admin-overlay-color-128);
+  border-color: var(--admin-overlay-color-132);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .textarea,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .checkboxLabel {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .submitButton {
-  background: #6366f1;
+  background: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .submitButton:hover:not(:disabled) {
-  background: #4f46e5;
+  background: var(--admin-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cancelLink:hover {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }

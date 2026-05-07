@@ -1,9 +1,9 @@
-/* Бирюзовые акценты — как у заполненных полей карточки товара (ProductEditPage: #14b8a6, #ccfbf1) */
+/* Бирюзовые акценты — как у заполненных полей карточки товара (ProductEditPage: var(--admin-chart-teal), var(--admin-chart-teal-bg)) */
 .page {
-  --dash-turquoise: #14b8a6;
-  --dash-turquoise-deep: #0d9488;
-  --dash-turquoise-soft: #ccfbf1;
-  --dash-turquoise-muted: #0f766e;
+  --dash-turquoise: var(--admin-chart-teal);
+  --dash-turquoise-deep: var(--admin-success-emerald);
+  --dash-turquoise-soft: var(--admin-chart-teal-bg);
+  --dash-turquoise-muted: var(--admin-chart-teal-strong);
 
   max-width: 1200px;
   margin: 0 auto;
@@ -21,12 +21,12 @@
     135deg,
     var(--dash-turquoise-deep) 0%,
     var(--dash-turquoise) 38%,
-    #6366f1 100%
+    var(--admin-accent) 100%
   );
   border-radius: 12px;
   padding: 14px 18px 16px;
   margin-bottom: 12px;
-  box-shadow: 0 6px 24px rgb(20 184 166 / 0.28);
+  box-shadow: 0 6px 24px var(--admin-overlay-color-045);
 }
 
 .heroText {
@@ -36,7 +36,7 @@
 .title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--admin-surface);
   margin: 0 0 4px;
   letter-spacing: -0.02em;
   line-height: 1.25;
@@ -46,7 +46,7 @@
   margin: 0;
   font-size: 0.8125rem;
   line-height: 1.4;
-  color: rgb(255 255 255 / 0.88);
+  color: var(--admin-overlay-color-092);
 }
 
 @media (max-width: 640px) {
@@ -66,12 +66,12 @@
 }
 
 .toolbar {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 10px;
   padding: 10px 14px;
   margin-bottom: 12px;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+  box-shadow: 0 1px 2px var(--admin-overlay-color-001);
 }
 
 @media (max-width: 640px) {
@@ -107,7 +107,7 @@
 .dateLabel {
   font-size: 0.65rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   line-height: 1.2;
@@ -115,23 +115,23 @@
 
 .dateInput {
   padding: 5px 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   font-size: 0.8125rem;
-  color: #1f2937;
-  background: #f9fafb;
+  color: var(--admin-text-secondary);
+  background: var(--admin-surface-muted);
   min-width: 138px;
 }
 
 .dateInput:focus {
   outline: none;
   border-color: var(--dash-turquoise);
-  background: #fff;
-  box-shadow: 0 0 0 3px rgb(20 184 166 / 0.22);
+  background: var(--admin-surface);
+  box-shadow: 0 0 0 3px var(--admin-overlay-color-044);
 }
 
 .dateSep {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
   padding-bottom: 4px;
   font-weight: 500;
   font-size: 0.875rem;
@@ -140,7 +140,7 @@
 .primaryBtn {
   padding: 6px 14px;
   background: linear-gradient(135deg, var(--dash-turquoise-deep), var(--dash-turquoise));
-  color: #fff;
+  color: var(--admin-surface);
   border: none;
   border-radius: 6px;
   font-weight: 600;
@@ -152,7 +152,7 @@
 }
 
 .primaryBtn:hover:not(:disabled) {
-  box-shadow: 0 4px 14px rgb(20 184 166 / 0.45);
+  box-shadow: 0 4px 14px var(--admin-overlay-color-048);
   transform: translateY(-1px);
 }
 
@@ -173,16 +173,16 @@
 
 .presetsLabel {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .chip {
   padding: 4px 10px;
   font-size: 0.75rem;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface-muted);
   border-radius: 999px;
-  color: #374151;
+  color: var(--admin-text-secondary);
   cursor: pointer;
   transition:
     background 0.15s,
@@ -191,29 +191,29 @@
 
 .chip:hover {
   background: var(--dash-turquoise-soft);
-  border-color: #5eead4;
+  border-color: var(--admin-chart-teal-soft);
   color: var(--dash-turquoise-muted);
 }
 
 .errorBanner {
   padding: 12px 16px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--admin-error-bg);
+  border: 1px solid var(--admin-error-border-soft);
   border-radius: 10px;
-  color: #b91c1c;
+  color: var(--admin-error-text);
   font-size: 0.9rem;
   margin-bottom: 16px;
 }
 
 .rangeHint {
   font-size: 0.8125rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin: 0 0 14px;
   overflow-wrap: anywhere;
 }
 
 .rangeHint strong {
-  color: #374151;
+  color: var(--admin-text-secondary);
   font-weight: 600;
 }
 
@@ -255,11 +255,11 @@
 }
 
 .panel {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 0.04);
+  box-shadow: 0 2px 8px var(--admin-overlay-color-001);
 }
 
 .panelHead {
@@ -267,8 +267,8 @@
   align-items: center;
   gap: 10px;
   padding: 16px 18px;
-  background: linear-gradient(180deg, #fafafa 0%, #fff 100%);
-  border-bottom: 1px solid #f3f4f6;
+  background: linear-gradient(180deg, var(--admin-surface-muted) 0%, var(--admin-surface) 100%);
+  border-bottom: 1px solid var(--admin-surface-soft);
 }
 
 @media (max-width: 640px) {
@@ -290,7 +290,7 @@
   margin: 0;
   font-size: 1.05rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--admin-text-primary);
 }
 
 .chartsWrap {
@@ -298,7 +298,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 16px;
   padding: 16px 18px 8px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--admin-surface-soft);
 }
 
 @media (max-width: 700px) {
@@ -319,14 +319,14 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 .chartHint {
   margin: 0 0 10px;
   font-size: 0.7rem;
   line-height: 1.35;
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 .chart {
@@ -351,7 +351,7 @@
 }
 
 .chartName {
-  color: #374151;
+  color: var(--admin-text-secondary);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -362,7 +362,7 @@
 .chartTrack {
   height: 10px;
   border-radius: 6px;
-  background: #e5e7eb;
+  background: var(--admin-border);
   overflow: hidden;
   min-width: 0;
 }
@@ -387,7 +387,7 @@
 .chartCount {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: #111827;
+  color: var(--admin-text-primary);
   font-size: 0.8125rem;
   line-height: 1.2;
 }
@@ -396,7 +396,7 @@
   font-size: 0.7rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   line-height: 1.15;
 }
 
@@ -436,18 +436,18 @@
 }
 
 .table thead {
-  background: #f9fafb;
+  background: var(--admin-surface-muted);
 }
 
 .table th {
   text-align: left;
   padding: 12px 16px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .table th.colNum,
@@ -467,12 +467,12 @@
   font-size: 0.85rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: #4b5563;
+  color: var(--admin-sidebar-text);
 }
 
 .table td {
   padding: 14px 16px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--admin-surface-soft);
   vertical-align: middle;
 }
 
@@ -482,7 +482,7 @@
 
 @media (hover: hover) {
   .table tbody tr:hover td {
-    background: #fafafa;
+    background: var(--admin-surface-muted);
   }
 }
 
@@ -508,9 +508,9 @@
     display: block;
     margin-bottom: 12px;
     padding: 14px 12px;
-    background: #fafafa;
+    background: var(--admin-surface-muted);
     border-radius: 12px;
-    border: 1px solid #f3f4f6;
+    border: 1px solid var(--admin-surface-soft);
   }
 
   .table tbody tr:last-child {
@@ -527,7 +527,7 @@
   .table tbody td:first-child {
     padding-bottom: 12px;
     margin-bottom: 10px;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--admin-border);
   }
 
   .table tbody td:first-child::before {
@@ -535,7 +535,7 @@
     display: block;
     font-size: 0.65rem;
     font-weight: 700;
-    color: #6b7280;
+    color: var(--admin-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 8px;
@@ -547,7 +547,7 @@
     align-items: center;
     gap: 12px;
     padding: 10px 0;
-    border-top: 1px solid #f3f4f6;
+    border-top: 1px solid var(--admin-surface-soft);
     text-align: right !important;
   }
 
@@ -555,7 +555,7 @@
     content: attr(data-label);
     font-size: 0.7rem;
     font-weight: 600;
-    color: #6b7280;
+    color: var(--admin-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     flex-shrink: 0;
@@ -586,7 +586,7 @@
   height: 40px;
   border-radius: 10px;
   background: linear-gradient(135deg, var(--dash-turquoise-deep), var(--dash-turquoise));
-  color: #fff;
+  color: var(--admin-surface);
   font-size: 0.75rem;
   font-weight: 700;
   display: flex;
@@ -603,7 +603,7 @@
 
 .userName {
   font-weight: 600;
-  color: #111827;
+  color: var(--admin-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -611,7 +611,7 @@
 
 .userEmail {
   font-size: 0.8rem;
-  color: #9ca3af;
+  color: var(--admin-text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -640,18 +640,18 @@
 .badgePeriod {
   background: var(--dash-turquoise-soft);
   color: var(--dash-turquoise-muted);
-  border: 1px solid rgb(20 184 166 / 0.35);
+  border: 1px solid var(--admin-overlay-color-046);
 }
 
 .badgeTotal {
-  background: #f0fdf4;
-  color: #15803d;
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-deep);
 }
 
 .empty {
   padding: 28px 20px;
   text-align: center;
-  color: #9ca3af;
+  color: var(--admin-text-muted);
   font-size: 0.9rem;
   line-height: 1.5;
   margin: 0;
@@ -659,7 +659,7 @@
 
 .quickLinks {
   padding: 20px 0 0;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--admin-border);
 }
 
 .quickTitle {
@@ -667,7 +667,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #9ca3af;
+  color: var(--admin-text-muted);
   margin: 0 0 12px;
 }
 
@@ -681,8 +681,8 @@
   display: inline-flex;
   align-items: center;
   padding: 10px 16px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 10px;
   color: var(--dash-turquoise-muted);
   font-size: 0.9rem;
@@ -696,8 +696,8 @@
 
 .quickLink:hover {
   background: var(--dash-turquoise-soft);
-  border-color: #5eead4;
-  color: #0d9488;
+  border-color: var(--admin-chart-teal-soft);
+  color: var(--admin-success-emerald);
 }
 
 @media (max-width: 640px) {
@@ -718,61 +718,65 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .toolbar,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .panel,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .quickLink {
-  background: #1f2937;
-  border-color: #374151;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .subtitle {
-  color: rgb(255 255 255 / 0.88);
+  color: var(--admin-overlay-color-092);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dateInput {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .panelHead {
-  background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
-  border-bottom-color: #374151;
+  background: linear-gradient(
+    180deg,
+    var(--admin-text-secondary) 0%,
+    var(--admin-text-primary) 100%
+  );
+  border-bottom-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .panelTitle,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .userName {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .table thead {
-  background: #111827;
+  background: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .table th {
-  color: #9ca3af;
-  border-bottom-color: #374151;
+  color: var(--admin-text-muted);
+  border-bottom-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .table td {
-  border-bottom-color: #374151;
+  border-bottom-color: var(--admin-text-secondary);
 }
 
 @media (hover: hover) {
   :where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody tr:hover td {
-    background: #374151;
+    background: var(--admin-text-secondary);
   }
 }
 
 @media (max-width: 640px) {
   :where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody tr {
-    background: #111827;
-    border-color: #374151;
+    background: var(--admin-text-primary);
+    border-color: var(--admin-text-secondary);
   }
 
   :where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody td:first-child {
-    border-bottom-color: #374151;
+    border-bottom-color: var(--admin-text-secondary);
   }
 
   :where(html[data-theme='dark'], [data-app-theme='dark']) .table tbody td:not(:first-child) {
-    border-top-color: #1f2937;
+    border-top-color: var(--admin-text-secondary);
   }
 
   @media (hover: hover) {
@@ -786,79 +790,79 @@
     .table
     tbody
     td:not(:first-child)::before {
-    color: #9ca3af;
+    color: var(--admin-text-muted);
   }
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .badgePeriod {
-  background: rgb(20 184 166 / 0.22);
-  color: #5eead4;
-  border-color: rgb(20 184 166 / 0.4);
+  background: var(--admin-overlay-color-044);
+  color: var(--admin-chart-teal-soft);
+  border-color: var(--admin-overlay-color-047);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .badgeTotal {
-  background: rgb(34 197 94 / 0.2);
-  color: #86efac;
+  background: var(--admin-overlay-color-098);
+  color: var(--admin-success-lime);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .quickLink {
-  color: #5eead4;
+  color: var(--admin-chart-teal-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .quickLink:hover {
-  background: rgb(20 184 166 / 0.12);
-  border-color: #14b8a6;
-  color: #99f6e4;
+  background: var(--admin-overlay-color-041);
+  border-color: var(--admin-chart-teal);
+  color: var(--admin-chart-teal-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .rangeHint strong {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .rangeHint {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chip {
-  background: #374151;
-  border-color: #4b5563;
-  color: #e5e7eb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chip:hover {
-  background: rgb(20 184 166 / 0.15);
-  border-color: #14b8a6;
-  color: #99f6e4;
+  background: var(--admin-overlay-color-042);
+  border-color: var(--admin-chart-teal);
+  color: var(--admin-chart-teal-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chartsWrap {
-  border-bottom-color: #374151;
+  border-bottom-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chartTitle {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chartName {
-  color: #e5e7eb;
+  color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chartTrack {
-  background: #374151;
+  background: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chartCount {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chartPct {
-  color: #9ca3af;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chartHint {
-  color: #6b7280;
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .pctCell {
-  color: #d1d5db;
+  color: var(--admin-border-strong);
 }

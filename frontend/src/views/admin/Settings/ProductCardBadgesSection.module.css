@@ -11,19 +11,19 @@
 }
 
 .toastSuccess {
-  background: rgb(34 197 94 / 20%);
-  color: rgb(22 163 74);
+  background: var(--admin-overlay-color-101);
+  color: var(--admin-overlay-color-052);
 }
 
 .toastError {
-  background: rgb(239 68 68 / 20%);
-  color: rgb(185 28 28);
+  background: var(--admin-overlay-color-065);
+  color: var(--admin-overlay-color-037);
 }
 
 .intro {
   font-size: 0.8125rem;
   line-height: 1.4;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   margin: 0 0 0.5rem;
 }
 
@@ -39,15 +39,15 @@
   align-items: center;
   gap: 0.5rem 0.65rem;
   padding: 0.45rem 0.55rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
-  background: #fafafa;
+  background: var(--admin-surface-muted);
 }
 
 .order {
   flex: 0 0 auto;
   min-width: 1.25rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.75rem;
   line-height: 1;
 }
@@ -60,14 +60,14 @@
 .badgeTitle {
   font-weight: 600;
   font-size: 0.8125rem;
-  color: #111827;
+  color: var(--admin-text-primary);
   margin: 0 0 0.2rem;
   line-height: 1.2;
 }
 
 .fieldLabel {
   font-size: 0.6875rem;
-  color: #6b7280;
+  color: var(--admin-text-muted);
   display: block;
   margin-bottom: 0.12rem;
   line-height: 1.2;
@@ -86,7 +86,7 @@
   min-width: 0;
   box-sizing: border-box;
   padding: 0.3rem 0.45rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 4px;
   font-size: 0.8125rem;
   line-height: 1.35;
@@ -102,7 +102,7 @@
   border: none;
   border-radius: 4px;
   background: var(--color-accent);
-  color: #fff;
+  color: var(--admin-surface);
   cursor: pointer;
   font-size: 0.75rem;
   font-weight: 500;
@@ -127,10 +127,10 @@
   flex: 0 0 auto;
   width: 44px;
   height: 44px;
-  border: 1px dashed #d1d5db;
+  border: 1px dashed var(--admin-border-strong);
   border-radius: 4px;
   overflow: hidden;
-  background: #fff;
+  background: var(--admin-surface);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -140,17 +140,17 @@
 /* Лёгкая «шахматка» — лучше видна прозрачность PNG */
 .thumbWrapHasImage {
   background:
-    linear-gradient(45deg, #e8e8e8 25%, transparent 25%),
-    linear-gradient(-45deg, #e8e8e8 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #e8e8e8 75%),
-    linear-gradient(-45deg, transparent 75%, #e8e8e8 75%);
+    linear-gradient(45deg, var(--admin-surface) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--admin-surface) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--admin-surface) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--admin-surface) 75%);
   background-size: 8px 8px;
   background-position:
     0 0,
     0 4px,
     4px -4px,
     -4px 0;
-  background-color: #f5f5f5;
+  background-color: var(--admin-surface-soft);
 }
 
 .thumbRemoveOverlay {
@@ -164,8 +164,8 @@
   border-radius: 3px;
   font-size: 14px;
   line-height: 1;
-  color: #fff;
-  background: rgb(15 23 42 / 72%);
+  color: var(--admin-surface);
+  background: var(--admin-overlay-color-029);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -173,7 +173,7 @@
 }
 
 .thumbRemoveOverlay:hover:not(:disabled) {
-  background: rgb(185 28 28 / 88%);
+  background: var(--admin-overlay-color-036);
 }
 
 .thumbRemoveOverlay:disabled {
@@ -189,7 +189,7 @@
 
 .thumbEmpty {
   font-size: 0.6rem;
-  color: #9ca3af;
+  color: var(--admin-text-muted);
   text-align: center;
   line-height: 1.1;
 }
@@ -210,38 +210,38 @@
   display: inline-block;
   padding: 0.25rem 0.55rem;
   background: var(--color-accent);
-  color: #fff;
+  color: var(--admin-surface);
   border-radius: 4px;
   font-size: 0.75rem;
   line-height: 1.2;
 }
 
 .loading {
-  color: #6b7280;
+  color: var(--admin-text-muted);
   font-size: 0.875rem;
   margin: 0;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .row {
-  background: #1f2937;
-  border-color: #374151;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .badgeTitle {
-  color: #f9fafb;
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .textarea {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f9fafb;
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .thumbWrap {
-  background: #111827;
-  border-color: #4b5563;
+  background: var(--admin-text-primary);
+  border-color: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .thumbWrapHasImage {
-  background: #1f2937;
+  background: var(--admin-text-secondary);
 }
