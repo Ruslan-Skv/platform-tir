@@ -463,6 +463,11 @@
   line-height: var(--admin-line-height-sm);
 }
 
+.openingSideRow .checkbox span {
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+}
+
 .attributesGrid {
   display: flex;
   flex-direction: column;

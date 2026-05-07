@@ -2190,7 +2190,9 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
 
               <div className={styles.formGroup}>
                 <label htmlFor="openingSide">Сторона открывания</label>
-                <div className={`${styles.checkboxGroup} ${styles.checkboxGroupRow}`}>
+                <div
+                  className={`${styles.checkboxGroup} ${styles.checkboxGroupRow} ${styles.openingSideRow}`}
+                >
                   <label className={styles.checkbox}>
                     <input
                       type="checkbox"
