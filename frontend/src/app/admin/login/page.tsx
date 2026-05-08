@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
 import { useTheme } from '@/features/theme';
+import { Modal } from '@/shared/ui/Modal';
 
 import styles from './login.module.css';
 
@@ -53,7 +54,7 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${styles.adminThemeScope}`}>
       <button
         type="button"
         onClick={toggleTheme}
@@ -67,83 +68,93 @@ export default function AdminLoginPage() {
           <MoonIcon className={styles.themeIcon} />
         )}
       </button>
-      <div className={styles.loginCard}>
-        <div className={styles.logo}>
-          <h1>ТИР</h1>
-          <p>Административная панель</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className={styles.form} autoComplete="off">
-          <h2 className={styles.title}>Вход в систему</h2>
-
-          {error && <div className={styles.error}>{error}</div>}
-
-          <div className={styles.formGroup}>
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@example.com"
-              required
-              autoComplete="off"
-              className={styles.input}
-            />
+      <Modal
+        isOpen={true}
+        onClose={() => {}}
+        title="Вход в админ-панель"
+        size="sm"
+        showCloseButton={false}
+        className={styles.loginModalPanel}
+        titleClassName={styles.loginModalTitle}
+      >
+        <div className={styles.loginCard}>
+          <div className={styles.logo}>
+            <h1>ТИР</h1>
+            <p>Административная панель</p>
           </div>
 
-          <div className={styles.formGroup}>
-            <label htmlFor="password">Пароль</label>
-            <div className={styles.passwordWrap}>
+          <form onSubmit={handleSubmit} className={styles.form} autoComplete="off">
+            {error && <div className={styles.error}>{error}</div>}
+
+            <div className={styles.formGroup}>
+              <label htmlFor="email">Email</label>
               <input
-                type={showPassword ? 'text' : 'password'}
-                id="password"
-                name="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                type="email"
+                id="email"
+                name="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@example.com"
                 required
                 autoComplete="off"
-                className={`${styles.input} ${styles.inputWithToggle}`}
+                className={styles.input}
               />
-              <button
-                type="button"
-                className={styles.passwordToggle}
-                onClick={() => setShowPassword((v) => !v)}
-                tabIndex={-1}
-                aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
-                title={showPassword ? 'Скрыть' : 'Показать'}
-              >
-                {showPassword ? (
-                  <EyeSlashIcon className={styles.passwordToggleIcon} aria-hidden />
-                ) : (
-                  <EyeIcon className={styles.passwordToggleIcon} aria-hidden />
-                )}
-              </button>
             </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="password">Пароль</label>
+              <div className={styles.passwordWrap}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  name="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  autoComplete="off"
+                  className={`${styles.input} ${styles.inputWithToggle}`}
+                />
+                <button
+                  type="button"
+                  className={styles.passwordToggle}
+                  onClick={() => setShowPassword((v) => !v)}
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+                  title={showPassword ? 'Скрыть' : 'Показать'}
+                >
+                  {showPassword ? (
+                    <EyeSlashIcon className={styles.passwordToggleIcon} aria-hidden />
+                  ) : (
+                    <EyeIcon className={styles.passwordToggleIcon} aria-hidden />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" disabled={isSubmitting} className={styles.submitButton}>
+              {isSubmitting ? 'Вход...' : 'Войти'}
+            </button>
+          </form>
+
+          <div className={styles.footer}>
+            <p className={styles.hint}>
+              Пароль в приложении не хранится: если поля заполняются сами — это браузер (сохранённые
+              логины). На чужом ПК отключите автозаполнение для этого сайта в настройках браузера.
+            </p>
+            <p className={styles.hint}>
+              Регистрировались через Яндекс? Задайте пароль через{' '}
+              <Link href="/forgot-password" className={styles.inlineLink}>
+                восстановление пароля
+              </Link>{' '}
+              на сайте, затем войдите сюда с email и новым паролем.
+            </p>
+            <Link href="/" className={styles.backLink}>
+              ← Вернуться на сайт
+            </Link>
           </div>
-
-          <button type="submit" disabled={isSubmitting} className={styles.submitButton}>
-            {isSubmitting ? 'Вход...' : 'Войти'}
-          </button>
-        </form>
-
-        <div className={styles.footer}>
-          <p className={styles.hint}>
-            Пароль в приложении не хранится: если поля заполняются сами — это браузер (сохранённые
-            логины). На чужом ПК отключите автозаполнение для этого сайта в настройках браузера.
-            Регистрировались через Яндекс? Задайте пароль через{' '}
-            <Link href="/forgot-password" className={styles.inlineLink}>
-              восстановление пароля
-            </Link>{' '}
-            на сайте, затем войдите сюда с email и новым паролем.
-          </p>
-          <Link href="/" className={styles.backLink}>
-            ← Вернуться на сайт
-          </Link>
         </div>
-      </div>
+      </Modal>
     </div>
   );
 }

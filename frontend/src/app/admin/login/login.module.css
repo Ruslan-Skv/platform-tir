@@ -1,3 +1,55 @@
+.adminThemeScope {
+  --admin-bg-page: #f5f7fa;
+  --admin-surface: #ffffff;
+  --admin-surface-muted: #f9fafb;
+  --admin-surface-soft: #f3f4f6;
+  --admin-border: #e5e7eb;
+  --admin-border-strong: #d1d5db;
+  --admin-text-primary: #111827;
+  --admin-text-secondary: #374151;
+  --admin-text-muted: #6b7280;
+  --admin-accent: rgb(var(--color-accent-rgb));
+  --admin-danger-bg: #fef2f2;
+  --admin-danger-border: #fecaca;
+  --admin-danger-text: #b91c1c;
+  --admin-danger-text-soft: #991b1b;
+  --admin-space-0: 0;
+  --admin-space-md: 8px;
+  --admin-space-xl: 12px;
+  --admin-space-2xl: 16px;
+  --admin-space-3xl: 20px;
+  --admin-space-4xl: 24px;
+  --admin-space-5xl: 32px;
+  --admin-space-6xl: 40px;
+  --admin-font-size-sm: 0.8125rem;
+  --admin-font-size-base: 0.9375rem;
+  --admin-font-size-lg: 1rem;
+  --admin-font-size-xl: 1.0625rem;
+  --admin-font-size-4xl: 1.75rem;
+  --admin-font-size-5xl: 2rem;
+  --admin-line-height-md: 1.4;
+  --admin-radius-sm: 6px;
+  --admin-radius-md: 8px;
+  --admin-radius-2xl: 16px;
+  --admin-letter-spacing-logo: 2px;
+}
+
+:where(html[data-theme='dark']) .adminThemeScope {
+  --admin-bg-page: #111827;
+  --admin-surface: #1f2937;
+  --admin-surface-muted: #111827;
+  --admin-surface-soft: #374151;
+  --admin-border: #374151;
+  --admin-border-strong: #4b5563;
+  --admin-text-primary: #f3f4f6;
+  --admin-text-secondary: #d1d5db;
+  --admin-text-muted: #9ca3af;
+  --admin-danger-bg: rgb(239 68 68 / 0.15);
+  --admin-danger-border: #fca5a5;
+  --admin-danger-text: #fca5a5;
+  --admin-danger-text-soft: #fecaca;
+}
+
 .container {
   min-height: 100vh;
   display: flex;
@@ -44,7 +96,7 @@
   padding: var(--admin-space-0);
   background: rgb(255 255 255 / 90%);
   border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-md);
+  border-radius: var(--admin-radius-md, 8px);
   color: var(--admin-text-secondary);
   cursor: pointer;
   transition:
@@ -91,13 +143,16 @@
 }
 
 .loginCard {
-  background: white;
-  border-radius: var(--admin-radius-2xl);
-  padding: var(--admin-space-6xl);
+  padding: 0.25rem 0.75rem;
+}
+
+.loginModalPanel {
   width: 100%;
-  max-width: 420px;
-  box-shadow: 0 20px 60px rgb(0 0 0 / 0.08);
-  border: 1px solid var(--admin-border);
+  max-width: 400px;
+}
+
+.loginModalTitle {
+  text-align: center;
 }
 
 .logo {
@@ -122,7 +177,7 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: var(--admin-space-3xl);
+  gap: 0;
 }
 
 .title {
@@ -138,7 +193,7 @@
   border: 1px solid var(--admin-danger-border);
   color: var(--admin-danger-text);
   padding: var(--admin-space-xl) var(--admin-space-2xl);
-  border-radius: var(--admin-radius-md);
+  border-radius: var(--admin-radius-md, 8px);
   font-size: var(--admin-font-size-base);
   text-align: center;
 }
@@ -146,7 +201,8 @@
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: var(--admin-space-md);
+  gap: 0.5rem;
+  margin-bottom: 1.125rem;
 }
 
 .formGroup label {
@@ -156,16 +212,18 @@
 }
 
 .input {
-  padding: var(--admin-space-xl) var(--admin-space-2xl);
-  border: 1px solid var(--admin-border-strong);
-  border-radius: var(--admin-radius-md);
+  padding: 0.8rem 0.95rem;
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-md, 8px);
   font-size: var(--admin-font-size-lg);
   transition:
     border-color 0.35s ease,
     box-shadow 0.35s ease;
   outline: none;
-  background: var(--admin-surface);
-  color: var(--admin-text-primary);
+  background: var(--admin-surface, #ffffff);
+  color: var(--admin-text-primary, #111827);
+  min-height: 46px;
+  line-height: 1.2;
 }
 
 .input:focus {
@@ -182,7 +240,7 @@
 }
 
 .inputWithToggle {
-  padding-right: 3rem;
+  padding-right: 3.1rem;
 }
 
 .passwordToggle {
@@ -193,11 +251,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.25rem;
+  width: 2.7rem;
+  height: 2.45rem;
   padding: var(--admin-space-0);
   border: none;
-  border-radius: var(--admin-radius-sm);
+  border-radius: var(--admin-radius-sm, 6px);
   background: transparent;
   color: var(--admin-text-muted);
   cursor: pointer;
@@ -228,8 +286,8 @@
   background: var(--color-accent);
   color: white;
   border: none;
-  padding: var(--admin-space-xl) var(--admin-space-4xl);
-  border-radius: var(--admin-radius-md);
+  padding: 0.8rem 1.6rem;
+  border-radius: var(--admin-radius-md, 8px);
   font-size: var(--admin-font-size-lg);
   font-weight: 600;
   cursor: pointer;
@@ -237,6 +295,11 @@
     background 0.2s,
     box-shadow 0.2s;
   margin-top: var(--admin-space-md);
+  align-self: center;
+  width: auto;
+  min-width: 190px;
+  min-height: 46px;
+  line-height: 1.2;
 }
 
 .submitButton:hover:not(:disabled) {
@@ -267,7 +330,7 @@
 }
 
 .hint {
-  font-size: var(--admin-font-size-sm);
+  font-size: 0.75rem;
   color: var(--admin-text-muted);
   margin: 0;
   line-height: var(--admin-line-height-md);
@@ -285,7 +348,7 @@
 .backLink {
   color: var(--admin-text-muted);
   text-decoration: none;
-  font-size: var(--admin-font-size-base);
+  font-size: 0.8125rem;
   transition: color 0.2s;
 }
 
@@ -295,9 +358,7 @@
 
 /* Тёмная тема — карточка и форма */
 :where(html[data-theme='dark']) .loginCard {
-  background: var(--admin-surface);
-  border-color: var(--admin-border);
-  box-shadow: 0 20px 60px rgb(0 0 0 / 0.5);
+  background: transparent;
 }
 
 :where(html[data-theme='dark']) .logo h1 {
