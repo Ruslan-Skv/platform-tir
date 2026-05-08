@@ -26,8 +26,8 @@ import {
   restoreContractDocumentPackageVersion,
   updateContractDocumentPackage,
 } from '@/shared/api/admin-contract-document-packages';
-import type { Contract } from '@/shared/api/admin-crm';
-import { getContract, getContracts } from '@/shared/api/admin-crm';
+import type { Contract, InstallerMaster } from '@/shared/api/admin-crm';
+import { getContract, getContracts, getInstallers } from '@/shared/api/admin-crm';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
 import styles from '../ContractDocuments.module.css';
@@ -96,16 +96,16 @@ function isWithinRevertWindow(iso: string | null | undefined): boolean {
 /** Встроенный в код шаблон (если в БД нет общего шаблона). */
 const FILE_REPAIR_CONTRACT_TEMPLATE = REPAIR_DOCUMENT_TEMPLATES.contract;
 const TEMPLATE_TAB_IDS = REPAIR_DOCUMENT_TAB_IDS.filter(
-  (id) => id !== 'data' && id !== 'estimate'
-) as Exclude<RepairDocumentTabId, 'data' | 'estimate'>[];
+  (id) => id !== 'data' && id !== 'estimate' && id !== 'interactiveFinalEstimate'
+) as Exclude<RepairDocumentTabId, 'data' | 'estimate' | 'interactiveFinalEstimate'>[];
 
 function normalizeTemplateTabId(
   value: string | undefined
-): Exclude<RepairDocumentTabId, 'data' | 'estimate'> {
+): Exclude<RepairDocumentTabId, 'data' | 'estimate' | 'interactiveFinalEstimate'> {
   if (!value) return 'contract';
   const v = normalizeLegacyRepairTabId(value);
   return (TEMPLATE_TAB_IDS as string[]).includes(v)
-    ? (v as Exclude<RepairDocumentTabId, 'data' | 'estimate'>)
+    ? (v as Exclude<RepairDocumentTabId, 'data' | 'estimate' | 'interactiveFinalEstimate'>)
     : 'contract';
 }
 
@@ -191,6 +191,7 @@ function isAddendumSlotEmpty(
 }
 
 type FinalEstimateSummaryRow = {
+  key: string;
   roomName: string;
   workName: string;
   unit: string;
@@ -199,6 +200,44 @@ type FinalEstimateSummaryRow = {
   includedQuantity: number;
   excludedQuantity: number;
 };
+
+type InstallerGradePercent = 0 | 5 | 10;
+
+function parseInstallerGradePercent(rawGrade: string): InstallerGradePercent {
+  const match = rawGrade.match(/\d+/);
+  const rank = match ? Number.parseInt(match[0] ?? '', 10) : NaN;
+  if (!Number.isFinite(rank)) return 0;
+  if (rank >= 6) return 10;
+  if (rank >= 5) return 5;
+  return 0;
+}
+
+function formatInstallerGradeShort(rawGrade: string): string {
+  const match = rawGrade.match(/\d+/);
+  const rank = match ? Number.parseInt(match[0] ?? '', 10) : NaN;
+  if (!Number.isFinite(rank)) return rawGrade.trim() || '—';
+  return `${rank}р`;
+}
+
+function formatInstallerNameShort(fullName: string): string {
+  const parts = fullName
+    .trim()
+    .split(/\s+/)
+    .filter((x) => x.length > 0);
+  if (parts.length === 0) return '—';
+  const surname = parts[0] ?? '';
+  const initials = parts
+    .slice(1, 3)
+    .map((part) => `${part[0]?.toUpperCase() ?? ''}.`)
+    .join('');
+  return `${surname}${initials ? ` ${initials}` : ''}`;
+}
+
+function formatMoneyRubShort(value: number): string {
+  const rounded = Math.round(value);
+  if (Math.abs(value - rounded) < 0.005) return `${rounded}`;
+  return formatMoneyValue(value);
+}
 
 function buildFinalEstimateSummary(form: RepairPackageFormData): {
   rows: FinalEstimateSummaryRow[];
@@ -263,6 +302,7 @@ function buildFinalEstimateSummary(form: RepairPackageFormData): {
     const amount = Math.max(0, item.includedAmount - item.excludedAmount);
     if (quantity <= 0 && amount <= 0) continue;
     rows.push({
+      key: `${item.roomName}::${item.workName}::${item.unit}`,
       roomName: item.roomName,
       workName: item.workName,
       unit: item.unit,
@@ -419,6 +459,7 @@ export function RepairContractDocumentEditorPage({
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [activeTab, setActiveTab] = useState<RepairDocumentTabId>('data');
+  const [activeFinalWorkOrderDocId, setActiveFinalWorkOrderDocId] = useState<string>('common');
   const activeAddendumSlot = useMemo(() => {
     const m = /^addendum([1-5])$/.exec(activeTab);
     return m ? Number(m[1]) : null;
@@ -467,6 +508,8 @@ export function RepairContractDocumentEditorPage({
   const [templateDraftHtml, setTemplateDraftHtml] = useState('');
   const [templateSaving, setTemplateSaving] = useState(false);
   const [estimatePresets, setEstimatePresets] = useState<ContractEstimatePreset[]>([]);
+  const [repairInstallers, setRepairInstallers] = useState<InstallerMaster[]>([]);
+  const [activeRepairInstallerId, setActiveRepairInstallerId] = useState('');
   const [estimateGroups, setEstimateGroups] = useState<ContractEstimateGroup[]>([]);
   /** '' | '__ungrouped__' | id группы — для связки с выбором расчёта. */
   const [estimateAttachGroupKey, setEstimateAttachGroupKey] = useState('');
@@ -719,32 +762,41 @@ export function RepairContractDocumentEditorPage({
         setPackageVersions([]);
       }
       try {
-        const [row, globalTpl, profilesRes, signatoryRes, templateRes, estimateRes, packagesRes] =
-          await Promise.all([
-            getContractDocumentPackage(packageId),
-            getContractDocumentGlobalTemplate('REPAIR', 'contract').catch(() => ({
-              html: null as string | null,
-              updatedAt: null as string | null,
-            })),
-            getContractDocumentExecutorProfiles('REPAIR').catch(() => ({
-              items: [] as ExecutorRequisiteProfile[],
-              updatedAt: null as string | null,
-            })),
-            getContractDocumentSignatoryProfiles('REPAIR').catch(() => ({
-              items: [] as ContractSignatoryProfile[],
-              updatedAt: null as string | null,
-            })),
-            getContractDocumentTemplatePresets('REPAIR').catch(() => ({
-              items: [] as ContractTemplatePreset[],
-              updatedAt: null as string | null,
-            })),
-            getContractDocumentEstimatePresets('REPAIR').catch(() => ({
-              items: [] as ContractEstimatePreset[],
-              groups: [],
-              updatedAt: null as string | null,
-            })),
-            getContractDocumentPackages('REPAIR').catch(() => []),
-          ]);
+        const [
+          row,
+          globalTpl,
+          profilesRes,
+          signatoryRes,
+          templateRes,
+          estimateRes,
+          packagesRes,
+          installersRes,
+        ] = await Promise.all([
+          getContractDocumentPackage(packageId),
+          getContractDocumentGlobalTemplate('REPAIR', 'contract').catch(() => ({
+            html: null as string | null,
+            updatedAt: null as string | null,
+          })),
+          getContractDocumentExecutorProfiles('REPAIR').catch(() => ({
+            items: [] as ExecutorRequisiteProfile[],
+            updatedAt: null as string | null,
+          })),
+          getContractDocumentSignatoryProfiles('REPAIR').catch(() => ({
+            items: [] as ContractSignatoryProfile[],
+            updatedAt: null as string | null,
+          })),
+          getContractDocumentTemplatePresets('REPAIR').catch(() => ({
+            items: [] as ContractTemplatePreset[],
+            updatedAt: null as string | null,
+          })),
+          getContractDocumentEstimatePresets('REPAIR').catch(() => ({
+            items: [] as ContractEstimatePreset[],
+            groups: [],
+            updatedAt: null as string | null,
+          })),
+          getContractDocumentPackages('REPAIR').catch(() => []),
+          getInstallers().catch(() => [] as InstallerMaster[]),
+        ]);
         if (row.kind !== 'REPAIR') {
           setError('Этот пакет относится к другому направлению.');
           return;
@@ -812,6 +864,9 @@ export function RepairContractDocumentEditorPage({
         setSignatoryProfiles(signatoryRes.items ?? []);
         const templates = templateRes.items ?? [];
         setEstimatePresets(estimateRes.items ?? []);
+        setRepairInstallers(
+          (installersRes ?? []).filter((installer) => installer.direction === 'REPAIR')
+        );
         setEstimateGroups(estimateRes.groups ?? []);
         setEstimateAttachGroupKey('');
         setEstimatePresetToAttach('');
@@ -1206,6 +1261,100 @@ export function RepairContractDocumentEditorPage({
     setForm((p) => ({ ...p, workOrder: { ...p.workOrder, [key]: value } }));
     touchPackageData();
   };
+  const toggleRepairInstallerForContract = useCallback(
+    (installerId: string, checked: boolean) => {
+      setForm((p) => {
+        const selected = new Set(p.selectedRepairInstallerIds ?? []);
+        if (checked) selected.add(installerId);
+        else selected.delete(installerId);
+
+        const nextAssignments: RepairPackageFormData['finalEstimateInstallerAssignments'] = {};
+        for (const [rowKey, assignment] of Object.entries(
+          p.finalEstimateInstallerAssignments ?? {}
+        )) {
+          if (!selected.has(assignment.installerId)) continue;
+          nextAssignments[rowKey] = assignment;
+        }
+        return {
+          ...p,
+          selectedRepairInstallerIds: [...selected],
+          finalEstimateInstallerAssignments: nextAssignments,
+        };
+      });
+      touchPackageData();
+    },
+    [touchPackageData]
+  );
+  const activateOrToggleRepairInstaller = useCallback(
+    (installerId: string) => {
+      const isSelected = (form.selectedRepairInstallerIds ?? []).includes(installerId);
+      if (!isSelected) {
+        toggleRepairInstallerForContract(installerId, true);
+        setActiveRepairInstallerId(installerId);
+        return;
+      }
+      if (activeRepairInstallerId === installerId) {
+        toggleRepairInstallerForContract(installerId, false);
+        if ((form.selectedRepairInstallerIds ?? []).length <= 1) {
+          setActiveRepairInstallerId('');
+        } else {
+          const fallback =
+            (form.selectedRepairInstallerIds ?? []).find((id) => id !== installerId) ?? '';
+          setActiveRepairInstallerId(fallback);
+        }
+        return;
+      }
+      setActiveRepairInstallerId(installerId);
+    },
+    [
+      activeRepairInstallerId,
+      form.selectedRepairInstallerIds,
+      toggleRepairInstallerForContract,
+      setActiveRepairInstallerId,
+    ]
+  );
+  const assignInstallerToFinalEstimateRow = useCallback(
+    (rowKey: string, installerId: string) => {
+      setForm((p) => {
+        const selected = new Set(p.selectedRepairInstallerIds ?? []);
+        const nextAssignments = { ...(p.finalEstimateInstallerAssignments ?? {}) };
+        if (!installerId || !selected.has(installerId)) {
+          delete nextAssignments[rowKey];
+        } else {
+          nextAssignments[rowKey] = { installerId };
+        }
+        return { ...p, finalEstimateInstallerAssignments: nextAssignments };
+      });
+      touchPackageData();
+    },
+    [touchPackageData]
+  );
+  const assignInstallerToFinalEstimateRows = useCallback(
+    (rowKeys: string[], installerId: string) => {
+      if (!installerId) return;
+      if (rowKeys.length === 0) return;
+      setForm((p) => {
+        const selected = new Set(p.selectedRepairInstallerIds ?? []);
+        if (!selected.has(installerId)) return p;
+        const nextAssignments = { ...(p.finalEstimateInstallerAssignments ?? {}) };
+        const allAssignedToActive = rowKeys.every(
+          (rowKey) => nextAssignments[rowKey]?.installerId === installerId
+        );
+        if (allAssignedToActive) {
+          for (const rowKey of rowKeys) {
+            delete nextAssignments[rowKey];
+          }
+        } else {
+          for (const rowKey of rowKeys) {
+            nextAssignments[rowKey] = { installerId };
+          }
+        }
+        return { ...p, finalEstimateInstallerAssignments: nextAssignments };
+      });
+      touchPackageData();
+    },
+    [touchPackageData]
+  );
 
   const patchManagerQuestionnaire1 = useCallback(
     (patch: Partial<RepairManagerQuestionnaire1Block>) => {
@@ -1535,6 +1684,57 @@ export function RepairContractDocumentEditorPage({
   }, [form.contract.number, form.contract.date]);
 
   const finalEstimateSummary = useMemo(() => buildFinalEstimateSummary(form), [form]);
+  const selectedRepairInstallers = useMemo(() => {
+    const selectedIds = new Set(form.selectedRepairInstallerIds ?? []);
+    return repairInstallers.filter((installer) => selectedIds.has(installer.id));
+  }, [repairInstallers, form.selectedRepairInstallerIds]);
+  const selectedRepairInstallersById = useMemo(
+    () => new Map(selectedRepairInstallers.map((installer) => [installer.id, installer])),
+    [selectedRepairInstallers]
+  );
+  const installerAssignedCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const assignment of Object.values(form.finalEstimateInstallerAssignments ?? {})) {
+      const installerId = assignment.installerId?.trim() ?? '';
+      if (!installerId) continue;
+      counts.set(installerId, (counts.get(installerId) ?? 0) + 1);
+    }
+    return counts;
+  }, [form.finalEstimateInstallerAssignments]);
+  useEffect(() => {
+    const selected = form.selectedRepairInstallerIds ?? [];
+    if (selected.length === 0) {
+      if (activeRepairInstallerId) setActiveRepairInstallerId('');
+      return;
+    }
+    if (!selected.includes(activeRepairInstallerId)) {
+      setActiveRepairInstallerId(selected[0] ?? '');
+    }
+  }, [form.selectedRepairInstallerIds, activeRepairInstallerId]);
+  useEffect(() => {
+    const allowedIds = new Set(repairInstallers.map((installer) => installer.id));
+    setForm((p) => {
+      const selected = (p.selectedRepairInstallerIds ?? []).filter((id) => allowedIds.has(id));
+      const selectedSet = new Set(selected);
+      const assignments = Object.fromEntries(
+        Object.entries(p.finalEstimateInstallerAssignments ?? {}).filter(([, assignment]) =>
+          selectedSet.has(assignment.installerId)
+        )
+      );
+      if (
+        selected.length === (p.selectedRepairInstallerIds ?? []).length &&
+        Object.keys(assignments).length ===
+          Object.keys(p.finalEstimateInstallerAssignments ?? {}).length
+      ) {
+        return p;
+      }
+      return {
+        ...p,
+        selectedRepairInstallerIds: selected,
+        finalEstimateInstallerAssignments: assignments,
+      };
+    });
+  }, [repairInstallers]);
   const finalEstimateRooms = useMemo(() => {
     const roomMap = new Map<
       string,
@@ -1542,6 +1742,7 @@ export function RepairContractDocumentEditorPage({
         name: string;
         total: number;
         lines: Array<{
+          key: string;
           name: string;
           unit: string;
           quantity: number;
@@ -1560,6 +1761,7 @@ export function RepairContractDocumentEditorPage({
       };
       const price = row.quantity > 0 ? row.amount / row.quantity : 0;
       room.lines.push({
+        key: row.key,
         name: row.workName,
         unit: row.unit,
         quantity: row.quantity,
@@ -1573,33 +1775,378 @@ export function RepairContractDocumentEditorPage({
     }
     return [...roomMap.values()];
   }, [finalEstimateSummary.rows]);
+  const interactiveFinalEstimateSections = useMemo(() => {
+    const rowByKey = new Map(
+      finalEstimateSummary.rows.map((row) => [
+        row.key,
+        {
+          ...row,
+          installerId: form.finalEstimateInstallerAssignments[row.key]?.installerId ?? '',
+        },
+      ])
+    );
+    const consumed = new Set<string>();
+    const sections: Array<{
+      categoryName: string;
+      rooms: Array<{
+        name: string;
+        lines: Array<{
+          key: string;
+          workName: string;
+          unit: string;
+          quantity: number;
+          amount: number;
+          installerId: string;
+        }>;
+      }>;
+    }> = [];
+
+    for (const section of selectedEstimateSections) {
+      const rooms = section.rooms
+        .map((room) => {
+          const lines = room.lines
+            .map((line) => {
+              const key = `${room.name}::${line.name}::${line.unit}`;
+              const row = rowByKey.get(key);
+              if (!row || consumed.has(key)) return null;
+              consumed.add(key);
+              return {
+                key: row.key,
+                workName: row.workName,
+                unit: row.unit,
+                quantity: row.quantity,
+                amount: row.amount,
+                installerId: row.installerId,
+              };
+            })
+            .filter(
+              (
+                row
+              ): row is {
+                key: string;
+                workName: string;
+                unit: string;
+                quantity: number;
+                amount: number;
+                installerId: string;
+              } => Boolean(row)
+            );
+          if (lines.length === 0) return null;
+          return { name: room.name, lines };
+        })
+        .filter(
+          (
+            room
+          ): room is {
+            name: string;
+            lines: Array<{
+              key: string;
+              workName: string;
+              unit: string;
+              quantity: number;
+              amount: number;
+              installerId: string;
+            }>;
+          } => Boolean(room)
+        );
+      if (rooms.length > 0) {
+        sections.push({ categoryName: section.categoryName, rooms });
+      }
+    }
+
+    const ungroupedByRoom = new Map<
+      string,
+      Array<{
+        key: string;
+        workName: string;
+        unit: string;
+        quantity: number;
+        amount: number;
+        installerId: string;
+      }>
+    >();
+    for (const row of rowByKey.values()) {
+      if (consumed.has(row.key)) continue;
+      const roomLines = ungroupedByRoom.get(row.roomName) ?? [];
+      roomLines.push({
+        key: row.key,
+        workName: row.workName,
+        unit: row.unit,
+        quantity: row.quantity,
+        amount: row.amount,
+        installerId: row.installerId,
+      });
+      ungroupedByRoom.set(row.roomName, roomLines);
+    }
+    if (ungroupedByRoom.size > 0) {
+      sections.push({
+        categoryName: '—',
+        rooms: [...ungroupedByRoom.entries()].map(([name, lines]) => ({ name, lines })),
+      });
+    }
+    return sections;
+  }, [finalEstimateSummary.rows, form.finalEstimateInstallerAssignments, selectedEstimateSections]);
+  const unassignedInteractiveRowsCount = useMemo(
+    () =>
+      finalEstimateSummary.rows.filter(
+        (row) => !form.finalEstimateInstallerAssignments[row.key]?.installerId
+      ).length,
+    [finalEstimateSummary.rows, form.finalEstimateInstallerAssignments]
+  );
 
   const finalWorkOrderComputed = useMemo(() => {
     const taxPercent = parsePercentForWorkOrder(form.workOrder.taxPercent);
     const markupPercent = parsePercentForWorkOrder(form.workOrder.markupPercent);
-    const gradeIncreasePercent = normalizeWorkOrderGrade(form.workOrder.gradeIncreasePercent);
-    const gradeFactor = 1 + gradeIncreasePercent / 100;
+    const fallbackGradeIncreasePercent = normalizeWorkOrderGrade(
+      form.workOrder.gradeIncreasePercent
+    );
     const roomTotals: number[] = [];
+    const installerTotalsMap = new Map<
+      string,
+      {
+        installer: InstallerMaster;
+        gradeIncreasePercent: InstallerGradePercent;
+        lineCount: number;
+        total: number;
+      }
+    >();
     const rooms = finalEstimateRooms.map((room) => {
       const lines = room.lines.map((line) => {
+        const assignedInstallerId =
+          form.finalEstimateInstallerAssignments[line.key]?.installerId ?? '';
+        const assignedInstaller = selectedRepairInstallersById.get(assignedInstallerId) ?? null;
+        const gradeIncreasePercent = assignedInstaller
+          ? parseInstallerGradePercent(assignedInstaller.grade)
+          : fallbackGradeIncreasePercent;
+        const gradeFactor = 1 + gradeIncreasePercent / 100;
         const adjustedPrice =
           line.price * (1 - taxPercent / 100) * (1 - markupPercent / 100) * gradeFactor;
         const adjustedAmount =
           line.amount * (1 - taxPercent / 100) * (1 - markupPercent / 100) * gradeFactor;
-        return { ...line, adjustedPrice, adjustedAmount };
+        if (assignedInstaller) {
+          const prev = installerTotalsMap.get(assignedInstaller.id) ?? {
+            installer: assignedInstaller,
+            gradeIncreasePercent,
+            lineCount: 0,
+            total: 0,
+          };
+          prev.lineCount += 1;
+          prev.total += adjustedAmount;
+          installerTotalsMap.set(assignedInstaller.id, prev);
+        }
+        return {
+          ...line,
+          adjustedPrice,
+          adjustedAmount,
+          installerId: assignedInstaller?.id ?? '',
+          installerFullName: assignedInstaller?.fullName ?? '',
+          installerGrade: assignedInstaller?.grade ?? '',
+          installerGradeIncreasePercent: gradeIncreasePercent,
+        };
       });
       const adjustedTotal = lines.reduce((sum, line) => sum + line.adjustedAmount, 0);
       roomTotals.push(adjustedTotal);
       return { ...room, lines, adjustedTotal };
     });
     const total = roomTotals.reduce((sum, x) => sum + x, 0);
-    return { rooms, total };
+    const installerTotals = [...installerTotalsMap.values()].sort((a, b) =>
+      a.installer.fullName.localeCompare(b.installer.fullName, 'ru')
+    );
+    return { rooms, total, installerTotals };
   }, [
     finalEstimateRooms,
     form.workOrder.taxPercent,
     form.workOrder.markupPercent,
     form.workOrder.gradeIncreasePercent,
+    form.finalEstimateInstallerAssignments,
+    selectedRepairInstallersById,
   ]);
+  const finalWorkOrderCategorySections = useMemo(() => {
+    const adjustedByKey = new Map<
+      string,
+      {
+        adjustedAmount: number;
+        quantity: number;
+        unit: string;
+      }
+    >();
+    for (const room of finalWorkOrderComputed.rooms) {
+      for (const line of room.lines) {
+        adjustedByKey.set(line.key, {
+          adjustedAmount: line.adjustedAmount,
+          quantity: line.quantity,
+          unit: line.unit,
+        });
+      }
+    }
+    return interactiveFinalEstimateSections
+      .map((section) => {
+        const rooms = section.rooms
+          .map((room) => {
+            const lines = room.lines
+              .map((line) => {
+                const adjusted = adjustedByKey.get(line.key);
+                if (!adjusted) return null;
+                return {
+                  ...line,
+                  adjustedAmount: adjusted.adjustedAmount,
+                  quantity: adjusted.quantity,
+                  unit: adjusted.unit,
+                };
+              })
+              .filter(
+                (
+                  line
+                ): line is {
+                  key: string;
+                  workName: string;
+                  unit: string;
+                  quantity: number;
+                  amount: number;
+                  installerId: string;
+                  adjustedAmount: number;
+                } => Boolean(line)
+              );
+            if (lines.length === 0) return null;
+            return {
+              ...room,
+              lines,
+              adjustedTotal: lines.reduce((sum, line) => sum + line.adjustedAmount, 0),
+            };
+          })
+          .filter(
+            (
+              room
+            ): room is {
+              name: string;
+              lines: Array<{
+                key: string;
+                workName: string;
+                unit: string;
+                quantity: number;
+                amount: number;
+                installerId: string;
+                adjustedAmount: number;
+              }>;
+              adjustedTotal: number;
+            } => Boolean(room)
+          );
+        if (rooms.length === 0) return null;
+        return {
+          categoryName: section.categoryName,
+          rooms,
+          adjustedTotal: rooms.reduce((sum, room) => sum + room.adjustedTotal, 0),
+        };
+      })
+      .filter(
+        (
+          section
+        ): section is {
+          categoryName: string;
+          rooms: Array<{
+            name: string;
+            lines: Array<{
+              key: string;
+              workName: string;
+              unit: string;
+              quantity: number;
+              amount: number;
+              installerId: string;
+              adjustedAmount: number;
+            }>;
+            adjustedTotal: number;
+          }>;
+          adjustedTotal: number;
+        } => Boolean(section)
+      );
+  }, [finalWorkOrderComputed.rooms, interactiveFinalEstimateSections]);
+  const perInstallerWorkOrders = useMemo(() => {
+    return selectedRepairInstallers
+      .map((installer) => {
+        const categories = finalWorkOrderCategorySections
+          .map((section) => {
+            const rooms = section.rooms
+              .map((room) => {
+                const lines = room.lines.filter((line) => line.installerId === installer.id);
+                if (lines.length === 0) return null;
+                return {
+                  name: room.name,
+                  lines,
+                  adjustedTotal: lines.reduce((sum, line) => sum + line.adjustedAmount, 0),
+                };
+              })
+              .filter(
+                (
+                  room
+                ): room is {
+                  name: string;
+                  lines: Array<{
+                    key: string;
+                    workName: string;
+                    unit: string;
+                    quantity: number;
+                    amount: number;
+                    installerId: string;
+                    adjustedAmount: number;
+                  }>;
+                  adjustedTotal: number;
+                } => Boolean(room)
+              );
+            if (rooms.length === 0) return null;
+            return {
+              categoryName: section.categoryName,
+              rooms,
+              adjustedTotal: rooms.reduce((sum, room) => sum + room.adjustedTotal, 0),
+            };
+          })
+          .filter(
+            (
+              section
+            ): section is {
+              categoryName: string;
+              rooms: Array<{
+                name: string;
+                lines: Array<{
+                  key: string;
+                  workName: string;
+                  unit: string;
+                  quantity: number;
+                  amount: number;
+                  installerId: string;
+                  adjustedAmount: number;
+                }>;
+                adjustedTotal: number;
+              }>;
+              adjustedTotal: number;
+            } => Boolean(section)
+          );
+        const total = categories.reduce((sum, category) => sum + category.adjustedTotal, 0);
+        const lineCount = categories.reduce(
+          (sum, category) =>
+            sum + category.rooms.reduce((rSum, room) => rSum + room.lines.length, 0),
+          0
+        );
+        return {
+          installer,
+          categories,
+          total,
+          lineCount,
+        };
+      })
+      .filter((row) => row.lineCount > 0);
+  }, [selectedRepairInstallers, finalWorkOrderCategorySections]);
+  const activeInstallerWorkOrder = useMemo(() => {
+    if (activeFinalWorkOrderDocId === 'common') return null;
+    return (
+      perInstallerWorkOrders.find((row) => row.installer.id === activeFinalWorkOrderDocId) ?? null
+    );
+  }, [activeFinalWorkOrderDocId, perInstallerWorkOrders]);
+  useEffect(() => {
+    const allowed = new Set(['common', ...perInstallerWorkOrders.map((row) => row.installer.id)]);
+    if (!allowed.has(activeFinalWorkOrderDocId)) {
+      setActiveFinalWorkOrderDocId('common');
+    }
+  }, [perInstallerWorkOrders, activeFinalWorkOrderDocId]);
 
   const applyEstimatePresetIdsToForm = (presetIds: string[]) => {
     if (contractAndEstimateLocked) return;
@@ -1727,7 +2274,7 @@ export function RepairContractDocumentEditorPage({
     () =>
       repairPackageFormForTemplate(formMergedForTemplate, {
         templateTab:
-          activeTab === 'finalEstimate'
+          activeTab === 'finalEstimate' || activeTab === 'interactiveFinalEstimate'
             ? 'estimate'
             : activeTab === 'finalWorkOrder'
               ? 'workOrder'
@@ -1757,7 +2304,12 @@ export function RepairContractDocumentEditorPage({
 
   const renderedDoc = useMemo(() => {
     if (activeTab === 'data') return '';
-    if (activeTab === 'finalEstimate' || activeTab === 'finalWorkOrder') return '';
+    if (
+      activeTab === 'finalEstimate' ||
+      activeTab === 'interactiveFinalEstimate' ||
+      activeTab === 'finalWorkOrder'
+    )
+      return '';
     if (activeTab === 'questionnaire1') {
       return buildManagerQuestionnaire1PrintHtml(repairFormForActiveTemplate);
     }
@@ -2202,8 +2754,10 @@ export function RepairContractDocumentEditorPage({
   };
 
   const handlePrint = () => {
-    if (activeTab === 'estimate') {
-      if (!estimatePrintSheetRef.current) return;
+    if (activeTab === 'estimate' || activeTab === 'finalWorkOrder') {
+      const printTargetId = activeTab === 'estimate' ? 'estimate-sheet' : 'work-order-sheet';
+      const target = document.querySelector(`[data-print-target='${printTargetId}']`);
+      if (!target) return;
       document.body.classList.add(BODY_PRINT_ESTIMATE_CLASS);
       const cleanup = (): void => {
         document.body.classList.remove(BODY_PRINT_ESTIMATE_CLASS);
@@ -2213,7 +2767,12 @@ export function RepairContractDocumentEditorPage({
       window.print();
       return;
     }
-    if (activeTab === 'finalEstimate' || activeTab === 'finalWorkOrder') return;
+    if (
+      activeTab === 'finalEstimate' ||
+      activeTab === 'interactiveFinalEstimate' ||
+      activeTab === 'finalWorkOrder'
+    )
+      return;
     if (!renderedDoc) return;
     const printTitle =
       activeTab === 'contract' || isRepairActTwinOneSheetTab(activeTab)
@@ -2265,7 +2824,11 @@ export function RepairContractDocumentEditorPage({
   const visibleRepairTabs = repairTabOrder.filter((id) =>
     isRepairAddendumTabVisible(id, form.addendumSlotCount)
   );
-  const summaryTabs: RepairDocumentTabId[] = ['finalEstimate', 'finalWorkOrder'];
+  const summaryTabs: RepairDocumentTabId[] = [
+    'interactiveFinalEstimate',
+    'finalEstimate',
+    'finalWorkOrder',
+  ];
   const orderedVisibleRepairTabs = [
     ...visibleRepairTabs.filter((id) => !summaryTabs.includes(id)),
     ...summaryTabs.filter((id) => visibleRepairTabs.includes(id)),
@@ -2682,8 +3245,12 @@ export function RepairContractDocumentEditorPage({
                   : `${REPAIR_DOCUMENT_TAB_LABELS[id]} — перетащите для смены порядка`
               }
               className={`${styles.tab} ${activeTab === id ? styles.tabActive : ''} ${
-                id === 'finalEstimate' || id === 'finalWorkOrder' ? styles.summaryTab : ''
-              } ${id === 'finalEstimate' ? styles.summaryTabFirst : ''} ${
+                id === 'interactiveFinalEstimate' ||
+                id === 'finalEstimate' ||
+                id === 'finalWorkOrder'
+                  ? styles.summaryTab
+                  : ''
+              } ${id === 'interactiveFinalEstimate' ? styles.summaryTabFirst : ''} ${
                 id === 'finalWorkOrder' ? styles.summaryTabLast : ''
               }`}
               onClick={() => handleRepairTabActivate(id)}
@@ -2696,6 +3263,18 @@ export function RepairContractDocumentEditorPage({
                   <RepairTabLockIcon />
                 ) : null}
                 <span>{REPAIR_DOCUMENT_TAB_LABELS_SHORT[id]}</span>
+                {id === 'interactiveFinalEstimate' ? (
+                  <span
+                    className={`${styles.repairTabUnassignedBadge} ${
+                      unassignedInteractiveRowsCount === 0
+                        ? styles.repairTabUnassignedBadgeDone
+                        : styles.repairTabUnassignedBadgePending
+                    }`}
+                    title="Количество неприкреплённых позиций"
+                  >
+                    {unassignedInteractiveRowsCount}
+                  </span>
+                ) : null}
               </span>
             </button>
           ))}
@@ -3682,6 +4261,223 @@ export function RepairContractDocumentEditorPage({
             </div>
           </div>
         </div>
+      ) : activeTab === 'interactiveFinalEstimate' ? (
+        <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
+          <div className={styles.formGrid}>
+            <div className={styles.sectionCard}>
+              <div className={styles.interactiveEstimateTitleRow}>
+                <h3 className={`${styles.sectionTitle} ${styles.estimateSectionTitle}`}>
+                  Интерактивная итоговая смета
+                </h3>
+                <span
+                  className={`${styles.interactiveUnassignedBadge} ${
+                    unassignedInteractiveRowsCount === 0
+                      ? styles.interactiveUnassignedBadgeDone
+                      : styles.interactiveUnassignedBadgePending
+                  }`}
+                  title="Количество неприкреплённых позиций"
+                >
+                  {unassignedInteractiveRowsCount}
+                </span>
+              </div>
+              <div className={styles.field} style={{ marginBottom: 12 }}>
+                {repairInstallers.length === 0 ? (
+                  <p className={styles.hint} style={{ margin: '6px 0 0' }}>
+                    Список мастеров пуст. Добавьте мастеров в разделе CRM → Мастера.
+                  </p>
+                ) : (
+                  <div className={styles.workCategoryButtons}>
+                    {repairInstallers.map((installer) => {
+                      const isSelected = (form.selectedRepairInstallerIds ?? []).includes(
+                        installer.id
+                      );
+                      const isActive = activeRepairInstallerId === installer.id;
+                      const assignedCount = installerAssignedCounts.get(installer.id) ?? 0;
+                      const isMarked = assignedCount > 0;
+                      return (
+                        <button
+                          key={installer.id}
+                          type="button"
+                          className={`${styles.workCategoryButton} ${
+                            isMarked ? styles.workCategoryButtonMarked : ''
+                          } ${isActive ? styles.workCategoryButtonActive : ''}`}
+                          onClick={() => activateOrToggleRepairInstaller(installer.id)}
+                          title={
+                            isSelected
+                              ? isActive
+                                ? 'Активный мастер (нажмите, чтобы убрать из договора)'
+                                : 'Выбранный мастер (нажмите, чтобы сделать активным)'
+                              : 'Нажмите, чтобы выбрать и сделать активным'
+                          }
+                        >
+                          <span>
+                            {installer.fullName} ({formatInstallerGradeShort(installer.grade)})
+                          </span>
+                          <span
+                            className={`${styles.installerAssignedCountBadge} ${
+                              assignedCount === 0 ? styles.installerAssignedCountBadgeZero : ''
+                            }`}
+                          >
+                            {assignedCount}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {interactiveFinalEstimateSections.length === 0 ? (
+                <p className={styles.estimateA4Empty}>Нет данных для назначения мастеров.</p>
+              ) : (
+                interactiveFinalEstimateSections.map((section) => (
+                  <section
+                    key={`interactive-section-${section.categoryName}`}
+                    className={`${styles.estimateA4CategorySection} ${styles.interactiveEstimateCategorySection}`}
+                  >
+                    {(() => {
+                      const sectionRowKeys = section.rooms.flatMap((room) =>
+                        room.lines.map((line) => line.key)
+                      );
+                      const isSectionAssignedToActive =
+                        Boolean(activeRepairInstallerId) &&
+                        sectionRowKeys.length > 0 &&
+                        sectionRowKeys.every(
+                          (rowKey) =>
+                            form.finalEstimateInstallerAssignments[rowKey]?.installerId ===
+                            activeRepairInstallerId
+                        );
+                      return (
+                        <div className={styles.interactiveEstimateCategoryHeader}>
+                          <p
+                            className={`${styles.estimateA4Meta} ${styles.interactiveEstimateCategoryMeta}`}
+                          >
+                            Категория работ: <strong>{section.categoryName}</strong>
+                            ;&nbsp;&nbsp;&nbsp;&nbsp;Помещений: {section.rooms.length}
+                          </p>
+                          <button
+                            type="button"
+                            className={`${styles.secondaryBtn} ${styles.interactiveEstimateAssignBtn}`}
+                            disabled={!activeRepairInstallerId}
+                            onClick={() =>
+                              assignInstallerToFinalEstimateRows(
+                                sectionRowKeys,
+                                activeRepairInstallerId
+                              )
+                            }
+                          >
+                            {isSectionAssignedToActive
+                              ? 'Снять активного с категории'
+                              : 'Назначить активного на категорию'}
+                          </button>
+                        </div>
+                      );
+                    })()}
+                    {section.rooms.map((room, roomIndex) => (
+                      <section
+                        key={`interactive-room-${section.categoryName}-${room.name}-${roomIndex}`}
+                        className={`${styles.estimateA4Room} ${styles.interactiveEstimateRoom}`}
+                      >
+                        <div
+                          className={`${styles.estimateA4RoomHeader} ${styles.interactiveEstimateRoomHeader}`}
+                        >
+                          <span>
+                            {roomIndex + 1}. {room.name}
+                          </span>
+                          <button
+                            type="button"
+                            className={`${styles.secondaryBtn} ${styles.interactiveEstimateAssignBtn}`}
+                            disabled={!activeRepairInstallerId}
+                            onClick={() =>
+                              assignInstallerToFinalEstimateRows(
+                                room.lines.map((line) => line.key),
+                                activeRepairInstallerId
+                              )
+                            }
+                          >
+                            {Boolean(activeRepairInstallerId) &&
+                            room.lines.length > 0 &&
+                            room.lines.every(
+                              (line) =>
+                                form.finalEstimateInstallerAssignments[line.key]?.installerId ===
+                                activeRepairInstallerId
+                            )
+                              ? 'Снять активного с помещения'
+                              : 'Назначить активного на помещение'}
+                          </button>
+                        </div>
+                        <table
+                          className={`${styles.estimateA4Table} ${styles.interactiveEstimateTable}`}
+                        >
+                          <thead>
+                            <tr>
+                              <th>№</th>
+                              <th>Работа</th>
+                              <th>Кол-во</th>
+                              <th className={styles.interactiveEstimateInstallerCol}>Мастер</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {room.lines.map((line, lineIndex) => (
+                              <tr
+                                key={line.key}
+                                className={`${styles.interactiveEstimateRow} ${
+                                  activeRepairInstallerId &&
+                                  line.installerId &&
+                                  line.installerId === activeRepairInstallerId
+                                    ? styles.interactiveEstimateRowActiveInstaller
+                                    : ''
+                                }`}
+                                onClick={() => {
+                                  if (!activeRepairInstallerId) return;
+                                  assignInstallerToFinalEstimateRow(
+                                    line.key,
+                                    activeRepairInstallerId
+                                  );
+                                }}
+                                title={
+                                  activeRepairInstallerId
+                                    ? 'Нажмите, чтобы назначить активного мастера на позицию'
+                                    : 'Сначала выберите активного мастера'
+                                }
+                              >
+                                <td>{lineIndex + 1}</td>
+                                <td>{line.workName}</td>
+                                <td>{formatMoneyValue(line.quantity)}</td>
+                                <td className={styles.interactiveEstimateInstallerCol}>
+                                  {line.installerId ? (
+                                    <div className={styles.interactiveAssignedInstaller}>
+                                      <span>
+                                        {selectedRepairInstallersById.get(line.installerId)
+                                          ?.fullName ?? 'Назначен'}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        className={`${styles.secondaryBtn} ${styles.interactiveAssignedInstallerClearBtn}`}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          assignInstallerToFinalEstimateRow(line.key, '');
+                                        }}
+                                      >
+                                        Снять
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <span className={styles.hint}>Не назначен</span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </section>
+                    ))}
+                  </section>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
       ) : activeTab === 'finalEstimate' ? (
         <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
           <div className={styles.formGrid}>
@@ -3847,58 +4643,184 @@ export function RepairContractDocumentEditorPage({
                 доп. соглашениям, с вычетом работ из блока «Непроводимые ремонтно-отделочные
                 работы».
               </p>
+              <div
+                className={styles.tabBar}
+                style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}
+              >
+                <button
+                  type="button"
+                  className={`${styles.tab} ${activeFinalWorkOrderDocId === 'common' ? styles.tabActive : ''}`}
+                  onClick={() => setActiveFinalWorkOrderDocId('common')}
+                >
+                  Общий заказ-наряд
+                </button>
+                {perInstallerWorkOrders.map((doc) => (
+                  <button
+                    key={doc.installer.id}
+                    type="button"
+                    className={`${styles.tab} ${
+                      activeFinalWorkOrderDocId === doc.installer.id ? styles.tabActive : ''
+                    }`}
+                    onClick={() => setActiveFinalWorkOrderDocId(doc.installer.id)}
+                  >
+                    {formatInstallerNameShort(doc.installer.fullName)} (
+                    {formatInstallerGradeShort(doc.installer.grade)})
+                  </button>
+                ))}
+                <button type="button" className={styles.secondaryBtn} onClick={handlePrint}>
+                  Печать документа
+                </button>
+              </div>
               <div className={styles.estimateA4Wrap}>
-                <article className={styles.estimateA4Sheet}>
-                  <p className={styles.estimateA4AppendixRef}>
-                    Приложение к договору № {estimateAppendixContractRef.num} от{' '}
-                    {estimateAppendixContractRef.date}
-                  </p>
+                <article className={styles.estimateA4Sheet} data-print-target="work-order-sheet">
+                  <div className={styles.estimateA4Meta} style={{ marginBottom: 10 }}>
+                    <p style={{ margin: '0 0 3px' }}>
+                      <strong>Договор:</strong> № {estimateAppendixContractRef.num} от{' '}
+                      {estimateAppendixContractRef.date}
+                    </p>
+                    <p style={{ margin: '0 0 3px' }}>
+                      <strong>Адрес:</strong> {formMergedForTemplate.object.objectAddress || '—'}
+                    </p>
+                    <p style={{ margin: '0 0 3px' }}>
+                      <strong>Заказчик:</strong> {formMergedForTemplate.customer.fullName || '—'}
+                    </p>
+                    <p style={{ margin: 0 }}>
+                      <strong>Телефон заказчика:</strong>{' '}
+                      {formMergedForTemplate.customer.phone || '—'}
+                    </p>
+                  </div>
                   {finalWorkOrderComputed.rooms.length === 0 ? (
                     <p className={styles.estimateA4Empty}>Нет данных для итогового заказ-наряда.</p>
+                  ) : activeInstallerWorkOrder ? (
+                    <>
+                      <h4 className={styles.estimateA4Title}>
+                        Заказ-наряд мастера: {activeInstallerWorkOrder.installer.fullName} (
+                        {formatInstallerGradeShort(activeInstallerWorkOrder.installer.grade)})
+                      </h4>
+                      {activeInstallerWorkOrder.categories.map((section) => (
+                        <section
+                          key={`installer-doc-category-${activeInstallerWorkOrder.installer.id}-${section.categoryName}`}
+                          className={styles.estimateA4CategorySection}
+                        >
+                          <p className={styles.estimateA4Meta}>
+                            Категория работ: <strong>{section.categoryName}</strong>
+                          </p>
+                          {section.rooms.map((room, roomIndex) => (
+                            <section
+                              key={`installer-doc-room-${activeInstallerWorkOrder.installer.id}-${section.categoryName}-${room.name}-${roomIndex}`}
+                              className={styles.estimateA4Room}
+                            >
+                              <div className={styles.estimateA4RoomHeader}>
+                                <span>
+                                  {roomIndex + 1}. {room.name}
+                                </span>
+                                <strong>{formatMoneyValue(room.adjustedTotal)} руб.</strong>
+                              </div>
+                              <table className={styles.estimateA4Table}>
+                                <thead>
+                                  <tr>
+                                    <th>№</th>
+                                    <th>Вид работ</th>
+                                    <th>Кол-во</th>
+                                    {form.workOrder.showLineAmounts ? <th>Стоимость</th> : null}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {room.lines.map((line, lineIndex) => (
+                                    <tr
+                                      key={`${line.key}-installer-doc-${activeInstallerWorkOrder.installer.id}`}
+                                    >
+                                      <td>{lineIndex + 1}</td>
+                                      <td>{line.workName}</td>
+                                      <td>
+                                        {formatMoneyValue(line.quantity)} {line.unit || ''}
+                                      </td>
+                                      {form.workOrder.showLineAmounts ? (
+                                        <td>{formatMoneyValue(line.adjustedAmount)}</td>
+                                      ) : null}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </section>
+                          ))}
+                        </section>
+                      ))}
+                      <p className={styles.estimateA4Total}>
+                        Итого по мастеру:{' '}
+                        <strong>{formatMoneyValue(activeInstallerWorkOrder.total)} руб.</strong>
+                      </p>
+                    </>
                   ) : (
                     <>
                       <h4 className={styles.estimateA4Title}>Итоговый заказ-наряд</h4>
-                      {finalWorkOrderComputed.rooms.map((room, roomIndex) => (
+                      {finalWorkOrderCategorySections.map((section) => (
                         <section
-                          key={`final-work-order-room-${room.name}-${roomIndex}`}
-                          className={styles.estimateA4Room}
+                          key={`final-work-order-category-${section.categoryName}`}
+                          className={styles.estimateA4CategorySection}
                         >
-                          <div className={styles.estimateA4RoomHeader}>
-                            <span>
-                              {roomIndex + 1}. {room.name}
-                            </span>
-                            <strong>{formatMoneyValue(room.adjustedTotal)} руб.</strong>
-                          </div>
-                          <table className={styles.estimateA4Table}>
-                            <thead>
-                              <tr>
-                                <th>№</th>
-                                <th>Вид работ</th>
-                                <th>Кол-во</th>
-                                {form.workOrder.showLineAmounts ? <th>Стоимость</th> : null}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {room.lines.map((line, lineIndex) => (
-                                <tr key={`${room.name}-${line.name}-wo-${lineIndex}`}>
-                                  <td>{lineIndex + 1}</td>
-                                  <td>{line.name}</td>
-                                  <td>
-                                    {formatMoneyValue(line.quantity)} {line.unit || ''}
-                                  </td>
-                                  {form.workOrder.showLineAmounts ? (
-                                    <td>{formatMoneyValue(line.adjustedAmount)}</td>
-                                  ) : null}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                          <p className={styles.estimateA4Meta}>
+                            Категория работ: <strong>{section.categoryName}</strong>
+                          </p>
+                          {section.rooms.map((room, roomIndex) => (
+                            <section
+                              key={`final-work-order-room-${section.categoryName}-${room.name}-${roomIndex}`}
+                              className={styles.estimateA4Room}
+                            >
+                              <div className={styles.estimateA4RoomHeader}>
+                                <span>
+                                  {roomIndex + 1}. {room.name}
+                                </span>
+                                <strong>{formatMoneyValue(room.adjustedTotal)} руб.</strong>
+                              </div>
+                              <table className={styles.estimateA4Table}>
+                                <thead>
+                                  <tr>
+                                    <th>№</th>
+                                    <th>Вид работ</th>
+                                    <th>Кол-во</th>
+                                    {form.workOrder.showLineAmounts ? <th>Стоимость</th> : null}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {room.lines.map((line, lineIndex) => (
+                                    <tr key={`${room.name}-${line.workName}-wo-${lineIndex}`}>
+                                      <td>{lineIndex + 1}</td>
+                                      <td>{line.workName}</td>
+                                      <td>
+                                        {formatMoneyValue(line.quantity)} {line.unit || ''}
+                                      </td>
+                                      {form.workOrder.showLineAmounts ? (
+                                        <td>{formatMoneyValue(line.adjustedAmount)}</td>
+                                      ) : null}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </section>
+                          ))}
                         </section>
                       ))}
                       <p className={styles.estimateA4Total}>
                         Итого по итоговому заказ-наряду:{' '}
                         <strong>{formatMoneyValue(finalWorkOrderComputed.total)} руб.</strong>
                       </p>
+                      {finalWorkOrderComputed.installerTotals.length > 0 ? (
+                        <section className={styles.estimateA4Room}>
+                          <div className={styles.estimateA4RoomHeader}>
+                            <span>Итоги по мастерам</span>
+                          </div>
+                          <div className={styles.estimateA4Meta}>
+                            {finalWorkOrderComputed.installerTotals.map((row) => (
+                              <p key={row.installer.id} style={{ margin: '0 0 4px' }}>
+                                {formatInstallerNameShort(row.installer.fullName)} (
+                                {formatInstallerGradeShort(row.installer.grade)}, {row.lineCount}
+                                шт.) - {formatMoneyRubShort(row.total)}руб.
+                              </p>
+                            ))}
+                          </div>
+                        </section>
+                      ) : null}
                     </>
                   )}
                 </article>

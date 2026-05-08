@@ -242,6 +242,10 @@ export interface RepairWorkOrderBlock {
   gradeIncreasePercent: 0 | 5 | 10;
 }
 
+export interface RepairInstallerAssignment {
+  installerId: string;
+}
+
 /** Статус доп. соглашения: после «подписано/оплачено» расчёты к этому Д/с не меняются. */
 export type RepairAddendumSlotStatus = 'OPEN' | 'SIGNED' | 'PAID';
 
@@ -275,6 +279,13 @@ export interface RepairPackageFormData {
   contract: RepairContractBlock;
   estimate: RepairEstimateBlock;
   workOrder: RepairWorkOrderBlock;
+  /** Мастера направления «Ремонт», прикрепленные к договору. */
+  selectedRepairInstallerIds: string[];
+  /**
+   * Назначение мастера на строки из итоговой сметы.
+   * Ключ: `${roomName}::${workName}::${unit}`.
+   */
+  finalEstimateInstallerAssignments: Record<string, RepairInstallerAssignment>;
   /**
    * Объект (группа расчётов) для сметы договора и всех Д/с: `''` — не выбран, `__ungrouped__` — вне объекта, иначе id группы.
    * При непустой смете фактически совпадает с объектом первого прикреплённого расчёта.
@@ -366,6 +377,8 @@ export function defaultRepairPackageFormData(): RepairPackageFormData {
       showLineAmounts: true,
       gradeIncreasePercent: 0,
     },
+    selectedRepairInstallerIds: [],
+    finalEstimateInstallerAssignments: {},
     estimateObjectGroupKey: '',
     managerQuestionnaire1: defaultRepairManagerQuestionnaire1Block(),
     postWorkQuestionnaire2: defaultRepairPostWorkQuestionnaire2Block(),
@@ -588,6 +601,29 @@ export function mergeRepairPackageFormData(raw: unknown): RepairPackageFormData 
   ) as unknown as RepairPackageFormData;
   return {
     ...merged,
+    selectedRepairInstallerIds: Array.isArray(
+      (merged as unknown as Record<string, unknown>).selectedRepairInstallerIds
+    )
+      ? (
+          (merged as unknown as Record<string, unknown>).selectedRepairInstallerIds as unknown[]
+        ).filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+      : [],
+    finalEstimateInstallerAssignments: isPlainObject(
+      (merged as unknown as Record<string, unknown>).finalEstimateInstallerAssignments
+    )
+      ? Object.fromEntries(
+          Object.entries(
+            (merged as unknown as Record<string, unknown>)
+              .finalEstimateInstallerAssignments as Record<string, unknown>
+          )
+            .map(([key, value]) => [
+              key.trim(),
+              isPlainObject(value) ? String(value.installerId ?? '').trim() : '',
+            ])
+            .filter(([key, installerId]) => key.length > 0 && installerId.length > 0)
+            .map(([key, installerId]) => [key, { installerId }])
+        )
+      : {},
     managerQuestionnaire1: normalizeManagerQuestionnaire1AfterLoad(
       merged.managerQuestionnaire1 as RepairManagerQuestionnaire1Block & {
         trafficSource?: string;
@@ -798,6 +834,18 @@ export function mergeRepairPackageFormWithPreviewFallback(
       showLineAmounts: form.workOrder.showLineAmounts,
       gradeIncreasePercent: form.workOrder.gradeIncreasePercent,
     },
+    selectedRepairInstallerIds: form.selectedRepairInstallerIds.filter(
+      (id) => id.trim().length > 0
+    ),
+    finalEstimateInstallerAssignments: Object.fromEntries(
+      Object.entries(form.finalEstimateInstallerAssignments ?? {}).filter(
+        ([key, value]) =>
+          key.trim().length > 0 &&
+          value &&
+          typeof value.installerId === 'string' &&
+          value.installerId.trim().length > 0
+      )
+    ),
     estimateObjectGroupKey: pickStr(form.estimateObjectGroupKey, fallback.estimateObjectGroupKey),
     managerQuestionnaire1: {
       ...fallback.managerQuestionnaire1,

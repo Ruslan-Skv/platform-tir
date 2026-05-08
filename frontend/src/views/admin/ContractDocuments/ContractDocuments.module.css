@@ -714,7 +714,11 @@
 
 .repairPackageTabBarCompact .summaryTab {
   background: transparent;
-  border-color: transparent;
+  border-top: 1px solid var(--admin-info-border);
+  border-bottom: 1px solid var(--admin-info-border);
+  border-left: 1px solid var(--admin-info-border);
+  border-right: none;
+  border-radius: 0;
 }
 
 .repairPackageTabBarCompact .summaryTabFirst {
@@ -727,10 +731,7 @@
 }
 
 .repairPackageTabBarCompact .summaryTabLast {
-  border-top: 1px solid var(--admin-info-border);
-  border-bottom: 1px solid var(--admin-info-border);
   border-right: 1px solid var(--admin-info-border);
-  border-left: none;
   border-top-right-radius: 7px;
   border-bottom-right-radius: 7px;
 }
@@ -3272,6 +3273,217 @@
   flex-shrink: 0;
 }
 
+.workCategoryButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-xs);
+}
+
+.workCategoryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  border-radius: var(--admin-radius-pill);
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
+  cursor: pointer;
+}
+
+.installerAssignedCountBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.installerAssignedCountBadgeZero {
+  background: var(--admin-border-strong);
+  color: var(--admin-text-secondary);
+}
+
+.workCategoryButtonActive {
+  background: var(--admin-accent);
+  border-color: var(--admin-accent);
+  color: var(--admin-surface);
+}
+
+.workCategoryButtonMarked {
+  border-color: var(--admin-success-deep);
+  background: var(--admin-success-bg);
+  color: var(--admin-success-deep);
+  font-weight: 700;
+}
+
+.workCategoryButtonActive.workCategoryButtonMarked {
+  border-color: var(--admin-success-text-strong);
+  background: linear-gradient(
+    180deg,
+    var(--admin-success-bright) 0%,
+    var(--admin-success-strong) 100%
+  );
+  color: var(--admin-surface);
+  box-shadow: 0 0 0 2px var(--admin-overlay-color-102);
+}
+
+.interactiveEstimateRow {
+  cursor: pointer;
+}
+
+.interactiveEstimateRow:hover td {
+  background: var(--admin-surface-soft);
+}
+
+.interactiveEstimateRowActiveInstaller td {
+  background: var(--admin-success-bg);
+}
+
+.interactiveAssignedInstaller {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-sm);
+}
+
+.interactiveAssignedInstallerClearBtn {
+  padding: 2px 6px;
+  min-height: 20px;
+  font-size: var(--admin-font-size-2xs);
+  line-height: 1;
+  border-radius: var(--admin-radius-sm);
+}
+
+.interactiveEstimateTable {
+  font-size: var(--admin-font-size-xs);
+  table-layout: auto;
+}
+
+.interactiveEstimateTable th,
+.interactiveEstimateTable td {
+  font-size: var(--admin-font-size-xs);
+}
+
+.interactiveEstimateTable th {
+  text-align: center;
+}
+
+.interactiveEstimateInstallerCol {
+  width: 260px;
+  min-width: 260px;
+}
+
+.interactiveEstimateTable th.interactiveEstimateInstallerCol {
+  text-align: center;
+}
+
+.interactiveEstimateCategoryMeta {
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
+  color: var(--admin-text-primary);
+  margin-bottom: 0;
+}
+
+.interactiveEstimateCategoryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-top: var(--admin-space-md);
+  margin-bottom: 4px;
+  padding-top: var(--admin-space-xs);
+  border-top: 1px solid var(--admin-border);
+}
+
+.interactiveEstimateCategorySection:first-of-type .interactiveEstimateCategoryHeader {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.interactiveEstimateAssignBtn {
+  padding: 2px 8px;
+  min-height: 22px;
+  font-size: var(--admin-font-size-2xs);
+  line-height: 1;
+}
+
+.interactiveEstimateRoomHeader {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  font-size: var(--admin-font-size-2xs);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.interactiveEstimateRoom {
+  margin-bottom: var(--admin-space-sm);
+}
+
+.interactiveEstimateTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.interactiveUnassignedBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.interactiveUnassignedBadgePending {
+  background: #dc2626;
+  color: #fff;
+}
+
+.interactiveUnassignedBadgeDone {
+  background: var(--admin-success-strong);
+  color: #fff;
+}
+
+.repairTabUnassignedBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.repairTabUnassignedBadgePending {
+  background: #dc2626;
+  color: #fff;
+}
+
+.repairTabUnassignedBadgeDone {
+  background: var(--admin-success-strong);
+  color: #fff;
+}
+
 .postWorkQ2RatingRow {
   display: flex;
   flex-wrap: wrap;
@@ -3868,11 +4080,14 @@
   }
 
   :global(body.body-print-estimate-sheet) [data-print-target='estimate-sheet'],
-  :global(body.body-print-estimate-sheet) [data-print-target='estimate-sheet'] * {
+  :global(body.body-print-estimate-sheet) [data-print-target='estimate-sheet'] *,
+  :global(body.body-print-estimate-sheet) [data-print-target='work-order-sheet'],
+  :global(body.body-print-estimate-sheet) [data-print-target='work-order-sheet'] * {
     visibility: visible !important;
   }
 
-  :global(body.body-print-estimate-sheet) [data-print-target='estimate-sheet'] {
+  :global(body.body-print-estimate-sheet) [data-print-target='estimate-sheet'],
+  :global(body.body-print-estimate-sheet) [data-print-target='work-order-sheet'] {
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
