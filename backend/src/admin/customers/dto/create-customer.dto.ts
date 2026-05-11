@@ -6,6 +6,7 @@ import {
   IsNumber,
   IsArray,
   IsDateString,
+  IsObject,
 } from 'class-validator';
 
 export enum LeadSource {
@@ -35,6 +36,12 @@ export enum DealStage {
   NEGOTIATION = 'NEGOTIATION',
   WON = 'WON',
   LOST = 'LOST',
+}
+
+export enum CustomerEntityType {
+  PERSON = 'PERSON',
+  COMPANY = 'COMPANY',
+  ENTREPRENEUR = 'ENTREPRENEUR',
 }
 
 export class CreateCustomerDto {
@@ -92,4 +99,12 @@ export class CreateCustomerDto {
   @IsDateString()
   @IsOptional()
   nextFollowUp?: string;
+
+  @IsEnum(CustomerEntityType)
+  @IsOptional()
+  entityType?: CustomerEntityType;
+
+  @IsObject()
+  @IsOptional()
+  extendedProfile?: Record<string, unknown>;
 }

@@ -551,6 +551,10 @@ model Customer {
   lastName      String?
   company       String?
   position      String?
+  /// PERSON | COMPANY | ENTREPRENEUR — вид заказчика в CRM
+  entityType      String? @map("entity_type") @db.VarChar(32)
+  /// Реквизиты в формате блока «Заказчик» пакета «Ремонт» (JSON)
+  extendedProfile Json?   @map("extended_profile")
   source        LeadSource     @default(WEBSITE)
   status        CustomerStatus @default(LEAD)
   stage         DealStage      @default(NEW)

@@ -301,9 +301,14 @@ export function InstallersPage() {
         title="Добавить мастера"
         size="md"
       >
-        <form className={styles.modalForm} onSubmit={handleCreate}>
-          <p className={styles.modalHint}>Заполните карточку мастера для выбранного направления.</p>
+        <form data-modal-form onSubmit={handleCreate}>
           <InstallerForm values={formValues} onChange={setFormValues} formError={formError} />
+          <div data-modal-footer-info data-modal-tone="success" role="status">
+            <span data-modal-footer-info-icon aria-hidden="true" />
+            <span data-modal-footer-info-text>
+              Заполните карточку мастера для выбранного направления.
+            </span>
+          </div>
           <ModalActions
             onCancel={() => {
               setCreateModalOpen(false);
@@ -323,9 +328,12 @@ export function InstallersPage() {
         title="Изменить мастера"
         size="md"
       >
-        <form className={styles.modalForm} onSubmit={handleEdit}>
-          <p className={styles.modalHint}>Изменения применятся сразу после сохранения.</p>
+        <form data-modal-form onSubmit={handleEdit}>
           <InstallerForm values={formValues} onChange={setFormValues} formError={formError} />
+          <div data-modal-footer-info data-modal-tone="success" role="status">
+            <span data-modal-footer-info-icon aria-hidden="true" />
+            <span data-modal-footer-info-text>Изменения применятся сразу после сохранения.</span>
+          </div>
           <ModalActions
             onCancel={() => {
               setEditItem(null);
@@ -361,12 +369,11 @@ function InstallerForm({
 }) {
   return (
     <>
-      <div className={styles.formGrid}>
-        <div className={styles.formGroup}>
+      <div data-modal-form-grid>
+        <div data-modal-form-group>
           <label htmlFor="installer-direction">Направление *</label>
           <select
             id="installer-direction"
-            className={styles.input}
             value={values.direction}
             onChange={(e) =>
               onChange({ ...values, direction: e.target.value as InstallerDirection })
@@ -380,11 +387,10 @@ function InstallerForm({
           </select>
         </div>
 
-        <div className={styles.formGroup}>
+        <div data-modal-form-group>
           <label htmlFor="installer-grade">Разряд *</label>
           <input
             id="installer-grade"
-            className={styles.input}
             type="text"
             value={values.grade}
             onChange={(e) => onChange({ ...values, grade: e.target.value })}
@@ -393,11 +399,10 @@ function InstallerForm({
         </div>
       </div>
 
-      <div className={styles.formGroup}>
+      <div data-modal-form-group>
         <label htmlFor="installer-fullname">ФИО *</label>
         <input
           id="installer-fullname"
-          className={styles.input}
           type="text"
           value={values.fullName}
           onChange={(e) => onChange({ ...values, fullName: e.target.value })}
@@ -405,18 +410,18 @@ function InstallerForm({
         />
       </div>
 
-      {formError && <p className={styles.formError}>{formError}</p>}
+      {formError ? <p data-modal-form-error>{formError}</p> : null}
     </>
   );
 }
 
 function ModalActions({ onCancel, submitting }: { onCancel: () => void; submitting: boolean }) {
   return (
-    <div className={styles.formActions}>
-      <button type="button" className={styles.cancelBtn} onClick={onCancel} disabled={submitting}>
+    <div data-modal-form-actions>
+      <button type="button" data-modal-btn="secondary" onClick={onCancel} disabled={submitting}>
         Отмена
       </button>
-      <button type="submit" className={styles.submitBtn} disabled={submitting}>
+      <button type="submit" data-modal-btn="primary" disabled={submitting}>
         {submitting ? 'Сохранение…' : 'Сохранить'}
       </button>
     </div>

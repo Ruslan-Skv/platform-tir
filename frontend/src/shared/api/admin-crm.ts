@@ -917,7 +917,37 @@ export async function deleteContract(id: string): Promise<void> {
   if (!res.ok) throw new Error('Не удалось удалить договор');
 }
 
+/** Договор заказчика в сводке (порядок: от новых к старым, как в выборке API) */
+export interface ContractCustomerContractRow {
+  id: string;
+  contractNumber: string | null;
+  contractDate: string | null;
+  totalAmount: number;
+}
+
+/** Блок «Заказчик» из последней версии пакета «Ремонт» по договору (если есть). */
+export interface DocumentCustomerBlock {
+  type: string;
+  fullName: string;
+  representativeFullNameNominative: string;
+  representativeFullNameGenitive: string;
+  organizationName: string;
+  representativePositionNominative: string;
+  representativePositionGenitive: string;
+  inn: string;
+  ogrn: string;
+  address: string;
+  phone: string;
+  email: string;
+  bankDetails: string;
+  passportSeriesNumber: string;
+  passportIssuedBy: string;
+  passportIssueDate: string;
+}
+
 export interface ContractCustomer {
+  /** Карточка клиента в CRM, если договоры привязаны к ней */
+  customerId: string | null;
   customerName: string;
   customerPhone: string;
   customerAddress: string | null;
@@ -926,7 +956,38 @@ export interface ContractCustomer {
   lastContractDate: string | null;
   lastContractId: string | null;
   lastContractNumber: string | null;
+  /** Все договоры этого заказчика в CRM (для карточки и ссылок) */
+  contracts: ContractCustomerContractRow[];
+  /** Реквизиты как на вкладке «Данные» пакета «Ремонт», если пакет сохранён */
+  documentCustomer?: DocumentCustomerBlock | null;
   manager: { id: string; firstName: string | null; lastName: string | null } | null;
+}
+
+export type CrmCustomerEntityType = 'PERSON' | 'COMPANY' | 'ENTREPRENEUR';
+
+export interface CreateCrmCustomerPayload {
+  email: string;
+  firstName: string;
+  lastName?: string;
+  phone?: string;
+  company?: string;
+  position?: string;
+  entityType?: CrmCustomerEntityType;
+  extendedProfile?: Record<string, unknown>;
+  notes?: string;
+}
+
+export async function createCrmCustomer(payload: CreateCrmCustomerPayload): Promise<unknown> {
+  const res = await apiFetch(`${API_URL}/admin/customers`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err.message || 'Не удалось создать заказчика');
+  }
+  return res.json();
 }
 
 export async function getContractCustomers(
@@ -935,7 +996,7 @@ export async function getContractCustomers(
   const url = new URL(`${API_URL}/admin/contracts/customers`);
   if (search?.trim()) url.searchParams.set('search', search.trim());
   const res = await apiFetch(String(url), { headers: getAdminAuthHeaders() });
-  if (!res.ok) throw new Error('Не удалось загрузить клиентов');
+  if (!res.ok) throw new Error('Не удалось загрузить заказчиков');
   return res.json();
 }
 

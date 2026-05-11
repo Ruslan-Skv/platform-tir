@@ -10,15 +10,14 @@ export class CustomersService {
   constructor(private prisma: PrismaService) {}
 
   async create(createCustomerDto: CreateCustomerDto) {
+    const { extendedProfile, dealValue, nextFollowUp, ...rest } = createCustomerDto;
     return this.prisma.customer.create({
       data: {
-        ...createCustomerDto,
-        dealValue: createCustomerDto.dealValue
-          ? new Prisma.Decimal(createCustomerDto.dealValue)
-          : null,
-        nextFollowUp: createCustomerDto.nextFollowUp
-          ? new Date(createCustomerDto.nextFollowUp)
-          : null,
+        ...rest,
+        dealValue: dealValue != null ? new Prisma.Decimal(dealValue) : null,
+        nextFollowUp: nextFollowUp ? new Date(nextFollowUp) : null,
+        extendedProfile:
+          extendedProfile != null ? (extendedProfile as Prisma.InputJsonValue) : undefined,
       },
       include: {
         manager: {
@@ -163,17 +162,25 @@ export class CustomersService {
 
   async update(id: string, updateCustomerDto: UpdateCustomerDto) {
     await this.findOne(id);
+    const { extendedProfile, dealValue, nextFollowUp, ...rest } = updateCustomerDto;
     return this.prisma.customer.update({
       where: { id },
       data: {
-        ...updateCustomerDto,
+        ...rest,
         dealValue:
-          updateCustomerDto.dealValue !== undefined
-            ? new Prisma.Decimal(updateCustomerDto.dealValue)
+          dealValue !== undefined
+            ? dealValue != null
+              ? new Prisma.Decimal(dealValue)
+              : null
             : undefined,
-        nextFollowUp: updateCustomerDto.nextFollowUp
-          ? new Date(updateCustomerDto.nextFollowUp)
-          : undefined,
+        nextFollowUp:
+          nextFollowUp !== undefined ? (nextFollowUp ? new Date(nextFollowUp) : null) : undefined,
+        extendedProfile:
+          extendedProfile === undefined
+            ? undefined
+            : extendedProfile === null
+              ? Prisma.DbNull
+              : (extendedProfile as Prisma.InputJsonValue),
       },
       include: {
         manager: {

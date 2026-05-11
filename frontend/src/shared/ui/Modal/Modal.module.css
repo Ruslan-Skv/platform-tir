@@ -1,3 +1,14 @@
+/**
+ * Модалка в портале (body), вне .adminLayout. На .panel заданы --modal-* и --admin-* (фолбэки).
+ *
+ * Разметка контента (единый вид для CRM и др.):
+ * — read-only: <div data-modal-readonly-panel data-modal-density="compact"?><dl data-modal-detail>…</dl></div> (как форма: серый фон снаружи, белая сетка, подпись + «поле» как input; compact — плотнее отступы и шрифты)
+ * — форма: <form data-modal-form data-modal-density="compact"?><div data-modal-form-actions>…</div></form> (compact — плотнее; подсказки см. data-modal-footer-info)
+ * — цветная плашка снизу (как «Заказ обратного звонка»): <div data-modal-footer-info data-modal-tone="success|info" role="status"><span data-modal-footer-info-icon aria-hidden="true" /><span data-modal-footer-info-text>…</span></div> — перед data-modal-form-actions или data-modal-actions
+ * — нижние действия: <div data-modal-actions>…</div> или data-modal-align="center"
+ * — кнопки/ссылки: data-modal-btn="primary" | "secondary"
+ */
+
 .dialog {
   position: relative;
   z-index: 50;
@@ -25,20 +36,75 @@
   display: flex;
   justify-content: center;
   min-height: 100%;
-  padding: 1rem;
+  padding: var(--admin-space-xl, 12px);
 }
 
+/* Локальные токены панели (светлая тема по умолчанию) */
 .panel {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 1rem;
-  box-shadow: 0 10px 40px rgb(0 0 0 / 12%);
+  --modal-surface: var(--admin-surface, #ffffff);
+  --modal-border: var(--admin-border, #e5e7eb);
+  --modal-shadow: var(--admin-shadow-popover, 0 10px 40px rgb(0 0 0 / 12%));
+  --modal-text: var(--admin-text-secondary, #374151);
+  --modal-text-muted: var(--admin-text-muted, #6b7280);
+  --modal-text-strong: var(--admin-text-primary, #111827);
+  --modal-radius: var(--admin-radius-xl, 12px);
+  --modal-fs-base: var(--admin-font-size-base, 0.9375rem);
+  --modal-fs-sm: var(--admin-font-size-sm, 0.8125rem);
+  --modal-fs-xs: var(--admin-font-size-xs, 0.75rem);
+  --modal-fs-title: var(--admin-font-size-xl, 1.0625rem);
+  --modal-lh: var(--admin-line-height-base, 1.35);
+  --modal-lh-tight: var(--admin-line-height-sm, 1.25);
+  --modal-space-sm: var(--admin-space-sm, 6px);
+  --modal-space-md: var(--admin-space-md, 8px);
+  --modal-space-lg: var(--admin-space-lg, 10px);
+  --modal-space-xl: var(--admin-space-xl, 12px);
+  --modal-space-2xl: var(--admin-space-2xl, 16px);
+  --modal-space-3xl: var(--admin-space-3xl, 20px);
+  --modal-font-stack:
+    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  /* Админ-токены в портале (вне .adminLayout) — формы и карточки внутри модалки */
+  --admin-space-2xs: 2px;
+  --admin-space-xs: 4px;
+  --admin-space-sm: 6px;
+  --admin-space-md: 8px;
+  --admin-space-lg: 10px;
+  --admin-space-xl: 12px;
+  --admin-space-2xl: 16px;
+  --admin-space-3xl: 20px;
+  --admin-space-4xl: 24px;
+  --admin-font-size-xs: 0.75rem;
+  --admin-font-size-sm: 0.8125rem;
+  --admin-font-size-base: 0.9375rem;
+  --admin-text-primary: #111827;
+  --admin-text-secondary: #374151;
+  --admin-text-muted: #6b7280;
+  --admin-surface: #ffffff;
+  --admin-surface-soft: #f3f4f6;
+  --admin-surface-muted: #f9fafb;
+  --admin-border: #e5e7eb;
+  --admin-border-strong: #d1d5db;
+  --admin-accent: rgb(var(--color-accent-rgb, 217 6 82));
+  --admin-radius-sm: 6px;
+  --admin-radius-md: 8px;
+  --admin-radius-lg: 10px;
+  --admin-shadow-focus-soft: 0 0 0 3px rgb(var(--color-accent-rgb, 217 6 82) / 0.22);
+  --admin-error-text: #b91c1c;
+
+  background: var(--modal-surface);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--modal-radius);
+  box-shadow: var(--modal-shadow);
   box-sizing: border-box;
+  color: var(--modal-text);
   color-scheme: light;
+  font-family: var(--modal-font-stack);
+  font-size: var(--modal-fs-base);
+  line-height: var(--modal-lh);
   margin: 0 auto;
   max-height: 90vh;
   overflow-y: auto;
-  padding: 1.5rem;
+  padding: var(--admin-space-3xl, 20px) var(--admin-space-2xl, 16px);
   position: relative;
   transform: translateY(0);
   transition: all 0.3s;
@@ -62,10 +128,11 @@
 }
 
 .header {
-  align-items: center;
+  align-items: flex-start;
   display: flex;
-  margin-bottom: 1.5rem;
-  padding: 0 0.5rem;
+  gap: var(--modal-space-md);
+  margin-bottom: var(--admin-space-3xl, 20px);
+  padding: 0 var(--modal-space-sm);
 }
 
 .headerWithTitle {
@@ -77,21 +144,24 @@
 }
 
 .title {
-  color: #111827;
-  font-size: 1.125rem;
+  color: var(--modal-text-strong);
+  flex: 1;
+  font-size: var(--modal-fs-title);
   font-weight: 600;
-  line-height: 1.75rem;
+  line-height: var(--modal-lh-tight);
   margin: 0;
+  padding-right: var(--modal-space-2xl);
 }
 
 .closeButton {
   appearance: none;
   background: transparent;
   border: 1px solid rgb(17 24 39 / 0.08);
-  border-radius: 0.375rem;
+  border-radius: var(--admin-radius-md, 8px);
   box-shadow: none;
-  color: #9ca3af;
-  padding: 0.5rem;
+  color: var(--modal-text-muted);
+  flex-shrink: 0;
+  padding: var(--modal-space-sm);
   transition:
     background 0.2s ease,
     border-color 0.2s ease,
@@ -100,16 +170,15 @@
 }
 
 .closeButton:hover {
-  background: #f3f4f6;
+  background: var(--admin-surface-soft, #f3f4f6);
   border-color: rgb(17 24 39 / 0.12);
-  color: #4b5563;
+  color: var(--modal-text);
 }
 
 .closeButton:focus {
   outline: none;
 }
 
-/* Слабее глобального розового ring у кнопок в globals.css */
 .closeButton:focus-visible {
   border-color: rgb(17 24 39 / 0.14);
   box-shadow: 0 0 0 1px rgb(17 24 39 / 0.1);
@@ -121,32 +190,533 @@
   width: 1.25rem;
 }
 
+/* Контент: базовая типографика без отдельных модулей в каждой модалке */
 .content {
   position: relative;
 }
 
-/* Темная тема для Modal */
+.content :where(p) {
+  color: var(--modal-text);
+  font-size: var(--modal-fs-sm);
+  line-height: var(--modal-lh);
+  margin: 0 0 var(--modal-space-xl);
+}
+
+.content :where(p:last-child) {
+  margin-bottom: 0;
+}
+
+.content :where(h2, h3, h4) {
+  color: var(--modal-text-strong);
+  font-weight: 600;
+  line-height: var(--modal-lh-tight);
+  margin: var(--modal-space-2xl) 0 var(--modal-space-md);
+}
+
+.content :where(h2:first-child, h3:first-child, h4:first-child) {
+  margin-top: 0;
+}
+
+.content :where(h2) {
+  font-size: var(--admin-font-size-lg, 1rem);
+}
+
+.content :where(h3) {
+  font-size: var(--modal-fs-sm);
+}
+
+.content :where(h4) {
+  font-size: var(--modal-fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.content :where(ul, ol) {
+  color: var(--modal-text);
+  font-size: var(--modal-fs-sm);
+  line-height: var(--modal-lh);
+  margin: 0 0 var(--modal-space-xl);
+  padding-left: 1.25rem;
+}
+
+.content :where(li + li) {
+  margin-top: var(--modal-space-sm);
+}
+
+/* Ссылки в тексте (не трогаем «кнопочные» <a> с классом в корне модалки) */
+.content :where(p a, li a, td a) {
+  color: var(--admin-link, var(--admin-accent, #2563eb));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.content :where(p a:hover, li a:hover, td a:hover) {
+  color: var(--admin-link-hover, #1d4ed8);
+}
+
+.content :where(strong, b) {
+  color: var(--modal-text-strong);
+  font-weight: 600;
+}
+
+.content :where(label) {
+  color: var(--modal-text-muted);
+  display: block;
+  font-size: var(--modal-fs-xs);
+  font-weight: 600;
+  margin-bottom: var(--modal-space-sm);
+}
+
+.content :where(hr) {
+  border: none;
+  border-top: 1px solid var(--modal-border);
+  margin: var(--modal-space-xl) 0;
+}
+
+.content :where(code) {
+  background: var(--admin-surface-muted, #f3f4f6);
+  border-radius: var(--admin-radius-sm, 6px);
+  color: var(--modal-text-strong);
+  font-size: 0.8em;
+  padding: 0.1em 0.35em;
+}
+
+.content :where(pre) {
+  background: var(--admin-surface-muted, #f3f4f6);
+  border-radius: var(--admin-radius-md, 8px);
+  color: var(--modal-text);
+  font-size: var(--modal-fs-xs);
+  line-height: 1.45;
+  overflow-x: auto;
+  padding: var(--modal-space-xl);
+}
+
+/* dl без разметки — только сброс отступов (карточки: data-modal-detail) */
+.content :where(dl:not([data-modal-detail])) {
+  margin: 0;
+}
+
+/* Read-only блок: тот же визуальный каркас, что у <form data-modal-form> + сетки мастеров */
+.content :where([data-modal-readonly-panel]) {
+  background: var(--admin-surface-soft, #f3f4f6);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--admin-radius-lg, 10px);
+  box-sizing: border-box;
+  margin: 0;
+  padding: var(--admin-space-xl, 12px);
+}
+
+.content :where([data-modal-readonly-panel] dl[data-modal-detail]) {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--admin-radius-md, 8px);
+  box-sizing: border-box;
+  column-gap: var(--admin-space-lg, 10px);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  padding: var(--admin-space-lg, 10px);
+  row-gap: var(--admin-space-lg, 10px);
+}
+
+.content :where(dl[data-modal-detail] > [data-modal-field]) {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs, 4px);
+  margin: 0;
+  min-width: 0;
+}
+
+.content :where(dl[data-modal-detail] > [data-modal-field][data-modal-span]) {
+  grid-column: 1 / -1;
+}
+
+.content :where(dl[data-modal-detail] dt) {
+  color: var(--modal-text);
+  display: block;
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  margin: 0;
+  text-transform: none;
+}
+
+.content :where(dl[data-modal-detail] dd) {
+  align-items: flex-start;
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-md, 8px);
+  box-sizing: border-box;
+  color: var(--modal-text);
+  display: flex;
+  font-size: var(--admin-font-size-base, 0.9375rem);
+  font-weight: 400;
+  line-height: 1.35;
+  margin: 0;
+  min-height: 40px;
+  padding: var(--admin-space-md, 8px) var(--admin-space-xl, 12px);
+  word-break: break-word;
+}
+
+.content :where(dl[data-modal-detail] dd code) {
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  padding: 0;
+}
+
+/* Список ссылок на договоры внутри read-only ячейки */
+.content :where(dl[data-modal-detail] > [data-modal-field]:has([data-modal-contract-links]) > dd) {
+  background: transparent;
+  border: none;
+  display: block;
+  min-height: 0;
+  padding: 0;
+}
+
+.content :where([data-modal-contract-links]) {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-md, 8px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs, 4px);
+  list-style: none;
+  margin: 0;
+  max-height: 14rem;
+  overflow-y: auto;
+  padding: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
+  width: 100%;
+}
+
+.content :where([data-modal-contract-links] li) {
+  line-height: 1.35;
+  margin: 0;
+}
+
+.content :where([data-modal-contract-links] a) {
+  color: var(--admin-link, var(--admin-accent, #2563eb));
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.content :where([data-modal-contract-links] a:hover) {
+  color: var(--admin-link-hover, #1d4ed8);
+}
+
+@media (max-width: 520px) {
+  .content :where([data-modal-readonly-panel] dl[data-modal-detail]) {
+    grid-template-columns: 1fr;
+  }
+
+  .content
+    :where(
+      [data-modal-readonly-panel] dl[data-modal-detail] > [data-modal-field][data-modal-span]
+    ) {
+    grid-column: auto;
+  }
+}
+
+/* Компактная карточка (напр. заказчик CRM): меньше отступы, поля и шрифты */
+.content :where([data-modal-readonly-panel][data-modal-density='compact']) {
+  padding: var(--admin-space-sm, 6px);
+}
+
+.content :where([data-modal-readonly-panel][data-modal-density='compact'] dl[data-modal-detail]) {
+  column-gap: var(--admin-space-md, 8px);
+  padding: var(--admin-space-md, 8px);
+  row-gap: var(--admin-space-sm, 6px);
+}
+
+.content
+  :where(
+    [data-modal-readonly-panel][data-modal-density='compact']
+      dl[data-modal-detail]
+      > [data-modal-field]
+  ) {
+  gap: 2px;
+}
+
+.content
+  :where([data-modal-readonly-panel][data-modal-density='compact'] dl[data-modal-detail] dt) {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.content
+  :where([data-modal-readonly-panel][data-modal-density='compact'] dl[data-modal-detail] dd) {
+  border-radius: var(--admin-radius-sm, 6px);
+  font-size: 0.75rem;
+  line-height: 1.3;
+  min-height: 1.75rem;
+  padding: 3px var(--admin-space-md, 8px);
+}
+
+.content
+  :where([data-modal-readonly-panel][data-modal-density='compact'] [data-modal-contract-links]) {
+  border-radius: var(--admin-radius-sm, 6px);
+  gap: 2px;
+  max-height: 10rem;
+  padding: 4px var(--admin-space-sm, 6px);
+}
+
+.content
+  :where([data-modal-readonly-panel][data-modal-density='compact'] [data-modal-contract-links] a) {
+  font-size: 0.6875rem;
+}
+
+/* Форма в модалке: <form data-modal-form> … */
+.content :where([data-modal-form]) {
+  background: var(--admin-surface-soft, #f3f4f6);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--admin-radius-lg, 10px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xl, 12px);
+  padding: var(--admin-space-xl, 12px);
+}
+
+.content :where([data-modal-form-hint]) {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--admin-radius-md, 8px);
+  color: var(--modal-text);
+  font-size: var(--modal-fs-sm);
+  line-height: 1.45;
+  margin: 0;
+  padding: var(--admin-space-md, 8px) var(--admin-space-lg, 10px);
+}
+
+.content :where([data-modal-form-grid]) {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--admin-radius-md, 8px);
+  display: grid;
+  gap: var(--admin-space-lg, 10px);
+  grid-template-columns: 1fr 1fr;
+  padding: var(--admin-space-lg, 10px);
+}
+
+.content :where([data-modal-form-group]) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs, 4px);
+  margin-bottom: var(--admin-space-sm, 6px);
+}
+
+.content :where([data-modal-form-grid] [data-modal-form-group]) {
+  margin-bottom: 0;
+}
+
+.content :where([data-modal-form-group]:last-child) {
+  margin-bottom: 0;
+}
+
+.content :where([data-modal-form-group] > label) {
+  color: var(--modal-text);
+  display: block;
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-bottom: 0;
+}
+
+.content
+  :where(
+    [data-modal-form] input:not([type='checkbox']):not([type='radio']),
+    [data-modal-form] select,
+    [data-modal-form] textarea
+  ) {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-md, 8px);
+  box-sizing: border-box;
+  color: var(--modal-text);
+  font-size: var(--admin-font-size-base, 0.9375rem);
+  min-height: 40px;
+  padding: var(--admin-space-md, 8px) var(--admin-space-xl, 12px);
+  width: 100%;
+}
+
+.content
+  :where(
+    [data-modal-form] input:not([type='checkbox']):not([type='radio']):focus,
+    [data-modal-form] select:focus,
+    [data-modal-form] textarea:focus
+  ) {
+  border-color: var(--admin-accent, rgb(var(--color-accent-rgb, 217 6 82)));
+  box-shadow: var(--admin-shadow-focus-soft);
+  outline: none;
+}
+
+.content :where([data-modal-form-error]) {
+  background: rgb(254 226 226 / 0.65);
+  border: 1px solid rgb(252 165 165 / 0.8);
+  border-radius: var(--admin-radius-md, 8px);
+  color: var(--admin-error-text, #b91c1c);
+  font-size: var(--modal-fs-sm);
+  line-height: 1.4;
+  margin: var(--admin-space-xs, 4px) 0 0;
+  padding: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
+}
+
+.content :where([data-modal-form-actions]) {
+  align-items: center;
+  background: var(--admin-surface, #ffffff);
+  border-radius: var(--admin-radius-md, 8px);
+  border-top: 1px solid var(--modal-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-xl, 12px);
+  justify-content: flex-end;
+  margin-top: var(--admin-space-md, 8px);
+  padding: var(--admin-space-lg, 10px);
+  padding-top: var(--admin-space-lg, 10px);
+}
+
+/* Инфо-плашка внизу (аналог CallbackForm: зелёный success / синий info) */
+.content :where([data-modal-footer-info]) {
+  align-items: center;
+  border-radius: var(--admin-radius-md, 8px);
+  box-sizing: border-box;
+  display: flex;
+  gap: var(--admin-space-md, 8px);
+  line-height: 1.35;
+  margin-top: var(--admin-space-md, 8px);
+  padding: var(--admin-space-md, 8px) var(--admin-space-lg, 10px);
+}
+
+.content :where([data-modal-readonly-panel] + [data-modal-footer-info]) {
+  margin-top: var(--admin-space-xl, 12px);
+}
+
+/* Компактная карточка: футер и действия (ниже общих правил footer / actions) */
+.content [data-modal-readonly-panel][data-modal-density='compact'] + [data-modal-footer-info] {
+  font-size: 0.75rem;
+  gap: var(--admin-space-sm, 6px);
+  line-height: 1.3;
+  margin-top: var(--admin-space-md, 8px);
+  padding: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
+}
+
+.content
+  [data-modal-readonly-panel][data-modal-density='compact']
+  + [data-modal-footer-info]
+  [data-modal-footer-info-icon] {
+  height: 0.875rem;
+  width: 0.875rem;
+}
+
+.content :where([data-modal-footer-info] + [data-modal-form-actions]) {
+  margin-top: var(--admin-space-sm, 6px);
+}
+
+.content :where([data-modal-footer-info-icon]) {
+  background-color: currentcolor;
+  display: block;
+  flex-shrink: 0;
+  height: 1rem;
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='black' fill-rule='evenodd' d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  width: 1rem;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='black' fill-rule='evenodd' d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+}
+
+.content :where([data-modal-footer-info][data-modal-tone='info'] [data-modal-footer-info-icon]) {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='black' fill-rule='evenodd' d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 102 0v-3a1 1 0 00-1-1z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='black' fill-rule='evenodd' d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 102 0v-3a1 1 0 00-1-1z' clip-rule='evenodd'/%3E%3C/svg%3E");
+}
+
+.content :where([data-modal-footer-info-text]) {
+  color: inherit;
+  flex: 1;
+  font-size: var(--modal-fs-sm);
+  min-width: 0;
+}
+
+.content :where([data-modal-footer-info][data-modal-tone='success']) {
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  color: #166534;
+}
+
+.content :where([data-modal-footer-info][data-modal-tone='info']) {
+  background: rgb(224 242 254);
+  border: 1px solid rgb(125 211 252);
+  color: rgb(30 58 138);
+}
+
+@media (max-width: 768px) {
+  .content :where([data-modal-form-grid]) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.content :where(table) {
+  border-collapse: collapse;
+  font-size: var(--modal-fs-sm);
+  width: 100%;
+}
+
+.content :where(th, td) {
+  border: 1px solid var(--modal-border);
+  padding: var(--modal-space-md) var(--modal-space-lg);
+  text-align: left;
+}
+
+.content :where(th) {
+  background: var(--admin-surface-muted, #f9fafb);
+  color: var(--modal-text-muted);
+  font-size: var(--modal-fs-xs);
+  font-weight: 600;
+}
+
+/* Тёмная тема: переопределяем локальные токены панели */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .panel {
-  background: #1f2937;
-  border: 1px solid #374151;
-  box-shadow: 0 10px 40px rgb(0 0 0 / 35%);
+  --modal-surface: var(--admin-surface, #1f2937);
+  --modal-border: var(--admin-border-strong, #374151);
+  --modal-shadow: var(--admin-shadow-popover-dark, 0 10px 40px rgb(0 0 0 / 35%));
+  --modal-text: var(--admin-text-secondary, #d1d5db);
+  --modal-text-muted: var(--admin-text-muted, #9ca3af);
+  --modal-text-strong: var(--admin-text-inverse, #f9fafb);
+  --admin-text-primary: #f3f4f6;
+  --admin-text-secondary: #d1d5db;
+  --admin-text-muted: #9ca3af;
+  --admin-surface: #1f2937;
+  --admin-surface-soft: #374151;
+  --admin-surface-muted: #111827;
+  --admin-border: #374151;
+  --admin-border-strong: #4b5563;
+  --admin-error-text: #fca5a5;
   color-scheme: dark;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: #d1d5db;
+  color: var(--modal-text-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .closeButton {
   background: transparent;
   border-color: rgb(255 255 255 / 0.08);
-  color: #9ca3af;
+  color: var(--modal-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .closeButton:hover {
   background: rgb(255 255 255 / 0.06);
   border-color: rgb(255 255 255 / 0.12);
-  color: #d1d5db;
+  color: var(--modal-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .closeButton:focus-visible {
@@ -154,10 +724,226 @@
   box-shadow: 0 0 0 1px rgb(255 255 255 / 0.1);
 }
 
-/* Мобильная адаптация — модалка по центру экрана (вертикально и горизонтально) */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .content :where(code) {
+  background: rgb(0 0 0 / 0.25);
+  color: var(--modal-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .content :where(pre) {
+  background: rgb(0 0 0 / 0.25);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .content :where(th) {
+  background: rgb(0 0 0 / 0.2);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .content :where([data-modal-form-error]) {
+  background: rgb(127 29 29 / 0.35);
+  border-color: rgb(248 113 113 / 0.35);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .content
+  :where([data-modal-footer-info][data-modal-tone='success']) {
+  background: rgb(22 101 52 / 0.2);
+  border-color: #166534;
+  color: #86efac;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .content
+  :where([data-modal-footer-info][data-modal-tone='info']) {
+  background: rgb(12 74 110 / 0.35);
+  border-color: rgb(56 189 248 / 0.45);
+  color: rgb(186 230 253);
+}
+
+/* Ряд действий внизу модалки: кнопки по ширине контента, не на всю панель */
+.content :where([data-modal-actions]) {
+  align-items: center;
+  border-top: 1px solid var(--modal-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--modal-space-md);
+  justify-content: flex-start;
+  margin-top: var(--modal-space-xl);
+  padding-top: var(--modal-space-xl);
+}
+
+.content :where([data-modal-footer-info] + [data-modal-actions]) {
+  margin-top: var(--admin-space-md, 8px);
+  padding-top: var(--admin-space-lg, 10px);
+}
+
+.content
+  [data-modal-readonly-panel][data-modal-density='compact']
+  + [data-modal-footer-info]
+  + [data-modal-actions] {
+  gap: var(--admin-space-sm, 6px);
+  margin-top: var(--admin-space-sm, 6px);
+  padding-top: var(--admin-space-sm, 6px);
+}
+
+.content :where([data-modal-actions][data-modal-align='center']) {
+  justify-content: center;
+}
+
+.content :where([data-modal-actions]) > :where(button, a) {
+  flex: 0 0 auto;
+  max-width: 100%;
+  width: fit-content;
+}
+
+/* Единые кнопки в зоне действий и в футере формы модалки */
+.content
+  :where(
+    [data-modal-actions] [data-modal-btn='primary'],
+    [data-modal-form-actions] [data-modal-btn='primary']
+  ) {
+  align-items: center;
+  background: var(--admin-accent, rgb(var(--color-accent-rgb, 217 6 82)));
+  border: none;
+  border-radius: var(--admin-radius-md, 8px);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.12);
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--modal-fs-sm);
+  font-weight: 600;
+  justify-content: center;
+  min-height: 40px;
+  padding: var(--admin-space-md, 8px) var(--admin-space-2xl, 16px);
+  text-decoration: none;
+}
+
+.content
+  :where(
+    [data-modal-actions] [data-modal-btn='primary']:hover,
+    [data-modal-form-actions] [data-modal-btn='primary']:hover
+  ) {
+  filter: brightness(1.05);
+}
+
+.content
+  :where(
+    [data-modal-actions] [data-modal-btn='secondary'],
+    [data-modal-form-actions] [data-modal-btn='secondary']
+  ) {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-md, 8px);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+  color: var(--modal-text);
+  cursor: pointer;
+  font-size: var(--modal-fs-sm);
+  min-height: 40px;
+  padding: var(--admin-space-md, 8px) var(--admin-space-2xl, 16px);
+}
+
+.content
+  :where(
+    [data-modal-actions] [data-modal-btn='secondary']:hover,
+    [data-modal-form-actions] [data-modal-btn='secondary']:hover
+  ) {
+  background: var(--admin-surface-soft, #f3f4f6);
+}
+
+.content
+  :where(
+    [data-modal-actions] [data-modal-btn]:disabled,
+    [data-modal-form-actions] [data-modal-btn]:disabled
+  ) {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Компактная форма в модалке (напр. «Новый заказчик в CRM») */
+.content [data-modal-form][data-modal-density='compact'] {
+  border-radius: var(--admin-radius-md, 8px);
+  gap: var(--admin-space-md, 8px);
+  padding: var(--admin-space-md, 8px);
+}
+
+.content [data-modal-form][data-modal-density='compact'] [data-modal-form-grid] {
+  gap: var(--admin-space-sm, 6px);
+  padding: var(--admin-space-md, 8px);
+}
+
+.content [data-modal-form][data-modal-density='compact'] [data-modal-form-group] {
+  gap: 2px;
+  margin-bottom: var(--admin-space-xs, 4px);
+}
+
+.content [data-modal-form][data-modal-density='compact'] [data-modal-form-group] > label {
+  font-size: 0.6875rem;
+  line-height: 1.2;
+}
+
+.content
+  [data-modal-form][data-modal-density='compact']
+  input:not([type='checkbox']):not([type='radio']),
+.content [data-modal-form][data-modal-density='compact'] select {
+  border-radius: var(--admin-radius-sm, 6px);
+  font-size: 0.75rem;
+  min-height: 1.75rem;
+  padding: 3px var(--admin-space-md, 8px);
+}
+
+.content [data-modal-form][data-modal-density='compact'] textarea {
+  border-radius: var(--admin-radius-sm, 6px);
+  font-size: 0.75rem;
+  min-height: 3.25rem;
+  padding: 4px var(--admin-space-md, 8px);
+}
+
+.content [data-modal-form][data-modal-density='compact'] [data-modal-form-error] {
+  font-size: 0.75rem;
+  line-height: 1.3;
+  margin-top: 2px;
+  padding: 4px var(--admin-space-sm, 6px);
+}
+
+.content [data-modal-form][data-modal-density='compact'] [data-modal-footer-info] {
+  font-size: 0.75rem;
+  gap: var(--admin-space-sm, 6px);
+  line-height: 1.3;
+  margin-top: var(--admin-space-sm, 6px);
+  padding: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
+}
+
+.content [data-modal-form][data-modal-density='compact'] [data-modal-footer-info-text] {
+  font-size: 0.75rem;
+}
+
+.content [data-modal-form][data-modal-density='compact'] [data-modal-footer-info-icon] {
+  height: 0.875rem;
+  width: 0.875rem;
+}
+
+.content [data-modal-form][data-modal-density='compact'] [data-modal-form-actions] {
+  gap: var(--admin-space-md, 8px);
+  margin-top: var(--admin-space-sm, 6px);
+  padding: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
+}
+
+.content
+  [data-modal-form][data-modal-density='compact']
+  [data-modal-form-actions]
+  [data-modal-btn='primary'],
+.content
+  [data-modal-form][data-modal-density='compact']
+  [data-modal-form-actions]
+  [data-modal-btn='secondary'] {
+  border-radius: var(--admin-radius-sm, 6px);
+  font-size: 0.75rem;
+  min-height: 2rem;
+  padding: var(--admin-space-xs, 4px) var(--admin-space-xl, 12px);
+}
+
+/* Мобильная адаптация */
 @media (width <= 767px) {
   .container {
-    padding: 1rem 0.5rem;
+    padding: var(--modal-space-xl) var(--modal-space-sm);
   }
 
   .center {
@@ -166,31 +952,30 @@
     justify-content: center;
     min-height: 100%;
     min-height: 100dvh;
-    padding: 0.5rem;
+    padding: var(--modal-space-sm);
     width: 100%;
   }
 
   .panel {
-    border-radius: 1rem;
+    border-radius: var(--modal-radius);
     margin: 0;
     max-height: 95vh;
     max-width: none !important;
-    padding: 1rem 0.5rem;
+    padding: var(--modal-space-xl) var(--modal-space-sm);
     width: 100%;
   }
 
   .header {
-    margin-bottom: 1rem;
-    padding: 0 0.25rem;
+    margin-bottom: var(--modal-space-xl);
+    padding: 0 var(--modal-space-sm);
   }
 
   .closeButton {
     position: absolute;
-    right: 0.5rem;
-    top: 0.5rem;
+    right: var(--modal-space-sm);
+    top: var(--modal-space-sm);
   }
 
-  /* Поверх базовых отступов панели (две классовые специфичности) */
   .panel.panelCompactMobile {
     padding: 0.625rem 0.5rem;
   }
@@ -200,14 +985,13 @@
   }
 
   .title.titleCompactMobile {
-    font-size: 0.9375rem;
+    font-size: var(--admin-font-size-base, 0.9375rem);
     font-weight: 600;
-    line-height: 1.25rem;
+    line-height: var(--modal-lh-tight);
     padding-right: 2.25rem;
   }
 }
 
-/* Для очень маленьких экранов */
 @media (width <= 480px) {
   .container {
     padding: 0.75rem 0.35rem;
@@ -225,7 +1009,7 @@
   }
 
   .title {
-    font-size: 1rem;
+    font-size: var(--admin-font-size-lg, 1rem);
   }
 
   .panel.panelCompactMobile {
@@ -237,19 +1021,18 @@
   }
 
   .title.titleCompactMobile {
-    font-size: 0.875rem;
+    font-size: var(--admin-font-size-sm, 0.8125rem);
     line-height: 1.2rem;
     padding-right: 2rem;
   }
 }
 
-/* Десктопные улучшения */
 @media (width >= 768px) {
   .panel {
-    padding: 1.5rem 1rem;
+    padding: var(--admin-space-3xl, 20px) var(--admin-space-2xl, 16px);
   }
 
   .header {
-    padding: 0 0.75rem;
+    padding: 0 var(--modal-space-md);
   }
 }

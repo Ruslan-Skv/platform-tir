@@ -92,7 +92,6 @@ const baseNavItems: NavItem[] = [
       },
       { label: 'Офисы', href: '/admin/crm/offices', resourceId: 'admin.crm.offices' },
       { label: 'Менеджеры', href: '/admin/crm/managers', resourceId: 'admin.crm.managers' },
-      { label: 'Клиенты', href: '/admin/crm/customers', resourceId: 'admin.crm.customers' },
       { label: 'Заявки с форм', href: '/admin/forms', resourceId: 'admin.forms' },
       { label: 'Чат поддержки', href: '/admin/support', resourceId: 'admin.support' },
       { label: 'Воронка продаж', href: '/admin/crm/funnel', resourceId: 'admin.crm.funnel' },
@@ -167,6 +166,12 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.crm.measurements',
       },
     ],
+  },
+  {
+    label: 'Заказчики',
+    href: '/admin/customers',
+    icon: '👤',
+    resourceId: 'admin.crm.customers',
   },
   {
     label: 'Контент',

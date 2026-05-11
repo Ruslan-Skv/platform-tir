@@ -1,7 +1,5 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { CustomersPage } from '@/views/admin/CRM/Customers/CustomersPage';
-
-export default function AdminCustomersPage() {
-  return <CustomersPage />;
+export default function AdminCrmCustomersRedirect() {
+  redirect('/admin/customers');
 }
