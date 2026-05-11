@@ -7,6 +7,8 @@ import {
   IsArray,
   IsDateString,
   IsObject,
+  ArrayMaxSize,
+  MaxLength,
 } from 'class-validator';
 
 export enum LeadSource {
@@ -58,6 +60,13 @@ export class CreateCustomerDto {
   @IsString()
   @IsOptional()
   phone?: string;
+
+  @IsArray()
+  @ArrayMaxSize(30)
+  @IsString({ each: true })
+  @MaxLength(40, { each: true })
+  @IsOptional()
+  phones?: string[];
 
   @IsString()
   @IsOptional()

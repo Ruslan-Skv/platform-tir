@@ -6,7 +6,7 @@
  * — форма: <form data-modal-form data-modal-density="compact"?><div data-modal-form-actions>…</div></form> (compact — плотнее; подсказки см. data-modal-footer-info)
  * — цветная плашка снизу (как «Заказ обратного звонка»): <div data-modal-footer-info data-modal-tone="success|info" role="status"><span data-modal-footer-info-icon aria-hidden="true" /><span data-modal-footer-info-text>…</span></div> — перед data-modal-form-actions или data-modal-actions
  * — нижние действия: <div data-modal-actions>…</div> или data-modal-align="center"
- * — кнопки/ссылки: data-modal-btn="primary" | "secondary"
+ * — кнопки/ссылки: data-modal-btn="primary" | "secondary" (в т.ч. внутри [data-modal-form], не только в data-modal-form-actions)
  */
 
 .dialog {
@@ -794,11 +794,12 @@
   width: fit-content;
 }
 
-/* Единые кнопки в зоне действий и в футере формы модалки */
+/* Единые кнопки: футер модалки, низ формы и тело формы (напр. «Добавить номер») */
 .content
   :where(
     [data-modal-actions] [data-modal-btn='primary'],
-    [data-modal-form-actions] [data-modal-btn='primary']
+    [data-modal-form-actions] [data-modal-btn='primary'],
+    [data-modal-form] [data-modal-btn='primary']
   ) {
   align-items: center;
   background: var(--admin-accent, rgb(var(--color-accent-rgb, 217 6 82)));
@@ -819,7 +820,8 @@
 .content
   :where(
     [data-modal-actions] [data-modal-btn='primary']:hover,
-    [data-modal-form-actions] [data-modal-btn='primary']:hover
+    [data-modal-form-actions] [data-modal-btn='primary']:hover,
+    [data-modal-form] [data-modal-btn='primary']:hover
   ) {
   filter: brightness(1.05);
 }
@@ -827,7 +829,8 @@
 .content
   :where(
     [data-modal-actions] [data-modal-btn='secondary'],
-    [data-modal-form-actions] [data-modal-btn='secondary']
+    [data-modal-form-actions] [data-modal-btn='secondary'],
+    [data-modal-form] [data-modal-btn='secondary']
   ) {
   background: var(--admin-surface, #ffffff);
   border: 1px solid var(--admin-border-strong, #d1d5db);
@@ -843,7 +846,8 @@
 .content
   :where(
     [data-modal-actions] [data-modal-btn='secondary']:hover,
-    [data-modal-form-actions] [data-modal-btn='secondary']:hover
+    [data-modal-form-actions] [data-modal-btn='secondary']:hover,
+    [data-modal-form] [data-modal-btn='secondary']:hover
   ) {
   background: var(--admin-surface-soft, #f3f4f6);
 }
@@ -851,7 +855,8 @@
 .content
   :where(
     [data-modal-actions] [data-modal-btn]:disabled,
-    [data-modal-form-actions] [data-modal-btn]:disabled
+    [data-modal-form-actions] [data-modal-btn]:disabled,
+    [data-modal-form] [data-modal-btn]:disabled
   ) {
   cursor: not-allowed;
   opacity: 0.6;
@@ -926,14 +931,8 @@
   padding: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
 }
 
-.content
-  [data-modal-form][data-modal-density='compact']
-  [data-modal-form-actions]
-  [data-modal-btn='primary'],
-.content
-  [data-modal-form][data-modal-density='compact']
-  [data-modal-form-actions]
-  [data-modal-btn='secondary'] {
+.content [data-modal-form][data-modal-density='compact'] [data-modal-btn='primary'],
+.content [data-modal-form][data-modal-density='compact'] [data-modal-btn='secondary'] {
   border-radius: var(--admin-radius-sm, 6px);
   font-size: 0.75rem;
   min-height: 2rem;

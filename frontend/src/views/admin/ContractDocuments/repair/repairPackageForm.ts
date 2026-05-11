@@ -28,7 +28,10 @@ export interface RepairCustomerBlock {
   inn: string;
   ogrn: string;
   address: string;
+  /** Основной телефон (первый непустой из `phones`); для шаблонов `{{customer.phone}}`. */
   phone: string;
+  /** Номера по порядку; пустая последняя строка допускается при вводе следующего номера. */
+  phones: string[];
   email: string;
   bankDetails: string;
   passportSeriesNumber: string;
@@ -322,6 +325,7 @@ export function defaultRepairPackageFormData(): RepairPackageFormData {
       ogrn: '',
       address: '',
       phone: '',
+      phones: [''],
       email: '',
       bankDetails: '',
       passportSeriesNumber: '',
@@ -412,6 +416,43 @@ function defaultAddendumSlots(): RepairAddendumSlotsTuple {
     defaultAddendumSlot(),
     defaultAddendumSlot(),
   ];
+}
+
+/** Приводит телефоны заказчика к виду для формы и шаблонов: `phone` = первый непустой из `phones`. */
+export function normalizeRepairCustomerBlock(
+  raw: Partial<RepairCustomerBlock> | RepairCustomerBlock | undefined | null
+): RepairCustomerBlock {
+  const base = defaultRepairPackageFormData().customer;
+  if (!raw || typeof raw !== 'object') return base;
+  const o = { ...base, ...raw } as RepairCustomerBlock & { phones?: unknown };
+
+  let slots: string[] = [];
+  if (Array.isArray(o.phones) && o.phones.length > 0) {
+    slots = o.phones.map((x) => (typeof x === 'string' ? x : ''));
+  } else if ((o.phone ?? '').trim()) {
+    slots = [String(o.phone)];
+  } else {
+    slots = [''];
+  }
+
+  const ordered: string[] = [];
+  const seen = new Set<string>();
+  for (const s of slots) {
+    const t = s.trim();
+    if (t && !seen.has(t)) {
+      seen.add(t);
+      ordered.push(t);
+    }
+  }
+  const hadTrailingBlank = slots.length > 0 && String(slots[slots.length - 1] ?? '').trim() === '';
+  const phonesOut = ordered.length === 0 ? [''] : hadTrailingBlank ? [...ordered, ''] : ordered;
+  const phoneOut = ordered[0] ?? '';
+
+  return {
+    ...o,
+    phones: phonesOut,
+    phone: phoneOut,
+  };
 }
 
 function normalizeAddendumSlotStatus(raw: unknown): RepairAddendumSlotStatus {
@@ -599,8 +640,10 @@ export function mergeRepairPackageFormData(raw: unknown): RepairPackageFormData 
     base as unknown as Record<string, unknown>,
     raw
   ) as unknown as RepairPackageFormData;
+  const mergedCustomer = normalizeRepairCustomerBlock(merged.customer);
   return {
     ...merged,
+    customer: mergedCustomer,
     selectedRepairInstallerIds: Array.isArray(
       (merged as unknown as Record<string, unknown>).selectedRepairInstallerIds
     )
@@ -677,6 +720,7 @@ export function buildRepairTemplatePreviewFallbackData(
       fullName: 'Иванов Иван Иванович',
       address: 'г. Краснодар, ул. Примерная, д. 1',
       phone: '+7 900 000-00-00',
+      phones: ['+7 900 000-00-00'],
     },
     executor: {
       ...base.executor,
@@ -728,7 +772,7 @@ export function mergeRepairPackageFormWithPreviewFallback(
   fallback: RepairPackageFormData
 ): RepairPackageFormData {
   return {
-    customer: {
+    customer: normalizeRepairCustomerBlock({
       ...form.customer,
       type: form.customer.type,
       fullName: pickStr(form.customer.fullName, fallback.customer.fullName),
@@ -753,6 +797,12 @@ export function mergeRepairPackageFormWithPreviewFallback(
       ogrn: pickStr(form.customer.ogrn, fallback.customer.ogrn),
       address: pickStr(form.customer.address, fallback.customer.address),
       phone: pickStr(form.customer.phone, fallback.customer.phone),
+      phones:
+        form.customer.phones?.some((p) => p.trim()) && form.customer.phones.length > 0
+          ? form.customer.phones
+          : fallback.customer.phones?.some((p) => p.trim())
+            ? fallback.customer.phones
+            : [''],
       email: pickStr(form.customer.email, fallback.customer.email),
       bankDetails: pickStr(form.customer.bankDetails, fallback.customer.bankDetails),
       passportSeriesNumber: pickStr(
@@ -764,7 +814,7 @@ export function mergeRepairPackageFormWithPreviewFallback(
         form.customer.passportIssueDate,
         fallback.customer.passportIssueDate
       ),
-    },
+    }),
     executor: {
       ...form.executor,
       executorKind: form.executor.executorKind,

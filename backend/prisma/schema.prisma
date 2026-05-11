@@ -547,6 +547,8 @@ model Customer {
   id            String         @id @default(cuid())
   email         String         @unique
   phone         String?
+  /// Все номера телефонов (первый дублируется в phone для поиска и старых интеграций)
+  phones        String[]       @default([]) @map("phones")
   firstName     String
   lastName      String?
   company       String?

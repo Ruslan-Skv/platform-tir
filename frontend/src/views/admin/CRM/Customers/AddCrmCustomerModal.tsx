@@ -5,10 +5,12 @@ import { type ChangeEvent, type FormEvent, useCallback, useState } from 'react';
 import { type CrmCustomerEntityType, createCrmCustomer } from '@/shared/api/admin-crm';
 import { Modal } from '@/shared/ui/Modal';
 
+import phoneStyles from './AddCrmCustomerModal.module.css';
+
 type FormState = {
   entityType: CrmCustomerEntityType;
   email: string;
-  phone: string;
+  phones: string[];
   fullName: string;
   repNom: string;
   repGen: string;
@@ -28,7 +30,7 @@ type FormState = {
 const emptyForm = (): FormState => ({
   entityType: 'PERSON',
   email: '',
-  phone: '',
+  phones: [''],
   fullName: '',
   repNom: '',
   repGen: '',
@@ -52,7 +54,8 @@ export function AddCrmCustomerModal({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onCreated: () => void;
+  /** Передаётся тело ответа API создания заказчика (для подстановки в формы и т.п.). */
+  onCreated?: (created: unknown) => void;
 }) {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
@@ -74,6 +77,25 @@ export function AddCrmCustomerModal({
       const v = e.target.value;
       setForm((prev) => ({ ...prev, [key]: v }) as FormState);
     };
+
+  const updatePhoneAt = useCallback((index: number, value: string) => {
+    setForm((prev) => {
+      const phones = [...prev.phones];
+      phones[index] = value;
+      return { ...prev, phones };
+    });
+  }, []);
+
+  const addPhoneRow = useCallback(() => {
+    setForm((prev) => ({ ...prev, phones: [...prev.phones, ''] }));
+  }, []);
+
+  const removePhoneRow = useCallback((index: number) => {
+    setForm((prev) => ({
+      ...prev,
+      phones: prev.phones.length <= 1 ? [''] : prev.phones.filter((_, i) => i !== index),
+    }));
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -98,6 +120,8 @@ export function AddCrmCustomerModal({
       }
     }
 
+    const normalizedPhones = form.phones.map((p) => p.trim()).filter(Boolean);
+
     const ext: Record<string, unknown> = {
       type: form.entityType,
       fullName: form.fullName,
@@ -109,7 +133,7 @@ export function AddCrmCustomerModal({
       inn: form.inn,
       ogrn: form.ogrn,
       address: form.address,
-      phone: form.phone,
+      phone: normalizedPhones[0] ?? '',
       email: form.email,
       bankDetails: form.bankDetails,
       passportSeriesNumber: form.passportSeriesNumber,
@@ -134,11 +158,12 @@ export function AddCrmCustomerModal({
 
     setSubmitting(true);
     try {
-      await createCrmCustomer({
+      const created = await createCrmCustomer({
         email,
         firstName: firstNameForCrm,
         lastName,
-        phone: form.phone.trim() || undefined,
+        phone: normalizedPhones[0] ?? undefined,
+        phones: normalizedPhones.length > 0 ? normalizedPhones : undefined,
         company:
           form.entityType !== 'PERSON' ? form.organizationName.trim() || undefined : undefined,
         position: form.entityType !== 'PERSON' ? form.posNom.trim() || undefined : undefined,
@@ -147,7 +172,7 @@ export function AddCrmCustomerModal({
         notes: form.notes.trim() || undefined,
       });
       reset();
-      onCreated();
+      onCreated?.(created);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка сохранения');
@@ -159,7 +184,7 @@ export function AddCrmCustomerModal({
   const isPerson = form.entityType === 'PERSON';
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Новый заказчик в CRM" size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Добавить нового заказчика" size="lg">
       <form data-modal-form data-modal-density="compact" onSubmit={handleSubmit}>
         <div data-modal-form-grid>
           <div data-modal-form-group>
@@ -230,11 +255,52 @@ export function AddCrmCustomerModal({
           </div>
         )}
 
-        <div data-modal-form-grid>
-          <div data-modal-form-group>
-            <label htmlFor="crm-phone">Телефон</label>
-            <input id="crm-phone" type="tel" value={form.phone} onChange={set('phone')} />
+        <div data-modal-form-group>
+          <label id="crm-phones-label" htmlFor="crm-phone-0">
+            Телефоны
+          </label>
+          <p className={phoneStyles.phoneHint}>
+            Первый номер в списке — основной (договоры, поиск по CRM).
+          </p>
+          <div
+            className={phoneStyles.phoneToolbarRow}
+            role="group"
+            aria-labelledby="crm-phones-label"
+          >
+            {form.phones.map((tel, index) => (
+              <div key={index} className={phoneStyles.phoneSlot}>
+                <input
+                  id={index === 0 ? 'crm-phone-0' : undefined}
+                  type="tel"
+                  autoComplete="tel"
+                  aria-label={`Телефон ${index + 1}`}
+                  value={tel}
+                  onChange={(e) => updatePhoneAt(index, e.target.value)}
+                />
+                <button
+                  type="button"
+                  data-modal-btn="secondary"
+                  className={phoneStyles.phoneRemove}
+                  disabled={form.phones.length <= 1}
+                  onClick={() => removePhoneRow(index)}
+                  aria-label={`Удалить телефон ${index + 1}`}
+                >
+                  Удалить
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              data-modal-btn="secondary"
+              className={phoneStyles.addPhone}
+              onClick={addPhoneRow}
+            >
+              Добавить номер
+            </button>
           </div>
+        </div>
+
+        <div data-modal-form-grid>
           <div data-modal-form-group>
             <label htmlFor="crm-address">Адрес</label>
             <input id="crm-address" value={form.address} onChange={set('address')} />

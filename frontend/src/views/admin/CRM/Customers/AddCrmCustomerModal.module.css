@@ -1,0 +1,35 @@
+.phoneHint {
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  line-height: 1.35;
+  margin: 0 0 var(--admin-space-xs, 4px);
+}
+
+.phoneToolbarRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm, 8px);
+}
+
+.phoneSlot {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm, 6px);
+  flex: 1 1 min(100%, 220px);
+  min-width: 0;
+}
+
+.phoneSlot input {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.phoneRemove {
+  flex-shrink: 0;
+}
+
+.addPhone {
+  flex-shrink: 0;
+  align-self: center;
+}

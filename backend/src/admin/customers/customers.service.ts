@@ -9,11 +9,36 @@ import { Prisma } from '@prisma/client';
 export class CustomersService {
   constructor(private prisma: PrismaService) {}
 
+  /** Нормализует телефоны: порядок как в `phones`, затем одиночный `phone` без дублей; `phone` в БД = первый номер. */
+  private normalizeCustomerPhones(params: { phone?: string | null; phones?: string[] | null }): {
+    phone: string | null;
+    phones: string[];
+  } {
+    if (params.phone === null && params.phones === undefined) {
+      return { phone: null, phones: [] };
+    }
+    const out: string[] = [];
+    const add = (s: string | null | undefined) => {
+      const t = (s ?? '').trim();
+      if (t && !out.includes(t)) out.push(t);
+    };
+    if (params.phones != null) {
+      for (const p of params.phones) add(p);
+    }
+    if (params.phone !== undefined && params.phone !== null) {
+      add(params.phone);
+    }
+    return { phone: out[0] ?? null, phones: out };
+  }
+
   async create(createCustomerDto: CreateCustomerDto) {
-    const { extendedProfile, dealValue, nextFollowUp, ...rest } = createCustomerDto;
+    const { extendedProfile, dealValue, nextFollowUp, phone, phones, ...rest } = createCustomerDto;
+    const { phone: primary, phones: list } = this.normalizeCustomerPhones({ phone, phones });
     return this.prisma.customer.create({
       data: {
         ...rest,
+        phone: primary,
+        phones: list,
         dealValue: dealValue != null ? new Prisma.Decimal(dealValue) : null,
         nextFollowUp: nextFollowUp ? new Date(nextFollowUp) : null,
         extendedProfile:
@@ -65,12 +90,14 @@ export class CustomersService {
     }
 
     if (search) {
+      const t = search.trim();
       where.OR = [
         { email: { contains: search, mode: 'insensitive' } },
         { firstName: { contains: search, mode: 'insensitive' } },
         { lastName: { contains: search, mode: 'insensitive' } },
         { company: { contains: search, mode: 'insensitive' } },
         { phone: { contains: search } },
+        { phones: { has: t } },
       ];
     }
 
@@ -162,26 +189,38 @@ export class CustomersService {
 
   async update(id: string, updateCustomerDto: UpdateCustomerDto) {
     await this.findOne(id);
-    const { extendedProfile, dealValue, nextFollowUp, ...rest } = updateCustomerDto;
+    const { extendedProfile, dealValue, nextFollowUp, phone, phones, ...rest } = updateCustomerDto;
+
+    const data: Prisma.CustomerUpdateInput = {
+      ...rest,
+      dealValue:
+        dealValue !== undefined
+          ? dealValue != null
+            ? new Prisma.Decimal(dealValue)
+            : null
+          : undefined,
+      nextFollowUp:
+        nextFollowUp !== undefined ? (nextFollowUp ? new Date(nextFollowUp) : null) : undefined,
+      extendedProfile:
+        extendedProfile === undefined
+          ? undefined
+          : extendedProfile === null
+            ? Prisma.DbNull
+            : (extendedProfile as Prisma.InputJsonValue),
+    };
+
+    if (phone !== undefined || phones !== undefined) {
+      const { phone: primary, phones: list } = this.normalizeCustomerPhones({
+        phone: phone !== undefined ? phone : undefined,
+        phones: phones !== undefined ? phones : undefined,
+      });
+      data.phone = primary;
+      data.phones = list;
+    }
+
     return this.prisma.customer.update({
       where: { id },
-      data: {
-        ...rest,
-        dealValue:
-          dealValue !== undefined
-            ? dealValue != null
-              ? new Prisma.Decimal(dealValue)
-              : null
-            : undefined,
-        nextFollowUp:
-          nextFollowUp !== undefined ? (nextFollowUp ? new Date(nextFollowUp) : null) : undefined,
-        extendedProfile:
-          extendedProfile === undefined
-            ? undefined
-            : extendedProfile === null
-              ? Prisma.DbNull
-              : (extendedProfile as Prisma.InputJsonValue),
-      },
+      data,
       include: {
         manager: {
           select: {

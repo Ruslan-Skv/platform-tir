@@ -800,6 +800,8 @@ export async function rollbackMeasurement(
 // --- Contracts ---
 export interface Contract {
   id: string;
+  /** Карточка заказчика CRM, если договор к ней привязан */
+  customerId?: string | null;
   contractNumber: string;
   contractDate: string;
   validityEnd?: string | null;
@@ -970,6 +972,8 @@ export interface CreateCrmCustomerPayload {
   firstName: string;
   lastName?: string;
   phone?: string;
+  /** Все номера по порядку; первый дублируется в `phone` на бэкенде */
+  phones?: string[];
   company?: string;
   position?: string;
   entityType?: CrmCustomerEntityType;
@@ -986,6 +990,22 @@ export async function createCrmCustomer(payload: CreateCrmCustomerPayload): Prom
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { message?: string };
     throw new Error(err.message || 'Не удалось создать заказчика');
+  }
+  return res.json();
+}
+
+export async function updateCrmCustomer(
+  customerId: string,
+  payload: Record<string, unknown>
+): Promise<unknown> {
+  const res = await apiFetch(`${API_URL}/admin/customers/${encodeURIComponent(customerId)}`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err.message || 'Не удалось сохранить заказчика в CRM');
   }
   return res.json();
 }

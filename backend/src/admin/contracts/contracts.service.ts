@@ -245,6 +245,7 @@ export class ContractsService {
                 { lastName: { contains: t, mode: 'insensitive' } },
                 { company: { contains: t, mode: 'insensitive' } },
                 { phone: { contains: t } },
+                { phones: { has: t } },
                 { email: { contains: t, mode: 'insensitive' } },
               ],
             },

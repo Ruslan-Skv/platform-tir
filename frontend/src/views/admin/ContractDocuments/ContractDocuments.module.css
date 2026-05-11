@@ -972,6 +972,30 @@
   font-size: var(--admin-font-size-sm);
 }
 
+.repairContractDataTabDense .sectionCustomerHeader {
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xs);
+}
+
+.repairContractDataTabDense .sectionCustomerHeader .sectionTitle {
+  margin: 0;
+  padding-top: 2px;
+  font-size: var(--admin-font-size-sm);
+}
+
+/* Кнопка CRM в шапке «Заказчик»: создание (accent), сохранение (primary), «в базе» (secondary) */
+.repairContractDataTabDense .sectionCustomerHeader .repairCustomerCreateCrmBtn {
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
+  padding: var(--admin-space-xs) var(--admin-space-md);
+}
+
+.repairCustomerCrmSyncedBtn {
+  max-width: min(100%, 26rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .repairContractDataTabDense .sectionFields {
   gap: 6px 8px;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -997,6 +1021,18 @@
   );
 }
 
+/* Телефоны заказчика: кнопки вне модалки — те же secondary, компактный размер как у полей */
+.repairContractDataTabDense .customerEmailPhonesRow {
+  gap: var(--admin-space-sm) var(--admin-space-md);
+}
+
+.repairContractDataTabDense .sectionCustomer .customerEmailPhonesRow .secondaryBtn {
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
+  border-radius: var(--admin-radius-sm);
+  white-space: nowrap;
+}
+
 .repairContractDataTabDense .contractHeaderMetaRow {
   column-gap: var(--admin-space-md);
 }
@@ -1019,6 +1055,12 @@
 .repairContractDataTabDense .crmCompactField .secondaryBtn {
   padding: var(--admin-space-xs) var(--admin-space-md);
   font-size: var(--admin-font-size-xs);
+}
+
+.repairContractDataTabDense .crmCompactField .repairCustomerSearchCrmBtn {
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
 }
 
 .repairContractDataTabDense .crmResultBtn {
@@ -1242,6 +1284,22 @@
   flex-wrap: wrap;
 }
 
+.sectionCustomerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-sm);
+  padding-top: 0;
+}
+
+.sectionCustomerHeader .sectionTitle {
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .estimateSectionTitle {
   margin-bottom: var(--admin-space-sm);
   flex: 1 1 160px;
@@ -1459,6 +1517,43 @@
   font-size: var(--admin-font-size-xs);
 }
 
+/* E-mail слева, телефоны справа — одна строка сетки «Заказчик» */
+.customerEmailPhonesRow {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-md) var(--admin-space-xl);
+  grid-column: 1 / -1;
+}
+
+.customerEmailInRow {
+  flex: 0 1 18rem;
+  margin: 0;
+  max-width: 22rem;
+  min-width: 12rem;
+}
+
+/* Блок «Телефоны»: справа от e-mail; поля и кнопки в одну линию с переносом */
+.customerPhonesBlock {
+  flex: 1 1 16rem;
+  margin: 0;
+  min-width: 0;
+}
+
+.customerPhonesRow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm) var(--admin-space-md);
+}
+
+.customerPhonesRow input[type='tel'] {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 9rem;
+  width: 11.5rem;
+}
+
 .sectionCustomer {
   background: var(--admin-info-bg-soft);
   border-color: var(--admin-info-border-soft);
@@ -1490,8 +1585,28 @@
 .repairCustomerSearchModeRow {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--admin-space-sm);
   margin-bottom: var(--admin-space-sm);
+}
+
+.repairCustomerSearchKindGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  align-items: center;
+}
+
+.repairCustomerSearchCrmBtn {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 4px rgb(15 23 42 / 18%);
+}
+
+.repairCustomerSearchCrmBtn:hover {
+  box-shadow: 0 2px 8px rgb(15 23 42 / 22%);
 }
 
 .repairCustomerSearchFlGrid {

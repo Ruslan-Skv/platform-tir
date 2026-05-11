@@ -29,6 +29,7 @@ import {
 import type { ContractCustomer, InstallerMaster } from '@/shared/api/admin-crm';
 import { getContract, getContractCustomers, getInstallers } from '@/shared/api/admin-crm';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
+import { AddCrmCustomerModal } from '@/views/admin/CRM/Customers/AddCrmCustomerModal';
 
 import styles from '../ContractDocuments.module.css';
 import { RepairAddendumEstimateBlock } from './RepairAddendumEstimateBlock';
@@ -36,7 +37,10 @@ import { RepairContractPaymentsTab } from './RepairContractPaymentsTab';
 import { RepairManagerQuestionnaire1Tab } from './RepairManagerQuestionnaire1Tab';
 import { RepairPostWorkQuestionnaire2Tab } from './RepairPostWorkQuestionnaire2Tab';
 import { amountToRussianWords } from './amountToRussianWords';
-import { mergeRepairFormFromCrmContract } from './applyCrmContractToForm';
+import {
+  mergeRepairFormFromCreatedCrmCustomer,
+  mergeRepairFormFromCrmContract,
+} from './applyCrmContractToForm';
 import { applyTemplate } from './applyTemplate';
 import { contractDateToDdMmYyyy, todayContractDateDdMmYyyy } from './contractDateFormat';
 import {
@@ -494,6 +498,7 @@ export function RepairContractDocumentEditorPage({
   const [customerResults, setCustomerResults] = useState<ContractCustomer[]>([]);
   const [customerSearchLoading, setCustomerSearchLoading] = useState(false);
   const [customerSearchPopoverOpen, setCustomerSearchPopoverOpen] = useState(false);
+  const [addCrmCustomerModalOpen, setAddCrmCustomerModalOpen] = useState(false);
   const customerSearchRootRef = useRef<HTMLDivElement>(null);
   const [templateOverrides, setTemplateOverrides] = useState<
     Partial<Record<RepairDocumentTemplateTabId, string>>
@@ -591,6 +596,7 @@ export function RepairContractDocumentEditorPage({
   draftTitleRef.current = draftTitle;
   const draftCrmContractIdRef = useRef(draftCrmContractId);
   draftCrmContractIdRef.current = draftCrmContractId;
+
   /** В браузере `setTimeout` возвращает `number`; при подмешанных типах Node — не `NodeJS.Timeout`. */
   const persistRepairPackageDebounceRef = useRef<number | null>(null);
 
@@ -1204,12 +1210,13 @@ export function RepairContractDocumentEditorPage({
     }
   };
 
-  const applyCrmContractToFormById = async (contractId: string) => {
+  const applyCrmContractToFormById = async (contractId: string, searchRow: ContractCustomer) => {
     setError(null);
     try {
       const c = await getContract(contractId);
+      const nextForm = mergeRepairFormFromCrmContract(c, formRef.current, searchRow);
       setDraftCrmContractId(contractId);
-      setForm((prev) => mergeRepairFormFromCrmContract(c, prev));
+      setForm(nextForm);
       touchPackageData();
       setCustomerSearchPopoverOpen(false);
     } catch (e) {
@@ -1217,33 +1224,12 @@ export function RepairContractDocumentEditorPage({
     }
   };
 
-  const updateCustomer = <K extends keyof RepairPackageFormData['customer']>(
-    key: K,
-    value: string
-  ) => {
-    setForm((p) => {
-      const nextCustomer = { ...p.customer, [key]: value };
-      if (key === 'type') {
-        const nextType = value as RepairPackageFormData['customer']['type'];
-        if (nextType === 'PERSON') {
-          nextCustomer.organizationName = '';
-          nextCustomer.representativeFullNameNominative = '';
-          nextCustomer.representativeFullNameGenitive = '';
-          nextCustomer.representativePositionNominative = '';
-          nextCustomer.representativePositionGenitive = '';
-          nextCustomer.inn = '';
-          nextCustomer.ogrn = '';
-        } else {
-          nextCustomer.fullName = '';
-          nextCustomer.passportSeriesNumber = '';
-          nextCustomer.passportIssuedBy = '';
-          nextCustomer.passportIssueDate = '';
-        }
-      }
-      return { ...p, customer: nextCustomer };
-    });
-    touchPackageData();
-  };
+  const repairCustomerPhonesReadonlyDisplay = useMemo(() => {
+    const parts = (form.customer.phones ?? []).map((p) => p.trim()).filter(Boolean);
+    const joined = parts.join(', ');
+    if (joined) return joined;
+    return (form.customer.phone ?? '').trim() || '—';
+  }, [form.customer.phones, form.customer.phone]);
 
   const updateExecutor = <K extends keyof RepairPackageFormData['executor']>(
     key: K,
@@ -3291,6 +3277,17 @@ export function RepairContractDocumentEditorPage({
         cancelText="Отмена"
       />
 
+      <AddCrmCustomerModal
+        isOpen={addCrmCustomerModalOpen}
+        onClose={() => setAddCrmCustomerModalOpen(false)}
+        onCreated={(created) => {
+          const next = mergeRepairFormFromCreatedCrmCustomer(created, formRef.current);
+          setForm(next);
+          setCustomerSearchKind(next.customer.type);
+          touchPackageData();
+        }}
+      />
+
       <div className={styles.repairPackageTabBarRow}>
         <div
           className={`${styles.tabBar} ${styles.blockTabs} ${styles.repairPackageTabBarCompact}`}
@@ -3455,49 +3452,55 @@ export function RepairContractDocumentEditorPage({
                   className={`${styles.field} ${styles.crmCompactField} ${styles.crmCompactBox} ${styles.repairCustomerSearchWrap}`}
                 >
                   <h3 className={styles.sectionTitle}>Поиск заказчика в базе</h3>
-                  <div
-                    className={styles.repairCustomerSearchModeRow}
-                    role="group"
-                    aria-label="Тип заказчика"
-                  >
+                  <div className={styles.repairCustomerSearchModeRow}>
+                    <div
+                      className={styles.repairCustomerSearchKindGroup}
+                      role="group"
+                      aria-label="Тип заказчика"
+                    >
+                      <button
+                        type="button"
+                        className={
+                          customerSearchKind === 'PERSON' ? styles.primaryBtn : styles.secondaryBtn
+                        }
+                        onClick={() => {
+                          setCustomerSearchKind('PERSON');
+                        }}
+                      >
+                        Физлицо
+                      </button>
+                      <button
+                        type="button"
+                        className={
+                          customerSearchKind === 'COMPANY' ? styles.primaryBtn : styles.secondaryBtn
+                        }
+                        onClick={() => {
+                          setCustomerSearchKind('COMPANY');
+                        }}
+                      >
+                        ЮЛ
+                      </button>
+                      <button
+                        type="button"
+                        className={
+                          customerSearchKind === 'ENTREPRENEUR'
+                            ? styles.primaryBtn
+                            : styles.secondaryBtn
+                        }
+                        onClick={() => {
+                          setCustomerSearchKind('ENTREPRENEUR');
+                        }}
+                        title="Индивидуальный предприниматель"
+                      >
+                        ИП
+                      </button>
+                    </div>
                     <button
                       type="button"
-                      className={
-                        customerSearchKind === 'PERSON' ? styles.primaryBtn : styles.secondaryBtn
-                      }
-                      onClick={() => {
-                        setCustomerSearchKind('PERSON');
-                        updateCustomer('type', 'PERSON');
-                      }}
+                      className={`${styles.primaryBtn} ${styles.repairCustomerSearchCrmBtn}`}
+                      onClick={() => setAddCrmCustomerModalOpen(true)}
                     >
-                      Физлицо
-                    </button>
-                    <button
-                      type="button"
-                      className={
-                        customerSearchKind === 'COMPANY' ? styles.primaryBtn : styles.secondaryBtn
-                      }
-                      onClick={() => {
-                        setCustomerSearchKind('COMPANY');
-                        updateCustomer('type', 'COMPANY');
-                      }}
-                    >
-                      ЮЛ
-                    </button>
-                    <button
-                      type="button"
-                      className={
-                        customerSearchKind === 'ENTREPRENEUR'
-                          ? styles.primaryBtn
-                          : styles.secondaryBtn
-                      }
-                      onClick={() => {
-                        setCustomerSearchKind('ENTREPRENEUR');
-                        updateCustomer('type', 'ENTREPRENEUR');
-                      }}
-                      title="Индивидуальный предприниматель"
-                    >
-                      ИП
+                      Добавить нового заказчика
                     </button>
                   </div>
                   {customerSearchKind === 'PERSON' ? (
@@ -3593,7 +3596,7 @@ export function RepairContractDocumentEditorPage({
                                     disabled={!c.lastContractId}
                                     onClick={() => {
                                       if (!c.lastContractId) return;
-                                      void applyCrmContractToFormById(c.lastContractId);
+                                      void applyCrmContractToFormById(c.lastContractId, c);
                                     }}
                                   >
                                     {c.customerName} · {c.customerPhone}
@@ -3661,19 +3664,15 @@ export function RepairContractDocumentEditorPage({
 
             <div className={`${styles.sectionCard} ${styles.sectionCustomer}`}>
               <h3 className={styles.sectionTitle}>Заказчик</h3>
+              <p className={styles.hint} style={{ marginTop: 4, marginBottom: 10 }}>
+                Данные подставляются из выбранной строки в блоке «Поиск заказчика в базе».
+                Редактировать здесь нельзя. Чтобы завести карточку и указать телефоны, нажмите
+                «Добавить нового заказчика» в блоке поиска.
+              </p>
               <div className={styles.sectionFields}>
                 <div className={styles.field}>
                   <label htmlFor="c_type">Тип заказчика</label>
-                  <select
-                    id="c_type"
-                    value={form.customer.type}
-                    onChange={(e) =>
-                      updateCustomer(
-                        'type',
-                        e.target.value as RepairPackageFormData['customer']['type']
-                      )
-                    }
-                  >
+                  <select id="c_type" value={form.customer.type} disabled>
                     <option value="PERSON">Физлицо</option>
                     <option value="COMPANY">ЮЛ</option>
                     <option value="ENTREPRENEUR">ИП</option>
@@ -3682,11 +3681,7 @@ export function RepairContractDocumentEditorPage({
                 {form.customer.type === 'PERSON' ? (
                   <div className={styles.field}>
                     <label htmlFor="c_fullName">ФИО</label>
-                    <input
-                      id="c_fullName"
-                      value={form.customer.fullName}
-                      onChange={(e) => updateCustomer('fullName', e.target.value)}
-                    />
+                    <input id="c_fullName" value={form.customer.fullName} readOnly />
                   </div>
                 ) : (
                   <>
@@ -3695,9 +3690,7 @@ export function RepairContractDocumentEditorPage({
                       <input
                         id="c_repFullNameNom"
                         value={form.customer.representativeFullNameNominative}
-                        onChange={(e) =>
-                          updateCustomer('representativeFullNameNominative', e.target.value)
-                        }
+                        readOnly
                       />
                     </div>
                     <div className={styles.field}>
@@ -3705,9 +3698,7 @@ export function RepairContractDocumentEditorPage({
                       <input
                         id="c_repFullNameGen"
                         value={form.customer.representativeFullNameGenitive}
-                        onChange={(e) =>
-                          updateCustomer('representativeFullNameGenitive', e.target.value)
-                        }
+                        readOnly
                       />
                     </div>
                   </>
@@ -3716,20 +3707,14 @@ export function RepairContractDocumentEditorPage({
                   <>
                     <div className={styles.field}>
                       <label htmlFor="c_orgName">Наименование организации</label>
-                      <input
-                        id="c_orgName"
-                        value={form.customer.organizationName}
-                        onChange={(e) => updateCustomer('organizationName', e.target.value)}
-                      />
+                      <input id="c_orgName" value={form.customer.organizationName} readOnly />
                     </div>
                     <div className={styles.field}>
                       <label htmlFor="c_posNom">Должность представ. (именит.)</label>
                       <input
                         id="c_posNom"
                         value={form.customer.representativePositionNominative}
-                        onChange={(e) =>
-                          updateCustomer('representativePositionNominative', e.target.value)
-                        }
+                        readOnly
                       />
                     </div>
                     <div className={styles.field}>
@@ -3737,52 +3722,46 @@ export function RepairContractDocumentEditorPage({
                       <input
                         id="c_posGen"
                         value={form.customer.representativePositionGenitive}
-                        onChange={(e) =>
-                          updateCustomer('representativePositionGenitive', e.target.value)
-                        }
+                        readOnly
                       />
                     </div>
                     <div className={styles.field}>
                       <label htmlFor="c_inn">ИНН</label>
-                      <input
-                        id="c_inn"
-                        value={form.customer.inn}
-                        onChange={(e) => updateCustomer('inn', e.target.value)}
-                      />
+                      <input id="c_inn" value={form.customer.inn} readOnly />
                     </div>
                     <div className={styles.field}>
                       <label htmlFor="c_ogrn">ОГРН</label>
-                      <input
-                        id="c_ogrn"
-                        value={form.customer.ogrn}
-                        onChange={(e) => updateCustomer('ogrn', e.target.value)}
-                      />
+                      <input id="c_ogrn" value={form.customer.ogrn} readOnly />
                     </div>
                   </>
                 ) : null}
                 <div className={styles.field}>
                   <label htmlFor="c_address">Адрес</label>
-                  <input
-                    id="c_address"
-                    value={form.customer.address}
-                    onChange={(e) => updateCustomer('address', e.target.value)}
-                  />
+                  <input id="c_address" value={form.customer.address} readOnly />
                 </div>
-                <div className={styles.field}>
-                  <label htmlFor="c_phone">Телефон</label>
-                  <input
-                    id="c_phone"
-                    value={form.customer.phone}
-                    onChange={(e) => updateCustomer('phone', e.target.value)}
-                  />
-                </div>
-                <div className={styles.field}>
+                <div className={`${styles.field} ${styles.customerEmailInRow}`}>
                   <label htmlFor="c_email">E-mail</label>
                   <input
                     id="c_email"
+                    type="email"
+                    autoComplete="email"
                     value={form.customer.email}
-                    onChange={(e) => updateCustomer('email', e.target.value)}
+                    readOnly
                   />
+                </div>
+                <div className={`${styles.field} ${styles.fieldSpanAll}`}>
+                  <label htmlFor="c_phones_ro">Телефоны</label>
+                  <input
+                    id="c_phones_ro"
+                    type="text"
+                    readOnly
+                    value={repairCustomerPhonesReadonlyDisplay}
+                    title={repairCustomerPhonesReadonlyDisplay}
+                  />
+                  <p className={styles.hint} style={{ marginTop: 4 }}>
+                    Несколько номеров — только в карточке CRM через «Добавить нового заказчика»; в
+                    шаблоне основной номер — <code>{'{{customer.phone}}'}</code>.
+                  </p>
                 </div>
                 <div
                   className={`${styles.field} ${styles.fieldSpanAll} ${styles.customerBankDetailsField}`}
@@ -3792,34 +3771,22 @@ export function RepairContractDocumentEditorPage({
                     id="c_bank_details"
                     rows={1}
                     value={form.customer.bankDetails}
-                    onChange={(e) => updateCustomer('bankDetails', e.target.value)}
+                    readOnly
                   />
                 </div>
                 {form.customer.type === 'PERSON' ? (
                   <>
                     <div className={styles.field}>
                       <label htmlFor="c_passport">Паспорт (серия и номер)</label>
-                      <input
-                        id="c_passport"
-                        value={form.customer.passportSeriesNumber}
-                        onChange={(e) => updateCustomer('passportSeriesNumber', e.target.value)}
-                      />
+                      <input id="c_passport" value={form.customer.passportSeriesNumber} readOnly />
                     </div>
                     <div className={styles.field}>
                       <label htmlFor="c_passportBy">Кем выдан</label>
-                      <input
-                        id="c_passportBy"
-                        value={form.customer.passportIssuedBy}
-                        onChange={(e) => updateCustomer('passportIssuedBy', e.target.value)}
-                      />
+                      <input id="c_passportBy" value={form.customer.passportIssuedBy} readOnly />
                     </div>
                     <div className={styles.field}>
                       <label htmlFor="c_passportDate">Дата выдачи</label>
-                      <input
-                        id="c_passportDate"
-                        value={form.customer.passportIssueDate}
-                        onChange={(e) => updateCustomer('passportIssueDate', e.target.value)}
-                      />
+                      <input id="c_passportDate" value={form.customer.passportIssueDate} readOnly />
                     </div>
                   </>
                 ) : null}
