@@ -1,12 +1,10 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { useParams } from 'next/navigation';
-
-import { MeasurementFormPage } from '@/views/admin/CRM/Measurements/MeasurementFormPage';
-
-export default function AdminMeasurementEditPage() {
-  const params = useParams();
-  const id = typeof params?.id === 'string' ? params.id : undefined;
-
-  return <MeasurementFormPage measurementId={id} />;
+export default async function AdminCrmMeasurementsIdRedirect({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  redirect(`/admin/measurements/${id}`);
 }

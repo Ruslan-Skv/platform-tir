@@ -1,7 +1,5 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { MeasurementFormPage } from '@/views/admin/CRM/Measurements/MeasurementFormPage';
-
-export default function AdminMeasurementNewPage() {
-  return <MeasurementFormPage />;
+export default function AdminCrmMeasurementsNewRedirect() {
+  redirect('/admin/measurements/new');
 }

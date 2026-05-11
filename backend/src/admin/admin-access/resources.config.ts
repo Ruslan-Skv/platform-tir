@@ -12,7 +12,7 @@ export interface AdminResourceItem {
 export const ADMIN_RESOURCES: AdminResourceItem[] = [
   { id: 'admin', label: 'Дашборд', path: '/admin' },
   { id: 'admin.crm', label: 'CRM', path: '/admin/crm' },
-  { id: 'admin.crm.measurements', label: 'Замеры', path: '/admin/crm/measurements' },
+  { id: 'admin.crm.measurements', label: 'Замеры', path: '/admin/measurements/repair' },
   { id: 'admin.crm.contracts', label: 'Объекты', path: '/admin/crm/contracts' },
   {
     id: 'admin.crm.contract-payments',

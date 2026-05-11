@@ -379,7 +379,7 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
   useEffect(() => {
     if (measurementId && searchParams.get('created') === '1') {
       showMessage('success', 'Замер создан');
-      router.replace(`/admin/crm/measurements/${measurementId}`, { scroll: false });
+      router.replace(`/admin/measurements/${measurementId}`, { scroll: false });
     }
   }, [measurementId, searchParams, router, showMessage]);
 
@@ -496,7 +496,7 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
       } else {
         const created = await createMeasurement(payload);
         setCurrentMeasurementId(created.id);
-        router.replace(`/admin/crm/measurements/${created.id}`, { scroll: false });
+        router.replace(`/admin/measurements/${created.id}`, { scroll: false });
       }
       lastSavedPayloadRef.current = payloadKey;
       setMessage({ type: 'success', text: 'Сохранено автоматически' });
@@ -605,7 +605,7 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <Link href="/admin/crm/measurements" className={styles.backLink}>
+        <Link href="/admin/measurements/repair" className={styles.backLink}>
           ← К списку замеров
         </Link>
         <div className={styles.titleRow}>

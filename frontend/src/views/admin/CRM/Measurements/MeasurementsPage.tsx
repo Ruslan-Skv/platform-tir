@@ -511,7 +511,7 @@ export function MeasurementsPage() {
           </button>
           <button
             className={styles.actionButton}
-            onClick={() => router.push(`/admin/crm/measurements/${m.id}`)}
+            onClick={() => router.push(`/admin/measurements/${m.id}`)}
             title="Редактировать"
           >
             ✏️
@@ -567,7 +567,7 @@ export function MeasurementsPage() {
           >
             {editMode ? '✕ Выйти из редактирования' : '✏️ Быстрое редактирование'}
           </button>
-          <Link href="/admin/crm/measurements/new" className={styles.addButton}>
+          <Link href="/admin/measurements/new" className={styles.addButton}>
             + Добавить замер
           </Link>
         </div>
@@ -681,7 +681,7 @@ export function MeasurementsPage() {
         data={data}
         columns={columnsWithActions}
         keyExtractor={(m) => m.id}
-        onRowClick={(m) => router.push(`/admin/crm/measurements/${m.id}`)}
+        onRowClick={(m) => router.push(`/admin/measurements/${m.id}`)}
         selectable
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
