@@ -1394,6 +1394,10 @@
     grid-template-columns: 1fr;
   }
 
+  .paymentsTab .paymentsContractMoneyRow {
+    grid-template-columns: 1fr;
+  }
+
   .contractSumAndWordsRow {
     grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr);
   }
@@ -4055,6 +4059,417 @@
   -webkit-text-fill-color: var(--admin-text-primary) !important;
   box-shadow: 0 0 0 1000px var(--admin-surface-soft) inset !important;
   transition: background-color 9999s ease-out 0s;
+}
+
+/* ——— Вкладка «Оплаты» (журнал по пакету ремонта) ——— */
+.paymentsTab {
+  max-width: 1200px;
+}
+
+/* Разные акценты карточек вкладки «Оплаты» */
+.paymentsTab .paymentsBlockAccentContract {
+  background: var(--admin-info-bg-soft);
+  border-left: 3px solid var(--admin-info);
+}
+
+.paymentsTab .paymentsBlockAccentAddendum {
+  background: var(--admin-success-bg-soft);
+  border-left: 3px solid var(--admin-success-emerald);
+}
+
+.paymentsTab .paymentsBlockAccentSummary {
+  background: var(--admin-warning-bg);
+  border-left: 3px solid var(--admin-warning-strong);
+}
+
+.paymentsTab .paymentsBlockAccentForm {
+  background: var(--admin-accent-soft);
+  border-left: 3px solid var(--admin-accent-border);
+}
+
+.paymentsTab .paymentsBlockAccentJournal {
+  background: var(--admin-surface-muted);
+  border-left: 3px solid var(--admin-border-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsBlockAccentContract {
+  background: var(--admin-overlay-info-soft);
+  border-left-color: var(--admin-info-bright);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsBlockAccentAddendum {
+  background: var(--admin-overlay-success-soft);
+  border-left-color: var(--admin-success-emerald);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsBlockAccentSummary {
+  background: var(--admin-overlay-warning-soft);
+  border-left-color: var(--admin-warning-amber);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsBlockAccentForm {
+  background: var(--admin-accent-soft);
+  border-left-color: var(--admin-accent);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsBlockAccentJournal {
+  background: var(--admin-surface-soft);
+  border-left-color: var(--admin-text-muted);
+}
+
+.paymentsDocFieldsCard {
+  margin-bottom: var(--admin-space-lg);
+}
+
+/* Договор / Д/с: три поля (сумма | пропись | предоплата/100%) в одну строку */
+.paymentsTab .paymentsContractMoneyRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr) minmax(0, 1fr);
+  gap: var(--admin-space-md);
+  align-items: start;
+}
+
+.paymentsTab .paymentsContractMoneyRow .field {
+  min-width: 0;
+}
+
+.paymentsTab .paymentsContractMoneyRow .field input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Рекомендованная предоплата / оплата — отдельный акцент (не как прочие auto-filled) */
+.paymentsTab input.paymentsRecommendedAmountInput {
+  background: var(--admin-info-bg-soft);
+  border-color: var(--admin-info-border-soft);
+}
+
+.paymentsTab input.paymentsRecommendedAmountInput:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--admin-info-border-soft);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .paymentsTab
+  input.paymentsRecommendedAmountInput {
+  background: var(--admin-info-soft) !important;
+  border-color: var(--admin-info-border) !important;
+  color: var(--admin-text-primary) !important;
+  -webkit-text-fill-color: var(--admin-text-primary) !important;
+}
+
+/* Сводка перед формой «Добавить оплату»: договор+Д/с, журнал, остаток */
+.paymentsPreFormSummaryCard {
+  margin-bottom: var(--admin-space-lg);
+  padding: var(--admin-space-sm) var(--admin-space-md);
+}
+
+.paymentsPreFormSummaryCard .sectionTitle {
+  margin-bottom: var(--admin-space-2xs);
+}
+
+.paymentsPreFormSummarySections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+}
+
+@media (min-width: 960px) {
+  .paymentsPreFormSummarySections {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(150px, 200px) minmax(120px, 190px);
+    column-gap: var(--admin-space-md);
+    row-gap: 0;
+    align-items: start;
+  }
+
+  .paymentsPreFormSummarySection + .paymentsPreFormSummarySection {
+    border-left: 1px solid var(--admin-border);
+    padding-left: var(--admin-space-md);
+    margin-left: 0;
+  }
+}
+
+.paymentsPreFormSummarySection {
+  margin: 0;
+}
+
+.paymentsPreFormSummaryHeading {
+  margin: 0 0 var(--admin-space-2xs);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  line-height: 1.25;
+}
+
+.paymentsPreFormSummaryCard .paymentsKvGrid {
+  gap: 2px var(--admin-space-md);
+}
+
+.paymentsKvGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--admin-space-xs) var(--admin-space-lg);
+  align-items: baseline;
+  font-size: var(--admin-font-size-sm);
+}
+
+.paymentsPreFormSummaryCard .paymentsKvTotalRow {
+  margin-top: 4px;
+  padding-top: 6px;
+}
+
+.paymentsKvKey {
+  color: var(--admin-text-muted);
+}
+
+.paymentsKvVal {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: right;
+  color: var(--admin-text-primary);
+}
+
+.paymentsKvTotalRow {
+  margin-top: var(--admin-space-xs);
+  padding-top: var(--admin-space-sm);
+  border-top: 1px solid var(--admin-border);
+  font-weight: 700;
+}
+
+.paymentsKvTotalRow.paymentsKvKey {
+  color: var(--admin-text-primary);
+}
+
+.paymentsKvOverpay {
+  color: var(--admin-warning-strong);
+}
+
+/* Основание: select + новый текст + «+» в одну строку */
+.paymentsBasisInlineRow {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: var(--admin-space-sm);
+  align-items: center;
+  min-width: 0;
+  margin-top: 0;
+}
+
+.paymentsBasisSelectWrap {
+  flex: 1 1 38%;
+  min-width: 0;
+  display: flex;
+}
+
+.paymentsBasisSelectWrap select {
+  width: 100%;
+  min-width: 0;
+}
+
+.paymentsBasisInlineRow .paymentsNewBasisInput {
+  flex: 1 1 42%;
+  min-width: 120px;
+  width: auto;
+  max-width: none;
+}
+
+.paymentsAddBasisIconBtn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1;
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+  cursor: pointer;
+}
+
+.paymentsAddBasisIconBtn:hover {
+  background: var(--admin-surface-soft);
+}
+
+@media (max-width: 640px) {
+  .paymentsBasisInlineRow {
+    flex-wrap: wrap;
+  }
+
+  .paymentsBasisSelectWrap {
+    flex: 1 1 100%;
+  }
+
+  .paymentsBasisInlineRow .paymentsNewBasisInput {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+.paymentsSummaryGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--admin-space-lg);
+  margin-bottom: var(--admin-space-lg);
+}
+
+@media (max-width: 960px) {
+  .paymentsSummaryGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.paymentsSummaryCard,
+.paymentsFormCard,
+.paymentsTableCard {
+  margin-bottom: 0;
+}
+
+.paymentsBreakdownList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+}
+
+.paymentsBreakdownList li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--admin-space-md);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.paymentsBreakdownList li:last-child {
+  border-bottom: none;
+}
+
+.paymentsBreakdownGrand {
+  font-weight: 600;
+  padding-top: var(--admin-space-sm);
+  margin-top: var(--admin-space-xs);
+  border-top: 1px dashed var(--admin-border-strong) !important;
+}
+
+.paymentsBreakdownRemainder strong {
+  color: var(--admin-info-strong);
+}
+
+.paymentsFormGrid {
+  display: grid;
+  grid-template-columns: minmax(140px, 200px) minmax(0, 1fr) minmax(160px, 240px);
+  gap: var(--admin-space-md);
+  margin-top: var(--admin-space-sm);
+  align-items: start;
+}
+
+.paymentsFormGrid > .field {
+  min-width: 0;
+}
+
+.paymentsAmountField {
+  gap: var(--admin-space-2xs);
+}
+
+.paymentsAmountFieldTitle {
+  display: block;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.paymentsAmountPairRow {
+  display: grid;
+  grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
+  gap: var(--admin-space-md);
+  align-items: start;
+}
+
+.paymentsAmountPairCell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xs);
+  min-width: 0;
+}
+
+.paymentsAmountWordsPreview {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+}
+
+@media (max-width: 720px) {
+  .paymentsFormGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .paymentsAmountPairRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.paymentsFormActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  margin-top: var(--admin-space-lg);
+}
+
+.paymentsTableWrap {
+  overflow-x: auto;
+  margin-top: var(--admin-space-sm);
+}
+
+.paymentsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--admin-font-size-sm);
+}
+
+.paymentsTable th,
+.paymentsTable td {
+  border: 1px solid var(--admin-border);
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  text-align: left;
+  vertical-align: top;
+}
+
+.paymentsTable th {
+  background: var(--admin-surface-soft);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.paymentsTableBasisCell {
+  max-width: 280px;
+  word-break: break-word;
+}
+
+.paymentsTableUserCell {
+  white-space: nowrap;
+  font-size: var(--admin-font-size-xs);
+}
+
+.paymentsTableActionsCell {
+  white-space: nowrap;
+}
+
+.paymentsTableActionsCell button {
+  margin-right: var(--admin-space-xs);
 }
 
 /*

@@ -31,6 +31,17 @@ function getAdminAuthHeaders(): HeadersInit {
   return headers;
 }
 
+async function readAdminContractPackagesError(res: Response): Promise<string> {
+  try {
+    const j = (await res.json()) as { message?: string | string[] };
+    if (Array.isArray(j.message)) return j.message.join('; ');
+    if (typeof j.message === 'string') return j.message;
+  } catch {
+    /* ignore */
+  }
+  return `Запрос не выполнен (HTTP ${res.status})`;
+}
+
 export type ContractDocumentPackageKind =
   | 'REPAIR'
   | 'WINDOWS'
@@ -83,6 +94,60 @@ export interface ContractDocumentPackage {
   createdBy?: ContractDocumentPackageUserRef | null;
   crmContract?: ContractDocumentPackageCrmContract | null;
 }
+
+export type ContractDocumentPackagePaymentForm =
+  | 'CASH'
+  | 'TERMINAL'
+  | 'QR'
+  | 'INVOICE'
+  | 'LC_TRANSFER';
+
+export type ContractDocumentPackagePaymentKind = 'PREPAYMENT' | 'ADVANCE' | 'FINAL' | 'AMENDMENT';
+
+export interface ContractDocumentPackagePaymentUserRef {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+}
+
+/** Журнал оплат по пакету документов (вкладка «Оплаты» в редакторе ремонта). */
+export interface ContractDocumentPackagePayment {
+  id: string;
+  packageId: string;
+  paymentDate: string;
+  amount: string;
+  paymentForm: ContractDocumentPackagePaymentForm;
+  paymentType: ContractDocumentPackagePaymentKind;
+  addendumNumber: number | null;
+  basis: string | null;
+  notes: string | null;
+  recordedById: string | null;
+  createdAt: string;
+  updatedAt: string;
+  recordedBy: ContractDocumentPackagePaymentUserRef | null;
+}
+
+export interface ContractDocumentPackagePaymentInput {
+  paymentDate: string;
+  amount: number;
+  paymentForm: ContractDocumentPackagePaymentForm;
+  paymentType: ContractDocumentPackagePaymentKind;
+  addendumNumber?: number;
+  basis?: string;
+  notes?: string;
+}
+
+/** PATCH оплаты: допускаются null для сброса текстов и номера Д/с. */
+export type ContractDocumentPackagePaymentPatch = Partial<{
+  paymentDate: string;
+  amount: number;
+  paymentForm: ContractDocumentPackagePaymentForm;
+  paymentType: ContractDocumentPackagePaymentKind;
+  addendumNumber: number | null;
+  basis: string | null;
+  notes: string | null;
+}>;
 
 /** Краткая запись в списке истории версий пакета (без тела formData). */
 export interface ContractDocumentPackageVersionListItem {
@@ -201,6 +266,63 @@ export async function getContractDocumentPackage(id: string): Promise<ContractDo
   });
   if (!res.ok) throw new Error('Не удалось загрузить пакет документов');
   return res.json();
+}
+
+export async function getContractDocumentPackagePayments(
+  packageId: string
+): Promise<ContractDocumentPackagePayment[]> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/payments`,
+    {
+      headers: getAdminAuthHeaders(),
+    }
+  );
+  if (!res.ok) throw new Error(await readAdminContractPackagesError(res));
+  return res.json();
+}
+
+export async function createContractDocumentPackagePayment(
+  packageId: string,
+  body: ContractDocumentPackagePaymentInput
+): Promise<ContractDocumentPackagePayment> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/payments`,
+    {
+      method: 'POST',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+  if (!res.ok) throw new Error(await readAdminContractPackagesError(res));
+  return res.json();
+}
+
+export async function updateContractDocumentPackagePayment(
+  packageId: string,
+  paymentId: string,
+  body: ContractDocumentPackagePaymentPatch
+): Promise<ContractDocumentPackagePayment> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/payments/${paymentId}`,
+    {
+      method: 'PATCH',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+  if (!res.ok) throw new Error(await readAdminContractPackagesError(res));
+  return res.json();
+}
+
+export async function deleteContractDocumentPackagePayment(
+  packageId: string,
+  paymentId: string
+): Promise<void> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/payments/${paymentId}`,
+    { method: 'DELETE', headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) throw new Error(await readAdminContractPackagesError(res));
 }
 
 export async function getContractDocumentPackageVersions(

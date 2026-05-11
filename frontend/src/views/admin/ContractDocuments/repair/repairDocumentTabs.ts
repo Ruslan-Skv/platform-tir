@@ -1,5 +1,6 @@
 export const REPAIR_DOCUMENT_TAB_IDS = [
   'data',
+  'payments',
   'contract',
   'estimate',
   'finalEstimate',
@@ -73,6 +74,7 @@ export function normalizeLegacyRepairTabId(id: string): string {
 
 export const REPAIR_DOCUMENT_TAB_LABELS: Record<RepairDocumentTabId, string> = {
   data: 'Данные',
+  payments: 'Оплаты',
   contract: 'Договор',
   estimate: 'Смета',
   finalEstimate: 'Итог. смета',
@@ -100,6 +102,7 @@ export const REPAIR_DOCUMENT_TAB_LABELS: Record<RepairDocumentTabId, string> = {
 /** Короткие подписи для строки вкладок редактора пакета «Ремонт». */
 export const REPAIR_DOCUMENT_TAB_LABELS_SHORT: Record<RepairDocumentTabId, string> = {
   data: 'Данные',
+  payments: 'Оплаты',
   contract: 'Договор',
   estimate: 'Смета',
   finalEstimate: 'Итог. смета',
@@ -144,7 +147,7 @@ export function normalizeRepairDocumentTabOrder(raw: unknown): RepairDocumentTab
   }
   const interactiveId: RepairDocumentTabId = 'interactiveFinalEstimate';
   const finalEstimateId: RepairDocumentTabId = 'finalEstimate';
-  const filtered = out.filter((id) => id !== interactiveId);
+  const filtered: RepairDocumentTabId[] = out.filter((id) => id !== interactiveId);
   const finalEstimateIdx = filtered.indexOf(finalEstimateId);
   if (finalEstimateIdx < 0) return [...filtered, interactiveId];
   filtered.splice(finalEstimateIdx, 0, interactiveId);

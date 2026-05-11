@@ -3,7 +3,7 @@ import type { RepairPackageFormData } from './repairPackageForm';
 import { mergeRepairPackageFormData } from './repairPackageForm';
 
 /** Вкладки с HTML-шаблоном (можно переопределить текст, в т.ч. загрузкой из Excel). */
-export type RepairDocumentTemplateTabId = Exclude<RepairDocumentTabId, 'data'>;
+export type RepairDocumentTemplateTabId = Exclude<RepairDocumentTabId, 'data' | 'payments'>;
 
 const TEMPLATE_TAB_IDS: RepairDocumentTemplateTabId[] = [
   'contract',

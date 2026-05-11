@@ -18,6 +18,7 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
+import { ContractDocumentPackagePaymentsService } from './contract-document-package-payments.service';
 import { ContractDocumentPackagesService } from './contract-document-packages.service';
 import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
 import { SetGlobalExecutorProfilesDto } from './dto/set-global-executor-profiles.dto';
@@ -25,7 +26,9 @@ import { SetGlobalContractTemplatesDto } from './dto/set-global-contract-templat
 import { SetGlobalSignatoryProfilesDto } from './dto/set-global-signatory-profiles.dto';
 import { SetGlobalEstimatePresetsDto } from './dto/set-global-estimate-presets.dto';
 import { SetGlobalContractTemplateDto } from './dto/set-global-contract-template.dto';
+import { CreateContractDocumentPackagePaymentDto } from './dto/create-contract-document-package-payment.dto';
 import { UpdateContractDocumentPackageDto } from './dto/update-contract-document-package.dto';
+import { UpdateContractDocumentPackagePaymentDto } from './dto/update-contract-document-package-payment.dto';
 
 const CRM_ROLES = [
   'SUPER_ADMIN',
@@ -46,7 +49,10 @@ const CRM_ROLES = [
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(...CRM_ROLES)
 export class ContractDocumentPackagesController {
-  constructor(private readonly service: ContractDocumentPackagesService) {}
+  constructor(
+    private readonly service: ContractDocumentPackagesService,
+    private readonly packagePayments: ContractDocumentPackagePaymentsService,
+  ) {}
 
   @Post()
   create(@Body() dto: CreateContractDocumentPackageDto, @Req() req: RequestWithUser) {
@@ -170,6 +176,34 @@ export class ContractDocumentPackagesController {
     @Req() req: RequestWithUser,
   ) {
     return this.service.restoreVersion(id, versionId, req.user?.id);
+  }
+
+  @Get(':id/payments')
+  listPackagePayments(@Param('id') id: string) {
+    return this.packagePayments.list(id);
+  }
+
+  @Post(':id/payments')
+  createPackagePayment(
+    @Param('id') id: string,
+    @Body() dto: CreateContractDocumentPackagePaymentDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.packagePayments.create(id, dto, req.user?.id);
+  }
+
+  @Patch(':id/payments/:paymentId')
+  updatePackagePayment(
+    @Param('id') id: string,
+    @Param('paymentId') paymentId: string,
+    @Body() dto: UpdateContractDocumentPackagePaymentDto,
+  ) {
+    return this.packagePayments.update(id, paymentId, dto);
+  }
+
+  @Delete(':id/payments/:paymentId')
+  removePackagePayment(@Param('id') id: string, @Param('paymentId') paymentId: string) {
+    return this.packagePayments.remove(id, paymentId);
   }
 
   @Get(':id')

@@ -9,9 +9,15 @@ import { repairTemplateProductionLog } from './productionLog';
 import { repairTemplateWorkOrder } from './workOrder';
 import { repairTemplateWorkOrderAddendum } from './workOrderAddendum';
 
-export const REPAIR_DOCUMENT_TEMPLATES: Record<Exclude<RepairDocumentTabId, 'data'>, string> = {
+export const REPAIR_DOCUMENT_TEMPLATES: Record<
+  Exclude<RepairDocumentTabId, 'data' | 'payments'>,
+  string
+> = {
   contract: repairTemplateContract,
   estimate: repairTemplateEstimate,
+  finalEstimate: `<div class="docPrint"><p>Итоговая смета формируется на соответствующей вкладке пакета.</p></div>`,
+  interactiveFinalEstimate: `<div class="docPrint"><p>Интерактивная итоговая смета — на вкладке пакета.</p></div>`,
+  finalWorkOrder: `<div class="docPrint"><p>Итоговый заказ-наряд формируется на вкладке пакета.</p></div>`,
   actStart: repairTemplateActStart,
   actAcceptance: repairTemplateActAcceptance,
   cashOrder: repairTemplateCashOrder,

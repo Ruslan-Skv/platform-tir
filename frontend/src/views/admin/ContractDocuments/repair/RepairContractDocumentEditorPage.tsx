@@ -32,6 +32,7 @@ import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
 import styles from '../ContractDocuments.module.css';
 import { RepairAddendumEstimateBlock } from './RepairAddendumEstimateBlock';
+import { RepairContractPaymentsTab } from './RepairContractPaymentsTab';
 import { RepairManagerQuestionnaire1Tab } from './RepairManagerQuestionnaire1Tab';
 import { RepairPostWorkQuestionnaire2Tab } from './RepairPostWorkQuestionnaire2Tab';
 import { amountToRussianWords } from './amountToRussianWords';
@@ -96,16 +97,20 @@ function isWithinRevertWindow(iso: string | null | undefined): boolean {
 /** Встроенный в код шаблон (если в БД нет общего шаблона). */
 const FILE_REPAIR_CONTRACT_TEMPLATE = REPAIR_DOCUMENT_TEMPLATES.contract;
 const TEMPLATE_TAB_IDS = REPAIR_DOCUMENT_TAB_IDS.filter(
-  (id) => id !== 'data' && id !== 'estimate' && id !== 'interactiveFinalEstimate'
-) as Exclude<RepairDocumentTabId, 'data' | 'estimate' | 'interactiveFinalEstimate'>[];
+  (id) =>
+    id !== 'data' && id !== 'payments' && id !== 'estimate' && id !== 'interactiveFinalEstimate'
+) as Exclude<RepairDocumentTabId, 'data' | 'payments' | 'estimate' | 'interactiveFinalEstimate'>[];
 
 function normalizeTemplateTabId(
   value: string | undefined
-): Exclude<RepairDocumentTabId, 'data' | 'estimate' | 'interactiveFinalEstimate'> {
+): Exclude<RepairDocumentTabId, 'data' | 'payments' | 'estimate' | 'interactiveFinalEstimate'> {
   if (!value) return 'contract';
   const v = normalizeLegacyRepairTabId(value);
   return (TEMPLATE_TAB_IDS as string[]).includes(v)
-    ? (v as Exclude<RepairDocumentTabId, 'data' | 'estimate' | 'interactiveFinalEstimate'>)
+    ? (v as Exclude<
+        RepairDocumentTabId,
+        'data' | 'payments' | 'estimate' | 'interactiveFinalEstimate'
+      >)
     : 'contract';
 }
 
@@ -2303,7 +2308,7 @@ export function RepairContractDocumentEditorPage({
   );
 
   const renderedDoc = useMemo(() => {
-    if (activeTab === 'data') return '';
+    if (activeTab === 'data' || activeTab === 'payments') return '';
     if (
       activeTab === 'finalEstimate' ||
       activeTab === 'interactiveFinalEstimate' ||
@@ -2767,12 +2772,7 @@ export function RepairContractDocumentEditorPage({
       window.print();
       return;
     }
-    if (
-      activeTab === 'finalEstimate' ||
-      activeTab === 'interactiveFinalEstimate' ||
-      activeTab === 'finalWorkOrder'
-    )
-      return;
+    if (activeTab === 'finalEstimate' || activeTab === 'interactiveFinalEstimate') return;
     if (!renderedDoc) return;
     const printTitle =
       activeTab === 'contract' || isRepairActTwinOneSheetTab(activeTab)
@@ -3485,71 +3485,10 @@ export function RepairContractDocumentEditorPage({
                     />
                   </div>
                 </div>
-                <div className={`${styles.contractInlineRow} ${styles.contractSumAndWordsRow}`}>
-                  <div className={`${styles.field} ${styles.contractInlineField}`}>
-                    <label htmlFor="cta">Стоимость дог.</label>
-                    <input
-                      id="cta"
-                      value={form.contract.totalAmount}
-                      readOnly
-                      className={styles.autoFilledInput}
-                    />
-                  </div>
-                  <div className={`${styles.field} ${styles.contractInlineField}`}>
-                    <label htmlFor="ctaw">Стоимость договора прописью</label>
-                    <input
-                      id="ctaw"
-                      className={styles.autoFilledInput}
-                      value={form.contract.totalAmountWords}
-                      onChange={(e) => updateContract('totalAmountWords', e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className={styles.contractInlineRow}>
-                  <div className={`${styles.field} ${styles.contractInlineField}`}>
-                    <label htmlFor="crp">Рекомендованная предоплата (70%)</label>
-                    <input
-                      id="crp"
-                      className={styles.autoFilledInput}
-                      value={form.contract.recommendedPrepayment}
-                      readOnly
-                    />
-                  </div>
-                </div>
-                <div className={`${styles.contractInlineRow} ${styles.contractSumAndWordsRow}`}>
-                  <div className={`${styles.field} ${styles.contractInlineField}`}>
-                    <label htmlFor="prep">Оплата</label>
-                    <input
-                      id="prep"
-                      value={form.contract.prepaymentAmount}
-                      onChange={(e) => updateContract('prepaymentAmount', e.target.value)}
-                      autoComplete="off"
-                    />
-                  </div>
-                  <div className={`${styles.field} ${styles.contractInlineField}`}>
-                    <label htmlFor="prepw">Оплата прописью</label>
-                    <input
-                      id="prepw"
-                      readOnly
-                      className={styles.autoFilledInput}
-                      value={form.contract.prepaymentAmountWords}
-                      title="Заполняется автоматически из поля «Оплата»; в шаблоне: {{contract.prepaymentAmountWords}}"
-                    />
-                  </div>
-                </div>
-                <div className={`${styles.contractInlineRow} ${styles.contractPaymentBasisRow}`}>
-                  <div
-                    className={`${styles.field} ${styles.contractInlineField} ${styles.contractPaymentBasisField}`}
-                  >
-                    <label htmlFor="paybasis">Основание</label>
-                    <input
-                      id="paybasis"
-                      value={form.contract.paymentBasis}
-                      onChange={(e) => updateContract('paymentBasis', e.target.value)}
-                      placeholder="Например: по договору подряда № … от …"
-                    />
-                  </div>
-                </div>
+                <p className={styles.hint} style={{ marginTop: 6 }}>
+                  Суммы договора, предоплата, основание для ПКО и текст «Оплата» — на вкладке
+                  «Оплаты».
+                </p>
               </div>
             </div>
 
@@ -3934,6 +3873,13 @@ export function RepairContractDocumentEditorPage({
             . На вкладке «Договор» можно править HTML и вставлять плейсхолдеры.
           </p>
         </div>
+      ) : activeTab === 'payments' ? (
+        <RepairContractPaymentsTab
+          packageId={packageId}
+          form={form}
+          onError={setError}
+          onUpdateContract={updateContract}
+        />
       ) : activeTab === 'estimate' ? (
         <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
           <div className={styles.formGrid}>
