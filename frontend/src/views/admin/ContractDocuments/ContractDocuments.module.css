@@ -869,6 +869,35 @@
   min-width: 0;
 }
 
+/* Адрес объекта | этаж — под реквизитами договора; описание — на всю ширину блока */
+.contractObjectAddressRow {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 120px);
+  column-gap: var(--admin-space-xl);
+}
+
+.contractCompactBlock .contractObjectAddressRow .field input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.contractObjectDescRow {
+  grid-template-columns: 1fr;
+}
+
+.contractCompactBlock .contractObjectDescRow .field textarea {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 3.25rem;
+  resize: vertical;
+}
+
+.repairContractDataTabDense .contractCompactBlock .contractObjectDescRow .field textarea {
+  min-height: 2.75rem;
+  resize: vertical;
+}
+
 /* Пара «цифры | пропись»: пропись шире (~2.5× первой колонки), одна строка */
 .contractSumAndWordsRow {
   grid-template-columns: minmax(0, 1fr) minmax(0, 2.5fr);
@@ -1001,10 +1030,6 @@
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
 }
 
-.repairContractDataTabDense .objectSectionFields {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
 .repairContractDataTabDense .field input,
 .repairContractDataTabDense .field select,
 .repairContractDataTabDense .field textarea {
@@ -1034,6 +1059,10 @@
 }
 
 .repairContractDataTabDense .contractHeaderMetaRow {
+  column-gap: var(--admin-space-md);
+}
+
+.repairContractDataTabDense .contractObjectAddressRow {
   column-gap: var(--admin-space-md);
 }
 
@@ -1696,7 +1725,7 @@
     grid-template-columns: 1fr;
   }
 
-  .objectSectionFields {
+  .contractObjectAddressRow {
     grid-template-columns: 1fr;
   }
 }

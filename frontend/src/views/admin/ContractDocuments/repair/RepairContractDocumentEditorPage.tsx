@@ -3621,7 +3621,6 @@ export function RepairContractDocumentEditorPage({
               </div>
 
               <div className={`${styles.dataTopBlock} ${styles.contractCompactBlock}`}>
-                <h3 className={styles.sectionTitle}>Договор</h3>
                 <div className={`${styles.contractInlineRow} ${styles.contractHeaderMetaRow}`}>
                   <div className={`${styles.field} ${styles.contractInlineField}`}>
                     <label htmlFor="cn">Номер договора</label>
@@ -3655,10 +3654,36 @@ export function RepairContractDocumentEditorPage({
                     />
                   </div>
                 </div>
-                <p className={styles.hint} style={{ marginTop: 6 }}>
-                  Суммы договора, предоплата, основание для ПКО и текст «Оплата» — на вкладке
-                  «Оплаты».
-                </p>
+                <div className={`${styles.contractInlineRow} ${styles.contractObjectAddressRow}`}>
+                  <div className={`${styles.field} ${styles.contractInlineField}`}>
+                    <label htmlFor="o_addr">Адрес объекта</label>
+                    <input
+                      id="o_addr"
+                      value={form.object.objectAddress}
+                      onChange={(e) => updateObject('objectAddress', e.target.value)}
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className={`${styles.field} ${styles.contractInlineField}`}>
+                    <label htmlFor="o_floor">Этаж</label>
+                    <input
+                      id="o_floor"
+                      value={form.object.objectFloor}
+                      onChange={(e) => updateObject('objectFloor', e.target.value)}
+                      autoComplete="off"
+                    />
+                  </div>
+                </div>
+                <div className={`${styles.contractInlineRow} ${styles.contractObjectDescRow}`}>
+                  <div className={`${styles.field} ${styles.contractInlineField}`}>
+                    <label htmlFor="o_desc">Описание работ / объекта</label>
+                    <textarea
+                      id="o_desc"
+                      value={form.object.objectDescription}
+                      onChange={(e) => updateObject('objectDescription', e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -3790,36 +3815,6 @@ export function RepairContractDocumentEditorPage({
                     </div>
                   </>
                 ) : null}
-              </div>
-            </div>
-
-            <div className={`${styles.sectionCard} ${styles.sectionObject}`}>
-              <h3 className={styles.sectionTitle}>Объект</h3>
-              <div className={`${styles.sectionFields} ${styles.objectSectionFields}`}>
-                <div className={styles.field}>
-                  <label htmlFor="o_addr">Адрес объекта</label>
-                  <input
-                    id="o_addr"
-                    value={form.object.objectAddress}
-                    onChange={(e) => updateObject('objectAddress', e.target.value)}
-                  />
-                </div>
-                <div className={styles.field}>
-                  <label htmlFor="o_floor">Этаж</label>
-                  <input
-                    id="o_floor"
-                    value={form.object.objectFloor}
-                    onChange={(e) => updateObject('objectFloor', e.target.value)}
-                  />
-                </div>
-                <div className={styles.field}>
-                  <label htmlFor="o_desc">Описание работ / объекта</label>
-                  <textarea
-                    id="o_desc"
-                    value={form.object.objectDescription}
-                    onChange={(e) => updateObject('objectDescription', e.target.value)}
-                  />
-                </div>
               </div>
             </div>
 
