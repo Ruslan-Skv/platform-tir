@@ -210,28 +210,59 @@ export class ContractsService {
   }
 
   async getCustomersFromContracts(search?: string) {
+    const buildTokenMatch = (rawToken: string): Prisma.ContractWhereInput => {
+      const t = rawToken.trim();
+      const digitsOnly = t.replace(/\D/g, '');
+      const or: Prisma.ContractWhereInput[] = [
+        { customerName: { contains: t, mode: 'insensitive' } },
+        { customerPhone: { contains: t } },
+        { customerAddress: { contains: t, mode: 'insensitive' } },
+        {
+          customer: {
+            is: {
+              OR: [
+                { firstName: { contains: t, mode: 'insensitive' } },
+                { lastName: { contains: t, mode: 'insensitive' } },
+                { company: { contains: t, mode: 'insensitive' } },
+                { phone: { contains: t } },
+                { email: { contains: t, mode: 'insensitive' } },
+              ],
+            },
+          },
+        },
+      ];
+      if (digitsOnly.length >= 10) {
+        or.push({ notes: { contains: digitsOnly, mode: 'insensitive' } });
+      }
+      return { OR: or };
+    };
+
     const where: Prisma.ContractWhereInput = {
       OR: [
         { customerName: { not: null, notIn: [''] } },
         { customerPhone: { not: null, notIn: [''] } },
+        { customerId: { not: null } },
       ],
     };
     if (search?.trim()) {
-      const term = search.trim();
-      where.AND = [
-        {
-          OR: [
-            { customerName: { contains: term, mode: 'insensitive' } },
-            { customerPhone: { contains: term } },
-            { customerAddress: { contains: term, mode: 'insensitive' } },
-          ],
-        },
-      ];
+      const tokens = search
+        .trim()
+        .split(/\s+/)
+        .map((x) => x.trim())
+        .filter((x) => x.length > 0);
+      if (tokens.length === 0) {
+        /* keep base where */
+      } else if (tokens.length === 1) {
+        where.AND = [buildTokenMatch(tokens[0]!)];
+      } else {
+        where.AND = tokens.map((tok) => buildTokenMatch(tok));
+      }
     }
     const contracts = await this.prisma.contract.findMany({
       where,
       select: {
         id: true,
+        customerId: true,
         customerName: true,
         customerPhone: true,
         customerAddress: true,
@@ -262,7 +293,7 @@ export class ContractsService {
     >();
 
     for (const c of contracts) {
-      const k = key(c.customerName, c.customerPhone);
+      const k = c.customerId ? `cid:${c.customerId}` : key(c.customerName, c.customerPhone);
       const existing = map.get(k);
       const totalAmount = Number(c.totalAmount ?? 0);
       if (!existing) {

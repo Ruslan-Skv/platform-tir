@@ -26,8 +26,8 @@ import {
   restoreContractDocumentPackageVersion,
   updateContractDocumentPackage,
 } from '@/shared/api/admin-contract-document-packages';
-import type { Contract, InstallerMaster } from '@/shared/api/admin-crm';
-import { getContract, getContracts, getInstallers } from '@/shared/api/admin-crm';
+import type { ContractCustomer, InstallerMaster } from '@/shared/api/admin-crm';
+import { getContract, getContractCustomers, getInstallers } from '@/shared/api/admin-crm';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
 import styles from '../ContractDocuments.module.css';
@@ -483,9 +483,18 @@ export function RepairContractDocumentEditorPage({
   const [error, setError] = useState<string | null>(null);
   const [isRevertStatusConfirmModalOpen, setIsRevertStatusConfirmModalOpen] = useState(false);
   const [dirty, setDirty] = useState(false);
-  const [contractQuery, setContractQuery] = useState('');
-  const [contractResults, setContractResults] = useState<Contract[]>([]);
-  const [contractsLoading, setContractsLoading] = useState(false);
+  const [customerSearchKind, setCustomerSearchKind] = useState<
+    'PERSON' | 'COMPANY' | 'ENTREPRENEUR'
+  >('PERSON');
+  const [customerFlFio, setCustomerFlFio] = useState('');
+  const [customerFlPhone, setCustomerFlPhone] = useState('');
+  const [customerFlAddress, setCustomerFlAddress] = useState('');
+  const [customerUlOrg, setCustomerUlOrg] = useState('');
+  const [customerUlInn, setCustomerUlInn] = useState('');
+  const [customerResults, setCustomerResults] = useState<ContractCustomer[]>([]);
+  const [customerSearchLoading, setCustomerSearchLoading] = useState(false);
+  const [customerSearchPopoverOpen, setCustomerSearchPopoverOpen] = useState(false);
+  const customerSearchRootRef = useRef<HTMLDivElement>(null);
   const [templateOverrides, setTemplateOverrides] = useState<
     Partial<Record<RepairDocumentTemplateTabId, string>>
   >({});
@@ -976,28 +985,83 @@ export function RepairContractDocumentEditorPage({
     };
   }, [isVersionsHistoryOpen]);
 
-  const searchContracts = useCallback(async (q: string) => {
-    setContractsLoading(true);
+  const customerSearchQuery = useMemo(() => {
+    if (customerSearchKind === 'PERSON') {
+      return [customerFlFio, customerFlPhone, customerFlAddress]
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .join(' ');
+    }
+    return [customerUlOrg, customerUlInn]
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join(' ');
+  }, [
+    customerSearchKind,
+    customerFlFio,
+    customerFlPhone,
+    customerFlAddress,
+    customerUlOrg,
+    customerUlInn,
+  ]);
+
+  const openCustomerSearchPopoverIfReady = useCallback(() => {
+    if (customerSearchQuery.trim().length >= 2) {
+      setCustomerSearchPopoverOpen(true);
+    }
+  }, [customerSearchQuery]);
+
+  const searchCustomersFromContracts = useCallback(async (q: string) => {
+    if (q.trim().length < 2) {
+      setCustomerResults([]);
+      return;
+    }
+    setCustomerSearchLoading(true);
     try {
-      const res = await getContracts({
-        search: q.trim() || undefined,
-        limit: 25,
-        page: 1,
-      });
-      setContractResults(res.data);
+      const res = await getContractCustomers(q);
+      setCustomerResults(res.customers);
     } catch {
-      setContractResults([]);
+      setCustomerResults([]);
     } finally {
-      setContractsLoading(false);
+      setCustomerSearchLoading(false);
     }
   }, []);
 
   useEffect(() => {
     const t = window.setTimeout(() => {
-      void searchContracts(contractQuery);
-    }, 350);
+      void searchCustomersFromContracts(customerSearchQuery);
+    }, 400);
     return () => window.clearTimeout(t);
-  }, [contractQuery, searchContracts]);
+  }, [customerSearchQuery, searchCustomersFromContracts]);
+
+  useEffect(() => {
+    if (customerSearchQuery.trim().length < 2) {
+      setCustomerSearchPopoverOpen(false);
+      return;
+    }
+    setCustomerSearchPopoverOpen(true);
+  }, [customerSearchQuery]);
+
+  useEffect(() => {
+    if (!customerSearchPopoverOpen) return;
+    const onDocMouseDown = (e: MouseEvent) => {
+      const root = customerSearchRootRef.current;
+      if (!root) return;
+      const t = e.target;
+      if (t instanceof Node && !root.contains(t)) {
+        setCustomerSearchPopoverOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocMouseDown, true);
+    return () => document.removeEventListener('mousedown', onDocMouseDown, true);
+  }, [customerSearchPopoverOpen]);
+
+  useEffect(() => {
+    const t = form.customer.type;
+    setCustomerSearchKind(
+      t === 'PERSON' ? 'PERSON' : t === 'ENTREPRENEUR' ? 'ENTREPRENEUR' : 'COMPANY'
+    );
+  }, [form.customer.type]);
 
   const handleMarkContractConcluded = async () => {
     setSavingPackageStatus(true);
@@ -1140,13 +1204,14 @@ export function RepairContractDocumentEditorPage({
     }
   };
 
-  const handlePullFromCrm = async () => {
-    if (!draftCrmContractId) return;
+  const applyCrmContractToFormById = async (contractId: string) => {
     setError(null);
     try {
-      const c = await getContract(draftCrmContractId);
+      const c = await getContract(contractId);
+      setDraftCrmContractId(contractId);
       setForm((prev) => mergeRepairFormFromCrmContract(c, prev));
       touchPackageData();
+      setCustomerSearchPopoverOpen(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось загрузить договор CRM');
     }
@@ -3378,74 +3443,176 @@ export function RepairContractDocumentEditorPage({
       </div>
 
       {activeTab === 'data' ? (
-        <div className={`${styles.blockData} ${styles.dataCompact}`}>
+        <div
+          className={`${styles.blockData} ${styles.dataCompact} ${styles.repairContractDataTabDense}`}
+        >
           <div className={styles.formGrid}>
             <div className={styles.dataTopRow}>
               <div className={styles.dataTopBlock}>
                 <div
-                  className={`${styles.field} ${styles.crmCompactField} ${styles.crmCompactBox}`}
+                  ref={customerSearchRootRef}
+                  onFocusCapture={openCustomerSearchPopoverIfReady}
+                  className={`${styles.field} ${styles.crmCompactField} ${styles.crmCompactBox} ${styles.repairCustomerSearchWrap}`}
                 >
-                  <h3 className={styles.sectionTitle}>Связь с CRM</h3>
-                  <label htmlFor="crm_search">Найти договор (№, ФИО, телефон)</label>
-                  <input
-                    id="crm_search"
-                    value={contractQuery}
-                    onChange={(e) => setContractQuery(e.target.value)}
-                    placeholder="Начните вводить для поиска…"
-                  />
-                  <p className={styles.hint} style={{ marginTop: 2 }}>
-                    {contractsLoading ? 'Поиск…' : `Найдено: ${contractResults.length}`}
-                  </p>
-                  {contractResults.length > 0 ? (
-                    <ul className={styles.crmResultsList}>
-                      {contractResults.map((c) => (
-                        <li key={c.id} className={styles.crmResultItem}>
-                          <button
-                            type="button"
-                            className={`${styles.secondaryBtn} ${styles.crmResultBtn}`}
-                            onClick={() => {
-                              setDraftCrmContractId(c.id);
-                              touchPackageData();
-                            }}
-                          >
-                            № {c.contractNumber} · {c.customerName || '—'}{' '}
-                            {draftCrmContractId === c.id ? '(выбран)' : ''}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                </div>
-                <div
-                  className={`${styles.field} ${styles.crmCompactField} ${styles.crmCompactBox}`}
-                  style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}
-                >
-                  <button
-                    type="button"
-                    className={styles.secondaryBtn}
-                    disabled={!draftCrmContractId}
-                    onClick={() => void handlePullFromCrm()}
+                  <h3 className={styles.sectionTitle}>Поиск заказчика в базе</h3>
+                  <div
+                    className={styles.repairCustomerSearchModeRow}
+                    role="group"
+                    aria-label="Тип заказчика"
                   >
-                    Подставить данные из CRM в форму
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.secondaryBtn}
-                    disabled={!draftCrmContractId}
-                    onClick={() => {
-                      setDraftCrmContractId(null);
-                      touchPackageData();
-                    }}
-                  >
-                    Отвязать договор
-                  </button>
-                  {draftCrmContractId ? (
-                    <Link
-                      className={styles.secondaryBtn}
-                      href={`/admin/crm/contracts/${draftCrmContractId}`}
+                    <button
+                      type="button"
+                      className={
+                        customerSearchKind === 'PERSON' ? styles.primaryBtn : styles.secondaryBtn
+                      }
+                      onClick={() => {
+                        setCustomerSearchKind('PERSON');
+                        updateCustomer('type', 'PERSON');
+                      }}
                     >
-                      Открыть карточку в CRM
-                    </Link>
+                      Физлицо
+                    </button>
+                    <button
+                      type="button"
+                      className={
+                        customerSearchKind === 'COMPANY' ? styles.primaryBtn : styles.secondaryBtn
+                      }
+                      onClick={() => {
+                        setCustomerSearchKind('COMPANY');
+                        updateCustomer('type', 'COMPANY');
+                      }}
+                    >
+                      ЮЛ
+                    </button>
+                    <button
+                      type="button"
+                      className={
+                        customerSearchKind === 'ENTREPRENEUR'
+                          ? styles.primaryBtn
+                          : styles.secondaryBtn
+                      }
+                      onClick={() => {
+                        setCustomerSearchKind('ENTREPRENEUR');
+                        updateCustomer('type', 'ENTREPRENEUR');
+                      }}
+                      title="Индивидуальный предприниматель"
+                    >
+                      ИП
+                    </button>
+                  </div>
+                  {customerSearchKind === 'PERSON' ? (
+                    <div className={styles.repairCustomerSearchFlGrid}>
+                      <div className={styles.field}>
+                        <label htmlFor="crm_cust_fio">ФИО</label>
+                        <input
+                          id="crm_cust_fio"
+                          value={customerFlFio}
+                          onChange={(e) => setCustomerFlFio(e.target.value)}
+                          onClick={openCustomerSearchPopoverIfReady}
+                          placeholder="Фамилия Имя Отчество"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div className={styles.field}>
+                        <label htmlFor="crm_cust_phone">Телефон</label>
+                        <input
+                          id="crm_cust_phone"
+                          value={customerFlPhone}
+                          onChange={(e) => setCustomerFlPhone(e.target.value)}
+                          onClick={openCustomerSearchPopoverIfReady}
+                          placeholder="+7…"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div className={styles.field}>
+                        <label htmlFor="crm_cust_addr">Адрес</label>
+                        <input
+                          id="crm_cust_addr"
+                          value={customerFlAddress}
+                          onChange={(e) => setCustomerFlAddress(e.target.value)}
+                          onClick={openCustomerSearchPopoverIfReady}
+                          placeholder="Город, улица…"
+                          autoComplete="off"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={styles.repairCustomerSearchUlGrid}>
+                      <div className={styles.field}>
+                        <label htmlFor="crm_cust_org">Наименование организации</label>
+                        <input
+                          id="crm_cust_org"
+                          value={customerUlOrg}
+                          onChange={(e) => setCustomerUlOrg(e.target.value)}
+                          onClick={openCustomerSearchPopoverIfReady}
+                          placeholder="ООО, ИП…"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div className={styles.field}>
+                        <label htmlFor="crm_cust_inn">ИНН</label>
+                        <input
+                          id="crm_cust_inn"
+                          value={customerUlInn}
+                          onChange={(e) => setCustomerUlInn(e.target.value)}
+                          onClick={openCustomerSearchPopoverIfReady}
+                          placeholder="10 или 12 цифр"
+                          inputMode="numeric"
+                          autoComplete="off"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  {customerSearchQuery.trim().length < 2 ? (
+                    <p className={styles.hint} style={{ marginTop: 6 }}>
+                      Введите не менее 2 символов (по всем заполненным полям). Совпадения — в
+                      выпадающем списке.
+                    </p>
+                  ) : null}
+                  {customerSearchPopoverOpen && customerSearchQuery.trim().length >= 2 ? (
+                    <div className={styles.repairCustomerSearchDropdown} role="listbox">
+                      <div className={styles.repairCustomerSearchDropdownHeader}>
+                        {customerSearchLoading
+                          ? 'Поиск…'
+                          : `Найдено: ${customerResults.length}. Клик по строке — подставить данные в форму.`}
+                      </div>
+                      <div className={styles.repairCustomerSearchDropdownBody}>
+                        {customerSearchLoading ? null : customerResults.length === 0 ? (
+                          <p className={styles.hint} style={{ margin: '8px 12px' }}>
+                            Ничего не найдено
+                          </p>
+                        ) : (
+                          <ul className={styles.repairCustomerSearchDropdownList}>
+                            {customerResults.map((c) => {
+                              const rowKey = `${c.lastContractId ?? c.customerName}|${c.customerPhone}`;
+                              return (
+                                <li key={rowKey} className={styles.crmResultItem}>
+                                  <button
+                                    type="button"
+                                    className={`${styles.secondaryBtn} ${styles.crmResultBtn}`}
+                                    disabled={!c.lastContractId}
+                                    onClick={() => {
+                                      if (!c.lastContractId) return;
+                                      void applyCrmContractToFormById(c.lastContractId);
+                                    }}
+                                  >
+                                    {c.customerName} · {c.customerPhone}
+                                    {c.customerAddress ? ` · ${c.customerAddress}` : ''}
+                                    {c.lastContractNumber != null
+                                      ? ` · последний договор № ${c.lastContractNumber}`
+                                      : ''}
+                                    {c.contractCount > 1 ? ` (${c.contractCount} дог.)` : ''}
+                                    {c.lastContractId && draftCrmContractId === c.lastContractId
+                                      ? ' (выбран)'
+                                      : ''}
+                                  </button>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
                   ) : null}
                 </div>
               </div>
@@ -3524,7 +3691,7 @@ export function RepairContractDocumentEditorPage({
                 ) : (
                   <>
                     <div className={styles.field}>
-                      <label htmlFor="c_repFullNameNom">ФИО представителя (именительный)</label>
+                      <label htmlFor="c_repFullNameNom">ФИО представителя (именит.)</label>
                       <input
                         id="c_repFullNameNom"
                         value={form.customer.representativeFullNameNominative}
@@ -3534,7 +3701,7 @@ export function RepairContractDocumentEditorPage({
                       />
                     </div>
                     <div className={styles.field}>
-                      <label htmlFor="c_repFullNameGen">ФИО представителя (родительный)</label>
+                      <label htmlFor="c_repFullNameGen">ФИО представителя (родит.)</label>
                       <input
                         id="c_repFullNameGen"
                         value={form.customer.representativeFullNameGenitive}
@@ -3556,7 +3723,7 @@ export function RepairContractDocumentEditorPage({
                       />
                     </div>
                     <div className={styles.field}>
-                      <label htmlFor="c_posNom">Должность представителя (именительный)</label>
+                      <label htmlFor="c_posNom">Должность представ. (именит.)</label>
                       <input
                         id="c_posNom"
                         value={form.customer.representativePositionNominative}
@@ -3566,7 +3733,7 @@ export function RepairContractDocumentEditorPage({
                       />
                     </div>
                     <div className={styles.field}>
-                      <label htmlFor="c_posGen">Должность представителя (родительный)</label>
+                      <label htmlFor="c_posGen">Должность представ. (родит.)</label>
                       <input
                         id="c_posGen"
                         value={form.customer.representativePositionGenitive}
@@ -3617,10 +3784,13 @@ export function RepairContractDocumentEditorPage({
                     onChange={(e) => updateCustomer('email', e.target.value)}
                   />
                 </div>
-                <div className={`${styles.field} ${styles.fieldSpanAll}`}>
+                <div
+                  className={`${styles.field} ${styles.fieldSpanAll} ${styles.customerBankDetailsField}`}
+                >
                   <label htmlFor="c_bank_details">Банковские реквизиты</label>
                   <textarea
                     id="c_bank_details"
+                    rows={1}
                     value={form.customer.bankDetails}
                     onChange={(e) => updateCustomer('bankDetails', e.target.value)}
                   />
@@ -3653,6 +3823,36 @@ export function RepairContractDocumentEditorPage({
                     </div>
                   </>
                 ) : null}
+              </div>
+            </div>
+
+            <div className={`${styles.sectionCard} ${styles.sectionObject}`}>
+              <h3 className={styles.sectionTitle}>Объект</h3>
+              <div className={`${styles.sectionFields} ${styles.objectSectionFields}`}>
+                <div className={styles.field}>
+                  <label htmlFor="o_addr">Адрес объекта</label>
+                  <input
+                    id="o_addr"
+                    value={form.object.objectAddress}
+                    onChange={(e) => updateObject('objectAddress', e.target.value)}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="o_floor">Этаж</label>
+                  <input
+                    id="o_floor"
+                    value={form.object.objectFloor}
+                    onChange={(e) => updateObject('objectFloor', e.target.value)}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="o_desc">Описание работ / объекта</label>
+                  <textarea
+                    id="o_desc"
+                    value={form.object.objectDescription}
+                    onChange={(e) => updateObject('objectDescription', e.target.value)}
+                  />
+                </div>
               </div>
             </div>
 
@@ -3793,7 +3993,7 @@ export function RepairContractDocumentEditorPage({
                   </p>
                 ) : null}
                 <div className={styles.field}>
-                  <label htmlFor="e_directorNom">Подписант (именительный падеж)</label>
+                  <label htmlFor="e_directorNom">Подписант (именит. падеж)</label>
                   <input
                     id="e_directorNom"
                     value={form.executor.directorNameNominative}
@@ -3801,7 +4001,7 @@ export function RepairContractDocumentEditorPage({
                   />
                 </div>
                 <div className={styles.field}>
-                  <label htmlFor="e_directorGen">Подписант (родительный падеж)</label>
+                  <label htmlFor="e_directorGen">Подписант (родит. падеж)</label>
                   <input
                     id="e_directorGen"
                     value={form.executor.directorNameGenitive}
@@ -3830,36 +4030,6 @@ export function RepairContractDocumentEditorPage({
                     id="e_office_phone"
                     value={form.executor.officePhone}
                     onChange={(e) => updateExecutor('officePhone', e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className={`${styles.sectionCard} ${styles.sectionObject}`}>
-              <h3 className={styles.sectionTitle}>Объект</h3>
-              <div className={`${styles.sectionFields} ${styles.objectSectionFields}`}>
-                <div className={styles.field}>
-                  <label htmlFor="o_addr">Адрес объекта</label>
-                  <input
-                    id="o_addr"
-                    value={form.object.objectAddress}
-                    onChange={(e) => updateObject('objectAddress', e.target.value)}
-                  />
-                </div>
-                <div className={styles.field}>
-                  <label htmlFor="o_floor">Этаж</label>
-                  <input
-                    id="o_floor"
-                    value={form.object.objectFloor}
-                    onChange={(e) => updateObject('objectFloor', e.target.value)}
-                  />
-                </div>
-                <div className={styles.field}>
-                  <label htmlFor="o_desc">Описание работ / объекта</label>
-                  <textarea
-                    id="o_desc"
-                    value={form.object.objectDescription}
-                    onChange={(e) => updateObject('objectDescription', e.target.value)}
                   />
                 </div>
               </div>

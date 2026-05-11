@@ -31,11 +31,11 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
       { path: 'customer.organizationName', label: 'Наименование организации' },
       {
         path: 'customer.representativePositionNominative',
-        label: 'Должность представителя (именительный падеж)',
+        label: 'Должность представителя (именит. падеж)',
       },
       {
         path: 'customer.representativePositionGenitive',
-        label: 'Должность представителя (родительный падеж)',
+        label: 'Должность представителя (родит. падеж)',
       },
       { path: 'customer.inn', label: 'ИНН заказчика' },
       { path: 'customer.ogrn', label: 'ОГРН заказчика' },
