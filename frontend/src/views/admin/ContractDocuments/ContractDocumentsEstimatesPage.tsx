@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -9,9 +9,7 @@ import {
   type ContractDocumentPackageStatus,
   type ContractEstimateGroup,
   type ContractEstimatePreset,
-  type ContractEstimatePresetsHistoryEntry,
   getContractDocumentEstimatePresets,
-  getContractDocumentEstimatePresetsHistory,
   getContractDocumentPackages,
   putContractDocumentEstimatePresets,
 } from '@/shared/api/admin-contract-document-packages';
@@ -19,6 +17,7 @@ import { getMeasurements } from '@/shared/api/admin-crm';
 
 import styles from './ContractDocuments.module.css';
 import { getDisplayContractDate, getDisplayContractNumber } from './repair/packageContractDisplay';
+import { clampEstimateAdditionalMarkupPercent } from './repair/repairApplyEstimatePresetIds';
 import { persistRepairPackageAfterRemovingEstimatePreset } from './repair/repairDetachEstimatePresetFromPackages';
 
 type EstimatePackageUsage =
@@ -62,6 +61,14 @@ function sortEstimateGroupsByTitle(gs: ContractEstimateGroup[]) {
   return [...gs].sort((a, b) => a.title.localeCompare(b.title, 'ru'));
 }
 
+function parseOptionalPercentInput(raw: string): number | undefined {
+  const t = raw.trim().replace(',', '.');
+  if (!t) return undefined;
+  const n = Number(t);
+  if (!Number.isFinite(n)) return undefined;
+  return n;
+}
+
 /** Убирает ссылку на несуществующую группу (после удаления объекта и т.п.). */
 function stripOrphanGroupIds(
   rows: ContractEstimatePreset[],
@@ -73,6 +80,101 @@ function stripOrphanGroupIds(
     const { groupId: _removed, ...rest } = it;
     return rest as ContractEstimatePreset;
   });
+}
+
+/** Иконки фильтра по привязке расчёта к договору (отдельная визуальная группа). */
+function EstimatesAttachmentFilterControl({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: 'all' | 'bound' | 'unbound';
+  onChange: (next: 'all' | 'bound' | 'unbound') => void;
+  disabled?: boolean;
+}) {
+  const btn = (mode: 'all' | 'bound' | 'unbound', label: string, children: ReactNode) => (
+    <button
+      type="button"
+      className={`${styles.estimatesAttachmentFilterBtn} ${value === mode ? styles.estimatesAttachmentFilterBtnActive : ''}`}
+      disabled={disabled}
+      aria-pressed={value === mode}
+      aria-label={label}
+      title={label}
+      onClick={() => onChange(mode)}
+    >
+      {children}
+    </button>
+  );
+
+  return (
+    <div
+      role="toolbar"
+      aria-label="Фильтр по привязке к договору"
+      className={styles.estimatesAttachmentFilterGroup}
+    >
+      {btn(
+        'all',
+        'Все расчёты',
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width={18}
+          height={18}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <line x1="8" y1="6" x2="21" y2="6" />
+          <line x1="8" y1="12" x2="21" y2="12" />
+          <line x1="8" y1="18" x2="21" y2="18" />
+          <line x1="3" y1="6" x2="3.01" y2="6" />
+          <line x1="3" y1="12" x2="3.01" y2="12" />
+          <line x1="3" y1="18" x2="3.01" y2="18" />
+        </svg>
+      )}
+      {btn(
+        'bound',
+        'Только привязанные к договору',
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width={18}
+          height={18}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+        </svg>
+      )}
+      {btn(
+        'unbound',
+        'Только не привязанные к договору',
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width={18}
+          height={18}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+          <line x1="4" y1="4" x2="20" y2="20" />
+        </svg>
+      )}
+    </div>
+  );
 }
 
 export function ContractDocumentsEstimatesPage() {
@@ -103,9 +205,6 @@ export function ContractDocumentsEstimatesPage() {
     usages: EstimatePackageUsage[];
   } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [historyBusy, setHistoryBusy] = useState(false);
-  const [historyRows, setHistoryRows] = useState<ContractEstimatePresetsHistoryEntry[]>([]);
   const [isGenerateFromMeasurementOpen, setIsGenerateFromMeasurementOpen] = useState(false);
   const [completedMeasurements, setCompletedMeasurements] = useState<
     Array<{
@@ -117,18 +216,7 @@ export function ContractDocumentsEstimatesPage() {
   >([]);
   const [completedMeasurementsBusy, setCompletedMeasurementsBusy] = useState(false);
   const [selectedMeasurementId, setSelectedMeasurementId] = useState('');
-
-  const loadEstimateHistory = useCallback(async () => {
-    setHistoryBusy(true);
-    try {
-      const rows = await getContractDocumentEstimatePresetsHistory('REPAIR');
-      setHistoryRows(rows);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось загрузить историю изменений расчётов');
-    } finally {
-      setHistoryBusy(false);
-    }
-  }, []);
+  const [archiveView, setArchiveView] = useState(false);
 
   const openGenerateFromMeasurementModal = useCallback(async () => {
     setIsGenerateFromMeasurementOpen(true);
@@ -152,42 +240,6 @@ export function ContractDocumentsEstimatesPage() {
       setCompletedMeasurementsBusy(false);
     }
   }, []);
-
-  useEffect(() => {
-    if (!isHistoryOpen) return;
-    void loadEstimateHistory();
-  }, [isHistoryOpen, loadEstimateHistory]);
-
-  const formatHistoryDate = (iso: string) => {
-    try {
-      return new Date(iso).toLocaleString('ru-RU', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch {
-      return iso;
-    }
-  };
-
-  const HISTORY_FIELD_LABELS: Record<string, string> = {
-    estimateItemsCountChanged: 'Изменилось количество расчётов',
-    estimateGroupsCountChanged: 'Изменилось количество объектов',
-    estimateItemsUpdated: 'Изменены расчёты',
-    estimateGroupsUpdated: 'Изменены объекты',
-    estimateDataUpdated: 'Изменены данные расчётов',
-  };
-
-  const formatHistoryFields = (fields: string[]) =>
-    fields.map((field) => HISTORY_FIELD_LABELS[field] ?? field).join(', ');
-
-  const formatHistoryAction = (action: ContractEstimatePresetsHistoryEntry['action']) => {
-    if (action === 'CREATE') return 'Создание';
-    if (action === 'ROLLBACK') return 'Откат';
-    return 'Изменение';
-  };
 
   const fetchEstimatesFromServer = useCallback(async () => {
     const [presetsRes, packagesRes] = await Promise.all([
@@ -300,14 +352,54 @@ export function ContractDocumentsEstimatesPage() {
     void persistEstimates(nextItems, nextGroups);
   };
 
+  const setGroupArchived = (groupId: string, archived: boolean) => {
+    const nextGroups = groups.map((g) => {
+      if (g.id !== groupId) return g;
+      if (archived) {
+        return { ...g, archived: true, updatedAt: new Date().toISOString() };
+      }
+      const { archived: _drop, ...rest } = g;
+      return { ...rest, updatedAt: new Date().toISOString() } as ContractEstimateGroup;
+    });
+    if (!archived) {
+      const nextItems = items.map((it) => {
+        if (it.groupId !== groupId || !it.archived) return it;
+        const { archived: _d, ...rest } = it;
+        return { ...rest, updatedAt: new Date().toISOString() } as ContractEstimatePreset;
+      });
+      void persistEstimates(nextItems, nextGroups);
+      return;
+    }
+    void persistEstimates(items, nextGroups);
+  };
+
+  const setPresetArchived = (estimateId: string, archived: boolean) => {
+    const nextItems = items.map((it) => {
+      if (it.id !== estimateId) return it;
+      if (archived) {
+        return { ...it, archived: true, updatedAt: new Date().toISOString() };
+      }
+      const { archived: _drop, ...rest } = it;
+      return { ...rest, updatedAt: new Date().toISOString() } as ContractEstimatePreset;
+    });
+    void persistEstimates(nextItems, groups);
+  };
+
   const assignEstimateToGroup = (estimateId: string, groupId: string | null) => {
     const nextItems = items.map((it) => {
       if (it.id !== estimateId) return it;
+      let next: ContractEstimatePreset;
       if (!groupId) {
         const { groupId: _g, ...rest } = it;
-        return rest as ContractEstimatePreset;
+        next = rest as ContractEstimatePreset;
+      } else {
+        next = { ...it, groupId };
+        if (next.archived) {
+          const { archived: _a, ...r } = next;
+          next = { ...r } as ContractEstimatePreset;
+        }
       }
-      return { ...it, groupId };
+      return next;
     });
     void persistEstimates(nextItems, groups);
   };
@@ -325,7 +417,7 @@ export function ContractDocumentsEstimatesPage() {
     let detachOk = false;
     try {
       for (const u of usages) {
-        await persistRepairPackageAfterRemovingEstimatePreset(u.packageId, it.id, items);
+        await persistRepairPackageAfterRemovingEstimatePreset(u.packageId, it.id, items, groups);
       }
       const packagesRes = await getContractDocumentPackages('REPAIR');
       setRepairPackages(
@@ -368,7 +460,7 @@ export function ContractDocumentsEstimatesPage() {
     let detachOk = false;
     try {
       for (const u of usages) {
-        await persistRepairPackageAfterRemovingEstimatePreset(u.packageId, it.id, items);
+        await persistRepairPackageAfterRemovingEstimatePreset(u.packageId, it.id, items, groups);
       }
       const packagesRes = await getContractDocumentPackages('REPAIR');
       setRepairPackages(
@@ -502,26 +594,143 @@ export function ContractDocumentsEstimatesPage() {
     }
     return map;
   }, [repairPackages]);
-  const visibleItems = useMemo(
+
+  /** Объект: нельзя менять наценку на уровне группы, если хотя бы один расчёт группы в подписанном договоре / Д/с. */
+  const groupIdsWithLockedEstimate = useMemo(() => {
+    const ids = new Set<string>();
+    for (const it of items) {
+      if (!it.groupId) continue;
+      const usages = usageByEstimateId.get(it.id) ?? [];
+      if (usages.some((u) => isUsageLocked(u))) ids.add(it.groupId);
+    }
+    return ids;
+  }, [items, usageByEstimateId]);
+
+  const updateGroupAdditionalMarkupPercent = (groupId: string, raw: string) => {
+    if (groupIdsWithLockedEstimate.has(groupId)) return;
+    const group = groups.find((g) => g.id === groupId);
+    if (!group) return;
+    const parsed = parseOptionalPercentInput(raw);
+    const hadExplicit = typeof group.additionalMarkupPercent === 'number';
+
+    if (parsed === undefined) {
+      if (!hadExplicit) return;
+      const { additionalMarkupPercent: _drop, ...rest } = group;
+      const nextGroups = groups.map((g) =>
+        g.id === groupId
+          ? ({ ...rest, updatedAt: new Date().toISOString() } as ContractEstimateGroup)
+          : g
+      );
+      void persistEstimates(items, nextGroups);
+      return;
+    }
+
+    const nextGroups = groups.map((g) => {
+      if (g.id !== groupId) return g;
+      return {
+        ...g,
+        updatedAt: new Date().toISOString(),
+        additionalMarkupPercent: clampEstimateAdditionalMarkupPercent(parsed),
+      };
+    });
+    void persistEstimates(items, nextGroups);
+  };
+
+  const updatePresetAdditionalMarkupPercent = (estimateId: string, raw: string) => {
+    const usages = usageByEstimateId.get(estimateId) ?? [];
+    if (usages.some((u) => isUsageLocked(u))) return;
+    const current = items.find((it) => it.id === estimateId);
+    if (!current) return;
+    const parsed = parseOptionalPercentInput(raw);
+    const hadExplicit = typeof current.additionalMarkupPercent === 'number';
+
+    if (parsed === undefined) {
+      if (!hadExplicit) return;
+      const { additionalMarkupPercent: _drop, ...rest } = current;
+      const nextItems = items.map((it) =>
+        it.id === estimateId ? (rest as ContractEstimatePreset) : it
+      );
+      void persistEstimates(nextItems, groups);
+      return;
+    }
+
+    const nextItems = items.map((it) => {
+      if (it.id !== estimateId) return it;
+      return {
+        ...it,
+        additionalMarkupPercent: clampEstimateAdditionalMarkupPercent(parsed),
+      };
+    });
+    void persistEstimates(nextItems, groups);
+  };
+
+  const visibleItems = useMemo(() => {
+    const base = itemsSorted.filter((it) => {
+      const isBound = (usageByEstimateId.get(it.id)?.length ?? 0) > 0;
+      if (attachmentFilter === 'bound') return isBound;
+      if (attachmentFilter === 'unbound') return !isBound;
+      return true;
+    });
+    return base.filter((it) => {
+      const g = it.groupId ? groups.find((x) => x.id === it.groupId) : undefined;
+      const groupArchived = Boolean(g?.archived);
+      const rowArchived = Boolean(it.archived);
+      const inArchiveCombined = groupArchived || rowArchived;
+      return archiveView ? inArchiveCombined : !inArchiveCombined;
+    });
+  }, [itemsSorted, attachmentFilter, usageByEstimateId, archiveView, groups]);
+
+  const hasAnythingInArchive = useMemo(
     () =>
-      itemsSorted.filter((it) => {
-        const isBound = (usageByEstimateId.get(it.id)?.length ?? 0) > 0;
-        if (attachmentFilter === 'bound') return isBound;
-        if (attachmentFilter === 'unbound') return !isBound;
-        return true;
+      items.some((it) => {
+        const g = it.groupId ? groups.find((x) => x.id === it.groupId) : undefined;
+        return Boolean(it.archived) || Boolean(g?.archived);
       }),
-    [itemsSorted, attachmentFilter, usageByEstimateId]
+    [items, groups]
   );
 
-  const groupsSorted = useMemo(() => sortEstimateGroupsByTitle(groups), [groups]);
+  const groupsSortedMain = useMemo(
+    () => sortEstimateGroupsByTitle(groups.filter((g) => !g.archived)),
+    [groups]
+  );
+  const groupsSortedArchived = useMemo(
+    () => sortEstimateGroupsByTitle(groups.filter((g) => Boolean(g.archived))),
+    [groups]
+  );
+  const groupsForLayout = archiveView ? groupsSortedArchived : groupsSortedMain;
+  const groupsForSelect = groupsForLayout;
 
   const layoutSections = useMemo(() => {
-    const groupIdSet = new Set(groups.map((g) => g.id));
     const sections: Array<
       | { kind: 'group'; group: ContractEstimateGroup; items: ContractEstimatePreset[] }
       | { kind: 'ungrouped'; items: ContractEstimatePreset[] }
+      | { kind: 'soloArchived'; items: ContractEstimatePreset[] }
     > = [];
-    for (const group of groupsSorted) {
+
+    if (archiveView) {
+      for (const group of groupsForLayout) {
+        const inGroup = visibleItems.filter((it) => it.groupId === group.id);
+        if (inGroup.length === 0 && attachmentFilter !== 'all') continue;
+        sections.push({ kind: 'group', group, items: inGroup });
+      }
+      const soloArchived = visibleItems.filter((it) => {
+        if (!it.groupId || !it.archived) return false;
+        const g = groups.find((x) => x.id === it.groupId);
+        if (!g) return false;
+        return !g.archived;
+      });
+      if (soloArchived.length > 0) {
+        sections.push({ kind: 'soloArchived', items: soloArchived });
+      }
+      const ungrouped = visibleItems.filter((it) => !it.groupId);
+      if (ungrouped.length > 0) {
+        sections.push({ kind: 'ungrouped', items: ungrouped });
+      }
+      return sections;
+    }
+
+    const groupIdSet = new Set(groupsForLayout.map((g) => g.id));
+    for (const group of groupsForLayout) {
       const inGroup = visibleItems.filter((it) => it.groupId === group.id);
       if (inGroup.length === 0 && attachmentFilter !== 'all') continue;
       sections.push({ kind: 'group', group, items: inGroup });
@@ -531,12 +740,16 @@ export function ContractDocumentsEstimatesPage() {
       sections.push({ kind: 'ungrouped', items: ungrouped });
     }
     return sections;
-  }, [groupsSorted, visibleItems, attachmentFilter]);
+  }, [groupsForLayout, visibleItems, attachmentFilter, archiveView, groups]);
 
   const renderEstimateCard = (it: ContractEstimatePreset) => {
     const usages = usageByEstimateId.get(it.id) ?? [];
     const isBound = usages.length > 0;
     const hasLockedUsage = usages.some((u) => isUsageLocked(u));
+    const groupForIt = it.groupId ? groups.find((g) => g.id === it.groupId) : undefined;
+    const groupArchived = Boolean(groupForIt?.archived);
+    const canPresetArchive = !isBound && !it.archived && !groupArchived && !it.groupId;
+    const canPresetRestoreFromArchive = Boolean(it.archived) && !groupArchived;
     const primaryUsage = usages[0];
     const primaryLabel = primaryUsage ? formatEstimatePackageUsageLabel(primaryUsage) : '';
     const boundBadgeText = primaryUsage
@@ -552,7 +765,7 @@ export function ContractDocumentsEstimatesPage() {
             {hasLockedUsage ? (
               <span
                 className={styles.estimatesBadge}
-                title="Расчёт нельзя редактировать: договор заключён или Д/с подписано"
+                title="Расчёт нельзя редактировать: договор подписан или Д/с подписано"
                 aria-label="Расчёт заблокирован для редактирования"
               >
                 🔒
@@ -577,21 +790,73 @@ export function ContractDocumentsEstimatesPage() {
             onChange={(e) => assignEstimateToGroup(it.id, e.target.value ? e.target.value : null)}
           >
             <option value="">Не в объекте</option>
-            {groupsSorted.map((g) => (
+            {groupsForSelect.map((g) => (
               <option key={g.id} value={g.id}>
                 {g.title}
               </option>
             ))}
           </select>
         </label>
+        <label
+          className={`${styles.field} ${styles.estimatesCardMarkupField}`}
+          title={
+            hasLockedUsage
+              ? 'Нельзя менять наценку: расчёт закрыт для изменений (прикреплён к пакету со статусом «Договор подписан» или к подписанному Д/с).'
+              : 'Доп. наценка к расчёту, %. Пусто — для расчёта в объекте действует наценка объекта; иначе +% к цене каждой позиции при прикреплении к смете.'
+          }
+        >
+          <span>Наценка, %</span>
+          <input
+            key={`${it.id}:markup:${it.additionalMarkupPercent ?? 'none'}`}
+            type="number"
+            min={0}
+            max={999}
+            step={0.1}
+            defaultValue={
+              typeof it.additionalMarkupPercent === 'number'
+                ? String(it.additionalMarkupPercent)
+                : '0'
+            }
+            disabled={saving || hasLockedUsage}
+            onFocus={(e) => {
+              e.currentTarget.dataset.markupAtFocus = e.currentTarget.value;
+            }}
+            onBlur={(e) => {
+              if (e.currentTarget.dataset.markupAtFocus === e.currentTarget.value) return;
+              updatePresetAdditionalMarkupPercent(it.id, e.target.value);
+            }}
+          />
+        </label>
         <div className={styles.estimatesCardActions}>
+          {!archiveView && canPresetArchive ? (
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              disabled={saving}
+              title="Только для расчёта вне объекта и без привязки к договору. Если расчёт в объекте — используйте «В архив» у объекта или открепите расчёт от объекта."
+              onClick={() => setPresetArchived(it.id, true)}
+            >
+              В архив
+            </button>
+          ) : null}
+          {archiveView && canPresetRestoreFromArchive ? (
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              disabled={saving}
+              title="Вернуть расчёт в основной список"
+              onClick={() => setPresetArchived(it.id, false)}
+            >
+              Восстановить
+            </button>
+          ) : null}
           <button
             type="button"
             className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
             aria-label="Редактировать"
             title={
               hasLockedUsage
-                ? 'Редактирование запрещено: договор заключён или Д/с подписано'
+                ? 'Редактирование запрещено: договор подписан или Д/с подписано'
                 : 'Редактировать'
             }
             disabled={saving || hasLockedUsage}
@@ -658,7 +923,7 @@ export function ContractDocumentsEstimatesPage() {
             className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
             aria-label="Удалить"
             title={
-              hasLockedUsage ? 'Удаление запрещено: договор заключён или Д/с подписано' : 'Удалить'
+              hasLockedUsage ? 'Удаление запрещено: договор подписан или Д/с подписано' : 'Удалить'
             }
             disabled={saving || hasLockedUsage}
             onClick={() => {
@@ -705,30 +970,19 @@ export function ContractDocumentsEstimatesPage() {
   }
 
   return (
-    <div className={`${styles.page} ${styles.pageWide}`}>
+    <div
+      className={`${styles.page} ${styles.pageWide}${archiveView ? ` ${styles.estimatesPageInArchive}` : ''}`}
+    >
       <div className={styles.editorHeader}>
         <div>
           <Link className={styles.backLink} href="/admin/contract-documents">
             ← К разделу «Оформление договоров»
           </Link>
           <h1 className={styles.title} style={{ marginTop: 8 }}>
-            Расчёты
+            {archiveView ? 'Архив расчётов' : 'Расчёты'}
           </h1>
-          <p className={styles.subtitle} style={{ marginBottom: 12, fontSize: '0.88rem' }}>
-            Общие расчёты команды. Несколько расчётов можно объединить в объект (здание / проект).
-            Сохраняются на сервере для всей команды.
-          </p>
         </div>
         <div className={styles.headerButtonsRow}>
-          <button
-            type="button"
-            className={styles.secondaryBtn}
-            disabled={saving || refreshing}
-            onClick={() => setIsHistoryOpen(true)}
-            title="История изменений расчётов"
-          >
-            История изменений
-          </button>
           <button
             type="button"
             className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn}`}
@@ -756,6 +1010,61 @@ export function ContractDocumentsEstimatesPage() {
               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
             </svg>
           </button>
+          <button
+            type="button"
+            className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn} ${styles.estimatesPageArchiveIconBtn}`}
+            disabled={saving || refreshing}
+            aria-label={
+              archiveView
+                ? 'Вернуться к основному списку расчётов'
+                : 'Архив: объекты и расчёты, отправленные в архив'
+            }
+            title={
+              archiveView
+                ? 'Вернуться к основному списку расчётов'
+                : 'Объекты с расчётами, отправленные в архив'
+            }
+            onClick={() => setArchiveView((v) => !v)}
+          >
+            {archiveView ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width={18}
+                height={18}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M8 6h13" />
+                <path d="M8 12h13" />
+                <path d="M8 18h13" />
+                <path d="M3 6h.01" />
+                <path d="M3 12h.01" />
+                <path d="M3 18h.01" />
+              </svg>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width={18}
+                height={18}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M21 8v13H3V8" />
+                <path d="M23 3v5H1V3z" />
+                <path d="M10 12h4" />
+              </svg>
+            )}
+          </button>
         </div>
       </div>
 
@@ -763,64 +1072,65 @@ export function ContractDocumentsEstimatesPage() {
       {ok ? <p className={styles.success}>{ok}</p> : null}
 
       <div
-        className={`${styles.sectionCard} ${styles.estimatesListSection}`}
+        className={`${styles.sectionCard} ${styles.estimatesListSection}${archiveView ? ` ${styles.estimatesListSectionArchive}` : ''}`}
         style={{ marginBottom: 10 }}
       >
-        <div className={styles.estimatesToolbar}>
-          <h3 className={styles.estimatesToolbarTitle}>Список расчётов</h3>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              className={`${styles.secondaryBtn} ${styles.estimatesGenerateFromMeasurementBtn}`}
-              disabled={saving || refreshing}
-              onClick={() => void openGenerateFromMeasurementModal()}
+        <div
+          className={`${styles.estimatesControlsSingleRow}${archiveView ? ` ${styles.estimatesControlsSingleRowArchive}` : ''}`}
+        >
+          {archiveView ? (
+            <h3
+              className={`${styles.estimatesToolbarTitle} ${styles.estimatesToolbarTitleArchive}`}
             >
-              Создать из выполненного замера
-            </button>
-            <Link
-              className={`${styles.primaryBtn} ${styles.estimatesCompactPrimaryLink}`}
-              href="/admin/contract-documents/estimates/workspace"
-              style={{ textDecoration: 'none' }}
-            >
-              Создать новый расчёт
-            </Link>
-          </div>
-        </div>
-        <div className={styles.estimatesFilterRow}>
-          <button
-            type="button"
-            className={attachmentFilter === 'all' ? styles.primaryBtn : styles.secondaryBtn}
-            onClick={() => setAttachmentFilter('all')}
-          >
-            Все
-          </button>
-          <button
-            type="button"
-            className={attachmentFilter === 'bound' ? styles.primaryBtn : styles.secondaryBtn}
-            onClick={() => setAttachmentFilter('bound')}
-          >
-            Только привязанные
-          </button>
-          <button
-            type="button"
-            className={attachmentFilter === 'unbound' ? styles.primaryBtn : styles.secondaryBtn}
-            onClick={() => setAttachmentFilter('unbound')}
-          >
-            Только непривязанные
-          </button>
-          <button
-            type="button"
-            className={`${styles.secondaryBtn} ${styles.estimatesAddObjectBtn}`}
+              Архив объектов и расчётов
+            </h3>
+          ) : null}
+          {!archiveView ? (
+            <>
+              <button
+                type="button"
+                className={`${styles.secondaryBtn} ${styles.estimatesGenerateFromMeasurementBtn}`}
+                disabled={saving || refreshing}
+                onClick={() => void openGenerateFromMeasurementModal()}
+              >
+                Создать расчёт из замера
+              </button>
+              <Link
+                className={`${styles.primaryBtn} ${styles.estimatesCompactPrimaryLink}`}
+                href="/admin/contract-documents/estimates/workspace"
+                style={{ textDecoration: 'none' }}
+              >
+                Создать расчёт
+              </Link>
+            </>
+          ) : null}
+          <EstimatesAttachmentFilterControl
+            value={attachmentFilter}
+            onChange={setAttachmentFilter}
             disabled={saving}
-            onClick={createObjectGroup}
-          >
-            Добавить объект
-          </button>
+          />
+          <div className={styles.estimatesFilterRowSpacer} aria-hidden />
+          {!archiveView ? (
+            <div className={styles.estimatesFilterRowTrailing}>
+              <button
+                type="button"
+                className={`${styles.secondaryBtn} ${styles.estimatesAddObjectBtn}`}
+                disabled={saving}
+                onClick={createObjectGroup}
+              >
+                Добавить объект
+              </button>
+            </div>
+          ) : null}
         </div>
-        <div className={styles.estimatesSectionsStack}>
+        <div
+          className={`${styles.estimatesSectionsStack}${archiveView ? ` ${styles.estimatesSectionsStackArchive}` : ''}`}
+        >
           {visibleItems.length === 0 ? (
             <p className={styles.hint} style={{ margin: 0 }}>
-              Нет расчётов для текущего фильтра.
+              {archiveView && !hasAnythingInArchive
+                ? 'В архиве пока нет расчётов и объектов.'
+                : 'Нет расчётов для текущего фильтра.'}
             </p>
           ) : (
             layoutSections.map((section) => {
@@ -880,9 +1190,63 @@ export function ContractDocumentsEstimatesPage() {
                           }}
                         />
                       </label>
+                      <label
+                        className={`${styles.field} ${styles.estimatesGroupTitleField}`}
+                        style={{ maxWidth: 150 }}
+                      >
+                        <span>Доп. наценка, %</span>
+                        <input
+                          key={`${section.group.id}:markup:${section.group.additionalMarkupPercent ?? 'none'}`}
+                          type="number"
+                          min={0}
+                          max={999}
+                          step={0.1}
+                          defaultValue={
+                            typeof section.group.additionalMarkupPercent === 'number'
+                              ? String(section.group.additionalMarkupPercent)
+                              : '0'
+                          }
+                          disabled={saving || groupIdsWithLockedEstimate.has(section.group.id)}
+                          title={
+                            groupIdsWithLockedEstimate.has(section.group.id)
+                              ? 'Нельзя менять наценку объекта: в группе есть расчёт, прикреплённый к пакету со статусом «Договор подписан» или к подписанному Д/с.'
+                              : 'На все расчёты этого объекта: +% к цене каждой позиции в смете'
+                          }
+                          onFocus={(e) => {
+                            e.currentTarget.dataset.markupAtFocus = e.currentTarget.value;
+                          }}
+                          onBlur={(e) => {
+                            if (e.currentTarget.dataset.markupAtFocus === e.currentTarget.value)
+                              return;
+                            updateGroupAdditionalMarkupPercent(section.group.id, e.target.value);
+                          }}
+                        />
+                      </label>
                       <span className={styles.estimatesGroupCount}>
                         Расчётов: {totalInGroup} · привязано: {boundInGroup}
                       </span>
+                      {!archiveView && totalInGroup > 0 ? (
+                        <button
+                          type="button"
+                          className={styles.secondaryBtn}
+                          disabled={saving}
+                          title="Скрыть объект из основного списка и из выбора при оформлении договоров"
+                          onClick={() => setGroupArchived(section.group.id, true)}
+                        >
+                          В архив
+                        </button>
+                      ) : null}
+                      {archiveView ? (
+                        <button
+                          type="button"
+                          className={styles.secondaryBtn}
+                          disabled={saving}
+                          title="Вернуть объект в основной список и в выбор при оформлении договоров"
+                          onClick={() => setGroupArchived(section.group.id, false)}
+                        >
+                          Восстановить
+                        </button>
+                      ) : null}
                       {totalInGroup === 0 ? (
                         <button
                           type="button"
@@ -906,6 +1270,18 @@ export function ContractDocumentsEstimatesPage() {
                         )}
                       </div>
                     ) : null}
+                  </div>
+                );
+              }
+              if (section.kind === 'soloArchived') {
+                return (
+                  <div key="_soloArchived" className={styles.estimatesUngroupedBlock}>
+                    <h4 className={styles.estimatesUngroupedHeading}>
+                      В архиве отдельно (объект в основном списке)
+                    </h4>
+                    <div className={styles.estimatesCardsStack}>
+                      {section.items.map((it) => renderEstimateCard(it))}
+                    </div>
                   </div>
                 );
               }
@@ -1018,66 +1394,6 @@ export function ContractDocumentsEstimatesPage() {
                 onClick={() => void handleConfirmDetachDelete()}
               >
                 {saving ? 'Подождите…' : 'Удалить'}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {isHistoryOpen ? (
-        <div
-          className={`${styles.saveModalBackdrop} ${styles.packageVersionsModalBackdrop}`}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="estimate-history-title"
-          onClick={() => setIsHistoryOpen(false)}
-        >
-          <div className={styles.packageVersionsModalCard} onClick={(e) => e.stopPropagation()}>
-            <h3 className={styles.packageVersionsTitle} id="estimate-history-title">
-              История изменений расчётов
-            </h3>
-            {historyRows.length === 0 && !historyBusy ? (
-              <p className={styles.hint}>Пока нет записей истории.</p>
-            ) : null}
-            {historyRows.length > 0 ? (
-              <div className={styles.tableWrap}>
-                <table className={styles.packageVersionsTable}>
-                  <thead>
-                    <tr>
-                      <th>Дата</th>
-                      <th>Тип события</th>
-                      <th>Ключевые изменения</th>
-                      <th>Автор</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {historyRows.map((row) => {
-                      const author =
-                        row.changedBy &&
-                        [row.changedBy.lastName, row.changedBy.firstName]
-                          .filter(Boolean)
-                          .join(' ')
-                          .trim();
-                      return (
-                        <tr key={row.id}>
-                          <td>{formatHistoryDate(row.changedAt)}</td>
-                          <td>{formatHistoryAction(row.action)}</td>
-                          <td>{formatHistoryFields(row.changedFields)}</td>
-                          <td>{author || row.changedBy?.email || '—'}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ) : null}
-            <div className={styles.saveModalActionsRow}>
-              <button
-                type="button"
-                className={styles.primaryBtn}
-                onClick={() => setIsHistoryOpen(false)}
-              >
-                Закрыть
               </button>
             </div>
           </div>

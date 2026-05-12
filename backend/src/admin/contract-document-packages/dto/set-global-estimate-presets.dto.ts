@@ -3,11 +3,15 @@ import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
+  IsBoolean,
   IsEnum,
+  IsNumber,
   IsObject,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
+  Min,
   ValidateNested,
 } from 'class-validator';
 
@@ -63,6 +67,19 @@ export class ContractEstimatePresetDto {
   @IsString()
   @MaxLength(80)
   sourceMeasurementId?: string;
+
+  /** Доп. наценка на расчёт, % (если не задано — для расчёта в объекте берётся наценка объекта). */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(999)
+  additionalMarkupPercent?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  archived?: boolean;
 }
 
 /** Логический объект: несколько расчётов одного здания / проекта. */
@@ -78,6 +95,19 @@ export class ContractEstimateGroupDto {
   @IsOptional()
   @IsString()
   updatedAt?: string;
+
+  /** Доп. наценка на все расчёты объекта, % (0 — без наценки на уровне объекта). */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(999)
+  additionalMarkupPercent?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  archived?: boolean;
 }
 
 export class SetGlobalEstimatePresetsDto {

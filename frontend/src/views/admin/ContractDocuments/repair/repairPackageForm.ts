@@ -1,4 +1,5 @@
 import type {
+  ContractEstimateGroup,
   ContractEstimatePreset,
   ContractSignatoryProfile,
   ExecutorRequisiteProfile,
@@ -305,7 +306,7 @@ export interface RepairPackageFormData {
   addendumDocumentDates: [string, string, string, string, string];
   /** По одному слоту на «Д/с №1»…«Д/с №5»: расчёты и статус подписания. */
   addendumSlots: RepairAddendumSlotsTuple;
-  /** Время установки статуса «Договор заключен» (ISO), окно отмены — 24 часа. */
+  /** Время установки статуса «Договор подписан» (ISO), окно отмены — 24 часа. */
   contractConcludedAt: string;
   /** Время установки статуса «Договор оплачен» (ISO). */
   contractPaidAt: string;
@@ -1247,7 +1248,11 @@ function buildWorkOrderCategoryTotalsHtml(options: {
 /** Данные для подстановки в HTML: добавляет вычисляемое поле `executor.innKppRegLine`. */
 export function repairPackageFormForTemplate(
   form: RepairPackageFormData,
-  options?: { templateTab?: string; estimatePresets?: ContractEstimatePreset[] }
+  options?: {
+    templateTab?: string;
+    estimatePresets?: ContractEstimatePreset[];
+    estimateGroups?: ContractEstimateGroup[];
+  }
 ): RepairPackageFormData & {
   executor: RepairExecutorBlock & { innKppRegLine: string };
   estimate: RepairEstimateBlock & {
@@ -1286,6 +1291,7 @@ export function repairPackageFormForTemplate(
     roomsHtml: string;
   };
 } {
+  const estimateGroupsForTpl = options?.estimateGroups ?? [];
   const { executor } = form;
   const { estimate } = form;
   const isIp = executor.executorKind === 'ENTREPRENEUR';
@@ -1346,7 +1352,8 @@ export function repairPackageFormForTemplate(
     addendumSlotIdx !== null ? form.addendumSlots[addendumSlotIdx]?.selectedPresetIds : undefined;
   const addendumSections = buildEstimateSectionsFromPresetIds(
     addendumPresetIds,
-    options?.estimatePresets ?? []
+    options?.estimatePresets ?? [],
+    estimateGroupsForTpl
   );
   const addendumExcludedPresetIds =
     addendumSlotIdx !== null
@@ -1354,7 +1361,8 @@ export function repairPackageFormForTemplate(
       : undefined;
   const addendumExcludedSections = buildEstimateSectionsFromPresetIds(
     addendumExcludedPresetIds,
-    options?.estimatePresets ?? []
+    options?.estimatePresets ?? [],
+    estimateGroupsForTpl
   );
   const addendumExcludedSnap =
     addendumSlot !== null && addendumSlot >= 1 && addendumSlot <= 5
@@ -1429,7 +1437,8 @@ export function repairPackageFormForTemplate(
   );
   const workOrderSections = buildEstimateSectionsFromPresetIds(
     form.estimate.selectedPresetIds,
-    options?.estimatePresets ?? []
+    options?.estimatePresets ?? [],
+    estimateGroupsForTpl
   );
   const workOrderCategoryTotalsHtml = buildWorkOrderCategoryTotalsHtml({
     sections: workOrderSections,
@@ -1448,7 +1457,8 @@ export function repairPackageFormForTemplate(
     addendumSlot !== null && addendumSlot >= 1 && addendumSlot <= 5
       ? buildEstimateSectionsFromPresetIds(
           form.addendumSlots[addendumSlot - 1]?.selectedPresetIds ?? [],
-          options?.estimatePresets ?? []
+          options?.estimatePresets ?? [],
+          estimateGroupsForTpl
         )
       : [];
   const workOrderAddendumCategoryTotalsHtml = buildWorkOrderCategoryTotalsHtml({

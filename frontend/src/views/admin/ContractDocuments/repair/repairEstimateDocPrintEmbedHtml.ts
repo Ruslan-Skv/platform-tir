@@ -1,9 +1,12 @@
-import type { ContractEstimatePreset } from '@/shared/api/admin-contract-document-packages';
+import type {
+  ContractEstimateGroup,
+  ContractEstimatePreset,
+} from '@/shared/api/admin-contract-document-packages';
 
 import {
   type EstimateSnapshot,
   type EstimateSnapshotRoom,
-  parseEstimateSnapshotFromDraft,
+  getSnapshotForEstimateAttach,
 } from './repairApplyEstimatePresetIds';
 
 export type EstimateEmbedSection = {
@@ -26,19 +29,21 @@ function parseDraftMultiCategoryMeta(draftRaw: string): DraftMultiCategoryMeta |
   }
 }
 
-/** Как на вкладке «Смета»: группировка помещений по категориям выбранных расчётов. */
+/** Как на вкладке «Смета»: группировка помещений по категориям выбранных расчётов (с учётом доп. наценки). */
 export function buildEstimateSectionsFromPresetIds(
   presetIds: string[] | undefined | null,
-  estimatePresets: ContractEstimatePreset[]
+  estimatePresets: ContractEstimatePreset[],
+  estimateGroups: ContractEstimateGroup[] = []
 ): EstimateEmbedSection[] {
   const sectionMap = new Map<string, { categoryName: string; rooms: EstimateSnapshotRoom[] }>();
   for (const presetId of presetIds ?? []) {
     const preset = estimatePresets.find((row) => row.id === presetId);
     if (!preset) continue;
-    const snapshot = preset.snapshot ?? parseEstimateSnapshotFromDraft(preset.calculatorDraft);
+    const snapshot = getSnapshotForEstimateAttach(preset, estimateGroups);
+    if (!snapshot?.rooms?.length) continue;
     const meta = parseDraftMultiCategoryMeta(preset.calculatorDraft);
     const categories = meta?.categories ?? [];
-    if (snapshot?.rooms?.length && categories.length > 1) {
+    if (categories.length > 1) {
       let cursor = 0;
       for (const cat of categories) {
         const count = Math.max(0, Number(cat.roomCount) || 0);

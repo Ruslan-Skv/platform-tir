@@ -62,7 +62,8 @@ import {
   applyEstimatePresetIdsToAddendumSlot,
   applyEstimatePresetIdsToRepairForm,
   getContractEstimateObjectGroupKey,
-  parseEstimateSnapshotFromDraft,
+  getSnapshotForEstimateAttach,
+  isContractEstimatePresetAttachable,
 } from './repairApplyEstimatePresetIds';
 import {
   REPAIR_DOCUMENT_TAB_IDS,
@@ -639,7 +640,7 @@ export function RepairContractDocumentEditorPage({
   const [packageRefreshing, setPackageRefreshing] = useState(false);
   const [packageFlowStatus, setPackageFlowStatus] =
     useState<ContractDocumentPackageStatus>('IN_PROGRESS');
-  /** После «Договор заключен» вкладки «Договор» и «Смета» только для просмотра. */
+  /** После «Договор подписан» вкладки «Договор» и «Смета» только для просмотра. */
   const contractAndEstimateLocked = packageFlowStatus === 'CONTRACT_CONCLUDED';
   const canRevertContractConcluded =
     packageFlowStatus === 'CONTRACT_CONCLUDED' && isWithinRevertWindow(form.contractConcludedAt);
@@ -962,7 +963,43 @@ export function RepairContractDocumentEditorPage({
             selectedPresetId: normalizedEstimateIds[0] ?? '',
           },
         };
-        setForm(formPayload);
+        const presetsList = estimateRes.items ?? [];
+        const estGroupsList = estimateRes.groups ?? [];
+        let finalForm: RepairPackageFormData = formPayload;
+        if (normalizedEstimateIds.length > 0) {
+          finalForm = applyEstimatePresetIdsToRepairForm(
+            finalForm,
+            normalizedEstimateIds,
+            presetsList,
+            estGroupsList
+          );
+        }
+        for (let i = 0; i < 5; i++) {
+          const slot = finalForm.addendumSlots[i];
+          const add = [...(slot?.selectedPresetIds ?? [])];
+          if (add.length > 0) {
+            finalForm = applyEstimatePresetIdsToAddendumSlot(
+              finalForm,
+              i,
+              add,
+              presetsList,
+              estGroupsList,
+              'additional'
+            );
+          }
+          const exc = [...(slot?.excludedSelectedPresetIds ?? [])];
+          if (exc.length > 0) {
+            finalForm = applyEstimatePresetIdsToAddendumSlot(
+              finalForm,
+              i,
+              exc,
+              presetsList,
+              estGroupsList,
+              'excluded'
+            );
+          }
+        }
+        setForm(finalForm);
         const overridesSansContract = { ...ov };
         delete overridesSansContract.contract;
         setTemplateOverrides(overridesSansContract);
@@ -1016,7 +1053,7 @@ export function RepairContractDocumentEditorPage({
           try {
             await updateContractDocumentPackage(packageId, {
               title: row.title?.trim() || null,
-              formData: buildPersistedFormData(formPayload, overridesSansContract, selectedIds),
+              formData: buildPersistedFormData(finalForm, overridesSansContract, selectedIds),
               crmContractId: row.crmContractId ?? null,
               recordVersion: true,
             });
@@ -1026,7 +1063,7 @@ export function RepairContractDocumentEditorPage({
                   ? {
                       ...p,
                       formData: buildPersistedFormData(
-                        formPayload,
+                        finalForm,
                         overridesSansContract,
                         selectedIds
                       ) as Record<string, unknown>,
@@ -1185,7 +1222,7 @@ export function RepairContractDocumentEditorPage({
 
   const confirmRevertContractConcluded = async () => {
     if (!canRevertContractConcluded) {
-      setError('Снять статус «Договор заключен» можно только в течение 24 часов после установки.');
+      setError('Снять статус «Договор подписан» можно только в течение 24 часов после установки.');
       return;
     }
     setSavingPackageStatus(true);
@@ -1663,11 +1700,18 @@ export function RepairContractDocumentEditorPage({
       }
     }
     return estimatePresets.filter((preset) => {
+      if (!isContractEstimatePresetAttachable(preset, estimateGroups)) return false;
       if (selected.has(preset.id)) return false;
       if (usedOnAddenda.has(preset.id)) return false;
       return (estimateUsageById.get(preset.id)?.length ?? 0) === 0;
     });
-  }, [estimatePresets, estimateUsageById, form.estimate.selectedPresetIds, form.addendumSlots]);
+  }, [
+    estimatePresets,
+    estimateGroups,
+    estimateUsageById,
+    form.estimate.selectedPresetIds,
+    form.addendumSlots,
+  ]);
 
   const contractEstimateObjectKey = useMemo(
     () => getContractEstimateObjectGroupKey(form, estimatePresets),
@@ -1727,6 +1771,7 @@ export function RepairContractDocumentEditorPage({
     });
     return estimatePresets
       .filter((p) => {
+        if (!isContractEstimatePresetAttachable(p, estimateGroups)) return false;
         if (usedElsewhere.has(p.id)) return false;
         if ((estimateUsageById.get(p.id)?.length ?? 0) !== 0) return false;
         const g = p.groupId ? p.groupId : '__ungrouped__';
@@ -1740,6 +1785,7 @@ export function RepairContractDocumentEditorPage({
     form.estimate.selectedPresetIds,
     form.addendumSlots,
     estimatePresets,
+    estimateGroups,
     estimateUsageById,
   ]);
   const attachableAddendumExcludedEstimatePresets = attachableAddendumEstimatePresets;
@@ -1823,7 +1869,7 @@ export function RepairContractDocumentEditorPage({
       const preset = estimatePresets.find((row) => row.id === presetId);
       if (!preset) continue;
       const categoryName = preset.categoryName.trim() || '—';
-      const snapshot = preset.snapshot ?? parseEstimateSnapshotFromDraft(preset.calculatorDraft);
+      const snapshot = getSnapshotForEstimateAttach(preset, estimateGroups);
       const existing = sectionMap.get(categoryName);
       if (existing) {
         existing.rooms.push(...(snapshot?.rooms ?? []));
@@ -1835,7 +1881,7 @@ export function RepairContractDocumentEditorPage({
       }
     }
     return [...sectionMap.values()];
-  }, [form.estimate.selectedPresetIds, estimatePresets]);
+  }, [form.estimate.selectedPresetIds, estimatePresets, estimateGroups]);
 
   const estimateAppendixContractRef = useMemo(() => {
     const num = form.contract.number.trim() || '—';
@@ -2313,7 +2359,12 @@ export function RepairContractDocumentEditorPage({
     if (contractAndEstimateLocked) return;
     setForm((p) => {
       const uniqueIds = [...new Set(presetIds.filter(Boolean))];
-      const nextForm = applyEstimatePresetIdsToRepairForm(p, uniqueIds, estimatePresets);
+      const nextForm = applyEstimatePresetIdsToRepairForm(
+        p,
+        uniqueIds,
+        estimatePresets,
+        estimateGroups
+      );
       formRef.current = nextForm;
       schedulePersistRepairPackageDebounced();
       return nextForm;
@@ -2441,8 +2492,9 @@ export function RepairContractDocumentEditorPage({
               ? 'workOrder'
               : activeTab,
         estimatePresets,
+        estimateGroups,
       }),
-    [formMergedForTemplate, activeTab, estimatePresets]
+    [formMergedForTemplate, activeTab, estimatePresets, estimateGroups]
   );
 
   const patchAddendumDocumentDate = useCallback(
@@ -3050,7 +3102,7 @@ export function RepairContractDocumentEditorPage({
             <h1 className={styles.title}>Пакет документов</h1>
             {packageFlowStatus === 'CONTRACT_CONCLUDED' ? (
               <span className={styles.packageFlowStatusBadge} role="status">
-                Договор заключен
+                Договор подписан
               </span>
             ) : null}
             {isContractPaid ? (
@@ -3162,7 +3214,7 @@ export function RepairContractDocumentEditorPage({
                 disabled={savingPackageStatus}
                 onClick={() => void handleMarkContractConcluded()}
               >
-                {savingPackageStatus ? 'Сохранение…' : 'Договор заключен'}
+                {savingPackageStatus ? 'Сохранение…' : 'Договор подписан'}
               </button>
             ) : (
               <>
@@ -3201,7 +3253,7 @@ export function RepairContractDocumentEditorPage({
                   }
                   onClick={() => setIsRevertStatusConfirmModalOpen(true)}
                 >
-                  {savingPackageStatus ? 'Сохранение…' : 'Снять статус «Договор заключен»'}
+                  {savingPackageStatus ? 'Сохранение…' : 'Снять статус «Договор подписан»'}
                 </button>
               </>
             )}
@@ -3360,9 +3412,9 @@ export function RepairContractDocumentEditorPage({
         onConfirm={() => {
           void confirmRevertContractConcluded();
         }}
-        title="Снять статус «Договор заключен»"
-        message="Снять статус «Договор заключен»? Пакет снова будет отображаться как в оформлении."
-        confirmText="Снять статус «Договор заключен»"
+        title="Снять статус «Договор подписан»"
+        message="Снять статус «Договор подписан»? Пакет снова будет отображаться как в оформлении."
+        confirmText="Снять статус «Договор подписан»"
         cancelText="Отмена"
       />
 
@@ -3408,7 +3460,7 @@ export function RepairContractDocumentEditorPage({
               aria-selected={activeTab === id}
               title={
                 contractAndEstimateLocked && (id === 'contract' || id === 'estimate')
-                  ? `${REPAIR_DOCUMENT_TAB_LABELS[id]} — только просмотр (договор заключён)`
+                  ? `${REPAIR_DOCUMENT_TAB_LABELS[id]} — только просмотр (договор подписан)`
                   : `${REPAIR_DOCUMENT_TAB_LABELS[id]} — перетащите для смены порядка`
               }
               className={`${styles.tab} ${activeTab === id ? styles.tabActive : ''} ${
@@ -4075,7 +4127,7 @@ export function RepairContractDocumentEditorPage({
             <div className={styles.sectionCard}>
               {contractAndEstimateLocked ? (
                 <p className={`${styles.hint} ${styles.estimateLockNotice}`}>
-                  Договор заключён: смета договора и прикреплённые к ней расчёты только для
+                  Договор подписан: смета договора и прикреплённые к ней расчёты только для
                   просмотра и печати. Дополнительные объёмы оформляйте на вкладках «Д/с №1»…«Д/с
                   №5»: там можно прикрепить новые расчёты к соответствующему дополнительному
                   соглашению.
@@ -5126,6 +5178,7 @@ export function RepairContractDocumentEditorPage({
                       idx,
                       [...(p.addendumSlots[idx].selectedPresetIds ?? []), pid],
                       estimatePresets,
+                      estimateGroups,
                       'additional'
                     );
                     formRef.current = next;
@@ -5145,6 +5198,7 @@ export function RepairContractDocumentEditorPage({
                       idx,
                       [...(p.addendumSlots[idx].excludedSelectedPresetIds ?? []), pid],
                       estimatePresets,
+                      estimateGroups,
                       'excluded'
                     );
                     formRef.current = next;
@@ -5165,6 +5219,7 @@ export function RepairContractDocumentEditorPage({
                         (id) => id !== presetId
                       ),
                       estimatePresets,
+                      estimateGroups,
                       'additional'
                     );
                     formRef.current = next;
@@ -5184,6 +5239,7 @@ export function RepairContractDocumentEditorPage({
                         (id) => id !== presetId
                       ),
                       estimatePresets,
+                      estimateGroups,
                       'excluded'
                     );
                     formRef.current = next;
@@ -5207,6 +5263,7 @@ export function RepairContractDocumentEditorPage({
                       idx,
                       ids,
                       estimatePresets,
+                      estimateGroups,
                       'additional'
                     );
                     formRef.current = next;
@@ -5230,6 +5287,7 @@ export function RepairContractDocumentEditorPage({
                       idx,
                       ids,
                       estimatePresets,
+                      estimateGroups,
                       'excluded'
                     );
                     formRef.current = next;
@@ -5258,7 +5316,7 @@ export function RepairContractDocumentEditorPage({
               <div className={`${styles.field} ${styles.repairAddendumDateFieldRow}`}>
                 <label htmlFor={`repair_addendum_date_${activeAddendumSlot}`}>
                   Дата доп. соглашения (в шапке слева; полный ввод расчётов — после статуса «Договор
-                  заключён»)
+                  подписан»)
                 </label>
                 <input
                   id={`repair_addendum_date_${activeAddendumSlot}`}
@@ -5275,7 +5333,7 @@ export function RepairContractDocumentEditorPage({
           ) : null}
           {activeTab === 'contract' && contractAndEstimateLocked ? (
             <p className={`${styles.hint} ${styles.contractLockNotice}`}>
-              Договор заключён: текст договора на этой вкладке только для просмотра и печати.
+              Договор подписан: текст договора на этой вкладке только для просмотра и печати.
             </p>
           ) : null}
           {activeTab === 'contract' ||

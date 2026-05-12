@@ -18,6 +18,7 @@ import { ServiceCategoryPage } from '@/views/services/ui/ServiceCategoryPage/Ser
 
 import styles from './ContractDocuments.module.css';
 import { buildEstimateSnapshot } from './repair/contractDocumentsEstimateSnapshot';
+import { clampEstimateAdditionalMarkupPercent } from './repair/repairApplyEstimatePresetIds';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 const REPAIR_MEASUREMENT_DATA_MARKER = '[REPAIR_MEASUREMENT_DATA_V1]';
@@ -344,14 +345,22 @@ function clampWithEllipsis(value: string, max: number): string {
 }
 
 function sanitizeEstimatePresetForApi(input: ContractEstimatePreset): ContractEstimatePreset {
-  return {
-    ...input,
+  const { additionalMarkupPercent: rawMarkup, ...restIn } = input;
+  const base: ContractEstimatePreset = {
+    ...restIn,
     id: clampWithEllipsis(input.id || `est_${Date.now()}`, 80),
     title: clampWithEllipsis(input.title || 'Расчёт', 160),
     categorySlug: clampWithEllipsis(input.categorySlug || 'repair', 120),
     categoryName: clampWithEllipsis(input.categoryName || 'Расчёт', 200),
     groupId: input.groupId ? clampWithEllipsis(input.groupId, 48) : undefined,
   };
+  if (typeof rawMarkup === 'number' && Number.isFinite(rawMarkup)) {
+    return {
+      ...base,
+      additionalMarkupPercent: clampEstimateAdditionalMarkupPercent(rawMarkup),
+    };
+  }
+  return base;
 }
 
 const ESTIMATES_LIST_HREF = '/admin/contract-documents/estimates';
@@ -665,11 +674,25 @@ function ContractDocumentsEstimateWorkspaceInner() {
         };
         return sanitizeEstimatePresetForApi(rest as ContractEstimatePreset);
       });
-      const payloadGroups = estimateGroups.map((g) => ({
-        ...g,
-        id: clampWithEllipsis(g.id || `grp_${Date.now()}`, 48),
-        title: clampWithEllipsis(g.title || 'Объект', 200),
-      }));
+      const payloadGroups = estimateGroups.map((g) => {
+        const id = clampWithEllipsis(g.id || `grp_${Date.now()}`, 48);
+        const title = clampWithEllipsis(g.title || 'Объект', 200);
+        if (
+          typeof g.additionalMarkupPercent === 'number' &&
+          Number.isFinite(g.additionalMarkupPercent)
+        ) {
+          return {
+            ...g,
+            id,
+            title,
+            additionalMarkupPercent: clampEstimateAdditionalMarkupPercent(
+              g.additionalMarkupPercent
+            ),
+          };
+        }
+        const { additionalMarkupPercent: _m, ...rest } = g;
+        return { ...rest, id, title } as ContractEstimateGroup;
+      });
       await putContractDocumentEstimatePresets({
         kind: 'REPAIR',
         items: payloadItems,
@@ -749,6 +772,10 @@ function ContractDocumentsEstimateWorkspaceInner() {
         ? { slugs: draftSlugs, draftsByCategory, categories: categorySummaries }
         : null
     );
+    const copySourceForMarkup =
+      !existing && copyFromId ? items.find((it) => it.id === copyFromId) : undefined;
+    const markupSource = existing ?? copySourceForMarkup;
+
     const nextItem: ContractEstimatePreset = {
       id: existing?.id ?? `est_${Date.now()}`,
       title,
@@ -760,11 +787,15 @@ function ContractDocumentsEstimateWorkspaceInner() {
       snapshot: mergedSnapshot,
       updatedAt: new Date().toISOString(),
       ...(existing?.groupId ? { groupId: existing.groupId } : {}),
+      ...(existing?.archived ? { archived: true } : {}),
       ...(existing?.sourceMeasurementId
         ? { sourceMeasurementId: existing.sourceMeasurementId }
         : fromMeasurementId
           ? { sourceMeasurementId: fromMeasurementId }
           : {}),
+      ...(typeof markupSource?.additionalMarkupPercent === 'number'
+        ? { additionalMarkupPercent: markupSource.additionalMarkupPercent }
+        : {}),
     };
 
     const next = existing

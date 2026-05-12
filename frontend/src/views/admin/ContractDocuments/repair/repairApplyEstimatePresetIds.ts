@@ -1,4 +1,7 @@
-import type { ContractEstimatePreset } from '@/shared/api/admin-contract-document-packages';
+import type {
+  ContractEstimateGroup,
+  ContractEstimatePreset,
+} from '@/shared/api/admin-contract-document-packages';
 
 import { amountToRussianWords } from './amountToRussianWords';
 import type { RepairPackageFormData } from './repairPackageForm';
@@ -21,6 +24,68 @@ export type EstimateSnapshot = {
   total: number;
   rooms: EstimateSnapshotRoom[];
 };
+
+const ESTIMATE_ADDITIONAL_MARKUP_MAX = 999;
+
+export function clampEstimateAdditionalMarkupPercent(raw: unknown): number {
+  if (typeof raw !== 'number' || !Number.isFinite(raw)) return 0;
+  if (raw < 0) return 0;
+  if (raw > ESTIMATE_ADDITIONAL_MARKUP_MAX) return ESTIMATE_ADDITIONAL_MARKUP_MAX;
+  return raw;
+}
+
+export function getGroupEstimateAdditionalMarkupPercent(
+  groupId: string | undefined,
+  groups: ContractEstimateGroup[]
+): number {
+  if (!groupId) return 0;
+  const g = groups.find((x) => x.id === groupId);
+  if (
+    !g ||
+    typeof g.additionalMarkupPercent !== 'number' ||
+    !Number.isFinite(g.additionalMarkupPercent)
+  ) {
+    return 0;
+  }
+  return clampEstimateAdditionalMarkupPercent(g.additionalMarkupPercent);
+}
+
+/** Наценка на расчёт; если на расчёте не задана — для расчёта в объекте используется наценка объекта. */
+export function getEffectiveEstimateAdditionalMarkupPercent(
+  preset: ContractEstimatePreset,
+  groups: ContractEstimateGroup[]
+): number {
+  if (
+    typeof preset.additionalMarkupPercent === 'number' &&
+    Number.isFinite(preset.additionalMarkupPercent)
+  ) {
+    return clampEstimateAdditionalMarkupPercent(preset.additionalMarkupPercent);
+  }
+  return getGroupEstimateAdditionalMarkupPercent(preset.groupId, groups);
+}
+
+/** Увеличивает цену и сумму по каждой позиции на `percent` %; пересчитывает итоги по помещениям и всей смете. */
+export function applyAdditionalMarkupPercentToSnapshot(
+  snapshot: EstimateSnapshot | null,
+  percent: number
+): EstimateSnapshot | null {
+  if (!snapshot?.rooms?.length) return snapshot;
+  const factor = 1 + clampEstimateAdditionalMarkupPercent(percent) / 100;
+  if (factor <= 1) return snapshot;
+  let grandTotal = 0;
+  const rooms: EstimateSnapshotRoom[] = snapshot.rooms.map((room) => {
+    let roomTotal = 0;
+    const lines = room.lines.map((line) => {
+      const price = line.price * factor;
+      const amount = line.amount * factor;
+      roomTotal += amount;
+      return { ...line, price, amount };
+    });
+    grandTotal += roomTotal;
+    return { ...room, total: roomTotal, lines };
+  });
+  return { total: grandTotal, rooms };
+}
 
 function formatMoneyValue(value: number): string {
   return value.toFixed(2).replace('.', ',');
@@ -71,11 +136,16 @@ function formatEstimateSnapshotNotes(
 
 function formatCombinedEstimateNotes(
   selectedPresets: ContractEstimatePreset[],
-  mergedSnapshot: EstimateSnapshot | null
+  mergedSnapshot: EstimateSnapshot | null,
+  estimateGroups: ContractEstimateGroup[]
 ): string {
   if (selectedPresets.length === 0) return '';
   const blocks: string[] = selectedPresets.map((preset, idx) => {
-    const localSnapshot = preset.snapshot ?? parseEstimateSnapshotFromDraft(preset.calculatorDraft);
+    const raw = preset.snapshot ?? parseEstimateSnapshotFromDraft(preset.calculatorDraft);
+    const localSnapshot = applyAdditionalMarkupPercentToSnapshot(
+      raw,
+      getEffectiveEstimateAdditionalMarkupPercent(preset, estimateGroups)
+    );
     const localText = formatEstimateSnapshotNotes(preset, localSnapshot);
     return `${idx + 1}) ${localText}`;
   });
@@ -158,8 +228,30 @@ export function parseEstimateSnapshotFromDraft(draftRaw: string): EstimateSnapsh
   }
 }
 
+/** Снимок сметы для прикрепления к пакету: базовый расчёт + эффективная доп. наценка. */
+export function getSnapshotForEstimateAttach(
+  preset: ContractEstimatePreset,
+  estimateGroups: ContractEstimateGroup[]
+): EstimateSnapshot | null {
+  return applyAdditionalMarkupPercentToSnapshot(
+    preset.snapshot ?? parseEstimateSnapshotFromDraft(preset.calculatorDraft),
+    getEffectiveEstimateAdditionalMarkupPercent(preset, estimateGroups)
+  );
+}
+
 function presetObjectGroupKey(preset: ContractEstimatePreset): string {
   return preset.groupId ? preset.groupId : '__ungrouped__';
+}
+
+/** Расчёт из неархивного объекта (или вне объекта) — доступен для прикрепления к пакету в ремонте. */
+export function isContractEstimatePresetAttachable(
+  preset: ContractEstimatePreset,
+  groups: ContractEstimateGroup[]
+): boolean {
+  if (preset.archived) return false;
+  if (!preset.groupId) return true;
+  const g = groups.find((x) => x.id === preset.groupId);
+  return !g?.archived;
 }
 
 /** Объект сметы договора: по первому прикреплённому расчёту или по полю формы до прикрепления. */
@@ -180,7 +272,8 @@ export function getContractEstimateObjectGroupKey(
 export function applyEstimatePresetIdsToRepairForm(
   previous: RepairPackageFormData,
   presetIds: string[],
-  presets: ContractEstimatePreset[]
+  presets: ContractEstimatePreset[],
+  estimateGroups: ContractEstimateGroup[] = []
 ): RepairPackageFormData {
   const uniqueIds = [...new Set(presetIds.filter(Boolean))];
   if (uniqueIds.length === 0) {
@@ -231,10 +324,13 @@ export function applyEstimatePresetIdsToRepairForm(
   const mergedSnapshot = mergeEstimateSnapshots(
     selectedPresets.map((preset) => ({
       presetTitle: preset.title,
-      snapshot: preset.snapshot ?? parseEstimateSnapshotFromDraft(preset.calculatorDraft),
+      snapshot: applyAdditionalMarkupPercentToSnapshot(
+        preset.snapshot ?? parseEstimateSnapshotFromDraft(preset.calculatorDraft),
+        getEffectiveEstimateAdditionalMarkupPercent(preset, estimateGroups)
+      ),
     }))
   );
-  const notes = formatCombinedEstimateNotes(selectedPresets, mergedSnapshot);
+  const notes = formatCombinedEstimateNotes(selectedPresets, mergedSnapshot, estimateGroups);
   const contractTotals = estimateTotalToContractFields(mergedSnapshot?.total ?? null);
   return {
     ...previous,
@@ -261,6 +357,7 @@ export function applyEstimatePresetIdsToAddendumSlot(
   slotIndex0: number,
   presetIds: string[],
   presets: ContractEstimatePreset[],
+  estimateGroups: ContractEstimateGroup[] = [],
   target: 'additional' | 'excluded' = 'additional',
   /** Снятие расчёта из списка «Расчёты» и т.п.: разрешает менять слот даже при статусе SIGNED. */
   force = false
@@ -294,10 +391,13 @@ export function applyEstimatePresetIdsToAddendumSlot(
   const mergedSnapshot = mergeEstimateSnapshots(
     selectedPresets.map((preset) => ({
       presetTitle: preset.title,
-      snapshot: preset.snapshot ?? parseEstimateSnapshotFromDraft(preset.calculatorDraft),
+      snapshot: applyAdditionalMarkupPercentToSnapshot(
+        preset.snapshot ?? parseEstimateSnapshotFromDraft(preset.calculatorDraft),
+        getEffectiveEstimateAdditionalMarkupPercent(preset, estimateGroups)
+      ),
     }))
   );
-  const notes = formatCombinedEstimateNotes(selectedPresets, mergedSnapshot);
+  const notes = formatCombinedEstimateNotes(selectedPresets, mergedSnapshot, estimateGroups);
   nextSlots[slotIndex0] = {
     ...slot,
     ...(target === 'additional'

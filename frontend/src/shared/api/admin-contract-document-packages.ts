@@ -50,7 +50,7 @@ export type ContractDocumentPackageKind =
   | 'BLINDS'
   | 'FURNITURE';
 
-/** Стадия пакета: «в работе» или договор заключён (фиксирует менеджер). */
+/** Стадия пакета: «в работе» или договор подписан (фиксирует менеджер). */
 export type ContractDocumentPackageStatus = 'IN_PROGRESS' | 'CONTRACT_CONCLUDED';
 
 export interface ContractDocumentPackageUserRef {
@@ -214,6 +214,10 @@ export interface ContractEstimateGroup {
   id: string;
   title: string;
   updatedAt?: string;
+  /** Доп. наценка на все расчёты объекта, % к цене каждой позиции (0 — без наценки). */
+  additionalMarkupPercent?: number;
+  /** Объект в архиве: скрыт в основном списке и в выборе при оформлении договоров. */
+  archived?: boolean;
 }
 
 export interface ContractEstimatePreset {
@@ -228,6 +232,11 @@ export interface ContractEstimatePreset {
   multiCategorySlugs?: string[];
   /** Ссылка на `ContractEstimateGroup.id`, если расчёт входит в объект. */
   groupId?: string;
+  /**
+   * Доп. наценка только на этот расчёт, % к цене каждой позиции.
+   * Если не задано — для расчёта в объекте действует наценка объекта (`ContractEstimateGroup.additionalMarkupPercent`).
+   */
+  additionalMarkupPercent?: number;
   /** Замер-источник, если расчёт был создан из выполненного замера. */
   sourceMeasurementId?: string;
   snapshot?: {
@@ -245,6 +254,8 @@ export interface ContractEstimatePreset {
     }>;
   } | null;
   updatedAt?: string;
+  /** Расчёт в архиве (отдельно от объекта): скрыт в основном списке и в выборе при оформлении договоров. */
+  archived?: boolean;
 }
 
 export async function getContractDocumentPackages(

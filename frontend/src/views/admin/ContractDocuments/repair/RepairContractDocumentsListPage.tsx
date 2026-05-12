@@ -144,7 +144,7 @@ export function RepairContractDocumentsListPage() {
                           </Link>
                           {r.status === 'CONTRACT_CONCLUDED' ? (
                             <span className={styles.packageFlowStatusBadge} role="status">
-                              Договор заключен
+                              Договор подписан
                             </span>
                           ) : null}
                         </div>

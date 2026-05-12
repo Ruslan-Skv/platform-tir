@@ -294,7 +294,7 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesSectionsStack {
   background: var(--admin-surface);
-  border-color: var(--admin-sidebar-text);
+  border: none;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesGroupBlock {
@@ -613,6 +613,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  color: var(--admin-info);
+}
+
+.estimatesPageArchiveIconBtn {
+  color: var(--admin-text-secondary);
+}
+
+.estimatesPageArchiveIconBtn:hover:not(:disabled) {
   color: var(--admin-info);
 }
 
@@ -3297,7 +3305,146 @@
 .estimatesListSection {
   padding: var(--admin-space-lg);
   background: var(--admin-surface-muted);
-  border-color: var(--admin-border-strong);
+  border: 1px solid var(--admin-border);
+}
+
+.estimatesPageInArchive {
+  padding: var(--admin-space-md);
+  padding-top: var(--admin-space-sm);
+  background: linear-gradient(
+    165deg,
+    var(--admin-surface-muted) 0%,
+    var(--admin-surface) 42%,
+    var(--admin-surface) 100%
+  );
+  border-radius: var(--admin-radius-lg);
+}
+
+.estimatesListSectionArchive {
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+}
+
+.estimatesControlsSingleRow {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  margin-bottom: var(--admin-space-md);
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  background: linear-gradient(
+    180deg,
+    var(--admin-surface-muted) 0%,
+    var(--admin-surface-soft) 100%
+  );
+  border: none;
+  border-radius: var(--admin-radius-md);
+  overflow-x: auto;
+}
+
+.estimatesControlsSingleRow .estimatesFilterRowSpacer {
+  flex: 1 1 0;
+  min-width: 8px;
+}
+
+.estimatesControlsSingleRow .secondaryBtn,
+.estimatesControlsSingleRow .primaryBtn,
+.estimatesControlsSingleRow a.primaryBtn {
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+}
+
+.estimatesControlsSingleRow .estimatesToolbarTitle {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.estimatesAttachmentFilterGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  padding: 4px;
+  margin-left: var(--admin-space-md);
+  margin-right: var(--admin-space-md);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
+}
+
+.estimatesControlsSingleRowArchive .estimatesAttachmentFilterGroup {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-text-muted);
+}
+
+.estimatesAttachmentFilterBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: var(--admin-radius-sm);
+  background: transparent;
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+}
+
+.estimatesAttachmentFilterBtn:hover:not(:disabled) {
+  background: var(--admin-surface-muted);
+  color: var(--admin-text-primary);
+}
+
+.estimatesAttachmentFilterBtn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--admin-surface),
+    0 0 0 4px rgba(var(--admin-overlay-color-144), 0.35);
+}
+
+.estimatesAttachmentFilterBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.estimatesAttachmentFilterBtnActive {
+  background: linear-gradient(180deg, var(--admin-info-bg-soft) 0%, var(--admin-info-bg) 100%);
+  color: var(--admin-info-strong);
+  box-shadow: 0 0 0 1px var(--admin-info-border-soft);
+}
+
+.estimatesControlsSingleRowArchive {
+  background: linear-gradient(180deg, var(--admin-surface-muted) 0%, var(--admin-surface) 100%);
+  border: none;
+}
+
+.estimatesToolbarArchive {
+  background: linear-gradient(
+    180deg,
+    var(--admin-surface-muted) 0%,
+    var(--admin-surface-soft) 100%
+  );
+  border: 1px dashed var(--admin-text-muted);
+  border-left: 4px solid var(--admin-text-muted);
+}
+
+.estimatesToolbarTitleArchive {
+  color: var(--admin-text-secondary);
+  font-size: var(--admin-font-size-sm);
+  letter-spacing: 0.04em;
+}
+
+.estimatesFilterRowArchive {
+  background: var(--admin-surface-muted);
+  border: 1px solid var(--admin-border-strong);
+  border-left: 4px solid var(--admin-text-muted);
+}
+
+.estimatesSectionsStackArchive {
+  background: var(--admin-surface-soft);
+  border: none;
 }
 
 .estimatesToolbar {
@@ -3312,6 +3459,10 @@
   border: 1px solid var(--admin-info-border-soft);
   border-left: 3px solid var(--admin-info);
   border-radius: var(--admin-radius-md);
+}
+
+.estimatesToolbarActionsOnly {
+  justify-content: flex-end;
 }
 
 .estimatesToolbarTitle {
@@ -3379,6 +3530,23 @@
   color: var(--admin-info-text);
 }
 
+.estimatesFilterRowSpacer {
+  flex: 1 1 0;
+  min-width: 4px;
+}
+
+.estimatesFilterRowTrailing {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--admin-space-sm);
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.estimatesFilterRowTrailing .estimatesAddObjectBtn {
+  margin-left: 0;
+}
+
 .estimatesCompactPrimaryLink {
   padding: var(--admin-space-sm) var(--admin-space-xl);
   font-size: var(--admin-font-size-sm);
@@ -3389,8 +3557,7 @@
   gap: var(--admin-space-md);
   padding: var(--admin-space-md);
   background: var(--admin-scrollbar-track);
-  border: 1px solid var(--admin-border);
-  border-left: 3px solid var(--admin-text-muted);
+  border: none;
   border-radius: var(--admin-radius-md);
 }
 
@@ -3614,8 +3781,39 @@
   border-radius: var(--admin-radius-xs);
 }
 
+/** Узкое поле «Доп. наценка» у карточки расчёта (не путать с широким select «Объект»). */
+.estimatesCardMarkupField {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--admin-space-2xs);
+  flex: 0 0 auto;
+  max-width: 124px;
+  margin: 0;
+  min-width: 0;
+}
+
+.estimatesCardMarkupField > span {
+  flex-shrink: 0;
+  font-size: var(--admin-font-size-2xs);
+  font-weight: 600;
+  color: var(--admin-text-muted);
+  white-space: nowrap;
+}
+
+.estimatesCardMarkupField input {
+  width: 2.75rem;
+  min-width: 0;
+  flex-shrink: 0;
+  padding: var(--admin-space-2xs) 4px;
+  font-size: var(--admin-font-size-2xs);
+  border-radius: var(--admin-radius-xs);
+}
+
 .estimatesCardActions {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: var(--admin-space-xs);
   flex-shrink: 0;
   margin-left: auto;
@@ -3632,6 +3830,23 @@
   display: block;
   width: 14px;
   height: 14px;
+}
+
+.estimatesCardActions .estimatesIconBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  color: var(--admin-text-muted);
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
+}
+
+.estimatesCardActions .estimatesIconBtn:disabled:hover {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
+}
+
+.estimatesCardActions .estimatesIconBtn:disabled svg {
+  stroke: var(--admin-text-muted);
 }
 
 .managerQuestionnaireNeedsGrid {
@@ -3943,7 +4158,75 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesListSection {
   background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesPageInArchive {
+  background: linear-gradient(
+    165deg,
+    var(--admin-overlay-color-014) 0%,
+    var(--admin-surface) 40%,
+    var(--admin-surface) 100%
+  );
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesListSectionArchive {
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesToolbarArchive {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-text-muted);
+  border-left-color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesToolbarTitleArchive {
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesFilterRowArchive {
+  background: var(--admin-overlay-color-014);
   border-color: var(--admin-sidebar-text);
+  border-left-color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesSectionsStackArchive {
+  border: none;
+  background: var(--admin-surface);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesControlsSingleRow {
+  background: var(--admin-surface-soft);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesControlsSingleRowArchive {
+  background: var(--admin-overlay-color-014);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesAttachmentFilterGroup {
+  background: var(--admin-surface);
+  border-color: var(--admin-sidebar-text);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesControlsSingleRowArchive
+  .estimatesAttachmentFilterGroup {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesAttachmentFilterBtn:hover:not(:disabled) {
+  background: var(--admin-overlay-color-014);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesAttachmentFilterBtnActive {
+  background: linear-gradient(180deg, var(--admin-info) 0%, var(--admin-info-strong) 100%);
+  color: var(--admin-text-inverse);
+  box-shadow: 0 0 0 1px var(--admin-info-bright);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesToolbar {
@@ -3977,8 +4260,7 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesSectionsStack {
   background: var(--admin-surface);
-  border-color: var(--admin-sidebar-text);
-  border-left-color: var(--admin-text-muted);
+  border: none;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesGroupBlock {
@@ -4044,8 +4326,25 @@
   color: var(--admin-text-secondary);
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesCardActions
+  .estimatesIconBtn:disabled {
+  opacity: 0.42;
+  background: var(--admin-surface);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesCardActions
+  .estimatesIconBtn:disabled
+  svg {
+  stroke: var(--admin-text-muted);
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardMeta,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardGroupField > span {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardGroupField > span,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardMarkupField > span {
   color: var(--admin-text-secondary);
 }
 
@@ -4069,6 +4368,18 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardGroupField select:focus {
+  outline: none;
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 2px rgba(var(--admin-overlay-color-144), 0.25);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardMarkupField input {
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-sidebar-text);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardMarkupField input:focus {
   outline: none;
   border-color: var(--admin-accent);
   box-shadow: 0 0 0 2px rgba(var(--admin-overlay-color-144), 0.25);

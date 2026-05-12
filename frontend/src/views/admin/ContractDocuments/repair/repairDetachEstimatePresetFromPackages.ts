@@ -1,4 +1,7 @@
-import type { ContractEstimatePreset } from '@/shared/api/admin-contract-document-packages';
+import type {
+  ContractEstimateGroup,
+  ContractEstimatePreset,
+} from '@/shared/api/admin-contract-document-packages';
 import {
   getContractDocumentPackage,
   updateContractDocumentPackage,
@@ -29,12 +32,13 @@ function normalizedEstimateIdsFromForm(form: {
 export async function persistRepairPackageAfterRemovingEstimatePreset(
   packageId: string,
   presetIdToRemove: string,
-  presets: ContractEstimatePreset[]
+  presets: ContractEstimatePreset[],
+  estimateGroups: ContractEstimateGroup[] = []
 ): Promise<void> {
   const row = await getContractDocumentPackage(packageId);
   const { form, templateOverrides, templatePresetIds } = mergeFormDataFromStorage(row.formData);
   const nextIds = normalizedEstimateIdsFromForm(form).filter((id) => id !== presetIdToRemove);
-  let nextForm = applyEstimatePresetIdsToRepairForm(form, nextIds, presets);
+  let nextForm = applyEstimatePresetIdsToRepairForm(form, nextIds, presets, estimateGroups);
   for (let i = 0; i < 5; i++) {
     const slot = nextForm.addendumSlots[i];
     const add = [...(slot.selectedPresetIds ?? [])].filter((id) => id !== presetIdToRemove);
@@ -45,8 +49,24 @@ export async function persistRepairPackageAfterRemovingEstimatePreset(
     ) {
       continue;
     }
-    nextForm = applyEstimatePresetIdsToAddendumSlot(nextForm, i, add, presets, 'additional', true);
-    nextForm = applyEstimatePresetIdsToAddendumSlot(nextForm, i, exc, presets, 'excluded', true);
+    nextForm = applyEstimatePresetIdsToAddendumSlot(
+      nextForm,
+      i,
+      add,
+      presets,
+      estimateGroups,
+      'additional',
+      true
+    );
+    nextForm = applyEstimatePresetIdsToAddendumSlot(
+      nextForm,
+      i,
+      exc,
+      presets,
+      estimateGroups,
+      'excluded',
+      true
+    );
   }
   const formData = buildPersistedFormData(nextForm, templateOverrides, templatePresetIds);
   await updateContractDocumentPackage(packageId, {
