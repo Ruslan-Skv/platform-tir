@@ -3,7 +3,10 @@ import type {
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
 
-import { amountToRussianWords } from './amountToRussianWords';
+import {
+  applyRepairContractDiscountToNullableBase,
+  repairEstimateTotalToContractFields,
+} from './repairContractDiscount';
 import type { RepairPackageFormData } from './repairPackageForm';
 
 export type EstimateSnapshotLine = {
@@ -155,26 +158,6 @@ function formatCombinedEstimateNotes(
     '',
     ...blocks,
   ].join('\n');
-}
-
-function estimateTotalToContractFields(total: number | null): {
-  totalAmount: string;
-  totalAmountWords: string;
-  recommendedPrepayment: string;
-} {
-  if (total === null) {
-    return {
-      totalAmount: '',
-      totalAmountWords: '',
-      recommendedPrepayment: '',
-    };
-  }
-  const totalAmount = total.toFixed(2).replace('.', ',');
-  return {
-    totalAmount,
-    totalAmountWords: amountToRussianWords(totalAmount),
-    recommendedPrepayment: formatMoneyValue(total * 0.7),
-  };
 }
 
 type PersistedCalculatorDraftV1 = {
@@ -331,7 +314,12 @@ export function applyEstimatePresetIdsToRepairForm(
     }))
   );
   const notes = formatCombinedEstimateNotes(selectedPresets, mergedSnapshot, estimateGroups);
-  const contractTotals = estimateTotalToContractFields(mergedSnapshot?.total ?? null);
+  const contractTotals = repairEstimateTotalToContractFields(
+    applyRepairContractDiscountToNullableBase(
+      mergedSnapshot?.total ?? null,
+      previous.contract.discountPercent
+    )
+  );
   return {
     ...previous,
     estimateObjectGroupKey: groupKey,

@@ -99,6 +99,10 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
       },
       { path: 'contract.paymentBasis', label: 'Основание (платёж / перечисление)' },
       { path: 'contract.workPeriod', label: 'Срок договора (календарных дней, число)' },
+      {
+        path: 'contract.discountPercent',
+        label: 'Скидка по договору (%, число; применяется к смете и Д/с)',
+      },
     ],
   },
   {

@@ -1078,13 +1078,6 @@ export function ContractDocumentsEstimatesPage() {
         <div
           className={`${styles.estimatesControlsSingleRow}${archiveView ? ` ${styles.estimatesControlsSingleRowArchive}` : ''}`}
         >
-          {archiveView ? (
-            <h3
-              className={`${styles.estimatesToolbarTitle} ${styles.estimatesToolbarTitleArchive}`}
-            >
-              Архив объектов и расчётов
-            </h3>
-          ) : null}
           {!archiveView ? (
             <>
               <button

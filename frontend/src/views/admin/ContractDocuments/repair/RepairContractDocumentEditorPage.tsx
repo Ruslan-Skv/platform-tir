@@ -6,6 +6,7 @@ import Link from 'next/link';
 
 import { useAuth } from '@/features/auth';
 import {
+  type ContractDocumentPackagePayment,
   type ContractDocumentPackageStatus,
   type ContractDocumentPackageVersionListItem,
   type ContractEstimateGroup,
@@ -17,6 +18,7 @@ import {
   getContractDocumentExecutorProfiles,
   getContractDocumentGlobalTemplate,
   getContractDocumentPackage,
+  getContractDocumentPackagePayments,
   getContractDocumentPackageVersion,
   getContractDocumentPackageVersions,
   getContractDocumentPackages,
@@ -66,6 +68,12 @@ import {
   isContractEstimatePresetAttachable,
 } from './repairApplyEstimatePresetIds';
 import {
+  applyRepairContractDiscountToAmount,
+  parseRepairContractDiscountPercent,
+  repairContractDiscountMoneyFactor,
+  repairEstimateTotalToContractFields,
+} from './repairContractDiscount';
+import {
   REPAIR_DOCUMENT_TAB_IDS,
   REPAIR_DOCUMENT_TAB_LABELS,
   REPAIR_DOCUMENT_TAB_LABELS_SHORT,
@@ -87,6 +95,7 @@ import {
   mergeRepairPackageFormWithPreviewFallback,
   repairPackageFormForTemplate,
 } from './repairPackageForm';
+import { computeRepairPackagePayableBreakdown } from './repairPackagePaymentTotals';
 
 /** Класс на `document.body` при печати сметы — см. `@media print` в ContractDocuments.module.css */
 const BODY_PRINT_ESTIMATE_CLASS = 'body-print-estimate-sheet';
@@ -97,6 +106,13 @@ function isWithinRevertWindow(iso: string | null | undefined): boolean {
   const ts = Date.parse(iso);
   if (!Number.isFinite(ts)) return false;
   return Date.now() - ts <= STATUS_REVERT_WINDOW_MS;
+}
+
+function sumPackagePaymentAmountsRub(rows: ContractDocumentPackagePayment[]): number {
+  return rows.reduce((acc, r) => {
+    const n = Number.parseFloat(r.amount);
+    return acc + (Number.isFinite(n) ? n : 0);
+  }, 0);
 }
 
 /** Встроенный в код шаблон (если в БД нет общего шаблона). */
@@ -459,6 +475,14 @@ function RepairTabLockIcon() {
   );
 }
 
+function RepairDataSectionLockCorner({ title }: { title: string }) {
+  return (
+    <div className={styles.repairDataSectionLockCorner} role="img" aria-label={title} title={title}>
+      <RepairTabLockIcon />
+    </div>
+  );
+}
+
 interface RepairContractDocumentEditorPageProps {
   packageId: string;
 }
@@ -638,10 +662,19 @@ export function RepairContractDocumentEditorPage({
     }>
   >([]);
   const [packageRefreshing, setPackageRefreshing] = useState(false);
+  /** Сумма строк журнала оплат (для бейджа % в шапке после «Договор подписан»). */
+  const [headerJournalPaidRub, setHeaderJournalPaidRub] = useState(0);
   const [packageFlowStatus, setPackageFlowStatus] =
     useState<ContractDocumentPackageStatus>('IN_PROGRESS');
   /** После «Договор подписан» вкладки «Договор» и «Смета» только для просмотра. */
   const contractAndEstimateLocked = packageFlowStatus === 'CONTRACT_CONCLUDED';
+  /** После подписания договора с вкладки «Оплаты» можно править только эти поля `contract.*`. */
+  const REPAIR_CONTRACT_FIELDS_EDITABLE_WHEN_SIGNED = new Set<string>([
+    'prepaymentAmount',
+    'prepaymentAmountWords',
+    'paymentBasis',
+    'totalAmountWords',
+  ]);
   const canRevertContractConcluded =
     packageFlowStatus === 'CONTRACT_CONCLUDED' && isWithinRevertWindow(form.contractConcludedAt);
   const isContractPaid = (form.contractPaidAt ?? '').trim() !== '';
@@ -660,6 +693,41 @@ export function RepairContractDocumentEditorPage({
         .filter((v): v is number => v !== null),
     [form.addendumSlots]
   );
+
+  const headerPayableBreakdown = useMemo(() => computeRepairPackagePayableBreakdown(form), [form]);
+
+  /** Круглый бейдж % оплаты от «Итого» (договор + Д/с) для шапки при статусе «Договор подписан». */
+  const signedContractPayOrb = useMemo(() => {
+    if (packageFlowStatus !== 'CONTRACT_CONCLUDED') return null;
+    const gt = headerPayableBreakdown.grandTotalRub;
+    if (gt == null || !Number.isFinite(gt) || gt <= 0) return null;
+    const paid = headerJournalPaidRub;
+    const pct = (paid / gt) * 100;
+    const tolRub = 0.5;
+    const treatAsFull = paid >= gt - tolRub;
+    const roundedPct = Math.round(pct);
+    const label = treatAsFull ? '100%' : `${roundedPct}%`;
+    let toneClass: string;
+    if (treatAsFull || roundedPct >= 100) {
+      toneClass = styles.packageFlowPayPctOrbGreen;
+    } else if (roundedPct >= 70) {
+      toneClass = styles.packageFlowPayPctOrbLime;
+    } else {
+      toneClass = styles.packageFlowPayPctOrbYellow;
+    }
+    const paidFmt = new Intl.NumberFormat('ru-RU', {
+      style: 'currency',
+      currency: 'RUB',
+      maximumFractionDigits: 0,
+    }).format(paid);
+    const gtFmt = new Intl.NumberFormat('ru-RU', {
+      style: 'currency',
+      currency: 'RUB',
+      maximumFractionDigits: 0,
+    }).format(gt);
+    const title = `Внесено по журналу: ${paidFmt} (${label} от суммы «Итого» на вкладке «Оплаты»: ${gtFmt})`;
+    return { label, toneClass, title };
+  }, [packageFlowStatus, headerPayableBreakdown.grandTotalRub, headerJournalPaidRub]);
   const [savingPackageStatus, setSavingPackageStatus] = useState(false);
   const [packageVersions, setPackageVersions] = useState<ContractDocumentPackageVersionListItem[]>(
     []
@@ -857,6 +925,15 @@ export function RepairContractDocumentEditorPage({
     [packageId]
   );
 
+  const refreshHeaderJournalPaidRub = useCallback(async () => {
+    try {
+      const list = await getContractDocumentPackagePayments(packageId);
+      setHeaderJournalPaidRub(sumPackagePaymentAmountsRub(list));
+    } catch {
+      /* не блокируем шапку */
+    }
+  }, [packageId]);
+
   const load = useCallback(
     async (opts?: { mode?: 'initial' | 'refresh' }) => {
       const isRefresh = opts?.mode === 'refresh';
@@ -879,6 +956,7 @@ export function RepairContractDocumentEditorPage({
           estimateRes,
           packagesRes,
           installersRes,
+          paymentsRes,
         ] = await Promise.all([
           getContractDocumentPackage(packageId),
           getContractDocumentGlobalTemplate('REPAIR', 'contract').catch(() => ({
@@ -904,11 +982,16 @@ export function RepairContractDocumentEditorPage({
           })),
           getContractDocumentPackages('REPAIR').catch(() => []),
           getInstallers().catch(() => [] as InstallerMaster[]),
+          getContractDocumentPackagePayments(packageId).catch(
+            () => [] as ContractDocumentPackagePayment[]
+          ),
         ]);
         if (row.kind !== 'REPAIR') {
           setError('Этот пакет относится к другому направлению.');
+          setHeaderJournalPaidRub(0);
           return;
         }
+        setHeaderJournalPaidRub(sumPackagePaymentAmountsRub(paymentsRes ?? []));
         setDraftTitle(row.title ?? '');
         setDraftCrmContractId(row.crmContractId ?? null);
         setPackageFlowStatus(
@@ -1094,6 +1177,15 @@ export function RepairContractDocumentEditorPage({
     void load();
   }, [load]);
 
+  const prevRepairActiveTabRef = useRef<RepairDocumentTabId>(activeTab);
+  useEffect(() => {
+    const prev = prevRepairActiveTabRef.current;
+    prevRepairActiveTabRef.current = activeTab;
+    if (prev === 'payments' && activeTab !== 'payments') {
+      void refreshHeaderJournalPaidRub();
+    }
+  }, [activeTab, refreshHeaderJournalPaidRub]);
+
   useEffect(() => {
     if (isVersionsHistoryOpen && !loading) {
       void refreshPackageVersions({ skipSpinner: true });
@@ -1136,10 +1228,11 @@ export function RepairContractDocumentEditorPage({
   ]);
 
   const openCustomerSearchPopoverIfReady = useCallback(() => {
+    if (contractAndEstimateLocked) return;
     if (customerSearchQuery.trim().length >= 2) {
       setCustomerSearchPopoverOpen(true);
     }
-  }, [customerSearchQuery]);
+  }, [customerSearchQuery, contractAndEstimateLocked]);
 
   const searchCustomersFromContracts = useCallback(async (q: string) => {
     if (q.trim().length < 2) {
@@ -1250,32 +1343,6 @@ export function RepairContractDocumentEditorPage({
     }
   };
 
-  const handleMarkContractPaid = async () => {
-    if (packageFlowStatus !== 'CONTRACT_CONCLUDED') return;
-    setSavingPackageStatus(true);
-    setError(null);
-    try {
-      const nowIso = new Date().toISOString();
-      const nextForm = { ...formRef.current, contractPaidAt: nowIso };
-      const formData = buildPersistedFormData(
-        nextForm,
-        templateOverridesRef.current,
-        selectedTemplateIdsRef.current
-      );
-      await updateContractDocumentPackage(packageId, {
-        status: packageFlowStatus,
-        formData,
-        recordVersion: true,
-      });
-      setForm(nextForm);
-      formRef.current = nextForm;
-      await refreshPackageVersions({ skipSpinner: true });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось установить статус «Договор оплачен»');
-    } finally {
-      setSavingPackageStatus(false);
-    }
-  };
   const handleRevertContractPaid = async () => {
     if (!canRevertContractPaid) {
       setError('Снять статус «Договор оплачен» можно только в течение 24 часов после установки.');
@@ -1335,6 +1402,7 @@ export function RepairContractDocumentEditorPage({
   };
 
   const applyCrmContractToFormById = async (contractId: string, searchRow: ContractCustomer) => {
+    if (contractAndEstimateLocked) return;
     setError(null);
     try {
       const c = await getContract(contractId);
@@ -1356,6 +1424,7 @@ export function RepairContractDocumentEditorPage({
   }, [form.customer.phones, form.customer.phone]);
 
   const applyExecutorProfile = (title: string) => {
+    if (contractAndEstimateLocked) return;
     setForm((p) => {
       const profile = executorProfiles.find((it) => it.title === title);
       if (!profile) {
@@ -1402,6 +1471,7 @@ export function RepairContractDocumentEditorPage({
   }, [executorProfiles, form.executor.selectedProfileTitle]);
 
   const applySignatoryProfile = (title: string) => {
+    if (contractAndEstimateLocked) return;
     setForm((p) => {
       const profile = signatoryProfiles.find((it) => it.title === title);
       if (!profile) {
@@ -1448,6 +1518,7 @@ export function RepairContractDocumentEditorPage({
   }, [signatoryProfiles, form.executor.selectedSignatoryProfileTitle]);
 
   const updateObject = <K extends keyof RepairPackageFormData['object']>(key: K, value: string) => {
+    if (contractAndEstimateLocked) return;
     setForm((p) => ({ ...p, object: { ...p.object, [key]: value } }));
     touchPackageData();
   };
@@ -1638,8 +1709,27 @@ export function RepairContractDocumentEditorPage({
     key: K,
     value: string
   ) => {
+    if (
+      contractAndEstimateLocked &&
+      !REPAIR_CONTRACT_FIELDS_EDITABLE_WHEN_SIGNED.has(String(key))
+    ) {
+      return;
+    }
     setForm((p) => {
       const nextContract = { ...p.contract, [key]: value };
+      if (key === 'discountPercent') {
+        const base = p.estimate.snapshot?.total;
+        if (typeof base === 'number' && Number.isFinite(base)) {
+          const after = applyRepairContractDiscountToAmount(
+            base,
+            parseRepairContractDiscountPercent(value)
+          );
+          const fields = repairEstimateTotalToContractFields(after);
+          nextContract.totalAmount = fields.totalAmount;
+          nextContract.totalAmountWords = fields.totalAmountWords;
+          nextContract.recommendedPrepayment = fields.recommendedPrepayment;
+        }
+      }
       if (key === 'totalAmount') {
         nextContract.totalAmountWords = amountToRussianWords(value);
         const parsedAmount = parseDecimalAmount(value);
@@ -1663,6 +1753,12 @@ export function RepairContractDocumentEditorPage({
       return { ...p, contract: { ...p.contract, prepaymentAmountWords: nextWords } };
     });
   }, [form.contract.prepaymentAmount]);
+
+  useEffect(() => {
+    if (contractAndEstimateLocked) {
+      setCustomerSearchPopoverOpen(false);
+    }
+  }, [contractAndEstimateLocked]);
 
   const estimateUsageById = useMemo(() => {
     const map = new Map<
@@ -1891,6 +1987,18 @@ export function RepairContractDocumentEditorPage({
   }, [form.contract.number, form.contract.date]);
 
   const finalEstimateSummary = useMemo(() => buildFinalEstimateSummary(form), [form]);
+  const contractDiscountPercentParsed = useMemo(
+    () => parseRepairContractDiscountPercent(form.contract.discountPercent),
+    [form.contract.discountPercent]
+  );
+  const finalEstimateTotalAfterDiscount = useMemo(
+    () =>
+      applyRepairContractDiscountToAmount(
+        finalEstimateSummary.totalAmount,
+        contractDiscountPercentParsed
+      ),
+    [finalEstimateSummary.totalAmount, contractDiscountPercentParsed]
+  );
   const selectedRepairInstallers = useMemo(() => {
     const selectedIds = new Set(form.selectedRepairInstallerIds ?? []);
     return repairInstallers.filter((installer) => selectedIds.has(installer.id));
@@ -2101,9 +2209,13 @@ export function RepairContractDocumentEditorPage({
     [finalEstimateSummary.rows, form.finalEstimateInstallerAssignments]
   );
 
+  /** Итоговый заказ-наряд: скидка по договору на уровне каждой позиции (в сметах — только в итогах). */
   const finalWorkOrderComputed = useMemo(() => {
     const taxPercent = parsePercentForWorkOrder(form.workOrder.taxPercent);
     const markupPercent = parsePercentForWorkOrder(form.workOrder.markupPercent);
+    const discountFactor = repairContractDiscountMoneyFactor(
+      parseRepairContractDiscountPercent(form.contract.discountPercent)
+    );
     const fallbackGradeIncreasePercent = normalizeWorkOrderGrade(
       form.workOrder.gradeIncreasePercent
     );
@@ -2127,9 +2239,17 @@ export function RepairContractDocumentEditorPage({
           : fallbackGradeIncreasePercent;
         const gradeFactor = 1 + gradeIncreasePercent / 100;
         const adjustedPrice =
-          line.price * (1 - taxPercent / 100) * (1 - markupPercent / 100) * gradeFactor;
+          line.price *
+          discountFactor *
+          (1 - taxPercent / 100) *
+          (1 - markupPercent / 100) *
+          gradeFactor;
         const adjustedAmount =
-          line.amount * (1 - taxPercent / 100) * (1 - markupPercent / 100) * gradeFactor;
+          line.amount *
+          discountFactor *
+          (1 - taxPercent / 100) *
+          (1 - markupPercent / 100) *
+          gradeFactor;
         if (assignedInstaller) {
           const prev = installerTotalsMap.get(assignedInstaller.id) ?? {
             installer: assignedInstaller,
@@ -2165,6 +2285,7 @@ export function RepairContractDocumentEditorPage({
     form.workOrder.taxPercent,
     form.workOrder.markupPercent,
     form.workOrder.gradeIncreasePercent,
+    form.contract.discountPercent,
     form.finalEstimateInstallerAssignments,
     selectedRepairInstallersById,
   ]);
@@ -3101,8 +3222,16 @@ export function RepairContractDocumentEditorPage({
           <div className={styles.editorHeaderTitleRow}>
             <h1 className={styles.title}>Пакет документов</h1>
             {packageFlowStatus === 'CONTRACT_CONCLUDED' ? (
-              <span className={styles.packageFlowStatusBadge} role="status">
-                Договор подписан
+              <span className={styles.packageFlowSignedLabelGroup} role="status">
+                <span className={styles.packageFlowStatusBadge}>Договор подписан</span>
+                {signedContractPayOrb != null ? (
+                  <span
+                    className={`${styles.packageFlowPayPctOrb} ${signedContractPayOrb.toneClass}`}
+                    title={signedContractPayOrb.title}
+                  >
+                    {signedContractPayOrb.label}
+                  </span>
+                ) : null}
               </span>
             ) : null}
             {isContractPaid ? (
@@ -3218,16 +3347,7 @@ export function RepairContractDocumentEditorPage({
               </button>
             ) : (
               <>
-                {!isContractPaid ? (
-                  <button
-                    type="button"
-                    className={styles.secondaryBtn}
-                    disabled={savingPackageStatus}
-                    onClick={() => void handleMarkContractPaid()}
-                  >
-                    {savingPackageStatus ? 'Сохранение…' : 'Договор оплачен'}
-                  </button>
-                ) : (
+                {isContractPaid ? (
                   <button
                     type="button"
                     className={styles.secondaryBtn}
@@ -3241,7 +3361,7 @@ export function RepairContractDocumentEditorPage({
                   >
                     {savingPackageStatus ? 'Сохранение…' : 'Снять статус «Договор оплачен»'}
                   </button>
-                )}
+                ) : null}
                 <button
                   type="button"
                   className={styles.secondaryBtn}
@@ -3438,6 +3558,7 @@ export function RepairContractDocumentEditorPage({
         isOpen={addCrmCustomerModalOpen}
         onClose={() => setAddCrmCustomerModalOpen(false)}
         onCreated={(created) => {
+          if (contractAndEstimateLocked) return;
           const next = mergeRepairFormFromCreatedCrmCustomer(created, formRef.current);
           setForm(next);
           setCustomerSearchKind(next.customer.type);
@@ -3603,7 +3724,14 @@ export function RepairContractDocumentEditorPage({
           <div className={styles.formGrid}>
             <div className={styles.dataTopRow}>
               <div className={styles.dataTopBlock}>
-                <div className={`${styles.sectionCard} ${styles.sectionCustomer}`}>
+                <div
+                  className={`${styles.sectionCard} ${styles.sectionCustomer} ${
+                    contractAndEstimateLocked ? styles.repairDataSectionCardLocked : ''
+                  }`}
+                >
+                  {contractAndEstimateLocked ? (
+                    <RepairDataSectionLockCorner title="Договор подписан: блок «Договор и объект» только для просмотра" />
+                  ) : null}
                   <h3 className={styles.sectionTitle}>Договор и объект</h3>
                   <div className={styles.contractCompactBlock}>
                     <div className={`${styles.contractInlineRow} ${styles.contractHeaderMetaRow}`}>
@@ -3614,6 +3742,8 @@ export function RepairContractDocumentEditorPage({
                           value={form.contract.number}
                           onChange={(e) => updateContract('number', e.target.value)}
                           autoComplete="off"
+                          disabled={contractAndEstimateLocked}
+                          className={contractAndEstimateLocked ? styles.autoFilledInput : undefined}
                         />
                       </div>
                       <div className={`${styles.field} ${styles.contractInlineField}`}>
@@ -3624,6 +3754,8 @@ export function RepairContractDocumentEditorPage({
                           onChange={(e) => updateContract('date', e.target.value)}
                           placeholder="дд.мм.гггг"
                           autoComplete="off"
+                          disabled={contractAndEstimateLocked}
+                          className={contractAndEstimateLocked ? styles.autoFilledInput : undefined}
                         />
                       </div>
                       <div className={`${styles.field} ${styles.contractInlineField}`}>
@@ -3636,6 +3768,8 @@ export function RepairContractDocumentEditorPage({
                           placeholder="60"
                           title="Календарных дней; в шаблоне: {{contract.workPeriod}}"
                           autoComplete="off"
+                          disabled={contractAndEstimateLocked}
+                          className={contractAndEstimateLocked ? styles.autoFilledInput : undefined}
                         />
                       </div>
                     </div>
@@ -3649,6 +3783,8 @@ export function RepairContractDocumentEditorPage({
                           value={form.object.objectAddress}
                           onChange={(e) => updateObject('objectAddress', e.target.value)}
                           autoComplete="off"
+                          disabled={contractAndEstimateLocked}
+                          className={contractAndEstimateLocked ? styles.autoFilledInput : undefined}
                         />
                       </div>
                       <div className={`${styles.field} ${styles.contractInlineField}`}>
@@ -3658,16 +3794,44 @@ export function RepairContractDocumentEditorPage({
                           value={form.object.objectFloor}
                           onChange={(e) => updateObject('objectFloor', e.target.value)}
                           autoComplete="off"
+                          disabled={contractAndEstimateLocked}
+                          className={contractAndEstimateLocked ? styles.autoFilledInput : undefined}
                         />
                       </div>
                     </div>
-                    <div className={`${styles.contractInlineRow} ${styles.contractObjectDescRow}`}>
+                    <div
+                      className={`${styles.contractInlineRow} ${styles.contractObjectDescDiscountRow}`}
+                    >
                       <div className={`${styles.field} ${styles.contractInlineField}`}>
                         <label htmlFor="o_desc">Описание работ / объекта</label>
                         <textarea
                           id="o_desc"
                           value={form.object.objectDescription}
                           onChange={(e) => updateObject('objectDescription', e.target.value)}
+                          disabled={contractAndEstimateLocked}
+                          className={contractAndEstimateLocked ? styles.autoFilledInput : undefined}
+                        />
+                      </div>
+                      <div
+                        className={`${styles.field} ${styles.contractInlineField} ${styles.contractDiscountFieldCell}`}
+                      >
+                        <div className={styles.contractDiscountLabelRow}>
+                          <label htmlFor="contract_discount_pct">Скидка по договору (%)</label>
+                        </div>
+                        <input
+                          id="contract_discount_pct"
+                          inputMode="decimal"
+                          value={form.contract.discountPercent}
+                          onChange={(e) => updateContract('discountPercent', e.target.value)}
+                          placeholder="0"
+                          title={
+                            contractAndEstimateLocked
+                              ? 'После статуса «Договор подписан» общие данные договора изменить нельзя'
+                              : 'Применяется к смете, доп. соглашениям, заказ-наряду и вкладке «Оплаты»'
+                          }
+                          autoComplete="off"
+                          disabled={contractAndEstimateLocked}
+                          className={contractAndEstimateLocked ? styles.autoFilledInput : undefined}
                         />
                       </div>
                     </div>
@@ -3679,7 +3843,9 @@ export function RepairContractDocumentEditorPage({
                 <div
                   ref={customerSearchRootRef}
                   onFocusCapture={openCustomerSearchPopoverIfReady}
-                  className={`${styles.field} ${styles.crmCompactField} ${styles.crmCompactBox} ${styles.repairCustomerSearchWrap}`}
+                  className={`${styles.field} ${styles.crmCompactField} ${styles.crmCompactBox} ${styles.repairCustomerSearchWrap} ${
+                    contractAndEstimateLocked ? styles.repairCustomerSearchWrapLocked : ''
+                  }`}
                 >
                   <h3 className={styles.sectionTitle}>Поиск заказчика в базе</h3>
                   <div className={styles.repairCustomerSearchModeRow}>
@@ -3693,6 +3859,7 @@ export function RepairContractDocumentEditorPage({
                         className={
                           customerSearchKind === 'PERSON' ? styles.primaryBtn : styles.secondaryBtn
                         }
+                        disabled={contractAndEstimateLocked}
                         onClick={() => {
                           setCustomerSearchKind('PERSON');
                         }}
@@ -3704,6 +3871,7 @@ export function RepairContractDocumentEditorPage({
                         className={
                           customerSearchKind === 'COMPANY' ? styles.primaryBtn : styles.secondaryBtn
                         }
+                        disabled={contractAndEstimateLocked}
                         onClick={() => {
                           setCustomerSearchKind('COMPANY');
                         }}
@@ -3717,6 +3885,7 @@ export function RepairContractDocumentEditorPage({
                             ? styles.primaryBtn
                             : styles.secondaryBtn
                         }
+                        disabled={contractAndEstimateLocked}
                         onClick={() => {
                           setCustomerSearchKind('ENTREPRENEUR');
                         }}
@@ -3728,6 +3897,7 @@ export function RepairContractDocumentEditorPage({
                     <button
                       type="button"
                       className={`${styles.primaryBtn} ${styles.repairCustomerSearchCrmBtn}`}
+                      disabled={contractAndEstimateLocked}
                       onClick={() => setAddCrmCustomerModalOpen(true)}
                     >
                       Добавить нового заказчика
@@ -3744,6 +3914,7 @@ export function RepairContractDocumentEditorPage({
                           onClick={openCustomerSearchPopoverIfReady}
                           placeholder="Фамилия Имя Отчество"
                           autoComplete="off"
+                          disabled={contractAndEstimateLocked}
                         />
                       </div>
                       <div className={styles.field}>
@@ -3755,6 +3926,7 @@ export function RepairContractDocumentEditorPage({
                           onClick={openCustomerSearchPopoverIfReady}
                           placeholder="+7…"
                           autoComplete="off"
+                          disabled={contractAndEstimateLocked}
                         />
                       </div>
                       <div className={styles.field}>
@@ -3766,6 +3938,7 @@ export function RepairContractDocumentEditorPage({
                           onClick={openCustomerSearchPopoverIfReady}
                           placeholder="Город, улица…"
                           autoComplete="off"
+                          disabled={contractAndEstimateLocked}
                         />
                       </div>
                     </div>
@@ -3780,6 +3953,7 @@ export function RepairContractDocumentEditorPage({
                           onClick={openCustomerSearchPopoverIfReady}
                           placeholder="ООО, ИП…"
                           autoComplete="off"
+                          disabled={contractAndEstimateLocked}
                         />
                       </div>
                       <div className={styles.field}>
@@ -3792,6 +3966,7 @@ export function RepairContractDocumentEditorPage({
                           placeholder="10 или 12 цифр"
                           inputMode="numeric"
                           autoComplete="off"
+                          disabled={contractAndEstimateLocked}
                         />
                       </div>
                     </div>
@@ -3802,7 +3977,9 @@ export function RepairContractDocumentEditorPage({
                       выпадающем списке.
                     </p>
                   ) : null}
-                  {customerSearchPopoverOpen && customerSearchQuery.trim().length >= 2 ? (
+                  {customerSearchPopoverOpen &&
+                  !contractAndEstimateLocked &&
+                  customerSearchQuery.trim().length >= 2 ? (
                     <div className={styles.repairCustomerSearchDropdown} role="listbox">
                       <div className={styles.repairCustomerSearchDropdownHeader}>
                         {customerSearchLoading
@@ -3823,7 +4000,7 @@ export function RepairContractDocumentEditorPage({
                                   <button
                                     type="button"
                                     className={`${styles.secondaryBtn} ${styles.crmResultBtn}`}
-                                    disabled={!c.lastContractId}
+                                    disabled={contractAndEstimateLocked || !c.lastContractId}
                                     onClick={() => {
                                       if (!c.lastContractId) return;
                                       void applyCrmContractToFormById(c.lastContractId, c);
@@ -3851,7 +4028,14 @@ export function RepairContractDocumentEditorPage({
               </div>
             </div>
 
-            <div className={`${styles.sectionCard} ${styles.sectionCustomer}`}>
+            <div
+              className={`${styles.sectionCard} ${styles.sectionCustomer} ${
+                contractAndEstimateLocked ? styles.repairDataSectionCardLocked : ''
+              }`}
+            >
+              {contractAndEstimateLocked ? (
+                <RepairDataSectionLockCorner title="Договор подписан: блок «Заказчик» только для просмотра" />
+              ) : null}
               <h3 className={styles.sectionTitle}>Заказчик</h3>
               <p className={styles.hint} style={{ marginTop: 4, marginBottom: 10 }}>
                 Данные подставляются из выбранной строки в блоке «Поиск заказчика в базе».
@@ -3982,7 +4166,14 @@ export function RepairContractDocumentEditorPage({
               </div>
             </div>
 
-            <div className={`${styles.sectionCard} ${styles.sectionExecutor}`}>
+            <div
+              className={`${styles.sectionCard} ${styles.sectionExecutor} ${
+                contractAndEstimateLocked ? styles.repairDataSectionCardLocked : ''
+              }`}
+            >
+              {contractAndEstimateLocked ? (
+                <RepairDataSectionLockCorner title="Договор подписан: блок «Исполнитель» только для просмотра" />
+              ) : null}
               <h3 className={styles.sectionTitle}>Исполнитель</h3>
               <p className={styles.hint} style={{ marginTop: 4, marginBottom: 10 }}>
                 Реквизиты подставляются из выбранного набора в справочнике «Исполнители».
@@ -3995,6 +4186,7 @@ export function RepairContractDocumentEditorPage({
                     id="e_profile"
                     value={form.executor.selectedProfileTitle}
                     onChange={(e) => applyExecutorProfile(e.target.value)}
+                    disabled={contractAndEstimateLocked}
                   >
                     <option value="">— выбрать набор —</option>
                     {executorProfiles.map((profile) => (
@@ -4054,7 +4246,14 @@ export function RepairContractDocumentEditorPage({
               </div>
             </div>
 
-            <div className={`${styles.sectionCard} ${styles.sectionExecutor}`}>
+            <div
+              className={`${styles.sectionCard} ${styles.sectionExecutor} ${
+                contractAndEstimateLocked ? styles.repairDataSectionCardLocked : ''
+              }`}
+            >
+              {contractAndEstimateLocked ? (
+                <RepairDataSectionLockCorner title="Договор подписан: блок «Подписант» только для просмотра" />
+              ) : null}
               <h3 className={styles.sectionTitle}>Подписант</h3>
               <p className={styles.hint} style={{ marginTop: 4, marginBottom: 10 }}>
                 Данные подставляются из выбранной карточки в справочнике «Подписанты». Редактировать
@@ -4067,6 +4266,7 @@ export function RepairContractDocumentEditorPage({
                     id="s_profile"
                     value={form.executor.selectedSignatoryProfileTitle}
                     onChange={(e) => applySignatoryProfile(e.target.value)}
+                    disabled={contractAndEstimateLocked}
                   >
                     <option value="">— выбрать карточку —</option>
                     {signatoryProfiles.map((profile) => (
@@ -4408,12 +4608,39 @@ export function RepairContractDocumentEditorPage({
                               </>
                             ) : null}
                           </section>
-                          <p className={styles.estimateA4Total}>
-                            Итого по смете:{' '}
-                            <strong>
-                              {formatMoneyValue(form.estimate.snapshot?.total ?? 0)} руб.
-                            </strong>
-                          </p>
+                          {contractDiscountPercentParsed > 0 ? (
+                            <>
+                              <p className={styles.estimateA4Total}>
+                                Итого по смете (без скидки):{' '}
+                                <strong>
+                                  {formatMoneyValue(form.estimate.snapshot?.total ?? 0)} руб.
+                                </strong>
+                              </p>
+                              <p className={styles.estimateA4DiscountMeta}>
+                                Скидка по договору:{' '}
+                                {String(contractDiscountPercentParsed).replace('.', ',')}%
+                              </p>
+                              <p className={styles.estimateA4Total}>
+                                Итого со скидкой:{' '}
+                                <strong>
+                                  {formatMoneyValue(
+                                    applyRepairContractDiscountToAmount(
+                                      form.estimate.snapshot?.total ?? 0,
+                                      contractDiscountPercentParsed
+                                    )
+                                  )}{' '}
+                                  руб.
+                                </strong>
+                              </p>
+                            </>
+                          ) : (
+                            <p className={styles.estimateA4Total}>
+                              Итого по смете:{' '}
+                              <strong>
+                                {formatMoneyValue(form.estimate.snapshot?.total ?? 0)} руб.
+                              </strong>
+                            </p>
+                          )}
                           <RepairEstimateSignaturesBlock
                             directorName={formMergedForTemplate.executor.directorName}
                             customerFullName={formMergedForTemplate.customer.fullName}
@@ -4442,7 +4669,9 @@ export function RepairContractDocumentEditorPage({
                   <Link className={styles.link} href="/admin/contract-documents/estimates">
                     «Расчёты»
                   </Link>
-                  .
+                  . В таблице сметы суммы по строкам — без скидки по договору; скидка показывается
+                  только в итоговом блоке. Стоимость позиций со скидкой — на вкладке «Итоговый
+                  заказ-наряд».
                 </p>
               </div>
             </div>
@@ -4677,7 +4906,8 @@ export function RepairContractDocumentEditorPage({
               <p className={styles.hint} style={{ marginTop: 0 }}>
                 Итог формируется из основной сметы и всех доп. соглашений. Одинаковые работы в одном
                 помещении суммируются, а работы из блока «Непроводимые ремонтно-отделочные работы»
-                вычитаются по количеству и сумме.
+                вычитаются по количеству и сумме. В строках таблицы — суммы без скидки по договору;
+                скидка только в итогах ниже; по позициям со скидкой см. заказ-наряд.
               </p>
               <div className={styles.estimateA4Wrap}>
                 <article className={styles.estimateA4Sheet}>
@@ -4738,10 +4968,31 @@ export function RepairContractDocumentEditorPage({
                           </table>
                         </section>
                       ))}
-                      <p className={styles.estimateA4Total}>
-                        Итого по итоговой смете:{' '}
-                        <strong>{formatMoneyValue(finalEstimateSummary.totalAmount)} руб.</strong>
-                      </p>
+                      {contractDiscountPercentParsed > 0 ? (
+                        <>
+                          <p className={styles.estimateA4Total}>
+                            Итого по итоговой смете (без скидки):{' '}
+                            <strong>
+                              {formatMoneyValue(finalEstimateSummary.totalAmount)} руб.
+                            </strong>
+                          </p>
+                          <p className={styles.estimateA4DiscountMeta}>
+                            Скидка по договору:{' '}
+                            {String(contractDiscountPercentParsed).replace('.', ',')}%
+                          </p>
+                          <p className={styles.estimateA4Total}>
+                            Итого со скидкой:{' '}
+                            <strong>
+                              {formatMoneyValue(finalEstimateTotalAfterDiscount)} руб.
+                            </strong>
+                          </p>
+                        </>
+                      ) : (
+                        <p className={styles.estimateA4Total}>
+                          Итого по итоговой смете:{' '}
+                          <strong>{formatMoneyValue(finalEstimateSummary.totalAmount)} руб.</strong>
+                        </p>
+                      )}
                     </>
                   )}
                 </article>
@@ -4939,6 +5190,14 @@ export function RepairContractDocumentEditorPage({
                         Итого по мастеру:{' '}
                         <strong>{formatMoneyValue(activeInstallerWorkOrder.total)} руб.</strong>
                       </p>
+                      {contractDiscountPercentParsed > 0 ? (
+                        <p className={styles.estimateA4DiscountMeta}>
+                          В столбце «Стоимость» — сумма по позиции со скидкой по договору{' '}
+                          {String(contractDiscountPercentParsed).replace('.', ',')}% (скидка до
+                          налога, наценки и надбавки по разряду). В сметах такие суммы по строкам не
+                          выводятся.
+                        </p>
+                      ) : null}
                     </>
                   ) : (
                     <>
@@ -4994,6 +5253,14 @@ export function RepairContractDocumentEditorPage({
                         Итого по итоговому заказ-наряду:{' '}
                         <strong>{formatMoneyValue(finalWorkOrderComputed.total)} руб.</strong>
                       </p>
+                      {contractDiscountPercentParsed > 0 ? (
+                        <p className={styles.estimateA4DiscountMeta}>
+                          В столбце «Стоимость» — сумма по позиции со скидкой по договору{' '}
+                          {String(contractDiscountPercentParsed).replace('.', ',')}% (скидка до
+                          налога, наценки и надбавки по разряду). В сметах такие суммы по строкам не
+                          выводятся.
+                        </p>
+                      ) : null}
                       {finalWorkOrderComputed.installerTotals.length > 0 ? (
                         <section className={styles.estimateA4Room}>
                           <div className={styles.estimateA4RoomHeader}>

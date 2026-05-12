@@ -14,6 +14,10 @@ import {
 
 import styles from '../ContractDocuments.module.css';
 import { amountToRussianWords } from './amountToRussianWords';
+import {
+  applyRepairContractDiscountToAmount,
+  parseRepairContractDiscountPercent,
+} from './repairContractDiscount';
 import type { RepairPackageFormData } from './repairPackageForm';
 import {
   computeRepairPackagePayableBreakdown,
@@ -40,6 +44,18 @@ function formatMoneyRub(n: number | null | undefined) {
     currency: 'RUB',
     maximumFractionDigits: 0,
   }).format(n);
+}
+
+/** Доля `partRub` от `grandTotalRub` (общая стоимость по сводке «Договор и Д/с»). */
+function formatPercentOfGrandTotal(
+  partRub: number | null | undefined,
+  grandTotalRub: number | null | undefined,
+  fractionDigits = 1
+): string | null {
+  if (partRub == null || !Number.isFinite(partRub)) return null;
+  if (grandTotalRub == null || !Number.isFinite(grandTotalRub) || grandTotalRub <= 0) return null;
+  const pct = (partRub / grandTotalRub) * 100;
+  return `${pct.toFixed(fractionDigits).replace('.', ',')} %`;
 }
 
 function formatDateRu(isoDate: string) {
@@ -119,15 +135,17 @@ export function RepairContractPaymentsTab({
   }, [load]);
 
   const addendumPaymentSummaries = useMemo(() => {
+    const discountPct = parseRepairContractDiscountPercent(form.contract.discountPercent);
     const count = Math.min(
       5,
       Math.max(1, Number.isFinite(form.addendumSlotCount) ? form.addendumSlotCount : 1)
     );
     return Array.from({ length: count }, (_, i) => {
-      const total = form.addendumSlots[i]?.snapshot?.total;
-      if (typeof total !== 'number' || !Number.isFinite(total)) {
+      const raw = form.addendumSlots[i]?.snapshot?.total;
+      if (typeof raw !== 'number' || !Number.isFinite(raw)) {
         return { num: i + 1, costStr: '', words: '', rec100: '', hasData: false as const };
       }
+      const total = applyRepairContractDiscountToAmount(raw, discountPct);
       const costStr = total.toFixed(2).replace('.', ',');
       return {
         num: i + 1,
@@ -137,7 +155,12 @@ export function RepairContractPaymentsTab({
         hasData: true as const,
       };
     });
-  }, [form.addendumSlotCount, form.addendumSlots]);
+  }, [form.addendumSlotCount, form.addendumSlots, form.contract.discountPercent]);
+
+  const paymentsContractDiscountPct = useMemo(
+    () => parseRepairContractDiscountPercent(form.contract.discountPercent),
+    [form.contract.discountPercent]
+  );
 
   const payableBreakdown = useMemo(() => computeRepairPackagePayableBreakdown(form), [form]);
 
@@ -155,6 +178,23 @@ export function RepairContractPaymentsTab({
     if (gt == null) return null;
     return gt - journalPaidRub;
   }, [payableBreakdown.grandTotalRub, journalPaidRub]);
+
+  const grandTotalRub = payableBreakdown.grandTotalRub;
+
+  const journalPaidPctOfGrand = useMemo(
+    () => formatPercentOfGrandTotal(journalPaidRub, grandTotalRub),
+    [journalPaidRub, grandTotalRub]
+  );
+
+  const balancePctOfGrand = useMemo(
+    () => formatPercentOfGrandTotal(balancePerJournalRub, grandTotalRub),
+    [balancePerJournalRub, grandTotalRub]
+  );
+
+  const mainContractPctOfGrand = useMemo(
+    () => formatPercentOfGrandTotal(payableBreakdown.mainContractRub, grandTotalRub),
+    [payableBreakdown.mainContractRub, grandTotalRub]
+  );
 
   const editJournalAmountWords = useMemo(() => {
     const n = parseRubAmountString(draft.editAmount);
@@ -394,20 +434,41 @@ export function RepairContractPaymentsTab({
         <div className={styles.paymentsPreFormSummarySections}>
           <section className={styles.paymentsPreFormSummarySection}>
             <h4 className={styles.paymentsPreFormSummaryHeading}>Договор и Д/с</h4>
+            {paymentsContractDiscountPct > 0 ? (
+              <p className={styles.hint} style={{ margin: '0 0 8px' }}>
+                Учтена скидка по договору {String(paymentsContractDiscountPct).replace('.', ',')}
+                %: итоговые суммы по Д/с (не по строкам сметы) и поле «Стоимость договора» — после
+                скидки.
+              </p>
+            ) : null}
             <div className={styles.paymentsKvGrid}>
               <span className={styles.paymentsKvKey}>Договор</span>
               <span className={styles.paymentsKvVal}>
                 {formatMoneyRub(payableBreakdown.mainContractRub)}
+                {mainContractPctOfGrand != null ? (
+                  <span className={styles.paymentsKvPctSuffix}> · {mainContractPctOfGrand}</span>
+                ) : null}
               </span>
-              {payableBreakdown.addendumTotalsRub.map(({ slotIndex1, totalRub }) => (
-                <Fragment key={slotIndex1}>
-                  <span className={styles.paymentsKvKey}>Д/с №{slotIndex1}</span>
-                  <span className={styles.paymentsKvVal}>{formatMoneyRub(totalRub)}</span>
-                </Fragment>
-              ))}
+              {payableBreakdown.addendumTotalsRub.map(({ slotIndex1, totalRub }) => {
+                const addendumPct = formatPercentOfGrandTotal(totalRub, grandTotalRub);
+                return (
+                  <Fragment key={slotIndex1}>
+                    <span className={styles.paymentsKvKey}>Д/с №{slotIndex1}</span>
+                    <span className={styles.paymentsKvVal}>
+                      {formatMoneyRub(totalRub)}
+                      {addendumPct != null ? (
+                        <span className={styles.paymentsKvPctSuffix}> · {addendumPct}</span>
+                      ) : null}
+                    </span>
+                  </Fragment>
+                );
+              })}
               <span className={`${styles.paymentsKvKey} ${styles.paymentsKvTotalRow}`}>Итого</span>
               <span className={`${styles.paymentsKvVal} ${styles.paymentsKvTotalRow}`}>
                 {formatMoneyRub(payableBreakdown.grandTotalRub)}
+                {grandTotalRub != null && grandTotalRub > 0 ? (
+                  <span className={styles.paymentsKvPctSuffix}> · 100 %</span>
+                ) : null}
               </span>
             </div>
           </section>
@@ -419,7 +480,12 @@ export function RepairContractPaymentsTab({
             ) : (
               <div className={styles.paymentsKvGrid}>
                 <span className={styles.paymentsKvKey}>Внесено</span>
-                <span className={styles.paymentsKvVal}>{formatMoneyRub(journalPaidRub)}</span>
+                <span className={styles.paymentsKvVal}>
+                  {formatMoneyRub(journalPaidRub)}
+                  {journalPaidPctOfGrand != null ? (
+                    <span className={styles.paymentsKvPctSuffix}> · {journalPaidPctOfGrand}</span>
+                  ) : null}
+                </span>
                 <span className={styles.paymentsKvKey}>Строк</span>
                 <span className={styles.paymentsKvVal}>{rows.length}</span>
               </div>
@@ -441,7 +507,16 @@ export function RepairContractPaymentsTab({
                       : ''
                   }`}
                 >
-                  {balancePerJournalRub == null ? '—' : formatMoneyRub(balancePerJournalRub)}
+                  {balancePerJournalRub == null ? (
+                    '—'
+                  ) : (
+                    <>
+                      {formatMoneyRub(balancePerJournalRub)}
+                      {balancePctOfGrand != null ? (
+                        <span className={styles.paymentsKvPctSuffix}> · {balancePctOfGrand}</span>
+                      ) : null}
+                    </>
+                  )}
                 </span>
               </div>
             )}
@@ -648,6 +723,7 @@ export function RepairContractPaymentsTab({
                 <tr>
                   <th>Дата</th>
                   <th>Сумма</th>
+                  <th className={styles.paymentsTablePctCol}>% от итого</th>
                   <th>Способ оплаты</th>
                   <th>Основание</th>
                   <th>Кто внёс</th>
@@ -655,37 +731,43 @@ export function RepairContractPaymentsTab({
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
-                  <tr key={r.id}>
-                    <td>{formatDateRu(r.paymentDate)}</td>
-                    <td>{formatMoneyRub(Number.parseFloat(r.amount))}</td>
-                    <td>{PAYMENT_FORM_LABELS[r.paymentForm] ?? r.paymentForm}</td>
-                    <td className={styles.paymentsTableBasisCell}>{r.basis?.trim() || '—'}</td>
-                    <td className={styles.paymentsTableUserCell}>
-                      {r.recordedBy
-                        ? [r.recordedBy.firstName, r.recordedBy.lastName]
-                            .filter(Boolean)
-                            .join(' ') || r.recordedBy.email
-                        : '—'}
-                    </td>
-                    <td className={styles.paymentsTableActionsCell}>
-                      <button
-                        type="button"
-                        className={styles.secondaryBtn}
-                        onClick={() => startEdit(r)}
-                      >
-                        Изм.
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.secondaryBtn}
-                        onClick={() => void removeRow(r.id)}
-                      >
-                        Удал.
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {rows.map((r) => {
+                  const rowAmountNum = Number.parseFloat(r.amount);
+                  const rowRub = Number.isFinite(rowAmountNum) ? rowAmountNum : null;
+                  const rowPct = formatPercentOfGrandTotal(rowRub, grandTotalRub);
+                  return (
+                    <tr key={r.id}>
+                      <td>{formatDateRu(r.paymentDate)}</td>
+                      <td>{formatMoneyRub(Number.parseFloat(r.amount))}</td>
+                      <td className={styles.paymentsTablePctCol}>{rowPct ?? '—'}</td>
+                      <td>{PAYMENT_FORM_LABELS[r.paymentForm] ?? r.paymentForm}</td>
+                      <td className={styles.paymentsTableBasisCell}>{r.basis?.trim() || '—'}</td>
+                      <td className={styles.paymentsTableUserCell}>
+                        {r.recordedBy
+                          ? [r.recordedBy.firstName, r.recordedBy.lastName]
+                              .filter(Boolean)
+                              .join(' ') || r.recordedBy.email
+                          : '—'}
+                      </td>
+                      <td className={styles.paymentsTableActionsCell}>
+                        <button
+                          type="button"
+                          className={styles.secondaryBtn}
+                          onClick={() => startEdit(r)}
+                        >
+                          Изм.
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.secondaryBtn}
+                          onClick={() => void removeRow(r.id)}
+                        >
+                          Удал.
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

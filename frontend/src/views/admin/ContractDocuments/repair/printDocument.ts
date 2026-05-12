@@ -163,6 +163,9 @@ function buildPrintStylesheet(marginFooter?: PrintMarginFooterNames): string {
   .docPrint .estimateA4DocPrintEmbed .estimateA4Total {
     margin: 10pt 0 0; font-size: 12pt; line-height: 1.3; text-align: right;
   }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4DiscountMeta {
+    margin: 6pt 0 0; font-size: 10.5pt; line-height: 1.3; text-align: right; color: #444;
+  }
   .docPrint .estimateA4DocPrintEmbed .estimateA4Signatures {
     margin-top: 12pt; page-break-inside: avoid; break-inside: avoid;
   }

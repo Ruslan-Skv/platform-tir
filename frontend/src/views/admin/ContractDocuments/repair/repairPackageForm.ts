@@ -8,6 +8,10 @@ import type {
 import { amountToRussianWords } from './amountToRussianWords';
 import { todayContractDateDdMmYyyy } from './contractDateFormat';
 import {
+  applyRepairContractDiscountToAmount,
+  parseRepairContractDiscountPercent,
+} from './repairContractDiscount';
+import {
   type EstimateEmbedSection,
   buildEstimateDocPrintEmbedHtml,
   buildEstimateDocPrintFooterHtml,
@@ -83,6 +87,8 @@ export interface RepairContractBlock {
   paymentBasis: string;
   /** Срок договора в календарных днях (число строкой, напр. «60»); в шаблоне `{{contract.workPeriod}}`. */
   workPeriod: string;
+  /** Скидка на стоимость по договору, % (применяется к смете, Д/с, заказ-нарядам и сводке оплат). */
+  discountPercent: string;
 }
 
 /** Анкета на вкладке «Анкета 1»: заполняет менеджер по телефонному разговору с клиентом. */
@@ -369,6 +375,7 @@ export function defaultRepairPackageFormData(): RepairPackageFormData {
       prepaymentAmountWords: '',
       paymentBasis: '',
       workPeriod: '',
+      discountPercent: '',
     },
     estimate: {
       selectedPresetId: '',
@@ -874,6 +881,7 @@ export function mergeRepairPackageFormWithPreviewFallback(
       ),
       paymentBasis: pickStr(form.contract.paymentBasis, fallback.contract.paymentBasis),
       workPeriod: pickStr(form.contract.workPeriod, fallback.contract.workPeriod),
+      discountPercent: pickStr(form.contract.discountPercent, fallback.contract.discountPercent),
     },
     estimate: {
       ...form.estimate,
@@ -974,9 +982,23 @@ export function mergeRepairPackageFormWithPreviewFallback(
   };
 }
 
-/** HTML-таблица объединённой сметы по снимку (как на вкладке «Смета» / в шаблоне). */
+/** Подвал после таблицы сметы: скидка и итог со скидкой (не трогает суммы по строкам). */
+function buildEstimateRoomsDiscountSuffixHtml(
+  grossTotal: number,
+  contractDiscountPercentRaw?: string
+): string {
+  const p = parseRepairContractDiscountPercent(contractDiscountPercentRaw ?? '');
+  if (p <= 0 || !Number.isFinite(grossTotal) || grossTotal <= 0) return '';
+  const net = applyRepairContractDiscountToAmount(grossTotal, p);
+  const fmt = (n: number) => n.toFixed(2).replace('.', ',');
+  return `<p class="estimateA4DiscountMeta" style="margin:8px 0 0;text-align:right;">Скидка по договору: ${String(p).replace('.', ',')}%</p>
+<p class="estimateA4Total" style="margin:4px 0 0;text-align:right;">Итого со скидкой: <strong>${fmt(net)} руб.</strong></p>`;
+}
+
+/** HTML-таблица объединённой сметы по снимку (как на вкладке «Смета» / в шаблоне). Строки — без договорной скидки; при необходимости скидка только в подвале через `buildEstimateRoomsDiscountSuffixHtml`. */
 export function buildEstimateRoomsHtmlFromSnapshot(
-  snapshot: RepairEstimateBlock['snapshot']
+  snapshot: RepairEstimateBlock['snapshot'],
+  contractDiscountPercentRaw?: string
 ): string {
   if (!snapshot?.rooms?.length) return '';
   const escapeHtml = (value: string): string =>
@@ -1023,7 +1045,7 @@ export function buildEstimateRoomsHtmlFromSnapshot(
         .replace('.', ',')}</td>
     </tr>
   </tbody>
-</table>`;
+</table>${buildEstimateRoomsDiscountSuffixHtml(snapshot.total, contractDiscountPercentRaw)}`;
 }
 
 type WorkOrderRoomLine = {
@@ -1065,33 +1087,48 @@ function normalizeGradeIncreasePercent(v: unknown): 0 | 5 | 10 {
   return v === 5 || v === 10 ? v : 0;
 }
 
+/** Заказ-наряд: здесь и только здесь скидка доводится до суммы/цены каждой позиции (затем налог, наценка, разряд). */
 function buildWorkOrderComputed(
   snapshot: RepairEstimateBlock['snapshot'],
   taxRaw: string,
   markupRaw: string,
-  gradeIncreasePercentRaw: unknown
+  gradeIncreasePercentRaw: unknown,
+  contractDiscountPercentRaw: string
 ) {
   const taxPercent = parsePercent(taxRaw);
   const markupPercent = parsePercent(markupRaw);
   const gradeIncreasePercent = normalizeGradeIncreasePercent(gradeIncreasePercentRaw);
   const gradeFactor = 1 + gradeIncreasePercent / 100;
+  const contractDiscountPercent = parseRepairContractDiscountPercent(contractDiscountPercentRaw);
   const rooms: WorkOrderRoom[] = (snapshot?.rooms ?? []).map((room) => {
-    const lines = room.lines.map((line) => ({
-      name: line.name,
-      unit: line.unit,
-      quantity: line.quantity,
-      originalPrice: line.price,
-      originalAmount: line.amount,
-      /**
-       * ВАЖНО: расчёт последовательный:
-       * 1) сначала вычитаем налог из исходной суммы
-       * 2) затем вычитаем наценку из остатка
-       * 3) после этого применяем надбавку разряда (5% или 10%)
-       */
-      adjustedPrice: line.price * (1 - taxPercent / 100) * (1 - markupPercent / 100) * gradeFactor,
-      adjustedAmount:
-        line.amount * (1 - taxPercent / 100) * (1 - markupPercent / 100) * gradeFactor,
-    }));
+    const lines = room.lines.map((line) => {
+      const afterDiscount = applyRepairContractDiscountToAmount(
+        line.amount,
+        contractDiscountPercent
+      );
+      const afterDiscountPrice = applyRepairContractDiscountToAmount(
+        line.price,
+        contractDiscountPercent
+      );
+      return {
+        name: line.name,
+        unit: line.unit,
+        quantity: line.quantity,
+        originalPrice: line.price,
+        originalAmount: line.amount,
+        /**
+         * ВАЖНО: расчёт последовательный:
+         * 0) скидка по договору от исходной суммы/цены
+         * 1) сначала вычитаем налог из суммы после скидки
+         * 2) затем вычитаем наценку из остатка
+         * 3) после этого применяем надбавку разряда (5% или 10%)
+         */
+        adjustedPrice:
+          afterDiscountPrice * (1 - taxPercent / 100) * (1 - markupPercent / 100) * gradeFactor,
+        adjustedAmount:
+          afterDiscount * (1 - taxPercent / 100) * (1 - markupPercent / 100) * gradeFactor,
+      };
+    });
     const adjustedTotal = lines.reduce((sum, line) => sum + line.adjustedAmount, 0);
     const originalTotal = lines.reduce((sum, line) => sum + line.originalAmount, 0);
     return {
@@ -1103,8 +1140,12 @@ function buildWorkOrderComputed(
   });
   const originalTotal = rooms.reduce((sum, room) => sum + room.originalTotal, 0);
   const adjustedTotal = rooms.reduce((sum, room) => sum + room.adjustedTotal, 0);
-  const taxAmount = originalTotal * (taxPercent / 100);
-  const afterTax = originalTotal - taxAmount;
+  const afterDiscountTotal = applyRepairContractDiscountToAmount(
+    originalTotal,
+    contractDiscountPercent
+  );
+  const taxAmount = afterDiscountTotal * (taxPercent / 100);
+  const afterTax = afterDiscountTotal - taxAmount;
   const markupAmount = afterTax * (markupPercent / 100);
   const reductionAmount = taxAmount + markupAmount;
   return {
@@ -1125,6 +1166,7 @@ function buildWorkOrderRoomsHtmlFromSnapshot(
   taxRaw: string,
   markupRaw: string,
   gradeIncreasePercentRaw: unknown,
+  contractDiscountPercentRaw: string,
   sections?: EstimateEmbedSection[],
   showLineAmounts = true
 ): string {
@@ -1135,7 +1177,13 @@ function buildWorkOrderRoomsHtmlFromSnapshot(
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
-  const computed = buildWorkOrderComputed(snapshot, taxRaw, markupRaw, gradeIncreasePercentRaw);
+  const computed = buildWorkOrderComputed(
+    snapshot,
+    taxRaw,
+    markupRaw,
+    gradeIncreasePercentRaw,
+    contractDiscountPercentRaw
+  );
   if (computed.rooms.length === 0) return '';
   const sectionRooms =
     sections && sections.length > 0
@@ -1332,7 +1380,7 @@ export function repairPackageFormForTemplate(
         .join('\n\n')
     : '';
 
-  const roomsHtml = buildEstimateRoomsHtmlFromSnapshot(snapshot);
+  const roomsHtml = buildEstimateRoomsHtmlFromSnapshot(snapshot, form.contract.discountPercent);
 
   const prepaymentRaw = form.contract.prepaymentAmount.trim();
   const prepaymentAmountWords = prepaymentRaw
@@ -1393,6 +1441,17 @@ export function repairPackageFormForTemplate(
           const excludedTotal = addendumExcludedSnap?.total ?? 0;
           const summaryTotal = additionalTotal - excludedTotal;
           const formatMoney = (value: number) => value.toFixed(2).replace('.', ',');
+          const addendumDiscountPct = parseRepairContractDiscountPercent(
+            form.contract.discountPercent
+          );
+          const summaryAfterDiscount = applyRepairContractDiscountToAmount(
+            summaryTotal,
+            addendumDiscountPct
+          );
+          const addendumDiscountFooter =
+            addendumDiscountPct > 0 && summaryTotal > 0
+              ? `<p class="estimateA4DiscountMeta">Скидка по договору: ${String(addendumDiscountPct).replace('.', ',')}%</p><p class="estimateA4Total"><strong>Итого по доп. соглашению со скидкой: ${formatMoney(summaryAfterDiscount)} руб.</strong></p>`
+              : '';
           const sectionsHtml: string[] = [];
           if (additionalHtml) {
             sectionsHtml.push(
@@ -1407,7 +1466,10 @@ export function repairPackageFormForTemplate(
           if (sectionsHtml.length === 0) return '';
           return [
             ...sectionsHtml,
-            `<p class="estimateA4Total"><strong>Общий итог по дополнительному соглашению: ${formatMoney(summaryTotal)} руб.</strong></p>`,
+            addendumDiscountPct > 0 && summaryTotal > 0
+              ? `<p class="estimateA4Total"><strong>Общий итог по дополнительному соглашению (без скидки): ${formatMoney(summaryTotal)} руб.</strong></p>`
+              : `<p class="estimateA4Total"><strong>Общий итог по дополнительному соглашению: ${formatMoney(summaryTotal)} руб.</strong></p>`,
+            addendumDiscountFooter,
             buildEstimateDocPrintFooterHtml({
               directorName: form.executor.directorName,
               customerFullName: form.customer.fullName,
@@ -1433,7 +1495,8 @@ export function repairPackageFormForTemplate(
     form.estimate.snapshot,
     form.workOrder.taxPercent,
     form.workOrder.markupPercent,
-    form.workOrder.gradeIncreasePercent
+    form.workOrder.gradeIncreasePercent,
+    form.contract.discountPercent
   );
   const workOrderSections = buildEstimateSectionsFromPresetIds(
     form.estimate.selectedPresetIds,
@@ -1450,7 +1513,8 @@ export function repairPackageFormForTemplate(
           form.addendumSlots[addendumSlot - 1]?.snapshot ?? null,
           form.workOrder.taxPercent,
           form.workOrder.markupPercent,
-          form.workOrder.gradeIncreasePercent
+          form.workOrder.gradeIncreasePercent,
+          form.contract.discountPercent
         )
       : null;
   const workOrderAddendumSections =
@@ -1472,6 +1536,7 @@ export function repairPackageFormForTemplate(
           form.workOrder.taxPercent,
           form.workOrder.markupPercent,
           form.workOrder.gradeIncreasePercent,
+          form.contract.discountPercent,
           workOrderAddendumSections,
           form.workOrder.showLineAmounts
         )
@@ -1517,6 +1582,7 @@ export function repairPackageFormForTemplate(
         form.workOrder.taxPercent,
         form.workOrder.markupPercent,
         form.workOrder.gradeIncreasePercent,
+        form.contract.discountPercent,
         workOrderSections,
         form.workOrder.showLineAmounts
       ),

@@ -8,6 +8,10 @@ import {
   type EstimateSnapshotRoom,
   getSnapshotForEstimateAttach,
 } from './repairApplyEstimatePresetIds';
+import {
+  applyRepairContractDiscountToAmount,
+  parseRepairContractDiscountPercent,
+} from './repairContractDiscount';
 
 export type EstimateEmbedSection = {
   categoryName: string;
@@ -127,6 +131,10 @@ function buildHandwritingNoteHtml(): string {
 /**
  * HTML-блок сметы для вставки в `.docPrint` (Д/с и т.п.): как на вкладке «Смета» —
  * категории, таблицы по помещениям, итоги по категориям, итого, подписи, примечание, подписи.
+ *
+ * Договорная скидка: цены и суммы **по строкам** всегда без скидки (как в расчёте).
+ * При переданном `contractDiscountPercent` скидка отражается **только** в подвальном `discountBlock`
+ * (итоги). Дисконт по позициям — только в заказ-наряде (`buildWorkOrderRoomsHtmlFromSnapshot`).
  */
 export function buildEstimateDocPrintEmbedHtml(options: {
   sections: EstimateEmbedSection[];
@@ -134,8 +142,16 @@ export function buildEstimateDocPrintEmbedHtml(options: {
   directorName: string;
   customerFullName: string;
   includeFooter?: boolean;
+  /** Скидка по договору, % — блок в подвале сметы. */
+  contractDiscountPercent?: string;
 }): string {
-  const { snapshot, directorName, customerFullName, includeFooter = true } = options;
+  const {
+    snapshot,
+    directorName,
+    customerFullName,
+    includeFooter = true,
+    contractDiscountPercent = '',
+  } = options;
   if (!snapshot?.rooms?.length) return '';
 
   let sections = options.sections.filter((s) => s.rooms.length > 0);
@@ -200,12 +216,22 @@ export function buildEstimateDocPrintEmbedHtml(options: {
   </ul>`
       : '';
 
+  const discountPercent = parseRepairContractDiscountPercent(contractDiscountPercent);
+  const grossTotal = snapshot.total;
+  const totalAfterDiscount = applyRepairContractDiscountToAmount(grossTotal, discountPercent);
+  const discountBlock =
+    discountPercent > 0 && grossTotal > 0
+      ? `<p class="estimateA4DiscountMeta">Скидка по договору: ${String(discountPercent).replace('.', ',')}%</p>
+<p class="estimateA4Total">Итого по смете (без скидки): <strong>${formatMoney(grossTotal)} руб.</strong></p>
+<p class="estimateA4Total">Итого со скидкой: <strong>${formatMoney(totalAfterDiscount)} руб.</strong></p>`
+      : `<p class="estimateA4Total">Итого по смете: <strong>${formatMoney(grossTotal)} руб.</strong></p>`;
+
   const bodyHtml = `<div class="estimateA4DocPrintEmbed estimateRoomsEmbed">
 ${categoriesHtml}
 <section class="estimateA4Summary">
 ${summaryInner}
 </section>
-<p class="estimateA4Total">Итого по смете: <strong>${formatMoney(snapshot.total)} руб.</strong></p>
+${discountBlock}
 </div>`;
   if (!includeFooter) return bodyHtml;
   return `${bodyHtml}
