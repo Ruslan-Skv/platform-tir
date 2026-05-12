@@ -26,7 +26,7 @@ export function ContractDocumentsHubPage() {
           </p>
         </Link>
         <Link className={styles.hubCard} href="/admin/contract-documents/requisites">
-          <h2 className={styles.hubCardTitle}>Наши реквизиты</h2>
+          <h2 className={styles.hubCardTitle}>Исполнители</h2>
           <p className={styles.hubCardHint}>
             Наборы реквизитов Исполнителя для быстрого выбора в договоре.
           </p>

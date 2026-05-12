@@ -462,6 +462,93 @@ interface RepairContractDocumentEditorPageProps {
   packageId: string;
 }
 
+/** Реквизиты исполнителя из справочника «Исполнители» (блок формы без подписанта). */
+type RepairExecutorRequisitesFields = Pick<
+  RepairPackageFormData['executor'],
+  | 'executorKind'
+  | 'companyName'
+  | 'inn'
+  | 'kpp'
+  | 'ogrn'
+  | 'ogrnip'
+  | 'legalAddress'
+  | 'actualAddress'
+  | 'bankDetails'
+  | 'email'
+>;
+
+function executorRequisitesFromProfile(
+  profile: ExecutorRequisiteProfile
+): RepairExecutorRequisitesFields {
+  const kind = profile.kind === 'ENTREPRENEUR' ? 'ENTREPRENEUR' : 'COMPANY';
+  return {
+    executorKind: kind,
+    companyName: profile.companyName ?? '',
+    inn: profile.inn ?? '',
+    kpp: kind === 'ENTREPRENEUR' ? '' : (profile.kpp ?? ''),
+    ogrn: kind === 'ENTREPRENEUR' ? '' : (profile.ogrn ?? ''),
+    ogrnip: kind === 'ENTREPRENEUR' ? (profile.ogrnip ?? '') : '',
+    legalAddress: profile.legalAddress ?? '',
+    actualAddress: profile.actualAddress ?? '',
+    bankDetails: profile.bankDetails ?? '',
+    email: profile.email ?? '',
+  };
+}
+
+function emptyExecutorRequisites(): RepairExecutorRequisitesFields {
+  return {
+    executorKind: 'COMPANY',
+    companyName: '',
+    inn: '',
+    kpp: '',
+    ogrn: '',
+    ogrnip: '',
+    legalAddress: '',
+    actualAddress: '',
+    bankDetails: '',
+    email: '',
+  };
+}
+
+/** Поля подписанта из справочника «Подписанты». */
+type RepairSignatoryDirectoryFields = Pick<
+  RepairPackageFormData['executor'],
+  | 'signatoryCrmUserId'
+  | 'directorNameNominative'
+  | 'directorNameGenitive'
+  | 'directorName'
+  | 'basis'
+  | 'salesOffice'
+  | 'officePhone'
+>;
+
+function signatoryFieldsFromProfile(
+  profile: ContractSignatoryProfile
+): RepairSignatoryDirectoryFields {
+  const nom = profile.directorNameNominative ?? '';
+  return {
+    signatoryCrmUserId: profile.crmUserId ?? '',
+    directorNameNominative: nom,
+    directorNameGenitive: profile.directorNameGenitive ?? '',
+    directorName: nom,
+    basis: profile.basis ?? '',
+    salesOffice: profile.salesOffice ?? '',
+    officePhone: profile.officePhone ?? '',
+  };
+}
+
+function emptySignatoryDirectoryFields(): RepairSignatoryDirectoryFields {
+  return {
+    signatoryCrmUserId: '',
+    directorNameNominative: '',
+    directorNameGenitive: '',
+    directorName: '',
+    basis: '',
+    salesOffice: '',
+    officePhone: '',
+  };
+}
+
 export function RepairContractDocumentEditorPage({
   packageId,
 }: RepairContractDocumentEditorPageProps) {
@@ -1231,79 +1318,97 @@ export function RepairContractDocumentEditorPage({
     return (form.customer.phone ?? '').trim() || '—';
   }, [form.customer.phones, form.customer.phone]);
 
-  const updateExecutor = <K extends keyof RepairPackageFormData['executor']>(
-    key: K,
-    value: string
-  ) => {
-    setForm((p) => {
-      let nextExecutor = { ...p.executor, [key]: value } as RepairPackageFormData['executor'];
-      if (key === 'executorKind') {
-        if (value === 'ENTREPRENEUR') {
-          nextExecutor = { ...nextExecutor, kpp: '', ogrn: '' };
-        } else {
-          nextExecutor = { ...nextExecutor, ogrnip: '' };
-        }
-      }
-      // Keep legacy placeholder value in sync for old templates.
-      if (key === 'directorNameNominative') {
-        nextExecutor.directorName = value;
-      }
-      return { ...p, executor: nextExecutor };
-    });
-    touchPackageData();
-  };
-
   const applyExecutorProfile = (title: string) => {
     setForm((p) => {
       const profile = executorProfiles.find((it) => it.title === title);
       if (!profile) {
-        return { ...p, executor: { ...p.executor, selectedProfileTitle: '' } };
+        return {
+          ...p,
+          executor: {
+            ...p.executor,
+            selectedProfileTitle: '',
+            ...emptyExecutorRequisites(),
+          },
+        };
       }
-      const kind = profile.kind === 'ENTREPRENEUR' ? 'ENTREPRENEUR' : 'COMPANY';
       return {
         ...p,
         executor: {
           ...p.executor,
           selectedProfileTitle: title,
-          executorKind: kind,
-          companyName: profile.companyName ?? '',
-          inn: profile.inn ?? '',
-          kpp: kind === 'ENTREPRENEUR' ? '' : (profile.kpp ?? ''),
-          ogrn: kind === 'ENTREPRENEUR' ? '' : (profile.ogrn ?? ''),
-          ogrnip: kind === 'ENTREPRENEUR' ? (profile.ogrnip ?? '') : '',
-          legalAddress: profile.legalAddress ?? '',
-          actualAddress: profile.actualAddress ?? '',
-          bankDetails: profile.bankDetails ?? '',
-          email: profile.email ?? '',
+          ...executorRequisitesFromProfile(profile),
         },
       };
     });
     touchPackageData();
   };
 
+  useEffect(() => {
+    const title = form.executor.selectedProfileTitle?.trim();
+    if (!title || executorProfiles.length === 0) return;
+    const profile = executorProfiles.find((it) => it.title === title);
+    if (!profile) return;
+    const fromProfile = executorRequisitesFromProfile(profile);
+    setForm((prev) => {
+      if (prev.executor.selectedProfileTitle?.trim() !== title) return prev;
+      const keys = Object.keys(fromProfile) as (keyof RepairExecutorRequisitesFields)[];
+      if (keys.every((k) => prev.executor[k] === fromProfile[k])) return prev;
+      return {
+        ...prev,
+        executor: {
+          ...prev.executor,
+          selectedProfileTitle: title,
+          ...fromProfile,
+        },
+      };
+    });
+  }, [executorProfiles, form.executor.selectedProfileTitle]);
+
   const applySignatoryProfile = (title: string) => {
     setForm((p) => {
       const profile = signatoryProfiles.find((it) => it.title === title);
       if (!profile) {
-        return { ...p, executor: { ...p.executor, selectedSignatoryProfileTitle: '' } };
+        return {
+          ...p,
+          executor: {
+            ...p.executor,
+            selectedSignatoryProfileTitle: '',
+            ...emptySignatoryDirectoryFields(),
+          },
+        };
       }
       return {
         ...p,
         executor: {
           ...p.executor,
           selectedSignatoryProfileTitle: title,
-          signatoryCrmUserId: profile.crmUserId ?? '',
-          directorNameNominative: profile.directorNameNominative ?? '',
-          directorNameGenitive: profile.directorNameGenitive ?? '',
-          directorName: profile.directorNameNominative ?? '',
-          basis: profile.basis ?? '',
-          salesOffice: profile.salesOffice ?? '',
-          officePhone: profile.officePhone ?? '',
+          ...signatoryFieldsFromProfile(profile),
         },
       };
     });
     touchPackageData();
   };
+
+  useEffect(() => {
+    const title = form.executor.selectedSignatoryProfileTitle?.trim();
+    if (!title || signatoryProfiles.length === 0) return;
+    const profile = signatoryProfiles.find((it) => it.title === title);
+    if (!profile) return;
+    const fromProfile = signatoryFieldsFromProfile(profile);
+    setForm((prev) => {
+      if (prev.executor.selectedSignatoryProfileTitle?.trim() !== title) return prev;
+      const keys = Object.keys(fromProfile) as (keyof RepairSignatoryDirectoryFields)[];
+      if (keys.every((k) => prev.executor[k] === fromProfile[k])) return prev;
+      return {
+        ...prev,
+        executor: {
+          ...prev.executor,
+          selectedSignatoryProfileTitle: title,
+          ...fromProfile,
+        },
+      };
+    });
+  }, [signatoryProfiles, form.executor.selectedSignatoryProfileTitle]);
 
   const updateObject = <K extends keyof RepairPackageFormData['object']>(key: K, value: string) => {
     setForm((p) => ({ ...p, object: { ...p.object, [key]: value } }));
@@ -3446,6 +3551,79 @@ export function RepairContractDocumentEditorPage({
           <div className={styles.formGrid}>
             <div className={styles.dataTopRow}>
               <div className={styles.dataTopBlock}>
+                <div className={`${styles.sectionCard} ${styles.sectionCustomer}`}>
+                  <h3 className={styles.sectionTitle}>Договор и объект</h3>
+                  <div className={styles.contractCompactBlock}>
+                    <div className={`${styles.contractInlineRow} ${styles.contractHeaderMetaRow}`}>
+                      <div className={`${styles.field} ${styles.contractInlineField}`}>
+                        <label htmlFor="cn">Номер договора</label>
+                        <input
+                          id="cn"
+                          value={form.contract.number}
+                          onChange={(e) => updateContract('number', e.target.value)}
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div className={`${styles.field} ${styles.contractInlineField}`}>
+                        <label htmlFor="cd">Дата договора</label>
+                        <input
+                          id="cd"
+                          value={form.contract.date}
+                          onChange={(e) => updateContract('date', e.target.value)}
+                          placeholder="дд.мм.гггг"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div className={`${styles.field} ${styles.contractInlineField}`}>
+                        <label htmlFor="wp">Срок договора (дней)</label>
+                        <input
+                          id="wp"
+                          inputMode="numeric"
+                          value={form.contract.workPeriod}
+                          onChange={(e) => updateContract('workPeriod', e.target.value)}
+                          placeholder="60"
+                          title="Календарных дней; в шаблоне: {{contract.workPeriod}}"
+                          autoComplete="off"
+                        />
+                      </div>
+                    </div>
+                    <div
+                      className={`${styles.contractInlineRow} ${styles.contractObjectAddressRow}`}
+                    >
+                      <div className={`${styles.field} ${styles.contractInlineField}`}>
+                        <label htmlFor="o_addr">Адрес объекта</label>
+                        <input
+                          id="o_addr"
+                          value={form.object.objectAddress}
+                          onChange={(e) => updateObject('objectAddress', e.target.value)}
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div className={`${styles.field} ${styles.contractInlineField}`}>
+                        <label htmlFor="o_floor">Этаж</label>
+                        <input
+                          id="o_floor"
+                          value={form.object.objectFloor}
+                          onChange={(e) => updateObject('objectFloor', e.target.value)}
+                          autoComplete="off"
+                        />
+                      </div>
+                    </div>
+                    <div className={`${styles.contractInlineRow} ${styles.contractObjectDescRow}`}>
+                      <div className={`${styles.field} ${styles.contractInlineField}`}>
+                        <label htmlFor="o_desc">Описание работ / объекта</label>
+                        <textarea
+                          id="o_desc"
+                          value={form.object.objectDescription}
+                          onChange={(e) => updateObject('objectDescription', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.dataTopBlock}>
                 <div
                   ref={customerSearchRootRef}
                   onFocusCapture={openCustomerSearchPopoverIfReady}
@@ -3619,72 +3797,6 @@ export function RepairContractDocumentEditorPage({
                   ) : null}
                 </div>
               </div>
-
-              <div className={`${styles.dataTopBlock} ${styles.contractCompactBlock}`}>
-                <div className={`${styles.contractInlineRow} ${styles.contractHeaderMetaRow}`}>
-                  <div className={`${styles.field} ${styles.contractInlineField}`}>
-                    <label htmlFor="cn">Номер договора</label>
-                    <input
-                      id="cn"
-                      value={form.contract.number}
-                      onChange={(e) => updateContract('number', e.target.value)}
-                      autoComplete="off"
-                    />
-                  </div>
-                  <div className={`${styles.field} ${styles.contractInlineField}`}>
-                    <label htmlFor="cd">Дата договора</label>
-                    <input
-                      id="cd"
-                      value={form.contract.date}
-                      onChange={(e) => updateContract('date', e.target.value)}
-                      placeholder="дд.мм.гггг"
-                      autoComplete="off"
-                    />
-                  </div>
-                  <div className={`${styles.field} ${styles.contractInlineField}`}>
-                    <label htmlFor="wp">Срок договора (дней)</label>
-                    <input
-                      id="wp"
-                      inputMode="numeric"
-                      value={form.contract.workPeriod}
-                      onChange={(e) => updateContract('workPeriod', e.target.value)}
-                      placeholder="60"
-                      title="Календарных дней; в шаблоне: {{contract.workPeriod}}"
-                      autoComplete="off"
-                    />
-                  </div>
-                </div>
-                <div className={`${styles.contractInlineRow} ${styles.contractObjectAddressRow}`}>
-                  <div className={`${styles.field} ${styles.contractInlineField}`}>
-                    <label htmlFor="o_addr">Адрес объекта</label>
-                    <input
-                      id="o_addr"
-                      value={form.object.objectAddress}
-                      onChange={(e) => updateObject('objectAddress', e.target.value)}
-                      autoComplete="off"
-                    />
-                  </div>
-                  <div className={`${styles.field} ${styles.contractInlineField}`}>
-                    <label htmlFor="o_floor">Этаж</label>
-                    <input
-                      id="o_floor"
-                      value={form.object.objectFloor}
-                      onChange={(e) => updateObject('objectFloor', e.target.value)}
-                      autoComplete="off"
-                    />
-                  </div>
-                </div>
-                <div className={`${styles.contractInlineRow} ${styles.contractObjectDescRow}`}>
-                  <div className={`${styles.field} ${styles.contractInlineField}`}>
-                    <label htmlFor="o_desc">Описание работ / объекта</label>
-                    <textarea
-                      id="o_desc"
-                      value={form.object.objectDescription}
-                      onChange={(e) => updateObject('objectDescription', e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
             </div>
 
             <div className={`${styles.sectionCard} ${styles.sectionCustomer}`}>
@@ -3820,9 +3932,13 @@ export function RepairContractDocumentEditorPage({
 
             <div className={`${styles.sectionCard} ${styles.sectionExecutor}`}>
               <h3 className={styles.sectionTitle}>Исполнитель</h3>
+              <p className={styles.hint} style={{ marginTop: 4, marginBottom: 10 }}>
+                Реквизиты подставляются из выбранного набора в справочнике «Исполнители».
+                Редактировать здесь нельзя — только выбор набора.
+              </p>
               <div className={styles.sectionFields}>
                 <div className={styles.field}>
-                  <label htmlFor="e_profile">Наши реквизиты (из справочника)</label>
+                  <label htmlFor="e_profile">Исполнители (из справочника)</label>
                   <select
                     id="e_profile"
                     value={form.executor.selectedProfileTitle}
@@ -3837,59 +3953,28 @@ export function RepairContractDocumentEditorPage({
                   </select>
                 </div>
                 <div className={styles.field}>
-                  <label htmlFor="e_exec_kind">Тип исполнителя</label>
-                  <select
-                    id="e_exec_kind"
-                    value={form.executor.executorKind}
-                    onChange={(e) => updateExecutor('executorKind', e.target.value)}
-                  >
-                    <option value="COMPANY">Юридическое лицо (ЮЛ)</option>
-                    <option value="ENTREPRENEUR">Индивидуальный предприниматель (ИП)</option>
-                  </select>
-                </div>
-                <div className={styles.field}>
                   <label htmlFor="e_company">Наименование организации</label>
-                  <input
-                    id="e_company"
-                    value={form.executor.companyName}
-                    onChange={(e) => updateExecutor('companyName', e.target.value)}
-                  />
+                  <input id="e_company" readOnly value={form.executor.companyName} />
                 </div>
                 <div className={styles.field}>
                   <label htmlFor="e_inn">ИНН</label>
-                  <input
-                    id="e_inn"
-                    value={form.executor.inn}
-                    onChange={(e) => updateExecutor('inn', e.target.value)}
-                  />
+                  <input id="e_inn" readOnly value={form.executor.inn} />
                 </div>
                 {form.executor.executorKind === 'COMPANY' ? (
                   <div className={styles.field}>
                     <label htmlFor="e_kpp">КПП</label>
-                    <input
-                      id="e_kpp"
-                      value={form.executor.kpp}
-                      onChange={(e) => updateExecutor('kpp', e.target.value)}
-                    />
+                    <input id="e_kpp" readOnly value={form.executor.kpp} />
                   </div>
                 ) : null}
                 {form.executor.executorKind === 'COMPANY' ? (
                   <div className={styles.field}>
                     <label htmlFor="e_ogrn">ОГРН</label>
-                    <input
-                      id="e_ogrn"
-                      value={form.executor.ogrn}
-                      onChange={(e) => updateExecutor('ogrn', e.target.value)}
-                    />
+                    <input id="e_ogrn" readOnly value={form.executor.ogrn} />
                   </div>
                 ) : (
                   <div className={styles.field}>
                     <label htmlFor="e_ogrnip">ОГРНИП</label>
-                    <input
-                      id="e_ogrnip"
-                      value={form.executor.ogrnip}
-                      onChange={(e) => updateExecutor('ogrnip', e.target.value)}
-                    />
+                    <input id="e_ogrnip" readOnly value={form.executor.ogrnip} />
                   </div>
                 )}
                 <div className={styles.field}>
@@ -3898,39 +3983,31 @@ export function RepairContractDocumentEditorPage({
                     id="e_email"
                     type="email"
                     autoComplete="email"
+                    readOnly
                     value={form.executor.email}
-                    onChange={(e) => updateExecutor('email', e.target.value)}
                   />
                 </div>
                 <div className={styles.field}>
                   <label htmlFor="e_legal">Юридический адрес</label>
-                  <textarea
-                    id="e_legal"
-                    value={form.executor.legalAddress}
-                    onChange={(e) => updateExecutor('legalAddress', e.target.value)}
-                  />
+                  <textarea id="e_legal" readOnly value={form.executor.legalAddress} />
                 </div>
                 <div className={styles.field}>
                   <label htmlFor="e_actual">Адрес для корреспонденции</label>
-                  <textarea
-                    id="e_actual"
-                    value={form.executor.actualAddress}
-                    onChange={(e) => updateExecutor('actualAddress', e.target.value)}
-                  />
+                  <textarea id="e_actual" readOnly value={form.executor.actualAddress} />
                 </div>
-                <div className={styles.field}>
+                <div className={`${styles.field} ${styles.executorBankDetailsField}`}>
                   <label htmlFor="e_bank">Банковские реквизиты</label>
-                  <textarea
-                    id="e_bank"
-                    value={form.executor.bankDetails}
-                    onChange={(e) => updateExecutor('bankDetails', e.target.value)}
-                  />
+                  <textarea id="e_bank" readOnly value={form.executor.bankDetails} />
                 </div>
               </div>
             </div>
 
             <div className={`${styles.sectionCard} ${styles.sectionExecutor}`}>
               <h3 className={styles.sectionTitle}>Подписант</h3>
+              <p className={styles.hint} style={{ marginTop: 4, marginBottom: 10 }}>
+                Данные подставляются из выбранной карточки в справочнике «Подписанты». Редактировать
+                здесь нельзя — только выбор карточки.
+              </p>
               <div className={styles.sectionFields}>
                 <div className={styles.field}>
                   <label htmlFor="s_profile">Карточка подписанта (из справочника)</label>
@@ -3956,43 +4033,23 @@ export function RepairContractDocumentEditorPage({
                 ) : null}
                 <div className={styles.field}>
                   <label htmlFor="e_directorNom">Подписант (именит. падеж)</label>
-                  <input
-                    id="e_directorNom"
-                    value={form.executor.directorNameNominative}
-                    onChange={(e) => updateExecutor('directorNameNominative', e.target.value)}
-                  />
+                  <input id="e_directorNom" readOnly value={form.executor.directorNameNominative} />
                 </div>
                 <div className={styles.field}>
                   <label htmlFor="e_directorGen">Подписант (родит. падеж)</label>
-                  <input
-                    id="e_directorGen"
-                    value={form.executor.directorNameGenitive}
-                    onChange={(e) => updateExecutor('directorNameGenitive', e.target.value)}
-                  />
+                  <input id="e_directorGen" readOnly value={form.executor.directorNameGenitive} />
                 </div>
                 <div className={styles.field}>
                   <label htmlFor="e_basis">Действует на основании</label>
-                  <input
-                    id="e_basis"
-                    value={form.executor.basis}
-                    onChange={(e) => updateExecutor('basis', e.target.value)}
-                  />
+                  <input id="e_basis" readOnly value={form.executor.basis} />
                 </div>
                 <div className={styles.field}>
                   <label htmlFor="e_sales_office">Офис продаж</label>
-                  <input
-                    id="e_sales_office"
-                    value={form.executor.salesOffice}
-                    onChange={(e) => updateExecutor('salesOffice', e.target.value)}
-                  />
+                  <input id="e_sales_office" readOnly value={form.executor.salesOffice} />
                 </div>
                 <div className={styles.field}>
                   <label htmlFor="e_office_phone">Телефон офиса</label>
-                  <input
-                    id="e_office_phone"
-                    value={form.executor.officePhone}
-                    onChange={(e) => updateExecutor('officePhone', e.target.value)}
-                  />
+                  <input id="e_office_phone" readOnly value={form.executor.officePhone} />
                 </div>
               </div>
             </div>

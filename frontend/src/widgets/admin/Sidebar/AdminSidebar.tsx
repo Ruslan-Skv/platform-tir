@@ -128,7 +128,7 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.contract-documents.instruction',
       },
       {
-        label: 'Наши реквизиты',
+        label: 'Исполнители',
         href: '/admin/contract-documents/requisites',
         resourceId: 'admin.contract-documents.requisites',
       },

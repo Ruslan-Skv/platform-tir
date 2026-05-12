@@ -115,7 +115,7 @@ export function ContractDocumentsExecutorProfilesPage() {
     <div className={styles.page}>
       <div className={styles.editorHeader}>
         <div>
-          <h1 className={styles.title}>Наши реквизиты</h1>
+          <h1 className={styles.title}>Исполнители</h1>
           <p className={styles.subtitle}>
             Создайте наборы реквизитов Исполнителя. Подписанта и офис продаж настройте в разделе{' '}
             <Link className={styles.link} href="/admin/contract-documents/signatories">
