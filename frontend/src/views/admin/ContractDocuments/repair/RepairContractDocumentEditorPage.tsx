@@ -4397,7 +4397,9 @@ export function RepairContractDocumentEditorPage({
           </div>
         </div>
       ) : activeTab === 'interactiveFinalEstimate' ? (
-        <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
+        <div
+          className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact} ${styles.interactiveFinalEstimateTab}`}
+        >
           <div className={styles.formGrid}>
             <div className={styles.sectionCard}>
               <div className={styles.interactiveEstimateTitleRow}>

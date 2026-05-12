@@ -190,10 +190,6 @@
   color: var(--admin-text-primary);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairPackageTabBarCompact .summaryTab {
-  color: var(--admin-text-primary);
-}
-
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .repairPackageTabBarCompact
   .summaryTabFirst,
@@ -201,13 +197,6 @@
   .repairPackageTabBarCompact
   .summaryTabLast {
   border-color: var(--admin-sidebar-text);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairPackageTabBarCompact
-  .summaryTab.tabActive {
-  background: var(--admin-overlay-color-014);
-  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sectionCustomer,
@@ -4095,16 +4084,25 @@
   border-color: var(--admin-success-border-soft);
 }
 
+/* Неактивные вкладки: тёмный текст на «мятном» фоне панели (в т.ч. summaryTab — иначе наследует .tab и остаётся слишком светлым) */
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairPackageTabBarCompact
+  .repairPackageTabBarCompact.blockTabs
   .tab:not(.tabActive) {
   color: var(--admin-bg-page);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairPackageTabBarCompact
-  .summaryTab:not(.tabActive) {
+  .repairPackageTabBarCompact.blockTabs
+  .tab:not(.tabActive):hover {
   color: var(--admin-bg-page);
+}
+
+/* Активная вкладка: .tab:hover в тёмной теме перебивает цвет с .tabActive (белый текст на info-bg-soft) */
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairPackageTabBarCompact.blockTabs
+  .tab.tabActive:hover {
+  color: var(--admin-info-strong);
+  background: var(--admin-info-bg-soft);
 }
 
 /* Базовый dark-слой для всех вкладок Contract Documents */
@@ -4132,8 +4130,8 @@
   .dataTopRow
   > .dataTopBlock:nth-child(1)
   > .sectionCard {
-  background: color-mix(in srgb, rgb(6 182 212) 26%, var(--admin-surface));
-  border-color: rgb(34 211 238 / 0.42);
+  background: color-mix(in srgb, var(--admin-bg-page) 91%, rgb(6 182 212) 9%);
+  border-color: rgb(34 211 238 / 0.35);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
@@ -4141,23 +4139,23 @@
   .dataTopRow
   > .dataTopBlock:nth-child(2)
   .repairCustomerSearchWrap {
-  background: var(--admin-overlay-success-soft);
-  border-color: rgb(52 211 153 / 0.4);
+  background: color-mix(in srgb, var(--admin-bg-page) 89%, rgb(16 185 129) 11%);
+  border-color: rgb(52 211 153 / 0.32);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .repairContractDataTabDense
   .formGrid
   > .sectionCard:nth-child(2) {
-  background: var(--admin-overlay-info-soft);
-  border-color: rgb(96 165 250 / 0.42);
+  background: color-mix(in srgb, var(--admin-bg-page) 89%, rgb(59 130 246) 11%);
+  border-color: rgb(96 165 250 / 0.35);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .repairContractDataTabDense
   .formGrid
   > .sectionCard:nth-child(3) {
-  background: var(--admin-accent-soft);
+  background: color-mix(in srgb, var(--admin-bg-page) 90%, rgb(var(--color-accent-rgb)) 10%);
   border-color: var(--admin-accent-border);
 }
 
@@ -4165,8 +4163,57 @@
   .repairContractDataTabDense
   .formGrid
   > .sectionCard:nth-child(4) {
-  background: var(--admin-overlay-warning-soft);
-  border-color: rgb(251 191 36 / 0.45);
+  background: color-mix(in srgb, var(--admin-bg-page) 89%, rgb(245 158 11) 11%);
+  border-color: rgb(251 191 36 / 0.38);
+}
+
+/* Контраст текста на затемнённых карточках вкладки «Данные» */
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .sectionCard
+  .sectionTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .crmCompactBox
+  .sectionTitle {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .sectionCustomer
+  .field
+  label,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .sectionExecutor
+  .field
+  label,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .crmCompactBox
+  .field
+  label {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractDataTabDense .hint {
+  color: rgba(243, 244, 246, 0.9);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractDataTabDense .hint code {
+  color: var(--admin-text-primary);
+  background: rgb(0 0 0 / 0.22);
+  border-radius: var(--admin-radius-sm);
+  padding: 0.1em 0.35em;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractDataTabDense .crmCompactBox,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .crmCompactBox
+  p {
+  color: rgba(243, 244, 246, 0.92);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
@@ -4453,6 +4500,137 @@
   border-color: var(--admin-warning-border-soft);
 }
 
+/* Тёмная тема: вкладка «Интерактивная итоговая смета» */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .interactiveFinalEstimateTab.blockData {
+  background: transparent;
+  border-color: transparent;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .interactiveFinalEstimateTab .hint {
+  color: rgba(243, 244, 246, 0.9);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .interactiveFinalEstimateTab .sectionCard {
+  background: color-mix(in srgb, var(--admin-bg-page) 91%, rgb(var(--color-accent-rgb)) 9%);
+  border-color: var(--admin-accent-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .estimateSectionTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .sectionTitle {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .workCategoryButton {
+  background: color-mix(in srgb, var(--admin-bg-page) 88%, rgb(148 163 184) 12%);
+  border-color: var(--admin-border-strong);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .workCategoryButtonMarked:not(.workCategoryButtonActive) {
+  background: color-mix(in srgb, var(--admin-bg-page) 80%, rgb(34 197 94) 20%);
+  border-color: rgb(52 211 153 / 0.5);
+  color: rgb(220 252 231);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .workCategoryButtonActive {
+  background: rgb(var(--color-accent-rgb));
+  border-color: rgb(var(--color-accent-rgb) / 0.92);
+  color: #fff;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.35),
+    0 1px 3px rgb(0 0 0 / 0.25);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .workCategoryButtonActive.workCategoryButtonMarked {
+  background: linear-gradient(180deg, rgb(74 222 128) 0%, rgb(22 163 74) 100%);
+  border-color: rgb(52 211 153 / 0.95);
+  color: #fff;
+  box-shadow:
+    0 0 0 2px rgb(20 83 45 / 0.55),
+    0 1px 3px rgb(0 0 0 / 0.3);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .installerAssignedCountBadgeZero {
+  background: rgb(51 65 85);
+  color: rgba(226, 232, 240, 0.92);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveEstimateCategoryHeader {
+  border-top-color: var(--admin-border-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveEstimateCategoryMeta {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveEstimateRoomHeader {
+  color: rgba(243, 244, 246, 0.92);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .estimateA4Empty {
+  color: rgba(226, 232, 240, 0.78);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveEstimateTable.estimateA4Table
+  th {
+  background: rgb(17 24 39 / 0.88);
+  color: var(--admin-text-primary);
+  border-color: var(--admin-border-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveEstimateTable.estimateA4Table
+  td {
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-primary);
+  border-color: var(--admin-border-strong);
+}
+
+/* Специфичность ≥ правила для всех td, иначе подсветка активного мастера не видна */
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveEstimateTable.estimateA4Table
+  tr.interactiveEstimateRow:hover
+  td {
+  background: rgb(30 41 59 / 0.82);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveEstimateTable.estimateA4Table
+  tr.interactiveEstimateRowActiveInstaller
+  td {
+  background: color-mix(in srgb, var(--admin-surface-soft) 55%, rgb(34 197 94) 45%);
+  color: var(--admin-text-primary);
+  border-color: rgb(52 211 153 / 0.55);
+  box-shadow: inset 0 0 0 1px rgb(52 211 153 / 0.35);
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimateLockNotice,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractLockNotice {
   background: var(--admin-overlay-color-091);
@@ -4557,28 +4735,99 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsBlockAccentContract {
-  background: var(--admin-overlay-info-soft);
-  border-left-color: var(--admin-info-bright);
+  background: color-mix(in srgb, var(--admin-bg-page) 89%, rgb(59 130 246) 11%);
+  border-left-color: rgb(96 165 250 / 0.42);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsBlockAccentAddendum {
-  background: var(--admin-overlay-success-soft);
-  border-left-color: var(--admin-success-emerald);
+  background: color-mix(in srgb, var(--admin-bg-page) 89%, rgb(16 185 129) 11%);
+  border-left-color: rgb(52 211 153 / 0.38);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsBlockAccentSummary {
-  background: var(--admin-overlay-warning-soft);
-  border-left-color: var(--admin-warning-amber);
+  background: color-mix(in srgb, var(--admin-bg-page) 88%, rgb(245 158 11) 12%);
+  border-left-color: rgb(251 191 36 / 0.4);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsBlockAccentForm {
-  background: var(--admin-accent-soft);
-  border-left-color: var(--admin-accent);
+  background: color-mix(in srgb, var(--admin-bg-page) 90%, rgb(var(--color-accent-rgb)) 10%);
+  border-left-color: var(--admin-accent-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsBlockAccentJournal {
+  background: color-mix(in srgb, var(--admin-bg-page) 93%, rgb(148 163 184) 7%);
+  border-left-color: var(--admin-border-strong);
+}
+
+/* Тёмная тема: контраст текста и таблицы на вкладке «Оплаты» */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .sectionTitle {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .field label {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .hint {
+  color: rgba(243, 244, 246, 0.9);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .paymentsTab
+  .paymentsPreFormSummaryHeading {
+  color: rgba(243, 244, 246, 0.88);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsKvKey {
+  color: rgba(229, 231, 235, 0.85);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .paymentsTab
+  .paymentsKvTotalRow.paymentsKvKey {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsKvVal {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsAmountFieldTitle {
+  color: rgba(243, 244, 246, 0.9);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsAmountWordsPreview {
+  color: rgba(243, 244, 246, 0.88);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsKvOverpay {
+  color: var(--admin-danger-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .autoFilledInput {
+  background: rgb(17 24 39 / 0.58) !important;
+  border-color: var(--admin-border-strong) !important;
+  color: var(--admin-text-primary) !important;
+  -webkit-text-fill-color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsTable th {
+  background: rgb(17 24 39 / 0.72);
+  color: var(--admin-text-primary);
+  border-color: var(--admin-border-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsTable td {
   background: var(--admin-surface-soft);
-  border-left-color: var(--admin-text-muted);
+  color: var(--admin-text-primary);
+  border-color: var(--admin-border-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .paymentsTab
+  .paymentsPreFormSummarySection
+  + .paymentsPreFormSummarySection {
+  border-left-color: var(--admin-border-strong);
 }
 
 .paymentsDocFieldsCard {
@@ -4617,8 +4866,8 @@
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .paymentsTab
   input.paymentsRecommendedAmountInput {
-  background: var(--admin-info-soft) !important;
-  border-color: var(--admin-info-border) !important;
+  background: color-mix(in srgb, var(--admin-bg-page) 78%, rgb(96 165 250) 22%) !important;
+  border-color: rgb(96 165 250 / 0.5) !important;
   color: var(--admin-text-primary) !important;
   -webkit-text-fill-color: var(--admin-text-primary) !important;
 }
