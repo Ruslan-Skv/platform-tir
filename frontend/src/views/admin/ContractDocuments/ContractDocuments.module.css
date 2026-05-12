@@ -513,6 +513,27 @@
   margin: 0;
 }
 
+.repairHeaderContractSignedDate {
+  font-size: var(--admin-font-size-xl);
+  font-weight: 500;
+  color: var(--admin-text-muted);
+  white-space: nowrap;
+}
+
+.repairContractsListActionsCol {
+  width: 132px;
+  text-align: right;
+  vertical-align: middle;
+  padding-left: var(--admin-space-sm);
+}
+
+.repairContractsListActionsCell.estimatesCardActions {
+  margin-left: 0;
+  width: 100%;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+}
+
 .editorHeaderHistoryBtn {
   margin-left: auto;
   align-self: center;
@@ -650,6 +671,24 @@
   align-items: flex-end;
 }
 
+.repairEditorDraftTitleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  align-self: stretch;
+  justify-content: flex-end;
+}
+
+.repairEditorDraftTitleRow .draftTitleInput {
+  flex: 1 1 240px;
+  min-width: 240px;
+}
+
+.repairEditorDraftTitleRow > button {
+  flex-shrink: 0;
+}
+
 .draftTitleInput {
   min-width: 240px;
   padding: var(--admin-space-sm) var(--admin-space-9);
@@ -662,6 +701,83 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--admin-space-sm);
+}
+
+.contractSignedRevertUi {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm) var(--admin-space-md);
+  max-width: min(100%, 520px);
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-surface-soft);
+}
+
+.contractSignedRevertLoader {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.contractSignedRevertRingSvg {
+  width: 40px;
+  height: 40px;
+  display: block;
+}
+
+.contractSignedRevertRingTrack {
+  stroke: var(--admin-border-strong);
+  stroke-width: 3;
+}
+
+.contractSignedRevertRingProgress {
+  stroke: var(--admin-accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.1s linear;
+}
+
+.contractSignedRevertRingSec {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--admin-font-size-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--admin-text-primary);
+  pointer-events: none;
+}
+
+.contractSignedRevertHint {
+  margin: 0;
+  flex: 1 1 180px;
+  min-width: 0;
+  font-size: var(--admin-font-size-xs);
+  line-height: 1.35;
+  color: var(--admin-text-secondary);
+}
+
+.contractSignedRevertBtn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractSignedRevertUi {
+  background: rgb(17 24 39 / 0.45);
+  border-color: var(--admin-border-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractSignedRevertRingTrack {
+  stroke: rgb(75 85 99 / 0.85);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractSignedRevertHint {
+  color: rgba(243, 244, 246, 0.88);
 }
 
 .estimatesPageRefreshIconBtn {
@@ -1530,6 +1646,71 @@
 
 .estimateTabCompact .estimateSectionHeader {
   gap: 3px 5px;
+}
+
+.repairAddendumMarkSignedProminentBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-weight: 700;
+  font-size: var(--admin-font-size-sm);
+  line-height: 1.2;
+  color: var(--admin-surface);
+  background: var(--admin-info);
+  border: 2px solid var(--admin-info-strong);
+  border-radius: var(--admin-radius-md);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgb(37 99 235 / 0.25);
+  white-space: nowrap;
+}
+
+.repairAddendumMarkSignedProminentBtn:hover:not(:disabled) {
+  background: var(--admin-info-strong);
+  border-color: var(--admin-info-strong);
+  color: var(--admin-surface);
+  box-shadow: 0 2px 10px rgb(29 78 216 / 0.4);
+}
+
+.repairAddendumMarkSignedProminentBtn:focus-visible {
+  outline: 2px solid var(--admin-info-light);
+  outline-offset: 2px;
+}
+
+.repairAddendumMarkSignedProminentBtn:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.estimateTabCompact .repairAddendumMarkSignedProminentBtn {
+  font-size: var(--admin-font-size-xs);
+  padding: var(--admin-space-2xs) var(--admin-space-sm);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairAddendumMarkSignedProminentBtn {
+  background: var(--admin-info-bright);
+  border-color: var(--admin-info-light);
+  color: #f8fafc;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.4);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairAddendumMarkSignedProminentBtn:hover:not(:disabled) {
+  background: var(--admin-info-light);
+  border-color: var(--admin-info-light);
+  color: #f8fafc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairAddendumMarkSignedProminentBtn:disabled {
+  opacity: 0.45;
+}
+
+.repairAddendumHeaderCornerActions {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-left: auto;
 }
 
 .estimateTabCompact .estimateSectionTitle {
@@ -5633,8 +5814,8 @@
 }
 
 /*
- * Печать сметы с текущей страницы (класс на body задаётся из RepairContractDocumentEditorPage).
- * Тот же DOM и те же CSS Modules, что во вкладке «Смета».
+ * Печать листа сметы / итоговой сметы / заказ-наряда с текущей страницы (класс на body задаётся из RepairContractDocumentEditorPage).
+ * Тот же DOM и те же CSS Modules, что во вкладках «Смета», «Итог. смета», «Итог. заказ-наряд».
  */
 @media print {
   @page {
@@ -5656,12 +5837,15 @@
 
   :global(body.body-print-estimate-sheet) [data-print-target='estimate-sheet'],
   :global(body.body-print-estimate-sheet) [data-print-target='estimate-sheet'] *,
+  :global(body.body-print-estimate-sheet) [data-print-target='final-estimate-sheet'],
+  :global(body.body-print-estimate-sheet) [data-print-target='final-estimate-sheet'] *,
   :global(body.body-print-estimate-sheet) [data-print-target='work-order-sheet'],
   :global(body.body-print-estimate-sheet) [data-print-target='work-order-sheet'] * {
     visibility: visible !important;
   }
 
   :global(body.body-print-estimate-sheet) [data-print-target='estimate-sheet'],
+  :global(body.body-print-estimate-sheet) [data-print-target='final-estimate-sheet'],
   :global(body.body-print-estimate-sheet) [data-print-target='work-order-sheet'] {
     position: absolute !important;
     left: 0 !important;

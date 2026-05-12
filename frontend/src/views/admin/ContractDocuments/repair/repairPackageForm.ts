@@ -316,6 +316,11 @@ export interface RepairPackageFormData {
   contractConcludedAt: string;
   /** Время установки статуса «Договор оплачен» (ISO). */
   contractPaidAt: string;
+  /**
+   * Номер договора на момент создания копии пакета (из поля «Номер договора»).
+   * Пока совпадает с `contract.number`, к отображаемому номеру добавляется слово «копия».
+   */
+  _repairCopyContractNumberBaseline?: string;
 }
 
 export function defaultRepairPackageFormData(): RepairPackageFormData {

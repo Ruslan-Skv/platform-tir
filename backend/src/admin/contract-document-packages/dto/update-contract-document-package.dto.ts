@@ -20,7 +20,7 @@ export class UpdateContractDocumentPackageDto {
   @IsEnum(ContractDocumentPackageStatus)
   status?: ContractDocumentPackageStatus;
 
-  /** Если true — после сохранения добавляется запись в историю версий пакета. */
+  /** Если true — после сохранения добавляется запись в журнал событий пакета (снимок метаданных). */
   @IsOptional()
   @IsBoolean()
   recordVersion?: boolean;

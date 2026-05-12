@@ -169,15 +169,6 @@ export class ContractDocumentPackagesController {
     return this.service.getVersion(id, versionId);
   }
 
-  @Post(':id/versions/:versionId/restore')
-  restoreVersion(
-    @Param('id') id: string,
-    @Param('versionId') versionId: string,
-    @Req() req: RequestWithUser,
-  ) {
-    return this.service.restoreVersion(id, versionId, req.user?.id);
-  }
-
   @Get(':id/payments')
   listPackagePayments(@Param('id') id: string) {
     return this.packagePayments.list(id);

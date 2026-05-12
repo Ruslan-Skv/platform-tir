@@ -11,4 +11,6 @@ export const contractDocumentPackageInclude = {
       totalAmount: true,
     },
   },
+  /** Для списков пакетов: сумма оплат по журналу без полной выгрузки платежей. */
+  payments: { select: { amount: true } },
 };

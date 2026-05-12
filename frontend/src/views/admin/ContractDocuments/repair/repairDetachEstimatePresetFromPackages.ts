@@ -72,7 +72,7 @@ export async function persistRepairPackageAfterRemovingEstimatePreset(
   await updateContractDocumentPackage(packageId, {
     title: row.title?.trim() || null,
     formData,
-    crmContractId: row.crmContractId ?? null,
+    crmContractId: null,
     recordVersion: true,
   });
 }

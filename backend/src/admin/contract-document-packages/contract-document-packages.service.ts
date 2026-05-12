@@ -131,7 +131,10 @@ export class ContractDocumentPackagesService {
     return this.prisma.contractDocumentPackage.findMany({
       where: kind ? { kind } : undefined,
       orderBy: { updatedAt: 'desc' },
-      include: contractDocumentPackageInclude,
+      include: {
+        ...contractDocumentPackageInclude,
+        _count: { select: { versions: true } },
+      },
     });
   }
 
@@ -363,44 +366,41 @@ export class ContractDocumentPackagesService {
     return row;
   }
 
-  async restoreVersion(packageId: string, versionId: string, savedById?: string | null) {
-    const pkg = await this.findOne(packageId);
-    const ver = await this.prisma.contractDocumentPackageVersion.findFirst({
-      where: { id: versionId, packageId },
-    });
-    if (!ver) {
-      throw new NotFoundException('Версия не найдена');
-    }
-    if (ver.crmContractId) {
-      await this.assertCrmContractExists(ver.crmContractId);
-    }
-    if (pkg.kind === ContractDocumentPackageKind.REPAIR) {
-      await this.assertRepairEstimatePresetsExclusive(packageId, ver.formData);
-    }
-    await this.appendPackageVersion(
-      packageId,
-      {
-        title: pkg.title,
-        formData: pkg.formData as Prisma.InputJsonValue,
-        crmContractId: pkg.crmContractId,
-        status: pkg.status,
-      },
-      savedById ?? null,
-    );
-    return this.prisma.contractDocumentPackage.update({
-      where: { id: packageId },
-      data: {
-        title: ver.title,
-        formData: ver.formData as Prisma.InputJsonValue,
-        crmContractId: ver.crmContractId,
-        status: ver.status,
-      },
-      include: contractDocumentPackageInclude,
-    });
-  }
-
   async remove(id: string) {
-    await this.findOne(id);
+    const row = await this.findOne(id);
+    if (row.kind === ContractDocumentPackageKind.REPAIR) {
+      const [versionCount, paymentCount, v1] = await Promise.all([
+        this.prisma.contractDocumentPackageVersion.count({ where: { packageId: id } }),
+        this.prisma.contractDocumentPackagePayment.count({ where: { packageId: id } }),
+        this.prisma.contractDocumentPackageVersion.findFirst({
+          where: { packageId: id, versionNumber: 1 },
+          select: { title: true, status: true, crmContractId: true, formData: true },
+        }),
+      ]);
+      if (paymentCount > 0) {
+        throw new BadRequestException(
+          'Нельзя удалить пакет с зарегистрированными оплатами. Удаление доступно только для пустого черновика.',
+        );
+      }
+      if (!v1) {
+        throw new BadRequestException('Не удалось проверить историю пакета; удаление отклонено.');
+      }
+      if (versionCount > 1) {
+        throw new BadRequestException(
+          'Удалить можно только черновик, с которым ещё не сохраняли изменения после создания.',
+        );
+      }
+      const sameAsInitial =
+        (row.title ?? null) === (v1.title ?? null) &&
+        row.status === v1.status &&
+        (row.crmContractId ?? null) === (v1.crmContractId ?? null) &&
+        JSON.stringify(row.formData ?? {}) === JSON.stringify(v1.formData ?? {});
+      if (!sameAsInitial) {
+        throw new BadRequestException(
+          'Состояние пакета отличается от момента создания. Такой договор удалять нельзя.',
+        );
+      }
+    }
     return this.prisma.contractDocumentPackage.delete({ where: { id } });
   }
 

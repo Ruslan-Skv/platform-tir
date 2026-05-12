@@ -93,6 +93,10 @@ export interface ContractDocumentPackage {
   updatedAt: string;
   createdBy?: ContractDocumentPackageUserRef | null;
   crmContract?: ContractDocumentPackageCrmContract | null;
+  /** При `include` в списке пакетов — строки журнала оплат (только `amount`). */
+  payments?: Array<{ amount: string | number }>;
+  /** Число записей в журнале версий (для списка). Создание пакета всегда добавляет версию 1. */
+  _count?: { versions: number };
 }
 
 export type ContractDocumentPackagePaymentForm =
@@ -149,7 +153,7 @@ export type ContractDocumentPackagePaymentPatch = Partial<{
   notes: string | null;
 }>;
 
-/** Краткая запись в списке истории версий пакета (без тела formData). */
+/** Запись журнала событий пакета (снимок метаданных без тела formData в списке). */
 export interface ContractDocumentPackageVersionListItem {
   id: string;
   packageId: string;
@@ -161,11 +165,6 @@ export interface ContractDocumentPackageVersionListItem {
   keyMoments?: string[];
   createdAt: string;
   savedBy?: ContractDocumentPackageUserRef | null;
-}
-
-/** Полная версия для просмотра JSON. */
-export interface ContractDocumentPackageVersionDetail extends ContractDocumentPackageVersionListItem {
-  formData: Record<string, unknown>;
 }
 
 export type ExecutorRequisiteKind = 'COMPANY' | 'ENTREPRENEUR';
@@ -343,31 +342,7 @@ export async function getContractDocumentPackageVersions(
     `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/versions`,
     { headers: getAdminAuthHeaders() }
   );
-  if (!res.ok) throw new Error('Не удалось загрузить историю версий');
-  return res.json();
-}
-
-export async function getContractDocumentPackageVersion(
-  packageId: string,
-  versionId: string
-): Promise<ContractDocumentPackageVersionDetail> {
-  const res = await apiFetch(
-    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/versions/${versionId}`,
-    { headers: getAdminAuthHeaders() }
-  );
-  if (!res.ok) throw new Error('Не удалось загрузить версию');
-  return res.json();
-}
-
-export async function restoreContractDocumentPackageVersion(
-  packageId: string,
-  versionId: string
-): Promise<ContractDocumentPackage> {
-  const res = await apiFetch(
-    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/versions/${versionId}/restore`,
-    { method: 'POST', headers: getAdminAuthHeaders() }
-  );
-  if (!res.ok) throw new Error('Не удалось восстановить версию');
+  if (!res.ok) throw new Error('Не удалось загрузить журнал событий');
   return res.json();
 }
 
@@ -411,7 +386,7 @@ export async function deleteContractDocumentPackage(id: string): Promise<void> {
     method: 'DELETE',
     headers: getAdminAuthHeaders(),
   });
-  if (!res.ok) throw new Error('Не удалось удалить пакет документов');
+  if (!res.ok) throw new Error(await readAdminContractPackagesError(res));
 }
 
 /** Общий шаблон договора для направления (подставляется, если у пакета нет своего HTML). */
