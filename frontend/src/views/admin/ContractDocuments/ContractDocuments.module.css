@@ -586,22 +586,18 @@
 }
 
 .repairContractsListActionsCol {
-  width: 176px;
+  width: 140px;
   text-align: right;
   vertical-align: middle;
-  padding-left: var(--admin-space-sm);
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .repairContractsListTable th.repairContractsListActionsCol,
 .repairContractsListTable td.repairContractsListActionsCol {
   text-align: right;
-}
-
-.repairContractsListActionsCell.estimatesCardActions {
-  margin-left: 0;
-  width: 100%;
-  justify-content: flex-end;
-  flex-wrap: nowrap;
+  padding-left: var(--admin-space-sm);
+  padding-right: var(--admin-space-xs);
 }
 
 .editorHeaderHistoryBtn {
@@ -4455,6 +4451,31 @@
 
 .estimatesCardActions .estimatesIconBtn:disabled svg {
   stroke: var(--admin-text-muted);
+}
+
+/* Список ремонта: один тип действия — одна колонка (сетка), чтобы иконка фото не сдвигала остальные */
+.repairContractsListActionsGrid.estimatesCardActions {
+  display: grid;
+  grid-template-columns: repeat(4, max-content);
+  column-gap: 2px;
+  row-gap: 0;
+  justify-content: end;
+  align-items: center;
+  justify-items: stretch;
+  margin-left: 0;
+  width: 100%;
+}
+
+.repairContractsListActionsSlot {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-width: 0;
+}
+
+.repairContractsListActionsIconPlaceholder {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .managerQuestionnaireNeedsGrid {

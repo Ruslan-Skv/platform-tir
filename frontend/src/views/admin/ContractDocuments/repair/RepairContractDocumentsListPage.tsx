@@ -715,7 +715,7 @@ export function RepairContractDocumentsListPage() {
                   {addendumColumnCount > 0 ? <th>СД итог.</th> : null}
                   <th>Оплачено</th>
                   <th>Остаток</th>
-                  <th className={styles.repairContractsListActionsCol}>Действия</th>
+                  <th className={styles.repairContractsListActionsCol} />
                 </tr>
               </thead>
               <tbody>
@@ -796,123 +796,9 @@ export function RepairContractDocumentsListPage() {
                         <td>{formatListMoney(remainingRub)}</td>
                         <td className={styles.repairContractsListActionsCol}>
                           <div
-                            className={`${styles.estimatesCardActions} ${styles.repairContractsListActionsCell}`}
+                            className={`${styles.estimatesCardActions} ${styles.repairContractsListActionsGrid}`}
                           >
-                            <button
-                              type="button"
-                              className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
-                              disabled={
-                                loading ||
-                                creating ||
-                                copyingPackageId !== null ||
-                                deletingPackageId !== null
-                              }
-                              aria-label="Редактировать"
-                              title="Редактировать"
-                              onClick={() =>
-                                router.push(adminContractDocumentsContractsRepairPackageHref(r.id))
-                              }
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width={14}
-                                height={14}
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="var(--admin-chart-series-1)"
-                                strokeWidth={2}
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden
-                              >
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                              </svg>
-                            </button>
-                            <button
-                              type="button"
-                              className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
-                              disabled={
-                                loading ||
-                                creating ||
-                                (copyingPackageId !== null && !copyBusy) ||
-                                deletingPackageId !== null
-                              }
-                              aria-busy={copyBusy}
-                              aria-label={
-                                copyBusy
-                                  ? 'Копирование договора…'
-                                  : 'Копировать договор (данные без прикреплённых расчётов)'
-                              }
-                              title="Копировать: все вкладки, без расчётов в смете и в Д/с"
-                              onClick={() => void handleCopyPackage(r.id)}
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width={14}
-                                height={14}
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="var(--admin-chart-series-2)"
-                                strokeWidth={2}
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className={
-                                  copyBusy ? styles.estimatesRefreshIconSpinning : undefined
-                                }
-                                aria-hidden
-                              >
-                                <rect x={9} y={9} width={13} height={13} rx={2} ry={2} />
-                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                              </svg>
-                            </button>
-                            <button
-                              type="button"
-                              className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
-                              disabled={
-                                !canDeleteDraft ||
-                                loading ||
-                                creating ||
-                                copyingPackageId !== null ||
-                                (deletingPackageId !== null && !deleteBusy)
-                              }
-                              aria-busy={deleteBusy}
-                              aria-label={
-                                deleteBusy
-                                  ? 'Удаление черновика…'
-                                  : canDeleteDraft
-                                    ? 'Удалить черновик'
-                                    : 'Удаление недоступно: прикреплена смета или есть оплаты'
-                              }
-                              title={
-                                canDeleteDraft
-                                  ? 'Удалить черновик (если нет прикреплённой сметы и записей об оплатах)'
-                                  : 'Удалить нельзя: к договору прикреплена смета или в журнале есть оплаты'
-                              }
-                              onClick={() => requestDeletePackage(r)}
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width={14}
-                                height={14}
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="var(--admin-chart-series-6)"
-                                strokeWidth={2}
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className={
-                                  deleteBusy ? styles.estimatesRefreshIconSpinning : undefined
-                                }
-                                aria-hidden
-                              >
-                                <polyline points="3 6 5 6 21 6" />
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                <line x1="10" y1="11" x2="10" y2="17" />
-                                <line x1="14" y1="11" x2="14" y2="17" />
-                              </svg>
-                            </button>
-                            {actPhotoItems.length > 0 ? (
+                            <div className={styles.repairContractsListActionsSlot}>
                               <button
                                 type="button"
                                 className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
@@ -922,18 +808,147 @@ export function RepairContractDocumentsListPage() {
                                   copyingPackageId !== null ||
                                   deletingPackageId !== null
                                 }
-                                title="Просмотр загруженных фото актов (статусы «В работе», «Договор закрыт»)"
-                                aria-label={`Просмотр фото актов договора ${num}`}
+                                aria-label="Редактировать"
+                                title="Редактировать"
                                 onClick={() =>
-                                  setActPhotosModal({
-                                    items: actPhotoItems,
-                                    contractLabel: num,
-                                  })
+                                  router.push(
+                                    adminContractDocumentsContractsRepairPackageHref(r.id)
+                                  )
                                 }
                               >
-                                <RepairListActPhotosTriggerIcon />
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width={14}
+                                  height={14}
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="var(--admin-chart-series-1)"
+                                  strokeWidth={2}
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  aria-hidden
+                                >
+                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
                               </button>
-                            ) : null}
+                            </div>
+                            <div className={styles.repairContractsListActionsSlot}>
+                              <button
+                                type="button"
+                                className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+                                disabled={
+                                  loading ||
+                                  creating ||
+                                  (copyingPackageId !== null && !copyBusy) ||
+                                  deletingPackageId !== null
+                                }
+                                aria-busy={copyBusy}
+                                aria-label={
+                                  copyBusy
+                                    ? 'Копирование договора…'
+                                    : 'Копировать договор (данные без прикреплённых расчётов)'
+                                }
+                                title="Копировать: все вкладки, без расчётов в смете и в Д/с"
+                                onClick={() => void handleCopyPackage(r.id)}
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width={14}
+                                  height={14}
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="var(--admin-chart-series-2)"
+                                  strokeWidth={2}
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className={
+                                    copyBusy ? styles.estimatesRefreshIconSpinning : undefined
+                                  }
+                                  aria-hidden
+                                >
+                                  <rect x={9} y={9} width={13} height={13} rx={2} ry={2} />
+                                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                </svg>
+                              </button>
+                            </div>
+                            <div className={styles.repairContractsListActionsSlot}>
+                              <button
+                                type="button"
+                                className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+                                disabled={
+                                  !canDeleteDraft ||
+                                  loading ||
+                                  creating ||
+                                  copyingPackageId !== null ||
+                                  (deletingPackageId !== null && !deleteBusy)
+                                }
+                                aria-busy={deleteBusy}
+                                aria-label={
+                                  deleteBusy
+                                    ? 'Удаление черновика…'
+                                    : canDeleteDraft
+                                      ? 'Удалить черновик'
+                                      : 'Удаление недоступно: прикреплена смета или есть оплаты'
+                                }
+                                title={
+                                  canDeleteDraft
+                                    ? 'Удалить черновик (если нет прикреплённой сметы и записей об оплатах)'
+                                    : 'Удалить нельзя: к договору прикреплена смета или в журнале есть оплаты'
+                                }
+                                onClick={() => requestDeletePackage(r)}
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width={14}
+                                  height={14}
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="var(--admin-chart-series-6)"
+                                  strokeWidth={2}
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className={
+                                    deleteBusy ? styles.estimatesRefreshIconSpinning : undefined
+                                  }
+                                  aria-hidden
+                                >
+                                  <polyline points="3 6 5 6 21 6" />
+                                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                  <line x1="10" y1="11" x2="10" y2="17" />
+                                  <line x1="14" y1="11" x2="14" y2="17" />
+                                </svg>
+                              </button>
+                            </div>
+                            <div className={styles.repairContractsListActionsSlot}>
+                              {actPhotoItems.length > 0 ? (
+                                <button
+                                  type="button"
+                                  className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+                                  disabled={
+                                    loading ||
+                                    creating ||
+                                    copyingPackageId !== null ||
+                                    deletingPackageId !== null
+                                  }
+                                  title="Просмотр загруженных фото актов (статусы «В работе», «Договор закрыт»)"
+                                  aria-label={`Просмотр фото актов договора ${num}`}
+                                  onClick={() =>
+                                    setActPhotosModal({
+                                      items: actPhotoItems,
+                                      contractLabel: num,
+                                    })
+                                  }
+                                >
+                                  <RepairListActPhotosTriggerIcon />
+                                </button>
+                              ) : (
+                                <span
+                                  className={`${styles.secondaryBtn} ${styles.estimatesIconBtn} ${styles.repairContractsListActionsIconPlaceholder}`}
+                                  aria-hidden
+                                />
+                              )}
+                            </div>
                           </div>
                         </td>
                       </tr>
