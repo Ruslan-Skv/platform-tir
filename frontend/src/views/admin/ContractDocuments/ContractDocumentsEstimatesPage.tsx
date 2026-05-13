@@ -253,7 +253,12 @@ export function ContractDocumentsEstimatesPage() {
       (packagesRes ?? []).map((p) => ({
         id: p.id,
         title: p.title ?? null,
-        status: p.status === 'CONTRACT_CONCLUDED' ? 'CONTRACT_CONCLUDED' : 'IN_PROGRESS',
+        status:
+          p.status === 'CONTRACT_CONCLUDED'
+            ? 'CONTRACT_CONCLUDED'
+            : p.status === 'REFUSED'
+              ? 'REFUSED'
+              : 'IN_PROGRESS',
         formData: (p.formData ?? {}) as Record<string, unknown>,
         crmContract: p.crmContract
           ? {
@@ -424,7 +429,12 @@ export function ContractDocumentsEstimatesPage() {
         (packagesRes ?? []).map((p) => ({
           id: p.id,
           title: p.title ?? null,
-          status: p.status === 'CONTRACT_CONCLUDED' ? 'CONTRACT_CONCLUDED' : 'IN_PROGRESS',
+          status:
+            p.status === 'CONTRACT_CONCLUDED'
+              ? 'CONTRACT_CONCLUDED'
+              : p.status === 'REFUSED'
+                ? 'REFUSED'
+                : 'IN_PROGRESS',
           formData: (p.formData ?? {}) as Record<string, unknown>,
           crmContract: p.crmContract
             ? {
@@ -467,7 +477,12 @@ export function ContractDocumentsEstimatesPage() {
         (packagesRes ?? []).map((p) => ({
           id: p.id,
           title: p.title ?? null,
-          status: p.status === 'CONTRACT_CONCLUDED' ? 'CONTRACT_CONCLUDED' : 'IN_PROGRESS',
+          status:
+            p.status === 'CONTRACT_CONCLUDED'
+              ? 'CONTRACT_CONCLUDED'
+              : p.status === 'REFUSED'
+                ? 'REFUSED'
+                : 'IN_PROGRESS',
           formData: (p.formData ?? {}) as Record<string, unknown>,
           crmContract: p.crmContract
             ? {

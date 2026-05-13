@@ -64,13 +64,13 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
       { path: 'executor.email', label: 'E-mail исполнителя' },
       {
         path: 'executor.directorNameNominative',
-        label: 'Подписант (именительный падеж)',
+        label: 'Менеджер (именительный падеж)',
       },
       {
         path: 'executor.directorNameGenitive',
-        label: 'Подписант (родительный падеж)',
+        label: 'Менеджер (родительный падеж)',
       },
-      { path: 'executor.directorName', label: 'Подписант (legacy)' },
+      { path: 'executor.directorName', label: 'Менеджер (legacy)' },
       { path: 'executor.basis', label: 'Действует на основании' },
       { path: 'executor.salesOffice', label: 'Офис продаж' },
       { path: 'executor.officePhone', label: 'Телефон офиса' },

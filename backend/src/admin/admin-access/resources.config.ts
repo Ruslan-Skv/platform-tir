@@ -30,7 +30,6 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/crm/contract-payments',
   },
   { id: 'admin.crm.offices', label: 'Офисы', path: '/admin/crm/offices' },
-  { id: 'admin.crm.managers', label: 'Менеджеры', path: '/admin/crm/managers' },
   { id: 'admin.crm.installers', label: 'Мастера (монтажники)', path: '/admin/crm/installers' },
   { id: 'admin.crm.customers', label: 'Заказчики', path: '/admin/customers' },
   { id: 'admin.forms', label: 'Заявки с форм', path: '/admin/forms' },
@@ -51,7 +50,12 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   {
     id: 'admin.contract-documents.repair',
     label: 'Оформление договоров — Ремонт',
-    path: '/admin/contract-documents/repair',
+    path: '/admin/contract-documents/contracts/repair',
+  },
+  {
+    id: 'admin.contract-documents.contracts',
+    label: 'Оформление договоров — Договора',
+    path: '/admin/contract-documents/contracts',
   },
   {
     id: 'admin.contract-documents.instruction',
@@ -65,7 +69,7 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   },
   {
     id: 'admin.contract-documents.signatories',
-    label: 'Оформление договоров — Подписанты',
+    label: 'Оформление договоров — Менеджеры',
     path: '/admin/contract-documents/signatories',
   },
   {

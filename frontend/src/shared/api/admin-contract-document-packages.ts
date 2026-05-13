@@ -50,8 +50,8 @@ export type ContractDocumentPackageKind =
   | 'BLINDS'
   | 'FURNITURE';
 
-/** Стадия пакета: «в работе» или договор подписан (фиксирует менеджер). */
-export type ContractDocumentPackageStatus = 'IN_PROGRESS' | 'CONTRACT_CONCLUDED';
+/** Стадия пакета: «в работе», договор подписан или отказ (фиксирует менеджер). */
+export type ContractDocumentPackageStatus = 'IN_PROGRESS' | 'CONTRACT_CONCLUDED' | 'REFUSED';
 
 export interface ContractDocumentPackageUserRef {
   id: string;
@@ -184,7 +184,7 @@ export interface ExecutorRequisiteProfile {
   email?: string;
 }
 
-/** Профиль подписанта (справочник); связь с сотрудником CRM через `crmUserId`. */
+/** Профиль менеджера (справочник). */
 export interface ContractSignatoryProfile {
   title: string;
   crmUserId?: string;
@@ -381,6 +381,52 @@ export async function updateContractDocumentPackage(
   return res.json();
 }
 
+/** Фото акта начала работ для пакета «Ремонт»; файл сохраняется на сервере, в ответе — относительный `imageUrl`. */
+export async function uploadRepairPackageWorkStartActPhoto(
+  packageId: string,
+  file: File
+): Promise<{ imageUrl: string }> {
+  const body = new FormData();
+  body.append('file', file);
+  const headers = getAdminAuthHeaders() as Record<string, string>;
+  delete headers['Content-Type'];
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/upload-work-start-act-photo`,
+    {
+      method: 'POST',
+      headers: { ...headers, Accept: 'application/json' },
+      body,
+    }
+  );
+  if (!res.ok) {
+    throw new Error(await readAdminContractPackagesError(res));
+  }
+  return res.json() as Promise<{ imageUrl: string }>;
+}
+
+/** Фото акта сдачи-приёмки при закрытии договора «Ремонт»; в ответе — относительный `imageUrl`. */
+export async function uploadRepairPackageContractCloseActPhoto(
+  packageId: string,
+  file: File
+): Promise<{ imageUrl: string }> {
+  const body = new FormData();
+  body.append('file', file);
+  const headers = getAdminAuthHeaders() as Record<string, string>;
+  delete headers['Content-Type'];
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/upload-contract-close-act-photo`,
+    {
+      method: 'POST',
+      headers: { ...headers, Accept: 'application/json' },
+      body,
+    }
+  );
+  if (!res.ok) {
+    throw new Error(await readAdminContractPackagesError(res));
+  }
+  return res.json() as Promise<{ imageUrl: string }>;
+}
+
 export async function deleteContractDocumentPackage(id: string): Promise<void> {
   const res = await apiFetch(`${getApiBaseUrl()}/admin/contract-document-packages/${id}`, {
     method: 'DELETE',
@@ -456,7 +502,7 @@ export async function getContractDocumentSignatoryProfiles(
   const qs = new URLSearchParams({ kind });
   const url = `${getApiBaseUrl()}/admin/contract-document-packages/signatory-profiles?${qs}`;
   const res = await apiFetch(url, { headers: getAdminAuthHeaders() });
-  if (!res.ok) throw new Error('Не удалось загрузить подписантов');
+  if (!res.ok) throw new Error('Не удалось загрузить менеджеров');
   return res.json();
 }
 
@@ -474,7 +520,7 @@ export async function putContractDocumentSignatoryProfiles(body: {
   );
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { message?: string };
-    throw new Error(err.message || 'Не удалось сохранить подписантов');
+    throw new Error(err.message || 'Не удалось сохранить менеджеров');
   }
   return res.json();
 }

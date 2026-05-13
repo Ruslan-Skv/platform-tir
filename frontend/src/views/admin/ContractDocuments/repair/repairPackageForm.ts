@@ -56,9 +56,9 @@ export interface RepairExecutorBlock {
   actualAddress: string;
   bankDetails: string;
   email: string;
-  /** Карточка из справочника «Подписанты». */
+  /** Карточка из справочника «Менеджеры». */
   selectedSignatoryProfileTitle: string;
-  /** Id пользователя CRM из карточки подписанта (для связи с «Менеджерами»). */
+  /** Id пользователя CRM в пакете договора (если был задан ранее); в справочнике карточек не хранится. */
   signatoryCrmUserId: string;
   directorNameNominative: string;
   directorNameGenitive: string;
@@ -314,8 +314,25 @@ export interface RepairPackageFormData {
   addendumSlots: RepairAddendumSlotsTuple;
   /** Время установки статуса «Договор подписан» (ISO), окно отмены — 24 часа. */
   contractConcludedAt: string;
+  /** Текст причины отказа (при статусе пакета REFUSED). */
+  contractRefusalReason: string;
+  /** Время фиксации отказа (ISO). */
+  contractRefusedAt: string;
   /** Время установки статуса «Договор оплачен» (ISO). */
   contractPaidAt: string;
+  /**
+   * Дата начала работ по подписанному акту начала работ (формат YYYY-MM-DD), вместе с фото акта —
+   * для отображения этапа «В работе» в списке договоров.
+   */
+  repairWorkStartActSignedAt: string;
+  /** URL фото акта начала работ (относительный путь после загрузки на сервер). */
+  repairWorkStartActPhotoUrl: string;
+  /**
+   * Дата подписания акта сдачи-приёмки (YYYY-MM-DD) и фото акта — этап «Закрыт» в списке договоров.
+   */
+  repairContractCloseActSignedAt: string;
+  /** URL фото акта сдачи-приёмки. */
+  repairContractCloseActPhotoUrl: string;
   /**
    * Номер договора на момент создания копии пакета (из поля «Номер договора»).
    * Пока совпадает с `contract.number`, к отображаемому номеру добавляется слово «копия».
@@ -403,7 +420,13 @@ export function defaultRepairPackageFormData(): RepairPackageFormData {
     addendumDocumentDates: ['', '', '', '', ''],
     addendumSlots: defaultAddendumSlots(),
     contractConcludedAt: '',
+    contractRefusalReason: '',
+    contractRefusedAt: '',
     contractPaidAt: '',
+    repairWorkStartActSignedAt: '',
+    repairWorkStartActPhotoUrl: '',
+    repairContractCloseActSignedAt: '',
+    repairContractCloseActPhotoUrl: '',
   };
 }
 
@@ -700,6 +723,24 @@ export function mergeRepairPackageFormData(raw: unknown): RepairPackageFormData 
       typeof (merged as unknown as Record<string, unknown>).contractPaidAt === 'string'
         ? String((merged as unknown as Record<string, unknown>).contractPaidAt)
         : '',
+    repairWorkStartActSignedAt:
+      typeof (merged as unknown as Record<string, unknown>).repairWorkStartActSignedAt === 'string'
+        ? String((merged as unknown as Record<string, unknown>).repairWorkStartActSignedAt)
+        : '',
+    repairWorkStartActPhotoUrl:
+      typeof (merged as unknown as Record<string, unknown>).repairWorkStartActPhotoUrl === 'string'
+        ? String((merged as unknown as Record<string, unknown>).repairWorkStartActPhotoUrl)
+        : '',
+    repairContractCloseActSignedAt:
+      typeof (merged as unknown as Record<string, unknown>).repairContractCloseActSignedAt ===
+      'string'
+        ? String((merged as unknown as Record<string, unknown>).repairContractCloseActSignedAt)
+        : '',
+    repairContractCloseActPhotoUrl:
+      typeof (merged as unknown as Record<string, unknown>).repairContractCloseActPhotoUrl ===
+      'string'
+        ? String((merged as unknown as Record<string, unknown>).repairContractCloseActPhotoUrl)
+        : '',
     estimateObjectGroupKey:
       typeof (merged as unknown as Record<string, unknown>).estimateObjectGroupKey === 'string'
         ? String((merged as unknown as Record<string, unknown>).estimateObjectGroupKey)
@@ -983,7 +1024,25 @@ export function mergeRepairPackageFormWithPreviewFallback(
       };
     }) as RepairAddendumSlotsTuple,
     contractConcludedAt: pickStr(form.contractConcludedAt, fallback.contractConcludedAt),
+    contractRefusalReason: pickStr(form.contractRefusalReason, fallback.contractRefusalReason),
+    contractRefusedAt: pickStr(form.contractRefusedAt, fallback.contractRefusedAt),
     contractPaidAt: pickStr(form.contractPaidAt, fallback.contractPaidAt),
+    repairWorkStartActSignedAt: pickStr(
+      form.repairWorkStartActSignedAt,
+      fallback.repairWorkStartActSignedAt
+    ),
+    repairWorkStartActPhotoUrl: pickStr(
+      form.repairWorkStartActPhotoUrl,
+      fallback.repairWorkStartActPhotoUrl
+    ),
+    repairContractCloseActSignedAt: pickStr(
+      form.repairContractCloseActSignedAt,
+      fallback.repairContractCloseActSignedAt
+    ),
+    repairContractCloseActPhotoUrl: pickStr(
+      form.repairContractCloseActPhotoUrl,
+      fallback.repairContractCloseActPhotoUrl
+    ),
   };
 }
 

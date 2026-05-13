@@ -1306,7 +1306,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
         <div>
           <h1 className={styles.title}>Библиотека шаблонов документов</h1>
         </div>
-        <Link className={styles.secondaryBtn} href="/admin/contract-documents/repair">
+        <Link className={styles.secondaryBtn} href="/admin/contract-documents/contracts/repair">
           К разделу «Ремонт»
         </Link>
       </div>

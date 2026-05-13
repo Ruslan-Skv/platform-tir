@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -12,7 +12,14 @@ import {
   getContractDocumentPackage,
   getContractDocumentPackages,
 } from '@/shared/api/admin-contract-document-packages';
+import { type CrmUser, getCrmUsers } from '@/shared/api/admin-crm';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
+import { Modal } from '@/shared/ui/Modal';
+import {
+  ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_HREF,
+  adminContractDocumentsContractsRepairPackageHref,
+} from '@/views/admin/ContractDocuments/contractDocumentsContractsRoutes';
 
 import styles from '../ContractDocuments.module.css';
 import { buildFormDataForRepairPackageCopy } from './cloneRepairPackageFormDataForCopy';
@@ -21,6 +28,69 @@ import {
   getDisplayContractNumber,
 } from './packageContractDisplay';
 import { applyRepairContractDiscountToNullableBase } from './repairContractDiscount';
+import { type RepairPackageFormData, mergeRepairPackageFormData } from './repairPackageForm';
+
+type RepairListActPhotoItem = {
+  key: string;
+  title: string;
+  dateLabel: string;
+  src: string;
+};
+
+function formatRepairListActDate(raw: string): string {
+  const t = raw.trim();
+  if (!t) return '—';
+  const d = /\d{4}-\d{2}-\d{2}/.test(t) ? new Date(`${t}T12:00:00`) : new Date(t);
+  if (Number.isNaN(d.getTime())) return t;
+  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function repairListAttachedActPhotosFromForm(
+  form: RepairPackageFormData
+): RepairListActPhotoItem[] {
+  const items: RepairListActPhotoItem[] = [];
+  const workPhoto = form.repairWorkStartActPhotoUrl?.trim();
+  if (workPhoto) {
+    items.push({
+      key: 'work-start',
+      title: 'Акт начала работ',
+      dateLabel: formatRepairListActDate(form.repairWorkStartActSignedAt ?? ''),
+      src: publicUploadUrl(workPhoto),
+    });
+  }
+  const closePhoto = form.repairContractCloseActPhotoUrl?.trim();
+  if (closePhoto) {
+    items.push({
+      key: 'contract-close',
+      title: 'Акт сдачи-приёмки (закрытие договора)',
+      dateLabel: formatRepairListActDate(form.repairContractCloseActSignedAt ?? ''),
+      src: publicUploadUrl(closePhoto),
+    });
+  }
+  return items;
+}
+
+/** Иконка «фото актов» в списке договоров (как в редакторе, 14×14). */
+function RepairListActPhotosTriggerIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={14}
+      height={14}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect width={18} height={18} x={3} y={3} rx={2} ry={2} />
+      <circle cx={8.5} cy={8.5} r={1.5} />
+      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+    </svg>
+  );
+}
 
 const listMoneyFormatter = new Intl.NumberFormat('ru-RU', {
   style: 'currency',
@@ -39,6 +109,35 @@ function parseAmountToNumber(raw: unknown): number | null {
 function formatListMoney(n: number | null): string {
   if (n == null || Number.isNaN(n)) return '—';
   return listMoneyFormatter.format(n);
+}
+
+const listPercentFormatter = new Intl.NumberFormat('ru-RU', {
+  maximumFractionDigits: 1,
+  minimumFractionDigits: 0,
+});
+
+/** Оплаты в руб. и доля от базы (СД итог. или СД нач., если колонок Д/с нет). */
+function formatListPaidWithPercent(paidRub: number, baseTotalRub: number | null): string {
+  const money = formatListMoney(paidRub);
+  if (
+    baseTotalRub == null ||
+    Number.isNaN(baseTotalRub) ||
+    !Number.isFinite(baseTotalRub) ||
+    baseTotalRub <= 0
+  ) {
+    return money;
+  }
+  const pct = (paidRub / baseTotalRub) * 100;
+  const pctStr = listPercentFormatter.format(pct);
+  return `${money} (${pctStr}%)`;
+}
+
+/** Сколько осталось оплатить по базе (СД итог. или СД нач.); при неизвестной базе — null. */
+function repairListRemainingToPayRub(baseTotalRub: number | null, paidRub: number): number | null {
+  if (baseTotalRub == null || Number.isNaN(baseTotalRub) || !Number.isFinite(baseTotalRub)) {
+    return null;
+  }
+  return Math.max(0, baseTotalRub - paidRub);
 }
 
 function sumPackagePaymentsRub(pkg: ContractDocumentPackage): number {
@@ -66,11 +165,11 @@ function repairListHasAttachedEstimate(fd: Record<string, unknown>): boolean {
   return false;
 }
 
-/** Стоимость в списке — только из прикреплённой сметы (снимок), с учётом скидки по договору. */
-function repairListContractTotalAmount(fd: Record<string, unknown>): number | null {
-  if (!repairListHasAttachedEstimate(fd)) return null;
-  const est = asObj(fd.estimate);
-  const snapRaw = est?.snapshot;
+/** Сумма по снимку сметы (поле total или сумма строк), затем скидка по договору. */
+function repairListSnapshotTotalAfterDiscountRub(
+  snapRaw: unknown,
+  discountPercentRaw: string
+): number | null {
   if (!snapRaw || typeof snapRaw !== 'object' || Array.isArray(snapRaw)) return null;
   const snap = snapRaw as Record<string, unknown>;
   let base: number | null = null;
@@ -83,6 +182,7 @@ function repairListContractTotalAmount(fd: Record<string, unknown>): number | nu
       if (!Array.isArray(r?.lines)) continue;
       for (const line of r.lines) {
         const l = asObj(line);
+        if (!l) continue;
         const amt = typeof l.amount === 'number' ? l.amount : Number(l.amount);
         if (Number.isFinite(amt)) sum += amt;
       }
@@ -90,8 +190,69 @@ function repairListContractTotalAmount(fd: Record<string, unknown>): number | nu
     base = sum;
   }
   if (base == null || !Number.isFinite(base)) return null;
+  return applyRepairContractDiscountToNullableBase(base, discountPercentRaw);
+}
+
+/** Стоимость в списке — только из прикреплённой сметы (снимок), с учётом скидки по договору. */
+function repairListContractTotalAmount(fd: Record<string, unknown>): number | null {
+  if (!repairListHasAttachedEstimate(fd)) return null;
+  const est = asObj(fd.estimate);
   const c = asObj(fd.contract);
-  return applyRepairContractDiscountToNullableBase(base, String(c?.discountPercent ?? ''));
+  return repairListSnapshotTotalAfterDiscountRub(est?.snapshot, String(c?.discountPercent ?? ''));
+}
+
+/** Статусы вкладки Д/с после подписания (в интерфейсе: «Д/с подписано» / «Д/с оплачено»). */
+function repairListIsAddendumSignedLikeStatus(
+  status: string | undefined
+): status is 'SIGNED' | 'PAID' {
+  return status === 'SIGNED' || status === 'PAID';
+}
+
+/** Максимальный номер слота Д/с (1…5), у которого хотя бы в одном пакете статус подписано/оплачено. */
+function repairListMaxSignedAddendumSlotCount(packages: ContractDocumentPackage[]): number {
+  let max = 0;
+  for (const pkg of packages) {
+    const form = mergeRepairPackageFormData(pkg.formData);
+    const slotCap = Math.min(5, Math.max(1, form.addendumSlotCount || 1));
+    for (let i = 0; i < slotCap; i++) {
+      const st = form.addendumSlots[i]?.status;
+      if (repairListIsAddendumSignedLikeStatus(st)) {
+        max = Math.max(max, i + 1);
+      }
+    }
+  }
+  return max;
+}
+
+function repairListSignedAddendumRub(
+  form: RepairPackageFormData,
+  slotIndex0: number
+): number | null {
+  const slot = form.addendumSlots[slotIndex0];
+  if (!slot || !repairListIsAddendumSignedLikeStatus(slot.status)) return null;
+  return repairListSnapshotTotalAfterDiscountRub(
+    slot.snapshot,
+    String(form.contract.discountPercent ?? '')
+  );
+}
+
+function repairListSignedAddendaSumRub(form: RepairPackageFormData, addendumColumnCount: number) {
+  let sum = 0;
+  for (let i = 0; i < addendumColumnCount; i++) {
+    const v = repairListSignedAddendumRub(form, i);
+    if (v != null) sum += v;
+  }
+  return sum;
+}
+
+/** «СД итог.» = «СД нач.» + суммы подписанных Д/с по колонкам таблицы. */
+function repairListContractAndSignedAddendaTotalRub(
+  form: RepairPackageFormData,
+  mainRub: number | null,
+  addendumColumnCount: number
+): number | null {
+  if (mainRub == null) return null;
+  return mainRub + repairListSignedAddendaSumRub(form, addendumColumnCount);
 }
 
 function repairListCustomerName(fd: Record<string, unknown>): string {
@@ -118,6 +279,42 @@ function repairListWorkDescription(fd: Record<string, unknown>): string {
   return String(q?.orderInfo ?? '').trim() || '—';
 }
 
+function formatCrmUserName(u: CrmUser | undefined): string {
+  if (!u) return '';
+  const parts = [u.firstName, u.lastName].filter(Boolean);
+  return parts.length ? parts.join(' ') : (u.email ?? '');
+}
+
+function repairListManagerCrmUserId(form: RepairPackageFormData): string {
+  return form.executor.signatoryCrmUserId?.trim() ?? '';
+}
+
+/** Подпись в списке: ФИО из формы, иначе из CRM, иначе название карточки. */
+function repairListManagerDisplayLabel(form: RepairPackageFormData, crmUsers: CrmUser[]): string {
+  const nom = form.executor.directorNameNominative?.trim();
+  if (nom) return nom;
+  const id = repairListManagerCrmUserId(form);
+  if (id) {
+    const u = crmUsers.find((x) => x.id === id);
+    const n = formatCrmUserName(u);
+    if (n) return n;
+    return id;
+  }
+  const title = form.executor.selectedSignatoryProfileTitle?.trim();
+  if (title) return title;
+  return '—';
+}
+
+/** Ключ для фильтра по колонке «Менеджер» (CRM id или пара карточка+ФИО без id). */
+function repairListManagerFilterKey(form: RepairPackageFormData): string {
+  const crmId = repairListManagerCrmUserId(form);
+  if (crmId) return `crm:${crmId}`;
+  const title = form.executor.selectedSignatoryProfileTitle?.trim() ?? '';
+  const nom = form.executor.directorNameNominative?.trim() ?? '';
+  if (title || nom) return `local:${title}\u0001${nom}`;
+  return '';
+}
+
 function formatSigningDateOnly(r: ContractDocumentPackage): string {
   if (r.status !== 'CONTRACT_CONCLUDED') return '—';
   const fd = r.formData ?? {};
@@ -129,6 +326,75 @@ function formatSigningDateOnly(r: ContractDocumentPackage): string {
     return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
   } catch {
     return '—';
+  }
+}
+
+/** Этапы жизненного цикла договора в списке (фильтр и колонка «Статус»). */
+type RepairListPipelineStatus = 'IN_PROJECT' | 'SIGNED' | 'WORK_IN_PROGRESS' | 'CLOSED' | 'REFUSED';
+
+/**
+ * «В работе» и «Закрыт» задаются в редакторе пакета (дата + фото соответствующего акта).
+ * `repairContractClosed: true` — устаревший признак «Закрыт», сохраняем для совместимости.
+ */
+const REPAIR_PIPELINE_REFUSED_FD = 'repairContractClientRefused';
+const REPAIR_PIPELINE_CLOSED_FD = 'repairContractClosed';
+const REPAIR_PIPELINE_CLOSE_ACT_DATE_FD = 'repairContractCloseActSignedAt';
+const REPAIR_PIPELINE_CLOSE_ACT_PHOTO_FD = 'repairContractCloseActPhotoUrl';
+const REPAIR_PIPELINE_WORK_START_FD = 'repairWorkStartActSignedAt';
+const REPAIR_PIPELINE_WORK_START_PHOTO_FD = 'repairWorkStartActPhotoUrl';
+
+function repairListPipelineStatus(pkg: ContractDocumentPackage): RepairListPipelineStatus {
+  if (pkg.status === 'REFUSED') return 'REFUSED';
+  const fd = (pkg.formData ?? {}) as Record<string, unknown>;
+  if (fd[REPAIR_PIPELINE_REFUSED_FD] === true) return 'REFUSED';
+  const closeDateRaw = fd[REPAIR_PIPELINE_CLOSE_ACT_DATE_FD];
+  const closePhotoRaw = fd[REPAIR_PIPELINE_CLOSE_ACT_PHOTO_FD];
+  const contractClosedByActs =
+    typeof closeDateRaw === 'string' &&
+    closeDateRaw.trim().length > 0 &&
+    typeof closePhotoRaw === 'string' &&
+    closePhotoRaw.trim().length > 0;
+  if (contractClosedByActs || fd[REPAIR_PIPELINE_CLOSED_FD] === true) return 'CLOSED';
+  const workStartRaw = fd[REPAIR_PIPELINE_WORK_START_FD];
+  const workPhotoRaw = fd[REPAIR_PIPELINE_WORK_START_PHOTO_FD];
+  const workStarted =
+    typeof workStartRaw === 'string' &&
+    workStartRaw.trim().length > 0 &&
+    typeof workPhotoRaw === 'string' &&
+    workPhotoRaw.trim().length > 0;
+  if (pkg.status === 'CONTRACT_CONCLUDED' && workStarted) return 'WORK_IN_PROGRESS';
+  if (pkg.status === 'CONTRACT_CONCLUDED') return 'SIGNED';
+  return 'IN_PROJECT';
+}
+
+function repairListPipelineStatusLabel(st: RepairListPipelineStatus): string {
+  switch (st) {
+    case 'IN_PROJECT':
+      return 'В проекте';
+    case 'SIGNED':
+      return 'Подписан';
+    case 'WORK_IN_PROGRESS':
+      return 'В работе';
+    case 'CLOSED':
+      return 'Закрыт';
+    case 'REFUSED':
+      return 'Отказ';
+  }
+}
+
+function repairListPipelineStatusBadgeClass(st: RepairListPipelineStatus): string {
+  const base = styles.repairContractsListStatusBadge;
+  switch (st) {
+    case 'IN_PROJECT':
+      return `${base} ${styles.repairContractsListStatusBadgeInProject}`;
+    case 'SIGNED':
+      return `${base} ${styles.repairContractsListStatusBadgeSigned}`;
+    case 'WORK_IN_PROGRESS':
+      return `${base} ${styles.repairContractsListStatusBadgeWork}`;
+    case 'CLOSED':
+      return `${base} ${styles.repairContractsListStatusBadgeClosed}`;
+    case 'REFUSED':
+      return `${base} ${styles.repairContractsListStatusBadgeRefused}`;
   }
 }
 
@@ -150,6 +416,9 @@ function repairPackageDeletionAllowed(pkg: ContractDocumentPackage): boolean {
 export function RepairContractDocumentsListPage() {
   const router = useRouter();
   const [rows, setRows] = useState<ContractDocumentPackage[]>([]);
+  const [crmUsers, setCrmUsers] = useState<CrmUser[]>([]);
+  const [managerFilter, setManagerFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<'' | RepairListPipelineStatus>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -158,13 +427,74 @@ export function RepairContractDocumentsListPage() {
   const [packagePendingDelete, setPackagePendingDelete] = useState<ContractDocumentPackage | null>(
     null
   );
+  const [actPhotosModal, setActPhotosModal] = useState<{
+    items: RepairListActPhotoItem[];
+    contractLabel: string;
+  } | null>(null);
+
+  const addendumColumnCount = useMemo(() => repairListMaxSignedAddendumSlotCount(rows), [rows]);
+  const repairListTableColSpan = 11 + addendumColumnCount + (addendumColumnCount > 0 ? 1 : 0);
+
+  const managerFilterOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const r of rows) {
+      const form = mergeRepairPackageFormData(r.formData ?? {});
+      const key = repairListManagerFilterKey(form);
+      if (!key) continue;
+      if (!map.has(key)) {
+        map.set(key, repairListManagerDisplayLabel(form, crmUsers));
+      }
+    }
+    return [...map.entries()]
+      .map(([id, label]) => ({ id, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'ru', { sensitivity: 'base' }));
+  }, [rows, crmUsers]);
+
+  const visibleRows = useMemo(() => {
+    let list =
+      managerFilter === ''
+        ? [...rows]
+        : rows.filter((r) => {
+            const form = mergeRepairPackageFormData(r.formData ?? {});
+            return repairListManagerFilterKey(form) === managerFilter;
+          });
+
+    if (statusFilter) {
+      list = list.filter((r) => repairListPipelineStatus(r) === statusFilter);
+    }
+
+    return list;
+  }, [rows, managerFilter, statusFilter]);
+
+  const emptyFilteredListMessage = useMemo(() => {
+    if (rows.length === 0) return '';
+    const byManager = managerFilter !== '';
+    const byStatus = statusFilter !== '';
+    if (byManager && byStatus) {
+      return 'Нет договоров по выбранным фильтрам менеджера и статуса.';
+    }
+    if (byStatus) return 'Нет договоров с выбранным статусом.';
+    if (byManager) return 'Нет договоров по выбранному фильтру менеджера.';
+    return '';
+  }, [rows.length, managerFilter, statusFilter]);
+
+  useEffect(() => {
+    if (!managerFilter) return;
+    if (!managerFilterOptions.some((o) => o.id === managerFilter)) {
+      setManagerFilter('');
+    }
+  }, [managerFilter, managerFilterOptions]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await getContractDocumentPackages('REPAIR');
+      const [data, users] = await Promise.all([
+        getContractDocumentPackages('REPAIR'),
+        getCrmUsers().catch(() => [] as CrmUser[]),
+      ]);
       setRows(data);
+      setCrmUsers(users);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ошибка загрузки');
     } finally {
@@ -185,7 +515,7 @@ export function RepairContractDocumentsListPage() {
         title: undefined,
         formData: {},
       });
-      router.push(`/admin/contract-documents/repair/${created.id}`);
+      router.push(adminContractDocumentsContractsRepairPackageHref(created.id));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось создать');
     } finally {
@@ -213,7 +543,7 @@ export function RepairContractDocumentsListPage() {
         formData,
       });
       await load();
-      router.push(`/admin/contract-documents/repair/${created.id}`);
+      router.push(adminContractDocumentsContractsRepairPackageHref(created.id));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось скопировать договор');
     } finally {
@@ -259,19 +589,19 @@ export function RepairContractDocumentsListPage() {
     <div className={`${styles.page} ${styles.pageWide}`}>
       <div className={styles.editorHeader}>
         <div>
-          <Link className={styles.backLink} href="/admin/contract-documents">
-            ← К разделу «Оформление договоров»
+          <Link className={styles.backLink} href={ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_HREF}>
+            ← Договора
           </Link>
           <h1 className={styles.title} style={{ marginTop: 8 }}>
-            Оформление договоров — Ремонт
+            Договора — Ремонт
           </h1>
-          <p
+          {/* <p
             className={styles.hubCardHint}
             style={{ marginTop: 6, marginBottom: 0, maxWidth: 720 }}
           >
             Создавайте пакет документов: вкладка «Данные» для ввода, остальные вкладки подставляют
             значения в шаблоны.
-          </p>
+          </p> */}
         </div>
         <div className={styles.headerButtonsRow}>
           <button
@@ -323,13 +653,40 @@ export function RepairContractDocumentsListPage() {
           >
             {creating ? 'Создание…' : 'Создать новый договор'}
           </button>
-          <Link
-            className={styles.secondaryBtn}
-            href="/admin/contract-documents"
-            style={{ textDecoration: 'none' }}
-          >
-            Все направления
-          </Link>
+          <div className={styles.field} style={{ minWidth: 220, flex: '1 1 200px' }}>
+            <label htmlFor="repair_list_manager_filter">Менеджер</label>
+            <select
+              id="repair_list_manager_filter"
+              value={managerFilter}
+              onChange={(e) => setManagerFilter(e.target.value)}
+              disabled={loading}
+            >
+              <option value="">Все договоры</option>
+              {managerFilterOptions.map(({ id, label }) => (
+                <option key={id} value={id}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className={styles.field} style={{ minWidth: 220, flex: '1 1 200px' }}>
+            <label htmlFor="repair_list_status_filter">Статус</label>
+            <select
+              id="repair_list_status_filter"
+              value={statusFilter}
+              onChange={(e) =>
+                setStatusFilter((e.target.value || '') as '' | RepairListPipelineStatus)
+              }
+              disabled={loading}
+            >
+              <option value="">Все</option>
+              <option value="IN_PROJECT">В проекте</option>
+              <option value="SIGNED">Подписан</option>
+              <option value="WORK_IN_PROGRESS">В работе</option>
+              <option value="CLOSED">Закрыт</option>
+              <option value="REFUSED">Отказ</option>
+            </select>
+          </div>
           <div className={styles.estimatesFilterRowSpacer} aria-hidden />
         </div>
 
@@ -339,55 +696,104 @@ export function RepairContractDocumentsListPage() {
           </p>
         ) : (
           <div className={styles.tableWrap} style={{ marginTop: 'var(--admin-space-md)' }}>
-            <table className={styles.table}>
+            <table className={`${styles.table} ${styles.repairContractsListTable}`}>
               <thead>
                 <tr>
-                  <th>№ договора</th>
-                  <th>Дата подписания</th>
-                  <th>ФИО заказчика</th>
+                  <th>№ дог.</th>
+                  <th>Статус</th>
+                  <th>Дата</th>
+                  <th>Заказчик</th>
+                  <th>Менеджер</th>
                   <th>Адрес объекта</th>
                   <th>Описание работ</th>
-                  <th>Стоимость договора</th>
+                  <th>СД нач.</th>
+                  {addendumColumnCount > 0
+                    ? Array.from({ length: addendumColumnCount }, (_, i) => (
+                        <th key={`addendum_th_${i + 1}`}>Д/с №{i + 1}</th>
+                      ))
+                    : null}
+                  {addendumColumnCount > 0 ? <th>СД итог.</th> : null}
                   <th>Оплачено</th>
+                  <th>Остаток</th>
                   <th className={styles.repairContractsListActionsCol}>Действия</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={8} style={{ color: 'var(--admin-text-muted)' }}>
+                    <td
+                      colSpan={repairListTableColSpan}
+                      style={{ color: 'var(--admin-text-muted)' }}
+                    >
                       Пока нет ни одного пакета. Нажмите «Создать новый договор».
                     </td>
                   </tr>
+                ) : visibleRows.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={repairListTableColSpan}
+                      style={{ color: 'var(--admin-text-muted)' }}
+                    >
+                      {emptyFilteredListMessage}
+                    </td>
+                  </tr>
                 ) : (
-                  rows.map((r) => {
+                  visibleRows.map((r) => {
                     const fd = r.formData ?? {};
+                    const form = mergeRepairPackageFormData(fd);
                     const num = getDisplayContractNumber({ formData: fd });
                     const paidRub = sumPackagePaymentsRub(r);
                     const totalRub = repairListContractTotalAmount(fd);
+                    const totalWithAddendaRub = repairListContractAndSignedAddendaTotalRub(
+                      form,
+                      totalRub,
+                      addendumColumnCount
+                    );
+                    const paymentBaseRub = addendumColumnCount > 0 ? totalWithAddendaRub : totalRub;
+                    const remainingRub = repairListRemainingToPayRub(paymentBaseRub, paidRub);
                     const workDesc = repairListWorkDescription(fd);
                     const workShort = ellipsizeOneLine(workDesc, 100);
+                    const managerLabel = repairListManagerDisplayLabel(form, crmUsers);
                     const copyBusy = copyingPackageId === r.id;
                     const deleteBusy = deletingPackageId === r.id;
                     const canDeleteDraft = repairPackageDeletionAllowed(r);
+                    const pipelineStatus = repairListPipelineStatus(r);
+                    const actPhotoItems = repairListAttachedActPhotosFromForm(form);
                     return (
                       <tr key={r.id}>
                         <td>
                           <Link
                             className={styles.link}
-                            href={`/admin/contract-documents/repair/${r.id}`}
+                            href={adminContractDocumentsContractsRepairPackageHref(r.id)}
                           >
                             {num}
                           </Link>
                         </td>
+                        <td>
+                          <span className={repairListPipelineStatusBadgeClass(pipelineStatus)}>
+                            {repairListPipelineStatusLabel(pipelineStatus)}
+                          </span>
+                        </td>
                         <td>{formatSigningDateOnly(r)}</td>
                         <td>{repairListCustomerName(fd)}</td>
+                        <td title={managerLabel}>{ellipsizeOneLine(managerLabel, 40)}</td>
                         <td>{ellipsizeOneLine(repairListObjectAddress(fd), 64)}</td>
                         <td title={workDesc.length > workShort.length ? workDesc : undefined}>
                           {workShort}
                         </td>
                         <td>{formatListMoney(totalRub)}</td>
-                        <td>{formatListMoney(paidRub)}</td>
+                        {addendumColumnCount > 0
+                          ? Array.from({ length: addendumColumnCount }, (_, i) => (
+                              <td key={`addendum_td_${r.id}_${i + 1}`}>
+                                {formatListMoney(repairListSignedAddendumRub(form, i))}
+                              </td>
+                            ))
+                          : null}
+                        {addendumColumnCount > 0 ? (
+                          <td>{formatListMoney(totalWithAddendaRub)}</td>
+                        ) : null}
+                        <td>{formatListPaidWithPercent(paidRub, paymentBaseRub)}</td>
+                        <td>{formatListMoney(remainingRub)}</td>
                         <td className={styles.repairContractsListActionsCol}>
                           <div
                             className={`${styles.estimatesCardActions} ${styles.repairContractsListActionsCell}`}
@@ -404,7 +810,7 @@ export function RepairContractDocumentsListPage() {
                               aria-label="Редактировать"
                               title="Редактировать"
                               onClick={() =>
-                                router.push(`/admin/contract-documents/repair/${r.id}`)
+                                router.push(adminContractDocumentsContractsRepairPackageHref(r.id))
                               }
                             >
                               <svg
@@ -506,6 +912,28 @@ export function RepairContractDocumentsListPage() {
                                 <line x1="14" y1="11" x2="14" y2="17" />
                               </svg>
                             </button>
+                            {actPhotoItems.length > 0 ? (
+                              <button
+                                type="button"
+                                className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+                                disabled={
+                                  loading ||
+                                  creating ||
+                                  copyingPackageId !== null ||
+                                  deletingPackageId !== null
+                                }
+                                title="Просмотр загруженных фото актов (статусы «В работе», «Договор закрыт»)"
+                                aria-label={`Просмотр фото актов договора ${num}`}
+                                onClick={() =>
+                                  setActPhotosModal({
+                                    items: actPhotoItems,
+                                    contractLabel: num,
+                                  })
+                                }
+                              >
+                                <RepairListActPhotosTriggerIcon />
+                              </button>
+                            ) : null}
                           </div>
                         </td>
                       </tr>
@@ -517,6 +945,60 @@ export function RepairContractDocumentsListPage() {
           </div>
         )}
       </div>
+
+      <Modal
+        isOpen={actPhotosModal != null}
+        onClose={() => setActPhotosModal(null)}
+        title={
+          actPhotosModal
+            ? `Фото актов (${actPhotosModal.contractLabel})`
+            : 'Фото актов к статусам договора'
+        }
+        size="lg"
+        compactOnMobile
+      >
+        {actPhotosModal ? (
+          <div data-modal-form data-modal-density="compact">
+            <p data-modal-form-hint style={{ marginTop: 0 }}>
+              Снимки, загруженные при установке этапов «В работе» и «Договор закрыт».
+            </p>
+            <div className={styles.repairAttachedActPhotosList}>
+              {actPhotosModal.items.map((it) => (
+                <section key={it.key} className={styles.repairAttachedActPhotoBlock}>
+                  <h3 className={styles.repairAttachedActPhotoTitle}>{it.title}</h3>
+                  <p className={styles.repairAttachedActPhotoMeta}>
+                    Дата по акту: <strong>{it.dateLabel}</strong>
+                  </p>
+                  <div className={styles.repairWorkStartModalPreview}>
+                    <a
+                      href={it.src}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.repairAttachedActPhotoImageLink}
+                    >
+                      <img src={it.src} alt={it.title} />
+                    </a>
+                  </div>
+                  <p className={styles.repairAttachedActPhotoLinkLine}>
+                    <a href={it.src} target="_blank" rel="noopener noreferrer">
+                      Открыть в полном размере
+                    </a>
+                  </p>
+                </section>
+              ))}
+            </div>
+            <div data-modal-form-actions>
+              <button
+                type="button"
+                data-modal-btn="secondary"
+                onClick={() => setActPhotosModal(null)}
+              >
+                Закрыть
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
 
       <ConfirmModal
         isOpen={packagePendingDelete != null}

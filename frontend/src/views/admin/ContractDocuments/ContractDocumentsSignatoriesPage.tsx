@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 
@@ -9,13 +9,11 @@ import {
   getContractDocumentSignatoryProfiles,
   putContractDocumentSignatoryProfiles,
 } from '@/shared/api/admin-contract-document-packages';
-import { type CrmUser, getCrmUsers } from '@/shared/api/admin-crm';
 
 import styles from './ContractDocuments.module.css';
 
 const EMPTY_PROFILE: ContractSignatoryProfile = {
   title: '',
-  crmUserId: '',
   directorNameNominative: '',
   directorNameGenitive: '',
   basis: '',
@@ -23,32 +21,34 @@ const EMPTY_PROFILE: ContractSignatoryProfile = {
   officePhone: '',
 };
 
-function formatCrmUserName(u: CrmUser): string {
-  const parts = [u.firstName, u.lastName].filter(Boolean);
-  return parts.length ? parts.join(' ') : (u.email ?? '—');
+type SignatorySortKey = 'title_asc' | 'title_desc';
+
+type SignatoryRowView = { item: ContractSignatoryProfile; originalIndex: number };
+
+function stripCrmFromProfiles(items: ContractSignatoryProfile[]): ContractSignatoryProfile[] {
+  return items.map((p) => {
+    const { crmUserId: _removed, ...rest } = p;
+    return rest;
+  });
 }
 
 export function ContractDocumentsSignatoriesPage() {
   const [items, setItems] = useState<ContractSignatoryProfile[]>([]);
-  const [crmUsers, setCrmUsers] = useState<CrmUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [draft, setDraft] = useState<ContractSignatoryProfile>(EMPTY_PROFILE);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [signatorySort, setSignatorySort] = useState<SignatorySortKey>('title_asc');
 
   useEffect(() => {
     void (async () => {
       setLoading(true);
       setError(null);
       try {
-        const [profilesRes, users] = await Promise.all([
-          getContractDocumentSignatoryProfiles('REPAIR'),
-          getCrmUsers().catch(() => [] as CrmUser[]),
-        ]);
-        setItems(profilesRes.items ?? []);
-        setCrmUsers(users);
+        const profilesRes = await getContractDocumentSignatoryProfiles('REPAIR');
+        setItems(stripCrmFromProfiles(profilesRes.items ?? []));
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Не удалось загрузить данные');
       } finally {
@@ -66,9 +66,10 @@ export function ContractDocumentsSignatoriesPage() {
     setSaving(true);
     setError(null);
     setOk(null);
+    const sanitized = stripCrmFromProfiles(nextItems);
     try {
-      await putContractDocumentSignatoryProfiles({ kind: 'REPAIR', items: nextItems });
-      setItems(nextItems);
+      await putContractDocumentSignatoryProfiles({ kind: 'REPAIR', items: sanitized });
+      setItems(sanitized);
       setOk('Сохранено.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сохранить');
@@ -79,17 +80,17 @@ export function ContractDocumentsSignatoriesPage() {
 
   const handleUpsert = async () => {
     if (!draft.title?.trim()) {
-      setError('Укажите название карточки подписанта.');
+      setError('Укажите название карточки.');
       return;
     }
     const next = [...items];
-    const normalized: ContractSignatoryProfile = {
+    const normalizedDraft: ContractSignatoryProfile = {
       ...draft,
       title: draft.title.trim(),
-      crmUserId: draft.crmUserId?.trim() || undefined,
     };
-    if (editingIndex === null) next.push(normalized);
-    else next[editingIndex] = normalized;
+    const withoutCrm = stripCrmFromProfiles([normalizedDraft])[0];
+    if (editingIndex === null) next.push(withoutCrm);
+    else next[editingIndex] = withoutCrm;
     await saveAll(next);
     resetDraft();
   };
@@ -100,25 +101,31 @@ export function ContractDocumentsSignatoriesPage() {
     if (editingIndex === idx) resetDraft();
   };
 
-  const crmUserById = (id: string | undefined) =>
-    id ? crmUsers.find((u) => u.id === id) : undefined;
+  const displayedRows = useMemo((): SignatoryRowView[] => {
+    const rows: SignatoryRowView[] = items.map((item, originalIndex) => ({
+      item,
+      originalIndex,
+    }));
+    const cmpTitle = (a: SignatoryRowView, b: SignatoryRowView) =>
+      (a.item.title || '').localeCompare(b.item.title || '', 'ru', { sensitivity: 'base' });
+    return [...rows].sort((a, b) => {
+      if (signatorySort === 'title_asc') return cmpTitle(a, b);
+      return -cmpTitle(a, b);
+    });
+  }, [items, signatorySort]);
 
   return (
     <div className={styles.page}>
       <div className={styles.editorHeader}>
         <div>
-          <h1 className={styles.title}>Подписанты</h1>
+          <h1 className={styles.title}>Менеджеры</h1>
           <p className={styles.subtitle}>
-            Карточки подписанта для договоров: ФИО в падежах, основание полномочий, офис продаж.
-            Привяжите сотрудника из CRM — это те же пользователи, что в разделе «Менеджеры»; в
+            Карточки менеджера для договоров: ФИО в падежах, основание полномочий, офис продаж. В
             пакете документов менеджер выберет карточку из списка.
           </p>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
-          <Link className={styles.secondaryBtn} href="/admin/crm/managers">
-            Менеджеры CRM
-          </Link>
-          <Link className={styles.secondaryBtn} href="/admin/contract-documents/repair">
+          <Link className={styles.secondaryBtn} href="/admin/contract-documents/contracts/repair">
             К разделу «Ремонт»
           </Link>
         </div>
@@ -138,44 +145,14 @@ export function ContractDocumentsSignatoriesPage() {
             />
           </div>
           <div className={styles.field}>
-            <label>Сотрудник CRM (связь)</label>
-            <select
-              value={draft.crmUserId ?? ''}
-              onChange={(e) => {
-                const id = e.target.value;
-                setDraft((p) => {
-                  const u = crmUsers.find((x) => x.id === id);
-                  const suggested = u ? formatCrmUserName(u) : '';
-                  const keepNom = p.directorNameNominative?.trim();
-                  return {
-                    ...p,
-                    crmUserId: id || undefined,
-                    directorNameNominative: id && !keepNom ? suggested : p.directorNameNominative,
-                  };
-                });
-              }}
-            >
-              <option value="">— не привязан —</option>
-              {crmUsers.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {formatCrmUserName(u)} ({u.email}) — {u.role}
-                </option>
-              ))}
-            </select>
-            <p className={styles.hint} style={{ marginTop: 6, marginBottom: 0 }}>
-              Список совпадает с API раздела «Менеджеры». При выборе сотрудника ФИО в им. падеж
-              подставляется из CRM, если поле «Подписант (именительный)» было пустым.
-            </p>
-          </div>
-          <div className={styles.field}>
-            <label>Подписант (именительный падеж)</label>
+            <label>Менеджер (именительный падеж)</label>
             <input
               value={draft.directorNameNominative ?? ''}
               onChange={(e) => setDraft((p) => ({ ...p, directorNameNominative: e.target.value }))}
             />
           </div>
           <div className={styles.field}>
-            <label>Подписант (родительный падеж)</label>
+            <label>Менеджер (родительный падеж)</label>
             <input
               value={draft.directorNameGenitive ?? ''}
               onChange={(e) => setDraft((p) => ({ ...p, directorNameGenitive: e.target.value }))}
@@ -221,13 +198,31 @@ export function ContractDocumentsSignatoriesPage() {
         </div>
       </div>
 
+      <div
+        className={styles.estimatesControlsSingleRow}
+        style={{ marginTop: 'var(--admin-space-lg)', marginBottom: 'var(--admin-space-sm)' }}
+      >
+        <div className={styles.field} style={{ minWidth: 240, flex: '1 1 220px' }}>
+          <label htmlFor="signatory_sort">Сортировка</label>
+          <select
+            id="signatory_sort"
+            value={signatorySort}
+            onChange={(e) => setSignatorySort(e.target.value as SignatorySortKey)}
+            disabled={loading}
+          >
+            <option value="title_asc">По названию карточки А → Я</option>
+            <option value="title_desc">По названию карточки Я → А</option>
+          </select>
+        </div>
+        <div className={styles.estimatesFilterRowSpacer} aria-hidden />
+      </div>
+
       <div className={styles.tableWrap}>
         <table className={styles.table}>
           <thead>
             <tr>
               <th>Название</th>
-              <th>CRM</th>
-              <th>Подписант (им.)</th>
+              <th>Менеджер (им.)</th>
               <th>Офис</th>
               <th>Действия</th>
             </tr>
@@ -235,49 +230,42 @@ export function ContractDocumentsSignatoriesPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5}>Загрузка…</td>
+                <td colSpan={4}>Загрузка…</td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={5}>Карточки подписантов пока не добавлены.</td>
+                <td colSpan={4}>Карточки менеджеров пока не добавлены.</td>
               </tr>
             ) : (
-              items.map((item, idx) => {
-                const linked = crmUserById(item.crmUserId);
-                return (
-                  <tr key={`${item.title}-${idx}`}>
-                    <td>{item.title}</td>
-                    <td>{linked ? `${formatCrmUserName(linked)}` : '—'}</td>
-                    <td>{item.directorNameNominative || '—'}</td>
-                    <td>{item.salesOffice || '—'}</td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button
-                          type="button"
-                          className={styles.secondaryBtn}
-                          onClick={() => {
-                            setDraft({
-                              ...item,
-                              crmUserId: item.crmUserId ?? '',
-                            });
-                            setEditingIndex(idx);
-                          }}
-                        >
-                          Редактировать
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.dangerBtn}
-                          disabled={saving}
-                          onClick={() => void handleDelete(idx)}
-                        >
-                          Удалить
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
+              displayedRows.map(({ item, originalIndex }) => (
+                <tr key={`${item.title}-${originalIndex}`}>
+                  <td>{item.title}</td>
+                  <td>{item.directorNameNominative || '—'}</td>
+                  <td>{item.salesOffice || '—'}</td>
+                  <td>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        type="button"
+                        className={styles.secondaryBtn}
+                        onClick={() => {
+                          setDraft({ ...item });
+                          setEditingIndex(originalIndex);
+                        }}
+                      >
+                        Редактировать
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.dangerBtn}
+                        disabled={saving}
+                        onClick={() => void handleDelete(originalIndex)}
+                      >
+                        Удалить
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>

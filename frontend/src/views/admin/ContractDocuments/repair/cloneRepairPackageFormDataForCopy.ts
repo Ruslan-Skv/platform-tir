@@ -17,7 +17,13 @@ export function buildFormDataForRepairPackageCopy(raw: unknown): Record<string, 
   const next: RepairPackageFormData = {
     ...form,
     contractConcludedAt: '',
+    contractRefusalReason: '',
+    contractRefusedAt: '',
     contractPaidAt: '',
+    repairWorkStartActSignedAt: '',
+    repairWorkStartActPhotoUrl: '',
+    repairContractCloseActSignedAt: '',
+    repairContractCloseActPhotoUrl: '',
     estimate: {
       ...form.estimate,
       selectedPresetIds: [],
@@ -29,5 +35,8 @@ export function buildFormDataForRepairPackageCopy(raw: unknown): Record<string, 
     estimateObjectGroupKey: '',
   };
 
-  return buildPersistedFormData(next, templateOverrides, templatePresetIds);
+  const fd = buildPersistedFormData(next, templateOverrides, templatePresetIds);
+  delete fd.repairContractClosed;
+  delete fd.repairContractClientRefused;
+  return fd;
 }

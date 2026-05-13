@@ -1,14 +1,8 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { useParams } from 'next/navigation';
+type Props = { params: Promise<{ id: string }> };
 
-import { RepairContractDocumentEditorPage } from '@/views/admin/ContractDocuments/repair/RepairContractDocumentEditorPage';
-
-export default function AdminContractDocumentsRepairIdPage() {
-  const params = useParams();
-  const id = typeof params?.id === 'string' ? params.id : '';
-  if (!id) {
-    return <p style={{ padding: 24 }}>Некорректный идентификатор.</p>;
-  }
-  return <RepairContractDocumentEditorPage packageId={id} />;
+export default async function AdminContractDocumentsRepairIdLegacyRedirect({ params }: Props) {
+  const { id } = await params;
+  redirect(`/admin/contract-documents/contracts/repair/${encodeURIComponent(id)}`);
 }

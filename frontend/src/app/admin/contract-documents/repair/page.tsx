@@ -1,7 +1,5 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { RepairContractDocumentsListPage } from '@/views/admin/ContractDocuments/repair/RepairContractDocumentsListPage';
-
-export default function AdminContractDocumentsRepairPage() {
-  return <RepairContractDocumentsListPage />;
+export default function AdminContractDocumentsRepairLegacyRedirect() {
+  redirect('/admin/contract-documents/contracts/repair');
 }

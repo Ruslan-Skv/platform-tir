@@ -439,6 +439,66 @@
   border-bottom: none;
 }
 
+/* Список договоров ремонта: компактнее шрифт и ячейки */
+.repairContractsListTable {
+  font-size: var(--admin-font-size-xs);
+}
+
+.repairContractsListTable th,
+.repairContractsListTable td {
+  padding: var(--admin-space-md) var(--admin-space-lg);
+}
+
+.repairContractsListStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--admin-space-2xs) var(--admin-space-md);
+  border-radius: var(--admin-radius-pill);
+  font-size: var(--admin-font-size-2xs);
+  font-weight: 600;
+  line-height: var(--admin-line-height-flat);
+  white-space: nowrap;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+}
+
+.repairContractsListStatusBadgeSigned {
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text-strong);
+  border-color: var(--admin-success-border-soft);
+}
+
+.repairContractsListStatusBadgeProgress {
+  background: var(--admin-info-soft);
+  color: var(--admin-info-text);
+  border-color: var(--admin-accent-soft-strong);
+}
+
+.repairContractsListStatusBadgeInProject {
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+}
+
+.repairContractsListStatusBadgeWork {
+  background: var(--admin-info-soft);
+  color: var(--admin-info-text);
+  border-color: var(--admin-accent-border);
+}
+
+.repairContractsListStatusBadgeClosed {
+  background: var(--admin-surface);
+  color: var(--admin-text-muted);
+  border-color: var(--admin-sidebar-text);
+}
+
+.repairContractsListStatusBadgeRefused {
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning-text);
+  border-color: var(--admin-warning-border-soft);
+}
+
 .link {
   color: var(--admin-info);
   font-weight: 500;
@@ -477,6 +537,11 @@
   opacity: 0.55;
   cursor: not-allowed;
   pointer-events: none;
+}
+
+/* Направление «скоро»: карточка ведёт на заглушку, визуально мягче готовых */
+.hubCardMuted {
+  opacity: 0.78;
 }
 
 .hubCardTitle {
@@ -521,10 +586,15 @@
 }
 
 .repairContractsListActionsCol {
-  width: 132px;
+  width: 176px;
   text-align: right;
   vertical-align: middle;
   padding-left: var(--admin-space-sm);
+}
+
+.repairContractsListTable th.repairContractsListActionsCol,
+.repairContractsListTable td.repairContractsListActionsCol {
+  text-align: right;
 }
 
 .repairContractsListActionsCell.estimatesCardActions {
@@ -687,6 +757,104 @@
 
 .repairEditorDraftTitleRow > button {
   flex-shrink: 0;
+}
+
+/* Шапка редактора ремонта: ссылка слева, «В работе» по центру промежутка, действия справа */
+.repairEditorHeaderThreeCol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: var(--admin-space-md);
+}
+
+.repairEditorHeaderThreeCol > .headerActions {
+  margin-left: auto;
+}
+
+.repairEditorHeaderThreeCol:has(.repairEditorHeaderCenterSlot) > .headerActions {
+  margin-left: 0;
+}
+
+.repairEditorHeaderLeft {
+  min-width: 0;
+}
+
+.repairEditorHeaderCenterSlot {
+  flex: 1 1 8rem;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.repairEditorHeaderCenterControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--admin-space-md);
+}
+
+/* Одна внешняя высота для бейджа и кнопки: 1px + 1px рамки + вертикальные отступы + строка (1.15em) */
+.repairEditorHeaderCenterControls .packageFlowStatusBadge,
+.repairEditorHeaderCenterControls .repairEditorHeaderPipelineBtn,
+.repairEditorHeaderCenterControls .repairEditorHeaderClosedStatusBtn {
+  box-sizing: border-box;
+  line-height: 1.15;
+  min-height: calc(2px + 2 * var(--admin-space-xs) + 1.15em);
+  align-items: center;
+}
+
+.repairEditorHeaderCenterControls .packageFlowStatusBadge,
+.repairEditorHeaderCenterControls .repairEditorHeaderClosedStatusBtn {
+  font-weight: 600;
+}
+
+.repairEditorHeaderCenterControls .repairEditorHeaderClosedStatusBtn {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  cursor: default;
+  text-align: center;
+}
+
+.repairEditorHeaderCenterControls .repairEditorHeaderClosedStatusBtn:disabled {
+  opacity: 1;
+}
+
+.repairEditorHeaderCenterControls .repairEditorHeaderPipelineBtn {
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 400;
+  border-radius: var(--admin-radius-pill);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.repairPackageRefusedBanner {
+  margin: 0 0 var(--admin-space-md);
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid rgb(185 28 28 / 0.35);
+  background: rgb(254 242 242);
+  color: var(--admin-text);
+}
+
+.repairContractRefusalReasonTextarea {
+  width: 100%;
+  min-height: 7rem;
+  box-sizing: border-box;
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-border-strong);
+  font: inherit;
+  resize: vertical;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairPackageRefusedBanner {
+  background: rgb(127 29 29 / 0.35);
+  border-color: rgb(248 113 113 / 0.4);
 }
 
 .draftTitleInput {
@@ -3531,6 +3699,148 @@
   margin-top: var(--admin-space-xs);
 }
 
+/* Модалка «В работе»: две колонки (дата | файл); min-width для ellipsis в узкой ячейке */
+.repairWorkStartModalTopGrid [data-modal-form-group] {
+  min-width: 0;
+}
+
+.repairWorkStartModalDateFieldWrap {
+  align-self: flex-start;
+  max-width: 100%;
+  width: fit-content;
+}
+
+/* В общих стилях модалки у input width: 100% — для даты оставляем по содержимому */
+.repairWorkStartModalDateFieldWrap input[type='date'] {
+  width: auto !important;
+  min-width: 11rem;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.repairWorkStartModalFileRow {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-md);
+  max-width: 100%;
+}
+
+.repairWorkStartModalFileInputSrOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.repairWorkStartModalFilePickBtn {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.repairWorkStartModalFileRow:focus-within .repairWorkStartModalFilePickBtn {
+  outline: 2px solid var(--admin-info);
+  outline-offset: 2px;
+}
+
+.repairWorkStartModalFileRow:has(.repairWorkStartModalFileInputSrOnly:disabled)
+  .repairWorkStartModalFilePickBtn {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.repairWorkStartModalFileName {
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  min-width: 0;
+  flex: 1 1 8rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repairWorkStartModalFileRemoveBtn {
+  flex-shrink: 0;
+}
+
+.repairWorkStartModalPreview {
+  margin: 0;
+  padding: var(--admin-space-md);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-surface-soft);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.repairWorkStartModalPreview img {
+  max-width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: var(--admin-radius-sm);
+}
+
+.repairAttachedActPhotosList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xl);
+  margin-top: var(--admin-space-sm);
+  min-width: 0;
+}
+
+.repairAttachedActPhotoBlock {
+  min-width: 0;
+}
+
+.repairAttachedActPhotoTitle {
+  margin: 0 0 var(--admin-space-xs);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.repairAttachedActPhotoMeta {
+  margin: 0 0 var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+}
+
+.repairAttachedActPhotoImageLink {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  border-radius: var(--admin-radius-sm);
+}
+
+.repairAttachedActPhotoImageLink:focus-visible {
+  outline: 2px solid var(--admin-info);
+  outline-offset: 2px;
+}
+
+.repairAttachedActPhotoLinkLine {
+  margin: var(--admin-space-sm) 0 0;
+  font-size: var(--admin-font-size-sm);
+}
+
+.repairAttachedActPhotoLinkLine a {
+  color: var(--admin-info);
+  text-decoration: underline;
+}
+
+.repairAttachedActPhotoLinkLine a:hover {
+  text-decoration: none;
+}
+
 .packageVersionsModalCard {
   width: min(720px, 94vw);
   max-height: min(88vh, 900px);
@@ -4430,6 +4740,11 @@
   border-color: var(--admin-sidebar-text);
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairWorkStartModalPreview {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .packageVersionsTitle,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .saveModalTitle {
   color: var(--admin-text-primary);
@@ -4618,6 +4933,42 @@
   background: var(--admin-surface);
   border-color: var(--admin-sidebar-text);
   color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListStatusBadgeSigned {
+  background: var(--admin-success-bg);
+  color: var(--admin-success-text-strong);
+  border-color: var(--admin-success-lime);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListStatusBadgeProgress {
+  background: var(--admin-info-soft);
+  color: var(--admin-text-primary);
+  border-color: var(--admin-accent-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListStatusBadgeInProject {
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListStatusBadgeWork {
+  background: var(--admin-info-soft);
+  color: var(--admin-text-primary);
+  border-color: var(--admin-accent-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListStatusBadgeClosed {
+  background: var(--admin-surface);
+  color: var(--admin-text-muted);
+  border-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListStatusBadgeRefused {
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning-text);
+  border-color: var(--admin-warning-border-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])

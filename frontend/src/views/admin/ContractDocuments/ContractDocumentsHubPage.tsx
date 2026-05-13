@@ -19,10 +19,10 @@ export function ContractDocumentsHubPage() {
             Плейсхолдеры, Excel, CRM, печать и хранение шаблонов — всё в одном месте.
           </p>
         </Link>
-        <Link className={styles.hubCard} href="/admin/contract-documents/repair">
-          <h2 className={styles.hubCardTitle}>Ремонт</h2>
+        <Link className={styles.hubCard} href="/admin/contract-documents/contracts">
+          <h2 className={styles.hubCardTitle}>Договора</h2>
           <p className={styles.hubCardHint}>
-            Договор, смета, акты, ПКО, анкеты, заказ-наряды и др.
+            Направления: ремонт, окна, двери и др. — списки пакетов документов и оформление.
           </p>
         </Link>
         <Link className={styles.hubCard} href="/admin/contract-documents/requisites">
@@ -32,9 +32,9 @@ export function ContractDocumentsHubPage() {
           </p>
         </Link>
         <Link className={styles.hubCard} href="/admin/contract-documents/signatories">
-          <h2 className={styles.hubCardTitle}>Подписанты</h2>
+          <h2 className={styles.hubCardTitle}>Менеджеры</h2>
           <p className={styles.hubCardHint}>
-            Подписанты, основание полномочий, офис продаж и связь с сотрудниками CRM.
+            Карточки менеджера для договоров: ФИО, основание полномочий, офис продаж и связь с CRM.
           </p>
         </Link>
         <Link className={styles.hubCard} href="/admin/contract-documents/templates">
@@ -49,26 +49,6 @@ export function ContractDocumentsHubPage() {
             Единый серверный список смет для команды: расчёт в калькуляторе, сохранение и выбор.
           </p>
         </Link>
-        <div className={`${styles.hubCard} ${styles.hubCardDisabled}`}>
-          <h2 className={styles.hubCardTitle}>Окна</h2>
-          <p className={styles.hubCardHint}>Раздел будет добавлен позже.</p>
-        </div>
-        <div className={`${styles.hubCard} ${styles.hubCardDisabled}`}>
-          <h2 className={styles.hubCardTitle}>Двери</h2>
-          <p className={styles.hubCardHint}>Раздел будет добавлен позже.</p>
-        </div>
-        <div className={`${styles.hubCard} ${styles.hubCardDisabled}`}>
-          <h2 className={styles.hubCardTitle}>Потолки</h2>
-          <p className={styles.hubCardHint}>Раздел будет добавлен позже.</p>
-        </div>
-        <div className={`${styles.hubCard} ${styles.hubCardDisabled}`}>
-          <h2 className={styles.hubCardTitle}>Жалюзи</h2>
-          <p className={styles.hubCardHint}>Раздел будет добавлен позже.</p>
-        </div>
-        <div className={`${styles.hubCard} ${styles.hubCardDisabled}`}>
-          <h2 className={styles.hubCardTitle}>Мебель</h2>
-          <p className={styles.hubCardHint}>Раздел будет добавлен позже.</p>
-        </div>
       </div>
     </div>
   );

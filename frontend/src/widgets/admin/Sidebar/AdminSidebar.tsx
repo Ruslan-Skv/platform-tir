@@ -90,7 +90,6 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.crm.supplier-settlements',
       },
       { label: 'Офисы', href: '/admin/crm/offices', resourceId: 'admin.crm.offices' },
-      { label: 'Менеджеры', href: '/admin/crm/managers', resourceId: 'admin.crm.managers' },
       { label: 'Заявки с форм', href: '/admin/forms', resourceId: 'admin.forms' },
       { label: 'Чат поддержки', href: '/admin/support', resourceId: 'admin.support' },
       { label: 'Воронка продаж', href: '/admin/crm/funnel', resourceId: 'admin.crm.funnel' },
@@ -127,12 +126,49 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.contract-documents.instruction',
       },
       {
+        label: 'Договора',
+        href: '/admin/contract-documents/contracts',
+        resourceId: 'admin.contract-documents.contracts',
+        children: [
+          {
+            label: 'Ремонт',
+            href: '/admin/contract-documents/contracts/repair',
+            resourceId: 'admin.contract-documents.repair',
+          },
+          {
+            label: 'Окна',
+            href: '/admin/contract-documents/contracts/windows',
+            resourceId: 'admin.contract-documents.contracts',
+          },
+          {
+            label: 'Двери',
+            href: '/admin/contract-documents/contracts/doors',
+            resourceId: 'admin.contract-documents.contracts',
+          },
+          {
+            label: 'Потолки',
+            href: '/admin/contract-documents/contracts/ceilings',
+            resourceId: 'admin.contract-documents.contracts',
+          },
+          {
+            label: 'Жалюзи',
+            href: '/admin/contract-documents/contracts/blinds',
+            resourceId: 'admin.contract-documents.contracts',
+          },
+          {
+            label: 'Мебель',
+            href: '/admin/contract-documents/contracts/furniture',
+            resourceId: 'admin.contract-documents.contracts',
+          },
+        ],
+      },
+      {
         label: 'Исполнители',
         href: '/admin/contract-documents/requisites',
         resourceId: 'admin.contract-documents.requisites',
       },
       {
-        label: 'Подписанты',
+        label: 'Менеджеры',
         href: '/admin/contract-documents/signatories',
         resourceId: 'admin.contract-documents.signatories',
       },
@@ -145,11 +181,6 @@ const baseNavItems: NavItem[] = [
         label: 'Расчёты',
         href: '/admin/contract-documents/estimates',
         resourceId: 'admin.contract-documents.estimates',
-      },
-      {
-        label: 'Ремонт',
-        href: '/admin/contract-documents/repair',
-        resourceId: 'admin.contract-documents.repair',
       },
     ],
   },

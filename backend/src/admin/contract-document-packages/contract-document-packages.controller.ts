@@ -11,8 +11,14 @@ import {
   Query,
   Req,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { ContractDocumentPackageKind } from '@prisma/client';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import * as fs from 'fs';
+import * as path from 'path';
 
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -44,6 +50,20 @@ const CRM_ROLES = [
   'DRIVER',
   'INSTALLER',
 ] as const;
+
+const repairWorkStartActsDir = path.join(
+  process.cwd(),
+  'uploads',
+  'contract-document-packages',
+  'work-start-acts',
+);
+
+const repairContractCloseActsDir = path.join(
+  process.cwd(),
+  'uploads',
+  'contract-document-packages',
+  'contract-close-acts',
+);
 
 @Controller('admin/contract-document-packages')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -195,6 +215,86 @@ export class ContractDocumentPackagesController {
   @Delete(':id/payments/:paymentId')
   removePackagePayment(@Param('id') id: string, @Param('paymentId') paymentId: string) {
     return this.packagePayments.remove(id, paymentId);
+  }
+
+  @Post(':id/upload-work-start-act-photo')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (_req, _file, cb) => {
+          if (!fs.existsSync(repairWorkStartActsDir)) {
+            fs.mkdirSync(repairWorkStartActsDir, { recursive: true });
+          }
+          cb(null, repairWorkStartActsDir);
+        },
+        filename: (_req, file, cb) => {
+          cb(null, `work-start-act-${Date.now()}${path.extname(file.originalname) || '.jpg'}`);
+        },
+      }),
+      limits: { fileSize: 8 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const allowed = /\.(jpe?g|png|webp|gif)$/i.test(file.originalname);
+        if (!allowed) {
+          cb(new BadRequestException('Допустимы только изображения: jpg, png, webp, gif'), false);
+          return;
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async uploadWorkStartActPhoto(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file?.path) {
+      throw new BadRequestException('Файл не загружен');
+    }
+    const pkg = await this.service.findOne(id);
+    if (pkg.kind !== ContractDocumentPackageKind.REPAIR) {
+      throw new BadRequestException('Доступно только для пакета «Ремонт»');
+    }
+    const filename = path.basename(file.path);
+    return { imageUrl: `/uploads/contract-document-packages/work-start-acts/${filename}` };
+  }
+
+  @Post(':id/upload-contract-close-act-photo')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (_req, _file, cb) => {
+          if (!fs.existsSync(repairContractCloseActsDir)) {
+            fs.mkdirSync(repairContractCloseActsDir, { recursive: true });
+          }
+          cb(null, repairContractCloseActsDir);
+        },
+        filename: (_req, file, cb) => {
+          cb(null, `contract-close-act-${Date.now()}${path.extname(file.originalname) || '.jpg'}`);
+        },
+      }),
+      limits: { fileSize: 8 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const allowed = /\.(jpe?g|png|webp|gif)$/i.test(file.originalname);
+        if (!allowed) {
+          cb(new BadRequestException('Допустимы только изображения: jpg, png, webp, gif'), false);
+          return;
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async uploadContractCloseActPhoto(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file?.path) {
+      throw new BadRequestException('Файл не загружен');
+    }
+    const pkg = await this.service.findOne(id);
+    if (pkg.kind !== ContractDocumentPackageKind.REPAIR) {
+      throw new BadRequestException('Доступно только для пакета «Ремонт»');
+    }
+    const filename = path.basename(file.path);
+    return { imageUrl: `/uploads/contract-document-packages/contract-close-acts/${filename}` };
   }
 
   @Get(':id')

@@ -1974,6 +1974,7 @@ enum ContractDocumentPackageKind {
 enum ContractDocumentPackageStatus {
   IN_PROGRESS
   CONTRACT_CONCLUDED
+  REFUSED
 }
 
 model ContractDocumentPackage {

@@ -36,8 +36,6 @@ export function RepairAddendumEstimateBlock({
   setDraggingPresetId,
   draggingExcludedPresetId,
   setDraggingExcludedPresetId,
-  onMarkSigned,
-  onMarkPaid,
   canUnmarkSigned,
   onUnmarkSigned,
   canUnmarkPaid,
@@ -67,16 +65,12 @@ export function RepairAddendumEstimateBlock({
   setDraggingPresetId: (v: string | null) => void;
   draggingExcludedPresetId: string | null;
   setDraggingExcludedPresetId: (v: string | null) => void;
-  onMarkSigned: () => void;
-  onMarkPaid: () => void;
   canUnmarkSigned: boolean;
   onUnmarkSigned: () => void;
   canUnmarkPaid: boolean;
   onUnmarkPaid: () => void;
 }) {
   const readOnly = slot.status === 'SIGNED' || slot.status === 'PAID';
-  const hasAnyAttachedPresets =
-    (slot.selectedPresetIds?.length ?? 0) > 0 || (slot.excludedSelectedPresetIds?.length ?? 0) > 0;
 
   return (
     <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
@@ -86,21 +80,6 @@ export function RepairAddendumEstimateBlock({
             <h3 className={`${styles.sectionTitle} ${styles.estimateSectionTitle}`}>
               Дополнительное соглашение №{slotOrdinal}
             </h3>
-            {slot.status === 'OPEN' ? (
-              <div className={styles.repairAddendumHeaderCornerActions}>
-                <button
-                  type="button"
-                  className={styles.repairAddendumMarkSignedProminentBtn}
-                  onClick={onMarkSigned}
-                  disabled={!hasAnyAttachedPresets}
-                  title={
-                    !hasAnyAttachedPresets ? 'Сначала прикрепите хотя бы один расчёт' : undefined
-                  }
-                >
-                  Д/с №{slotOrdinal} подписано
-                </button>
-              </div>
-            ) : null}
           </div>
           <div className={`${styles.field} ${styles.repairAddendumDateFieldRow}`}>
             <label htmlFor={`repair_addendum_date_${slotOrdinal}`}>
@@ -169,27 +148,15 @@ export function RepairAddendumEstimateBlock({
                     >
                       Добавить в раздел "Смета дополнительных..."
                     </button>
-                    {slot.status === 'SIGNED' ? (
-                      <>
-                        <button
-                          type="button"
-                          className={styles.secondaryBtn}
-                          onClick={onMarkPaid}
-                          title={`Присвоить статус «Д/с №${slotOrdinal} оплачено»`}
-                        >
-                          Д/с №{slotOrdinal} оплачено
-                        </button>
-                        {canUnmarkSigned ? (
-                          <button
-                            type="button"
-                            className={styles.secondaryBtn}
-                            onClick={onUnmarkSigned}
-                            title="Отменить статус «Д/с подписано» (доступно 30 секунд)"
-                          >
-                            Отменить статус «Д/с подписано»
-                          </button>
-                        ) : null}
-                      </>
+                    {slot.status === 'SIGNED' && canUnmarkSigned ? (
+                      <button
+                        type="button"
+                        className={styles.secondaryBtn}
+                        onClick={onUnmarkSigned}
+                        title="Отменить статус «Д/с подписано» (доступно 30 секунд)"
+                      >
+                        Отменить статус «Д/с подписано»
+                      </button>
                     ) : null}
                     {slot.status === 'PAID' ? (
                       <button

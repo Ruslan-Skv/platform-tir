@@ -57,7 +57,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--admin-space-xl) var(--admin-space-lg);
+  padding: var(--admin-space-md) var(--admin-space-md);
   border-bottom: 1px solid var(--admin-sidebar-divider);
 }
 
@@ -74,8 +74,8 @@
   background: var(--admin-sidebar-hover-bg);
   border: none;
   color: var(--admin-sidebar-text-strong);
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: var(--admin-radius-sm);
   cursor: pointer;
   display: flex;
@@ -114,11 +114,11 @@
 .nav {
   flex: 1;
   overflow-y: auto;
-  padding: var(--admin-space-xl) var(--admin-space-0);
+  padding: var(--admin-space-sm) var(--admin-space-0);
 }
 
 .navItem {
-  margin-bottom: var(--admin-space-xs);
+  margin-bottom: var(--admin-space-0);
 }
 
 .navLinkRow {
@@ -136,7 +136,7 @@
 .navLink {
   display: flex;
   align-items: center;
-  padding: var(--admin-space-md) var(--admin-space-lg);
+  padding: var(--admin-space-xs) var(--admin-space-md);
   color: var(--admin-sidebar-text);
   text-decoration: none;
   transition: all 0.2s;
@@ -150,8 +150,8 @@
 
 .accessIcon {
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -174,8 +174,8 @@
 
 .accessIconSubmenu {
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -262,8 +262,8 @@
 }
 
 .icon {
-  font-size: var(--admin-font-size-lg);
-  min-width: 28px;
+  font-size: var(--admin-font-size-md);
+  min-width: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -288,12 +288,12 @@
 
 .submenu {
   background: var(--admin-sidebar-submenu-bg);
-  padding: var(--admin-space-2xs) var(--admin-space-0);
+  padding: var(--admin-space-0);
 }
 
 .submenuLink {
   display: block;
-  padding: var(--admin-space-sm) var(--admin-space-lg) var(--admin-space-sm) var(--admin-space-7xl);
+  padding: var(--admin-space-xs) var(--admin-space-md) var(--admin-space-xs) var(--admin-space-6xl);
   color: var(--admin-sidebar-text);
   text-decoration: none;
   font-size: var(--admin-font-size-sm);
@@ -311,13 +311,13 @@
 }
 
 .submenuGroup {
-  margin-bottom: var(--admin-space-2xs);
+  margin-bottom: var(--admin-space-0);
 }
 
 .submenuGroupRow {
   display: flex;
   align-items: center;
-  padding: var(--admin-space-sm) var(--admin-space-lg) var(--admin-space-sm) var(--admin-space-7xl);
+  padding: var(--admin-space-xs) var(--admin-space-md) var(--admin-space-xs) var(--admin-space-6xl);
   color: var(--admin-sidebar-text);
   font-size: var(--admin-font-size-sm);
   width: 100%;
@@ -354,7 +354,7 @@
   border: none;
   color: inherit;
   cursor: pointer;
-  padding: var(--admin-space-2xs) var(--admin-space-sm);
+  padding: var(--admin-space-0) var(--admin-space-xs);
   display: flex;
   align-items: center;
   opacity: 0.7;
@@ -365,16 +365,16 @@
 }
 
 .submenuNested {
-  padding-left: 24px;
+  padding-left: var(--admin-space-3xl);
   background: var(--admin-sidebar-submenu-nested-bg);
 }
 
 .submenuNested .submenuLink {
-  padding-left: 36px;
+  padding-left: var(--admin-space-4xl);
 }
 
 .footer {
-  padding: var(--admin-space-xl) var(--admin-space-lg);
+  padding: var(--admin-space-md) var(--admin-space-md);
   border-top: 1px solid var(--admin-sidebar-divider);
 }
 
@@ -382,7 +382,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--admin-space-md);
+  padding: var(--admin-space-sm);
   color: var(--admin-sidebar-text);
   text-decoration: none;
   border-radius: var(--admin-radius-sm);
