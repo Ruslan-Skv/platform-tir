@@ -92,7 +92,7 @@
 
 .error h1 {
   font-size: 1.5rem;
-  color: #dc2626;
+  color: var(--color-accent);
   margin-bottom: 1rem;
 }
 
@@ -847,7 +847,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ef4444;
+  background: var(--color-accent);
   color: white;
   border: none;
   border-radius: 0.375rem;
@@ -859,7 +859,7 @@
 }
 
 .removeVariantButton:hover {
-  background: #dc2626;
+  background: var(--color-accent-hover);
 }
 
 .removeVariantButton:active {

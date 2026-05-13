@@ -259,7 +259,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .error {
-  background: rgb(239 68 68 / 0.2);
+  background: rgb(var(--color-accent-rgb) / 0.2);
   border-color: var(--admin-danger-text);
   color: var(--admin-danger-text-soft);
 }

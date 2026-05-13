@@ -198,7 +198,7 @@
 .error {
   padding: 0.75rem;
   background: #fef2f2;
-  color: #dc2626;
+  color: var(--color-accent);
   border: 1px solid #fecaca;
   border-radius: 8px;
   font-size: 0.9rem;
@@ -485,8 +485,8 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .error {
-  background: rgb(239 68 68 / 0.15);
-  border-color: #dc2626;
+  background: rgb(var(--color-accent-rgb) / 0.15);
+  border-color: var(--color-accent);
   color: #fca5a5;
 }
 

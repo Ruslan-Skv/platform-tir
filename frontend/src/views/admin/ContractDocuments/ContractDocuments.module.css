@@ -4194,7 +4194,7 @@
   height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: #dc2626;
+  background: var(--admin-accent);
   color: #fff;
   font-size: 10px;
   font-weight: 700;
@@ -4346,7 +4346,7 @@
 }
 
 .interactiveUnassignedBadgePending {
-  background: #dc2626;
+  background: var(--admin-accent);
   color: #fff;
 }
 
@@ -4369,7 +4369,7 @@
 }
 
 .repairTabUnassignedBadgePending {
-  background: #dc2626;
+  background: var(--admin-accent);
   color: #fff;
 }
 

@@ -908,7 +908,7 @@
 }
 
 .calcRemoveButton:hover {
-  color: #dc2626;
+  color: var(--color-accent);
 }
 
 .calcRemoveIcon {
@@ -1010,7 +1010,7 @@
   padding: 0;
   font-size: 1.25rem;
   line-height: 1;
-  color: #dc2626;
+  color: var(--color-accent);
   background: transparent;
   border: 1px solid #fecaca;
   border-radius: 4px;
@@ -1127,7 +1127,7 @@
 }
 
 .required {
-  color: #dc2626;
+  color: var(--color-accent);
 }
 
 .orderFormInput,
@@ -1152,7 +1152,7 @@
 }
 
 .orderError {
-  color: #dc2626;
+  color: var(--color-accent);
   font-size: 0.875rem;
   margin: 0 0 0.75rem;
 }

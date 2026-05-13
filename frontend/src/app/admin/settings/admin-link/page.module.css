@@ -90,7 +90,7 @@
 }
 
 .toastError {
-  background: rgb(239 68 68 / 20%);
+  background: rgb(var(--color-accent-rgb) / 20%);
   color: var(--admin-danger-text);
 }
 

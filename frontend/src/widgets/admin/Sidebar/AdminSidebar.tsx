@@ -78,7 +78,6 @@ const baseNavItems: NavItem[] = [
     icon: '👥',
     resourceId: 'admin.crm',
     children: [
-      { label: 'Объекты', href: '/admin/crm/contracts', resourceId: 'admin.crm.contracts' },
       {
         label: 'Движ. ден. средст',
         href: '/admin/crm/contract-payments',

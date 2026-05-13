@@ -44,7 +44,7 @@
   --admin-text-primary: #f3f4f6;
   --admin-text-secondary: #d1d5db;
   --admin-text-muted: #9ca3af;
-  --admin-danger-bg: rgb(239 68 68 / 0.15);
+  --admin-danger-bg: rgb(var(--color-accent-rgb) / 0.15);
   --admin-danger-border: #fca5a5;
   --admin-danger-text: #fca5a5;
   --admin-danger-text-soft: #fecaca;
@@ -374,7 +374,7 @@
 }
 
 :where(html[data-theme='dark']) .error {
-  background: rgb(239 68 68 / 0.15);
+  background: rgb(var(--color-accent-rgb) / 0.15);
   border-color: var(--admin-danger-text);
   color: var(--admin-danger-text-soft);
 }

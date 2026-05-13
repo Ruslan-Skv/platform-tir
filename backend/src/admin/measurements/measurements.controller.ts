@@ -53,9 +53,12 @@ export class MeasurementsController {
     @Query('search') search?: string,
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
+    @Query('withoutContract') withoutContract?: string,
+    @Query('hasCustomerId') hasCustomerId?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
+    const truthy = (v?: string) => v === '1' || v === 'true' || v === 'yes';
     return this.measurementsService.findAll({
       status,
       managerId,
@@ -64,6 +67,8 @@ export class MeasurementsController {
       search,
       dateFrom,
       dateTo,
+      withoutContract: truthy(withoutContract),
+      hasCustomerId: truthy(hasCustomerId),
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 20,
     });

@@ -201,7 +201,7 @@
   font-style: italic;
 }
 
-/* Иконка истории заказа (как в CRM Объекты) */
+/* Иконка истории заказа */
 .historyActionButton {
   padding: var(--admin-space-xs) var(--admin-space-md);
   background: transparent;

@@ -432,8 +432,8 @@
 }
 
 .actionButtonActive {
-  background: rgb(239 68 68 / 20%);
-  border-color: rgb(239 68 68 / 40%);
+  background: rgb(var(--color-accent-rgb) / 20%);
+  border-color: rgb(var(--color-accent-rgb) / 40%);
 }
 
 .actionIcon {

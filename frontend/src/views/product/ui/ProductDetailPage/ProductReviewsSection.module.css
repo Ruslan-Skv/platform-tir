@@ -184,7 +184,7 @@
 }
 
 .formError {
-  color: #dc2626;
+  color: var(--color-accent);
   font-size: 0.875rem;
   margin: 0 0 0.5rem;
 }

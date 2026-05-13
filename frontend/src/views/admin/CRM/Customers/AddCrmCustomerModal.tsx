@@ -1,6 +1,6 @@
 'use client';
 
-import { type ChangeEvent, type FormEvent, useCallback, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useCallback, useEffect, useState } from 'react';
 
 import { type CrmCustomerEntityType, createCrmCustomer } from '@/shared/api/admin-crm';
 import { Modal } from '@/shared/ui/Modal';
@@ -51,11 +51,17 @@ export function AddCrmCustomerModal({
   isOpen,
   onClose,
   onCreated,
+  formMode = 'full',
+  initialMeasurementDraft,
 }: {
   isOpen: boolean;
   onClose: () => void;
   /** Передаётся тело ответа API создания заказчика (для подстановки в формы и т.п.). */
   onCreated?: (created: unknown) => void;
+  /** `measurementQuick` — только ФИО, телефоны и адрес; e-mail создаётся на сервере автоматически. */
+  formMode?: 'full' | 'measurementQuick';
+  /** Подстановка в краткую форму при открытии (например с полей замера). */
+  initialMeasurementDraft?: { fullName: string; phone: string; address: string };
 }) {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
@@ -65,6 +71,28 @@ export function AddCrmCustomerModal({
     setForm(emptyForm());
     setError(null);
   }, []);
+
+  const isQuick = formMode === 'measurementQuick';
+
+  useEffect(() => {
+    if (!isOpen || !isQuick) return;
+    setForm(() => ({
+      ...emptyForm(),
+      entityType: 'PERSON',
+      fullName: initialMeasurementDraft?.fullName?.trim() ?? '',
+      phones: initialMeasurementDraft?.phone?.trim()
+        ? [initialMeasurementDraft.phone.trim()]
+        : [''],
+      address: initialMeasurementDraft?.address?.trim() ?? '',
+    }));
+    setError(null);
+  }, [
+    isOpen,
+    isQuick,
+    initialMeasurementDraft?.fullName,
+    initialMeasurementDraft?.phone,
+    initialMeasurementDraft?.address,
+  ]);
 
   const handleClose = useCallback(() => {
     reset();
@@ -100,6 +128,58 @@ export function AddCrmCustomerModal({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (isQuick) {
+      if (!form.fullName.trim()) {
+        setError('Укажите ФИО');
+        return;
+      }
+      const normalizedPhones = form.phones.map((p) => p.trim()).filter(Boolean);
+      if (normalizedPhones.length === 0) {
+        setError('Укажите телефон');
+        return;
+      }
+      const ext: Record<string, unknown> = {
+        type: 'PERSON',
+        fullName: form.fullName.trim(),
+        representativeFullNameNominative: '',
+        representativeFullNameGenitive: '',
+        organizationName: '',
+        representativePositionNominative: '',
+        representativePositionGenitive: '',
+        inn: '',
+        ogrn: '',
+        address: form.address.trim(),
+        phone: normalizedPhones[0] ?? '',
+        email: '',
+        bankDetails: '',
+        passportSeriesNumber: '',
+        passportIssuedBy: '',
+        passportIssueDate: '',
+      };
+      setSubmitting(true);
+      try {
+        const created = await createCrmCustomer({
+          firstName: form.fullName.trim(),
+          phone: normalizedPhones[0],
+          phones: normalizedPhones,
+          entityType: 'PERSON',
+          extendedProfile: ext,
+          notes:
+            form.notes.trim() ||
+            'Карточка из замера: неполные данные — дозаполнить при оформлении договора.',
+        });
+        reset();
+        onCreated?.(created);
+        onClose();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Ошибка сохранения');
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
     const email = form.email.trim();
     if (!email) {
       setError('Укажите e-mail');
@@ -183,37 +263,47 @@ export function AddCrmCustomerModal({
 
   const isPerson = form.entityType === 'PERSON';
 
-  return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Добавить нового заказчика" size="lg">
-      <form data-modal-form data-modal-density="compact" onSubmit={handleSubmit}>
-        <div data-modal-form-grid>
-          <div data-modal-form-group>
-            <label htmlFor="crm-entity-type">Тип заказчика</label>
-            <select
-              id="crm-entity-type"
-              value={form.entityType}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, entityType: e.target.value as CrmCustomerEntityType }))
-              }
-            >
-              <option value="PERSON">Физлицо</option>
-              <option value="COMPANY">Юридическое лицо</option>
-              <option value="ENTREPRENEUR">ИП</option>
-            </select>
-          </div>
-          <div data-modal-form-group>
-            <label htmlFor="crm-email">E-mail *</label>
-            <input
-              id="crm-email"
-              type="email"
-              value={form.email}
-              onChange={set('email')}
-              required
-            />
-          </div>
-        </div>
+  const modalTitle =
+    formMode === 'measurementQuick' ? 'Новый клиент (краткая карточка)' : 'Добавить клиента';
 
-        {isPerson ? (
+  return (
+    <Modal isOpen={isOpen} onClose={handleClose} title={modalTitle} size="lg">
+      <form data-modal-form data-modal-density="compact" onSubmit={handleSubmit}>
+        {!isQuick ? (
+          <div data-modal-form-grid>
+            <div data-modal-form-group>
+              <label htmlFor="crm-entity-type">Тип</label>
+              <select
+                id="crm-entity-type"
+                value={form.entityType}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, entityType: e.target.value as CrmCustomerEntityType }))
+                }
+              >
+                <option value="PERSON">Физлицо</option>
+                <option value="COMPANY">Юридическое лицо</option>
+                <option value="ENTREPRENEUR">ИП</option>
+              </select>
+            </div>
+            <div data-modal-form-group>
+              <label htmlFor="crm-email">E-mail *</label>
+              <input
+                id="crm-email"
+                type="email"
+                value={form.email}
+                onChange={set('email')}
+                required
+              />
+            </div>
+          </div>
+        ) : (
+          <p data-modal-form-hint style={{ marginTop: 0 }}>
+            E-mail будет создан автоматически; при договоре можно указать настоящий e-mail и
+            остальные реквизиты в карточке клиента.
+          </p>
+        )}
+
+        {isQuick || isPerson ? (
           <div data-modal-form-group>
             <label htmlFor="crm-fl-fio">ФИО *</label>
             <input id="crm-fl-fio" value={form.fullName} onChange={set('fullName')} />
@@ -257,10 +347,12 @@ export function AddCrmCustomerModal({
 
         <div data-modal-form-group>
           <label id="crm-phones-label" htmlFor="crm-phone-0">
-            Телефоны
+            Телефоны{isQuick ? ' *' : ''}
           </label>
           <p className={phoneStyles.phoneHint}>
-            Первый номер в списке — основной (договоры, поиск по CRM).
+            {isQuick
+              ? 'Укажите хотя бы один номер — он будет основным в карточке клиента.'
+              : 'Первый номер в списке — основной (договоры, поиск).'}
           </p>
           <div
             className={phoneStyles.phoneToolbarRow}
@@ -307,12 +399,19 @@ export function AddCrmCustomerModal({
           </div>
         </div>
 
-        <div data-modal-form-group>
-          <label htmlFor="crm-bank">Банковские реквизиты</label>
-          <textarea id="crm-bank" rows={2} value={form.bankDetails} onChange={set('bankDetails')} />
-        </div>
+        {!isQuick ? (
+          <div data-modal-form-group>
+            <label htmlFor="crm-bank">Банковские реквизиты</label>
+            <textarea
+              id="crm-bank"
+              rows={2}
+              value={form.bankDetails}
+              onChange={set('bankDetails')}
+            />
+          </div>
+        ) : null}
 
-        {isPerson ? (
+        {isPerson && !isQuick ? (
           <div data-modal-form-grid>
             <div data-modal-form-group>
               <label htmlFor="crm-pass">Паспорт (серия и номер)</label>
@@ -351,8 +450,9 @@ export function AddCrmCustomerModal({
         <div data-modal-footer-info data-modal-tone="success" role="status">
           <span data-modal-footer-info-icon aria-hidden="true" />
           <span data-modal-footer-info-text>
-            Карточка сохраняется в CRM. В списке «по договорам» заказчик появится после привязки к
-            договору.
+            {isQuick
+              ? 'Карточка сохраняется и связывается с замером. Полные реквизиты можно внести позже при договоре.'
+              : 'Карточка сохраняется в справочнике клиентов. В сводке «По договорам» заказчик появится после указания карточки на договоре.'}
           </span>
         </div>
 

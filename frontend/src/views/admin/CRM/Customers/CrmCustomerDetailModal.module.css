@@ -1,0 +1,25 @@
+.footerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-md);
+  margin-top: var(--admin-space-md);
+}
+
+.footerLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  border-radius: var(--admin-radius-sm);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.footerLink:hover {
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
+}

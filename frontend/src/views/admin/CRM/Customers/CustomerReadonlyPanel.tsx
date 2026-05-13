@@ -1,7 +1,5 @@
 'use client';
 
-import Link from 'next/link';
-
 import type { ContractCustomer, DocumentCustomerBlock } from '@/shared/api/admin-crm';
 
 function disp(v: string | undefined | null): string {
@@ -44,12 +42,10 @@ export function CustomerReadonlyPanel({
   customer,
   formatCurrency,
   formatDateDdMmYyyy,
-  onNavigateContract,
 }: {
   customer: ContractCustomer;
   formatCurrency: (n: number) => string;
   formatDateDdMmYyyy: (iso: string | null) => string;
-  onNavigateContract: () => void;
 }) {
   const doc: DocumentCustomerBlock | null | undefined = customer.documentCustomer;
   const isPerson = doc?.type === 'PERSON';
@@ -59,7 +55,7 @@ export function CustomerReadonlyPanel({
       <dl data-modal-detail>
         {doc ? (
           <>
-            <Field label="Тип заказчика">{typeRu(doc.type)}</Field>
+            <Field label="Тип">{typeRu(doc.type)}</Field>
             {isPerson ? (
               <Field label="ФИО">{disp(doc.fullName)}</Field>
             ) : (
@@ -95,35 +91,25 @@ export function CustomerReadonlyPanel({
           </>
         ) : (
           <>
-            <Field label="Тип заказчика">— (нет сохранённого пакета «Ремонт»)</Field>
+            <Field label="Тип">— (нет сохранённого пакета «Ремонт»)</Field>
             <Field label="Наименование / ФИО (по договору)">{disp(customer.customerName)}</Field>
             <Field label="Телефон (по договору)">{disp(customer.customerPhone)}</Field>
             <FieldSpan label="Адрес (по договору)">{disp(customer.customerAddress)}</FieldSpan>
           </>
         )}
 
-        <Field label="ID клиента CRM">
-          {customer.customerId ? <code>{customer.customerId}</code> : '—'}
-        </Field>
         <Field label="Договоров">{customer.contractCount}</Field>
         <Field label="Сумма по договорам">{formatCurrency(customer.totalAmount)}</Field>
-        <FieldSpan label="Договоры в CRM">
+        <FieldSpan label="Договоры">
           {(customer.contracts ?? []).length === 0 ? (
             '—'
           ) : (
             <ul data-modal-contract-links>
               {(customer.contracts ?? []).map((row) => (
                 <li key={row.id}>
-                  <Link
-                    href={`/admin/crm/contracts/${row.id}`}
-                    onClick={() => {
-                      onNavigateContract();
-                    }}
-                  >
-                    {row.contractNumber ? `№ ${row.contractNumber}` : 'Без номера'}
-                    {row.contractDate ? ` от ${formatDateDdMmYyyy(row.contractDate)}` : ''}
-                    {` — ${formatCurrency(row.totalAmount)}`}
-                  </Link>
+                  {row.contractNumber ? `№ ${row.contractNumber}` : 'Без номера'}
+                  {row.contractDate ? ` от ${formatDateDdMmYyyy(row.contractDate)}` : ''}
+                  {` — ${formatCurrency(row.totalAmount)}`}
                 </li>
               ))}
             </ul>

@@ -12,6 +12,7 @@ import {
   getContractDocumentPackage,
   getContractDocumentPackages,
 } from '@/shared/api/admin-contract-document-packages';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
 import styles from '../ContractDocuments.module.css';
 import { buildFormDataForRepairPackageCopy } from './cloneRepairPackageFormDataForCopy';
@@ -19,6 +20,7 @@ import {
   REPAIR_COPY_CONTRACT_NUMBER_BASELINE_KEY,
   getDisplayContractNumber,
 } from './packageContractDisplay';
+import { applyRepairContractDiscountToNullableBase } from './repairContractDiscount';
 
 const listMoneyFormatter = new Intl.NumberFormat('ru-RU', {
   style: 'currency',
@@ -52,8 +54,44 @@ function asObj(v: unknown): Record<string, unknown> | null {
   return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
 }
 
+function repairListHasAttachedEstimate(fd: Record<string, unknown>): boolean {
+  const e = asObj(fd.estimate);
+  if (!e) return false;
+  if (typeof e.selectedPresetId === 'string' && e.selectedPresetId.trim()) return true;
+  if (Array.isArray(e.selectedPresetIds)) {
+    return e.selectedPresetIds.some(
+      (x) => typeof x === 'string' && (x as string).trim().length > 0
+    );
+  }
+  return false;
+}
+
+/** Стоимость в списке — только из прикреплённой сметы (снимок), с учётом скидки по договору. */
 function repairListContractTotalAmount(fd: Record<string, unknown>): number | null {
-  return parseAmountToNumber(asObj(fd.contract)?.totalAmount);
+  if (!repairListHasAttachedEstimate(fd)) return null;
+  const est = asObj(fd.estimate);
+  const snapRaw = est?.snapshot;
+  if (!snapRaw || typeof snapRaw !== 'object' || Array.isArray(snapRaw)) return null;
+  const snap = snapRaw as Record<string, unknown>;
+  let base: number | null = null;
+  if (typeof snap.total === 'number' && Number.isFinite(snap.total)) {
+    base = snap.total;
+  } else if (Array.isArray(snap.rooms)) {
+    let sum = 0;
+    for (const room of snap.rooms) {
+      const r = asObj(room);
+      if (!Array.isArray(r?.lines)) continue;
+      for (const line of r.lines) {
+        const l = asObj(line);
+        const amt = typeof l.amount === 'number' ? l.amount : Number(l.amount);
+        if (Number.isFinite(amt)) sum += amt;
+      }
+    }
+    base = sum;
+  }
+  if (base == null || !Number.isFinite(base)) return null;
+  const c = asObj(fd.contract);
+  return applyRepairContractDiscountToNullableBase(base, String(c?.discountPercent ?? ''));
 }
 
 function repairListCustomerName(fd: Record<string, unknown>): string {
@@ -100,11 +138,13 @@ function ellipsizeOneLine(s: string, maxLen: number): string {
   return `${t.slice(0, Math.max(0, maxLen - 1))}…`;
 }
 
-/** Черновик без сохранений после создания: одна версия в журнале и нет оплат. */
-function repairPackageDraftDeletionAllowed(pkg: ContractDocumentPackage): boolean {
-  const versionCount = pkg._count?.versions ?? 1;
+/** Удаление: нельзя при оплатах или при прикреплённой смете (основной договор). */
+function repairPackageDeletionAllowed(pkg: ContractDocumentPackage): boolean {
   const paymentCount = pkg.payments?.length ?? 0;
-  return versionCount === 1 && paymentCount === 0;
+  if (paymentCount > 0) return false;
+  const fd = (pkg.formData ?? {}) as Record<string, unknown>;
+  if (repairListHasAttachedEstimate(fd)) return false;
+  return true;
 }
 
 export function RepairContractDocumentsListPage() {
@@ -115,6 +155,9 @@ export function RepairContractDocumentsListPage() {
   const [creating, setCreating] = useState(false);
   const [copyingPackageId, setCopyingPackageId] = useState<string | null>(null);
   const [deletingPackageId, setDeletingPackageId] = useState<string | null>(null);
+  const [packagePendingDelete, setPackagePendingDelete] = useState<ContractDocumentPackage | null>(
+    null
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -134,16 +177,12 @@ export function RepairContractDocumentsListPage() {
   }, [load]);
 
   const handleCreate = async () => {
-    const title =
-      typeof window !== 'undefined'
-        ? (window.prompt('Название черновика (необязательно):', '') ?? '')
-        : '';
     setCreating(true);
     setError(null);
     try {
       const created = await createContractDocumentPackage({
         kind: 'REPAIR',
-        title: title.trim() || undefined,
+        title: undefined,
         formData: {},
       });
       router.push(`/admin/contract-documents/repair/${created.id}`);
@@ -182,26 +221,39 @@ export function RepairContractDocumentsListPage() {
     }
   };
 
-  const handleDeletePackage = async (pkg: ContractDocumentPackage) => {
-    if (!repairPackageDraftDeletionAllowed(pkg)) return;
-    const ok =
-      typeof window !== 'undefined'
-        ? window.confirm(
-            'Удалить этот черновик договора? Действие необратимо. Удаление доступно только пока не было сохранений после создания.'
-          )
-        : false;
-    if (!ok) return;
-    setDeletingPackageId(pkg.id);
-    setError(null);
-    try {
-      await deleteContractDocumentPackage(pkg.id);
-      await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось удалить пакет');
-    } finally {
-      setDeletingPackageId(null);
-    }
+  const requestDeletePackage = (pkg: ContractDocumentPackage) => {
+    if (!repairPackageDeletionAllowed(pkg)) return;
+    setPackagePendingDelete(pkg);
   };
+
+  const handleConfirmDeletePackage = () => {
+    const pkg = packagePendingDelete;
+    if (!pkg?.id) return;
+    const id = pkg.id;
+    void (async () => {
+      setDeletingPackageId(id);
+      setError(null);
+      try {
+        await deleteContractDocumentPackage(id);
+        await load();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Не удалось удалить пакет');
+      } finally {
+        setDeletingPackageId(null);
+      }
+    })();
+  };
+
+  const deleteConfirmMessage =
+    packagePendingDelete != null
+      ? (() => {
+          const n = getDisplayContractNumber({
+            formData: (packagePendingDelete.formData ?? {}) as Record<string, unknown>,
+          });
+          const suffix = n && String(n).trim() !== '' && n !== '—' ? ` «${n}»` : '';
+          return `Удалить черновик договора${suffix}? Действие необратимо.`;
+        })()
+      : '';
 
   return (
     <div className={`${styles.page} ${styles.pageWide}`}>
@@ -269,7 +321,7 @@ export function RepairContractDocumentsListPage() {
             }
             onClick={() => void handleCreate()}
           >
-            {creating ? 'Создание…' : 'Новый пакет документов'}
+            {creating ? 'Создание…' : 'Создать новый договор'}
           </button>
           <Link
             className={styles.secondaryBtn}
@@ -304,7 +356,7 @@ export function RepairContractDocumentsListPage() {
                 {rows.length === 0 ? (
                   <tr>
                     <td colSpan={8} style={{ color: 'var(--admin-text-muted)' }}>
-                      Пока нет ни одного пакета. Нажмите «Новый пакет документов».
+                      Пока нет ни одного пакета. Нажмите «Создать новый договор».
                     </td>
                   </tr>
                 ) : (
@@ -317,7 +369,7 @@ export function RepairContractDocumentsListPage() {
                     const workShort = ellipsizeOneLine(workDesc, 100);
                     const copyBusy = copyingPackageId === r.id;
                     const deleteBusy = deletingPackageId === r.id;
-                    const canDeleteDraft = repairPackageDraftDeletionAllowed(r);
+                    const canDeleteDraft = repairPackageDeletionAllowed(r);
                     return (
                       <tr key={r.id}>
                         <td>
@@ -424,14 +476,14 @@ export function RepairContractDocumentsListPage() {
                                   ? 'Удаление черновика…'
                                   : canDeleteDraft
                                     ? 'Удалить черновик'
-                                    : 'Удаление недоступно: уже есть сохранения или оплаты'
+                                    : 'Удаление недоступно: прикреплена смета или есть оплаты'
                               }
                               title={
                                 canDeleteDraft
-                                  ? 'Удалить черновик (только если не было сохранений после создания и нет оплат)'
-                                  : 'Удалить можно только черновик без сохранений после создания и без оплат в журнале'
+                                  ? 'Удалить черновик (если нет прикреплённой сметы и записей об оплатах)'
+                                  : 'Удалить нельзя: к договору прикреплена смета или в журнале есть оплаты'
                               }
-                              onClick={() => void handleDeletePackage(r)}
+                              onClick={() => requestDeletePackage(r)}
                             >
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -465,6 +517,17 @@ export function RepairContractDocumentsListPage() {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={packagePendingDelete != null}
+        onClose={() => setPackagePendingDelete(null)}
+        onConfirm={handleConfirmDeletePackage}
+        title="Удалить черновик договора?"
+        message={deleteConfirmMessage}
+        confirmText="Удалить"
+        cancelText="Отмена"
+        variant="danger"
+      />
     </div>
   );
 }

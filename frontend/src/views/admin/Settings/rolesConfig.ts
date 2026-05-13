@@ -103,11 +103,8 @@ export const ROLES_CONFIG: RoleConfig[] = [
   {
     id: 'TECHNOLOGIST',
     label: 'Технолог',
-    description: 'Работа в CRM: замеры, объекты, договоры, оплаты.',
-    permissions: [
-      'CRM: замеры, объекты, договоры, оплаты',
-      'Просмотр клиентов, офисов и направлений CRM',
-    ],
+    description: 'Работа в CRM: замеры, договоры, оплаты.',
+    permissions: ['CRM: замеры, договоры, оплаты', 'Просмотр клиентов, офисов и направлений CRM'],
   },
   {
     id: 'PARTNER',

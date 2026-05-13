@@ -51,6 +51,7 @@ export class CustomersController {
     @Query('stage') stage?: string,
     @Query('managerId') managerId?: string,
     @Query('search') search?: string,
+    @Query('entityType') entityType?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
@@ -59,8 +60,24 @@ export class CustomersController {
       stage,
       managerId,
       search,
+      entityType: entityType?.trim() || undefined,
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 20,
+    });
+  }
+
+  @Get('directory')
+  findClientDirectory(
+    @Query('search') search?: string,
+    @Query('entityType') entityType?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.customersService.findClientDirectory({
+      search,
+      entityType: entityType?.trim() || undefined,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 25,
     });
   }
 

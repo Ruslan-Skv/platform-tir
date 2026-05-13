@@ -29,7 +29,7 @@
 
 .error h1 {
   font-size: 1.5rem;
-  color: #ef4444;
+  color: var(--color-accent);
   margin-bottom: 1rem;
 }
 
@@ -560,7 +560,7 @@
 }
 
 .removeButton:hover:not(:disabled) {
-  color: #ef4444;
+  color: var(--color-accent);
   background: #fef2f2;
 }
 
@@ -860,7 +860,7 @@
 }
 
 .deliveryBasketButton:hover {
-  color: #ef4444;
+  color: var(--color-accent);
   background: #fef2f2;
 }
 
@@ -1053,7 +1053,7 @@
 
 .deliveryCostError {
   font-size: 0.9375rem;
-  color: #dc2626;
+  color: var(--color-accent);
 }
 
 .checkoutButton {
@@ -1648,7 +1648,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .deliveryBasketButton:hover {
-  color: #ef4444;
+  color: var(--color-accent);
   background: #7f1d1d;
 }
 
@@ -1731,7 +1731,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .removeButton:hover:not(:disabled) {
-  color: #ef4444;
+  color: var(--color-accent);
   background: #7f1d1d;
 }
 
@@ -2031,12 +2031,12 @@
 }
 
 .required {
-  color: #dc2626;
+  color: var(--color-accent);
 }
 
 .sendToEmailError {
   font-size: 0.8125rem;
-  color: #dc2626;
+  color: var(--color-accent);
   margin: 0;
 }
 

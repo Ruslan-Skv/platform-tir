@@ -510,6 +510,117 @@
   color: var(--admin-danger-border-strong);
 }
 
+/* --- Вкладки «Все» / «По договорам» / «Замер без договора» --- */
+.mainTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-2xs);
+  margin-bottom: var(--admin-space-sm);
+  border-bottom: 1px solid var(--admin-border);
+  padding-bottom: 0;
+}
+
+.mainTab {
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  margin-bottom: -1px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: var(--admin-radius-sm) var(--admin-radius-sm) 0 0;
+  background: transparent;
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.mainTab:hover {
+  color: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
+}
+
+.mainTabActive {
+  color: var(--admin-accent);
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+  border-bottom-color: var(--admin-surface);
+  box-shadow: 0 1px 0 var(--admin-surface);
+}
+
+.tabDescription {
+  margin: 0 0 var(--admin-space-xl);
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-muted);
+  max-width: 960px;
+}
+
+.measureReportFilters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--admin-space-lg);
+}
+
+.measureFilterLabel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xs);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  color: var(--admin-text-muted);
+}
+
+.measureFilterSelect {
+  min-width: 200px;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  font: inherit;
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+}
+
+.measureCheckboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.linkLikeBtn {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--admin-accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.linkLikeBtn:hover {
+  color: var(--admin-text-secondary);
+}
+
+.tableLink {
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  color: var(--admin-accent);
+  text-decoration: none;
+}
+
+.tableLink:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 768px) {
   .filters {
     flex-direction: column;

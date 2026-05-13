@@ -34,7 +34,7 @@
 }
 
 .expiredNotice {
-  color: #dc2626;
+  color: var(--color-accent);
   margin-bottom: 1rem;
   font-weight: 500;
 }

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
   type ContractDocumentPackage,
@@ -94,6 +94,7 @@ function formatUser(u: { firstName?: string | null; lastName?: string | null } |
 
 export function MeasurementsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [data, setData] = useState<Measurement[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -107,6 +108,11 @@ export function MeasurementsPage() {
   const [search, setSearch] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+
+  useEffect(() => {
+    const q = searchParams.get('search');
+    if (q && q.trim()) setSearch(q.trim());
+  }, [searchParams]);
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [editMode, setEditMode] = useState(false);

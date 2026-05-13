@@ -288,11 +288,11 @@
   }
 
   .imageSideRight .removeButton {
-    color: #dc2626;
+    color: var(--color-accent);
   }
 
   .imageSideRight .removeButton:hover:not(:disabled) {
-    color: #b91c1c;
+    color: var(--color-accent-hover);
   }
 
   .imageSideRight .favoriteButton:active,

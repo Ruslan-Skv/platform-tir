@@ -10,6 +10,7 @@ import {
   ArrayMaxSize,
   MaxLength,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export enum LeadSource {
   WEBSITE = 'WEBSITE',
@@ -47,8 +48,11 @@ export enum CustomerEntityType {
 }
 
 export class CreateCustomerDto {
+  /** Если не указан, на бэкенде создаётся уникальный служебный адрес (карточка «с замера», дозаполнение позже). */
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? undefined : value))
   @IsEmail()
-  email: string;
+  email?: string;
 
   @IsString()
   firstName: string;

@@ -6,15 +6,18 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
+  type CrmCustomerListItem,
   type CrmDirection,
   type CrmUser,
   createMeasurement,
+  getCrmCustomers,
   getCrmDirections,
   getCrmUsers,
   getMeasurement,
   updateMeasurement,
 } from '@/shared/api/admin-crm';
 import { apiFetch } from '@/shared/lib/api-fetch';
+import { AddCrmCustomerModal } from '@/views/admin/CRM/Customers/AddCrmCustomerModal';
 
 import styles from './MeasurementFormPage.module.css';
 import { MeasurementHistoryModal } from './MeasurementHistoryModal';
@@ -280,6 +283,28 @@ type AutoQuantityMetrics = {
   windowsArea: number;
 };
 
+function addressFromCustomerExtended(ext: unknown): string {
+  if (!ext || typeof ext !== 'object') return '';
+  const a = (ext as Record<string, unknown>).address;
+  return typeof a === 'string' ? a : '';
+}
+
+function crmCustomerDisplayName(row: CrmCustomerListItem): string {
+  const parts = [row.firstName, row.lastName].map((x) => (x ?? '').trim()).filter(Boolean);
+  if (parts.length) return parts.join(' ');
+  if (row.company?.trim()) return row.company.trim();
+  return row.email || row.id;
+}
+
+function isCreatedCrmCustomer(x: unknown): x is {
+  id: string;
+  firstName?: string;
+  phone?: string | null;
+  phones?: string[];
+} {
+  return typeof x === 'object' && x !== null && typeof (x as { id?: unknown }).id === 'string';
+}
+
 function resolveAutoQuantity(itemName: string, metrics: AutoQuantityMetrics): number | null {
   const n = itemName.toLowerCase();
   if (n.includes('плинтус')) return metrics.baseboardPerimeter;
@@ -311,6 +336,13 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
   const [customerName, setCustomerName] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerId, setCustomerId] = useState<string | null>(null);
+  const [crmSearchInput, setCrmSearchInput] = useState('');
+  const [crmSearchDebounced, setCrmSearchDebounced] = useState('');
+  const [crmSearchResults, setCrmSearchResults] = useState<CrmCustomerListItem[]>([]);
+  const [crmSearchLoading, setCrmSearchLoading] = useState(false);
+  const [crmSearchError, setCrmSearchError] = useState<string | null>(null);
+  const [addCrmCustomerOpen, setAddCrmCustomerOpen] = useState(false);
   const [comments, setComments] = useState('');
   const [status, setStatus] = useState('NEW');
   const [loading, setLoading] = useState(!!measurementId);
@@ -358,6 +390,7 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
       setExecutionDate(formatDateForInput(data.executionDate));
       setSurveyorId(data.surveyorId ?? '');
       setDirectionId(data.directionId ?? '');
+      setCustomerId(data.customerId ?? null);
       setCustomerName(data.customerName);
       setCustomerAddress(data.customerAddress ?? '');
       setCustomerPhone(data.customerPhone);
@@ -394,6 +427,49 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
     getCrmUsers()
       .then(setUsers)
       .catch(() => setUsers([]));
+  }, []);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      setCrmSearchDebounced(crmSearchInput.trim());
+    }, 380);
+    return () => window.clearTimeout(t);
+  }, [crmSearchInput]);
+
+  useEffect(() => {
+    const q = crmSearchDebounced;
+    if (q.length < 2) {
+      setCrmSearchResults([]);
+      setCrmSearchError(null);
+      return;
+    }
+    let cancelled = false;
+    setCrmSearchLoading(true);
+    setCrmSearchError(null);
+    getCrmCustomers({ search: q, limit: 30, page: 1 })
+      .then((res) => {
+        if (!cancelled) setCrmSearchResults(res.data ?? []);
+      })
+      .catch((e) => {
+        if (!cancelled) setCrmSearchError(e instanceof Error ? e.message : 'Ошибка поиска');
+      })
+      .finally(() => {
+        if (!cancelled) setCrmSearchLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [crmSearchDebounced]);
+
+  const applyCrmCustomerRow = useCallback((row: CrmCustomerListItem) => {
+    setCustomerId(row.id);
+    setCustomerName(crmCustomerDisplayName(row));
+    const phone = row.phone?.trim() || row.phones?.find((p) => p.trim()) || '';
+    setCustomerPhone(phone);
+    setCustomerAddress(addressFromCustomerExtended(row.extendedProfile));
+    setCrmSearchResults([]);
+    setCrmSearchInput('');
+    setCrmSearchDebounced('');
   }, []);
 
   useEffect(() => {
@@ -456,7 +532,7 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
   }, [managerId, receptionDate, executionDate, customerName, customerPhone]);
 
   const buildPayload = useCallback(() => {
-    return {
+    const base = {
       managerId,
       receptionDate,
       customerName: customerName.trim(),
@@ -468,6 +544,10 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
       ...(customerAddress.trim() && { customerAddress: customerAddress.trim() }),
       comments: stringifyRepairMeasurementData(comments, repairMeasurementData),
     };
+    if (currentMeasurementId) {
+      return { ...base, customerId: customerId ?? null };
+    }
+    return customerId ? { ...base, customerId } : base;
   }, [
     managerId,
     receptionDate,
@@ -480,6 +560,8 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
     customerAddress,
     comments,
     repairMeasurementData,
+    currentMeasurementId,
+    customerId,
   ]);
 
   const persistMeasurement = useCallback(async () => {
@@ -778,6 +860,86 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className={`${styles.row} ${styles.customerCrmBlock}`}>
+            <div className={styles.customerCrmBlockInner}>
+              <h3 className={styles.customerCrmTitle}>Клиент в базе</h3>
+              <p className={styles.customerCrmHint}>
+                Найдите существующую карточку или создайте новую с краткими данными; полный профиль
+                можно дополнить при договоре.
+              </p>
+              <div className={styles.customerCrmSearchRow}>
+                <input
+                  type="search"
+                  className={styles.input}
+                  placeholder="Поиск: ФИО, телефон, e-mail, компания (от 2 символов)"
+                  value={crmSearchInput}
+                  onChange={(e) => setCrmSearchInput(e.target.value)}
+                  autoComplete="off"
+                  aria-label="Поиск клиента в базе"
+                />
+                {customerId ? (
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={() => {
+                      setCustomerId(null);
+                    }}
+                  >
+                    Снять выбор карточки
+                  </button>
+                ) : null}
+              </div>
+              {crmSearchLoading ? <p className={styles.customerCrmMuted}>Поиск…</p> : null}
+              {crmSearchError ? (
+                <p className={styles.customerCrmError} role="alert">
+                  {crmSearchError}
+                </p>
+              ) : null}
+              {crmSearchDebounced.length >= 2 &&
+              !crmSearchLoading &&
+              !crmSearchError &&
+              crmSearchResults.length === 0 ? (
+                <p className={styles.customerCrmMuted}>Ничего не найдено</p>
+              ) : null}
+              {crmSearchResults.length > 0 ? (
+                <ul
+                  className={styles.customerCrmResults}
+                  role="listbox"
+                  aria-label="Результаты поиска"
+                >
+                  {crmSearchResults.map((row) => (
+                    <li key={row.id}>
+                      <button
+                        type="button"
+                        className={styles.customerCrmResultButton}
+                        onClick={() => applyCrmCustomerRow(row)}
+                      >
+                        <span className={styles.customerCrmResultName}>
+                          {crmCustomerDisplayName(row)}
+                        </span>
+                        <span className={styles.customerCrmResultMeta}>
+                          {[row.phone || row.phones?.[0], row.email].filter(Boolean).join(' · ')}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              <div className={styles.customerCrmActions}>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={() => setAddCrmCustomerOpen(true)}
+                >
+                  Добавить нового заказчика
+                </button>
+                {customerId ? (
+                  <span className={styles.customerCrmLinkedBadge}>Выбрана карточка клиента</span>
+                ) : null}
+              </div>
+            </div>
           </div>
 
           <div className={styles.row}>
@@ -1415,6 +1577,28 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
             })()}
         </section>
       </div>
+
+      <AddCrmCustomerModal
+        isOpen={addCrmCustomerOpen}
+        onClose={() => setAddCrmCustomerOpen(false)}
+        formMode="measurementQuick"
+        initialMeasurementDraft={{
+          fullName: customerName,
+          phone: customerPhone,
+          address: customerAddress,
+        }}
+        onCreated={(created) => {
+          if (!isCreatedCrmCustomer(created)) return;
+          setCustomerId(created.id);
+          if (typeof created.firstName === 'string' && created.firstName.trim()) {
+            setCustomerName(created.firstName.trim());
+          }
+          const ph =
+            (typeof created.phone === 'string' && created.phone.trim()) ||
+            (Array.isArray(created.phones) ? created.phones.find((p) => p.trim()) : undefined);
+          if (ph) setCustomerPhone(ph.trim());
+        }}
+      />
 
       {measurementId && showHistory && (
         <MeasurementHistoryModal

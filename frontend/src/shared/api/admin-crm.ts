@@ -668,6 +668,7 @@ export interface Measurement {
   manager?: { id: string; firstName: string | null; lastName: string | null };
   surveyor?: { id: string; firstName: string | null; lastName: string | null } | null;
   direction?: { id: string; name: string; slug: string } | null;
+  customer?: { id: string; firstName: string; lastName: string | null; email: string } | null;
 }
 
 export async function getMeasurements(params?: {
@@ -678,6 +679,10 @@ export async function getMeasurements(params?: {
   search?: string;
   dateFrom?: string;
   dateTo?: string;
+  /** Замеры без привязанного договора (отчёт «замер без конверсии»). */
+  withoutContract?: boolean;
+  /** Только замеры с выбранной карточкой клиента (`customerId`). */
+  hasCustomerId?: boolean;
   page?: number;
   limit?: number;
 }): Promise<{
@@ -695,6 +700,8 @@ export async function getMeasurements(params?: {
   if (params?.search) searchParams.set('search', params.search);
   if (params?.dateFrom) searchParams.set('dateFrom', params.dateFrom);
   if (params?.dateTo) searchParams.set('dateTo', params.dateTo);
+  if (params?.withoutContract) searchParams.set('withoutContract', 'true');
+  if (params?.hasCustomerId) searchParams.set('hasCustomerId', 'true');
   searchParams.set('page', String(params?.page ?? 1));
   searchParams.set('limit', String(params?.limit ?? 20));
 
@@ -724,7 +731,7 @@ export async function createMeasurement(data: {
   customerPhone: string;
   comments?: string;
   status?: string;
-  customerId?: string;
+  customerId?: string | null;
 }): Promise<Measurement> {
   const res = await apiFetch(`${API_URL}/admin/measurements`, {
     method: 'POST',
@@ -741,7 +748,7 @@ export async function createMeasurement(data: {
 
 export async function updateMeasurement(
   id: string,
-  data: Partial<Parameters<typeof createMeasurement>[0]>
+  data: Partial<Parameters<typeof createMeasurement>[0]> & { customerId?: string | null }
 ): Promise<Measurement> {
   const res = await apiFetch(`${API_URL}/admin/measurements/${id}`, {
     method: 'PATCH',
@@ -800,7 +807,7 @@ export async function rollbackMeasurement(
 // --- Contracts ---
 export interface Contract {
   id: string;
-  /** Карточка заказчика CRM, если договор к ней привязан */
+  /** Идентификатор карточки клиента в справочнике, если договор к ней привязан */
   customerId?: string | null;
   contractNumber: string;
   contractDate: string;
@@ -948,7 +955,7 @@ export interface DocumentCustomerBlock {
 }
 
 export interface ContractCustomer {
-  /** Карточка клиента в CRM, если договоры привязаны к ней */
+  /** Идентификатор карточки клиента, если договоры с ней связаны */
   customerId: string | null;
   customerName: string;
   customerPhone: string;
@@ -958,17 +965,37 @@ export interface ContractCustomer {
   lastContractDate: string | null;
   lastContractId: string | null;
   lastContractNumber: string | null;
-  /** Все договоры этого заказчика в CRM (для карточки и ссылок) */
+  /** Все договоры этого заказчика (для карточки и ссылок) */
   contracts: ContractCustomerContractRow[];
   /** Реквизиты как на вкладке «Данные» пакета «Ремонт», если пакет сохранён */
   documentCustomer?: DocumentCustomerBlock | null;
   manager: { id: string; firstName: string | null; lastName: string | null } | null;
 }
 
+/** Строка единого справочника GET /admin/customers/directory */
+export interface ClientDirectoryRow {
+  rowSource: 'customer' | 'contract_only';
+  id: string;
+  displayName: string;
+  email: string | null;
+  phone: string | null;
+  entityType: string | null;
+  status: string | null;
+  stage: string | null;
+  createdAt: string | null;
+  manager: { id: string; email: string; firstName: string | null; lastName: string | null } | null;
+  sourceLabel: string;
+  contractCount: number | null;
+  totalAmount: number | null;
+  lastContractDate: string | null;
+  contractCustomer?: ContractCustomer | null;
+}
+
 export type CrmCustomerEntityType = 'PERSON' | 'COMPANY' | 'ENTREPRENEUR';
 
 export interface CreateCrmCustomerPayload {
-  email: string;
+  /** Если не передан, на сервере будет создан уникальный служебный адрес. */
+  email?: string;
   firstName: string;
   lastName?: string;
   phone?: string;
@@ -979,6 +1006,90 @@ export interface CreateCrmCustomerPayload {
   entityType?: CrmCustomerEntityType;
   extendedProfile?: Record<string, unknown>;
   notes?: string;
+}
+
+/** Строка из списка GET /admin/customers (для поиска при замере и т.п.). */
+export interface CrmCustomerListItem {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string | null;
+  phone: string | null;
+  phones: string[];
+  company: string | null;
+  entityType?: string | null;
+  extendedProfile?: Record<string, unknown> | null;
+  status?: string;
+  stage?: string;
+  notes?: string | null;
+  createdAt?: string;
+  manager?: { id: string; email: string; firstName: string | null; lastName: string | null } | null;
+}
+
+/** Полная карточка GET /admin/customers/:id */
+export type CrmCustomerDetail = CrmCustomerListItem & {
+  tags?: string[];
+  updatedAt?: string;
+  lastContactAt?: string | null;
+  nextFollowUp?: string | null;
+  dealValue?: unknown;
+  isActive?: boolean;
+};
+
+export async function getCrmCustomers(params?: {
+  search?: string;
+  page?: number;
+  limit?: number;
+  entityType?: CrmCustomerEntityType;
+}): Promise<{
+  data: CrmCustomerListItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}> {
+  const search = new URLSearchParams();
+  if (params?.search?.trim()) search.set('search', params.search.trim());
+  search.set('page', String(params?.page ?? 1));
+  search.set('limit', String(Math.min(params?.limit ?? 30, 100)));
+  if (params?.entityType) search.set('entityType', params.entityType);
+  const res = await apiFetch(`${API_URL}/admin/customers?${search}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить список клиентов');
+  return res.json();
+}
+
+export async function getClientDirectory(params?: {
+  search?: string;
+  page?: number;
+  limit?: number;
+  entityType?: CrmCustomerEntityType;
+}): Promise<{
+  data: ClientDirectoryRow[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}> {
+  const search = new URLSearchParams();
+  if (params?.search?.trim()) search.set('search', params.search.trim());
+  search.set('page', String(params?.page ?? 1));
+  search.set('limit', String(Math.min(params?.limit ?? 25, 100)));
+  if (params?.entityType) search.set('entityType', params.entityType);
+  const res = await apiFetch(`${API_URL}/admin/customers/directory?${search}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить справочник клиентов');
+  return res.json();
+}
+
+export async function getCrmCustomer(id: string): Promise<CrmCustomerDetail> {
+  const res = await apiFetch(`${API_URL}/admin/customers/${encodeURIComponent(id)}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить карточку клиента');
+  return res.json() as Promise<CrmCustomerDetail>;
 }
 
 export async function createCrmCustomer(payload: CreateCrmCustomerPayload): Promise<unknown> {
@@ -1005,7 +1116,7 @@ export async function updateCrmCustomer(
   });
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { message?: string };
-    throw new Error(err.message || 'Не удалось сохранить заказчика в CRM');
+    throw new Error(err.message || 'Не удалось сохранить данные клиента');
   }
   return res.json();
 }

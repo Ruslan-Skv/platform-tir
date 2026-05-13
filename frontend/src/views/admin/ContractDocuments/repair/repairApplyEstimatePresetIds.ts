@@ -9,6 +9,28 @@ import {
 } from './repairContractDiscount';
 import type { RepairPackageFormData } from './repairPackageForm';
 
+/** Снятие основной сметы договора: очистить снимок и суммы в блоке договора (не из шаблона вручную). */
+function detachMainRepairEstimateFromForm(previous: RepairPackageFormData): RepairPackageFormData {
+  const cleared = repairEstimateTotalToContractFields(null);
+  return {
+    ...previous,
+    estimateObjectGroupKey: '',
+    contract: {
+      ...previous.contract,
+      totalAmount: cleared.totalAmount,
+      totalAmountWords: cleared.totalAmountWords,
+      recommendedPrepayment: cleared.recommendedPrepayment,
+    },
+    estimate: {
+      ...previous.estimate,
+      selectedPresetId: '',
+      selectedPresetIds: [],
+      snapshot: null,
+      notes: '',
+    },
+  };
+}
+
 export type EstimateSnapshotLine = {
   name: string;
   unit: string;
@@ -260,49 +282,19 @@ export function applyEstimatePresetIdsToRepairForm(
 ): RepairPackageFormData {
   const uniqueIds = [...new Set(presetIds.filter(Boolean))];
   if (uniqueIds.length === 0) {
-    return {
-      ...previous,
-      estimateObjectGroupKey: '',
-      estimate: {
-        ...previous.estimate,
-        selectedPresetId: '',
-        selectedPresetIds: [],
-        snapshot: null,
-        notes: '',
-      },
-    };
+    return detachMainRepairEstimateFromForm(previous);
   }
   const selectedPresetsRaw = uniqueIds
     .map((id) => presets.find((it) => it.id === id))
     .filter((x): x is ContractEstimatePreset => Boolean(x));
   if (selectedPresetsRaw.length === 0) {
-    return {
-      ...previous,
-      estimateObjectGroupKey: '',
-      estimate: {
-        ...previous.estimate,
-        selectedPresetId: '',
-        selectedPresetIds: [],
-        snapshot: null,
-        notes: '',
-      },
-    };
+    return detachMainRepairEstimateFromForm(previous);
   }
   const groupKey = presetObjectGroupKey(selectedPresetsRaw[0]);
   const selectedPresets = selectedPresetsRaw.filter((p) => presetObjectGroupKey(p) === groupKey);
   const coercedIds = selectedPresets.map((p) => p.id);
   if (selectedPresets.length === 0) {
-    return {
-      ...previous,
-      estimateObjectGroupKey: '',
-      estimate: {
-        ...previous.estimate,
-        selectedPresetId: '',
-        selectedPresetIds: [],
-        snapshot: null,
-        notes: '',
-      },
-    };
+    return detachMainRepairEstimateFromForm(previous);
   }
   const mergedSnapshot = mergeEstimateSnapshots(
     selectedPresets.map((preset) => ({

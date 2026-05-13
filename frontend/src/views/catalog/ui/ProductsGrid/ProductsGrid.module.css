@@ -297,7 +297,7 @@
 }
 
 .error {
-  color: #dc2626;
+  color: var(--color-accent);
   background: #fef2f2;
 }
 

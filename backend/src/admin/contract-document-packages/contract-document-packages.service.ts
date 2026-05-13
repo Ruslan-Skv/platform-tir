@@ -369,35 +369,18 @@ export class ContractDocumentPackagesService {
   async remove(id: string) {
     const row = await this.findOne(id);
     if (row.kind === ContractDocumentPackageKind.REPAIR) {
-      const [versionCount, paymentCount, v1] = await Promise.all([
-        this.prisma.contractDocumentPackageVersion.count({ where: { packageId: id } }),
-        this.prisma.contractDocumentPackagePayment.count({ where: { packageId: id } }),
-        this.prisma.contractDocumentPackageVersion.findFirst({
-          where: { packageId: id, versionNumber: 1 },
-          select: { title: true, status: true, crmContractId: true, formData: true },
-        }),
-      ]);
+      const paymentCount = await this.prisma.contractDocumentPackagePayment.count({
+        where: { packageId: id },
+      });
       if (paymentCount > 0) {
         throw new BadRequestException(
-          'Нельзя удалить пакет с зарегистрированными оплатами. Удаление доступно только для пустого черновика.',
+          'Нельзя удалить пакет с зарегистрированными оплатами. Сначала удалите записи об оплатах.',
         );
       }
-      if (!v1) {
-        throw new BadRequestException('Не удалось проверить историю пакета; удаление отклонено.');
-      }
-      if (versionCount > 1) {
+      const estimatePresetIds = this.extractRepairEstimatePresetIds(row.formData);
+      if (estimatePresetIds.length > 0) {
         throw new BadRequestException(
-          'Удалить можно только черновик, с которым ещё не сохраняли изменения после создания.',
-        );
-      }
-      const sameAsInitial =
-        (row.title ?? null) === (v1.title ?? null) &&
-        row.status === v1.status &&
-        (row.crmContractId ?? null) === (v1.crmContractId ?? null) &&
-        JSON.stringify(row.formData ?? {}) === JSON.stringify(v1.formData ?? {});
-      if (!sameAsInitial) {
-        throw new BadRequestException(
-          'Состояние пакета отличается от момента создания. Такой договор удалять нельзя.',
+          'Нельзя удалить договор с прикреплённой сметой. Сначала отвяжите расчёты на вкладке «Смета».',
         );
       }
     }

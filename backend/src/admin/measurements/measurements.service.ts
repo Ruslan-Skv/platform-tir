@@ -205,6 +205,10 @@ export class MeasurementsService {
     search?: string;
     dateFrom?: string;
     dateTo?: string;
+    /** Замеры, к которым не привязан договор (воронка после замера). */
+    withoutContract?: boolean;
+    /** Только замеры с привязкой к карточке CRM. */
+    hasCustomerId?: boolean;
     page?: number;
     limit?: number;
   }) {
@@ -216,6 +220,8 @@ export class MeasurementsService {
       search,
       dateFrom,
       dateTo,
+      withoutContract,
+      hasCustomerId,
       page = 1,
       limit = 20,
     } = params || {};
@@ -229,6 +235,12 @@ export class MeasurementsService {
     if (managerId) where.managerId = managerId;
     if (surveyorId) where.surveyorId = surveyorId;
     if (directionId) where.directionId = directionId;
+    if (withoutContract) {
+      where.contract = { is: null };
+    }
+    if (hasCustomerId) {
+      where.customerId = { not: null };
+    }
 
     if (search) {
       where.OR = [

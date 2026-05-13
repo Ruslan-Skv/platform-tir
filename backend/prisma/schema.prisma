@@ -1983,7 +1983,7 @@ model ContractDocumentPackage {
   status         ContractDocumentPackageStatus @default(IN_PROGRESS)
   /// Все редактируемые поля вкладки «Данные» и прочие структурированные данные (смета и т.д.).
   formData       Json                        @default("{}")
-  /// Связь с договором в CRM («Объекты»).
+  /// Связь с договором в учётной системе (таблица `Contract`).
   crmContractId  String?
   createdById    String?
   createdAt      DateTime                    @default(now())
