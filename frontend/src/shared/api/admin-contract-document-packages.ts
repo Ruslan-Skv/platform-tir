@@ -254,6 +254,8 @@ export interface ContractEstimatePreset {
         quantity: number;
         price: number;
         amount: number;
+        /** Id позиции каталога; нужен для группировки по подкатегориям в модалке разделения сметы. */
+        itemId?: string;
       }>;
     }>;
   } | null;

@@ -29,6 +29,7 @@ export class ContractEstimatePresetDto {
         quantity: number;
         price: number;
         amount: number;
+        itemId?: string;
       }>;
     }>;
   } | null;

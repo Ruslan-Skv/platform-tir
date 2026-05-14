@@ -37,6 +37,8 @@ export type EstimateSnapshotLine = {
   quantity: number;
   price: number;
   amount: number;
+  /** Id позиции каталога (пишется при сохранении сметы из ответа calculate). */
+  itemId?: string;
 };
 
 export type EstimateSnapshotRoom = {
@@ -185,9 +187,19 @@ type PersistedCalculatorDraftV1 = {
     id: string;
     name: string;
     collapsed: boolean;
-    lines: Array<{ itemId: string; quantity: number }>;
+    lines: Array<{ itemId: string; quantity: number | string }>;
   }>;
 };
+
+function draftLineQuantityPositive(raw: unknown): number | null {
+  const n =
+    typeof raw === 'number'
+      ? raw
+      : typeof raw === 'string'
+        ? Number(String(raw).replace(',', '.').trim())
+        : NaN;
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
 
 export function parseEstimateSnapshotFromDraft(draftRaw: string): EstimateSnapshot | null {
   try {
@@ -198,15 +210,19 @@ export function parseEstimateSnapshotFromDraft(draftRaw: string): EstimateSnapsh
     for (const calc of parsed.calcs) {
       const roomLines: EstimateSnapshotLine[] = [];
       for (const rawLine of calc.lines ?? []) {
-        if (!rawLine?.itemId || typeof rawLine.quantity !== 'number' || rawLine.quantity <= 0)
-          continue;
-        const quantity = Number(rawLine.quantity);
+        const qty = draftLineQuantityPositive(rawLine?.quantity);
+        const itemId =
+          rawLine?.itemId === null || rawLine?.itemId === undefined
+            ? null
+            : String(rawLine.itemId).trim() || null;
+        if (!itemId || qty == null) continue;
         roomLines.push({
-          name: `Позиция ${rawLine.itemId}`,
+          name: `Позиция ${itemId}`,
           unit: 'ед.',
-          quantity,
+          quantity: qty,
           price: 0,
           amount: 0,
+          itemId,
         });
       }
       const roomTotal = roomLines.reduce((sum, line) => sum + line.amount, 0);

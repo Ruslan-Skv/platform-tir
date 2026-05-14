@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -20,11 +20,16 @@ import { Modal } from '@/shared/ui/Modal';
 import styles from './ContractDocuments.module.css';
 import {
   type SiblingClaim,
+  type WorkScopeCategoryRow,
+  type WorkScopeLineRow,
   buildEstimateWorkScopeTree,
+  buildEstimateWorkScopeTreeAsync,
   buildSiblingLineClaimIndex,
   collectAllLineScopeIds,
   lineKeysFromCategoryNodeId,
   lineKeysFromRoomNodeId,
+  lineKeysFromStageNodeId,
+  linesInWorkScopeRoom,
   selectionIntersectsSiblingClaims,
 } from './repair/estimateWorkScopeTree';
 import { getDisplayContractDate, getDisplayContractNumber } from './repair/packageContractDisplay';
@@ -416,7 +421,25 @@ function EstimateWorkScopeSplitModal({
     estimateWorkScopeKeys: string[];
   }) => void | Promise<void>;
 }) {
-  const tree = useMemo(() => buildEstimateWorkScopeTree(preset, groups), [preset, groups]);
+  const [tree, setTree] = useState<WorkScopeCategoryRow[]>([]);
+  const [treeLoading, setTreeLoading] = useState(true);
+  const [workScopeSplitHint, setWorkScopeSplitHint] = useState<
+    'draft_snapshot_mismatch' | 'no_subcategory_buckets' | null
+  >(null);
+  const treeLoadGen = useRef(0);
+
+  useEffect(() => {
+    const gen = ++treeLoadGen.current;
+    setTreeLoading(true);
+    setWorkScopeSplitHint(null);
+    void buildEstimateWorkScopeTreeAsync(preset, groups).then((r) => {
+      if (treeLoadGen.current !== gen) return;
+      setTree(r.tree);
+      setWorkScopeSplitHint(r.hint);
+      setTreeLoading(false);
+    });
+  }, [preset, groups]);
+
   const allLineIds = useMemo(() => collectAllLineScopeIds(tree), [tree]);
   const claimIndex = useMemo(
     () => buildSiblingLineClaimIndex(allPresets, preset.splitBundleId, preset.id),
@@ -442,7 +465,7 @@ function EstimateWorkScopeSplitModal({
     let sum = 0;
     for (const cat of tree) {
       for (const room of cat.rooms) {
-        for (const line of room.lines) {
+        for (const line of linesInWorkScopeRoom(room)) {
           if (selectedSet.has(line.id)) sum += line.amount;
         }
       }
@@ -454,7 +477,7 @@ function EstimateWorkScopeSplitModal({
     let sum = 0;
     for (const cat of tree) {
       for (const room of cat.rooms) {
-        for (const line of room.lines) {
+        for (const line of linesInWorkScopeRoom(room)) {
           sum += line.amount;
         }
       }
@@ -462,10 +485,55 @@ function EstimateWorkScopeSplitModal({
     return sum;
   }, [tree]);
 
-  const unselectedTotal = useMemo(
-    () => Math.max(0, grandTotalInTree - selectedTotal),
-    [grandTotalInTree, selectedTotal]
+  /** Строка отнесена к другому расчёту связки (по сохранённым `estimateWorkScopeKeys`). */
+  const isLineKeyAssignedToSiblingPreset = useMemo(() => {
+    const bundle = preset.splitBundleId?.trim();
+    if (!bundle) return () => false;
+    return (lineId: string): boolean => {
+      for (const p of allPresets) {
+        if (p.id === preset.id) continue;
+        if (p.splitBundleId !== bundle) continue;
+        const keys = p.estimateWorkScopeKeys;
+        if (!Array.isArray(keys) || keys.length === 0) continue;
+        if (keys.includes(lineId)) return true;
+      }
+      return false;
+    };
+  }, [allPresets, preset.id, preset.splitBundleId]);
+
+  /** Сумма позиций, которые ни здесь не выбраны, ни в связанных расчётах не отнесены. */
+  const unassignedAcrossBundleTotal = useMemo(() => {
+    let sum = 0;
+    for (const cat of tree) {
+      for (const room of cat.rooms) {
+        for (const line of linesInWorkScopeRoom(room)) {
+          if (selectedSet.has(line.id)) continue;
+          if (isLineKeyAssignedToSiblingPreset(line.id)) continue;
+          sum += line.amount;
+        }
+      }
+    }
+    return sum;
+  }, [tree, selectedSet, isLineKeyAssignedToSiblingPreset]);
+
+  /** Строки с обычным чекбоксом (не заняты соседним расчётом связки). */
+  const selectableLineIds = useMemo(
+    () => allLineIds.filter((id) => !isLineKeyClaimedBySibling(id, claimIndex, selectedKeys)),
+    [allLineIds, claimIndex, selectedKeys]
   );
+
+  const allSelectableSelected =
+    selectableLineIds.length > 0 && selectableLineIds.every((id) => selectedSet.has(id));
+
+  const anySelectableSelected = selectableLineIds.some((id) => selectedSet.has(id));
+
+  const selectAllAvailableLines = () => {
+    setSelectedKeys([...selectableLineIds]);
+  };
+
+  const deselectAllAvailableLines = () => {
+    setSelectedKeys([]);
+  };
 
   const toggleLine = (lineId: string) => {
     if (isLineKeyClaimedBySibling(lineId, claimIndex, selectedKeys)) return;
@@ -476,6 +544,23 @@ function EstimateWorkScopeSplitModal({
 
   const toggleRoom = (roomId: string) => {
     const lineIds = lineKeysFromRoomNodeId(tree, roomId);
+    const selectable = lineIds.filter(
+      (id) => !isLineKeyClaimedBySibling(id, claimIndex, selectedKeys) || selectedKeys.includes(id)
+    );
+    const allSel = selectable.length > 0 && selectable.every((id) => selectedSet.has(id));
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (allSel) {
+        selectable.forEach((id) => next.delete(id));
+      } else {
+        selectable.forEach((id) => next.add(id));
+      }
+      return [...next];
+    });
+  };
+
+  const toggleStage = (stageId: string) => {
+    const lineIds = lineKeysFromStageNodeId(tree, stageId);
     const selectable = lineIds.filter(
       (id) => !isLineKeyClaimedBySibling(id, claimIndex, selectedKeys) || selectedKeys.includes(id)
     );
@@ -508,6 +593,55 @@ function EstimateWorkScopeSplitModal({
     });
   };
 
+  const renderWorkScopeLineRow = (line: WorkScopeLineRow, indentClass: string) => {
+    const claims = claimIndex.get(line.id);
+    const claimed = isLineKeyClaimedBySibling(line.id, claimIndex, selectedKeys);
+    const claimTitle = claims?.[0]?.title;
+    return (
+      <label key={line.id} className={`${styles.workScopeSplitRow} ${indentClass}`}>
+        {claimed ? (
+          <span
+            className={styles.workScopeSplitClaimedCheckbox}
+            role="img"
+            aria-label={
+              claimTitle
+                ? `Позиция уже включена в расчёт «${claimTitle}»`
+                : 'Позиция уже включена в другом расчёте связки'
+            }
+            title={claimTitle ? `Уже в расчёте «${claimTitle}»` : 'Уже в другом расчёте связки'}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width={12}
+              height={12}
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden
+            >
+              <path
+                d="M18 6L6 18M6 6l12 12"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </span>
+        ) : (
+          <input
+            type="checkbox"
+            checked={selectedSet.has(line.id)}
+            disabled={saving || treeLoading}
+            onChange={() => toggleLine(line.id)}
+          />
+        )}
+        <span style={{ flex: 1, minWidth: 0 }}>{line.label}</span>
+        <span className={styles.workScopeSplitRowMeta}>
+          {formatEstimatePresetTotalRub(line.amount)}
+        </span>
+      </label>
+    );
+  };
+
   const handleSave = async () => {
     const hit = selectionIntersectsSiblingClaims(selectedSet, claimIndex);
     if (hit) {
@@ -536,6 +670,7 @@ function EstimateWorkScopeSplitModal({
       showCloseButton
     >
       <form
+        className={styles.workScopeSplitModalForm}
         data-modal-form
         data-modal-density="compact"
         onSubmit={(e) => {
@@ -549,44 +684,64 @@ function EstimateWorkScopeSplitModal({
           могут включить их повторно.
         </p>
         <p data-modal-form-hint>
-          Сумма по выбранному: <strong>{formatEstimatePresetTotalRub(selectedTotal)}</strong>
+          Сумма всех позиций: <strong>{formatEstimatePresetTotalRub(grandTotalInTree)}</strong>
           {' · '}
-          Сумма невыбранных позиций:{' '}
-          <strong>{formatEstimatePresetTotalRub(unselectedTotal)}</strong>
+          Выбрано здесь: <strong>{formatEstimatePresetTotalRub(selectedTotal)}</strong>
+          {' · '}
+          Невыбранные позиции
+          {preset.splitBundleId?.trim() ? ' (по связке)' : ''}:{' '}
+          <strong>{formatEstimatePresetTotalRub(unassignedAcrossBundleTotal)}</strong>
         </p>
         {localError ? <p data-modal-form-error>{localError}</p> : null}
 
         <div className={styles.workScopeSplitTreePanel}>
-          {tree.map((cat) => (
-            <div key={cat.id}>
-              <label className={`${styles.workScopeSplitRow} ${styles.workScopeSplitIndent1}`}>
-                <input
-                  type="checkbox"
-                  checked={(() => {
-                    const ids = lineKeysFromCategoryNodeId(tree, cat.id);
-                    const selectable = ids.filter(
-                      (id) =>
-                        !isLineKeyClaimedBySibling(id, claimIndex, selectedKeys) ||
-                        selectedKeys.includes(id)
-                    );
-                    return selectable.length > 0 && selectable.every((id) => selectedSet.has(id));
-                  })()}
-                  disabled={saving}
-                  onChange={() => toggleCategory(cat.id)}
-                />
-                <span>{cat.label}</span>
-                <span className={styles.workScopeSplitRowMeta}>
-                  {formatEstimatePresetTotalRub(cat.amount)}
-                </span>
-              </label>
-              {cat.rooms.map((room) => (
-                <div key={room.id}>
-                  <label className={`${styles.workScopeSplitRow} ${styles.workScopeSplitIndent2}`}>
+          {!treeLoading && tree.length > 0 ? (
+            <div className={styles.workScopeSplitTreeToolbar}>
+              <button
+                type="button"
+                className={styles.workScopeSplitBulkLink}
+                disabled={
+                  saving || treeLoading || selectableLineIds.length === 0 || allSelectableSelected
+                }
+                onClick={selectAllAvailableLines}
+              >
+                Отметить все
+              </button>
+              <span className={styles.workScopeSplitBulkSep} aria-hidden>
+                ·
+              </span>
+              <button
+                type="button"
+                className={styles.workScopeSplitBulkLink}
+                disabled={
+                  saving || treeLoading || selectableLineIds.length === 0 || !anySelectableSelected
+                }
+                onClick={deselectAllAvailableLines}
+              >
+                Снять все
+              </button>
+            </div>
+          ) : null}
+          <div className={styles.workScopeSplitTreeScroll}>
+            {treeLoading ? (
+              <p data-modal-form-hint style={{ margin: 0 }}>
+                Загрузка подкатегорий из каталога…
+              </p>
+            ) : tree.length === 0 ? (
+              <p data-modal-form-hint style={{ margin: 0 }}>
+                Нет строк сметы для разделения.
+              </p>
+            ) : (
+              tree.map((cat) => (
+                <div key={cat.id}>
+                  <label
+                    className={`${styles.workScopeSplitRow} ${styles.workScopeSplitIndent1} ${styles.workScopeSplitHeading}`}
+                  >
                     <input
                       type="checkbox"
                       checked={(() => {
-                        const lineIds = lineKeysFromRoomNodeId(tree, room.id);
-                        const selectable = lineIds.filter(
+                        const ids = lineKeysFromCategoryNodeId(tree, cat.id);
+                        const selectable = ids.filter(
                           (id) =>
                             !isLineKeyClaimedBySibling(id, claimIndex, selectedKeys) ||
                             selectedKeys.includes(id)
@@ -595,80 +750,120 @@ function EstimateWorkScopeSplitModal({
                           selectable.length > 0 && selectable.every((id) => selectedSet.has(id))
                         );
                       })()}
-                      disabled={saving}
-                      onChange={() => toggleRoom(room.id)}
+                      disabled={saving || treeLoading}
+                      onChange={() => toggleCategory(cat.id)}
                     />
-                    <span>{room.label}</span>
+                    <span className={styles.workScopeSplitHeadingLabel}>{cat.label}</span>
+                    <span className={styles.workScopeSplitHeadingLeader} aria-hidden="true" />
                     <span className={styles.workScopeSplitRowMeta}>
-                      {formatEstimatePresetTotalRub(room.amount)}
+                      {formatEstimatePresetTotalRub(cat.amount)}
                     </span>
                   </label>
-                  {room.lines.map((line) => {
-                    const claims = claimIndex.get(line.id);
-                    const claimed = isLineKeyClaimedBySibling(line.id, claimIndex, selectedKeys);
-                    const claimTitle = claims?.[0]?.title;
+                  {cat.rooms.map((room) => {
+                    const showStages = room.stages.length > 1;
                     return (
-                      <label
-                        key={line.id}
-                        className={`${styles.workScopeSplitRow} ${styles.workScopeSplitIndent3}`}
-                      >
-                        {claimed ? (
-                          <span
-                            className={styles.workScopeSplitClaimedCheckbox}
-                            role="img"
-                            aria-label={
-                              claimTitle
-                                ? `Позиция уже включена в расчёт «${claimTitle}»`
-                                : 'Позиция уже включена в другом расчёте связки'
-                            }
-                            title={
-                              claimTitle
-                                ? `Уже в расчёте «${claimTitle}»`
-                                : 'Уже в другом расчёте связки'
-                            }
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width={12}
-                              height={12}
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              aria-hidden
-                            >
-                              <path
-                                d="M18 6L6 18M6 6l12 12"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                              />
-                            </svg>
-                          </span>
-                        ) : (
+                      <div key={room.id}>
+                        <label
+                          className={`${styles.workScopeSplitRow} ${styles.workScopeSplitIndent2} ${styles.workScopeSplitHeading}`}
+                        >
                           <input
                             type="checkbox"
-                            checked={selectedSet.has(line.id)}
-                            disabled={saving}
-                            onChange={() => toggleLine(line.id)}
+                            checked={(() => {
+                              const lineIds = lineKeysFromRoomNodeId(tree, room.id);
+                              const selectable = lineIds.filter(
+                                (id) =>
+                                  !isLineKeyClaimedBySibling(id, claimIndex, selectedKeys) ||
+                                  selectedKeys.includes(id)
+                              );
+                              return (
+                                selectable.length > 0 &&
+                                selectable.every((id) => selectedSet.has(id))
+                              );
+                            })()}
+                            disabled={saving || treeLoading}
+                            onChange={() => toggleRoom(room.id)}
                           />
-                        )}
-                        <span style={{ flex: 1, minWidth: 0 }}>{line.label}</span>
-                        <span className={styles.workScopeSplitRowMeta}>
-                          {formatEstimatePresetTotalRub(line.amount)}
-                        </span>
-                      </label>
+                          <span className={styles.workScopeSplitHeadingLabel}>{room.label}</span>
+                          <span className={styles.workScopeSplitHeadingLeader} aria-hidden="true" />
+                          <span className={styles.workScopeSplitRowMeta}>
+                            {formatEstimatePresetTotalRub(room.amount)}
+                          </span>
+                        </label>
+                        {showStages
+                          ? room.stages.map((stage) => (
+                              <div key={stage.id}>
+                                <label
+                                  className={`${styles.workScopeSplitRow} ${styles.workScopeSplitIndent3} ${styles.workScopeSplitHeading}`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={(() => {
+                                      const lineIds = lineKeysFromStageNodeId(tree, stage.id);
+                                      const selectable = lineIds.filter(
+                                        (id) =>
+                                          !isLineKeyClaimedBySibling(
+                                            id,
+                                            claimIndex,
+                                            selectedKeys
+                                          ) || selectedKeys.includes(id)
+                                      );
+                                      return (
+                                        selectable.length > 0 &&
+                                        selectable.every((id) => selectedSet.has(id))
+                                      );
+                                    })()}
+                                    disabled={saving || treeLoading}
+                                    onChange={() => toggleStage(stage.id)}
+                                  />
+                                  <span className={styles.workScopeSplitHeadingLabel}>
+                                    {stage.label}
+                                  </span>
+                                  <span
+                                    className={styles.workScopeSplitHeadingLeader}
+                                    aria-hidden="true"
+                                  />
+                                  <span className={styles.workScopeSplitRowMeta}>
+                                    {formatEstimatePresetTotalRub(stage.amount)}
+                                  </span>
+                                </label>
+                                {stage.lines.map((line) =>
+                                  renderWorkScopeLineRow(line, styles.workScopeSplitIndent4)
+                                )}
+                              </div>
+                            ))
+                          : linesInWorkScopeRoom(room).map((line) =>
+                              renderWorkScopeLineRow(line, styles.workScopeSplitIndent3)
+                            )}
+                      </div>
                     );
                   })}
                 </div>
-              ))}
-            </div>
-          ))}
+              ))
+            )}
+          </div>
         </div>
+
+        {!treeLoading && workScopeSplitHint === 'draft_snapshot_mismatch' ? (
+          <p data-modal-form-hint>
+            Подкатегории недоступны: в сохранённом снимке этой сметы нет скрытых id позиций каталога
+            (так было до последнего обновления). Они появляются после следующего сохранения сметы из
+            редактора расчёта. Если кнопки «Сохранить» не видно — внесите любое маленькое изменение
+            (например пробел в названии помещения), затем сохраните.
+          </p>
+        ) : null}
+        {!treeLoading && workScopeSplitHint === 'no_subcategory_buckets' ? (
+          <p data-modal-form-hint>
+            Подкатегории не разделены: в каталоге для этих видов работ одна секция позиций, либо
+            ответ каталога не содержит нужных id позиций.
+          </p>
+        ) : null}
 
         <div data-modal-footer-info data-modal-tone="info" role="status">
           <span data-modal-footer-info-icon aria-hidden="true" />
           <span data-modal-footer-info-text>
-            В данных сметы нет отдельного поля «этап» — показаны категории, помещения и строки
-            сметы.
+            Подкатегории (секции позиций в каталоге услуг) подставляются только в этой модалке, если
+            совпадают черновик калькулятора и снимок сметы. В печатной смете по-прежнему только
+            помещения и родительские категории.
           </span>
         </div>
 
@@ -679,7 +874,7 @@ function EstimateWorkScopeSplitModal({
           <button
             type="submit"
             data-modal-btn="primary"
-            disabled={saving || allLineIds.length === 0}
+            disabled={saving || treeLoading || allLineIds.length === 0}
           >
             {saving ? 'Сохранение…' : 'Сохранить состав'}
           </button>

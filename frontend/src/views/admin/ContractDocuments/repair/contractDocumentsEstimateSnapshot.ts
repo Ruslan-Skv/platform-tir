@@ -1,6 +1,22 @@
 import type { ContractEstimatePreset } from '@/shared/api/admin-contract-document-packages';
+import { apiFetch } from '@/shared/lib/api-fetch';
+import { getApiBaseUrl } from '@/shared/lib/auth-session';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+function joinApiPath(path: string): string {
+  const base = getApiBaseUrl().replace(/\/$/, '');
+  const p = path.replace(/^\//, '');
+  return `${base}/${p}`;
+}
+
+function draftLineQuantityPositive(raw: unknown): number | null {
+  const n =
+    typeof raw === 'number'
+      ? raw
+      : typeof raw === 'string'
+        ? Number(String(raw).replace(',', '.').trim())
+        : NaN;
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
 
 type PersistedCalculatorDraftV1 = {
   v: 1;
@@ -9,13 +25,20 @@ type PersistedCalculatorDraftV1 = {
     id: string;
     name: string;
     collapsed: boolean;
-    lines: Array<{ itemId: string; quantity: number }>;
+    lines: Array<{ itemId: string; quantity: number | string }>;
   }>;
 };
 
 export type EstimateSnapshot = NonNullable<ContractEstimatePreset['snapshot']>;
 
-function parseDraftRooms(
+function normalizeCatalogItemId(raw: unknown): string | null {
+  if (raw === null || raw === undefined) return null;
+  const s = String(raw).trim();
+  return s.length > 0 ? s : null;
+}
+
+/** Комнаты и позиции черновика калькулятора (как при построении снимка сметы). */
+export function parseDraftRooms(
   draftRaw: string
 ): Array<{ name: string; items: Array<{ itemId: string; quantity: number }> }> {
   try {
@@ -24,9 +47,14 @@ function parseDraftRooms(
     return parsed.calcs
       .map((calc) => ({
         name: calc.name?.trim() || 'Помещение',
-        items: (calc.lines ?? []).filter(
-          (line) => line?.itemId && typeof line.quantity === 'number' && line.quantity > 0
-        ),
+        items: (calc.lines ?? [])
+          .map((line) => {
+            const qty = draftLineQuantityPositive(line?.quantity);
+            const itemId = normalizeCatalogItemId(line?.itemId);
+            if (!itemId || qty == null) return null;
+            return { itemId, quantity: qty };
+          })
+          .filter((x): x is { itemId: string; quantity: number } => x != null),
       }))
       .filter((room) => room.items.length > 0);
   } catch {
@@ -39,7 +67,7 @@ export async function buildEstimateSnapshot(draftRaw: string): Promise<EstimateS
   if (rooms.length === 0) return null;
   const roomSnapshots = await Promise.all(
     rooms.map(async (room) => {
-      const res = await fetch(`${API_URL}/service-catalog/calculate`, {
+      const res = await apiFetch(joinApiPath('service-catalog/calculate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items: room.items }),
@@ -54,12 +82,14 @@ export async function buildEstimateSnapshot(draftRaw: string): Promise<EstimateS
             quantity: item.quantity,
             price: 0,
             amount: 0,
+            itemId: item.itemId,
           })),
         };
       }
       const data = (await res.json()) as {
         total?: number;
         lines?: Array<{
+          itemId?: string;
           name: string;
           unit: string;
           quantity: number;
@@ -67,18 +97,36 @@ export async function buildEstimateSnapshot(draftRaw: string): Promise<EstimateS
           amount: number;
         }>;
       };
+      const apiLines = Array.isArray(data.lines) ? data.lines : [];
+      const mapped =
+        apiLines.length > 0
+          ? apiLines.map((line, idx) => {
+              const fromApi = normalizeCatalogItemId(line.itemId);
+              const fromItem = room.items[idx]
+                ? normalizeCatalogItemId(room.items[idx]!.itemId)
+                : null;
+              const itemId = fromApi ?? fromItem;
+              return {
+                name: line.name,
+                unit: line.unit,
+                quantity: line.quantity,
+                price: line.price,
+                amount: line.amount,
+                ...(itemId ? { itemId } : {}),
+              };
+            })
+          : room.items.map((item) => ({
+              name: `Позиция ${item.itemId}`,
+              unit: 'ед.',
+              quantity: item.quantity,
+              price: 0,
+              amount: 0,
+              itemId: item.itemId,
+            }));
       return {
         name: room.name,
         total: typeof data.total === 'number' ? data.total : 0,
-        lines: Array.isArray(data.lines)
-          ? data.lines.map((line) => ({
-              name: line.name,
-              unit: line.unit,
-              quantity: line.quantity,
-              price: line.price,
-              amount: line.amount,
-            }))
-          : [],
+        lines: mapped,
       };
     })
   );

@@ -6303,33 +6303,184 @@
   margin-right: var(--admin-space-xs);
 }
 
+.workScopeSplitModalForm [data-modal-form-hint],
+.workScopeSplitModalForm [data-modal-form-error] {
+  font-size: var(--admin-font-size-xs, 0.8125rem);
+  line-height: 1.35;
+}
+
+.workScopeSplitModalForm [data-modal-footer-info-text] {
+  font-size: var(--admin-font-size-xs, 0.8125rem);
+  line-height: 1.35;
+}
+
+.workScopeSplitHeading {
+  padding: 2px 0;
+}
+
+.workScopeSplitHeadingLabel {
+  flex-shrink: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.workScopeSplitHeadingLeader {
+  align-self: flex-end;
+  border-bottom: 1px dotted var(--admin-text-muted);
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  height: 0.55em;
+  margin: 0 0.35rem;
+  min-width: 0.75rem;
+  opacity: 0.55;
+}
+
 .workScopeSplitTreePanel {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border-strong);
   border-radius: var(--admin-radius-md);
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
   max-height: min(52vh, 480px);
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   padding: var(--admin-space-md);
+}
+
+.workScopeSplitTreeToolbar {
+  align-items: center;
+  border-bottom: 1px solid var(--admin-border-strong, #e5e7eb);
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 0.15em 0.4em;
+  line-height: 1.25;
+  margin: -2px 0 6px;
+  padding-bottom: 5px;
+}
+
+.workScopeSplitTreeScroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.workScopeSplitBulkLink {
+  background: none;
+  border: none;
+  color: var(--admin-accent-action, #2563eb);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--admin-font-size-xs, 0.8125rem);
+  margin: 0;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+.workScopeSplitBulkLink:hover:not(:disabled) {
+  color: var(--admin-accent-action-hover, #1d4ed8);
+}
+
+.workScopeSplitBulkLink:disabled {
+  color: var(--admin-text-muted);
+  cursor: not-allowed;
+  opacity: 0.55;
+  text-decoration: none;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .workScopeSplitBulkLink {
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workScopeSplitBulkLink:hover:not(:disabled) {
+  color: #bfdbfe;
+}
+
+.workScopeSplitBulkSep {
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-xs, 0.8125rem);
+  user-select: none;
 }
 
 .workScopeSplitTreePanel label.workScopeSplitRow {
   align-items: flex-start;
   color: var(--modal-text, var(--admin-text-primary));
   display: flex;
-  font-size: var(--admin-font-size-sm);
+  font-size: var(--admin-font-size-xs, 0.8125rem);
   font-weight: 400;
   margin-bottom: 0;
+}
+
+.workScopeSplitTreePanel label.workScopeSplitRow.workScopeSplitHeading.workScopeSplitIndent1 {
+  color: var(--admin-info-bright, #1d4ed8);
+  font-weight: 400;
+}
+
+.workScopeSplitTreePanel label.workScopeSplitRow.workScopeSplitHeading.workScopeSplitIndent2 {
+  color: var(--admin-success-emerald, #047857);
+  font-weight: 400;
+}
+
+.workScopeSplitTreePanel label.workScopeSplitRow.workScopeSplitHeading.workScopeSplitIndent3 {
+  color: var(--admin-warning-amber, #b45309);
+  font-weight: 400;
+}
+
+.workScopeSplitTreePanel label.workScopeSplitRow.workScopeSplitHeading .workScopeSplitRowMeta {
+  color: var(--admin-text-muted);
+  font-weight: 400;
+  margin-left: 0;
+}
+
+.workScopeSplitTreePanel label.workScopeSplitRow.workScopeSplitHeading {
+  align-items: flex-end;
+}
+
+.workScopeSplitTreePanel label.workScopeSplitRow.workScopeSplitHeading > input[type='checkbox'] {
+  align-self: center;
+  margin: 0;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workScopeSplitTreePanel
+  label.workScopeSplitRow.workScopeSplitHeading.workScopeSplitIndent1 {
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workScopeSplitTreePanel
+  label.workScopeSplitRow.workScopeSplitHeading.workScopeSplitIndent2 {
+  color: #6ee7b7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workScopeSplitTreePanel
+  label.workScopeSplitRow.workScopeSplitHeading.workScopeSplitIndent3 {
+  color: #fcd34d;
+}
+
+.workScopeSplitTreePanel input[type='checkbox'] {
+  box-sizing: border-box;
+  cursor: pointer;
+  flex-shrink: 0;
+  height: 13px;
+  margin: 2px 0 0;
+  min-height: 13px;
+  min-width: 13px;
+  width: 13px;
 }
 
 .workScopeSplitRow {
   display: flex;
   align-items: flex-start;
   gap: var(--admin-space-sm);
-  padding: 3px 0;
-  font-size: var(--admin-font-size-sm);
-  line-height: 1.35;
+  line-height: 1.28;
+  padding: 1px 0;
+  font-size: var(--admin-font-size-xs, 0.8125rem);
 }
 
 .workScopeSplitRowMeta {
@@ -6352,23 +6503,29 @@
   padding-left: 2.5rem;
 }
 
+.workScopeSplitIndent4 {
+  padding-left: 3.75rem;
+}
+
 .workScopeSplitClaimedCheckbox {
   align-items: center;
   background: var(--admin-surface-soft, #f3f4f6);
   border: 1px solid var(--admin-border-strong, #d1d5db);
-  border-radius: 3px;
+  border-radius: 2px;
   box-sizing: border-box;
   color: #dc2626;
   display: inline-flex;
   flex-shrink: 0;
-  height: 18px;
+  height: 14px;
   justify-content: center;
-  margin-top: 1px;
-  width: 18px;
+  margin: 2px 0 0;
+  width: 14px;
 }
 
 .workScopeSplitClaimedCheckbox svg {
   display: block;
+  height: 9px;
+  width: 9px;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .workScopeSplitClaimedCheckbox {
