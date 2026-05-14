@@ -4403,6 +4403,16 @@
   color: var(--admin-text-muted);
 }
 
+.estimatesSplitBundleBadge {
+  border: 1px solid color-mix(in srgb, var(--admin-chart-series-4) 50%, var(--admin-border));
+  background: color-mix(in srgb, var(--admin-chart-series-4) 14%, var(--admin-surface));
+  color: var(--admin-text-primary);
+}
+
+.estimatesCardSplitBundle {
+  border-left: 3px solid var(--admin-chart-series-4);
+}
+
 .estimatesCardMeta {
   font-size: var(--admin-font-size-2xs);
   color: var(--admin-text-muted);
@@ -6293,17 +6303,24 @@
   margin-right: var(--admin-space-xs);
 }
 
-.workScopeSplitModalCard {
-  width: min(720px, 100%);
-  max-height: min(90vh, 920px);
+.workScopeSplitTreePanel {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+  box-sizing: border-box;
+  max-height: min(52vh, 480px);
+  min-height: 0;
+  overflow: auto;
+  padding: var(--admin-space-md);
 }
 
-.workScopeSplitModalScroll {
-  overflow: auto;
-  max-height: min(58vh, 520px);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-md);
-  padding: var(--admin-space-md);
+.workScopeSplitTreePanel label.workScopeSplitRow {
+  align-items: flex-start;
+  color: var(--modal-text, var(--admin-text-primary));
+  display: flex;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 400;
+  margin-bottom: 0;
 }
 
 .workScopeSplitRow {
@@ -6335,9 +6352,27 @@
   padding-left: 2.5rem;
 }
 
-.workScopeSplitClaimNote {
-  font-size: var(--admin-font-size-xs);
-  color: var(--admin-chart-series-6);
+.workScopeSplitClaimedCheckbox {
+  align-items: center;
+  background: var(--admin-surface-soft, #f3f4f6);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: 3px;
+  box-sizing: border-box;
+  color: #dc2626;
+  display: inline-flex;
+  flex-shrink: 0;
+  height: 18px;
+  justify-content: center;
+  margin-top: 1px;
+  width: 18px;
+}
+
+.workScopeSplitClaimedCheckbox svg {
+  display: block;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .workScopeSplitClaimedCheckbox {
+  color: #f87171;
 }
 
 /*

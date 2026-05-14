@@ -14,6 +14,8 @@ import {
   putContractDocumentEstimatePresets,
 } from '@/shared/api/admin-contract-document-packages';
 import { getMeasurements } from '@/shared/api/admin-crm';
+import confirmModalStyles from '@/shared/ui/ConfirmModal/ConfirmModal.module.css';
+import { Modal } from '@/shared/ui/Modal';
 
 import styles from './ContractDocuments.module.css';
 import {
@@ -83,6 +85,14 @@ function parseOptionalPercentInput(raw: string): number | undefined {
 
 function formatEstimatePresetTotalRub(total: number): string {
   return `${total.toFixed(2).replace('.', ',')} руб.`;
+}
+
+/** Можно создать связанный экземпляр: уже есть сохранённый состав разделения сметы. */
+function isPresetEligibleForLinkedSplitInstance(p: ContractEstimatePreset): boolean {
+  return (
+    Boolean(p.splitBundleId) ||
+    (Array.isArray(p.estimateWorkScopeKeys) && p.estimateWorkScopeKeys.length > 0)
+  );
 }
 
 type EstimatesListSortMode = 'estimateDate' | 'updatedAt';
@@ -440,6 +450,23 @@ function EstimateWorkScopeSplitModal({
     return sum;
   }, [tree, selectedSet]);
 
+  const grandTotalInTree = useMemo(() => {
+    let sum = 0;
+    for (const cat of tree) {
+      for (const room of cat.rooms) {
+        for (const line of room.lines) {
+          sum += line.amount;
+        }
+      }
+    }
+    return sum;
+  }, [tree]);
+
+  const unselectedTotal = useMemo(
+    () => Math.max(0, grandTotalInTree - selectedTotal),
+    [grandTotalInTree, selectedTotal]
+  );
+
   const toggleLine = (lineId: string) => {
     if (isLineKeyClaimedBySibling(lineId, claimIndex, selectedKeys)) return;
     setSelectedKeys((prev) =>
@@ -499,37 +526,37 @@ function EstimateWorkScopeSplitModal({
   };
 
   return (
-    <div
-      className={styles.saveModalBackdrop}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="work-scope-split-title"
-      onClick={(e) => {
-        if (e.target === e.currentTarget && !saving) onClose();
+    <Modal
+      isOpen
+      onClose={() => {
+        if (!saving) onClose();
       }}
+      title="Разделение сметы по договорам"
+      size="lg"
+      showCloseButton
     >
-      <div
-        className={`${styles.saveModalCard} ${styles.workScopeSplitModalCard}`}
-        onClick={(e) => e.stopPropagation()}
+      <form
+        data-modal-form
+        data-modal-density="compact"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void handleSave();
+        }}
       >
-        <h3 id="work-scope-split-title" className={styles.saveModalTitle}>
-          Разделение сметы по договорам
-        </h3>
-        <p className={styles.saveModalText}>
+        <p data-modal-form-hint>
           Расчёт: <strong>{preset.title}</strong>. Отметьте позиции, которые войдут в этот экземпляр
           для договора. Связанные копии расчёта (та же группа разделения) видят занятые позиции и не
-          могут включить их повторно. В данных сметы нет отдельного поля «этап» — показаны
-          категории, помещения и строки сметы.
+          могут включить их повторно.
         </p>
-        <p className={styles.saveModalText} style={{ marginTop: -4 }}>
+        <p data-modal-form-hint>
           Сумма по выбранному: <strong>{formatEstimatePresetTotalRub(selectedTotal)}</strong>
+          {' · '}
+          Сумма невыбранных позиций:{' '}
+          <strong>{formatEstimatePresetTotalRub(unselectedTotal)}</strong>
         </p>
-        {localError ? (
-          <p className={styles.hint} style={{ color: 'var(--admin-chart-series-6)' }}>
-            {localError}
-          </p>
-        ) : null}
-        <div className={styles.workScopeSplitModalScroll}>
+        {localError ? <p data-modal-form-error>{localError}</p> : null}
+
+        <div className={styles.workScopeSplitTreePanel}>
           {tree.map((cat) => (
             <div key={cat.id}>
               <label className={`${styles.workScopeSplitRow} ${styles.workScopeSplitIndent1}`}>
@@ -547,9 +574,7 @@ function EstimateWorkScopeSplitModal({
                   disabled={saving}
                   onChange={() => toggleCategory(cat.id)}
                 />
-                <span>
-                  <strong>{cat.label}</strong>
-                </span>
+                <span>{cat.label}</span>
                 <span className={styles.workScopeSplitRowMeta}>
                   {formatEstimatePresetTotalRub(cat.amount)}
                 </span>
@@ -581,26 +606,52 @@ function EstimateWorkScopeSplitModal({
                   {room.lines.map((line) => {
                     const claims = claimIndex.get(line.id);
                     const claimed = isLineKeyClaimedBySibling(line.id, claimIndex, selectedKeys);
+                    const claimTitle = claims?.[0]?.title;
                     return (
                       <label
                         key={line.id}
                         className={`${styles.workScopeSplitRow} ${styles.workScopeSplitIndent3}`}
                       >
-                        <input
-                          type="checkbox"
-                          checked={selectedSet.has(line.id)}
-                          disabled={saving || claimed}
-                          onChange={() => toggleLine(line.id)}
-                        />
-                        <span style={{ flex: 1, minWidth: 0 }}>
-                          {line.label}
-                          {claims?.length ? (
-                            <span className={styles.workScopeSplitClaimNote}>
-                              {' '}
-                              — уже в «{claims[0]!.title}»
-                            </span>
-                          ) : null}
-                        </span>
+                        {claimed ? (
+                          <span
+                            className={styles.workScopeSplitClaimedCheckbox}
+                            role="img"
+                            aria-label={
+                              claimTitle
+                                ? `Позиция уже включена в расчёт «${claimTitle}»`
+                                : 'Позиция уже включена в другом расчёте связки'
+                            }
+                            title={
+                              claimTitle
+                                ? `Уже в расчёте «${claimTitle}»`
+                                : 'Уже в другом расчёте связки'
+                            }
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width={12}
+                              height={12}
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              aria-hidden
+                            >
+                              <path
+                                d="M18 6L6 18M6 6l12 12"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                              />
+                            </svg>
+                          </span>
+                        ) : (
+                          <input
+                            type="checkbox"
+                            checked={selectedSet.has(line.id)}
+                            disabled={saving}
+                            onChange={() => toggleLine(line.id)}
+                          />
+                        )}
+                        <span style={{ flex: 1, minWidth: 0 }}>{line.label}</span>
                         <span className={styles.workScopeSplitRowMeta}>
                           {formatEstimatePresetTotalRub(line.amount)}
                         </span>
@@ -612,21 +663,29 @@ function EstimateWorkScopeSplitModal({
             </div>
           ))}
         </div>
-        <div className={styles.saveModalActionsRow}>
-          <button type="button" className={styles.secondaryBtn} disabled={saving} onClick={onClose}>
+
+        <div data-modal-footer-info data-modal-tone="info" role="status">
+          <span data-modal-footer-info-icon aria-hidden="true" />
+          <span data-modal-footer-info-text>
+            В данных сметы нет отдельного поля «этап» — показаны категории, помещения и строки
+            сметы.
+          </span>
+        </div>
+
+        <div data-modal-form-actions>
+          <button type="button" data-modal-btn="secondary" disabled={saving} onClick={onClose}>
             Отмена
           </button>
           <button
-            type="button"
-            className={styles.primaryBtn}
+            type="submit"
+            data-modal-btn="primary"
             disabled={saving || allLineIds.length === 0}
-            onClick={() => void handleSave()}
           >
             {saving ? 'Сохранение…' : 'Сохранить состав'}
           </button>
         </div>
-      </div>
-    </div>
+      </form>
+    </Modal>
   );
 }
 
@@ -658,6 +717,11 @@ export function ContractDocumentsEstimatesPage() {
   const [detachDeleteModal, setDetachDeleteModal] = useState<{
     estimateId: string;
     usages: EstimatePackageUsage[];
+  } | null>(null);
+  const [simpleDeleteModal, setSimpleDeleteModal] = useState<{
+    estimateId: string;
+    title: string;
+    inSplitBundle: boolean;
   } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [isGenerateFromMeasurementOpen, setIsGenerateFromMeasurementOpen] = useState(false);
@@ -994,12 +1058,19 @@ export function ContractDocumentsEstimatesPage() {
     }
     if (!detachOk) return;
     setDetachDeleteModal(null);
-    await removeEstimateById(estimateId);
+    const removed = await removeEstimateById(estimateId);
+    if (!removed) return;
   };
 
-  const removeEstimateById = async (id: string) => {
+  const removeEstimateById = async (id: string): Promise<boolean> => {
     const next = items.filter((it) => it.id !== id);
-    await persistEstimates(next, groups);
+    return persistEstimates(next, groups);
+  };
+
+  const handleConfirmSimpleDelete = async () => {
+    if (!simpleDeleteModal) return;
+    const ok = await removeEstimateById(simpleDeleteModal.estimateId);
+    if (ok) setSimpleDeleteModal(null);
   };
 
   const toggleGroupCollapsed = (groupId: string) => {
@@ -1352,8 +1423,20 @@ export function ContractDocumentsEstimatesPage() {
     const hasSnapshotTotal = typeof snapshotTotal === 'number' && Number.isFinite(snapshotTotal);
     const splitTree = it.groupId ? buildEstimateWorkScopeTree(it, groups) : [];
     const canOpenWorkScopeSplit = Boolean(it.groupId) && splitTree.length > 0;
+    const splitBundlePeers = it.splitBundleId
+      ? items.filter((p) => p.splitBundleId === it.splitBundleId)
+      : [];
+    const splitBundleTooltip =
+      splitBundlePeers.length > 0
+        ? `Связанные расчёты (${splitBundlePeers.length}):\n${splitBundlePeers.map((p) => `· ${p.title}`).join('\n')}`
+        : '';
+    const canAddLinkedSplitInstance =
+      Boolean(it.groupId) && isPresetEligibleForLinkedSplitInstance(it);
     return (
-      <div key={it.id} className={styles.estimatesCard}>
+      <div
+        key={it.id}
+        className={`${styles.estimatesCard}${it.splitBundleId ? ` ${styles.estimatesCardSplitBundle}` : ''}`}
+      >
         {reorder ? (
           <div
             className={styles.estimatesCardReorderCol}
@@ -1415,6 +1498,14 @@ export function ContractDocumentsEstimatesPage() {
             >
               {isBound ? boundBadgeText : 'Не привязан'}
             </span>
+            {it.splitBundleId ? (
+              <span
+                className={`${styles.estimatesBadge} ${styles.estimatesSplitBundleBadge}`}
+                title={splitBundleTooltip}
+              >
+                Связка · {splitBundlePeers.length}
+              </span>
+            ) : null}
           </div>
           <span className={styles.estimatesCardMeta}>
             {it.categoryName}
@@ -1541,7 +1632,7 @@ export function ContractDocumentsEstimatesPage() {
             type="button"
             className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
             aria-label="Копировать расчёт"
-            title="Копировать расчёт"
+            title="Обычная копия: отдельный расчёт без связи разделения сметы. Остаётся в том же объекте, в списке сразу после исходного."
             disabled={saving}
             onClick={() =>
               router.push(
@@ -1565,6 +1656,41 @@ export function ContractDocumentsEstimatesPage() {
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
             </svg>
           </button>
+          {it.groupId && !archiveView ? (
+            <button
+              type="button"
+              className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+              aria-label="Связанный экземпляр для другого договора"
+              title={
+                canAddLinkedSplitInstance
+                  ? 'Связанный экземпляр: тот же объект и та же связка разделения сметы; после сохранения выберите позиции в модалке разделения.'
+                  : 'Сначала сохраните состав позиций в модалке «Разделение сметы» у этого расчёта.'
+              }
+              disabled={saving || hasLockedUsage || !canAddLinkedSplitInstance}
+              onClick={() => {
+                if (!canAddLinkedSplitInstance || hasLockedUsage) return;
+                router.push(
+                  `/admin/contract-documents/estimates/workspace?copyFrom=${encodeURIComponent(it.id)}&splitInstance=1`
+                );
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width={14}
+                height={14}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--admin-chart-series-5)"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+              </svg>
+            </button>
+          ) : null}
           {canOpenWorkScopeSplit && !archiveView ? (
             <button
               type="button"
@@ -1613,7 +1739,11 @@ export function ContractDocumentsEstimatesPage() {
                 });
                 return;
               }
-              void removeEstimateById(it.id);
+              setSimpleDeleteModal({
+                estimateId: it.id,
+                title: it.title.trim() || 'Расчёт',
+                inSplitBundle: Boolean(it.splitBundleId),
+              });
             }}
           >
             <svg
@@ -2140,6 +2270,50 @@ export function ContractDocumentsEstimatesPage() {
           </div>
         </div>
       ) : null}
+
+      <Modal
+        isOpen={simpleDeleteModal != null}
+        onClose={() => {
+          if (saving) return;
+          setSimpleDeleteModal(null);
+        }}
+        title="Удалить расчёт?"
+        size="sm"
+        showCloseButton
+      >
+        {simpleDeleteModal ? (
+          <div className={confirmModalStyles.content}>
+            <p className={confirmModalStyles.message}>
+              Расчёт «<strong>{simpleDeleteModal.title}</strong>» будет удалён безвозвратно из
+              общего списка. Восстановить его будет нельзя. Действие необратимо.
+            </p>
+            {simpleDeleteModal.inSplitBundle ? (
+              <p className={confirmModalStyles.message}>
+                Расчёт входит в связку разделения сметы: после удаления остальные экземпляры связки
+                останутся; их набор выбранных позиций не пересчитается автоматически.
+              </p>
+            ) : null}
+            <div className={confirmModalStyles.actions}>
+              <button
+                type="button"
+                className={confirmModalStyles.cancelButton}
+                disabled={saving}
+                onClick={() => setSimpleDeleteModal(null)}
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                className={`${confirmModalStyles.confirmButton} ${confirmModalStyles.danger}`}
+                disabled={saving}
+                onClick={() => void handleConfirmSimpleDelete()}
+              >
+                {saving ? 'Подождите…' : 'Удалить'}
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
 
       {isGenerateFromMeasurementOpen ? (
         <div

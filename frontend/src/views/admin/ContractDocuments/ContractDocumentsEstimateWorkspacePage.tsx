@@ -51,6 +51,52 @@ function clearStoredCalculatorStateForNewEstimate(categorySlugs: string[]) {
   }
 }
 
+function sortPresetsInGroupByListOrder(
+  a: ContractEstimatePreset,
+  b: ContractEstimatePreset
+): number {
+  const ai = a.inGroupListOrder;
+  const bi = b.inGroupListOrder;
+  if (ai != null && bi != null && ai !== bi) return ai - bi;
+  if (ai != null && bi == null) return -1;
+  if (ai == null && bi != null) return 1;
+  const at = Date.parse(a.updatedAt ?? '');
+  const bt = Date.parse(b.updatedAt ?? '');
+  if (Number.isFinite(at) && Number.isFinite(bt) && at !== bt) return bt - at;
+  return a.id.localeCompare(b.id);
+}
+
+/** Порядок внутри объекта: вставка сразу после указанного расчёта (между соседями — середина диапазона). */
+function computeInGroupListOrderAfterPreset(
+  presets: ContractEstimatePreset[],
+  groupId: string,
+  afterPresetId: string
+): number {
+  const members = presets.filter((p) => p.groupId === groupId).sort(sortPresetsInGroupByListOrder);
+  const i = members.findIndex((p) => p.id === afterPresetId);
+  if (i < 0) {
+    let max = 0;
+    for (const p of members) {
+      const o = p.inGroupListOrder;
+      if (typeof o === 'number' && Number.isFinite(o) && o > max) max = o;
+    }
+    return max + 10;
+  }
+  const cur = members[i]!;
+  const curOrd =
+    typeof cur.inGroupListOrder === 'number' && Number.isFinite(cur.inGroupListOrder)
+      ? cur.inGroupListOrder
+      : (i + 1) * 10;
+  const next = members[i + 1];
+  if (!next) return curOrd + 10;
+  const nextOrd =
+    typeof next.inGroupListOrder === 'number' && Number.isFinite(next.inGroupListOrder)
+      ? next.inGroupListOrder
+      : curOrd + 20;
+  if (nextOrd > curOrd + 1) return Math.floor((curOrd + nextOrd) / 2);
+  return curOrd + 10;
+}
+
 type WorkspaceBaseline = {
   categorySlugs: string[];
   name: string;
@@ -370,6 +416,7 @@ function ContractDocumentsEstimateWorkspaceInner() {
   const searchParams = useSearchParams();
   const estimateIdFromUrl = searchParams.get('id');
   const copyFromId = searchParams.get('copyFrom');
+  const splitInstanceFromUrl = searchParams.get('splitInstance') === '1';
   const fromMeasurementId = searchParams.get('fromMeasurement');
 
   const [loading, setLoading] = useState(true);
@@ -436,7 +483,8 @@ function ContractDocumentsEstimateWorkspaceInner() {
             }
             setEstimateCategorySlugs(sourceSlugs);
             setActiveCategorySlug(sourceSlugs[0] ?? '');
-            const copyTitle = `${source.title.trim() || 'Расчёт'} (копия)`;
+            const copyLabel = splitInstanceFromUrl ? '(экземпляр)' : '(копия)';
+            const copyTitle = `${source.title.trim() || 'Расчёт'} ${copyLabel}`;
             setEstimateNameDraft(copyTitle);
             setSelectedEstimateId('');
             baselineSlugs = sourceSlugs;
@@ -553,7 +601,7 @@ function ContractDocumentsEstimateWorkspaceInner() {
         setLoading(false);
       }
     })();
-  }, [estimateIdFromUrl, copyFromId, fromMeasurementId]);
+  }, [estimateIdFromUrl, copyFromId, splitInstanceFromUrl, fromMeasurementId]);
 
   useEffect(() => {
     if (estimateCategorySlugs.length === 0) {
@@ -772,14 +820,23 @@ function ContractDocumentsEstimateWorkspaceInner() {
         ? { slugs: draftSlugs, draftsByCategory, categories: categorySummaries }
         : null
     );
-    const copySourceForMarkup =
+    const copyFromSource =
       !existing && copyFromId ? items.find((it) => it.id === copyFromId) : undefined;
-    const markupSource = existing ?? copySourceForMarkup;
-    const copyInSplitFamily =
-      !existing &&
-      Boolean(copySourceForMarkup) &&
-      (Boolean(copySourceForMarkup!.splitBundleId) ||
-        Array.isArray(copySourceForMarkup!.estimateWorkScopeKeys));
+    const markupSource = existing ?? copyFromSource;
+    const copyLinkedSplitInstance = Boolean(copyFromSource) && splitInstanceFromUrl;
+
+    if (copyLinkedSplitInstance && copyFromSource) {
+      const eligible =
+        Boolean(copyFromSource.splitBundleId) ||
+        (Array.isArray(copyFromSource.estimateWorkScopeKeys) &&
+          copyFromSource.estimateWorkScopeKeys.length > 0);
+      if (!eligible) {
+        setError(
+          'Чтобы создать связанный экземпляр, сначала у исходного расчёта сохраните состав в модалке «Разделение сметы».'
+        );
+        return;
+      }
+    }
 
     const createdAt =
       existing != null
@@ -797,7 +854,11 @@ function ContractDocumentsEstimateWorkspaceInner() {
       snapshot: mergedSnapshot,
       createdAt,
       updatedAt: new Date().toISOString(),
-      ...(existing?.groupId ? { groupId: existing.groupId } : {}),
+      ...(existing?.groupId
+        ? { groupId: existing.groupId }
+        : copyFromSource?.groupId
+          ? { groupId: copyFromSource.groupId }
+          : {}),
       ...(existing?.archived ? { archived: true } : {}),
       ...(existing?.sourceMeasurementId
         ? { sourceMeasurementId: existing.sourceMeasurementId }
@@ -809,7 +870,15 @@ function ContractDocumentsEstimateWorkspaceInner() {
         : {}),
       ...(existing?.groupId && existing.inGroupListOrder != null
         ? { inGroupListOrder: existing.inGroupListOrder }
-        : {}),
+        : !existing && copyFromSource?.groupId && copyFromId
+          ? {
+              inGroupListOrder: computeInGroupListOrderAfterPreset(
+                items,
+                copyFromSource.groupId,
+                copyFromId
+              ),
+            }
+          : {}),
       ...(existing && !existing.groupId && existing.mergeListOrder != null
         ? { mergeListOrder: existing.mergeListOrder }
         : {}),
@@ -817,9 +886,9 @@ function ContractDocumentsEstimateWorkspaceInner() {
       ...(typeof existing?.estimateWorkScopeKeys !== 'undefined'
         ? { estimateWorkScopeKeys: [...existing.estimateWorkScopeKeys] }
         : {}),
-      ...(copyInSplitFamily && copySourceForMarkup
+      ...(copyLinkedSplitInstance && copyFromSource
         ? {
-            splitBundleId: copySourceForMarkup.splitBundleId ?? copySourceForMarkup.id,
+            splitBundleId: copyFromSource.splitBundleId ?? copyFromSource.id,
             estimateWorkScopeKeys: [] as string[],
           }
         : {}),
@@ -864,15 +933,18 @@ function ContractDocumentsEstimateWorkspaceInner() {
           <h1 className={`${styles.title} ${styles.estimateWorkspaceTitle}`}>
             {estimateIdFromUrl
               ? 'Редактирование расчёта'
-              : copyFromId
-                ? 'Новый расчёт по копии'
-                : fromMeasurementId
-                  ? 'Новый расчёт по выполненному замеру'
-                  : 'Новый расчёт'}
+              : copyFromId && splitInstanceFromUrl
+                ? 'Связанный экземпляр расчёта'
+                : copyFromId
+                  ? 'Новый расчёт по копии'
+                  : fromMeasurementId
+                    ? 'Новый расчёт по выполненному замеру'
+                    : 'Новый расчёт'}
           </h1>
           <p className={`${styles.subtitle} ${styles.estimateWorkspaceSubtitle}`}>
-            Калькулятор сметы. Сохранение появляется только при изменениях в названии, категории или
-            смете; затем вы вернётесь к списку общих расчётов.
+            {copyFromId && splitInstanceFromUrl
+              ? 'После сохранения расчёт окажется в том же объекте, рядом с исходным. Откройте у него модалку «Разделение сметы» и отметьте позиции для следующего договора. Обычное копирование без связи — кнопка «Копировать расчёт» в списке.'
+              : 'Калькулятор сметы. Сохранение появляется только при изменениях в названии, категории или смете; затем вы вернётесь к списку общих расчётов.'}
           </p>
         </div>
         <div className={styles.estimateWorkspaceHeaderControls}>
