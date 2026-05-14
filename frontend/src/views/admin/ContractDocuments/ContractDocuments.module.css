@@ -4409,6 +4409,12 @@
   color: var(--admin-text-primary);
 }
 
+.estimatesSplitBundleBadge.estimatesSplitBundleBadgeComplete {
+  background: var(--admin-success-bg-soft);
+  border: 1px solid var(--admin-success-border-soft);
+  color: var(--admin-success-text-strong);
+}
+
 .estimatesCardSplitBundle {
   border-left: 3px solid var(--admin-chart-series-4);
 }
@@ -4433,6 +4439,12 @@
 .estimatesCardCost strong {
   color: var(--admin-text-primary);
   font-weight: 600;
+}
+
+.estimatesCardCostFull {
+  color: var(--admin-text-muted);
+  font-weight: 400;
+  white-space: nowrap;
 }
 
 .estimatesCardGroupField {

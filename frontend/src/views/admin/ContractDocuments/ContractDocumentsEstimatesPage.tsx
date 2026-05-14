@@ -35,6 +35,7 @@ import {
 import { getDisplayContractDate, getDisplayContractNumber } from './repair/packageContractDisplay';
 import {
   clampEstimateAdditionalMarkupPercent,
+  getBaseSnapshotWithMarkupForPreset,
   getSnapshotForEstimateAttach,
 } from './repair/repairApplyEstimatePresetIds';
 import { persistRepairPackageAfterRemovingEstimatePreset } from './repair/repairDetachEstimatePresetFromPackages';
@@ -98,6 +99,40 @@ function isPresetEligibleForLinkedSplitInstance(p: ContractEstimatePreset): bool
     Boolean(p.splitBundleId) ||
     (Array.isArray(p.estimateWorkScopeKeys) && p.estimateWorkScopeKeys.length > 0)
   );
+}
+
+/** Объединение ключей строк сметы (`wsl:…`) по всем расчётам связки: явный список или «вся смета», если ключей нет в данных. */
+function mergeSplitBundleWorkScopeLineKeys(
+  peers: ContractEstimatePreset[],
+  groups: ContractEstimateGroup[]
+): Set<string> {
+  const union = new Set<string>();
+  for (const p of peers) {
+    const keys = p.estimateWorkScopeKeys;
+    if (Array.isArray(keys) && keys.length > 0) {
+      for (const k of keys) {
+        if (typeof k === 'string' && k.length > 0) union.add(k);
+      }
+    } else if (!Array.isArray(keys)) {
+      const tree = p.groupId ? buildEstimateWorkScopeTree(p, groups) : [];
+      for (const id of collectAllLineScopeIds(tree)) union.add(id);
+    }
+  }
+  return union;
+}
+
+/** Не менее двух расчётов в связке и вместе они покрывают все строки дерева состава для `cardPreset`. */
+function splitBundleCoversAllWorkScopeLines(
+  cardPreset: ContractEstimatePreset,
+  peers: ContractEstimatePreset[],
+  groups: ContractEstimateGroup[]
+): boolean {
+  if (!cardPreset.splitBundleId?.trim() || peers.length < 2) return false;
+  const tree = cardPreset.groupId ? buildEstimateWorkScopeTree(cardPreset, groups) : [];
+  const allIds = collectAllLineScopeIds(tree);
+  if (allIds.length === 0) return false;
+  const union = mergeSplitBundleWorkScopeLineKeys(peers, groups);
+  return allIds.every((id) => union.has(id));
 }
 
 type EstimatesListSortMode = 'estimateDate' | 'updatedAt';
@@ -1614,16 +1649,34 @@ export function ContractDocumentsEstimatesPage() {
         : primaryLabel
       : 'Не привязан';
     const attachSnap = getSnapshotForEstimateAttach(it, groups);
+    const fullMarkupSnap = getBaseSnapshotWithMarkupForPreset(it, groups);
     const snapshotTotal = attachSnap?.total;
+    const fullSnapshotTotal = fullMarkupSnap?.total;
     const hasSnapshotTotal = typeof snapshotTotal === 'number' && Number.isFinite(snapshotTotal);
+    const hasFullSnapshotTotal =
+      typeof fullSnapshotTotal === 'number' && Number.isFinite(fullSnapshotTotal);
+    const showFullEstimateTotalInParens =
+      Boolean(it.splitBundleId) &&
+      hasSnapshotTotal &&
+      hasFullSnapshotTotal &&
+      Math.abs(fullSnapshotTotal - snapshotTotal) > 0.005;
     const splitTree = it.groupId ? buildEstimateWorkScopeTree(it, groups) : [];
     const canOpenWorkScopeSplit = Boolean(it.groupId) && splitTree.length > 0;
     const splitBundlePeers = it.splitBundleId
       ? items.filter((p) => p.splitBundleId === it.splitBundleId)
       : [];
+    const splitBundleCoversAllPositions = splitBundleCoversAllWorkScopeLines(
+      it,
+      splitBundlePeers,
+      groups
+    );
     const splitBundleTooltip =
       splitBundlePeers.length > 0
-        ? `Связанные расчёты (${splitBundlePeers.length}):\n${splitBundlePeers.map((p) => `· ${p.title}`).join('\n')}`
+        ? `Связанные расчёты (${splitBundlePeers.length}):\n${splitBundlePeers.map((p) => `· ${p.title}`).join('\n')}${
+            splitBundleCoversAllPositions
+              ? '\n\nВсе позиции сметы распределены по расчётам связки.'
+              : ''
+          }`
         : '';
     const canAddLinkedSplitInstance =
       Boolean(it.groupId) && isPresetEligibleForLinkedSplitInstance(it);
@@ -1695,7 +1748,11 @@ export function ContractDocumentsEstimatesPage() {
             </span>
             {it.splitBundleId ? (
               <span
-                className={`${styles.estimatesBadge} ${styles.estimatesSplitBundleBadge}`}
+                className={`${styles.estimatesBadge} ${styles.estimatesSplitBundleBadge}${
+                  splitBundleCoversAllPositions
+                    ? ` ${styles.estimatesSplitBundleBadgeComplete}`
+                    : ''
+                }`}
                 title={splitBundleTooltip}
               >
                 Связка · {splitBundlePeers.length}
@@ -1709,7 +1766,15 @@ export function ContractDocumentsEstimatesPage() {
           <span className={styles.estimatesCardCost}>
             Стоимость:{' '}
             {hasSnapshotTotal ? (
-              <strong>{formatEstimatePresetTotalRub(snapshotTotal)}</strong>
+              <>
+                <strong>{formatEstimatePresetTotalRub(snapshotTotal)}</strong>
+                {showFullEstimateTotalInParens ? (
+                  <span className={styles.estimatesCardCostFull}>
+                    {' '}
+                    (всего {formatEstimatePresetTotalRub(fullSnapshotTotal)})
+                  </span>
+                ) : null}
+              </>
             ) : (
               '—'
             )}

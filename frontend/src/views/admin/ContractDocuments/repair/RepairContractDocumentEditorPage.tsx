@@ -67,11 +67,9 @@ import {
   wrapRepairActTwinCopiesOnOnePageHtml,
 } from './repairActTwinCopiesOnOnePageHtml';
 import {
-  type EstimateSnapshotRoom,
   applyEstimatePresetIdsToAddendumSlot,
   applyEstimatePresetIdsToRepairForm,
   getContractEstimateObjectGroupKey,
-  getSnapshotForEstimateAttach,
   isContractEstimatePresetAttachable,
 } from './repairApplyEstimatePresetIds';
 import {
@@ -93,6 +91,7 @@ import {
   normalizeLegacyRepairTabId,
   normalizeRepairDocumentTabOrder,
 } from './repairDocumentTemplates';
+import { buildEstimateSectionsFromPresetIds } from './repairEstimateDocPrintEmbedHtml';
 import {
   type RepairManagerQuestionnaire1Block,
   type RepairPackageFormData,
@@ -2322,31 +2321,15 @@ export function RepairContractDocumentEditorPage({
     estimateAttachGroupKey,
   ]);
 
-  const selectedEstimateSections = useMemo(() => {
-    const sectionMap = new Map<
-      string,
-      {
-        categoryName: string;
-        rooms: EstimateSnapshotRoom[];
-      }
-    >();
-    for (const presetId of form.estimate.selectedPresetIds ?? []) {
-      const preset = estimatePresets.find((row) => row.id === presetId);
-      if (!preset) continue;
-      const categoryName = preset.categoryName.trim() || '—';
-      const snapshot = getSnapshotForEstimateAttach(preset, estimateGroups);
-      const existing = sectionMap.get(categoryName);
-      if (existing) {
-        existing.rooms.push(...(snapshot?.rooms ?? []));
-      } else {
-        sectionMap.set(categoryName, {
-          categoryName,
-          rooms: [...(snapshot?.rooms ?? [])],
-        });
-      }
-    }
-    return [...sectionMap.values()];
-  }, [form.estimate.selectedPresetIds, estimatePresets, estimateGroups]);
+  const selectedEstimateSections = useMemo(
+    () =>
+      buildEstimateSectionsFromPresetIds(
+        form.estimate.selectedPresetIds,
+        estimatePresets,
+        estimateGroups
+      ),
+    [form.estimate.selectedPresetIds, estimatePresets, estimateGroups]
+  );
 
   const estimateAppendixContractRef = useMemo(() => {
     const num = form.contract.number.trim() || '—';
@@ -6115,14 +6098,6 @@ export function RepairContractDocumentEditorPage({
                         Итого по мастеру:{' '}
                         <strong>{formatMoneyValue(activeInstallerWorkOrder.total)} руб.</strong>
                       </p>
-                      {contractDiscountPercentParsed > 0 ? (
-                        <p className={styles.estimateA4DiscountMeta}>
-                          В столбце «Стоимость» — сумма по позиции со скидкой по договору{' '}
-                          {String(contractDiscountPercentParsed).replace('.', ',')}% (скидка до
-                          налога, наценки и надбавки по разряду). В сметах такие суммы по строкам не
-                          выводятся.
-                        </p>
-                      ) : null}
                     </>
                   ) : (
                     <>
@@ -6178,14 +6153,6 @@ export function RepairContractDocumentEditorPage({
                         Итого по итоговому заказ-наряду:{' '}
                         <strong>{formatMoneyValue(finalWorkOrderComputed.total)} руб.</strong>
                       </p>
-                      {contractDiscountPercentParsed > 0 ? (
-                        <p className={styles.estimateA4DiscountMeta}>
-                          В столбце «Стоимость» — сумма по позиции со скидкой по договору{' '}
-                          {String(contractDiscountPercentParsed).replace('.', ',')}% (скидка до
-                          налога, наценки и надбавки по разряду). В сметах такие суммы по строкам не
-                          выводятся.
-                        </p>
-                      ) : null}
                       {finalWorkOrderComputed.installerTotals.length > 0 ? (
                         <section className={styles.estimateA4Room}>
                           <div className={styles.estimateA4RoomHeader}>

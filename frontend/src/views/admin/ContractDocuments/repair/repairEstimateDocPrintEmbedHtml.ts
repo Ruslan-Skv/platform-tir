@@ -3,6 +3,7 @@ import type {
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
 
+import { parseDraftRooms } from './contractDocumentsEstimateSnapshot';
 import {
   type EstimateSnapshot,
   type EstimateSnapshotRoom,
@@ -20,7 +21,98 @@ export type EstimateEmbedSection = {
 
 type DraftMultiCategoryMeta = {
   categories?: Array<{ slug: string; name: string; roomCount: number; total: number }>;
+  slugs?: string[];
 };
+
+function normalizeUniqueSlugs(slugs: string[] | undefined): string[] {
+  if (!Array.isArray(slugs)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const s of slugs) {
+    const t = typeof s === 'string' ? s.trim() : '';
+    if (!t || seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
+  }
+  return out;
+}
+
+function resolvePresetMultiSlugOrder(
+  preset: ContractEstimatePreset,
+  meta: DraftMultiCategoryMeta | null
+): string[] {
+  const fromPreset = normalizeUniqueSlugs(preset.multiCategorySlugs);
+  if (fromPreset.length > 1) return fromPreset;
+  const fromMeta = normalizeUniqueSlugs(meta?.slugs);
+  if (fromMeta.length > 1) return fromMeta;
+  return [];
+}
+
+/**
+ * Помещения объединённого снимка режутся по категориям комплексного расчёта (как при сохранении):
+ * сначала `__adminMultiCategory.categories`, иначе порядок slug'ов и число помещений из черновиков по категориям.
+ */
+function buildEmbedSectionsForMergedPreset(
+  preset: ContractEstimatePreset,
+  snapshot: EstimateSnapshot
+): EstimateEmbedSection[] {
+  if (!snapshot.rooms.length) return [];
+  const meta = parseDraftMultiCategoryMeta(preset.calculatorDraft);
+  const categories = meta?.categories ?? [];
+
+  if (categories.length > 1) {
+    const out: EstimateEmbedSection[] = [];
+    let cursor = 0;
+    for (const cat of categories) {
+      const count = Math.max(0, Number(cat.roomCount) || 0);
+      const rooms = snapshot.rooms.slice(cursor, cursor + count);
+      cursor += count;
+      if (rooms.length === 0) continue;
+      const slug = (cat.slug || '').trim();
+      const categoryName = (cat.name || '').trim() || slug.replace(/-/g, ' ') || '—';
+      out.push({ categoryName, rooms: [...rooms] });
+    }
+    if (cursor < snapshot.rooms.length) {
+      const tailRooms = snapshot.rooms.slice(cursor);
+      const name = preset.categoryName.trim() || '—';
+      out.push({ categoryName: name, rooms: [...tailRooms] });
+    }
+    return out;
+  }
+
+  const slugOrder = resolvePresetMultiSlugOrder(preset, meta);
+  const byCat = preset.calculatorDraftByCategory as Record<string, string> | undefined;
+  if (slugOrder.length > 1 && byCat && typeof byCat === 'object') {
+    let cursor = 0;
+    const out: EstimateEmbedSection[] = [];
+    for (const slug of slugOrder) {
+      const draft = byCat[slug];
+      if (!draft || !String(draft).trim()) {
+        return [{ categoryName: preset.categoryName.trim() || '—', rooms: [...snapshot.rooms] }];
+      }
+      const roomCount = parseDraftRooms(draft).length;
+      if (roomCount <= 0) {
+        return [{ categoryName: preset.categoryName.trim() || '—', rooms: [...snapshot.rooms] }];
+      }
+      const rooms = snapshot.rooms.slice(cursor, cursor + roomCount);
+      cursor += roomCount;
+      if (rooms.length === 0) continue;
+      const catMeta = categories.find((c) => (c.slug || '').trim() === slug);
+      const categoryName =
+        (catMeta?.name && String(catMeta.name).trim()) || slug.replace(/-/g, ' ') || '—';
+      out.push({ categoryName, rooms: [...rooms] });
+    }
+    if (cursor < snapshot.rooms.length) {
+      out.push({
+        categoryName: preset.categoryName.trim() || '—',
+        rooms: [...snapshot.rooms.slice(cursor)],
+      });
+    }
+    if (out.length > 0) return out;
+  }
+
+  return [{ categoryName: preset.categoryName.trim() || '—', rooms: [...snapshot.rooms] }];
+}
 
 function parseDraftMultiCategoryMeta(draftRaw: string): DraftMultiCategoryMeta | null {
   try {
@@ -45,39 +137,11 @@ export function buildEstimateSectionsFromPresetIds(
     if (!preset) continue;
     const snapshot = getSnapshotForEstimateAttach(preset, estimateGroups);
     if (!snapshot?.rooms?.length) continue;
-    const meta = parseDraftMultiCategoryMeta(preset.calculatorDraft);
-    const categories = meta?.categories ?? [];
-    if (categories.length > 1) {
-      let cursor = 0;
-      for (const cat of categories) {
-        const count = Math.max(0, Number(cat.roomCount) || 0);
-        const rooms = snapshot.rooms.slice(cursor, cursor + count);
-        cursor += count;
-        if (rooms.length === 0) continue;
-        const categoryName = (cat.name || '').trim() || '—';
-        const existing = sectionMap.get(categoryName);
-        if (existing) existing.rooms.push(...rooms);
-        else sectionMap.set(categoryName, { categoryName, rooms: [...rooms] });
-      }
-      if (cursor < snapshot.rooms.length) {
-        const fallbackCategoryName = preset.categoryName.trim() || '—';
-        const existing = sectionMap.get(fallbackCategoryName);
-        const tailRooms = snapshot.rooms.slice(cursor);
-        if (existing) existing.rooms.push(...tailRooms);
-        else
-          sectionMap.set(fallbackCategoryName, {
-            categoryName: fallbackCategoryName,
-            rooms: tailRooms,
-          });
-      }
-      continue;
-    }
-    const categoryName = preset.categoryName.trim() || '—';
-    const existing = sectionMap.get(categoryName);
-    if (existing) {
-      existing.rooms.push(...(snapshot?.rooms ?? []));
-    } else {
-      sectionMap.set(categoryName, { categoryName, rooms: [...(snapshot?.rooms ?? [])] });
+    for (const sec of buildEmbedSectionsForMergedPreset(preset, snapshot)) {
+      const existing = sectionMap.get(sec.categoryName);
+      if (existing) existing.rooms.push(...sec.rooms);
+      else
+        sectionMap.set(sec.categoryName, { categoryName: sec.categoryName, rooms: [...sec.rooms] });
     }
   }
   return [...sectionMap.values()];
