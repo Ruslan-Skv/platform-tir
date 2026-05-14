@@ -143,6 +143,32 @@
   justify-content: flex-end;
 }
 
+.titleRow {
+  align-items: flex-start;
+  display: flex;
+  flex: 1;
+  gap: var(--modal-space-md);
+  min-width: 0;
+  padding-right: var(--modal-space-2xl);
+}
+
+.titleRow .title {
+  flex: 1;
+  min-width: 0;
+  padding-right: 0;
+}
+
+.titleAside {
+  color: var(--modal-text-muted);
+  flex-shrink: 0;
+  font-size: var(--modal-fs-sm);
+  font-weight: 400;
+  line-height: var(--modal-lh-tight);
+  max-width: min(20rem, 46vw);
+  text-align: right;
+  white-space: normal;
+}
+
 .title {
   color: var(--modal-text-strong);
   flex: 1;

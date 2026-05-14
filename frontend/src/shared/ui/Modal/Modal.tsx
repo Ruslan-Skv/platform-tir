@@ -10,6 +10,8 @@ export interface ModalProps {
   onClose: () => void;
   children: React.ReactNode;
   title?: string;
+  /** Содержимое справа от заголовка (например индикатор заполнения). */
+  titleAside?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showCloseButton?: boolean;
   /** Уменьшает отступы панели и заголовка на экранах ≤767px */
@@ -25,6 +27,7 @@ export const Modal: React.FC<ModalProps> = ({
   onClose,
   children,
   title,
+  titleAside,
   size = 'md',
   showCloseButton = true,
   compactOnMobile = false,
@@ -52,11 +55,24 @@ export const Modal: React.FC<ModalProps> = ({
                 className={`${styles.header} ${title ? styles.headerWithTitle : styles.headerWithoutTitle} ${compactOnMobile ? styles.headerCompactMobile : ''}`.trim()}
               >
                 {title && (
-                  <Dialog.Title
-                    className={`${styles.title} ${compactOnMobile ? styles.titleCompactMobile : ''} ${titleClassName ?? ''}`.trim()}
-                  >
-                    {title}
-                  </Dialog.Title>
+                  <>
+                    {titleAside != null ? (
+                      <div className={styles.titleRow}>
+                        <Dialog.Title
+                          className={`${styles.title} ${compactOnMobile ? styles.titleCompactMobile : ''} ${titleClassName ?? ''}`.trim()}
+                        >
+                          {title}
+                        </Dialog.Title>
+                        <div className={styles.titleAside}>{titleAside}</div>
+                      </div>
+                    ) : (
+                      <Dialog.Title
+                        className={`${styles.title} ${compactOnMobile ? styles.titleCompactMobile : ''} ${titleClassName ?? ''}`.trim()}
+                      >
+                        {title}
+                      </Dialog.Title>
+                    )}
+                  </>
                 )}
 
                 {showCloseButton && (

@@ -1,6 +1,6 @@
 'use client';
 
-import { type ChangeEvent, type FormEvent, useCallback, useEffect, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { type CrmCustomerEntityType, createCrmCustomer } from '@/shared/api/admin-crm';
 import { Modal } from '@/shared/ui/Modal';
@@ -47,6 +47,61 @@ const emptyForm = (): FormState => ({
   notes: '',
 });
 
+function hasTrimmedText(value: string): boolean {
+  return value.trim().length > 0;
+}
+
+function hasAnyTrimmedPhone(phones: readonly string[]): boolean {
+  return phones.some((p) => p.trim().length > 0);
+}
+
+const FIO_TARGET_WORD_COUNT = 3;
+
+function countWhitespaceSeparatedWords(value: string): number {
+  return value.trim().split(/\s+/).filter(Boolean).length;
+}
+
+/** Полное ФИО — три слова (фамилия, имя, отчество); при меньшем числе слов вклад пропорционально меньше. */
+function fioSlotWeight(value: string): number {
+  const n = countWhitespaceSeparatedWords(value);
+  if (n === 0) return 0;
+  return Math.min(n, FIO_TARGET_WORD_COUNT) / FIO_TARGET_WORD_COUNT;
+}
+
+/** Доля заполненных полей: у физлица без паспорта и банковских реквизитов; e-mail учитывается, но не обязателен. Заметки не учитываются. */
+function computeAddCustomerFormFillPercent(form: FormState, isQuick: boolean): number {
+  if (isQuick) {
+    const parts =
+      fioSlotWeight(form.fullName) +
+      (hasAnyTrimmedPhone(form.phones) ? 1 : 0) +
+      (hasTrimmedText(form.address) ? 1 : 0);
+    return Math.round((parts / 3) * 100);
+  }
+
+  if (form.entityType === 'PERSON') {
+    const parts =
+      (hasTrimmedText(form.email) ? 1 : 0) +
+      fioSlotWeight(form.fullName) +
+      (hasAnyTrimmedPhone(form.phones) ? 1 : 0) +
+      (hasTrimmedText(form.address) ? 1 : 0);
+    return Math.round((parts / 4) * 100);
+  }
+
+  const parts =
+    (hasTrimmedText(form.email) ? 1 : 0) +
+    fioSlotWeight(form.repNom) +
+    (hasTrimmedText(form.repGen) ? 1 : 0) +
+    (hasTrimmedText(form.organizationName) ? 1 : 0) +
+    (hasTrimmedText(form.posNom) ? 1 : 0) +
+    (hasTrimmedText(form.posGen) ? 1 : 0) +
+    (hasTrimmedText(form.inn) ? 1 : 0) +
+    (hasTrimmedText(form.ogrn) ? 1 : 0) +
+    (hasTrimmedText(form.address) ? 1 : 0) +
+    (hasTrimmedText(form.bankDetails) ? 1 : 0) +
+    (hasAnyTrimmedPhone(form.phones) ? 1 : 0);
+  return Math.round((parts / 11) * 100);
+}
+
 export function AddCrmCustomerModal({
   isOpen,
   onClose,
@@ -73,6 +128,21 @@ export function AddCrmCustomerModal({
   }, []);
 
   const isQuick = formMode === 'measurementQuick';
+
+  const fillPercent = useMemo(
+    () => computeAddCustomerFormFillPercent(form, isQuick),
+    [form, isQuick]
+  );
+
+  const fillPercentAsideHint = useMemo(() => {
+    if (isQuick) {
+      return 'В расчёт входят: ФИО, телефоны, адрес. E-mail в этой форме не задаётся — на сервере создаётся служебный адрес. Заметки не учитываются.';
+    }
+    if (form.entityType === 'PERSON') {
+      return 'В расчёт входят: e-mail, ФИО, телефоны, адрес. Паспорт и банковские реквизиты не учитываются.';
+    }
+    return 'В расчёт входят: e-mail, ФИО представителя, остальные данные представителя и организации, ИНН, ОГРН, адрес, банковские реквизиты, телефоны.';
+  }, [isQuick, form.entityType]);
 
   useEffect(() => {
     if (!isOpen || !isQuick) return;
@@ -180,11 +250,7 @@ export function AddCrmCustomerModal({
       return;
     }
 
-    const email = form.email.trim();
-    if (!email) {
-      setError('Укажите e-mail');
-      return;
-    }
+    const emailTrimmed = form.email.trim();
     if (form.entityType === 'PERSON' && !form.fullName.trim()) {
       setError('Укажите ФИО');
       return;
@@ -239,7 +305,7 @@ export function AddCrmCustomerModal({
     setSubmitting(true);
     try {
       const created = await createCrmCustomer({
-        email,
+        ...(emailTrimmed ? { email: emailTrimmed } : {}),
         firstName: firstNameForCrm,
         lastName,
         phone: normalizedPhones[0] ?? undefined,
@@ -267,7 +333,20 @@ export function AddCrmCustomerModal({
     formMode === 'measurementQuick' ? 'Новый клиент (краткая карточка)' : 'Добавить клиента';
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title={modalTitle} size="lg">
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={modalTitle}
+      titleAside={
+        <div className={phoneStyles.titleAsideStack}>
+          <span className={phoneStyles.titleAsideMain}>
+            Данные заказчика заполнены на {fillPercent}%.
+          </span>
+          <span className={phoneStyles.titleAsideHint}>{fillPercentAsideHint}</span>
+        </div>
+      }
+      size="lg"
+    >
       <form data-modal-form data-modal-density="compact" onSubmit={handleSubmit}>
         {!isQuick ? (
           <div data-modal-form-grid>
@@ -286,14 +365,8 @@ export function AddCrmCustomerModal({
               </select>
             </div>
             <div data-modal-form-group>
-              <label htmlFor="crm-email">E-mail *</label>
-              <input
-                id="crm-email"
-                type="email"
-                value={form.email}
-                onChange={set('email')}
-                required
-              />
+              <label htmlFor="crm-email">E-mail</label>
+              <input id="crm-email" type="email" value={form.email} onChange={set('email')} />
             </div>
           </div>
         ) : (
