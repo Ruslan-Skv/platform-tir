@@ -217,6 +217,11 @@ export interface ContractEstimateGroup {
   additionalMarkupPercent?: number;
   /** Объект в архиве: скрыт в основном списке и в выборе при оформлении договоров. */
   archived?: boolean;
+  /**
+   * Порядок блока объекта в общей ленте (вместе с расчётами вне объекта): меньше — выше.
+   * Если не задан — позиция по дате (режим сортировки на странице).
+   */
+  mergeListOrder?: number;
 }
 
 export interface ContractEstimatePreset {
@@ -252,7 +257,16 @@ export interface ContractEstimatePreset {
       }>;
     }>;
   } | null;
+  /** Дата создания расчёта (ISO). Для старых записей может отсутствовать — тогда на списке используется эвристика по id или updatedAt. */
+  createdAt?: string;
   updatedAt?: string;
+  /**
+   * Порядок в общей ленте для расчёта вне объекта: меньше — выше.
+   * У расчётов внутри объекта не используется (см. `inGroupListOrder`).
+   */
+  mergeListOrder?: number;
+  /** Порядок расчёта внутри объекта: меньше — выше. */
+  inGroupListOrder?: number;
   /** Расчёт в архиве (отдельно от объекта): скрыт в основном списке и в выборе при оформлении договоров. */
   archived?: boolean;
 }

@@ -776,6 +776,11 @@ function ContractDocumentsEstimateWorkspaceInner() {
       !existing && copyFromId ? items.find((it) => it.id === copyFromId) : undefined;
     const markupSource = existing ?? copySourceForMarkup;
 
+    const createdAt =
+      existing != null
+        ? (existing.createdAt ?? existing.updatedAt ?? new Date().toISOString())
+        : new Date().toISOString();
+
     const nextItem: ContractEstimatePreset = {
       id: existing?.id ?? `est_${Date.now()}`,
       title,
@@ -785,6 +790,7 @@ function ContractDocumentsEstimateWorkspaceInner() {
       calculatorDraftByCategory: draftsByCategory,
       multiCategorySlugs: draftSlugs,
       snapshot: mergedSnapshot,
+      createdAt,
       updatedAt: new Date().toISOString(),
       ...(existing?.groupId ? { groupId: existing.groupId } : {}),
       ...(existing?.archived ? { archived: true } : {}),
@@ -795,6 +801,12 @@ function ContractDocumentsEstimateWorkspaceInner() {
           : {}),
       ...(typeof markupSource?.additionalMarkupPercent === 'number'
         ? { additionalMarkupPercent: markupSource.additionalMarkupPercent }
+        : {}),
+      ...(existing?.groupId && existing.inGroupListOrder != null
+        ? { inGroupListOrder: existing.inGroupListOrder }
+        : {}),
+      ...(existing && !existing.groupId && existing.mergeListOrder != null
+        ? { mergeListOrder: existing.mergeListOrder }
         : {}),
     };
 

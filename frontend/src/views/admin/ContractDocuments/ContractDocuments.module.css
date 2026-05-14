@@ -4025,6 +4025,41 @@
   box-shadow: 0 0 0 1px var(--admin-info-border-soft);
 }
 
+/** Выпадающий список сортировки в панели списка расчётов */
+.estimatesSortSelectField {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.estimatesSortSelectField > span {
+  flex-shrink: 0;
+  font-size: var(--admin-font-size-2xs);
+  font-weight: 600;
+  color: var(--admin-text-muted);
+  white-space: nowrap;
+}
+
+.estimatesSortSelectField select {
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  font-size: var(--admin-font-size-xs);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-xs);
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+  min-width: 11rem;
+  max-width: min(18rem, 50vw);
+  cursor: pointer;
+}
+
+.estimatesSortSelectField select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .estimatesControlsSingleRowArchive {
   background: linear-gradient(180deg, var(--admin-surface-muted) 0%, var(--admin-surface) 100%);
   border: none;
@@ -4306,6 +4341,26 @@
   box-shadow: 0 1px 1px var(--admin-overlay-color-161);
 }
 
+.estimatesCardReorderCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  width: 14px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 0;
+}
+
+.estimatesGroupReorderCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  width: 14px;
+  flex-shrink: 0;
+}
+
 .estimatesCardMain {
   flex: 1 1 140px;
   min-width: 0;
@@ -4356,6 +4411,18 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.estimatesCardCost {
+  font-size: var(--admin-font-size-2xs);
+  color: var(--admin-text-muted);
+  margin-top: var(--admin-space-2xs);
+  display: block;
+}
+
+.estimatesCardCost strong {
+  color: var(--admin-text-primary);
+  font-weight: 600;
 }
 
 .estimatesCardGroupField {
@@ -4434,6 +4501,26 @@
   display: block;
   width: 14px;
   height: 14px;
+}
+
+.estimatesIconBtn.estimatesReorderStackBtn svg,
+.estimatesIconBtn.estimatesGroupReorderBtn svg {
+  width: 8px;
+  height: 8px;
+}
+
+.estimatesIconBtn.estimatesReorderStackBtn,
+.estimatesIconBtn.estimatesGroupReorderBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  min-width: 14px;
+  min-height: 11px;
+  width: 14px;
+  height: 11px;
+  box-sizing: border-box;
+  border-radius: var(--admin-radius-xs);
 }
 
 .estimatesCardActions .estimatesIconBtn:disabled {
@@ -5009,9 +5096,14 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardMeta,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardCost,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardGroupField > span,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardMarkupField > span {
   color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardCost strong {
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesAddObjectBtn {
@@ -5034,6 +5126,22 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardGroupField select:focus {
+  outline: none;
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 2px rgba(var(--admin-overlay-color-144), 0.25);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesSortSelectField > span {
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesSortSelectField select {
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-sidebar-text);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesSortSelectField select:focus {
   outline: none;
   border-color: var(--admin-accent);
   box-shadow: 0 0 0 2px rgba(var(--admin-overlay-color-144), 0.25);

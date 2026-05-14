@@ -69,6 +69,192 @@ function parseOptionalPercentInput(raw: string): number | undefined {
   return n;
 }
 
+function formatEstimatePresetTotalRub(total: number): string {
+  return `${total.toFixed(2).replace('.', ',')} руб.`;
+}
+
+type EstimatesListSortMode = 'estimateDate' | 'updatedAt';
+
+function parseIsoTs(raw: string | undefined): number {
+  if (!raw) return 0;
+  const t = Date.parse(raw);
+  return Number.isFinite(t) ? t : 0;
+}
+
+/** Дата расчёта для сортировки: `createdAt` → метка в id `est_<ms>` → `updatedAt` (наследие). */
+function presetEstimateDateSortTs(p: ContractEstimatePreset): number {
+  const fromCreated = parseIsoTs(p.createdAt);
+  if (fromCreated > 0) return fromCreated;
+  const m = /^est_(\d+)$/.exec(p.id.trim());
+  if (m) {
+    const n = Number(m[1]);
+    if (Number.isFinite(n)) return n;
+  }
+  return parseIsoTs(p.updatedAt);
+}
+
+function presetSortTs(p: ContractEstimatePreset, mode: EstimatesListSortMode): number {
+  return mode === 'estimateDate' ? presetEstimateDateSortTs(p) : parseIsoTs(p.updatedAt);
+}
+
+type MergeSortRow =
+  | {
+      kind: 'group';
+      group: ContractEstimateGroup;
+      items: ContractEstimatePreset[];
+      sortTs: number;
+    }
+  | { kind: 'standalone'; preset: ContractEstimatePreset; sortTs: number };
+
+function mergeListOrderRank(sortTs: number, order: number | undefined): number {
+  if (order != null && Number.isFinite(order)) return order;
+  return 1e15 - sortTs;
+}
+
+function comparePresetsInGroup(
+  a: ContractEstimatePreset,
+  b: ContractEstimatePreset,
+  mode: EstimatesListSortMode
+): number {
+  const ai = a.inGroupListOrder;
+  const bi = b.inGroupListOrder;
+  if (ai != null && bi != null && ai !== bi) return ai - bi;
+  if (ai != null && bi == null) return -1;
+  if (ai == null && bi != null) return 1;
+  const td = presetSortTs(b, mode) - presetSortTs(a, mode);
+  if (td !== 0) return td;
+  return a.title.localeCompare(b.title, 'ru');
+}
+
+function buildMergeSortRows(args: {
+  groupsForLayout: ContractEstimateGroup[];
+  visibleItems: ContractEstimatePreset[];
+  attachmentFilter: 'all' | 'bound' | 'unbound';
+  estimateListSortMode: EstimatesListSortMode;
+}): MergeSortRow[] {
+  const { groupsForLayout, visibleItems, attachmentFilter, estimateListSortMode: sortMode } = args;
+  const sortPresets = (list: ContractEstimatePreset[]) =>
+    [...list].sort((a, b) => comparePresetsInGroup(a, b, sortMode));
+
+  const groupIdSet = new Set(groupsForLayout.map((g) => g.id));
+  const rows: MergeSortRow[] = [];
+
+  for (const group of groupsForLayout) {
+    const inGroup = visibleItems.filter((it) => it.groupId === group.id);
+    if (inGroup.length === 0 && attachmentFilter !== 'all') continue;
+    const sorted = sortPresets(inGroup);
+    const sortTs =
+      sorted.length > 0 ? Math.max(...sorted.map((p) => presetSortTs(p, sortMode))) : 0;
+    rows.push({ kind: 'group', group, items: sorted, sortTs });
+  }
+
+  const standaloneRaw = visibleItems.filter((it) => !it.groupId || !groupIdSet.has(it.groupId));
+  for (const preset of sortPresets(standaloneRaw)) {
+    rows.push({ kind: 'standalone', preset, sortTs: presetSortTs(preset, sortMode) });
+  }
+
+  rows.sort((a, b) => {
+    const ra =
+      a.kind === 'group'
+        ? mergeListOrderRank(a.sortTs, a.group.mergeListOrder)
+        : mergeListOrderRank(a.sortTs, a.preset.mergeListOrder);
+    const rb =
+      b.kind === 'group'
+        ? mergeListOrderRank(b.sortTs, b.group.mergeListOrder)
+        : mergeListOrderRank(b.sortTs, b.preset.mergeListOrder);
+    if (ra !== rb) return ra - rb;
+    if (a.kind !== b.kind) return a.kind === 'group' ? -1 : 1;
+    if (a.kind === 'group' && b.kind === 'group') {
+      return a.group.title.localeCompare(b.group.title, 'ru');
+    }
+    if (a.kind === 'standalone' && b.kind === 'standalone') {
+      return a.preset.title.localeCompare(b.preset.title, 'ru');
+    }
+    return 0;
+  });
+
+  return rows;
+}
+
+function applyMergeListOrdersFromRows(
+  rows: MergeSortRow[],
+  baseItems: ContractEstimatePreset[],
+  baseGroups: ContractEstimateGroup[]
+): { nextItems: ContractEstimatePreset[]; nextGroups: ContractEstimateGroup[] } {
+  const gPatch = new Map<string, number>();
+  const pPatch = new Map<string, number>();
+  rows.forEach((row, idx) => {
+    const v = idx * 10;
+    if (row.kind === 'group') gPatch.set(row.group.id, v);
+    else pPatch.set(row.preset.id, v);
+  });
+  const nextGroups = baseGroups.map((g) =>
+    gPatch.has(g.id) ? { ...g, mergeListOrder: gPatch.get(g.id)! } : { ...g }
+  );
+  const nextItems = baseItems.map((it) =>
+    pPatch.has(it.id) ? { ...it, mergeListOrder: pPatch.get(it.id)! } : { ...it }
+  );
+  return { nextItems, nextGroups };
+}
+
+function applyInGroupListOrders(
+  groupId: string,
+  orderedVisible: ContractEstimatePreset[],
+  baseItems: ContractEstimatePreset[],
+  visibleIds: Set<string>
+): ContractEstimatePreset[] {
+  const hidden = baseItems.filter((it) => it.groupId === groupId && !visibleIds.has(it.id));
+  const fullOrder = [...orderedVisible, ...hidden];
+  return baseItems.map((it) => {
+    if (it.groupId !== groupId) return it;
+    const idx = fullOrder.findIndex((p) => p.id === it.id);
+    if (idx < 0) return it;
+    return { ...it, inGroupListOrder: idx * 10 };
+  });
+}
+
+/** Сортировка списка расчётов: выпадающий список. */
+function EstimatesListSortControl({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: EstimatesListSortMode;
+  onChange: (next: EstimatesListSortMode) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <label className={styles.estimatesSortSelectField}>
+      <span>Сортировка</span>
+      <select
+        value={value}
+        disabled={disabled}
+        aria-label="Сортировка списка расчётов"
+        onChange={(e) => onChange(e.target.value as EstimatesListSortMode)}
+      >
+        <option value="updatedAt">По дате обновления</option>
+        <option value="estimateDate">По дате расчёта</option>
+      </select>
+    </label>
+  );
+}
+
+function EstimatesReorderArrowUp() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={8} height={8} viewBox="0 0 24 24" aria-hidden>
+      <polygon points="12,5 6,18 18,18" fill="currentColor" />
+    </svg>
+  );
+}
+
+function EstimatesReorderArrowDown() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={8} height={8} viewBox="0 0 24 24" aria-hidden>
+      <polygon points="12,19 6,6 18,6" fill="currentColor" />
+    </svg>
+  );
+}
+
 /** Убирает ссылку на несуществующую группу (после удаления объекта и т.п.). */
 function stripOrphanGroupIds(
   rows: ContractEstimatePreset[],
@@ -195,6 +381,8 @@ export function ContractDocumentsEstimatesPage() {
     }>
   >([]);
   const [attachmentFilter, setAttachmentFilter] = useState<'all' | 'bound' | 'unbound'>('all');
+  const [estimateListSortMode, setEstimateListSortMode] =
+    useState<EstimatesListSortMode>('updatedAt');
   const [collapsedGroupIds, setCollapsedGroupIds] = useState<Set<string>>(() => new Set());
   const [detachEditModal, setDetachEditModal] = useState<{
     estimateId: string;
@@ -300,11 +488,14 @@ export function ContractDocumentsEstimatesPage() {
 
   const persistEstimates = async (
     nextItems: ContractEstimatePreset[],
-    nextGroups: ContractEstimateGroup[]
+    nextGroups: ContractEstimateGroup[],
+    options?: { suppressSuccessMessage?: boolean }
   ): Promise<boolean> => {
     setSaving(true);
     setError(null);
-    setOk(null);
+    if (!options?.suppressSuccessMessage) {
+      setOk(null);
+    }
     try {
       const cleaned = stripOrphanGroupIds(nextItems, nextGroups);
       await putContractDocumentEstimatePresets({
@@ -314,7 +505,9 @@ export function ContractDocumentsEstimatesPage() {
       });
       setItems(cleaned);
       setGroups(nextGroups);
-      setOk('Сохранено.');
+      if (!options?.suppressSuccessMessage) {
+        setOk('Сохранено.');
+      }
       return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сохранить расчёты');
@@ -395,10 +588,19 @@ export function ContractDocumentsEstimatesPage() {
       if (it.id !== estimateId) return it;
       let next: ContractEstimatePreset;
       if (!groupId) {
-        const { groupId: _g, ...rest } = it;
+        const { groupId: _g, inGroupListOrder: _ig, ...rest } = it;
         next = rest as ContractEstimatePreset;
       } else {
-        next = { ...it, groupId };
+        const maxInGroup = Math.max(
+          -1,
+          ...items.filter((x) => x.groupId === groupId).map((x) => x.inGroupListOrder ?? -1)
+        );
+        const { mergeListOrder: _ml, ...base } = it;
+        next = {
+          ...base,
+          groupId,
+          inGroupListOrder: maxInGroup + 10,
+        };
         if (next.archived) {
           const { archived: _a, ...r } = next;
           next = { ...r } as ContractEstimatePreset;
@@ -516,16 +718,6 @@ export function ContractDocumentsEstimatesPage() {
       return next;
     });
   };
-
-  const itemsSorted = useMemo(
-    () =>
-      [...items].sort((a, b) => {
-        const aTs = a.updatedAt ? Date.parse(a.updatedAt) : 0;
-        const bTs = b.updatedAt ? Date.parse(b.updatedAt) : 0;
-        return bTs - aTs;
-      }),
-    [items]
-  );
 
   const usageByEstimateId = useMemo(() => {
     const map = new Map<string, EstimatePackageUsage[]>();
@@ -680,7 +872,7 @@ export function ContractDocumentsEstimatesPage() {
   };
 
   const visibleItems = useMemo(() => {
-    const base = itemsSorted.filter((it) => {
+    const base = items.filter((it) => {
       const isBound = (usageByEstimateId.get(it.id)?.length ?? 0) > 0;
       if (attachmentFilter === 'bound') return isBound;
       if (attachmentFilter === 'unbound') return !isBound;
@@ -693,7 +885,7 @@ export function ContractDocumentsEstimatesPage() {
       const inArchiveCombined = groupArchived || rowArchived;
       return archiveView ? inArchiveCombined : !inArchiveCombined;
     });
-  }, [itemsSorted, attachmentFilter, usageByEstimateId, archiveView, groups]);
+  }, [items, attachmentFilter, usageByEstimateId, archiveView, groups]);
 
   const hasAnythingInArchive = useMemo(
     () =>
@@ -715,19 +907,67 @@ export function ContractDocumentsEstimatesPage() {
   const groupsForLayout = archiveView ? groupsSortedArchived : groupsSortedMain;
   const groupsForSelect = groupsForLayout;
 
-  const layoutSections = useMemo(() => {
-    const sections: Array<
-      | { kind: 'group'; group: ContractEstimateGroup; items: ContractEstimatePreset[] }
-      | { kind: 'ungrouped'; items: ContractEstimatePreset[] }
-      | { kind: 'soloArchived'; items: ContractEstimatePreset[] }
-    > = [];
+  type EstimateLayoutBlock =
+    | {
+        kind: 'group';
+        group: ContractEstimateGroup;
+        items: ContractEstimatePreset[];
+        mergeGlobalIndex: number;
+        mergeGlobalTotal: number;
+      }
+    | {
+        kind: 'standaloneRun';
+        entries: Array<{
+          preset: ContractEstimatePreset;
+          mergeGlobalIndex: number;
+          mergeGlobalTotal: number;
+        }>;
+      }
+    | { kind: 'soloArchived'; items: ContractEstimatePreset[] };
+
+  const { estimateLayoutBlocks } = useMemo(() => {
+    const mergeSortRows = buildMergeSortRows({
+      groupsForLayout,
+      visibleItems,
+      attachmentFilter,
+      estimateListSortMode,
+    });
+    const mergeGlobalTotal = mergeSortRows.length;
+
+    const blocks: EstimateLayoutBlock[] = [];
+    let i = 0;
+    while (i < mergeSortRows.length) {
+      const row = mergeSortRows[i];
+      if (row.kind === 'group') {
+        blocks.push({
+          kind: 'group',
+          group: row.group,
+          items: row.items,
+          mergeGlobalIndex: i,
+          mergeGlobalTotal,
+        });
+        i++;
+      } else {
+        const entries: Array<{
+          preset: ContractEstimatePreset;
+          mergeGlobalIndex: number;
+          mergeGlobalTotal: number;
+        }> = [];
+        while (i < mergeSortRows.length && mergeSortRows[i].kind === 'standalone') {
+          const s = mergeSortRows[i];
+          if (s.kind !== 'standalone') break;
+          entries.push({
+            preset: s.preset,
+            mergeGlobalIndex: i,
+            mergeGlobalTotal,
+          });
+          i++;
+        }
+        if (entries.length > 0) blocks.push({ kind: 'standaloneRun', entries });
+      }
+    }
 
     if (archiveView) {
-      for (const group of groupsForLayout) {
-        const inGroup = visibleItems.filter((it) => it.groupId === group.id);
-        if (inGroup.length === 0 && attachmentFilter !== 'all') continue;
-        sections.push({ kind: 'group', group, items: inGroup });
-      }
       const soloArchived = visibleItems.filter((it) => {
         if (!it.groupId || !it.archived) return false;
         const g = groups.find((x) => x.id === it.groupId);
@@ -735,29 +975,72 @@ export function ContractDocumentsEstimatesPage() {
         return !g.archived;
       });
       if (soloArchived.length > 0) {
-        sections.push({ kind: 'soloArchived', items: soloArchived });
+        blocks.push({
+          kind: 'soloArchived',
+          items: [...soloArchived].sort((a, b) =>
+            comparePresetsInGroup(a, b, estimateListSortMode)
+          ),
+        });
       }
-      const ungrouped = visibleItems.filter((it) => !it.groupId);
-      if (ungrouped.length > 0) {
-        sections.push({ kind: 'ungrouped', items: ungrouped });
-      }
-      return sections;
     }
 
-    const groupIdSet = new Set(groupsForLayout.map((g) => g.id));
-    for (const group of groupsForLayout) {
-      const inGroup = visibleItems.filter((it) => it.groupId === group.id);
-      if (inGroup.length === 0 && attachmentFilter !== 'all') continue;
-      sections.push({ kind: 'group', group, items: inGroup });
-    }
-    const ungrouped = visibleItems.filter((it) => !it.groupId || !groupIdSet.has(it.groupId));
-    if (ungrouped.length > 0) {
-      sections.push({ kind: 'ungrouped', items: ungrouped });
-    }
-    return sections;
-  }, [groupsForLayout, visibleItems, attachmentFilter, archiveView, groups]);
+    return { estimateLayoutBlocks: blocks };
+  }, [groupsForLayout, visibleItems, attachmentFilter, archiveView, groups, estimateListSortMode]);
 
-  const renderEstimateCard = (it: ContractEstimatePreset) => {
+  type EstimateCardReorder =
+    | { scope: 'inGroup'; groupId: string; index: number; total: number }
+    | { scope: 'orphan'; mergeGlobalIndex: number; mergeGlobalTotal: number };
+
+  const handleMoveMergeGroup = (groupId: string, dir: -1 | 1) => {
+    const rows = buildMergeSortRows({
+      groupsForLayout,
+      visibleItems,
+      attachmentFilter,
+      estimateListSortMode,
+    });
+    const idx = rows.findIndex((r) => r.kind === 'group' && r.group.id === groupId);
+    if (idx < 0) return;
+    const j = idx + dir;
+    if (j < 0 || j >= rows.length) return;
+    const swapped = [...rows];
+    [swapped[idx], swapped[j]] = [swapped[j], swapped[idx]];
+    const { nextItems, nextGroups } = applyMergeListOrdersFromRows(swapped, items, groups);
+    void persistEstimates(nextItems, nextGroups, { suppressSuccessMessage: true });
+  };
+
+  const handleMoveOrphanPreset = (presetId: string, dir: -1 | 1) => {
+    const rows = buildMergeSortRows({
+      groupsForLayout,
+      visibleItems,
+      attachmentFilter,
+      estimateListSortMode,
+    });
+    const idx = rows.findIndex((r) => r.kind === 'standalone' && r.preset.id === presetId);
+    if (idx < 0) return;
+    const j = idx + dir;
+    if (j < 0 || j >= rows.length) return;
+    const swapped = [...rows];
+    [swapped[idx], swapped[j]] = [swapped[j], swapped[idx]];
+    const { nextItems, nextGroups } = applyMergeListOrdersFromRows(swapped, items, groups);
+    void persistEstimates(nextItems, nextGroups, { suppressSuccessMessage: true });
+  };
+
+  const handleMovePresetInGroup = (groupId: string, presetId: string, dir: -1 | 1) => {
+    const visibleIds = new Set(visibleItems.map((x) => x.id));
+    const peers = visibleItems
+      .filter((it) => it.groupId === groupId)
+      .sort((a, b) => comparePresetsInGroup(a, b, estimateListSortMode));
+    const idx = peers.findIndex((p) => p.id === presetId);
+    if (idx < 0) return;
+    const j = idx + dir;
+    if (j < 0 || j >= peers.length) return;
+    const swapped = [...peers];
+    [swapped[idx], swapped[j]] = [swapped[j], swapped[idx]];
+    const nextItems = applyInGroupListOrders(groupId, swapped, items, visibleIds);
+    void persistEstimates(nextItems, groups, { suppressSuccessMessage: true });
+  };
+
+  const renderEstimateCard = (it: ContractEstimatePreset, reorder?: EstimateCardReorder) => {
     const usages = usageByEstimateId.get(it.id) ?? [];
     const isBound = usages.length > 0;
     const hasLockedUsage = usages.some((u) => isUsageLocked(u));
@@ -772,8 +1055,54 @@ export function ContractDocumentsEstimatesPage() {
         ? `${primaryLabel} (+${usages.length - 1})`
         : primaryLabel
       : 'Не привязан';
+    const snapshotTotal = it.snapshot?.total;
+    const hasSnapshotTotal = typeof snapshotTotal === 'number' && Number.isFinite(snapshotTotal);
     return (
       <div key={it.id} className={styles.estimatesCard}>
+        {reorder ? (
+          <div
+            className={styles.estimatesCardReorderCol}
+            role="group"
+            aria-label="Порядок в списке"
+          >
+            <button
+              type="button"
+              className={`${styles.secondaryBtn} ${styles.estimatesIconBtn} ${styles.estimatesReorderStackBtn}`}
+              disabled={
+                saving ||
+                (reorder.scope === 'inGroup' ? reorder.index <= 0 : reorder.mergeGlobalIndex <= 0)
+              }
+              aria-label="Выше в списке"
+              title="Выше в списке"
+              onClick={() =>
+                reorder.scope === 'inGroup'
+                  ? handleMovePresetInGroup(reorder.groupId, it.id, -1)
+                  : handleMoveOrphanPreset(it.id, -1)
+              }
+            >
+              <EstimatesReorderArrowUp />
+            </button>
+            <button
+              type="button"
+              className={`${styles.secondaryBtn} ${styles.estimatesIconBtn} ${styles.estimatesReorderStackBtn}`}
+              disabled={
+                saving ||
+                (reorder.scope === 'inGroup'
+                  ? reorder.index >= reorder.total - 1
+                  : reorder.mergeGlobalIndex >= reorder.mergeGlobalTotal - 1)
+              }
+              aria-label="Ниже в списке"
+              title="Ниже в списке"
+              onClick={() =>
+                reorder.scope === 'inGroup'
+                  ? handleMovePresetInGroup(reorder.groupId, it.id, 1)
+                  : handleMoveOrphanPreset(it.id, 1)
+              }
+            >
+              <EstimatesReorderArrowDown />
+            </button>
+          </div>
+        ) : null}
         <div className={styles.estimatesCardMain}>
           <div className={styles.estimatesCardTitleRow}>
             <strong className={styles.estimatesCardTitle}>{it.title}</strong>
@@ -795,6 +1124,14 @@ export function ContractDocumentsEstimatesPage() {
           <span className={styles.estimatesCardMeta}>
             {it.categoryName}
             {it.updatedAt ? ` · ${new Date(it.updatedAt).toLocaleString('ru-RU')}` : ''}
+          </span>
+          <span className={styles.estimatesCardCost}>
+            Стоимость:{' '}
+            {hasSnapshotTotal ? (
+              <strong>{formatEstimatePresetTotalRub(snapshotTotal)}</strong>
+            ) : (
+              '—'
+            )}
           </span>
         </div>
         <label className={`${styles.field} ${styles.estimatesCardGroupField}`}>
@@ -1117,6 +1454,11 @@ export function ContractDocumentsEstimatesPage() {
             onChange={setAttachmentFilter}
             disabled={saving}
           />
+          <EstimatesListSortControl
+            value={estimateListSortMode}
+            onChange={setEstimateListSortMode}
+            disabled={saving}
+          />
           <div className={styles.estimatesFilterRowSpacer} aria-hidden />
           {!archiveView ? (
             <div className={styles.estimatesFilterRowTrailing}>
@@ -1141,8 +1483,9 @@ export function ContractDocumentsEstimatesPage() {
                 : 'Нет расчётов для текущего фильтра.'}
             </p>
           ) : (
-            layoutSections.map((section) => {
-              if (section.kind === 'group') {
+            estimateLayoutBlocks.map((block) => {
+              if (block.kind === 'group') {
+                const section = block;
                 const groupCollapsed = collapsedGroupIds.has(section.group.id);
                 const allInGroup = items.filter((it) => it.groupId === section.group.id);
                 const totalInGroup = allInGroup.length;
@@ -1184,6 +1527,38 @@ export function ContractDocumentsEstimatesPage() {
                           <polyline points="6 9 12 15 18 9" />
                         </svg>
                       </button>
+                      <div
+                        className={styles.estimatesGroupReorderCol}
+                        role="group"
+                        aria-label="Порядок объекта в списке"
+                      >
+                        <button
+                          type="button"
+                          className={`${styles.secondaryBtn} ${styles.estimatesIconBtn} ${styles.estimatesGroupReorderBtn}`}
+                          disabled={
+                            saving || section.mergeGlobalTotal < 2 || section.mergeGlobalIndex <= 0
+                          }
+                          aria-label="Объект выше в списке"
+                          title="Объект выше в общем списке"
+                          onClick={() => handleMoveMergeGroup(section.group.id, -1)}
+                        >
+                          <EstimatesReorderArrowUp />
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.secondaryBtn} ${styles.estimatesIconBtn} ${styles.estimatesGroupReorderBtn}`}
+                          disabled={
+                            saving ||
+                            section.mergeGlobalTotal < 2 ||
+                            section.mergeGlobalIndex >= section.mergeGlobalTotal - 1
+                          }
+                          aria-label="Объект ниже в списке"
+                          title="Объект ниже в общем списке"
+                          onClick={() => handleMoveMergeGroup(section.group.id, 1)}
+                        >
+                          <EstimatesReorderArrowDown />
+                        </button>
+                      </div>
                       <label className={`${styles.field} ${styles.estimatesGroupTitleField}`}>
                         <span>Название объекта</span>
                         <input
@@ -1274,31 +1649,47 @@ export function ContractDocumentsEstimatesPage() {
                             В этом объекте нет расчётов для текущего фильтра.
                           </p>
                         ) : (
-                          section.items.map((it) => renderEstimateCard(it))
+                          section.items.map((it, idx) =>
+                            renderEstimateCard(it, {
+                              scope: 'inGroup',
+                              groupId: section.group.id,
+                              index: idx,
+                              total: section.items.length,
+                            })
+                          )
                         )}
                       </div>
                     ) : null}
                   </div>
                 );
               }
-              if (section.kind === 'soloArchived') {
+              if (block.kind === 'soloArchived') {
                 return (
                   <div key="_soloArchived" className={styles.estimatesUngroupedBlock}>
                     <h4 className={styles.estimatesUngroupedHeading}>
                       В архиве отдельно (объект в основном списке)
                     </h4>
                     <div className={styles.estimatesCardsStack}>
-                      {section.items.map((it) => renderEstimateCard(it))}
+                      {block.items.map((it) => renderEstimateCard(it))}
                     </div>
                   </div>
                 );
               }
               return (
-                <div key="_ungrouped" className={styles.estimatesUngroupedBlock}>
-                  <h4 className={styles.estimatesUngroupedHeading}>Вне объекта</h4>
-                  <div className={styles.estimatesCardsStack}>
-                    {section.items.map((it) => renderEstimateCard(it))}
-                  </div>
+                <div
+                  key={`standRun_${[...block.entries]
+                    .map((e) => e.preset.id)
+                    .sort()
+                    .join('|')}`}
+                  className={styles.estimatesCardsStack}
+                >
+                  {block.entries.map(({ preset, mergeGlobalIndex, mergeGlobalTotal }) =>
+                    renderEstimateCard(preset, {
+                      scope: 'orphan',
+                      mergeGlobalIndex,
+                      mergeGlobalTotal,
+                    })
+                  )}
                 </div>
               );
             })

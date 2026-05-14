@@ -56,6 +56,10 @@ export class ContractEstimatePresetDto {
   @IsString()
   updatedAt?: string;
 
+  @IsOptional()
+  @IsString()
+  createdAt?: string;
+
   /** Объект (группа расчётов), опционально. */
   @IsOptional()
   @IsString()
@@ -80,6 +84,22 @@ export class ContractEstimatePresetDto {
   @IsBoolean()
   @Type(() => Boolean)
   archived?: boolean;
+
+  /** Порядок в ленте для расчёта вне объекта. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(10_000_000)
+  mergeListOrder?: number;
+
+  /** Порядок внутри объекта. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(10_000_000)
+  inGroupListOrder?: number;
 }
 
 /** Логический объект: несколько расчётов одного здания / проекта. */
@@ -108,6 +128,14 @@ export class ContractEstimateGroupDto {
   @IsBoolean()
   @Type(() => Boolean)
   archived?: boolean;
+
+  /** Порядок блока объекта в общей ленте. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(10_000_000)
+  mergeListOrder?: number;
 }
 
 export class SetGlobalEstimatePresetsDto {
