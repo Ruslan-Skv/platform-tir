@@ -16,8 +16,20 @@ import {
 import { getMeasurements } from '@/shared/api/admin-crm';
 
 import styles from './ContractDocuments.module.css';
+import {
+  type SiblingClaim,
+  buildEstimateWorkScopeTree,
+  buildSiblingLineClaimIndex,
+  collectAllLineScopeIds,
+  lineKeysFromCategoryNodeId,
+  lineKeysFromRoomNodeId,
+  selectionIntersectsSiblingClaims,
+} from './repair/estimateWorkScopeTree';
 import { getDisplayContractDate, getDisplayContractNumber } from './repair/packageContractDisplay';
-import { clampEstimateAdditionalMarkupPercent } from './repair/repairApplyEstimatePresetIds';
+import {
+  clampEstimateAdditionalMarkupPercent,
+  getSnapshotForEstimateAttach,
+} from './repair/repairApplyEstimatePresetIds';
 import { persistRepairPackageAfterRemovingEstimatePreset } from './repair/repairDetachEstimatePresetFromPackages';
 
 type EstimatePackageUsage =
@@ -363,6 +375,261 @@ function EstimatesAttachmentFilterControl({
   );
 }
 
+function generateSplitBundleId(): string {
+  return `split_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function isLineKeyClaimedBySibling(
+  lineId: string,
+  claimIndex: Map<string, SiblingClaim[]>,
+  selectedKeys: string[]
+): boolean {
+  if (selectedKeys.includes(lineId)) return false;
+  return (claimIndex.get(lineId)?.length ?? 0) > 0;
+}
+
+function EstimateWorkScopeSplitModal({
+  preset,
+  groups,
+  allPresets,
+  saving,
+  onClose,
+  onSave,
+}: {
+  preset: ContractEstimatePreset;
+  groups: ContractEstimateGroup[];
+  allPresets: ContractEstimatePreset[];
+  saving: boolean;
+  onClose: () => void;
+  onSave: (payload: {
+    splitBundleId: string;
+    estimateWorkScopeKeys: string[];
+  }) => void | Promise<void>;
+}) {
+  const tree = useMemo(() => buildEstimateWorkScopeTree(preset, groups), [preset, groups]);
+  const allLineIds = useMemo(() => collectAllLineScopeIds(tree), [tree]);
+  const claimIndex = useMemo(
+    () => buildSiblingLineClaimIndex(allPresets, preset.splitBundleId, preset.id),
+    [allPresets, preset.splitBundleId, preset.id]
+  );
+
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const raw = preset.estimateWorkScopeKeys;
+    if (Array.isArray(raw)) {
+      setSelectedKeys(raw.filter((k) => allLineIds.includes(k)));
+    } else {
+      setSelectedKeys([...allLineIds]);
+    }
+    setLocalError(null);
+  }, [preset.id, preset.estimateWorkScopeKeys, allLineIds]);
+
+  const selectedSet = useMemo(() => new Set(selectedKeys), [selectedKeys]);
+
+  const selectedTotal = useMemo(() => {
+    let sum = 0;
+    for (const cat of tree) {
+      for (const room of cat.rooms) {
+        for (const line of room.lines) {
+          if (selectedSet.has(line.id)) sum += line.amount;
+        }
+      }
+    }
+    return sum;
+  }, [tree, selectedSet]);
+
+  const toggleLine = (lineId: string) => {
+    if (isLineKeyClaimedBySibling(lineId, claimIndex, selectedKeys)) return;
+    setSelectedKeys((prev) =>
+      prev.includes(lineId) ? prev.filter((x) => x !== lineId) : [...prev, lineId]
+    );
+  };
+
+  const toggleRoom = (roomId: string) => {
+    const lineIds = lineKeysFromRoomNodeId(tree, roomId);
+    const selectable = lineIds.filter(
+      (id) => !isLineKeyClaimedBySibling(id, claimIndex, selectedKeys) || selectedKeys.includes(id)
+    );
+    const allSel = selectable.length > 0 && selectable.every((id) => selectedSet.has(id));
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (allSel) {
+        selectable.forEach((id) => next.delete(id));
+      } else {
+        selectable.forEach((id) => next.add(id));
+      }
+      return [...next];
+    });
+  };
+
+  const toggleCategory = (categoryId: string) => {
+    const lineIds = lineKeysFromCategoryNodeId(tree, categoryId);
+    const selectable = lineIds.filter(
+      (id) => !isLineKeyClaimedBySibling(id, claimIndex, selectedKeys) || selectedKeys.includes(id)
+    );
+    const allSel = selectable.length > 0 && selectable.every((id) => selectedSet.has(id));
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (allSel) {
+        selectable.forEach((id) => next.delete(id));
+      } else {
+        selectable.forEach((id) => next.add(id));
+      }
+      return [...next];
+    });
+  };
+
+  const handleSave = async () => {
+    const hit = selectionIntersectsSiblingClaims(selectedSet, claimIndex);
+    if (hit) {
+      setLocalError(
+        `Позиция уже отнесена к расчёту «${hit.title}». Снимите пересечение по составу работ.`
+      );
+      return;
+    }
+    if (selectedKeys.length === 0) {
+      setLocalError('Отметьте хотя бы одну позицию для этого экземпляра расчёта.');
+      return;
+    }
+    const bundle = (preset.splitBundleId ?? '').trim() || generateSplitBundleId();
+    setLocalError(null);
+    await onSave({ splitBundleId: bundle, estimateWorkScopeKeys: [...selectedKeys] });
+  };
+
+  return (
+    <div
+      className={styles.saveModalBackdrop}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="work-scope-split-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !saving) onClose();
+      }}
+    >
+      <div
+        className={`${styles.saveModalCard} ${styles.workScopeSplitModalCard}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 id="work-scope-split-title" className={styles.saveModalTitle}>
+          Разделение сметы по договорам
+        </h3>
+        <p className={styles.saveModalText}>
+          Расчёт: <strong>{preset.title}</strong>. Отметьте позиции, которые войдут в этот экземпляр
+          для договора. Связанные копии расчёта (та же группа разделения) видят занятые позиции и не
+          могут включить их повторно. В данных сметы нет отдельного поля «этап» — показаны
+          категории, помещения и строки сметы.
+        </p>
+        <p className={styles.saveModalText} style={{ marginTop: -4 }}>
+          Сумма по выбранному: <strong>{formatEstimatePresetTotalRub(selectedTotal)}</strong>
+        </p>
+        {localError ? (
+          <p className={styles.hint} style={{ color: 'var(--admin-chart-series-6)' }}>
+            {localError}
+          </p>
+        ) : null}
+        <div className={styles.workScopeSplitModalScroll}>
+          {tree.map((cat) => (
+            <div key={cat.id}>
+              <label className={`${styles.workScopeSplitRow} ${styles.workScopeSplitIndent1}`}>
+                <input
+                  type="checkbox"
+                  checked={(() => {
+                    const ids = lineKeysFromCategoryNodeId(tree, cat.id);
+                    const selectable = ids.filter(
+                      (id) =>
+                        !isLineKeyClaimedBySibling(id, claimIndex, selectedKeys) ||
+                        selectedKeys.includes(id)
+                    );
+                    return selectable.length > 0 && selectable.every((id) => selectedSet.has(id));
+                  })()}
+                  disabled={saving}
+                  onChange={() => toggleCategory(cat.id)}
+                />
+                <span>
+                  <strong>{cat.label}</strong>
+                </span>
+                <span className={styles.workScopeSplitRowMeta}>
+                  {formatEstimatePresetTotalRub(cat.amount)}
+                </span>
+              </label>
+              {cat.rooms.map((room) => (
+                <div key={room.id}>
+                  <label className={`${styles.workScopeSplitRow} ${styles.workScopeSplitIndent2}`}>
+                    <input
+                      type="checkbox"
+                      checked={(() => {
+                        const lineIds = lineKeysFromRoomNodeId(tree, room.id);
+                        const selectable = lineIds.filter(
+                          (id) =>
+                            !isLineKeyClaimedBySibling(id, claimIndex, selectedKeys) ||
+                            selectedKeys.includes(id)
+                        );
+                        return (
+                          selectable.length > 0 && selectable.every((id) => selectedSet.has(id))
+                        );
+                      })()}
+                      disabled={saving}
+                      onChange={() => toggleRoom(room.id)}
+                    />
+                    <span>{room.label}</span>
+                    <span className={styles.workScopeSplitRowMeta}>
+                      {formatEstimatePresetTotalRub(room.amount)}
+                    </span>
+                  </label>
+                  {room.lines.map((line) => {
+                    const claims = claimIndex.get(line.id);
+                    const claimed = isLineKeyClaimedBySibling(line.id, claimIndex, selectedKeys);
+                    return (
+                      <label
+                        key={line.id}
+                        className={`${styles.workScopeSplitRow} ${styles.workScopeSplitIndent3}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedSet.has(line.id)}
+                          disabled={saving || claimed}
+                          onChange={() => toggleLine(line.id)}
+                        />
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          {line.label}
+                          {claims?.length ? (
+                            <span className={styles.workScopeSplitClaimNote}>
+                              {' '}
+                              — уже в «{claims[0]!.title}»
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className={styles.workScopeSplitRowMeta}>
+                          {formatEstimatePresetTotalRub(line.amount)}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div className={styles.saveModalActionsRow}>
+          <button type="button" className={styles.secondaryBtn} disabled={saving} onClick={onClose}>
+            Отмена
+          </button>
+          <button
+            type="button"
+            className={styles.primaryBtn}
+            disabled={saving || allLineIds.length === 0}
+            onClick={() => void handleSave()}
+          >
+            {saving ? 'Сохранение…' : 'Сохранить состав'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ContractDocumentsEstimatesPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -405,6 +672,7 @@ export function ContractDocumentsEstimatesPage() {
   const [completedMeasurementsBusy, setCompletedMeasurementsBusy] = useState(false);
   const [selectedMeasurementId, setSelectedMeasurementId] = useState('');
   const [archiveView, setArchiveView] = useState(false);
+  const [workScopeModalPresetId, setWorkScopeModalPresetId] = useState<string | null>(null);
 
   const openGenerateFromMeasurementModal = useCallback(async () => {
     setIsGenerateFromMeasurementOpen(true);
@@ -472,6 +740,12 @@ export function ContractDocumentsEstimatesPage() {
     })();
   }, [fetchEstimatesFromServer]);
 
+  useEffect(() => {
+    if (workScopeModalPresetId && !items.some((x) => x.id === workScopeModalPresetId)) {
+      setWorkScopeModalPresetId(null);
+    }
+  }, [workScopeModalPresetId, items]);
+
   const refreshEstimates = async () => {
     if (refreshing || saving) return;
     setRefreshing(true);
@@ -515,6 +789,24 @@ export function ContractDocumentsEstimatesPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleWorkScopeSave = async (
+    presetId: string,
+    payload: { splitBundleId: string; estimateWorkScopeKeys: string[] }
+  ) => {
+    const next = items.map((it) =>
+      it.id === presetId
+        ? {
+            ...it,
+            splitBundleId: payload.splitBundleId,
+            estimateWorkScopeKeys: payload.estimateWorkScopeKeys,
+            updatedAt: new Date().toISOString(),
+          }
+        : it
+    );
+    const ok = await persistEstimates(next, groups);
+    if (ok) setWorkScopeModalPresetId(null);
   };
 
   const createObjectGroup = () => {
@@ -1055,8 +1347,11 @@ export function ContractDocumentsEstimatesPage() {
         ? `${primaryLabel} (+${usages.length - 1})`
         : primaryLabel
       : 'Не привязан';
-    const snapshotTotal = it.snapshot?.total;
+    const attachSnap = getSnapshotForEstimateAttach(it, groups);
+    const snapshotTotal = attachSnap?.total;
     const hasSnapshotTotal = typeof snapshotTotal === 'number' && Number.isFinite(snapshotTotal);
+    const splitTree = it.groupId ? buildEstimateWorkScopeTree(it, groups) : [];
+    const canOpenWorkScopeSplit = Boolean(it.groupId) && splitTree.length > 0;
     return (
       <div key={it.id} className={styles.estimatesCard}>
         {reorder ? (
@@ -1270,6 +1565,37 @@ export function ContractDocumentsEstimatesPage() {
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
             </svg>
           </button>
+          {canOpenWorkScopeSplit && !archiveView ? (
+            <button
+              type="button"
+              className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+              aria-label="Состав работ по договорам"
+              title="Разделение сметы: выбор позиций для этого экземпляра и связанных копий"
+              disabled={saving || hasLockedUsage}
+              onClick={() => setWorkScopeModalPresetId(it.id)}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width={14}
+                height={14}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--admin-chart-series-4)"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M16 3h5v5" />
+                <path d="M8 3H3v5" />
+                <path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3" />
+                <path d="m15 9 6-6" />
+                <path d="M21 16v5h-5" />
+                <path d="M8 21H3v-5" />
+                <path d="M12 11V3" />
+              </svg>
+            </button>
+          ) : null}
           <button
             type="button"
             className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
@@ -1312,6 +1638,11 @@ export function ContractDocumentsEstimatesPage() {
       </div>
     );
   };
+
+  const workScopePreset =
+    workScopeModalPresetId == null
+      ? null
+      : (items.find((x) => x.id === workScopeModalPresetId) ?? null);
 
   if (loading) {
     return (
@@ -1696,6 +2027,17 @@ export function ContractDocumentsEstimatesPage() {
           )}
         </div>
       </div>
+
+      {workScopePreset ? (
+        <EstimateWorkScopeSplitModal
+          preset={workScopePreset}
+          groups={groups}
+          allPresets={items}
+          saving={saving}
+          onClose={() => setWorkScopeModalPresetId(null)}
+          onSave={(payload) => handleWorkScopeSave(workScopePreset.id, payload)}
+        />
+      ) : null}
 
       {detachEditModal ? (
         <div

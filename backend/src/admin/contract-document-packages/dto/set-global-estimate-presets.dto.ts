@@ -100,6 +100,20 @@ export class ContractEstimatePresetDto {
   @Min(0)
   @Max(10_000_000)
   inGroupListOrder?: number;
+
+  /** Связка экземпляров при разделении одной сметы на несколько договоров. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  splitBundleId?: string;
+
+  /** Включённые в экземпляр позиции сметы (стабильные id строк). */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(8000)
+  @IsString({ each: true })
+  @MaxLength(64, { each: true })
+  estimateWorkScopeKeys?: string[];
 }
 
 /** Логический объект: несколько расчётов одного здания / проекта. */

@@ -166,11 +166,7 @@ function formatCombinedEstimateNotes(
 ): string {
   if (selectedPresets.length === 0) return '';
   const blocks: string[] = selectedPresets.map((preset, idx) => {
-    const raw = preset.snapshot ?? parseEstimateSnapshotFromDraft(preset.calculatorDraft);
-    const localSnapshot = applyAdditionalMarkupPercentToSnapshot(
-      raw,
-      getEffectiveEstimateAdditionalMarkupPercent(preset, estimateGroups)
-    );
+    const localSnapshot = getSnapshotForEstimateAttach(preset, estimateGroups);
     const localText = formatEstimateSnapshotNotes(preset, localSnapshot);
     return `${idx + 1}) ${localText}`;
   });
@@ -233,8 +229,8 @@ export function parseEstimateSnapshotFromDraft(draftRaw: string): EstimateSnapsh
   }
 }
 
-/** Снимок сметы для прикрепления к пакету: базовый расчёт + эффективная доп. наценка. */
-export function getSnapshotForEstimateAttach(
+/** Снимок с наценкой, без фильтра по объёму работ (для дерева выбора в модалке «Разделение сметы»). */
+export function getBaseSnapshotWithMarkupForPreset(
   preset: ContractEstimatePreset,
   estimateGroups: ContractEstimateGroup[]
 ): EstimateSnapshot | null {
@@ -242,6 +238,36 @@ export function getSnapshotForEstimateAttach(
     preset.snapshot ?? parseEstimateSnapshotFromDraft(preset.calculatorDraft),
     getEffectiveEstimateAdditionalMarkupPercent(preset, estimateGroups)
   );
+}
+
+function filterSnapshotByWorkScopeLineKeys(
+  snapshot: EstimateSnapshot | null,
+  keys: string[] | null | undefined
+): EstimateSnapshot | null {
+  if (!snapshot?.rooms?.length) return snapshot;
+  if (keys === undefined || keys === null) return snapshot;
+  if (keys.length === 0) return { total: 0, rooms: [] };
+  const keySet = new Set(keys);
+  let grandTotal = 0;
+  const rooms: EstimateSnapshotRoom[] = [];
+  snapshot.rooms.forEach((room, gri) => {
+    const lines = (room.lines ?? []).filter((_, li) => keySet.has(`wsl:${gri}:${li}`));
+    if (lines.length === 0) return;
+    const roomTotal = lines.reduce((s, ln) => s + ln.amount, 0);
+    grandTotal += roomTotal;
+    rooms.push({ ...room, lines, total: roomTotal });
+  });
+  if (rooms.length === 0) return { total: 0, rooms: [] };
+  return { total: grandTotal, rooms };
+}
+
+/** Снимок сметы для прикрепления к пакету: наценка и при необходимости только выбранные позиции (`estimateWorkScopeKeys`). */
+export function getSnapshotForEstimateAttach(
+  preset: ContractEstimatePreset,
+  estimateGroups: ContractEstimateGroup[]
+): EstimateSnapshot | null {
+  const base = getBaseSnapshotWithMarkupForPreset(preset, estimateGroups);
+  return filterSnapshotByWorkScopeLineKeys(base, preset.estimateWorkScopeKeys);
 }
 
 function presetObjectGroupKey(preset: ContractEstimatePreset): string {
@@ -299,10 +325,7 @@ export function applyEstimatePresetIdsToRepairForm(
   const mergedSnapshot = mergeEstimateSnapshots(
     selectedPresets.map((preset) => ({
       presetTitle: preset.title,
-      snapshot: applyAdditionalMarkupPercentToSnapshot(
-        preset.snapshot ?? parseEstimateSnapshotFromDraft(preset.calculatorDraft),
-        getEffectiveEstimateAdditionalMarkupPercent(preset, estimateGroups)
-      ),
+      snapshot: getSnapshotForEstimateAttach(preset, estimateGroups),
     }))
   );
   const notes = formatCombinedEstimateNotes(selectedPresets, mergedSnapshot, estimateGroups);
@@ -371,10 +394,7 @@ export function applyEstimatePresetIdsToAddendumSlot(
   const mergedSnapshot = mergeEstimateSnapshots(
     selectedPresets.map((preset) => ({
       presetTitle: preset.title,
-      snapshot: applyAdditionalMarkupPercentToSnapshot(
-        preset.snapshot ?? parseEstimateSnapshotFromDraft(preset.calculatorDraft),
-        getEffectiveEstimateAdditionalMarkupPercent(preset, estimateGroups)
-      ),
+      snapshot: getSnapshotForEstimateAttach(preset, estimateGroups),
     }))
   );
   const notes = formatCombinedEstimateNotes(selectedPresets, mergedSnapshot, estimateGroups);

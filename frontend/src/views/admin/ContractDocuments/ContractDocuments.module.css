@@ -6293,6 +6293,53 @@
   margin-right: var(--admin-space-xs);
 }
 
+.workScopeSplitModalCard {
+  width: min(720px, 100%);
+  max-height: min(90vh, 920px);
+}
+
+.workScopeSplitModalScroll {
+  overflow: auto;
+  max-height: min(58vh, 520px);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  padding: var(--admin-space-md);
+}
+
+.workScopeSplitRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--admin-space-sm);
+  padding: 3px 0;
+  font-size: var(--admin-font-size-sm);
+  line-height: 1.35;
+}
+
+.workScopeSplitRowMeta {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--admin-text-muted);
+  white-space: nowrap;
+}
+
+.workScopeSplitIndent1 {
+  padding-left: 0;
+}
+
+.workScopeSplitIndent2 {
+  padding-left: 1.25rem;
+}
+
+.workScopeSplitIndent3 {
+  padding-left: 2.5rem;
+}
+
+.workScopeSplitClaimNote {
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-chart-series-6);
+}
+
 /*
  * Печать листа сметы / итоговой сметы / заказ-наряда с текущей страницы (класс на body задаётся из RepairContractDocumentEditorPage).
  * Тот же DOM и те же CSS Modules, что во вкладках «Смета», «Итог. смета», «Итог. заказ-наряд».

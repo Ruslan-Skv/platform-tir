@@ -775,6 +775,11 @@ function ContractDocumentsEstimateWorkspaceInner() {
     const copySourceForMarkup =
       !existing && copyFromId ? items.find((it) => it.id === copyFromId) : undefined;
     const markupSource = existing ?? copySourceForMarkup;
+    const copyInSplitFamily =
+      !existing &&
+      Boolean(copySourceForMarkup) &&
+      (Boolean(copySourceForMarkup!.splitBundleId) ||
+        Array.isArray(copySourceForMarkup!.estimateWorkScopeKeys));
 
     const createdAt =
       existing != null
@@ -807,6 +812,16 @@ function ContractDocumentsEstimateWorkspaceInner() {
         : {}),
       ...(existing && !existing.groupId && existing.mergeListOrder != null
         ? { mergeListOrder: existing.mergeListOrder }
+        : {}),
+      ...(existing?.splitBundleId ? { splitBundleId: existing.splitBundleId } : {}),
+      ...(typeof existing?.estimateWorkScopeKeys !== 'undefined'
+        ? { estimateWorkScopeKeys: [...existing.estimateWorkScopeKeys] }
+        : {}),
+      ...(copyInSplitFamily && copySourceForMarkup
+        ? {
+            splitBundleId: copySourceForMarkup.splitBundleId ?? copySourceForMarkup.id,
+            estimateWorkScopeKeys: [] as string[],
+          }
         : {}),
     };
 
