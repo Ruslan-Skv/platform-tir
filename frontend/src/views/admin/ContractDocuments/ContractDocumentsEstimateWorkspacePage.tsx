@@ -14,6 +14,7 @@ import {
 import { getMeasurement } from '@/shared/api/admin-crm';
 import { ApprovedOrderGuardProvider } from '@/shared/lib/contexts/ApprovedOrderGuardContext';
 import { CartProvider } from '@/shared/lib/contexts/CartContext';
+import { Modal } from '@/shared/ui/Modal';
 import { ServiceCategoryPage } from '@/views/services/ui/ServiceCategoryPage/ServiceCategoryPage';
 
 import styles from './ContractDocuments.module.css';
@@ -1044,6 +1045,7 @@ function ContractDocumentsEstimateWorkspaceInner() {
                     hideAddToCart
                     hideBreadcrumbs
                     hideTitleBlock
+                    allowCustomWorkItems={activeCategorySlug === 'prochie'}
                   />
                 </ApprovedOrderGuardProvider>
               </div>
@@ -1054,47 +1056,32 @@ function ContractDocumentsEstimateWorkspaceInner() {
         )}
       </div>
 
-      {exitConfirmOpen ? (
-        <div
-          className={styles.saveModalBackdrop}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="estimate-exit-title"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setExitConfirmOpen(false);
-          }}
-        >
-          <div className={styles.saveModalCard} onClick={(e) => e.stopPropagation()}>
-            <h3 id="estimate-exit-title" className={styles.saveModalTitle}>
-              Выйти без сохранения?
-            </h3>
-            <p className={styles.saveModalText}>
-              Несохранённые изменения в расчёте будут отменены. Для расчёта, открытого из списка,
-              черновик калькулятора вернётся к состоянию на момент открытия страницы.
-            </p>
-            <div
-              style={{
-                display: 'flex',
-                gap: 8,
-                justifyContent: 'flex-end',
-                flexWrap: 'wrap',
-                marginTop: 4,
-              }}
+      <Modal
+        isOpen={exitConfirmOpen}
+        onClose={() => setExitConfirmOpen(false)}
+        title="Выйти без сохранения?"
+        size="md"
+        compactOnMobile
+      >
+        <div data-modal-form data-modal-density="compact">
+          <p data-modal-form-hint style={{ marginTop: 0 }}>
+            Несохранённые изменения в расчёте будут отменены. Для расчёта, открытого из списка,
+            черновик калькулятора вернётся к состоянию на момент открытия страницы.
+          </p>
+          <div data-modal-form-actions>
+            <button
+              type="button"
+              data-modal-btn="secondary"
+              onClick={() => setExitConfirmOpen(false)}
             >
-              <button
-                type="button"
-                className={styles.secondaryBtn}
-                onClick={() => setExitConfirmOpen(false)}
-              >
-                Отмена
-              </button>
-              <button type="button" className={styles.primaryBtn} onClick={abandonChangesAndLeave}>
-                Выйти без сохранения
-              </button>
-            </div>
+              Отмена
+            </button>
+            <button type="button" data-modal-btn="primary" onClick={abandonChangesAndLeave}>
+              Выйти без сохранения
+            </button>
           </div>
         </div>
-      ) : null}
+      </Modal>
     </div>
   );
 }

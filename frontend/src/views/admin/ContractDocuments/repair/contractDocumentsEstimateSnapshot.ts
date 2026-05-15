@@ -2,6 +2,12 @@ import type { ContractEstimatePreset } from '@/shared/api/admin-contract-documen
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { getApiBaseUrl } from '@/shared/lib/auth-session';
 
+import {
+  buildCustomSnapshotLines,
+  parseEstimateCustomItemsFromDraft,
+  splitDraftLineItems,
+} from './estimateCustomWorkItems';
+
 function joinApiPath(path: string): string {
   const base = getApiBaseUrl().replace(/\/$/, '');
   const p = path.replace(/^\//, '');
@@ -65,25 +71,41 @@ export function parseDraftRooms(
 export async function buildEstimateSnapshot(draftRaw: string): Promise<EstimateSnapshot | null> {
   const rooms = parseDraftRooms(draftRaw);
   if (rooms.length === 0) return null;
+  const customItems = parseEstimateCustomItemsFromDraft(draftRaw);
   const roomSnapshots = await Promise.all(
     rooms.map(async (room) => {
+      const { catalog, custom } = splitDraftLineItems(room.items, customItems);
+      const customLines = buildCustomSnapshotLines(custom);
+      const customTotal = customLines.reduce((s, l) => s + l.amount, 0);
+
+      if (catalog.length === 0) {
+        return {
+          name: room.name,
+          total: customTotal,
+          lines: customLines,
+        };
+      }
+
       const res = await apiFetch(joinApiPath('service-catalog/calculate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: room.items }),
+        body: JSON.stringify({ items: catalog }),
       });
       if (!res.ok) {
         return {
           name: room.name,
-          total: 0,
-          lines: room.items.map((item) => ({
-            name: `Позиция ${item.itemId}`,
-            unit: 'ед.',
-            quantity: item.quantity,
-            price: 0,
-            amount: 0,
-            itemId: item.itemId,
-          })),
+          total: customTotal,
+          lines: [
+            ...catalog.map((item) => ({
+              name: `Позиция ${item.itemId}`,
+              unit: 'ед.',
+              quantity: item.quantity,
+              price: 0,
+              amount: 0,
+              itemId: item.itemId,
+            })),
+            ...customLines,
+          ],
         };
       }
       const data = (await res.json()) as {
@@ -102,9 +124,7 @@ export async function buildEstimateSnapshot(draftRaw: string): Promise<EstimateS
         apiLines.length > 0
           ? apiLines.map((line, idx) => {
               const fromApi = normalizeCatalogItemId(line.itemId);
-              const fromItem = room.items[idx]
-                ? normalizeCatalogItemId(room.items[idx]!.itemId)
-                : null;
+              const fromItem = catalog[idx] ? normalizeCatalogItemId(catalog[idx]!.itemId) : null;
               const itemId = fromApi ?? fromItem;
               return {
                 name: line.name,
@@ -115,7 +135,7 @@ export async function buildEstimateSnapshot(draftRaw: string): Promise<EstimateS
                 ...(itemId ? { itemId } : {}),
               };
             })
-          : room.items.map((item) => ({
+          : catalog.map((item) => ({
               name: `Позиция ${item.itemId}`,
               unit: 'ед.',
               quantity: item.quantity,
@@ -123,10 +143,11 @@ export async function buildEstimateSnapshot(draftRaw: string): Promise<EstimateS
               amount: 0,
               itemId: item.itemId,
             }));
+      const catalogTotal = typeof data.total === 'number' ? data.total : 0;
       return {
         name: room.name,
-        total: typeof data.total === 'number' ? data.total : 0,
-        lines: mapped,
+        total: catalogTotal + customTotal,
+        lines: [...mapped, ...customLines],
       };
     })
   );

@@ -22,6 +22,15 @@ import { useApprovedOrderGuard } from '@/shared/lib/contexts/ApprovedOrderGuardC
 import { useCart } from '@/shared/lib/hooks';
 import { getSafeHref } from '@/shared/lib/sanitize';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal/ConfirmModal';
+import {
+  ESTIMATE_CUSTOM_WORK_UNITS,
+  type EstimateCalculatorDraftCustomItems,
+  createEstimateCustomItemId,
+  mergeCalculateResultWithCustomLines,
+  normalizeEstimateCustomWorkItemDef,
+  parseCustomWorkFormInput,
+  splitDraftLineItems,
+} from '@/views/admin/ContractDocuments/repair/estimateCustomWorkItems';
 
 import styles from './ServiceCategoryPage.module.css';
 
@@ -113,6 +122,8 @@ const calculatorDraftStorageKey = (categorySlug: string) =>
 type PersistedCalculatorDraftV1 = {
   v: 1;
   activeCalcId: string;
+  /** Виды работ только для этого расчёта (ключ — `est-custom:…`). */
+  customItems?: EstimateCalculatorDraftCustomItems;
   calcs: Array<{
     id: string;
     name: string;
@@ -180,13 +191,15 @@ function readCalculatorDraftFromStorage(slug: string): PersistedCalculatorDraftV
 function writeCalculatorDraftToStorage(
   slug: string,
   calculations: CalculatorDraft[],
-  activeCalcId: string
+  activeCalcId: string,
+  customItems: EstimateCalculatorDraftCustomItems
 ): void {
   if (typeof window === 'undefined') return;
   try {
     const payload: PersistedCalculatorDraftV1 = {
       v: 1,
       activeCalcId,
+      ...(Object.keys(customItems).length > 0 ? { customItems } : {}),
       calcs: calculations.map((c) => ({
         id: c.id,
         name: c.name,
@@ -206,10 +219,21 @@ function writeCalculatorDraftToStorage(
 function hydrateCalculatorDraftFromStorage(
   slug: string,
   data: CategoryData
-): { calculations: CalculatorDraft[]; activeCalcId: string } | null {
+): {
+  calculations: CalculatorDraft[];
+  activeCalcId: string;
+  customItems: EstimateCalculatorDraftCustomItems;
+} | null {
   const raw = readCalculatorDraftFromStorage(slug);
   if (!raw || raw.calcs.length === 0) return null;
 
+  const customItems: EstimateCalculatorDraftCustomItems = {};
+  if (raw.customItems && typeof raw.customItems === 'object') {
+    for (const [id, def] of Object.entries(raw.customItems)) {
+      const normalized = normalizeEstimateCustomWorkItemDef(def);
+      if (normalized) customItems[id] = normalized;
+    }
+  }
   const idToItem = new Map(data.items.map((i) => [i.id, i]));
   const calculations: CalculatorDraft[] = raw.calcs.map((c) => {
     const lines: CalculatorLine[] = [];
@@ -217,6 +241,17 @@ function hydrateCalculatorDraftFromStorage(
       if (!l || typeof l.itemId !== 'string') continue;
       const q = typeof l.quantity === 'number' && !Number.isNaN(l.quantity) ? l.quantity : 0;
       if (q <= 0) continue;
+      const customDef = customItems[l.itemId];
+      if (customDef) {
+        lines.push({
+          itemId: l.itemId,
+          name: customDef.name,
+          unit: customDef.unit,
+          price: customDef.price,
+          quantity: q,
+        });
+        continue;
+      }
       const item = idToItem.get(l.itemId);
       if (!item || item.price === undefined) continue;
       lines.push({
@@ -245,7 +280,7 @@ function hydrateCalculatorDraftFromStorage(
       ? raw.activeCalcId
       : calculations[0].id;
 
-  return { calculations, activeCalcId: activeRaw };
+  return { calculations, activeCalcId: activeRaw, customItems };
 }
 
 const formatPrice = (n: number) =>
@@ -373,11 +408,14 @@ export function ServiceCategoryPage({
   hideAddToCart = false,
   hideBreadcrumbs = false,
   hideTitleBlock = false,
+  allowCustomWorkItems = false,
 }: {
   slug: string;
   hideAddToCart?: boolean;
   hideBreadcrumbs?: boolean;
   hideTitleBlock?: boolean;
+  /** Доп. виды работ только в черновике расчёта (категория «Прочие работы»). */
+  allowCustomWorkItems?: boolean;
 }) {
   const searchParams = useSearchParams();
   const roomsParam = searchParams.get('rooms');
@@ -411,6 +449,11 @@ export function ServiceCategoryPage({
   const [collapsedWorkGroupKeys, setCollapsedWorkGroupKeys] = useState<Set<string>>(
     () => new Set()
   );
+  const [draftCustomItems, setDraftCustomItems] = useState<EstimateCalculatorDraftCustomItems>({});
+  const [customWorkName, setCustomWorkName] = useState('');
+  const [customWorkUnit, setCustomWorkUnit] = useState<string>(ESTIMATE_CUSTOM_WORK_UNITS[2]);
+  const [customWorkPrice, setCustomWorkPrice] = useState('');
+  const [customWorkError, setCustomWorkError] = useState<string | null>(null);
   /** Пока true — не пишем черновик в localStorage (первая гидрация URL/хранилища). */
   const skipPersistCalculatorDraftRef = useRef(true);
   const prevSlugForCalculatorRef = useRef<string | null>(null);
@@ -591,6 +634,9 @@ export function ServiceCategoryPage({
     if (restored) {
       setCalculations(restored.calculations);
       setActiveCalcId(restored.activeCalcId);
+      setDraftCustomItems(restored.customItems);
+    } else {
+      setDraftCustomItems({});
     }
     skipPersistCalculatorDraftRef.current = false;
   }, [data, presetRaw, roomsParam, slug]);
@@ -598,8 +644,8 @@ export function ServiceCategoryPage({
   useEffect(() => {
     if (!data || data.slug !== slug) return;
     if (skipPersistCalculatorDraftRef.current) return;
-    writeCalculatorDraftToStorage(slug, calculations, activeCalcId);
-  }, [slug, data?.id, calculations, activeCalcId]);
+    writeCalculatorDraftToStorage(slug, calculations, activeCalcId, draftCustomItems);
+  }, [slug, data?.id, calculations, activeCalcId, draftCustomItems]);
 
   useEffect(() => {
     if (!activeCalcId && calculations.length > 0) {
@@ -728,15 +774,75 @@ export function ServiceCategoryPage({
   };
 
   const calculateForLines = async (lines: CalculatorLine[]) => {
+    const items = lines.map((l) => ({ itemId: l.itemId, quantity: l.quantity }));
+    const { catalog, custom } = splitDraftLineItems(items, draftCustomItems);
+    const categoryName = data?.name ?? '';
+
+    if (catalog.length === 0) {
+      const customLines = custom.map(({ itemId, quantity, def }) => ({
+        itemId,
+        name: def.name,
+        categoryName,
+        unit: def.unit,
+        quantity,
+        price: def.price,
+        amount: def.price * quantity,
+      }));
+      const total = customLines.reduce((s, l) => s + l.amount, 0);
+      return {
+        total,
+        lines: customLines,
+        showPricesInPublic: true,
+      };
+    }
+
     const res = await apiFetch(`${API_URL}/service-catalog/calculate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        items: lines.map((l) => ({ itemId: l.itemId, quantity: l.quantity })),
-      }),
+      body: JSON.stringify({ items: catalog }),
     });
     if (!res.ok) throw new Error('Не удалось рассчитать стоимость');
-    return res.json() as Promise<CalculateResult>;
+    const apiResult = (await res.json()) as CalculateResult;
+    return mergeCalculateResultWithCustomLines(apiResult, custom, categoryName);
+  };
+
+  const addCustomWorkToCalculator = async () => {
+    const def = parseCustomWorkFormInput(customWorkName, customWorkUnit, customWorkPrice);
+    if (!def) {
+      setCustomWorkError(
+        'Укажите название, единицу измерения и цену за единицу (неотрицательное число).'
+      );
+      return;
+    }
+    const canEdit = await requireDetachFromCart();
+    if (!canEdit) return;
+    const targetId = activeCalcId || calculations[0]?.id;
+    if (!targetId) return;
+
+    const itemId = createEstimateCustomItemId();
+    setDraftCustomItems((prev) => ({ ...prev, [itemId]: def }));
+    setCalculations((prev) =>
+      prev.map((calc) => {
+        if (calc.id !== targetId) return calc;
+        return {
+          ...calc,
+          lines: [
+            ...calc.lines,
+            {
+              itemId,
+              name: def.name,
+              unit: def.unit,
+              price: def.price,
+              quantity: 1,
+            },
+          ],
+          result: null,
+        };
+      })
+    );
+    setCustomWorkName('');
+    setCustomWorkPrice('');
+    setCustomWorkError(null);
   };
 
   const addCalculation = async () => {
@@ -818,6 +924,10 @@ export function ServiceCategoryPage({
         },
       ]);
       setActiveCalcId(id);
+      setDraftCustomItems({});
+      setCustomWorkName('');
+      setCustomWorkPrice('');
+      setCustomWorkError(null);
     }
     prevSlugForCalculatorRef.current = slug;
   }, [slug]);
@@ -1109,6 +1219,66 @@ export function ServiceCategoryPage({
               </table>
             </div>
           )}
+          {allowCustomWorkItems && showPrices ? (
+            <div className={styles.customWorkSection}>
+              <h3 className={styles.customWorkTitle}>Дополнительные виды работ</h3>
+              <p className={styles.customWorkHint}>
+                Только для этого расчёта: позиции не попадают в общий каталог и сохраняются вместе с
+                расчётом.
+              </p>
+              <div className={styles.customWorkForm}>
+                <label className={styles.customWorkField}>
+                  <span>Название</span>
+                  <input
+                    type="text"
+                    value={customWorkName}
+                    onChange={(e) => {
+                      setCustomWorkName(e.target.value);
+                      if (customWorkError) setCustomWorkError(null);
+                    }}
+                    placeholder="Например: Монтаж нестандартной конструкции"
+                    maxLength={200}
+                  />
+                </label>
+                <label className={styles.customWorkField}>
+                  <span>Ед. изм.</span>
+                  <select
+                    value={customWorkUnit}
+                    onChange={(e) => setCustomWorkUnit(e.target.value)}
+                  >
+                    {ESTIMATE_CUSTOM_WORK_UNITS.map((u) => (
+                      <option key={u} value={u}>
+                        {u}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className={styles.customWorkField}>
+                  <span>Цена за ед.</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={customWorkPrice}
+                    onChange={(e) => {
+                      setCustomWorkPrice(e.target.value);
+                      if (customWorkError) setCustomWorkError(null);
+                    }}
+                    placeholder="0"
+                  />
+                </label>
+                <button
+                  type="button"
+                  className={styles.customWorkAddButton}
+                  onClick={() => void addCustomWorkToCalculator()}
+                  title="Добавить вид работ в расчёт активного помещения"
+                >
+                  <PlusCircleIcon className={styles.addButtonIcon} aria-hidden />В расчёт
+                </button>
+              </div>
+              {customWorkError ? <p className={styles.customWorkError}>{customWorkError}</p> : null}
+            </div>
+          ) : null}
         </section>
 
         {showPrices && (

@@ -6,6 +6,7 @@ import { apiFetch } from '@/shared/lib/api-fetch';
 import { getApiBaseUrl } from '@/shared/lib/auth-session';
 
 import { parseDraftRooms } from './contractDocumentsEstimateSnapshot';
+import { parseEstimateCustomItemsFromDraft, splitDraftLineItems } from './estimateCustomWorkItems';
 import {
   type EstimateSnapshot,
   type EstimateSnapshotLine,
@@ -178,6 +179,7 @@ async function buildItemIdsMatrixByRecalculate(
   const byCat = preset.calculatorDraftByCategory ?? {};
   const slugs = resolveMultiCategorySlugOrder(preset);
   const rooms: Array<{ name: string; items: Array<{ itemId: string; quantity: number }> }> = [];
+  const roomDraftRaws: string[] = [];
 
   if (slugs.length > 1 && Object.keys(byCat).length > 0) {
     for (const s of slugs) {
@@ -185,10 +187,17 @@ async function buildItemIdsMatrixByRecalculate(
       if (!slug) return null;
       const raw = byCat[slug];
       if (!raw) return null;
-      rooms.push(...parseDraftRooms(raw));
+      for (const room of parseDraftRooms(raw)) {
+        rooms.push(room);
+        roomDraftRaws.push(raw);
+      }
     }
   } else {
-    rooms.push(...parseDraftRooms(preset.calculatorDraft));
+    const raw = preset.calculatorDraft;
+    for (const room of parseDraftRooms(raw)) {
+      rooms.push(room);
+      roomDraftRaws.push(raw);
+    }
   }
 
   if (rooms.length !== snapshot.rooms.length) return null;
@@ -198,10 +207,18 @@ async function buildItemIdsMatrixByRecalculate(
       const items = rooms[gri]!.items;
       const linesLen = snapshot.rooms[gri]!.lines.length;
       if (items.length !== linesLen) return null;
+      const customItems = parseEstimateCustomItemsFromDraft(
+        roomDraftRaws[gri] ?? preset.calculatorDraft
+      );
+      const { catalog, custom } = splitDraftLineItems(items, customItems);
+      const customIds = custom.map((c) => c.itemId);
+      if (catalog.length === 0) {
+        return customIds.length === linesLen ? customIds : items.map((it) => it.itemId);
+      }
       const res = await apiFetch(joinApiPath('service-catalog/calculate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify({ items: catalog }),
       });
       if (!res.ok) return items.map((it) => it.itemId);
       const data = (await res.json()) as { lines?: Array<{ itemId?: unknown }> };
@@ -209,7 +226,8 @@ async function buildItemIdsMatrixByRecalculate(
       const fromApi = rawLines
         .map((ln) => normalizeCatalogItemId(ln?.itemId))
         .filter((x): x is string => Boolean(x));
-      if (fromApi.length === linesLen) return fromApi;
+      const merged = [...fromApi, ...customIds];
+      if (merged.length === linesLen) return merged;
       return items.map((it) => it.itemId);
     })
   );

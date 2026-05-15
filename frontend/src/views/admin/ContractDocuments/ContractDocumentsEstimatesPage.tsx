@@ -317,6 +317,51 @@ function EstimatesReorderArrowDown() {
   );
 }
 
+function EstimatesArchiveIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={14}
+      height={14}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M21 8v13H3V8" />
+      <path d="M23 3v5H1V3z" />
+      <path d="M10 12h4" />
+    </svg>
+  );
+}
+
+function EstimatesRestoreFromArchiveIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={14}
+      height={14}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M8 6h13" />
+      <path d="M8 12h13" />
+      <path d="M8 18h13" />
+      <path d="M3 6h.01" />
+      <path d="M3 12h.01" />
+      <path d="M3 18h.01" />
+    </svg>
+  );
+}
+
 /** Убирает ссылку на несуществующую группу (после удаления объекта и т.п.). */
 function stripOrphanGroupIds(
   rows: ContractEstimatePreset[],
@@ -1829,23 +1874,25 @@ export function ContractDocumentsEstimatesPage() {
           {!archiveView && canPresetArchive ? (
             <button
               type="button"
-              className={styles.secondaryBtn}
+              className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
               disabled={saving}
-              title="Только для расчёта вне объекта и без привязки к договору. Если расчёт в объекте — используйте «В архив» у объекта или открепите расчёт от объекта."
+              aria-label="В архив"
+              title="Отправить расчёт в архив: скрыть из основного списка и из выбора при оформлении договоров"
               onClick={() => setPresetArchived(it.id, true)}
             >
-              В архив
+              <EstimatesArchiveIcon />
             </button>
           ) : null}
           {archiveView && canPresetRestoreFromArchive ? (
             <button
               type="button"
-              className={styles.secondaryBtn}
+              className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
               disabled={saving}
+              aria-label="Восстановить"
               title="Вернуть расчёт в основной список"
               onClick={() => setPresetArchived(it.id, false)}
             >
-              Восстановить
+              <EstimatesRestoreFromArchiveIcon />
             </button>
           ) : null}
           <button
@@ -2332,23 +2379,25 @@ export function ContractDocumentsEstimatesPage() {
                       {!archiveView && totalInGroup > 0 ? (
                         <button
                           type="button"
-                          className={styles.secondaryBtn}
+                          className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
                           disabled={saving}
+                          aria-label="В архив"
                           title="Скрыть объект из основного списка и из выбора при оформлении договоров"
                           onClick={() => setGroupArchived(section.group.id, true)}
                         >
-                          В архив
+                          <EstimatesArchiveIcon />
                         </button>
                       ) : null}
                       {archiveView ? (
                         <button
                           type="button"
-                          className={styles.secondaryBtn}
+                          className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
                           disabled={saving}
+                          aria-label="Восстановить"
                           title="Вернуть объект в основной список и в выбор при оформлении договоров"
                           onClick={() => setGroupArchived(section.group.id, false)}
                         >
-                          Восстановить
+                          <EstimatesRestoreFromArchiveIcon />
                         </button>
                       ) : null}
                       {totalInGroup === 0 ? (
