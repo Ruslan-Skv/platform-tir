@@ -325,7 +325,7 @@ function EstimatesArchiveIcon() {
       height={14}
       viewBox="0 0 24 24"
       fill="none"
-      stroke="currentColor"
+      stroke="var(--admin-chart-series-3)"
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -346,7 +346,7 @@ function EstimatesRestoreFromArchiveIcon() {
       height={14}
       viewBox="0 0 24 24"
       fill="none"
-      stroke="currentColor"
+      stroke="var(--admin-chart-series-1)"
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -1939,7 +1939,7 @@ export function ContractDocumentsEstimatesPage() {
             type="button"
             className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
             aria-label="Копировать расчёт"
-            title="Обычная копия: отдельный расчёт без связи разделения сметы. Остаётся в том же объекте, в списке сразу после исходного."
+            title="Создать обычную копию расчёта (отдельный расчёт без связи при разделении сметы)"
             disabled={saving}
             onClick={() =>
               router.push(
@@ -1970,7 +1970,7 @@ export function ContractDocumentsEstimatesPage() {
               aria-label="Связанный экземпляр для другого договора"
               title={
                 canAddLinkedSplitInstance
-                  ? 'Связанный экземпляр: тот же объект и та же связка разделения сметы; после сохранения выберите позиции в модалке разделения.'
+                  ? 'Создать связанный экземпляр расчёта (после сохранения выберите позиции).'
                   : 'Сначала сохраните состав позиций в модалке «Разделение сметы» у этого расчёта.'
               }
               disabled={saving || hasLockedUsage || !canAddLinkedSplitInstance}
@@ -2091,16 +2091,14 @@ export function ContractDocumentsEstimatesPage() {
 
   return (
     <div
-      className={`${styles.page} ${styles.pageWide}${archiveView ? ` ${styles.estimatesPageInArchive}` : ''}`}
+      className={`${styles.page} ${styles.pageWide} ${styles.estimatesPage}${archiveView ? ` ${styles.estimatesPageInArchive}` : ''}`}
     >
       <div className={styles.editorHeader}>
         <div>
           <Link className={styles.backLink} href="/admin/contract-documents">
             ← К разделу «Оформление договоров»
           </Link>
-          <h1 className={styles.title} style={{ marginTop: 8 }}>
-            {archiveView ? 'Архив расчётов' : 'Расчёты'}
-          </h1>
+          <h1 className={styles.title}>{archiveView ? 'Архив расчётов' : 'Расчёты'}</h1>
         </div>
         <div className={styles.headerButtonsRow}>
           <button
@@ -2193,7 +2191,6 @@ export function ContractDocumentsEstimatesPage() {
 
       <div
         className={`${styles.sectionCard} ${styles.estimatesListSection}${archiveView ? ` ${styles.estimatesListSectionArchive}` : ''}`}
-        style={{ marginBottom: 10 }}
       >
         <div
           className={`${styles.estimatesControlsSingleRow}${archiveView ? ` ${styles.estimatesControlsSingleRowArchive}` : ''}`}

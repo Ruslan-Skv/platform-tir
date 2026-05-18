@@ -994,7 +994,7 @@ export interface ClientDirectoryRow {
 export type CrmCustomerEntityType = 'PERSON' | 'COMPANY' | 'ENTREPRENEUR';
 
 export interface CreateCrmCustomerPayload {
-  /** Если не передан, на сервере будет создан уникальный служебный адрес. */
+  /** Необязательно. */
   email?: string;
   firstName: string;
   lastName?: string;
@@ -1011,7 +1011,7 @@ export interface CreateCrmCustomerPayload {
 /** Строка из списка GET /admin/customers (для поиска при замере и т.п.). */
 export interface CrmCustomerListItem {
   id: string;
-  email: string;
+  email: string | null;
   firstName: string;
   lastName: string | null;
   phone: string | null;

@@ -9,6 +9,7 @@ export { useMobileCatalogColumns } from './useMobileCatalogColumns';
 export { usePhotoMobileLayout } from './usePhotoMobileLayout';
 export { usePublicSiteEditMode } from './usePublicSiteEditMode';
 export { useCanEditCatalogOnPublic } from './useCanEditCatalogOnPublic';
+export { useBrowserHistoryNavigation } from './useBrowserHistoryNavigation';
 export type { CategoryFromAPI, NavigationCategory } from './useDynamicCategories';
 export type { ServiceCategoryForNav } from './useDynamicServiceCategories';
 export type { MobileCatalogColumns } from './useMobileCatalogColumns';

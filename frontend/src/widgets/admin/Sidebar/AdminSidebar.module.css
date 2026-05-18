@@ -289,11 +289,14 @@
 .submenu {
   background: var(--admin-sidebar-submenu-bg);
   padding: var(--admin-space-0);
+  --admin-sidebar-indent-1: var(--admin-space-7xl);
+  --admin-sidebar-indent-2: var(--admin-space-5xl);
 }
 
 .submenuLink {
   display: block;
-  padding: var(--admin-space-xs) var(--admin-space-md) var(--admin-space-xs) var(--admin-space-6xl);
+  padding: var(--admin-space-xs) var(--admin-space-md) var(--admin-space-xs)
+    var(--admin-sidebar-indent-1);
   color: var(--admin-sidebar-text);
   text-decoration: none;
   font-size: var(--admin-font-size-sm);
@@ -317,7 +320,8 @@
 .submenuGroupRow {
   display: flex;
   align-items: center;
-  padding: var(--admin-space-xs) var(--admin-space-md) var(--admin-space-xs) var(--admin-space-6xl);
+  padding: var(--admin-space-xs) var(--admin-space-md) var(--admin-space-xs)
+    var(--admin-sidebar-indent-1);
   color: var(--admin-sidebar-text);
   font-size: var(--admin-font-size-sm);
   width: 100%;
@@ -365,12 +369,14 @@
 }
 
 .submenuNested {
-  padding-left: var(--admin-space-3xl);
+  margin-left: var(--admin-sidebar-indent-1);
+  padding-left: var(--admin-sidebar-indent-2);
   background: var(--admin-sidebar-submenu-nested-bg);
+  border-left: 2px solid var(--admin-sidebar-divider);
 }
 
 .submenuNested .submenuLink {
-  padding-left: var(--admin-space-4xl);
+  padding-left: var(--admin-space-xl);
 }
 
 .footer {

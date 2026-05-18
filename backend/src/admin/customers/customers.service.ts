@@ -1,5 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { randomBytes } from 'crypto';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -17,19 +16,6 @@ export class CustomersService {
     private prisma: PrismaService,
     private contractsService: ContractsService,
   ) {}
-
-  /** Уникальный служебный e-mail для карточек без почты (запись на замер и т.п.). */
-  private async allocatePlaceholderEmail(): Promise<string> {
-    for (let attempt = 0; attempt < 12; attempt++) {
-      const candidate = `client-no-email-${randomBytes(10).toString('hex')}@placeholder.local`;
-      const taken = await this.prisma.customer.findUnique({
-        where: { email: candidate },
-        select: { id: true },
-      });
-      if (!taken) return candidate;
-    }
-    throw new BadRequestException('Не удалось выделить уникальный служебный e-mail');
-  }
 
   /** Нормализует телефоны: порядок как в `phones`, затем одиночный `phone` без дублей; `phone` в БД = первый номер. */
   private normalizeCustomerPhones(params: { phone?: string | null; phones?: string[] | null }): {
@@ -57,9 +43,7 @@ export class CustomersService {
     const { extendedProfile, dealValue, nextFollowUp, phone, phones, email, ...rest } =
       createCustomerDto;
     const emailResolved =
-      email != null && String(email).trim() !== ''
-        ? String(email).trim()
-        : await this.allocatePlaceholderEmail();
+      email != null && String(email).trim() !== '' ? String(email).trim() : null;
     const { phone: primary, phones: list } = this.normalizeCustomerPhones({ phone, phones });
     return this.prisma.customer.create({
       data: {

@@ -545,7 +545,7 @@ model ServiceOrderItem {
 
 model Customer {
   id            String         @id @default(cuid())
-  email         String         @unique
+  email         String?        @unique
   phone         String?
   /// Все номера телефонов (первый дублируется в phone для поиска и старых интеграций)
   phones        String[]       @default([]) @map("phones")

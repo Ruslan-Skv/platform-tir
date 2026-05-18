@@ -1,6 +1,13 @@
 'use client';
 
-import { ArrowLeftIcon, MoonIcon, PencilSquareIcon, SunIcon } from '@heroicons/react/24/outline';
+import {
+  ArrowLeftIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  MoonIcon,
+  PencilSquareIcon,
+  SunIcon,
+} from '@heroicons/react/24/outline';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -21,6 +28,7 @@ import type { AdminSupportConversation } from '@/shared/api/admin-support';
 import { ensureFreshAccessToken } from '@/shared/lib/auth-session';
 import { getAvatarUrl } from '@/shared/lib/avatar';
 import { canRoleEditCatalogOnPublicSite } from '@/shared/lib/catalog-public-edit';
+import { useBrowserHistoryNavigation } from '@/shared/lib/hooks';
 import { type NotificationSoundType, playNotificationSound } from '@/shared/lib/notification-sound';
 import {
   PUBLIC_SITE_EDIT_MODE_EVENT,
@@ -62,6 +70,7 @@ type NotificationItem =
 export function AdminHeader() {
   const { user, logout } = useAuth();
   const { isDarkTheme, toggleTheme } = useTheme();
+  const { canGoBack, canGoForward, goBack, goForward } = useBrowserHistoryNavigation();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [reviewNotifications, setReviewNotifications] = useState<AdminReview[]>([]);
@@ -326,6 +335,28 @@ export function AdminHeader() {
         <ArrowLeftIcon className={styles.backToPublicIcon} aria-hidden />
         <span className={styles.backToPublicText}>На сайт</span>
       </Link>
+      <div className={styles.historyNav} role="group" aria-label="Навигация по истории">
+        <button
+          type="button"
+          className={styles.historyNavButton}
+          onClick={goBack}
+          disabled={!canGoBack}
+          title="Назад"
+          aria-label="Назад"
+        >
+          <ChevronLeftIcon className={styles.historyNavIcon} aria-hidden />
+        </button>
+        <button
+          type="button"
+          className={styles.historyNavButton}
+          onClick={goForward}
+          disabled={!canGoForward}
+          title="Вперёд"
+          aria-label="Вперёд"
+        >
+          <ChevronRightIcon className={styles.historyNavIcon} aria-hidden />
+        </button>
+      </div>
       <div className={styles.searchWrapper}>
         <input
           type="search"

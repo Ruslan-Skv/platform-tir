@@ -1,4 +1,5 @@
 import type { Contract, ContractCustomer, DocumentCustomerBlock } from '@/shared/api/admin-crm';
+import { parseObjectAddresses } from '@/views/admin/CRM/Customers/crmCustomerExtendedProfile';
 
 import { amountToRussianWords } from './amountToRussianWords';
 import { isoOrCrmDateToContractDdMmYyyy } from './contractDateFormat';
@@ -164,11 +165,18 @@ export function mergeRepairFormFromCreatedCrmCustomer(
     customerPatch.phone = primaryFromRow;
   }
 
+  const objectAddresses = parseObjectAddresses(ext);
+  const firstObjectAddress = objectAddresses[0] ?? '';
+
   return {
     ...prev,
     customer: normalizeRepairCustomerBlock({
       ...prev.customer,
       ...customerPatch,
     }),
+    object: {
+      ...prev.object,
+      objectAddress: firstObjectAddress || prev.object.objectAddress,
+    },
   };
 }

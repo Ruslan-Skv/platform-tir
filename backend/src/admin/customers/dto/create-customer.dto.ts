@@ -48,7 +48,7 @@ export enum CustomerEntityType {
 }
 
 export class CreateCustomerDto {
-  /** Если не указан, на бэкенде создаётся уникальный служебный адрес (карточка «с замера», дозаполнение позже). */
+  /** Необязательно; если не указан, в карточке e-mail остаётся пустым. */
   @IsOptional()
   @Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? undefined : value))
   @IsEmail()

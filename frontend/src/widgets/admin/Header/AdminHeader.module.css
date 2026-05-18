@@ -59,6 +59,57 @@
   }
 }
 
+.historyNav {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--admin-space-2xs);
+  padding: var(--admin-space-2xs);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border);
+}
+
+.historyNavButton {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+.historyNavButton:hover:not(:disabled) {
+  background: var(--admin-border);
+  color: var(--admin-text-primary);
+}
+
+.historyNavButton:focus {
+  outline: none;
+}
+
+.historyNavButton:focus-visible {
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
+}
+
+.historyNavButton:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.historyNavIcon {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+}
+
 .searchWrapper {
   position: relative;
   flex: 1;

@@ -1,11 +1,23 @@
 'use client';
 
-import { type ChangeEvent, type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  type ChangeEvent,
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { type CrmCustomerEntityType, createCrmCustomer } from '@/shared/api/admin-crm';
+import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
 import { Modal } from '@/shared/ui/Modal';
 
 import phoneStyles from './AddCrmCustomerModal.module.css';
+import { normalizeObjectAddresses } from './crmCustomerExtendedProfile';
+
+const MODAL_TITLE = 'Добавить клиента в базу';
 
 type FormState = {
   entityType: CrmCustomerEntityType;
@@ -20,6 +32,7 @@ type FormState = {
   inn: string;
   ogrn: string;
   address: string;
+  objectAddresses: string[];
   bankDetails: string;
   passportSeriesNumber: string;
   passportIssuedBy: string;
@@ -40,6 +53,7 @@ const emptyForm = (): FormState => ({
   inn: '',
   ogrn: '',
   address: '',
+  objectAddresses: [],
   bankDetails: '',
   passportSeriesNumber: '',
   passportIssuedBy: '',
@@ -69,15 +83,7 @@ function fioSlotWeight(value: string): number {
 }
 
 /** Доля заполненных полей: у физлица без паспорта и банковских реквизитов; e-mail учитывается, но не обязателен. Заметки не учитываются. */
-function computeAddCustomerFormFillPercent(form: FormState, isQuick: boolean): number {
-  if (isQuick) {
-    const parts =
-      fioSlotWeight(form.fullName) +
-      (hasAnyTrimmedPhone(form.phones) ? 1 : 0) +
-      (hasTrimmedText(form.address) ? 1 : 0);
-    return Math.round((parts / 3) * 100);
-  }
-
+function computeAddCustomerFormFillPercent(form: FormState): number {
   if (form.entityType === 'PERSON') {
     const parts =
       (hasTrimmedText(form.email) ? 1 : 0) +
@@ -102,67 +108,97 @@ function computeAddCustomerFormFillPercent(form: FormState, isQuick: boolean): n
   return Math.round((parts / 11) * 100);
 }
 
+type CustomerDraft = {
+  fullName?: string;
+  phone?: string;
+  residenceAddress?: string;
+  objectAddress?: string;
+  /** Устар.: с формы замера — трактуется как адрес объекта */
+  address?: string;
+};
+
+function draftHasContent(draft: CustomerDraft | undefined): boolean {
+  if (!draft) return false;
+  return Boolean(
+    draft.fullName?.trim() ||
+    draft.phone?.trim() ||
+    draft.residenceAddress?.trim() ||
+    draft.objectAddress?.trim() ||
+    draft.address?.trim()
+  );
+}
+
+function getFillBannerToneClass(percent: number): string {
+  if (percent >= 85) return phoneStyles.fillBannerSuccess;
+  if (percent >= 55) return phoneStyles.fillBannerProgress;
+  if (percent >= 30) return phoneStyles.fillBannerStarted;
+  return phoneStyles.fillBannerLow;
+}
+
+function fillPercentHint(entityType: CrmCustomerEntityType): string {
+  if (entityType === 'PERSON') {
+    return 'В расчёт входят: e-mail, ФИО, телефоны, адрес проживания. Адреса объектов, паспорт и банковские реквизиты не учитываются.';
+  }
+  return 'В расчёт входят: e-mail, ФИО представителя, остальные данные представителя и организации, ИНН, ОГРН, адрес проживания, банковские реквизиты, телефоны. Адреса объектов не учитываются.';
+}
+
+function formFromDraft(draft: CustomerDraft): FormState {
+  const objectAddr = draft.objectAddress?.trim() || draft.address?.trim() || '';
+  return {
+    ...emptyForm(),
+    entityType: 'PERSON',
+    fullName: draft.fullName?.trim() ?? '',
+    phones: draft.phone?.trim() ? [draft.phone.trim()] : [''],
+    address: draft.residenceAddress?.trim() ?? '',
+    objectAddresses: objectAddr ? [objectAddr] : [],
+  };
+}
+
 export function AddCrmCustomerModal({
   isOpen,
   onClose,
   onCreated,
-  formMode = 'full',
-  initialMeasurementDraft,
+  initialDraft,
 }: {
   isOpen: boolean;
   onClose: () => void;
   /** Передаётся тело ответа API создания заказчика (для подстановки в формы и т.п.). */
   onCreated?: (created: unknown) => void;
-  /** `measurementQuick` — только ФИО, телефоны и адрес; e-mail создаётся на сервере автоматически. */
-  formMode?: 'full' | 'measurementQuick';
-  /** Подстановка в краткую форму при открытии (например с полей замера). */
-  initialMeasurementDraft?: { fullName: string; phone: string; address: string };
+  /** Подстановка полей только при открытии модалки (например с формы замера до привязки карточки). */
+  initialDraft?: CustomerDraft;
 }) {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const wasOpenRef = useRef(false);
+  const initialDraftRef = useRef(initialDraft);
+
+  initialDraftRef.current = initialDraft;
 
   const reset = useCallback(() => {
     setForm(emptyForm());
     setError(null);
   }, []);
 
-  const isQuick = formMode === 'measurementQuick';
+  const fillPercent = useMemo(() => computeAddCustomerFormFillPercent(form), [form]);
 
-  const fillPercent = useMemo(
-    () => computeAddCustomerFormFillPercent(form, isQuick),
-    [form, isQuick]
-  );
-
-  const fillPercentAsideHint = useMemo(() => {
-    if (isQuick) {
-      return 'В расчёт входят: ФИО, телефоны, адрес. E-mail в этой форме не задаётся — на сервере создаётся служебный адрес. Заметки не учитываются.';
-    }
-    if (form.entityType === 'PERSON') {
-      return 'В расчёт входят: e-mail, ФИО, телефоны, адрес. Паспорт и банковские реквизиты не учитываются.';
-    }
-    return 'В расчёт входят: e-mail, ФИО представителя, остальные данные представителя и организации, ИНН, ОГРН, адрес, банковские реквизиты, телефоны.';
-  }, [isQuick, form.entityType]);
+  const fillPercentHintText = useMemo(() => fillPercentHint(form.entityType), [form.entityType]);
 
   useEffect(() => {
-    if (!isOpen || !isQuick) return;
-    setForm(() => ({
-      ...emptyForm(),
-      entityType: 'PERSON',
-      fullName: initialMeasurementDraft?.fullName?.trim() ?? '',
-      phones: initialMeasurementDraft?.phone?.trim()
-        ? [initialMeasurementDraft.phone.trim()]
-        : [''],
-      address: initialMeasurementDraft?.address?.trim() ?? '',
-    }));
-    setError(null);
-  }, [
-    isOpen,
-    isQuick,
-    initialMeasurementDraft?.fullName,
-    initialMeasurementDraft?.phone,
-    initialMeasurementDraft?.address,
-  ]);
+    const wasOpen = wasOpenRef.current;
+    wasOpenRef.current = isOpen;
+
+    if (!isOpen) {
+      if (wasOpen) reset();
+      return;
+    }
+
+    if (!wasOpen) {
+      const draft = initialDraftRef.current;
+      setForm(draftHasContent(draft) ? formFromDraft(draft!) : emptyForm());
+      setError(null);
+    }
+  }, [isOpen, reset]);
 
   const handleClose = useCallback(() => {
     reset();
@@ -195,60 +231,28 @@ export function AddCrmCustomerModal({
     }));
   }, []);
 
+  const updateObjectAddressAt = useCallback((index: number, value: string) => {
+    setForm((prev) => {
+      const objectAddresses = [...prev.objectAddresses];
+      objectAddresses[index] = value;
+      return { ...prev, objectAddresses };
+    });
+  }, []);
+
+  const addObjectAddressRow = useCallback(() => {
+    setForm((prev) => ({ ...prev, objectAddresses: [...prev.objectAddresses, ''] }));
+  }, []);
+
+  const removeObjectAddressRow = useCallback((index: number) => {
+    setForm((prev) => ({
+      ...prev,
+      objectAddresses: prev.objectAddresses.filter((_, i) => i !== index),
+    }));
+  }, []);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-
-    if (isQuick) {
-      if (!form.fullName.trim()) {
-        setError('Укажите ФИО');
-        return;
-      }
-      const normalizedPhones = form.phones.map((p) => p.trim()).filter(Boolean);
-      if (normalizedPhones.length === 0) {
-        setError('Укажите телефон');
-        return;
-      }
-      const ext: Record<string, unknown> = {
-        type: 'PERSON',
-        fullName: form.fullName.trim(),
-        representativeFullNameNominative: '',
-        representativeFullNameGenitive: '',
-        organizationName: '',
-        representativePositionNominative: '',
-        representativePositionGenitive: '',
-        inn: '',
-        ogrn: '',
-        address: form.address.trim(),
-        phone: normalizedPhones[0] ?? '',
-        email: '',
-        bankDetails: '',
-        passportSeriesNumber: '',
-        passportIssuedBy: '',
-        passportIssueDate: '',
-      };
-      setSubmitting(true);
-      try {
-        const created = await createCrmCustomer({
-          firstName: form.fullName.trim(),
-          phone: normalizedPhones[0],
-          phones: normalizedPhones,
-          entityType: 'PERSON',
-          extendedProfile: ext,
-          notes:
-            form.notes.trim() ||
-            'Карточка из замера: неполные данные — дозаполнить при оформлении договора.',
-        });
-        reset();
-        onCreated?.(created);
-        onClose();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Ошибка сохранения');
-      } finally {
-        setSubmitting(false);
-      }
-      return;
-    }
 
     const emailTrimmed = form.email.trim();
     if (form.entityType === 'PERSON' && !form.fullName.trim()) {
@@ -267,6 +271,7 @@ export function AddCrmCustomerModal({
     }
 
     const normalizedPhones = form.phones.map((p) => p.trim()).filter(Boolean);
+    const normalizedObjectAddresses = normalizeObjectAddresses(form.objectAddresses);
 
     const ext: Record<string, unknown> = {
       type: form.entityType,
@@ -278,7 +283,8 @@ export function AddCrmCustomerModal({
       representativePositionGenitive: form.posGen,
       inn: form.inn,
       ogrn: form.ogrn,
-      address: form.address,
+      address: form.address.trim(),
+      objectAddresses: normalizedObjectAddresses,
       phone: normalizedPhones[0] ?? '',
       email: form.email,
       bankDetails: form.bankDetails,
@@ -317,9 +323,8 @@ export function AddCrmCustomerModal({
         extendedProfile: ext,
         notes: form.notes.trim() || undefined,
       });
-      reset();
       onCreated?.(created);
-      onClose();
+      handleClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка сохранения');
     } finally {
@@ -329,54 +334,53 @@ export function AddCrmCustomerModal({
 
   const isPerson = form.entityType === 'PERSON';
 
-  const modalTitle =
-    formMode === 'measurementQuick' ? 'Новый клиент (краткая карточка)' : 'Добавить клиента';
+  const fillPercentTitleAside = (
+    <div className={phoneStyles.fillBannerTooltipWrap}>
+      <BadgeTooltip content={fillPercentHintText} side="left">
+        <div
+          className={`${phoneStyles.fillBanner} ${getFillBannerToneClass(fillPercent)}`}
+          data-modal-footer-info
+          role="status"
+        >
+          <span data-modal-footer-info-icon aria-hidden="true" />
+          <span data-modal-footer-info-text>Данные заказчика заполнены на {fillPercent}%.</span>
+        </div>
+      </BadgeTooltip>
+    </div>
+  );
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title={modalTitle}
-      titleAside={
-        <div className={phoneStyles.titleAsideStack}>
-          <span className={phoneStyles.titleAsideMain}>
-            Данные заказчика заполнены на {fillPercent}%.
-          </span>
-          <span className={phoneStyles.titleAsideHint}>{fillPercentAsideHint}</span>
-        </div>
-      }
-      size="lg"
+      title={MODAL_TITLE}
+      titleAside={fillPercentTitleAside}
+      size="md"
+      className={phoneStyles.modalPanel}
     >
-      <form data-modal-form data-modal-density="compact" onSubmit={handleSubmit}>
-        {!isQuick ? (
-          <div data-modal-form-grid>
-            <div data-modal-form-group>
-              <label htmlFor="crm-entity-type">Тип</label>
-              <select
-                id="crm-entity-type"
-                value={form.entityType}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, entityType: e.target.value as CrmCustomerEntityType }))
-                }
-              >
-                <option value="PERSON">Физлицо</option>
-                <option value="COMPANY">Юридическое лицо</option>
-                <option value="ENTREPRENEUR">ИП</option>
-              </select>
-            </div>
-            <div data-modal-form-group>
-              <label htmlFor="crm-email">E-mail</label>
-              <input id="crm-email" type="email" value={form.email} onChange={set('email')} />
-            </div>
+      <form className={phoneStyles.formShell} data-modal-form onSubmit={handleSubmit}>
+        <div data-modal-form-grid>
+          <div data-modal-form-group>
+            <label htmlFor="crm-entity-type">Тип</label>
+            <select
+              id="crm-entity-type"
+              value={form.entityType}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, entityType: e.target.value as CrmCustomerEntityType }))
+              }
+            >
+              <option value="PERSON">Физлицо</option>
+              <option value="COMPANY">Юридическое лицо</option>
+              <option value="ENTREPRENEUR">ИП</option>
+            </select>
           </div>
-        ) : (
-          <p data-modal-form-hint style={{ marginTop: 0 }}>
-            E-mail будет создан автоматически; при договоре можно указать настоящий e-mail и
-            остальные реквизиты в карточке клиента.
-          </p>
-        )}
+          <div data-modal-form-group>
+            <label htmlFor="crm-email">E-mail</label>
+            <input id="crm-email" type="email" value={form.email} onChange={set('email')} />
+          </div>
+        </div>
 
-        {isQuick || isPerson ? (
+        {isPerson ? (
           <div data-modal-form-group>
             <label htmlFor="crm-fl-fio">ФИО *</label>
             <input id="crm-fl-fio" value={form.fullName} onChange={set('fullName')} />
@@ -420,12 +424,10 @@ export function AddCrmCustomerModal({
 
         <div data-modal-form-group>
           <label id="crm-phones-label" htmlFor="crm-phone-0">
-            Телефоны{isQuick ? ' *' : ''}
+            Телефоны
           </label>
           <p className={phoneStyles.phoneHint}>
-            {isQuick
-              ? 'Укажите хотя бы один номер — он будет основным в карточке клиента.'
-              : 'Первый номер в списке — основной (договоры, поиск).'}
+            Первый номер в списке — основной (договоры, поиск).
           </p>
           <div
             className={phoneStyles.phoneToolbarRow}
@@ -465,26 +467,65 @@ export function AddCrmCustomerModal({
           </div>
         </div>
 
-        <div data-modal-form-grid>
-          <div data-modal-form-group>
-            <label htmlFor="crm-address">Адрес</label>
-            <input id="crm-address" value={form.address} onChange={set('address')} />
+        <div data-modal-form-group>
+          <label htmlFor="crm-residence-address">Адрес проживания</label>
+          <input
+            id="crm-residence-address"
+            value={form.address}
+            onChange={set('address')}
+            autoComplete="street-address"
+          />
+        </div>
+
+        <div data-modal-form-group>
+          <label id="crm-object-addresses-label">Адреса объектов</label>
+          {/* <p className={phoneStyles.objectAddressHint}>
+            Укажите адреса, где планируются или выполнялись работы. Обычно новые объекты добавляют
+            позже — после завершения работ по предыдущему адресу.
+          </p> */}
+          <div
+            className={phoneStyles.phoneToolbarRow}
+            role="group"
+            aria-labelledby="crm-object-addresses-label"
+          >
+            {form.objectAddresses.map((addr, index) => (
+              <div key={index} className={phoneStyles.phoneSlot}>
+                <input
+                  type="text"
+                  autoComplete="off"
+                  aria-label={`Адрес объекта ${index + 1}`}
+                  value={addr}
+                  onChange={(e) => updateObjectAddressAt(index, e.target.value)}
+                  placeholder="г. …, ул. …, д. …"
+                />
+                <button
+                  type="button"
+                  data-modal-btn="secondary"
+                  className={phoneStyles.phoneRemove}
+                  onClick={() => removeObjectAddressRow(index)}
+                  aria-label={`Удалить адрес объекта ${index + 1}`}
+                >
+                  Удалить
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              data-modal-btn="secondary"
+              className={phoneStyles.addPhone}
+              onClick={addObjectAddressRow}
+            >
+              Добавить адрес объекта
+            </button>
           </div>
         </div>
 
-        {!isQuick ? (
-          <div data-modal-form-group>
-            <label htmlFor="crm-bank">Банковские реквизиты</label>
-            <textarea
-              id="crm-bank"
-              rows={2}
-              value={form.bankDetails}
-              onChange={set('bankDetails')}
-            />
-          </div>
-        ) : null}
+        <div data-modal-form-group>
+          <label htmlFor="crm-bank">Банковские реквизиты</label>
+          <textarea id="crm-bank" rows={1} value={form.bankDetails} onChange={set('bankDetails')} />
+        </div>
 
-        {isPerson && !isQuick ? (
+        {isPerson ? (
           <div data-modal-form-grid>
             <div data-modal-form-group>
               <label htmlFor="crm-pass">Паспорт (серия и номер)</label>
@@ -515,7 +556,7 @@ export function AddCrmCustomerModal({
 
         <div data-modal-form-group>
           <label htmlFor="crm-notes">Заметки</label>
-          <textarea id="crm-notes" rows={2} value={form.notes} onChange={set('notes')} />
+          <textarea id="crm-notes" rows={1} value={form.notes} onChange={set('notes')} />
         </div>
 
         {error ? <p data-modal-form-error>{error}</p> : null}
@@ -523,9 +564,8 @@ export function AddCrmCustomerModal({
         <div data-modal-footer-info data-modal-tone="success" role="status">
           <span data-modal-footer-info-icon aria-hidden="true" />
           <span data-modal-footer-info-text>
-            {isQuick
-              ? 'Карточка сохраняется и связывается с замером. Полные реквизиты можно внести позже при договоре.'
-              : 'Карточка сохраняется в справочнике клиентов. В сводке «По договорам» заказчик появится после указания карточки на договоре.'}
+            Карточка сохраняется в справочнике клиентов. В сводке «По договорам» заказчик появится
+            после указания карточки на договоре.
           </span>
         </div>
 

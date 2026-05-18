@@ -280,32 +280,33 @@
   -webkit-text-fill-color: var(--admin-text-primary) !important;
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesPage .editorHeader {
+  border-bottom-color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesListSection {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+  box-shadow: none;
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesToolbar {
   background: var(--admin-surface-soft);
-  border-color: var(--admin-sidebar-text);
-  border-left-color: var(--admin-info);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesFilterRow {
-  background: var(--admin-surface-soft);
-  border-color: var(--admin-sidebar-text);
-  border-left-color: var(--admin-warning-strong);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesSectionsStack {
-  background: var(--admin-surface);
-  border: none;
+  border-color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesGroupBlock {
-  background: var(--admin-overlay-color-014);
-  border-color: var(--admin-accent-soft-strong);
-  border-left-color: var(--admin-accent);
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesGroupHeader {
-  background: var(--admin-overlay-color-014);
-  border-color: var(--admin-accent-soft-strong);
+  background: var(--admin-surface-soft);
+  border-bottom-color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesPage .estimatesCard:hover {
+  box-shadow: 0 2px 12px rgb(0 0 0 / 0.25);
 }
 
 .estimateWorkspacePage .estimateWorkspaceTabBar {
@@ -3911,44 +3912,62 @@
   word-break: break-word;
 }
 
-/* ——— Раздел «Расчёты»: компактные карточки и объекты ——— */
-.estimatesListSection {
-  padding: var(--admin-space-lg);
-  background: var(--admin-surface-muted);
-  border: 1px solid var(--admin-border);
+/* ——— Раздел «Расчёты»: спокойный рабочий список ——— */
+.estimatesPage {
+  padding-bottom: var(--admin-space-3xl);
 }
 
-.estimatesPageInArchive {
-  padding: var(--admin-space-md);
-  padding-top: var(--admin-space-sm);
-  background: linear-gradient(
-    165deg,
-    var(--admin-surface-muted) 0%,
-    var(--admin-surface) 42%,
-    var(--admin-surface) 100%
-  );
+.estimatesPage .editorHeader {
+  margin-bottom: var(--admin-space-lg);
+  padding-bottom: var(--admin-space-md);
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.estimatesPage .editorHeader .title {
+  margin: var(--admin-space-sm) 0 0;
+  font-size: var(--admin-font-size-2xl);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.estimatesPage .backLink {
+  font-size: var(--admin-font-size-sm);
+}
+
+.estimatesPage .headerButtonsRow {
+  gap: var(--admin-space-xs);
+}
+
+.estimatesListSection {
+  padding: var(--admin-space-lg);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+
+.estimatesPageInArchive .editorHeader .title::after {
+  content: ' · архив';
+  font-size: var(--admin-font-size-sm);
+  font-weight: 500;
+  color: var(--admin-text-muted);
 }
 
 .estimatesListSectionArchive {
-  border: 1px solid var(--admin-border);
   background: var(--admin-surface);
 }
 
 .estimatesControlsSingleRow {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--admin-space-sm);
-  margin-bottom: var(--admin-space-md);
-  padding: var(--admin-space-sm) var(--admin-space-md);
-  background: linear-gradient(
-    180deg,
-    var(--admin-surface-muted) 0%,
-    var(--admin-surface-soft) 100%
-  );
+  gap: var(--admin-space-sm) var(--admin-space-md);
+  margin-bottom: var(--admin-space-lg);
+  padding: 0 0 var(--admin-space-md);
+  background: transparent;
   border: none;
-  border-radius: var(--admin-radius-md);
+  border-bottom: 1px solid var(--admin-border);
+  border-radius: 0;
   overflow-x: auto;
 }
 
@@ -3974,44 +3993,40 @@
   align-items: center;
   gap: 2px;
   flex-shrink: 0;
-  padding: 4px;
-  margin-left: var(--admin-space-md);
-  margin-right: var(--admin-space-md);
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border-strong);
+  padding: 3px;
+  margin: 0;
+  background: var(--admin-surface-muted);
+  border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-md);
-  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
-}
-
-.estimatesControlsSingleRowArchive .estimatesAttachmentFilterGroup {
-  background: var(--admin-surface-soft);
-  border-color: var(--admin-text-muted);
+  box-shadow: none;
 }
 
 .estimatesAttachmentFilterBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 32px;
+  width: 34px;
+  height: 30px;
   padding: 0;
   border: none;
-  border-radius: var(--admin-radius-sm);
+  border-radius: calc(var(--admin-radius-md) - 2px);
   background: transparent;
-  color: var(--admin-text-secondary);
+  color: var(--admin-text-muted);
   cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .estimatesAttachmentFilterBtn:hover:not(:disabled) {
-  background: var(--admin-surface-muted);
+  background: var(--admin-surface);
   color: var(--admin-text-primary);
 }
 
 .estimatesAttachmentFilterBtn:focus-visible {
   outline: none;
-  box-shadow:
-    0 0 0 2px var(--admin-surface),
-    0 0 0 4px rgba(var(--admin-overlay-color-144), 0.35);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-info) 35%, transparent);
 }
 
 .estimatesAttachmentFilterBtn:disabled {
@@ -4020,9 +4035,9 @@
 }
 
 .estimatesAttachmentFilterBtnActive {
-  background: linear-gradient(180deg, var(--admin-info-bg-soft) 0%, var(--admin-info-bg) 100%);
-  color: var(--admin-info-strong);
-  box-shadow: 0 0 0 1px var(--admin-info-border-soft);
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
 }
 
 /** Выпадающий список сортировки в панели списка расчётов */
@@ -4061,28 +4076,23 @@
 }
 
 .estimatesControlsSingleRowArchive {
-  background: linear-gradient(180deg, var(--admin-surface-muted) 0%, var(--admin-surface) 100%);
-  border: none;
+  background: transparent;
+  border-bottom-color: var(--admin-border);
 }
 
 .estimatesToolbarArchive {
-  background: linear-gradient(
-    180deg,
-    var(--admin-surface-muted) 0%,
-    var(--admin-surface-soft) 100%
-  );
-  border: 1px dashed var(--admin-text-muted);
-  border-left: 4px solid var(--admin-text-muted);
+  background: var(--admin-surface-muted);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
 }
 
 .estimatesFilterRowArchive {
-  background: var(--admin-surface-muted);
-  border: 1px solid var(--admin-border-strong);
-  border-left: 4px solid var(--admin-text-muted);
+  background: transparent;
+  border: none;
 }
 
 .estimatesSectionsStackArchive {
-  background: var(--admin-surface-soft);
+  background: transparent;
   border: none;
 }
 
@@ -4094,9 +4104,8 @@
   margin-bottom: var(--admin-space-md);
   flex-wrap: wrap;
   padding: var(--admin-space-md) var(--admin-space-lg);
-  background: linear-gradient(180deg, var(--admin-info-bg-soft) 0%, var(--admin-info-bg-soft) 100%);
-  border: 1px solid var(--admin-info-border-soft);
-  border-left: 3px solid var(--admin-info);
+  background: var(--admin-surface-muted);
+  border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-md);
 }
 
@@ -4111,8 +4120,8 @@
   grid-column: auto;
   font-size: var(--admin-font-size-md);
   line-height: var(--admin-line-height-sm);
-  font-weight: 700;
-  color: var(--admin-info);
+  font-weight: 600;
+  color: var(--admin-text-primary);
 }
 
 .estimatesGenerateFromMeasurementBtn {
@@ -4141,11 +4150,10 @@
   flex-wrap: wrap;
   gap: var(--admin-space-sm);
   margin-bottom: var(--admin-space-md);
-  padding: var(--admin-space-md) var(--admin-space-lg);
-  background: linear-gradient(180deg, var(--admin-warning-bg) 0%, var(--admin-warning-bg) 100%);
-  border: 1px solid var(--admin-warning-border);
-  border-left: 3px solid var(--admin-warning-strong);
-  border-radius: var(--admin-radius-md);
+  padding: var(--admin-space-md) 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
 }
 
 .estimatesFilterRow .secondaryBtn,
@@ -4193,54 +4201,48 @@
 
 .estimatesSectionsStack {
   display: grid;
-  gap: var(--admin-space-md);
-  padding: var(--admin-space-md);
-  background: var(--admin-scrollbar-track);
+  gap: var(--admin-space-lg);
+  padding: 0;
+  background: transparent;
   border: none;
-  border-radius: var(--admin-radius-md);
+  border-radius: 0;
 }
 
 .estimatesGroupBlock {
-  border: 1px solid var(--admin-accent);
-  border-left: 3px solid var(--admin-accent);
-  border-radius: var(--admin-radius-md);
-  padding: var(--admin-space-md);
-  background: var(--admin-accent-soft);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  padding: 0;
+  background: var(--admin-surface);
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
 }
 
 .estimatesGroupBlockHasBound {
-  background: var(--admin-info-bg-soft);
-  border-color: var(--admin-chart-cyan-soft);
-  border-left-color: var(--admin-success-emerald);
+  border-color: color-mix(in srgb, var(--admin-success) 28%, var(--admin-border));
 }
 
 .estimatesGroupBlockHasBound .estimatesGroupHeader {
-  background: var(--admin-chart-cyan-bg);
-  border-color: var(--admin-chart-cyan-border);
+  background: color-mix(in srgb, var(--admin-success-bg-soft) 55%, var(--admin-surface-soft));
+  border-color: var(--admin-border);
 }
 
-.estimatesGroupBlockHasBound .estimatesGroupTitleField > span {
-  color: var(--admin-success-emerald);
-}
-
-.estimatesGroupBlockHasBound .estimatesGroupCount {
-  color: var(--admin-success-deep);
-}
-
+.estimatesGroupBlockHasBound .estimatesGroupTitleField > span,
+.estimatesGroupBlockHasBound .estimatesGroupCount,
 .estimatesGroupBlockHasBound .estimatesGroupCollapseBtn {
-  color: var(--admin-success-emerald);
+  color: var(--admin-text-secondary);
 }
 
 .estimatesGroupHeader {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 8px;
-  margin-bottom: var(--admin-space-sm);
-  padding: var(--admin-space-sm) var(--admin-space-md);
-  background: var(--admin-accent-soft);
-  border: 1px solid var(--admin-accent-soft-strong);
-  border-radius: var(--admin-radius-sm);
+  gap: var(--admin-space-sm) var(--admin-space-md);
+  margin-bottom: 0;
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  background: var(--admin-surface-soft);
+  border: none;
+  border-bottom: 1px solid var(--admin-border);
+  border-radius: 0;
 }
 
 .estimatesGroupHeaderCollapsed {
@@ -4253,7 +4255,7 @@
   min-height: 28px;
   border-radius: var(--admin-radius-sm);
   flex-shrink: 0;
-  color: var(--admin-accent);
+  color: var(--admin-text-muted);
 }
 
 .estimatesGroupCollapseChevron {
@@ -4278,9 +4280,11 @@
 .estimatesGroupTitleField > span {
   flex-shrink: 0;
   font-size: var(--admin-font-size-2xs);
-  font-weight: 600;
-  color: var(--admin-accent);
+  font-weight: 500;
+  color: var(--admin-text-muted);
   white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .estimatesGroupTitleField input {
@@ -4292,8 +4296,8 @@
 }
 
 .estimatesGroupCount {
-  font-size: var(--admin-font-size-2xs);
-  color: var(--admin-accent);
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
   white-space: nowrap;
 }
 
@@ -4304,23 +4308,23 @@
 
 .estimatesCardsStack {
   display: grid;
-  gap: var(--admin-space-xs);
+  gap: var(--admin-space-sm);
+  padding: var(--admin-space-md) var(--admin-space-lg) var(--admin-space-lg);
 }
 
 .estimatesUngroupedBlock {
-  padding: var(--admin-space-md);
+  padding: var(--admin-space-lg);
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-left: 3px solid var(--admin-chart-cyan);
-  border-radius: var(--admin-radius-md);
-  box-shadow: 0 1px 2px var(--admin-overlay-color-161);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
 }
 
 .estimatesUngroupedHeading {
-  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-sm);
+  margin: 0 0 var(--admin-space-md);
   font-size: var(--admin-font-size-sm);
   font-weight: 600;
-  color: var(--admin-success-strong);
+  color: var(--admin-text-secondary);
 }
 
 .estimatesEmptyInGroup {
@@ -4333,12 +4337,20 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 8px;
-  padding: var(--admin-space-xs) var(--admin-space-sm);
-  border: 1px solid var(--admin-border-strong);
-  border-radius: var(--admin-radius-sm);
+  gap: var(--admin-space-sm) var(--admin-space-md);
+  padding: var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
   background: var(--admin-surface);
-  box-shadow: 0 1px 1px var(--admin-overlay-color-161);
+  box-shadow: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.estimatesPage .estimatesCard:hover {
+  border-color: color-mix(in srgb, var(--admin-border-strong) 80%, var(--admin-text-muted));
+  box-shadow: 0 2px 8px rgb(15 23 42 / 0.05);
 }
 
 .estimatesCardReorderCol {
@@ -4383,16 +4395,16 @@
 
 .estimatesBadge {
   font-size: var(--admin-font-size-2xs);
-  font-weight: 600;
-  border-radius: var(--admin-radius-pill);
-  padding: var(--admin-space-2xs) var(--admin-space-sm);
+  font-weight: 500;
+  border-radius: var(--admin-radius-sm);
+  padding: 2px var(--admin-space-sm);
   max-width: 100%;
-  line-height: var(--admin-line-height-sm);
+  line-height: 1.35;
   white-space: normal;
 }
 
 .estimatesBadgeBound {
-  border: 1px solid var(--admin-success-border-soft);
+  border: 1px solid color-mix(in srgb, var(--admin-success) 22%, var(--admin-border));
   background: var(--admin-success-bg-soft);
   color: var(--admin-success-text-strong);
 }
@@ -4404,19 +4416,38 @@
 }
 
 .estimatesSplitBundleBadge {
-  border: 1px solid color-mix(in srgb, var(--admin-chart-series-4) 50%, var(--admin-border));
-  background: color-mix(in srgb, var(--admin-chart-series-4) 14%, var(--admin-surface));
-  color: var(--admin-text-primary);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface-muted);
+  color: var(--admin-text-secondary);
 }
 
 .estimatesSplitBundleBadge.estimatesSplitBundleBadgeComplete {
   background: var(--admin-success-bg-soft);
-  border: 1px solid var(--admin-success-border-soft);
+  border: 1px solid color-mix(in srgb, var(--admin-success) 22%, var(--admin-border));
   color: var(--admin-success-text-strong);
 }
 
 .estimatesCardSplitBundle {
-  border-left: 3px solid var(--admin-chart-series-4);
+  border-left: 2px solid color-mix(in srgb, var(--admin-info) 45%, var(--admin-border));
+}
+
+.estimatesPage .estimatesPageRefreshIconBtn,
+.estimatesPage .estimatesPageArchiveIconBtn {
+  min-width: 36px;
+  min-height: 36px;
+  padding: var(--admin-space-sm);
+  border-radius: var(--admin-radius-md);
+  color: var(--admin-text-secondary);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  box-shadow: none;
+}
+
+.estimatesPage .estimatesPageRefreshIconBtn:hover:not(:disabled),
+.estimatesPage .estimatesPageArchiveIconBtn:hover:not(:disabled) {
+  color: var(--admin-text-primary);
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border-strong);
 }
 
 .estimatesCardMeta {
@@ -4899,79 +4930,10 @@
   color: var(--admin-text-primary);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesListSection {
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesPageInArchive {
-  background: linear-gradient(
-    165deg,
-    var(--admin-overlay-color-014) 0%,
-    var(--admin-surface) 40%,
-    var(--admin-surface) 100%
-  );
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesListSectionArchive {
-  border: 1px solid var(--admin-border);
-  background: var(--admin-surface);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesToolbarArchive {
-  background: var(--admin-surface-soft);
-  border-color: var(--admin-text-muted);
-  border-left-color: var(--admin-text-muted);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesFilterRowArchive {
-  background: var(--admin-overlay-color-014);
-  border-color: var(--admin-sidebar-text);
-  border-left-color: var(--admin-text-muted);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesSectionsStackArchive {
-  border: none;
-  background: var(--admin-surface);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesControlsSingleRow {
-  background: var(--admin-surface-soft);
-}
-
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesControlsSingleRow,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesControlsSingleRowArchive {
-  background: var(--admin-overlay-color-014);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesAttachmentFilterGroup {
-  background: var(--admin-surface);
-  border-color: var(--admin-sidebar-text);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .estimatesControlsSingleRowArchive
-  .estimatesAttachmentFilterGroup {
-  background: var(--admin-surface-soft);
-  border-color: var(--admin-text-muted);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .estimatesAttachmentFilterBtn:hover:not(:disabled) {
-  background: var(--admin-overlay-color-014);
-  color: var(--admin-text-primary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesAttachmentFilterBtnActive {
-  background: linear-gradient(180deg, var(--admin-info) 0%, var(--admin-info-strong) 100%);
-  color: var(--admin-text-inverse);
-  box-shadow: 0 0 0 1px var(--admin-info-bright);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesToolbar {
-  background: var(--admin-surface-soft);
-  border-color: var(--admin-sidebar-text);
-  border-left-color: var(--admin-info);
+  background: transparent;
+  border-bottom-color: var(--admin-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesToolbarTitle {
@@ -4991,26 +4953,17 @@
   color: var(--admin-text-inverse);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesFilterRow {
-  background: var(--admin-surface-soft);
-  border-color: var(--admin-sidebar-text);
-  border-left-color: var(--admin-warning-strong);
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesAddObjectBtn {
+  background: linear-gradient(180deg, var(--admin-info) 0%, var(--admin-info-strong) 100%);
+  border-color: var(--admin-info-bright);
+  color: var(--admin-text-inverse);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesSectionsStack {
-  background: var(--admin-surface);
-  border: none;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesGroupBlock {
-  background: var(--admin-overlay-color-014);
-  border-color: var(--admin-accent-soft-strong);
-  border-left-color: var(--admin-accent);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesGroupHeader {
-  background: var(--admin-overlay-color-014);
-  border-color: var(--admin-accent-soft-strong);
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesAddObjectBtn:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--admin-info-strong) 0%, var(--admin-info) 100%);
+  border-color: var(--admin-info-bright);
+  color: var(--admin-text-inverse);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesGroupTitleField input {
@@ -5037,16 +4990,13 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesGroupBlockHasBound {
-  background: var(--admin-overlay-color-098);
-  border-color: var(--admin-success-border);
-  border-left-color: var(--admin-success);
+  border-color: color-mix(in srgb, var(--admin-success) 35%, var(--admin-border));
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .estimatesGroupBlockHasBound
   .estimatesGroupHeader {
-  background: var(--admin-overlay-color-097);
-  border-color: var(--admin-success-border);
+  background: color-mix(in srgb, var(--admin-success-bg-soft) 40%, var(--admin-surface-soft));
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesUngroupedBlock,
@@ -5128,17 +5078,36 @@
   color: var(--admin-text-primary);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesAddObjectBtn {
-  background: linear-gradient(180deg, var(--admin-info) 0%, var(--admin-info-strong) 100%);
-  border-color: var(--admin-info-bright);
-  color: var(--admin-text-inverse);
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesPage
+  .estimatesPageRefreshIconBtn,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesPage
+  .estimatesPageArchiveIconBtn {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .estimatesAddObjectBtn:hover:not(:disabled) {
-  background: linear-gradient(180deg, var(--admin-info-strong) 0%, var(--admin-info) 100%);
-  border-color: var(--admin-info-bright);
-  color: var(--admin-text-inverse);
+  .estimatesPage
+  .estimatesPageRefreshIconBtn:hover:not(:disabled),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesPage
+  .estimatesPageArchiveIconBtn:hover:not(:disabled) {
+  background: var(--admin-surface-muted);
+  border-color: var(--admin-border-strong);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesAttachmentFilterGroup {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesAttachmentFilterBtnActive {
+  background: var(--admin-surface-muted);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardGroupField select {

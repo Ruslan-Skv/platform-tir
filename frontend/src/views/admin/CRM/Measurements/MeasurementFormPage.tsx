@@ -1581,12 +1581,15 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
       <AddCrmCustomerModal
         isOpen={addCrmCustomerOpen}
         onClose={() => setAddCrmCustomerOpen(false)}
-        formMode="measurementQuick"
-        initialMeasurementDraft={{
-          fullName: customerName,
-          phone: customerPhone,
-          address: customerAddress,
-        }}
+        initialDraft={
+          customerId
+            ? undefined
+            : {
+                fullName: customerName,
+                phone: customerPhone,
+                objectAddress: customerAddress,
+              }
+        }
         onCreated={(created) => {
           if (!isCreatedCrmCustomer(created)) return;
           setCustomerId(created.id);

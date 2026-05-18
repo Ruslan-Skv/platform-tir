@@ -8,6 +8,7 @@ import { type CrmCustomerDetail, getCrmCustomer } from '@/shared/api/admin-crm';
 import { Modal } from '@/shared/ui/Modal';
 
 import styles from './CrmCustomerDetailModal.module.css';
+import { parseObjectAddresses } from './crmCustomerExtendedProfile';
 
 function disp(v: string | undefined | null): string {
   const s = v != null ? String(v).trim() : '';
@@ -67,6 +68,7 @@ export function CrmCustomerDetailModal({
   }, [isOpen, customerId]);
 
   const ext = data?.extendedProfile as Record<string, unknown> | undefined;
+  const objectAddresses = parseObjectAddresses(ext);
   const displayName = data
     ? [data.firstName, data.lastName].filter((x) => (x ?? '').trim()).join(' ') ||
       data.company?.trim() ||
@@ -94,7 +96,18 @@ export function CrmCustomerDetailModal({
                   data.manager.email
                 : '—'}
             </Field>
-            <Field label="Адрес (профиль)">{extStr(ext ?? null, 'address')}</Field>
+            <Field label="Адрес проживания">{extStr(ext ?? null, 'address')}</Field>
+            <Field label="Адреса объектов">
+              {objectAddresses.length > 0 ? (
+                <ul className={styles.objectAddressList}>
+                  {objectAddresses.map((addr) => (
+                    <li key={addr}>{addr}</li>
+                  ))}
+                </ul>
+              ) : (
+                '—'
+              )}
+            </Field>
             <Field label="Заметки">{disp(data.notes)}</Field>
           </dl>
           <div className={styles.footerActions}>
