@@ -40,6 +40,11 @@ interface DataTableProps<T> {
     total: number;
     onPageChange: (page: number) => void;
   };
+  /** Сортировка на сервере: стрелки в шапке, данные не пересортировываются локально */
+  serverSideSort?: boolean;
+  controlledSortBy?: string | null;
+  controlledSortOrder?: SortOrder;
+  onSortChange?: (sortBy: string, sortOrder: SortOrder) => void;
 }
 
 type SortOrder = 'asc' | 'desc';
@@ -88,6 +93,10 @@ export function DataTable<T>({
   loading = false,
   emptyMessage = 'Нет данных',
   pagination,
+  serverSideSort = false,
+  controlledSortBy = null,
+  controlledSortOrder = 'asc',
+  onSortChange,
 }: DataTableProps<T>) {
   const [internalSelectedIds, setInternalSelectedIds] = useState<string[]>([]);
   const isControlled = selectedIdsProp !== undefined;
@@ -151,7 +160,19 @@ export function DataTable<T>({
     onSelectionChange?.(newSelection);
   };
 
+  const isServerSort = Boolean(serverSideSort && onSortChange);
+  const activeSortBy = isServerSort ? controlledSortBy : sortBy;
+  const activeSortOrder = isServerSort ? controlledSortOrder : sortOrder;
+
   const handleSort = (key: string) => {
+    if (isServerSort && onSortChange) {
+      if (activeSortBy === key) {
+        onSortChange(key, activeSortOrder === 'asc' ? 'desc' : 'asc');
+      } else {
+        onSortChange(key, 'asc');
+      }
+      return;
+    }
     if (sortBy === key) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -196,13 +217,13 @@ export function DataTable<T>({
   };
 
   const sortedData = useMemo(() => {
-    if (!sortBy || data.length === 0) return data;
+    if (isServerSort || !sortBy || data.length === 0) return data;
     return [...data].sort((a, b) => {
       const aVal = getValue(a, sortBy);
       const bVal = getValue(b, sortBy);
       return compareValues(aVal, bVal, sortOrder);
     });
-  }, [data, sortBy, sortOrder]);
+  }, [data, isServerSort, sortBy, sortOrder]);
 
   const displayData = sortedData;
 
@@ -375,8 +396,10 @@ export function DataTable<T>({
                     >
                       <span className={styles.headerContent}>
                         {column.title}
-                        {column.sortable && sortBy === sortKey && (
-                          <span className={styles.sortIcon}>{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                        {column.sortable && activeSortBy === sortKey && (
+                          <span className={styles.sortIcon}>
+                            {activeSortOrder === 'asc' ? '↑' : '↓'}
+                          </span>
                         )}
                       </span>
                     </th>

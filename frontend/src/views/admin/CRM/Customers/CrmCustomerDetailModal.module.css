@@ -1,3 +1,29 @@
+.auditInfoText {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
+  line-height: 1.35;
+}
+
+.auditPart {
+  white-space: nowrap;
+}
+
+.auditPart strong {
+  font-weight: 600;
+}
+
+.auditSep {
+  color: var(--admin-text-muted, #6b7280);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.auditDate {
+  font-variant-numeric: tabular-nums;
+}
+
 .footerActions {
   display: flex;
   flex-wrap: wrap;
@@ -24,10 +50,114 @@
   color: var(--admin-accent);
 }
 
-.objectAddressList {
+.objectAddressList,
+.relatedLinksList {
   margin: 0;
   padding-left: 1.15rem;
   display: flex;
   flex-direction: column;
   gap: var(--admin-space-xs);
+}
+
+.relatedLink {
+  color: var(--admin-accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.relatedLink:hover {
+  text-decoration: underline;
+}
+
+.titleWithEdit {
+  align-items: center;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm, 6px);
+}
+
+.editBtn {
+  align-items: center;
+  background: var(--admin-surface-soft, #f3f4f6);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-sm, 6px);
+  color: var(--admin-text-secondary, #374151);
+  cursor: pointer;
+  display: inline-flex;
+  height: 1.75rem;
+  justify-content: center;
+  padding: 0;
+  vertical-align: middle;
+  width: 1.75rem;
+}
+
+.editBtn:hover {
+  border-color: var(--admin-accent, #2563eb);
+  color: var(--admin-accent, #2563eb);
+}
+
+.historyBtn {
+  align-items: center;
+  background: var(--admin-surface-soft, #f3f4f6);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-sm, 6px);
+  color: var(--admin-text-secondary, #374151);
+  cursor: pointer;
+  display: inline-flex;
+  height: 1.75rem;
+  justify-content: center;
+  padding: 0;
+  vertical-align: middle;
+  width: 1.75rem;
+}
+
+.historyBtn:hover {
+  border-color: var(--admin-accent, #2563eb);
+  color: var(--admin-accent, #2563eb);
+}
+
+.trashBtn {
+  align-items: center;
+  background: var(--admin-surface-soft, #f3f4f6);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-sm, 6px);
+  color: var(--admin-text-secondary, #374151);
+  cursor: pointer;
+  display: inline-flex;
+  height: 1.75rem;
+  justify-content: center;
+  padding: 0;
+  vertical-align: middle;
+  width: 1.75rem;
+}
+
+.trashBtn:hover {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.editBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.editIcon {
+  height: 1.125rem;
+  width: 1.125rem;
+}
+
+.linkedSection {
+  margin-top: var(--admin-space-lg, 10px);
+}
+
+.linkedSectionTitle {
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  font-weight: 600;
+  margin: 0 0 var(--admin-space-md, 8px);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editBtn {
+  background: var(--admin-surface-muted, #111827);
+  border-color: var(--admin-border-strong, #374151);
+  color: var(--admin-text-secondary, #d1d5db);
 }

@@ -1,14 +1,33 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { CreateInteractionDto } from './dto/create-interaction.dto';
 import { ContractsService } from '../contracts/contracts.service';
 import { Prisma } from '@prisma/client';
+import {
+  buildCustomerHistorySnapshot,
+  computeCustomerHistoryChangedFields,
+  customerRowAfterUpdate,
+} from './customer-history.util';
 
 function digitsPhone(s: string | null | undefined): string {
   return (s ?? '').replace(/\D/g, '');
 }
+
+const customerAuditUserSelect = {
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  role: true,
+} as const;
+
+const customerDetailInclude = {
+  manager: { select: customerAuditUserSelect },
+  createdBy: { select: customerAuditUserSelect },
+  updatedBy: { select: customerAuditUserSelect },
+} as const;
 
 @Injectable()
 export class CustomersService {
@@ -16,6 +35,48 @@ export class CustomersService {
     private prisma: PrismaService,
     private contractsService: ContractsService,
   ) {}
+
+  private collectExistingPhones(customer: { phone: string | null; phones: string[] }): string[] {
+    const list = (
+      customer.phones?.length ? customer.phones : customer.phone ? [customer.phone] : []
+    )
+      .map((p) => p.trim())
+      .filter(Boolean);
+    const unique: string[] = [];
+    for (const p of list) {
+      if (!unique.some((x) => digitsPhone(x) === digitsPhone(p))) unique.push(p);
+    }
+    return unique;
+  }
+
+  private resolveCustomerEntityType(customer: {
+    entityType: string | null;
+    extendedProfile: unknown;
+  }): 'PERSON' | 'COMPANY' | 'ENTREPRENEUR' {
+    if (
+      customer.entityType === 'PERSON' ||
+      customer.entityType === 'COMPANY' ||
+      customer.entityType === 'ENTREPRENEUR'
+    ) {
+      return customer.entityType;
+    }
+    const ext = customer.extendedProfile as Record<string, unknown> | null;
+    const t = ext?.type;
+    if (t === 'COMPANY' || t === 'ENTREPRENEUR') return t;
+    return 'PERSON';
+  }
+
+  private assertExistingPhonesPreserved(existingPhones: string[], nextPhones: string[]): void {
+    for (const ep of existingPhones) {
+      const epDigits = digitsPhone(ep);
+      const found = nextPhones.some((p) => digitsPhone(p) === epDigits);
+      if (!found) {
+        throw new BadRequestException(
+          'Нельзя удалять или изменять существующие номера телефона. Можно только добавить новый.',
+        );
+      }
+    }
+  }
 
   /** Нормализует телефоны: порядок как в `phones`, затем одиночный `phone` без дублей; `phone` в БД = первый номер. */
   private normalizeCustomerPhones(params: { phone?: string | null; phones?: string[] | null }): {
@@ -39,13 +100,13 @@ export class CustomersService {
     return { phone: out[0] ?? null, phones: out };
   }
 
-  async create(createCustomerDto: CreateCustomerDto) {
+  async create(createCustomerDto: CreateCustomerDto, actorUserId?: string) {
     const { extendedProfile, dealValue, nextFollowUp, phone, phones, email, ...rest } =
       createCustomerDto;
     const emailResolved =
       email != null && String(email).trim() !== '' ? String(email).trim() : null;
     const { phone: primary, phones: list } = this.normalizeCustomerPhones({ phone, phones });
-    return this.prisma.customer.create({
+    const created = await this.prisma.customer.create({
       data: {
         ...rest,
         email: emailResolved,
@@ -55,18 +116,31 @@ export class CustomersService {
         nextFollowUp: nextFollowUp ? new Date(nextFollowUp) : null,
         extendedProfile:
           extendedProfile != null ? (extendedProfile as Prisma.InputJsonValue) : undefined,
+        createdById: actorUserId ?? null,
+        updatedById: actorUserId ?? null,
       },
-      include: {
-        manager: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
+      include: customerDetailInclude,
     });
+
+    if (actorUserId) {
+      const snap = buildCustomerHistorySnapshot(created);
+      const changedFields = Object.keys(snap).filter((key) => {
+        const v = snap[key];
+        if (Array.isArray(v)) return v.length > 0;
+        return v !== null && v !== undefined && String(v).trim() !== '';
+      });
+      await this.prisma.customerHistory.create({
+        data: {
+          customerId: created.id,
+          snapshot: snap as Prisma.InputJsonValue,
+          changedFields,
+          action: 'CREATE',
+          changedById: actorUserId,
+        },
+      });
+    }
+
+    return created;
   }
 
   async findAll(params?: {
@@ -82,7 +156,7 @@ export class CustomersService {
     const { status, stage, managerId, search, entityType, page = 1, limit = 20 } = params || {};
     const skip = (page - 1) * limit;
 
-    const where: Prisma.CustomerWhereInput = {};
+    const where: Prisma.CustomerWhereInput = { deletedAt: null };
 
     if (status) {
       where.status = status as Prisma.EnumCustomerStatusFilter;
@@ -164,6 +238,8 @@ export class CustomersService {
     entityType?: string;
     page?: number;
     limit?: number;
+    sortBy?: 'displayName' | 'createdAt';
+    sortOrder?: 'asc' | 'desc';
   }) {
     const page = params?.page ?? 1;
     const limit = Math.min(Math.max(params?.limit ?? 25, 1), 100);
@@ -173,7 +249,7 @@ export class CustomersService {
         ? params.entityType
         : undefined;
 
-    const where: Prisma.CustomerWhereInput = {};
+    const where: Prisma.CustomerWhereInput = { deletedAt: null };
     if (entityType) {
       where.entityType = entityType;
     }
@@ -234,19 +310,50 @@ export class CustomersService {
       });
     }
 
-    type Merged = { sort: string; row: Record<string, unknown> };
+    const sortBy = params?.sortBy === 'createdAt' ? 'createdAt' : 'displayName';
+    const sortOrder = params?.sortOrder === 'desc' ? 'desc' : 'asc';
+
+    type Merged = {
+      nameKey: string;
+      createdKey: number;
+      row: Record<string, unknown>;
+    };
     const merged: Merged[] = [];
 
+    const statsByCustomerId = await this.buildDirectoryStatsForCustomers(
+      dbCustomers.map((c) => c.id),
+    );
+
     for (const c of dbCustomers) {
-      const row = this.serializeCustomerDirectoryRow(c);
-      merged.push({ sort: String(row['displayName'] ?? '').toLowerCase(), row });
+      const row = this.serializeCustomerDirectoryRow(c, statsByCustomerId.get(c.id));
+      merged.push({
+        nameKey: String(row['displayName'] ?? '').toLowerCase(),
+        createdKey: c.createdAt.getTime(),
+        row,
+      });
     }
     for (const o of orphanParties) {
       const row = this.serializeContractOnlyDirectoryRow(o);
-      merged.push({ sort: String(row['displayName'] ?? '').toLowerCase(), row });
+      merged.push({
+        nameKey: String(row['displayName'] ?? '').toLowerCase(),
+        createdKey: 0,
+        row,
+      });
     }
 
-    merged.sort((a, b) => a.sort.localeCompare(b.sort, 'ru'));
+    merged.sort((a, b) => {
+      if (sortBy === 'createdAt') {
+        const aEmpty = a.createdKey === 0;
+        const bEmpty = b.createdKey === 0;
+        if (aEmpty && bEmpty) return a.nameKey.localeCompare(b.nameKey, 'ru');
+        if (aEmpty) return 1;
+        if (bEmpty) return -1;
+        const cmp = a.createdKey - b.createdKey;
+        return sortOrder === 'asc' ? cmp : -cmp;
+      }
+      const cmp = a.nameKey.localeCompare(b.nameKey, 'ru');
+      return sortOrder === 'asc' ? cmp : -cmp;
+    });
     const total = merged.length;
     const slice = merged.slice(skip, skip + limit);
     return {
@@ -258,16 +365,142 @@ export class CustomersService {
     };
   }
 
+  private async buildDirectoryStatsForCustomers(customerIds: string[]): Promise<
+    Map<
+      string,
+      {
+        contractCount: number;
+        totalAmount: number;
+        lastContractDate: string | null;
+        lastContractNumber: string | null;
+        lastMeasurementDate: string | null;
+        measurementCount: number;
+      }
+    >
+  > {
+    const map = new Map<
+      string,
+      {
+        contractCount: number;
+        totalAmount: number;
+        lastContractDate: string | null;
+        lastContractNumber: string | null;
+        lastMeasurementDate: string | null;
+        measurementCount: number;
+      }
+    >();
+    if (customerIds.length === 0) return map;
+
+    const contracts = await this.prisma.contract.findMany({
+      where: { customerId: { in: customerIds } },
+      select: {
+        customerId: true,
+        contractDate: true,
+        contractNumber: true,
+        totalAmount: true,
+      },
+      orderBy: { contractDate: 'desc' },
+    });
+    for (const row of contracts) {
+      if (!row.customerId) continue;
+      const cur = map.get(row.customerId) ?? {
+        contractCount: 0,
+        totalAmount: 0,
+        lastContractDate: null,
+        lastContractNumber: null,
+        lastMeasurementDate: null,
+        measurementCount: 0,
+      };
+      cur.contractCount += 1;
+      cur.totalAmount += Number(row.totalAmount ?? 0);
+      if (!cur.lastContractDate) {
+        cur.lastContractDate = row.contractDate.toISOString().slice(0, 10);
+        cur.lastContractNumber = row.contractNumber;
+      }
+      map.set(row.customerId, cur);
+    }
+
+    const measurements = await this.prisma.measurement.findMany({
+      where: { customerId: { in: customerIds } },
+      select: { customerId: true, receptionDate: true },
+      orderBy: { receptionDate: 'desc' },
+    });
+    for (const row of measurements) {
+      if (!row.customerId) continue;
+      const cur = map.get(row.customerId) ?? {
+        contractCount: 0,
+        totalAmount: 0,
+        lastContractDate: null,
+        lastContractNumber: null,
+        lastMeasurementDate: null,
+        measurementCount: 0,
+      };
+      cur.measurementCount += 1;
+      if (!cur.lastMeasurementDate) {
+        cur.lastMeasurementDate = row.receptionDate.toISOString().slice(0, 10);
+      }
+      map.set(row.customerId, cur);
+    }
+
+    return map;
+  }
+
+  /** Отображаемое ФИО физлица из extendedProfile и колонок Customer. */
+  private resolvePersonDisplayName(customer: {
+    firstName: string;
+    lastName: string | null;
+    extendedProfile: unknown;
+  }): string {
+    const ext = (customer.extendedProfile ?? {}) as Record<string, unknown>;
+    const str = (key: string) => {
+      const v = ext[key];
+      return typeof v === 'string' ? v.trim() : '';
+    };
+    const extLn = str('lastName');
+    const extFn = str('firstName');
+    const extPat = str('patronymic');
+    if (extLn || extFn || extPat) {
+      return [extLn, extFn, extPat].filter(Boolean).join(' ');
+    }
+    const full = str('fullName');
+    if (full) return full;
+    const rowFn = (customer.firstName ?? '').trim();
+    const rowLn = (customer.lastName ?? '').trim();
+    if (rowFn && /\s/.test(rowFn) && !rowLn) return rowFn;
+    return [rowLn, rowFn].filter(Boolean).join(' ');
+  }
+
   private serializeCustomerDirectoryRow(
     c: Prisma.CustomerGetPayload<{
       include: {
         manager: { select: { id: true; email: true; firstName: true; lastName: true } };
       };
     }>,
+    stats?: {
+      contractCount: number;
+      totalAmount: number;
+      lastContractDate: string | null;
+      lastContractNumber: string | null;
+      lastMeasurementDate: string | null;
+      measurementCount: number;
+    },
   ): Record<string, unknown> {
-    const parts = [c.firstName, c.lastName].map((x) => (x ?? '').trim()).filter(Boolean);
+    const entityType = this.resolveCustomerEntityType(c);
     const displayName =
-      parts.length > 0 ? parts.join(' ') : (c.company ?? '').trim() || c.email || c.id;
+      entityType === 'PERSON'
+        ? this.resolvePersonDisplayName(c) || c.email || c.id
+        : (c.company ?? '').trim() ||
+          (() => {
+            const ext = (c.extendedProfile ?? {}) as Record<string, unknown>;
+            const org = typeof ext.organizationName === 'string' ? ext.organizationName.trim() : '';
+            return org;
+          })() ||
+          [c.firstName, c.lastName]
+            .map((x) => (x ?? '').trim())
+            .filter(Boolean)
+            .join(' ') ||
+          c.email ||
+          c.id;
     return {
       rowSource: 'customer',
       id: c.id,
@@ -279,10 +512,12 @@ export class CustomersService {
       stage: c.stage,
       createdAt: c.createdAt.toISOString(),
       manager: c.manager,
-      sourceLabel: 'Карточка',
-      contractCount: null,
-      totalAmount: null,
-      lastContractDate: null,
+      contractCount: stats?.contractCount ?? 0,
+      totalAmount: stats?.totalAmount ?? 0,
+      lastContractDate: stats?.lastContractDate ?? null,
+      lastContractNumber: stats?.lastContractNumber ?? null,
+      lastMeasurementDate: stats?.lastMeasurementDate ?? null,
+      measurementCount: stats?.measurementCount ?? 0,
       contractCustomer: null,
     };
   }
@@ -310,53 +545,50 @@ export class CustomersService {
       stage: null,
       createdAt: null,
       manager: o.manager,
-      sourceLabel: 'Только договор',
       contractCount: o.contractCount,
       totalAmount: Number(o.totalAmount ?? 0),
       lastContractDate: o.lastContractDate,
+      lastContractNumber: o.lastContractNumber ?? null,
+      lastMeasurementDate: null,
+      measurementCount: 0,
       contractCustomer: o,
     };
   }
 
+  private async assertCustomerExists(id: string, options?: { allowTrashed?: boolean }) {
+    const customer = await this.prisma.customer.findUnique({ where: { id } });
+    if (!customer) {
+      throw new NotFoundException(`Customer with ID ${id} not found`);
+    }
+    if (!options?.allowTrashed && customer.deletedAt) {
+      throw new NotFoundException('Карточка клиента находится в корзине');
+    }
+    return customer;
+  }
+
   async findOne(id: string) {
+    await this.assertCustomerExists(id);
     const customer = await this.prisma.customer.findUnique({
       where: { id },
       include: {
-        manager: {
+        ...customerDetailInclude,
+        contracts: {
           select: {
             id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
+            contractNumber: true,
+            contractDate: true,
+            totalAmount: true,
           },
+          orderBy: { contractDate: 'desc' },
         },
-        interactions: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
+        measurements: {
+          select: {
+            id: true,
+            receptionDate: true,
+            status: true,
+            customerName: true,
           },
-          orderBy: { createdAt: 'desc' },
-          take: 50,
-        },
-        tasks: {
-          include: {
-            assignee: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
-          orderBy: { dueDate: 'asc' },
-        },
-        deals: {
-          orderBy: { createdAt: 'desc' },
+          orderBy: { receptionDate: 'desc' },
         },
       },
     });
@@ -365,15 +597,66 @@ export class CustomersService {
       throw new NotFoundException(`Customer with ID ${id} not found`);
     }
 
-    return customer;
+    const contractIds = customer.contracts.map((c) => c.id);
+    const packages =
+      contractIds.length > 0
+        ? await this.prisma.contractDocumentPackage.findMany({
+            where: { crmContractId: { in: contractIds } },
+            select: { id: true, crmContractId: true },
+          })
+        : [];
+    const packageByContract = new Map(
+      packages
+        .filter((p): p is { id: string; crmContractId: string } => Boolean(p.crmContractId))
+        .map((p) => [p.crmContractId, p.id]),
+    );
+
+    const {
+      contracts,
+      measurements,
+      dealValue,
+      lastContactAt,
+      nextFollowUp,
+      createdAt,
+      updatedAt,
+      ...rest
+    } = customer;
+
+    return {
+      ...rest,
+      dealValue: dealValue != null ? Number(dealValue) : null,
+      createdAt: createdAt.toISOString(),
+      updatedAt: updatedAt.toISOString(),
+      lastContactAt: lastContactAt?.toISOString() ?? null,
+      nextFollowUp: nextFollowUp?.toISOString() ?? null,
+      contracts: contracts.map((c) => ({
+        id: c.id,
+        contractNumber: c.contractNumber,
+        contractDate: c.contractDate.toISOString().slice(0, 10),
+        totalAmount: Number(c.totalAmount),
+        documentPackageId: packageByContract.get(c.id) ?? null,
+      })),
+      measurements: measurements.map((m) => ({
+        id: m.id,
+        receptionDate: m.receptionDate.toISOString().slice(0, 10),
+        status: m.status,
+        customerName: m.customerName,
+      })),
+    };
   }
 
-  async update(id: string, updateCustomerDto: UpdateCustomerDto) {
-    await this.findOne(id);
+  async update(id: string, updateCustomerDto: UpdateCustomerDto, actorUserId?: string) {
+    const existing = await this.assertCustomerExists(id);
+    const entityType = this.resolveCustomerEntityType(existing);
     const { extendedProfile, dealValue, nextFollowUp, phone, phones, ...rest } = updateCustomerDto;
+    delete rest.firstName;
+    delete rest.lastName;
+    delete rest.company;
+    delete rest.entityType;
 
     const data: Prisma.CustomerUpdateInput = {
       ...rest,
+      ...(actorUserId ? { updatedById: actorUserId } : {}),
       dealValue:
         dealValue !== undefined
           ? dealValue != null
@@ -382,48 +665,194 @@ export class CustomersService {
           : undefined,
       nextFollowUp:
         nextFollowUp !== undefined ? (nextFollowUp ? new Date(nextFollowUp) : null) : undefined,
-      extendedProfile:
-        extendedProfile === undefined
-          ? undefined
-          : extendedProfile === null
-            ? Prisma.DbNull
-            : (extendedProfile as Prisma.InputJsonValue),
     };
 
+    if (extendedProfile !== undefined) {
+      const ext0 = (existing.extendedProfile ?? {}) as Record<string, unknown>;
+      const incoming = extendedProfile === null ? {} : (extendedProfile as Record<string, unknown>);
+      const merged: Record<string, unknown> = { ...ext0, ...incoming, type: entityType };
+
+      if (entityType === 'PERSON') {
+        for (const key of ['lastName', 'firstName', 'patronymic'] as const) {
+          const v = ext0[key];
+          if (typeof v === 'string' && v.trim()) {
+            merged[key] = v;
+          }
+        }
+      } else {
+        const org =
+          (typeof ext0.organizationName === 'string' && ext0.organizationName.trim()) ||
+          existing.company?.trim() ||
+          '';
+        if (org) merged.organizationName = org;
+      }
+
+      data.extendedProfile = merged as Prisma.InputJsonValue;
+    }
+
     if (phone !== undefined || phones !== undefined) {
+      const existingPhones = this.collectExistingPhones(existing);
       const { phone: primary, phones: list } = this.normalizeCustomerPhones({
         phone: phone !== undefined ? phone : undefined,
         phones: phones !== undefined ? phones : undefined,
       });
+      this.assertExistingPhonesPreserved(existingPhones, list);
       data.phone = primary;
       data.phones = list;
+    }
+
+    if (actorUserId) {
+      const snapshotBefore = buildCustomerHistorySnapshot(existing);
+      const afterRow = customerRowAfterUpdate(existing, {
+        email: data.email !== undefined ? (data.email as string | null) : undefined,
+        phone: data.phone !== undefined ? (data.phone as string | null) : undefined,
+        phones: data.phones !== undefined ? (data.phones as string[]) : undefined,
+        notes: data.notes !== undefined ? (data.notes as string | null) : undefined,
+        company: data.company !== undefined ? (data.company as string | null) : undefined,
+        position: data.position !== undefined ? (data.position as string | null) : undefined,
+        extendedProfile: data.extendedProfile !== undefined ? data.extendedProfile : undefined,
+      });
+      const snapshotAfter = buildCustomerHistorySnapshot(afterRow);
+      const changedFields = computeCustomerHistoryChangedFields(snapshotBefore, snapshotAfter);
+      if (changedFields.length > 0) {
+        await this.prisma.customerHistory.create({
+          data: {
+            customerId: id,
+            snapshot: snapshotBefore as Prisma.InputJsonValue,
+            changedFields,
+            action: 'UPDATE',
+            changedById: actorUserId,
+          },
+        });
+      }
     }
 
     return this.prisma.customer.update({
       where: { id },
       data,
+      include: customerDetailInclude,
+    });
+  }
+
+  async getHistory(customerId: string) {
+    await this.assertCustomerExists(customerId, { allowTrashed: true });
+
+    const history = await this.prisma.customerHistory.findMany({
+      where: { customerId },
       include: {
-        manager: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
+        changedBy: { select: customerAuditUserSelect },
+      },
+      orderBy: { changedAt: 'desc' },
+    });
+
+    return history.map((h) => ({
+      id: h.id,
+      action: h.action,
+      changedAt: h.changedAt.toISOString(),
+      changedBy: h.changedBy,
+      changedFields: h.changedFields,
+      snapshot: h.snapshot as Record<string, unknown>,
+    }));
+  }
+
+  async findTrash(params?: { search?: string; page?: number; limit?: number }) {
+    const page = params?.page ?? 1;
+    const limit = Math.min(Math.max(params?.limit ?? 25, 1), 100);
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.CustomerWhereInput = { deletedAt: { not: null } };
+    if (params?.search?.trim()) {
+      const search = params.search.trim();
+      const t = search;
+      where.OR = [
+        { email: { contains: search, mode: 'insensitive' } },
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { company: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search } },
+        { phones: { has: t } },
+      ];
+    }
+
+    const [customers, total] = await Promise.all([
+      this.prisma.customer.findMany({
+        where,
+        include: { updatedBy: { select: customerAuditUserSelect } },
+        orderBy: { deletedAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.customer.count({ where }),
+    ]);
+
+    const data = customers.map((c) => {
+      const entityType = this.resolveCustomerEntityType(c);
+      const displayName =
+        entityType === 'PERSON'
+          ? this.resolvePersonDisplayName(c) || c.email || c.id
+          : (c.company ?? '').trim() ||
+            (() => {
+              const ext = (c.extendedProfile ?? {}) as Record<string, unknown>;
+              const org =
+                typeof ext.organizationName === 'string' ? ext.organizationName.trim() : '';
+              return org;
+            })() ||
+            [c.firstName, c.lastName]
+              .map((x) => (x ?? '').trim())
+              .filter(Boolean)
+              .join(' ') ||
+            c.email ||
+            c.id;
+      return {
+        id: c.id,
+        displayName,
+        email: c.email,
+        phone: c.phone ?? c.phones?.[0] ?? null,
+        entityType: c.entityType ?? null,
+        deletedAt: c.deletedAt!.toISOString(),
+        deletedBy: c.updatedBy,
+      };
+    });
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    };
+  }
+
+  async moveToTrash(id: string, actorUserId?: string) {
+    const existing = await this.assertCustomerExists(id);
+    if (existing.deletedAt) {
+      throw new BadRequestException('Карточка уже в корзине');
+    }
+    return this.prisma.customer.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+        ...(actorUserId ? { updatedById: actorUserId } : {}),
       },
     });
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
-    return this.prisma.customer.delete({
+  async restoreFromTrash(id: string, actorUserId?: string) {
+    const existing = await this.assertCustomerExists(id, { allowTrashed: true });
+    if (!existing.deletedAt) {
+      throw new BadRequestException('Карточка не в корзине');
+    }
+    return this.prisma.customer.update({
       where: { id },
+      data: {
+        deletedAt: null,
+        ...(actorUserId ? { updatedById: actorUserId } : {}),
+      },
     });
   }
 
   async addInteraction(userId: string, createInteractionDto: CreateInteractionDto) {
-    const customer = await this.findOne(createInteractionDto.customerId);
+    await this.assertCustomerExists(createInteractionDto.customerId);
 
     const interaction = await this.prisma.interaction.create({
       data: {
@@ -443,7 +872,7 @@ export class CustomersService {
 
     // Update last contact date
     await this.prisma.customer.update({
-      where: { id: customer.id },
+      where: { id: createInteractionDto.customerId },
       data: { lastContactAt: new Date() },
     });
 
@@ -551,7 +980,7 @@ export class CustomersService {
 
   // Assign manager to customer
   async assignManager(customerId: string, managerId: string) {
-    await this.findOne(customerId);
+    await this.assertCustomerExists(customerId);
     return this.prisma.customer.update({
       where: { id: customerId },
       data: { managerId },

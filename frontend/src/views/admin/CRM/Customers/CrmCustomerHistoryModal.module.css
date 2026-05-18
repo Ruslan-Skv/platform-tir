@@ -1,0 +1,155 @@
+/* Панель: те же отступы, что у «Добавить клиента» (modalPanel в AddCrmCustomerModal) */
+.historyPanel {
+  max-height: min(92vh, 52rem);
+}
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs, 4px);
+  padding: var(--admin-space-xs, 4px);
+}
+
+.shell :global([data-modal-form-hint]) {
+  margin: 0;
+  padding: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
+}
+
+.shell :global([data-modal-form-error]) {
+  margin: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs, 4px);
+  max-height: min(58vh, 28rem);
+  overflow-y: auto;
+  padding: var(--admin-space-sm, 6px) !important;
+}
+
+.entry {
+  background: var(--admin-surface, #fff);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-md, 8px);
+  overflow: hidden;
+}
+
+.entryHeader {
+  align-items: center;
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: var(--admin-space-md, 8px);
+  padding: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
+  text-align: left;
+  width: 100%;
+}
+
+.entryHeader:hover {
+  background: var(--admin-surface-soft, #f9fafb);
+}
+
+.entryMeta {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  font-size: var(--modal-fs-sm, 0.8125rem);
+  gap: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
+  line-height: var(--admin-line-height-sm, 1.25);
+  min-width: 0;
+}
+
+.entryDate {
+  color: var(--admin-text-secondary, #374151);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.entryUser {
+  color: var(--admin-text-muted, #6b7280);
+}
+
+.entryAction {
+  border-radius: var(--admin-radius-xl, 999px);
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 2px var(--admin-space-md, 8px);
+}
+
+.actionCreate {
+  background: var(--admin-success-bg, #dcfce7);
+  border: 1px solid var(--admin-success-border, #6ee7b7);
+  color: var(--admin-success-deep, #15803d);
+}
+
+.actionUpdate {
+  background: var(--admin-info-bg-soft, #eff6ff);
+  border: 1px solid var(--admin-info-border, #93c5fd);
+  color: var(--admin-info-text, #1e40af);
+}
+
+.entryFields {
+  color: var(--admin-text-muted, #6b7280);
+  flex-basis: 100%;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+}
+
+.expandIcon {
+  color: var(--admin-text-muted, #6b7280);
+  flex-shrink: 0;
+  font-size: 0.625rem;
+}
+
+.entryDetails {
+  border-top: 1px solid var(--admin-border, #e5e7eb);
+  padding: var(--admin-space-xs, 4px);
+}
+
+.changesDetail {
+  gap: var(--admin-space-xs, 4px) !important;
+  padding: var(--admin-space-xs, 4px) !important;
+}
+
+.changeRowChanged :global(dt) {
+  color: var(--admin-text-secondary, #374151);
+  font-weight: 700;
+}
+
+.changeValues {
+  align-items: baseline;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-xs, 4px);
+  word-break: break-word;
+}
+
+.changeOld {
+  color: var(--admin-text-muted, #6b7280);
+  text-decoration: line-through;
+}
+
+.changeArrow {
+  color: var(--admin-text-muted, #6b7280);
+}
+
+.changeNew {
+  color: var(--admin-text-secondary, #374151);
+  font-weight: 600;
+}
+
+.shell :global([data-modal-form-actions]) {
+  margin-top: var(--admin-space-xs, 4px);
+  padding: var(--admin-space-xs, 4px) var(--admin-space-sm, 6px);
+}
+
+.shell :global([data-modal-btn='secondary']) {
+  min-height: 1.75rem !important;
+  padding-bottom: 2px !important;
+  padding-top: 2px !important;
+}

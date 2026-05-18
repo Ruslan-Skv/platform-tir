@@ -1,5 +1,9 @@
 import type { Contract, ContractCustomer, DocumentCustomerBlock } from '@/shared/api/admin-crm';
 import { parseObjectAddresses } from '@/views/admin/CRM/Customers/crmCustomerExtendedProfile';
+import {
+  joinPersonFullName,
+  resolvePersonNameParts,
+} from '@/views/admin/CRM/Customers/crmCustomerName';
 
 import { amountToRussianWords } from './amountToRussianWords';
 import { isoOrCrmDateToContractDdMmYyyy } from './contractDateFormat';
@@ -127,9 +131,15 @@ export function mergeRepairFormFromCreatedCrmCustomer(
 
   const firstName = s(r.firstName);
   const lastName = s(r.lastName);
-  const composedName = [firstName, lastName].filter(Boolean).join(' ').trim();
-
-  const fullNamePerson = s(ext.fullName).trim() || composedName;
+  const personParts = resolvePersonNameParts({
+    extLastName: s(ext.lastName),
+    extFirstName: s(ext.firstName),
+    extPatronymic: s(ext.patronymic),
+    extFullName: s(ext.fullName),
+    rowFirstName: firstName,
+    rowLastName: lastName,
+  });
+  const fullNamePerson = joinPersonFullName(personParts);
   const orgName = s(ext.organizationName).trim() || s(r.company).trim();
 
   const customerPatch: Partial<RepairCustomerBlock> & { phones?: string[] } = {

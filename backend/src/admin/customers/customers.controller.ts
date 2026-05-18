@@ -41,8 +41,8 @@ export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
   @Post()
-  create(@Body() createCustomerDto: CreateCustomerDto) {
-    return this.customersService.create(createCustomerDto);
+  create(@Body() createCustomerDto: CreateCustomerDto, @Request() req: RequestWithUser) {
+    return this.customersService.create(createCustomerDto, req.user?.id);
   }
 
   @Get()
@@ -66,18 +66,37 @@ export class CustomersController {
     });
   }
 
+  @Get('trash')
+  findTrash(
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.customersService.findTrash({
+      search,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 25,
+    });
+  }
+
   @Get('directory')
   findClientDirectory(
     @Query('search') search?: string,
     @Query('entityType') entityType?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: string,
   ) {
+    const sortByNorm = sortBy === 'createdAt' || sortBy === 'displayName' ? sortBy : undefined;
+    const sortOrderNorm = sortOrder === 'desc' || sortOrder === 'asc' ? sortOrder : undefined;
     return this.customersService.findClientDirectory({
       search,
       entityType: entityType?.trim() || undefined,
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 25,
+      sortBy: sortByNorm,
+      sortOrder: sortOrderNorm,
     });
   }
 
@@ -91,19 +110,33 @@ export class CustomersController {
     return this.customersService.getUpcomingFollowUps(managerId, days ? parseInt(days, 10) : 7);
   }
 
+  @Get(':id/history')
+  getHistory(@Param('id') id: string) {
+    return this.customersService.getHistory(id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.customersService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCustomerDto: UpdateCustomerDto) {
-    return this.customersService.update(id, updateCustomerDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateCustomerDto: UpdateCustomerDto,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.customersService.update(id, updateCustomerDto, req.user?.id);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.customersService.remove(id);
+  moveToTrash(@Param('id') id: string, @Request() req: RequestWithUser) {
+    return this.customersService.moveToTrash(id, req.user?.id);
+  }
+
+  @Post(':id/restore')
+  restoreFromTrash(@Param('id') id: string, @Request() req: RequestWithUser) {
+    return this.customersService.restoreFromTrash(id, req.user?.id);
   }
 
   @Post(':id/interactions')

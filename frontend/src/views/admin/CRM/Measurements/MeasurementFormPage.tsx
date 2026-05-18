@@ -18,6 +18,10 @@ import {
 } from '@/shared/api/admin-crm';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { AddCrmCustomerModal } from '@/views/admin/CRM/Customers/AddCrmCustomerModal';
+import {
+  joinPersonFullName,
+  resolvePersonNamePartsFromDetail,
+} from '@/views/admin/CRM/Customers/crmCustomerName';
 
 import styles from './MeasurementFormPage.module.css';
 import { MeasurementHistoryModal } from './MeasurementHistoryModal';
@@ -299,6 +303,8 @@ function crmCustomerDisplayName(row: CrmCustomerListItem): string {
 function isCreatedCrmCustomer(x: unknown): x is {
   id: string;
   firstName?: string;
+  lastName?: string | null;
+  extendedProfile?: Record<string, unknown> | null;
   phone?: string | null;
   phones?: string[];
 } {
@@ -1593,9 +1599,20 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
         onCreated={(created) => {
           if (!isCreatedCrmCustomer(created)) return;
           setCustomerId(created.id);
-          if (typeof created.firstName === 'string' && created.firstName.trim()) {
-            setCustomerName(created.firstName.trim());
-          }
+          const ext =
+            created.extendedProfile &&
+            typeof created.extendedProfile === 'object' &&
+            !Array.isArray(created.extendedProfile)
+              ? (created.extendedProfile as Record<string, unknown>)
+              : null;
+          const fullName = joinPersonFullName(
+            resolvePersonNamePartsFromDetail({
+              firstName: created.firstName,
+              lastName: created.lastName,
+              extendedProfile: ext,
+            })
+          );
+          if (fullName) setCustomerName(fullName);
           const ph =
             (typeof created.phone === 'string' && created.phone.trim()) ||
             (Array.isArray(created.phones) ? created.phones.find((p) => p.trim()) : undefined);

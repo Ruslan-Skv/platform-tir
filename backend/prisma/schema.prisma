@@ -56,6 +56,8 @@ model User {
   cartServiceItems  CartServiceItem[]
   comments          Comment[]
   assignedCustomers Customer[]     @relation("ManagerCustomers")
+  customersCreated  Customer[]     @relation("CustomerCreatedBy")
+  customersUpdated  Customer[]     @relation("CustomerUpdatedBy")
   interactions      Interaction[]
   orders            Order[]
   ordersCreatedForCustomers Order[] @relation("OrdersCreatedByManager")
@@ -79,6 +81,7 @@ model User {
   officeHistory            OfficeHistory[]      @relation("OfficeHistoryChangedBy")
   supplierSettlementHistory SupplierSettlementHistory[] @relation("SupplierSettlementHistoryChangedBy")
   taskHistory              TaskHistory[]       @relation("TaskHistoryChangedBy")
+  customerHistory          CustomerHistory[]   @relation("CustomerHistoryChangedBy")
   managedComplexObjects ComplexObject[]      @relation("ComplexObjectManager")
   adminResourcePermissions AdminResourcePermission[]
   officeOtherExpensesCreated OfficeOtherExpense[]
@@ -564,19 +567,44 @@ model Customer {
   notes         String?
   tags          String[]
   managerId     String?
+  createdById   String?        @map("created_by_id")
+  updatedById   String?        @map("updated_by_id")
   isActive      Boolean        @default(true)
   lastContactAt DateTime?
   nextFollowUp  DateTime?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  /// Мягкое удаление: карточка в корзине, не показывается в справочнике
+  deletedAt     DateTime?      @map("deleted_at")
   manager       User?          @relation("ManagerCustomers", fields: [managerId], references: [id])
+  createdBy     User?          @relation("CustomerCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy     User?          @relation("CustomerUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
   deals         Deal[]
   interactions  Interaction[]
   tasks         Task[]
   measurements  Measurement[]
   contracts     Contract[]
+  history       CustomerHistory[]
 
+  @@index([deletedAt])
   @@map("customers")
+}
+
+model CustomerHistory {
+  id            String   @id @default(cuid())
+  customerId    String   @map("customer_id")
+  snapshot      Json
+  changedFields String[] @default([]) @map("changed_fields")
+  action        String
+  changedById   String   @map("changed_by_id")
+  changedAt     DateTime @default(now()) @map("changed_at")
+
+  customer  Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  changedBy User     @relation("CustomerHistoryChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
+
+  @@index([customerId])
+  @@index([changedAt])
+  @@map("customer_history")
 }
 
 model Interaction {

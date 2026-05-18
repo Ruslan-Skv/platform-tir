@@ -1,11 +1,11 @@
-/* Панель модалки: меньше внешние отступы (без изменения шрифтов) */
+/* Панель модалки: внешние отступы от краёв (без изменения шрифтов полей) */
 .modalPanel {
-  padding: var(--admin-space-md, 8px) var(--admin-space-lg, 10px) !important;
+  padding: var(--admin-space-4xl, 24px) var(--admin-space-3xl, 20px) !important;
 }
 
 .modalPanel > div:first-child {
-  gap: var(--admin-space-xs, 4px);
-  margin-bottom: var(--admin-space-sm, 6px);
+  gap: var(--admin-space-sm, 6px);
+  margin-bottom: var(--admin-space-xl, 12px);
 }
 
 /* Индикатор заполнения справа от заголовка */
@@ -20,6 +20,25 @@
   font-weight: inherit;
   max-width: min(22rem, 52vw);
   text-align: right;
+}
+
+.fieldError {
+  color: #b91c1c;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  line-height: 1.3;
+  margin: 2px 0 0;
+}
+
+.inputInvalid {
+  border-color: #dc2626 !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fieldError {
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .inputInvalid {
+  border-color: #f87171 !important;
 }
 
 .phoneHint,
@@ -39,10 +58,22 @@
 
 .phoneSlot {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--admin-space-xs, 4px);
   flex: 1 1 min(100%, 10.5rem);
   min-width: 0;
+}
+
+.phoneSlotInputs {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.phoneSlotInputs input {
+  width: 100%;
 }
 
 .phoneSlot input {
@@ -148,6 +179,21 @@
 .formShell :global([data-modal-form-grid]) {
   gap: var(--admin-space-xs, 4px);
   padding: var(--admin-space-sm, 6px);
+}
+
+/* Добавление клиента (физлицо): фамилия, имя, отчество в одну строку */
+.personNameRow {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Физлицо: паспортные поля в одну строку (добавление и редактирование карточки) */
+.passportRow {
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr) minmax(0, 0.85fr);
+}
+
+/* Редактирование карточки: фамилия, имя, отчество, e-mail в одну строку */
+.personNameEmailRow {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .formShell :global([data-modal-form-group]) {

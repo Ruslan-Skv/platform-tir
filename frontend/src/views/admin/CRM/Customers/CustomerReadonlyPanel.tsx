@@ -2,6 +2,9 @@
 
 import type { ContractCustomer, DocumentCustomerBlock } from '@/shared/api/admin-crm';
 
+import { parseFullNameString } from './crmCustomerName';
+import { formatCrmPhoneOrDash } from './crmCustomerPhone';
+
 function disp(v: string | undefined | null): string {
   const s = v != null ? String(v).trim() : '';
   return s === '' ? '—' : s;
@@ -38,6 +41,17 @@ function FieldSpan({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
+function PersonNameFields({ fullName }: { fullName?: string | null }) {
+  const parts = parseFullNameString(fullName ?? '');
+  return (
+    <>
+      <Field label="Фамилия">{disp(parts.lastName)}</Field>
+      <Field label="Имя">{disp(parts.firstName)}</Field>
+      <Field label="Отчество">{disp(parts.patronymic)}</Field>
+    </>
+  );
+}
+
 export function CustomerReadonlyPanel({
   customer,
   formatCurrency,
@@ -57,7 +71,7 @@ export function CustomerReadonlyPanel({
           <>
             <Field label="Тип">{typeRu(doc.type)}</Field>
             {isPerson ? (
-              <Field label="ФИО">{disp(doc.fullName)}</Field>
+              <PersonNameFields fullName={doc.fullName} />
             ) : (
               <>
                 <Field label="ФИО представителя (именит.)">
@@ -78,7 +92,9 @@ export function CustomerReadonlyPanel({
               </>
             )}
             <FieldSpan label="Адрес">{disp(doc.address || customer.customerAddress)}</FieldSpan>
-            <Field label="Телефон">{disp(doc.phone || customer.customerPhone)}</Field>
+            <Field label="Телефон">
+              {formatCrmPhoneOrDash(doc.phone || customer.customerPhone)}
+            </Field>
             <Field label="E-mail">{disp(doc.email)}</Field>
             <FieldSpan label="Банковские реквизиты">{disp(doc.bankDetails)}</FieldSpan>
             {isPerson ? (

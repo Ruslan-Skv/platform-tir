@@ -972,6 +972,21 @@ export interface ContractCustomer {
   manager: { id: string; firstName: string | null; lastName: string | null } | null;
 }
 
+export interface CrmCustomerContractLink {
+  id: string;
+  contractNumber: string;
+  contractDate: string | null;
+  totalAmount: number;
+  documentPackageId: string | null;
+}
+
+export interface CrmCustomerMeasurementLink {
+  id: string;
+  receptionDate: string;
+  status: string;
+  customerName: string;
+}
+
 /** Строка единого справочника GET /admin/customers/directory */
 export interface ClientDirectoryRow {
   rowSource: 'customer' | 'contract_only';
@@ -984,10 +999,12 @@ export interface ClientDirectoryRow {
   stage: string | null;
   createdAt: string | null;
   manager: { id: string; email: string; firstName: string | null; lastName: string | null } | null;
-  sourceLabel: string;
   contractCount: number | null;
   totalAmount: number | null;
   lastContractDate: string | null;
+  lastContractNumber: string | null;
+  lastMeasurementDate: string | null;
+  measurementCount?: number | null;
   contractCustomer?: ContractCustomer | null;
 }
 
@@ -1008,6 +1025,14 @@ export interface CreateCrmCustomerPayload {
   notes?: string;
 }
 
+export interface CrmCustomerAuditUser {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  role: string;
+}
+
 /** Строка из списка GET /admin/customers (для поиска при замере и т.п.). */
 export interface CrmCustomerListItem {
   id: string;
@@ -1023,17 +1048,21 @@ export interface CrmCustomerListItem {
   stage?: string;
   notes?: string | null;
   createdAt?: string;
+  updatedAt?: string;
   manager?: { id: string; email: string; firstName: string | null; lastName: string | null } | null;
+  createdBy?: CrmCustomerAuditUser | null;
+  updatedBy?: CrmCustomerAuditUser | null;
 }
 
 /** Полная карточка GET /admin/customers/:id */
 export type CrmCustomerDetail = CrmCustomerListItem & {
   tags?: string[];
-  updatedAt?: string;
   lastContactAt?: string | null;
   nextFollowUp?: string | null;
   dealValue?: unknown;
   isActive?: boolean;
+  contracts?: CrmCustomerContractLink[];
+  measurements?: CrmCustomerMeasurementLink[];
 };
 
 export async function getCrmCustomers(params?: {
@@ -1060,11 +1089,15 @@ export async function getCrmCustomers(params?: {
   return res.json();
 }
 
+export type ClientDirectorySortBy = 'displayName' | 'createdAt';
+
 export async function getClientDirectory(params?: {
   search?: string;
   page?: number;
   limit?: number;
   entityType?: CrmCustomerEntityType;
+  sortBy?: ClientDirectorySortBy;
+  sortOrder?: 'asc' | 'desc';
 }): Promise<{
   data: ClientDirectoryRow[];
   total: number;
@@ -1077,6 +1110,8 @@ export async function getClientDirectory(params?: {
   search.set('page', String(params?.page ?? 1));
   search.set('limit', String(Math.min(params?.limit ?? 25, 100)));
   if (params?.entityType) search.set('entityType', params.entityType);
+  if (params?.sortBy) search.set('sortBy', params.sortBy);
+  if (params?.sortOrder) search.set('sortOrder', params.sortOrder);
   const res = await apiFetch(`${API_URL}/admin/customers/directory?${search}`, {
     headers: getAdminAuthHeaders(),
   });
@@ -1090,6 +1125,83 @@ export async function getCrmCustomer(id: string): Promise<CrmCustomerDetail> {
   });
   if (!res.ok) throw new Error('Не удалось загрузить карточку клиента');
   return res.json() as Promise<CrmCustomerDetail>;
+}
+
+export interface CrmCustomerHistoryEntry {
+  id: string;
+  action: 'CREATE' | 'UPDATE';
+  changedAt: string;
+  changedBy: CrmCustomerAuditUser;
+  changedFields: string[];
+  snapshot: Record<string, unknown>;
+}
+
+export async function getCrmCustomerHistory(
+  customerId: string
+): Promise<CrmCustomerHistoryEntry[]> {
+  const res = await apiFetch(
+    `${API_URL}/admin/customers/${encodeURIComponent(customerId)}/history`,
+    { headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) throw new Error('Не удалось загрузить историю карточки клиента');
+  return res.json();
+}
+
+export interface CrmCustomerTrashRow {
+  id: string;
+  displayName: string;
+  email: string | null;
+  phone: string | null;
+  entityType: string | null;
+  deletedAt: string;
+  deletedBy: CrmCustomerAuditUser | null;
+}
+
+export async function getCrmCustomerTrash(params?: {
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{
+  data: CrmCustomerTrashRow[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}> {
+  const search = new URLSearchParams();
+  if (params?.search?.trim()) search.set('search', params.search.trim());
+  search.set('page', String(params?.page ?? 1));
+  search.set('limit', String(Math.min(params?.limit ?? 25, 100)));
+  const res = await apiFetch(`${API_URL}/admin/customers/trash?${search}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить корзину клиентов');
+  return res.json();
+}
+
+export async function trashCrmCustomer(customerId: string): Promise<void> {
+  const res = await apiFetch(`${API_URL}/admin/customers/${encodeURIComponent(customerId)}`, {
+    method: 'DELETE',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err.message || 'Не удалось переместить карточку в корзину');
+  }
+}
+
+export async function restoreCrmCustomer(customerId: string): Promise<void> {
+  const res = await apiFetch(
+    `${API_URL}/admin/customers/${encodeURIComponent(customerId)}/restore`,
+    {
+      method: 'POST',
+      headers: getAdminAuthHeaders(),
+    }
+  );
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err.message || 'Не удалось восстановить карточку');
+  }
 }
 
 export async function createCrmCustomer(payload: CreateCrmCustomerPayload): Promise<unknown> {

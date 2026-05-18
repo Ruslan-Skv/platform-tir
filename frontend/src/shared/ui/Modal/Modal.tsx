@@ -9,7 +9,7 @@ export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
-  title?: string;
+  title?: React.ReactNode;
   /** Содержимое справа от заголовка (например индикатор заполнения). */
   titleAside?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
