@@ -518,6 +518,129 @@
   border-top: 1px solid var(--admin-border);
 }
 
+.measurementsCollapsed {
+  display: flex;
+  justify-content: flex-start;
+  padding: var(--admin-space-xs) 0;
+}
+
+.openMeasurementResultsButton {
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  border: 1px solid var(--admin-info-border, #93c5fd);
+  border-radius: var(--admin-radius-md);
+  background: linear-gradient(
+    180deg,
+    var(--admin-info-bg-soft, #eff6ff) 0%,
+    var(--admin-surface) 100%
+  );
+  color: var(--admin-info-strong, #1d4ed8);
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.openMeasurementResultsButton:hover {
+  border-color: var(--admin-info, #3b82f6);
+  background: var(--admin-info-bg, #dbeafe);
+}
+
+.resultCategoryTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-xs);
+  margin-bottom: var(--admin-space-sm);
+}
+
+.resultCategoryTab,
+.roomTabButton {
+  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  border-radius: var(--admin-radius-pill);
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
+  cursor: pointer;
+}
+
+.resultCategoryTabLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-2xs);
+}
+
+.resultCategoryTabSavedMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: var(--admin-radius-pill);
+  background: #ffff00;
+  color: #1a1a1a;
+  font-size: var(--admin-font-size-2xs);
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.12);
+}
+
+.roomTabsRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--admin-space-xs);
+  margin-bottom: var(--admin-space-xs);
+}
+
+.roomTabsAddButton {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.resultCategoryTabFilled,
+.roomTabButtonFilled {
+  border-color: var(--admin-success-deep);
+  background: var(--admin-success-bg);
+  color: var(--admin-success-deep);
+  font-weight: 700;
+}
+
+.resultCategoryTabActive.resultCategoryTabActiveEmpty,
+.roomTabButtonActive.roomTabButtonActiveEmpty,
+.workCategoryButtonActive:not(.workCategoryButtonMarked) {
+  border-color: var(--admin-chart-cyan);
+  background: linear-gradient(180deg, var(--admin-info-bg-soft) 0%, var(--admin-info-bg) 100%);
+  color: var(--admin-info-strong);
+  box-shadow: 0 1px 6px var(--admin-overlay-color-129);
+}
+
+.resultCategoryTabActive.resultCategoryTabActiveFilled,
+.roomTabButtonActive.roomTabButtonActiveFilled {
+  border-color: var(--admin-success-text-strong);
+  background: linear-gradient(
+    180deg,
+    var(--admin-success-bright) 0%,
+    var(--admin-success-strong) 100%
+  );
+  color: var(--admin-surface);
+  font-weight: 700;
+  box-shadow: 0 0 0 2px var(--admin-overlay-color-102);
+}
+
+.measurementsTabPlaceholder {
+  margin: var(--admin-space-md) 0;
+  padding: var(--admin-space-lg);
+  border: 1px dashed var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-sm);
+  text-align: center;
+}
+
 .measurementsSectionHeader {
   display: flex;
   align-items: center;
@@ -533,29 +656,32 @@
 }
 
 .completeMeasurementButton {
-  border: 1px solid var(--admin-warning) !important;
+  border: 1px solid var(--admin-chart-cyan) !important;
   background: linear-gradient(
     180deg,
-    var(--admin-warning-bg) 0%,
-    var(--admin-warning-border-soft) 100%
+    var(--admin-info-bg-soft) 0%,
+    var(--admin-info-bg) 100%
   ) !important;
-  color: var(--admin-warning-brown) !important;
+  color: var(--admin-info-strong) !important;
   font-weight: 700;
   font-size: var(--admin-font-size-sm) !important;
   padding: var(--admin-space-sm) var(--admin-space-lg) !important;
   border-radius: var(--admin-radius-md);
-  box-shadow: 0 2px 8px var(--admin-overlay-color-082);
-  letter-spacing: var(--admin-letter-spacing-base);
+  box-shadow: 0 1px 6px var(--admin-overlay-color-129);
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .completeMeasurementButton:hover:not(:disabled) {
-  border-color: var(--admin-warning-strong) !important;
+  border-color: var(--admin-info) !important;
   background: linear-gradient(
     180deg,
-    var(--admin-warning-border-soft) 0%,
-    var(--admin-warning-border) 100%
+    var(--admin-info-bg) 0%,
+    var(--admin-info-border-soft) 100%
   ) !important;
-  box-shadow: 0 3px 10px var(--admin-overlay-color-083);
+  color: var(--admin-info-text) !important;
 }
 
 .completeMeasurementButtonDone {
@@ -610,29 +736,6 @@
   padding: var(--admin-space-sm);
   margin-bottom: var(--admin-space-xs);
   background: var(--admin-surface-muted);
-}
-
-.roomTabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--admin-space-xs);
-  margin-bottom: var(--admin-space-xs);
-}
-
-.roomTabButton {
-  border: 1px solid var(--admin-border);
-  background: var(--admin-surface);
-  color: var(--admin-text-secondary);
-  border-radius: var(--admin-radius-sm);
-  padding: var(--admin-space-2xs) var(--admin-space-md);
-  font-size: var(--admin-font-size-2xs);
-  cursor: pointer;
-}
-
-.roomTabButtonActive {
-  background: var(--admin-info);
-  border-color: var(--admin-info);
-  color: var(--admin-surface);
 }
 
 .roomCardHeader {
@@ -1064,18 +1167,6 @@
   background: var(--admin-surface);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .roomTabButton {
-  border-color: var(--admin-text-muted);
-  background: var(--admin-surface-soft);
-  color: var(--admin-text-secondary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .roomTabButtonActive {
-  border-color: var(--admin-accent-soft-strong);
-  background: var(--admin-accent);
-  color: var(--admin-surface);
-}
-
 :where(html[data-theme='dark'], [data-app-theme='dark']) .roomIconCopy {
   color: var(--admin-success-border);
 }
@@ -1159,16 +1250,44 @@
   }
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .workCategoryButton {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .workCategoryButton,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .resultCategoryTab,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .roomTabButton {
   border-color: var(--admin-sidebar-text);
   background: var(--admin-surface-soft);
   color: var(--admin-text-secondary);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .workCategoryButtonActive {
-  border-color: var(--admin-accent-soft-strong);
-  background: var(--admin-accent);
+:where(html[data-theme='dark'], [data-app-theme='dark']) .resultCategoryTabFilled,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .roomTabButtonFilled {
+  border-color: var(--admin-success-bright);
+  background: var(--admin-overlay-color-098);
+  color: var(--admin-success-bg);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .resultCategoryTabActive.resultCategoryTabActiveFilled,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .roomTabButtonActive.roomTabButtonActiveFilled {
+  border-color: var(--admin-success-border);
+  background: linear-gradient(
+    180deg,
+    var(--admin-success-deep) 0%,
+    var(--admin-success-text-strong) 100%
+  );
   color: var(--admin-surface);
+  box-shadow: 0 0 0 2px var(--admin-overlay-color-141);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .resultCategoryTabActive.resultCategoryTabActiveEmpty,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .roomTabButtonActive.roomTabButtonActiveEmpty,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workCategoryButtonActive:not(.workCategoryButtonMarked) {
+  background: linear-gradient(180deg, var(--admin-info) 0%, var(--admin-info-strong) 100%);
+  border-color: var(--admin-info-bright);
+  color: var(--admin-text-inverse);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .workCategoryButtonMarked {
@@ -1201,14 +1320,25 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .completeMeasurementButton {
-  border-color: var(--admin-warning-amber) !important;
+  border-color: var(--admin-info-bright) !important;
   background: linear-gradient(
     180deg,
-    var(--admin-warning-bg) 0%,
-    var(--admin-warning-border-soft) 100%
+    var(--admin-info) 0%,
+    var(--admin-info-strong) 100%
   ) !important;
-  color: var(--admin-warning-text) !important;
-  box-shadow: 0 2px 10px var(--admin-overlay-color-088);
+  color: var(--admin-text-inverse) !important;
+  box-shadow: 0 1px 6px var(--admin-overlay-color-129);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .completeMeasurementButton:hover:not(:disabled) {
+  border-color: var(--admin-info-bright) !important;
+  background: linear-gradient(
+    180deg,
+    var(--admin-info-strong) 0%,
+    var(--admin-info) 100%
+  ) !important;
+  color: var(--admin-text-inverse) !important;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .completeMeasurementButtonDone {
@@ -1302,7 +1432,7 @@
   justify-content: flex-end;
   min-height: 0;
   margin-top: var(--admin-space-sm);
-  padding-bottom: var(--admin-space-md);
+  padding-bottom: 1rem;
 }
 
 .customerCrmSearchRow {
@@ -1468,6 +1598,7 @@
   cursor: pointer;
   font-size: var(--admin-font-size-xs);
   font-weight: 600;
+  margin-left: auto;
   transition: background 0.15s ease;
 }
 
@@ -1477,22 +1608,37 @@
 
 .customerCrmClearButton {
   padding: var(--admin-space-xs) var(--admin-space-md);
-  border: 1px solid var(--admin-border);
+  border: 1px solid var(--admin-chart-cyan);
   border-radius: var(--admin-radius-md);
-  background: var(--admin-surface);
-  color: var(--admin-text-secondary);
+  background: linear-gradient(180deg, var(--admin-info-bg-soft) 0%, var(--admin-info-bg) 100%);
+  color: var(--admin-info-strong);
   cursor: pointer;
   font-size: var(--admin-font-size-xs);
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
+  box-shadow: 0 1px 6px var(--admin-overlay-color-129);
   transition:
     border-color 0.15s ease,
+    background 0.15s ease,
     color 0.15s ease;
 }
 
 .customerCrmClearButton:hover {
-  border-color: var(--admin-text-muted);
-  color: var(--admin-text-primary);
+  border-color: var(--admin-info);
+  background: linear-gradient(180deg, var(--admin-info-bg) 0%, var(--admin-info-border-soft) 100%);
+  color: var(--admin-info-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmClearButton {
+  background: linear-gradient(180deg, var(--admin-info) 0%, var(--admin-info-strong) 100%);
+  border-color: var(--admin-info-bright);
+  color: var(--admin-text-inverse);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmClearButton:hover {
+  background: linear-gradient(180deg, var(--admin-info-strong) 0%, var(--admin-info) 100%);
+  border-color: var(--admin-info-bright);
+  color: var(--admin-text-inverse);
 }
 
 .directionRowsBlock .directionRows {

@@ -43,7 +43,19 @@ const STATUS_SELECT_CLASS_BY_VALUE: Record<string, string> = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 const REPAIR_MEASUREMENT_DATA_MARKER = '[REPAIR_MEASUREMENT_DATA_V1]';
+const MEASUREMENT_SAVED_TABS_MARKER = '[MEASUREMENT_SAVED_TABS_V1]';
 const MAX_ROOMS_COUNT = 15;
+
+const MEASUREMENT_RESULT_TABS = [
+  { id: 'repair', label: 'Ремонт' },
+  { id: 'doors', label: 'Двери' },
+  { id: 'windows', label: 'Окна' },
+  { id: 'ceilings', label: 'Потолки' },
+  { id: 'blinds', label: 'Жалюзи' },
+  { id: 'furniture', label: 'Мебель' },
+] as const;
+
+type MeasurementResultTabId = (typeof MEASUREMENT_RESULT_TABS)[number]['id'];
 
 interface OpeningDimensions {
   id: string;
@@ -133,6 +145,81 @@ function buildDefaultRepairMeasurementData(): RepairMeasurementData {
   };
 }
 
+function commentsIncludeRepairResults(commentsValue: string | null | undefined): boolean {
+  return (commentsValue ?? '').includes(REPAIR_MEASUREMENT_DATA_MARKER);
+}
+
+function commentsIncludeSavedTabs(commentsValue: string | null | undefined): boolean {
+  return (commentsValue ?? '').includes(MEASUREMENT_SAVED_TABS_MARKER);
+}
+
+function getResultTabLabel(tabId: MeasurementResultTabId): string {
+  return MEASUREMENT_RESULT_TABS.find((tab) => tab.id === tabId)?.label ?? tabId;
+}
+
+function extractSavedTabsFromComments(source: string): {
+  textWithoutSavedMarker: string;
+  savedTabs: Set<MeasurementResultTabId>;
+} {
+  const markerIndex = source.indexOf(MEASUREMENT_SAVED_TABS_MARKER);
+  if (markerIndex < 0) {
+    return { textWithoutSavedMarker: source, savedTabs: new Set() };
+  }
+  const before = source.slice(0, markerIndex).trimEnd();
+  let after = source.slice(markerIndex + MEASUREMENT_SAVED_TABS_MARKER.length).trimStart();
+  const savedTabs = new Set<MeasurementResultTabId>();
+  if (after.startsWith('{')) {
+    let depth = 0;
+    let end = 0;
+    for (let i = 0; i < after.length; i += 1) {
+      const char = after[i];
+      if (char === '{') depth += 1;
+      if (char === '}') {
+        depth -= 1;
+        if (depth === 0) {
+          end = i + 1;
+          break;
+        }
+      }
+    }
+    if (end > 0) {
+      try {
+        const parsed = JSON.parse(after.slice(0, end)) as Partial<
+          Record<MeasurementResultTabId, boolean>
+        >;
+        for (const tab of MEASUREMENT_RESULT_TABS) {
+          if (parsed[tab.id]) savedTabs.add(tab.id);
+        }
+      } catch {
+        /* ignore malformed saved tabs payload */
+      }
+      after = after.slice(end).trimStart();
+    }
+  }
+  const textWithoutSavedMarker = [before, after].filter(Boolean).join('\n\n').trim();
+  return { textWithoutSavedMarker, savedTabs };
+}
+
+function buildMeasurementComments(
+  cleanComment: string,
+  savedTabs: Set<MeasurementResultTabId>,
+  repairData: RepairMeasurementData | null
+): string {
+  const blocks: string[] = [];
+  const trimmedComment = cleanComment.trim();
+  if (trimmedComment) blocks.push(trimmedComment);
+  if (savedTabs.size > 0) {
+    const payload = Object.fromEntries(
+      MEASUREMENT_RESULT_TABS.map((tab) => [tab.id, savedTabs.has(tab.id)])
+    );
+    blocks.push(`${MEASUREMENT_SAVED_TABS_MARKER}${JSON.stringify(payload)}`);
+  }
+  if (repairData) {
+    blocks.push(`${REPAIR_MEASUREMENT_DATA_MARKER}${JSON.stringify(repairData)}`);
+  }
+  return blocks.join('\n\n');
+}
+
 function parseRepairMeasurementDataFromComments(commentsValue: string | null | undefined): {
   cleanComment: string;
   data: RepairMeasurementData;
@@ -199,17 +286,6 @@ function parseRepairMeasurementDataFromComments(commentsValue: string | null | u
   }
 }
 
-function stringifyRepairMeasurementData(
-  commentsValue: string,
-  data: RepairMeasurementData
-): string {
-  const cleaned = commentsValue.trim();
-  const payload = JSON.stringify(data);
-  return cleaned
-    ? `${cleaned}\n\n${REPAIR_MEASUREMENT_DATA_MARKER}${payload}`
-    : `${REPAIR_MEASUREMENT_DATA_MARKER}${payload}`;
-}
-
 function collectWorkCategories(categories: ServiceCatalogCategory[]): WorkCategoryGroup[] {
   const grouped = new Map<string, { name: string; items: ServiceCatalogItem[] }>();
   const descendantIds = new Set<string>();
@@ -250,6 +326,14 @@ function collectWorkCategories(categories: ServiceCatalogCategory[]): WorkCatego
     name: group.name,
     items: [...new Map(group.items.map((item) => [item.id, item])).values()],
   }));
+}
+
+function isMeasurementResultTabFilled(
+  tabId: MeasurementResultTabId,
+  rooms: RepairMeasurementRoom[]
+): boolean {
+  if (tabId === 'repair') return rooms.some((room) => isRoomFilled(room));
+  return false;
 }
 
 function isRoomFilled(room: RepairMeasurementRoom): boolean {
@@ -356,6 +440,11 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
     Record<string, string>
   >({});
   const [activeRoomId, setActiveRoomId] = useState('');
+  const [resultsSectionOpen, setResultsSectionOpen] = useState(false);
+  const [savedResultTabs, setSavedResultTabs] = useState<Set<MeasurementResultTabId>>(
+    () => new Set()
+  );
+  const [activeResultTab, setActiveResultTab] = useState<MeasurementResultTabId>('repair');
   const [currentMeasurementId, setCurrentMeasurementId] = useState<string | null>(
     measurementId ?? null
   );
@@ -397,9 +486,18 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
       setCustomerName(data.customerName);
       setCustomerAddress(data.customerAddress ?? '');
       setCustomerPhone(data.customerPhone);
-      const parsedComments = parseRepairMeasurementDataFromComments(data.comments ?? '');
+      const { textWithoutSavedMarker, savedTabs } = extractSavedTabsFromComments(
+        data.comments ?? ''
+      );
+      const parsedComments = parseRepairMeasurementDataFromComments(textWithoutSavedMarker);
       setComments(parsedComments.cleanComment);
       setRepairMeasurementData(parsedComments.data);
+      setSavedResultTabs(savedTabs);
+      setResultsSectionOpen(
+        commentsIncludeRepairResults(data.comments ?? '') ||
+          commentsIncludeSavedTabs(data.comments ?? '')
+      );
+      setActiveResultTab('repair');
       setStatus(data.status);
     } catch {
       showMessage('error', 'Ошибка загрузки замера');
@@ -614,71 +712,90 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
     return errors;
   }, [managerId, receptionDate, executionDate, customerId, customerName, customerPhone]);
 
-  const buildPayload = useCallback(() => {
-    const primaryDirectionId = directionRows[0]?.trim() ?? '';
-    const additionalDirectionIds = directionRows
-      .slice(1)
-      .map((id) => id.trim())
-      .filter(Boolean);
-    const base = {
+  const buildPayload = useCallback(
+    (savedTabsOverride?: Set<MeasurementResultTabId>) => {
+      const savedTabs = savedTabsOverride ?? savedResultTabs;
+      const primaryDirectionId = directionRows[0]?.trim() ?? '';
+      const additionalDirectionIds = directionRows
+        .slice(1)
+        .map((id) => id.trim())
+        .filter(Boolean);
+      const shouldPersistResults = resultsSectionOpen || savedTabs.size > 0;
+      const base = {
+        managerId,
+        receptionDate,
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
+        status,
+        ...(executionDate && { executionDate }),
+        ...(surveyorId && { surveyorId }),
+        ...(primaryDirectionId && { directionId: primaryDirectionId }),
+        ...(additionalDirectionIds.length > 0 && { additionalDirectionIds }),
+        ...(customerAddress.trim() && { customerAddress: customerAddress.trim() }),
+        comments: shouldPersistResults
+          ? buildMeasurementComments(
+              comments,
+              savedTabs,
+              resultsSectionOpen ? repairMeasurementData : null
+            )
+          : comments.trim(),
+      };
+      if (currentMeasurementId) {
+        return { ...base, customerId: customerId ?? null };
+      }
+      return customerId ? { ...base, customerId } : base;
+    },
+    [
       managerId,
       receptionDate,
-      customerName: customerName.trim(),
-      customerPhone: customerPhone.trim(),
+      customerName,
+      customerPhone,
       status,
-      ...(executionDate && { executionDate }),
-      ...(surveyorId && { surveyorId }),
-      ...(primaryDirectionId && { directionId: primaryDirectionId }),
-      ...(additionalDirectionIds.length > 0 && { additionalDirectionIds }),
-      ...(customerAddress.trim() && { customerAddress: customerAddress.trim() }),
-      comments: stringifyRepairMeasurementData(comments, repairMeasurementData),
-    };
-    if (currentMeasurementId) {
-      return { ...base, customerId: customerId ?? null };
-    }
-    return customerId ? { ...base, customerId } : base;
-  }, [
-    managerId,
-    receptionDate,
-    customerName,
-    customerPhone,
-    status,
-    executionDate,
-    surveyorId,
-    directionRows,
-    customerAddress,
-    comments,
-    repairMeasurementData,
-    currentMeasurementId,
-    customerId,
-  ]);
+      executionDate,
+      surveyorId,
+      directionRows,
+      customerAddress,
+      comments,
+      repairMeasurementData,
+      resultsSectionOpen,
+      savedResultTabs,
+      currentMeasurementId,
+      customerId,
+    ]
+  );
 
-  const persistMeasurement = useCallback(async () => {
-    const errors = collectValidationErrors();
-    setFieldErrors(errors);
-    if (Object.keys(errors).length > 0) return;
-    const payload = buildPayload();
-    const payloadKey = JSON.stringify(payload);
-    if (payloadKey === lastSavedPayloadRef.current) return;
-    setSaving(true);
-    try {
-      if (currentMeasurementId) {
-        await updateMeasurement(currentMeasurementId, payload);
-      } else {
-        const created = await createMeasurement(payload);
-        setCurrentMeasurementId(created.id);
-        router.replace(`/admin/measurements/${created.id}`, { scroll: false });
+  const persistMeasurement = useCallback(
+    async (opts?: { savedTabs?: Set<MeasurementResultTabId>; successText?: string }) => {
+      const errors = collectValidationErrors();
+      setFieldErrors(errors);
+      if (Object.keys(errors).length > 0) return;
+      const payload = buildPayload(opts?.savedTabs);
+      const payloadKey = JSON.stringify(payload);
+      if (payloadKey === lastSavedPayloadRef.current) return;
+      setSaving(true);
+      try {
+        if (currentMeasurementId) {
+          await updateMeasurement(currentMeasurementId, payload);
+        } else {
+          const created = await createMeasurement(payload);
+          setCurrentMeasurementId(created.id);
+          router.replace(`/admin/measurements/${created.id}`, { scroll: false });
+        }
+        lastSavedPayloadRef.current = payloadKey;
+        setMessage({
+          type: 'success',
+          text: opts?.successText ?? 'Сохранено автоматически',
+        });
+        setTimeout(() => setMessage(null), opts?.successText ? 3000 : 1200);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Ошибка автосохранения';
+        showMessage('error', msg);
+      } finally {
+        setSaving(false);
       }
-      lastSavedPayloadRef.current = payloadKey;
-      setMessage({ type: 'success', text: 'Сохранено автоматически' });
-      setTimeout(() => setMessage(null), 1200);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Ошибка автосохранения';
-      showMessage('error', msg);
-    } finally {
-      setSaving(false);
-    }
-  }, [collectValidationErrors, buildPayload, currentMeasurementId, router, showMessage]);
+    },
+    [collectValidationErrors, buildPayload, currentMeasurementId, router, showMessage]
+  );
 
   useEffect(() => {
     if (loading) return;
@@ -741,14 +858,30 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
     });
   };
 
-  const handleMarkMeasurementCompleted = useCallback(() => {
-    const hasAnyRoomData = repairMeasurementData.rooms.some((room) => isRoomFilled(room));
-    if (!hasAnyRoomData) {
-      showMessage('error', 'Сначала заполните блок «Результаты замеров»');
-      return;
-    }
-    setStatus('COMPLETED');
-  }, [repairMeasurementData.rooms, showMessage]);
+  const handleSaveResultTab = useCallback(
+    async (tabId: MeasurementResultTabId) => {
+      if (!resultsSectionOpen) {
+        showMessage('error', 'Сначала нажмите «Заполнить результаты замеров»');
+        return;
+      }
+      if (savedResultTabs.has(tabId)) return;
+      if (!isMeasurementResultTabFilled(tabId, repairMeasurementData.rooms)) {
+        showMessage('error', `Сначала заполните вкладку «${getResultTabLabel(tabId)}»`);
+        return;
+      }
+      const nextSaved = new Set(savedResultTabs);
+      nextSaved.add(tabId);
+      setSavedResultTabs(nextSaved);
+      await persistMeasurement({ savedTabs: nextSaved, successText: 'Замер сохранен' });
+    },
+    [
+      repairMeasurementData.rooms,
+      resultsSectionOpen,
+      savedResultTabs,
+      persistMeasurement,
+      showMessage,
+    ]
+  );
 
   if (loading) {
     return (
@@ -1069,7 +1202,7 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
                     className={styles.customerCrmAddButton}
                     onClick={() => setAddCrmCustomerOpen(true)}
                   >
-                    + Добавить заказчика в базу
+                    + Добавить нового заказчика
                   </button>
                 </div>
                 <div className={styles.customerCrmSearchWrap}>
@@ -1191,565 +1324,677 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
         </section>
 
         <section className={styles.measurementsSection}>
-          <div className={styles.measurementsSectionHeader}>
-            <h2 className={styles.measurementsTitle}>Результаты замеров</h2>
-            <div className={styles.measurementsHeaderActions}>
+          {!resultsSectionOpen ? (
+            <div className={styles.measurementsCollapsed}>
               <button
                 type="button"
-                className={`${styles.secondaryButton} ${styles.completeMeasurementButton} ${
-                  status === 'COMPLETED' ? styles.completeMeasurementButtonDone : ''
-                }`}
-                onClick={handleMarkMeasurementCompleted}
-                disabled={status === 'COMPLETED'}
+                className={styles.openMeasurementResultsButton}
+                onClick={() => {
+                  setResultsSectionOpen(true);
+                  setActiveResultTab('repair');
+                }}
               >
-                Замер выполнен
-              </button>
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                onClick={addRoom}
-                disabled={repairMeasurementData.rooms.length >= MAX_ROOMS_COUNT}
-              >
-                + Добавить помещение
+                Заполнить результаты замеров
               </button>
             </div>
-          </div>
-          <p className={styles.measurementsHint}>
-            Помещений: {repairMeasurementData.rooms.length} / {MAX_ROOMS_COUNT}. Периметр, площадь
-            стен и вычеты дверей/окон считаются автоматически.
-          </p>
-
-          <div className={styles.roomTabs}>
-            {repairMeasurementData.rooms.map((room, roomIndex) => (
-              <button
-                key={`tab-${room.id}`}
-                type="button"
-                className={`${styles.roomTabButton} ${activeRoomId === room.id ? styles.roomTabButtonActive : ''}`}
-                onClick={() => setActiveRoomId(room.id)}
-              >
-                {room.name.trim() || `Помещение ${roomIndex + 1}`}
-              </button>
-            ))}
-          </div>
-
-          {(repairMeasurementData.rooms.filter((room) => room.id === activeRoomId)[0] ??
-            repairMeasurementData.rooms[0]) &&
-            (() => {
-              const room =
-                repairMeasurementData.rooms.filter((x) => x.id === activeRoomId)[0] ??
-                repairMeasurementData.rooms[0];
-              const roomIndex = repairMeasurementData.rooms.findIndex((x) => x.id === room.id);
-              const wallSegments = room.wallSegments.map(parseNumber);
-              const perimeter = wallSegments.reduce((sum, value) => sum + value, 0);
-              const ceilingHeight = parseNumber(room.ceilingHeight);
-              const doorsArea = room.doors.reduce(
-                (sum, door) => sum + parseNumber(door.width) * parseNumber(door.height),
-                0
-              );
-              const windowsArea = room.windows.reduce(
-                (sum, window) => sum + parseNumber(window.width) * parseNumber(window.height),
-                0
-              );
-              const grossWallArea = perimeter * ceilingHeight;
-              const netWallArea = Math.max(0, grossWallArea - doorsArea - windowsArea);
-              const doorsWidthSum = room.doors.reduce(
-                (sum, door) => sum + parseNumber(door.width),
-                0
-              );
-              const baseboardPerimeter = Math.max(0, perimeter - doorsWidthSum);
-
-              return (
-                <article key={room.id} className={styles.roomCard}>
-                  <div className={styles.roomCardHeader}>
-                    <strong>Помещение {roomIndex + 1}</strong>
-                    <div className={styles.roomActions}>
-                      <button
-                        type="button"
-                        className={`${styles.secondaryButton} ${styles.roomIconBtn}`}
-                        onClick={() => copyRoomWithWorksOnly(room.id)}
-                        disabled={repairMeasurementData.rooms.length >= MAX_ROOMS_COUNT}
-                        title="Скопировать помещение (только виды работ)"
-                        aria-label="Скопировать помещение"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width={14}
-                          height={14}
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden
-                          className={styles.roomIconCopy}
-                        >
-                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                        </svg>
-                      </button>
-                      {repairMeasurementData.rooms.length > 1 && (
-                        <button
-                          type="button"
-                          className={`${styles.secondaryButton} ${styles.roomIconBtn}`}
-                          onClick={() => removeRoom(room.id)}
-                          disabled={isRoomFilled(room)}
-                          title={
-                            isRoomFilled(room)
-                              ? 'Заполненное помещение нельзя удалить'
-                              : 'Удалить помещение'
-                          }
-                          aria-label="Удалить помещение"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width={14}
-                            height={14}
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            aria-hidden
-                            className={styles.roomIconDelete}
-                          >
-                            <polyline points="3 6 5 6 21 6" />
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                            <line x1="10" y1="11" x2="10" y2="17" />
-                            <line x1="14" y1="11" x2="14" y2="17" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className={`${styles.roomTopGrid} ${styles.zonePrimary}`}>
-                    <div className={styles.row}>
-                      <label className={styles.label}>Название помещения</label>
-                      <input
-                        type="text"
-                        className={styles.input}
-                        value={room.name}
-                        onChange={(e) =>
-                          updateRoom(room.id, (r) => ({ ...r, name: e.target.value }))
-                        }
-                        placeholder="Кухня, Спальня, Коридор..."
-                      />
-                    </div>
-                    <div className={styles.row}>
-                      <label className={styles.label}>Высота потолка, м</label>
-                      <input
-                        type="text"
-                        className={styles.input}
-                        value={room.ceilingHeight}
-                        onChange={(e) =>
-                          updateRoom(room.id, (r) => ({ ...r, ceilingHeight: e.target.value }))
-                        }
-                        placeholder="2.7"
-                      />
-                    </div>
-                    <div className={styles.row}>
-                      <label className={styles.label}>Площадь пола, м2</label>
-                      <input
-                        type="text"
-                        className={styles.input}
-                        value={room.floorArea}
-                        onChange={(e) =>
-                          updateRoom(room.id, (r) => ({ ...r, floorArea: e.target.value }))
-                        }
-                        placeholder="18.5"
-                      />
-                    </div>
-                    <div className={styles.row}>
-                      <label className={styles.label}>Толщина стен, м</label>
-                      <input
-                        type="text"
-                        className={styles.input}
-                        value={room.wallThickness}
-                        onChange={(e) =>
-                          updateRoom(room.id, (r) => ({ ...r, wallThickness: e.target.value }))
-                        }
-                        placeholder="0.2"
-                      />
-                    </div>
-                    <div className={styles.row}>
-                      <label className={styles.label}>Толщина откосов, м</label>
-                      <input
-                        type="text"
-                        className={styles.input}
-                        value={room.slopeThickness}
-                        onChange={(e) =>
-                          updateRoom(room.id, (r) => ({ ...r, slopeThickness: e.target.value }))
-                        }
-                        placeholder="0.03"
-                      />
-                    </div>
-                  </div>
-
-                  <div
-                    className={`${styles.row} ${styles.wallSegmentsSection} ${styles.zoneGeometry}`}
+          ) : (
+            <>
+              <div className={styles.measurementsSectionHeader}>
+                <h2 className={styles.measurementsTitle}>Результаты замера</h2>
+                <div className={styles.measurementsHeaderActions}>
+                  <button
+                    type="button"
+                    className={`${styles.secondaryButton} ${styles.completeMeasurementButton} ${
+                      savedResultTabs.has(activeResultTab)
+                        ? styles.completeMeasurementButtonDone
+                        : ''
+                    }`}
+                    onClick={() => void handleSaveResultTab(activeResultTab)}
+                    disabled={savedResultTabs.has(activeResultTab) || saving}
                   >
-                    <label className={styles.label}>Участки стен (длины, м)</label>
-                    <div className={styles.wallSegmentsList}>
-                      {room.wallSegments.map((segment, segmentIndex) => (
-                        <div
-                          key={`${room.id}-segment-${segmentIndex}`}
-                          className={styles.wallSegmentItem}
-                        >
-                          <input
-                            type="text"
-                            className={styles.input}
-                            value={segment}
-                            onChange={(e) =>
-                              updateRoom(room.id, (r) => {
-                                const next = [...r.wallSegments];
-                                next[segmentIndex] = e.target.value;
-                                return { ...r, wallSegments: next };
-                              })
-                            }
-                            placeholder={`Сторона ${segmentIndex + 1}`}
-                          />
-                          <button
-                            type="button"
-                            className={styles.secondaryButton}
-                            onClick={() =>
-                              updateRoom(room.id, (r) => ({
-                                ...r,
-                                wallSegments: r.wallSegments.filter((_, i) => i !== segmentIndex),
-                              }))
-                            }
-                            disabled={room.wallSegments.length <= 1}
+                    {savedResultTabs.has(activeResultTab) ? 'Замер сохранен' : 'Сохранить замер'}
+                  </button>
+                </div>
+              </div>
+              <div
+                className={styles.resultCategoryTabs}
+                role="tablist"
+                aria-label="Категории результатов замера"
+              >
+                {MEASUREMENT_RESULT_TABS.map((tab) => {
+                  const isActive = activeResultTab === tab.id;
+                  const isFilled = isMeasurementResultTabFilled(
+                    tab.id,
+                    repairMeasurementData.rooms
+                  );
+                  const isSaved = savedResultTabs.has(tab.id);
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      className={`${styles.resultCategoryTab} ${
+                        isActive ? styles.resultCategoryTabActive : ''
+                      } ${!isActive && isFilled ? styles.resultCategoryTabFilled : ''} ${
+                        isActive && isFilled ? styles.resultCategoryTabActiveFilled : ''
+                      } ${isActive && !isFilled ? styles.resultCategoryTabActiveEmpty : ''} ${
+                        isSaved ? styles.resultCategoryTabSaved : ''
+                      }`}
+                      onClick={() => setActiveResultTab(tab.id)}
+                    >
+                      <span className={styles.resultCategoryTabLabel}>
+                        {tab.label}
+                        {isSaved ? (
+                          <span
+                            className={styles.resultCategoryTabSavedMark}
+                            aria-label="Замер сохранен"
                           >
-                            −
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        type="button"
-                        className={styles.secondaryButton}
-                        onClick={() =>
-                          updateRoom(room.id, (r) => ({
-                            ...r,
-                            wallSegments: [...r.wallSegments, ''],
-                          }))
-                        }
-                      >
-                        + Сторона
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className={`${styles.roomOpeningsGrid} ${styles.zoneOpenings}`}>
-                    <div className={styles.row}>
-                      <label className={styles.label}>Двери (ширина x высота, м)</label>
-                      {room.doors.map((door, doorIndex) => (
-                        <div
-                          key={door.id}
-                          className={`${styles.inlineRow} ${styles.openingSizeRow}`}
-                        >
-                          <input
-                            type="text"
-                            className={styles.input}
-                            value={door.width}
-                            onChange={(e) =>
-                              updateRoom(room.id, (r) => {
-                                const next = [...r.doors];
-                                next[doorIndex] = { ...next[doorIndex], width: e.target.value };
-                                return { ...r, doors: next };
-                              })
-                            }
-                            placeholder="Ширина"
-                          />
-                          <input
-                            type="text"
-                            className={styles.input}
-                            value={door.height}
-                            onChange={(e) =>
-                              updateRoom(room.id, (r) => {
-                                const next = [...r.doors];
-                                next[doorIndex] = { ...next[doorIndex], height: e.target.value };
-                                return { ...r, doors: next };
-                              })
-                            }
-                            placeholder="Высота"
-                          />
-                          <button
-                            type="button"
-                            className={styles.secondaryButton}
-                            onClick={() =>
-                              updateRoom(room.id, (r) => ({
-                                ...r,
-                                doors: r.doors.filter((_, i) => i !== doorIndex),
-                              }))
-                            }
-                          >
-                            −
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        type="button"
-                        className={styles.secondaryButton}
-                        onClick={() =>
-                          updateRoom(room.id, (r) => ({
-                            ...r,
-                            doors: [
-                              ...r.doors,
-                              { id: `${r.id}-door-${Date.now()}`, width: '', height: '' },
-                            ],
-                          }))
-                        }
-                      >
-                        + Добавить дверь
-                      </button>
-                    </div>
-
-                    <div className={styles.row}>
-                      <label className={styles.label}>Окна (ширина x высота, м)</label>
-                      {room.windows.map((window, windowIndex) => (
-                        <div
-                          key={window.id}
-                          className={`${styles.inlineRow} ${styles.openingSizeRow}`}
-                        >
-                          <input
-                            type="text"
-                            className={styles.input}
-                            value={window.width}
-                            onChange={(e) =>
-                              updateRoom(room.id, (r) => {
-                                const next = [...r.windows];
-                                next[windowIndex] = { ...next[windowIndex], width: e.target.value };
-                                return { ...r, windows: next };
-                              })
-                            }
-                            placeholder="Ширина"
-                          />
-                          <input
-                            type="text"
-                            className={styles.input}
-                            value={window.height}
-                            onChange={(e) =>
-                              updateRoom(room.id, (r) => {
-                                const next = [...r.windows];
-                                next[windowIndex] = {
-                                  ...next[windowIndex],
-                                  height: e.target.value,
-                                };
-                                return { ...r, windows: next };
-                              })
-                            }
-                            placeholder="Высота"
-                          />
-                          <button
-                            type="button"
-                            className={styles.secondaryButton}
-                            onClick={() =>
-                              updateRoom(room.id, (r) => ({
-                                ...r,
-                                windows: r.windows.filter((_, i) => i !== windowIndex),
-                              }))
-                            }
-                          >
-                            −
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        type="button"
-                        className={styles.secondaryButton}
-                        onClick={() =>
-                          updateRoom(room.id, (r) => ({
-                            ...r,
-                            windows: [
-                              ...r.windows,
-                              { id: `${r.id}-window-${Date.now()}`, width: '', height: '' },
-                            ],
-                          }))
-                        }
-                      >
-                        + Добавить окно
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className={styles.calculatedBlock}>
-                    <div>
-                      Периметр: <strong>{formatMetric(perimeter)} м</strong>
-                    </div>
-                    <div>
-                      Периметр для плинтуса (минус двери):{' '}
-                      <strong>{formatMetric(baseboardPerimeter)} м</strong>
-                    </div>
-                    <div>
-                      Площадь стен (грязная): <strong>{formatMetric(grossWallArea)} м2</strong>
-                    </div>
-                    <div>
-                      Площадь дверей: <strong>{formatMetric(doorsArea)} м2</strong>
-                    </div>
-                    <div>
-                      Площадь окон: <strong>{formatMetric(windowsArea)} м2</strong>
-                    </div>
-                    <div>
-                      Площадь стен (чистая): <strong>{formatMetric(netWallArea)} м2</strong>
-                    </div>
-                  </div>
-
-                  <div className={styles.row}>
-                    <label className={`${styles.label} ${styles.emphasisLabel}`}>
-                      Требуемые виды работ
-                    </label>
-                    {workCategories.length === 0 ? (
-                      <span className={styles.measurementsHint}>
-                        Список работ пока не загрузился.
+                            ✓
+                          </span>
+                        ) : null}
                       </span>
-                    ) : (
-                      <>
-                        <div className={styles.workCategoryButtons}>
-                          {workCategories.map((category, categoryIndex) => {
-                            const activeCategoryId =
-                              activeWorkCategoryByRoomId[room.id] ?? workCategories[0]?.id ?? '';
-                            const isActive = activeCategoryId === category.id;
-                            const hasSelectedInCategory = category.items.some((item) =>
-                              room.selectedWorkItemIds.includes(item.id)
-                            );
-                            return (
+                    </button>
+                  );
+                })}
+              </div>
+              {activeResultTab === 'repair' ? (
+                <>
+                  <p className={styles.measurementsHint}>
+                    Помещений: {repairMeasurementData.rooms.length} / {MAX_ROOMS_COUNT}. Периметр,
+                    площадь стен и вычеты дверей/окон считаются автоматически.
+                  </p>
+
+                  <div className={styles.roomTabsRow} role="tablist" aria-label="Помещения">
+                    {repairMeasurementData.rooms.map((room, roomIndex) => {
+                      const isActive = activeRoomId === room.id;
+                      const isFilled = isRoomFilled(room);
+                      return (
+                        <button
+                          key={`tab-${room.id}`}
+                          type="button"
+                          role="tab"
+                          aria-selected={isActive}
+                          className={`${styles.roomTabButton} ${
+                            isActive ? styles.roomTabButtonActive : ''
+                          } ${!isActive && isFilled ? styles.roomTabButtonFilled : ''} ${
+                            isActive && isFilled ? styles.roomTabButtonActiveFilled : ''
+                          } ${isActive && !isFilled ? styles.roomTabButtonActiveEmpty : ''}`}
+                          onClick={() => setActiveRoomId(room.id)}
+                        >
+                          {room.name.trim() || `Помещение ${roomIndex + 1}`}
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      className={`${styles.secondaryButton} ${styles.roomTabsAddButton}`}
+                      onClick={addRoom}
+                      disabled={repairMeasurementData.rooms.length >= MAX_ROOMS_COUNT}
+                    >
+                      + Добавить помещение
+                    </button>
+                  </div>
+
+                  {(repairMeasurementData.rooms.filter((room) => room.id === activeRoomId)[0] ??
+                    repairMeasurementData.rooms[0]) &&
+                    (() => {
+                      const room =
+                        repairMeasurementData.rooms.filter((x) => x.id === activeRoomId)[0] ??
+                        repairMeasurementData.rooms[0];
+                      const roomIndex = repairMeasurementData.rooms.findIndex(
+                        (x) => x.id === room.id
+                      );
+                      const wallSegments = room.wallSegments.map(parseNumber);
+                      const perimeter = wallSegments.reduce((sum, value) => sum + value, 0);
+                      const ceilingHeight = parseNumber(room.ceilingHeight);
+                      const doorsArea = room.doors.reduce(
+                        (sum, door) => sum + parseNumber(door.width) * parseNumber(door.height),
+                        0
+                      );
+                      const windowsArea = room.windows.reduce(
+                        (sum, window) =>
+                          sum + parseNumber(window.width) * parseNumber(window.height),
+                        0
+                      );
+                      const grossWallArea = perimeter * ceilingHeight;
+                      const netWallArea = Math.max(0, grossWallArea - doorsArea - windowsArea);
+                      const doorsWidthSum = room.doors.reduce(
+                        (sum, door) => sum + parseNumber(door.width),
+                        0
+                      );
+                      const baseboardPerimeter = Math.max(0, perimeter - doorsWidthSum);
+
+                      return (
+                        <article key={room.id} className={styles.roomCard}>
+                          <div className={styles.roomCardHeader}>
+                            <strong>Помещение {roomIndex + 1}</strong>
+                            <div className={styles.roomActions}>
                               <button
-                                key={`${room.id}-${category.id}`}
                                 type="button"
-                                className={`${styles.workCategoryButton} ${
-                                  isActive ? styles.workCategoryButtonActive : ''
-                                } ${hasSelectedInCategory ? styles.workCategoryButtonMarked : ''}`}
-                                title={
-                                  hasSelectedInCategory
-                                    ? 'В категории есть выбранные работы'
-                                    : undefined
+                                className={`${styles.secondaryButton} ${styles.roomIconBtn}`}
+                                onClick={() => copyRoomWithWorksOnly(room.id)}
+                                disabled={repairMeasurementData.rooms.length >= MAX_ROOMS_COUNT}
+                                title="Скопировать помещение (только виды работ)"
+                                aria-label="Скопировать помещение"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width={14}
+                                  height={14}
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth={2}
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  aria-hidden
+                                  className={styles.roomIconCopy}
+                                >
+                                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                </svg>
+                              </button>
+                              {repairMeasurementData.rooms.length > 1 && (
+                                <button
+                                  type="button"
+                                  className={`${styles.secondaryButton} ${styles.roomIconBtn}`}
+                                  onClick={() => removeRoom(room.id)}
+                                  disabled={isRoomFilled(room)}
+                                  title={
+                                    isRoomFilled(room)
+                                      ? 'Заполненное помещение нельзя удалить'
+                                      : 'Удалить помещение'
+                                  }
+                                  aria-label="Удалить помещение"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width={14}
+                                    height={14}
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    aria-hidden
+                                    className={styles.roomIconDelete}
+                                  >
+                                    <polyline points="3 6 5 6 21 6" />
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    <line x1="10" y1="11" x2="10" y2="17" />
+                                    <line x1="14" y1="11" x2="14" y2="17" />
+                                  </svg>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className={`${styles.roomTopGrid} ${styles.zonePrimary}`}>
+                            <div className={styles.row}>
+                              <label className={styles.label}>Название помещения</label>
+                              <input
+                                type="text"
+                                className={styles.input}
+                                value={room.name}
+                                onChange={(e) =>
+                                  updateRoom(room.id, (r) => ({ ...r, name: e.target.value }))
                                 }
+                                placeholder="Кухня, Спальня, Коридор..."
+                              />
+                            </div>
+                            <div className={styles.row}>
+                              <label className={styles.label}>Высота потолка, м</label>
+                              <input
+                                type="text"
+                                className={styles.input}
+                                value={room.ceilingHeight}
+                                onChange={(e) =>
+                                  updateRoom(room.id, (r) => ({
+                                    ...r,
+                                    ceilingHeight: e.target.value,
+                                  }))
+                                }
+                                placeholder="2.7"
+                              />
+                            </div>
+                            <div className={styles.row}>
+                              <label className={styles.label}>Площадь пола, м2</label>
+                              <input
+                                type="text"
+                                className={styles.input}
+                                value={room.floorArea}
+                                onChange={(e) =>
+                                  updateRoom(room.id, (r) => ({ ...r, floorArea: e.target.value }))
+                                }
+                                placeholder="18.5"
+                              />
+                            </div>
+                            <div className={styles.row}>
+                              <label className={styles.label}>Толщина стен, м</label>
+                              <input
+                                type="text"
+                                className={styles.input}
+                                value={room.wallThickness}
+                                onChange={(e) =>
+                                  updateRoom(room.id, (r) => ({
+                                    ...r,
+                                    wallThickness: e.target.value,
+                                  }))
+                                }
+                                placeholder="0.2"
+                              />
+                            </div>
+                            <div className={styles.row}>
+                              <label className={styles.label}>Толщина откосов, м</label>
+                              <input
+                                type="text"
+                                className={styles.input}
+                                value={room.slopeThickness}
+                                onChange={(e) =>
+                                  updateRoom(room.id, (r) => ({
+                                    ...r,
+                                    slopeThickness: e.target.value,
+                                  }))
+                                }
+                                placeholder="0.03"
+                              />
+                            </div>
+                          </div>
+
+                          <div
+                            className={`${styles.row} ${styles.wallSegmentsSection} ${styles.zoneGeometry}`}
+                          >
+                            <label className={styles.label}>Участки стен (длины, м)</label>
+                            <div className={styles.wallSegmentsList}>
+                              {room.wallSegments.map((segment, segmentIndex) => (
+                                <div
+                                  key={`${room.id}-segment-${segmentIndex}`}
+                                  className={styles.wallSegmentItem}
+                                >
+                                  <input
+                                    type="text"
+                                    className={styles.input}
+                                    value={segment}
+                                    onChange={(e) =>
+                                      updateRoom(room.id, (r) => {
+                                        const next = [...r.wallSegments];
+                                        next[segmentIndex] = e.target.value;
+                                        return { ...r, wallSegments: next };
+                                      })
+                                    }
+                                    placeholder={`Сторона ${segmentIndex + 1}`}
+                                  />
+                                  <button
+                                    type="button"
+                                    className={styles.secondaryButton}
+                                    onClick={() =>
+                                      updateRoom(room.id, (r) => ({
+                                        ...r,
+                                        wallSegments: r.wallSegments.filter(
+                                          (_, i) => i !== segmentIndex
+                                        ),
+                                      }))
+                                    }
+                                    disabled={room.wallSegments.length <= 1}
+                                  >
+                                    −
+                                  </button>
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                className={styles.secondaryButton}
                                 onClick={() =>
-                                  setActiveWorkCategoryByRoomId((prev) => ({
-                                    ...prev,
-                                    [room.id]: category.id,
+                                  updateRoom(room.id, (r) => ({
+                                    ...r,
+                                    wallSegments: [...r.wallSegments, ''],
                                   }))
                                 }
                               >
-                                {category.name || `Категория ${categoryIndex + 1}`}
+                                + Сторона
                               </button>
-                            );
-                          })}
-                        </div>
-                        <div className={styles.workItemsGrid}>
-                          {(
-                            workCategories.find(
-                              (category) =>
-                                category.id ===
-                                (activeWorkCategoryByRoomId[room.id] ?? workCategories[0]?.id)
-                            ) ?? workCategories[0]
-                          )?.items.map((item) => {
-                            const checked = room.selectedWorkItemIds.includes(item.id);
-                            const autoQty = resolveAutoQuantity(item.name, {
-                              floorArea: parseNumber(room.floorArea),
-                              perimeter,
-                              baseboardPerimeter,
-                              grossWallArea,
-                              netWallArea,
-                              doorsArea,
-                              windowsArea,
-                            });
-                            const manualQty = room.workItemQuantities[item.id] ?? '';
-                            const displayQty =
-                              manualQty.trim() !== ''
-                                ? manualQty
-                                : autoQty !== null
-                                  ? formatMetric(autoQty)
-                                  : '';
-                            return (
-                              <label key={`${room.id}-${item.id}`} className={styles.checkboxLabel}>
-                                <input
-                                  type="checkbox"
-                                  checked={checked}
-                                  onChange={(e) =>
-                                    updateRoom(room.id, (r) => ({
-                                      ...r,
-                                      selectedWorkItemIds: e.target.checked
-                                        ? [...r.selectedWorkItemIds, item.id]
-                                        : r.selectedWorkItemIds.filter((id) => id !== item.id),
-                                      workItemQuantities: e.target.checked
-                                        ? r.workItemQuantities
-                                        : Object.fromEntries(
-                                            Object.entries(r.workItemQuantities).filter(
-                                              ([key]) => key !== item.id
-                                            )
-                                          ),
-                                    }))
-                                  }
-                                />
-                                <span>{item.name}</span>
-                                {checked && (
-                                  <span className={styles.itemQuantityWrap}>
-                                    <input
-                                      type="text"
-                                      className={`${styles.input} ${styles.itemQuantityInput}`}
-                                      value={displayQty}
-                                      onChange={(e) =>
-                                        updateRoom(room.id, (r) => ({
-                                          ...r,
-                                          workItemQuantities: {
-                                            ...r.workItemQuantities,
-                                            [item.id]: e.target.value,
-                                          },
-                                        }))
-                                      }
-                                      placeholder={
-                                        autoQty !== null ? formatMetric(autoQty) : 'Кол-во'
-                                      }
-                                    />
-                                    {autoQty !== null && manualQty.trim() !== '' && (
-                                      <button
-                                        type="button"
-                                        className={styles.secondaryButton}
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          updateRoom(room.id, (r) => ({
-                                            ...r,
-                                            workItemQuantities: Object.fromEntries(
-                                              Object.entries(r.workItemQuantities).filter(
-                                                ([key]) => key !== item.id
-                                              )
-                                            ),
-                                          }));
-                                        }}
-                                        title="Вернуть авторасчёт"
-                                      >
-                                        ↺
-                                      </button>
-                                    )}
-                                  </span>
-                                )}
-                              </label>
-                            );
-                          })}
-                        </div>
-                      </>
-                    )}
-                  </div>
+                            </div>
+                          </div>
 
-                  <div className={`${styles.row} ${styles.zoneNotes}`}>
-                    <label className={`${styles.label} ${styles.emphasisLabel}`}>
-                      Примечания по помещению
-                    </label>
-                    <textarea
-                      value={room.notes}
-                      onChange={(e) =>
-                        updateRoom(room.id, (r) => ({ ...r, notes: e.target.value }))
-                      }
-                      className={styles.textarea}
-                      rows={2}
-                      placeholder="Например: сложная геометрия, дополнительные подготовительные работы..."
-                    />
-                  </div>
-                </article>
-              );
-            })()}
+                          <div className={`${styles.roomOpeningsGrid} ${styles.zoneOpenings}`}>
+                            <div className={styles.row}>
+                              <label className={styles.label}>Двери (ширина x высота, м)</label>
+                              {room.doors.map((door, doorIndex) => (
+                                <div
+                                  key={door.id}
+                                  className={`${styles.inlineRow} ${styles.openingSizeRow}`}
+                                >
+                                  <input
+                                    type="text"
+                                    className={styles.input}
+                                    value={door.width}
+                                    onChange={(e) =>
+                                      updateRoom(room.id, (r) => {
+                                        const next = [...r.doors];
+                                        next[doorIndex] = {
+                                          ...next[doorIndex],
+                                          width: e.target.value,
+                                        };
+                                        return { ...r, doors: next };
+                                      })
+                                    }
+                                    placeholder="Ширина"
+                                  />
+                                  <input
+                                    type="text"
+                                    className={styles.input}
+                                    value={door.height}
+                                    onChange={(e) =>
+                                      updateRoom(room.id, (r) => {
+                                        const next = [...r.doors];
+                                        next[doorIndex] = {
+                                          ...next[doorIndex],
+                                          height: e.target.value,
+                                        };
+                                        return { ...r, doors: next };
+                                      })
+                                    }
+                                    placeholder="Высота"
+                                  />
+                                  <button
+                                    type="button"
+                                    className={styles.secondaryButton}
+                                    onClick={() =>
+                                      updateRoom(room.id, (r) => ({
+                                        ...r,
+                                        doors: r.doors.filter((_, i) => i !== doorIndex),
+                                      }))
+                                    }
+                                  >
+                                    −
+                                  </button>
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                className={styles.secondaryButton}
+                                onClick={() =>
+                                  updateRoom(room.id, (r) => ({
+                                    ...r,
+                                    doors: [
+                                      ...r.doors,
+                                      { id: `${r.id}-door-${Date.now()}`, width: '', height: '' },
+                                    ],
+                                  }))
+                                }
+                              >
+                                + Добавить дверь
+                              </button>
+                            </div>
+
+                            <div className={styles.row}>
+                              <label className={styles.label}>Окна (ширина x высота, м)</label>
+                              {room.windows.map((window, windowIndex) => (
+                                <div
+                                  key={window.id}
+                                  className={`${styles.inlineRow} ${styles.openingSizeRow}`}
+                                >
+                                  <input
+                                    type="text"
+                                    className={styles.input}
+                                    value={window.width}
+                                    onChange={(e) =>
+                                      updateRoom(room.id, (r) => {
+                                        const next = [...r.windows];
+                                        next[windowIndex] = {
+                                          ...next[windowIndex],
+                                          width: e.target.value,
+                                        };
+                                        return { ...r, windows: next };
+                                      })
+                                    }
+                                    placeholder="Ширина"
+                                  />
+                                  <input
+                                    type="text"
+                                    className={styles.input}
+                                    value={window.height}
+                                    onChange={(e) =>
+                                      updateRoom(room.id, (r) => {
+                                        const next = [...r.windows];
+                                        next[windowIndex] = {
+                                          ...next[windowIndex],
+                                          height: e.target.value,
+                                        };
+                                        return { ...r, windows: next };
+                                      })
+                                    }
+                                    placeholder="Высота"
+                                  />
+                                  <button
+                                    type="button"
+                                    className={styles.secondaryButton}
+                                    onClick={() =>
+                                      updateRoom(room.id, (r) => ({
+                                        ...r,
+                                        windows: r.windows.filter((_, i) => i !== windowIndex),
+                                      }))
+                                    }
+                                  >
+                                    −
+                                  </button>
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                className={styles.secondaryButton}
+                                onClick={() =>
+                                  updateRoom(room.id, (r) => ({
+                                    ...r,
+                                    windows: [
+                                      ...r.windows,
+                                      { id: `${r.id}-window-${Date.now()}`, width: '', height: '' },
+                                    ],
+                                  }))
+                                }
+                              >
+                                + Добавить окно
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className={styles.calculatedBlock}>
+                            <div>
+                              Периметр: <strong>{formatMetric(perimeter)} м</strong>
+                            </div>
+                            <div>
+                              Периметр для плинтуса (минус двери):{' '}
+                              <strong>{formatMetric(baseboardPerimeter)} м</strong>
+                            </div>
+                            <div>
+                              Площадь стен (грязная):{' '}
+                              <strong>{formatMetric(grossWallArea)} м2</strong>
+                            </div>
+                            <div>
+                              Площадь дверей: <strong>{formatMetric(doorsArea)} м2</strong>
+                            </div>
+                            <div>
+                              Площадь окон: <strong>{formatMetric(windowsArea)} м2</strong>
+                            </div>
+                            <div>
+                              Площадь стен (чистая): <strong>{formatMetric(netWallArea)} м2</strong>
+                            </div>
+                          </div>
+
+                          <div className={styles.row}>
+                            <label className={`${styles.label} ${styles.emphasisLabel}`}>
+                              Требуемые виды работ
+                            </label>
+                            {workCategories.length === 0 ? (
+                              <span className={styles.measurementsHint}>
+                                Список работ пока не загрузился.
+                              </span>
+                            ) : (
+                              <>
+                                <div className={styles.workCategoryButtons}>
+                                  {workCategories.map((category, categoryIndex) => {
+                                    const activeCategoryId =
+                                      activeWorkCategoryByRoomId[room.id] ??
+                                      workCategories[0]?.id ??
+                                      '';
+                                    const isActive = activeCategoryId === category.id;
+                                    const hasSelectedInCategory = category.items.some((item) =>
+                                      room.selectedWorkItemIds.includes(item.id)
+                                    );
+                                    return (
+                                      <button
+                                        key={`${room.id}-${category.id}`}
+                                        type="button"
+                                        className={`${styles.workCategoryButton} ${
+                                          isActive ? styles.workCategoryButtonActive : ''
+                                        } ${hasSelectedInCategory ? styles.workCategoryButtonMarked : ''}`}
+                                        title={
+                                          hasSelectedInCategory
+                                            ? 'В категории есть выбранные работы'
+                                            : undefined
+                                        }
+                                        onClick={() =>
+                                          setActiveWorkCategoryByRoomId((prev) => ({
+                                            ...prev,
+                                            [room.id]: category.id,
+                                          }))
+                                        }
+                                      >
+                                        {category.name || `Категория ${categoryIndex + 1}`}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                                <div className={styles.workItemsGrid}>
+                                  {(
+                                    workCategories.find(
+                                      (category) =>
+                                        category.id ===
+                                        (activeWorkCategoryByRoomId[room.id] ??
+                                          workCategories[0]?.id)
+                                    ) ?? workCategories[0]
+                                  )?.items.map((item) => {
+                                    const checked = room.selectedWorkItemIds.includes(item.id);
+                                    const autoQty = resolveAutoQuantity(item.name, {
+                                      floorArea: parseNumber(room.floorArea),
+                                      perimeter,
+                                      baseboardPerimeter,
+                                      grossWallArea,
+                                      netWallArea,
+                                      doorsArea,
+                                      windowsArea,
+                                    });
+                                    const manualQty = room.workItemQuantities[item.id] ?? '';
+                                    const displayQty =
+                                      manualQty.trim() !== ''
+                                        ? manualQty
+                                        : autoQty !== null
+                                          ? formatMetric(autoQty)
+                                          : '';
+                                    return (
+                                      <label
+                                        key={`${room.id}-${item.id}`}
+                                        className={styles.checkboxLabel}
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={checked}
+                                          onChange={(e) =>
+                                            updateRoom(room.id, (r) => ({
+                                              ...r,
+                                              selectedWorkItemIds: e.target.checked
+                                                ? [...r.selectedWorkItemIds, item.id]
+                                                : r.selectedWorkItemIds.filter(
+                                                    (id) => id !== item.id
+                                                  ),
+                                              workItemQuantities: e.target.checked
+                                                ? r.workItemQuantities
+                                                : Object.fromEntries(
+                                                    Object.entries(r.workItemQuantities).filter(
+                                                      ([key]) => key !== item.id
+                                                    )
+                                                  ),
+                                            }))
+                                          }
+                                        />
+                                        <span>{item.name}</span>
+                                        {checked && (
+                                          <span className={styles.itemQuantityWrap}>
+                                            <input
+                                              type="text"
+                                              className={`${styles.input} ${styles.itemQuantityInput}`}
+                                              value={displayQty}
+                                              onChange={(e) =>
+                                                updateRoom(room.id, (r) => ({
+                                                  ...r,
+                                                  workItemQuantities: {
+                                                    ...r.workItemQuantities,
+                                                    [item.id]: e.target.value,
+                                                  },
+                                                }))
+                                              }
+                                              placeholder={
+                                                autoQty !== null ? formatMetric(autoQty) : 'Кол-во'
+                                              }
+                                            />
+                                            {autoQty !== null && manualQty.trim() !== '' && (
+                                              <button
+                                                type="button"
+                                                className={styles.secondaryButton}
+                                                onClick={(e) => {
+                                                  e.preventDefault();
+                                                  updateRoom(room.id, (r) => ({
+                                                    ...r,
+                                                    workItemQuantities: Object.fromEntries(
+                                                      Object.entries(r.workItemQuantities).filter(
+                                                        ([key]) => key !== item.id
+                                                      )
+                                                    ),
+                                                  }));
+                                                }}
+                                                title="Вернуть авторасчёт"
+                                              >
+                                                ↺
+                                              </button>
+                                            )}
+                                          </span>
+                                        )}
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              </>
+                            )}
+                          </div>
+
+                          <div className={`${styles.row} ${styles.zoneNotes}`}>
+                            <label className={`${styles.label} ${styles.emphasisLabel}`}>
+                              Примечания по помещению
+                            </label>
+                            <textarea
+                              value={room.notes}
+                              onChange={(e) =>
+                                updateRoom(room.id, (r) => ({ ...r, notes: e.target.value }))
+                              }
+                              className={styles.textarea}
+                              rows={2}
+                              placeholder="Например: сложная геометрия, дополнительные подготовительные работы..."
+                            />
+                          </div>
+                        </article>
+                      );
+                    })()}
+                </>
+              ) : (
+                <p className={styles.measurementsTabPlaceholder}>
+                  Раздел «{MEASUREMENT_RESULT_TABS.find((t) => t.id === activeResultTab)?.label}»
+                  будет доступен позже.
+                </p>
+              )}
+            </>
+          )}
         </section>
       </div>
 
