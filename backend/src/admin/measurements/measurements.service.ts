@@ -491,7 +491,7 @@ export class MeasurementsService {
       updateData.customerPhone = updateMeasurementDto.customerPhone;
     if (updateMeasurementDto.comments !== undefined)
       updateData.comments = updateMeasurementDto.comments ?? null;
-    if (updateMeasurementDto.status) {
+    if (updateMeasurementDto.status !== undefined) {
       updateData.status = updateMeasurementDto.status as MeasurementStatus;
     }
     if (updateMeasurementDto.customerId !== undefined)

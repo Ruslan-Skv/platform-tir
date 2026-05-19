@@ -45,6 +45,8 @@ interface DataTableProps<T> {
   controlledSortBy?: string | null;
   controlledSortOrder?: SortOrder;
   onSortChange?: (sortBy: string, sortOrder: SortOrder) => void;
+  /** Дополнительный класс на внешний контейнер таблицы */
+  containerClassName?: string;
 }
 
 type SortOrder = 'asc' | 'desc';
@@ -97,6 +99,7 @@ export function DataTable<T>({
   controlledSortBy = null,
   controlledSortOrder = 'asc',
   onSortChange,
+  containerClassName,
 }: DataTableProps<T>) {
   const [internalSelectedIds, setInternalSelectedIds] = useState<string[]>([]);
   const isControlled = selectedIdsProp !== undefined;
@@ -360,7 +363,7 @@ export function DataTable<T>({
   }, []);
 
   return (
-    <div className={styles.tableContainer}>
+    <div className={[styles.tableContainer, containerClassName].filter(Boolean).join(' ')}>
       <div className={styles.tableWrapper}>
         {/* Стрелка влево */}
         {showLeftArrow && (

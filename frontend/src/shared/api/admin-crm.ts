@@ -757,14 +757,26 @@ export async function createMeasurement(data: {
 
 export async function updateMeasurement(
   id: string,
-  data: Partial<Parameters<typeof createMeasurement>[0]> & { customerId?: string | null }
+  data: Partial<Parameters<typeof createMeasurement>[0]> & { customerId?: string | null },
+  init?: Pick<RequestInit, 'signal'>
 ): Promise<Measurement> {
   const res = await apiFetch(`${API_URL}/admin/measurements/${id}`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(data),
+    signal: init?.signal,
   });
-  if (!res.ok) throw new Error('Не удалось обновить замер');
+  if (!res.ok) {
+    let detail = '';
+    try {
+      const body = (await res.json()) as { message?: string | string[] };
+      if (typeof body.message === 'string') detail = body.message;
+      else if (Array.isArray(body.message)) detail = body.message.join(', ');
+    } catch {
+      /* ignore */
+    }
+    throw new Error(detail ? `Не удалось обновить замер: ${detail}` : 'Не удалось обновить замер');
+  }
   return res.json();
 }
 

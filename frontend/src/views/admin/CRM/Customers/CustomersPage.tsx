@@ -401,6 +401,7 @@ export function CustomersPage() {
       {error && <p className={styles.errorText}>{error}</p>}
 
       <DataTable
+        containerClassName={styles.directoryTable}
         data={directoryRows}
         columns={directoryColumns}
         keyExtractor={(row) => row.id}

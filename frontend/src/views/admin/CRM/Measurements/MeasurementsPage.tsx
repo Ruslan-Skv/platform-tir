@@ -416,6 +416,7 @@ export function MeasurementsPage() {
       </div>
 
       <DataTable
+        containerClassName={styles.directoryTable}
         data={data}
         columns={columns}
         keyExtractor={(m) => m.id}

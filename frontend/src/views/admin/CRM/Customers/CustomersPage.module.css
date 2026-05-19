@@ -7,6 +7,22 @@
   background: var(--admin-info-bg-soft) !important;
 }
 
+/* Шапка таблицы справочника — контрастнее тела */
+.directoryTable thead {
+  box-shadow: 0 2px 0 var(--admin-border-strong);
+}
+
+.directoryTable thead th {
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
+  font-weight: 700;
+  border-bottom: 2px solid var(--admin-border-strong);
+}
+
+.directoryTable thead th:hover {
+  background: var(--admin-border);
+}
+
 .header {
   display: flex;
   align-items: center;

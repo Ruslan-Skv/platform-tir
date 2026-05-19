@@ -4,12 +4,26 @@
   padding: var(--admin-space-0) var(--admin-space-xl);
   box-sizing: border-box;
   overflow-x: clip;
-  margin: 0 auto;
+  margin: calc(-1 * var(--admin-space-sm)) auto 0;
+  /* Чуть крупнее базовая типографика карточки замера (+1px на шаг шкалы) */
+  --admin-font-size-2xs: 0.6875rem;
+  --admin-font-size-xs: 0.8125rem;
+  --admin-font-size-sm: 0.875rem;
+  --admin-font-size-md: 0.9375rem;
+  --admin-font-size-base: 1rem;
+  --admin-font-size-lg: 1.0625rem;
+  --admin-font-size-xl: 1.125rem;
+  --admin-font-size-2xl: 1.3125rem;
+  --admin-font-size-3xl: 1.4125rem;
+  --admin-font-size-4xl: 1.8125rem;
 }
 
 .header {
   position: relative;
-  margin-bottom: var(--admin-space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xs);
+  margin-bottom: 0;
 }
 
 .backLink {
@@ -17,7 +31,8 @@
   color: var(--admin-text-muted);
   text-decoration: none;
   font-size: var(--admin-font-size-sm);
-  margin-bottom: var(--admin-space-2xs);
+  margin: 0;
+  line-height: 1.2;
 }
 
 .backLink:hover {
@@ -26,37 +41,48 @@
 
 .titleRow {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: var(--admin-space-md);
+  gap: var(--admin-space-sm);
 }
 
-.headerAutosaveFloating {
-  position: absolute;
-  right: 0;
-  top: 2px;
+.titleWithAutosave {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  min-width: 0;
+}
+
+.autosaveNotice {
+  flex-shrink: 0;
   pointer-events: none;
   opacity: 0;
-  transform: translateY(-2px);
-  transition: opacity 0.16s ease;
+  transform: translateX(-4px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
   padding: var(--admin-space-xs) var(--admin-space-sm);
   border-radius: var(--admin-radius-sm);
-  font-size: var(--admin-font-size-2xs);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 500;
   line-height: var(--admin-line-height-xs);
+  white-space: nowrap;
   border: 1px solid var(--admin-success-border-soft);
   background: var(--admin-success-bg-soft);
   color: var(--admin-success-text-strong);
 }
 
-.headerAutosaveFloatingVisible {
+.autosaveNoticeVisible {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateX(0);
 }
 
 .titleControls {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--admin-space-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--admin-space-xs);
   margin-left: auto;
 }
 
@@ -118,24 +144,39 @@
   font-weight: 700;
   color: var(--admin-text-secondary);
   margin: 0;
+  line-height: 1.15;
 }
 
+/* Как «Журнал» в редакторе пакета договора: secondaryBtn + estimatesPageRefreshIconBtn */
 .historyButton {
-  align-items: center;
   display: inline-flex;
-  gap: var(--admin-space-xs);
-  padding: var(--admin-space-xs) var(--admin-space-lg);
-  font-size: var(--admin-font-size-xs);
-  background: var(--admin-surface-soft);
-  color: var(--admin-text-secondary);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-sm);
-  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: var(--admin-space-md);
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: var(--admin-radius-md);
   font-weight: 500;
+  color: var(--admin-info);
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border);
+  cursor: pointer;
 }
 
 .historyButton:hover {
   background: var(--admin-border);
+}
+
+.historyButton:focus-visible {
+  outline: 2px solid var(--admin-accent);
+  outline-offset: 2px;
+}
+
+.header .historyButton {
+  min-width: 32px;
+  min-height: 32px;
+  padding: var(--admin-space-xs);
 }
 
 .loading {
@@ -146,9 +187,9 @@
 }
 
 .message {
-  padding: var(--admin-space-sm) var(--admin-space-lg);
+  padding: var(--admin-space-xs) var(--admin-space-lg);
   border-radius: var(--admin-radius-sm);
-  margin-bottom: var(--admin-space-md);
+  margin-bottom: var(--admin-space-2xs);
   font-size: var(--admin-font-size-xs);
 }
 
@@ -1118,7 +1159,7 @@
   color: var(--admin-success-border-soft);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .headerAutosaveFloating {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .autosaveNotice {
   border-color: var(--admin-success-bright);
   background: var(--admin-overlay-color-097);
   color: var(--admin-success-bg);
@@ -1235,12 +1276,14 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .historyButton {
   background: var(--admin-surface-soft);
-  border-color: var(--admin-sidebar-text);
-  color: var(--admin-text-secondary);
+  border-color: var(--admin-border);
+  color: var(--admin-info-bright, #60a5fa);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .historyButton:hover {
-  background: var(--admin-sidebar-text);
+  background: var(--admin-surface-muted);
+  border-color: var(--admin-border-strong);
+  color: var(--admin-info-bright, #93c5fd);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .measurementsSection {
@@ -1764,7 +1807,7 @@
   border-radius: var(--admin-radius-sm);
   background: var(--admin-surface);
   cursor: pointer;
-  font-size: 1.125rem;
+  font-size: var(--admin-font-size-xl);
   font-weight: 600;
   line-height: 1;
 }

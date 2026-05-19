@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -974,21 +974,32 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
           ← К списку замеров
         </Link>
         <div className={styles.titleRow}>
-          <h1 className={styles.title}>
-            {measurementId ? 'Редактирование замера' : 'Новый замер'}
-          </h1>
+          <div className={styles.titleWithAutosave}>
+            <h1 className={styles.title}>
+              {measurementId ? 'Редактирование замера' : 'Новый замер'}
+            </h1>
+            <span
+              className={`${styles.autosaveNotice} ${
+                isAutosaveMessage ? styles.autosaveNoticeVisible : ''
+              }`}
+              role="status"
+              aria-live="polite"
+            >
+              Сохранено автоматически
+            </span>
+          </div>
           <div className={styles.titleControls}>
-            {measurementId && (
+            {measurementId ? (
               <button
                 type="button"
                 className={styles.historyButton}
                 onClick={() => setShowHistory(true)}
                 title="Журнал событий замера"
-                aria-label="Журнал событий замера"
+                aria-label="Открыть журнал событий замера"
               >
-                <VersionsHistoryIcon size={18} />
+                <VersionsHistoryIcon />
               </button>
-            )}
+            ) : null}
             <BadgeTooltip content={MEASUREMENT_STATUS_ORDER_HINT} side="left" wide>
               <label className={styles.statusInlineLabel}>
                 <span className={styles.statusInlineText}>Статус</span>
@@ -1012,14 +1023,6 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
               </label>
             </BadgeTooltip>
           </div>
-        </div>
-        <div
-          className={`${styles.headerAutosaveFloating} ${
-            isAutosaveMessage ? styles.headerAutosaveFloatingVisible : ''
-          }`}
-          aria-live="polite"
-        >
-          Сохранено автоматически
         </div>
       </div>
 
