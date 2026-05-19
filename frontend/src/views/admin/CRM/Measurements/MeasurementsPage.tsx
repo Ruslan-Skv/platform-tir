@@ -18,44 +18,27 @@ import {
   getCrmDirections,
   getCrmUsers,
   getMeasurements,
-  updateMeasurement,
 } from '@/shared/api/admin-crm';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 
-import { MeasurementHistoryModal } from './MeasurementHistoryModal';
 import styles from './MeasurementsPage.module.css';
+import {
+  type MeasurementListSortBy,
+  type MeasurementListSortOrder,
+  loadMeasurementListSort,
+  parseMeasurementListSortBy,
+  persistMeasurementListSort,
+} from './measurementListSort';
+import { MEASUREMENT_STATUS_OPTIONS, getMeasurementStatusLabel } from './measurementStatuses';
 
-const STATUS_LABELS: Record<string, string> = {
-  NEW: 'Новый',
-  ASSIGNED: 'Назначен',
-  IN_PROGRESS: 'В работе',
-  COMPLETED: 'Выполнен',
-  CANCELLED: 'Отменён',
-  CONVERTED: 'В договор',
-};
+function formatDate(s: string | null | undefined) {
+  if (!s) return '—';
+  return new Date(s).toLocaleDateString('ru-RU');
+}
 
-const STATUS_OPTIONS = Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label }));
-
-type EditableFieldKey =
-  | 'receptionDate'
-  | 'executionDate'
-  | 'managerId'
-  | 'surveyorId'
-  | 'directionId'
-  | 'customerName'
-  | 'customerAddress'
-  | 'customerPhone'
-  | 'status'
-  | 'comments';
-
-type MeasurementEdits = Partial<Record<EditableFieldKey, string | null>>;
-
-interface EditableColumnConfig {
-  key: EditableFieldKey;
-  title: string;
-  type: 'text' | 'date' | 'select';
-  /** Для select — ключ опций (managers, surveyors, directions, status) */
-  optionsKey?: 'managers' | 'surveyors' | 'directions' | 'status';
+function formatUser(u: { firstName?: string | null; lastName?: string | null } | null | undefined) {
+  if (!u) return '—';
+  return [u.firstName, u.lastName].filter(Boolean).join(' ') || '—';
 }
 
 interface MeasurementLinksInfo {
@@ -63,33 +46,6 @@ interface MeasurementLinksInfo {
   estimateTitle: string;
   packageId?: string;
   packageTitle?: string;
-}
-
-const EDITABLE_COLUMNS: EditableColumnConfig[] = [
-  { key: 'receptionDate', title: 'Дата приёма', type: 'date' },
-  { key: 'executionDate', title: 'Дата выполнения', type: 'date' },
-  { key: 'managerId', title: 'Менеджер', type: 'select', optionsKey: 'managers' },
-  { key: 'surveyorId', title: 'Замерщик', type: 'select', optionsKey: 'surveyors' },
-  { key: 'directionId', title: 'Направление', type: 'select', optionsKey: 'directions' },
-  { key: 'customerName', title: 'ФИО заказчика', type: 'text' },
-  { key: 'customerAddress', title: 'Адрес', type: 'text' },
-  { key: 'customerPhone', title: 'Телефон', type: 'text' },
-  { key: 'status', title: 'Статус', type: 'select', optionsKey: 'status' },
-];
-
-function formatDate(s: string | null | undefined) {
-  if (!s) return '—';
-  return new Date(s).toLocaleDateString('ru-RU');
-}
-
-function formatDateForInput(s: string | null | undefined): string {
-  if (!s) return '';
-  return new Date(s).toISOString().slice(0, 10);
-}
-
-function formatUser(u: { firstName?: string | null; lastName?: string | null } | null | undefined) {
-  if (!u) return '—';
-  return [u.firstName, u.lastName].filter(Boolean).join(' ') || '—';
 }
 
 export function MeasurementsPage() {
@@ -108,36 +64,25 @@ export function MeasurementsPage() {
   const [search, setSearch] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [measurementSortBy, setMeasurementSortBy] = useState<MeasurementListSortBy>(
+    () => loadMeasurementListSort().sortBy
+  );
+  const [measurementSortOrder, setMeasurementSortOrder] = useState<MeasurementListSortOrder>(
+    () => loadMeasurementListSort().sortOrder
+  );
+
+  useEffect(() => {
+    persistMeasurementListSort(measurementSortBy, measurementSortOrder);
+  }, [measurementSortBy, measurementSortOrder]);
 
   useEffect(() => {
     const q = searchParams.get('search');
     if (q && q.trim()) setSearch(q.trim());
   }, [searchParams]);
 
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [editMode, setEditMode] = useState(false);
-  const [editedProducts, setEditedProducts] = useState<Record<string, MeasurementEdits>>({});
-  const [savingEdits, setSavingEdits] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const [saveMessageType, setSaveMessageType] = useState<'success' | 'error'>('success');
-  const [historyMeasurementId, setHistoryMeasurementId] = useState<string | null>(null);
   const [linksByMeasurementId, setLinksByMeasurementId] = useState<
     Record<string, MeasurementLinksInfo>
   >({});
-  const hasSelection = selectedIds.length > 0;
-
-  const managers = users.filter((u) =>
-    [
-      'SUPER_ADMIN',
-      'ADMIN',
-      'MODERATOR',
-      'SUPPORT',
-      'BRIGADIER',
-      'LEAD_SPECIALIST_FURNITURE',
-      'LEAD_SPECIALIST_WINDOWS_DOORS',
-    ].includes(u.role)
-  );
-  const surveyors = users.filter((u) => u.role === 'SURVEYOR');
 
   const extractEstimatePresetIdsFromPackageForm = (formData: unknown): string[] => {
     if (!formData || typeof formData !== 'object') return [];
@@ -213,6 +158,15 @@ export function MeasurementsPage() {
     }
   }, []);
 
+  const handleMeasurementSortChange = useCallback(
+    (sortBy: string, sortOrder: MeasurementListSortOrder) => {
+      setMeasurementSortBy(parseMeasurementListSortBy(sortBy));
+      setMeasurementSortOrder(sortOrder);
+      setPage(1);
+    },
+    []
+  );
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -225,6 +179,8 @@ export function MeasurementsPage() {
         search: search || undefined,
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
+        sortBy: measurementSortBy,
+        sortOrder: measurementSortOrder,
       });
       setData(res.data);
       setTotal(res.total);
@@ -246,6 +202,8 @@ export function MeasurementsPage() {
     search,
     dateFrom,
     dateTo,
+    measurementSortBy,
+    measurementSortOrder,
     loadMeasurementLinks,
   ]);
 
@@ -262,231 +220,75 @@ export function MeasurementsPage() {
       .catch(() => setUsers([]));
   }, []);
 
-  const handleInlineEdit = (
-    measurementId: string,
-    field: EditableFieldKey,
-    value: string | null
-  ) => {
-    setEditedProducts((prev) => ({
-      ...prev,
-      [measurementId]: {
-        ...prev[measurementId],
-        [field]: value,
-      },
-    }));
+  const renderDirection = (m: Measurement) => {
+    const primary = m.direction?.name;
+    const extra =
+      m.additionalDirections?.map((d) => d.name).filter(Boolean) ??
+      (m.additionalDirectionIds ?? [])
+        .map((id) => directions.find((d) => d.id === id)?.name)
+        .filter(Boolean);
+    if (primary && extra.length > 0) return `${primary} (+${extra.join(', ')})`;
+    if (primary) return primary;
+    if (extra.length > 0) return extra.join(', ');
+    return '—';
   };
 
-  const getCurrentValue = (m: Measurement, field: EditableFieldKey): string | null => {
-    if (editedProducts[m.id]?.[field] !== undefined) {
-      return editedProducts[m.id][field] ?? null;
-    }
-    switch (field) {
-      case 'managerId':
-        return m.managerId ?? m.manager?.id ?? null;
-      case 'surveyorId':
-        return m.surveyorId ?? m.surveyor?.id ?? null;
-      case 'directionId':
-        return m.directionId ?? m.direction?.id ?? null;
-      case 'receptionDate':
-        return m.receptionDate ? formatDateForInput(m.receptionDate) : null;
-      case 'executionDate':
-        return m.executionDate ? formatDateForInput(m.executionDate) : null;
-      default:
-        return (m[field] as string) ?? null;
-    }
-  };
-
-  const hasEdits = (measurementId: string): boolean =>
-    Object.keys(editedProducts[measurementId] || {}).length > 0;
-
-  const saveAllEdits = async () => {
-    const idsToSave = Object.keys(editedProducts).filter((id) => hasEdits(id));
-    if (idsToSave.length === 0) return;
-
-    setSavingEdits(true);
-    setSaveMessage(null);
-    try {
-      for (const id of idsToSave) {
-        const edits = { ...editedProducts[id] } as Record<string, string | null>;
-        const optionalKeys: EditableFieldKey[] = [
-          'executionDate',
-          'surveyorId',
-          'directionId',
-          'comments',
-          'customerAddress',
-        ];
-        const payload: Record<string, string | null | undefined> = {};
-        for (const [k, v] of Object.entries(edits)) {
-          const key = k as EditableFieldKey;
-          if (v === null || v === '') {
-            if (optionalKeys.includes(key)) {
-              payload[k] = null;
-            }
-          } else {
-            payload[k] = v;
-          }
-        }
-        await updateMeasurement(id, payload);
-      }
-      setEditedProducts({});
-      setSaveMessageType('success');
-      setSaveMessage(`Сохранено замеров: ${idsToSave.length}`);
-      setTimeout(() => setSaveMessage(null), 3000);
-      fetchData();
-    } catch (err) {
-      setSaveMessageType('error');
-      setSaveMessage(err instanceof Error ? err.message : 'Ошибка сохранения');
-      setTimeout(() => setSaveMessage(null), 5000);
-    } finally {
-      setSavingEdits(false);
-    }
-  };
-
-  const cancelEdits = () => {
-    setEditedProducts({});
-    setEditMode(false);
-  };
-
-  const totalEditsCount = Object.keys(editedProducts).filter((id) => hasEdits(id)).length;
-
-  const renderEditableCell = (m: Measurement, col: EditableColumnConfig) => {
-    const currentValue = getCurrentValue(m, col.key);
-    const isEdited = editedProducts[m.id]?.[col.key] !== undefined;
-
-    if (col.type === 'date') {
-      return (
-        <input
-          type="date"
-          className={`${styles.editableInput} ${isEdited ? styles.edited : ''}`}
-          value={currentValue ?? ''}
-          onChange={(e) => {
-            e.stopPropagation();
-            const v = e.target.value || null;
-            handleInlineEdit(m.id, col.key, v);
-          }}
-          onClick={(e) => e.stopPropagation()}
-        />
-      );
-    }
-
-    if (col.type === 'select') {
-      const options =
-        col.optionsKey === 'status'
-          ? STATUS_OPTIONS
-          : col.optionsKey === 'managers'
-            ? managers.length > 0
-              ? managers
-              : users
-            : col.optionsKey === 'surveyors'
-              ? surveyors.length > 0
-                ? surveyors
-                : users
-              : directions;
-      const optionList =
-        col.optionsKey === 'status'
-          ? (options as { value: string; label: string }[])
-          : (options as {
-              id: string;
-              name?: string;
-              firstName?: string | null;
-              lastName?: string | null;
-            }[]);
-
-      return (
-        <select
-          className={`${styles.editableInput} ${styles.editableSelect} ${isEdited ? styles.edited : ''}`}
-          value={currentValue ?? ''}
-          onChange={(e) => {
-            e.stopPropagation();
-            handleInlineEdit(m.id, col.key, e.target.value || null);
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {(col.key === 'surveyorId' || col.key === 'directionId') && <option value="">—</option>}
-          {col.optionsKey === 'status'
-            ? (optionList as { value: string; label: string }[]).map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))
-            : (
-                optionList as {
-                  id: string;
-                  name?: string;
-                  firstName?: string | null;
-                  lastName?: string | null;
-                }[]
-              ).map((o) => (
-                <option key={o.id} value={o.id}>
-                  {'name' in o ? o.name : [o.firstName, o.lastName].filter(Boolean).join(' ')}
-                </option>
-              ))}
-        </select>
-      );
-    }
-
-    return (
-      <input
-        type="text"
-        className={`${styles.editableInput} ${isEdited ? styles.edited : ''}`}
-        value={currentValue ?? ''}
-        onChange={(e) => {
-          e.stopPropagation();
-          handleInlineEdit(m.id, col.key, e.target.value || null);
-        }}
-        onClick={(e) => e.stopPropagation()}
-      />
-    );
-  };
-
-  const columns = EDITABLE_COLUMNS.map((col) => ({
-    key: col.key,
-    title: col.title,
-    sortable: col.key === 'receptionDate',
-    render: (m: Measurement) => {
-      if (editMode && selectedIds.includes(m.id)) {
-        return renderEditableCell(m, col);
-      }
-      switch (col.key) {
-        case 'receptionDate':
-          return formatDate(m.receptionDate);
-        case 'executionDate':
-          return formatDate(m.executionDate);
-        case 'managerId':
-          return formatUser(m.manager);
-        case 'surveyorId':
-          return formatUser(m.surveyor);
-        case 'directionId': {
-          const primary = m.direction?.name;
-          const extra =
-            m.additionalDirections?.map((d) => d.name).filter(Boolean) ??
-            (m.additionalDirectionIds ?? [])
-              .map((id) => directions.find((d) => d.id === id)?.name)
-              .filter(Boolean);
-          if (primary && extra.length > 0) return `${primary} (+${extra.join(', ')})`;
-          if (primary) return primary;
-          if (extra.length > 0) return extra.join(', ');
-          return '—';
-        }
-        case 'status':
-          return (
-            <span className={`${styles.badge} ${styles[`status${m.status}`] ?? ''}`}>
-              {STATUS_LABELS[m.status] ?? m.status}
-            </span>
-          );
-        case 'comments':
-          const c = m.comments;
-          if (!c) return '—';
-          const s = String(c);
-          return s.length > 50 ? s.slice(0, 50) + '…' : s;
-        default:
-          return (m[col.key] as string) ?? '—';
-      }
+  const columns = [
+    {
+      key: 'receptionDate',
+      title: 'Дата',
+      sortable: true,
+      sortKey: 'receptionDate',
+      render: (m: Measurement) => formatDate(m.receptionDate),
     },
-  }));
-
-  const columnsWithActions = [
-    ...columns,
+    {
+      key: 'executionDate',
+      title: 'Дата замера',
+      sortable: true,
+      sortKey: 'executionDate',
+      render: (m: Measurement) => formatDate(m.executionDate),
+    },
+    {
+      key: 'managerId',
+      title: 'Менеджер',
+      render: (m: Measurement) => formatUser(m.manager),
+    },
+    {
+      key: 'surveyorId',
+      title: 'Замерщик',
+      render: (m: Measurement) => formatUser(m.surveyor),
+    },
+    {
+      key: 'directionId',
+      title: 'Направление',
+      render: renderDirection,
+    },
+    {
+      key: 'customerName',
+      title: 'ФИО заказчика',
+      render: (m: Measurement) => m.customerName || '—',
+    },
+    {
+      key: 'customerAddress',
+      title: 'Адрес',
+      render: (m: Measurement) => m.customerAddress || '—',
+    },
+    {
+      key: 'customerPhone',
+      title: 'Телефон',
+      render: (m: Measurement) => m.customerPhone || '—',
+    },
+    {
+      key: 'status',
+      title: 'Статус',
+      sortable: true,
+      sortKey: 'status',
+      render: (m: Measurement) => (
+        <span className={`${styles.badge} ${styles[`status${m.status}`] ?? ''}`}>
+          {getMeasurementStatusLabel(m.status)}
+        </span>
+      ),
+    },
     {
       key: 'links',
       title: 'Связи',
@@ -507,34 +309,6 @@ export function MeasurementsPage() {
         );
       },
     },
-    {
-      key: 'actions',
-      title: '',
-      width: '90px',
-      render: (m: Measurement) => (
-        <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
-          {editMode && hasEdits(m.id) && (
-            <span className={styles.editedIndicator} title="Есть изменения">
-              ●
-            </span>
-          )}
-          <button
-            className={styles.actionButton}
-            onClick={() => setHistoryMeasurementId(m.id)}
-            title="История изменений"
-          >
-            📋
-          </button>
-          <button
-            className={styles.actionButton}
-            onClick={() => router.push(`/admin/measurements/${m.id}`)}
-            title="Редактировать"
-          >
-            ✏️
-          </button>
-        </div>
-      ),
-    },
   ];
 
   return (
@@ -546,6 +320,7 @@ export function MeasurementsPage() {
         </div>
         <div className={styles.headerActions}>
           <button
+            type="button"
             className={`${styles.secondaryButton} ${styles.refreshButton}`}
             onClick={() => void fetchData()}
             disabled={loading}
@@ -570,34 +345,11 @@ export function MeasurementsPage() {
               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
             </svg>
           </button>
-          <button
-            className={`${styles.secondaryButton} ${editMode ? styles.active : ''}`}
-            onClick={() => {
-              if (editMode && totalEditsCount > 0) {
-                if (confirm('Есть несохранённые изменения. Выйти без сохранения?')) cancelEdits();
-              } else {
-                setEditMode(!editMode);
-                setEditedProducts({});
-              }
-            }}
-          >
-            {editMode ? '✕ Выйти из редактирования' : '✏️ Быстрое редактирование'}
-          </button>
           <Link href="/admin/measurements/new" className={styles.addButton}>
             + Добавить замер
           </Link>
         </div>
       </div>
-
-      {saveMessage && (
-        <div
-          className={`${styles.saveMessage} ${
-            saveMessageType === 'success' ? styles.saveMessageSuccess : styles.saveMessageError
-          }`}
-        >
-          {saveMessage}
-        </div>
-      )}
 
       <div className={styles.filters}>
         <input
@@ -613,9 +365,9 @@ export function MeasurementsPage() {
           className={styles.select}
         >
           <option value="">Все статусы</option>
-          {Object.entries(STATUS_LABELS).map(([v, l]) => (
-            <option key={v} value={v}>
-              {l}
+          {MEASUREMENT_STATUS_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
             </option>
           ))}
         </select>
@@ -663,44 +415,15 @@ export function MeasurementsPage() {
         </label>
       </div>
 
-      {editMode && (
-        <div className={styles.editModeBar}>
-          <div className={styles.editModeInfo}>
-            <span className={styles.editModeIcon}>✏️</span>
-            <span>Режим быстрого редактирования</span>
-            {totalEditsCount > 0 && (
-              <span className={styles.editCount}>
-                Изменено замеров: <strong>{totalEditsCount}</strong>
-              </span>
-            )}
-          </div>
-          <div className={styles.editModeActions}>
-            <button
-              className={styles.editCancelButton}
-              onClick={cancelEdits}
-              disabled={savingEdits}
-            >
-              Отмена
-            </button>
-            <button
-              className={styles.editSaveButton}
-              onClick={saveAllEdits}
-              disabled={savingEdits || totalEditsCount === 0}
-            >
-              {savingEdits ? 'Сохранение...' : `Сохранить изменения (${totalEditsCount})`}
-            </button>
-          </div>
-        </div>
-      )}
-
       <DataTable
         data={data}
-        columns={columnsWithActions}
+        columns={columns}
         keyExtractor={(m) => m.id}
         onRowClick={(m) => router.push(`/admin/measurements/${m.id}`)}
-        selectable
-        selectedIds={selectedIds}
-        onSelectionChange={setSelectedIds}
+        serverSideSort
+        controlledSortBy={measurementSortBy}
+        controlledSortOrder={measurementSortOrder}
+        onSortChange={handleMeasurementSortChange}
         loading={loading}
         emptyMessage="Нет замеров"
         pagination={{
@@ -710,17 +433,6 @@ export function MeasurementsPage() {
           onPageChange: setPage,
         }}
       />
-
-      {historyMeasurementId && (
-        <MeasurementHistoryModal
-          measurementId={historyMeasurementId}
-          measurementName={data.find((m) => m.id === historyMeasurementId)?.customerName}
-          users={users}
-          directions={directions}
-          onClose={() => setHistoryMeasurementId(null)}
-          onRollback={() => fetchData()}
-        />
-      )}
     </div>
   );
 }

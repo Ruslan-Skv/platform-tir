@@ -1,107 +1,53 @@
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: var(--admin-overlay-color-155);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: var(--admin-space-3xl);
+.journalPanel {
+  max-height: min(92vh, 52rem);
 }
 
-.modal {
-  background: var(--admin-surface);
-  border-radius: var(--admin-radius-xl);
-  max-width: 560px;
-  width: 100%;
-  max-height: 85vh;
-  overflow: hidden;
+.shell {
   display: flex;
   flex-direction: column;
-  box-shadow: var(--admin-shadow-modal);
+  gap: var(--admin-space-xs, 4px);
+  padding: var(--admin-space-xs, 4px);
 }
 
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--admin-space-2xl) var(--admin-space-3xl);
-  border-bottom: 1px solid var(--admin-border);
-}
-
-.title {
+.shell :global([data-modal-form-hint]) {
   margin: 0;
-  font-size: var(--admin-font-size-xl);
-  font-weight: 600;
-  color: var(--admin-text-secondary);
+  padding: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
 }
 
-.closeButton {
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: transparent;
-  font-size: var(--admin-font-size-2xl);
-  cursor: pointer;
+.shell :global([data-modal-form-error]) {
+  margin: 0;
+}
+
+.subtitle {
+  margin: 0;
+  padding: 0 var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
-  line-height: var(--admin-line-height-flat);
-  border-radius: var(--admin-radius-sm);
-}
-
-.closeButton:hover {
-  background: var(--admin-surface-soft);
-  color: var(--admin-text-secondary);
-}
-
-.loading,
-.empty,
-.error {
-  padding: var(--admin-space-5xl);
-  text-align: center;
-  color: var(--admin-text-muted);
-  font-size: var(--admin-font-size-base);
-}
-
-.error {
-  color: var(--admin-error-strong);
+  line-height: 1.45;
 }
 
 .list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs, 4px);
+  max-height: min(58vh, 28rem);
   overflow-y: auto;
-  padding: var(--admin-space-xl);
+  padding: var(--admin-space-sm, 6px) !important;
 }
 
 .entry {
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-md);
-  margin-bottom: var(--admin-space-md);
-  overflow: hidden;
-}
-
-.entry:last-child {
-  margin-bottom: 0;
-}
-
-.entryHeader {
-  display: flex;
-  align-items: center;
-  gap: var(--admin-space-xl);
-  padding: var(--admin-space-xl) var(--admin-space-xl);
-  cursor: pointer;
-  background: var(--admin-surface-muted);
-}
-
-.entryHeader:hover {
-  background: var(--admin-surface-soft);
+  background: var(--admin-surface, #fff);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-md, 8px);
+  padding: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
 }
 
 .entryMeta {
-  flex: 1;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--admin-space-md);
-  font-size: var(--admin-font-size-base);
+  gap: var(--admin-space-md, 8px);
+  font-size: var(--admin-font-size-sm);
 }
 
 .entryDate {
@@ -127,120 +73,14 @@
   color: var(--admin-warning-text);
 }
 
-.entryFields {
+.eventList {
+  margin: var(--admin-space-sm, 6px) 0 0;
+  padding-left: var(--admin-space-lg);
   font-size: var(--admin-font-size-sm);
-  color: var(--admin-text-muted);
-}
-
-.rollbackButton {
-  padding: var(--admin-space-xs) var(--admin-space-lg);
-  font-size: var(--admin-font-size-sm);
-  background: var(--admin-accent);
-  color: var(--admin-surface);
-  border: none;
-  border-radius: var(--admin-radius-sm);
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.rollbackButton:hover:not(:disabled) {
-  background: var(--admin-accent);
-}
-
-.rollbackButton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.expandIcon {
-  font-size: var(--admin-font-size-2xs);
-  color: var(--admin-text-muted);
-}
-
-.entryDetails {
-  padding: var(--admin-space-xl) var(--admin-space-xl);
-  background: var(--admin-surface);
-  border-top: 1px solid var(--admin-border);
-}
-
-.snapshotTable {
-  display: flex;
-  flex-direction: column;
-  gap: var(--admin-space-sm);
-  font-size: var(--admin-font-size-md);
-}
-
-.snapshotRow {
-  display: flex;
-  gap: var(--admin-space-xl);
-}
-
-.snapshotLabel {
-  color: var(--admin-text-muted);
-  min-width: 140px;
-}
-
-.snapshotValue {
   color: var(--admin-text-secondary);
-  word-break: break-word;
+  line-height: 1.45;
 }
 
-/* Тёмная тема */
-:where(html[data-theme='dark'], [data-app-theme='dark']) .modal {
-  background: var(--admin-text-secondary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .header {
-  border-bottom-color: var(--admin-text-secondary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: var(--admin-surface-muted);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .closeButton {
-  color: var(--admin-text-muted);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .closeButton:hover {
-  background: var(--admin-text-secondary);
-  color: var(--admin-border);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .loading,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .empty {
-  color: var(--admin-text-muted);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .entry {
-  border-color: var(--admin-text-secondary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .entryHeader {
-  background: var(--admin-text-primary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .entryHeader:hover {
-  background: var(--admin-text-secondary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .entryDate {
-  color: var(--admin-border);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .entryUser {
-  color: var(--admin-text-muted);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .entryDetails {
-  background: var(--admin-text-secondary);
-  border-top-color: var(--admin-text-secondary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .snapshotLabel {
-  color: var(--admin-text-muted);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .snapshotValue {
-  color: var(--admin-surface-muted);
+.eventList li + li {
+  margin-top: var(--admin-space-2xs);
 }

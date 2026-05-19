@@ -34,6 +34,13 @@ const DIRECTORY_SORT_STORAGE_KEY = 'admin_customers_directory_sort';
 
 type DirectorySortOrder = 'asc' | 'desc';
 
+function parseClientDirectorySortBy(value: string): ClientDirectorySortBy {
+  if (value === 'createdAt') return 'createdAt';
+  if (value === 'lastMeasurementDate') return 'lastMeasurementDate';
+  if (value === 'lastContractDate') return 'lastContractDate';
+  return 'displayName';
+}
+
 function loadDirectorySort(): { sortBy: ClientDirectorySortBy; sortOrder: DirectorySortOrder } {
   if (typeof window === 'undefined') {
     return { sortBy: 'displayName', sortOrder: 'asc' };
@@ -42,8 +49,7 @@ function loadDirectorySort(): { sortBy: ClientDirectorySortBy; sortOrder: Direct
     const raw = localStorage.getItem(DIRECTORY_SORT_STORAGE_KEY);
     if (!raw) return { sortBy: 'displayName', sortOrder: 'asc' };
     const parsed = JSON.parse(raw) as { sortBy?: string; sortOrder?: string };
-    const sortBy: ClientDirectorySortBy =
-      parsed.sortBy === 'createdAt' ? 'createdAt' : 'displayName';
+    const sortBy = parseClientDirectorySortBy(parsed.sortBy ?? 'displayName');
     const sortOrder: DirectorySortOrder = parsed.sortOrder === 'desc' ? 'desc' : 'asc';
     return { sortBy, sortOrder };
   } catch {
@@ -146,8 +152,7 @@ export function CustomersPage() {
   }, [searchQuery, typeFilter, authorFilter, directorySortBy, directorySortOrder]);
 
   const handleDirectorySortChange = useCallback((sortBy: string, sortOrder: DirectorySortOrder) => {
-    const nextSortBy: ClientDirectorySortBy = sortBy === 'createdAt' ? 'createdAt' : 'displayName';
-    setDirectorySortBy(nextSortBy);
+    setDirectorySortBy(parseClientDirectorySortBy(sortBy));
     setDirectorySortOrder(sortOrder);
     setDirectoryPage(1);
   }, []);
@@ -207,6 +212,14 @@ export function CustomersPage() {
   const directoryColumns = useMemo(
     () => [
       {
+        key: 'created',
+        title: 'Создан',
+        sortable: true,
+        sortKey: 'createdAt',
+        render: (row: ClientDirectoryRow) =>
+          row.rowSource === 'customer' ? formatCrmDateTime(row.createdAt) : '—',
+      },
+      {
         key: 'name',
         title: 'Клиент',
         sortable: true,
@@ -228,9 +241,25 @@ export function CustomersPage() {
         render: (row: ClientDirectoryRow) => formatCrmPhoneOrDash(row.phone),
       },
       {
-        key: 'type',
-        title: 'Тип',
-        render: (row: ClientDirectoryRow) => formatCrmEntityType(row.entityType),
+        key: 'lastMeasurement',
+        title: 'Посл. замер',
+        sortable: true,
+        sortKey: 'lastMeasurementDate',
+        render: (row: ClientDirectoryRow) =>
+          row.lastMeasurementDate ? formatDateDdMmYyyy(row.lastMeasurementDate) : '—',
+      },
+      {
+        key: 'lastContract',
+        title: 'Посл. договор',
+        sortable: true,
+        sortKey: 'lastContractDate',
+        render: (row: ClientDirectoryRow) => {
+          if (!row.contractCount) return '—';
+          const parts: string[] = [];
+          if (row.lastContractNumber) parts.push(`№ ${row.lastContractNumber}`);
+          if (row.lastContractDate) parts.push(formatDateDdMmYyyy(row.lastContractDate));
+          return parts.length > 0 ? parts.join(' · ') : String(row.contractCount);
+        },
       },
       {
         key: 'contracts',
@@ -245,33 +274,13 @@ export function CustomersPage() {
           row.totalAmount != null && row.totalAmount > 0 ? formatCurrency(row.totalAmount) : '—',
       },
       {
-        key: 'lastContract',
-        title: 'Посл. договор',
-        render: (row: ClientDirectoryRow) => {
-          if (!row.contractCount) return '—';
-          const parts: string[] = [];
-          if (row.lastContractNumber) parts.push(`№ ${row.lastContractNumber}`);
-          if (row.lastContractDate) parts.push(formatDateDdMmYyyy(row.lastContractDate));
-          return parts.length > 0 ? parts.join(' · ') : String(row.contractCount);
-        },
-      },
-      {
-        key: 'lastMeasurement',
-        title: 'Посл. замер',
-        render: (row: ClientDirectoryRow) =>
-          row.lastMeasurementDate ? formatDateDdMmYyyy(row.lastMeasurementDate) : '—',
-      },
-      {
-        key: 'created',
-        title: 'Карточка создана',
-        sortable: true,
-        sortKey: 'createdAt',
-        render: (row: ClientDirectoryRow) =>
-          row.rowSource === 'customer' ? formatCrmDateTime(row.createdAt) : '—',
+        key: 'type',
+        title: 'Тип',
+        render: (row: ClientDirectoryRow) => formatCrmEntityType(row.entityType),
       },
       {
         key: 'author',
-        title: 'Автор карточки',
+        title: 'Автор',
         render: (row: ClientDirectoryRow) =>
           row.rowSource === 'customer'
             ? formatCrmAuditActor(resolveCrmCreatedByActor({ createdBy: row.createdBy }))
@@ -289,8 +298,35 @@ export function CustomersPage() {
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <h1 className={styles.title}>Заказчики и клиенты</h1>
+          <span className={styles.count}>{directoryTotal} записей</span>
         </div>
         <div className={styles.headerActions}>
+          <button
+            type="button"
+            className={`${styles.secondaryButton} ${styles.refreshButton}`}
+            onClick={() => setListRefreshKey((k) => k + 1)}
+            disabled={loading}
+            title="Обновить список заказчиков"
+            aria-label="Обновить список заказчиков"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width={18}
+              height={18}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={loading ? styles.refreshIconSpinning : undefined}
+              aria-hidden
+            >
+              <path d="M23 4v6h-6" />
+              <path d="M1 20v-6h6" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+          </button>
           <button
             type="button"
             className={styles.addButton}
@@ -300,12 +336,12 @@ export function CustomersPage() {
           </button>
           <button
             type="button"
-            className={styles.trashButton}
+            className={`${styles.secondaryButton} ${styles.refreshButton}`}
             onClick={() => setTrashOpen(true)}
             title="Корзина клиентов"
             aria-label="Корзина клиентов"
           >
-            <TrashIcon className={styles.trashButtonIcon} aria-hidden />
+            <TrashIcon width={18} height={18} aria-hidden />
           </button>
         </div>
       </div>
@@ -327,76 +363,38 @@ export function CustomersPage() {
           />
         </div>
 
-        <div className={styles.authorFilter}>
-          <label className={styles.authorFilterCaption} htmlFor="customers-author-filter">
-            Автор карточки
-          </label>
-          <select
-            id="customers-author-filter"
-            className={styles.authorSelect}
-            value={authorFilter}
-            onChange={(e) => setAuthorFilter(e.target.value)}
-          >
-            <option value="">Все авторы</option>
-            <option value="_none">Без автора</option>
-            {authorSelectOptions.map((u) => (
-              <option key={u.id} value={u.id}>
-                {formatCrmUserOptionLabel(u)}
-              </option>
-            ))}
-          </select>
-        </div>
+        <select
+          id="customers-author-filter"
+          className={styles.authorSelect}
+          value={authorFilter}
+          onChange={(e) => setAuthorFilter(e.target.value)}
+          aria-label="Автор карточки"
+        >
+          <option value="">Все авторы</option>
+          <option value="_none">Без автора</option>
+          {authorSelectOptions.map((u) => (
+            <option key={u.id} value={u.id}>
+              {formatCrmUserOptionLabel(u)}
+            </option>
+          ))}
+        </select>
 
-        <div className={styles.typeFilter}>
-          <span className={styles.typeFilterCaption} id="customers-type-filter-label">
-            Тип
-          </span>
-          <div className={styles.typeFilterToolbar}>
-            <span
-              className={styles.typeFilterCount}
-              aria-live="polite"
-              aria-atomic="true"
-              title={
-                loading
-                  ? 'Загрузка'
-                  : typeFilter === 'all' && !authorFilter
-                    ? `Позиций в таблице: ${directoryRows.length}`
-                    : `Показано ${directoryRows.length} из ${directoryTotal}`
+        <div className={styles.typeFilterButtons} role="group" aria-label="Тип клиента">
+          {TYPE_FILTER_OPTIONS.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              className={
+                typeFilter === value
+                  ? `${styles.typeFilterBtn} ${styles.typeFilterBtnActive}`
+                  : styles.typeFilterBtn
               }
+              aria-pressed={typeFilter === value}
+              onClick={() => setTypeFilter(value)}
             >
-              {loading ? (
-                <span className={styles.typeFilterCountValue}>…</span>
-              ) : (
-                <>
-                  <span className={styles.typeFilterCountValue}>{directoryRows.length}</span>
-                  {(typeFilter !== 'all' || authorFilter) && directoryTotal > 0 ? (
-                    <span className={styles.typeFilterCountTotal}>/{directoryTotal}</span>
-                  ) : null}
-                </>
-              )}
-            </span>
-            <div
-              className={styles.typeFilterButtons}
-              role="group"
-              aria-labelledby="customers-type-filter-label"
-            >
-              {TYPE_FILTER_OPTIONS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={
-                    typeFilter === value
-                      ? `${styles.typeFilterBtn} ${styles.typeFilterBtnActive}`
-                      : styles.typeFilterBtn
-                  }
-                  aria-pressed={typeFilter === value}
-                  onClick={() => setTypeFilter(value)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 

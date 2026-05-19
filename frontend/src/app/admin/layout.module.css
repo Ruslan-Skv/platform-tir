@@ -454,6 +454,12 @@
   --admin-warning-strong: #d97706;
   --admin-warning-text: #92400e;
   --admin-warning-yellow: #eab308;
+  --admin-saved-mark-bg: #ffff00;
+  --admin-saved-mark-text: #1a1a1a;
+  --admin-saved-mark-ring: rgb(0 0 0 / 0.12);
+  --admin-measurement-status-completed-bg: #ede4d6;
+  --admin-measurement-status-completed-border: #d4bc9a;
+  --admin-measurement-status-completed-text: #5c4a36;
   /* Semantic overlay scale */
   --admin-overlay-soft: rgb(0 0 0 / 0.06);
   --admin-overlay-medium: rgb(0 0 0 / 0.12);
@@ -822,6 +828,9 @@
   --admin-overlay-success-medium: rgb(16 185 129 / 0.34);
   --admin-overlay-info-soft: rgb(59 130 246 / 0.24);
   --admin-overlay-warning-soft: rgb(245 158 11 / 0.24);
+  --admin-measurement-status-completed-bg: #4a3f32;
+  --admin-measurement-status-completed-border: #a08968;
+  --admin-measurement-status-completed-text: #e8dcc8;
   --admin-overlay-danger-soft: rgb(var(--color-accent-rgb) / 0.26);
   --admin-overlay-danger-medium: rgb(var(--color-accent-rgb) / 0.36);
   --admin-overlay-danger-strong: rgb(var(--color-accent-rgb) / 0.46);

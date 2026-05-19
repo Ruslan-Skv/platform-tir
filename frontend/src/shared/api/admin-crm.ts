@@ -673,6 +673,8 @@ export interface Measurement {
   customer?: { id: string; firstName: string; lastName: string | null; email: string } | null;
 }
 
+export type MeasurementListSortBy = 'receptionDate' | 'executionDate' | 'status';
+
 export async function getMeasurements(params?: {
   status?: string;
   managerId?: string;
@@ -687,6 +689,8 @@ export async function getMeasurements(params?: {
   hasCustomerId?: boolean;
   page?: number;
   limit?: number;
+  sortBy?: MeasurementListSortBy;
+  sortOrder?: 'asc' | 'desc';
 }): Promise<{
   data: Measurement[];
   total: number;
@@ -706,6 +710,8 @@ export async function getMeasurements(params?: {
   if (params?.hasCustomerId) searchParams.set('hasCustomerId', 'true');
   searchParams.set('page', String(params?.page ?? 1));
   searchParams.set('limit', String(params?.limit ?? 20));
+  if (params?.sortBy) searchParams.set('sortBy', params.sortBy);
+  if (params?.sortOrder) searchParams.set('sortOrder', params.sortOrder);
 
   const res = await apiFetch(`${API_URL}/admin/measurements?${searchParams}`, {
     headers: getAdminAuthHeaders(),
@@ -1095,7 +1101,11 @@ export async function getCrmCustomers(params?: {
   return res.json();
 }
 
-export type ClientDirectorySortBy = 'displayName' | 'createdAt';
+export type ClientDirectorySortBy =
+  | 'displayName'
+  | 'createdAt'
+  | 'lastMeasurementDate'
+  | 'lastContractDate';
 
 /** `_none` — карточки без автора в БД */
 export type ClientDirectoryCreatedByFilter = string;

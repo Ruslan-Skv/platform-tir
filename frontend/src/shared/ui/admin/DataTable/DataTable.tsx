@@ -226,6 +226,8 @@ export function DataTable<T>({
   }, [data, isServerSort, sortBy, sortOrder]);
 
   const displayData = sortedData;
+  const showLoadingPlaceholder = loading && displayData.length === 0;
+  const isRefreshing = loading && displayData.length > 0;
 
   const totalPages = pagination ? Math.ceil(pagination.total / pagination.limit) : 0;
 
@@ -396,19 +398,28 @@ export function DataTable<T>({
                     >
                       <span className={styles.headerContent}>
                         {column.title}
-                        {column.sortable && activeSortBy === sortKey && (
-                          <span className={styles.sortIcon}>
-                            {activeSortOrder === 'asc' ? '↑' : '↓'}
+                        {column.sortable ? (
+                          <span
+                            className={`${styles.sortIcon} ${
+                              activeSortBy === sortKey ? styles.sortIconActive : styles.sortIconIdle
+                            }`}
+                            aria-hidden
+                          >
+                            {activeSortBy === sortKey
+                              ? activeSortOrder === 'asc'
+                                ? '↑'
+                                : '↓'
+                              : '↕'}
                           </span>
-                        )}
+                        ) : null}
                       </span>
                     </th>
                   );
                 })}
               </tr>
             </thead>
-            <tbody>
-              {loading ? (
+            <tbody className={isRefreshing ? styles.tbodyRefreshing : undefined}>
+              {showLoadingPlaceholder ? (
                 <tr>
                   <td
                     colSpan={columns.length + (selectable ? 1 : 0)}

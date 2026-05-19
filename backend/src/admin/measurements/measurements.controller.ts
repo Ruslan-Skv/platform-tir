@@ -57,8 +57,15 @@ export class MeasurementsController {
     @Query('hasCustomerId') hasCustomerId?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: string,
   ) {
     const truthy = (v?: string) => v === '1' || v === 'true' || v === 'yes';
+    const sortByNorm =
+      sortBy === 'receptionDate' || sortBy === 'executionDate' || sortBy === 'status'
+        ? sortBy
+        : undefined;
+    const sortOrderNorm = sortOrder === 'asc' || sortOrder === 'desc' ? sortOrder : undefined;
     return this.measurementsService.findAll({
       status,
       managerId,
@@ -71,6 +78,8 @@ export class MeasurementsController {
       hasCustomerId: truthy(hasCustomerId),
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 20,
+      sortBy: sortByNorm,
+      sortOrder: sortOrderNorm,
     });
   }
 

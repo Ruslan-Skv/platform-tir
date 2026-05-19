@@ -33,6 +33,7 @@ import { getContract, getContractCustomers, getInstallers } from '@/shared/api/a
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
+import { VersionsHistoryIcon } from '@/shared/ui/icons/VersionsHistoryIcon';
 import { AddCrmCustomerModal } from '@/views/admin/CRM/Customers/AddCrmCustomerModal';
 import { ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_REPAIR_HREF } from '@/views/admin/ContractDocuments/contractDocumentsContractsRoutes';
 
@@ -475,28 +476,6 @@ function formatPackageVersionActor(v: ContractDocumentPackageVersionListItem): s
   const email = u.email?.trim();
   if (email) return email;
   return '—';
-}
-
-/** Иконка «история / версии» в шапке пакета (как у обновления и печати: 18×24, stroke). */
-function PackageVersionsHistoryTriggerIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={18}
-      height={18}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-      <path d="M3 3v5h5" />
-      <path d="M12 7v5l4 2" />
-    </svg>
-  );
 }
 
 /** Иконка «фото актов» в шапке (рядом с обновлением и печатью). */
@@ -3809,7 +3788,7 @@ export function RepairContractDocumentEditorPage({
                 title="Журнал событий пакета"
                 aria-label="Открыть журнал событий пакета"
               >
-                <PackageVersionsHistoryTriggerIcon />
+                <VersionsHistoryIcon />
               </button>
             ) : null}
             <button

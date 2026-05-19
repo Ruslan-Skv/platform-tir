@@ -89,7 +89,13 @@ export class CustomersController {
     @Query('sortOrder') sortOrder?: string,
     @Query('createdById') createdById?: string,
   ) {
-    const sortByNorm = sortBy === 'createdAt' || sortBy === 'displayName' ? sortBy : undefined;
+    const sortByNorm =
+      sortBy === 'createdAt' ||
+      sortBy === 'displayName' ||
+      sortBy === 'lastMeasurementDate' ||
+      sortBy === 'lastContractDate'
+        ? sortBy
+        : undefined;
     const sortOrderNorm = sortOrder === 'desc' || sortOrder === 'asc' ? sortOrder : undefined;
     return this.customersService.findClientDirectory({
       search,

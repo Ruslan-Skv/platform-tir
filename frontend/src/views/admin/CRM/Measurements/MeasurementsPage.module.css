@@ -73,12 +73,6 @@
   border-color: var(--admin-border-strong);
 }
 
-.secondaryButton.active {
-  background: var(--admin-accent-soft);
-  border-color: var(--admin-accent);
-  color: var(--admin-accent);
-}
-
 .refreshButton {
   flex-shrink: 0;
   width: 40px;
@@ -113,131 +107,6 @@
   }
 }
 
-.saveMessage {
-  padding: var(--admin-space-md) var(--admin-space-xl);
-  border-radius: var(--admin-radius-sm);
-  margin-bottom: var(--admin-space-xl);
-  font-size: var(--admin-font-size-sm);
-}
-
-.saveMessageSuccess {
-  background: var(--admin-success-bg-soft);
-  color: var(--admin-success-text);
-}
-
-.saveMessageError {
-  background: var(--admin-error-bg-soft);
-  color: var(--admin-error-text-strong);
-}
-
-/* Edit Mode Bar */
-.editModeBar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--admin-space-xl) var(--admin-space-2xl);
-  background: linear-gradient(135deg, var(--admin-accent-soft) 0%, var(--admin-accent-soft) 100%);
-  border: 1px solid var(--admin-accent-soft-strong);
-  border-radius: var(--admin-radius-md);
-  margin-bottom: var(--admin-space-xl);
-}
-
-.editModeInfo {
-  display: flex;
-  align-items: center;
-  gap: var(--admin-space-lg);
-}
-
-.editModeIcon {
-  font-size: var(--admin-font-size-xl);
-}
-
-.editModeInfo > span:nth-child(2) {
-  font-weight: 600;
-  color: var(--admin-accent);
-  font-size: var(--admin-font-size-sm);
-}
-
-.editCount {
-  padding: var(--admin-space-xs) var(--admin-space-lg);
-  background: var(--admin-accent);
-  color: var(--admin-surface);
-  border-radius: var(--admin-radius-2xl);
-  font-size: var(--admin-font-size-sm);
-}
-
-.editCount strong {
-  font-weight: 600;
-}
-
-.editModeActions {
-  display: flex;
-  gap: var(--admin-space-md);
-}
-
-.editCancelButton {
-  padding: var(--admin-space-sm) var(--admin-space-xl);
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border-strong);
-  border-radius: var(--admin-radius-sm);
-  color: var(--admin-text-secondary);
-  font-weight: 500;
-  font-size: var(--admin-font-size-xs);
-  cursor: pointer;
-}
-
-.editCancelButton:hover:not(:disabled) {
-  background: var(--admin-surface-soft);
-}
-
-.editSaveButton {
-  padding: var(--admin-space-sm) var(--admin-space-xl);
-  background: var(--admin-accent);
-  border: none;
-  border-radius: var(--admin-radius-sm);
-  color: var(--admin-surface);
-  font-weight: 500;
-  font-size: var(--admin-font-size-xs);
-  cursor: pointer;
-}
-
-.editSaveButton:hover:not(:disabled) {
-  background: var(--admin-accent);
-}
-
-.editSaveButton:disabled,
-.editCancelButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.actions {
-  display: flex;
-  align-items: center;
-  gap: var(--admin-space-xs);
-}
-
-.actionButton {
-  padding: var(--admin-space-xs) var(--admin-space-md);
-  background: transparent;
-  border: none;
-  border-radius: var(--admin-radius-xs);
-  cursor: pointer;
-  font-size: var(--admin-font-size-lg);
-  opacity: 0.7;
-}
-
-.actionButton:hover {
-  opacity: 1;
-  background: rgba(var(--admin-overlay-color-144), 0.1);
-}
-
-.editedIndicator {
-  color: var(--admin-warning);
-  font-size: var(--admin-font-size-xs);
-  margin-right: var(--admin-space-2xs);
-}
-
 .muted {
   color: var(--admin-text-muted);
   font-size: var(--admin-font-size-xs);
@@ -263,35 +132,6 @@
   color: var(--admin-warning-brown);
 }
 
-.editableInput {
-  width: 100%;
-  min-width: 100px;
-  max-width: 180px;
-  padding: var(--admin-space-xs) var(--admin-space-md);
-  border: 1px solid var(--admin-border-strong);
-  border-radius: var(--admin-radius-xs);
-  font-size: var(--admin-font-size-sm);
-  background: var(--admin-surface);
-}
-
-.editableInput:focus {
-  outline: none;
-  border-color: var(--admin-accent);
-}
-
-.editableInput.edited {
-  border-color: var(--admin-warning);
-  background: var(--admin-warning-bg);
-}
-
-.editableSelect {
-  cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23374151' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 6px center;
-}
-
 .filters {
   display: flex;
   flex-wrap: wrap;
@@ -309,9 +149,12 @@
   font-size: var(--admin-font-size-sm);
 }
 
-.searchInput:focus {
+.searchInput:focus,
+.select:focus,
+.dateInput:focus {
+  border-color: var(--admin-accent, #2563eb);
+  box-shadow: var(--admin-shadow-focus-soft);
   outline: none;
-  border-color: var(--admin-accent);
 }
 
 .select {
@@ -321,6 +164,7 @@
   font-size: var(--admin-font-size-sm);
   background: var(--admin-surface);
   min-width: 120px;
+  cursor: pointer;
 }
 
 .dateLabel {
@@ -366,8 +210,9 @@
 }
 
 .statusCOMPLETED {
-  background: var(--admin-success-bg-soft);
-  color: var(--admin-success-text);
+  background: var(--admin-measurement-status-completed-bg, #ede4d6);
+  border: 1px solid var(--admin-measurement-status-completed-border, #d4bc9a);
+  color: var(--admin-measurement-status-completed-text, #5c4a36);
 }
 
 .statusCANCELLED {
@@ -376,8 +221,9 @@
 }
 
 .statusCONVERTED {
-  background: var(--admin-info-bg);
-  color: var(--admin-info-text);
+  background: var(--admin-success-bg);
+  border: 1px solid var(--admin-success-lime);
+  color: var(--admin-success-text-strong);
 }
 
 @media (max-width: 768px) {
@@ -420,8 +266,11 @@
   color: var(--admin-text-muted);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput:focus {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput:focus,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select:focus,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dateInput:focus {
   border-color: var(--admin-accent);
+  box-shadow: var(--admin-shadow-focus-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select {
@@ -456,8 +305,9 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusCOMPLETED {
-  background: var(--admin-overlay-color-138);
-  color: var(--admin-success-border);
+  background: var(--admin-measurement-status-completed-bg, #4a3f32);
+  border: 1px solid var(--admin-measurement-status-completed-border, #a08968);
+  color: var(--admin-measurement-status-completed-text, #e8dcc8);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusCANCELLED {
@@ -466,8 +316,9 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusCONVERTED {
-  background: var(--admin-overlay-color-094);
-  color: var(--admin-info-border);
+  background: var(--admin-overlay-color-098);
+  border: 1px solid var(--admin-success-lime);
+  color: var(--admin-success-border-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryButton {
@@ -478,44 +329,4 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryButton:hover {
   background: var(--admin-sidebar-text);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryButton.active {
-  background: var(--admin-overlay-color-140);
-  border-color: var(--admin-accent);
-  color: var(--admin-accent);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .editModeBar {
-  background: linear-gradient(
-    135deg,
-    var(--admin-text-secondary) 0%,
-    var(--admin-text-secondary) 100%
-  );
-  border-color: var(--admin-sidebar-text);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .editModeInfo > span:nth-child(2) {
-  color: var(--admin-accent);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .editCancelButton {
-  background: var(--admin-text-secondary);
-  border-color: var(--admin-sidebar-text);
-  color: var(--admin-border);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .editCancelButton:hover:not(:disabled) {
-  background: var(--admin-sidebar-text);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .editableInput {
-  background: var(--admin-text-secondary);
-  border-color: var(--admin-sidebar-text);
-  color: var(--admin-surface-muted);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .editableInput.edited {
-  border-color: var(--admin-warning);
-  background: var(--admin-overlay-color-075);
 }

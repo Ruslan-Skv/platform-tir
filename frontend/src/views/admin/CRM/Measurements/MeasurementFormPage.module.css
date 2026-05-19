@@ -64,6 +64,19 @@
   display: inline-flex;
   align-items: center;
   gap: var(--admin-space-sm);
+  cursor: help;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .statusInlineText {
@@ -83,9 +96,9 @@
 }
 
 .statusSelectCompleted {
-  background: var(--admin-success-bg);
-  border-color: var(--admin-success-lime);
-  color: var(--admin-success-text-strong);
+  background: var(--admin-measurement-status-completed-bg, #ede4d6);
+  border-color: var(--admin-measurement-status-completed-border, #d4bc9a);
+  color: var(--admin-measurement-status-completed-text, #5c4a36);
 }
 
 .statusSelectCancelled {
@@ -95,9 +108,9 @@
 }
 
 .statusSelectConverted {
-  background: var(--admin-chart-violet-bg);
-  border-color: var(--admin-chart-violet-border);
-  color: var(--admin-accent);
+  background: var(--admin-success-bg);
+  border-color: var(--admin-success-lime);
+  color: var(--admin-success-text-strong);
 }
 
 .title {
@@ -108,6 +121,9 @@
 }
 
 .historyButton {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--admin-space-xs);
   padding: var(--admin-space-xs) var(--admin-space-lg);
   font-size: var(--admin-font-size-xs);
   background: var(--admin-surface-soft);
@@ -578,12 +594,12 @@
   width: 1rem;
   height: 1rem;
   border-radius: var(--admin-radius-pill);
-  background: #ffff00;
-  color: #1a1a1a;
+  background: var(--admin-saved-mark-bg);
+  color: var(--admin-saved-mark-text);
   font-size: var(--admin-font-size-2xs);
   font-weight: 700;
   line-height: 1;
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.12);
+  box-shadow: 0 0 0 1px var(--admin-saved-mark-ring);
 }
 
 .roomTabsRow {
@@ -651,8 +667,85 @@
 
 .measurementsHeaderActions {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--admin-space-xs);
+}
+
+.measurementSavedBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  border-radius: var(--admin-radius-md);
+  background: linear-gradient(
+    180deg,
+    var(--admin-success-bright) 0%,
+    var(--admin-success-strong) 100%
+  );
+  color: var(--admin-surface);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.unsaveMeasurementButton {
+  border-color: var(--admin-chart-cyan) !important;
+  background: linear-gradient(
+    180deg,
+    var(--admin-info-bg-soft) 0%,
+    var(--admin-info-bg) 100%
+  ) !important;
+  color: var(--admin-info-strong) !important;
+  font-weight: 600;
+  box-shadow: 0 1px 6px var(--admin-overlay-color-129);
+}
+
+.unsaveMeasurementButton:hover:not(:disabled) {
+  border-color: var(--admin-info) !important;
+  background: linear-gradient(
+    180deg,
+    var(--admin-info-bg) 0%,
+    var(--admin-info-border-soft) 100%
+  ) !important;
+  color: var(--admin-info-text) !important;
+}
+
+.measurementsLockedHint {
+  margin: 0 0 var(--admin-space-sm);
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  border: 1px solid var(--admin-success-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-success-bg);
+  color: var(--admin-success-deep);
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-base, 1.45);
+}
+
+.measurementsTabBody {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.measurementsTabBody:disabled {
+  opacity: 1;
+}
+
+.measurementsTabBody:disabled .input,
+.measurementsTabBody:disabled .textarea,
+.measurementsTabBody:disabled .select {
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
+  cursor: default;
+}
+
+.measurementsTabBody:disabled .secondaryButton,
+.measurementsTabBody:disabled .dangerButton,
+.measurementsTabBody:disabled .roomIconBtn {
+  pointer-events: none;
+  opacity: 0.55;
 }
 
 .completeMeasurementButton {
@@ -1008,9 +1101,9 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusSelectCompleted {
-  background: var(--admin-overlay-color-098);
-  border-color: var(--admin-success-border);
-  color: var(--admin-success-border-soft);
+  background: var(--admin-measurement-status-completed-bg, #4a3f32);
+  border-color: var(--admin-measurement-status-completed-border, #a08968);
+  color: var(--admin-measurement-status-completed-text, #e8dcc8);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusSelectCancelled {
@@ -1020,9 +1113,9 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusSelectConverted {
-  background: var(--admin-overlay-color-014);
-  border-color: var(--admin-chart-violet-soft);
-  color: var(--admin-accent-soft);
+  background: var(--admin-overlay-color-098);
+  border-color: var(--admin-success-lime);
+  color: var(--admin-success-border-soft);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .headerAutosaveFloating {

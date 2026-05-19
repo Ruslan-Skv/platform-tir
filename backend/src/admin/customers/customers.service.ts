@@ -241,7 +241,7 @@ export class CustomersService {
     createdById?: string;
     page?: number;
     limit?: number;
-    sortBy?: 'displayName' | 'createdAt';
+    sortBy?: 'displayName' | 'createdAt' | 'lastMeasurementDate' | 'lastContractDate';
     sortOrder?: 'asc' | 'desc';
   }) {
     const page = params?.page ?? 1;
@@ -323,12 +323,19 @@ export class CustomersService {
       });
     }
 
-    const sortBy = params?.sortBy === 'createdAt' ? 'createdAt' : 'displayName';
+    const sortBy =
+      params?.sortBy === 'createdAt' ||
+      params?.sortBy === 'lastMeasurementDate' ||
+      params?.sortBy === 'lastContractDate'
+        ? params.sortBy
+        : 'displayName';
     const sortOrder = params?.sortOrder === 'desc' ? 'desc' : 'asc';
 
     type Merged = {
       nameKey: string;
       createdKey: number;
+      lastMeasurementKey: number;
+      lastContractKey: number;
       row: Record<string, unknown>;
     };
     const merged: Merged[] = [];
@@ -342,6 +349,8 @@ export class CustomersService {
       merged.push({
         nameKey: String(row['displayName'] ?? '').toLowerCase(),
         createdKey: c.createdAt.getTime(),
+        lastMeasurementKey: this.directoryDateSortKey(row['lastMeasurementDate']),
+        lastContractKey: this.directoryDateSortKey(row['lastContractDate']),
         row,
       });
     }
@@ -350,22 +359,43 @@ export class CustomersService {
       merged.push({
         nameKey: String(row['displayName'] ?? '').toLowerCase(),
         createdKey: 0,
+        lastMeasurementKey: this.directoryDateSortKey(row['lastMeasurementDate']),
+        lastContractKey: this.directoryDateSortKey(row['lastContractDate']),
         row,
       });
     }
 
     merged.sort((a, b) => {
-      if (sortBy === 'createdAt') {
-        const aEmpty = a.createdKey === 0;
-        const bEmpty = b.createdKey === 0;
+      const dir = sortOrder === 'asc' ? 1 : -1;
+      const compareWithEmptyLast = (aEmpty: boolean, bEmpty: boolean, cmp: number) => {
         if (aEmpty && bEmpty) return a.nameKey.localeCompare(b.nameKey, 'ru');
-        if (aEmpty) return 1;
-        if (bEmpty) return -1;
-        const cmp = a.createdKey - b.createdKey;
-        return sortOrder === 'asc' ? cmp : -cmp;
+        if (aEmpty) return sortOrder === 'asc' ? 1 : -1;
+        if (bEmpty) return sortOrder === 'asc' ? -1 : 1;
+        return cmp * dir;
+      };
+
+      if (sortBy === 'createdAt') {
+        return compareWithEmptyLast(
+          a.createdKey === 0,
+          b.createdKey === 0,
+          a.createdKey - b.createdKey,
+        );
       }
-      const cmp = a.nameKey.localeCompare(b.nameKey, 'ru');
-      return sortOrder === 'asc' ? cmp : -cmp;
+      if (sortBy === 'lastMeasurementDate') {
+        return compareWithEmptyLast(
+          a.lastMeasurementKey === 0,
+          b.lastMeasurementKey === 0,
+          a.lastMeasurementKey - b.lastMeasurementKey,
+        );
+      }
+      if (sortBy === 'lastContractDate') {
+        return compareWithEmptyLast(
+          a.lastContractKey === 0,
+          b.lastContractKey === 0,
+          a.lastContractKey - b.lastContractKey,
+        );
+      }
+      return a.nameKey.localeCompare(b.nameKey, 'ru') * dir;
     });
     const total = merged.length;
     const slice = merged.slice(skip, skip + limit);
@@ -481,6 +511,12 @@ export class CustomersService {
     const rowLn = (customer.lastName ?? '').trim();
     if (rowFn && /\s/.test(rowFn) && !rowLn) return rowFn;
     return [rowLn, rowFn].filter(Boolean).join(' ');
+  }
+
+  private directoryDateSortKey(iso: unknown): number {
+    if (typeof iso !== 'string' || !iso.trim()) return 0;
+    const t = new Date(iso).getTime();
+    return Number.isNaN(t) ? 0 : t;
   }
 
   private serializeCustomerDirectoryRow(

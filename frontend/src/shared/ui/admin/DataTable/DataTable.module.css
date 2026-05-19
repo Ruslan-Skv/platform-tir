@@ -175,7 +175,27 @@
 }
 
 .sortIcon {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 0.75rem;
   font-size: var(--admin-font-size-xs);
+  line-height: 1;
+  text-align: center;
+}
+
+.sortIconIdle {
+  color: var(--admin-text-muted);
+}
+
+.sortIconActive {
+  color: var(--admin-accent);
+  font-weight: 700;
+}
+
+.tbodyRefreshing {
+  opacity: 0.55;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
 }
 
 .row {

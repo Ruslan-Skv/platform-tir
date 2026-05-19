@@ -71,6 +71,7 @@ function buildSnapshot(
   };
 }
 const REPAIR_MEASUREMENT_DATA_MARKER = '[REPAIR_MEASUREMENT_DATA_V1]';
+const MEASUREMENT_SAVED_TABS_MARKER = '[MEASUREMENT_SAVED_TABS_V1]';
 
 type ParsedMeasurementData = {
   rooms: Array<{
@@ -132,14 +133,74 @@ function hasRoomWorkQuantities(room: NonNullable<ParsedMeasurementData>['rooms']
   return Object.values(room.workItemQuantities ?? {}).some((x) => (x ?? '').trim() !== '');
 }
 
+function extractSavedTabsFromComments(value: string | null | undefined): Record<string, boolean> {
+  if (!value) return {};
+  const idx = value.indexOf(MEASUREMENT_SAVED_TABS_MARKER);
+  if (idx < 0) return {};
+  const after = value.slice(idx + MEASUREMENT_SAVED_TABS_MARKER.length).trimStart();
+  if (!after.startsWith('{')) return {};
+  let depth = 0;
+  let end = 0;
+  for (let i = 0; i < after.length; i += 1) {
+    const char = after[i];
+    if (char === '{') depth += 1;
+    if (char === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        end = i + 1;
+        break;
+      }
+    }
+  }
+  if (end <= 0) return {};
+  try {
+    const parsed = JSON.parse(after.slice(0, end)) as Record<string, boolean>;
+    return Object.fromEntries(Object.entries(parsed).filter(([, flag]) => Boolean(flag)));
+  } catch {
+    return {};
+  }
+}
+
+function buildSavedTabsMoments(
+  previousComments: string | null,
+  nextComments: string | null,
+): string[] {
+  const prev = extractSavedTabsFromComments(previousComments);
+  const next = extractSavedTabsFromComments(nextComments);
+  const moments: string[] = [];
+  const keys = new Set([...Object.keys(prev), ...Object.keys(next)]);
+  for (const key of keys) {
+    if (next[key] && !prev[key]) moments.push(`measurementTabSaved:${key}`);
+    if (!next[key] && prev[key]) moments.push(`measurementTabUnsaved:${key}`);
+  }
+  return moments;
+}
+
+function stripMeasurementMarkers(comments: string | null | undefined): string {
+  if (!comments) return '';
+  let text = comments;
+  for (const marker of [MEASUREMENT_SAVED_TABS_MARKER, REPAIR_MEASUREMENT_DATA_MARKER]) {
+    const idx = text.indexOf(marker);
+    if (idx >= 0) text = text.slice(0, idx);
+  }
+  return text.trim();
+}
+
 function buildMeasurementKeyMoments(
   previousComments: string | null,
   nextComments: string | null,
 ): string[] {
   const prev = parseMeasurementDataFromComments(previousComments);
   const next = parseMeasurementDataFromComments(nextComments);
-  if (!next) return [];
   const moments: string[] = [];
+
+  moments.push(...buildSavedTabsMoments(previousComments, nextComments));
+
+  if (stripMeasurementMarkers(previousComments) !== stripMeasurementMarkers(nextComments)) {
+    moments.push('measurementNoteUpdated');
+  }
+
+  if (!next) return moments;
 
   const prevRooms = prev?.rooms ?? [];
   const nextRooms = next.rooms ?? [];
@@ -278,6 +339,8 @@ export class MeasurementsService {
     hasCustomerId?: boolean;
     page?: number;
     limit?: number;
+    sortBy?: 'receptionDate' | 'executionDate' | 'status';
+    sortOrder?: 'asc' | 'desc';
   }) {
     const {
       status,
@@ -291,6 +354,8 @@ export class MeasurementsService {
       hasCustomerId,
       page = 1,
       limit = 20,
+      sortBy = 'receptionDate',
+      sortOrder = 'desc',
     } = params || {};
 
     const skip = (page - 1) * limit;
@@ -301,7 +366,6 @@ export class MeasurementsService {
     }
     if (managerId) where.managerId = managerId;
     if (surveyorId) where.surveyorId = surveyorId;
-    if (directionId) where.directionId = directionId;
     if (withoutContract) {
       where.contract = { is: null };
     }
@@ -309,13 +373,27 @@ export class MeasurementsService {
       where.customerId = { not: null };
     }
 
+    const andParts: Prisma.MeasurementWhereInput[] = [];
+
     if (search) {
-      where.OR = [
-        { customerName: { contains: search, mode: 'insensitive' } },
-        { customerPhone: { contains: search } },
-        { customerAddress: { contains: search, mode: 'insensitive' } },
-        { comments: { contains: search, mode: 'insensitive' } },
-      ];
+      andParts.push({
+        OR: [
+          { customerName: { contains: search, mode: 'insensitive' } },
+          { customerPhone: { contains: search } },
+          { customerAddress: { contains: search, mode: 'insensitive' } },
+          { comments: { contains: search, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    if (directionId) {
+      andParts.push({
+        OR: [{ directionId }, { additionalDirections: { some: { directionId } } }],
+      });
+    }
+
+    if (andParts.length > 0) {
+      where.AND = andParts;
     }
 
     if (dateFrom || dateTo) {
@@ -324,13 +402,20 @@ export class MeasurementsService {
       if (dateTo) where.receptionDate.lte = new Date(dateTo);
     }
 
+    const orderBy: Prisma.MeasurementOrderByWithRelationInput =
+      sortBy === 'executionDate'
+        ? { executionDate: sortOrder }
+        : sortBy === 'status'
+          ? { status: sortOrder }
+          : { receptionDate: sortOrder };
+
     const [rows, total] = await Promise.all([
       this.prisma.measurement.findMany({
         where,
         include: MEASUREMENT_RELATIONS_INCLUDE,
         skip,
         take: limit,
-        orderBy: { receptionDate: 'desc' },
+        orderBy,
       }),
       this.prisma.measurement.count({ where }),
     ]);
@@ -406,14 +491,20 @@ export class MeasurementsService {
       updateData.customerPhone = updateMeasurementDto.customerPhone;
     if (updateMeasurementDto.comments !== undefined)
       updateData.comments = updateMeasurementDto.comments ?? null;
-    if (updateMeasurementDto.status)
+    if (updateMeasurementDto.status) {
       updateData.status = updateMeasurementDto.status as MeasurementStatus;
+    }
     if (updateMeasurementDto.customerId !== undefined)
       updateData.customerId = updateMeasurementDto.customerId ?? null;
 
     if (changedById) {
       const snapshot = buildSnapshot(current);
       const changedFields = Object.keys(updateData) as string[];
+      if (updateMeasurementDto.status && updateMeasurementDto.status !== current.status) {
+        const statusIdx = changedFields.indexOf('status');
+        if (statusIdx >= 0) changedFields.splice(statusIdx, 1);
+        changedFields.push(`statusChanged:${current.status}->${updateMeasurementDto.status}`);
+      }
       if (
         shouldSyncAdditional &&
         JSON.stringify(prevAdditionalIds) !== JSON.stringify(nextAdditionalIds)
