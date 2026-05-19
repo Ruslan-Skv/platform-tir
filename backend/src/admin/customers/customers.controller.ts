@@ -87,12 +87,14 @@ export class CustomersController {
     @Query('limit') limit?: string,
     @Query('sortBy') sortBy?: string,
     @Query('sortOrder') sortOrder?: string,
+    @Query('createdById') createdById?: string,
   ) {
     const sortByNorm = sortBy === 'createdAt' || sortBy === 'displayName' ? sortBy : undefined;
     const sortOrderNorm = sortOrder === 'desc' || sortOrder === 'asc' ? sortOrder : undefined;
     return this.customersService.findClientDirectory({
       search,
       entityType: entityType?.trim() || undefined,
+      createdById: createdById?.trim() || undefined,
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 25,
       sortBy: sortByNorm,

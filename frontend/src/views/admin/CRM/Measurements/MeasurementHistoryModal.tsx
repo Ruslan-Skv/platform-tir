@@ -18,6 +18,7 @@ const FIELD_LABELS: Record<string, string> = {
   managerId: 'Менеджер',
   surveyorId: 'Замерщик',
   directionId: 'Направление',
+  additionalDirectionIds: 'Дополнительные направления',
   customerName: 'ФИО заказчика',
   customerAddress: 'Адрес',
   customerPhone: 'Телефон',
@@ -81,6 +82,12 @@ function formatSnapshotValue(
   if (key === 'directionId') {
     const d = directions.find((x) => x.id === value);
     return d ? d.name : String(value);
+  }
+  if (key === 'additionalDirectionIds' && Array.isArray(value)) {
+    return value
+      .map((id) => directions.find((x) => x.id === id)?.name ?? String(id))
+      .filter(Boolean)
+      .join(', ');
   }
   return String(value);
 }

@@ -8,7 +8,9 @@ import {
   type ClientDirectoryRow,
   type ClientDirectorySortBy,
   type CrmCustomerEntityType,
+  type CrmUser,
   getClientDirectory,
+  getCrmUsers,
 } from '@/shared/api/admin-crm';
 import { Modal } from '@/shared/ui/Modal';
 import { DataTable } from '@/shared/ui/admin/DataTable';
@@ -18,7 +20,13 @@ import { CrmCustomerDetailModal } from './CrmCustomerDetailModal';
 import { CrmCustomerTrashModal } from './CrmCustomerTrashModal';
 import { CustomerReadonlyPanel } from './CustomerReadonlyPanel';
 import styles from './CustomersPage.module.css';
-import { formatCrmDateTime, formatCrmEntityType } from './crmCustomerDisplay';
+import {
+  formatCrmAuditActor,
+  formatCrmDateTime,
+  formatCrmEntityType,
+  formatCrmUserOptionLabel,
+  resolveCrmCreatedByActor,
+} from './crmCustomerDisplay';
 import { formatCrmPhoneOrDash } from './crmCustomerPhone';
 
 const PAGE_SIZE = 25;
@@ -82,6 +90,8 @@ export function CustomersPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [typeFilter, setTypeFilter] = useState<CustomerTypeFilter>('all');
+  const [authorFilter, setAuthorFilter] = useState('');
+  const [crmUsers, setCrmUsers] = useState<CrmUser[]>([]);
 
   const [directoryRows, setDirectoryRows] = useState<ClientDirectoryRow[]>([]);
   const [directoryPage, setDirectoryPage] = useState(1);
@@ -111,6 +121,20 @@ export function CustomersPage() {
   }, [directorySortBy, directorySortOrder]);
 
   useEffect(() => {
+    getCrmUsers()
+      .then(setCrmUsers)
+      .catch(() => setCrmUsers([]));
+  }, []);
+
+  const authorSelectOptions = useMemo(
+    () =>
+      [...crmUsers].sort((a, b) =>
+        formatCrmUserOptionLabel(a).localeCompare(formatCrmUserOptionLabel(b), 'ru')
+      ),
+    [crmUsers]
+  );
+
+  useEffect(() => {
     const t = window.setTimeout(() => {
       setSearchQuery(searchInput.trim());
     }, 380);
@@ -119,7 +143,7 @@ export function CustomersPage() {
 
   useEffect(() => {
     setDirectoryPage(1);
-  }, [searchQuery, typeFilter, directorySortBy, directorySortOrder]);
+  }, [searchQuery, typeFilter, authorFilter, directorySortBy, directorySortOrder]);
 
   const handleDirectorySortChange = useCallback((sortBy: string, sortOrder: DirectorySortOrder) => {
     const nextSortBy: ClientDirectorySortBy = sortBy === 'createdAt' ? 'createdAt' : 'displayName';
@@ -137,6 +161,7 @@ export function CustomersPage() {
       page: directoryPage,
       limit: PAGE_SIZE,
       entityType: typeFilter === 'all' ? undefined : typeFilter,
+      createdById: authorFilter || undefined,
       sortBy: directorySortBy,
       sortOrder: directorySortOrder,
     })
@@ -154,7 +179,15 @@ export function CustomersPage() {
     return () => {
       cancelled = true;
     };
-  }, [searchQuery, directoryPage, listRefreshKey, typeFilter, directorySortBy, directorySortOrder]);
+  }, [
+    searchQuery,
+    directoryPage,
+    listRefreshKey,
+    typeFilter,
+    authorFilter,
+    directorySortBy,
+    directorySortOrder,
+  ]);
 
   const selectedDirectoryRow = useMemo(
     () => directoryRows.find((r) => r.id === selectedDirectoryRowId) ?? null,
@@ -166,11 +199,6 @@ export function CustomersPage() {
     if (!directoryRows.some((r) => r.id === selectedDirectoryRowId))
       setSelectedDirectoryRowId(null);
   }, [directoryRows, selectedDirectoryRowId]);
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSearchQuery(searchInput.trim());
-  };
 
   const clearDirectorySelection = useCallback(() => {
     setSelectedDirectoryRowId(null);
@@ -241,6 +269,14 @@ export function CustomersPage() {
         render: (row: ClientDirectoryRow) =>
           row.rowSource === 'customer' ? formatCrmDateTime(row.createdAt) : '—',
       },
+      {
+        key: 'author',
+        title: 'Автор карточки',
+        render: (row: ClientDirectoryRow) =>
+          row.rowSource === 'customer'
+            ? formatCrmAuditActor(resolveCrmCreatedByActor({ createdBy: row.createdBy }))
+            : '—',
+      },
     ],
     []
   );
@@ -260,7 +296,7 @@ export function CustomersPage() {
             className={styles.addButton}
             onClick={() => setAddCustomerOpen(true)}
           >
-            Добавить заказчика
+            + Добавить заказчика
           </button>
           <button
             type="button"
@@ -274,12 +310,12 @@ export function CustomersPage() {
         </div>
       </div>
 
-      <p className={styles.tabDescription}>
+      {/* <p className={styles.tabDescription}>
         Единый справочник: карточки клиентов и заказчики из договоров без отдельной карточки. В
         таблице видно число договоров, суммы и даты последнего договора и замера.
-      </p>
+      </p> */}
 
-      <form className={styles.filters} onSubmit={handleSearchSubmit}>
+      <div className={styles.filters}>
         <div className={styles.searchGroup}>
           <input
             type="search"
@@ -287,10 +323,28 @@ export function CustomersPage() {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className={styles.searchInput}
+            aria-label="Поиск по справочнику"
           />
-          <button type="submit" className={styles.searchButton}>
-            Найти
-          </button>
+        </div>
+
+        <div className={styles.authorFilter}>
+          <label className={styles.authorFilterCaption} htmlFor="customers-author-filter">
+            Автор карточки
+          </label>
+          <select
+            id="customers-author-filter"
+            className={styles.authorSelect}
+            value={authorFilter}
+            onChange={(e) => setAuthorFilter(e.target.value)}
+          >
+            <option value="">Все авторы</option>
+            <option value="_none">Без автора</option>
+            {authorSelectOptions.map((u) => (
+              <option key={u.id} value={u.id}>
+                {formatCrmUserOptionLabel(u)}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className={styles.typeFilter}>
@@ -305,7 +359,7 @@ export function CustomersPage() {
               title={
                 loading
                   ? 'Загрузка'
-                  : typeFilter === 'all'
+                  : typeFilter === 'all' && !authorFilter
                     ? `Позиций в таблице: ${directoryRows.length}`
                     : `Показано ${directoryRows.length} из ${directoryTotal}`
               }
@@ -315,7 +369,7 @@ export function CustomersPage() {
               ) : (
                 <>
                   <span className={styles.typeFilterCountValue}>{directoryRows.length}</span>
-                  {typeFilter !== 'all' && directoryTotal > 0 ? (
+                  {(typeFilter !== 'all' || authorFilter) && directoryTotal > 0 ? (
                     <span className={styles.typeFilterCountTotal}>/{directoryTotal}</span>
                   ) : null}
                 </>
@@ -344,7 +398,7 @@ export function CustomersPage() {
             </div>
           </div>
         </div>
-      </form>
+      </div>
 
       {error && <p className={styles.errorText}>{error}</p>}
 

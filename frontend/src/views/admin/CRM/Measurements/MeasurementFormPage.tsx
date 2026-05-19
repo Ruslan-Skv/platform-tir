@@ -6,11 +6,12 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
-  type CrmCustomerListItem,
+  type ClientDirectoryRow,
   type CrmDirection,
   type CrmUser,
   createMeasurement,
-  getCrmCustomers,
+  getClientDirectory,
+  getCrmCustomer,
   getCrmDirections,
   getCrmUsers,
   getMeasurement,
@@ -18,13 +19,13 @@ import {
 } from '@/shared/api/admin-crm';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { AddCrmCustomerModal } from '@/views/admin/CRM/Customers/AddCrmCustomerModal';
-import {
-  joinPersonFullName,
-  resolvePersonNamePartsFromDetail,
-} from '@/views/admin/CRM/Customers/crmCustomerName';
+import { CrmCustomerDetailModal } from '@/views/admin/CRM/Customers/CrmCustomerDetailModal';
+import { getCrmCustomerFillBannerToneClass } from '@/views/admin/CRM/Customers/crmCustomerFillPercent';
+import { formatCrmPhoneOrDash } from '@/views/admin/CRM/Customers/crmCustomerPhone';
 
 import styles from './MeasurementFormPage.module.css';
 import { MeasurementHistoryModal } from './MeasurementHistoryModal';
+import { measurementFieldsFromCrmCustomerDetail } from './measurementCrmCustomer';
 
 const STATUS_OPTIONS = [
   { value: 'NEW', label: 'Принят' },
@@ -287,19 +288,6 @@ type AutoQuantityMetrics = {
   windowsArea: number;
 };
 
-function addressFromCustomerExtended(ext: unknown): string {
-  if (!ext || typeof ext !== 'object') return '';
-  const a = (ext as Record<string, unknown>).address;
-  return typeof a === 'string' ? a : '';
-}
-
-function crmCustomerDisplayName(row: CrmCustomerListItem): string {
-  const parts = [row.firstName, row.lastName].map((x) => (x ?? '').trim()).filter(Boolean);
-  if (parts.length) return parts.join(' ');
-  if (row.company?.trim()) return row.company.trim();
-  return row.email || row.id;
-}
-
 function isCreatedCrmCustomer(x: unknown): x is {
   id: string;
   firstName?: string;
@@ -338,17 +326,19 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
   const [receptionDate, setReceptionDate] = useState(formatDateForInput(new Date().toISOString()));
   const [executionDate, setExecutionDate] = useState('');
   const [surveyorId, setSurveyorId] = useState('');
-  const [directionId, setDirectionId] = useState('');
+  /** Первая строка — основное направление, остальные — дополнительные. */
+  const [directionRows, setDirectionRows] = useState<string[]>(['']);
   const [customerName, setCustomerName] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [crmSearchInput, setCrmSearchInput] = useState('');
   const [crmSearchDebounced, setCrmSearchDebounced] = useState('');
-  const [crmSearchResults, setCrmSearchResults] = useState<CrmCustomerListItem[]>([]);
+  const [crmSearchResults, setCrmSearchResults] = useState<ClientDirectoryRow[]>([]);
   const [crmSearchLoading, setCrmSearchLoading] = useState(false);
   const [crmSearchError, setCrmSearchError] = useState<string | null>(null);
   const [addCrmCustomerOpen, setAddCrmCustomerOpen] = useState(false);
+  const [crmDetailCustomerId, setCrmDetailCustomerId] = useState<string | null>(null);
   const [comments, setComments] = useState('');
   const [status, setStatus] = useState('NEW');
   const [loading, setLoading] = useState(!!measurementId);
@@ -395,7 +385,14 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
       setReceptionDate(formatDateForInput(data.receptionDate));
       setExecutionDate(formatDateForInput(data.executionDate));
       setSurveyorId(data.surveyorId ?? '');
-      setDirectionId(data.directionId ?? '');
+      const additionalDirectionIds =
+        data.additionalDirectionIds ?? data.additionalDirections?.map((d) => d.id) ?? [];
+      const primaryDirectionId = data.directionId ?? '';
+      setDirectionRows(
+        primaryDirectionId || additionalDirectionIds.length > 0
+          ? [primaryDirectionId, ...additionalDirectionIds]
+          : ['']
+      );
       setCustomerId(data.customerId ?? null);
       setCustomerName(data.customerName);
       setCustomerAddress(data.customerAddress ?? '');
@@ -442,6 +439,27 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
     return () => window.clearTimeout(t);
   }, [crmSearchInput]);
 
+  const reloadCrmSearchResults = useCallback(() => {
+    const q = crmSearchDebounced;
+    if (q.length < 2) {
+      setCrmSearchResults([]);
+      setCrmSearchError(null);
+      return Promise.resolve();
+    }
+    setCrmSearchLoading(true);
+    setCrmSearchError(null);
+    return getClientDirectory({ search: q, limit: 30, page: 1 })
+      .then((res) => {
+        setCrmSearchResults((res.data ?? []).filter((row) => row.rowSource === 'customer'));
+      })
+      .catch((e) => {
+        setCrmSearchError(e instanceof Error ? e.message : 'Ошибка поиска');
+      })
+      .finally(() => {
+        setCrmSearchLoading(false);
+      });
+  }, [crmSearchDebounced]);
+
   useEffect(() => {
     const q = crmSearchDebounced;
     if (q.length < 2) {
@@ -452,9 +470,11 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
     let cancelled = false;
     setCrmSearchLoading(true);
     setCrmSearchError(null);
-    getCrmCustomers({ search: q, limit: 30, page: 1 })
+    getClientDirectory({ search: q, limit: 30, page: 1 })
       .then((res) => {
-        if (!cancelled) setCrmSearchResults(res.data ?? []);
+        if (!cancelled) {
+          setCrmSearchResults((res.data ?? []).filter((row) => row.rowSource === 'customer'));
+        }
       })
       .catch((e) => {
         if (!cancelled) setCrmSearchError(e instanceof Error ? e.message : 'Ошибка поиска');
@@ -467,15 +487,68 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
     };
   }, [crmSearchDebounced]);
 
-  const applyCrmCustomerRow = useCallback((row: CrmCustomerListItem) => {
-    setCustomerId(row.id);
-    setCustomerName(crmCustomerDisplayName(row));
-    const phone = row.phone?.trim() || row.phones?.find((p) => p.trim()) || '';
-    setCustomerPhone(phone);
-    setCustomerAddress(addressFromCustomerExtended(row.extendedProfile));
-    setCrmSearchResults([]);
-    setCrmSearchInput('');
-    setCrmSearchDebounced('');
+  const applyCrmCustomerFromDetail = useCallback(
+    (detail: Parameters<typeof measurementFieldsFromCrmCustomerDetail>[0]) => {
+      const fields = measurementFieldsFromCrmCustomerDetail(detail);
+      setCustomerId(fields.customerId);
+      setCustomerName(fields.customerName);
+      setCustomerPhone(fields.customerPhone);
+      setCustomerAddress(fields.customerAddress);
+      clearFieldError('customerName');
+      clearFieldError('customerPhone');
+    },
+    [clearFieldError]
+  );
+
+  const applyDirectoryRow = useCallback(
+    async (row: ClientDirectoryRow) => {
+      if (row.rowSource !== 'customer') return;
+      try {
+        const detail = await getCrmCustomer(row.id);
+        applyCrmCustomerFromDetail(detail);
+        setCrmSearchResults([]);
+        setCrmSearchInput('');
+        setCrmSearchDebounced('');
+      } catch {
+        showMessage('error', 'Не удалось загрузить карточку заказчика');
+      }
+    },
+    [applyCrmCustomerFromDetail, showMessage]
+  );
+
+  const directionOptionsForRow = useCallback(
+    (rowIndex: number) => {
+      const taken = new Set(
+        directionRows
+          .map((id, index) => (index !== rowIndex && id ? id : null))
+          .filter((id): id is string => Boolean(id))
+      );
+      return directions.filter((direction) => !taken.has(direction.id));
+    },
+    [directionRows, directions]
+  );
+
+  const insertDirectionRowAfter = useCallback(
+    (rowIndex: number) => {
+      setDirectionRows((prev) => {
+        const maxRows = Math.max(directions.length, 1);
+        if (prev.length >= maxRows) return prev;
+        const next = [...prev];
+        next.splice(rowIndex + 1, 0, '');
+        return next;
+      });
+    },
+    [directions.length]
+  );
+
+  const updateDirectionRow = useCallback((rowIndex: number, value: string) => {
+    setDirectionRows((prev) => prev.map((id, index) => (index === rowIndex ? value : id)));
+  }, []);
+
+  const removeDirectionRow = useCallback((rowIndex: number) => {
+    setDirectionRows((prev) =>
+      prev.length <= 1 ? prev : prev.filter((_, index) => index !== rowIndex)
+    );
   }, []);
 
   useEffect(() => {
@@ -524,20 +597,29 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
       const rec = new Date(receptionDate);
       if (exec < rec) errors.executionDate = 'Дата выполнения не может быть раньше даты приёма';
     }
-    if (!customerName.trim()) {
-      errors.customerName = 'Введите ФИО заказчика';
-    } else if (customerName.trim().length < 2) {
-      errors.customerName = 'ФИО должно содержать минимум 2 символа';
-    }
-    if (!customerPhone.trim()) {
-      errors.customerPhone = 'Введите телефон заказчика';
-    } else if (!isValidPhone(customerPhone)) {
-      errors.customerPhone = 'Неверный формат телефона';
+    if (!customerId) {
+      errors.customerName = 'Выберите заказчика в базе через поиск';
+    } else {
+      if (!customerName.trim()) {
+        errors.customerName = 'В карточке заказчика не указано ФИО';
+      } else if (customerName.trim().length < 2) {
+        errors.customerName = 'ФИО должно содержать минимум 2 символа';
+      }
+      if (!customerPhone.trim()) {
+        errors.customerPhone = 'Введите телефон заказчика';
+      } else if (!isValidPhone(customerPhone)) {
+        errors.customerPhone = 'Неверный формат телефона';
+      }
     }
     return errors;
-  }, [managerId, receptionDate, executionDate, customerName, customerPhone]);
+  }, [managerId, receptionDate, executionDate, customerId, customerName, customerPhone]);
 
   const buildPayload = useCallback(() => {
+    const primaryDirectionId = directionRows[0]?.trim() ?? '';
+    const additionalDirectionIds = directionRows
+      .slice(1)
+      .map((id) => id.trim())
+      .filter(Boolean);
     const base = {
       managerId,
       receptionDate,
@@ -546,7 +628,8 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
       status,
       ...(executionDate && { executionDate }),
       ...(surveyorId && { surveyorId }),
-      ...(directionId && { directionId }),
+      ...(primaryDirectionId && { directionId: primaryDirectionId }),
+      ...(additionalDirectionIds.length > 0 && { additionalDirectionIds }),
       ...(customerAddress.trim() && { customerAddress: customerAddress.trim() }),
       comments: stringifyRepairMeasurementData(comments, repairMeasurementData),
     };
@@ -562,7 +645,7 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
     status,
     executionDate,
     surveyorId,
-    directionId,
+    directionRows,
     customerAddress,
     comments,
     repairMeasurementData,
@@ -661,7 +744,7 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
   const handleMarkMeasurementCompleted = useCallback(() => {
     const hasAnyRoomData = repairMeasurementData.rooms.some((room) => isRoomFilled(room));
     if (!hasAnyRoomData) {
-      showMessage('error', 'Сначала заполните блок «Замеры помещений»');
+      showMessage('error', 'Сначала заполните блок «Результаты замеров»');
       return;
     }
     setStatus('COMPLETED');
@@ -746,284 +829,370 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
       )}
 
       <div className={styles.form}>
-        <div className={`${styles.grid} ${styles.zoneMeta}`}>
-          <div className={styles.row}>
-            <label className={styles.label} htmlFor="managerId">
-              Менеджер <span className={styles.required}>*</span>
-            </label>
-            <select
-              id="managerId"
-              value={managerId}
-              onChange={(e) => {
-                setManagerId(e.target.value);
-                clearFieldError('managerId');
-              }}
-              className={`${styles.select} ${fieldErrors.managerId ? styles.inputError : ''}`}
-              required
-              aria-invalid={!!fieldErrors.managerId}
-              aria-describedby={fieldErrors.managerId ? 'managerId-error' : undefined}
-            >
-              <option value="">— Выберите —</option>
-              {managers.length > 0
-                ? managers.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {[u.firstName, u.lastName].filter(Boolean).join(' ')} ({u.role})
-                    </option>
-                  ))
-                : users.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {[u.firstName, u.lastName].filter(Boolean).join(' ')} ({u.role})
-                    </option>
-                  ))}
-            </select>
-            {fieldErrors.managerId && (
-              <span id="managerId-error" className={styles.fieldError} role="alert">
-                {fieldErrors.managerId}
-              </span>
-            )}
-          </div>
-
-          <div className={styles.row}>
-            <label className={styles.label} htmlFor="receptionDate">
-              Дата приёма <span className={styles.required}>*</span>
-            </label>
-            <input
-              id="receptionDate"
-              type="date"
-              value={receptionDate}
-              onChange={(e) => {
-                setReceptionDate(e.target.value);
-                clearFieldError('receptionDate');
-              }}
-              className={`${styles.input} ${fieldErrors.receptionDate ? styles.inputError : ''}`}
-              required
-              aria-invalid={!!fieldErrors.receptionDate}
-              aria-describedby={fieldErrors.receptionDate ? 'receptionDate-error' : undefined}
-            />
-            {fieldErrors.receptionDate && (
-              <span id="receptionDate-error" className={styles.fieldError} role="alert">
-                {fieldErrors.receptionDate}
-              </span>
-            )}
-          </div>
-
-          <div className={styles.row}>
-            <label className={styles.label} htmlFor="executionDate">
-              Дата выполнения
-            </label>
-            <input
-              id="executionDate"
-              type="date"
-              value={executionDate}
-              onChange={(e) => {
-                setExecutionDate(e.target.value);
-                clearFieldError('executionDate');
-              }}
-              className={`${styles.input} ${fieldErrors.executionDate ? styles.inputError : ''}`}
-              aria-invalid={!!fieldErrors.executionDate}
-              aria-describedby={fieldErrors.executionDate ? 'executionDate-error' : undefined}
-            />
-            {fieldErrors.executionDate && (
-              <span id="executionDate-error" className={styles.fieldError} role="alert">
-                {fieldErrors.executionDate}
-              </span>
-            )}
-          </div>
-
-          <div className={styles.row}>
-            <label className={styles.label}>Замерщик</label>
-            <select
-              value={surveyorId}
-              onChange={(e) => setSurveyorId(e.target.value)}
-              className={styles.select}
-            >
-              <option value="">— Не назначен —</option>
-              {surveyors.length > 0
-                ? surveyors.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {[u.firstName, u.lastName].filter(Boolean).join(' ')}
-                    </option>
-                  ))
-                : users.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {[u.firstName, u.lastName].filter(Boolean).join(' ')}
-                    </option>
-                  ))}
-            </select>
-          </div>
-
-          <div className={styles.row}>
-            <label className={styles.label}>Направление</label>
-            <select
-              value={directionId}
-              onChange={(e) => setDirectionId(e.target.value)}
-              className={styles.select}
-            >
-              <option value="">— Выберите —</option>
-              {directions.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className={`${styles.row} ${styles.customerCrmBlock}`}>
-            <div className={styles.customerCrmBlockInner}>
-              <h3 className={styles.customerCrmTitle}>Клиент в базе</h3>
-              <p className={styles.customerCrmHint}>
-                Найдите существующую карточку или создайте новую с краткими данными; полный профиль
-                можно дополнить при договоре.
-              </p>
-              <div className={styles.customerCrmSearchRow}>
-                <input
-                  type="search"
-                  className={styles.input}
-                  placeholder="Поиск: ФИО, телефон, e-mail, компания (от 2 символов)"
-                  value={crmSearchInput}
-                  onChange={(e) => setCrmSearchInput(e.target.value)}
-                  autoComplete="off"
-                  aria-label="Поиск клиента в базе"
-                />
-                {customerId ? (
-                  <button
-                    type="button"
-                    className={styles.secondaryButton}
-                    onClick={() => {
-                      setCustomerId(null);
-                    }}
-                  >
-                    Снять выбор карточки
-                  </button>
-                ) : null}
+        <section className={styles.formBlockSection}>
+          <h2 className={styles.formBlockTitle}>Бланк замера</h2>
+          <div className={styles.blankSheet}>
+            <div className={`${styles.grid} ${styles.blankMetaGrid}`}>
+              <div className={styles.row}>
+                <label className={styles.label} htmlFor="managerId">
+                  Менеджер <span className={styles.required}>*</span>
+                </label>
+                <select
+                  id="managerId"
+                  value={managerId}
+                  onChange={(e) => {
+                    setManagerId(e.target.value);
+                    clearFieldError('managerId');
+                  }}
+                  className={`${styles.select} ${fieldErrors.managerId ? styles.inputError : ''}`}
+                  required
+                  aria-invalid={!!fieldErrors.managerId}
+                  aria-describedby={fieldErrors.managerId ? 'managerId-error' : undefined}
+                >
+                  <option value="">— Выберите —</option>
+                  {managers.length > 0
+                    ? managers.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {[u.firstName, u.lastName].filter(Boolean).join(' ')} ({u.role})
+                        </option>
+                      ))
+                    : users.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {[u.firstName, u.lastName].filter(Boolean).join(' ')} ({u.role})
+                        </option>
+                      ))}
+                </select>
+                {fieldErrors.managerId && (
+                  <span id="managerId-error" className={styles.fieldError} role="alert">
+                    {fieldErrors.managerId}
+                  </span>
+                )}
               </div>
-              {crmSearchLoading ? <p className={styles.customerCrmMuted}>Поиск…</p> : null}
-              {crmSearchError ? (
-                <p className={styles.customerCrmError} role="alert">
-                  {crmSearchError}
-                </p>
-              ) : null}
-              {crmSearchDebounced.length >= 2 &&
-              !crmSearchLoading &&
-              !crmSearchError &&
-              crmSearchResults.length === 0 ? (
-                <p className={styles.customerCrmMuted}>Ничего не найдено</p>
-              ) : null}
-              {crmSearchResults.length > 0 ? (
-                <ul
-                  className={styles.customerCrmResults}
-                  role="listbox"
-                  aria-label="Результаты поиска"
+
+              <div className={styles.row}>
+                <label className={styles.label} htmlFor="receptionDate">
+                  Дата приёма <span className={styles.required}>*</span>
+                </label>
+                <input
+                  id="receptionDate"
+                  type="date"
+                  value={receptionDate}
+                  onChange={(e) => {
+                    setReceptionDate(e.target.value);
+                    clearFieldError('receptionDate');
+                  }}
+                  className={`${styles.input} ${fieldErrors.receptionDate ? styles.inputError : ''}`}
+                  required
+                  aria-invalid={!!fieldErrors.receptionDate}
+                  aria-describedby={fieldErrors.receptionDate ? 'receptionDate-error' : undefined}
+                />
+                {fieldErrors.receptionDate && (
+                  <span id="receptionDate-error" className={styles.fieldError} role="alert">
+                    {fieldErrors.receptionDate}
+                  </span>
+                )}
+              </div>
+
+              <div className={styles.row}>
+                <label className={styles.label} htmlFor="executionDate">
+                  Дата выполнения
+                </label>
+                <input
+                  id="executionDate"
+                  type="date"
+                  value={executionDate}
+                  onChange={(e) => {
+                    setExecutionDate(e.target.value);
+                    clearFieldError('executionDate');
+                  }}
+                  className={`${styles.input} ${fieldErrors.executionDate ? styles.inputError : ''}`}
+                  aria-invalid={!!fieldErrors.executionDate}
+                  aria-describedby={fieldErrors.executionDate ? 'executionDate-error' : undefined}
+                />
+                {fieldErrors.executionDate && (
+                  <span id="executionDate-error" className={styles.fieldError} role="alert">
+                    {fieldErrors.executionDate}
+                  </span>
+                )}
+              </div>
+
+              <div className={styles.row}>
+                <label className={styles.label}>Замерщик</label>
+                <select
+                  value={surveyorId}
+                  onChange={(e) => setSurveyorId(e.target.value)}
+                  className={styles.select}
                 >
-                  {crmSearchResults.map((row) => (
-                    <li key={row.id}>
-                      <button
-                        type="button"
-                        className={styles.customerCrmResultButton}
-                        onClick={() => applyCrmCustomerRow(row)}
-                      >
-                        <span className={styles.customerCrmResultName}>
-                          {crmCustomerDisplayName(row)}
-                        </span>
-                        <span className={styles.customerCrmResultMeta}>
-                          {[row.phone || row.phones?.[0], row.email].filter(Boolean).join(' · ')}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-              <div className={styles.customerCrmActions}>
-                <button
-                  type="button"
-                  className={styles.secondaryButton}
-                  onClick={() => setAddCrmCustomerOpen(true)}
-                >
-                  Добавить нового заказчика
-                </button>
-                {customerId ? (
-                  <span className={styles.customerCrmLinkedBadge}>Выбрана карточка клиента</span>
-                ) : null}
+                  <option value="">— Не назначен —</option>
+                  {surveyors.length > 0
+                    ? surveyors.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {[u.firstName, u.lastName].filter(Boolean).join(' ')}
+                        </option>
+                      ))
+                    : users.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {[u.firstName, u.lastName].filter(Boolean).join(' ')}
+                        </option>
+                      ))}
+                </select>
               </div>
             </div>
-          </div>
 
-          <div className={styles.row}>
-            <label className={styles.label} htmlFor="customerName">
-              ФИО заказчика <span className={styles.required}>*</span>
-            </label>
-            <input
-              id="customerName"
-              type="text"
-              value={customerName}
-              onChange={(e) => {
-                setCustomerName(e.target.value);
-                clearFieldError('customerName');
-              }}
-              className={`${styles.input} ${fieldErrors.customerName ? styles.inputError : ''}`}
-              placeholder="Иванов Иван Иванович"
-              required
-              aria-invalid={!!fieldErrors.customerName}
-              aria-describedby={fieldErrors.customerName ? 'customerName-error' : undefined}
-            />
-            {fieldErrors.customerName && (
-              <span id="customerName-error" className={styles.fieldError} role="alert">
-                {fieldErrors.customerName}
-              </span>
-            )}
-          </div>
+            <div className={styles.blankCustomerLayout}>
+              <div className={`${styles.row} ${styles.directionRowsBlock}`}>
+                <label className={styles.label}>Направление</label>
+                <div className={styles.directionRows}>
+                  {directionRows.map((directionRowId, rowIndex) => (
+                    <div key={`direction-row-${rowIndex}`} className={styles.directionRow}>
+                      <select
+                        value={directionRowId}
+                        onChange={(e) => updateDirectionRow(rowIndex, e.target.value)}
+                        className={styles.select}
+                        aria-label={
+                          rowIndex === 0
+                            ? 'Основное направление'
+                            : `Дополнительное направление ${rowIndex}`
+                        }
+                      >
+                        <option value="">— Выберите —</option>
+                        {directionOptionsForRow(rowIndex).map((direction) => (
+                          <option key={direction.id} value={direction.id}>
+                            {direction.name}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        className={styles.directionRowAdd}
+                        onClick={() => insertDirectionRowAfter(rowIndex)}
+                        disabled={directionRows.length >= Math.max(directions.length, 1)}
+                        aria-label="Добавить направление"
+                        title="Добавить направление"
+                      >
+                        +
+                      </button>
+                      {rowIndex > 0 ? (
+                        <button
+                          type="button"
+                          className={styles.directionRowRemove}
+                          onClick={() => removeDirectionRow(rowIndex)}
+                          aria-label="Удалить направление"
+                          title="Удалить направление"
+                        >
+                          ×
+                        </button>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-          <div className={styles.row}>
-            <label className={styles.label}>Адрес</label>
-            <input
-              type="text"
-              value={customerAddress}
-              onChange={(e) => setCustomerAddress(e.target.value)}
-              className={styles.input}
-              placeholder="г. Мурманск, ул. Ленина, д. 1"
-            />
-          </div>
+              <div className={styles.row}>
+                <label className={styles.label} htmlFor="customerName">
+                  ФИО заказчика <span className={styles.required}>*</span>
+                </label>
+                <input
+                  id="customerName"
+                  type="text"
+                  value={customerName}
+                  readOnly
+                  className={`${styles.input} ${styles.inputReadonly} ${
+                    fieldErrors.customerName ? styles.inputError : ''
+                  }`}
+                  placeholder="Выберите карточку в базе"
+                  required
+                  aria-invalid={!!fieldErrors.customerName}
+                  aria-describedby={fieldErrors.customerName ? 'customerName-error' : undefined}
+                />
+                {fieldErrors.customerName && (
+                  <span id="customerName-error" className={styles.fieldError} role="alert">
+                    {fieldErrors.customerName}
+                  </span>
+                )}
+              </div>
 
-          <div className={styles.row}>
-            <label className={styles.label} htmlFor="customerPhone">
-              Телефон заказчика <span className={styles.required}>*</span>
-            </label>
-            <input
-              id="customerPhone"
-              type="tel"
-              value={customerPhone}
-              onChange={(e) => {
-                setCustomerPhone(e.target.value);
-                clearFieldError('customerPhone');
-              }}
-              className={`${styles.input} ${fieldErrors.customerPhone ? styles.inputError : ''}`}
-              placeholder="+7 (999) 123-45-67 или 8 999 123-45-67"
-              required
-              aria-invalid={!!fieldErrors.customerPhone}
-              aria-describedby={fieldErrors.customerPhone ? 'customerPhone-error' : undefined}
-            />
-            {fieldErrors.customerPhone && (
-              <span id="customerPhone-error" className={styles.fieldError} role="alert">
-                {fieldErrors.customerPhone}
-              </span>
-            )}
-          </div>
-        </div>
+              <div className={styles.row}>
+                <label className={styles.label} htmlFor="customerPhone">
+                  Телефон заказчика <span className={styles.required}>*</span>
+                </label>
+                <input
+                  id="customerPhone"
+                  type="tel"
+                  value={customerPhone}
+                  readOnly
+                  className={`${styles.input} ${styles.inputReadonly} ${
+                    fieldErrors.customerPhone ? styles.inputError : ''
+                  }`}
+                  placeholder="Из карточки заказчика"
+                  required
+                  aria-invalid={!!fieldErrors.customerPhone}
+                  aria-describedby={fieldErrors.customerPhone ? 'customerPhone-error' : undefined}
+                />
+                {fieldErrors.customerPhone && (
+                  <span id="customerPhone-error" className={styles.fieldError} role="alert">
+                    {fieldErrors.customerPhone}
+                  </span>
+                )}
+              </div>
 
-        <div className={`${styles.row} ${styles.zoneCommentMain}`}>
-          <label className={styles.label}>Комментарии</label>
-          <textarea
-            value={comments}
-            onChange={(e) => setComments(e.target.value)}
-            className={styles.textarea}
-            rows={3}
-            placeholder="Дополнительная информация..."
-          />
-        </div>
+              <div className={styles.row}>
+                <label className={styles.label} htmlFor="customerAddress">
+                  Адрес объекта
+                </label>
+                <input
+                  id="customerAddress"
+                  type="text"
+                  value={customerAddress}
+                  readOnly
+                  className={`${styles.input} ${styles.inputReadonly}`}
+                  placeholder="Из карточки заказчика"
+                />
+              </div>
+
+              <article className={styles.customerCrmPanel}>
+                <div className={styles.customerCrmPanelHead}>
+                  <div>
+                    <h3 className={styles.customerCrmTitle}>Поиск заказчика в базе</h3>
+                    <p className={styles.customerCrmHint}>
+                      Найдите карточку в базе или добавьте новую — поля заказчика заполнятся
+                      автоматически.
+                    </p>
+                  </div>
+                  {customerId ? (
+                    <span className={styles.customerCrmLinkedBadge}>Карточка выбрана</span>
+                  ) : null}
+                </div>
+                <div className={styles.customerCrmActions}>
+                  <button
+                    type="button"
+                    className={styles.customerCrmAddButton}
+                    onClick={() => setAddCrmCustomerOpen(true)}
+                  >
+                    + Добавить заказчика в базу
+                  </button>
+                </div>
+                <div className={styles.customerCrmSearchWrap}>
+                  <div className={styles.customerCrmSearchRow}>
+                    <input
+                      type="search"
+                      className={`${styles.input} ${styles.customerCrmSearchInput}`}
+                      placeholder="Поиск: ФИО, телефон, e-mail, компания (от 2 символов)"
+                      value={crmSearchInput}
+                      onChange={(e) => setCrmSearchInput(e.target.value)}
+                      autoComplete="off"
+                      aria-label="Поиск заказчика в базе"
+                      aria-expanded={crmSearchDebounced.length >= 2}
+                      aria-controls="customer-crm-search-listbox"
+                    />
+                    {customerId ? (
+                      <button
+                        type="button"
+                        className={styles.customerCrmClearButton}
+                        onClick={() => {
+                          setCustomerId(null);
+                          setCustomerName('');
+                          setCustomerPhone('');
+                          setCustomerAddress('');
+                        }}
+                      >
+                        Снять выбор
+                      </button>
+                    ) : null}
+                  </div>
+                  {crmSearchDebounced.length >= 2 ? (
+                    <div
+                      className={styles.customerCrmDropdown}
+                      id="customer-crm-search-listbox"
+                      role="presentation"
+                    >
+                      {crmSearchLoading ? <p className={styles.customerCrmMuted}>Поиск…</p> : null}
+                      {crmSearchError ? (
+                        <p className={styles.customerCrmError} role="alert">
+                          {crmSearchError}
+                        </p>
+                      ) : null}
+                      {!crmSearchLoading && !crmSearchError && crmSearchResults.length === 0 ? (
+                        <p className={styles.customerCrmMuted}>Ничего не найдено</p>
+                      ) : null}
+                      {!crmSearchLoading && !crmSearchError && crmSearchResults.length > 0 ? (
+                        <ul
+                          className={styles.customerCrmResults}
+                          role="listbox"
+                          aria-label="Результаты поиска"
+                        >
+                          {crmSearchResults.map((row) => {
+                            const fillPercent =
+                              row.profileFillPercent != null
+                                ? Math.round(row.profileFillPercent)
+                                : 0;
+                            const fillComplete = fillPercent >= 100;
+                            return (
+                              <li
+                                key={row.id}
+                                role="option"
+                                className={styles.customerCrmResultItem}
+                              >
+                                <button
+                                  type="button"
+                                  className={styles.customerCrmResultButton}
+                                  onClick={() => void applyDirectoryRow(row)}
+                                >
+                                  <span className={styles.customerCrmResultName}>
+                                    {row.displayName}
+                                  </span>
+                                  <span className={styles.customerCrmResultMeta}>
+                                    {[row.phone ? formatCrmPhoneOrDash(row.phone) : null, row.email]
+                                      .filter(Boolean)
+                                      .join(' · ')}
+                                  </span>
+                                </button>
+                                <div className={styles.customerCrmResultAside}>
+                                  <span
+                                    className={`${styles.customerCrmResultFill} ${getCrmCustomerFillBannerToneClass(fillPercent)}`}
+                                  >
+                                    Карточка {fillPercent}%
+                                  </span>
+                                  {!fillComplete ? (
+                                    <button
+                                      type="button"
+                                      className={styles.customerCrmResultEditBtn}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setCrmDetailCustomerId(row.id);
+                                      }}
+                                    >
+                                      Дозаполнить
+                                    </button>
+                                  ) : null}
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              </article>
+            </div>
+
+            <div className={`${styles.row} ${styles.blankCommentRow}`}>
+              <label className={styles.label}>Комментарии</label>
+              <textarea
+                value={comments}
+                onChange={(e) => setComments(e.target.value)}
+                className={styles.textarea}
+                rows={2}
+                placeholder="Дополнительная информация..."
+              />
+            </div>
+          </div>
+        </section>
 
         <section className={styles.measurementsSection}>
           <div className={styles.measurementsSectionHeader}>
-            <h2 className={styles.measurementsTitle}>Замеры помещений</h2>
+            <h2 className={styles.measurementsTitle}>Результаты замеров</h2>
             <div className={styles.measurementsHeaderActions}>
               <button
                 type="button"
@@ -1584,6 +1753,23 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
         </section>
       </div>
 
+      <CrmCustomerDetailModal
+        customerId={crmDetailCustomerId}
+        isOpen={Boolean(crmDetailCustomerId)}
+        onClose={() => setCrmDetailCustomerId(null)}
+        onUpdated={async () => {
+          await reloadCrmSearchResults();
+          if (crmDetailCustomerId && crmDetailCustomerId === customerId) {
+            try {
+              const detail = await getCrmCustomer(crmDetailCustomerId);
+              applyCrmCustomerFromDetail(detail);
+            } catch {
+              showMessage('error', 'Не удалось обновить данные заказчика');
+            }
+          }
+        }}
+      />
+
       <AddCrmCustomerModal
         isOpen={addCrmCustomerOpen}
         onClose={() => setAddCrmCustomerOpen(false)}
@@ -1596,27 +1782,15 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
                 objectAddress: customerAddress,
               }
         }
-        onCreated={(created) => {
+        onCreated={async (created) => {
           if (!isCreatedCrmCustomer(created)) return;
-          setCustomerId(created.id);
-          const ext =
-            created.extendedProfile &&
-            typeof created.extendedProfile === 'object' &&
-            !Array.isArray(created.extendedProfile)
-              ? (created.extendedProfile as Record<string, unknown>)
-              : null;
-          const fullName = joinPersonFullName(
-            resolvePersonNamePartsFromDetail({
-              firstName: created.firstName,
-              lastName: created.lastName,
-              extendedProfile: ext,
-            })
-          );
-          if (fullName) setCustomerName(fullName);
-          const ph =
-            (typeof created.phone === 'string' && created.phone.trim()) ||
-            (Array.isArray(created.phones) ? created.phones.find((p) => p.trim()) : undefined);
-          if (ph) setCustomerPhone(ph.trim());
+          try {
+            const detail = await getCrmCustomer(created.id);
+            applyCrmCustomerFromDetail(detail);
+          } catch {
+            showMessage('error', 'Заказчик создан, но не удалось загрузить карточку');
+          }
+          setAddCrmCustomerOpen(false);
         }}
       />
 

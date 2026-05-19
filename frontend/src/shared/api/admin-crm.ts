@@ -659,6 +659,8 @@ export interface Measurement {
   executionDate: string | null;
   surveyorId: string | null;
   directionId: string | null;
+  additionalDirectionIds?: string[];
+  additionalDirections?: { id: string; name: string; slug: string }[];
   customerName: string;
   customerAddress: string | null;
   customerPhone: string;
@@ -726,6 +728,7 @@ export async function createMeasurement(data: {
   executionDate?: string;
   surveyorId?: string;
   directionId?: string;
+  additionalDirectionIds?: string[];
   customerName: string;
   customerAddress?: string;
   customerPhone: string;
@@ -999,6 +1002,7 @@ export interface ClientDirectoryRow {
   stage: string | null;
   createdAt: string | null;
   manager: { id: string; email: string; firstName: string | null; lastName: string | null } | null;
+  createdBy?: CrmCustomerAuditUser | null;
   contractCount: number | null;
   totalAmount: number | null;
   lastContractDate: string | null;
@@ -1006,6 +1010,8 @@ export interface ClientDirectoryRow {
   lastMeasurementDate: string | null;
   measurementCount?: number | null;
   contractCustomer?: ContractCustomer | null;
+  /** Доля заполнения карточки CRM (0–100), только для rowSource === 'customer'. */
+  profileFillPercent?: number | null;
 }
 
 export type CrmCustomerEntityType = 'PERSON' | 'COMPANY' | 'ENTREPRENEUR';
@@ -1091,11 +1097,15 @@ export async function getCrmCustomers(params?: {
 
 export type ClientDirectorySortBy = 'displayName' | 'createdAt';
 
+/** `_none` — карточки без автора в БД */
+export type ClientDirectoryCreatedByFilter = string;
+
 export async function getClientDirectory(params?: {
   search?: string;
   page?: number;
   limit?: number;
   entityType?: CrmCustomerEntityType;
+  createdById?: ClientDirectoryCreatedByFilter;
   sortBy?: ClientDirectorySortBy;
   sortOrder?: 'asc' | 'desc';
 }): Promise<{
@@ -1110,6 +1120,7 @@ export async function getClientDirectory(params?: {
   search.set('page', String(params?.page ?? 1));
   search.set('limit', String(Math.min(params?.limit ?? 25, 100)));
   if (params?.entityType) search.set('entityType', params.entityType);
+  if (params?.createdById) search.set('createdById', params.createdById);
   if (params?.sortBy) search.set('sortBy', params.sortBy);
   if (params?.sortOrder) search.set('sortOrder', params.sortOrder);
   const res = await apiFetch(`${API_URL}/admin/customers/directory?${search}`, {

@@ -1757,10 +1757,25 @@ model CrmDirection {
   sortOrder    Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  measurements Measurement[]
-  contracts    Contract[]
+  measurements                    Measurement[]
+  measurementAdditionalDirections MeasurementAdditionalDirection[]
+  contracts                       Contract[]
 
   @@map("crm_directions")
+}
+
+model MeasurementAdditionalDirection {
+  measurementId String
+  directionId   String
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  measurement Measurement  @relation(fields: [measurementId], references: [id], onDelete: Cascade)
+  direction   CrmDirection @relation(fields: [directionId], references: [id], onDelete: Cascade)
+
+  @@id([measurementId, directionId])
+  @@index([measurementId])
+  @@map("measurement_additional_directions")
 }
 
 model InstallerMaster {
@@ -1794,10 +1809,11 @@ model Measurement {
 
   manager    User          @relation("MeasurementManager", fields: [managerId], references: [id], onDelete: Restrict)
   surveyor   User?         @relation("MeasurementSurveyor", fields: [surveyorId], references: [id], onDelete: SetNull)
-  direction  CrmDirection? @relation(fields: [directionId], references: [id], onDelete: SetNull)
-  customer   Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  contract   Contract?     @relation("MeasurementToContract")
-  history    MeasurementHistory[]
+  direction             CrmDirection?                    @relation(fields: [directionId], references: [id], onDelete: SetNull)
+  additionalDirections  MeasurementAdditionalDirection[]
+  customer              Customer?                        @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  contract                Contract?                        @relation("MeasurementToContract")
+  history                 MeasurementHistory[]
 
   @@index([managerId])
   @@index([status])

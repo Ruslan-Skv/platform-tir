@@ -10,6 +10,7 @@ import {
   computeCustomerHistoryChangedFields,
   customerRowAfterUpdate,
 } from './customer-history.util';
+import { computeCrmCustomerProfileFillPercent } from './crm-customer-fill-percent.util';
 
 function digitsPhone(s: string | null | undefined): string {
   return (s ?? '').replace(/\D/g, '');
@@ -236,6 +237,8 @@ export class CustomersService {
   async findClientDirectory(params?: {
     search?: string;
     entityType?: string;
+    /** ID пользователя или `_none` — карточки без указанного автора */
+    createdById?: string;
     page?: number;
     limit?: number;
     sortBy?: 'displayName' | 'createdAt';
@@ -266,6 +269,15 @@ export class CustomersService {
       ];
     }
 
+    const createdByFilter = params?.createdById?.trim();
+    if (createdByFilter) {
+      if (createdByFilter === '_none') {
+        where.createdById = null;
+      } else {
+        where.createdById = createdByFilter;
+      }
+    }
+
     const FETCH_CAP = 5000;
     const dbCustomers = await this.prisma.customer.findMany({
       where,
@@ -278,6 +290,7 @@ export class CustomersService {
             lastName: true,
           },
         },
+        createdBy: { select: customerAuditUserSelect },
       },
       orderBy: { createdAt: 'desc' },
       take: FETCH_CAP,
@@ -298,7 +311,7 @@ export class CustomersService {
     >['customers'][number];
 
     let orphanParties: ContractParty[] = [];
-    if (!entityType) {
+    if (!entityType && !createdByFilter) {
       const { customers: contractParties } = await this.contractsService.getCustomersFromContracts(
         params?.search,
       );
@@ -474,6 +487,7 @@ export class CustomersService {
     c: Prisma.CustomerGetPayload<{
       include: {
         manager: { select: { id: true; email: true; firstName: true; lastName: true } };
+        createdBy: { select: typeof customerAuditUserSelect };
       };
     }>,
     stats?: {
@@ -512,6 +526,7 @@ export class CustomersService {
       stage: c.stage,
       createdAt: c.createdAt.toISOString(),
       manager: c.manager,
+      createdBy: c.createdBy,
       contractCount: stats?.contractCount ?? 0,
       totalAmount: stats?.totalAmount ?? 0,
       lastContractDate: stats?.lastContractDate ?? null,
@@ -519,6 +534,7 @@ export class CustomersService {
       lastMeasurementDate: stats?.lastMeasurementDate ?? null,
       measurementCount: stats?.measurementCount ?? 0,
       contractCustomer: null,
+      profileFillPercent: computeCrmCustomerProfileFillPercent(c),
     };
   }
 
@@ -545,6 +561,7 @@ export class CustomersService {
       stage: null,
       createdAt: null,
       manager: o.manager,
+      createdBy: null,
       contractCount: o.contractCount,
       totalAmount: Number(o.totalAmount ?? 0),
       lastContractDate: o.lastContractDate,

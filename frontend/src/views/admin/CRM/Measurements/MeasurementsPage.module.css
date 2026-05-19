@@ -34,20 +34,20 @@
 .addButton {
   display: inline-block;
   padding: var(--admin-space-sm) var(--admin-space-xl);
-  background: var(--admin-accent);
-  color: var(--admin-surface);
   border: none;
-  border-radius: var(--admin-radius-md);
-  font-weight: 500;
-  font-size: var(--admin-font-size-xs);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-info, #3b82f6);
+  color: var(--admin-surface, #ffffff);
   cursor: pointer;
-  transition: background 0.2s;
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  font-weight: 600;
   text-decoration: none;
+  transition: background 0.15s ease;
 }
 
 .addButton:hover {
-  background: var(--admin-accent);
-  color: var(--admin-surface);
+  background: var(--admin-info-strong, #1d4ed8);
+  color: var(--admin-surface, #ffffff);
 }
 
 .headerActions {
@@ -407,7 +407,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addButton:hover {
-  background: var(--admin-accent-soft-strong);
+  background: var(--admin-info-strong, #1d4ed8);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput {

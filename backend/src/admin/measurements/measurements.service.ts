@@ -17,6 +17,59 @@ const MEASUREMENT_SNAPSHOT_FIELDS = {
   status: true,
   customerId: true,
 } as const;
+
+const MEASUREMENT_RELATIONS_INCLUDE = {
+  manager: { select: { id: true, firstName: true, lastName: true } },
+  surveyor: { select: { id: true, firstName: true, lastName: true } },
+  direction: { select: { id: true, name: true, slug: true } },
+  additionalDirections: {
+    orderBy: { sortOrder: 'asc' as const },
+    include: { direction: { select: { id: true, name: true, slug: true } } },
+  },
+} as const;
+
+type MeasurementWithRelations = Prisma.MeasurementGetPayload<{
+  include: typeof MEASUREMENT_RELATIONS_INCLUDE;
+}>;
+
+function normalizeAdditionalDirectionIds(
+  primaryDirectionId: string | null | undefined,
+  ids?: string[],
+): string[] {
+  if (!ids?.length) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const id of ids) {
+    const trimmed = id?.trim();
+    if (!trimmed || trimmed === primaryDirectionId || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    out.push(trimmed);
+  }
+  return out;
+}
+
+function additionalDirectionIdsFromLinks(links: { directionId: string }[]): string[] {
+  return links.map((x) => x.directionId);
+}
+
+function formatMeasurementResponse(m: MeasurementWithRelations) {
+  const additionalDirectionIds = additionalDirectionIdsFromLinks(m.additionalDirections);
+  const additionalDirections = m.additionalDirections.map((x) => x.direction);
+  return { ...m, additionalDirectionIds, additionalDirections };
+}
+
+function buildSnapshot(
+  row: Prisma.MeasurementGetPayload<{
+    select: typeof MEASUREMENT_SNAPSHOT_FIELDS;
+  }> & { additionalDirections?: { directionId: string }[] },
+) {
+  return {
+    ...row,
+    receptionDate: row.receptionDate.toISOString().slice(0, 10),
+    executionDate: row.executionDate ? row.executionDate.toISOString().slice(0, 10) : null,
+    additionalDirectionIds: additionalDirectionIdsFromLinks(row.additionalDirections ?? []),
+  };
+}
 const REPAIR_MEASUREMENT_DATA_MARKER = '[REPAIR_MEASUREMENT_DATA_V1]';
 
 type ParsedMeasurementData = {
@@ -146,7 +199,30 @@ function buildMeasurementKeyMoments(
 export class MeasurementsService {
   constructor(private prisma: PrismaService) {}
 
+  private async syncAdditionalDirections(
+    measurementId: string,
+    primaryDirectionId: string | null,
+    ids: string[],
+  ) {
+    const normalized = normalizeAdditionalDirectionIds(primaryDirectionId, ids);
+    await this.prisma.measurementAdditionalDirection.deleteMany({ where: { measurementId } });
+    if (normalized.length === 0) return;
+    await this.prisma.measurementAdditionalDirection.createMany({
+      data: normalized.map((directionId, sortOrder) => ({
+        measurementId,
+        directionId,
+        sortOrder,
+      })),
+    });
+  }
+
   async create(createMeasurementDto: CreateMeasurementDto, createdById?: string) {
+    const primaryDirectionId = createMeasurementDto.directionId ?? null;
+    const additionalIds = normalizeAdditionalDirectionIds(
+      primaryDirectionId,
+      createMeasurementDto.additionalDirectionIds,
+    );
+
     const created = await this.prisma.measurement.create({
       data: {
         managerId: createMeasurementDto.managerId,
@@ -155,46 +231,37 @@ export class MeasurementsService {
           ? new Date(createMeasurementDto.executionDate)
           : null,
         surveyorId: createMeasurementDto.surveyorId ?? null,
-        directionId: createMeasurementDto.directionId ?? null,
+        directionId: primaryDirectionId,
         customerName: createMeasurementDto.customerName,
         customerAddress: createMeasurementDto.customerAddress ?? null,
         customerPhone: createMeasurementDto.customerPhone,
         comments: createMeasurementDto.comments ?? null,
         status: (createMeasurementDto.status as MeasurementStatus) ?? 'NEW',
         customerId: createMeasurementDto.customerId ?? null,
+        ...(additionalIds.length > 0 && {
+          additionalDirections: {
+            create: additionalIds.map((directionId, sortOrder) => ({
+              directionId,
+              sortOrder,
+            })),
+          },
+        }),
       },
-      include: {
-        manager: { select: { id: true, firstName: true, lastName: true } },
-        surveyor: { select: { id: true, firstName: true, lastName: true } },
-        direction: { select: { id: true, name: true, slug: true } },
-      },
+      include: MEASUREMENT_RELATIONS_INCLUDE,
     });
+
     if (createdById) {
       await this.prisma.measurementHistory.create({
         data: {
           measurementId: created.id,
-          snapshot: {
-            managerId: created.managerId,
-            receptionDate: created.receptionDate.toISOString().slice(0, 10),
-            executionDate: created.executionDate
-              ? created.executionDate.toISOString().slice(0, 10)
-              : null,
-            surveyorId: created.surveyorId,
-            directionId: created.directionId,
-            customerName: created.customerName,
-            customerAddress: created.customerAddress,
-            customerPhone: created.customerPhone,
-            comments: created.comments,
-            status: created.status,
-            customerId: created.customerId,
-          } as object,
+          snapshot: buildSnapshot(created) as object,
           changedFields: ['measurementCreated'],
           action: 'CREATE',
           changedById: createdById,
         },
       });
     }
-    return created;
+    return formatMeasurementResponse(created);
   }
 
   async findAll(params?: {
@@ -257,14 +324,10 @@ export class MeasurementsService {
       if (dateTo) where.receptionDate.lte = new Date(dateTo);
     }
 
-    const [data, total] = await Promise.all([
+    const [rows, total] = await Promise.all([
       this.prisma.measurement.findMany({
         where,
-        include: {
-          manager: { select: { id: true, firstName: true, lastName: true } },
-          surveyor: { select: { id: true, firstName: true, lastName: true } },
-          direction: { select: { id: true, name: true, slug: true } },
-        },
+        include: MEASUREMENT_RELATIONS_INCLUDE,
         skip,
         take: limit,
         orderBy: { receptionDate: 'desc' },
@@ -272,16 +335,21 @@ export class MeasurementsService {
       this.prisma.measurement.count({ where }),
     ]);
 
-    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+    return {
+      data: rows.map(formatMeasurementResponse),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: string) {
     const m = await this.prisma.measurement.findUnique({
       where: { id },
       include: {
+        ...MEASUREMENT_RELATIONS_INCLUDE,
         manager: { select: { id: true, firstName: true, lastName: true, email: true } },
-        surveyor: { select: { id: true, firstName: true, lastName: true } },
-        direction: { select: { id: true, name: true, slug: true } },
         customer: { select: { id: true, firstName: true, lastName: true, email: true } },
         contract: true,
       },
@@ -289,17 +357,33 @@ export class MeasurementsService {
     if (!m) {
       throw new NotFoundException(`Measurement with ID ${id} not found`);
     }
-    return m;
+    return formatMeasurementResponse(m);
   }
 
   async update(id: string, updateMeasurementDto: UpdateMeasurementDto, changedById?: string) {
     const current = await this.prisma.measurement.findUnique({
       where: { id },
-      select: MEASUREMENT_SNAPSHOT_FIELDS,
+      select: {
+        ...MEASUREMENT_SNAPSHOT_FIELDS,
+        additionalDirections: { select: { directionId: true }, orderBy: { sortOrder: 'asc' } },
+      },
     });
     if (!current) {
       throw new NotFoundException(`Measurement with ID ${id} not found`);
     }
+
+    const prevAdditionalIds = additionalDirectionIdsFromLinks(current.additionalDirections);
+    const nextPrimaryDirectionId =
+      updateMeasurementDto.directionId !== undefined
+        ? (updateMeasurementDto.directionId ?? null)
+        : current.directionId;
+    const shouldSyncAdditional = updateMeasurementDto.additionalDirectionIds !== undefined;
+    const nextAdditionalIds = shouldSyncAdditional
+      ? normalizeAdditionalDirectionIds(
+          nextPrimaryDirectionId,
+          updateMeasurementDto.additionalDirectionIds,
+        )
+      : normalizeAdditionalDirectionIds(nextPrimaryDirectionId, prevAdditionalIds);
 
     const updateData: Prisma.MeasurementUncheckedUpdateInput = {};
     if (updateMeasurementDto.managerId !== undefined)
@@ -328,14 +412,14 @@ export class MeasurementsService {
       updateData.customerId = updateMeasurementDto.customerId ?? null;
 
     if (changedById) {
-      const snapshot = {
-        ...current,
-        receptionDate: current.receptionDate.toISOString().slice(0, 10),
-        executionDate: current.executionDate
-          ? current.executionDate.toISOString().slice(0, 10)
-          : null,
-      };
+      const snapshot = buildSnapshot(current);
       const changedFields = Object.keys(updateData) as string[];
+      if (
+        shouldSyncAdditional &&
+        JSON.stringify(prevAdditionalIds) !== JSON.stringify(nextAdditionalIds)
+      ) {
+        changedFields.push('additionalDirectionIds');
+      }
       if (Object.prototype.hasOwnProperty.call(updateData, 'comments')) {
         const keyMoments = buildMeasurementKeyMoments(
           current.comments,
@@ -345,26 +429,39 @@ export class MeasurementsService {
           if (!changedFields.includes(moment)) changedFields.push(moment);
         }
       }
-      await this.prisma.measurementHistory.create({
-        data: {
-          measurementId: id,
-          snapshot: snapshot as object,
-          changedFields,
-          action: 'UPDATE',
-          changedById,
-        },
-      });
+      if (changedFields.length > 0) {
+        await this.prisma.measurementHistory.create({
+          data: {
+            measurementId: id,
+            snapshot: snapshot as object,
+            changedFields,
+            action: 'UPDATE',
+            changedById,
+          },
+        });
+      }
     }
 
-    return this.prisma.measurement.update({
+    const updated = await this.prisma.measurement.update({
       where: { id },
       data: updateData,
-      include: {
-        manager: { select: { id: true, firstName: true, lastName: true } },
-        surveyor: { select: { id: true, firstName: true, lastName: true } },
-        direction: { select: { id: true, name: true, slug: true } },
-      },
+      include: MEASUREMENT_RELATIONS_INCLUDE,
     });
+
+    const additionalChanged =
+      JSON.stringify(prevAdditionalIds) !== JSON.stringify(nextAdditionalIds);
+    const needsAdditionalSync =
+      additionalChanged && (shouldSyncAdditional || updateMeasurementDto.directionId !== undefined);
+    if (needsAdditionalSync) {
+      await this.syncAdditionalDirections(id, updated.directionId, nextAdditionalIds);
+      const refetched = await this.prisma.measurement.findUnique({
+        where: { id },
+        include: MEASUREMENT_RELATIONS_INCLUDE,
+      });
+      if (refetched) return formatMeasurementResponse(refetched);
+    }
+
+    return formatMeasurementResponse(updated);
   }
 
   async getHistory(measurementId: string) {
@@ -411,12 +508,17 @@ export class MeasurementsService {
     }
 
     const snapshot = historyEntry.snapshot as Record<string, unknown>;
+    const rollbackAdditionalIds = Array.isArray(snapshot.additionalDirectionIds)
+      ? (snapshot.additionalDirectionIds as string[])
+      : [];
+    const rollbackDirectionId = (snapshot.directionId as string) ?? null;
+
     const updateData: Prisma.MeasurementUncheckedUpdateInput = {
       managerId: snapshot.managerId as string,
       receptionDate: new Date(snapshot.receptionDate as string),
       executionDate: snapshot.executionDate ? new Date(snapshot.executionDate as string) : null,
       surveyorId: (snapshot.surveyorId as string) ?? null,
-      directionId: (snapshot.directionId as string) ?? null,
+      directionId: rollbackDirectionId,
       customerName: snapshot.customerName as string,
       customerAddress: (snapshot.customerAddress as string) ?? null,
       customerPhone: snapshot.customerPhone as string,
@@ -435,15 +537,19 @@ export class MeasurementsService {
       },
     });
 
-    return this.prisma.measurement.update({
+    const updated = await this.prisma.measurement.update({
       where: { id: measurementId },
       data: updateData,
-      include: {
-        manager: { select: { id: true, firstName: true, lastName: true } },
-        surveyor: { select: { id: true, firstName: true, lastName: true } },
-        direction: { select: { id: true, name: true, slug: true } },
-      },
+      include: MEASUREMENT_RELATIONS_INCLUDE,
     });
+
+    await this.syncAdditionalDirections(measurementId, rollbackDirectionId, rollbackAdditionalIds);
+
+    const refetched = await this.prisma.measurement.findUnique({
+      where: { id: measurementId },
+      include: MEASUREMENT_RELATIONS_INCLUDE,
+    });
+    return formatMeasurementResponse(refetched ?? updated);
   }
 
   async remove(id: string) {

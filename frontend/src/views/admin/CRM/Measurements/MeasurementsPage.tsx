@@ -456,8 +456,18 @@ export function MeasurementsPage() {
           return formatUser(m.manager);
         case 'surveyorId':
           return formatUser(m.surveyor);
-        case 'directionId':
-          return m.direction?.name ?? '—';
+        case 'directionId': {
+          const primary = m.direction?.name;
+          const extra =
+            m.additionalDirections?.map((d) => d.name).filter(Boolean) ??
+            (m.additionalDirectionIds ?? [])
+              .map((id) => directions.find((d) => d.id === id)?.name)
+              .filter(Boolean);
+          if (primary && extra.length > 0) return `${primary} (+${extra.join(', ')})`;
+          if (primary) return primary;
+          if (extra.length > 0) return extra.join(', ');
+          return '—';
+        }
         case 'status':
           return (
             <span className={`${styles.badge} ${styles[`status${m.status}`] ?? ''}`}>

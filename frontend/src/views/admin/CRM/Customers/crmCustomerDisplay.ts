@@ -48,6 +48,15 @@ export function extProfileString(
 }
 
 /** Автор или редактор карточки: ФИО, иначе e-mail (как в карточке товара). */
+export function formatCrmUserOptionLabel(user: {
+  firstName?: string | null;
+  lastName?: string | null;
+  email: string;
+}): string {
+  const name = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+  return name || user.email?.trim() || '—';
+}
+
 export function formatCrmAuditActor(user: CrmCustomerAuditUser | null | undefined): string {
   if (!user) return '—';
   const name = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();

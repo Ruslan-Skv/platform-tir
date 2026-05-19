@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsDateString, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsDateString, IsEnum, IsArray } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum MeasurementStatusDto {
@@ -33,6 +33,15 @@ export class CreateMeasurementDto {
   @IsOptional()
   @IsString()
   directionId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Дополнительные направления (cuid), без дублирования основного',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  additionalDirectionIds?: string[];
 
   @ApiProperty()
   @IsString()
