@@ -52,18 +52,42 @@ function collectAllNavHrefs(children: NavChild[]): string[] {
 }
 
 /**
+ * Страница относится к отдельному пункту верхнего уровня (напр. «Договора»), а не к hub-префиксу в настройках.
+ */
+function isShadowedByTopLevelNavPath(
+  pathname: string,
+  href: string,
+  topLevelOnlyHrefs: string[]
+): boolean {
+  for (const top of topLevelOnlyHrefs) {
+    if (top === href) continue;
+    const onTop = pathname === top || pathname.startsWith(`${top}/`);
+    if (!onTop) continue;
+    if (top.startsWith(`${href}/`)) return true;
+  }
+  return false;
+}
+
+/**
  * Из кандидатов выбирается самый длинный href, для которого pathname === href или pathname.startsWith(href + '/').
  * Так «…/settings/catalog» не подсвечивается на странице «…/settings/catalog/product-badges».
  */
 function getBestMatchingHref(
   pathname: string | null | undefined,
-  candidates: string[]
+  candidates: string[],
+  topLevelOnlyHrefs: string[] = []
 ): string | null {
   if (!pathname) return null;
   let best: string | null = null;
   for (const href of candidates) {
-    const match = pathname === href || pathname.startsWith(href + '/');
+    const match = pathname === href || pathname.startsWith(`${href}/`);
     if (!match) continue;
+    if (
+      topLevelOnlyHrefs.length > 0 &&
+      isShadowedByTopLevelNavPath(pathname, href, topLevelOnlyHrefs)
+    ) {
+      continue;
+    }
     if (!best || href.length > best.length) {
       best = href;
     }
@@ -517,6 +541,12 @@ export function AdminSidebar({
 
   const navItems = useMemo(() => filterNavByAccess(baseNavItems, hasAccess), [hasAccess]);
 
+  /** Пункты без подменю (напр. «Договора», «Расчёты») — не дают подсвечивать hub `/admin/contract-documents` в настройках. */
+  const topLevelOnlyHrefs = useMemo(
+    () => navItems.filter((item) => !item.children).map((item) => item.href),
+    [navItems]
+  );
+
   // Найти путь (предки + сам ключ) для раскрытия при клике
   const getExpandBranch = useCallback(
     (key: string): string[] => {
@@ -560,17 +590,15 @@ export function AdminSidebar({
       if (path !== href && !path.startsWith(`${href}/`)) {
         return false;
       }
-      // Отдельный пункт верхнего уровня (напр. «Расчёты») не подсвечивает родителя-префикс
-      const blockingTopLevel = navItems.find(
-        (item) =>
-          !item.children &&
-          item.href !== href &&
-          item.href.startsWith(`${href}/`) &&
-          (path === item.href || path.startsWith(`${item.href}/`))
-      );
-      return !blockingTopLevel;
+      if (
+        topLevelOnlyHrefs.length > 0 &&
+        isShadowedByTopLevelNavPath(path, href, topLevelOnlyHrefs)
+      ) {
+        return false;
+      }
+      return true;
     },
-    [pathname, navItems]
+    [pathname, topLevelOnlyHrefs]
   );
 
   const fromCategory = searchParams?.get('fromCategory');
@@ -578,14 +606,16 @@ export function AdminSidebar({
 
   const isChildActive = (children: NavChild[] | undefined): boolean => {
     if (!children) return false;
-    return getBestMatchingHref(pathname ?? '', collectAllNavHrefs(children)) !== null;
+    return (
+      getBestMatchingHref(pathname ?? '', collectAllNavHrefs(children), topLevelOnlyHrefs) !== null
+    );
   };
 
   const isChildOrDescendantActive = (child: NavChild): boolean => {
     const nestedHrefs = child.children
       ? [child.href, ...child.children.map((n) => n.href)]
       : [child.href];
-    return getBestMatchingHref(pathname ?? '', nestedHrefs) !== null;
+    return getBestMatchingHref(pathname ?? '', nestedHrefs, topLevelOnlyHrefs) !== null;
   };
 
   const isPathActive = (href: string, sectionNavHrefs: string[]) => {
@@ -593,7 +623,7 @@ export function AdminSidebar({
       const categoryHref = `/admin/catalog/products/category/${fromCategory}`;
       return href === categoryHref;
     }
-    return getBestMatchingHref(pathname ?? '', sectionNavHrefs) === href;
+    return getBestMatchingHref(pathname ?? '', sectionNavHrefs, topLevelOnlyHrefs) === href;
   };
 
   // При навигации раскрываем только активную ветку (accordion)
