@@ -6,6 +6,11 @@ import {
 
 /** Сохранённые фильтры и сортировка списка договоров ремонта (/admin/contract-documents/contracts). */
 
+export const REPAIR_CONTRACTS_PAGE_LIMIT_OPTIONS = [20, 50, 100, 200] as const;
+export type RepairContractsPageLimit = (typeof REPAIR_CONTRACTS_PAGE_LIMIT_OPTIONS)[number];
+
+const REPAIR_CONTRACTS_PAGE_LIMIT_LEGACY_KEY = 'admin_repair_contracts_page_limit';
+
 export interface RepairContractsListFiltersPersisted {
   search: string;
   managerFilter: string;
@@ -15,6 +20,7 @@ export interface RepairContractsListFiltersPersisted {
   dateTo: string;
   sortBy: RepairContractsListSortBy;
   sortOrder: RepairContractsListSortOrder;
+  pageLimit: RepairContractsPageLimit;
 }
 const REPAIR_CONTRACTS_LIST_FILTERS_STORAGE_KEY = 'admin_repair_contracts_list_filters_v1';
 
@@ -27,7 +33,30 @@ const EMPTY_FILTERS: RepairContractsListFiltersPersisted = {
   dateTo: '',
   sortBy: 'date',
   sortOrder: 'desc',
+  pageLimit: 20,
 };
+
+function normalizePageLimit(raw: unknown): RepairContractsPageLimit {
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  if (REPAIR_CONTRACTS_PAGE_LIMIT_OPTIONS.includes(n as RepairContractsPageLimit)) {
+    return n as RepairContractsPageLimit;
+  }
+  return EMPTY_FILTERS.pageLimit;
+}
+
+function readLegacyPageLimit(): RepairContractsPageLimit | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(REPAIR_CONTRACTS_PAGE_LIMIT_LEGACY_KEY);
+    if (!raw) return null;
+    const parsed = Number(raw);
+    return REPAIR_CONTRACTS_PAGE_LIMIT_OPTIONS.includes(parsed as RepairContractsPageLimit)
+      ? (parsed as RepairContractsPageLimit)
+      : null;
+  } catch {
+    return null;
+  }
+}
 
 const PIPELINE_STATUS_FILTER_VALUES = new Set([
   'IN_PROJECT',
@@ -57,6 +86,10 @@ function normalizePersistedFilters(
     sortBy: hasSortInPayload ? parseRepairContractsListSortBy(raw.sortBy!) : EMPTY_FILTERS.sortBy,
     sortOrder:
       raw.sortOrder === 'asc' || raw.sortOrder === 'desc' ? raw.sortOrder : EMPTY_FILTERS.sortOrder,
+    pageLimit:
+      raw.pageLimit != null
+        ? normalizePageLimit(raw.pageLimit)
+        : (readLegacyPageLimit() ?? EMPTY_FILTERS.pageLimit),
   };
 }
 

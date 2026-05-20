@@ -724,7 +724,15 @@ export class ContractDocumentPackagesService {
     return row;
   }
 
-  async getGlobalEstimatePresets(kind: ContractDocumentPackageKind) {
+  private isEstimatePresetTrashed(item: ContractEstimatePresetDto): boolean {
+    return Boolean(item.deletedAt?.trim());
+  }
+
+  private async loadGlobalEstimatePresetsBlob(kind: ContractDocumentPackageKind): Promise<{
+    items: ContractEstimatePresetDto[];
+    groups: ContractEstimateGroupDto[];
+    updatedAt: string | null;
+  }> {
     const row = await this.prisma.contractDocumentGlobalTemplate.findUnique({
       where: {
         kind_tab: { kind, tab: ContractDocumentPackagesService.ESTIMATE_PRESETS_TAB },
@@ -735,7 +743,7 @@ export class ContractDocumentPackagesService {
       return {
         items: [] as ContractEstimatePresetDto[],
         groups: [] as ContractEstimateGroupDto[],
-        updatedAt: null as string | null,
+        updatedAt: null,
       };
     }
     try {
@@ -755,6 +763,134 @@ export class ContractDocumentPackagesService {
         updatedAt: row.updatedAt.toISOString(),
       };
     }
+  }
+
+  private estimatePresetMatchesTrashSearch(
+    item: ContractEstimatePresetDto,
+    groups: ContractEstimateGroupDto[],
+    searchNorm: string,
+  ): boolean {
+    const groupTitle = item.groupId ? (groups.find((g) => g.id === item.groupId)?.title ?? '') : '';
+    const haystack = [item.title, item.categoryName, item.categorySlug, groupTitle]
+      .join(' ')
+      .toLowerCase();
+    return haystack.includes(searchNorm);
+  }
+
+  async getGlobalEstimatePresets(kind: ContractDocumentPackageKind) {
+    const raw = await this.loadGlobalEstimatePresetsBlob(kind);
+    return {
+      items: raw.items.filter((item) => !this.isEstimatePresetTrashed(item)),
+      groups: raw.groups,
+      updatedAt: raw.updatedAt,
+    };
+  }
+
+  async findEstimatePresetsTrash(
+    kind: ContractDocumentPackageKind,
+    params?: { search?: string; page?: number; limit?: number },
+  ) {
+    const raw = await this.loadGlobalEstimatePresetsBlob(kind);
+    const page = params?.page ?? 1;
+    const limit = Math.min(Math.max(params?.limit ?? 25, 1), 100);
+    const skip = (page - 1) * limit;
+    const searchNorm = params?.search?.trim().toLowerCase() ?? '';
+
+    let trashed = raw.items.filter((item) => this.isEstimatePresetTrashed(item));
+    trashed.sort((a, b) => {
+      const ta = Date.parse(a.deletedAt ?? '') || 0;
+      const tb = Date.parse(b.deletedAt ?? '') || 0;
+      return tb - ta;
+    });
+
+    if (searchNorm) {
+      trashed = trashed.filter((item) =>
+        this.estimatePresetMatchesTrashSearch(item, raw.groups, searchNorm),
+      );
+    }
+
+    const total = trashed.length;
+    const pageRows = trashed.slice(skip, skip + limit);
+
+    const userIds = [
+      ...new Set(
+        pageRows.map((row) => row.deletedById?.trim()).filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const users =
+      userIds.length > 0
+        ? await this.prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, email: true, firstName: true, lastName: true },
+          })
+        : [];
+    const userById = new Map(users.map((u) => [u.id, u]));
+
+    return {
+      data: pageRows.map((item) => {
+        const deletedById = item.deletedById?.trim() ?? null;
+        const deletedBy = deletedById ? (userById.get(deletedById) ?? null) : null;
+        const group = item.groupId ? raw.groups.find((g) => g.id === item.groupId) : undefined;
+        return {
+          id: item.id,
+          title: item.title,
+          categoryName: item.categoryName,
+          groupTitle: group?.title ?? null,
+          deletedAt: item.deletedAt!,
+          deletedBy,
+        };
+      }),
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    };
+  }
+
+  async trashEstimatePreset(
+    kind: ContractDocumentPackageKind,
+    presetId: string,
+    actorUserId?: string,
+  ) {
+    const raw = await this.loadGlobalEstimatePresetsBlob(kind);
+    const index = raw.items.findIndex((item) => item.id === presetId);
+    if (index < 0) {
+      throw new NotFoundException('Расчёт не найден');
+    }
+    const item = raw.items[index];
+    if (this.isEstimatePresetTrashed(item)) {
+      throw new BadRequestException('Расчёт уже в корзине');
+    }
+    const nextItems = [...raw.items];
+    nextItems[index] = {
+      ...item,
+      deletedAt: new Date().toISOString(),
+      deletedById: actorUserId ?? undefined,
+    };
+    await this.setGlobalEstimatePresets(
+      { kind, items: nextItems, groups: raw.groups },
+      actorUserId,
+    );
+    return { ok: true };
+  }
+
+  async restoreEstimatePresetFromTrash(kind: ContractDocumentPackageKind, presetId: string) {
+    const raw = await this.loadGlobalEstimatePresetsBlob(kind);
+    const index = raw.items.findIndex((item) => item.id === presetId);
+    if (index < 0) {
+      throw new NotFoundException('Расчёт не найден');
+    }
+    const item = raw.items[index];
+    if (!this.isEstimatePresetTrashed(item)) {
+      throw new BadRequestException('Расчёт не в корзине');
+    }
+    const nextItems = [...raw.items];
+    const restored = { ...item };
+    delete restored.deletedAt;
+    delete restored.deletedById;
+    nextItems[index] = restored;
+    await this.setGlobalEstimatePresets({ kind, items: nextItems, groups: raw.groups });
+    return { ok: true };
   }
 
   private buildEstimatePresetsChangedFields(args: {
@@ -843,9 +979,23 @@ export class ContractDocumentPackagesService {
   }
 
   async setGlobalEstimatePresets(dto: SetGlobalEstimatePresetsDto, updatedById?: string) {
-    const previous = await this.getGlobalEstimatePresets(dto.kind);
-    const nextItems = dto.items ?? [];
-    const nextGroups = dto.groups ?? [];
+    const previousRaw = await this.loadGlobalEstimatePresetsBlob(dto.kind);
+    const trashedItems = previousRaw.items.filter((item) => this.isEstimatePresetTrashed(item));
+    const activeFromDto = (dto.items ?? []).map((item) => {
+      const copy = { ...item };
+      delete copy.deletedAt;
+      delete copy.deletedById;
+      return copy;
+    });
+    const activeIds = new Set(activeFromDto.map((item) => item.id));
+    const preservedTrash = trashedItems.filter((item) => !activeIds.has(item.id));
+    const nextItems = [...activeFromDto, ...preservedTrash];
+    const nextGroups = dto.groups ?? previousRaw.groups;
+    const previous = {
+      items: previousRaw.items.filter((item) => !this.isEstimatePresetTrashed(item)),
+      groups: previousRaw.groups,
+      updatedAt: previousRaw.updatedAt,
+    };
     const changedFields = this.buildEstimatePresetsChangedFields({
       previousItems: previous.items,
       previousGroups: previous.groups,

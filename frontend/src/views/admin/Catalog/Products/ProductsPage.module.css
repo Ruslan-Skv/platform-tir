@@ -3,6 +3,13 @@
   margin: 0;
 }
 
+/* Пагинация по центру страницы */
+.productsPagination {
+  justify-content: center;
+  gap: var(--admin-space-2xl);
+  flex-wrap: wrap;
+}
+
 /* Пагинация: активная страница — зелёная рамка как у иконки «Копировать» */
 .paginationPageActive {
   background: var(--admin-surface);

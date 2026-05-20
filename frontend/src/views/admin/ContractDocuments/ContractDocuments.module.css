@@ -483,6 +483,19 @@
   margin-bottom: var(--admin-space-xl);
 }
 
+.repairContractsListPagination {
+  justify-content: center;
+  gap: var(--admin-space-2xl);
+  flex-wrap: wrap;
+}
+
+.repairContractsListPaginationPageActive {
+  background: var(--admin-surface);
+  border-color: var(--admin-icon-copy);
+  color: var(--admin-icon-copy);
+  font-weight: 600;
+}
+
 .repairContractsListSelect {
   padding: var(--admin-space-sm) var(--admin-space-lg);
   border: 1px solid var(--admin-border);
@@ -4146,93 +4159,6 @@
   white-space: nowrap;
 }
 
-.estimatesAttachmentFilterGroup {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-  padding: 3px;
-  margin: 0;
-  background: var(--admin-surface-muted);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-md);
-  box-shadow: none;
-}
-
-.estimatesAttachmentFilterBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 30px;
-  padding: 0;
-  border: none;
-  border-radius: calc(var(--admin-radius-md) - 2px);
-  background: transparent;
-  color: var(--admin-text-muted);
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.estimatesAttachmentFilterBtn:hover:not(:disabled) {
-  background: var(--admin-surface);
-  color: var(--admin-text-primary);
-}
-
-.estimatesAttachmentFilterBtn:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-info) 35%, transparent);
-}
-
-.estimatesAttachmentFilterBtn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.estimatesAttachmentFilterBtnActive {
-  background: var(--admin-surface);
-  color: var(--admin-text-primary);
-  box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
-}
-
-/** Выпадающий список сортировки в панели списка расчётов */
-.estimatesSortSelectField {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: var(--admin-space-sm);
-  margin: 0;
-  flex-shrink: 0;
-}
-
-.estimatesSortSelectField > span {
-  flex-shrink: 0;
-  font-size: var(--admin-font-size-2xs);
-  font-weight: 600;
-  color: var(--admin-text-muted);
-  white-space: nowrap;
-}
-
-.estimatesSortSelectField select {
-  padding: var(--admin-space-xs) var(--admin-space-sm);
-  font-size: var(--admin-font-size-xs);
-  border: 1px solid var(--admin-border-strong);
-  border-radius: var(--admin-radius-xs);
-  background: var(--admin-surface);
-  color: var(--admin-text-primary);
-  min-width: 11rem;
-  max-width: min(18rem, 50vw);
-  cursor: pointer;
-}
-
-.estimatesSortSelectField select:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
 .estimatesControlsSingleRowArchive {
   background: transparent;
   border-bottom-color: var(--admin-border);
@@ -5315,16 +5241,6 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   color: var(--admin-text-primary);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesAttachmentFilterGroup {
-  background: var(--admin-surface-soft);
-  border-color: var(--admin-border);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesAttachmentFilterBtnActive {
-  background: var(--admin-surface-muted);
-  box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
-}
-
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardGroupField select {
   background: var(--admin-surface-soft);
   border: 1px solid var(--admin-sidebar-text);
@@ -5332,22 +5248,6 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesCardGroupField select:focus {
-  outline: none;
-  border-color: var(--admin-accent);
-  box-shadow: 0 0 0 2px rgba(var(--admin-overlay-color-144), 0.25);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesSortSelectField > span {
-  color: var(--admin-text-secondary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesSortSelectField select {
-  background: var(--admin-surface-soft);
-  border: 1px solid var(--admin-sidebar-text);
-  color: var(--admin-text-primary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesSortSelectField select:focus {
   outline: none;
   border-color: var(--admin-accent);
   box-shadow: 0 0 0 2px rgba(var(--admin-overlay-color-144), 0.25);

@@ -683,6 +683,21 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
     localStorage.setItem(PRODUCTS_PAGE_LIMIT_STORAGE_KEY, String(limit));
   }, [limit]);
 
+  // После SSR/навигации восстановить лимит из localStorage (useState-инициализатор на сервере даёт 20)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(PRODUCTS_PAGE_LIMIT_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = Number(raw);
+      if (Number.isFinite(parsed) && parsed > 0 && parsed !== limit) {
+        setLimit(parsed);
+      }
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- только при монтировании
+  }, []);
+
   // Check if any advanced filter is active
   const hasAdvancedFilters =
     activeFilter !== 'all' ||
@@ -1977,7 +1992,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       )}
 
       <DataTable
-        containerClassName={styles.productsDataTable}
+        paginationClassName={styles.productsPagination}
         paginationActiveClassName={styles.paginationPageActive}
         data={paginatedProducts}
         columns={columns}

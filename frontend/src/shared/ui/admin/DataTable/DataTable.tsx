@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { AdminTablePagination } from '../AdminTablePagination';
 import styles from './DataTable.module.css';
 
 interface Column<T> {
@@ -49,6 +50,8 @@ interface DataTableProps<T> {
   containerClassName?: string;
   /** Класс активной кнопки страницы (вместо стандартного accent) */
   paginationActiveClassName?: string;
+  /** Дополнительный класс на блок пагинации (напр. выравнивание по центру) */
+  paginationClassName?: string;
 }
 
 type SortOrder = 'asc' | 'desc';
@@ -103,6 +106,7 @@ export function DataTable<T>({
   onSortChange,
   containerClassName,
   paginationActiveClassName,
+  paginationClassName,
 }: DataTableProps<T>) {
   const [internalSelectedIds, setInternalSelectedIds] = useState<string[]>([]);
   const isControlled = selectedIdsProp !== undefined;
@@ -234,8 +238,6 @@ export function DataTable<T>({
   const displayData = sortedData;
   const showLoadingPlaceholder = loading && displayData.length === 0;
   const isRefreshing = loading && displayData.length > 0;
-
-  const totalPages = pagination ? Math.ceil(pagination.total / pagination.limit) : 0;
 
   // Функция для остановки прокрутки
   const stopScrolling = useCallback(() => {
@@ -488,62 +490,16 @@ export function DataTable<T>({
         )}
       </div>
 
-      {pagination && pagination.total > 0 && (
-        <div className={styles.pagination}>
-          <span className={styles.paginationInfo}>
-            {totalPages > 1 ? (
-              <>
-                Показано {(pagination.page - 1) * pagination.limit + 1} -{' '}
-                {Math.min(pagination.page * pagination.limit, pagination.total)} из{' '}
-                {pagination.total}
-              </>
-            ) : (
-              <>Всего: {pagination.total}</>
-            )}
-          </span>
-          {totalPages > 1 && (
-            <div className={styles.paginationButtons}>
-              <button
-                className={styles.pageButton}
-                disabled={pagination.page === 1}
-                onClick={() => pagination.onPageChange(pagination.page - 1)}
-              >
-                ←
-              </button>
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let page: number;
-                if (totalPages <= 5) {
-                  page = i + 1;
-                } else if (pagination.page <= 3) {
-                  page = i + 1;
-                } else if (pagination.page >= totalPages - 2) {
-                  page = totalPages - 4 + i;
-                } else {
-                  page = pagination.page - 2 + i;
-                }
-                return (
-                  <button
-                    key={page}
-                    className={`${styles.pageButton} ${
-                      page === pagination.page ? (paginationActiveClassName ?? styles.active) : ''
-                    }`}
-                    onClick={() => pagination.onPageChange(page)}
-                  >
-                    {page}
-                  </button>
-                );
-              })}
-              <button
-                className={styles.pageButton}
-                disabled={pagination.page === totalPages}
-                onClick={() => pagination.onPageChange(pagination.page + 1)}
-              >
-                →
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+      {pagination && pagination.total > 0 ? (
+        <AdminTablePagination
+          page={pagination.page}
+          limit={pagination.limit}
+          total={pagination.total}
+          onPageChange={pagination.onPageChange}
+          className={paginationClassName}
+          activePageClassName={paginationActiveClassName}
+        />
+      ) : null}
     </div>
   );
 }

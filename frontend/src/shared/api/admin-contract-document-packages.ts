@@ -276,6 +276,9 @@ export interface ContractEstimatePreset {
    * У копий после первого сохранения границ работ совпадает с исходным расчётом.
    */
   splitBundleId?: string;
+  /** ISO — расчёт в корзине (не возвращается в основном списке). */
+  deletedAt?: string;
+  deletedById?: string;
   /**
    * Id позиций (`wsl:<индекс помещения>:<индекс строки>`), включаемых в этот экземпляр для договора.
    * Если не задано — в договор попадает весь снимок сметы (как раньше). Пустой массив — ничего не включено (ожидается выбор в модалке).
@@ -661,6 +664,13 @@ export async function getContractDocumentEstimatePresetsHistory(
   if (!res.ok) throw new Error('Не удалось загрузить историю изменений расчётов');
   return res.json();
 }
+
+export {
+  type ContractEstimatePresetTrashRow,
+  getContractDocumentEstimatePresetsTrash,
+  restoreContractEstimatePreset,
+  trashContractEstimatePreset,
+} from './admin-contract-document-estimate-presets-trash';
 
 export async function putContractDocumentEstimatePresets(body: {
   kind: ContractDocumentPackageKind;

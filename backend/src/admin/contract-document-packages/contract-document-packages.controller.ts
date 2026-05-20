@@ -163,6 +163,53 @@ export class ContractDocumentPackagesController {
     return this.service.setGlobalEstimatePresets(dto, req.user?.id);
   }
 
+  @Get('estimate-presets/trash')
+  findEstimatePresetsTrash(
+    @Query('kind') kind: string,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const allowed = new Set<string>(Object.values(ContractDocumentPackageKind));
+    if (!kind || !allowed.has(kind)) {
+      throw new BadRequestException('Укажите корректный query-параметр kind');
+    }
+    return this.service.findEstimatePresetsTrash(kind as ContractDocumentPackageKind, {
+      search,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 25,
+    });
+  }
+
+  @Post('estimate-presets/:presetId/restore')
+  restoreEstimatePreset(@Param('presetId') presetId: string, @Query('kind') kind: string) {
+    const allowed = new Set<string>(Object.values(ContractDocumentPackageKind));
+    if (!kind || !allowed.has(kind)) {
+      throw new BadRequestException('Укажите корректный query-параметр kind');
+    }
+    return this.service.restoreEstimatePresetFromTrash(
+      kind as ContractDocumentPackageKind,
+      presetId,
+    );
+  }
+
+  @Delete('estimate-presets/:presetId')
+  trashEstimatePreset(
+    @Param('presetId') presetId: string,
+    @Query('kind') kind: string,
+    @Req() req: RequestWithUser,
+  ) {
+    const allowed = new Set<string>(Object.values(ContractDocumentPackageKind));
+    if (!kind || !allowed.has(kind)) {
+      throw new BadRequestException('Укажите корректный query-параметр kind');
+    }
+    return this.service.trashEstimatePreset(
+      kind as ContractDocumentPackageKind,
+      presetId,
+      req.user?.id,
+    );
+  }
+
   @Get('executor-profiles')
   getGlobalExecutorProfiles(@Query('kind') kind: string) {
     const allowed = new Set<string>(Object.values(ContractDocumentPackageKind));

@@ -115,6 +115,17 @@ export class ContractEstimatePresetDto {
   @IsString({ each: true })
   @MaxLength(64, { each: true })
   estimateWorkScopeKeys?: string[];
+
+  /** ISO — расчёт в корзине (скрыт из основного списка). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  deletedAt?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  deletedById?: string;
 }
 
 /** Логический объект: несколько расчётов одного здания / проекта. */

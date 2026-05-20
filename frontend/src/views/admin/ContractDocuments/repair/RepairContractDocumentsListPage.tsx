@@ -30,6 +30,7 @@ import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
+import { AdminTablePagination } from '@/shared/ui/admin/AdminTablePagination';
 import {
   AdminListRefreshButton,
   AdminToolbarTrashButton,
@@ -49,6 +50,8 @@ import {
 } from './packageContractDisplay';
 import { applyRepairContractDiscountToNullableBase } from './repairContractDiscount';
 import {
+  REPAIR_CONTRACTS_PAGE_LIMIT_OPTIONS,
+  type RepairContractsPageLimit,
   loadRepairContractsListFilters,
   persistRepairContractsListFilters,
   reloadRepairContractsListFiltersFromStorage,
@@ -768,6 +771,8 @@ export function RepairContractDocumentsListPage() {
   const [listSortOrder, setListSortOrder] = useState<RepairContractsListSortOrder>(
     initialListFilters.sortOrder
   );
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState<RepairContractsPageLimit>(initialListFilters.pageLimit);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -863,6 +868,21 @@ export function RepairContractDocumentsListPage() {
     addendumColumnCount,
   ]);
 
+  const totalVisible = visibleRows.length;
+  const paginatedRows = useMemo(
+    () => visibleRows.slice((page - 1) * limit, page * limit),
+    [visibleRows, page, limit]
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchNorm, managerFilter, statusFilter, directionFilter, dateFrom, dateTo]);
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(totalVisible / limit));
+    if (page > totalPages) setPage(totalPages);
+  }, [totalVisible, limit, page]);
+
   const handleListSortChange = useCallback(
     (column: RepairContractsListSortBy) => {
       if (listSortBy === column) {
@@ -890,6 +910,7 @@ export function RepairContractDocumentsListPage() {
     setDateTo(saved.dateTo);
     setListSortBy(saved.sortBy);
     setListSortOrder(saved.sortOrder);
+    setLimit(saved.pageLimit);
     listFiltersHydratedRef.current = true;
   }, []);
 
@@ -908,6 +929,7 @@ export function RepairContractDocumentsListPage() {
       dateTo,
       sortBy: listSortBy,
       sortOrder: listSortOrder,
+      pageLimit: limit,
     });
   }, [
     search,
@@ -918,6 +940,7 @@ export function RepairContractDocumentsListPage() {
     dateTo,
     listSortBy,
     listSortOrder,
+    limit,
   ]);
 
   useEffect(() => {
@@ -1201,6 +1224,22 @@ export function RepairContractDocumentsListPage() {
             aria-label="Дата до"
           />
         </label>
+        <select
+          value={limit}
+          onChange={(e) => {
+            setLimit(Number(e.target.value) as RepairContractsPageLimit);
+            setPage(1);
+          }}
+          disabled={loading}
+          className={styles.repairContractsListSelect}
+          aria-label="Количество строк на странице"
+        >
+          {REPAIR_CONTRACTS_PAGE_LIMIT_OPTIONS.map((n) => (
+            <option key={n} value={n}>
+              {n} на странице
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className={`${dataTableStyles.tableContainer} ${styles.repairContractsDirectoryTable}`}>
@@ -1298,7 +1337,7 @@ export function RepairContractDocumentsListPage() {
                     </td>
                   </tr>
                 ) : (
-                  visibleRows.map((r) => {
+                  paginatedRows.map((r) => {
                     const fd = r.formData ?? {};
                     const form = mergeRepairPackageFormData(fd);
                     const num = getDisplayContractNumber({ formData: fd });
@@ -1464,10 +1503,15 @@ export function RepairContractDocumentsListPage() {
             </table>
           </div>
         </div>
-        {!loading && visibleRows.length > 0 ? (
-          <div className={dataTableStyles.pagination}>
-            <span className={dataTableStyles.paginationInfo}>Всего: {visibleRows.length}</span>
-          </div>
+        {!loading && totalVisible > 0 ? (
+          <AdminTablePagination
+            page={page}
+            limit={limit}
+            total={totalVisible}
+            onPageChange={setPage}
+            className={styles.repairContractsListPagination}
+            activePageClassName={styles.repairContractsListPaginationPageActive}
+          />
         ) : null}
       </div>
 

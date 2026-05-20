@@ -4,6 +4,9 @@ export type CustomerTypeFilter = 'all' | CrmCustomerEntityType;
 
 export type DirectorySortOrder = 'asc' | 'desc';
 
+export const CUSTOMERS_PAGE_LIMIT_OPTIONS = [20, 50, 100, 200] as const;
+export type CustomersPageLimit = (typeof CUSTOMERS_PAGE_LIMIT_OPTIONS)[number];
+
 export interface CustomersDirectoryListPersisted {
   search: string;
   typeFilter: CustomerTypeFilter;
@@ -11,6 +14,7 @@ export interface CustomersDirectoryListPersisted {
   sortBy: ClientDirectorySortBy;
   sortOrder: DirectorySortOrder;
   page: number;
+  pageLimit: CustomersPageLimit;
 }
 
 const STORAGE_KEY = 'admin_customers_directory_list_v1';
@@ -30,7 +34,18 @@ const EMPTY: CustomersDirectoryListPersisted = {
   sortBy: 'displayName',
   sortOrder: 'asc',
   page: 1,
+  pageLimit: 20,
 };
+
+function normalizePageLimit(raw: unknown): CustomersPageLimit {
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  if (CUSTOMERS_PAGE_LIMIT_OPTIONS.includes(n as CustomersPageLimit)) {
+    return n as CustomersPageLimit;
+  }
+  // Ранее в справочнике было фиксированно 25 строк
+  if (n === 25) return 20;
+  return EMPTY.pageLimit;
+}
 
 export function parseClientDirectorySortBy(value: string): ClientDirectorySortBy {
   if (value === 'createdAt') return 'createdAt';
@@ -92,10 +107,24 @@ function normalizePersisted(
         ? raw.sortOrder
         : (legacy?.sortOrder ?? EMPTY.sortOrder),
     page: normalizePage(raw.page),
+    pageLimit: normalizePageLimit(raw.pageLimit),
   };
 }
 
 let memoryCache: CustomersDirectoryListPersisted | null = null;
+
+function readFromLocalStorage(): CustomersDirectoryListPersisted {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      const legacy = loadLegacySortOnly();
+      return legacy ? { ...EMPTY, ...legacy } : { ...EMPTY };
+    }
+    return normalizePersisted(JSON.parse(raw) as Partial<CustomersDirectoryListPersisted>);
+  } catch {
+    return { ...EMPTY };
+  }
+}
 
 export function loadCustomersDirectoryListState(): CustomersDirectoryListPersisted {
   if (memoryCache) return memoryCache;
@@ -103,19 +132,15 @@ export function loadCustomersDirectoryListState(): CustomersDirectoryListPersist
     memoryCache = { ...EMPTY };
     return memoryCache;
   }
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      const legacy = loadLegacySortOnly();
-      memoryCache = legacy ? { ...EMPTY, ...legacy } : { ...EMPTY };
-      return memoryCache;
-    }
-    memoryCache = normalizePersisted(JSON.parse(raw) as Partial<CustomersDirectoryListPersisted>);
-    return memoryCache;
-  } catch {
-    memoryCache = { ...EMPTY };
-    return memoryCache;
-  }
+  memoryCache = readFromLocalStorage();
+  return memoryCache;
+}
+
+/** Перечитать localStorage после SSR / навигации. */
+export function reloadCustomersDirectoryListStateFromStorage(): CustomersDirectoryListPersisted {
+  if (typeof window === 'undefined') return { ...EMPTY };
+  memoryCache = readFromLocalStorage();
+  return memoryCache;
 }
 
 export function persistCustomersDirectoryListState(state: CustomersDirectoryListPersisted): void {

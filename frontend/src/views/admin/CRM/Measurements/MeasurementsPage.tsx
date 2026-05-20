@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -30,8 +30,11 @@ import {
 } from './measurementListSort';
 import { MEASUREMENT_STATUS_OPTIONS, getMeasurementStatusLabel } from './measurementStatuses';
 import {
+  MEASUREMENTS_PAGE_LIMIT_OPTIONS,
+  type MeasurementsPageLimit,
   loadMeasurementsListFilters,
   persistMeasurementsListFilters,
+  reloadMeasurementsListFiltersFromStorage,
 } from './measurementsListFilters';
 
 function measurementsFilterFieldClass(base: string, active: boolean, activeClass: string): string {
@@ -58,33 +61,47 @@ interface MeasurementLinksInfo {
 export function MeasurementsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const initialListStateRef = useRef(loadMeasurementsListFilters());
+  const initialListState = initialListStateRef.current;
+  const listStateHydratedRef = useRef(false);
+
   const [data, setData] = useState<Measurement[]>([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [limit] = useState(20);
+  const [page, setPage] = useState(initialListState.page);
+  const [limit, setLimit] = useState<MeasurementsPageLimit>(initialListState.pageLimit);
   const [loading, setLoading] = useState(true);
   const [directions, setDirections] = useState<CrmDirection[]>([]);
   const [managerOptions, setManagerOptions] = useState<ContractSignatoryProfile[]>([]);
-  const [statusFilter, setStatusFilter] = useState(
-    () => loadMeasurementsListFilters().statusFilter
-  );
-  const [managerFilter, setManagerFilter] = useState(
-    () => loadMeasurementsListFilters().managerFilter
-  );
-  const [directionFilter, setDirectionFilter] = useState(
-    () => loadMeasurementsListFilters().directionFilter
-  );
-  const [search, setSearch] = useState(() => loadMeasurementsListFilters().search);
-  const [dateFrom, setDateFrom] = useState(() => loadMeasurementsListFilters().dateFrom);
-  const [dateTo, setDateTo] = useState(() => loadMeasurementsListFilters().dateTo);
+  const [statusFilter, setStatusFilter] = useState(initialListState.statusFilter);
+  const [managerFilter, setManagerFilter] = useState(initialListState.managerFilter);
+  const [directionFilter, setDirectionFilter] = useState(initialListState.directionFilter);
+  const [search, setSearch] = useState(initialListState.search);
+  const [dateFrom, setDateFrom] = useState(initialListState.dateFrom);
+  const [dateTo, setDateTo] = useState(initialListState.dateTo);
   const [measurementSortBy, setMeasurementSortBy] = useState<MeasurementListSortBy>(
-    () => loadMeasurementsListFilters().sortBy
+    initialListState.sortBy
   );
   const [measurementSortOrder, setMeasurementSortOrder] = useState<MeasurementListSortOrder>(
-    () => loadMeasurementsListFilters().sortOrder
+    initialListState.sortOrder
   );
 
   useEffect(() => {
+    const saved = reloadMeasurementsListFiltersFromStorage();
+    setSearch(saved.search);
+    setManagerFilter(saved.managerFilter);
+    setStatusFilter(saved.statusFilter);
+    setDirectionFilter(saved.directionFilter);
+    setDateFrom(saved.dateFrom);
+    setDateTo(saved.dateTo);
+    setMeasurementSortBy(saved.sortBy);
+    setMeasurementSortOrder(saved.sortOrder);
+    setPage(saved.page);
+    setLimit(saved.pageLimit);
+    listStateHydratedRef.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!listStateHydratedRef.current) return;
     persistMeasurementsListFilters({
       search,
       managerFilter,
@@ -94,6 +111,8 @@ export function MeasurementsPage() {
       dateTo,
       sortBy: measurementSortBy,
       sortOrder: measurementSortOrder,
+      page,
+      pageLimit: limit,
     });
   }, [
     search,
@@ -104,7 +123,14 @@ export function MeasurementsPage() {
     dateTo,
     measurementSortBy,
     measurementSortOrder,
+    page,
+    limit,
   ]);
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    if (page > totalPages) setPage(totalPages);
+  }, [total, limit, page]);
 
   useEffect(() => {
     const q = searchParams.get('search');
@@ -494,10 +520,28 @@ export function MeasurementsPage() {
             aria-label="Дата до"
           />
         </label>
+        <select
+          value={limit}
+          onChange={(e) => {
+            setLimit(Number(e.target.value) as MeasurementsPageLimit);
+            setPage(1);
+          }}
+          disabled={loading}
+          className={styles.pageLimitSelect}
+          aria-label="Количество строк на странице"
+        >
+          {MEASUREMENTS_PAGE_LIMIT_OPTIONS.map((n) => (
+            <option key={n} value={n}>
+              {n} на странице
+            </option>
+          ))}
+        </select>
       </div>
 
       <DataTable
         containerClassName={styles.directoryTable}
+        paginationClassName={styles.directoryPagination}
+        paginationActiveClassName={styles.directoryPaginationPageActive}
         data={data}
         columns={columns}
         keyExtractor={(m) => m.id}

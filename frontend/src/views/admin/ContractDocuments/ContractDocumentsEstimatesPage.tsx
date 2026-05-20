@@ -1,27 +1,43 @@
 'use client';
 
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import {
+  getContractDocumentEstimatePresetsTrash,
+  trashContractEstimatePreset,
+} from '@/shared/api/admin-contract-document-estimate-presets-trash';
+import {
   type ContractDocumentPackageStatus,
   type ContractEstimateGroup,
   type ContractEstimatePreset,
+  type ContractSignatoryProfile,
   getContractDocumentEstimatePresets,
   getContractDocumentPackages,
+  getContractDocumentSignatoryProfiles,
   putContractDocumentEstimatePresets,
 } from '@/shared/api/admin-contract-document-packages';
 import { getMeasurements } from '@/shared/api/admin-crm';
 import confirmModalStyles from '@/shared/ui/ConfirmModal/ConfirmModal.module.css';
 import { Modal } from '@/shared/ui/Modal';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
+import {
+  AdminToolbarTrashButton,
+  useAdminTrashCount,
+} from '@/shared/ui/admin/AdminToolbarIconButton';
 import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 import { EditIcon } from '@/shared/ui/icons/EditIcon';
 
 import styles from './ContractDocuments.module.css';
+import { EstimateTrashModal } from './EstimateTrashModal';
+import {
+  loadEstimatesListFilters,
+  persistEstimatesListFilters,
+  reloadEstimatesListFiltersFromStorage,
+} from './estimatesListFilters';
 import {
   type SiblingClaim,
   type WorkScopeCategoryRow,
@@ -43,6 +59,7 @@ import {
   getSnapshotForEstimateAttach,
 } from './repair/repairApplyEstimatePresetIds';
 import { persistRepairPackageAfterRemovingEstimatePreset } from './repair/repairDetachEstimatePresetFromPackages';
+import { mergeRepairPackageFormData } from './repair/repairPackageForm';
 
 type EstimatePackageUsage =
   | {
@@ -83,6 +100,25 @@ function formatEstimatePackageUsageLabel(u: EstimatePackageUsage): string {
 
 function sortEstimateGroupsByTitle(gs: ContractEstimateGroup[]) {
   return [...gs].sort((a, b) => a.title.localeCompare(b.title, 'ru'));
+}
+
+function estimatesListFilterFieldClass(base: string, active: boolean, activeClass: string): string {
+  return active ? `${base} ${activeClass}` : base;
+}
+
+function repairPackageManagerCrmUserId(formData: Record<string, unknown>): string {
+  const form = mergeRepairPackageFormData(formData);
+  return form.executor.signatoryCrmUserId?.trim() ?? '';
+}
+
+function estimateMatchesManagerFilter(
+  presetId: string,
+  managerFilter: string,
+  managerIdsByPresetId: Map<string, Set<string>>
+): boolean {
+  if (!managerFilter) return true;
+  const ids = managerIdsByPresetId.get(presetId);
+  return Boolean(ids?.has(managerFilter));
 }
 
 function parseOptionalPercentInput(raw: string): number | undefined {
@@ -139,28 +175,14 @@ function splitBundleCoversAllWorkScopeLines(
   return allIds.every((id) => union.has(id));
 }
 
-type EstimatesListSortMode = 'estimateDate' | 'updatedAt';
-
 function parseIsoTs(raw: string | undefined): number {
   if (!raw) return 0;
   const t = Date.parse(raw);
   return Number.isFinite(t) ? t : 0;
 }
 
-/** Дата расчёта для сортировки: `createdAt` → метка в id `est_<ms>` → `updatedAt` (наследие). */
-function presetEstimateDateSortTs(p: ContractEstimatePreset): number {
-  const fromCreated = parseIsoTs(p.createdAt);
-  if (fromCreated > 0) return fromCreated;
-  const m = /^est_(\d+)$/.exec(p.id.trim());
-  if (m) {
-    const n = Number(m[1]);
-    if (Number.isFinite(n)) return n;
-  }
+function presetSortTs(p: ContractEstimatePreset): number {
   return parseIsoTs(p.updatedAt);
-}
-
-function presetSortTs(p: ContractEstimatePreset, mode: EstimatesListSortMode): number {
-  return mode === 'estimateDate' ? presetEstimateDateSortTs(p) : parseIsoTs(p.updatedAt);
 }
 
 type MergeSortRow =
@@ -177,17 +199,13 @@ function mergeListOrderRank(sortTs: number, order: number | undefined): number {
   return 1e15 - sortTs;
 }
 
-function comparePresetsInGroup(
-  a: ContractEstimatePreset,
-  b: ContractEstimatePreset,
-  mode: EstimatesListSortMode
-): number {
+function comparePresetsInGroup(a: ContractEstimatePreset, b: ContractEstimatePreset): number {
   const ai = a.inGroupListOrder;
   const bi = b.inGroupListOrder;
   if (ai != null && bi != null && ai !== bi) return ai - bi;
   if (ai != null && bi == null) return -1;
   if (ai == null && bi != null) return 1;
-  const td = presetSortTs(b, mode) - presetSortTs(a, mode);
+  const td = presetSortTs(b) - presetSortTs(a);
   if (td !== 0) return td;
   return a.title.localeCompare(b.title, 'ru');
 }
@@ -195,28 +213,25 @@ function comparePresetsInGroup(
 function buildMergeSortRows(args: {
   groupsForLayout: ContractEstimateGroup[];
   visibleItems: ContractEstimatePreset[];
-  attachmentFilter: 'all' | 'bound' | 'unbound';
-  estimateListSortMode: EstimatesListSortMode;
 }): MergeSortRow[] {
-  const { groupsForLayout, visibleItems, attachmentFilter, estimateListSortMode: sortMode } = args;
+  const { groupsForLayout, visibleItems } = args;
   const sortPresets = (list: ContractEstimatePreset[]) =>
-    [...list].sort((a, b) => comparePresetsInGroup(a, b, sortMode));
+    [...list].sort((a, b) => comparePresetsInGroup(a, b));
 
   const groupIdSet = new Set(groupsForLayout.map((g) => g.id));
   const rows: MergeSortRow[] = [];
 
   for (const group of groupsForLayout) {
     const inGroup = visibleItems.filter((it) => it.groupId === group.id);
-    if (inGroup.length === 0 && attachmentFilter !== 'all') continue;
     const sorted = sortPresets(inGroup);
-    const sortTs =
-      sorted.length > 0 ? Math.max(...sorted.map((p) => presetSortTs(p, sortMode))) : 0;
+    if (sorted.length === 0) continue;
+    const sortTs = Math.max(...sorted.map((p) => presetSortTs(p)));
     rows.push({ kind: 'group', group, items: sorted, sortTs });
   }
 
   const standaloneRaw = visibleItems.filter((it) => !it.groupId || !groupIdSet.has(it.groupId));
   for (const preset of sortPresets(standaloneRaw)) {
-    rows.push({ kind: 'standalone', preset, sortTs: presetSortTs(preset, sortMode) });
+    rows.push({ kind: 'standalone', preset, sortTs: presetSortTs(preset) });
   }
 
   rows.sort((a, b) => {
@@ -277,32 +292,6 @@ function applyInGroupListOrders(
     if (idx < 0) return it;
     return { ...it, inGroupListOrder: idx * 10 };
   });
-}
-
-/** Сортировка списка расчётов: выпадающий список. */
-function EstimatesListSortControl({
-  value,
-  onChange,
-  disabled,
-}: {
-  value: EstimatesListSortMode;
-  onChange: (next: EstimatesListSortMode) => void;
-  disabled?: boolean;
-}) {
-  return (
-    <label className={styles.estimatesSortSelectField}>
-      <span>Сортировка</span>
-      <select
-        value={value}
-        disabled={disabled}
-        aria-label="Сортировка списка расчётов"
-        onChange={(e) => onChange(e.target.value as EstimatesListSortMode)}
-      >
-        <option value="updatedAt">По дате обновления</option>
-        <option value="estimateDate">По дате расчёта</option>
-      </select>
-    </label>
-  );
 }
 
 function EstimatesReorderArrowUp() {
@@ -377,101 +366,6 @@ function stripOrphanGroupIds(
     const { groupId: _removed, ...rest } = it;
     return rest as ContractEstimatePreset;
   });
-}
-
-/** Иконки фильтра по привязке расчёта к договору (отдельная визуальная группа). */
-function EstimatesAttachmentFilterControl({
-  value,
-  onChange,
-  disabled,
-}: {
-  value: 'all' | 'bound' | 'unbound';
-  onChange: (next: 'all' | 'bound' | 'unbound') => void;
-  disabled?: boolean;
-}) {
-  const btn = (mode: 'all' | 'bound' | 'unbound', label: string, children: ReactNode) => (
-    <button
-      type="button"
-      className={`${styles.estimatesAttachmentFilterBtn} ${value === mode ? styles.estimatesAttachmentFilterBtnActive : ''}`}
-      disabled={disabled}
-      aria-pressed={value === mode}
-      aria-label={label}
-      title={label}
-      onClick={() => onChange(mode)}
-    >
-      {children}
-    </button>
-  );
-
-  return (
-    <div
-      role="toolbar"
-      aria-label="Фильтр по привязке к договору"
-      className={styles.estimatesAttachmentFilterGroup}
-    >
-      {btn(
-        'all',
-        'Все расчёты',
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width={18}
-          height={18}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-        >
-          <line x1="8" y1="6" x2="21" y2="6" />
-          <line x1="8" y1="12" x2="21" y2="12" />
-          <line x1="8" y1="18" x2="21" y2="18" />
-          <line x1="3" y1="6" x2="3.01" y2="6" />
-          <line x1="3" y1="12" x2="3.01" y2="12" />
-          <line x1="3" y1="18" x2="3.01" y2="18" />
-        </svg>
-      )}
-      {btn(
-        'bound',
-        'Только привязанные к договору',
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width={18}
-          height={18}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-        >
-          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-        </svg>
-      )}
-      {btn(
-        'unbound',
-        'Только не привязанные к договору',
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width={18}
-          height={18}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-        >
-          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-          <line x1="4" y1="4" x2="20" y2="20" />
-        </svg>
-      )}
-    </div>
-  );
 }
 
 function generateSplitBundleId(): string {
@@ -970,6 +864,9 @@ function EstimateWorkScopeSplitModal({
 
 export function ContractDocumentsEstimatesPage() {
   const router = useRouter();
+  const initialListFiltersRef = useRef(loadEstimatesListFilters());
+  const listFiltersHydratedRef = useRef(false);
+  const skipListFiltersPersistRef = useRef(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -985,9 +882,6 @@ export function ContractDocumentsEstimatesPage() {
       crmContract?: { contractNumber: string; contractDate: string } | null;
     }>
   >([]);
-  const [attachmentFilter, setAttachmentFilter] = useState<'all' | 'bound' | 'unbound'>('all');
-  const [estimateListSortMode, setEstimateListSortMode] =
-    useState<EstimatesListSortMode>('updatedAt');
   const [collapsedGroupIds, setCollapsedGroupIds] = useState<Set<string>>(() => new Set());
   const [detachEditModal, setDetachEditModal] = useState<{
     estimateId: string;
@@ -1002,6 +896,12 @@ export function ContractDocumentsEstimatesPage() {
     title: string;
     inSplitBundle: boolean;
   } | null>(null);
+  const [trashOpen, setTrashOpen] = useState(false);
+  const fetchEstimateTrashTotal = useCallback(
+    () => getContractDocumentEstimatePresetsTrash({ page: 1, limit: 1 }),
+    []
+  );
+  const { trashCount, refreshTrashCount } = useAdminTrashCount(fetchEstimateTrashTotal);
   const [refreshing, setRefreshing] = useState(false);
   const [isGenerateFromMeasurementOpen, setIsGenerateFromMeasurementOpen] = useState(false);
   const [completedMeasurements, setCompletedMeasurements] = useState<
@@ -1016,6 +916,8 @@ export function ContractDocumentsEstimatesPage() {
   const [selectedMeasurementId, setSelectedMeasurementId] = useState('');
   const [archiveView, setArchiveView] = useState(false);
   const [workScopeModalPresetId, setWorkScopeModalPresetId] = useState<string | null>(null);
+  const [managerOptions, setManagerOptions] = useState<ContractSignatoryProfile[]>([]);
+  const [managerFilter, setManagerFilter] = useState(initialListFiltersRef.current.managerFilter);
 
   const openGenerateFromMeasurementModal = useCallback(async () => {
     setIsGenerateFromMeasurementOpen(true);
@@ -1041,9 +943,12 @@ export function ContractDocumentsEstimatesPage() {
   }, []);
 
   const fetchEstimatesFromServer = useCallback(async () => {
-    const [presetsRes, packagesRes] = await Promise.all([
+    const [presetsRes, packagesRes, signatoriesRes] = await Promise.all([
       getContractDocumentEstimatePresets('REPAIR'),
       getContractDocumentPackages('REPAIR'),
+      getContractDocumentSignatoryProfiles('REPAIR').catch(() => ({
+        items: [] as ContractSignatoryProfile[],
+      })),
     ]);
     const loadedGroups = presetsRes.groups ?? [];
     setGroups(loadedGroups);
@@ -1067,6 +972,10 @@ export function ContractDocumentsEstimatesPage() {
           : null,
       }))
     );
+    const profiles = (signatoriesRes.items ?? [])
+      .filter((p) => Boolean(p.crmUserId?.trim()))
+      .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'ru', { sensitivity: 'base' }));
+    setManagerOptions(profiles);
   }, []);
 
   useEffect(() => {
@@ -1082,6 +991,28 @@ export function ContractDocumentsEstimatesPage() {
       }
     })();
   }, [fetchEstimatesFromServer]);
+
+  useEffect(() => {
+    const saved = reloadEstimatesListFiltersFromStorage();
+    setManagerFilter(saved.managerFilter);
+    listFiltersHydratedRef.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!listFiltersHydratedRef.current) return;
+    if (skipListFiltersPersistRef.current) {
+      skipListFiltersPersistRef.current = false;
+      return;
+    }
+    persistEstimatesListFilters({ managerFilter });
+  }, [managerFilter]);
+
+  useEffect(() => {
+    if (!managerFilter) return;
+    if (!managerOptions.some((p) => p.crmUserId === managerFilter)) {
+      setManagerFilter('');
+    }
+  }, [managerFilter, managerOptions]);
 
   useEffect(() => {
     if (workScopeModalPresetId && !items.some((x) => x.id === workScopeModalPresetId)) {
@@ -1337,19 +1268,33 @@ export function ContractDocumentsEstimatesPage() {
     }
     if (!detachOk) return;
     setDetachDeleteModal(null);
-    const removed = await removeEstimateById(estimateId);
-    if (!removed) return;
+    const moved = await moveEstimateToTrashById(estimateId);
+    if (moved) setOk('Расчёт перемещён в корзину.');
   };
 
-  const removeEstimateById = async (id: string): Promise<boolean> => {
-    const next = items.filter((it) => it.id !== id);
-    return persistEstimates(next, groups);
+  const moveEstimateToTrashById = async (estimateId: string): Promise<boolean> => {
+    setSaving(true);
+    setError(null);
+    try {
+      await trashContractEstimatePreset(estimateId);
+      setItems((prev) => prev.filter((it) => it.id !== estimateId));
+      void refreshTrashCount();
+      return true;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось переместить расчёт в корзину');
+      return false;
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleConfirmSimpleDelete = async () => {
     if (!simpleDeleteModal) return;
-    const ok = await removeEstimateById(simpleDeleteModal.estimateId);
-    if (ok) setSimpleDeleteModal(null);
+    const ok = await moveEstimateToTrashById(simpleDeleteModal.estimateId);
+    if (ok) {
+      setSimpleDeleteModal(null);
+      setOk('Расчёт перемещён в корзину.');
+    }
   };
 
   const toggleGroupCollapsed = (groupId: string) => {
@@ -1444,6 +1389,27 @@ export function ContractDocumentsEstimatesPage() {
     return map;
   }, [repairPackages]);
 
+  const packageManagerById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const pkg of repairPackages) {
+      map.set(pkg.id, repairPackageManagerCrmUserId(pkg.formData));
+    }
+    return map;
+  }, [repairPackages]);
+
+  const managerIdsByPresetId = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const [presetId, usages] of usageByEstimateId) {
+      const ids = new Set<string>();
+      for (const usage of usages) {
+        const managerId = packageManagerById.get(usage.packageId) ?? '';
+        if (managerId) ids.add(managerId);
+      }
+      if (ids.size > 0) map.set(presetId, ids);
+    }
+    return map;
+  }, [usageByEstimateId, packageManagerById]);
+
   /** Объект: нельзя менять наценку на уровне группы, если хотя бы один расчёт группы в подписанном договоре / Д/с. */
   const groupIdsWithLockedEstimate = useMemo(() => {
     const ids = new Set<string>();
@@ -1514,20 +1480,18 @@ export function ContractDocumentsEstimatesPage() {
   };
 
   const visibleItems = useMemo(() => {
-    const base = items.filter((it) => {
-      const isBound = (usageByEstimateId.get(it.id)?.length ?? 0) > 0;
-      if (attachmentFilter === 'bound') return isBound;
-      if (attachmentFilter === 'unbound') return !isBound;
-      return true;
-    });
-    return base.filter((it) => {
+    return items.filter((it) => {
       const g = it.groupId ? groups.find((x) => x.id === it.groupId) : undefined;
       const groupArchived = Boolean(g?.archived);
       const rowArchived = Boolean(it.archived);
       const inArchiveCombined = groupArchived || rowArchived;
-      return archiveView ? inArchiveCombined : !inArchiveCombined;
+      const archiveOk = archiveView ? inArchiveCombined : !inArchiveCombined;
+      if (!archiveOk) return false;
+      return estimateMatchesManagerFilter(it.id, managerFilter, managerIdsByPresetId);
     });
-  }, [items, attachmentFilter, usageByEstimateId, archiveView, groups]);
+  }, [items, archiveView, groups, managerFilter, managerIdsByPresetId]);
+
+  const hasActiveManagerFilter = Boolean(managerFilter);
 
   const hasAnythingInArchive = useMemo(
     () =>
@@ -1571,8 +1535,6 @@ export function ContractDocumentsEstimatesPage() {
     const mergeSortRows = buildMergeSortRows({
       groupsForLayout,
       visibleItems,
-      attachmentFilter,
-      estimateListSortMode,
     });
     const mergeGlobalTotal = mergeSortRows.length;
 
@@ -1619,15 +1581,13 @@ export function ContractDocumentsEstimatesPage() {
       if (soloArchived.length > 0) {
         blocks.push({
           kind: 'soloArchived',
-          items: [...soloArchived].sort((a, b) =>
-            comparePresetsInGroup(a, b, estimateListSortMode)
-          ),
+          items: [...soloArchived].sort((a, b) => comparePresetsInGroup(a, b)),
         });
       }
     }
 
     return { estimateLayoutBlocks: blocks };
-  }, [groupsForLayout, visibleItems, attachmentFilter, archiveView, groups, estimateListSortMode]);
+  }, [groupsForLayout, visibleItems, archiveView, groups]);
 
   type EstimateCardReorder =
     | { scope: 'inGroup'; groupId: string; index: number; total: number }
@@ -1637,8 +1597,6 @@ export function ContractDocumentsEstimatesPage() {
     const rows = buildMergeSortRows({
       groupsForLayout,
       visibleItems,
-      attachmentFilter,
-      estimateListSortMode,
     });
     const idx = rows.findIndex((r) => r.kind === 'group' && r.group.id === groupId);
     if (idx < 0) return;
@@ -1654,8 +1612,6 @@ export function ContractDocumentsEstimatesPage() {
     const rows = buildMergeSortRows({
       groupsForLayout,
       visibleItems,
-      attachmentFilter,
-      estimateListSortMode,
     });
     const idx = rows.findIndex((r) => r.kind === 'standalone' && r.preset.id === presetId);
     if (idx < 0) return;
@@ -1671,7 +1627,7 @@ export function ContractDocumentsEstimatesPage() {
     const visibleIds = new Set(visibleItems.map((x) => x.id));
     const peers = visibleItems
       .filter((it) => it.groupId === groupId)
-      .sort((a, b) => comparePresetsInGroup(a, b, estimateListSortMode));
+      .sort((a, b) => comparePresetsInGroup(a, b));
     const idx = peers.findIndex((p) => p.id === presetId);
     if (idx < 0) return;
     const j = idx + dir;
@@ -2002,9 +1958,15 @@ export function ContractDocumentsEstimatesPage() {
             </button>
           ) : null}
           <AdminTableIconButton
-            aria-label="Удалить"
+            aria-label={
+              hasLockedUsage
+                ? 'В корзину недоступно: договор подписан или Д/с подписано'
+                : 'В корзину'
+            }
             title={
-              hasLockedUsage ? 'Удаление запрещено: договор подписан или Д/с подписано' : 'Удалить'
+              hasLockedUsage
+                ? 'В корзину недоступно: договор подписан или Д/с подписано'
+                : 'В корзину (восстановить можно из корзины)'
             }
             disabled={saving || hasLockedUsage}
             onClick={() => {
@@ -2098,6 +2060,12 @@ export function ContractDocumentsEstimatesPage() {
               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
             </svg>
           </button>
+          <AdminToolbarTrashButton
+            trashCount={trashCount}
+            onClick={() => setTrashOpen(true)}
+            title="Корзина расчётов"
+            aria-label="Корзина расчётов"
+          />
           <button
             type="button"
             className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn} ${styles.estimatesPageArchiveIconBtn}`}
@@ -2165,28 +2133,39 @@ export function ContractDocumentsEstimatesPage() {
         <div
           className={`${styles.estimatesControlsSingleRow}${archiveView ? ` ${styles.estimatesControlsSingleRowArchive}` : ''}`}
         >
-          <EstimatesAttachmentFilterControl
-            value={attachmentFilter}
-            onChange={setAttachmentFilter}
-            disabled={saving}
-          />
-          <EstimatesListSortControl
-            value={estimateListSortMode}
-            onChange={setEstimateListSortMode}
-            disabled={saving}
-          />
-          <div className={styles.estimatesFilterRowSpacer} aria-hidden />
           {!archiveView ? (
-            <div className={styles.estimatesFilterRowTrailing}>
-              <button
-                type="button"
-                className={`${styles.secondaryBtn} ${styles.estimatesAddObjectBtn}`}
-                disabled={saving}
-                onClick={createObjectGroup}
+            <>
+              <select
+                id="estimates_list_manager_filter"
+                value={managerFilter}
+                onChange={(e) => setManagerFilter(e.target.value)}
+                disabled={loading || saving}
+                className={estimatesListFilterFieldClass(
+                  styles.repairContractsListSelect,
+                  Boolean(managerFilter),
+                  styles.repairContractsListFilterActive
+                )}
+                aria-label="Менеджер"
               >
-                + Новый объект
-              </button>
-            </div>
+                <option value="">Все менеджеры</option>
+                {managerOptions.map((p) => (
+                  <option key={p.crmUserId} value={p.crmUserId}>
+                    {p.title?.trim() || p.directorNameNominative?.trim() || p.crmUserId}
+                  </option>
+                ))}
+              </select>
+              <div className={styles.estimatesFilterRowSpacer} aria-hidden />
+              <div className={styles.estimatesFilterRowTrailing}>
+                <button
+                  type="button"
+                  className={`${styles.secondaryBtn} ${styles.estimatesAddObjectBtn}`}
+                  disabled={saving}
+                  onClick={createObjectGroup}
+                >
+                  + Новый объект
+                </button>
+              </div>
+            </>
           ) : null}
         </div>
         <div
@@ -2196,7 +2175,9 @@ export function ContractDocumentsEstimatesPage() {
             <p className={styles.hint} style={{ margin: 0 }}>
               {archiveView && !hasAnythingInArchive
                 ? 'В архиве пока нет расчётов и объектов.'
-                : 'Нет расчётов для текущего фильтра.'}
+                : hasActiveManagerFilter
+                  ? 'Нет расчётов по выбранному менеджеру.'
+                  : 'Нет расчётов для текущего фильтра.'}
             </p>
           ) : (
             estimateLayoutBlocks.map((block) => {
@@ -2491,12 +2472,12 @@ export function ContractDocumentsEstimatesPage() {
         >
           <div className={styles.saveModalCard} onClick={(e) => e.stopPropagation()}>
             <h3 id="detach-delete-estimate-title" className={styles.saveModalTitle}>
-              Удаление расчёта
+              Переместить в корзину?
             </h3>
             <p className={styles.saveModalText}>
-              Этот расчёт прикреплён к смете договора или к дополнительному соглашению. При удалении
-              привязка будет снята автоматически, расчёт исчезнет из общего списка. Его нужно будет
-              заново создать и прикрепить в пакете документов, если он снова понадобится. Удалить?
+              Этот расчёт прикреплён к смете договора или к дополнительному соглашению. При
+              перемещении в корзину привязка будет снята автоматически, расчёт исчезнет из общего
+              списка. Восстановить можно из корзины на этой странице. Переместить в корзину?
             </p>
             <div
               style={{
@@ -2521,7 +2502,7 @@ export function ContractDocumentsEstimatesPage() {
                 disabled={saving}
                 onClick={() => void handleConfirmDetachDelete()}
               >
-                {saving ? 'Подождите…' : 'Удалить'}
+                {saving ? 'Подождите…' : 'В корзину'}
               </button>
             </div>
           </div>
@@ -2534,20 +2515,21 @@ export function ContractDocumentsEstimatesPage() {
           if (saving) return;
           setSimpleDeleteModal(null);
         }}
-        title="Удалить расчёт?"
+        title="Переместить в корзину?"
         size="sm"
         showCloseButton
       >
         {simpleDeleteModal ? (
           <div className={confirmModalStyles.content}>
             <p className={confirmModalStyles.message}>
-              Расчёт «<strong>{simpleDeleteModal.title}</strong>» будет удалён безвозвратно из
-              общего списка. Восстановить его будет нельзя. Действие необратимо.
+              Расчёт «<strong>{simpleDeleteModal.title}</strong>» будет скрыт из общего списка.
+              Восстановить его можно из корзины на этой странице.
             </p>
             {simpleDeleteModal.inSplitBundle ? (
               <p className={confirmModalStyles.message}>
-                Расчёт входит в связку разделения сметы: после удаления остальные экземпляры связки
-                останутся; их набор выбранных позиций не пересчитается автоматически.
+                Расчёт входит в связку разделения сметы: после перемещения в корзину остальные
+                экземпляры связки останутся; их набор выбранных позиций не пересчитается
+                автоматически.
               </p>
             ) : null}
             <div className={confirmModalStyles.actions}>
@@ -2565,12 +2547,24 @@ export function ContractDocumentsEstimatesPage() {
                 disabled={saving}
                 onClick={() => void handleConfirmSimpleDelete()}
               >
-                {saving ? 'Подождите…' : 'Удалить'}
+                {saving ? 'Подождите…' : 'В корзину'}
               </button>
             </div>
           </div>
         ) : null}
       </Modal>
+
+      <EstimateTrashModal
+        isOpen={trashOpen}
+        onClose={() => {
+          setTrashOpen(false);
+          void refreshTrashCount();
+        }}
+        onRestored={() => {
+          void refreshEstimates();
+          void refreshTrashCount();
+        }}
+      />
 
       {isGenerateFromMeasurementOpen ? (
         <div

@@ -33,14 +33,15 @@ import {
 } from './crmCustomerDisplay';
 import { formatCrmPhoneOrDash } from './crmCustomerPhone';
 import {
+  CUSTOMERS_PAGE_LIMIT_OPTIONS,
   type CustomerTypeFilter,
+  type CustomersPageLimit,
   type DirectorySortOrder,
   loadCustomersDirectoryListState,
   parseClientDirectorySortBy,
   persistCustomersDirectoryListState,
+  reloadCustomersDirectoryListStateFromStorage,
 } from './customersDirectoryListState';
-
-const PAGE_SIZE = 25;
 
 function customersFilterFieldClass(base: string, active: boolean, activeClass: string): string {
   return active ? `${base} ${activeClass}` : base;
@@ -68,30 +69,33 @@ function formatDateDdMmYyyy(iso: string | null | undefined): string {
 }
 
 const TYPE_FILTER_OPTIONS: { value: CustomerTypeFilter; label: string }[] = [
-  { value: 'all', label: 'Все' },
-  { value: 'PERSON', label: 'ФЛ' },
-  { value: 'ENTREPRENEUR', label: 'ИП' },
-  { value: 'COMPANY', label: 'ЮЛ' },
+  { value: 'all', label: 'Все типы' },
+  { value: 'PERSON', label: 'Физическое лицо (ФЛ)' },
+  { value: 'ENTREPRENEUR', label: 'Индивидуальный предприниматель (ИП)' },
+  { value: 'COMPANY', label: 'Юридическое лицо (ЮЛ)' },
 ];
 
 export function CustomersPage() {
-  const [searchInput, setSearchInput] = useState(() => loadCustomersDirectoryListState().search);
-  const [searchQuery, setSearchQuery] = useState(() => loadCustomersDirectoryListState().search);
+  const initialListStateRef = useRef(loadCustomersDirectoryListState());
+  const initialListState = initialListStateRef.current;
+  const listStateHydratedRef = useRef(false);
+
+  const [searchInput, setSearchInput] = useState(initialListState.search);
+  const [searchQuery, setSearchQuery] = useState(initialListState.search);
   const [listRefreshKey, setListRefreshKey] = useState(0);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [typeFilter, setTypeFilter] = useState<CustomerTypeFilter>(
-    () => loadCustomersDirectoryListState().typeFilter
-  );
-  const [authorFilter, setAuthorFilter] = useState(
-    () => loadCustomersDirectoryListState().authorFilter
-  );
+  const [typeFilter, setTypeFilter] = useState<CustomerTypeFilter>(initialListState.typeFilter);
+  const [authorFilter, setAuthorFilter] = useState(initialListState.authorFilter);
   const [crmUsers, setCrmUsers] = useState<CrmUser[]>([]);
 
   const [directoryRows, setDirectoryRows] = useState<ClientDirectoryRow[]>([]);
-  const [directoryPage, setDirectoryPage] = useState(() => loadCustomersDirectoryListState().page);
+  const [directoryPage, setDirectoryPage] = useState(initialListState.page);
+  const [directoryPageLimit, setDirectoryPageLimit] = useState<CustomersPageLimit>(
+    initialListState.pageLimit
+  );
   const [directoryTotal, setDirectoryTotal] = useState(0);
 
   const [selectedDirectoryRowId, setSelectedDirectoryRowId] = useState<string | null>(null);
@@ -105,13 +109,27 @@ export function CustomersPage() {
   );
 
   const [directorySortBy, setDirectorySortBy] = useState<ClientDirectorySortBy>(
-    () => loadCustomersDirectoryListState().sortBy
+    initialListState.sortBy
   );
   const [directorySortOrder, setDirectorySortOrder] = useState<DirectorySortOrder>(
-    () => loadCustomersDirectoryListState().sortOrder
+    initialListState.sortOrder
   );
 
   useEffect(() => {
+    const saved = reloadCustomersDirectoryListStateFromStorage();
+    setSearchInput(saved.search);
+    setSearchQuery(saved.search);
+    setTypeFilter(saved.typeFilter);
+    setAuthorFilter(saved.authorFilter);
+    setDirectorySortBy(saved.sortBy);
+    setDirectorySortOrder(saved.sortOrder);
+    setDirectoryPage(saved.page);
+    setDirectoryPageLimit(saved.pageLimit);
+    listStateHydratedRef.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!listStateHydratedRef.current) return;
     persistCustomersDirectoryListState({
       search: searchInput,
       typeFilter,
@@ -119,8 +137,22 @@ export function CustomersPage() {
       sortBy: directorySortBy,
       sortOrder: directorySortOrder,
       page: directoryPage,
+      pageLimit: directoryPageLimit,
     });
-  }, [searchInput, typeFilter, authorFilter, directorySortBy, directorySortOrder, directoryPage]);
+  }, [
+    searchInput,
+    typeFilter,
+    authorFilter,
+    directorySortBy,
+    directorySortOrder,
+    directoryPage,
+    directoryPageLimit,
+  ]);
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(directoryTotal / directoryPageLimit));
+    if (directoryPage > totalPages) setDirectoryPage(totalPages);
+  }, [directoryTotal, directoryPageLimit, directoryPage]);
 
   useEffect(() => {
     getCrmUsers()
@@ -170,7 +202,7 @@ export function CustomersPage() {
     getClientDirectory({
       search: searchQuery || undefined,
       page: directoryPage,
-      limit: PAGE_SIZE,
+      limit: directoryPageLimit,
       entityType: typeFilter === 'all' ? undefined : typeFilter,
       createdById: authorFilter || undefined,
       sortBy: directorySortBy,
@@ -198,6 +230,7 @@ export function CustomersPage() {
     authorFilter,
     directorySortBy,
     directorySortOrder,
+    directoryPageLimit,
   ]);
 
   const selectedDirectoryRow = useMemo(
@@ -374,32 +407,51 @@ export function CustomersPage() {
           ))}
         </select>
 
-        <div className={styles.typeFilterButtons} role="group" aria-label="Тип клиента">
+        <select
+          id="customers-type-filter"
+          value={typeFilter}
+          onChange={(e) => {
+            setTypeFilter(e.target.value as CustomerTypeFilter);
+            setDirectoryPage(1);
+          }}
+          className={customersFilterFieldClass(
+            styles.authorSelect,
+            typeFilter !== 'all',
+            styles.filterActive
+          )}
+          aria-label="Тип заказчика"
+        >
           {TYPE_FILTER_OPTIONS.map(({ value, label }) => (
-            <button
-              key={value}
-              type="button"
-              className={
-                typeFilter === value
-                  ? `${styles.typeFilterBtn} ${styles.typeFilterBtnActive}`
-                  : styles.typeFilterBtn
-              }
-              aria-pressed={typeFilter === value}
-              onClick={() => {
-                setTypeFilter(value);
-                setDirectoryPage(1);
-              }}
-            >
+            <option key={value} value={value}>
               {label}
-            </button>
+            </option>
           ))}
-        </div>
+        </select>
+
+        <select
+          value={directoryPageLimit}
+          onChange={(e) => {
+            setDirectoryPageLimit(Number(e.target.value) as CustomersPageLimit);
+            setDirectoryPage(1);
+          }}
+          disabled={loading}
+          className={styles.pageLimitSelect}
+          aria-label="Количество строк на странице"
+        >
+          {CUSTOMERS_PAGE_LIMIT_OPTIONS.map((n) => (
+            <option key={n} value={n}>
+              {n} на странице
+            </option>
+          ))}
+        </select>
       </div>
 
       {error && <p className={styles.errorText}>{error}</p>}
 
       <DataTable
         containerClassName={styles.directoryTable}
+        paginationClassName={styles.directoryPagination}
+        paginationActiveClassName={styles.directoryPaginationPageActive}
         data={directoryRows}
         columns={directoryColumns}
         keyExtractor={(row) => row.id}
@@ -420,7 +472,7 @@ export function CustomersPage() {
         }}
         pagination={{
           page: directoryPage,
-          limit: PAGE_SIZE,
+          limit: directoryPageLimit,
           total: directoryTotal,
           onPageChange: setDirectoryPage,
         }}

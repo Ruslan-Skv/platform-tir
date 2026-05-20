@@ -104,6 +104,40 @@
   margin-bottom: var(--admin-space-xl);
 }
 
+.directoryPagination {
+  justify-content: center;
+  gap: var(--admin-space-2xl);
+  flex-wrap: wrap;
+}
+
+.directoryPaginationPageActive {
+  background: var(--admin-surface);
+  border-color: var(--admin-icon-copy);
+  color: var(--admin-icon-copy);
+  font-weight: 600;
+}
+
+.pageLimitSelect {
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
+  background: var(--admin-surface);
+  min-width: 10.5rem;
+  cursor: pointer;
+}
+
+.pageLimitSelect:focus {
+  border-color: var(--admin-accent, #2563eb);
+  box-shadow: var(--admin-shadow-focus-soft);
+  outline: none;
+}
+
+.pageLimitSelect:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .searchInput {
   flex: 1;
   min-width: 160px;

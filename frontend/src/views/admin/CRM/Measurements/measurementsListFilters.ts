@@ -5,6 +5,9 @@ import {
 } from './measurementListSort';
 import { MEASUREMENT_STATUS_OPTIONS } from './measurementStatuses';
 
+export const MEASUREMENTS_PAGE_LIMIT_OPTIONS = [20, 50, 100, 200] as const;
+export type MeasurementsPageLimit = (typeof MEASUREMENTS_PAGE_LIMIT_OPTIONS)[number];
+
 /** Сохранённые фильтры и сортировка списка замеров (/admin/measurements). */
 export interface MeasurementsListFiltersPersisted {
   search: string;
@@ -15,6 +18,8 @@ export interface MeasurementsListFiltersPersisted {
   dateTo: string;
   sortBy: MeasurementListSortBy;
   sortOrder: MeasurementListSortOrder;
+  page: number;
+  pageLimit: MeasurementsPageLimit;
 }
 
 const MEASUREMENTS_LIST_FILTERS_STORAGE_KEY = 'admin_measurements_list_filters_v1';
@@ -29,7 +34,23 @@ const EMPTY_FILTERS: MeasurementsListFiltersPersisted = {
   dateTo: '',
   sortBy: 'receptionDate',
   sortOrder: 'desc',
+  page: 1,
+  pageLimit: 20,
 };
+
+function normalizePage(raw: unknown): number {
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isFinite(n) || n < 1) return 1;
+  return Math.floor(n);
+}
+
+function normalizePageLimit(raw: unknown): MeasurementsPageLimit {
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  if (MEASUREMENTS_PAGE_LIMIT_OPTIONS.includes(n as MeasurementsPageLimit)) {
+    return n as MeasurementsPageLimit;
+  }
+  return EMPTY_FILTERS.pageLimit;
+}
 
 const STATUS_FILTER_VALUES = new Set<string>([
   '',
@@ -84,10 +105,25 @@ function normalizePersistedFilters(
       raw.sortOrder === 'asc' || raw.sortOrder === 'desc'
         ? raw.sortOrder
         : (legacy?.sortOrder ?? EMPTY_FILTERS.sortOrder),
+    page: normalizePage(raw.page),
+    pageLimit: normalizePageLimit(raw.pageLimit),
   };
 }
 
 let memoryCache: MeasurementsListFiltersPersisted | null = null;
+
+function readFromLocalStorage(): MeasurementsListFiltersPersisted {
+  try {
+    const raw = localStorage.getItem(MEASUREMENTS_LIST_FILTERS_STORAGE_KEY);
+    if (!raw) {
+      const legacy = loadLegacySortOnly();
+      return legacy ? { ...EMPTY_FILTERS, ...legacy } : { ...EMPTY_FILTERS };
+    }
+    return normalizePersistedFilters(JSON.parse(raw) as Partial<MeasurementsListFiltersPersisted>);
+  } catch {
+    return { ...EMPTY_FILTERS };
+  }
+}
 
 export function loadMeasurementsListFilters(): MeasurementsListFiltersPersisted {
   if (memoryCache) return memoryCache;
@@ -95,21 +131,15 @@ export function loadMeasurementsListFilters(): MeasurementsListFiltersPersisted 
     memoryCache = { ...EMPTY_FILTERS };
     return memoryCache;
   }
-  try {
-    const raw = localStorage.getItem(MEASUREMENTS_LIST_FILTERS_STORAGE_KEY);
-    if (!raw) {
-      const legacy = loadLegacySortOnly();
-      memoryCache = legacy ? { ...EMPTY_FILTERS, ...legacy } : { ...EMPTY_FILTERS };
-      return memoryCache;
-    }
-    memoryCache = normalizePersistedFilters(
-      JSON.parse(raw) as Partial<MeasurementsListFiltersPersisted>
-    );
-    return memoryCache;
-  } catch {
-    memoryCache = { ...EMPTY_FILTERS };
-    return memoryCache;
-  }
+  memoryCache = readFromLocalStorage();
+  return memoryCache;
+}
+
+/** Перечитать localStorage после SSR / навигации. */
+export function reloadMeasurementsListFiltersFromStorage(): MeasurementsListFiltersPersisted {
+  if (typeof window === 'undefined') return { ...EMPTY_FILTERS };
+  memoryCache = readFromLocalStorage();
+  return memoryCache;
 }
 
 export function persistMeasurementsListFilters(state: MeasurementsListFiltersPersisted): void {
