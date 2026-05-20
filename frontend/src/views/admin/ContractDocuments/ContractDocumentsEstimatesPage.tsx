@@ -2200,14 +2200,14 @@ export function ContractDocumentsEstimatesPage() {
                 disabled={saving || refreshing}
                 onClick={() => void openGenerateFromMeasurementModal()}
               >
-                Создать расчёт из замера
+                + Новый расчёт из замера
               </button>
               <Link
                 className={`${styles.primaryBtn} ${styles.estimatesCompactPrimaryLink}`}
                 href="/admin/contract-documents/estimates/workspace"
                 style={{ textDecoration: 'none' }}
               >
-                Создать расчёт
+                + Новый расчёт
               </Link>
             </>
           ) : null}
@@ -2230,7 +2230,7 @@ export function ContractDocumentsEstimatesPage() {
                 disabled={saving}
                 onClick={createObjectGroup}
               >
-                Добавить объект
+                + Новый объект
               </button>
             </div>
           ) : null}
@@ -2671,7 +2671,7 @@ export function ContractDocumentsEstimatesPage() {
                   );
                 }}
               >
-                Создать расчёт
+                + Новый расчёт
               </button>
             </div>
           </div>

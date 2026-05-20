@@ -332,7 +332,7 @@ export function CustomersPage() {
             className={styles.addButton}
             onClick={() => setAddCustomerOpen(true)}
           >
-            + Добавить заказчика
+            + Новый заказчик
           </button>
           <button
             type="button"

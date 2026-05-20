@@ -643,7 +643,7 @@ export function RepairContractDocumentsListPage() {
             }
             onClick={() => void handleCreate()}
           >
-            {creating ? 'Создание…' : 'Создать новый договор'}
+            {creating ? 'Создание…' : '+ Новый договор'}
           </button>
           <div className={styles.field} style={{ minWidth: 220, flex: '1 1 200px' }}>
             <label htmlFor="repair_list_manager_filter">Менеджер</label>

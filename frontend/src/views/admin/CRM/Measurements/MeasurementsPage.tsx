@@ -360,7 +360,7 @@ export function MeasurementsPage() {
             </svg>
           </button>
           <Link href="/admin/measurements/new" className={styles.addButton}>
-            + Добавить замер
+            + Новый замер
           </Link>
         </div>
       </div>
