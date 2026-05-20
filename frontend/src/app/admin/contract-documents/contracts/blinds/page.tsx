@@ -1,7 +1,5 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { ContractDocumentsDirectionPlaceholderPage } from '@/views/admin/ContractDocuments/ContractDocumentsDirectionPlaceholderPage';
-
-export default function AdminContractDocumentsContractsBlindsPage() {
-  return <ContractDocumentsDirectionPlaceholderPage title="Жалюзи" />;
+export default function AdminContractDocumentsContractsBlindsRedirectPage() {
+  redirect('/admin/contract-documents/contracts');
 }

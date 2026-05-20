@@ -12,7 +12,7 @@ export interface AdminResourceItem {
 export const ADMIN_RESOURCES: AdminResourceItem[] = [
   { id: 'admin', label: 'Дашборд', path: '/admin' },
   { id: 'admin.crm', label: 'CRM', path: '/admin/crm' },
-  { id: 'admin.crm.measurements', label: 'Замеры', path: '/admin/measurements/repair' },
+  { id: 'admin.crm.measurements', label: 'Замеры', path: '/admin/measurements' },
   {
     id: 'admin.crm.contract-payments',
     label: 'Движ. ден. средст',
@@ -44,42 +44,42 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   },
   {
     id: 'admin.contract-documents',
-    label: 'Оформление договоров',
+    label: 'Настройки — Оформление договоров',
     path: '/admin/contract-documents',
   },
   {
     id: 'admin.contract-documents.repair',
-    label: 'Оформление договоров — Ремонт',
-    path: '/admin/contract-documents/contracts/repair',
+    label: 'Договора',
+    path: '/admin/contract-documents/contracts',
   },
   {
     id: 'admin.contract-documents.contracts',
-    label: 'Оформление договоров — Договора',
+    label: 'Договора',
     path: '/admin/contract-documents/contracts',
   },
   {
     id: 'admin.contract-documents.instruction',
-    label: 'Оформление договоров — Инструкция',
+    label: 'Настройки — Оформление договоров — Инструкция',
     path: '/admin/contract-documents/instruction',
   },
   {
     id: 'admin.contract-documents.requisites',
-    label: 'Оформление договоров — Исполнители',
+    label: 'Настройки — Оформление договоров — Исполнители',
     path: '/admin/contract-documents/requisites',
   },
   {
     id: 'admin.contract-documents.signatories',
-    label: 'Оформление договоров — Менеджеры',
+    label: 'Настройки — Оформление договоров — Менеджеры',
     path: '/admin/contract-documents/signatories',
   },
   {
     id: 'admin.contract-documents.templates',
-    label: 'Оформление договоров — Библиотека шаблонов',
+    label: 'Настройки — Оформление договоров — Библиотека шаблонов',
     path: '/admin/contract-documents/templates',
   },
   {
     id: 'admin.contract-documents.estimates',
-    label: 'Оформление договоров — Расчёты',
+    label: 'Расчёты',
     path: '/admin/contract-documents/estimates',
   },
   { id: 'admin.content', label: 'Контент', path: '/admin/content' },

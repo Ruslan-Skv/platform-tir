@@ -1,7 +1,5 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { ContractDocumentsDirectionPlaceholderPage } from '@/views/admin/ContractDocuments/ContractDocumentsDirectionPlaceholderPage';
-
-export default function AdminContractDocumentsContractsWindowsPage() {
-  return <ContractDocumentsDirectionPlaceholderPage title="Окна" />;
+export default function AdminContractDocumentsContractsWindowsRedirectPage() {
+  redirect('/admin/contract-documents/contracts');
 }

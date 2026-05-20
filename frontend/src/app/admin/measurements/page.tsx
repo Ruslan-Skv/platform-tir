@@ -1,5 +1,13 @@
-import { redirect } from 'next/navigation';
+'use client';
+
+import { Suspense } from 'react';
+
+import { MeasurementsPage } from '@/views/admin/CRM/Measurements/MeasurementsPage';
 
 export default function AdminMeasurementsPage() {
-  redirect('/admin/measurements/repair');
+  return (
+    <Suspense fallback={null}>
+      <MeasurementsPage />
+    </Suspense>
+  );
 }

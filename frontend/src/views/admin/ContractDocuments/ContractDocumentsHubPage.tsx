@@ -19,12 +19,6 @@ export function ContractDocumentsHubPage() {
             Плейсхолдеры, Excel, CRM, печать и хранение шаблонов — всё в одном месте.
           </p>
         </Link>
-        <Link className={styles.hubCard} href="/admin/contract-documents/contracts">
-          <h2 className={styles.hubCardTitle}>Договора</h2>
-          <p className={styles.hubCardHint}>
-            Направления: ремонт, окна, двери и др. — списки пакетов документов и оформление.
-          </p>
-        </Link>
         <Link className={styles.hubCard} href="/admin/contract-documents/requisites">
           <h2 className={styles.hubCardTitle}>Исполнители</h2>
           <p className={styles.hubCardHint}>
@@ -41,12 +35,6 @@ export function ContractDocumentsHubPage() {
           <h2 className={styles.hubCardTitle}>Библиотека шаблонов договоров</h2>
           <p className={styles.hubCardHint}>
             Именованные шаблоны договора «Ремонт»: создание, копирование и настройка по умолчанию.
-          </p>
-        </Link>
-        <Link className={styles.hubCard} href="/admin/contract-documents/estimates">
-          <h2 className={styles.hubCardTitle}>Расчёты</h2>
-          <p className={styles.hubCardHint}>
-            Единый серверный список смет для команды: расчёт в калькуляторе, сохранение и выбор.
           </p>
         </Link>
       </div>

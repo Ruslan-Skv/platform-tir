@@ -1008,7 +1008,7 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <Link href="/admin/measurements/repair" className={styles.backLink}>
+        <Link href="/admin/measurements" className={styles.backLink}>
           ← К списку замеров
         </Link>
         <div className={styles.titleRow}>

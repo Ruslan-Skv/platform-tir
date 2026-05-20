@@ -8,6 +8,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { useAdminAccessibleResources } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { useAuth } from '@/features/auth';
 import { getSafeHref } from '@/shared/lib/sanitize';
+import { AdminAccessIcon } from '@/shared/ui/icons/AdminAccessIcon';
 
 import { AccessModal } from './AccessModal';
 import styles from './AdminSidebar.module.css';
@@ -115,87 +116,22 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.crm.installers',
   },
   {
-    label: 'Оформление договоров',
-    href: '/admin/contract-documents',
-    icon: '📄',
-    resourceId: 'admin.contract-documents',
-    children: [
-      {
-        label: 'Инструкция по работе с разделом',
-        href: '/admin/contract-documents/instruction',
-        resourceId: 'admin.contract-documents.instruction',
-      },
-      {
-        label: 'Договора',
-        href: '/admin/contract-documents/contracts',
-        resourceId: 'admin.contract-documents.contracts',
-        children: [
-          {
-            label: 'Ремонт',
-            href: '/admin/contract-documents/contracts/repair',
-            resourceId: 'admin.contract-documents.repair',
-          },
-          {
-            label: 'Окна',
-            href: '/admin/contract-documents/contracts/windows',
-            resourceId: 'admin.contract-documents.contracts',
-          },
-          {
-            label: 'Двери',
-            href: '/admin/contract-documents/contracts/doors',
-            resourceId: 'admin.contract-documents.contracts',
-          },
-          {
-            label: 'Потолки',
-            href: '/admin/contract-documents/contracts/ceilings',
-            resourceId: 'admin.contract-documents.contracts',
-          },
-          {
-            label: 'Жалюзи',
-            href: '/admin/contract-documents/contracts/blinds',
-            resourceId: 'admin.contract-documents.contracts',
-          },
-          {
-            label: 'Мебель',
-            href: '/admin/contract-documents/contracts/furniture',
-            resourceId: 'admin.contract-documents.contracts',
-          },
-        ],
-      },
-      {
-        label: 'Исполнители',
-        href: '/admin/contract-documents/requisites',
-        resourceId: 'admin.contract-documents.requisites',
-      },
-      {
-        label: 'Менеджеры',
-        href: '/admin/contract-documents/signatories',
-        resourceId: 'admin.contract-documents.signatories',
-      },
-      {
-        label: 'Библиотека шаблонов',
-        href: '/admin/contract-documents/templates',
-        resourceId: 'admin.contract-documents.templates',
-      },
-      {
-        label: 'Расчёты',
-        href: '/admin/contract-documents/estimates',
-        resourceId: 'admin.contract-documents.estimates',
-      },
-    ],
+    label: 'Договора',
+    href: '/admin/contract-documents/contracts',
+    icon: '📋',
+    resourceId: 'admin.contract-documents.repair',
+  },
+  {
+    label: 'Расчёты',
+    href: '/admin/contract-documents/estimates',
+    icon: '📊',
+    resourceId: 'admin.contract-documents.estimates',
   },
   {
     label: 'Замеры',
     href: '/admin/measurements',
     icon: '📏',
     resourceId: 'admin.crm.measurements',
-    children: [
-      {
-        label: 'Ремонт',
-        href: '/admin/measurements/repair',
-        resourceId: 'admin.crm.measurements',
-      },
-    ],
   },
   {
     label: 'Заказчики',
@@ -465,6 +401,33 @@ const baseNavItems: NavItem[] = [
         href: '/admin/settings/pwa',
         resourceId: 'admin.settings.pwa',
       },
+      {
+        label: 'Оформление договоров',
+        href: '/admin/contract-documents',
+        resourceId: 'admin.contract-documents',
+        children: [
+          {
+            label: 'Инструкция по работе с разделом',
+            href: '/admin/contract-documents/instruction',
+            resourceId: 'admin.contract-documents.instruction',
+          },
+          {
+            label: 'Исполнители',
+            href: '/admin/contract-documents/requisites',
+            resourceId: 'admin.contract-documents.requisites',
+          },
+          {
+            label: 'Менеджеры',
+            href: '/admin/contract-documents/signatories',
+            resourceId: 'admin.contract-documents.signatories',
+          },
+          {
+            label: 'Библиотека шаблонов',
+            href: '/admin/contract-documents/templates',
+            resourceId: 'admin.contract-documents.templates',
+          },
+        ],
+      },
       { label: 'Роли', href: '/admin/settings/roles', resourceId: 'admin.settings.roles' },
       { label: 'Управление пользователями', href: '/admin/users', resourceId: 'admin.users' },
     ],
@@ -588,12 +551,27 @@ export function AdminSidebar({
 
   const isNestedExpanded = (child: NavChild) => expandedItems.includes(child.href);
 
-  const isActive = (href: string) => {
-    if (href === '/admin') {
-      return pathname === '/admin';
-    }
-    return pathname?.startsWith(href) ?? false;
-  };
+  const isActive = useCallback(
+    (href: string) => {
+      const path = pathname ?? '';
+      if (href === '/admin') {
+        return path === '/admin';
+      }
+      if (path !== href && !path.startsWith(`${href}/`)) {
+        return false;
+      }
+      // Отдельный пункт верхнего уровня (напр. «Расчёты») не подсвечивает родителя-префикс
+      const blockingTopLevel = navItems.find(
+        (item) =>
+          !item.children &&
+          item.href !== href &&
+          item.href.startsWith(`${href}/`) &&
+          (path === item.href || path.startsWith(`${item.href}/`))
+      );
+      return !blockingTopLevel;
+    },
+    [pathname, navItems]
+  );
 
   const fromCategory = searchParams?.get('fromCategory');
   const isProductEditPage = pathname?.match(/^\/admin\/catalog\/products\/[^/]+\/edit/);
@@ -698,7 +676,7 @@ export function AdminSidebar({
                         title="Доступ"
                         aria-label={`Управление доступом: ${item.label}`}
                       >
-                        🛡️
+                        <AdminAccessIcon size={16} />
                       </button>
                     )}
                   </div>
@@ -741,7 +719,7 @@ export function AdminSidebar({
                                   title="Доступ"
                                   aria-label={`Управление доступом: ${child.label}`}
                                 >
-                                  🛡️
+                                  <AdminAccessIcon size={14} />
                                 </button>
                               )}
                             </div>
@@ -774,7 +752,7 @@ export function AdminSidebar({
                                         title="Доступ"
                                         aria-label={`Управление доступом: ${nested.label}`}
                                       >
-                                        🛡️
+                                        <AdminAccessIcon size={14} />
                                       </button>
                                     )}
                                   </div>
@@ -807,7 +785,7 @@ export function AdminSidebar({
                                 title="Доступ"
                                 aria-label={`Управление доступом: ${child.label}`}
                               >
-                                🛡️
+                                <AdminAccessIcon size={14} />
                               </button>
                             )}
                           </div>
@@ -837,7 +815,7 @@ export function AdminSidebar({
                       title="Доступ"
                       aria-label={`Управление доступом: ${item.label}`}
                     >
-                      🛡️
+                      <AdminAccessIcon size={16} />
                     </button>
                   )}
                 </div>

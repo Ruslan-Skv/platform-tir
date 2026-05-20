@@ -14,6 +14,7 @@ import {
   setResourcePermission,
   setRolePermission,
 } from '@/shared/api/admin-access';
+import { AdminAccessIcon } from '@/shared/ui/icons/AdminAccessIcon';
 import { ROLES_CONFIG } from '@/views/admin/Settings/rolesConfig';
 
 import styles from './AccessModal.module.css';
@@ -163,7 +164,10 @@ export function AccessModal({ resourceId, label, onClose }: AccessModalProps) {
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
           <h2 id="access-modal-title" className={styles.title}>
-            Доступ: {label}
+            <span className={styles.titleWithIcon}>
+              <AdminAccessIcon size={20} />
+              <span>Доступ: {label}</span>
+            </span>
           </h2>
           <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Закрыть">
             ×

@@ -177,7 +177,7 @@ export function ContractDocumentsSignatoriesPage() {
           </p>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
-          <Link className={styles.secondaryBtn} href="/admin/contract-documents/contracts/repair">
+          <Link className={styles.secondaryBtn} href="/admin/contract-documents/contracts">
             К разделу «Ремонт»
           </Link>
         </div>

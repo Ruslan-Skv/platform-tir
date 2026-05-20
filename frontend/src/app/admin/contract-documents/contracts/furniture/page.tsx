@@ -1,7 +1,5 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { ContractDocumentsDirectionPlaceholderPage } from '@/views/admin/ContractDocuments/ContractDocumentsDirectionPlaceholderPage';
-
-export default function AdminContractDocumentsContractsFurniturePage() {
-  return <ContractDocumentsDirectionPlaceholderPage title="Мебель" />;
+export default function AdminContractDocumentsContractsFurnitureRedirectPage() {
+  redirect('/admin/contract-documents/contracts');
 }

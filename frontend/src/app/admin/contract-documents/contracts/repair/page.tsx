@@ -1,7 +1,6 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { RepairContractDocumentsListPage } from '@/views/admin/ContractDocuments/repair/RepairContractDocumentsListPage';
-
-export default function AdminContractDocumentsContractsRepairPage() {
-  return <RepairContractDocumentsListPage />;
+/** Старый URL списка договоров «Ремонт» — перенаправление в раздел «Договора». */
+export default function AdminContractDocumentsContractsRepairRedirectPage() {
+  redirect('/admin/contract-documents/contracts');
 }

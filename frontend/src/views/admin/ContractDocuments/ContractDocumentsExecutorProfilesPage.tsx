@@ -124,7 +124,7 @@ export function ContractDocumentsExecutorProfilesPage() {
             . В договоре менеджер выберет наборы из списков.
           </p>
         </div>
-        <Link className={styles.secondaryBtn} href="/admin/contract-documents/contracts/repair">
+        <Link className={styles.secondaryBtn} href="/admin/contract-documents/contracts">
           К разделу «Ремонт»
         </Link>
       </div>

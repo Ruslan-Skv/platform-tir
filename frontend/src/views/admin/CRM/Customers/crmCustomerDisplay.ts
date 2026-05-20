@@ -79,7 +79,7 @@ export function crmContractDetailHref(contract: {
   documentPackageId?: string | null;
 }): string | null {
   if (contract.documentPackageId) {
-    return `/admin/contract-documents/contracts/repair/${contract.documentPackageId}`;
+    return `/admin/contract-documents/contracts/${contract.documentPackageId}`;
   }
   return null;
 }

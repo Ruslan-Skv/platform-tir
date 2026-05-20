@@ -34,6 +34,17 @@
   color: var(--admin-text-primary);
 }
 
+.titleWithIcon {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+}
+
+.titleWithIcon svg {
+  flex-shrink: 0;
+  color: var(--admin-accent);
+}
+
 .closeBtn {
   background: none;
   border: none;

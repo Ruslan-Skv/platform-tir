@@ -16,10 +16,7 @@ import { type CrmUser, getCrmUsers } from '@/shared/api/admin-crm';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
-import {
-  ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_HREF,
-  adminContractDocumentsContractsRepairPackageHref,
-} from '@/views/admin/ContractDocuments/contractDocumentsContractsRoutes';
+import { adminContractDocumentsContractsRepairPackageHref } from '@/views/admin/ContractDocuments/contractDocumentsContractsRoutes';
 
 import styles from '../ContractDocuments.module.css';
 import { buildFormDataForRepairPackageCopy } from './cloneRepairPackageFormDataForCopy';
@@ -589,12 +586,7 @@ export function RepairContractDocumentsListPage() {
     <div className={`${styles.page} ${styles.pageWide}`}>
       <div className={styles.editorHeader}>
         <div>
-          <Link className={styles.backLink} href={ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_HREF}>
-            ← Договора
-          </Link>
-          <h1 className={styles.title} style={{ marginTop: 8 }}>
-            Договора — Ремонт
-          </h1>
+          <h1 className={styles.title}>Договора</h1>
           {/* <p
             className={styles.hubCardHint}
             style={{ marginTop: 6, marginBottom: 0, maxWidth: 720 }}

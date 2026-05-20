@@ -35,7 +35,7 @@ import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
 import { VersionsHistoryIcon } from '@/shared/ui/icons/VersionsHistoryIcon';
 import { AddCrmCustomerModal } from '@/views/admin/CRM/Customers/AddCrmCustomerModal';
-import { ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_REPAIR_HREF } from '@/views/admin/ContractDocuments/contractDocumentsContractsRoutes';
+import { ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_HREF } from '@/views/admin/ContractDocuments/contractDocumentsContractsRoutes';
 
 import styles from '../ContractDocuments.module.css';
 import { RepairAddendumEstimateBlock } from './RepairAddendumEstimateBlock';
@@ -3555,7 +3555,7 @@ export function RepairContractDocumentEditorPage({
         className={`${styles.editorHeader} ${styles.blockHeader} ${styles.repairEditorHeaderThreeCol}`}
       >
         <div className={styles.repairEditorHeaderLeft}>
-          <Link className={styles.backLink} href={ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_REPAIR_HREF}>
+          <Link className={styles.backLink} href={ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_HREF}>
             ← К списку договоров (Ремонт)
           </Link>
           <div className={styles.editorHeaderTitleRow}>

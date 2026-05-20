@@ -1,13 +1,6 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { Suspense } from 'react';
-
-import { MeasurementsPage } from '@/views/admin/CRM/Measurements/MeasurementsPage';
-
-export default function AdminRepairMeasurementsPage() {
-  return (
-    <Suspense fallback={null}>
-      <MeasurementsPage />
-    </Suspense>
-  );
+/** Старый URL списка замеров — перенаправление в раздел «Замеры». */
+export default function AdminRepairMeasurementsRedirectPage() {
+  redirect('/admin/measurements');
 }

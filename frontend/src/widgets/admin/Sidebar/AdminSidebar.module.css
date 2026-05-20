@@ -4,17 +4,14 @@
   top: 0;
   height: 100vh;
   width: 220px;
-  background: linear-gradient(
-    180deg,
-    var(--admin-sidebar-bg-start) 0%,
-    var(--admin-sidebar-bg-end) 100%
-  );
+  background-color: var(--admin-bg-page, #f5f7fa);
   color: var(--admin-sidebar-text-strong);
   display: flex;
   flex-direction: column;
   transition: width 0.3s ease;
   z-index: 100;
   overflow: hidden;
+  border-right: 1px solid var(--admin-sidebar-divider);
 }
 
 .sidebar.collapsed {
@@ -160,7 +157,6 @@
   background: transparent;
   color: var(--admin-sidebar-text);
   cursor: pointer;
-  font-size: var(--admin-font-size-md);
   border-radius: var(--admin-radius-xs);
   transition:
     color 0.2s,
@@ -184,7 +180,6 @@
   background: transparent;
   color: var(--admin-sidebar-text);
   cursor: pointer;
-  font-size: var(--admin-font-size-xs);
   border-radius: var(--admin-radius-xs);
   transition:
     color 0.2s,

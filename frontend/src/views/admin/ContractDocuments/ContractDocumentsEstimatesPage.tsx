@@ -2095,9 +2095,6 @@ export function ContractDocumentsEstimatesPage() {
     >
       <div className={styles.editorHeader}>
         <div>
-          <Link className={styles.backLink} href="/admin/contract-documents">
-            ← К разделу «Оформление договоров»
-          </Link>
           <h1 className={styles.title}>{archiveView ? 'Архив расчётов' : 'Расчёты'}</h1>
         </div>
         <div className={styles.headerButtonsRow}>
