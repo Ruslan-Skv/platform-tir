@@ -1,0 +1,418 @@
+.searchInput {
+  width: 100%;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
+  box-sizing: border-box;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 2px rgba(var(--admin-overlay-color-144), 0.2);
+}
+
+.searchInput:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.customerCrmPanel {
+  --customer-crm-result-row-height: 2.75rem;
+
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 100%;
+  padding: var(--admin-space-md);
+  border: 1px solid var(--admin-info-border, #93c5fd);
+  border-radius: var(--admin-radius-md);
+  background: linear-gradient(
+    152deg,
+    var(--admin-info-bg, #dbeafe) 0%,
+    var(--admin-info-border-soft, #bfdbfe) 32%,
+    var(--admin-info-bg-soft, #eff6ff) 58%,
+    var(--admin-surface) 88%
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.7),
+    0 2px 12px rgb(37 99 235 / 0.12);
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.customerCrmPanelHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--admin-space-sm);
+  margin-bottom: var(--admin-space-xs);
+  flex-shrink: 0;
+}
+
+.customerCrmTitle {
+  margin: 0 0 var(--admin-space-2xs);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
+  color: var(--admin-text-secondary);
+}
+
+.customerCrmHint {
+  margin: 0;
+  font-size: var(--admin-font-size-2xs);
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-muted);
+}
+
+.customerCrmSearchWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: flex-end;
+  min-height: 0;
+  margin-top: var(--admin-space-sm);
+  padding-bottom: 1rem;
+}
+
+.customerCrmSearchRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.customerCrmSearchRow .searchInput {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.customerCrmDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+}
+
+.customerCrmDropdown .customerCrmMuted,
+.customerCrmDropdown .customerCrmError {
+  margin: 0;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+  box-shadow: 0 6px 18px rgb(37 99 235 / 0.16);
+}
+
+.customerCrmMuted {
+  margin: var(--admin-space-2xs) 0;
+  font-size: var(--admin-font-size-2xs);
+  color: var(--admin-text-muted);
+}
+
+.customerCrmError {
+  margin: var(--admin-space-2xs) 0;
+  font-size: var(--admin-font-size-2xs);
+  color: var(--admin-error-text-strong);
+}
+
+.customerCrmResults {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: calc(var(--customer-crm-result-row-height) * 10);
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+  box-shadow: 0 6px 18px rgb(37 99 235 / 0.16);
+}
+
+.customerCrmResults li + li {
+  border-top: 1px solid var(--admin-border);
+}
+
+.customerCrmResultItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: var(--customer-crm-result-row-height);
+}
+
+.customerCrmResultAside {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-2xs);
+  flex-shrink: 0;
+  padding: 0 var(--admin-space-xs) 0 0;
+}
+
+.customerCrmResultFill {
+  font-size: var(--admin-font-size-2xs);
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  padding: 1px 5px;
+  border-radius: var(--admin-radius-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.customerCrmResultEditBtn {
+  padding: 1px var(--admin-space-xs);
+  border: 1px solid var(--admin-info-border, #93c5fd);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+  color: var(--admin-info-strong, #1d4ed8);
+  cursor: pointer;
+  font-size: var(--admin-font-size-2xs);
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.customerCrmResultEditBtn:hover:not(:disabled) {
+  background: var(--admin-info-bg-soft, #eff6ff);
+  border-color: var(--admin-info, #3b82f6);
+}
+
+.customerCrmResultEditBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.customerCrmResultButton {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  margin: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  box-sizing: border-box;
+}
+
+.customerCrmResultButton:hover:not(:disabled) {
+  background: var(--admin-info-bg);
+}
+
+.customerCrmResultButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.customerCrmResultName {
+  font-weight: 600;
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-secondary);
+}
+
+.customerCrmResultMeta {
+  font-size: var(--admin-font-size-2xs);
+  color: var(--admin-text-muted);
+  word-break: break-word;
+}
+
+.customerCrmActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  margin-top: 0;
+  margin-bottom: var(--admin-space-sm);
+  flex-shrink: 0;
+}
+
+.customerCrmSearchInput {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.customerCrmAddButton {
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  border: none;
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-info, #3b82f6);
+  color: var(--admin-surface, #fff);
+  cursor: pointer;
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  margin-left: auto;
+  transition: background 0.15s ease;
+}
+
+.customerCrmAddButton:hover:not(:disabled) {
+  background: var(--admin-info-strong, #1d4ed8);
+}
+
+.customerCrmAddButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.customerCrmClearButton {
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  border: 1px solid var(--admin-chart-cyan);
+  border-radius: var(--admin-radius-md);
+  background: linear-gradient(180deg, var(--admin-info-bg-soft) 0%, var(--admin-info-bg) 100%);
+  color: var(--admin-info-strong);
+  cursor: pointer;
+  font-size: var(--admin-font-size-xs);
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 1px 6px var(--admin-overlay-color-129);
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.customerCrmClearButton:hover:not(:disabled) {
+  border-color: var(--admin-info);
+  background: linear-gradient(180deg, var(--admin-info-bg) 0%, var(--admin-info-border-soft) 100%);
+  color: var(--admin-info-text);
+}
+
+.customerCrmClearButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.customerCrmLinkedBadge {
+  flex-shrink: 0;
+  padding: 2px var(--admin-space-xs);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-2xs);
+  font-weight: 600;
+  color: var(--admin-success-text-strong);
+  background: var(--admin-success-bg);
+  border: 1px solid var(--admin-success-border-soft);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmClearButton {
+  background: linear-gradient(180deg, var(--admin-info) 0%, var(--admin-info-strong) 100%);
+  border-color: var(--admin-info-bright);
+  color: var(--admin-text-inverse);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .customerCrmClearButton:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--admin-info-strong) 0%, var(--admin-info) 100%);
+  border-color: var(--admin-info-bright);
+  color: var(--admin-text-inverse);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmPanel {
+  border-color: var(--admin-info-light);
+  background: linear-gradient(
+    152deg,
+    var(--admin-overlay-color-136) 0%,
+    var(--admin-overlay-color-123) 40%,
+    var(--admin-surface-soft) 82%
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 2px 14px rgb(0 0 0 / 0.35);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmTitle {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmHint,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmMuted {
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmPanel .searchInput,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmSearchRow .searchInput {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .customerCrmPanel
+  .searchInput::placeholder {
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmPanel .searchInput:focus {
+  border-color: var(--admin-info-light);
+  box-shadow: 0 0 0 2px var(--admin-overlay-color-136);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmAddButton {
+  background: var(--admin-info);
+  color: var(--admin-text-inverse);
+  box-shadow: 0 1px 6px rgb(0 0 0 / 0.28);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .customerCrmAddButton:hover:not(:disabled) {
+  background: var(--admin-info-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmDropdown .customerCrmMuted,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmDropdown .customerCrmError,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmResults {
+  background: var(--admin-surface);
+  border-color: var(--admin-sidebar-text);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.45);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmResults li + li {
+  border-top-color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmResultButton {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .customerCrmResultButton:hover:not(:disabled) {
+  background: var(--admin-overlay-color-136);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmResultName {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmResultMeta {
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmResultEditBtn {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-info-light);
+  color: var(--admin-info-bright);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .customerCrmResultEditBtn:hover:not(:disabled) {
+  background: var(--admin-overlay-color-136);
+  border-color: var(--admin-info);
+  color: var(--admin-info-bright);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmError {
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmLinkedBadge {
+  background: rgb(22 101 52 / 0.28);
+  border-color: var(--admin-success-border);
+  color: var(--admin-success-bright);
+}

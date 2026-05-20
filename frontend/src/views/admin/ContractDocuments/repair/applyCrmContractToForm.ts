@@ -1,9 +1,11 @@
-import type { Contract, ContractCustomer, DocumentCustomerBlock } from '@/shared/api/admin-crm';
-import { parseObjectAddresses } from '@/views/admin/CRM/Customers/crmCustomerExtendedProfile';
-import {
-  joinPersonFullName,
-  resolvePersonNameParts,
-} from '@/views/admin/CRM/Customers/crmCustomerName';
+import type {
+  Contract,
+  ContractCustomer,
+  CrmCustomerDetail,
+  DocumentCustomerBlock,
+} from '@/shared/api/admin-crm';
+import { formFromCrmCustomerDetail } from '@/views/admin/CRM/Customers/crmCustomerForm';
+import { joinPersonFullName } from '@/views/admin/CRM/Customers/crmCustomerName';
 
 import { amountToRussianWords } from './amountToRussianWords';
 import { isoOrCrmDateToContractDdMmYyyy } from './contractDateFormat';
@@ -61,6 +63,74 @@ function contractSnapshotCustomer(c: Contract): RepairCustomerBlock {
   });
 }
 
+/** Блок «Заказчик» из карточки CRM (без слияния с предыдущими значениями формы). */
+function repairCustomerBlockFromCrmDetail(detail: CrmCustomerDetail): RepairCustomerBlock {
+  const { form, lockedPhones } = formFromCrmCustomerDetail(detail);
+  const type = form.entityType as RepairCustomerBlock['type'];
+  const personFullName = joinPersonFullName({
+    lastName: form.lastName,
+    firstName: form.firstName,
+    patronymic: form.patronymic,
+  });
+  const extraPhones = form.phones.map((p) => p.trim()).filter(Boolean);
+  const allPhones = [...lockedPhones, ...extraPhones];
+
+  return normalizeRepairCustomerBlock({
+    type,
+    fullName: type === 'PERSON' ? personFullName : form.repNom.trim(),
+    representativeFullNameNominative: form.repNom.trim(),
+    representativeFullNameGenitive: form.repGen.trim(),
+    organizationName: form.organizationName.trim(),
+    representativePositionNominative: form.posNom.trim(),
+    representativePositionGenitive: form.posGen.trim(),
+    inn: form.inn.trim(),
+    ogrn: form.ogrn.trim(),
+    address: form.address.trim(),
+    email: form.email.trim(),
+    bankDetails: form.bankDetails.trim(),
+    passportSeriesNumber: form.passportSeriesNumber.trim(),
+    passportIssuedBy: form.passportIssuedBy.trim(),
+    passportIssueDate: form.passportIssueDate.trim(),
+    phones: allPhones.length > 0 ? allPhones : [''],
+    phone: allPhones[0] ?? '',
+  });
+}
+
+/**
+ * Подстановка заказчика и адреса объекта из карточки CRM (поиск в базе, создание заказчика).
+ */
+export function mergeRepairFormFromCrmCustomerDetail(
+  detail: CrmCustomerDetail,
+  prev: RepairPackageFormData
+): RepairPackageFormData {
+  const { form } = formFromCrmCustomerDetail(detail);
+  const objectAddress = (form.objectAddresses[0] ?? '').trim();
+
+  return {
+    ...prev,
+    customer: repairCustomerBlockFromCrmDetail(detail),
+    object: {
+      ...prev.object,
+      objectAddress,
+    },
+  };
+}
+
+/** Сбрасывает поля, заполняемые из карточки CRM (блок «Заказчик» и «Адрес объекта»). */
+export function clearRepairFormCrmCustomerFields(
+  prev: RepairPackageFormData
+): RepairPackageFormData {
+  const defaults = defaultRepairPackageFormData();
+  return {
+    ...prev,
+    customer: defaults.customer,
+    object: {
+      ...prev.object,
+      objectAddress: defaults.object.objectAddress,
+    },
+  };
+}
+
 /**
  * Подстановка данных пакета по договору CRM и строке поиска.
  * Блок «Заказчик» **полностью** берётся из `documentCustomer` строки поиска (если есть),
@@ -99,94 +169,13 @@ export function mergeRepairFormFromCrmContract(
   };
 }
 
-/** Заполняет блок «Заказчик» из ответа POST `/admin/customers` после создания карточки в CRM (другие сценарии). */
+/** Заполняет блок «Заказчик» из ответа POST `/admin/customers` после создания карточки в CRM. */
 export function mergeRepairFormFromCreatedCrmCustomer(
   created: unknown,
   prev: RepairPackageFormData
 ): RepairPackageFormData {
   if (!created || typeof created !== 'object') return prev;
-  const r = created as Record<string, unknown>;
-  const ext =
-    r.extendedProfile && typeof r.extendedProfile === 'object' && !Array.isArray(r.extendedProfile)
-      ? (r.extendedProfile as Record<string, unknown>)
-      : {};
-
-  const s = (v: unknown) => (typeof v === 'string' ? v : '');
-
-  const entityRaw = s(r.entityType) || s(ext.type);
-  const type: RepairCustomerBlock['type'] =
-    entityRaw === 'COMPANY' || entityRaw === 'ENTREPRENEUR' || entityRaw === 'PERSON'
-      ? entityRaw
-      : 'PERSON';
-
-  const rawPhones = Array.isArray(r.phones)
-    ? r.phones.map((x) => (typeof x === 'string' ? x : ''))
-    : [];
-  const primaryFromRow = s(r.phone).trim();
-  const phonesForBlock = rawPhones.some((p) => p.trim())
-    ? rawPhones
-    : primaryFromRow
-      ? [primaryFromRow]
-      : undefined;
-
-  const firstName = s(r.firstName);
-  const lastName = s(r.lastName);
-  const personParts = resolvePersonNameParts({
-    extLastName: s(ext.lastName),
-    extFirstName: s(ext.firstName),
-    extPatronymic: s(ext.patronymic),
-    extFullName: s(ext.fullName),
-    rowFirstName: firstName,
-    rowLastName: lastName,
-  });
-  const fullNamePerson = joinPersonFullName(personParts);
-  const orgName = s(ext.organizationName).trim() || s(r.company).trim();
-
-  const customerPatch: Partial<RepairCustomerBlock> & { phones?: string[] } = {
-    type,
-    fullName:
-      type === 'PERSON'
-        ? fullNamePerson || prev.customer.fullName
-        : s(ext.fullName).trim() || prev.customer.fullName,
-    representativeFullNameNominative:
-      s(ext.representativeFullNameNominative) || prev.customer.representativeFullNameNominative,
-    representativeFullNameGenitive:
-      s(ext.representativeFullNameGenitive) || prev.customer.representativeFullNameGenitive,
-    organizationName: orgName || prev.customer.organizationName,
-    representativePositionNominative:
-      s(ext.representativePositionNominative) ||
-      s(r.position) ||
-      prev.customer.representativePositionNominative,
-    representativePositionGenitive:
-      s(ext.representativePositionGenitive) || prev.customer.representativePositionGenitive,
-    inn: s(ext.inn) || prev.customer.inn,
-    ogrn: s(ext.ogrn) || prev.customer.ogrn,
-    address: s(ext.address) || prev.customer.address,
-    email: s(r.email) || s(ext.email) || prev.customer.email,
-    bankDetails: s(ext.bankDetails) || prev.customer.bankDetails,
-    passportSeriesNumber: s(ext.passportSeriesNumber) || prev.customer.passportSeriesNumber,
-    passportIssuedBy: s(ext.passportIssuedBy) || prev.customer.passportIssuedBy,
-    passportIssueDate: s(ext.passportIssueDate) || prev.customer.passportIssueDate,
-  };
-  if (phonesForBlock) {
-    customerPatch.phones = phonesForBlock;
-    customerPatch.phone = primaryFromRow || phonesForBlock.find((p) => p.trim()) || '';
-  } else if (primaryFromRow) {
-    customerPatch.phone = primaryFromRow;
-  }
-
-  const objectAddresses = parseObjectAddresses(ext);
-  const firstObjectAddress = objectAddresses[0] ?? '';
-
-  return {
-    ...prev,
-    customer: normalizeRepairCustomerBlock({
-      ...prev.customer,
-      ...customerPatch,
-    }),
-    object: {
-      ...prev.object,
-      objectAddress: firstObjectAddress || prev.object.objectAddress,
-    },
-  };
+  const id = (created as { id?: unknown }).id;
+  if (typeof id !== 'string' || !id.trim()) return prev;
+  return mergeRepairFormFromCrmCustomerDetail(created as CrmCustomerDetail, prev);
 }

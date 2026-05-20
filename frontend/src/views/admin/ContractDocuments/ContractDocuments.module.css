@@ -1270,8 +1270,20 @@
   right: 6px;
 }
 
-.repairCustomerSearchWrapLocked {
+.repairCustomerSearchWrapLocked,
+.repairCustomerSearchSlotLocked {
   opacity: 0.96;
+}
+
+.repairCustomerSearchSlot {
+  position: relative;
+  z-index: 5;
+  width: 100%;
+  overflow: visible;
+}
+
+.repairCustomerSearchSlot > article {
+  height: 100%;
 }
 
 /* Адрес объекта | этаж — под реквизитами договора */
@@ -1385,7 +1397,7 @@
 
 /* «Договор и объект» и «Поиск заказчика» — одинаковая высота цветных карточек */
 .repairContractDataTabDense .dataTopBlock > .sectionCard,
-.repairContractDataTabDense .dataTopBlock > .repairCustomerSearchWrap {
+.repairContractDataTabDense .dataTopBlock > .repairCustomerSearchSlot {
   flex: 1 1 auto;
   min-height: 0;
 }
@@ -1405,9 +1417,8 @@
   border-color: var(--admin-chart-cyan-border);
 }
 
-.repairContractDataTabDense .dataTopRow > .dataTopBlock:nth-child(2) .repairCustomerSearchWrap {
-  background: var(--admin-success-bg-soft);
-  border-color: var(--admin-success-border-soft);
+.repairContractDataTabDense .dataTopRow > .dataTopBlock:nth-child(2) .repairCustomerSearchSlot {
+  min-height: 0;
 }
 
 .repairContractDataTabDense .formGrid > .sectionCard:nth-child(2) {

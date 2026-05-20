@@ -28,13 +28,13 @@ import {
   uploadRepairPackageContractCloseActPhoto,
   uploadRepairPackageWorkStartActPhoto,
 } from '@/shared/api/admin-contract-document-packages';
-import type { ContractCustomer, InstallerMaster } from '@/shared/api/admin-crm';
-import { getContract, getContractCustomers, getInstallers } from '@/shared/api/admin-crm';
+import type { CrmCustomerDetail, InstallerMaster } from '@/shared/api/admin-crm';
+import { getInstallers } from '@/shared/api/admin-crm';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
 import { VersionsHistoryIcon } from '@/shared/ui/icons/VersionsHistoryIcon';
-import { AddCrmCustomerModal } from '@/views/admin/CRM/Customers/AddCrmCustomerModal';
+import { CrmCustomerSearchPanel } from '@/views/admin/CRM/Customers/CrmCustomerSearchPanel';
 import { ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_HREF } from '@/views/admin/ContractDocuments/contractDocumentsContractsRoutes';
 
 import styles from '../ContractDocuments.module.css';
@@ -44,8 +44,8 @@ import { RepairManagerQuestionnaire1Tab } from './RepairManagerQuestionnaire1Tab
 import { RepairPostWorkQuestionnaire2Tab } from './RepairPostWorkQuestionnaire2Tab';
 import { amountToRussianWords } from './amountToRussianWords';
 import {
-  mergeRepairFormFromCreatedCrmCustomer,
-  mergeRepairFormFromCrmContract,
+  clearRepairFormCrmCustomerFields,
+  mergeRepairFormFromCrmCustomerDetail,
 } from './applyCrmContractToForm';
 import { applyTemplate } from './applyTemplate';
 import { contractDateToDdMmYyyy, todayContractDateDdMmYyyy } from './contractDateFormat';
@@ -651,19 +651,7 @@ export function RepairContractDocumentEditorPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
-  const [customerSearchKind, setCustomerSearchKind] = useState<
-    'PERSON' | 'COMPANY' | 'ENTREPRENEUR'
-  >('PERSON');
-  const [customerFlFio, setCustomerFlFio] = useState('');
-  const [customerFlPhone, setCustomerFlPhone] = useState('');
-  const [customerFlAddress, setCustomerFlAddress] = useState('');
-  const [customerUlOrg, setCustomerUlOrg] = useState('');
-  const [customerUlInn, setCustomerUlInn] = useState('');
-  const [customerResults, setCustomerResults] = useState<ContractCustomer[]>([]);
-  const [customerSearchLoading, setCustomerSearchLoading] = useState(false);
-  const [customerSearchPopoverOpen, setCustomerSearchPopoverOpen] = useState(false);
-  const [addCrmCustomerModalOpen, setAddCrmCustomerModalOpen] = useState(false);
-  const customerSearchRootRef = useRef<HTMLDivElement>(null);
+  const [linkedCrmCustomerId, setLinkedCrmCustomerId] = useState<string | null>(null);
   const [templateOverrides, setTemplateOverrides] = useState<
     Partial<Record<RepairDocumentTemplateTabId, string>>
   >({});
@@ -1420,84 +1408,23 @@ export function RepairContractDocumentEditorPage({
     };
   }, [isVersionsHistoryOpen]);
 
-  const customerSearchQuery = useMemo(() => {
-    if (customerSearchKind === 'PERSON') {
-      return [customerFlFio, customerFlPhone, customerFlAddress]
-        .map((s) => s.trim())
-        .filter(Boolean)
-        .join(' ');
-    }
-    return [customerUlOrg, customerUlInn]
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .join(' ');
-  }, [
-    customerSearchKind,
-    customerFlFio,
-    customerFlPhone,
-    customerFlAddress,
-    customerUlOrg,
-    customerUlInn,
-  ]);
+  const handleRepairCrmCustomerApplied = useCallback(
+    (detail: CrmCustomerDetail) => {
+      if (contractAndEstimateLocked) return;
+      const next = mergeRepairFormFromCrmCustomerDetail(detail, formRef.current);
+      setForm(next);
+      setLinkedCrmCustomerId(detail.id);
+      touchPackageData();
+    },
+    [contractAndEstimateLocked, touchPackageData]
+  );
 
-  const openCustomerSearchPopoverIfReady = useCallback(() => {
+  const handleRepairCrmCustomerClear = useCallback(() => {
     if (contractAndEstimateLocked) return;
-    if (customerSearchQuery.trim().length >= 2) {
-      setCustomerSearchPopoverOpen(true);
-    }
-  }, [customerSearchQuery, contractAndEstimateLocked]);
-
-  const searchCustomersFromContracts = useCallback(async (q: string) => {
-    if (q.trim().length < 2) {
-      setCustomerResults([]);
-      return;
-    }
-    setCustomerSearchLoading(true);
-    try {
-      const res = await getContractCustomers(q);
-      setCustomerResults(res.customers);
-    } catch {
-      setCustomerResults([]);
-    } finally {
-      setCustomerSearchLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const t = window.setTimeout(() => {
-      void searchCustomersFromContracts(customerSearchQuery);
-    }, 400);
-    return () => window.clearTimeout(t);
-  }, [customerSearchQuery, searchCustomersFromContracts]);
-
-  useEffect(() => {
-    if (customerSearchQuery.trim().length < 2) {
-      setCustomerSearchPopoverOpen(false);
-      return;
-    }
-    setCustomerSearchPopoverOpen(true);
-  }, [customerSearchQuery]);
-
-  useEffect(() => {
-    if (!customerSearchPopoverOpen) return;
-    const onDocMouseDown = (e: MouseEvent) => {
-      const root = customerSearchRootRef.current;
-      if (!root) return;
-      const t = e.target;
-      if (t instanceof Node && !root.contains(t)) {
-        setCustomerSearchPopoverOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onDocMouseDown, true);
-    return () => document.removeEventListener('mousedown', onDocMouseDown, true);
-  }, [customerSearchPopoverOpen]);
-
-  useEffect(() => {
-    const t = form.customer.type;
-    setCustomerSearchKind(
-      t === 'PERSON' ? 'PERSON' : t === 'ENTREPRENEUR' ? 'ENTREPRENEUR' : 'COMPANY'
-    );
-  }, [form.customer.type]);
+    setLinkedCrmCustomerId(null);
+    setForm((p) => clearRepairFormCrmCustomerFields(p));
+    touchPackageData();
+  }, [contractAndEstimateLocked, touchPackageData]);
 
   const handleMarkContractConcluded = async () => {
     setSavingPackageStatus(true);
@@ -1746,20 +1673,6 @@ export function RepairContractDocumentEditorPage({
       setContractCloseModalError(e instanceof Error ? e.message : 'Не удалось сохранить');
     } finally {
       setContractCloseModalBusy(false);
-    }
-  };
-
-  const applyCrmContractToFormById = async (contractId: string, searchRow: ContractCustomer) => {
-    if (contractAndEstimateLocked) return;
-    setError(null);
-    try {
-      const c = await getContract(contractId);
-      const nextForm = mergeRepairFormFromCrmContract(c, formRef.current, searchRow);
-      setForm(nextForm);
-      touchPackageData();
-      setCustomerSearchPopoverOpen(false);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось загрузить договор CRM');
     }
   };
 
@@ -2100,12 +2013,6 @@ export function RepairContractDocumentEditorPage({
       return { ...p, contract: { ...p.contract, prepaymentAmountWords: nextWords } };
     });
   }, [form.contract.prepaymentAmount]);
-
-  useEffect(() => {
-    if (contractAndEstimateLocked) {
-      setCustomerSearchPopoverOpen(false);
-    }
-  }, [contractAndEstimateLocked]);
 
   const estimateUsageById = useMemo(() => {
     const map = new Map<
@@ -4444,18 +4351,6 @@ export function RepairContractDocumentEditorPage({
         cancelText="Отмена"
         variant="default"
       />
-      <AddCrmCustomerModal
-        isOpen={addCrmCustomerModalOpen}
-        onClose={() => setAddCrmCustomerModalOpen(false)}
-        onCreated={(created) => {
-          if (contractAndEstimateLocked) return;
-          const next = mergeRepairFormFromCreatedCrmCustomer(created, formRef.current);
-          setForm(next);
-          setCustomerSearchKind(next.customer.type);
-          touchPackageData();
-        }}
-      />
-
       <div className={styles.repairPackageTabBarRow}>
         <div
           className={`${styles.tabBar} ${styles.blockTabs} ${styles.repairPackageTabBarCompact}`}
@@ -4731,186 +4626,18 @@ export function RepairContractDocumentEditorPage({
 
               <div className={styles.dataTopBlock}>
                 <div
-                  ref={customerSearchRootRef}
-                  onFocusCapture={openCustomerSearchPopoverIfReady}
-                  className={`${styles.field} ${styles.crmCompactField} ${styles.crmCompactBox} ${styles.repairCustomerSearchWrap} ${
-                    contractAndEstimateLocked ? styles.repairCustomerSearchWrapLocked : ''
+                  className={`${styles.repairCustomerSearchSlot} ${
+                    contractAndEstimateLocked ? styles.repairCustomerSearchSlotLocked : ''
                   }`}
                 >
-                  <h3 className={styles.sectionTitle}>Поиск заказчика в базе</h3>
-                  <div className={styles.repairCustomerSearchModeRow}>
-                    <div
-                      className={styles.repairCustomerSearchKindGroup}
-                      role="group"
-                      aria-label="Тип заказчика"
-                    >
-                      <button
-                        type="button"
-                        className={
-                          customerSearchKind === 'PERSON' ? styles.primaryBtn : styles.secondaryBtn
-                        }
-                        disabled={contractAndEstimateLocked}
-                        onClick={() => {
-                          setCustomerSearchKind('PERSON');
-                        }}
-                      >
-                        Физлицо
-                      </button>
-                      <button
-                        type="button"
-                        className={
-                          customerSearchKind === 'COMPANY' ? styles.primaryBtn : styles.secondaryBtn
-                        }
-                        disabled={contractAndEstimateLocked}
-                        onClick={() => {
-                          setCustomerSearchKind('COMPANY');
-                        }}
-                      >
-                        ЮЛ
-                      </button>
-                      <button
-                        type="button"
-                        className={
-                          customerSearchKind === 'ENTREPRENEUR'
-                            ? styles.primaryBtn
-                            : styles.secondaryBtn
-                        }
-                        disabled={contractAndEstimateLocked}
-                        onClick={() => {
-                          setCustomerSearchKind('ENTREPRENEUR');
-                        }}
-                        title="Индивидуальный предприниматель"
-                      >
-                        ИП
-                      </button>
-                    </div>
-                    <button
-                      type="button"
-                      className={`${styles.primaryBtn} ${styles.repairCustomerSearchCrmBtn}`}
-                      disabled={contractAndEstimateLocked}
-                      onClick={() => setAddCrmCustomerModalOpen(true)}
-                    >
-                      Добавить нового заказчика
-                    </button>
-                  </div>
-                  {customerSearchKind === 'PERSON' ? (
-                    <div className={styles.repairCustomerSearchFlGrid}>
-                      <div className={styles.field}>
-                        <label htmlFor="crm_cust_fio">ФИО</label>
-                        <input
-                          id="crm_cust_fio"
-                          value={customerFlFio}
-                          onChange={(e) => setCustomerFlFio(e.target.value)}
-                          onClick={openCustomerSearchPopoverIfReady}
-                          placeholder="Фамилия Имя Отчество"
-                          autoComplete="off"
-                          disabled={contractAndEstimateLocked}
-                        />
-                      </div>
-                      <div className={styles.field}>
-                        <label htmlFor="crm_cust_phone">Телефон</label>
-                        <input
-                          id="crm_cust_phone"
-                          value={customerFlPhone}
-                          onChange={(e) => setCustomerFlPhone(e.target.value)}
-                          onClick={openCustomerSearchPopoverIfReady}
-                          placeholder="+7…"
-                          autoComplete="off"
-                          disabled={contractAndEstimateLocked}
-                        />
-                      </div>
-                      <div className={styles.field}>
-                        <label htmlFor="crm_cust_addr">Адрес</label>
-                        <input
-                          id="crm_cust_addr"
-                          value={customerFlAddress}
-                          onChange={(e) => setCustomerFlAddress(e.target.value)}
-                          onClick={openCustomerSearchPopoverIfReady}
-                          placeholder="Город, улица…"
-                          autoComplete="off"
-                          disabled={contractAndEstimateLocked}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className={styles.repairCustomerSearchUlGrid}>
-                      <div className={styles.field}>
-                        <label htmlFor="crm_cust_org">Наименование организации</label>
-                        <input
-                          id="crm_cust_org"
-                          value={customerUlOrg}
-                          onChange={(e) => setCustomerUlOrg(e.target.value)}
-                          onClick={openCustomerSearchPopoverIfReady}
-                          placeholder="ООО, ИП…"
-                          autoComplete="off"
-                          disabled={contractAndEstimateLocked}
-                        />
-                      </div>
-                      <div className={styles.field}>
-                        <label htmlFor="crm_cust_inn">ИНН</label>
-                        <input
-                          id="crm_cust_inn"
-                          value={customerUlInn}
-                          onChange={(e) => setCustomerUlInn(e.target.value)}
-                          onClick={openCustomerSearchPopoverIfReady}
-                          placeholder="10 или 12 цифр"
-                          inputMode="numeric"
-                          autoComplete="off"
-                          disabled={contractAndEstimateLocked}
-                        />
-                      </div>
-                    </div>
-                  )}
-                  {customerSearchQuery.trim().length < 2 ? (
-                    <p className={styles.hint} style={{ marginTop: 6 }}>
-                      Введите не менее 2 символов (по всем заполненным полям). Совпадения — в
-                      выпадающем списке.
-                    </p>
-                  ) : null}
-                  {customerSearchPopoverOpen &&
-                  !contractAndEstimateLocked &&
-                  customerSearchQuery.trim().length >= 2 ? (
-                    <div className={styles.repairCustomerSearchDropdown} role="listbox">
-                      <div className={styles.repairCustomerSearchDropdownHeader}>
-                        {customerSearchLoading
-                          ? 'Поиск…'
-                          : `Найдено: ${customerResults.length}. Клик по строке — подставить данные в форму.`}
-                      </div>
-                      <div className={styles.repairCustomerSearchDropdownBody}>
-                        {customerSearchLoading ? null : customerResults.length === 0 ? (
-                          <p className={styles.hint} style={{ margin: '8px 12px' }}>
-                            Ничего не найдено
-                          </p>
-                        ) : (
-                          <ul className={styles.repairCustomerSearchDropdownList}>
-                            {customerResults.map((c) => {
-                              const rowKey = `${c.lastContractId ?? c.customerName}|${c.customerPhone}`;
-                              return (
-                                <li key={rowKey} className={styles.crmResultItem}>
-                                  <button
-                                    type="button"
-                                    className={`${styles.secondaryBtn} ${styles.crmResultBtn}`}
-                                    disabled={contractAndEstimateLocked || !c.lastContractId}
-                                    onClick={() => {
-                                      if (!c.lastContractId) return;
-                                      void applyCrmContractToFormById(c.lastContractId, c);
-                                    }}
-                                  >
-                                    {c.customerName} · {c.customerPhone}
-                                    {c.customerAddress ? ` · ${c.customerAddress}` : ''}
-                                    {c.lastContractNumber != null
-                                      ? ` · последний договор № ${c.lastContractNumber}`
-                                      : ''}
-                                    {c.contractCount > 1 ? ` (${c.contractCount} дог.)` : ''}
-                                  </button>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        )}
-                      </div>
-                    </div>
-                  ) : null}
+                  <CrmCustomerSearchPanel
+                    customerId={linkedCrmCustomerId}
+                    disabled={contractAndEstimateLocked}
+                    listboxId="repair-customer-crm-search-listbox"
+                    onCustomerApplied={handleRepairCrmCustomerApplied}
+                    onClear={handleRepairCrmCustomerClear}
+                    onError={(text) => setError(text)}
+                  />
                 </div>
               </div>
             </div>
@@ -4925,7 +4652,7 @@ export function RepairContractDocumentEditorPage({
               ) : null}
               <h3 className={styles.sectionTitle}>Заказчик</h3>
               <p className={styles.hint} style={{ marginTop: 4, marginBottom: 10 }}>
-                Данные подставляются из выбранной строки в блоке «Поиск заказчика в базе».
+                Данные подставляются из карточки заказчика в блоке «Поиск заказчика в базе».
                 Редактировать здесь нельзя. Чтобы завести карточку и указать телефоны, нажмите
                 «Добавить нового заказчика» в блоке поиска.
               </p>

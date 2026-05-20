@@ -10,12 +10,9 @@ import {
   getContractDocumentSignatoryProfiles,
 } from '@/shared/api/admin-contract-document-packages';
 import {
-  type ClientDirectoryRow,
   type CrmDirection,
   type CrmUser,
   createMeasurement,
-  getClientDirectory,
-  getCrmCustomer,
   getCrmDirections,
   getCrmUsers,
   getMeasurement,
@@ -24,10 +21,7 @@ import {
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
 import { VersionsHistoryIcon } from '@/shared/ui/icons/VersionsHistoryIcon';
-import { AddCrmCustomerModal } from '@/views/admin/CRM/Customers/AddCrmCustomerModal';
-import { CrmCustomerDetailModal } from '@/views/admin/CRM/Customers/CrmCustomerDetailModal';
-import { getCrmCustomerFillBannerToneClass } from '@/views/admin/CRM/Customers/crmCustomerFillPercent';
-import { formatCrmPhoneOrDash } from '@/views/admin/CRM/Customers/crmCustomerPhone';
+import { CrmCustomerSearchPanel } from '@/views/admin/CRM/Customers/CrmCustomerSearchPanel';
 
 import styles from './MeasurementFormPage.module.css';
 import { MeasurementHistoryModal } from './MeasurementHistoryModal';
@@ -374,17 +368,6 @@ type AutoQuantityMetrics = {
   windowsArea: number;
 };
 
-function isCreatedCrmCustomer(x: unknown): x is {
-  id: string;
-  firstName?: string;
-  lastName?: string | null;
-  extendedProfile?: Record<string, unknown> | null;
-  phone?: string | null;
-  phones?: string[];
-} {
-  return typeof x === 'object' && x !== null && typeof (x as { id?: unknown }).id === 'string';
-}
-
 function resolveAutoQuantity(itemName: string, metrics: AutoQuantityMetrics): number | null {
   const n = itemName.toLowerCase();
   if (n.includes('плинтус')) return metrics.baseboardPerimeter;
@@ -425,13 +408,6 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerId, setCustomerId] = useState<string | null>(null);
-  const [crmSearchInput, setCrmSearchInput] = useState('');
-  const [crmSearchDebounced, setCrmSearchDebounced] = useState('');
-  const [crmSearchResults, setCrmSearchResults] = useState<ClientDirectoryRow[]>([]);
-  const [crmSearchLoading, setCrmSearchLoading] = useState(false);
-  const [crmSearchError, setCrmSearchError] = useState<string | null>(null);
-  const [addCrmCustomerOpen, setAddCrmCustomerOpen] = useState(false);
-  const [crmDetailCustomerId, setCrmDetailCustomerId] = useState<string | null>(null);
   const [comments, setComments] = useState('');
   const [status, setStatus] = useState('NEW');
   const [loading, setLoading] = useState(!!measurementId);
@@ -550,61 +526,6 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
       .catch(() => setManagerOptions([]));
   }, []);
 
-  useEffect(() => {
-    const t = window.setTimeout(() => {
-      setCrmSearchDebounced(crmSearchInput.trim());
-    }, 380);
-    return () => window.clearTimeout(t);
-  }, [crmSearchInput]);
-
-  const reloadCrmSearchResults = useCallback(() => {
-    const q = crmSearchDebounced;
-    if (q.length < 2) {
-      setCrmSearchResults([]);
-      setCrmSearchError(null);
-      return Promise.resolve();
-    }
-    setCrmSearchLoading(true);
-    setCrmSearchError(null);
-    return getClientDirectory({ search: q, limit: 30, page: 1 })
-      .then((res) => {
-        setCrmSearchResults((res.data ?? []).filter((row) => row.rowSource === 'customer'));
-      })
-      .catch((e) => {
-        setCrmSearchError(e instanceof Error ? e.message : 'Ошибка поиска');
-      })
-      .finally(() => {
-        setCrmSearchLoading(false);
-      });
-  }, [crmSearchDebounced]);
-
-  useEffect(() => {
-    const q = crmSearchDebounced;
-    if (q.length < 2) {
-      setCrmSearchResults([]);
-      setCrmSearchError(null);
-      return;
-    }
-    let cancelled = false;
-    setCrmSearchLoading(true);
-    setCrmSearchError(null);
-    getClientDirectory({ search: q, limit: 30, page: 1 })
-      .then((res) => {
-        if (!cancelled) {
-          setCrmSearchResults((res.data ?? []).filter((row) => row.rowSource === 'customer'));
-        }
-      })
-      .catch((e) => {
-        if (!cancelled) setCrmSearchError(e instanceof Error ? e.message : 'Ошибка поиска');
-      })
-      .finally(() => {
-        if (!cancelled) setCrmSearchLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [crmSearchDebounced]);
-
   const applyCrmCustomerFromDetail = useCallback(
     (detail: Parameters<typeof measurementFieldsFromCrmCustomerDetail>[0]) => {
       const fields = measurementFieldsFromCrmCustomerDetail(detail);
@@ -617,22 +538,6 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
       if (fields.customerAddress.trim()) clearFieldError('customerAddress');
     },
     [clearFieldError]
-  );
-
-  const applyDirectoryRow = useCallback(
-    async (row: ClientDirectoryRow) => {
-      if (row.rowSource !== 'customer') return;
-      try {
-        const detail = await getCrmCustomer(row.id);
-        applyCrmCustomerFromDetail(detail);
-        setCrmSearchResults([]);
-        setCrmSearchInput('');
-        setCrmSearchDebounced('');
-      } catch {
-        showMessage('error', 'Не удалось загрузить карточку заказчика');
-      }
-    },
-    [applyCrmCustomerFromDetail, showMessage]
   );
 
   const directionOptionsForRow = useCallback(
@@ -1320,131 +1225,24 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
                 ) : null}
               </div>
 
-              <article className={styles.customerCrmPanel}>
-                <div className={styles.customerCrmPanelHead}>
-                  <div>
-                    <h3 className={styles.customerCrmTitle}>Поиск заказчика в базе</h3>
-                    <p className={styles.customerCrmHint}>
-                      Найдите карточку в базе или добавьте новую — поля заказчика заполнятся
-                      автоматически.
-                    </p>
-                  </div>
-                  {customerId ? (
-                    <span className={styles.customerCrmLinkedBadge}>Карточка выбрана</span>
-                  ) : null}
-                </div>
-                <div className={styles.customerCrmActions}>
-                  <button
-                    type="button"
-                    className={styles.customerCrmAddButton}
-                    onClick={() => setAddCrmCustomerOpen(true)}
-                  >
-                    + Добавить нового заказчика
-                  </button>
-                </div>
-                <div className={styles.customerCrmSearchWrap}>
-                  <div className={styles.customerCrmSearchRow}>
-                    <input
-                      type="search"
-                      className={`${styles.input} ${styles.customerCrmSearchInput}`}
-                      placeholder="Поиск: ФИО, телефон, e-mail, компания (от 2 символов)"
-                      value={crmSearchInput}
-                      onChange={(e) => setCrmSearchInput(e.target.value)}
-                      autoComplete="off"
-                      aria-label="Поиск заказчика в базе"
-                      aria-expanded={crmSearchDebounced.length >= 2}
-                      aria-controls="customer-crm-search-listbox"
-                    />
-                    {customerId ? (
-                      <button
-                        type="button"
-                        className={styles.customerCrmClearButton}
-                        onClick={() => {
-                          setCustomerId(null);
-                          setCustomerName('');
-                          setCustomerPhone('');
-                          setCustomerAddress('');
-                        }}
-                      >
-                        Снять выбор
-                      </button>
-                    ) : null}
-                  </div>
-                  {crmSearchDebounced.length >= 2 ? (
-                    <div
-                      className={styles.customerCrmDropdown}
-                      id="customer-crm-search-listbox"
-                      role="presentation"
-                    >
-                      {crmSearchLoading ? <p className={styles.customerCrmMuted}>Поиск…</p> : null}
-                      {crmSearchError ? (
-                        <p className={styles.customerCrmError} role="alert">
-                          {crmSearchError}
-                        </p>
-                      ) : null}
-                      {!crmSearchLoading && !crmSearchError && crmSearchResults.length === 0 ? (
-                        <p className={styles.customerCrmMuted}>Ничего не найдено</p>
-                      ) : null}
-                      {!crmSearchLoading && !crmSearchError && crmSearchResults.length > 0 ? (
-                        <ul
-                          className={styles.customerCrmResults}
-                          role="listbox"
-                          aria-label="Результаты поиска"
-                        >
-                          {crmSearchResults.map((row) => {
-                            const fillPercent =
-                              row.profileFillPercent != null
-                                ? Math.round(row.profileFillPercent)
-                                : 0;
-                            const fillComplete = fillPercent >= 100;
-                            return (
-                              <li
-                                key={row.id}
-                                role="option"
-                                className={styles.customerCrmResultItem}
-                              >
-                                <button
-                                  type="button"
-                                  className={styles.customerCrmResultButton}
-                                  onClick={() => void applyDirectoryRow(row)}
-                                >
-                                  <span className={styles.customerCrmResultName}>
-                                    {row.displayName}
-                                  </span>
-                                  <span className={styles.customerCrmResultMeta}>
-                                    {[row.phone ? formatCrmPhoneOrDash(row.phone) : null, row.email]
-                                      .filter(Boolean)
-                                      .join(' · ')}
-                                  </span>
-                                </button>
-                                <div className={styles.customerCrmResultAside}>
-                                  <span
-                                    className={`${styles.customerCrmResultFill} ${getCrmCustomerFillBannerToneClass(fillPercent)}`}
-                                  >
-                                    Карточка {fillPercent}%
-                                  </span>
-                                  {!fillComplete ? (
-                                    <button
-                                      type="button"
-                                      className={styles.customerCrmResultEditBtn}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setCrmDetailCustomerId(row.id);
-                                      }}
-                                    >
-                                      Дозаполнить
-                                    </button>
-                                  ) : null}
-                                </div>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-              </article>
+              <div className={styles.customerCrmPanelSlot}>
+                <CrmCustomerSearchPanel
+                  customerId={customerId}
+                  onCustomerApplied={applyCrmCustomerFromDetail}
+                  onClear={() => {
+                    setCustomerId(null);
+                    setCustomerName('');
+                    setCustomerPhone('');
+                    setCustomerAddress('');
+                  }}
+                  onError={(text) => showMessage('error', text)}
+                  addCustomerDraft={{
+                    fullName: customerName,
+                    phone: customerPhone,
+                    objectAddress: customerAddress,
+                  }}
+                />
+              </div>
             </div>
 
             <div className={`${styles.row} ${styles.blankCommentRow}`}>
@@ -2176,47 +1974,6 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
           )}
         </section>
       </div>
-
-      <CrmCustomerDetailModal
-        customerId={crmDetailCustomerId}
-        isOpen={Boolean(crmDetailCustomerId)}
-        onClose={() => setCrmDetailCustomerId(null)}
-        onUpdated={async () => {
-          await reloadCrmSearchResults();
-          if (crmDetailCustomerId && crmDetailCustomerId === customerId) {
-            try {
-              const detail = await getCrmCustomer(crmDetailCustomerId);
-              applyCrmCustomerFromDetail(detail);
-            } catch {
-              showMessage('error', 'Не удалось обновить данные заказчика');
-            }
-          }
-        }}
-      />
-
-      <AddCrmCustomerModal
-        isOpen={addCrmCustomerOpen}
-        onClose={() => setAddCrmCustomerOpen(false)}
-        initialDraft={
-          customerId
-            ? undefined
-            : {
-                fullName: customerName,
-                phone: customerPhone,
-                objectAddress: customerAddress,
-              }
-        }
-        onCreated={async (created) => {
-          if (!isCreatedCrmCustomer(created)) return;
-          try {
-            const detail = await getCrmCustomer(created.id);
-            applyCrmCustomerFromDetail(detail);
-          } catch {
-            showMessage('error', 'Заказчик создан, но не удалось загрузить карточку');
-          }
-          setAddCrmCustomerOpen(false);
-        }}
-      />
 
       {measurementId && showHistory && (
         <MeasurementHistoryModal
