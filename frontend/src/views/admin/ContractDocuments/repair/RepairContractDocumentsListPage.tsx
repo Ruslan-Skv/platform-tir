@@ -7,15 +7,28 @@ import { useRouter } from 'next/navigation';
 
 import {
   type ContractDocumentPackage,
+  type ContractDocumentPackageKind,
+  type ContractEstimatePreset,
+  type ContractSignatoryProfile,
   createContractDocumentPackage,
   deleteContractDocumentPackage,
+  getContractDocumentEstimatePresets,
   getContractDocumentPackage,
   getContractDocumentPackages,
+  getContractDocumentSignatoryProfiles,
 } from '@/shared/api/admin-contract-document-packages';
-import { type CrmUser, getCrmUsers } from '@/shared/api/admin-crm';
+import {
+  type CrmDirection,
+  type CrmUser,
+  type Measurement,
+  getCrmDirections,
+  getCrmUsers,
+  getMeasurements,
+} from '@/shared/api/admin-crm';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
+import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 import { adminContractDocumentsContractsRepairPackageHref } from '@/views/admin/ContractDocuments/contractDocumentsContractsRoutes';
 
 import styles from '../ContractDocuments.module.css';
@@ -302,14 +315,95 @@ function repairListManagerDisplayLabel(form: RepairPackageFormData, crmUsers: Cr
   return '—';
 }
 
-/** Ключ для фильтра по колонке «Менеджер» (CRM id или пара карточка+ФИО без id). */
-function repairListManagerFilterKey(form: RepairPackageFormData): string {
-  const crmId = repairListManagerCrmUserId(form);
-  if (crmId) return `crm:${crmId}`;
-  const title = form.executor.selectedSignatoryProfileTitle?.trim() ?? '';
-  const nom = form.executor.directorNameNominative?.trim() ?? '';
-  if (title || nom) return `local:${title}\u0001${nom}`;
-  return '';
+const PACKAGE_KIND_DIRECTION_SLUG: Record<ContractDocumentPackageKind, string> = {
+  REPAIR: 'repair',
+  WINDOWS: 'windows',
+  DOORS: 'doors',
+  CEILINGS: 'stretch-ceilings',
+  BLINDS: 'blinds',
+  FURNITURE: 'furniture',
+};
+
+function repairListAttachedPresetIds(fd: Record<string, unknown>): string[] {
+  const est = asObj(fd.estimate);
+  if (!est) return [];
+  const ids: string[] = [];
+  if (typeof est.selectedPresetId === 'string' && est.selectedPresetId.trim()) {
+    ids.push(est.selectedPresetId.trim());
+  }
+  if (Array.isArray(est.selectedPresetIds)) {
+    for (const x of est.selectedPresetIds) {
+      if (typeof x === 'string' && x.trim()) ids.push(x.trim());
+    }
+  }
+  return ids;
+}
+
+function repairListPackageDirectionIds(
+  pkg: ContractDocumentPackage,
+  directions: CrmDirection[],
+  presetById: Map<string, ContractEstimatePreset>,
+  measurementById: Map<string, Measurement>
+): string[] {
+  const out = new Set<string>();
+  const slug = PACKAGE_KIND_DIRECTION_SLUG[pkg.kind];
+  const fromKind = directions.find((d) => d.slug === slug);
+  if (fromKind) out.add(fromKind.id);
+
+  const fd = (pkg.formData ?? {}) as Record<string, unknown>;
+  for (const presetId of repairListAttachedPresetIds(fd)) {
+    const preset = presetById.get(presetId);
+    const mid = preset?.sourceMeasurementId?.trim();
+    if (!mid) continue;
+    const m = measurementById.get(mid);
+    if (!m) continue;
+    if (m.directionId) out.add(m.directionId);
+    for (const aid of m.additionalDirectionIds ?? []) {
+      if (aid) out.add(aid);
+    }
+  }
+  return [...out];
+}
+
+/** Дата для фильтра: подписание договора или дата создания пакета. */
+function repairListDateForFilter(pkg: ContractDocumentPackage): string | null {
+  const fd = pkg.formData ?? {};
+  const concluded = typeof fd.contractConcludedAt === 'string' ? fd.contractConcludedAt.trim() : '';
+  if (concluded) {
+    const d = new Date(concluded);
+    if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+  }
+  const created = pkg.createdAt?.trim();
+  if (!created) return null;
+  const d = new Date(created);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 10);
+}
+
+function repairListMatchesDateRange(
+  pkg: ContractDocumentPackage,
+  dateFrom: string,
+  dateTo: string
+): boolean {
+  const day = repairListDateForFilter(pkg);
+  if (!day) return false;
+  if (dateFrom && day < dateFrom) return false;
+  if (dateTo && day > dateTo) return false;
+  return true;
+}
+
+function normalizeRepairListSearch(s: string): string {
+  return s.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function repairListMatchesSearch(pkg: ContractDocumentPackage, searchNorm: string): boolean {
+  if (!searchNorm) return true;
+  const fd = (pkg.formData ?? {}) as Record<string, unknown>;
+  const num = getDisplayContractNumber({ formData: fd });
+  const haystack = normalizeRepairListSearch(
+    [num, repairListCustomerName(fd), repairListObjectAddress(fd)].join(' ')
+  );
+  return haystack.includes(searchNorm);
 }
 
 function formatSigningDateOnly(r: ContractDocumentPackage): string {
@@ -414,8 +508,16 @@ export function RepairContractDocumentsListPage() {
   const router = useRouter();
   const [rows, setRows] = useState<ContractDocumentPackage[]>([]);
   const [crmUsers, setCrmUsers] = useState<CrmUser[]>([]);
-  const [managerFilter, setManagerFilter] = useState<string>('');
+  const [directions, setDirections] = useState<CrmDirection[]>([]);
+  const [managerOptions, setManagerOptions] = useState<ContractSignatoryProfile[]>([]);
+  const [estimatePresets, setEstimatePresets] = useState<ContractEstimatePreset[]>([]);
+  const [measurementsById, setMeasurementsById] = useState<Map<string, Measurement>>(new Map());
+  const [search, setSearch] = useState('');
+  const [managerFilter, setManagerFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<'' | RepairListPipelineStatus>('');
+  const [directionFilter, setDirectionFilter] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -432,66 +534,116 @@ export function RepairContractDocumentsListPage() {
   const addendumColumnCount = useMemo(() => repairListMaxSignedAddendumSlotCount(rows), [rows]);
   const repairListTableColSpan = 11 + addendumColumnCount + (addendumColumnCount > 0 ? 1 : 0);
 
-  const managerFilterOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const r of rows) {
-      const form = mergeRepairPackageFormData(r.formData ?? {});
-      const key = repairListManagerFilterKey(form);
-      if (!key) continue;
-      if (!map.has(key)) {
-        map.set(key, repairListManagerDisplayLabel(form, crmUsers));
-      }
-    }
-    return [...map.entries()]
-      .map(([id, label]) => ({ id, label }))
-      .sort((a, b) => a.label.localeCompare(b.label, 'ru', { sensitivity: 'base' }));
-  }, [rows, crmUsers]);
+  const presetById = useMemo(
+    () => new Map(estimatePresets.map((p) => [p.id, p])),
+    [estimatePresets]
+  );
+
+  const searchNorm = useMemo(() => normalizeRepairListSearch(search), [search]);
+
+  const hasActiveFilters = Boolean(
+    searchNorm || managerFilter || statusFilter || directionFilter || dateFrom || dateTo
+  );
 
   const visibleRows = useMemo(() => {
-    let list =
-      managerFilter === ''
-        ? [...rows]
-        : rows.filter((r) => {
-            const form = mergeRepairPackageFormData(r.formData ?? {});
-            return repairListManagerFilterKey(form) === managerFilter;
-          });
+    let list = [...rows];
+
+    if (searchNorm) {
+      list = list.filter((r) => repairListMatchesSearch(r, searchNorm));
+    }
+
+    if (managerFilter) {
+      list = list.filter((r) => {
+        const form = mergeRepairPackageFormData(r.formData ?? {});
+        return repairListManagerCrmUserId(form) === managerFilter;
+      });
+    }
 
     if (statusFilter) {
       list = list.filter((r) => repairListPipelineStatus(r) === statusFilter);
     }
 
+    if (directionFilter) {
+      list = list.filter((r) =>
+        repairListPackageDirectionIds(r, directions, presetById, measurementsById).includes(
+          directionFilter
+        )
+      );
+    }
+
+    if (dateFrom || dateTo) {
+      list = list.filter((r) => repairListMatchesDateRange(r, dateFrom, dateTo));
+    }
+
     return list;
-  }, [rows, managerFilter, statusFilter]);
+  }, [
+    rows,
+    searchNorm,
+    managerFilter,
+    statusFilter,
+    directionFilter,
+    dateFrom,
+    dateTo,
+    directions,
+    presetById,
+    measurementsById,
+  ]);
 
   const emptyFilteredListMessage = useMemo(() => {
-    if (rows.length === 0) return '';
-    const byManager = managerFilter !== '';
-    const byStatus = statusFilter !== '';
-    if (byManager && byStatus) {
-      return 'Нет договоров по выбранным фильтрам менеджера и статуса.';
-    }
-    if (byStatus) return 'Нет договоров с выбранным статусом.';
-    if (byManager) return 'Нет договоров по выбранному фильтру менеджера.';
-    return '';
-  }, [rows.length, managerFilter, statusFilter]);
+    if (rows.length === 0 || !hasActiveFilters) return '';
+    return 'Нет договоров по выбранным фильтрам.';
+  }, [rows.length, hasActiveFilters]);
 
   useEffect(() => {
     if (!managerFilter) return;
-    if (!managerFilterOptions.some((o) => o.id === managerFilter)) {
+    if (!managerOptions.some((p) => p.crmUserId === managerFilter)) {
       setManagerFilter('');
     }
-  }, [managerFilter, managerFilterOptions]);
+  }, [managerFilter, managerOptions]);
+
+  useEffect(() => {
+    if (!directionFilter) return;
+    if (!directions.some((d) => d.id === directionFilter)) {
+      setDirectionFilter('');
+    }
+  }, [directionFilter, directions]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [data, users] = await Promise.all([
+      const [data, users, dirs, signatories, presetsRes, measurementsRes] = await Promise.all([
         getContractDocumentPackages('REPAIR'),
         getCrmUsers().catch(() => [] as CrmUser[]),
+        getCrmDirections().catch(() => [] as CrmDirection[]),
+        getContractDocumentSignatoryProfiles('REPAIR').catch(() => ({
+          items: [] as ContractSignatoryProfile[],
+          updatedAt: null,
+        })),
+        getContractDocumentEstimatePresets('REPAIR').catch(() => ({
+          items: [] as ContractEstimatePreset[],
+          groups: [],
+          updatedAt: null,
+        })),
+        getMeasurements({ page: 1, limit: 500 }).catch(() => ({
+          data: [] as Measurement[],
+          total: 0,
+          page: 1,
+          limit: 500,
+          totalPages: 0,
+        })),
       ]);
       setRows(data);
       setCrmUsers(users);
+      setDirections(dirs);
+      const profiles = (signatories.items ?? [])
+        .filter((p) => Boolean(p.crmUserId?.trim()))
+        .sort((a, b) =>
+          (a.title || '').localeCompare(b.title || '', 'ru', { sensitivity: 'base' })
+        );
+      setManagerOptions(profiles);
+      setEstimatePresets(presetsRes.items ?? []);
+      setMeasurementsById(new Map(measurementsRes.data.map((m) => [m.id, m])));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ошибка загрузки');
     } finally {
@@ -625,19 +777,9 @@ export function RepairContractDocumentsListPage() {
               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
             </svg>
           </button>
-        </div>
-      </div>
-
-      {error ? <p className={styles.error}>{error}</p> : null}
-
-      <div
-        className={`${styles.sectionCard} ${styles.estimatesListSection}`}
-        style={{ marginBottom: 10 }}
-      >
-        <div className={styles.estimatesControlsSingleRow}>
           <button
             type="button"
-            className={styles.primaryBtn}
+            className={styles.contractsListHeaderAddBtn}
             disabled={
               creating || loading || copyingPackageId !== null || deletingPackageId !== null
             }
@@ -645,51 +787,92 @@ export function RepairContractDocumentsListPage() {
           >
             {creating ? 'Создание…' : '+ Новый договор'}
           </button>
-          <div className={styles.field} style={{ minWidth: 220, flex: '1 1 200px' }}>
-            <label htmlFor="repair_list_manager_filter">Менеджер</label>
-            <select
-              id="repair_list_manager_filter"
-              value={managerFilter}
-              onChange={(e) => setManagerFilter(e.target.value)}
-              disabled={loading}
-            >
-              <option value="">Все договоры</option>
-              {managerFilterOptions.map(({ id, label }) => (
-                <option key={id} value={id}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className={styles.field} style={{ minWidth: 220, flex: '1 1 200px' }}>
-            <label htmlFor="repair_list_status_filter">Статус</label>
-            <select
-              id="repair_list_status_filter"
-              value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter((e.target.value || '') as '' | RepairListPipelineStatus)
-              }
-              disabled={loading}
-            >
-              <option value="">Все</option>
-              <option value="IN_PROJECT">В проекте</option>
-              <option value="SIGNED">Подписан</option>
-              <option value="WORK_IN_PROGRESS">В работе</option>
-              <option value="CLOSED">Закрыт</option>
-              <option value="REFUSED">Отказ</option>
-            </select>
-          </div>
-          <div className={styles.estimatesFilterRowSpacer} aria-hidden />
         </div>
+      </div>
 
-        {loading ? (
-          <p className={styles.hint} style={{ margin: 'var(--admin-space-md) 0 0' }}>
-            Загрузка…
-          </p>
-        ) : (
-          <div className={styles.tableWrap} style={{ marginTop: 'var(--admin-space-md)' }}>
-            <table className={`${styles.table} ${styles.repairContractsListTable}`}>
-              <thead>
+      {error ? <p className={styles.error}>{error}</p> : null}
+
+      <div className={styles.repairContractsListFilters}>
+        <input
+          type="search"
+          placeholder="Поиск по номеру договора, ФИО заказчика, адресу..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          disabled={loading}
+          className={styles.repairContractsListSearchInput}
+        />
+        <select
+          id="repair_list_status_filter"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter((e.target.value || '') as '' | RepairListPipelineStatus)}
+          disabled={loading}
+          className={styles.repairContractsListSelect}
+          aria-label="Статус"
+        >
+          <option value="">Все статусы</option>
+          <option value="IN_PROJECT">В проекте</option>
+          <option value="SIGNED">Подписан</option>
+          <option value="WORK_IN_PROGRESS">В работе</option>
+          <option value="CLOSED">Закрыт</option>
+          <option value="REFUSED">Отказ</option>
+        </select>
+        <select
+          id="repair_list_manager_filter"
+          value={managerFilter}
+          onChange={(e) => setManagerFilter(e.target.value)}
+          disabled={loading}
+          className={styles.repairContractsListSelect}
+          aria-label="Менеджер"
+        >
+          <option value="">Все менеджеры</option>
+          {managerOptions.map((p) => (
+            <option key={p.crmUserId} value={p.crmUserId}>
+              {p.title?.trim() || p.directorNameNominative?.trim() || p.crmUserId}
+            </option>
+          ))}
+        </select>
+        <select
+          id="repair_list_direction_filter"
+          value={directionFilter}
+          onChange={(e) => setDirectionFilter(e.target.value)}
+          disabled={loading}
+          className={styles.repairContractsListSelect}
+          aria-label="Направление"
+        >
+          <option value="">Все направления</option>
+          {directions.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.name}
+            </option>
+          ))}
+        </select>
+        <label className={styles.repairContractsListDateLabel}>
+          <span className={styles.repairContractsListDateLabelText}>Дата от</span>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            disabled={loading}
+            className={styles.repairContractsListDateInput}
+          />
+        </label>
+        <label className={styles.repairContractsListDateLabel}>
+          <span className={styles.repairContractsListDateLabelText}>Дата до</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            disabled={loading}
+            className={styles.repairContractsListDateInput}
+          />
+        </label>
+      </div>
+
+      <div className={`${dataTableStyles.tableContainer} ${styles.repairContractsDirectoryTable}`}>
+        <div className={dataTableStyles.tableWrapper}>
+          <div className={dataTableStyles.scrollContainer}>
+            <table className={`${dataTableStyles.table} ${styles.repairContractsListTable}`}>
+              <thead className={dataTableStyles.stickyHeader}>
                 <tr>
                   <th>№ дог.</th>
                   <th>Статус</th>
@@ -710,22 +893,22 @@ export function RepairContractDocumentsListPage() {
                   <th className={styles.repairContractsListActionsCol} />
                 </tr>
               </thead>
-              <tbody>
-                {rows.length === 0 ? (
+              <tbody className={loading ? dataTableStyles.tbodyRefreshing : undefined}>
+                {loading ? (
                   <tr>
-                    <td
-                      colSpan={repairListTableColSpan}
-                      style={{ color: 'var(--admin-text-muted)' }}
-                    >
-                      Пока нет ни одного пакета. Нажмите «Создать новый договор».
+                    <td colSpan={repairListTableColSpan} className={dataTableStyles.loadingCell}>
+                      Загрузка…
+                    </td>
+                  </tr>
+                ) : rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={repairListTableColSpan} className={dataTableStyles.emptyCell}>
+                      Пока нет ни одного пакета. Нажмите «+ Новый договор».
                     </td>
                   </tr>
                 ) : visibleRows.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={repairListTableColSpan}
-                      style={{ color: 'var(--admin-text-muted)' }}
-                    >
+                    <td colSpan={repairListTableColSpan} className={dataTableStyles.emptyCell}>
                       {emptyFilteredListMessage}
                     </td>
                   </tr>
@@ -752,11 +935,18 @@ export function RepairContractDocumentsListPage() {
                     const pipelineStatus = repairListPipelineStatus(r);
                     const actPhotoItems = repairListAttachedActPhotosFromForm(form);
                     return (
-                      <tr key={r.id}>
+                      <tr
+                        key={r.id}
+                        className={`${dataTableStyles.row} ${dataTableStyles.clickable}`}
+                        onClick={() =>
+                          router.push(adminContractDocumentsContractsRepairPackageHref(r.id))
+                        }
+                      >
                         <td>
                           <Link
                             className={styles.link}
                             href={adminContractDocumentsContractsRepairPackageHref(r.id)}
+                            onClick={(e) => e.stopPropagation()}
                           >
                             {num}
                           </Link>
@@ -789,6 +979,8 @@ export function RepairContractDocumentsListPage() {
                         <td className={styles.repairContractsListActionsCol}>
                           <div
                             className={`${styles.estimatesCardActions} ${styles.repairContractsListActionsGrid}`}
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => e.stopPropagation()}
                           >
                             <div className={styles.repairContractsListActionsSlot}>
                               <button
@@ -950,7 +1142,7 @@ export function RepairContractDocumentsListPage() {
               </tbody>
             </table>
           </div>
-        )}
+        </div>
       </div>
 
       <Modal

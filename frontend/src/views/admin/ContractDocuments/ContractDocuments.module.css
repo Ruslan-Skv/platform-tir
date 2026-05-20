@@ -440,14 +440,82 @@
   border-bottom: none;
 }
 
-/* Список договоров ремонта: компактнее шрифт и ячейки */
-.repairContractsListTable {
-  font-size: var(--admin-font-size-xs);
+/* Список договоров: фильтры как на /admin/measurements */
+.repairContractsListFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-xl);
 }
 
-.repairContractsListTable th,
-.repairContractsListTable td {
-  padding: var(--admin-space-md) var(--admin-space-lg);
+.repairContractsListSelect {
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
+  background: var(--admin-surface);
+  min-width: 120px;
+  cursor: pointer;
+}
+
+.repairContractsListSelect:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.repairContractsListSearchInput {
+  flex: 1;
+  min-width: 160px;
+  max-width: 360px;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
+  background: var(--admin-surface);
+}
+
+.repairContractsListSearchInput:focus,
+.repairContractsListSelect:focus,
+.repairContractsListDateInput:focus {
+  border-color: var(--admin-accent, #2563eb);
+  box-shadow: var(--admin-shadow-focus-soft);
+  outline: none;
+}
+
+.repairContractsListDateLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+}
+
+.repairContractsListDateLabelText {
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  white-space: nowrap;
+}
+
+.repairContractsListDateInput {
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
+  background: var(--admin-surface);
+}
+
+/* Список договоров: шапка таблицы как directoryTable (замеры, заказчики) */
+.repairContractsDirectoryTable thead {
+  box-shadow: 0 2px 0 var(--admin-border-strong);
+}
+
+.repairContractsDirectoryTable thead th {
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
+  font-weight: 700;
+  border-bottom: 2px solid var(--admin-border-strong);
+}
+
+.repairContractsDirectoryTable thead th:hover {
+  background: var(--admin-border);
 }
 
 .repairContractsListStatusBadge {
@@ -597,8 +665,6 @@
 .repairContractsListTable th.repairContractsListActionsCol,
 .repairContractsListTable td.repairContractsListActionsCol {
   text-align: right;
-  padding-left: var(--admin-space-sm);
-  padding-right: var(--admin-space-xs);
 }
 
 .editorHeaderHistoryBtn {
@@ -864,8 +930,38 @@
 .headerButtonsRow {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
   gap: var(--admin-space-sm);
+}
+
+/* «+ Новый договор» — тот же размер, что addButton на /admin/measurements */
+.contractsListHeaderAddBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  border: none;
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-info);
+  color: var(--admin-surface);
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  line-height: var(--admin-line-height-sm);
+  transition: background 0.15s ease;
+}
+
+.contractsListHeaderAddBtn:hover:not(:disabled) {
+  background: var(--admin-info-strong);
+}
+
+.contractsListHeaderAddBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .contractSignedRevertUi {
@@ -4205,7 +4301,8 @@
   margin-left: 0;
 }
 
-.estimatesCompactPrimaryLink {
+.primaryBtn.estimatesCompactPrimaryLink,
+a.primaryBtn.estimatesCompactPrimaryLink {
   padding: var(--admin-space-sm) var(--admin-space-xl);
   font-size: var(--admin-font-size-sm);
 }
@@ -5024,6 +5121,30 @@
   background: var(--admin-surface);
   border-color: var(--admin-sidebar-text);
   color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListSearchInput:focus,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListSelect:focus,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListDateInput:focus {
+  border-color: var(--admin-accent);
+  box-shadow: var(--admin-shadow-focus-soft);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListSearchInput,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListSelect,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListDateInput {
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractsListSearchInput::placeholder {
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListDateLabelText {
+  color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListStatusBadgeSigned {
