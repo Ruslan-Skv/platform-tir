@@ -158,6 +158,30 @@
   color: var(--admin-success-deep, #15803d);
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fillBannerLow {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border-strong);
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fillBannerStarted {
+  background: rgb(154 52 18 / 0.28);
+  border-color: rgb(251 146 60 / 0.45);
+  color: #fdba74;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fillBannerProgress {
+  background: var(--admin-overlay-color-136);
+  border-color: var(--admin-info-light);
+  color: var(--admin-info-bright);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fillBannerSuccess {
+  background: rgb(22 101 52 / 0.28);
+  border-color: var(--admin-success-border);
+  color: var(--admin-success-bright);
+}
+
 .fillBannerSuccess :global([data-modal-footer-info-icon]) {
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='black' fill-rule='evenodd' d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z' clip-rule='evenodd'/%3E%3C/svg%3E");
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='black' fill-rule='evenodd' d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z' clip-rule='evenodd'/%3E%3C/svg%3E");

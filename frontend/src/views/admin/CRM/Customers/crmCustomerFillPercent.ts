@@ -29,15 +29,22 @@ function personNameSlotWeight(form: CrmCustomerFormState): number {
   return personNamePartsFilledCount(personNameFromForm(form)) / PERSON_NAME_PARTS_COUNT;
 }
 
-/** Доля заполненных полей; заметки и адреса объектов не учитываются. */
+function hasAnyObjectAddress(objectAddresses: readonly string[]): boolean {
+  return objectAddresses.some((a) => a.trim().length > 0);
+}
+
+/** Доля заполненных полей; заметки и паспорт не учитываются. */
 export function computeCrmCustomerFormFillPercent(form: CrmCustomerFormState): number {
+  const objectAddressPart = hasAnyObjectAddress(form.objectAddresses) ? 1 : 0;
+
   if (form.entityType === 'PERSON') {
     const parts =
       (hasTrimmedText(form.email) ? 1 : 0) +
       personNameSlotWeight(form) +
       (hasAnyTrimmedPhone(form.phones) ? 1 : 0) +
-      (hasTrimmedText(form.address) ? 1 : 0);
-    return Math.round((parts / 4) * 100);
+      (hasTrimmedText(form.address) ? 1 : 0) +
+      objectAddressPart;
+    return Math.round((parts / 5) * 100);
   }
 
   const parts =
@@ -51,8 +58,9 @@ export function computeCrmCustomerFormFillPercent(form: CrmCustomerFormState): n
     (hasTrimmedText(form.ogrn) ? 1 : 0) +
     (hasTrimmedText(form.address) ? 1 : 0) +
     (hasTrimmedText(form.bankDetails) ? 1 : 0) +
-    (hasAnyTrimmedPhone(form.phones) ? 1 : 0);
-  return Math.round((parts / 11) * 100);
+    (hasAnyTrimmedPhone(form.phones) ? 1 : 0) +
+    objectAddressPart;
+  return Math.round((parts / 12) * 100);
 }
 
 export function getCrmCustomerFillBannerToneClass(percent: number): string {
@@ -64,9 +72,9 @@ export function getCrmCustomerFillBannerToneClass(percent: number): string {
 
 export function crmCustomerFillPercentHint(entityType: CrmCustomerEntityType): string {
   if (entityType === 'PERSON') {
-    return 'В расчёт входят: e-mail, фамилия, имя, отчество, телефоны, адрес проживания. Адреса объектов, паспорт и банковские реквизиты не учитываются.';
+    return 'В расчёт входят: e-mail, фамилия, имя, отчество, телефоны, адрес проживания, адрес объекта (хотя бы один). Паспорт и банковские реквизиты не учитываются.';
   }
-  return 'В расчёт входят: e-mail, ФИО представителя, остальные данные представителя и организации, ИНН, ОГРН, адрес проживания, банковские реквизиты, телефоны. Адреса объектов не учитываются.';
+  return 'В расчёт входят: e-mail, ФИО представителя, остальные данные представителя и организации, ИНН, ОГРН, адрес проживания, банковские реквизиты, телефоны, адрес объекта (хотя бы один).';
 }
 
 /** Объединяет сохранённые и новые телефоны для расчёта процента. */

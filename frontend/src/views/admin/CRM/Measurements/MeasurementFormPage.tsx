@@ -6,6 +6,10 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
+  type ContractSignatoryProfile,
+  getContractDocumentSignatoryProfiles,
+} from '@/shared/api/admin-contract-document-packages';
+import {
   type ClientDirectoryRow,
   type CrmDirection,
   type CrmUser,
@@ -395,7 +399,14 @@ function resolveAutoQuantity(itemName: string, metrics: AutoQuantityMetrics): nu
   return null;
 }
 
-type FieldKey = 'managerId' | 'receptionDate' | 'executionDate' | 'customerName' | 'customerPhone';
+type FieldKey =
+  | 'managerId'
+  | 'receptionDate'
+  | 'executionDate'
+  | 'directionId'
+  | 'customerName'
+  | 'customerPhone'
+  | 'customerAddress';
 
 interface MeasurementFormPageProps {
   measurementId?: string | null;
@@ -429,6 +440,7 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [directions, setDirections] = useState<CrmDirection[]>([]);
   const [users, setUsers] = useState<CrmUser[]>([]);
+  const [managerOptions, setManagerOptions] = useState<ContractSignatoryProfile[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [repairMeasurementData, setRepairMeasurementData] = useState<RepairMeasurementData>(
     buildDefaultRepairMeasurementData()
@@ -526,6 +538,16 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
     getCrmUsers()
       .then(setUsers)
       .catch(() => setUsers([]));
+    getContractDocumentSignatoryProfiles('REPAIR')
+      .then((res) => {
+        const items = (res.items ?? [])
+          .filter((p) => Boolean(p.crmUserId?.trim()))
+          .sort((a, b) =>
+            (a.title || '').localeCompare(b.title || '', 'ru', { sensitivity: 'base' })
+          );
+        setManagerOptions(items);
+      })
+      .catch(() => setManagerOptions([]));
   }, []);
 
   useEffect(() => {
@@ -592,6 +614,7 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
       setCustomerAddress(fields.customerAddress);
       clearFieldError('customerName');
       clearFieldError('customerPhone');
+      if (fields.customerAddress.trim()) clearFieldError('customerAddress');
     },
     [clearFieldError]
   );
@@ -688,6 +711,11 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
     const errors: Partial<Record<FieldKey, string>> = {};
     if (!managerId.trim()) errors.managerId = 'Выберите менеджера';
     if (!receptionDate) errors.receptionDate = 'Укажите дату приёма замера';
+    if (!directionRows[0]?.trim()) errors.directionId = 'Выберите направление';
+    if (!customerAddress.trim()) {
+      errors.customerAddress =
+        'Укажите адрес объекта в карточке заказчика (раздел адресов объектов)';
+    }
     if (executionDate) {
       const exec = new Date(executionDate);
       const rec = new Date(receptionDate);
@@ -708,7 +736,16 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
       }
     }
     return errors;
-  }, [managerId, receptionDate, executionDate, customerId, customerName, customerPhone]);
+  }, [
+    managerId,
+    receptionDate,
+    executionDate,
+    directionRows,
+    customerId,
+    customerName,
+    customerPhone,
+    customerAddress,
+  ]);
 
   const visibleResultTabs = useMemo(
     () => buildVisibleResultTabs(directionRows, directions),
@@ -719,6 +756,20 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
     () => visibleResultTabs.map((tab) => tab.id),
     [visibleResultTabs]
   );
+
+  const managerOptionIds = useMemo(
+    () => new Set(managerOptions.map((p) => p.crmUserId).filter(Boolean) as string[]),
+    [managerOptions]
+  );
+
+  const orphanManagerLabel = useMemo(() => {
+    if (!managerId || managerOptionIds.has(managerId)) return null;
+    const u = users.find((user) => user.id === managerId);
+    const name = u ? [u.firstName, u.lastName].filter(Boolean).join(' ') : '';
+    return name ? `${name} — нет в справочнике` : `Менеджер (${managerId}) — нет в справочнике`;
+  }, [managerId, managerOptionIds, users]);
+
+  const surveyors = useMemo(() => users.filter((u) => u.role === 'SURVEYOR'), [users]);
 
   useEffect(() => {
     setActiveResultTab((prev) => {
@@ -951,19 +1002,6 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
   }
 
   const isActiveResultTabLocked = savedResultTabs.has(activeResultTab);
-
-  const managers = users.filter((u) =>
-    [
-      'SUPER_ADMIN',
-      'ADMIN',
-      'MODERATOR',
-      'SUPPORT',
-      'BRIGADIER',
-      'LEAD_SPECIALIST_FURNITURE',
-      'LEAD_SPECIALIST_WINDOWS_DOORS',
-    ].includes(u.role)
-  );
-  const surveyors = users.filter((u) => u.role === 'SURVEYOR');
   const isAutosaveMessage =
     message?.type === 'success' && message.text === 'Сохранено автоматически';
 
@@ -1054,17 +1092,14 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
                   aria-describedby={fieldErrors.managerId ? 'managerId-error' : undefined}
                 >
                   <option value="">— Выберите —</option>
-                  {managers.length > 0
-                    ? managers.map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {[u.firstName, u.lastName].filter(Boolean).join(' ')} ({u.role})
-                        </option>
-                      ))
-                    : users.map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {[u.firstName, u.lastName].filter(Boolean).join(' ')} ({u.role})
-                        </option>
-                      ))}
+                  {orphanManagerLabel ? (
+                    <option value={managerId}>{orphanManagerLabel}</option>
+                  ) : null}
+                  {managerOptions.map((p) => (
+                    <option key={p.crmUserId} value={p.crmUserId}>
+                      {p.title?.trim() || p.directorNameNominative?.trim() || p.crmUserId}
+                    </option>
+                  ))}
                 </select>
                 {fieldErrors.managerId && (
                   <span id="managerId-error" className={styles.fieldError} role="alert">
@@ -1145,18 +1180,32 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
 
             <div className={styles.blankCustomerLayout}>
               <div className={`${styles.row} ${styles.directionRowsBlock}`}>
-                <label className={styles.label}>Направление</label>
+                <label className={styles.label}>
+                  Направление <span className={styles.required}>*</span>
+                </label>
                 <div className={styles.directionRows}>
                   {directionRows.map((directionRowId, rowIndex) => (
                     <div key={`direction-row-${rowIndex}`} className={styles.directionRow}>
                       <select
                         value={directionRowId}
-                        onChange={(e) => updateDirectionRow(rowIndex, e.target.value)}
-                        className={styles.select}
+                        onChange={(e) => {
+                          updateDirectionRow(rowIndex, e.target.value);
+                          if (rowIndex === 0 && e.target.value) clearFieldError('directionId');
+                        }}
+                        className={`${styles.select} ${
+                          rowIndex === 0 && fieldErrors.directionId ? styles.inputError : ''
+                        }`}
+                        required={rowIndex === 0}
                         aria-label={
                           rowIndex === 0
                             ? 'Основное направление'
                             : `Дополнительное направление ${rowIndex}`
+                        }
+                        aria-invalid={rowIndex === 0 ? !!fieldErrors.directionId : undefined}
+                        aria-describedby={
+                          rowIndex === 0 && fieldErrors.directionId
+                            ? 'directionId-error'
+                            : undefined
                         }
                       >
                         <option value="">— Выберите —</option>
@@ -1190,6 +1239,11 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
                     </div>
                   ))}
                 </div>
+                {fieldErrors.directionId ? (
+                  <span id="directionId-error" className={styles.fieldError} role="alert">
+                    {fieldErrors.directionId}
+                  </span>
+                ) : null}
               </div>
 
               <div className={styles.row}>
@@ -1242,16 +1296,28 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
 
               <div className={styles.row}>
                 <label className={styles.label} htmlFor="customerAddress">
-                  Адрес объекта
+                  Адрес объекта <span className={styles.required}>*</span>
                 </label>
                 <input
                   id="customerAddress"
                   type="text"
                   value={customerAddress}
                   readOnly
-                  className={`${styles.input} ${styles.inputReadonly}`}
+                  className={`${styles.input} ${styles.inputReadonly} ${
+                    fieldErrors.customerAddress ? styles.inputError : ''
+                  }`}
                   placeholder="Из карточки заказчика"
+                  required
+                  aria-invalid={!!fieldErrors.customerAddress}
+                  aria-describedby={
+                    fieldErrors.customerAddress ? 'customerAddress-error' : undefined
+                  }
                 />
+                {fieldErrors.customerAddress ? (
+                  <span id="customerAddress-error" className={styles.fieldError} role="alert">
+                    {fieldErrors.customerAddress}
+                  </span>
+                ) : null}
               </div>
 
               <article className={styles.customerCrmPanel}>

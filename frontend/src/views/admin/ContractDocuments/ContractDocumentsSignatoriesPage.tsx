@@ -9,11 +9,24 @@ import {
   getContractDocumentSignatoryProfiles,
   putContractDocumentSignatoryProfiles,
 } from '@/shared/api/admin-contract-document-packages';
+import { type CrmUser, getCrmUsers } from '@/shared/api/admin-crm';
 
 import styles from './ContractDocuments.module.css';
 
+/** Роли, доступные как менеджер в замерах и фильтрах списка. */
+const MANAGER_CRM_ROLES = [
+  'SUPER_ADMIN',
+  'ADMIN',
+  'MODERATOR',
+  'SUPPORT',
+  'BRIGADIER',
+  'LEAD_SPECIALIST_FURNITURE',
+  'LEAD_SPECIALIST_WINDOWS_DOORS',
+] as const;
+
 const EMPTY_PROFILE: ContractSignatoryProfile = {
   title: '',
+  crmUserId: '',
   directorNameNominative: '',
   directorNameGenitive: '',
   basis: '',
@@ -25,15 +38,23 @@ type SignatorySortKey = 'title_asc' | 'title_desc';
 
 type SignatoryRowView = { item: ContractSignatoryProfile; originalIndex: number };
 
-function stripCrmFromProfiles(items: ContractSignatoryProfile[]): ContractSignatoryProfile[] {
-  return items.map((p) => {
-    const { crmUserId: _removed, ...rest } = p;
-    return rest;
-  });
+function formatCrmUserLabel(u: CrmUser): string {
+  const name = [u.firstName, u.lastName].filter(Boolean).join(' ');
+  return name ? `${name} (${u.email})` : u.email;
+}
+
+function normalizeSignatoryProfile(profile: ContractSignatoryProfile): ContractSignatoryProfile {
+  const crmUserId = profile.crmUserId?.trim();
+  return {
+    ...profile,
+    title: profile.title.trim(),
+    ...(crmUserId ? { crmUserId } : {}),
+  };
 }
 
 export function ContractDocumentsSignatoriesPage() {
   const [items, setItems] = useState<ContractSignatoryProfile[]>([]);
+  const [crmUsers, setCrmUsers] = useState<CrmUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,13 +63,33 @@ export function ContractDocumentsSignatoriesPage() {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [signatorySort, setSignatorySort] = useState<SignatorySortKey>('title_asc');
 
+  const managerCrmUsers = useMemo(
+    () =>
+      crmUsers.filter((u) =>
+        MANAGER_CRM_ROLES.includes(u.role as (typeof MANAGER_CRM_ROLES)[number])
+      ),
+    [crmUsers]
+  );
+
+  const crmUserLabelById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const u of crmUsers) {
+      map.set(u.id, formatCrmUserLabel(u));
+    }
+    return map;
+  }, [crmUsers]);
+
   useEffect(() => {
     void (async () => {
       setLoading(true);
       setError(null);
       try {
-        const profilesRes = await getContractDocumentSignatoryProfiles('REPAIR');
-        setItems(stripCrmFromProfiles(profilesRes.items ?? []));
+        const [profilesRes, users] = await Promise.all([
+          getContractDocumentSignatoryProfiles('REPAIR'),
+          getCrmUsers().catch(() => [] as CrmUser[]),
+        ]);
+        setCrmUsers(users);
+        setItems(profilesRes.items ?? []);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Не удалось загрузить данные');
       } finally {
@@ -66,7 +107,7 @@ export function ContractDocumentsSignatoriesPage() {
     setSaving(true);
     setError(null);
     setOk(null);
-    const sanitized = stripCrmFromProfiles(nextItems);
+    const sanitized = nextItems.map(normalizeSignatoryProfile);
     try {
       await putContractDocumentSignatoryProfiles({ kind: 'REPAIR', items: sanitized });
       setItems(sanitized);
@@ -83,14 +124,24 @@ export function ContractDocumentsSignatoriesPage() {
       setError('Укажите название карточки.');
       return;
     }
+    const crmUserId = draft.crmUserId?.trim();
+    if (!crmUserId) {
+      setError(
+        'Выберите пользователя CRM — без привязки карточка не попадёт в фильтр менеджера в замерах.'
+      );
+      return;
+    }
+    const duplicateIdx = items.findIndex(
+      (p, i) => i !== editingIndex && p.crmUserId?.trim() === crmUserId
+    );
+    if (duplicateIdx >= 0) {
+      setError('Этот пользователь CRM уже привязан к другой карточке менеджера.');
+      return;
+    }
     const next = [...items];
-    const normalizedDraft: ContractSignatoryProfile = {
-      ...draft,
-      title: draft.title.trim(),
-    };
-    const withoutCrm = stripCrmFromProfiles([normalizedDraft])[0];
-    if (editingIndex === null) next.push(withoutCrm);
-    else next[editingIndex] = withoutCrm;
+    const normalizedDraft = normalizeSignatoryProfile(draft);
+    if (editingIndex === null) next.push(normalizedDraft);
+    else next[editingIndex] = normalizedDraft;
     await saveAll(next);
     resetDraft();
   };
@@ -120,8 +171,9 @@ export function ContractDocumentsSignatoriesPage() {
         <div>
           <h1 className={styles.title}>Менеджеры</h1>
           <p className={styles.subtitle}>
-            Карточки менеджера для договоров: ФИО в падежах, основание полномочий, офис продаж. В
-            пакете документов менеджер выберет карточку из списка.
+            Карточки менеджера для договоров: ФИО в падежах, основание полномочий, офис продаж. Для
+            каждой карточки укажите пользователя CRM — по нему карточка попадает в фильтр менеджера
+            в замерах. В пакете документов менеджер выберет карточку из списка.
           </p>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
@@ -143,6 +195,25 @@ export function ContractDocumentsSignatoriesPage() {
               onChange={(e) => setDraft((p) => ({ ...p, title: e.target.value }))}
               placeholder="Например: «Иванов И.И. — офис X»"
             />
+          </div>
+          <div className={styles.field}>
+            <label htmlFor="signatory_crm_user">Пользователь CRM</label>
+            <select
+              id="signatory_crm_user"
+              value={draft.crmUserId ?? ''}
+              onChange={(e) => setDraft((p) => ({ ...p, crmUserId: e.target.value }))}
+            >
+              <option value="">— Выберите сотрудника —</option>
+              {managerCrmUsers.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {formatCrmUserLabel(u)}
+                </option>
+              ))}
+            </select>
+            <p className={styles.hint} style={{ marginTop: 4, marginBottom: 0 }}>
+              Обязательная привязка к учётной записи CRM для фильтра замеров и поля «Менеджер» в
+              бланке замера.
+            </p>
           </div>
           <div className={styles.field}>
             <label>Менеджер (именительный падеж)</label>
@@ -222,6 +293,7 @@ export function ContractDocumentsSignatoriesPage() {
           <thead>
             <tr>
               <th>Название</th>
+              <th>Пользователь CRM</th>
               <th>Менеджер (им.)</th>
               <th>Офис</th>
               <th>Действия</th>
@@ -230,16 +302,21 @@ export function ContractDocumentsSignatoriesPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={4}>Загрузка…</td>
+                <td colSpan={5}>Загрузка…</td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={4}>Карточки менеджеров пока не добавлены.</td>
+                <td colSpan={5}>Карточки менеджеров пока не добавлены.</td>
               </tr>
             ) : (
               displayedRows.map(({ item, originalIndex }) => (
                 <tr key={`${item.title}-${originalIndex}`}>
                   <td>{item.title}</td>
+                  <td>
+                    {item.crmUserId
+                      ? (crmUserLabelById.get(item.crmUserId) ?? item.crmUserId)
+                      : '— не привязан —'}
+                  </td>
                   <td>{item.directorNameNominative || '—'}</td>
                   <td>{item.salesOffice || '—'}</td>
                   <td>

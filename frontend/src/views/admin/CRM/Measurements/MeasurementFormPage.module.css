@@ -905,6 +905,28 @@
   color: var(--admin-error-strong);
 }
 
+/* Неактивная кнопка удаления — как .estimatesCardActions .estimatesIconBtn:disabled */
+.roomActions .roomIconBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  color: var(--admin-text-muted);
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
+}
+
+.roomActions .roomIconBtn:disabled:hover {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
+}
+
+.roomActions .roomIconBtn:disabled .roomIconDelete {
+  color: var(--admin-text-muted);
+}
+
+.roomActions .roomIconBtn:disabled svg {
+  stroke: var(--admin-text-muted);
+}
+
 .inlineRow {
   display: grid;
   grid-template-columns: 1fr auto auto;
@@ -1139,30 +1161,6 @@
   color: var(--admin-text-secondary);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .statusSelectNew {
-  background: var(--admin-overlay-color-123);
-  border-color: var(--admin-info-light);
-  color: var(--admin-info-border-soft);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .statusSelectCompleted {
-  background: var(--admin-measurement-status-completed-bg, #4a3f32);
-  border-color: var(--admin-measurement-status-completed-border, #a08968);
-  color: var(--admin-measurement-status-completed-text, #e8dcc8);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .statusSelectCancelled {
-  background: var(--admin-overlay-color-059);
-  border-color: var(--admin-danger-text-soft);
-  color: var(--admin-error-border-soft);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .statusSelectConverted {
-  background: var(--admin-overlay-color-098);
-  border-color: var(--admin-success-lime);
-  color: var(--admin-success-border-soft);
-}
-
 :where(html[data-theme='dark'], [data-app-theme='dark']) .autosaveNotice {
   border-color: var(--admin-success-bright);
   background: var(--admin-overlay-color-097);
@@ -1313,6 +1311,27 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .roomIconDelete {
   color: var(--admin-danger-text-soft);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .roomActions .roomIconBtn:disabled {
+  opacity: 0.42;
+  background: var(--admin-surface);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .roomActions .roomIconBtn:disabled:hover {
+  background: var(--admin-surface);
+  border-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .roomActions
+  .roomIconBtn:disabled
+  .roomIconDelete,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .roomActions .roomIconBtn:disabled svg {
+  color: var(--admin-text-muted);
+  stroke: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .zonePrimary,
@@ -1501,19 +1520,6 @@
   ) !important;
   color: var(--admin-surface) !important;
   box-shadow: 0 4px 12px var(--admin-overlay-color-106);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmPanel {
-  border-color: var(--admin-info-light);
-  background: linear-gradient(
-    152deg,
-    var(--admin-overlay-color-136) 0%,
-    var(--admin-overlay-color-123) 40%,
-    var(--admin-surface-soft) 82%
-  );
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.08),
-    0 2px 14px rgb(37 99 235 / 0.22);
 }
 
 /* --- Поиск заказчика (форма замера) --- */
@@ -1849,4 +1855,163 @@
   color: var(--admin-success-text-strong);
   background: var(--admin-success-bg);
   border: 1px solid var(--admin-success-border-soft);
+}
+
+/* --- Поиск заказчика: тёмная тема (после светлых правил) --- */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmPanel {
+  border-color: var(--admin-info-light);
+  background: linear-gradient(
+    152deg,
+    var(--admin-overlay-color-136) 0%,
+    var(--admin-overlay-color-123) 40%,
+    var(--admin-surface-soft) 82%
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 2px 14px rgb(0 0 0 / 0.35);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmTitle {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmHint,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmMuted {
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmPanel .input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmSearchRow .input {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmPanel .input::placeholder {
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmPanel .input:focus {
+  border-color: var(--admin-info-light);
+  box-shadow: 0 0 0 2px var(--admin-overlay-color-136);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmAddButton {
+  background: var(--admin-info);
+  color: var(--admin-text-inverse);
+  box-shadow: 0 1px 6px rgb(0 0 0 / 0.28);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmAddButton:hover {
+  background: var(--admin-info-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmDropdown .customerCrmMuted,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmDropdown .customerCrmError,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmResults {
+  background: var(--admin-surface);
+  border-color: var(--admin-sidebar-text);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.45);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmResults li + li {
+  border-top-color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmResultButton {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmResultButton:hover {
+  background: var(--admin-overlay-color-136);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmResultName {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmResultMeta {
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmResultEditBtn {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-info-light);
+  color: var(--admin-info-bright);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmResultEditBtn:hover {
+  background: var(--admin-overlay-color-136);
+  border-color: var(--admin-info);
+  color: var(--admin-info-bright);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmError {
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmLinkedBadge {
+  background: rgb(22 101 52 / 0.28);
+  border-color: var(--admin-success-border);
+  color: var(--admin-success-bright);
+}
+
+/* --- Статус замера (select): тёмная тема — после общих .select --- */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select.statusInlineSelect.statusSelectNew,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select.statusSelectNew {
+  background: var(--admin-overlay-color-139);
+  border-color: var(--admin-info-light);
+  color: var(--admin-info-bright);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .select.statusInlineSelect.statusSelectCompleted,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select.statusSelectCompleted {
+  background: var(--admin-measurement-status-completed-bg);
+  border-color: var(--admin-measurement-status-completed-border);
+  color: var(--admin-measurement-status-completed-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .select.statusInlineSelect.statusSelectCancelled,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select.statusSelectCancelled {
+  background: var(--admin-overlay-color-031);
+  border-color: var(--admin-danger-border-strong);
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .select.statusInlineSelect.statusSelectConverted,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select.statusSelectConverted {
+  background: var(--admin-overlay-color-098);
+  border-color: var(--admin-success-lime);
+  color: var(--admin-success-bright);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .select.statusInlineSelect.statusSelectNew:focus,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select.statusSelectNew:focus {
+  border-color: var(--admin-info-bright);
+  box-shadow: 0 0 0 2px var(--admin-overlay-info-soft);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .select.statusInlineSelect.statusSelectCompleted:focus,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select.statusSelectCompleted:focus {
+  border-color: var(--admin-measurement-status-completed-border);
+  box-shadow: 0 0 0 2px rgb(160 137 104 / 0.35);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .select.statusInlineSelect.statusSelectCancelled:focus,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select.statusSelectCancelled:focus {
+  border-color: #f87171;
+  box-shadow: 0 0 0 2px var(--admin-overlay-danger-soft);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .select.statusInlineSelect.statusSelectConverted:focus,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select.statusSelectConverted:focus {
+  border-color: var(--admin-success-lime);
+  box-shadow: 0 0 0 2px var(--admin-overlay-success-soft);
 }

@@ -8,15 +8,15 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   type ContractDocumentPackage,
   type ContractEstimatePreset,
+  type ContractSignatoryProfile,
   getContractDocumentEstimatePresets,
   getContractDocumentPackages,
+  getContractDocumentSignatoryProfiles,
 } from '@/shared/api/admin-contract-document-packages';
 import {
   type CrmDirection,
-  type CrmUser,
   type Measurement,
   getCrmDirections,
-  getCrmUsers,
   getMeasurements,
 } from '@/shared/api/admin-crm';
 import { DataTable } from '@/shared/ui/admin/DataTable';
@@ -57,7 +57,7 @@ export function MeasurementsPage() {
   const [limit] = useState(20);
   const [loading, setLoading] = useState(true);
   const [directions, setDirections] = useState<CrmDirection[]>([]);
-  const [users, setUsers] = useState<CrmUser[]>([]);
+  const [managerOptions, setManagerOptions] = useState<ContractSignatoryProfile[]>([]);
   const [statusFilter, setStatusFilter] = useState('');
   const [managerFilter, setManagerFilter] = useState('');
   const [directionFilter, setDirectionFilter] = useState('');
@@ -215,10 +215,24 @@ export function MeasurementsPage() {
     getCrmDirections()
       .then(setDirections)
       .catch(() => setDirections([]));
-    getCrmUsers()
-      .then(setUsers)
-      .catch(() => setUsers([]));
+    getContractDocumentSignatoryProfiles('REPAIR')
+      .then((res) => {
+        const items = (res.items ?? [])
+          .filter((p) => Boolean(p.crmUserId?.trim()))
+          .sort((a, b) =>
+            (a.title || '').localeCompare(b.title || '', 'ru', { sensitivity: 'base' })
+          );
+        setManagerOptions(items);
+      })
+      .catch(() => setManagerOptions([]));
   }, []);
+
+  useEffect(() => {
+    if (!managerFilter) return;
+    if (!managerOptions.some((p) => p.crmUserId === managerFilter)) {
+      setManagerFilter('');
+    }
+  }, [managerFilter, managerOptions]);
 
   const renderDirection = (m: Measurement) => {
     const primary = m.direction?.name;
@@ -377,9 +391,9 @@ export function MeasurementsPage() {
           className={styles.select}
         >
           <option value="">Все менеджеры</option>
-          {users.map((u) => (
-            <option key={u.id} value={u.id}>
-              {[u.firstName, u.lastName].filter(Boolean).join(' ')} ({u.role})
+          {managerOptions.map((p) => (
+            <option key={p.crmUserId} value={p.crmUserId}>
+              {p.title?.trim() || p.directorNameNominative?.trim() || p.crmUserId}
             </option>
           ))}
         </select>

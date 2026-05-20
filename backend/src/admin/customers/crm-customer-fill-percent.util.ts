@@ -76,6 +76,12 @@ function personNameSlotWeight(customer: {
   return n / PERSON_NAME_PARTS_COUNT;
 }
 
+function hasAnyObjectAddress(ext: Record<string, unknown>): boolean {
+  const raw = ext.objectAddresses;
+  if (!Array.isArray(raw)) return false;
+  return raw.some((item) => typeof item === 'string' && item.trim().length > 0);
+}
+
 /** Доля заполненных полей карточки; логика совпадает с CRM-формой на фронте. */
 export function computeCrmCustomerProfileFillPercent(customer: {
   email: string | null;
@@ -89,14 +95,16 @@ export function computeCrmCustomerProfileFillPercent(customer: {
 }): number {
   const ext = (customer.extendedProfile ?? {}) as Record<string, unknown>;
   const entityType = resolveCustomerEntityTypeFromRow(customer);
+  const objectAddressPart = hasAnyObjectAddress(ext) ? 1 : 0;
 
   if (entityType === 'PERSON') {
     const parts =
       (hasTrimmedText(customer.email) ? 1 : 0) +
       personNameSlotWeight(customer) +
       (hasAnyTrimmedPhone(customer.phones, customer.phone) ? 1 : 0) +
-      (hasTrimmedText(str(ext, 'address')) ? 1 : 0);
-    return Math.round((parts / 4) * 100);
+      (hasTrimmedText(str(ext, 'address')) ? 1 : 0) +
+      objectAddressPart;
+    return Math.round((parts / 5) * 100);
   }
 
   const repNom =
@@ -117,6 +125,7 @@ export function computeCrmCustomerProfileFillPercent(customer: {
     (hasTrimmedText(str(ext, 'ogrn')) ? 1 : 0) +
     (hasTrimmedText(str(ext, 'address')) ? 1 : 0) +
     (hasTrimmedText(str(ext, 'bankDetails')) ? 1 : 0) +
-    (hasAnyTrimmedPhone(customer.phones, customer.phone) ? 1 : 0);
-  return Math.round((parts / 11) * 100);
+    (hasAnyTrimmedPhone(customer.phones, customer.phone) ? 1 : 0) +
+    objectAddressPart;
+  return Math.round((parts / 12) * 100);
 }
