@@ -82,6 +82,7 @@ export class ContractDocumentPackagesService {
     const others = await this.prisma.contractDocumentPackage.findMany({
       where: {
         kind: ContractDocumentPackageKind.REPAIR,
+        deletedAt: null,
         ...(currentPackageId ? { NOT: { id: currentPackageId } } : {}),
       },
       select: { id: true, formData: true },
@@ -129,7 +130,10 @@ export class ContractDocumentPackagesService {
 
   findAll(kind?: ContractDocumentPackageKind) {
     return this.prisma.contractDocumentPackage.findMany({
-      where: kind ? { kind } : undefined,
+      where: {
+        deletedAt: null,
+        ...(kind ? { kind } : {}),
+      },
       orderBy: { updatedAt: 'desc' },
       include: {
         ...contractDocumentPackageInclude,
@@ -138,7 +142,54 @@ export class ContractDocumentPackagesService {
     });
   }
 
-  async findOne(id: string) {
+  private displayContractNumberFromFormData(formData: unknown): string {
+    if (!formData || typeof formData !== 'object') return '—';
+    const fd = formData as Record<string, unknown>;
+    const contract =
+      fd.contract && typeof fd.contract === 'object'
+        ? (fd.contract as Record<string, unknown>)
+        : null;
+    const num = typeof contract?.number === 'string' ? contract.number.trim() : '';
+    return num || '—';
+  }
+
+  private customerNameFromFormData(formData: unknown): string {
+    if (!formData || typeof formData !== 'object') return '—';
+    const fd = formData as Record<string, unknown>;
+    const c =
+      fd.customer && typeof fd.customer === 'object'
+        ? (fd.customer as Record<string, unknown>)
+        : null;
+    if (!c) return '—';
+    const type = c.type;
+    if (type === 'COMPANY' || type === 'ENTREPRENEUR') {
+      const org = typeof c.organizationName === 'string' ? c.organizationName.trim() : '';
+      return org || '—';
+    }
+    const full = typeof c.fullName === 'string' ? c.fullName.trim() : '';
+    return full || '—';
+  }
+
+  private packageMatchesTrashSearch(
+    pkg: {
+      title: string | null;
+      formData: unknown;
+      crmContract: { customerName: string | null } | null;
+    },
+    searchNorm: string,
+  ): boolean {
+    const haystack = [
+      this.displayContractNumberFromFormData(pkg.formData),
+      this.customerNameFromFormData(pkg.formData),
+      pkg.crmContract?.customerName ?? '',
+      pkg.title ?? '',
+    ]
+      .join(' ')
+      .toLowerCase();
+    return haystack.includes(searchNorm);
+  }
+
+  async findOne(id: string, options?: { allowTrashed?: boolean }) {
     const row = await this.prisma.contractDocumentPackage.findUnique({
       where: { id },
       include: contractDocumentPackageInclude,
@@ -146,7 +197,54 @@ export class ContractDocumentPackagesService {
     if (!row) {
       throw new NotFoundException('Пакет документов не найден');
     }
+    if (row.deletedAt && !options?.allowTrashed) {
+      throw new NotFoundException('Пакет документов не найден');
+    }
     return row;
+  }
+
+  async findTrash(
+    kind: ContractDocumentPackageKind,
+    params?: { search?: string; page?: number; limit?: number },
+  ) {
+    const page = params?.page ?? 1;
+    const limit = Math.min(Math.max(params?.limit ?? 25, 1), 100);
+    const skip = (page - 1) * limit;
+    const searchNorm = params?.search?.trim().toLowerCase() ?? '';
+
+    const rows = await this.prisma.contractDocumentPackage.findMany({
+      where: { kind, deletedAt: { not: null } },
+      orderBy: { deletedAt: 'desc' },
+      include: {
+        deletedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
+        crmContract: {
+          select: {
+            customerName: true,
+          },
+        },
+      },
+    });
+
+    const filtered = searchNorm
+      ? rows.filter((pkg) => this.packageMatchesTrashSearch(pkg, searchNorm))
+      : rows;
+    const total = filtered.length;
+    const pageRows = filtered.slice(skip, skip + limit);
+
+    return {
+      data: pageRows.map((pkg) => ({
+        id: pkg.id,
+        contractNumber: this.displayContractNumberFromFormData(pkg.formData),
+        customerName: this.customerNameFromFormData(pkg.formData),
+        title: pkg.title,
+        deletedAt: pkg.deletedAt!.toISOString(),
+        deletedBy: pkg.deletedBy,
+      })),
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    };
   }
 
   async update(id: string, dto: UpdateContractDocumentPackageDto, savedById?: string | null) {
@@ -366,8 +464,11 @@ export class ContractDocumentPackagesService {
     return row;
   }
 
-  async remove(id: string) {
+  async moveToTrash(id: string, actorUserId?: string) {
     const row = await this.findOne(id);
+    if (row.deletedAt) {
+      throw new BadRequestException('Договор уже в корзине');
+    }
     if (row.kind === ContractDocumentPackageKind.REPAIR) {
       const paymentCount = await this.prisma.contractDocumentPackagePayment.count({
         where: { packageId: id },
@@ -384,7 +485,37 @@ export class ContractDocumentPackagesService {
         );
       }
     }
-    return this.prisma.contractDocumentPackage.delete({ where: { id } });
+    return this.prisma.contractDocumentPackage.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+        deletedById: actorUserId ?? null,
+      },
+      include: contractDocumentPackageInclude,
+    });
+  }
+
+  async restoreFromTrash(id: string) {
+    const row = await this.findOne(id, { allowTrashed: true });
+    if (!row.deletedAt) {
+      throw new BadRequestException('Договор не в корзине');
+    }
+    if (row.kind === ContractDocumentPackageKind.REPAIR && row.formData !== undefined) {
+      await this.assertRepairEstimatePresetsExclusive(id, row.formData);
+    }
+    return this.prisma.contractDocumentPackage.update({
+      where: { id },
+      data: {
+        deletedAt: null,
+        deletedById: null,
+      },
+      include: contractDocumentPackageInclude,
+    });
+  }
+
+  /** @deprecated Используйте moveToTrash — сохранено для совместимости вызовов. */
+  async remove(id: string, actorUserId?: string) {
+    return this.moveToTrash(id, actorUserId);
   }
 
   private assertGlobalTab(tab: string) {

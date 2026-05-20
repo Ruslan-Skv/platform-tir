@@ -3,6 +3,14 @@
   margin: 0;
 }
 
+/* Пагинация: активная страница — зелёная рамка как у иконки «Копировать» */
+.paginationPageActive {
+  background: var(--admin-surface);
+  border-color: var(--admin-icon-copy);
+  color: var(--admin-icon-copy);
+  font-weight: 600;
+}
+
 .header {
   display: flex;
   align-items: center;
@@ -37,20 +45,34 @@
   gap: var(--admin-space-xl);
 }
 
+/* Как «+ Новый договор» / addButton на замерах */
 .addButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  margin: 0;
   padding: var(--admin-space-sm) var(--admin-space-xl);
-  background: var(--admin-accent);
-  color: var(--admin-surface);
   border: none;
   border-radius: var(--admin-radius-md);
-  font-weight: 500;
-  font-size: var(--admin-font-size-xs);
+  background: var(--admin-info);
+  color: var(--admin-surface);
   cursor: pointer;
-  transition: background 0.2s;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  line-height: var(--admin-line-height-sm);
+  transition: background 0.15s ease;
 }
 
-.addButton:hover {
-  background: var(--admin-accent);
+.addButton:hover:not(:disabled) {
+  background: var(--admin-info-strong);
+  color: var(--admin-surface);
+}
+
+.addButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .secondaryButton {

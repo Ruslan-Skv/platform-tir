@@ -16,6 +16,10 @@ import {
 import { getMeasurements } from '@/shared/api/admin-crm';
 import confirmModalStyles from '@/shared/ui/ConfirmModal/ConfirmModal.module.css';
 import { Modal } from '@/shared/ui/Modal';
+import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
+import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
+import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
+import { EditIcon } from '@/shared/ui/icons/EditIcon';
 
 import styles from './ContractDocuments.module.css';
 import {
@@ -1895,9 +1899,7 @@ export function ContractDocumentsEstimatesPage() {
               <EstimatesRestoreFromArchiveIcon />
             </button>
           ) : null}
-          <button
-            type="button"
-            className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+          <AdminTableIconButton
             aria-label="Редактировать"
             title={
               hasLockedUsage
@@ -1919,25 +1921,9 @@ export function ContractDocumentsEstimatesPage() {
               );
             }}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width={14}
-              height={14}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--admin-chart-series-1)"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+            <EditIcon />
+          </AdminTableIconButton>
+          <AdminTableIconButton
             aria-label="Копировать расчёт"
             title="Создать обычную копию расчёта (отдельный расчёт без связи при разделении сметы)"
             disabled={saving}
@@ -1947,22 +1933,8 @@ export function ContractDocumentsEstimatesPage() {
               )
             }
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width={14}
-              height={14}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--admin-chart-series-2)"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-            </svg>
-          </button>
+            <CopyIcon />
+          </AdminTableIconButton>
           {it.groupId && !archiveView ? (
             <button
               type="button"
@@ -2029,9 +2001,7 @@ export function ContractDocumentsEstimatesPage() {
               </svg>
             </button>
           ) : null}
-          <button
-            type="button"
-            className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+          <AdminTableIconButton
             aria-label="Удалить"
             title={
               hasLockedUsage ? 'Удаление запрещено: договор подписан или Д/с подписано' : 'Удалить'
@@ -2053,24 +2023,8 @@ export function ContractDocumentsEstimatesPage() {
               });
             }}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width={14}
-              height={14}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--admin-chart-series-6)"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              <line x1="10" y1="11" x2="10" y2="17" />
-              <line x1="14" y1="11" x2="14" y2="17" />
-            </svg>
-          </button>
+            <DeleteIcon />
+          </AdminTableIconButton>
         </div>
       </div>
     );
@@ -2098,6 +2052,25 @@ export function ContractDocumentsEstimatesPage() {
           <h1 className={styles.title}>{archiveView ? 'Архив расчётов' : 'Расчёты'}</h1>
         </div>
         <div className={styles.headerButtonsRow}>
+          {!archiveView ? (
+            <>
+              <button
+                type="button"
+                className={`${styles.secondaryBtn} ${styles.estimatesGenerateFromMeasurementBtn}`}
+                disabled={saving || refreshing}
+                onClick={() => void openGenerateFromMeasurementModal()}
+              >
+                + Новый расчёт из замера
+              </button>
+              <Link
+                className={`${styles.primaryBtn} ${styles.estimatesCompactPrimaryLink}`}
+                href="/admin/contract-documents/estimates/workspace"
+                style={{ textDecoration: 'none' }}
+              >
+                + Новый расчёт
+              </Link>
+            </>
+          ) : null}
           <button
             type="button"
             className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn}`}
@@ -2192,25 +2165,6 @@ export function ContractDocumentsEstimatesPage() {
         <div
           className={`${styles.estimatesControlsSingleRow}${archiveView ? ` ${styles.estimatesControlsSingleRowArchive}` : ''}`}
         >
-          {!archiveView ? (
-            <>
-              <button
-                type="button"
-                className={`${styles.secondaryBtn} ${styles.estimatesGenerateFromMeasurementBtn}`}
-                disabled={saving || refreshing}
-                onClick={() => void openGenerateFromMeasurementModal()}
-              >
-                + Новый расчёт из замера
-              </button>
-              <Link
-                className={`${styles.primaryBtn} ${styles.estimatesCompactPrimaryLink}`}
-                href="/admin/contract-documents/estimates/workspace"
-                style={{ textDecoration: 'none' }}
-              >
-                + Новый расчёт
-              </Link>
-            </>
-          ) : null}
           <EstimatesAttachmentFilterControl
             value={attachmentFilter}
             onChange={setAttachmentFilter}

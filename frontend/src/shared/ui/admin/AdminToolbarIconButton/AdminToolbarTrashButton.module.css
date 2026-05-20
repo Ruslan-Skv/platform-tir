@@ -1,0 +1,32 @@
+.wrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  border: 1.5px solid var(--admin-surface);
+  background: var(--admin-text-muted);
+  color: var(--admin-surface);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .badge {
+  border-color: var(--admin-surface-soft);
+  background: var(--admin-text-secondary);
+  color: var(--admin-surface);
+}

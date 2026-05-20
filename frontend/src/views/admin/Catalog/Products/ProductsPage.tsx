@@ -6,7 +6,10 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
 import { apiFetch } from '@/shared/lib/api-fetch';
+import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
+import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
+import { EditIcon } from '@/shared/ui/icons/EditIcon';
 
 import styles from './ProductsPage.module.css';
 
@@ -1454,18 +1457,17 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
             ●
           </span>
         )}
-        <button
-          className={styles.actionButton}
+        <AdminTableIconButton
           onClick={(e) => {
             e.stopPropagation();
             router.push(hrefToProductEdit(product.id, persistedCategoryId));
           }}
           title="Редактировать"
+          aria-label="Редактировать товар"
         >
-          ✏️
-        </button>
-        <button
-          className={styles.actionButton}
+          <EditIcon />
+        </AdminTableIconButton>
+        <AdminTableIconButton
           onClick={(e) => {
             e.stopPropagation();
             const copyUrl = `/admin/catalog/products/new?copyFrom=${product.id}${
@@ -1474,9 +1476,10 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
             router.push(copyUrl);
           }}
           title="Копировать товар"
+          aria-label="Копировать товар"
         >
-          🔁
-        </button>
+          <CopyIcon />
+        </AdminTableIconButton>
       </div>
     ),
   };
@@ -1754,6 +1757,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
             {syncingSupplierPrices ? '⏳ Синхронизация...' : '🔄 Синхр. цены'}
           </button>
           <button
+            type="button"
             className={styles.addButton}
             onClick={() => {
               const url = persistedCategoryId
@@ -1762,7 +1766,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
               router.push(url);
             }}
           >
-            + Добавить товар
+            + Новый товар
           </button>
         </div>
       </div>
@@ -1973,6 +1977,8 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       )}
 
       <DataTable
+        containerClassName={styles.productsDataTable}
+        paginationActiveClassName={styles.paginationPageActive}
         data={paginatedProducts}
         columns={columns}
         keyExtractor={(product) => product.id}

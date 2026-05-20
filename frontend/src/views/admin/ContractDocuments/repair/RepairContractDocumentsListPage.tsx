@@ -11,11 +11,12 @@ import {
   type ContractEstimatePreset,
   type ContractSignatoryProfile,
   createContractDocumentPackage,
-  deleteContractDocumentPackage,
   getContractDocumentEstimatePresets,
   getContractDocumentPackage,
   getContractDocumentPackages,
   getContractDocumentSignatoryProfiles,
+  getRepairContractPackageTrash,
+  trashContractDocumentPackage,
 } from '@/shared/api/admin-contract-document-packages';
 import {
   type CrmDirection,
@@ -28,11 +29,19 @@ import {
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
-import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
+import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
+import {
+  AdminListRefreshButton,
+  AdminToolbarTrashButton,
+  useAdminTrashCount,
+} from '@/shared/ui/admin/AdminToolbarIconButton';
 import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
+import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
+import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 import { adminContractDocumentsContractsRepairPackageHref } from '@/views/admin/ContractDocuments/contractDocumentsContractsRoutes';
 
 import styles from '../ContractDocuments.module.css';
+import { RepairContractTrashModal } from './RepairContractTrashModal';
 import { buildFormDataForRepairPackageCopy } from './cloneRepairPackageFormDataForCopy';
 import {
   REPAIR_COPY_CONTRACT_NUMBER_BASELINE_KEY,
@@ -767,6 +776,13 @@ export function RepairContractDocumentsListPage() {
   const [packagePendingDelete, setPackagePendingDelete] = useState<ContractDocumentPackage | null>(
     null
   );
+  const [trashOpen, setTrashOpen] = useState(false);
+
+  const fetchRepairTrashTotal = useCallback(
+    () => getRepairContractPackageTrash({ page: 1, limit: 1 }),
+    []
+  );
+  const { trashCount, refreshTrashCount } = useAdminTrashCount(fetchRepairTrashTotal);
   const [actPhotosModal, setActPhotosModal] = useState<{
     items: RepairListActPhotoItem[];
     contractLabel: string;
@@ -958,8 +974,9 @@ export function RepairContractDocumentsListPage() {
       setError(e instanceof Error ? e.message : 'Ошибка загрузки');
     } finally {
       setLoading(false);
+      void refreshTrashCount();
     }
-  }, []);
+  }, [refreshTrashCount]);
 
   useEffect(() => {
     void load();
@@ -1023,10 +1040,11 @@ export function RepairContractDocumentsListPage() {
       setDeletingPackageId(id);
       setError(null);
       try {
-        await deleteContractDocumentPackage(id);
+        await trashContractDocumentPackage(id);
+        setPackagePendingDelete(null);
         await load();
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Не удалось удалить пакет');
+        setError(e instanceof Error ? e.message : 'Не удалось переместить договор в корзину');
       } finally {
         setDeletingPackageId(null);
       }
@@ -1040,7 +1058,7 @@ export function RepairContractDocumentsListPage() {
             formData: (packagePendingDelete.formData ?? {}) as Record<string, unknown>,
           });
           const suffix = n && String(n).trim() !== '' && n !== '—' ? ` «${n}»` : '';
-          return `Удалить черновик договора${suffix}? Действие необратимо.`;
+          return `Переместить договор${suffix} в корзину? Он исчезнет из списка, восстановить можно из корзины.`;
         })()
       : '';
 
@@ -1052,15 +1070,6 @@ export function RepairContractDocumentsListPage() {
           <span className={styles.repairContractsListCount}>{visibleRows.length} договоров</span>
         </div>
         <div className={styles.headerButtonsRow}>
-          <AdminListRefreshButton
-            disabled={
-              loading || creating || copyingPackageId !== null || deletingPackageId !== null
-            }
-            busy={loading}
-            title="Обновить список"
-            aria-label={loading ? 'Обновление списка договоров' : 'Обновить список договоров'}
-            onClick={() => void load()}
-          />
           <button
             type="button"
             className={styles.contractsListHeaderAddBtn}
@@ -1071,6 +1080,21 @@ export function RepairContractDocumentsListPage() {
           >
             {creating ? 'Создание…' : '+ Новый договор'}
           </button>
+          <AdminListRefreshButton
+            disabled={
+              loading || creating || copyingPackageId !== null || deletingPackageId !== null
+            }
+            busy={loading}
+            title="Обновить список"
+            aria-label={loading ? 'Обновление списка договоров' : 'Обновить список договоров'}
+            onClick={() => void load()}
+          />
+          <AdminToolbarTrashButton
+            trashCount={trashCount}
+            onClick={() => setTrashOpen(true)}
+            title="Корзина договоров"
+            aria-label="Корзина договоров"
+          />
         </div>
       </div>
 
@@ -1349,9 +1373,7 @@ export function RepairContractDocumentsListPage() {
                             className={`${styles.estimatesCardActions} ${styles.repairContractsListActionsGrid}`}
                           >
                             <div className={styles.repairContractsListActionsSlot}>
-                              <button
-                                type="button"
-                                className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+                              <AdminTableIconButton
                                 disabled={
                                   loading ||
                                   creating ||
@@ -1367,30 +1389,15 @@ export function RepairContractDocumentsListPage() {
                                 title="Копировать: все вкладки, без расчётов в смете и в Д/с"
                                 onClick={() => void handleCopyPackage(r.id)}
                               >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  width={14}
-                                  height={14}
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="var(--admin-chart-series-2)"
-                                  strokeWidth={2}
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
+                                <CopyIcon
                                   className={
                                     copyBusy ? styles.estimatesRefreshIconSpinning : undefined
                                   }
-                                  aria-hidden
-                                >
-                                  <rect x={9} y={9} width={13} height={13} rx={2} ry={2} />
-                                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                                </svg>
-                              </button>
+                                />
+                              </AdminTableIconButton>
                             </div>
                             <div className={styles.repairContractsListActionsSlot}>
-                              <button
-                                type="button"
-                                className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+                              <AdminTableIconButton
                                 disabled={
                                   !canDeleteDraft ||
                                   loading ||
@@ -1401,45 +1408,28 @@ export function RepairContractDocumentsListPage() {
                                 aria-busy={deleteBusy}
                                 aria-label={
                                   deleteBusy
-                                    ? 'Удаление черновика…'
+                                    ? 'Перемещение в корзину…'
                                     : canDeleteDraft
-                                      ? 'Удалить черновик'
+                                      ? 'В корзину'
                                       : 'Удаление недоступно: прикреплена смета или есть оплаты'
                                 }
                                 title={
                                   canDeleteDraft
-                                    ? 'Удалить черновик (если нет прикреплённой сметы и записей об оплатах)'
-                                    : 'Удалить нельзя: к договору прикреплена смета или в журнале есть оплаты'
+                                    ? 'В корзину (если нет прикреплённой сметы и записей об оплатах)'
+                                    : 'В корзину нельзя: к договору прикреплена смета или в журнале есть оплаты'
                                 }
                                 onClick={() => requestDeletePackage(r)}
                               >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  width={14}
-                                  height={14}
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="var(--admin-chart-series-6)"
-                                  strokeWidth={2}
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
+                                <DeleteIcon
                                   className={
                                     deleteBusy ? styles.estimatesRefreshIconSpinning : undefined
                                   }
-                                  aria-hidden
-                                >
-                                  <polyline points="3 6 5 6 21 6" />
-                                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                  <line x1="10" y1="11" x2="10" y2="17" />
-                                  <line x1="14" y1="11" x2="14" y2="17" />
-                                </svg>
-                              </button>
+                                />
+                              </AdminTableIconButton>
                             </div>
                             <div className={styles.repairContractsListActionsSlot}>
                               {actPhotoItems.length > 0 ? (
-                                <button
-                                  type="button"
-                                  className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+                                <AdminTableIconButton
                                   disabled={
                                     loading ||
                                     creating ||
@@ -1456,10 +1446,10 @@ export function RepairContractDocumentsListPage() {
                                   }
                                 >
                                   <RepairListActPhotosTriggerIcon />
-                                </button>
+                                </AdminTableIconButton>
                               ) : (
                                 <span
-                                  className={`${styles.secondaryBtn} ${styles.estimatesIconBtn} ${styles.repairContractsListActionsIconPlaceholder}`}
+                                  className={styles.repairContractsListActionsIconPlaceholder}
                                   aria-hidden
                                 />
                               )}
@@ -1539,11 +1529,23 @@ export function RepairContractDocumentsListPage() {
         isOpen={packagePendingDelete != null}
         onClose={() => setPackagePendingDelete(null)}
         onConfirm={handleConfirmDeletePackage}
-        title="Удалить черновик договора?"
+        title="Переместить в корзину?"
         message={deleteConfirmMessage}
-        confirmText="Удалить"
+        confirmText="В корзину"
         cancelText="Отмена"
         variant="danger"
+      />
+
+      <RepairContractTrashModal
+        isOpen={trashOpen}
+        onClose={() => {
+          setTrashOpen(false);
+          void refreshTrashCount();
+        }}
+        onRestored={() => {
+          void load();
+          void refreshTrashCount();
+        }}
       />
     </div>
   );

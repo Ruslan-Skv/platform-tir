@@ -481,6 +481,10 @@
   --admin-chart-series-4: var(--admin-warning-strong);
   --admin-chart-series-5: var(--admin-link);
   --admin-chart-series-6: var(--admin-danger-text);
+  --admin-icon-copy: var(--admin-chart-series-2);
+  --admin-icon-delete: var(--admin-chart-series-6);
+  --admin-icon-edit: var(--admin-chart-series-1);
+  --admin-icon-action-disabled: var(--admin-text-muted);
   --admin-chart-series-7: var(--admin-chart-violet-strong);
   --admin-chart-series-8: var(--admin-success-deep);
   /* Legacy chart/overlay aliases normalized to core palette */
@@ -840,6 +844,10 @@
   --admin-chart-series-4: rgb(245 158 11 / 0.95);
   --admin-chart-series-5: rgb(129 140 248 / 0.95);
   --admin-chart-series-6: rgb(248 113 113 / 0.95);
+  --admin-icon-copy: var(--admin-chart-series-2);
+  --admin-icon-delete: var(--admin-chart-series-6);
+  --admin-icon-edit: var(--admin-chart-series-1);
+  --admin-icon-action-disabled: var(--admin-text-muted);
   --admin-chart-series-7: rgb(var(--color-accent-rgb) / 0.78);
   --admin-chart-series-8: rgb(52 211 153 / 0.95);
   /* Legacy chart/overlay aliases (dark mode) */

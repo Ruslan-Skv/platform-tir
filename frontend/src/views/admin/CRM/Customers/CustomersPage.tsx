@@ -1,7 +1,5 @@
 'use client';
 
-import { TrashIcon } from '@heroicons/react/24/outline';
-
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -10,12 +8,14 @@ import {
   type CrmCustomerEntityType,
   type CrmUser,
   getClientDirectory,
+  getCrmCustomerTrash,
   getCrmUsers,
 } from '@/shared/api/admin-crm';
 import { Modal } from '@/shared/ui/Modal';
 import {
   AdminListRefreshButton,
-  AdminToolbarIconButton,
+  AdminToolbarTrashButton,
+  useAdminTrashCount,
 } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 
@@ -97,6 +97,12 @@ export function CustomersPage() {
   const [selectedDirectoryRowId, setSelectedDirectoryRowId] = useState<string | null>(null);
   const [addCustomerOpen, setAddCustomerOpen] = useState(false);
   const [trashOpen, setTrashOpen] = useState(false);
+
+  const fetchCustomerTrashTotal = useCallback(() => getCrmCustomerTrash({ page: 1, limit: 1 }), []);
+  const { trashCount, refreshTrashCount } = useAdminTrashCount(
+    fetchCustomerTrashTotal,
+    listRefreshKey
+  );
 
   const [directorySortBy, setDirectorySortBy] = useState<ClientDirectorySortBy>(
     () => loadCustomersDirectoryListState().sortBy
@@ -301,13 +307,6 @@ export function CustomersPage() {
           <span className={styles.count}>{directoryTotal} записей</span>
         </div>
         <div className={styles.headerActions}>
-          <AdminListRefreshButton
-            onClick={() => setListRefreshKey((k) => k + 1)}
-            disabled={loading}
-            busy={loading}
-            title="Обновить список заказчиков"
-            aria-label="Обновить список заказчиков"
-          />
           <button
             type="button"
             className={styles.addButton}
@@ -315,13 +314,19 @@ export function CustomersPage() {
           >
             + Новый заказчик
           </button>
-          <AdminToolbarIconButton
+          <AdminListRefreshButton
+            onClick={() => setListRefreshKey((k) => k + 1)}
+            disabled={loading}
+            busy={loading}
+            title="Обновить список заказчиков"
+            aria-label="Обновить список заказчиков"
+          />
+          <AdminToolbarTrashButton
+            trashCount={trashCount}
             onClick={() => setTrashOpen(true)}
             title="Корзина клиентов"
             aria-label="Корзина клиентов"
-          >
-            <TrashIcon width={18} height={18} aria-hidden />
-          </AdminToolbarIconButton>
+          />
         </div>
       </div>
 
@@ -459,13 +464,20 @@ export function CustomersPage() {
         onTrashed={() => {
           clearDirectorySelection();
           setListRefreshKey((k) => k + 1);
+          void refreshTrashCount();
         }}
       />
 
       <CrmCustomerTrashModal
         isOpen={trashOpen}
-        onClose={() => setTrashOpen(false)}
-        onRestored={() => setListRefreshKey((k) => k + 1)}
+        onClose={() => {
+          setTrashOpen(false);
+          void refreshTrashCount();
+        }}
+        onRestored={() => {
+          setListRefreshKey((k) => k + 1);
+          void refreshTrashCount();
+        }}
       />
 
       <AddCrmCustomerModal

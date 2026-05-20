@@ -1862,7 +1862,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug }) =>
                         setVariants((prev) => [...prev, newVariant]);
                       }}
                     >
-                      + Добавить товар
+                      + Новый товар
                     </button>
                   </div>
                 );

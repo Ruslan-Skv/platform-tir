@@ -1,0 +1,4 @@
+:global(.admin-action-icon-edit) {
+  color: var(--admin-icon-edit);
+  flex-shrink: 0;
+}

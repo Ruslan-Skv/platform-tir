@@ -1,0 +1,4 @@
+:global(.admin-action-icon-copy) {
+  color: var(--admin-icon-copy);
+  flex-shrink: 0;
+}

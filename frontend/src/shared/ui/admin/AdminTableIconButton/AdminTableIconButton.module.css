@@ -1,0 +1,66 @@
+/* Кнопка-иконка в строках таблиц админки (договора, сметы, каталог товаров) */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  padding: var(--admin-space-xs);
+  min-width: 26px;
+  min-height: 26px;
+  width: 26px;
+  height: 26px;
+  color: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--admin-border);
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  color: var(--admin-text-muted);
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
+}
+
+.button svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+.button:disabled svg {
+  color: var(--admin-icon-action-disabled);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .button {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .button:hover:not(:disabled) {
+  background: var(--admin-sidebar-text);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .button:disabled {
+  opacity: 0.42;
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .button:disabled svg {
+  color: var(--admin-icon-action-disabled);
+}

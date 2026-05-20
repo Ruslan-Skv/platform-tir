@@ -4749,7 +4749,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 }
 
 .estimatesCardActions .estimatesIconBtn:disabled svg {
-  stroke: var(--admin-text-muted);
+  color: var(--admin-icon-action-disabled);
 }
 
 /* Список ремонта: один тип действия — одна колонка (сетка), чтобы иконка фото не сдвигала остальные */
@@ -4773,6 +4773,13 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 }
 
 .repairContractsListActionsIconPlaceholder {
+  display: inline-flex;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  min-width: 26px;
+  min-height: 26px;
+  width: 26px;
+  height: 26px;
   visibility: hidden;
   pointer-events: none;
 }

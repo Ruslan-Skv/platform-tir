@@ -888,14 +888,6 @@
   line-height: var(--admin-line-height-none);
 }
 
-.roomIconCopy {
-  color: var(--admin-success-emerald);
-}
-
-.roomIconDelete {
-  color: var(--admin-error-strong);
-}
-
 /* Неактивная кнопка удаления — как .estimatesCardActions .estimatesIconBtn:disabled */
 .roomActions .roomIconBtn:disabled {
   opacity: 0.45;
@@ -910,12 +902,8 @@
   border-color: var(--admin-border);
 }
 
-.roomActions .roomIconBtn:disabled .roomIconDelete {
-  color: var(--admin-text-muted);
-}
-
 .roomActions .roomIconBtn:disabled svg {
-  stroke: var(--admin-text-muted);
+  color: var(--admin-icon-action-disabled);
 }
 
 .inlineRow {
@@ -1296,14 +1284,6 @@
   background: var(--admin-surface);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .roomIconCopy {
-  color: var(--admin-success-border);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .roomIconDelete {
-  color: var(--admin-danger-text-soft);
-}
-
 :where(html[data-theme='dark'], [data-app-theme='dark']) .roomActions .roomIconBtn:disabled {
   opacity: 0.42;
   background: var(--admin-surface);
@@ -1316,13 +1296,8 @@
   border-color: var(--admin-sidebar-text);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .roomActions
-  .roomIconBtn:disabled
-  .roomIconDelete,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .roomActions .roomIconBtn:disabled svg {
-  color: var(--admin-text-muted);
-  stroke: var(--admin-text-muted);
+  color: var(--admin-icon-action-disabled);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .zonePrimary,

@@ -12,6 +12,7 @@ import { fetchAdminManufacturersList } from '@/shared/api/admin-manufacturers';
 import { fetchAdminWeatherstripsList } from '@/shared/api/admin-weatherstrips';
 import { getApiErrorMessage, isNetworkFetchError } from '@/shared/lib/api-error';
 import { apiFetch } from '@/shared/lib/api-fetch';
+import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
 
 import { ImageUrlModal } from './ImageUrlModal';
 import { ProductComponentsSection } from './ProductComponentsSection';
@@ -1547,7 +1548,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <button
             type="button"
-            className={styles.cancelButton}
+            className={`${styles.cancelButton} ${styles.copyProductButton}`}
             onClick={() =>
               router.push(
                 `/admin/catalog/products/new?copyFrom=${productId}${
@@ -1555,8 +1556,10 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                 }`
               )
             }
+            aria-label="Скопировать товар"
           >
-            🔁 Скопировать
+            <CopyIcon />
+            Скопировать
           </button>
           <button
             type="button"

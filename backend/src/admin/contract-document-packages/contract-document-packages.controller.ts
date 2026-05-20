@@ -86,6 +86,24 @@ export class ContractDocumentPackagesController {
     return this.service.findAll(k);
   }
 
+  @Get('trash')
+  findTrash(
+    @Query('kind') kind: string,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const allowed = new Set<string>(Object.values(ContractDocumentPackageKind));
+    if (!kind || !allowed.has(kind)) {
+      throw new BadRequestException('Укажите корректный query-параметр kind');
+    }
+    return this.service.findTrash(kind as ContractDocumentPackageKind, {
+      search,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 25,
+    });
+  }
+
   @Get('global-templates')
   getGlobalTemplate(@Query('kind') kind: string, @Query('tab') tab: string) {
     const allowed = new Set<string>(Object.values(ContractDocumentPackageKind));
@@ -311,8 +329,13 @@ export class ContractDocumentPackagesController {
     return this.service.update(id, dto, req.user?.id);
   }
 
+  @Post(':id/restore')
+  restoreFromTrash(@Param('id') id: string) {
+    return this.service.restoreFromTrash(id);
+  }
+
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  remove(@Param('id') id: string, @Req() req: RequestWithUser) {
+    return this.service.moveToTrash(id, req.user?.id);
   }
 }

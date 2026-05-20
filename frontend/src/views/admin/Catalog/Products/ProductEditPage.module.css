@@ -814,20 +814,33 @@
   border-color: var(--admin-text-muted);
 }
 
+.copyProductButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+}
+
+/* Как «+ Новый объект» на странице расчётов */
 .saveButton {
   padding: var(--admin-space-sm) var(--admin-space-lg);
-  background: var(--admin-accent);
-  border: none;
+  border: 1px solid var(--admin-chart-cyan);
   border-radius: var(--admin-radius-sm);
-  color: var(--admin-surface);
-  font-weight: 500;
+  background: linear-gradient(180deg, var(--admin-info-bg-soft) 0%, var(--admin-info-bg) 100%);
+  color: var(--admin-info-strong);
+  font-weight: 700;
   font-size: var(--admin-font-size-xs);
   cursor: pointer;
-  transition: background 0.2s;
+  box-shadow: 0 1px 6px var(--admin-overlay-color-129);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .saveButton:hover:not(:disabled) {
-  background: var(--admin-accent);
+  border-color: var(--admin-info);
+  background: linear-gradient(180deg, var(--admin-info-bg) 0%, var(--admin-info-border-soft) 100%);
+  color: var(--admin-info-text);
 }
 
 .saveButton:disabled {
@@ -1615,6 +1628,18 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton:hover {
   background: var(--admin-sidebar-text);
   border-color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveButton {
+  background: linear-gradient(180deg, var(--admin-info) 0%, var(--admin-info-strong) 100%);
+  border-color: var(--admin-info-bright);
+  color: var(--admin-text-inverse);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveButton:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--admin-info-strong) 0%, var(--admin-info) 100%);
+  border-color: var(--admin-info-bright);
+  color: var(--admin-text-inverse);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .attributesSubtitle {

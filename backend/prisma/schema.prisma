@@ -95,6 +95,7 @@ model User {
   productsUpdated            Product[]             @relation("ProductUpdatedBy")
   categoriesCreated          Category[]            @relation("CategoryCreatedBy")
   contractDocumentPackagesCreated ContractDocumentPackage[] @relation("ContractDocumentPackagesCreated")
+  contractDocumentPackagesDeleted ContractDocumentPackage[] @relation("ContractDocumentPackagesDeleted")
   contractDocumentPackagePaymentsRecorded ContractDocumentPackagePayment[] @relation("ContractDocumentPackagePaymentRecordedBy")
   contractDocumentGlobalTemplatesUpdated ContractDocumentGlobalTemplate[] @relation("GlobalContractTemplateUpdatedBy")
   contractDocumentPackageVersionsSaved ContractDocumentPackageVersion[] @relation("ContractDocumentPackageVersionSavedBy")
@@ -2031,10 +2032,13 @@ model ContractDocumentPackage {
   /// Связь с договором в учётной системе (таблица `Contract`).
   crmContractId  String?
   createdById    String?
+  deletedAt      DateTime?                   @map("deleted_at")
+  deletedById    String?                     @map("deleted_by_id")
   createdAt      DateTime                    @default(now())
   updatedAt      DateTime                    @updatedAt
 
   createdBy   User?     @relation("ContractDocumentPackagesCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  deletedBy   User?     @relation("ContractDocumentPackagesDeleted", fields: [deletedById], references: [id], onDelete: SetNull)
   crmContract Contract? @relation(fields: [crmContractId], references: [id], onDelete: SetNull)
   versions    ContractDocumentPackageVersion[]
   payments    ContractDocumentPackagePayment[]
@@ -2042,6 +2046,7 @@ model ContractDocumentPackage {
   @@index([kind])
   @@index([createdAt])
   @@index([crmContractId])
+  @@index([deletedAt])
   @@map("contract_document_packages")
 }
 

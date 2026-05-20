@@ -47,6 +47,8 @@ interface DataTableProps<T> {
   onSortChange?: (sortBy: string, sortOrder: SortOrder) => void;
   /** Дополнительный класс на внешний контейнер таблицы */
   containerClassName?: string;
+  /** Класс активной кнопки страницы (вместо стандартного accent) */
+  paginationActiveClassName?: string;
 }
 
 type SortOrder = 'asc' | 'desc';
@@ -100,6 +102,7 @@ export function DataTable<T>({
   controlledSortOrder = 'asc',
   onSortChange,
   containerClassName,
+  paginationActiveClassName,
 }: DataTableProps<T>) {
   const [internalSelectedIds, setInternalSelectedIds] = useState<string[]>([]);
   const isControlled = selectedIdsProp !== undefined;
@@ -522,7 +525,7 @@ export function DataTable<T>({
                   <button
                     key={page}
                     className={`${styles.pageButton} ${
-                      page === pagination.page ? styles.active : ''
+                      page === pagination.page ? (paginationActiveClassName ?? styles.active) : ''
                     }`}
                     onClick={() => pagination.onPageChange(page)}
                   >

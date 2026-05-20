@@ -453,11 +453,60 @@ export async function uploadRepairPackageContractCloseActPhoto(
   return res.json() as Promise<{ imageUrl: string }>;
 }
 
-export async function deleteContractDocumentPackage(id: string): Promise<void> {
+export interface RepairContractPackageTrashRow {
+  id: string;
+  contractNumber: string;
+  customerName: string;
+  title: string | null;
+  deletedAt: string;
+  deletedBy: ContractDocumentPackageUserRef | null;
+}
+
+/** Переместить пакет документов в корзину (мягкое удаление). */
+export async function trashContractDocumentPackage(id: string): Promise<void> {
   const res = await apiFetch(`${getApiBaseUrl()}/admin/contract-document-packages/${id}`, {
     method: 'DELETE',
     headers: getAdminAuthHeaders(),
   });
+  if (!res.ok) throw new Error(await readAdminContractPackagesError(res));
+}
+
+/** @deprecated Используйте trashContractDocumentPackage */
+export async function deleteContractDocumentPackage(id: string): Promise<void> {
+  return trashContractDocumentPackage(id);
+}
+
+export async function getRepairContractPackageTrash(params?: {
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{
+  data: RepairContractPackageTrashRow[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}> {
+  const search = new URLSearchParams({ kind: 'REPAIR' });
+  if (params?.search?.trim()) search.set('search', params.search.trim());
+  search.set('page', String(params?.page ?? 1));
+  search.set('limit', String(Math.min(params?.limit ?? 25, 100)));
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/trash?${search}`,
+    { headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) throw new Error(await readAdminContractPackagesError(res));
+  return res.json();
+}
+
+export async function restoreRepairContractPackage(id: string): Promise<void> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${encodeURIComponent(id)}/restore`,
+    {
+      method: 'POST',
+      headers: getAdminAuthHeaders(),
+    }
+  );
   if (!res.ok) throw new Error(await readAdminContractPackagesError(res));
 }
 
