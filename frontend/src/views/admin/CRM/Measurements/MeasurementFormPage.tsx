@@ -989,17 +989,6 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
             </span>
           </div>
           <div className={styles.titleControls}>
-            {measurementId ? (
-              <button
-                type="button"
-                className={styles.historyButton}
-                onClick={() => setShowHistory(true)}
-                title="Журнал событий замера"
-                aria-label="Открыть журнал событий замера"
-              >
-                <VersionsHistoryIcon />
-              </button>
-            ) : null}
             <BadgeTooltip content={MEASUREMENT_STATUS_ORDER_HINT} side="left" wide>
               <label className={styles.statusInlineLabel}>
                 <span className={styles.statusInlineText}>Статус</span>
@@ -1022,6 +1011,17 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
                 </span>
               </label>
             </BadgeTooltip>
+            {measurementId ? (
+              <button
+                type="button"
+                className={styles.historyButton}
+                onClick={() => setShowHistory(true)}
+                title="Журнал событий замера"
+                aria-label="Открыть журнал событий замера"
+              >
+                <VersionsHistoryIcon />
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
