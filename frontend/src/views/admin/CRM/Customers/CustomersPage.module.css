@@ -58,62 +58,6 @@
   gap: var(--admin-space-sm, 6px);
 }
 
-.secondaryButton {
-  padding: var(--admin-space-sm) var(--admin-space-xl);
-  background: var(--admin-surface);
-  color: var(--admin-text-secondary);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-md);
-  font-weight: 500;
-  font-size: var(--admin-font-size-xs);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.secondaryButton:hover:not(:disabled) {
-  background: var(--admin-surface-muted);
-  border-color: var(--admin-border-strong);
-}
-
-.secondaryButton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.refreshButton {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  padding: var(--admin-space-md) !important;
-  min-width: 40px;
-  min-height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--admin-radius-md);
-  color: var(--admin-info);
-}
-
-.refreshButton:hover:not(:disabled) {
-  border-color: var(--admin-info) !important;
-  background: linear-gradient(
-    180deg,
-    var(--admin-info-bg) 0%,
-    var(--admin-info-border-soft) 100%
-  ) !important;
-  color: var(--admin-info-text) !important;
-}
-
-.refreshIconSpinning {
-  animation: refreshSpin 0.85s linear infinite;
-}
-
-@keyframes refreshSpin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .addButton {
   padding: var(--admin-space-sm) var(--admin-space-xl);
   border: none;
@@ -164,6 +108,13 @@
   border-color: var(--admin-accent, #2563eb);
   box-shadow: var(--admin-shadow-focus-soft);
   outline: none;
+}
+
+/* Поле фильтра не в исходном состоянии */
+.filterActive {
+  border-color: var(--admin-info);
+  background: var(--admin-info-bg-soft);
+  box-shadow: 0 0 0 1px var(--admin-info-border-soft);
 }
 
 .typeFilterButtons {
@@ -403,6 +354,43 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput::placeholder {
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .authorSelect {
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .authorSelect:focus {
+  border-color: var(--admin-accent);
+  box-shadow: var(--admin-shadow-focus-soft);
+  outline: none;
+}
+
+/* Активный фильтр: выше специфичность, чем у базовых полей в тёмной теме */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput.filterActive,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .authorSelect.filterActive {
+  border-color: var(--admin-info-bright, #60a5fa);
+  background: var(--admin-overlay-info-soft, rgb(59 130 246 / 0.24));
+  color: var(--admin-text-primary, #f9fafb);
+  box-shadow:
+    0 0 0 1px var(--admin-info-border, #93c5fd),
+    inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput.filterActive:focus,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .authorSelect.filterActive:focus {
+  border-color: var(--admin-info-light, #93c5fd);
+  background: var(--admin-overlay-info-soft, rgb(59 130 246 / 0.28));
+  box-shadow:
+    0 0 0 1px var(--admin-info-bright, #60a5fa),
+    var(--admin-shadow-focus-soft);
+  outline: none;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput.filterActive::placeholder {
   color: var(--admin-text-muted);
 }
 

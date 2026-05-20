@@ -2,7 +2,7 @@
 
 import { TrashIcon } from '@heroicons/react/24/outline';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   type ClientDirectoryRow,
@@ -13,6 +13,10 @@ import {
   getCrmUsers,
 } from '@/shared/api/admin-crm';
 import { Modal } from '@/shared/ui/Modal';
+import {
+  AdminListRefreshButton,
+  AdminToolbarIconButton,
+} from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 
 import { AddCrmCustomerModal } from './AddCrmCustomerModal';
@@ -28,33 +32,18 @@ import {
   resolveCrmCreatedByActor,
 } from './crmCustomerDisplay';
 import { formatCrmPhoneOrDash } from './crmCustomerPhone';
+import {
+  type CustomerTypeFilter,
+  type DirectorySortOrder,
+  loadCustomersDirectoryListState,
+  parseClientDirectorySortBy,
+  persistCustomersDirectoryListState,
+} from './customersDirectoryListState';
 
 const PAGE_SIZE = 25;
-const DIRECTORY_SORT_STORAGE_KEY = 'admin_customers_directory_sort';
 
-type DirectorySortOrder = 'asc' | 'desc';
-
-function parseClientDirectorySortBy(value: string): ClientDirectorySortBy {
-  if (value === 'createdAt') return 'createdAt';
-  if (value === 'lastMeasurementDate') return 'lastMeasurementDate';
-  if (value === 'lastContractDate') return 'lastContractDate';
-  return 'displayName';
-}
-
-function loadDirectorySort(): { sortBy: ClientDirectorySortBy; sortOrder: DirectorySortOrder } {
-  if (typeof window === 'undefined') {
-    return { sortBy: 'displayName', sortOrder: 'asc' };
-  }
-  try {
-    const raw = localStorage.getItem(DIRECTORY_SORT_STORAGE_KEY);
-    if (!raw) return { sortBy: 'displayName', sortOrder: 'asc' };
-    const parsed = JSON.parse(raw) as { sortBy?: string; sortOrder?: string };
-    const sortBy = parseClientDirectorySortBy(parsed.sortBy ?? 'displayName');
-    const sortOrder: DirectorySortOrder = parsed.sortOrder === 'desc' ? 'desc' : 'asc';
-    return { sortBy, sortOrder };
-  } catch {
-    return { sortBy: 'displayName', sortOrder: 'asc' };
-  }
+function customersFilterFieldClass(base: string, active: boolean, activeClass: string): string {
+  return active ? `${base} ${activeClass}` : base;
 }
 
 function formatCurrency(value: number): string {
@@ -78,8 +67,6 @@ function formatDateDdMmYyyy(iso: string | null | undefined): string {
   return iso;
 }
 
-type CustomerTypeFilter = 'all' | CrmCustomerEntityType;
-
 const TYPE_FILTER_OPTIONS: { value: CustomerTypeFilter; label: string }[] = [
   { value: 'all', label: 'Все' },
   { value: 'PERSON', label: 'ФЛ' },
@@ -88,19 +75,23 @@ const TYPE_FILTER_OPTIONS: { value: CustomerTypeFilter; label: string }[] = [
 ];
 
 export function CustomersPage() {
-  const [searchInput, setSearchInput] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState(() => loadCustomersDirectoryListState().search);
+  const [searchQuery, setSearchQuery] = useState(() => loadCustomersDirectoryListState().search);
   const [listRefreshKey, setListRefreshKey] = useState(0);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [typeFilter, setTypeFilter] = useState<CustomerTypeFilter>('all');
-  const [authorFilter, setAuthorFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState<CustomerTypeFilter>(
+    () => loadCustomersDirectoryListState().typeFilter
+  );
+  const [authorFilter, setAuthorFilter] = useState(
+    () => loadCustomersDirectoryListState().authorFilter
+  );
   const [crmUsers, setCrmUsers] = useState<CrmUser[]>([]);
 
   const [directoryRows, setDirectoryRows] = useState<ClientDirectoryRow[]>([]);
-  const [directoryPage, setDirectoryPage] = useState(1);
+  const [directoryPage, setDirectoryPage] = useState(() => loadCustomersDirectoryListState().page);
   const [directoryTotal, setDirectoryTotal] = useState(0);
 
   const [selectedDirectoryRowId, setSelectedDirectoryRowId] = useState<string | null>(null);
@@ -108,29 +99,35 @@ export function CustomersPage() {
   const [trashOpen, setTrashOpen] = useState(false);
 
   const [directorySortBy, setDirectorySortBy] = useState<ClientDirectorySortBy>(
-    () => loadDirectorySort().sortBy
+    () => loadCustomersDirectoryListState().sortBy
   );
   const [directorySortOrder, setDirectorySortOrder] = useState<DirectorySortOrder>(
-    () => loadDirectorySort().sortOrder
+    () => loadCustomersDirectoryListState().sortOrder
   );
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem(
-        DIRECTORY_SORT_STORAGE_KEY,
-        JSON.stringify({ sortBy: directorySortBy, sortOrder: directorySortOrder })
-      );
-    } catch {
-      /* ignore */
-    }
-  }, [directorySortBy, directorySortOrder]);
+    persistCustomersDirectoryListState({
+      search: searchInput,
+      typeFilter,
+      authorFilter,
+      sortBy: directorySortBy,
+      sortOrder: directorySortOrder,
+      page: directoryPage,
+    });
+  }, [searchInput, typeFilter, authorFilter, directorySortBy, directorySortOrder, directoryPage]);
 
   useEffect(() => {
     getCrmUsers()
       .then(setCrmUsers)
       .catch(() => setCrmUsers([]));
   }, []);
+
+  useEffect(() => {
+    if (!authorFilter || authorFilter === '_none') return;
+    if (!crmUsers.some((u) => u.id === authorFilter)) {
+      setAuthorFilter('');
+    }
+  }, [authorFilter, crmUsers]);
 
   const authorSelectOptions = useMemo(
     () =>
@@ -140,16 +137,19 @@ export function CustomersPage() {
     [crmUsers]
   );
 
+  const searchQueryRef = useRef(searchQuery);
+  searchQueryRef.current = searchQuery;
+
   useEffect(() => {
     const t = window.setTimeout(() => {
-      setSearchQuery(searchInput.trim());
+      const next = searchInput.trim();
+      if (searchQueryRef.current !== next) {
+        setDirectoryPage(1);
+      }
+      setSearchQuery(next);
     }, 380);
     return () => window.clearTimeout(t);
   }, [searchInput]);
-
-  useEffect(() => {
-    setDirectoryPage(1);
-  }, [searchQuery, typeFilter, authorFilter, directorySortBy, directorySortOrder]);
 
   const handleDirectorySortChange = useCallback((sortBy: string, sortOrder: DirectorySortOrder) => {
     setDirectorySortBy(parseClientDirectorySortBy(sortBy));
@@ -301,32 +301,13 @@ export function CustomersPage() {
           <span className={styles.count}>{directoryTotal} записей</span>
         </div>
         <div className={styles.headerActions}>
-          <button
-            type="button"
-            className={`${styles.secondaryButton} ${styles.refreshButton}`}
+          <AdminListRefreshButton
             onClick={() => setListRefreshKey((k) => k + 1)}
             disabled={loading}
+            busy={loading}
             title="Обновить список заказчиков"
             aria-label="Обновить список заказчиков"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width={18}
-              height={18}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={loading ? styles.refreshIconSpinning : undefined}
-              aria-hidden
-            >
-              <path d="M23 4v6h-6" />
-              <path d="M1 20v-6h6" />
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-            </svg>
-          </button>
+          />
           <button
             type="button"
             className={styles.addButton}
@@ -334,15 +315,13 @@ export function CustomersPage() {
           >
             + Новый заказчик
           </button>
-          <button
-            type="button"
-            className={`${styles.secondaryButton} ${styles.refreshButton}`}
+          <AdminToolbarIconButton
             onClick={() => setTrashOpen(true)}
             title="Корзина клиентов"
             aria-label="Корзина клиентов"
           >
             <TrashIcon width={18} height={18} aria-hidden />
-          </button>
+          </AdminToolbarIconButton>
         </div>
       </div>
 
@@ -358,16 +337,27 @@ export function CustomersPage() {
             placeholder="Поиск: ФИО, телефон, e-mail, компания, адрес…"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className={styles.searchInput}
+            className={customersFilterFieldClass(
+              styles.searchInput,
+              Boolean(searchInput.trim()),
+              styles.filterActive
+            )}
             aria-label="Поиск по справочнику"
           />
         </div>
 
         <select
           id="customers-author-filter"
-          className={styles.authorSelect}
+          className={customersFilterFieldClass(
+            styles.authorSelect,
+            Boolean(authorFilter),
+            styles.filterActive
+          )}
           value={authorFilter}
-          onChange={(e) => setAuthorFilter(e.target.value)}
+          onChange={(e) => {
+            setAuthorFilter(e.target.value);
+            setDirectoryPage(1);
+          }}
           aria-label="Автор карточки"
         >
           <option value="">Все авторы</option>
@@ -390,7 +380,10 @@ export function CustomersPage() {
                   : styles.typeFilterBtn
               }
               aria-pressed={typeFilter === value}
-              onClick={() => setTypeFilter(value)}
+              onClick={() => {
+                setTypeFilter(value);
+                setDirectoryPage(1);
+              }}
             >
               {label}
             </button>

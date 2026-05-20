@@ -19,17 +19,24 @@ import {
   getCrmDirections,
   getMeasurements,
 } from '@/shared/api/admin-crm';
+import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 
 import styles from './MeasurementsPage.module.css';
 import {
   type MeasurementListSortBy,
   type MeasurementListSortOrder,
-  loadMeasurementListSort,
   parseMeasurementListSortBy,
-  persistMeasurementListSort,
 } from './measurementListSort';
 import { MEASUREMENT_STATUS_OPTIONS, getMeasurementStatusLabel } from './measurementStatuses';
+import {
+  loadMeasurementsListFilters,
+  persistMeasurementsListFilters,
+} from './measurementsListFilters';
+
+function measurementsFilterFieldClass(base: string, active: boolean, activeClass: string): string {
+  return active ? `${base} ${activeClass}` : base;
+}
 
 function formatDate(s: string | null | undefined) {
   if (!s) return '—';
@@ -58,22 +65,46 @@ export function MeasurementsPage() {
   const [loading, setLoading] = useState(true);
   const [directions, setDirections] = useState<CrmDirection[]>([]);
   const [managerOptions, setManagerOptions] = useState<ContractSignatoryProfile[]>([]);
-  const [statusFilter, setStatusFilter] = useState('');
-  const [managerFilter, setManagerFilter] = useState('');
-  const [directionFilter, setDirectionFilter] = useState('');
-  const [search, setSearch] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [statusFilter, setStatusFilter] = useState(
+    () => loadMeasurementsListFilters().statusFilter
+  );
+  const [managerFilter, setManagerFilter] = useState(
+    () => loadMeasurementsListFilters().managerFilter
+  );
+  const [directionFilter, setDirectionFilter] = useState(
+    () => loadMeasurementsListFilters().directionFilter
+  );
+  const [search, setSearch] = useState(() => loadMeasurementsListFilters().search);
+  const [dateFrom, setDateFrom] = useState(() => loadMeasurementsListFilters().dateFrom);
+  const [dateTo, setDateTo] = useState(() => loadMeasurementsListFilters().dateTo);
   const [measurementSortBy, setMeasurementSortBy] = useState<MeasurementListSortBy>(
-    () => loadMeasurementListSort().sortBy
+    () => loadMeasurementsListFilters().sortBy
   );
   const [measurementSortOrder, setMeasurementSortOrder] = useState<MeasurementListSortOrder>(
-    () => loadMeasurementListSort().sortOrder
+    () => loadMeasurementsListFilters().sortOrder
   );
 
   useEffect(() => {
-    persistMeasurementListSort(measurementSortBy, measurementSortOrder);
-  }, [measurementSortBy, measurementSortOrder]);
+    persistMeasurementsListFilters({
+      search,
+      managerFilter,
+      statusFilter,
+      directionFilter,
+      dateFrom,
+      dateTo,
+      sortBy: measurementSortBy,
+      sortOrder: measurementSortOrder,
+    });
+  }, [
+    search,
+    managerFilter,
+    statusFilter,
+    directionFilter,
+    dateFrom,
+    dateTo,
+    measurementSortBy,
+    measurementSortOrder,
+  ]);
 
   useEffect(() => {
     const q = searchParams.get('search');
@@ -234,6 +265,13 @@ export function MeasurementsPage() {
     }
   }, [managerFilter, managerOptions]);
 
+  useEffect(() => {
+    if (!directionFilter) return;
+    if (!directions.some((d) => d.id === directionFilter)) {
+      setDirectionFilter('');
+    }
+  }, [directionFilter, directions]);
+
   const renderDirection = (m: Measurement) => {
     const primary = m.direction?.name;
     const extra =
@@ -333,32 +371,13 @@ export function MeasurementsPage() {
           <span className={styles.count}>{total} замеров</span>
         </div>
         <div className={styles.headerActions}>
-          <button
-            type="button"
-            className={`${styles.secondaryButton} ${styles.refreshButton}`}
+          <AdminListRefreshButton
             onClick={() => void fetchData()}
             disabled={loading}
+            busy={loading}
             title="Обновить список замеров"
             aria-label="Обновить список замеров"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width={18}
-              height={18}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={loading ? styles.refreshIconSpinning : undefined}
-              aria-hidden
-            >
-              <path d="M23 4v6h-6" />
-              <path d="M1 20v-6h6" />
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-            </svg>
-          </button>
+          />
           <Link href="/admin/measurements/new" className={styles.addButton}>
             + Новый замер
           </Link>
@@ -370,13 +389,29 @@ export function MeasurementsPage() {
           type="search"
           placeholder="Поиск по ФИО, адресу, телефону..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className={styles.searchInput}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          className={measurementsFilterFieldClass(
+            styles.searchInput,
+            Boolean(search.trim()),
+            styles.filterActive
+          )}
+          aria-label="Поиск по ФИО, адресу, телефону"
         />
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className={styles.select}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(1);
+          }}
+          className={measurementsFilterFieldClass(
+            styles.select,
+            Boolean(statusFilter),
+            styles.filterActive
+          )}
+          aria-label="Статус"
         >
           <option value="">Все статусы</option>
           {MEASUREMENT_STATUS_OPTIONS.map((o) => (
@@ -387,8 +422,16 @@ export function MeasurementsPage() {
         </select>
         <select
           value={managerFilter}
-          onChange={(e) => setManagerFilter(e.target.value)}
-          className={styles.select}
+          onChange={(e) => {
+            setManagerFilter(e.target.value);
+            setPage(1);
+          }}
+          className={measurementsFilterFieldClass(
+            styles.select,
+            Boolean(managerFilter),
+            styles.filterActive
+          )}
+          aria-label="Менеджер"
         >
           <option value="">Все менеджеры</option>
           {managerOptions.map((p) => (
@@ -399,8 +442,16 @@ export function MeasurementsPage() {
         </select>
         <select
           value={directionFilter}
-          onChange={(e) => setDirectionFilter(e.target.value)}
-          className={styles.select}
+          onChange={(e) => {
+            setDirectionFilter(e.target.value);
+            setPage(1);
+          }}
+          className={measurementsFilterFieldClass(
+            styles.select,
+            Boolean(directionFilter),
+            styles.filterActive
+          )}
+          aria-label="Направление"
         >
           <option value="">Все направления</option>
           {directions.map((d) => (
@@ -414,8 +465,16 @@ export function MeasurementsPage() {
           <input
             type="date"
             value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className={styles.dateInput}
+            onChange={(e) => {
+              setDateFrom(e.target.value);
+              setPage(1);
+            }}
+            className={measurementsFilterFieldClass(
+              styles.dateInput,
+              Boolean(dateFrom),
+              styles.filterActive
+            )}
+            aria-label="Дата от"
           />
         </label>
         <label className={styles.dateLabel}>
@@ -423,8 +482,16 @@ export function MeasurementsPage() {
           <input
             type="date"
             value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className={styles.dateInput}
+            onChange={(e) => {
+              setDateTo(e.target.value);
+              setPage(1);
+            }}
+            className={measurementsFilterFieldClass(
+              styles.dateInput,
+              Boolean(dateTo),
+              styles.filterActive
+            )}
+            aria-label="Дата до"
           />
         </label>
       </div>

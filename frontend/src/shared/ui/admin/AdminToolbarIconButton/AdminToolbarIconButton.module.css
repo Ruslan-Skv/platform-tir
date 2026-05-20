@@ -1,0 +1,58 @@
+.button {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 40px;
+  padding: var(--admin-space-md);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  box-shadow: none;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.button:hover:not(:disabled) {
+  color: var(--admin-text-primary);
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border-strong);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.button > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iconSpinning {
+  animation: adminToolbarIconSpin 0.85s linear infinite;
+}
+
+@keyframes adminToolbarIconSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .button {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .button:hover:not(:disabled) {
+  background: var(--admin-surface-muted);
+  border-color: var(--admin-border-strong);
+  color: var(--admin-text-primary);
+}

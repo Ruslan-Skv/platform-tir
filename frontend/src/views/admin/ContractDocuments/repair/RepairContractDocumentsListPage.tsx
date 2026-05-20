@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -28,6 +28,7 @@ import {
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
+import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 import { adminContractDocumentsContractsRepairPackageHref } from '@/views/admin/ContractDocuments/contractDocumentsContractsRoutes';
 
@@ -38,6 +39,15 @@ import {
   getDisplayContractNumber,
 } from './packageContractDisplay';
 import { applyRepairContractDiscountToNullableBase } from './repairContractDiscount';
+import {
+  loadRepairContractsListFilters,
+  persistRepairContractsListFilters,
+  reloadRepairContractsListFiltersFromStorage,
+} from './repairContractsListFilters';
+import {
+  type RepairContractsListSortBy,
+  type RepairContractsListSortOrder,
+} from './repairContractsListSort';
 import { type RepairPackageFormData, mergeRepairPackageFormData } from './repairPackageForm';
 
 type RepairListActPhotoItem = {
@@ -53,6 +63,20 @@ function formatRepairListActDate(raw: string): string {
   const d = /\d{4}-\d{2}-\d{2}/.test(t) ? new Date(`${t}T12:00:00`) : new Date(t);
   if (Number.isNaN(d.getTime())) return t;
   return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+/** Дата акта начала работ для колонки «Акт нр». */
+function repairListWorkStartActDateCell(form: RepairPackageFormData): string {
+  const signedAt = form.repairWorkStartActSignedAt?.trim();
+  if (!signedAt) return '—';
+  return formatRepairListActDate(signedAt);
+}
+
+/** Дата акта сдачи-приёмки для колонки «Акт с/п». */
+function repairListContractCloseActDateCell(form: RepairPackageFormData): string {
+  const signedAt = form.repairContractCloseActSignedAt?.trim();
+  if (!signedAt) return '—';
+  return formatRepairListActDate(signedAt);
 }
 
 function repairListAttachedActPhotosFromForm(
@@ -365,31 +389,50 @@ function repairListPackageDirectionIds(
   return [...out];
 }
 
-/** Дата для фильтра: подписание договора или дата создания пакета. */
-function repairListDateForFilter(pkg: ContractDocumentPackage): string | null {
+/** ISO-дата подписания договора (`contractConcludedAt`). */
+function repairListContractSigningDateIso(pkg: ContractDocumentPackage): string {
   const fd = pkg.formData ?? {};
-  const concluded = typeof fd.contractConcludedAt === 'string' ? fd.contractConcludedAt.trim() : '';
-  if (concluded) {
-    const d = new Date(concluded);
-    if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10);
-  }
-  const created = pkg.createdAt?.trim();
-  if (!created) return null;
-  const d = new Date(created);
+  const topLevel = typeof fd.contractConcludedAt === 'string' ? fd.contractConcludedAt.trim() : '';
+  if (topLevel) return topLevel;
+  return mergeRepairPackageFormData(fd).contractConcludedAt?.trim() ?? '';
+}
+
+function repairListIsoToFilterDay(iso: string): string | null {
+  const t = iso.trim();
+  if (!t) return null;
+  const d = /\d{4}-\d{2}-\d{2}/.test(t) ? new Date(`${t}T12:00:00`) : new Date(t);
   if (Number.isNaN(d.getTime())) return null;
   return d.toISOString().slice(0, 10);
 }
 
+/** Дни для фильтра «Дата от / до»: колонки Дата, Акт нр, Акт с/п. */
+function repairListFilterDateDays(pkg: ContractDocumentPackage): string[] {
+  const form = mergeRepairPackageFormData(pkg.formData ?? {});
+  const days: string[] = [];
+  const signing = repairListIsoToFilterDay(repairListContractSigningDateIso(pkg));
+  if (signing) days.push(signing);
+  const workStart = repairListIsoToFilterDay(form.repairWorkStartActSignedAt ?? '');
+  if (workStart) days.push(workStart);
+  const closeAct = repairListIsoToFilterDay(form.repairContractCloseActSignedAt ?? '');
+  if (closeAct) days.push(closeAct);
+  return days;
+}
+
+function repairListDayInDateRange(day: string, dateFrom: string, dateTo: string): boolean {
+  if (dateFrom && day < dateFrom) return false;
+  if (dateTo && day > dateTo) return false;
+  return true;
+}
+
+/** Строка попадает в фильтр, если хотя бы одна из дат (Дата / Акт нр / Акт с/п) в диапазоне. */
 function repairListMatchesDateRange(
   pkg: ContractDocumentPackage,
   dateFrom: string,
   dateTo: string
 ): boolean {
-  const day = repairListDateForFilter(pkg);
-  if (!day) return false;
-  if (dateFrom && day < dateFrom) return false;
-  if (dateTo && day > dateTo) return false;
-  return true;
+  const days = repairListFilterDateDays(pkg);
+  if (days.length === 0) return false;
+  return days.some((day) => repairListDayInDateRange(day, dateFrom, dateTo));
 }
 
 function normalizeRepairListSearch(s: string): string {
@@ -406,18 +449,11 @@ function repairListMatchesSearch(pkg: ContractDocumentPackage, searchNorm: strin
   return haystack.includes(searchNorm);
 }
 
+/** Колонка «Дата» — только дата подписания договора. */
 function formatSigningDateOnly(r: ContractDocumentPackage): string {
-  if (r.status !== 'CONTRACT_CONCLUDED') return '—';
-  const fd = r.formData ?? {};
-  const iso = typeof fd.contractConcludedAt === 'string' ? fd.contractConcludedAt.trim() : '';
+  const iso = repairListContractSigningDateIso(r);
   if (!iso) return '—';
-  try {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return '—';
-    return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  } catch {
-    return '—';
-  }
+  return formatRepairListActDate(iso);
 }
 
 /** Этапы жизненного цикла договора в списке (фильтр и колонка «Статус»). */
@@ -496,6 +532,14 @@ function ellipsizeOneLine(s: string, maxLen: number): string {
 }
 
 /** Удаление: нельзя при оплатах или при прикреплённой смете (основной договор). */
+function repairContractsListFilterFieldClass(
+  base: string,
+  active: boolean,
+  activeClass: string
+): string {
+  return active ? `${base} ${activeClass}` : base;
+}
+
 function repairPackageDeletionAllowed(pkg: ContractDocumentPackage): boolean {
   const paymentCount = pkg.payments?.length ?? 0;
   if (paymentCount > 0) return false;
@@ -504,20 +548,217 @@ function repairPackageDeletionAllowed(pkg: ContractDocumentPackage): boolean {
   return true;
 }
 
+const REPAIR_LIST_PIPELINE_STATUS_ORDER: Record<RepairListPipelineStatus, number> = {
+  IN_PROJECT: 0,
+  SIGNED: 1,
+  WORK_IN_PROGRESS: 2,
+  CLOSED: 3,
+  REFUSED: 4,
+};
+
+function repairListSigningDateMs(pkg: ContractDocumentPackage): number | null {
+  const iso = repairListContractSigningDateIso(pkg);
+  if (!iso) return null;
+  const d = /\d{4}-\d{2}-\d{2}/.test(iso) ? new Date(`${iso}T12:00:00`) : new Date(iso);
+  const t = d.getTime();
+  return Number.isNaN(t) ? null : t;
+}
+
+function repairListActSignedAtMs(isoRaw: string | undefined): number | null {
+  const iso = isoRaw?.trim();
+  if (!iso) return null;
+  const d = /\d{4}-\d{2}-\d{2}/.test(iso) ? new Date(`${iso}T12:00:00`) : new Date(iso);
+  const t = d.getTime();
+  return Number.isNaN(t) ? null : t;
+}
+
+function repairListWorkStartActDateMs(pkg: ContractDocumentPackage): number | null {
+  const form = mergeRepairPackageFormData(pkg.formData ?? {});
+  return repairListActSignedAtMs(form.repairWorkStartActSignedAt);
+}
+
+function repairListCloseActDateMs(pkg: ContractDocumentPackage): number | null {
+  const form = mergeRepairPackageFormData(pkg.formData ?? {});
+  return repairListActSignedAtMs(form.repairContractCloseActSignedAt);
+}
+
+function repairListRowRemainingRub(
+  pkg: ContractDocumentPackage,
+  addendumColumnCount: number
+): number | null {
+  const fd = pkg.formData ?? {};
+  const form = mergeRepairPackageFormData(fd);
+  const paidRub = sumPackagePaymentsRub(pkg);
+  const totalRub = repairListContractTotalAmount(fd);
+  const totalWithAddendaRub = repairListContractAndSignedAddendaTotalRub(
+    form,
+    totalRub,
+    addendumColumnCount
+  );
+  const paymentBaseRub = addendumColumnCount > 0 ? totalWithAddendaRub : totalRub;
+  return repairListRemainingToPayRub(paymentBaseRub, paidRub);
+}
+
+/** Числовые колонки с пустыми значениями: asc — пустые внизу, desc — пустые вверху. */
+function repairListCompareNullableNumber(
+  a: number | null,
+  b: number | null,
+  sortOrder: RepairContractsListSortOrder
+): number {
+  if (a == null && b == null) return 0;
+  if (a == null) return sortOrder === 'asc' ? 1 : -1;
+  if (b == null) return sortOrder === 'asc' ? -1 : 1;
+  const diff = a - b;
+  return sortOrder === 'asc' ? diff : -diff;
+}
+
+function repairListCompareStrings(
+  a: string,
+  b: string,
+  sortOrder: RepairContractsListSortOrder
+): number {
+  const diff = a.localeCompare(b, 'ru', { sensitivity: 'base', numeric: true });
+  return sortOrder === 'asc' ? diff : -diff;
+}
+
+function compareRepairContractListRows(
+  a: ContractDocumentPackage,
+  b: ContractDocumentPackage,
+  sortBy: RepairContractsListSortBy,
+  sortOrder: RepairContractsListSortOrder,
+  crmUsers: CrmUser[],
+  addendumColumnCount: number
+): number {
+  switch (sortBy) {
+    case 'contractNumber': {
+      const na = getDisplayContractNumber({
+        formData: (a.formData ?? {}) as Record<string, unknown>,
+      });
+      const nb = getDisplayContractNumber({
+        formData: (b.formData ?? {}) as Record<string, unknown>,
+      });
+      return repairListCompareStrings(String(na), String(nb), sortOrder);
+    }
+    case 'date':
+      return repairListCompareNullableNumber(
+        repairListSigningDateMs(a),
+        repairListSigningDateMs(b),
+        sortOrder
+      );
+    case 'status': {
+      const oa = REPAIR_LIST_PIPELINE_STATUS_ORDER[repairListPipelineStatus(a)];
+      const ob = REPAIR_LIST_PIPELINE_STATUS_ORDER[repairListPipelineStatus(b)];
+      const diff = oa - ob;
+      return sortOrder === 'asc' ? diff : -diff;
+    }
+    case 'customer': {
+      const fa = (a.formData ?? {}) as Record<string, unknown>;
+      const fb = (b.formData ?? {}) as Record<string, unknown>;
+      return repairListCompareStrings(
+        repairListCustomerName(fa),
+        repairListCustomerName(fb),
+        sortOrder
+      );
+    }
+    case 'manager': {
+      const la = repairListManagerDisplayLabel(
+        mergeRepairPackageFormData(a.formData ?? {}),
+        crmUsers
+      );
+      const lb = repairListManagerDisplayLabel(
+        mergeRepairPackageFormData(b.formData ?? {}),
+        crmUsers
+      );
+      return repairListCompareStrings(la, lb, sortOrder);
+    }
+    case 'remaining':
+      return repairListCompareNullableNumber(
+        repairListRowRemainingRub(a, addendumColumnCount),
+        repairListRowRemainingRub(b, addendumColumnCount),
+        sortOrder
+      );
+    case 'workStartAct':
+      return repairListCompareNullableNumber(
+        repairListWorkStartActDateMs(a),
+        repairListWorkStartActDateMs(b),
+        sortOrder
+      );
+    case 'closeAct':
+      return repairListCompareNullableNumber(
+        repairListCloseActDateMs(a),
+        repairListCloseActDateMs(b),
+        sortOrder
+      );
+    default:
+      return 0;
+  }
+}
+
+function RepairContractsListSortableTh({
+  column,
+  title,
+  sortBy,
+  sortOrder,
+  onSort,
+}: {
+  column: RepairContractsListSortBy;
+  title: string;
+  sortBy: RepairContractsListSortBy;
+  sortOrder: RepairContractsListSortOrder;
+  onSort: (column: RepairContractsListSortBy) => void;
+}) {
+  const isActive = sortBy === column;
+  return (
+    <th
+      className={dataTableStyles.sortable}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSort(column);
+      }}
+      aria-sort={isActive ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+    >
+      <span className={dataTableStyles.headerContent}>
+        {title}
+        <span
+          className={`${dataTableStyles.sortIcon} ${
+            isActive ? dataTableStyles.sortIconActive : dataTableStyles.sortIconIdle
+          }`}
+          aria-hidden
+        >
+          {isActive ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
+        </span>
+      </span>
+    </th>
+  );
+}
+
 export function RepairContractDocumentsListPage() {
   const router = useRouter();
+  const initialListFiltersRef = useRef(loadRepairContractsListFilters());
+  const initialListFilters = initialListFiltersRef.current;
+  const listFiltersHydratedRef = useRef(false);
+  const skipListFiltersPersistRef = useRef(true);
+
   const [rows, setRows] = useState<ContractDocumentPackage[]>([]);
   const [crmUsers, setCrmUsers] = useState<CrmUser[]>([]);
   const [directions, setDirections] = useState<CrmDirection[]>([]);
   const [managerOptions, setManagerOptions] = useState<ContractSignatoryProfile[]>([]);
   const [estimatePresets, setEstimatePresets] = useState<ContractEstimatePreset[]>([]);
   const [measurementsById, setMeasurementsById] = useState<Map<string, Measurement>>(new Map());
-  const [search, setSearch] = useState('');
-  const [managerFilter, setManagerFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'' | RepairListPipelineStatus>('');
-  const [directionFilter, setDirectionFilter] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [search, setSearch] = useState(initialListFilters.search);
+  const [managerFilter, setManagerFilter] = useState(initialListFilters.managerFilter);
+  const [statusFilter, setStatusFilter] = useState<'' | RepairListPipelineStatus>(
+    initialListFilters.statusFilter as '' | RepairListPipelineStatus
+  );
+  const [directionFilter, setDirectionFilter] = useState(initialListFilters.directionFilter);
+  const [dateFrom, setDateFrom] = useState(initialListFilters.dateFrom);
+  const [dateTo, setDateTo] = useState(initialListFilters.dateTo);
+  const [listSortBy, setListSortBy] = useState<RepairContractsListSortBy>(
+    initialListFilters.sortBy
+  );
+  const [listSortOrder, setListSortOrder] = useState<RepairContractsListSortOrder>(
+    initialListFilters.sortOrder
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -532,7 +773,7 @@ export function RepairContractDocumentsListPage() {
   } | null>(null);
 
   const addendumColumnCount = useMemo(() => repairListMaxSignedAddendumSlotCount(rows), [rows]);
-  const repairListTableColSpan = 11 + addendumColumnCount + (addendumColumnCount > 0 ? 1 : 0);
+  const repairListTableColSpan = 13 + addendumColumnCount + (addendumColumnCount > 0 ? 1 : 0);
 
   const presetById = useMemo(
     () => new Map(estimatePresets.map((p) => [p.id, p])),
@@ -575,6 +816,19 @@ export function RepairContractDocumentsListPage() {
       list = list.filter((r) => repairListMatchesDateRange(r, dateFrom, dateTo));
     }
 
+    list.sort((a, b) => {
+      const cmp = compareRepairContractListRows(
+        a,
+        b,
+        listSortBy,
+        listSortOrder,
+        crmUsers,
+        addendumColumnCount
+      );
+      if (cmp !== 0) return cmp;
+      return listSortOrder === 'asc' ? a.id.localeCompare(b.id) : b.id.localeCompare(a.id);
+    });
+
     return list;
   }, [
     rows,
@@ -587,12 +841,68 @@ export function RepairContractDocumentsListPage() {
     directions,
     presetById,
     measurementsById,
+    listSortBy,
+    listSortOrder,
+    crmUsers,
+    addendumColumnCount,
   ]);
+
+  const handleListSortChange = useCallback(
+    (column: RepairContractsListSortBy) => {
+      if (listSortBy === column) {
+        setListSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
+      } else {
+        setListSortBy(column);
+        setListSortOrder('asc');
+      }
+    },
+    [listSortBy]
+  );
 
   const emptyFilteredListMessage = useMemo(() => {
     if (rows.length === 0 || !hasActiveFilters) return '';
     return 'Нет договоров по выбранным фильтрам.';
   }, [rows.length, hasActiveFilters]);
+
+  useEffect(() => {
+    const saved = reloadRepairContractsListFiltersFromStorage();
+    setSearch(saved.search);
+    setManagerFilter(saved.managerFilter);
+    setStatusFilter(saved.statusFilter as '' | RepairListPipelineStatus);
+    setDirectionFilter(saved.directionFilter);
+    setDateFrom(saved.dateFrom);
+    setDateTo(saved.dateTo);
+    setListSortBy(saved.sortBy);
+    setListSortOrder(saved.sortOrder);
+    listFiltersHydratedRef.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!listFiltersHydratedRef.current) return;
+    if (skipListFiltersPersistRef.current) {
+      skipListFiltersPersistRef.current = false;
+      return;
+    }
+    persistRepairContractsListFilters({
+      search,
+      managerFilter,
+      statusFilter,
+      directionFilter,
+      dateFrom,
+      dateTo,
+      sortBy: listSortBy,
+      sortOrder: listSortOrder,
+    });
+  }, [
+    search,
+    managerFilter,
+    statusFilter,
+    directionFilter,
+    dateFrom,
+    dateTo,
+    listSortBy,
+    listSortOrder,
+  ]);
 
   useEffect(() => {
     if (!managerFilter) return;
@@ -735,48 +1045,22 @@ export function RepairContractDocumentsListPage() {
       : '';
 
   return (
-    <div className={`${styles.page} ${styles.pageWide}`}>
+    <div className={`${styles.page} ${styles.pageWide} ${styles.repairContractsListPage}`}>
       <div className={styles.editorHeader}>
-        <div>
+        <div className={styles.repairContractsListHeaderLeft}>
           <h1 className={styles.title}>Договора</h1>
-          {/* <p
-            className={styles.hubCardHint}
-            style={{ marginTop: 6, marginBottom: 0, maxWidth: 720 }}
-          >
-            Создавайте пакет документов: вкладка «Данные» для ввода, остальные вкладки подставляют
-            значения в шаблоны.
-          </p> */}
+          <span className={styles.repairContractsListCount}>{visibleRows.length} договоров</span>
         </div>
         <div className={styles.headerButtonsRow}>
-          <button
-            type="button"
-            className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn}`}
+          <AdminListRefreshButton
             disabled={
               loading || creating || copyingPackageId !== null || deletingPackageId !== null
             }
-            aria-busy={loading}
-            aria-label={loading ? 'Обновление списка договоров' : 'Обновить список договоров'}
+            busy={loading}
             title="Обновить список"
+            aria-label={loading ? 'Обновление списка договоров' : 'Обновить список договоров'}
             onClick={() => void load()}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width={18}
-              height={18}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={loading ? styles.estimatesRefreshIconSpinning : undefined}
-              aria-hidden
-            >
-              <path d="M23 4v6h-6" />
-              <path d="M1 20v-6h6" />
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-            </svg>
-          </button>
+          />
           <button
             type="button"
             className={styles.contractsListHeaderAddBtn}
@@ -799,14 +1083,23 @@ export function RepairContractDocumentsListPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           disabled={loading}
-          className={styles.repairContractsListSearchInput}
+          className={repairContractsListFilterFieldClass(
+            styles.repairContractsListSearchInput,
+            Boolean(search.trim()),
+            styles.repairContractsListFilterActive
+          )}
+          aria-label="Поиск по номеру договора, ФИО заказчика, адресу"
         />
         <select
           id="repair_list_status_filter"
           value={statusFilter}
           onChange={(e) => setStatusFilter((e.target.value || '') as '' | RepairListPipelineStatus)}
           disabled={loading}
-          className={styles.repairContractsListSelect}
+          className={repairContractsListFilterFieldClass(
+            styles.repairContractsListSelect,
+            Boolean(statusFilter),
+            styles.repairContractsListFilterActive
+          )}
           aria-label="Статус"
         >
           <option value="">Все статусы</option>
@@ -821,7 +1114,11 @@ export function RepairContractDocumentsListPage() {
           value={managerFilter}
           onChange={(e) => setManagerFilter(e.target.value)}
           disabled={loading}
-          className={styles.repairContractsListSelect}
+          className={repairContractsListFilterFieldClass(
+            styles.repairContractsListSelect,
+            Boolean(managerFilter),
+            styles.repairContractsListFilterActive
+          )}
           aria-label="Менеджер"
         >
           <option value="">Все менеджеры</option>
@@ -836,7 +1133,11 @@ export function RepairContractDocumentsListPage() {
           value={directionFilter}
           onChange={(e) => setDirectionFilter(e.target.value)}
           disabled={loading}
-          className={styles.repairContractsListSelect}
+          className={repairContractsListFilterFieldClass(
+            styles.repairContractsListSelect,
+            Boolean(directionFilter),
+            styles.repairContractsListFilterActive
+          )}
           aria-label="Направление"
         >
           <option value="">Все направления</option>
@@ -853,7 +1154,12 @@ export function RepairContractDocumentsListPage() {
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
             disabled={loading}
-            className={styles.repairContractsListDateInput}
+            className={repairContractsListFilterFieldClass(
+              styles.repairContractsListDateInput,
+              Boolean(dateFrom),
+              styles.repairContractsListFilterActive
+            )}
+            aria-label="Дата от"
           />
         </label>
         <label className={styles.repairContractsListDateLabel}>
@@ -863,7 +1169,12 @@ export function RepairContractDocumentsListPage() {
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
             disabled={loading}
-            className={styles.repairContractsListDateInput}
+            className={repairContractsListFilterFieldClass(
+              styles.repairContractsListDateInput,
+              Boolean(dateTo),
+              styles.repairContractsListFilterActive
+            )}
+            aria-label="Дата до"
           />
         </label>
       </div>
@@ -874,11 +1185,41 @@ export function RepairContractDocumentsListPage() {
             <table className={`${dataTableStyles.table} ${styles.repairContractsListTable}`}>
               <thead className={dataTableStyles.stickyHeader}>
                 <tr>
-                  <th>№ дог.</th>
-                  <th>Статус</th>
-                  <th>Дата</th>
-                  <th>Заказчик</th>
-                  <th>Менеджер</th>
+                  <RepairContractsListSortableTh
+                    column="contractNumber"
+                    title="№ дог."
+                    sortBy={listSortBy}
+                    sortOrder={listSortOrder}
+                    onSort={handleListSortChange}
+                  />
+                  <RepairContractsListSortableTh
+                    column="date"
+                    title="Дата"
+                    sortBy={listSortBy}
+                    sortOrder={listSortOrder}
+                    onSort={handleListSortChange}
+                  />
+                  <RepairContractsListSortableTh
+                    column="status"
+                    title="Статус"
+                    sortBy={listSortBy}
+                    sortOrder={listSortOrder}
+                    onSort={handleListSortChange}
+                  />
+                  <RepairContractsListSortableTh
+                    column="customer"
+                    title="Заказчик"
+                    sortBy={listSortBy}
+                    sortOrder={listSortOrder}
+                    onSort={handleListSortChange}
+                  />
+                  <RepairContractsListSortableTh
+                    column="manager"
+                    title="Менеджер"
+                    sortBy={listSortBy}
+                    sortOrder={listSortOrder}
+                    onSort={handleListSortChange}
+                  />
                   <th>Адрес объекта</th>
                   <th>Описание работ</th>
                   <th>СД нач.</th>
@@ -889,7 +1230,27 @@ export function RepairContractDocumentsListPage() {
                     : null}
                   {addendumColumnCount > 0 ? <th>СД итог.</th> : null}
                   <th>Оплачено</th>
-                  <th>Остаток</th>
+                  <RepairContractsListSortableTh
+                    column="remaining"
+                    title="Остаток"
+                    sortBy={listSortBy}
+                    sortOrder={listSortOrder}
+                    onSort={handleListSortChange}
+                  />
+                  <RepairContractsListSortableTh
+                    column="workStartAct"
+                    title="Акт нр"
+                    sortBy={listSortBy}
+                    sortOrder={listSortOrder}
+                    onSort={handleListSortChange}
+                  />
+                  <RepairContractsListSortableTh
+                    column="closeAct"
+                    title="Акт с/п"
+                    sortBy={listSortBy}
+                    sortOrder={listSortOrder}
+                    onSort={handleListSortChange}
+                  />
                   <th className={styles.repairContractsListActionsCol} />
                 </tr>
               </thead>
@@ -934,29 +1295,28 @@ export function RepairContractDocumentsListPage() {
                     const canDeleteDraft = repairPackageDeletionAllowed(r);
                     const pipelineStatus = repairListPipelineStatus(r);
                     const actPhotoItems = repairListAttachedActPhotosFromForm(form);
+                    const packageHref = adminContractDocumentsContractsRepairPackageHref(r.id);
                     return (
                       <tr
                         key={r.id}
-                        className={`${dataTableStyles.row} ${dataTableStyles.clickable}`}
-                        onClick={() =>
-                          router.push(adminContractDocumentsContractsRepairPackageHref(r.id))
-                        }
+                        className={`${dataTableStyles.row} ${styles.repairContractsListClickableRow}`}
+                        tabIndex={0}
+                        aria-label={`Открыть договор ${num}`}
+                        onClick={() => router.push(packageHref)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            router.push(packageHref);
+                          }
+                        }}
                       >
-                        <td>
-                          <Link
-                            className={styles.link}
-                            href={adminContractDocumentsContractsRepairPackageHref(r.id)}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {num}
-                          </Link>
-                        </td>
+                        <td>{num}</td>
+                        <td>{formatSigningDateOnly(r)}</td>
                         <td>
                           <span className={repairListPipelineStatusBadgeClass(pipelineStatus)}>
                             {repairListPipelineStatusLabel(pipelineStatus)}
                           </span>
                         </td>
-                        <td>{formatSigningDateOnly(r)}</td>
                         <td>{repairListCustomerName(fd)}</td>
                         <td title={managerLabel}>{ellipsizeOneLine(managerLabel, 40)}</td>
                         <td>{ellipsizeOneLine(repairListObjectAddress(fd), 64)}</td>
@@ -976,47 +1336,18 @@ export function RepairContractDocumentsListPage() {
                         ) : null}
                         <td>{formatListPaidWithPercent(paidRub, paymentBaseRub)}</td>
                         <td>{formatListMoney(remainingRub)}</td>
-                        <td className={styles.repairContractsListActionsCol}>
+                        <td title="Акт начала работ">{repairListWorkStartActDateCell(form)}</td>
+                        <td title="Акт сдачи-приёмки">
+                          {repairListContractCloseActDateCell(form)}
+                        </td>
+                        <td
+                          className={styles.repairContractsListActionsCol}
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
+                        >
                           <div
                             className={`${styles.estimatesCardActions} ${styles.repairContractsListActionsGrid}`}
-                            onClick={(e) => e.stopPropagation()}
-                            onKeyDown={(e) => e.stopPropagation()}
                           >
-                            <div className={styles.repairContractsListActionsSlot}>
-                              <button
-                                type="button"
-                                className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
-                                disabled={
-                                  loading ||
-                                  creating ||
-                                  copyingPackageId !== null ||
-                                  deletingPackageId !== null
-                                }
-                                aria-label="Редактировать"
-                                title="Редактировать"
-                                onClick={() =>
-                                  router.push(
-                                    adminContractDocumentsContractsRepairPackageHref(r.id)
-                                  )
-                                }
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  width={14}
-                                  height={14}
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="var(--admin-chart-series-1)"
-                                  strokeWidth={2}
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  aria-hidden
-                                >
-                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                </svg>
-                              </button>
-                            </div>
                             <div className={styles.repairContractsListActionsSlot}>
                               <button
                                 type="button"
@@ -1143,6 +1474,11 @@ export function RepairContractDocumentsListPage() {
             </table>
           </div>
         </div>
+        {!loading && visibleRows.length > 0 ? (
+          <div className={dataTableStyles.pagination}>
+            <span className={dataTableStyles.paginationInfo}>Всего: {visibleRows.length}</span>
+          </div>
+        ) : null}
       </div>
 
       <Modal
