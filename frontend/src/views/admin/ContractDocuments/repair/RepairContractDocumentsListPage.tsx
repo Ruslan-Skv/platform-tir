@@ -6,6 +6,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import {
+  type ContractDocumentObject,
+  autoSyncContractDocumentObjects,
+  getContractDocumentObjects,
+} from '@/shared/api/admin-contract-document-objects';
+import {
   type ContractDocumentPackage,
   type ContractDocumentPackageKind,
   type ContractEstimatePreset,
@@ -42,6 +47,7 @@ import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 import { adminContractDocumentsContractsRepairPackageHref } from '@/views/admin/ContractDocuments/contractDocumentsContractsRoutes';
 
 import styles from '../ContractDocuments.module.css';
+import { CONTRACT_DOCUMENT_PACKAGE_KIND_LABELS } from '../contractDocumentsListKinds';
 import { RepairContractTrashModal } from './RepairContractTrashModal';
 import { buildFormDataForRepairPackageCopy } from './cloneRepairPackageFormDataForCopy';
 import {
@@ -50,6 +56,7 @@ import {
 } from './packageContractDisplay';
 import { applyRepairContractDiscountToNullableBase } from './repairContractDiscount';
 import {
+  type ContractsListViewMode,
   REPAIR_CONTRACTS_PAGE_LIMIT_OPTIONS,
   type RepairContractsPageLimit,
   loadRepairContractsListFilters,
@@ -482,6 +489,16 @@ const REPAIR_PIPELINE_CLOSE_ACT_PHOTO_FD = 'repairContractCloseActPhotoUrl';
 const REPAIR_PIPELINE_WORK_START_FD = 'repairWorkStartActSignedAt';
 const REPAIR_PIPELINE_WORK_START_PHOTO_FD = 'repairWorkStartActPhotoUrl';
 
+/** Статус для фильтра и колонки: ремонт — полный конвейер, остальные направления — упрощённо. */
+function listPipelineStatus(pkg: ContractDocumentPackage): RepairListPipelineStatus {
+  if (pkg.kind !== 'REPAIR') {
+    if (pkg.status === 'REFUSED') return 'REFUSED';
+    if (pkg.status === 'CONTRACT_CONCLUDED') return 'SIGNED';
+    return 'IN_PROJECT';
+  }
+  return repairListPipelineStatus(pkg);
+}
+
 function repairListPipelineStatus(pkg: ContractDocumentPackage): RepairListPipelineStatus {
   if (pkg.status === 'REFUSED') return 'REFUSED';
   const fd = (pkg.formData ?? {}) as Record<string, unknown>;
@@ -594,6 +611,52 @@ function repairListCloseActDateMs(pkg: ContractDocumentPackage): number | null {
   return repairListActSignedAtMs(form.repairContractCloseActSignedAt);
 }
 
+function repairListPackageKindLabel(kind: ContractDocumentPackageKind): string {
+  return CONTRACT_DOCUMENT_PACKAGE_KIND_LABELS[kind] ?? kind;
+}
+
+type ObjectRowMoneyAggregate = {
+  totalRub: number | null;
+  totalWithAddendaRub: number | null;
+  paidRub: number;
+  remainingRub: number | null;
+};
+
+function aggregatePackagesMoney(
+  packages: ContractDocumentPackage[],
+  addendumColumnCount: number
+): ObjectRowMoneyAggregate {
+  let paidRub = 0;
+  let totalSum: number | null = null;
+  let totalWithAddendaSum: number | null = null;
+  let remainingSum: number | null = null;
+  for (const pkg of packages) {
+    const fd = pkg.formData ?? {};
+    const form = mergeRepairPackageFormData(fd);
+    const paid = sumPackagePaymentsRub(pkg);
+    paidRub += paid;
+    const totalRub = repairListContractTotalAmount(fd);
+    const totalWithAddendaRub = repairListContractAndSignedAddendaTotalRub(
+      form,
+      totalRub,
+      addendumColumnCount
+    );
+    const paymentBaseRub = addendumColumnCount > 0 ? totalWithAddendaRub : totalRub;
+    const rem = repairListRemainingToPayRub(paymentBaseRub, paid);
+    if (totalRub != null) totalSum = (totalSum ?? 0) + totalRub;
+    if (totalWithAddendaRub != null) {
+      totalWithAddendaSum = (totalWithAddendaSum ?? 0) + totalWithAddendaRub;
+    }
+    if (rem != null) remainingSum = (remainingSum ?? 0) + rem;
+  }
+  return {
+    totalRub: totalSum,
+    totalWithAddendaRub: totalWithAddendaSum,
+    paidRub,
+    remainingRub: remainingSum,
+  };
+}
+
 function repairListRowRemainingRub(
   pkg: ContractDocumentPackage,
   addendumColumnCount: number
@@ -658,8 +721,8 @@ function compareRepairContractListRows(
         sortOrder
       );
     case 'status': {
-      const oa = REPAIR_LIST_PIPELINE_STATUS_ORDER[repairListPipelineStatus(a)];
-      const ob = REPAIR_LIST_PIPELINE_STATUS_ORDER[repairListPipelineStatus(b)];
+      const oa = REPAIR_LIST_PIPELINE_STATUS_ORDER[listPipelineStatus(a)];
+      const ob = REPAIR_LIST_PIPELINE_STATUS_ORDER[listPipelineStatus(b)];
       const diff = oa - ob;
       return sortOrder === 'asc' ? diff : -diff;
     }
@@ -782,6 +845,12 @@ export function RepairContractDocumentsListPage() {
     null
   );
   const [trashOpen, setTrashOpen] = useState(false);
+  const [documentObjects, setDocumentObjects] = useState<ContractDocumentObject[]>([]);
+  const [listViewMode, setListViewMode] = useState<ContractsListViewMode>(
+    initialListFilters.listViewMode
+  );
+  /** В режиме «По объектам» раскрыт только один объект. */
+  const [expandedObjectId, setExpandedObjectId] = useState<string | null>(null);
 
   const fetchRepairTrashTotal = useCallback(
     () => getRepairContractPackageTrash({ page: 1, limit: 1 }),
@@ -793,8 +862,11 @@ export function RepairContractDocumentsListPage() {
     contractLabel: string;
   } | null>(null);
 
-  const addendumColumnCount = useMemo(() => repairListMaxSignedAddendumSlotCount(rows), [rows]);
-  const repairListTableColSpan = 13 + addendumColumnCount + (addendumColumnCount > 0 ? 1 : 0);
+  const addendumColumnCount = useMemo(
+    () => repairListMaxSignedAddendumSlotCount(rows.filter((r) => r.kind === 'REPAIR')),
+    [rows]
+  );
+  const repairListTableColSpan = 15 + addendumColumnCount + (addendumColumnCount > 0 ? 1 : 0);
 
   const presetById = useMemo(
     () => new Map(estimatePresets.map((p) => [p.id, p])),
@@ -805,6 +877,11 @@ export function RepairContractDocumentsListPage() {
 
   const hasActiveFilters = Boolean(
     searchNorm || managerFilter || statusFilter || directionFilter || dateFrom || dateTo
+  );
+
+  const objectsById = useMemo(
+    () => new Map(documentObjects.map((o) => [o.id, o])),
+    [documentObjects]
   );
 
   const visibleRows = useMemo(() => {
@@ -822,7 +899,7 @@ export function RepairContractDocumentsListPage() {
     }
 
     if (statusFilter) {
-      list = list.filter((r) => repairListPipelineStatus(r) === statusFilter);
+      list = list.filter((r) => listPipelineStatus(r) === statusFilter);
     }
 
     if (directionFilter) {
@@ -868,15 +945,72 @@ export function RepairContractDocumentsListPage() {
     addendumColumnCount,
   ]);
 
-  const totalVisible = visibleRows.length;
-  const paginatedRows = useMemo(
-    () => visibleRows.slice((page - 1) * limit, page * limit),
-    [visibleRows, page, limit]
+  type ListDisplayItem =
+    | { type: 'object'; objectId: string; packages: ContractDocumentPackage[] }
+    | { type: 'package'; package: ContractDocumentPackage; childOfObject?: boolean };
+
+  const tableDisplayItems = useMemo((): ListDisplayItem[] => {
+    if (listViewMode === 'flat') {
+      return visibleRows.map((pkg) => ({ type: 'package', package: pkg }));
+    }
+
+    const byObject = new Map<string, ContractDocumentPackage[]>();
+    const ungrouped: ContractDocumentPackage[] = [];
+    for (const pkg of visibleRows) {
+      const oid = pkg.documentObjectId?.trim();
+      if (oid) {
+        const arr = byObject.get(oid) ?? [];
+        arr.push(pkg);
+        byObject.set(oid, arr);
+      } else {
+        ungrouped.push(pkg);
+      }
+    }
+
+    const objectIds = [
+      ...new Set([...documentObjects.map((o) => o.id), ...byObject.keys()]),
+    ].filter((id) => (byObject.get(id)?.length ?? 0) > 0);
+
+    objectIds.sort((a, b) => {
+      const na = objectsById.get(a)?.name ?? byObject.get(a)?.[0]?.documentObject?.name ?? a;
+      const nb = objectsById.get(b)?.name ?? byObject.get(b)?.[0]?.documentObject?.name ?? b;
+      return repairListCompareStrings(String(na), String(nb), listSortOrder);
+    });
+
+    const items: ListDisplayItem[] = [];
+    for (const oid of objectIds) {
+      const pkgs = byObject.get(oid) ?? [];
+      items.push({ type: 'object', objectId: oid, packages: pkgs });
+      if (expandedObjectId === oid) {
+        for (const pkg of pkgs) {
+          items.push({ type: 'package', package: pkg, childOfObject: true });
+        }
+      }
+    }
+    for (const pkg of ungrouped) {
+      items.push({ type: 'package', package: pkg });
+    }
+    return items;
+  }, [listViewMode, visibleRows, documentObjects, objectsById, expandedObjectId, listSortOrder]);
+
+  const objectGroupCount = useMemo(() => {
+    if (listViewMode === 'flat') return 0;
+    return tableDisplayItems.filter((i) => i.type === 'object').length;
+  }, [listViewMode, tableDisplayItems]);
+
+  const totalVisible = listViewMode === 'flat' ? visibleRows.length : tableDisplayItems.length;
+  const paginatedDisplayItems = useMemo(
+    () => tableDisplayItems.slice((page - 1) * limit, page * limit),
+    [tableDisplayItems, page, limit]
   );
 
   useEffect(() => {
     setPage(1);
-  }, [searchNorm, managerFilter, statusFilter, directionFilter, dateFrom, dateTo]);
+  }, [searchNorm, managerFilter, statusFilter, directionFilter, dateFrom, dateTo, listViewMode]);
+
+  useEffect(() => {
+    if (listViewMode === 'flat') setExpandedObjectId(null);
+  }, [listViewMode]);
 
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(totalVisible / limit));
@@ -911,6 +1045,7 @@ export function RepairContractDocumentsListPage() {
     setListSortBy(saved.sortBy);
     setListSortOrder(saved.sortOrder);
     setLimit(saved.pageLimit);
+    setListViewMode(saved.listViewMode);
     listFiltersHydratedRef.current = true;
   }, []);
 
@@ -930,6 +1065,7 @@ export function RepairContractDocumentsListPage() {
       sortBy: listSortBy,
       sortOrder: listSortOrder,
       pageLimit: limit,
+      listViewMode,
     });
   }, [
     search,
@@ -941,6 +1077,7 @@ export function RepairContractDocumentsListPage() {
     listSortBy,
     listSortOrder,
     limit,
+    listViewMode,
   ]);
 
   useEffect(() => {
@@ -961,28 +1098,36 @@ export function RepairContractDocumentsListPage() {
     setLoading(true);
     setError(null);
     try {
-      const [data, users, dirs, signatories, presetsRes, measurementsRes] = await Promise.all([
-        getContractDocumentPackages('REPAIR'),
-        getCrmUsers().catch(() => [] as CrmUser[]),
-        getCrmDirections().catch(() => [] as CrmDirection[]),
-        getContractDocumentSignatoryProfiles('REPAIR').catch(() => ({
-          items: [] as ContractSignatoryProfile[],
-          updatedAt: null,
-        })),
-        getContractDocumentEstimatePresets('REPAIR').catch(() => ({
-          items: [] as ContractEstimatePreset[],
-          groups: [],
-          updatedAt: null,
-        })),
-        getMeasurements({ page: 1, limit: 500 }).catch(() => ({
-          data: [] as Measurement[],
-          total: 0,
-          page: 1,
-          limit: 500,
-          totalPages: 0,
-        })),
-      ]);
+      try {
+        await autoSyncContractDocumentObjects();
+      } catch {
+        /* группировка по адресу не должна блокировать список */
+      }
+      const [data, objects, users, dirs, signatories, presetsRes, measurementsRes] =
+        await Promise.all([
+          getContractDocumentPackages(),
+          getContractDocumentObjects().catch(() => [] as ContractDocumentObject[]),
+          getCrmUsers().catch(() => [] as CrmUser[]),
+          getCrmDirections().catch(() => [] as CrmDirection[]),
+          getContractDocumentSignatoryProfiles('REPAIR').catch(() => ({
+            items: [] as ContractSignatoryProfile[],
+            updatedAt: null,
+          })),
+          getContractDocumentEstimatePresets('REPAIR').catch(() => ({
+            items: [] as ContractEstimatePreset[],
+            groups: [],
+            updatedAt: null,
+          })),
+          getMeasurements({ page: 1, limit: 500 }).catch(() => ({
+            data: [] as Measurement[],
+            total: 0,
+            page: 1,
+            limit: 500,
+            totalPages: 0,
+          })),
+        ]);
       setRows(data);
+      setDocumentObjects(objects);
       setCrmUsers(users);
       setDirections(dirs);
       const profiles = (signatories.items ?? [])
@@ -1090,7 +1235,10 @@ export function RepairContractDocumentsListPage() {
       <div className={styles.editorHeader}>
         <div className={styles.repairContractsListHeaderLeft}>
           <h1 className={styles.title}>Договора</h1>
-          <span className={styles.repairContractsListCount}>{visibleRows.length} договоров</span>
+          <span className={styles.repairContractsListCount}>
+            {visibleRows.length} договоров
+            {objectGroupCount > 0 ? ` · ${objectGroupCount} объектов` : ''}
+          </span>
         </div>
         <div className={styles.headerButtonsRow}>
           <button
@@ -1155,6 +1303,16 @@ export function RepairContractDocumentsListPage() {
           <option value="WORK_IN_PROGRESS">В работе</option>
           <option value="CLOSED">Закрыт</option>
           <option value="REFUSED">Отказ</option>
+        </select>
+        <select
+          value={listViewMode}
+          onChange={(e) => setListViewMode(e.target.value as ContractsListViewMode)}
+          disabled={loading}
+          className={styles.repairContractsListSelect}
+          aria-label="Режим списка"
+        >
+          <option value="by_object">По объектам</option>
+          <option value="flat">Плоский список</option>
         </select>
         <select
           id="repair_list_manager_filter"
@@ -1248,6 +1406,8 @@ export function RepairContractDocumentsListPage() {
             <table className={`${dataTableStyles.table} ${styles.repairContractsListTable}`}>
               <thead className={dataTableStyles.stickyHeader}>
                 <tr>
+                  <th className={styles.repairContractsListSelectCol} aria-label="Группа" />
+                  <th className={styles.repairContractsListKindCol}>Направл.</th>
                   <RepairContractsListSortableTh
                     column="contractNumber"
                     title="№ дог."
@@ -1330,14 +1490,91 @@ export function RepairContractDocumentsListPage() {
                       Пока нет ни одного пакета. Нажмите «+ Новый договор».
                     </td>
                   </tr>
-                ) : visibleRows.length === 0 ? (
+                ) : tableDisplayItems.length === 0 ? (
                   <tr>
                     <td colSpan={repairListTableColSpan} className={dataTableStyles.emptyCell}>
                       {emptyFilteredListMessage}
                     </td>
                   </tr>
                 ) : (
-                  paginatedRows.map((r) => {
+                  paginatedDisplayItems.map((item) => {
+                    if (item.type === 'object') {
+                      const obj =
+                        objectsById.get(item.objectId) ?? item.packages[0]?.documentObject;
+                      const objName =
+                        (obj && 'name' in obj ? obj.name : null) ??
+                        item.packages[0]?.documentObject?.name ??
+                        'Объект';
+                      const objAddress =
+                        (obj && 'address' in obj ? obj.address : null) ??
+                        item.packages[0]?.documentObject?.address ??
+                        repairListObjectAddress(
+                          (item.packages[0]?.formData ?? {}) as Record<string, unknown>
+                        );
+                      const objCustomer =
+                        (obj && 'customerName' in obj ? obj.customerName : null) ??
+                        item.packages[0]?.documentObject?.customerName ??
+                        repairListCustomerName(
+                          (item.packages[0]?.formData ?? {}) as Record<string, unknown>
+                        );
+                      const agg = aggregatePackagesMoney(item.packages, addendumColumnCount);
+                      const paymentBase =
+                        addendumColumnCount > 0 ? agg.totalWithAddendaRub : agg.totalRub;
+                      const expanded = expandedObjectId === item.objectId;
+                      return (
+                        <tr
+                          key={`obj-${item.objectId}`}
+                          className={`${dataTableStyles.row} ${styles.repairContractsListObjectRow} ${
+                            expanded ? styles.repairContractsListObjectRowExpanded : ''
+                          }`}
+                        >
+                          <td className={styles.repairContractsListSelectCol}>
+                            <button
+                              type="button"
+                              className={styles.repairContractsListExpandBtn}
+                              aria-expanded={expanded}
+                              aria-label={expanded ? 'Свернуть договоры' : 'Развернуть договоры'}
+                              onClick={() =>
+                                setExpandedObjectId((current) =>
+                                  current === item.objectId ? null : item.objectId
+                                )
+                              }
+                            >
+                              {expanded ? '▼' : '▶'}
+                            </button>
+                          </td>
+                          <td className={styles.repairContractsListKindCol}>Объект</td>
+                          <td>
+                            <strong>{objName}</strong>
+                            <span className={styles.repairContractsListObjectBadge}>
+                              {item.packages.length} дог.
+                            </span>
+                          </td>
+                          <td>—</td>
+                          <td>—</td>
+                          <td>{objCustomer || '—'}</td>
+                          <td>—</td>
+                          <td>{ellipsizeOneLine(objAddress || '—', 64)}</td>
+                          <td>—</td>
+                          <td>{formatListMoney(agg.totalRub)}</td>
+                          {addendumColumnCount > 0
+                            ? Array.from({ length: addendumColumnCount }, (_, i) => (
+                                <td key={`obj_add_${item.objectId}_${i + 1}`}>—</td>
+                              ))
+                            : null}
+                          {addendumColumnCount > 0 ? (
+                            <td>{formatListMoney(agg.totalWithAddendaRub)}</td>
+                          ) : null}
+                          <td>{formatListPaidWithPercent(agg.paidRub, paymentBase)}</td>
+                          <td>{formatListMoney(agg.remainingRub)}</td>
+                          <td>—</td>
+                          <td>—</td>
+                          <td className={styles.repairContractsListActionsCol} />
+                        </tr>
+                      );
+                    }
+
+                    const r = item.package;
                     const fd = r.formData ?? {};
                     const form = mergeRepairPackageFormData(fd);
                     const num = getDisplayContractNumber({ formData: fd });
@@ -1356,13 +1593,16 @@ export function RepairContractDocumentsListPage() {
                     const copyBusy = copyingPackageId === r.id;
                     const deleteBusy = deletingPackageId === r.id;
                     const canDeleteDraft = repairPackageDeletionAllowed(r);
-                    const pipelineStatus = repairListPipelineStatus(r);
+                    const pipelineStatus = listPipelineStatus(r);
                     const actPhotoItems = repairListAttachedActPhotosFromForm(form);
                     const packageHref = adminContractDocumentsContractsRepairPackageHref(r.id);
+                    const rowClass = item.childOfObject
+                      ? `${dataTableStyles.row} ${styles.repairContractsListClickableRow} ${styles.repairContractsListChildRow}`
+                      : `${dataTableStyles.row} ${styles.repairContractsListClickableRow}`;
                     return (
                       <tr
                         key={r.id}
-                        className={`${dataTableStyles.row} ${styles.repairContractsListClickableRow}`}
+                        className={rowClass}
                         tabIndex={0}
                         aria-label={`Открыть договор ${num}`}
                         onClick={() => router.push(packageHref)}
@@ -1373,6 +1613,10 @@ export function RepairContractDocumentsListPage() {
                           }
                         }}
                       >
+                        <td className={styles.repairContractsListSelectCol} />
+                        <td className={styles.repairContractsListKindCol}>
+                          {repairListPackageKindLabel(r.kind)}
+                        </td>
                         <td>{num}</td>
                         <td>{formatSigningDateOnly(r)}</td>
                         <td>

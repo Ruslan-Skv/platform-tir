@@ -573,6 +573,25 @@
   background: var(--admin-border);
 }
 
+/* Компактная таблица: на широких экранах без лишнего горизонтального скролла */
+.repairContractsDirectoryTable .repairContractsListTable th,
+.repairContractsDirectoryTable .repairContractsListTable td {
+  padding: 4px 6px;
+  font-size: 0.75rem;
+  line-height: 1.25;
+}
+
+.repairContractsDirectoryTable .repairContractsListTable th {
+  letter-spacing: 0.02em;
+}
+
+@media (min-width: 1280px) {
+  .repairContractsDirectoryTable .repairContractsListTable th,
+  .repairContractsDirectoryTable .repairContractsListTable td {
+    padding: 4px 5px;
+  }
+}
+
 /* Строка списка договоров — клик открывает пакет (как DataTable на /admin/measurements) */
 .repairContractsListClickableRow {
   cursor: pointer;
@@ -719,11 +738,13 @@
 }
 
 .repairContractsListActionsCol {
-  width: 108px;
+  width: 76px;
+  min-width: 76px;
+  max-width: 76px;
   text-align: right;
   vertical-align: middle;
-  padding-left: 0;
-  padding-right: 0;
+  padding-left: 2px;
+  padding-right: 2px;
 }
 
 .repairContractsListTable th.repairContractsListActionsCol,
@@ -997,6 +1018,20 @@
   align-items: center;
   justify-content: flex-end;
   gap: var(--admin-space-sm);
+}
+
+/* Как «+ Новый объект» на /estimates, без margin-left: auto из панели фильтров */
+.headerButtonsRow .estimatesAddObjectBtn {
+  margin-left: 0;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+}
+
+:global([data-modal-form-actions]) .secondaryBtn.mergeObjectModalSaveBtn {
+  margin-left: 0;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+  min-height: 40px;
 }
 
 /* «+ Новый договор» — тот же размер, что addButton на /admin/measurements */
@@ -4246,7 +4281,9 @@
   font-size: var(--admin-font-size-sm);
 }
 
-.estimatesAddObjectBtn {
+.estimatesAddObjectBtn,
+.secondaryBtn.estimatesAddObjectBtn,
+.secondaryBtn.mergeObjectModalSaveBtn {
   margin-left: auto;
   border-color: var(--admin-chart-cyan);
   background: linear-gradient(180deg, var(--admin-info-bg-soft) 0%, var(--admin-info-bg) 100%);
@@ -4255,7 +4292,9 @@
   box-shadow: 0 1px 6px var(--admin-overlay-color-129);
 }
 
-.estimatesAddObjectBtn:hover:not(:disabled) {
+.estimatesAddObjectBtn:hover:not(:disabled),
+.secondaryBtn.estimatesAddObjectBtn:hover:not(:disabled),
+.secondaryBtn.mergeObjectModalSaveBtn:hover:not(:disabled) {
   border-color: var(--admin-info);
   background: linear-gradient(180deg, var(--admin-info-bg) 0%, var(--admin-info-border-soft) 100%);
   color: var(--admin-info-text);
@@ -4678,36 +4717,53 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   color: var(--admin-icon-action-disabled);
 }
 
-/* Список ремонта: один тип действия — одна колонка (сетка), чтобы иконка фото не сдвигала остальные */
+/* Список договоров: копировать / удалить / фото актов (слот фото всегда) */
 .repairContractsListActionsGrid.estimatesCardActions {
   display: grid;
-  grid-template-columns: repeat(3, max-content);
+  grid-template-columns: repeat(3, 24px);
   column-gap: 2px;
   row-gap: 0;
   justify-content: end;
   align-items: center;
-  justify-items: stretch;
-  margin-left: 0;
-  width: 100%;
+  justify-items: center;
+  width: max-content;
+  max-width: 100%;
+  margin-left: auto;
+  white-space: nowrap;
 }
 
 .repairContractsListActionsSlot {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   align-items: center;
-  min-width: 0;
+  flex-shrink: 0;
+  width: 24px;
+  min-width: 24px;
+}
+
+.repairContractsListActionsSlot > button {
+  min-width: 24px;
+  min-height: 24px;
+  width: 24px;
+  height: 24px;
+  padding: 2px;
 }
 
 .repairContractsListActionsIconPlaceholder {
   display: inline-flex;
   box-sizing: border-box;
   flex-shrink: 0;
-  min-width: 26px;
-  min-height: 26px;
-  width: 26px;
-  height: 26px;
+  min-width: 24px;
+  min-height: 24px;
+  width: 24px;
+  height: 24px;
   visibility: hidden;
   pointer-events: none;
+}
+
+.repairContractsDirectoryTable .repairContractsListStatusBadge {
+  padding: 1px 6px;
+  font-size: 0.6875rem;
 }
 
 .managerQuestionnaireNeedsGrid {
@@ -5473,6 +5529,25 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 :where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryBtn:hover {
   background: var(--admin-sidebar-text);
   color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesAddObjectBtn,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryBtn.estimatesAddObjectBtn,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryBtn.mergeObjectModalSaveBtn {
+  background: linear-gradient(180deg, var(--admin-info) 0%, var(--admin-info-strong) 100%);
+  border-color: var(--admin-info-bright);
+  color: var(--admin-text-inverse);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesAddObjectBtn:hover:not(:disabled),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .secondaryBtn.estimatesAddObjectBtn:hover:not(:disabled),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .secondaryBtn.mergeObjectModalSaveBtn:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--admin-info-strong) 0%, var(--admin-info) 100%);
+  border-color: var(--admin-info-bright);
+  color: var(--admin-text-inverse);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .tableWrap {
@@ -6678,4 +6753,204 @@ a.primaryBtn.estimatesCompactPrimaryLink {
     print-color-adjust: exact !important;
     z-index: 2147483647 !important;
   }
+}
+
+/* ——— Объединение договоров в объект ——— */
+.mergeObjectModalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: min(480px, 92vw);
+}
+
+.mergeObjectModalHint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--admin-text-secondary);
+}
+
+.mergeObjectModeTabs {
+  display: flex;
+  gap: 8px;
+}
+
+.mergeObjectModeTab,
+.mergeObjectModeTabActive {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.mergeObjectModeTabActive {
+  border-color: var(--admin-accent, #2563eb);
+  background: color-mix(in srgb, var(--admin-accent, #2563eb) 12%, var(--admin-surface));
+  font-weight: 600;
+}
+
+.mergeObjectFields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mergeObjectField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8125rem;
+}
+
+.mergeObjectField input,
+.mergeObjectField textarea,
+.mergeObjectField select {
+  padding: 8px 10px;
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+}
+
+.mergeObjectNormalizedHint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--admin-text-secondary);
+}
+
+.mergeObjectNormalizedHint code {
+  font-size: 0.75rem;
+}
+
+.mergeObjectSuggestionsTitle {
+  margin: 0 0 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.mergeObjectSuggestionsList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.mergeObjectSuggestionLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.mergeObjectSuggestionsLoading {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--admin-text-secondary);
+}
+
+.mergeObjectModalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* Строка-сводка по объекту — голубой фон */
+.repairContractsListObjectRow td {
+  background: var(--admin-info-bg-soft, #eff6ff);
+  font-weight: 600;
+}
+
+.repairContractsListObjectRow:hover td {
+  background: var(--admin-info-bg, #dbeafe);
+}
+
+.repairContractsListObjectRowExpanded td {
+  background: var(--admin-info-bg, #dbeafe);
+}
+
+.repairContractsListObjectRowExpanded:hover td {
+  background: color-mix(in srgb, var(--admin-info, #3b82f6) 18%, var(--admin-info-bg, #dbeafe));
+}
+
+/* Договоры внутри раскрытого объекта — янтарный фон, контрастнее сводки */
+.repairContractsListChildRow td {
+  background: var(--admin-contract-object-child-bg);
+}
+
+.repairContractsListChildRow:hover td {
+  background: var(--admin-contract-object-child-bg-hover);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListObjectRow td {
+  background: rgb(59 130 246 / 0.24);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListObjectRow:hover td,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListObjectRowExpanded td {
+  background: rgb(59 130 246 / 0.32);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractsListObjectRowExpanded:hover
+  td {
+  background: rgb(59 130 246 / 0.38);
+}
+
+.repairContractsListExpandBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  font-size: 0.625rem;
+  line-height: 1;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  vertical-align: middle;
+  color: var(--admin-text-secondary);
+}
+
+.repairContractsListExpandBtn:hover {
+  background: var(--admin-surface-hover, rgba(0, 0, 0, 0.06));
+}
+
+.repairContractsListObjectBadge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: var(--admin-surface-muted, #e5e7eb);
+  color: var(--admin-text-secondary);
+}
+
+.repairContractsListSelectCol {
+  width: 20px;
+  min-width: 20px;
+  max-width: 20px;
+  padding-left: 2px !important;
+  padding-right: 2px !important;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.repairContractsListTable th.repairContractsListSelectCol {
+  padding-left: 2px !important;
+  padding-right: 2px !important;
+}
+
+.repairContractsListKindCol {
+  white-space: nowrap;
+  font-size: 0.8125rem;
 }

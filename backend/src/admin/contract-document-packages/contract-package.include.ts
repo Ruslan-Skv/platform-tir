@@ -1,6 +1,9 @@
 const packageUserSelect = { id: true, email: true, firstName: true, lastName: true } as const;
 
 export const contractDocumentPackageInclude = {
+  documentObject: {
+    select: { id: true, name: true, address: true, customerName: true },
+  },
   createdBy: { select: packageUserSelect },
   deletedBy: { select: packageUserSelect },
   crmContract: {

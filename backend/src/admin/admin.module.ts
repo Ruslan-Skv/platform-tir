@@ -32,6 +32,7 @@ import { AdminPresenceModule } from './admin-presence/admin-presence.module';
 import { AdminDashboardModule } from './dashboard/admin-dashboard.module';
 import { OfficeCashModule } from './office-cash/office-cash.module';
 import { ServiceCatalogModule } from './service-catalog/service-catalog.module';
+import { ContractDocumentObjectsModule } from './contract-document-objects/contract-document-objects.module';
 import { ContractDocumentPackagesModule } from './contract-document-packages/contract-document-packages.module';
 import { InstallersModule } from './installers/installers.module';
 
@@ -74,6 +75,7 @@ import { InstallersModule } from './installers/installers.module';
     UserCabinetModule,
     AdminCatalogBlockModule,
     ServiceCatalogModule,
+    ContractDocumentObjectsModule,
     ContractDocumentPackagesModule,
     // Analytics
     AnalyticsModule,
@@ -110,6 +112,7 @@ import { InstallersModule } from './installers/installers.module';
     UserCabinetModule,
     AdminCatalogBlockModule,
     ServiceCatalogModule,
+    ContractDocumentObjectsModule,
     ContractDocumentPackagesModule,
     AnalyticsModule,
   ],

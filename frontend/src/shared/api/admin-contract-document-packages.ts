@@ -80,6 +80,13 @@ export interface ContractDocumentPackageCrmContract {
   totalAmount: string | number;
 }
 
+export interface ContractDocumentObjectRef {
+  id: string;
+  name: string;
+  address: string | null;
+  customerName: string | null;
+}
+
 export interface ContractDocumentPackage {
   id: string;
   kind: ContractDocumentPackageKind;
@@ -87,6 +94,8 @@ export interface ContractDocumentPackage {
   /** По умолчанию на старых ответах API — «в работе». */
   status?: ContractDocumentPackageStatus;
   formData: Record<string, unknown>;
+  documentObjectId?: string | null;
+  documentObject?: ContractDocumentObjectRef | null;
   crmContractId: string | null;
   createdById: string | null;
   createdAt: string;

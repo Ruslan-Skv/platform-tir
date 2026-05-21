@@ -460,6 +460,9 @@
   --admin-measurement-status-completed-bg: #ede4d6;
   --admin-measurement-status-completed-border: #d4bc9a;
   --admin-measurement-status-completed-text: #5c4a36;
+  /* Договоры: вложенные строки внутри объекта (список /admin/contract-documents/contracts) */
+  --admin-contract-object-child-bg: #e5e4e2;
+  --admin-contract-object-child-bg-hover: #d7d6d3;
   /* Semantic overlay scale */
   --admin-overlay-soft: rgb(0 0 0 / 0.06);
   --admin-overlay-medium: rgb(0 0 0 / 0.12);
@@ -835,6 +838,8 @@
   --admin-measurement-status-completed-bg: #4a3f32;
   --admin-measurement-status-completed-border: #a08968;
   --admin-measurement-status-completed-text: #e8dcc8;
+  --admin-contract-object-child-bg: #3d3c3a;
+  --admin-contract-object-child-bg-hover: #4a4946;
   --admin-overlay-danger-soft: rgb(var(--color-accent-rgb) / 0.26);
   --admin-overlay-danger-medium: rgb(var(--color-accent-rgb) / 0.36);
   --admin-overlay-danger-strong: rgb(var(--color-accent-rgb) / 0.46);

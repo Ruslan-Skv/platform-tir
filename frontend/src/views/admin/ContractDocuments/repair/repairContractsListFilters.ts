@@ -11,6 +11,8 @@ export type RepairContractsPageLimit = (typeof REPAIR_CONTRACTS_PAGE_LIMIT_OPTIO
 
 const REPAIR_CONTRACTS_PAGE_LIMIT_LEGACY_KEY = 'admin_repair_contracts_page_limit';
 
+export type ContractsListViewMode = 'flat' | 'by_object';
+
 export interface RepairContractsListFiltersPersisted {
   search: string;
   managerFilter: string;
@@ -21,8 +23,9 @@ export interface RepairContractsListFiltersPersisted {
   sortBy: RepairContractsListSortBy;
   sortOrder: RepairContractsListSortOrder;
   pageLimit: RepairContractsPageLimit;
+  listViewMode: ContractsListViewMode;
 }
-const REPAIR_CONTRACTS_LIST_FILTERS_STORAGE_KEY = 'admin_repair_contracts_list_filters_v1';
+const REPAIR_CONTRACTS_LIST_FILTERS_STORAGE_KEY = 'admin_repair_contracts_list_filters_v2';
 
 const EMPTY_FILTERS: RepairContractsListFiltersPersisted = {
   search: '',
@@ -34,6 +37,7 @@ const EMPTY_FILTERS: RepairContractsListFiltersPersisted = {
   sortBy: 'date',
   sortOrder: 'desc',
   pageLimit: 20,
+  listViewMode: 'by_object',
 };
 
 function normalizePageLimit(raw: unknown): RepairContractsPageLimit {
@@ -90,6 +94,10 @@ function normalizePersistedFilters(
       raw.pageLimit != null
         ? normalizePageLimit(raw.pageLimit)
         : (readLegacyPageLimit() ?? EMPTY_FILTERS.pageLimit),
+    listViewMode:
+      raw.listViewMode === 'flat' || raw.listViewMode === 'by_object'
+        ? raw.listViewMode
+        : EMPTY_FILTERS.listViewMode,
   };
 }
 

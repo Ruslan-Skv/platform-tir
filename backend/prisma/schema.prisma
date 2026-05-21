@@ -2022,6 +2022,21 @@ enum ContractDocumentPackageStatus {
   REFUSED
 }
 
+/// Объект (группа договоров по адресу/заказчику): все направления оформления договоров.
+model ContractDocumentObject {
+  id           String   @id @default(cuid())
+  name         String
+  customerName String?
+  address      String?  @db.Text
+  notes        String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  packages ContractDocumentPackage[]
+
+  @@map("contract_document_objects")
+}
+
 model ContractDocumentPackage {
   id             String                      @id @default(cuid())
   kind           ContractDocumentPackageKind
@@ -2031,21 +2046,25 @@ model ContractDocumentPackage {
   formData       Json                        @default("{}")
   /// Связь с договором в учётной системе (таблица `Contract`).
   crmContractId  String?
+  /// Группа «объект» (несколько пакетов / направлений на одном адресе).
+  documentObjectId String?
   createdById    String?
   deletedAt      DateTime?                   @map("deleted_at")
   deletedById    String?                     @map("deleted_by_id")
   createdAt      DateTime                    @default(now())
   updatedAt      DateTime                    @updatedAt
 
-  createdBy   User?     @relation("ContractDocumentPackagesCreated", fields: [createdById], references: [id], onDelete: SetNull)
-  deletedBy   User?     @relation("ContractDocumentPackagesDeleted", fields: [deletedById], references: [id], onDelete: SetNull)
-  crmContract Contract? @relation(fields: [crmContractId], references: [id], onDelete: SetNull)
-  versions    ContractDocumentPackageVersion[]
-  payments    ContractDocumentPackagePayment[]
+  documentObject ContractDocumentObject? @relation(fields: [documentObjectId], references: [id], onDelete: SetNull)
+  createdBy      User?                   @relation("ContractDocumentPackagesCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  deletedBy      User?                   @relation("ContractDocumentPackagesDeleted", fields: [deletedById], references: [id], onDelete: SetNull)
+  crmContract    Contract?               @relation(fields: [crmContractId], references: [id], onDelete: SetNull)
+  versions       ContractDocumentPackageVersion[]
+  payments       ContractDocumentPackagePayment[]
 
   @@index([kind])
   @@index([createdAt])
   @@index([crmContractId])
+  @@index([documentObjectId])
   @@index([deletedAt])
   @@map("contract_document_packages")
 }
