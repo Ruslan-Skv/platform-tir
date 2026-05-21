@@ -12,6 +12,7 @@ import {
 import { AddCrmCustomerModal } from './AddCrmCustomerModal';
 import { CrmCustomerDetailModal } from './CrmCustomerDetailModal';
 import styles from './CrmCustomerSearchPanel.module.css';
+import { crmDetailWithPreferredObjectAddress } from './crmCustomerExtendedProfile';
 import { getCrmCustomerFillBannerToneClass } from './crmCustomerFillPercent';
 import { formatCrmPhoneOrDash } from './crmCustomerPhone';
 
@@ -75,7 +76,7 @@ export function CrmCustomerSearchPanel({
     }
     setCrmSearchLoading(true);
     setCrmSearchError(null);
-    return getClientDirectory({ search: q, limit: 30, page: 1 })
+    return getClientDirectory({ search: q, limit: 30, page: 1, expandObjectAddresses: true })
       .then((res) => {
         setCrmSearchResults((res.data ?? []).filter((row) => row.rowSource === 'customer'));
       })
@@ -97,7 +98,7 @@ export function CrmCustomerSearchPanel({
     let cancelled = false;
     setCrmSearchLoading(true);
     setCrmSearchError(null);
-    getClientDirectory({ search: q, limit: 30, page: 1 })
+    getClientDirectory({ search: q, limit: 30, page: 1, expandObjectAddresses: true })
       .then((res) => {
         if (!cancelled) {
           setCrmSearchResults((res.data ?? []).filter((row) => row.rowSource === 'customer'));
@@ -119,7 +120,7 @@ export function CrmCustomerSearchPanel({
       if (disabled || row.rowSource !== 'customer') return;
       try {
         const detail = await getCrmCustomer(row.id);
-        onCustomerApplied(detail);
+        onCustomerApplied(crmDetailWithPreferredObjectAddress(detail, row.objectAddress));
         setCrmSearchResults([]);
         setCrmSearchInput('');
         setCrmSearchDebounced('');
@@ -167,7 +168,7 @@ export function CrmCustomerSearchPanel({
             <input
               type="search"
               className={`${styles.searchInput} ${styles.customerCrmSearchInput}`}
-              placeholder="Поиск: ФИО, телефон, e-mail, компания (от 2 символов)"
+              placeholder="Поиск: ФИО, телефон, e-mail, компания, адрес объекта (от 2 символов)"
               value={crmSearchInput}
               onChange={(e) => setCrmSearchInput(e.target.value)}
               autoComplete="off"
@@ -208,8 +209,10 @@ export function CrmCustomerSearchPanel({
                     const fillPercent =
                       row.profileFillPercent != null ? Math.round(row.profileFillPercent) : 0;
                     const fillComplete = fillPercent >= 100;
+                    const rowKey = row.directoryRowKey ?? row.id;
+                    const objectAddr = row.objectAddress?.trim();
                     return (
-                      <li key={row.id} role="option" className={styles.customerCrmResultItem}>
+                      <li key={rowKey} role="option" className={styles.customerCrmResultItem}>
                         <button
                           type="button"
                           className={styles.customerCrmResultButton}
@@ -222,6 +225,11 @@ export function CrmCustomerSearchPanel({
                               .filter(Boolean)
                               .join(' · ')}
                           </span>
+                          {objectAddr ? (
+                            <span className={styles.customerCrmResultObjectAddress}>
+                              Объект: {objectAddr}
+                            </span>
+                          ) : null}
                         </button>
                         <div className={styles.customerCrmResultAside}>
                           <span

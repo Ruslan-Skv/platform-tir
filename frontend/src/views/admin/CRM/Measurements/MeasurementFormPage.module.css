@@ -487,6 +487,11 @@
   font-size: var(--admin-font-size-xs);
 }
 
+.blankMetaGrid .fieldError {
+  font-size: var(--admin-font-size-2xs);
+  line-height: 1.35;
+}
+
 .blankCustomerLayout {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -510,6 +515,11 @@
   padding-top: 4px;
   padding-bottom: 4px;
   font-size: var(--admin-font-size-xs);
+}
+
+.blankCustomerLayout .fieldError {
+  font-size: var(--admin-font-size-2xs);
+  line-height: 1.35;
 }
 
 .blankCustomerLayout .directionRowsBlock {

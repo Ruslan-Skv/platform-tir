@@ -225,6 +225,13 @@
   word-break: break-word;
 }
 
+.customerCrmResultObjectAddress {
+  font-size: var(--admin-font-size-2xs);
+  font-weight: 600;
+  color: var(--admin-info-strong, #1d4ed8);
+  word-break: break-word;
+}
+
 .customerCrmActions {
   display: flex;
   flex-wrap: wrap;

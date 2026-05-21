@@ -1030,6 +1030,10 @@ export interface ClientDirectoryRow {
   contractCustomer?: ContractCustomer | null;
   /** Доля заполнения карточки CRM (0–100), только для rowSource === 'customer'. */
   profileFillPercent?: number | null;
+  /** Адрес объекта (при expandObjectAddresses — отдельная строка на каждый адрес). */
+  objectAddress?: string | null;
+  /** Уникальный ключ строки в выпадающем списке (id или id#obj:N). */
+  directoryRowKey?: string;
 }
 
 export type CrmCustomerEntityType = 'PERSON' | 'COMPANY' | 'ENTREPRENEUR';
@@ -1130,6 +1134,8 @@ export async function getClientDirectory(params?: {
   createdById?: ClientDirectoryCreatedByFilter;
   sortBy?: ClientDirectorySortBy;
   sortOrder?: 'asc' | 'desc';
+  /** По одной строке на каждый адрес объекта в карточке заказчика. */
+  expandObjectAddresses?: boolean;
 }): Promise<{
   data: ClientDirectoryRow[];
   total: number;
@@ -1145,6 +1151,7 @@ export async function getClientDirectory(params?: {
   if (params?.createdById) search.set('createdById', params.createdById);
   if (params?.sortBy) search.set('sortBy', params.sortBy);
   if (params?.sortOrder) search.set('sortOrder', params.sortOrder);
+  if (params?.expandObjectAddresses) search.set('expandObjectAddresses', 'true');
   const res = await apiFetch(`${API_URL}/admin/customers/directory?${search}`, {
     headers: getAdminAuthHeaders(),
   });

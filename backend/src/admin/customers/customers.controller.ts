@@ -88,6 +88,7 @@ export class CustomersController {
     @Query('sortBy') sortBy?: string,
     @Query('sortOrder') sortOrder?: string,
     @Query('createdById') createdById?: string,
+    @Query('expandObjectAddresses') expandObjectAddresses?: string,
   ) {
     const sortByNorm =
       sortBy === 'createdAt' ||
@@ -105,6 +106,10 @@ export class CustomersController {
       limit: limit ? parseInt(limit, 10) : 25,
       sortBy: sortByNorm,
       sortOrder: sortOrderNorm,
+      expandObjectAddresses:
+        expandObjectAddresses === '1' ||
+        expandObjectAddresses === 'true' ||
+        expandObjectAddresses === 'yes',
     });
   }
 

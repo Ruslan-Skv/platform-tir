@@ -11,6 +11,7 @@ import {
   customerRowAfterUpdate,
 } from './customer-history.util';
 import { computeCrmCustomerProfileFillPercent } from './crm-customer-fill-percent.util';
+import { parseObjectAddressesFromExtendedProfile } from './crm-object-addresses.util';
 
 function digitsPhone(s: string | null | undefined): string {
   return (s ?? '').replace(/\D/g, '');
@@ -243,6 +244,8 @@ export class CustomersService {
     limit?: number;
     sortBy?: 'displayName' | 'createdAt' | 'lastMeasurementDate' | 'lastContractDate';
     sortOrder?: 'asc' | 'desc';
+    /** По одной строке на каждый адрес объекта (для поиска заказчика в формах). */
+    expandObjectAddresses?: boolean;
   }) {
     const page = params?.page ?? 1;
     const limit = Math.min(Math.max(params?.limit ?? 25, 1), 100);
@@ -266,6 +269,7 @@ export class CustomersService {
         { company: { contains: search, mode: 'insensitive' } },
         { phone: { contains: search } },
         { phones: { has: t } },
+        { extendedProfile: { string_contains: search } },
       ];
     }
 
@@ -344,15 +348,22 @@ export class CustomersService {
       dbCustomers.map((c) => c.id),
     );
 
+    const expandObjectAddresses = params?.expandObjectAddresses === true;
+
     for (const c of dbCustomers) {
-      const row = this.serializeCustomerDirectoryRow(c, statsByCustomerId.get(c.id));
-      merged.push({
-        nameKey: String(row['displayName'] ?? '').toLowerCase(),
-        createdKey: c.createdAt.getTime(),
-        lastMeasurementKey: this.directoryDateSortKey(row['lastMeasurementDate']),
-        lastContractKey: this.directoryDateSortKey(row['lastContractDate']),
-        row,
-      });
+      const baseRow = this.serializeCustomerDirectoryRow(c, statsByCustomerId.get(c.id));
+      const rows = expandObjectAddresses
+        ? this.expandCustomerDirectoryRowsByObjectAddresses(baseRow, c)
+        : [baseRow];
+      for (const row of rows) {
+        merged.push({
+          nameKey: String(row['displayName'] ?? '').toLowerCase(),
+          createdKey: c.createdAt.getTime(),
+          lastMeasurementKey: this.directoryDateSortKey(row['lastMeasurementDate']),
+          lastContractKey: this.directoryDateSortKey(row['lastContractDate']),
+          row,
+        });
+      }
     }
     for (const o of orphanParties) {
       const row = this.serializeContractOnlyDirectoryRow(o);
@@ -517,6 +528,28 @@ export class CustomersService {
     if (typeof iso !== 'string' || !iso.trim()) return 0;
     const t = new Date(iso).getTime();
     return Number.isNaN(t) ? 0 : t;
+  }
+
+  private expandCustomerDirectoryRowsByObjectAddresses(
+    baseRow: Record<string, unknown>,
+    customer: { id: string; extendedProfile: unknown },
+  ): Record<string, unknown>[] {
+    const ext = (customer.extendedProfile ?? {}) as Record<string, unknown>;
+    const addresses = parseObjectAddressesFromExtendedProfile(ext);
+    if (addresses.length === 0) {
+      return [
+        {
+          ...baseRow,
+          objectAddress: null,
+          directoryRowKey: customer.id,
+        },
+      ];
+    }
+    return addresses.map((objectAddress, index) => ({
+      ...baseRow,
+      objectAddress,
+      directoryRowKey: `${customer.id}#obj:${index}`,
+    }));
   }
 
   private serializeCustomerDirectoryRow(
