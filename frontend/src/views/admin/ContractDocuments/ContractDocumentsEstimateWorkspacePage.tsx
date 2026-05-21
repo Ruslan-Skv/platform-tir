@@ -21,7 +21,7 @@ import measurementFormStyles from '@/views/admin/CRM/Measurements/MeasurementFor
 import { ServiceCategoryPage } from '@/views/services/ui/ServiceCategoryPage/ServiceCategoryPage';
 
 import styles from './ContractDocuments.module.css';
-import { buildEstimateSnapshot } from './repair/contractDocumentsEstimateSnapshot';
+import { buildEstimateSnapshot, parseDraftRooms } from './repair/contractDocumentsEstimateSnapshot';
 import {
   type EstimateCrmCustomerFields,
   emptyEstimateCrmCustomerFields,
@@ -275,6 +275,16 @@ function normalizeUniqueCategorySlugs(slugs: string[]): string[] {
   );
 }
 
+function countCalculatorSelectedLines(draftsByCategory: Record<string, string>): number {
+  let total = 0;
+  for (const draft of Object.values(draftsByCategory)) {
+    for (const room of parseDraftRooms(draft)) {
+      total += room.items.length;
+    }
+  }
+  return total;
+}
+
 function parsePersistedCalculatorDraft(draft: string | null): PersistedCalculatorDraftV1 | null {
   if (!draft) return null;
   try {
@@ -451,6 +461,9 @@ function ContractDocumentsEstimateWorkspaceInner() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [estimateNameError, setEstimateNameError] = useState<string | null>(null);
+  const [estimateCustomerError, setEstimateCustomerError] = useState<string | null>(null);
+  const [estimateObjectAddressError, setEstimateObjectAddressError] = useState<string | null>(null);
+  const [estimateCalculatorError, setEstimateCalculatorError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [items, setItems] = useState<ContractEstimatePreset[]>([]);
   const [estimateGroups, setEstimateGroups] = useState<ContractEstimateGroup[]>([]);
@@ -479,12 +492,16 @@ function ContractDocumentsEstimateWorkspaceInner() {
   const handleEstimateCrmCustomerApplied = useCallback(
     (detail: CrmCustomerDetail) => {
       applyEstimateCustomerFields(estimateFieldsFromCrmCustomerDetail(detail));
+      setEstimateCustomerError(null);
+      setEstimateObjectAddressError(null);
     },
     [applyEstimateCustomerFields]
   );
 
   const handleEstimateCrmCustomerClear = useCallback(() => {
     applyEstimateCustomerFields(emptyEstimateCrmCustomerFields());
+    setEstimateCustomerError(null);
+    setEstimateObjectAddressError(null);
   }, [applyEstimateCustomerFields]);
 
   useEffect(() => {
@@ -706,6 +723,18 @@ function ContractDocumentsEstimateWorkspaceInner() {
   }, []);
 
   useEffect(() => {
+    if (!estimateCalculatorError) return;
+    const draftsByCategory: Record<string, string> = {};
+    for (const slug of normalizeUniqueCategorySlugs(estimateCategorySlugs)) {
+      const draft = window.localStorage.getItem(calculatorDraftStorageKey(slug));
+      if (draft) draftsByCategory[slug] = draft;
+    }
+    if (countCalculatorSelectedLines(draftsByCategory) > 0) {
+      setEstimateCalculatorError(null);
+    }
+  }, [draftPollTick, estimateCalculatorError, estimateCategorySlugs]);
+
+  useEffect(() => {
     if (!baseline && !copySessionPendingSave) return;
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
       if (copySessionPendingSave) {
@@ -872,6 +901,9 @@ function ContractDocumentsEstimateWorkspaceInner() {
   const saveCurrentEstimate = async () => {
     setError(null);
     setEstimateNameError(null);
+    setEstimateCustomerError(null);
+    setEstimateObjectAddressError(null);
+    setEstimateCalculatorError(null);
 
     const nameTrimmed = estimateNameDraft.trim();
     if (!nameTrimmed) {
@@ -882,15 +914,15 @@ function ContractDocumentsEstimateWorkspaceInner() {
     }
 
     if (!crmCustomerId?.trim()) {
-      setError('Выберите заказчика в базе через поиск.');
+      setEstimateCustomerError('Выберите заказчика в базе через поиск.');
       return;
     }
     if (!customerName.trim()) {
-      setError('В карточке заказчика не указано имя.');
+      setEstimateCustomerError('В карточке заказчика не указано имя.');
       return;
     }
     if (!objectAddress.trim()) {
-      setError(
+      setEstimateObjectAddressError(
         'Укажите адрес объекта в карточке заказчика или выберите строку с адресом в поиске.'
       );
       return;
@@ -909,6 +941,10 @@ function ContractDocumentsEstimateWorkspaceInner() {
     const draftSlugs = Object.keys(draftsByCategory);
     if (draftSlugs.length === 0) {
       setError('Нет данных калькулятора по выбранным категориям.');
+      return;
+    }
+    if (!isEditingExisting && countCalculatorSelectedLines(draftsByCategory) === 0) {
+      setEstimateCalculatorError('Вы забыли посчитать работы в калькуляторе');
       return;
     }
     const categoryNames = draftSlugs.map(
@@ -1078,11 +1114,13 @@ function ContractDocumentsEstimateWorkspaceInner() {
                     ? 'Новый расчёт по выполненному замеру'
                     : 'Новый расчёт'}
           </h1>
-          <p className={`${styles.subtitle} ${styles.estimateWorkspaceSubtitle}`}>
-            {copyFromId && splitInstanceFromUrl
-              ? 'После сохранения расчёт окажется в том же объекте, рядом с исходным. Откройте у него модалку «Разделение сметы» и отметьте позиции для следующего договора. Обычное копирование без связи — кнопка «Копировать расчёт» в списке.'
-              : 'Калькулятор сметы. Сохранение появляется только при изменениях в названии, категории или смете; затем вы вернётесь к списку общих расчётов.'}
-          </p>
+          {copyFromId && splitInstanceFromUrl ? (
+            <p className={`${styles.subtitle} ${styles.estimateWorkspaceSubtitle}`}>
+              После сохранения расчёт окажется в том же объекте, рядом с исходным. Откройте у него
+              модалку «Разделение сметы» и отметьте позиции для следующего договора. Обычное
+              копирование без связи — кнопка «Копировать расчёт» в списке.
+            </p>
+          ) : null}
         </div>
         {dirty ? (
           <div className={styles.estimateWorkspaceHeaderControls}>
@@ -1112,7 +1150,11 @@ function ContractDocumentsEstimateWorkspaceInner() {
         ) : null}
       </div>
 
-      {error ? <p className={styles.error}>{error}</p> : null}
+      {error ? (
+        <p className={measurementFormStyles.fieldError} role="alert">
+          {error}
+        </p>
+      ) : null}
       {ok ? <p className={styles.success}>{ok}</p> : null}
 
       <div className={styles.estimateWorkspaceTopRow}>
@@ -1198,9 +1240,23 @@ function ContractDocumentsEstimateWorkspaceInner() {
                     value={customerName}
                     readOnly
                     placeholder="Выберите карточку в базе"
-                    className={`${measurementFormStyles.input} ${measurementFormStyles.inputReadonly}`}
-                    aria-invalid={!customerName.trim() && Boolean(error)}
+                    className={`${measurementFormStyles.input} ${measurementFormStyles.inputReadonly} ${
+                      estimateCustomerError ? measurementFormStyles.inputError : ''
+                    }`}
+                    aria-invalid={!!estimateCustomerError}
+                    aria-describedby={
+                      estimateCustomerError ? 'estimate-workspace-customer-error' : undefined
+                    }
                   />
+                  {estimateCustomerError ? (
+                    <span
+                      id="estimate-workspace-customer-error"
+                      className={measurementFormStyles.fieldError}
+                      role="alert"
+                    >
+                      {estimateCustomerError}
+                    </span>
+                  ) : null}
                 </div>
                 <div className={measurementFormStyles.row}>
                   <label
@@ -1215,8 +1271,25 @@ function ContractDocumentsEstimateWorkspaceInner() {
                     value={objectAddress}
                     readOnly
                     placeholder="Из карточки заказчика"
-                    className={`${measurementFormStyles.input} ${measurementFormStyles.inputReadonly}`}
+                    className={`${measurementFormStyles.input} ${measurementFormStyles.inputReadonly} ${
+                      estimateObjectAddressError ? measurementFormStyles.inputError : ''
+                    }`}
+                    aria-invalid={!!estimateObjectAddressError}
+                    aria-describedby={
+                      estimateObjectAddressError
+                        ? 'estimate-workspace-object-address-error'
+                        : undefined
+                    }
                   />
+                  {estimateObjectAddressError ? (
+                    <span
+                      id="estimate-workspace-object-address-error"
+                      className={measurementFormStyles.fieldError}
+                      role="alert"
+                    >
+                      {estimateObjectAddressError}
+                    </span>
+                  ) : null}
                 </div>
               </div>
               <div className={styles.repairCustomerSearchSlot}>
@@ -1238,6 +1311,14 @@ function ContractDocumentsEstimateWorkspaceInner() {
       </div>
 
       <div className={styles.docPane}>
+        {estimateCalculatorError ? (
+          <p
+            className={`${measurementFormStyles.fieldError} ${styles.estimateWorkspaceCalculatorError}`}
+            role="alert"
+          >
+            {estimateCalculatorError}
+          </p>
+        ) : null}
         {estimateCategorySlugs.length > 0 ? (
           <CartProvider>
             <div className={`${styles.tabBar} ${styles.estimateWorkspaceTabBar}`}>

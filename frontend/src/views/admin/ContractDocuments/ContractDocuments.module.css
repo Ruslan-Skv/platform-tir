@@ -70,6 +70,18 @@
 /* Hard compact preset for "Новый расчёт" page */
 .estimateWorkspacePage .editorHeader {
   margin-bottom: var(--admin-space-xs);
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+
+.estimateWorkspacePage .editorHeader > div:first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.estimateWorkspacePage .estimateWorkspaceHeaderControls {
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .estimateWorkspacePage .title {
@@ -202,6 +214,8 @@
 
 .estimateWorkspacePage .estimateWorkspaceHeaderControls {
   gap: var(--admin-space-sm);
+  flex-direction: row;
+  align-items: center;
 }
 
 .estimateWorkspacePage .estimateWorkspaceHeaderNameField {
@@ -443,6 +457,10 @@
 .estimateWorkspacePage .docPane {
   padding: var(--admin-space-xl);
   border-radius: var(--admin-radius-md);
+}
+
+.estimateWorkspaceCalculatorError {
+  margin: 0 0 var(--admin-space-md);
 }
 
 .pageWide {
@@ -2846,7 +2864,7 @@
   flex-direction: column;
   align-items: flex-end;
   gap: var(--admin-space-xs);
-  min-width: 300px;
+  min-width: 0;
 }
 
 .estimateWorkspaceHeaderNameField {
