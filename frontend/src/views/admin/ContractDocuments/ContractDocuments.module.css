@@ -82,10 +82,122 @@
   margin-top: var(--admin-space-2xs);
 }
 
+.estimateWorkspacePage .backLink {
+  display: inline-block;
+  font-size: var(--admin-font-size-sm);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.estimateWorkspacePage .backLink:hover {
+  color: var(--admin-info);
+}
+
 .estimateWorkspacePage .docToolbar.estimateWorkspaceToolbar {
   margin-bottom: var(--admin-space-sm);
   padding: var(--admin-space-sm) var(--admin-space-md);
   gap: var(--admin-space-sm);
+}
+
+.estimateWorkspaceTopRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--admin-space-lg);
+  align-items: stretch;
+  margin-bottom: var(--admin-space-md);
+}
+
+.estimateWorkspaceTopBlock {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.estimateWorkspaceTopBlock > .sectionCard {
+  flex: 1 1 auto;
+  height: 100%;
+}
+
+.estimateWorkspaceCategoriesCard,
+.estimateWorkspaceCustomerCard {
+  padding: var(--admin-space-md) var(--admin-space-lg);
+}
+
+.estimateWorkspaceCategoriesCard .estimateWorkspaceCategoryChips {
+  padding: 0;
+}
+
+@media (max-width: 980px) {
+  .estimateWorkspaceTopRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Обёртка blankSheet без второй рамки (сама карточка уже sectionCard) */
+.estimateWorkspaceCustomerBlankSheet {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  gap: var(--admin-space-sm);
+}
+
+/* Название расчёта — рамка и фокус как у поля «Поиск» в CrmCustomerSearchPanel */
+.estimateWorkspaceNameSearchInput {
+  width: 100%;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
+  box-sizing: border-box;
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+}
+
+.estimateWorkspaceNameSearchInput:focus {
+  outline: none;
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 2px rgba(var(--admin-overlay-color-144), 0.2);
+}
+
+.estimateWorkspaceNameSearchInput::placeholder {
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimateWorkspaceNameSearchInput {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateWorkspaceNameSearchInput::placeholder {
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimateWorkspaceNameSearchInput:focus {
+  border-color: var(--admin-info-light);
+  box-shadow: 0 0 0 2px var(--admin-overlay-color-136);
+}
+
+.estimateWorkspaceCustomerFieldsRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--admin-space-xs) var(--admin-space-sm);
+}
+
+.estimateWorkspaceCustomerFieldsRow > * {
+  margin-bottom: 0;
+}
+
+@media (max-width: 720px) {
+  .estimateWorkspaceCustomerFieldsRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.estimateWorkspaceCustomerCard .repairCustomerSearchSlot {
+  margin-top: var(--admin-space-xs);
 }
 
 .estimateWorkspacePage .estimateWorkspaceHeaderControls {
@@ -307,6 +419,10 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesPage .estimatesCard:hover {
   box-shadow: 0 2px 12px rgb(0 0 0 / 0.25);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesListEstimateRow:hover td {
+  background: var(--admin-surface-muted);
 }
 
 .estimateWorkspacePage .estimateWorkspaceTabBar {
@@ -926,6 +1042,19 @@
 
 .repairEditorHeaderLeft {
   min-width: 0;
+}
+
+.repairEditorHeaderLeft .backLink {
+  display: inline-block;
+  font-size: var(--admin-font-size-sm);
+  margin: 0;
+  line-height: 1.2;
+  color: var(--admin-text-muted);
+  text-decoration: none;
+}
+
+.repairEditorHeaderLeft .backLink:hover {
+  color: var(--admin-info);
 }
 
 .repairEditorHeaderCenterSlot {
@@ -4330,6 +4459,260 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   background: transparent;
   border: none;
   border-radius: 0;
+}
+
+/* Список расчётов — таблица (как договоры на /contracts) */
+.estimatesDirectoryTable thead {
+  box-shadow: 0 2px 0 var(--admin-border-strong);
+}
+
+.estimatesDirectoryTable thead th {
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
+  font-weight: 700;
+  border-bottom: 2px solid var(--admin-border-strong);
+}
+
+.estimatesDirectoryTable thead th:hover {
+  background: var(--admin-border);
+}
+
+.estimatesDirectoryTable .estimatesListTable th,
+.estimatesDirectoryTable .estimatesListTable td {
+  padding: 4px 6px;
+  font-size: 0.75rem;
+  line-height: 1.25;
+  vertical-align: middle;
+}
+
+.estimatesDirectoryTable .estimatesListTable th {
+  letter-spacing: 0.02em;
+}
+
+.estimatesListOrderCol {
+  width: 52px;
+  min-width: 52px;
+  max-width: 52px;
+  padding-left: 2px !important;
+  padding-right: 2px !important;
+  text-align: center;
+}
+
+.estimatesListOrderCellInner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.estimatesListOrderStack {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-items: center;
+}
+
+.estimatesListExpandBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  font-size: 0.625rem;
+  line-height: 1;
+  border: none;
+  border-radius: var(--admin-radius-sm);
+  background: transparent;
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+}
+
+.estimatesListExpandBtn:hover:not(:disabled) {
+  background: var(--admin-surface-hover, rgba(0, 0, 0, 0.06));
+}
+
+.estimatesListActionsCol {
+  width: 148px;
+  min-width: 148px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.estimatesListTable th.estimatesListActionsCol,
+.estimatesListTable td.estimatesListActionsCol {
+  text-align: right;
+}
+
+.estimatesListTitleCell {
+  min-width: 160px;
+  max-width: 280px;
+}
+
+.estimatesListTitleCell .estimatesCardTitleRow {
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.estimatesListBindingCell {
+  max-width: 220px;
+}
+
+.estimatesListBindingCell .estimatesBadge {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+.estimatesListCategoryCell {
+  white-space: nowrap;
+  color: var(--admin-text-secondary);
+}
+
+.estimatesListDateCell {
+  white-space: nowrap;
+  color: var(--admin-text-secondary);
+}
+
+.estimatesListCostCell {
+  white-space: nowrap;
+}
+
+.estimatesListCostCell strong {
+  color: var(--admin-text-primary);
+  font-weight: 700;
+}
+
+.estimatesListObjectCell select {
+  width: 100%;
+  min-width: 120px;
+  max-width: 200px;
+  font-size: 0.75rem;
+  padding: 2px 4px;
+}
+
+.estimatesListMarkupCell input {
+  width: 72px;
+  max-width: 100%;
+  font-size: 0.75rem;
+  padding: 2px 4px;
+}
+
+.estimatesListInlineField {
+  margin: 0;
+  gap: 2px;
+}
+
+.estimatesListInlineField > span:not(.estimatesListVisuallyHidden) {
+  font-size: 0.6875rem;
+  color: var(--admin-text-muted);
+}
+
+.estimatesListInlineField input,
+.estimatesListInlineField select {
+  margin: 0;
+}
+
+.estimatesListVisuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.estimatesListObjectTitleCell input {
+  width: 100%;
+  min-width: 140px;
+  font-weight: 600;
+  font-size: 0.8125rem;
+}
+
+.estimatesListObjectKindLabel {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--admin-info-strong);
+}
+
+.estimatesListObjectBadge {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--admin-text-secondary);
+}
+
+.estimatesListObjectRow td {
+  background: var(--admin-info-bg-soft, #eff6ff);
+  font-weight: 600;
+}
+
+.estimatesListObjectRow:hover td {
+  background: var(--admin-info-bg, #dbeafe);
+}
+
+.estimatesListObjectRowExpanded td {
+  background: var(--admin-info-bg, #dbeafe);
+}
+
+.estimatesListObjectRowHasBound td {
+  border-left: 3px solid var(--admin-info);
+}
+
+.estimatesListChildRow td {
+  background: var(--admin-contract-object-child-bg);
+}
+
+.estimatesListChildRow:hover td {
+  background: var(--admin-contract-object-child-bg-hover);
+}
+
+.estimatesListEstimateRow:hover td {
+  background: var(--admin-surface-muted);
+}
+
+.estimatesListEstimateRowSplit td {
+  border-left: 2px solid var(--admin-chart-series-5, #8b5cf6);
+}
+
+.estimatesListSectionRow td {
+  background: var(--admin-surface-muted);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: var(--admin-text-secondary);
+}
+
+.estimatesListEmptyInGroupRow td {
+  font-style: italic;
+  color: var(--admin-text-muted);
+}
+
+.estimatesDirectoryTable .estimatesCardActions {
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: 2px;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesListObjectRow td {
+  background: rgb(59 130 246 / 0.24);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesListObjectRow:hover td,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesListObjectRowExpanded td {
+  background: rgb(59 130 246 / 0.32);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesListChildRow td {
+  background: var(--admin-contract-object-child-bg);
 }
 
 .estimatesGroupBlock {

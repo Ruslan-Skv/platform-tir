@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -27,6 +27,7 @@ import {
   AdminToolbarTrashButton,
   useAdminTrashCount,
 } from '@/shared/ui/admin/AdminToolbarIconButton';
+import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 import { EditIcon } from '@/shared/ui/icons/EditIcon';
@@ -132,6 +133,8 @@ function parseOptionalPercentInput(raw: string): number | undefined {
 function formatEstimatePresetTotalRub(total: number): string {
   return `${total.toFixed(2).replace('.', ',')} руб.`;
 }
+
+const ESTIMATES_LIST_TABLE_COL_SPAN = 9;
 
 /** Можно создать связанный экземпляр: уже есть сохранённый состав разделения сметы. */
 function isPresetEligibleForLinkedSplitInstance(p: ContractEstimatePreset): boolean {
@@ -1638,7 +1641,230 @@ export function ContractDocumentsEstimatesPage() {
     void persistEstimates(nextItems, groups, { suppressSuccessMessage: true });
   };
 
-  const renderEstimateCard = (it: ContractEstimatePreset, reorder?: EstimateCardReorder) => {
+  const renderEstimateReorderCell = (reorder: EstimateCardReorder | undefined, itId: string) => {
+    if (!reorder) {
+      return <td className={styles.estimatesListOrderCol} />;
+    }
+    return (
+      <td className={styles.estimatesListOrderCol} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.estimatesListOrderStack} role="group" aria-label="Порядок в списке">
+          <button
+            type="button"
+            className={`${styles.secondaryBtn} ${styles.estimatesIconBtn} ${styles.estimatesReorderStackBtn}`}
+            disabled={
+              saving ||
+              (reorder.scope === 'inGroup' ? reorder.index <= 0 : reorder.mergeGlobalIndex <= 0)
+            }
+            aria-label="Выше в списке"
+            title="Выше в списке"
+            onClick={() =>
+              reorder.scope === 'inGroup'
+                ? handleMovePresetInGroup(reorder.groupId, itId, -1)
+                : handleMoveOrphanPreset(itId, -1)
+            }
+          >
+            <EstimatesReorderArrowUp />
+          </button>
+          <button
+            type="button"
+            className={`${styles.secondaryBtn} ${styles.estimatesIconBtn} ${styles.estimatesReorderStackBtn}`}
+            disabled={
+              saving ||
+              (reorder.scope === 'inGroup'
+                ? reorder.index >= reorder.total - 1
+                : reorder.mergeGlobalIndex >= reorder.mergeGlobalTotal - 1)
+            }
+            aria-label="Ниже в списке"
+            title="Ниже в списке"
+            onClick={() =>
+              reorder.scope === 'inGroup'
+                ? handleMovePresetInGroup(reorder.groupId, itId, 1)
+                : handleMoveOrphanPreset(itId, 1)
+            }
+          >
+            <EstimatesReorderArrowDown />
+          </button>
+        </div>
+      </td>
+    );
+  };
+
+  const renderEstimateGroupTableRow = (
+    section: Extract<EstimateLayoutBlock, { kind: 'group' }>
+  ) => {
+    const groupCollapsed = collapsedGroupIds.has(section.group.id);
+    const allInGroup = items.filter((it) => it.groupId === section.group.id);
+    const totalInGroup = allInGroup.length;
+    const boundInGroup = allInGroup.filter(
+      (it) => (usageByEstimateId.get(it.id)?.length ?? 0) > 0
+    ).length;
+    const hasBound = boundInGroup > 0;
+
+    return (
+      <tr
+        key={section.group.id}
+        className={`${dataTableStyles.row} ${styles.estimatesListObjectRow} ${
+          groupCollapsed ? '' : styles.estimatesListObjectRowExpanded
+        }${hasBound ? ` ${styles.estimatesListObjectRowHasBound}` : ''}`}
+      >
+        <td className={styles.estimatesListOrderCol}>
+          <div className={styles.estimatesListOrderCellInner}>
+            <button
+              type="button"
+              className={styles.estimatesListExpandBtn}
+              aria-expanded={!groupCollapsed}
+              aria-label={
+                groupCollapsed ? 'Развернуть расчёты объекта' : 'Свернуть расчёты объекта'
+              }
+              title={groupCollapsed ? 'Развернуть' : 'Свернуть'}
+              disabled={saving}
+              onClick={() => toggleGroupCollapsed(section.group.id)}
+            >
+              {groupCollapsed ? '▶' : '▼'}
+            </button>
+            <div
+              className={styles.estimatesListOrderStack}
+              role="group"
+              aria-label="Порядок объекта в списке"
+            >
+              <button
+                type="button"
+                className={`${styles.secondaryBtn} ${styles.estimatesIconBtn} ${styles.estimatesGroupReorderBtn}`}
+                disabled={saving || section.mergeGlobalTotal < 2 || section.mergeGlobalIndex <= 0}
+                aria-label="Объект выше в списке"
+                title="Объект выше в общем списке"
+                onClick={() => handleMoveMergeGroup(section.group.id, -1)}
+              >
+                <EstimatesReorderArrowUp />
+              </button>
+              <button
+                type="button"
+                className={`${styles.secondaryBtn} ${styles.estimatesIconBtn} ${styles.estimatesGroupReorderBtn}`}
+                disabled={
+                  saving ||
+                  section.mergeGlobalTotal < 2 ||
+                  section.mergeGlobalIndex >= section.mergeGlobalTotal - 1
+                }
+                aria-label="Объект ниже в списке"
+                title="Объект ниже в общем списке"
+                onClick={() => handleMoveMergeGroup(section.group.id, 1)}
+              >
+                <EstimatesReorderArrowDown />
+              </button>
+            </div>
+          </div>
+        </td>
+        <td className={styles.estimatesListObjectTitleCell}>
+          <label className={`${styles.field} ${styles.estimatesListInlineField}`}>
+            <span className={styles.estimatesListObjectKindLabel}>Объект</span>
+            <input
+              key={`${section.group.id}:${section.group.title}`}
+              defaultValue={section.group.title}
+              disabled={saving}
+              onBlur={(e) => {
+                const v = e.target.value.trim();
+                if (v && v !== section.group.title) {
+                  renameObjectGroup(section.group.id, v);
+                }
+              }}
+            />
+          </label>
+        </td>
+        <td className={styles.estimatesListCategoryCell}>
+          <span className={styles.estimatesListObjectBadge}>
+            {totalInGroup} расч. · привяз. {boundInGroup}
+          </span>
+        </td>
+        <td className={styles.estimatesListDateCell}>—</td>
+        <td className={styles.estimatesListCostCell}>—</td>
+        <td className={styles.estimatesListBindingCell}>
+          {hasBound ? (
+            <span className={`${styles.estimatesBadge} ${styles.estimatesBadgeBound}`}>
+              Есть привязки
+            </span>
+          ) : (
+            '—'
+          )}
+        </td>
+        <td className={styles.estimatesListObjectCell}>—</td>
+        <td className={styles.estimatesListMarkupCell}>
+          <label
+            className={`${styles.field} ${styles.estimatesListInlineField}`}
+            title={
+              groupIdsWithLockedEstimate.has(section.group.id)
+                ? 'Нельзя менять наценку объекта: в группе есть расчёт, прикреплённый к пакету со статусом «Договор подписан» или к подписанному Д/с.'
+                : 'На все расчёты этого объекта: +% к цене каждой позиции в смете'
+            }
+          >
+            <span>Наценка, %</span>
+            <input
+              key={`${section.group.id}:markup:${section.group.additionalMarkupPercent ?? 'none'}`}
+              type="number"
+              min={0}
+              max={999}
+              step={0.1}
+              defaultValue={
+                typeof section.group.additionalMarkupPercent === 'number'
+                  ? String(section.group.additionalMarkupPercent)
+                  : '0'
+              }
+              disabled={saving || groupIdsWithLockedEstimate.has(section.group.id)}
+              onFocus={(e) => {
+                e.currentTarget.dataset.markupAtFocus = e.currentTarget.value;
+              }}
+              onBlur={(e) => {
+                if (e.currentTarget.dataset.markupAtFocus === e.currentTarget.value) return;
+                updateGroupAdditionalMarkupPercent(section.group.id, e.target.value);
+              }}
+            />
+          </label>
+        </td>
+        <td className={styles.estimatesListActionsCol}>
+          <div
+            className={`${styles.estimatesCardActions} ${styles.repairContractsListActionsGrid}`}
+          >
+            {!archiveView && totalInGroup > 0 ? (
+              <button
+                type="button"
+                className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+                disabled={saving}
+                aria-label="В архив"
+                title="Скрыть объект из основного списка и из выбора при оформлении договоров"
+                onClick={() => setGroupArchived(section.group.id, true)}
+              >
+                <EstimatesArchiveIcon />
+              </button>
+            ) : null}
+            {archiveView ? (
+              <button
+                type="button"
+                className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+                disabled={saving}
+                aria-label="Восстановить"
+                title="Вернуть объект в основной список и в выбор при оформлении договоров"
+                onClick={() => setGroupArchived(section.group.id, false)}
+              >
+                <EstimatesRestoreFromArchiveIcon />
+              </button>
+            ) : null}
+            {totalInGroup === 0 ? (
+              <button
+                type="button"
+                className={`${styles.dangerBtn} ${styles.estimatesGroupDangerBtn}`}
+                disabled={saving}
+                title="Удалить пустой объект"
+                onClick={() => removeObjectGroup(section.group.id)}
+              >
+                Удалить
+              </button>
+            ) : null}
+          </div>
+        </td>
+      </tr>
+    );
+  };
+
+  const renderEstimateTableRow = (it: ContractEstimatePreset, reorder?: EstimateCardReorder) => {
     const usages = usageByEstimateId.get(it.id) ?? [];
     const isBound = usages.length > 0;
     const hasLockedUsage = usages.some((u) => isUsageLocked(u));
@@ -1685,56 +1911,26 @@ export function ContractDocumentsEstimatesPage() {
         : '';
     const canAddLinkedSplitInstance =
       Boolean(it.groupId) && isPresetEligibleForLinkedSplitInstance(it);
+    const updatedLabel = it.updatedAt
+      ? new Date(it.updatedAt).toLocaleString('ru-RU', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : '—';
+    const isChildRow = Boolean(it.groupId && groups.some((g) => g.id === it.groupId));
+
     return (
-      <div
+      <tr
         key={it.id}
-        className={`${styles.estimatesCard}${it.splitBundleId ? ` ${styles.estimatesCardSplitBundle}` : ''}`}
+        className={`${dataTableStyles.row} ${styles.estimatesListEstimateRow}${
+          it.splitBundleId ? ` ${styles.estimatesListEstimateRowSplit}` : ''
+        }${isChildRow ? ` ${styles.estimatesListChildRow}` : ''}`}
       >
-        {reorder ? (
-          <div
-            className={styles.estimatesCardReorderCol}
-            role="group"
-            aria-label="Порядок в списке"
-          >
-            <button
-              type="button"
-              className={`${styles.secondaryBtn} ${styles.estimatesIconBtn} ${styles.estimatesReorderStackBtn}`}
-              disabled={
-                saving ||
-                (reorder.scope === 'inGroup' ? reorder.index <= 0 : reorder.mergeGlobalIndex <= 0)
-              }
-              aria-label="Выше в списке"
-              title="Выше в списке"
-              onClick={() =>
-                reorder.scope === 'inGroup'
-                  ? handleMovePresetInGroup(reorder.groupId, it.id, -1)
-                  : handleMoveOrphanPreset(it.id, -1)
-              }
-            >
-              <EstimatesReorderArrowUp />
-            </button>
-            <button
-              type="button"
-              className={`${styles.secondaryBtn} ${styles.estimatesIconBtn} ${styles.estimatesReorderStackBtn}`}
-              disabled={
-                saving ||
-                (reorder.scope === 'inGroup'
-                  ? reorder.index >= reorder.total - 1
-                  : reorder.mergeGlobalIndex >= reorder.mergeGlobalTotal - 1)
-              }
-              aria-label="Ниже в списке"
-              title="Ниже в списке"
-              onClick={() =>
-                reorder.scope === 'inGroup'
-                  ? handleMovePresetInGroup(reorder.groupId, it.id, 1)
-                  : handleMoveOrphanPreset(it.id, 1)
-              }
-            >
-              <EstimatesReorderArrowDown />
-            </button>
-          </div>
-        ) : null}
-        <div className={styles.estimatesCardMain}>
+        {renderEstimateReorderCell(reorder, it.id)}
+        <td className={styles.estimatesListTitleCell}>
           <div className={styles.estimatesCardTitleRow}>
             <strong className={styles.estimatesCardTitle}>{it.title}</strong>
             {hasLockedUsage ? (
@@ -1746,11 +1942,6 @@ export function ContractDocumentsEstimatesPage() {
                 🔒
               </span>
             ) : null}
-            <span
-              className={`${styles.estimatesBadge} ${isBound ? styles.estimatesBadgeBound : styles.estimatesBadgeFree}`}
-            >
-              {isBound ? boundBadgeText : 'Не привязан'}
-            </span>
             {it.splitBundleId ? (
               <span
                 className={`${styles.estimatesBadge} ${styles.estimatesSplitBundleBadge}${
@@ -1764,231 +1955,246 @@ export function ContractDocumentsEstimatesPage() {
               </span>
             ) : null}
           </div>
-          <span className={styles.estimatesCardMeta}>
-            {it.categoryName}
-            {it.updatedAt ? ` · ${new Date(it.updatedAt).toLocaleString('ru-RU')}` : ''}
-          </span>
-          <span className={styles.estimatesCardCost}>
-            Стоимость:{' '}
-            {hasSnapshotTotal ? (
-              <>
-                <strong>{formatEstimatePresetTotalRub(snapshotTotal)}</strong>
-                {showFullEstimateTotalInParens ? (
-                  <span className={styles.estimatesCardCostFull}>
-                    {' '}
-                    (всего {formatEstimatePresetTotalRub(fullSnapshotTotal)})
-                  </span>
-                ) : null}
-              </>
-            ) : (
-              '—'
-            )}
-          </span>
-        </div>
-        <label className={`${styles.field} ${styles.estimatesCardGroupField}`}>
-          <span>Объект</span>
-          <select
-            value={it.groupId && groups.some((g) => g.id === it.groupId) ? it.groupId : ''}
-            disabled={saving}
-            onChange={(e) => assignEstimateToGroup(it.id, e.target.value ? e.target.value : null)}
-          >
-            <option value="">Не в объекте</option>
-            {groupsForSelect.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.title}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label
-          className={`${styles.field} ${styles.estimatesCardMarkupField}`}
-          title={
-            hasLockedUsage
-              ? 'Нельзя менять наценку: расчёт закрыт для изменений (прикреплён к пакету со статусом «Договор подписан» или к подписанному Д/с).'
-              : 'Доп. наценка к расчёту, %. Пусто — для расчёта в объекте действует наценка объекта; иначе +% к цене каждой позиции при прикреплении к смете.'
-          }
+        </td>
+        <td className={styles.estimatesListCategoryCell}>{it.categoryName || '—'}</td>
+        <td className={styles.estimatesListDateCell}>{updatedLabel}</td>
+        <td className={styles.estimatesListCostCell}>
+          {hasSnapshotTotal ? (
+            <>
+              <strong>{formatEstimatePresetTotalRub(snapshotTotal)}</strong>
+              {showFullEstimateTotalInParens ? (
+                <span className={styles.estimatesCardCostFull}>
+                  {' '}
+                  (всего {formatEstimatePresetTotalRub(fullSnapshotTotal)})
+                </span>
+              ) : null}
+            </>
+          ) : (
+            '—'
+          )}
+        </td>
+        <td
+          className={styles.estimatesListBindingCell}
+          title={isBound ? boundBadgeText : undefined}
         >
-          <span>Наценка, %</span>
-          <input
-            key={`${it.id}:markup:${it.additionalMarkupPercent ?? 'none'}`}
-            type="number"
-            min={0}
-            max={999}
-            step={0.1}
-            defaultValue={
-              typeof it.additionalMarkupPercent === 'number'
-                ? String(it.additionalMarkupPercent)
-                : '0'
-            }
-            disabled={saving || hasLockedUsage}
-            onFocus={(e) => {
-              e.currentTarget.dataset.markupAtFocus = e.currentTarget.value;
-            }}
-            onBlur={(e) => {
-              if (e.currentTarget.dataset.markupAtFocus === e.currentTarget.value) return;
-              updatePresetAdditionalMarkupPercent(it.id, e.target.value);
-            }}
-          />
-        </label>
-        <div className={styles.estimatesCardActions}>
-          {!archiveView && canPresetArchive ? (
-            <button
-              type="button"
-              className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+          <span
+            className={`${styles.estimatesBadge} ${isBound ? styles.estimatesBadgeBound : styles.estimatesBadgeFree}`}
+          >
+            {isBound ? boundBadgeText : 'Не привязан'}
+          </span>
+        </td>
+        <td className={styles.estimatesListObjectCell}>
+          <label className={`${styles.field} ${styles.estimatesListInlineField}`}>
+            <span className={styles.estimatesListVisuallyHidden}>Объект</span>
+            <select
+              value={it.groupId && groups.some((g) => g.id === it.groupId) ? it.groupId : ''}
               disabled={saving}
-              aria-label="В архив"
-              title="Отправить расчёт в архив: скрыть из основного списка и из выбора при оформлении договоров"
-              onClick={() => setPresetArchived(it.id, true)}
+              onChange={(e) => assignEstimateToGroup(it.id, e.target.value ? e.target.value : null)}
             >
-              <EstimatesArchiveIcon />
-            </button>
-          ) : null}
-          {archiveView && canPresetRestoreFromArchive ? (
-            <button
-              type="button"
-              className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
-              disabled={saving}
-              aria-label="Восстановить"
-              title="Вернуть расчёт в основной список"
-              onClick={() => setPresetArchived(it.id, false)}
-            >
-              <EstimatesRestoreFromArchiveIcon />
-            </button>
-          ) : null}
-          <AdminTableIconButton
-            aria-label="Редактировать"
+              <option value="">Не в объекте</option>
+              {groupsForSelect.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.title}
+                </option>
+              ))}
+            </select>
+          </label>
+        </td>
+        <td className={styles.estimatesListMarkupCell}>
+          <label
+            className={`${styles.field} ${styles.estimatesListInlineField}`}
             title={
               hasLockedUsage
-                ? 'Редактирование запрещено: договор подписан или Д/с подписано'
-                : 'Редактировать'
+                ? 'Нельзя менять наценку: расчёт закрыт для изменений (прикреплён к пакету со статусом «Договор подписан» или к подписанному Д/с).'
+                : 'Доп. наценка к расчёту, %. Пусто — для расчёта в объекте действует наценка объекта; иначе +% к цене каждой позиции при прикреплении к смете.'
             }
-            disabled={saving || hasLockedUsage}
-            onClick={() => {
-              if (hasLockedUsage) return;
-              if (usages.length > 0) {
-                setDetachEditModal({
-                  estimateId: it.id,
-                  usages: [...usages],
-                });
-                return;
+          >
+            <span className={styles.estimatesListVisuallyHidden}>Наценка, %</span>
+            <input
+              key={`${it.id}:markup:${it.additionalMarkupPercent ?? 'none'}`}
+              type="number"
+              min={0}
+              max={999}
+              step={0.1}
+              defaultValue={
+                typeof it.additionalMarkupPercent === 'number'
+                  ? String(it.additionalMarkupPercent)
+                  : '0'
               }
-              router.push(
-                `/admin/contract-documents/estimates/workspace?id=${encodeURIComponent(it.id)}`
-              );
-            }}
+              disabled={saving || hasLockedUsage}
+              onFocus={(e) => {
+                e.currentTarget.dataset.markupAtFocus = e.currentTarget.value;
+              }}
+              onBlur={(e) => {
+                if (e.currentTarget.dataset.markupAtFocus === e.currentTarget.value) return;
+                updatePresetAdditionalMarkupPercent(it.id, e.target.value);
+              }}
+            />
+          </label>
+        </td>
+        <td className={styles.estimatesListActionsCol}>
+          <div
+            className={`${styles.estimatesCardActions} ${styles.repairContractsListActionsGrid}`}
           >
-            <EditIcon />
-          </AdminTableIconButton>
-          <AdminTableIconButton
-            aria-label="Копировать расчёт"
-            title="Создать обычную копию расчёта (отдельный расчёт без связи при разделении сметы)"
-            disabled={saving}
-            onClick={() =>
-              router.push(
-                `/admin/contract-documents/estimates/workspace?copyFrom=${encodeURIComponent(it.id)}`
-              )
-            }
-          >
-            <CopyIcon />
-          </AdminTableIconButton>
-          {it.groupId && !archiveView ? (
-            <button
-              type="button"
-              className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
-              aria-label="Связанный экземпляр для другого договора"
+            {!archiveView && canPresetArchive ? (
+              <button
+                type="button"
+                className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+                disabled={saving}
+                aria-label="В архив"
+                title="Отправить расчёт в архив: скрыть из основного списка и из выбора при оформлении договоров"
+                onClick={() => setPresetArchived(it.id, true)}
+              >
+                <EstimatesArchiveIcon />
+              </button>
+            ) : null}
+            {archiveView && canPresetRestoreFromArchive ? (
+              <button
+                type="button"
+                className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+                disabled={saving}
+                aria-label="Восстановить"
+                title="Вернуть расчёт в основной список"
+                onClick={() => setPresetArchived(it.id, false)}
+              >
+                <EstimatesRestoreFromArchiveIcon />
+              </button>
+            ) : null}
+            <AdminTableIconButton
+              aria-label="Редактировать"
               title={
-                canAddLinkedSplitInstance
-                  ? 'Создать связанный экземпляр расчёта (после сохранения выберите позиции).'
-                  : 'Сначала сохраните состав позиций в модалке «Разделение сметы» у этого расчёта.'
+                hasLockedUsage
+                  ? 'Редактирование запрещено: договор подписан или Д/с подписано'
+                  : 'Редактировать'
               }
-              disabled={saving || hasLockedUsage || !canAddLinkedSplitInstance}
+              disabled={saving || hasLockedUsage}
               onClick={() => {
-                if (!canAddLinkedSplitInstance || hasLockedUsage) return;
+                if (hasLockedUsage) return;
+                if (usages.length > 0) {
+                  setDetachEditModal({
+                    estimateId: it.id,
+                    usages: [...usages],
+                  });
+                  return;
+                }
                 router.push(
-                  `/admin/contract-documents/estimates/workspace?copyFrom=${encodeURIComponent(it.id)}&splitInstance=1`
+                  `/admin/contract-documents/estimates/workspace?id=${encodeURIComponent(it.id)}`
                 );
               }}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width={14}
-                height={14}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--admin-chart-series-5)"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-              >
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-              </svg>
-            </button>
-          ) : null}
-          {canOpenWorkScopeSplit && !archiveView ? (
-            <button
-              type="button"
-              className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
-              aria-label="Состав работ по договорам"
-              title="Разделение сметы: выбор позиций для этого экземпляра и связанных копий"
-              disabled={saving || hasLockedUsage}
-              onClick={() => setWorkScopeModalPresetId(it.id)}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width={14}
-                height={14}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--admin-chart-series-4)"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-              >
-                <path d="M16 3h5v5" />
-                <path d="M8 3H3v5" />
-                <path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3" />
-                <path d="m15 9 6-6" />
-                <path d="M21 16v5h-5" />
-                <path d="M8 21H3v-5" />
-                <path d="M12 11V3" />
-              </svg>
-            </button>
-          ) : null}
-          <AdminTableIconButton
-            aria-label={
-              hasLockedUsage
-                ? 'В корзину недоступно: договор подписан или Д/с подписано'
-                : 'В корзину'
-            }
-            title={
-              hasLockedUsage
-                ? 'В корзину недоступно: договор подписан или Д/с подписано'
-                : 'В корзину (восстановить можно из корзины)'
-            }
-            disabled={saving || hasLockedUsage}
-            onClick={() => {
-              if (hasLockedUsage) return;
-              if (usages.length > 0) {
-                setDetachDeleteModal({
-                  estimateId: it.id,
-                  usages: [...usages],
-                });
-                return;
+              <EditIcon />
+            </AdminTableIconButton>
+            <AdminTableIconButton
+              aria-label="Копировать расчёт"
+              title="Создать обычную копию расчёта (отдельный расчёт без связи при разделении сметы)"
+              disabled={saving}
+              onClick={() =>
+                router.push(
+                  `/admin/contract-documents/estimates/workspace?copyFrom=${encodeURIComponent(it.id)}`
+                )
               }
-              setSimpleDeleteModal({
-                estimateId: it.id,
-                title: it.title.trim() || 'Расчёт',
-                inSplitBundle: Boolean(it.splitBundleId),
-              });
-            }}
-          >
-            <DeleteIcon />
-          </AdminTableIconButton>
-        </div>
-      </div>
+            >
+              <CopyIcon />
+            </AdminTableIconButton>
+            {it.groupId && !archiveView ? (
+              <button
+                type="button"
+                className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+                aria-label="Связанный экземпляр для другого договора"
+                title={
+                  canAddLinkedSplitInstance
+                    ? 'Создать связанный экземпляр расчёта (после сохранения выберите позиции).'
+                    : 'Сначала сохраните состав позиций в модалке «Разделение сметы» у этого расчёта.'
+                }
+                disabled={saving || hasLockedUsage || !canAddLinkedSplitInstance}
+                onClick={() => {
+                  if (!canAddLinkedSplitInstance || hasLockedUsage) return;
+                  router.push(
+                    `/admin/contract-documents/estimates/workspace?copyFrom=${encodeURIComponent(it.id)}&splitInstance=1`
+                  );
+                }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width={14}
+                  height={14}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--admin-chart-series-5)"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                </svg>
+              </button>
+            ) : null}
+            {canOpenWorkScopeSplit && !archiveView ? (
+              <button
+                type="button"
+                className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+                aria-label="Состав работ по договорам"
+                title="Разделение сметы: выбор позиций для этого экземпляра и связанных копий"
+                disabled={saving || hasLockedUsage}
+                onClick={() => setWorkScopeModalPresetId(it.id)}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width={14}
+                  height={14}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--admin-chart-series-4)"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M16 3h5v5" />
+                  <path d="M8 3H3v5" />
+                  <path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3" />
+                  <path d="m15 9 6-6" />
+                  <path d="M21 16v5h-5" />
+                  <path d="M8 21H3v-5" />
+                  <path d="M12 11V3" />
+                </svg>
+              </button>
+            ) : null}
+            <AdminTableIconButton
+              aria-label={
+                hasLockedUsage
+                  ? 'В корзину недоступно: договор подписан или Д/с подписано'
+                  : 'В корзину'
+              }
+              title={
+                hasLockedUsage
+                  ? 'В корзину недоступно: договор подписан или Д/с подписано'
+                  : 'В корзину (восстановить можно из корзины)'
+              }
+              disabled={saving || hasLockedUsage}
+              onClick={() => {
+                if (hasLockedUsage) return;
+                if (usages.length > 0) {
+                  setDetachDeleteModal({
+                    estimateId: it.id,
+                    usages: [...usages],
+                  });
+                  return;
+                }
+                setSimpleDeleteModal({
+                  estimateId: it.id,
+                  title: it.title.trim() || 'Расчёт',
+                  inSplitBundle: Boolean(it.splitBundleId),
+                });
+              }}
+            >
+              <DeleteIcon />
+            </AdminTableIconButton>
+          </div>
+        </td>
+      </tr>
     );
   };
 
@@ -2169,230 +2375,109 @@ export function ContractDocumentsEstimatesPage() {
           ) : null}
         </div>
         <div
-          className={`${styles.estimatesSectionsStack}${archiveView ? ` ${styles.estimatesSectionsStackArchive}` : ''}`}
+          className={`${dataTableStyles.tableContainer} ${styles.estimatesDirectoryTable}${archiveView ? ` ${styles.estimatesDirectoryTableArchive}` : ''}`}
         >
-          {visibleItems.length === 0 ? (
-            <p className={styles.hint} style={{ margin: 0 }}>
-              {archiveView && !hasAnythingInArchive
-                ? 'В архиве пока нет расчётов и объектов.'
-                : hasActiveManagerFilter
-                  ? 'Нет расчётов по выбранному менеджеру.'
-                  : 'Нет расчётов для текущего фильтра.'}
-            </p>
-          ) : (
-            estimateLayoutBlocks.map((block) => {
-              if (block.kind === 'group') {
-                const section = block;
-                const groupCollapsed = collapsedGroupIds.has(section.group.id);
-                const allInGroup = items.filter((it) => it.groupId === section.group.id);
-                const totalInGroup = allInGroup.length;
-                const boundInGroup = allInGroup.filter(
-                  (it) => (usageByEstimateId.get(it.id)?.length ?? 0) > 0
-                ).length;
-                return (
-                  <div
-                    key={section.group.id}
-                    className={`${styles.estimatesGroupBlock} ${boundInGroup > 0 ? styles.estimatesGroupBlockHasBound : ''}`}
-                  >
-                    <div
-                      className={`${styles.estimatesGroupHeader} ${groupCollapsed ? styles.estimatesGroupHeaderCollapsed : ''}`}
-                    >
-                      <button
-                        type="button"
-                        className={`${styles.secondaryBtn} ${styles.estimatesGroupCollapseBtn}`}
-                        aria-expanded={!groupCollapsed}
-                        aria-label={
-                          groupCollapsed ? 'Развернуть расчёты объекта' : 'Свернуть расчёты объекта'
-                        }
-                        title={groupCollapsed ? 'Развернуть' : 'Свернуть'}
-                        disabled={saving}
-                        onClick={() => toggleGroupCollapsed(section.group.id)}
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width={14}
-                          height={14}
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className={`${styles.estimatesGroupCollapseChevron}${groupCollapsed ? ` ${styles.estimatesGroupCollapseChevronFolded}` : ''}`}
-                          aria-hidden
-                        >
-                          <polyline points="6 9 12 15 18 9" />
-                        </svg>
-                      </button>
-                      <div
-                        className={styles.estimatesGroupReorderCol}
-                        role="group"
-                        aria-label="Порядок объекта в списке"
-                      >
-                        <button
-                          type="button"
-                          className={`${styles.secondaryBtn} ${styles.estimatesIconBtn} ${styles.estimatesGroupReorderBtn}`}
-                          disabled={
-                            saving || section.mergeGlobalTotal < 2 || section.mergeGlobalIndex <= 0
-                          }
-                          aria-label="Объект выше в списке"
-                          title="Объект выше в общем списке"
-                          onClick={() => handleMoveMergeGroup(section.group.id, -1)}
-                        >
-                          <EstimatesReorderArrowUp />
-                        </button>
-                        <button
-                          type="button"
-                          className={`${styles.secondaryBtn} ${styles.estimatesIconBtn} ${styles.estimatesGroupReorderBtn}`}
-                          disabled={
-                            saving ||
-                            section.mergeGlobalTotal < 2 ||
-                            section.mergeGlobalIndex >= section.mergeGlobalTotal - 1
-                          }
-                          aria-label="Объект ниже в списке"
-                          title="Объект ниже в общем списке"
-                          onClick={() => handleMoveMergeGroup(section.group.id, 1)}
-                        >
-                          <EstimatesReorderArrowDown />
-                        </button>
-                      </div>
-                      <label className={`${styles.field} ${styles.estimatesGroupTitleField}`}>
-                        <span>Название объекта</span>
-                        <input
-                          key={`${section.group.id}:${section.group.title}`}
-                          defaultValue={section.group.title}
-                          disabled={saving}
-                          onBlur={(e) => {
-                            const v = e.target.value.trim();
-                            if (v && v !== section.group.title) {
-                              renameObjectGroup(section.group.id, v);
-                            }
-                          }}
-                        />
-                      </label>
-                      <label
-                        className={`${styles.field} ${styles.estimatesGroupTitleField}`}
-                        style={{ maxWidth: 150 }}
-                      >
-                        <span>Доп. наценка, %</span>
-                        <input
-                          key={`${section.group.id}:markup:${section.group.additionalMarkupPercent ?? 'none'}`}
-                          type="number"
-                          min={0}
-                          max={999}
-                          step={0.1}
-                          defaultValue={
-                            typeof section.group.additionalMarkupPercent === 'number'
-                              ? String(section.group.additionalMarkupPercent)
-                              : '0'
-                          }
-                          disabled={saving || groupIdsWithLockedEstimate.has(section.group.id)}
-                          title={
-                            groupIdsWithLockedEstimate.has(section.group.id)
-                              ? 'Нельзя менять наценку объекта: в группе есть расчёт, прикреплённый к пакету со статусом «Договор подписан» или к подписанному Д/с.'
-                              : 'На все расчёты этого объекта: +% к цене каждой позиции в смете'
-                          }
-                          onFocus={(e) => {
-                            e.currentTarget.dataset.markupAtFocus = e.currentTarget.value;
-                          }}
-                          onBlur={(e) => {
-                            if (e.currentTarget.dataset.markupAtFocus === e.currentTarget.value)
-                              return;
-                            updateGroupAdditionalMarkupPercent(section.group.id, e.target.value);
-                          }}
-                        />
-                      </label>
-                      <span className={styles.estimatesGroupCount}>
-                        Расчётов: {totalInGroup} · привязано: {boundInGroup}
-                      </span>
-                      {!archiveView && totalInGroup > 0 ? (
-                        <button
-                          type="button"
-                          className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
-                          disabled={saving}
-                          aria-label="В архив"
-                          title="Скрыть объект из основного списка и из выбора при оформлении договоров"
-                          onClick={() => setGroupArchived(section.group.id, true)}
-                        >
-                          <EstimatesArchiveIcon />
-                        </button>
-                      ) : null}
-                      {archiveView ? (
-                        <button
-                          type="button"
-                          className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
-                          disabled={saving}
-                          aria-label="Восстановить"
-                          title="Вернуть объект в основной список и в выбор при оформлении договоров"
-                          onClick={() => setGroupArchived(section.group.id, false)}
-                        >
-                          <EstimatesRestoreFromArchiveIcon />
-                        </button>
-                      ) : null}
-                      {totalInGroup === 0 ? (
-                        <button
-                          type="button"
-                          className={`${styles.dangerBtn} ${styles.estimatesGroupDangerBtn}`}
-                          disabled={saving}
-                          title="Удалить пустой объект"
-                          onClick={() => removeObjectGroup(section.group.id)}
-                        >
-                          Удалить
-                        </button>
-                      ) : null}
-                    </div>
-                    {!groupCollapsed ? (
-                      <div className={styles.estimatesCardsStack}>
-                        {section.items.length === 0 ? (
-                          <p className={styles.estimatesEmptyInGroup}>
-                            В этом объекте нет расчётов для текущего фильтра.
-                          </p>
-                        ) : (
-                          section.items.map((it, idx) =>
-                            renderEstimateCard(it, {
-                              scope: 'inGroup',
-                              groupId: section.group.id,
-                              index: idx,
-                              total: section.items.length,
-                            })
-                          )
-                        )}
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              }
-              if (block.kind === 'soloArchived') {
-                return (
-                  <div key="_soloArchived" className={styles.estimatesUngroupedBlock}>
-                    <h4 className={styles.estimatesUngroupedHeading}>
-                      В архиве отдельно (объект в основном списке)
-                    </h4>
-                    <div className={styles.estimatesCardsStack}>
-                      {block.items.map((it) => renderEstimateCard(it))}
-                    </div>
-                  </div>
-                );
-              }
-              return (
-                <div
-                  key={`standRun_${[...block.entries]
-                    .map((e) => e.preset.id)
-                    .sort()
-                    .join('|')}`}
-                  className={styles.estimatesCardsStack}
+          <div className={dataTableStyles.tableWrapper}>
+            <div className={dataTableStyles.scrollContainer}>
+              <table className={`${dataTableStyles.table} ${styles.estimatesListTable}`}>
+                <thead className={dataTableStyles.stickyHeader}>
+                  <tr>
+                    <th className={styles.estimatesListOrderCol} aria-label="Порядок" />
+                    <th>Расчёт</th>
+                    <th>Категория</th>
+                    <th>Изменён</th>
+                    <th>Стоимость</th>
+                    <th>Привязка</th>
+                    <th>Объект</th>
+                    <th>Наценка, %</th>
+                    <th className={styles.estimatesListActionsCol} aria-label="Действия" />
+                  </tr>
+                </thead>
+                <tbody
+                  className={loading || refreshing ? dataTableStyles.tbodyRefreshing : undefined}
                 >
-                  {block.entries.map(({ preset, mergeGlobalIndex, mergeGlobalTotal }) =>
-                    renderEstimateCard(preset, {
-                      scope: 'orphan',
-                      mergeGlobalIndex,
-                      mergeGlobalTotal,
+                  {visibleItems.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={ESTIMATES_LIST_TABLE_COL_SPAN}
+                        className={dataTableStyles.emptyCell}
+                      >
+                        {archiveView && !hasAnythingInArchive
+                          ? 'В архиве пока нет расчётов и объектов.'
+                          : hasActiveManagerFilter
+                            ? 'Нет расчётов по выбранному менеджеру.'
+                            : 'Нет расчётов для текущего фильтра.'}
+                      </td>
+                    </tr>
+                  ) : (
+                    estimateLayoutBlocks.map((block) => {
+                      if (block.kind === 'group') {
+                        const section = block;
+                        const groupCollapsed = collapsedGroupIds.has(section.group.id);
+                        return (
+                          <Fragment key={section.group.id}>
+                            {renderEstimateGroupTableRow(section)}
+                            {!groupCollapsed ? (
+                              section.items.length === 0 ? (
+                                <tr
+                                  key={`${section.group.id}_empty`}
+                                  className={styles.estimatesListEmptyInGroupRow}
+                                >
+                                  <td
+                                    colSpan={ESTIMATES_LIST_TABLE_COL_SPAN}
+                                    className={dataTableStyles.emptyCell}
+                                  >
+                                    В этом объекте нет расчётов для текущего фильтра.
+                                  </td>
+                                </tr>
+                              ) : (
+                                section.items.map((it, idx) =>
+                                  renderEstimateTableRow(it, {
+                                    scope: 'inGroup',
+                                    groupId: section.group.id,
+                                    index: idx,
+                                    total: section.items.length,
+                                  })
+                                )
+                              )
+                            ) : null}
+                          </Fragment>
+                        );
+                      }
+                      if (block.kind === 'soloArchived') {
+                        return (
+                          <Fragment key="_soloArchived">
+                            <tr className={styles.estimatesListSectionRow}>
+                              <td colSpan={ESTIMATES_LIST_TABLE_COL_SPAN}>
+                                В архиве отдельно (объект в основном списке)
+                              </td>
+                            </tr>
+                            {block.items.map((it) => renderEstimateTableRow(it))}
+                          </Fragment>
+                        );
+                      }
+                      return (
+                        <Fragment
+                          key={`standRun_${[...block.entries]
+                            .map((e) => e.preset.id)
+                            .sort()
+                            .join('|')}`}
+                        >
+                          {block.entries.map(({ preset, mergeGlobalIndex, mergeGlobalTotal }) =>
+                            renderEstimateTableRow(preset, {
+                              scope: 'orphan',
+                              mergeGlobalIndex,
+                              mergeGlobalTotal,
+                            })
+                          )}
+                        </Fragment>
+                      );
                     })
                   )}
-                </div>
-              );
-            })
-          )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 

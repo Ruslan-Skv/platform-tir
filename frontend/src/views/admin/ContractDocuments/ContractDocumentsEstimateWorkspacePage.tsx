@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -11,14 +11,22 @@ import {
   getContractDocumentEstimatePresets,
   putContractDocumentEstimatePresets,
 } from '@/shared/api/admin-contract-document-packages';
-import { getMeasurement } from '@/shared/api/admin-crm';
+import { type CrmCustomerDetail, getCrmCustomer, getMeasurement } from '@/shared/api/admin-crm';
 import { ApprovedOrderGuardProvider } from '@/shared/lib/contexts/ApprovedOrderGuardContext';
 import { CartProvider } from '@/shared/lib/contexts/CartContext';
 import { Modal } from '@/shared/ui/Modal';
+import { CrmCustomerSearchPanel } from '@/views/admin/CRM/Customers/CrmCustomerSearchPanel';
+import { crmDetailWithPreferredObjectAddress } from '@/views/admin/CRM/Customers/crmCustomerExtendedProfile';
+import measurementFormStyles from '@/views/admin/CRM/Measurements/MeasurementFormPage.module.css';
 import { ServiceCategoryPage } from '@/views/services/ui/ServiceCategoryPage/ServiceCategoryPage';
 
 import styles from './ContractDocuments.module.css';
 import { buildEstimateSnapshot } from './repair/contractDocumentsEstimateSnapshot';
+import {
+  type EstimateCrmCustomerFields,
+  emptyEstimateCrmCustomerFields,
+  estimateFieldsFromCrmCustomerDetail,
+} from './repair/estimateCrmCustomer';
 import { clampEstimateAdditionalMarkupPercent } from './repair/repairApplyEstimatePresetIds';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
@@ -102,7 +110,20 @@ type WorkspaceBaseline = {
   categorySlugs: string[];
   name: string;
   draftsByCategory: Record<string, string | null>;
+  customer: EstimateCrmCustomerFields;
 };
+
+function estimateCustomerFieldsFromPreset(
+  preset: ContractEstimatePreset | undefined
+): EstimateCrmCustomerFields {
+  if (!preset) return emptyEstimateCrmCustomerFields();
+  const id = preset.crmCustomerId?.trim() ?? '';
+  return {
+    crmCustomerId: id || null,
+    customerName: (preset.customerName ?? '').trim(),
+    objectAddress: (preset.objectAddress ?? '').trim(),
+  };
+}
 
 type AdminMultiCategoryMeta = {
   slugs: string[];
@@ -401,6 +422,12 @@ function sanitizeEstimatePresetForApi(input: ContractEstimatePreset): ContractEs
     categoryName: clampWithEllipsis(input.categoryName || 'Расчёт', 200),
     groupId: input.groupId ? clampWithEllipsis(input.groupId, 48) : undefined,
   };
+  const crmId = input.crmCustomerId?.trim();
+  if (crmId) base.crmCustomerId = clampWithEllipsis(crmId, 80);
+  const custName = input.customerName?.trim();
+  if (custName) base.customerName = clampWithEllipsis(custName, 200);
+  const objAddr = input.objectAddress?.trim();
+  if (objAddr) base.objectAddress = clampWithEllipsis(objAddr, 500);
   if (typeof rawMarkup === 'number' && Number.isFinite(rawMarkup)) {
     return {
       ...base,
@@ -423,6 +450,7 @@ function ContractDocumentsEstimateWorkspaceInner() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [estimateNameError, setEstimateNameError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [items, setItems] = useState<ContractEstimatePreset[]>([]);
   const [estimateGroups, setEstimateGroups] = useState<ContractEstimateGroup[]>([]);
@@ -432,12 +460,32 @@ function ContractDocumentsEstimateWorkspaceInner() {
   const [estimateCategorySlugs, setEstimateCategorySlugs] = useState<string[]>([]);
   const [activeCategorySlug, setActiveCategorySlug] = useState('');
   const [estimateNameDraft, setEstimateNameDraft] = useState('');
+  const [crmCustomerId, setCrmCustomerId] = useState<string | null>(null);
+  const [customerName, setCustomerName] = useState('');
+  const [objectAddress, setObjectAddress] = useState('');
   const [selectedEstimateId, setSelectedEstimateId] = useState('');
   const [baseline, setBaseline] = useState<WorkspaceBaseline | null>(null);
   const [draftPollTick, setDraftPollTick] = useState(0);
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   /** Пока true — считаем черновик несохранённым (режим «копия»), чтобы была кнопка «Сохранить». */
   const [copySessionPendingSave, setCopySessionPendingSave] = useState(false);
+
+  const applyEstimateCustomerFields = useCallback((fields: EstimateCrmCustomerFields) => {
+    setCrmCustomerId(fields.crmCustomerId);
+    setCustomerName(fields.customerName);
+    setObjectAddress(fields.objectAddress);
+  }, []);
+
+  const handleEstimateCrmCustomerApplied = useCallback(
+    (detail: CrmCustomerDetail) => {
+      applyEstimateCustomerFields(estimateFieldsFromCrmCustomerDetail(detail));
+    },
+    [applyEstimateCustomerFields]
+  );
+
+  const handleEstimateCrmCustomerClear = useCallback(() => {
+    applyEstimateCustomerFields(emptyEstimateCrmCustomerFields());
+  }, [applyEstimateCustomerFields]);
 
   useEffect(() => {
     void (async () => {
@@ -446,6 +494,7 @@ function ContractDocumentsEstimateWorkspaceInner() {
       setOk(null);
       setBaseline(null);
       setCopySessionPendingSave(false);
+      applyEstimateCustomerFields(emptyEstimateCrmCustomerFields());
       try {
         const [presetsRes, categoriesRes] = await Promise.all([
           getContractDocumentEstimatePresets('REPAIR'),
@@ -468,6 +517,7 @@ function ContractDocumentsEstimateWorkspaceInner() {
 
         let baselineSlugs: string[] = [];
         let baselineName = '';
+        let baselineCustomer = emptyEstimateCrmCustomerFields();
 
         if (copyFromId) {
           const source = loadedItems.find((item) => item.id === copyFromId);
@@ -490,6 +540,8 @@ function ContractDocumentsEstimateWorkspaceInner() {
             setSelectedEstimateId('');
             baselineSlugs = sourceSlugs;
             baselineName = copyTitle;
+            baselineCustomer = estimateCustomerFieldsFromPreset(source);
+            applyEstimateCustomerFields(baselineCustomer);
             setCopySessionPendingSave(true);
           } else {
             setError('Исходный расчёт не найден. Вернитесь к списку и обновите страницу.');
@@ -519,6 +571,8 @@ function ContractDocumentsEstimateWorkspaceInner() {
             setSelectedEstimateId(preset.id);
             baselineSlugs = presetSlugs;
             baselineName = preset.title;
+            baselineCustomer = estimateCustomerFieldsFromPreset(preset);
+            applyEstimateCustomerFields(baselineCustomer);
           } else {
             setError('Расчёт не найден. Вернитесь к списку и обновите страницу.');
             setSelectedEstimateId('');
@@ -531,6 +585,28 @@ function ContractDocumentsEstimateWorkspaceInner() {
         } else if (fromMeasurementId) {
           try {
             const measurement = await getMeasurement(fromMeasurementId);
+            let measurementCustomer = emptyEstimateCrmCustomerFields();
+            if (measurement.customerId?.trim()) {
+              try {
+                const detail = await getCrmCustomer(measurement.customerId.trim());
+                measurementCustomer = estimateFieldsFromCrmCustomerDetail(
+                  crmDetailWithPreferredObjectAddress(detail, measurement.customerAddress)
+                );
+              } catch {
+                measurementCustomer = {
+                  crmCustomerId: measurement.customerId.trim(),
+                  customerName: (measurement.customerName ?? '').trim(),
+                  objectAddress: (measurement.customerAddress ?? '').trim(),
+                };
+              }
+            } else if ((measurement.customerName ?? '').trim()) {
+              measurementCustomer = {
+                crmCustomerId: null,
+                customerName: measurement.customerName.trim(),
+                objectAddress: (measurement.customerAddress ?? '').trim(),
+              };
+            }
+            applyEstimateCustomerFields(measurementCustomer);
             const rooms = parseMeasurementRooms(measurement.comments);
             if (rooms.length === 0) {
               setError('В выбранном замере нет данных для автогенерации расчёта.');
@@ -541,6 +617,7 @@ function ContractDocumentsEstimateWorkspaceInner() {
               setActiveCategorySlug(cats[0]?.slug ?? '');
               baselineSlugs = cats[0] ? [cats[0].slug] : [];
               baselineName = '';
+              baselineCustomer = measurementCustomer;
             } else {
               clearStoredCalculatorStateForNewEstimate(cats.map((c) => c.slug));
               const { draftSlugs, draftsByCategory } = await buildDraftsFromMeasurement(
@@ -553,6 +630,7 @@ function ContractDocumentsEstimateWorkspaceInner() {
                 setActiveCategorySlug(cats[0]?.slug ?? '');
                 baselineSlugs = cats[0] ? [cats[0].slug] : [];
                 baselineName = '';
+                baselineCustomer = measurementCustomer;
               } else {
                 for (const slug of draftSlugs) {
                   applyDraftToLocalCalculator(slug, draftsByCategory[slug]);
@@ -564,6 +642,7 @@ function ContractDocumentsEstimateWorkspaceInner() {
                 setSelectedEstimateId('');
                 baselineSlugs = draftSlugs;
                 baselineName = autoTitle;
+                baselineCustomer = measurementCustomer;
                 setCopySessionPendingSave(true);
               }
             }
@@ -595,6 +674,7 @@ function ContractDocumentsEstimateWorkspaceInner() {
           categorySlugs: baselineSlugs,
           name: baselineName,
           draftsByCategory: baselineDraftsByCategory,
+          customer: baselineCustomer,
         });
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Не удалось загрузить данные');
@@ -602,7 +682,13 @@ function ContractDocumentsEstimateWorkspaceInner() {
         setLoading(false);
       }
     })();
-  }, [estimateIdFromUrl, copyFromId, splitInstanceFromUrl, fromMeasurementId]);
+  }, [
+    estimateIdFromUrl,
+    copyFromId,
+    splitInstanceFromUrl,
+    fromMeasurementId,
+    applyEstimateCustomerFields,
+  ]);
 
   useEffect(() => {
     if (estimateCategorySlugs.length === 0) {
@@ -642,14 +728,27 @@ function ContractDocumentsEstimateWorkspaceInner() {
           break;
         }
       }
-      const isDirty = !sameSlugs || estimateNameDraft !== baseline.name || draftsDirty;
+      const customerDirty =
+        (crmCustomerId ?? '') !== (baseline.customer.crmCustomerId ?? '') ||
+        customerName !== baseline.customer.customerName ||
+        objectAddress !== baseline.customer.objectAddress;
+      const isDirty =
+        !sameSlugs || estimateNameDraft !== baseline.name || draftsDirty || customerDirty;
       if (!isDirty) return;
       e.preventDefault();
       e.returnValue = '';
     };
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [baseline, copySessionPendingSave, estimateCategorySlugs, estimateNameDraft]);
+  }, [
+    baseline,
+    copySessionPendingSave,
+    estimateCategorySlugs,
+    estimateNameDraft,
+    crmCustomerId,
+    customerName,
+    objectAddress,
+  ]);
 
   const dirty = useMemo(() => {
     if (copySessionPendingSave) return true;
@@ -661,13 +760,25 @@ function ContractDocumentsEstimateWorkspaceInner() {
       selectedSlugs.every((slug, idx) => slug === baselineSlugs[idx]);
     if (!sameSlugs) return true;
     if (estimateNameDraft !== baseline.name) return true;
+    if ((crmCustomerId ?? '') !== (baseline.customer.crmCustomerId ?? '')) return true;
+    if (customerName !== baseline.customer.customerName) return true;
+    if (objectAddress !== baseline.customer.objectAddress) return true;
     for (const slug of selectedSlugs) {
       const currentDraft = window.localStorage.getItem(calculatorDraftStorageKey(slug));
       const baselineDraft = baseline.draftsByCategory[slug] ?? null;
       if ((currentDraft ?? '') !== (baselineDraft ?? '')) return true;
     }
     return false;
-  }, [copySessionPendingSave, baseline, estimateCategorySlugs, estimateNameDraft, draftPollTick]);
+  }, [
+    copySessionPendingSave,
+    baseline,
+    estimateCategorySlugs,
+    estimateNameDraft,
+    draftPollTick,
+    crmCustomerId,
+    customerName,
+    objectAddress,
+  ]);
 
   const isEditingExisting =
     Boolean(selectedEstimateId) && items.some((it) => it.id === selectedEstimateId);
@@ -759,6 +870,31 @@ function ContractDocumentsEstimateWorkspaceInner() {
   };
 
   const saveCurrentEstimate = async () => {
+    setError(null);
+    setEstimateNameError(null);
+
+    const nameTrimmed = estimateNameDraft.trim();
+    if (!nameTrimmed) {
+      const msg = 'Укажите название расчёта — без него сохранить нельзя.';
+      setEstimateNameError(msg);
+      setError(msg);
+      return;
+    }
+
+    if (!crmCustomerId?.trim()) {
+      setError('Выберите заказчика в базе через поиск.');
+      return;
+    }
+    if (!customerName.trim()) {
+      setError('В карточке заказчика не указано имя.');
+      return;
+    }
+    if (!objectAddress.trim()) {
+      setError(
+        'Укажите адрес объекта в карточке заказчика или выберите строку с адресом в поиске.'
+      );
+      return;
+    }
     const selectedSlugs = normalizeUniqueCategorySlugs(estimateCategorySlugs);
     if (selectedSlugs.length === 0) {
       setError('Выберите хотя бы одну категорию работ.');
@@ -785,10 +921,7 @@ function ContractDocumentsEstimateWorkspaceInner() {
       ? `Комплексный расчёт: ${categoryNames.join(', ')}`
       : categoryNames[0];
     const categoryName = clampWithEllipsis(categoryNameRaw, 200);
-    const title = clampWithEllipsis(
-      estimateNameDraft.trim() || `Расчёт ${new Date().toLocaleString('ru-RU')}`,
-      160
-    );
+    const title = clampWithEllipsis(nameTrimmed, 160);
 
     const existing = selectedEstimateId
       ? items.find((it) => it.id === selectedEstimateId)
@@ -855,6 +988,9 @@ function ContractDocumentsEstimateWorkspaceInner() {
       snapshot: mergedSnapshot,
       createdAt,
       updatedAt: new Date().toISOString(),
+      crmCustomerId: crmCustomerId.trim(),
+      customerName: clampWithEllipsis(customerName.trim(), 200),
+      objectAddress: clampWithEllipsis(objectAddress.trim(), 500),
       ...(existing?.groupId
         ? { groupId: existing.groupId }
         : copyFromSource?.groupId
@@ -948,16 +1084,8 @@ function ContractDocumentsEstimateWorkspaceInner() {
               : 'Калькулятор сметы. Сохранение появляется только при изменениях в названии, категории или смете; затем вы вернётесь к списку общих расчётов.'}
           </p>
         </div>
-        <div className={styles.estimateWorkspaceHeaderControls}>
-          <label className={`${styles.field} ${styles.estimateWorkspaceHeaderNameField}`}>
-            <span>Название расчёта</span>
-            <input
-              value={estimateNameDraft}
-              onChange={(e) => setEstimateNameDraft(e.target.value)}
-              placeholder="Например: ЖК Парк, кв. 54"
-            />
-          </label>
-          {dirty ? (
+        {dirty ? (
+          <div className={styles.estimateWorkspaceHeaderControls}>
             <div className={styles.estimateWorkspaceActions}>
               <button
                 type="button"
@@ -980,40 +1108,133 @@ function ContractDocumentsEstimateWorkspaceInner() {
                 Выйти без сохранения
               </button>
             </div>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </div>
 
       {error ? <p className={styles.error}>{error}</p> : null}
       {ok ? <p className={styles.success}>{ok}</p> : null}
 
-      <div
-        className={`${styles.docToolbar} ${styles.blockImport} ${styles.estimateWorkspaceToolbar}`}
-      >
-        <label className={`${styles.field} ${styles.estimateWorkspaceFieldWide}`}>
-          <span>Категории работ (можно выбрать несколько)</span>
-          <div className={styles.estimateWorkspaceCategoryChips}>
-            {estimateCategories.map((c) => (
-              <button
-                key={c.slug}
-                type="button"
-                className={`${styles.estimateWorkspaceCategoryChip} ${
-                  estimateCategorySlugs.includes(c.slug)
-                    ? styles.estimateWorkspaceCategoryChipActive
-                    : ''
-                }`}
-                onClick={() => {
-                  setEstimateCategorySlugs((prev) => {
-                    if (prev.includes(c.slug)) return prev.filter((x) => x !== c.slug);
-                    return normalizeUniqueCategorySlugs([...prev, c.slug]);
-                  });
-                }}
-              >
-                {c.name}
-              </button>
-            ))}
+      <div className={styles.estimateWorkspaceTopRow}>
+        <div className={styles.estimateWorkspaceTopBlock}>
+          <div className={`${styles.sectionCard} ${styles.estimateWorkspaceCategoriesCard}`}>
+            <h3 className={styles.sectionTitle}>Категории работ</h3>
+            <p className={styles.hint} style={{ marginTop: 4, marginBottom: 10 }}>
+              Можно выбрать несколько — для каждой откроется вкладка калькулятора ниже.
+            </p>
+            <div className={styles.estimateWorkspaceCategoryChips}>
+              {estimateCategories.map((c) => (
+                <button
+                  key={c.slug}
+                  type="button"
+                  className={`${styles.estimateWorkspaceCategoryChip} ${
+                    estimateCategorySlugs.includes(c.slug)
+                      ? styles.estimateWorkspaceCategoryChipActive
+                      : ''
+                  }`}
+                  onClick={() => {
+                    setEstimateCategorySlugs((prev) => {
+                      if (prev.includes(c.slug)) return prev.filter((x) => x !== c.slug);
+                      return normalizeUniqueCategorySlugs([...prev, c.slug]);
+                    });
+                  }}
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
           </div>
-        </label>
+        </div>
+        <div className={styles.estimateWorkspaceTopBlock}>
+          <div className={`${styles.sectionCard} ${styles.estimateWorkspaceCustomerCard}`}>
+            <div
+              className={`${measurementFormStyles.blankSheet} ${styles.estimateWorkspaceCustomerBlankSheet}`}
+            >
+              <div className={measurementFormStyles.row}>
+                <label className={measurementFormStyles.label} htmlFor="estimate-workspace-name">
+                  Название расчёта <span className={measurementFormStyles.required}>*</span>
+                </label>
+                <input
+                  id="estimate-workspace-name"
+                  type="text"
+                  value={estimateNameDraft}
+                  onChange={(e) => {
+                    setEstimateNameDraft(e.target.value);
+                    if (estimateNameError) {
+                      setEstimateNameError(null);
+                      setError(null);
+                    }
+                  }}
+                  placeholder="Например: ЖК Парк, кв. 54"
+                  className={`${styles.estimateWorkspaceNameSearchInput} ${
+                    estimateNameError ? measurementFormStyles.inputError : ''
+                  }`}
+                  autoComplete="off"
+                  required
+                  aria-invalid={!!estimateNameError}
+                  aria-describedby={estimateNameError ? 'estimate-workspace-name-error' : undefined}
+                />
+                {estimateNameError ? (
+                  <span
+                    id="estimate-workspace-name-error"
+                    className={measurementFormStyles.fieldError}
+                    role="alert"
+                  >
+                    {estimateNameError}
+                  </span>
+                ) : null}
+              </div>
+              <div className={styles.estimateWorkspaceCustomerFieldsRow}>
+                <div className={measurementFormStyles.row}>
+                  <label
+                    className={measurementFormStyles.label}
+                    htmlFor="estimate-workspace-customer"
+                  >
+                    Заказчик
+                  </label>
+                  <input
+                    id="estimate-workspace-customer"
+                    type="text"
+                    value={customerName}
+                    readOnly
+                    placeholder="Выберите карточку в базе"
+                    className={`${measurementFormStyles.input} ${measurementFormStyles.inputReadonly}`}
+                    aria-invalid={!customerName.trim() && Boolean(error)}
+                  />
+                </div>
+                <div className={measurementFormStyles.row}>
+                  <label
+                    className={measurementFormStyles.label}
+                    htmlFor="estimate-workspace-object-address"
+                  >
+                    Адрес объекта
+                  </label>
+                  <input
+                    id="estimate-workspace-object-address"
+                    type="text"
+                    value={objectAddress}
+                    readOnly
+                    placeholder="Из карточки заказчика"
+                    className={`${measurementFormStyles.input} ${measurementFormStyles.inputReadonly}`}
+                  />
+                </div>
+              </div>
+              <div className={styles.repairCustomerSearchSlot}>
+                <CrmCustomerSearchPanel
+                  customerId={crmCustomerId}
+                  listboxId="estimate-workspace-customer-search-listbox"
+                  onCustomerApplied={handleEstimateCrmCustomerApplied}
+                  onClear={handleEstimateCrmCustomerClear}
+                  onError={(text) => setError(text)}
+                  addCustomerDraft={{
+                    fullName: customerName,
+                    objectAddress,
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className={styles.docPane}>

@@ -252,6 +252,12 @@ export interface ContractEstimatePreset {
   additionalMarkupPercent?: number;
   /** Замер-источник, если расчёт был создан из выполненного замера. */
   sourceMeasurementId?: string;
+  /** Карточка заказчика в CRM (`Customer.id`). */
+  crmCustomerId?: string;
+  /** Имя заказчика для списков и подписей (из карточки CRM). */
+  customerName?: string;
+  /** Адрес объекта, к которому относится расчёт. */
+  objectAddress?: string;
   snapshot?: {
     total: number;
     rooms: Array<{

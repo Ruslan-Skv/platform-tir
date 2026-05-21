@@ -73,6 +73,24 @@ export class ContractEstimatePresetDto {
   @MaxLength(80)
   sourceMeasurementId?: string;
 
+  /** Карточка заказчика в CRM (`Customer.id`). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  crmCustomerId?: string;
+
+  /** Отображаемое имя заказчика (из карточки CRM). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  customerName?: string;
+
+  /** Адрес объекта (из карточки CRM / строки поиска). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  objectAddress?: string;
+
   /** Доп. наценка на расчёт, % (если не задано — для расчёта в объекте берётся наценка объекта). */
   @IsOptional()
   @Type(() => Number)

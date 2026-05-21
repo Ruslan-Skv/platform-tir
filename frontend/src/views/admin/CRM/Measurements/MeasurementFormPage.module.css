@@ -36,7 +36,7 @@
 }
 
 .backLink:hover {
-  color: var(--admin-accent);
+  color: var(--admin-info);
 }
 
 .titleRow {
@@ -1139,7 +1139,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .backLink:hover {
-  color: var(--admin-accent);
+  color: var(--admin-info-light, #93c5fd);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
