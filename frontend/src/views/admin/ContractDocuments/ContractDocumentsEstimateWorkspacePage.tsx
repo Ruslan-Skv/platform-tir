@@ -27,6 +27,12 @@ import {
   emptyEstimateCrmCustomerFields,
   estimateFieldsFromCrmCustomerDetail,
 } from './repair/estimateCrmCustomer';
+import { ensureEstimateObjectGroups } from './repair/estimateObjectGroupSync';
+import {
+  type LinkedCopySplitTarget,
+  resolveLinkedCopySplitBundleId,
+  shouldAnchorSourceOnNewLinkedBundle,
+} from './repair/estimateSplitBundle';
 import { clampEstimateAdditionalMarkupPercent } from './repair/repairApplyEstimatePresetIds';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
@@ -455,6 +461,8 @@ function ContractDocumentsEstimateWorkspaceInner() {
   const estimateIdFromUrl = searchParams.get('id');
   const copyFromId = searchParams.get('copyFrom');
   const splitInstanceFromUrl = searchParams.get('splitInstance') === '1';
+  const newSplitBundleFromUrl = searchParams.get('newSplitBundle') === '1';
+  const joinSplitBundleIdFromUrl = searchParams.get('splitBundle')?.trim() ?? '';
   const fromMeasurementId = searchParams.get('fromMeasurement');
 
   const [loading, setLoading] = useState(true);
@@ -852,7 +860,8 @@ function ContractDocumentsEstimateWorkspaceInner() {
     setError(null);
     setOk(null);
     try {
-      const payloadItems = next.map((it) => {
+      const synced = ensureEstimateObjectGroups(next, estimateGroups);
+      const payloadItems = synced.items.map((it) => {
         const {
           calculatorDraftByCategory: _draftByCategory,
           multiCategorySlugs: _multiCategorySlugs,
@@ -863,7 +872,7 @@ function ContractDocumentsEstimateWorkspaceInner() {
         };
         return sanitizeEstimatePresetForApi(rest as ContractEstimatePreset);
       });
-      const payloadGroups = estimateGroups.map((g) => {
+      const payloadGroups = synced.groups.map((g) => {
         const id = clampWithEllipsis(g.id || `grp_${Date.now()}`, 48);
         const title = clampWithEllipsis(g.title || 'Объект', 200);
         if (
@@ -887,7 +896,8 @@ function ContractDocumentsEstimateWorkspaceInner() {
         items: payloadItems,
         groups: payloadGroups,
       });
-      setItems(next);
+      setItems(synced.items);
+      setEstimateGroups(synced.groups);
       setOk('Сохранено.');
       return true;
     } catch (e) {
@@ -994,19 +1004,21 @@ function ContractDocumentsEstimateWorkspaceInner() {
       !existing && copyFromId ? items.find((it) => it.id === copyFromId) : undefined;
     const markupSource = existing ?? copyFromSource;
     const copyLinkedSplitInstance = Boolean(copyFromSource) && splitInstanceFromUrl;
-
-    if (copyLinkedSplitInstance && copyFromSource) {
-      const eligible =
-        Boolean(copyFromSource.splitBundleId) ||
-        (Array.isArray(copyFromSource.estimateWorkScopeKeys) &&
-          copyFromSource.estimateWorkScopeKeys.length > 0);
-      if (!eligible) {
-        setError(
-          'Чтобы создать связанный экземпляр, сначала у исходного расчёта сохраните состав в модалке «Разделение сметы».'
-        );
-        return;
-      }
-    }
+    const linkedCopyTarget: LinkedCopySplitTarget | null = copyLinkedSplitInstance
+      ? joinSplitBundleIdFromUrl
+        ? { mode: 'join', bundleId: joinSplitBundleIdFromUrl }
+        : newSplitBundleFromUrl
+          ? { mode: 'new' }
+          : { mode: 'same' }
+      : null;
+    const linkedSplitBundleId =
+      copyFromSource && linkedCopyTarget
+        ? resolveLinkedCopySplitBundleId(copyFromSource, linkedCopyTarget, items)
+        : undefined;
+    const anchorSourceToNewBundle =
+      copyFromSource &&
+      linkedCopyTarget &&
+      shouldAnchorSourceOnNewLinkedBundle(copyFromSource, linkedCopyTarget, items);
 
     const createdAt =
       existing != null
@@ -1059,17 +1071,22 @@ function ContractDocumentsEstimateWorkspaceInner() {
       ...(typeof existing?.estimateWorkScopeKeys !== 'undefined'
         ? { estimateWorkScopeKeys: [...existing.estimateWorkScopeKeys] }
         : {}),
-      ...(copyLinkedSplitInstance && copyFromSource
+      ...(copyLinkedSplitInstance && linkedSplitBundleId
         ? {
-            splitBundleId: copyFromSource.splitBundleId ?? copyFromSource.id,
+            splitBundleId: linkedSplitBundleId,
             estimateWorkScopeKeys: [] as string[],
           }
         : {}),
     };
 
-    const next = existing
+    let next = existing
       ? items.map((it) => (it.id === existing.id ? nextItem : it))
       : [nextItem, ...items].slice(0, 200);
+    if (anchorSourceToNewBundle && copyFromSource && linkedSplitBundleId) {
+      next = next.map((it) =>
+        it.id === copyFromSource.id ? { ...it, splitBundleId: linkedSplitBundleId } : it
+      );
+    }
 
     setSelectedEstimateId(nextItem.id);
     const saved = await persistItems(next);
@@ -1116,9 +1133,11 @@ function ContractDocumentsEstimateWorkspaceInner() {
           </h1>
           {copyFromId && splitInstanceFromUrl ? (
             <p className={`${styles.subtitle} ${styles.estimateWorkspaceSubtitle}`}>
-              После сохранения расчёт окажется в том же объекте, рядом с исходным. Откройте у него
-              модалку «Разделение сметы» и отметьте позиции для следующего договора. Обычное
-              копирование без связи — кнопка «Копировать расчёт» в списке.
+              {newSplitBundleFromUrl
+                ? 'Новая связка на том же объекте: после сохранения распределите позиции в «Разделении сметы» у каждого экземпляра этой связки.'
+                : joinSplitBundleIdFromUrl
+                  ? 'Копия войдёт в выбранную связку на объекте — отметьте её позиции в «Разделении сметы».'
+                  : 'После сохранения расчёт окажется в той же связке, рядом с исходным. Отметьте позиции в «Разделении сметы» у каждого экземпляра.'}
             </p>
           ) : null}
         </div>

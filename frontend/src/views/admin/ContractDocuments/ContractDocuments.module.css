@@ -4302,6 +4302,68 @@
   gap: var(--admin-space-xs);
 }
 
+/* Модалка «Создать копию расчёта» — как «Закрытие договора» (data-modal-form) */
+.estimatesCopyChoiceOptions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md);
+  margin-top: var(--admin-space-xs);
+}
+
+.estimatesCopyChoiceRadioRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--admin-space-md);
+  cursor: pointer;
+}
+
+.estimatesCopyChoiceRadioRow:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.estimatesCopyChoiceRadioRow input[type='radio'] {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.estimatesCopyChoiceRadioText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xs);
+  min-width: 0;
+}
+
+.estimatesCopyChoiceRadioText strong {
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  color: var(--admin-text-primary);
+}
+
+.estimatesCopyChoiceRadioText > span:not(.estimatesCopyChoiceRadioWarn) {
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
+  line-height: var(--admin-line-height-sm, 1.25);
+}
+
+.estimatesCopyChoiceRadioWarn {
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-warning-brown, var(--admin-text-secondary));
+  line-height: var(--admin-line-height-sm, 1.25);
+}
+
+.estimatesCopyChoiceBundleSelect {
+  margin-top: var(--admin-space-xs);
+  width: 100%;
+  max-width: 100%;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-primary);
+  background: var(--admin-bg-input, var(--admin-bg-surface));
+  border: 1px solid var(--admin-border-default);
+  border-radius: var(--admin-radius-sm);
+}
+
 .estimatesPage .headerButtonsRow .primaryBtn.estimatesCompactPrimaryLink,
 .estimatesPage .headerButtonsRow .secondaryBtn.estimatesGenerateFromMeasurementBtn {
   padding: var(--admin-space-sm) var(--admin-space-xl);

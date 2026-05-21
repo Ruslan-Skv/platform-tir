@@ -46,10 +46,19 @@ import {
   reloadEstimatesListFiltersFromStorage,
 } from './estimatesListFilters';
 import { type EstimatesListSortBy, type EstimatesListSortOrder } from './estimatesListSort';
+import { ensureEstimateObjectGroups } from './repair/estimateObjectGroupSync';
+import {
+  type LinkedCopySplitTarget,
+  generateSplitBundleId,
+  getLinkedCopyDisabledReason,
+  getSplitBundleBadgeFraction,
+  listJoinableSplitBundlesAtObject,
+} from './repair/estimateSplitBundle';
 import {
   type SiblingClaim,
   type WorkScopeCategoryRow,
   type WorkScopeLineRow,
+  applySplitBundleSaveToPresets,
   buildEstimateWorkScopeTree,
   buildEstimateWorkScopeTreeAsync,
   buildSiblingLineClaimIndex,
@@ -58,6 +67,8 @@ import {
   lineKeysFromRoomNodeId,
   lineKeysFromStageNodeId,
   linesInWorkScopeRoom,
+  listPresetsInSplitBundle,
+  resolveSplitBundleId,
   selectionIntersectsSiblingClaims,
 } from './repair/estimateWorkScopeTree';
 import { getDisplayContractDate, getDisplayContractNumber } from './repair/packageContractDisplay';
@@ -187,14 +198,6 @@ function formatEstimateListTableCost(total: number): string {
 const ESTIMATES_LIST_TABLE_COL_SPAN = 7;
 const ESTIMATES_NO_ADDRESS_KEY = '__no_object_address__';
 
-/** Можно создать связанный экземпляр: уже есть сохранённый состав разделения сметы. */
-function isPresetEligibleForLinkedSplitInstance(p: ContractEstimatePreset): boolean {
-  return (
-    Boolean(p.splitBundleId) ||
-    (Array.isArray(p.estimateWorkScopeKeys) && p.estimateWorkScopeKeys.length > 0)
-  );
-}
-
 /** Объединение ключей строк сметы (`wsl:…`) по всем расчётам связки: явный список или «вся смета», если ключей нет в данных. */
 function mergeSplitBundleWorkScopeLineKeys(
   peers: ContractEstimatePreset[],
@@ -208,7 +211,7 @@ function mergeSplitBundleWorkScopeLineKeys(
         if (typeof k === 'string' && k.length > 0) union.add(k);
       }
     } else if (!Array.isArray(keys)) {
-      const tree = p.groupId ? buildEstimateWorkScopeTree(p, groups) : [];
+      const tree = buildEstimateWorkScopeTree(p, groups);
       for (const id of collectAllLineScopeIds(tree)) union.add(id);
     }
   }
@@ -218,14 +221,16 @@ function mergeSplitBundleWorkScopeLineKeys(
 /** Не менее двух расчётов в связке и вместе они покрывают все строки дерева состава для `cardPreset`. */
 function splitBundleCoversAllWorkScopeLines(
   cardPreset: ContractEstimatePreset,
-  peers: ContractEstimatePreset[],
+  bundlePresets: ContractEstimatePreset[],
   groups: ContractEstimateGroup[]
 ): boolean {
-  if (!cardPreset.splitBundleId?.trim() || peers.length < 2) return false;
-  const tree = cardPreset.groupId ? buildEstimateWorkScopeTree(cardPreset, groups) : [];
+  if (!resolveSplitBundleId(cardPreset, bundlePresets) || bundlePresets.length < 2) {
+    return false;
+  }
+  const tree = buildEstimateWorkScopeTree(cardPreset, groups);
   const allIds = collectAllLineScopeIds(tree);
   if (allIds.length === 0) return false;
-  const union = mergeSplitBundleWorkScopeLineKeys(peers, groups);
+  const union = mergeSplitBundleWorkScopeLineKeys(bundlePresets, groups);
   return allIds.every((id) => union.has(id));
 }
 
@@ -376,8 +381,207 @@ function stripOrphanGroupIds(
   });
 }
 
-function generateSplitBundleId(): string {
-  return `split_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+type EstimateCopyKind = 'plain' | 'linked_same' | 'linked_new' | 'linked_join';
+
+type EstimateCopyChoiceResult =
+  | { kind: 'plain' }
+  | { kind: 'linked'; target: LinkedCopySplitTarget };
+
+function linkedTargetForCopyKind(
+  kind: EstimateCopyKind,
+  joinBundleId: string
+): LinkedCopySplitTarget | null {
+  if (kind === 'linked_same') return { mode: 'same' };
+  if (kind === 'linked_new') return { mode: 'new' };
+  if (kind === 'linked_join') return { mode: 'join', bundleId: joinBundleId };
+  return null;
+}
+
+function EstimateCopyChoiceModal({
+  preset,
+  allPresets,
+  archiveView,
+  hasLockedUsage,
+  saving,
+  onClose,
+  onChoose,
+}: {
+  preset: ContractEstimatePreset;
+  allPresets: ContractEstimatePreset[];
+  archiveView: boolean;
+  hasLockedUsage: boolean;
+  saving: boolean;
+  onClose: () => void;
+  onChoose: (choice: EstimateCopyChoiceResult) => void;
+}) {
+  const [copyKind, setCopyKind] = useState<EstimateCopyKind>('plain');
+  const joinableBundles = useMemo(
+    () => listJoinableSplitBundlesAtObject(preset, allPresets),
+    [preset, allPresets]
+  );
+  const [joinBundleId, setJoinBundleId] = useState('');
+  const inCurrentBundle = Boolean(resolveSplitBundleId(preset, allPresets));
+  const title = preset.title.trim() || 'Расчёт';
+  const copyKindLabelId = `estimate-copy-kind-${preset.id}`;
+
+  const activeLinkedTarget = linkedTargetForCopyKind(copyKind, joinBundleId);
+  const linkedDisabledReason =
+    activeLinkedTarget != null
+      ? getLinkedCopyDisabledReason(preset, allPresets, activeLinkedTarget, {
+          archiveView,
+          hasLockedUsage,
+        })
+      : null;
+  const submitBlocked =
+    copyKind !== 'plain' &&
+    (Boolean(linkedDisabledReason) || (copyKind === 'linked_join' && !joinBundleId.trim()));
+
+  useEffect(() => {
+    setCopyKind('plain');
+    setJoinBundleId(joinableBundles[0]?.bundleId ?? '');
+  }, [preset.id, joinableBundles]);
+
+  const renderLinkedOption = (
+    kind: Exclude<EstimateCopyKind, 'plain'>,
+    optionTitle: string,
+    optionHint: string,
+    target: LinkedCopySplitTarget
+  ) => {
+    const reason = getLinkedCopyDisabledReason(preset, allPresets, target, {
+      archiveView,
+      hasLockedUsage,
+    });
+    return (
+      <label className={styles.estimatesCopyChoiceRadioRow} title={reason ?? undefined}>
+        <input
+          type="radio"
+          name={`estimate-copy-${preset.id}`}
+          checked={copyKind === kind}
+          disabled={saving || Boolean(reason)}
+          onChange={() => setCopyKind(kind)}
+        />
+        <span className={styles.estimatesCopyChoiceRadioText}>
+          <strong>{optionTitle}</strong>
+          <span>{optionHint}</span>
+          {reason ? <span className={styles.estimatesCopyChoiceRadioWarn}>{reason}</span> : null}
+          {kind === 'linked_join' && copyKind === 'linked_join' && joinableBundles.length > 0 ? (
+            <select
+              className={styles.estimatesCopyChoiceBundleSelect}
+              value={joinBundleId}
+              disabled={saving || Boolean(reason)}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => {
+                e.stopPropagation();
+                setJoinBundleId(e.target.value);
+              }}
+            >
+              {joinableBundles.map((b) => (
+                <option key={b.bundleId} value={b.bundleId}>
+                  {b.label}
+                </option>
+              ))}
+            </select>
+          ) : null}
+        </span>
+      </label>
+    );
+  };
+
+  return (
+    <Modal
+      isOpen
+      onClose={() => {
+        if (saving) return;
+        onClose();
+      }}
+      title="Создать копию расчёта"
+      size="md"
+      compactOnMobile
+    >
+      <div
+        className={styles.estimatesCopyChoiceModalForm}
+        data-modal-form
+        data-modal-density="compact"
+      >
+        <p data-modal-form-hint style={{ marginTop: 0 }}>
+          Расчёт «<strong>{title}</strong>». На одном объекте может быть несколько отдельных связок
+          разделения сметы — выберите, куда добавить копию.
+        </p>
+        <div data-modal-form-group data-modal-span>
+          <span id={copyKindLabelId}>Вариант копии</span>
+          <div
+            className={styles.estimatesCopyChoiceOptions}
+            role="radiogroup"
+            aria-labelledby={copyKindLabelId}
+          >
+            <label className={styles.estimatesCopyChoiceRadioRow}>
+              <input
+                type="radio"
+                name={`estimate-copy-${preset.id}`}
+                checked={copyKind === 'plain'}
+                disabled={saving}
+                onChange={() => setCopyKind('plain')}
+              />
+              <span className={styles.estimatesCopyChoiceRadioText}>
+                <strong>Обычная копия</strong>
+                <span>Отдельный расчёт без связи при разделении сметы.</span>
+              </span>
+            </label>
+            {renderLinkedOption(
+              'linked_same',
+              inCurrentBundle
+                ? 'Связанная копия — в эту же связку'
+                : 'Связанная копия — начать связку',
+              inCurrentBundle
+                ? 'Ещё один экземпляр в текущей связке; позиции сметы распределяются между расчётами связки.'
+                : 'Первый связанный экземпляр: после сохранения отметьте состав в «Разделении сметы» у каждого расчёта.',
+              { mode: 'same' }
+            )}
+            {renderLinkedOption(
+              'linked_new',
+              'Связанная копия — новая связка',
+              'Отдельная связка на том же объекте (другой набор договоров / другая смета). Исходный расчёт остаётся в своей связке.',
+              { mode: 'new' }
+            )}
+            {joinableBundles.length > 0
+              ? renderLinkedOption(
+                  'linked_join',
+                  'Связанная копия — в другую связку на объекте',
+                  'Добавить экземпляр в уже существующую связку по этому адресу.',
+                  { mode: 'join', bundleId: joinBundleId }
+                )
+              : null}
+          </div>
+        </div>
+        {submitBlocked && linkedDisabledReason ? (
+          <p data-modal-form-error role="alert">
+            {linkedDisabledReason}
+          </p>
+        ) : null}
+        <div data-modal-form-actions>
+          <button type="button" data-modal-btn="secondary" disabled={saving} onClick={onClose}>
+            Отмена
+          </button>
+          <button
+            type="button"
+            data-modal-btn="primary"
+            disabled={saving || submitBlocked}
+            onClick={() => {
+              if (copyKind === 'plain') {
+                onChoose({ kind: 'plain' });
+                return;
+              }
+              const target = linkedTargetForCopyKind(copyKind, joinBundleId);
+              if (!target) return;
+              onChoose({ kind: 'linked', target });
+            }}
+          >
+            {saving ? 'Подождите…' : 'Создать'}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
 }
 
 function isLineKeyClaimedBySibling(
@@ -427,9 +631,13 @@ function EstimateWorkScopeSplitModal({
   }, [preset, groups]);
 
   const allLineIds = useMemo(() => collectAllLineScopeIds(tree), [tree]);
+  const resolvedSplitBundleId = useMemo(
+    () => resolveSplitBundleId(preset, allPresets),
+    [preset, allPresets]
+  );
   const claimIndex = useMemo(
-    () => buildSiblingLineClaimIndex(allPresets, preset.splitBundleId, preset.id),
-    [allPresets, preset.splitBundleId, preset.id]
+    () => buildSiblingLineClaimIndex(allPresets, preset),
+    [allPresets, preset]
   );
 
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
@@ -439,11 +647,13 @@ function EstimateWorkScopeSplitModal({
     const raw = preset.estimateWorkScopeKeys;
     if (Array.isArray(raw)) {
       setSelectedKeys(raw.filter((k) => allLineIds.includes(k)));
+    } else if (claimIndex.size > 0) {
+      setSelectedKeys(allLineIds.filter((id) => !claimIndex.has(id)));
     } else {
       setSelectedKeys([...allLineIds]);
     }
     setLocalError(null);
-  }, [preset.id, preset.estimateWorkScopeKeys, allLineIds]);
+  }, [preset.id, preset.estimateWorkScopeKeys, allLineIds, claimIndex]);
 
   const selectedSet = useMemo(() => new Set(selectedKeys), [selectedKeys]);
 
@@ -473,19 +683,9 @@ function EstimateWorkScopeSplitModal({
 
   /** Строка отнесена к другому расчёту связки (по сохранённым `estimateWorkScopeKeys`). */
   const isLineKeyAssignedToSiblingPreset = useMemo(() => {
-    const bundle = preset.splitBundleId?.trim();
-    if (!bundle) return () => false;
-    return (lineId: string): boolean => {
-      for (const p of allPresets) {
-        if (p.id === preset.id) continue;
-        if (p.splitBundleId !== bundle) continue;
-        const keys = p.estimateWorkScopeKeys;
-        if (!Array.isArray(keys) || keys.length === 0) continue;
-        if (keys.includes(lineId)) return true;
-      }
-      return false;
-    };
-  }, [allPresets, preset.id, preset.splitBundleId]);
+    if (!resolvedSplitBundleId) return () => false;
+    return (lineId: string): boolean => claimIndex.has(lineId);
+  }, [resolvedSplitBundleId, claimIndex]);
 
   /** Сумма позиций, которые ни здесь не выбраны, ни в связанных расчётах не отнесены. */
   const unassignedAcrossBundleTotal = useMemo(() => {
@@ -640,7 +840,8 @@ function EstimateWorkScopeSplitModal({
       setLocalError('Отметьте хотя бы одну позицию для этого экземпляра расчёта.');
       return;
     }
-    const bundle = (preset.splitBundleId ?? '').trim() || generateSplitBundleId();
+    const bundle =
+      resolvedSplitBundleId ?? ((preset.splitBundleId ?? '').trim() || generateSplitBundleId());
     setLocalError(null);
     await onSave({ splitBundleId: bundle, estimateWorkScopeKeys: [...selectedKeys] });
   };
@@ -675,7 +876,7 @@ function EstimateWorkScopeSplitModal({
           Выбрано здесь: <strong>{formatEstimatePresetTotalRub(selectedTotal)}</strong>
           {' · '}
           Невыбранные позиции
-          {preset.splitBundleId?.trim() ? ' (по связке)' : ''}:{' '}
+          {resolvedSplitBundleId ? ' (по связке)' : ''}:{' '}
           <strong>{formatEstimatePresetTotalRub(unassignedAcrossBundleTotal)}</strong>
         </p>
         {localError ? <p data-modal-form-error>{localError}</p> : null}
@@ -905,7 +1106,9 @@ export function ContractDocumentsEstimatesPage() {
     }>
   >([]);
   /** В списке раскрыт только один адрес объекта (как на /contracts). */
-  const [expandedAddressKey, setExpandedAddressKey] = useState<string | null>(null);
+  const [expandedAddressKey, setExpandedAddressKey] = useState<string | null>(
+    initialListFiltersRef.current.expandedAddressKey
+  );
   const [detachEditModal, setDetachEditModal] = useState<{
     estimateId: string;
     usages: EstimatePackageUsage[];
@@ -935,6 +1138,7 @@ export function ContractDocumentsEstimatesPage() {
   const [completedMeasurementsBusy, setCompletedMeasurementsBusy] = useState(false);
   const [selectedMeasurementId, setSelectedMeasurementId] = useState('');
   const [workScopeModalPresetId, setWorkScopeModalPresetId] = useState<string | null>(null);
+  const [copyChoicePresetId, setCopyChoicePresetId] = useState<string | null>(null);
   const [managerOptions, setManagerOptions] = useState<ContractSignatoryProfile[]>([]);
   const [search, setSearch] = useState(initialListFiltersRef.current.search);
   const [managerFilter, setManagerFilter] = useState(initialListFiltersRef.current.managerFilter);
@@ -985,8 +1189,17 @@ export function ContractDocumentsEstimatesPage() {
       })),
     ]);
     const loadedGroups = presetsRes.groups ?? [];
-    setGroups(loadedGroups);
-    setItems(stripOrphanGroupIds(presetsRes.items ?? [], loadedGroups));
+    const stripped = stripOrphanGroupIds(presetsRes.items ?? [], loadedGroups);
+    const synced = ensureEstimateObjectGroups(stripped, loadedGroups);
+    setGroups(synced.groups);
+    setItems(synced.items);
+    if (synced.changed) {
+      await putContractDocumentEstimatePresets({
+        kind: 'REPAIR',
+        items: synced.items,
+        groups: synced.groups,
+      });
+    }
     setRepairPackages(
       (packagesRes ?? []).map((p) => ({
         id: p.id,
@@ -1036,6 +1249,7 @@ export function ContractDocumentsEstimatesPage() {
     setListSortBy(saved.sortBy);
     setListSortOrder(saved.sortOrder);
     setLimit(saved.pageLimit);
+    setExpandedAddressKey(saved.expandedAddressKey);
     listFiltersHydratedRef.current = true;
   }, []);
 
@@ -1066,12 +1280,21 @@ export function ContractDocumentsEstimatesPage() {
       sortOrder: listSortOrder,
       pageLimit: limit,
       listViewMode,
+      expandedAddressKey,
     });
-  }, [search, managerFilter, dateFrom, dateTo, listSortBy, listSortOrder, limit, listViewMode]);
+  }, [
+    search,
+    managerFilter,
+    dateFrom,
+    dateTo,
+    listSortBy,
+    listSortOrder,
+    limit,
+    listViewMode,
+    expandedAddressKey,
+  ]);
 
-  useEffect(() => {
-    if (listViewMode === 'flat') setExpandedAddressKey(null);
-  }, [listViewMode]);
+  const effectiveExpandedAddressKey = listViewMode === 'by_object' ? expandedAddressKey : null;
 
   useEffect(() => {
     setPage(1);
@@ -1099,6 +1322,12 @@ export function ContractDocumentsEstimatesPage() {
     }
   }, [workScopeModalPresetId, items]);
 
+  useEffect(() => {
+    if (copyChoicePresetId && !items.some((x) => x.id === copyChoicePresetId)) {
+      setCopyChoicePresetId(null);
+    }
+  }, [copyChoicePresetId, items]);
+
   const refreshEstimates = async () => {
     if (refreshing || saving) return;
     setRefreshing(true);
@@ -1124,14 +1353,15 @@ export function ContractDocumentsEstimatesPage() {
       setOk(null);
     }
     try {
-      const cleaned = stripOrphanGroupIds(nextItems, nextGroups);
+      const stripped = stripOrphanGroupIds(nextItems, nextGroups);
+      const synced = ensureEstimateObjectGroups(stripped, nextGroups);
       await putContractDocumentEstimatePresets({
         kind: 'REPAIR',
-        items: cleaned,
-        groups: nextGroups,
+        items: synced.items,
+        groups: synced.groups,
       });
-      setItems(cleaned);
-      setGroups(nextGroups);
+      setItems(synced.items);
+      setGroups(synced.groups);
       if (!options?.suppressSuccessMessage) {
         setOk('Сохранено.');
       }
@@ -1148,15 +1378,11 @@ export function ContractDocumentsEstimatesPage() {
     presetId: string,
     payload: { splitBundleId: string; estimateWorkScopeKeys: string[] }
   ) => {
-    const next = items.map((it) =>
-      it.id === presetId
-        ? {
-            ...it,
-            splitBundleId: payload.splitBundleId,
-            estimateWorkScopeKeys: payload.estimateWorkScopeKeys,
-            updatedAt: new Date().toISOString(),
-          }
-        : it
+    const next = applySplitBundleSaveToPresets(
+      items,
+      presetId,
+      payload.splitBundleId,
+      payload.estimateWorkScopeKeys
     );
     const ok = await persistEstimates(next, groups);
     if (ok) setWorkScopeModalPresetId(null);
@@ -1613,7 +1839,7 @@ export function ContractDocumentsEstimatesPage() {
           addressKey: block.addressKey,
           items: block.items,
         });
-        if (expandedAddressKey === block.addressKey) {
+        if (effectiveExpandedAddressKey === block.addressKey) {
           for (const preset of block.items) {
             out.push({ type: 'estimate', preset, childOfAddress: true });
           }
@@ -1626,7 +1852,15 @@ export function ContractDocumentsEstimatesPage() {
       }
     }
     return out;
-  }, [estimateLayoutBlocks, expandedAddressKey]);
+  }, [estimateLayoutBlocks, effectiveExpandedAddressKey]);
+
+  useEffect(() => {
+    if (loading || listViewMode !== 'by_object' || !expandedAddressKey) return;
+    const visible = estimateLayoutBlocks.some(
+      (b) => b.kind === 'address' && b.addressKey === expandedAddressKey
+    );
+    if (!visible) setExpandedAddressKey(null);
+  }, [loading, listViewMode, estimateLayoutBlocks, expandedAddressKey]);
 
   const totalTableRows = tableDisplayItems.length;
 
@@ -1643,7 +1877,7 @@ export function ContractDocumentsEstimatesPage() {
   const renderEstimateAddressGroupRow = (
     section: Extract<EstimateLayoutBlock, { kind: 'address' }>
   ) => {
-    const expanded = expandedAddressKey === section.addressKey;
+    const expanded = effectiveExpandedAddressKey === section.addressKey;
     const boundInGroup = section.items.filter(
       (it) => (usageByEstimateId.get(it.id)?.length ?? 0) > 0
     ).length;
@@ -1788,31 +2022,32 @@ export function ContractDocumentsEstimatesPage() {
     const hasSnapshotTotal = typeof snapshotTotal === 'number' && Number.isFinite(snapshotTotal);
     const hasFullSnapshotTotal =
       typeof fullSnapshotTotal === 'number' && Number.isFinite(fullSnapshotTotal);
+    const inSplitBundle = Boolean(resolveSplitBundleId(it, items));
     const showFullEstimateTotalInParens =
-      Boolean(it.splitBundleId) &&
+      inSplitBundle &&
       hasSnapshotTotal &&
       hasFullSnapshotTotal &&
       Math.abs(fullSnapshotTotal - snapshotTotal) > 0.005;
-    const splitTree = it.groupId ? buildEstimateWorkScopeTree(it, groups) : [];
-    const canOpenWorkScopeSplit = Boolean(it.groupId) && splitTree.length > 0;
-    const splitBundlePeers = it.splitBundleId
-      ? items.filter((p) => p.splitBundleId === it.splitBundleId)
-      : [];
+    const splitTree = buildEstimateWorkScopeTree(it, groups);
+    const canOpenWorkScopeSplit = splitTree.length > 0;
+    const splitBundleAll = listPresetsInSplitBundle(it, items);
+    const splitBundleCount = splitBundleAll.length;
+    const splitBundleBadgeFraction = getSplitBundleBadgeFraction(it, items);
     const splitBundleCoversAllPositions = splitBundleCoversAllWorkScopeLines(
       it,
-      splitBundlePeers,
+      splitBundleAll,
       groups
     );
     const splitBundleTooltip =
-      splitBundlePeers.length > 0
-        ? `Связанные расчёты (${splitBundlePeers.length}):\n${splitBundlePeers.map((p) => `· ${p.title}`).join('\n')}${
+      splitBundleCount >= 2
+        ? `Расчётов в связке: ${splitBundleCount}\n${splitBundleAll
+            .map((p) => `· ${p.title.trim() || 'Расчёт'}${p.id === it.id ? ' (этот)' : ''}`)
+            .join('\n')}${
             splitBundleCoversAllPositions
               ? '\n\nВсе позиции сметы распределены по расчётам связки.'
               : ''
           }`
         : '';
-    const canAddLinkedSplitInstance =
-      Boolean(it.groupId) && isPresetEligibleForLinkedSplitInstance(it);
     const updatedLabel = it.updatedAt
       ? new Date(it.updatedAt).toLocaleString('ru-RU', {
           day: '2-digit',
@@ -1844,7 +2079,7 @@ export function ContractDocumentsEstimatesPage() {
                 🔒
               </span>
             ) : null}
-            {it.splitBundleId ? (
+            {inSplitBundle && splitBundleCount >= 2 ? (
               <span
                 className={`${styles.estimatesBadge} ${styles.estimatesSplitBundleBadge}${
                   splitBundleCoversAllPositions
@@ -1853,7 +2088,10 @@ export function ContractDocumentsEstimatesPage() {
                 }`}
                 title={splitBundleTooltip}
               >
-                Связка · {splitBundlePeers.length}
+                Связка{' '}
+                {splitBundleBadgeFraction
+                  ? `${splitBundleBadgeFraction.bundleOrdinal}/${splitBundleBadgeFraction.memberOrdinal}`
+                  : null}
               </span>
             ) : null}
           </div>
@@ -1968,51 +2206,12 @@ export function ContractDocumentsEstimatesPage() {
             </AdminTableIconButton>
             <AdminTableIconButton
               aria-label="Копировать расчёт"
-              title="Создать обычную копию расчёта (отдельный расчёт без связи при разделении сметы)"
+              title="Создать копию: обычную или связанную"
               disabled={saving}
-              onClick={() =>
-                router.push(
-                  `/admin/contract-documents/estimates/workspace?copyFrom=${encodeURIComponent(it.id)}`
-                )
-              }
+              onClick={() => setCopyChoicePresetId(it.id)}
             >
               <CopyIcon />
             </AdminTableIconButton>
-            {it.groupId && !archiveView ? (
-              <button
-                type="button"
-                className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
-                aria-label="Связанный экземпляр для другого договора"
-                title={
-                  canAddLinkedSplitInstance
-                    ? 'Создать связанный экземпляр расчёта (после сохранения выберите позиции).'
-                    : 'Сначала сохраните состав позиций в модалке «Разделение сметы» у этого расчёта.'
-                }
-                disabled={saving || hasLockedUsage || !canAddLinkedSplitInstance}
-                onClick={() => {
-                  if (!canAddLinkedSplitInstance || hasLockedUsage) return;
-                  router.push(
-                    `/admin/contract-documents/estimates/workspace?copyFrom=${encodeURIComponent(it.id)}&splitInstance=1`
-                  );
-                }}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width={14}
-                  height={14}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="var(--admin-chart-series-5)"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                </svg>
-              </button>
-            ) : null}
             {canOpenWorkScopeSplit && !archiveView ? (
               <button
                 type="button"
@@ -2061,7 +2260,7 @@ export function ContractDocumentsEstimatesPage() {
                 setTrashConfirmModal({
                   estimateId: it.id,
                   title: it.title.trim() || 'Расчёт',
-                  inSplitBundle: Boolean(it.splitBundleId),
+                  inSplitBundle,
                   detachedUsages: usages.length > 0 ? [...usages] : [],
                 });
               }}
@@ -2078,6 +2277,9 @@ export function ContractDocumentsEstimatesPage() {
     workScopeModalPresetId == null
       ? null
       : (items.find((x) => x.id === workScopeModalPresetId) ?? null);
+
+  const copyChoicePreset =
+    copyChoicePresetId == null ? null : (items.find((x) => x.id === copyChoicePresetId) ?? null);
 
   if (loading) {
     return (
@@ -2433,6 +2635,29 @@ export function ContractDocumentsEstimatesPage() {
           saving={saving}
           onClose={() => setWorkScopeModalPresetId(null)}
           onSave={(payload) => handleWorkScopeSave(workScopePreset.id, payload)}
+        />
+      ) : null}
+
+      {copyChoicePreset ? (
+        <EstimateCopyChoiceModal
+          preset={copyChoicePreset}
+          allPresets={items}
+          archiveView={archiveView}
+          hasLockedUsage={(usageByEstimateId.get(copyChoicePreset.id) ?? []).some((u) =>
+            isUsageLocked(u)
+          )}
+          saving={saving}
+          onClose={() => setCopyChoicePresetId(null)}
+          onChoose={(choice) => {
+            const qs = new URLSearchParams({ copyFrom: copyChoicePreset.id });
+            if (choice.kind === 'linked') {
+              qs.set('splitInstance', '1');
+              if (choice.target.mode === 'new') qs.set('newSplitBundle', '1');
+              if (choice.target.mode === 'join') qs.set('splitBundle', choice.target.bundleId);
+            }
+            setCopyChoicePresetId(null);
+            router.push(`/admin/contract-documents/estimates/workspace?${qs}`);
+          }}
         />
       ) : null}
 

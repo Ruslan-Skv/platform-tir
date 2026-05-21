@@ -622,16 +622,69 @@ export function lineKeysFromStageNodeId(
 
 export type SiblingClaim = { presetId: string; title: string };
 
+/**
+ * Id связки «Разделение сметы». У исходного расчёта поле может быть пустым, если состав
+ * сохраняли сначала в связанной копии — тогда у копий `splitBundleId` равен id якорного расчёта.
+ */
+export function resolveSplitBundleId(
+  preset: ContractEstimatePreset,
+  presets: ContractEstimatePreset[]
+): string | undefined {
+  const own = preset.splitBundleId?.trim();
+  if (own) return own;
+  if (presets.some((p) => p.id !== preset.id && p.splitBundleId === preset.id)) {
+    return preset.id;
+  }
+  return undefined;
+}
+
+export function listPresetsInSplitBundle(
+  preset: ContractEstimatePreset,
+  presets: ContractEstimatePreset[]
+): ContractEstimatePreset[] {
+  const bundle = resolveSplitBundleId(preset, presets);
+  if (!bundle) return [];
+  return presets.filter((p) => resolveSplitBundleId(p, presets) === bundle);
+}
+
+/** Проставляет `splitBundleId` всем расчётам связки; ключи позиций — только у `focusPresetId`. */
+export function applySplitBundleSaveToPresets(
+  items: ContractEstimatePreset[],
+  focusPresetId: string,
+  bundleId: string,
+  estimateWorkScopeKeys: string[]
+): ContractEstimatePreset[] {
+  const bundle = bundleId.trim();
+  if (!bundle) return items;
+  const ts = new Date().toISOString();
+  return items.map((it) => {
+    const inBundle = it.id === focusPresetId || it.id === bundle || it.splitBundleId === bundle;
+    if (!inBundle) return it;
+    if (it.id === focusPresetId) {
+      return {
+        ...it,
+        splitBundleId: bundle,
+        estimateWorkScopeKeys: [...estimateWorkScopeKeys],
+        updatedAt: ts,
+      };
+    }
+    if (it.splitBundleId !== bundle) {
+      return { ...it, splitBundleId: bundle, updatedAt: ts };
+    }
+    return it;
+  });
+}
+
 export function buildSiblingLineClaimIndex(
   presets: ContractEstimatePreset[],
-  splitBundleId: string | undefined,
-  excludePresetId: string
+  focusPreset: ContractEstimatePreset
 ): Map<string, SiblingClaim[]> {
   const map = new Map<string, SiblingClaim[]>();
-  if (!splitBundleId?.trim()) return map;
+  const splitBundleId = resolveSplitBundleId(focusPreset, presets);
+  if (!splitBundleId) return map;
   for (const p of presets) {
-    if (p.id === excludePresetId) continue;
-    if (p.splitBundleId !== splitBundleId) continue;
+    if (p.id === focusPreset.id) continue;
+    if (resolveSplitBundleId(p, presets) !== splitBundleId) continue;
     const keys = p.estimateWorkScopeKeys;
     if (!Array.isArray(keys) || keys.length === 0) continue;
     const title = p.title?.trim() || p.id;

@@ -25,9 +25,11 @@ export interface EstimatesListFiltersPersisted {
   sortOrder: EstimatesListSortOrder;
   pageLimit: EstimatesPageLimit;
   listViewMode: EstimatesListViewMode;
+  /** Раскрытый блок объекта в режиме «По объектам» (`estimateObjectAddressKey`). */
+  expandedAddressKey: string | null;
 }
 
-const ESTIMATES_LIST_FILTERS_STORAGE_KEY = 'admin_estimates_list_filters_v5';
+const ESTIMATES_LIST_FILTERS_STORAGE_KEY = 'admin_estimates_list_filters_v6';
 
 const EMPTY_FILTERS: EstimatesListFiltersPersisted = {
   search: '',
@@ -38,7 +40,14 @@ const EMPTY_FILTERS: EstimatesListFiltersPersisted = {
   sortOrder: 'desc',
   pageLimit: 20,
   listViewMode: 'by_object',
+  expandedAddressKey: null,
 };
+
+function normalizeExpandedAddressKey(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const t = raw.trim();
+  return t.length > 0 ? t : null;
+}
 
 function normalizeListViewMode(raw: unknown): EstimatesListViewMode {
   return raw === 'flat' || raw === 'by_object' ? raw : EMPTY_FILTERS.listViewMode;
@@ -69,6 +78,7 @@ function normalizePersistedFilters(
         : EMPTY_FILTERS.sortOrder,
     pageLimit: raw.pageLimit != null ? normalizePageLimit(raw.pageLimit) : EMPTY_FILTERS.pageLimit,
     listViewMode: normalizeListViewMode(raw.listViewMode),
+    expandedAddressKey: normalizeExpandedAddressKey(raw.expandedAddressKey),
   };
 }
 
