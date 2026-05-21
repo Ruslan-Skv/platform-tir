@@ -46,6 +46,8 @@ export interface ContractEstimatePresetTrashRow {
   categoryName: string;
   groupTitle: string | null;
   deletedAt: string;
+  /** ISO — дата безвозвратного удаления (deletedAt + срок хранения в корзине). */
+  permanentDeleteAt: string | null;
   deletedBy: ContractDocumentPackageUserRef | null;
 }
 
@@ -59,6 +61,7 @@ export async function getContractDocumentEstimatePresetsTrash(params?: {
   page: number;
   limit: number;
   totalPages: number;
+  trashRetentionDays?: number;
 }> {
   const search = new URLSearchParams({ kind: 'REPAIR' });
   if (params?.search?.trim()) search.set('search', params.search.trim());

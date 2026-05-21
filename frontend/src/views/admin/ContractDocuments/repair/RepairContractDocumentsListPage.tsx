@@ -1545,7 +1545,9 @@ export function RepairContractDocumentsListPage() {
                           </td>
                           <td className={styles.repairContractsListKindCol}>Объект</td>
                           <td>
-                            <strong>{objName}</strong>
+                            <span className={styles.repairContractsListObjectAddressLabel}>
+                              {objName}
+                            </span>
                             <span className={styles.repairContractsListObjectBadge}>
                               {item.packages.length} дог.
                             </span>

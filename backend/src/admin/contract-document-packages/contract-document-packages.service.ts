@@ -32,6 +32,10 @@ export class ContractDocumentPackagesService {
   private static readonly SIGNATORY_PROFILES_TAB = 'signatory_profiles';
   private static readonly CONTRACT_TEMPLATES_TAB = 'contract_templates';
   private static readonly ESTIMATE_PRESETS_TAB = 'estimate_presets';
+  /** Срок хранения расчёта в корзине до безвозвратного удаления. */
+  static readonly ESTIMATE_PRESET_TRASH_RETENTION_DAYS = 30;
+  private static readonly ESTIMATE_PRESET_TRASH_RETENTION_MS =
+    ContractDocumentPackagesService.ESTIMATE_PRESET_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
   private static readonly VERSION_MOMENT_FORM_DATA_UPDATED = 'packageFormDataUpdated';
   private static readonly VERSION_MOMENT_CUSTOMER_UPDATED = 'packageCustomerUpdated';
   private static readonly VERSION_MOMENT_ESTIMATE_UPDATED = 'packageEstimateUpdated';
@@ -728,6 +732,49 @@ export class ContractDocumentPackagesService {
     return Boolean(item.deletedAt?.trim());
   }
 
+  private isEstimatePresetTrashExpired(deletedAt: string | undefined): boolean {
+    const trimmed = deletedAt?.trim();
+    if (!trimmed) return false;
+    const deletedMs = Date.parse(trimmed);
+    if (!Number.isFinite(deletedMs)) return false;
+    return (
+      deletedMs < Date.now() - ContractDocumentPackagesService.ESTIMATE_PRESET_TRASH_RETENTION_MS
+    );
+  }
+
+  /** Безвозвратно удаляет расчёты из корзины, лежащие дольше срока хранения. */
+  private async purgeExpiredTrashedEstimatePresets(
+    kind: ContractDocumentPackageKind,
+  ): Promise<number> {
+    const raw = await this.loadGlobalEstimatePresetsBlob(kind);
+    const nextItems = raw.items.filter(
+      (item) =>
+        !this.isEstimatePresetTrashed(item) || !this.isEstimatePresetTrashExpired(item.deletedAt),
+    );
+    const purged = raw.items.length - nextItems.length;
+    if (purged === 0) return 0;
+    const payload = JSON.stringify({
+      items: nextItems,
+      groups: raw.groups,
+    });
+    await this.prisma.contractDocumentGlobalTemplate.upsert({
+      where: {
+        kind_tab: { kind, tab: ContractDocumentPackagesService.ESTIMATE_PRESETS_TAB },
+      },
+      create: {
+        kind,
+        tab: ContractDocumentPackagesService.ESTIMATE_PRESETS_TAB,
+        html: payload,
+        updatedById: null,
+      },
+      update: {
+        html: payload,
+      },
+      select: { id: true },
+    });
+    return purged;
+  }
+
   private async loadGlobalEstimatePresetsBlob(kind: ContractDocumentPackageKind): Promise<{
     items: ContractEstimatePresetDto[];
     groups: ContractEstimateGroupDto[];
@@ -778,6 +825,7 @@ export class ContractDocumentPackagesService {
   }
 
   async getGlobalEstimatePresets(kind: ContractDocumentPackageKind) {
+    await this.purgeExpiredTrashedEstimatePresets(kind);
     const raw = await this.loadGlobalEstimatePresetsBlob(kind);
     return {
       items: raw.items.filter((item) => !this.isEstimatePresetTrashed(item)),
@@ -790,6 +838,7 @@ export class ContractDocumentPackagesService {
     kind: ContractDocumentPackageKind,
     params?: { search?: string; page?: number; limit?: number },
   ) {
+    await this.purgeExpiredTrashedEstimatePresets(kind);
     const raw = await this.loadGlobalEstimatePresetsBlob(kind);
     const page = params?.page ?? 1;
     const limit = Math.min(Math.max(params?.limit ?? 25, 1), 100);
@@ -831,12 +880,19 @@ export class ContractDocumentPackagesService {
         const deletedById = item.deletedById?.trim() ?? null;
         const deletedBy = deletedById ? (userById.get(deletedById) ?? null) : null;
         const group = item.groupId ? raw.groups.find((g) => g.id === item.groupId) : undefined;
+        const deletedMs = Date.parse(item.deletedAt ?? '');
+        const permanentDeleteAt = Number.isFinite(deletedMs)
+          ? new Date(
+              deletedMs + ContractDocumentPackagesService.ESTIMATE_PRESET_TRASH_RETENTION_MS,
+            ).toISOString()
+          : null;
         return {
           id: item.id,
           title: item.title,
           categoryName: item.categoryName,
           groupTitle: group?.title ?? null,
           deletedAt: item.deletedAt!,
+          permanentDeleteAt,
           deletedBy,
         };
       }),
@@ -844,6 +900,7 @@ export class ContractDocumentPackagesService {
       page,
       limit,
       totalPages: Math.max(1, Math.ceil(total / limit)),
+      trashRetentionDays: ContractDocumentPackagesService.ESTIMATE_PRESET_TRASH_RETENTION_DAYS,
     };
   }
 
@@ -852,6 +909,7 @@ export class ContractDocumentPackagesService {
     presetId: string,
     actorUserId?: string,
   ) {
+    await this.purgeExpiredTrashedEstimatePresets(kind);
     const raw = await this.loadGlobalEstimatePresetsBlob(kind);
     const index = raw.items.findIndex((item) => item.id === presetId);
     if (index < 0) {
@@ -980,16 +1038,25 @@ export class ContractDocumentPackagesService {
 
   async setGlobalEstimatePresets(dto: SetGlobalEstimatePresetsDto, updatedById?: string) {
     const previousRaw = await this.loadGlobalEstimatePresetsBlob(dto.kind);
-    const trashedItems = previousRaw.items.filter((item) => this.isEstimatePresetTrashed(item));
-    const activeFromDto = (dto.items ?? []).map((item) => {
-      const copy = { ...item };
-      delete copy.deletedAt;
-      delete copy.deletedById;
-      return copy;
-    });
+    const previousTrashedItems = previousRaw.items.filter((item) =>
+      this.isEstimatePresetTrashed(item),
+    );
+    const dtoItems = dto.items ?? [];
+    const activeFromDto = dtoItems
+      .filter((item) => !this.isEstimatePresetTrashed(item))
+      .map((item) => {
+        const copy = { ...item };
+        delete copy.deletedAt;
+        delete copy.deletedById;
+        return copy;
+      });
+    const trashedFromDto = dtoItems.filter((item) => this.isEstimatePresetTrashed(item));
     const activeIds = new Set(activeFromDto.map((item) => item.id));
-    const preservedTrash = trashedItems.filter((item) => !activeIds.has(item.id));
-    const nextItems = [...activeFromDto, ...preservedTrash];
+    const trashedFromDtoIds = new Set(trashedFromDto.map((item) => item.id));
+    const preservedTrash = previousTrashedItems.filter(
+      (item) => !activeIds.has(item.id) && !trashedFromDtoIds.has(item.id),
+    );
+    const nextItems = [...activeFromDto, ...trashedFromDto, ...preservedTrash];
     const nextGroups = dto.groups ?? previousRaw.groups;
     const previous = {
       items: previousRaw.items.filter((item) => !this.isEstimatePresetTrashed(item)),

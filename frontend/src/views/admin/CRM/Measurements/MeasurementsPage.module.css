@@ -23,7 +23,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--admin-space-4xl);
+  margin-bottom: var(--admin-space-lg);
+  padding-bottom: var(--admin-space-md);
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .headerLeft {
@@ -249,6 +251,10 @@
 }
 
 /* Тёмная тема */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .header {
+  border-bottom-color: var(--admin-border);
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .title {
   color: var(--admin-surface-muted);
 }

@@ -1,21 +1,74 @@
 /** Сохранённый фильтр списка расчётов (/admin/contract-documents/estimates). */
+import {
+  type EstimatesListSortBy,
+  type EstimatesListSortOrder,
+  parseEstimatesListSortBy,
+  parseEstimatesListSortOrder,
+} from './estimatesListSort';
+import {
+  REPAIR_CONTRACTS_PAGE_LIMIT_OPTIONS,
+  type RepairContractsPageLimit,
+} from './repair/repairContractsListFilters';
+
+export type EstimatesListViewMode = 'flat' | 'by_object';
+
+export type EstimatesPageLimit = RepairContractsPageLimit;
+
+export const ESTIMATES_PAGE_LIMIT_OPTIONS = REPAIR_CONTRACTS_PAGE_LIMIT_OPTIONS;
 
 export interface EstimatesListFiltersPersisted {
+  search: string;
   managerFilter: string;
+  dateFrom: string;
+  dateTo: string;
+  sortBy: EstimatesListSortBy;
+  sortOrder: EstimatesListSortOrder;
+  pageLimit: EstimatesPageLimit;
+  listViewMode: EstimatesListViewMode;
 }
 
-const ESTIMATES_LIST_FILTERS_STORAGE_KEY = 'admin_estimates_list_filters_v1';
+const ESTIMATES_LIST_FILTERS_STORAGE_KEY = 'admin_estimates_list_filters_v5';
 
 const EMPTY_FILTERS: EstimatesListFiltersPersisted = {
+  search: '',
   managerFilter: '',
+  dateFrom: '',
+  dateTo: '',
+  sortBy: 'date',
+  sortOrder: 'desc',
+  pageLimit: 20,
+  listViewMode: 'by_object',
 };
+
+function normalizeListViewMode(raw: unknown): EstimatesListViewMode {
+  return raw === 'flat' || raw === 'by_object' ? raw : EMPTY_FILTERS.listViewMode;
+}
+
+function normalizePageLimit(raw: unknown): EstimatesPageLimit {
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  if (ESTIMATES_PAGE_LIMIT_OPTIONS.includes(n as EstimatesPageLimit)) {
+    return n as EstimatesPageLimit;
+  }
+  return EMPTY_FILTERS.pageLimit;
+}
 
 function normalizePersistedFilters(
   raw: Partial<EstimatesListFiltersPersisted> | null | undefined
 ): EstimatesListFiltersPersisted {
   if (!raw || typeof raw !== 'object') return { ...EMPTY_FILTERS };
   return {
+    search: typeof raw.search === 'string' ? raw.search : '',
     managerFilter: typeof raw.managerFilter === 'string' ? raw.managerFilter : '',
+    dateFrom: typeof raw.dateFrom === 'string' ? raw.dateFrom : '',
+    dateTo: typeof raw.dateTo === 'string' ? raw.dateTo : '',
+    sortBy:
+      typeof raw.sortBy === 'string' ? parseEstimatesListSortBy(raw.sortBy) : EMPTY_FILTERS.sortBy,
+    sortOrder:
+      typeof raw.sortOrder === 'string'
+        ? parseEstimatesListSortOrder(raw.sortOrder)
+        : EMPTY_FILTERS.sortOrder,
+    pageLimit: raw.pageLimit != null ? normalizePageLimit(raw.pageLimit) : EMPTY_FILTERS.pageLimit,
+    listViewMode: normalizeListViewMode(raw.listViewMode),
   };
 }
 

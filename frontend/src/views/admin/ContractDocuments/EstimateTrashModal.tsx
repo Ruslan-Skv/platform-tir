@@ -13,6 +13,11 @@ import panelStyles from '@/views/admin/CRM/Customers/AddCrmCustomerModal.module.
 import styles from '@/views/admin/CRM/Customers/CrmCustomerTrashModal.module.css';
 import { formatCrmDateTimeLocale } from '@/views/admin/CRM/Customers/crmCustomerDisplay';
 
+import {
+  ESTIMATE_TRASH_RETENTION_NOTICE,
+  estimateTrashPermanentDeleteAtIso,
+} from './estimateTrashRetention';
+
 const PAGE_SIZE = 15;
 
 function formatPackageUserLabel(user: ContractDocumentPackageUserRef | null | undefined): string {
@@ -150,6 +155,14 @@ export function EstimateTrashModal({ isOpen, onClose, onRestored }: EstimateTras
                       Удалён {formatCrmDateTimeLocale(row.deletedAt)} ·{' '}
                       {formatPackageUserLabel(row.deletedBy)}
                     </span>
+                    {row.permanentDeleteAt || estimateTrashPermanentDeleteAtIso(row.deletedAt) ? (
+                      <span className={styles.entryDeleted}>
+                        Безвозвратное удаление:{' '}
+                        {formatCrmDateTimeLocale(
+                          row.permanentDeleteAt ?? estimateTrashPermanentDeleteAtIso(row.deletedAt)!
+                        )}
+                      </span>
+                    ) : null}
                   </div>
                   <button
                     type="button"
@@ -193,7 +206,7 @@ export function EstimateTrashModal({ isOpen, onClose, onRestored }: EstimateTras
           <span data-modal-footer-info-icon aria-hidden="true" />
           <span data-modal-footer-info-text>
             Расчёты в корзине скрыты из общего списка. Восстановление вернёт расчёт на страницу
-            «Расчёты».
+            «Расчёты». {ESTIMATE_TRASH_RETENTION_NOTICE}
           </span>
         </div>
       </form>

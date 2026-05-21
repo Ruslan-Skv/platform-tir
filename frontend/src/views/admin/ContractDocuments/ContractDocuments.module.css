@@ -406,10 +406,6 @@
   -webkit-text-fill-color: var(--admin-text-primary) !important;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesPage .editorHeader {
-  border-bottom-color: var(--admin-border);
-}
-
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesListSection {
   background: var(--admin-surface);
   border-color: var(--admin-border);
@@ -609,6 +605,17 @@
   color: var(--admin-text-muted);
 }
 
+/* Договора, Расчёты: отступ и разделитель между шапкой и фильтрами */
+.repairContractsListPage .editorHeader {
+  margin-bottom: var(--admin-space-lg);
+  padding-bottom: var(--admin-space-md);
+  border-bottom: 1px solid var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListPage .editorHeader {
+  border-bottom-color: var(--admin-border);
+}
+
 /* Список договоров: фильтры как на /admin/measurements */
 .repairContractsListFilters {
   display: flex;
@@ -707,20 +714,26 @@
   background: var(--admin-border);
 }
 
-/* Компактная таблица: на широких экранах без лишнего горизонтального скролла */
-.repairContractsDirectoryTable .repairContractsListTable th,
+/* Компактное тело таблицы; шапка — как DataTable на /admin/measurements */
 .repairContractsDirectoryTable .repairContractsListTable td {
   padding: 4px 6px;
   font-size: 0.75rem;
   line-height: 1.25;
+  vertical-align: middle;
 }
 
-.repairContractsDirectoryTable .repairContractsListTable th {
-  letter-spacing: 0.02em;
+.repairContractsDirectoryTable .repairContractsListTable thead th {
+  padding: var(--admin-space-md) var(--admin-space-sm);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 700;
+  line-height: var(--admin-line-height-normal, 1.5);
+  text-transform: uppercase;
+  letter-spacing: var(--admin-letter-spacing-wider);
+  vertical-align: middle;
+  white-space: nowrap;
 }
 
 @media (min-width: 1280px) {
-  .repairContractsDirectoryTable .repairContractsListTable th,
   .repairContractsDirectoryTable .repairContractsListTable td {
     padding: 4px 5px;
   }
@@ -4270,25 +4283,32 @@
   padding-bottom: var(--admin-space-3xl);
 }
 
-.estimatesPage .editorHeader {
-  margin-bottom: var(--admin-space-lg);
-  padding-bottom: var(--admin-space-md);
-  border-bottom: 1px solid var(--admin-border);
-}
-
-.estimatesPage .editorHeader .title {
-  margin: var(--admin-space-sm) 0 0;
-  font-size: var(--admin-font-size-2xl);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
 .estimatesPage .backLink {
   font-size: var(--admin-font-size-sm);
 }
 
+.estimatesPage button.backLink {
+  display: inline-block;
+  margin: 0 0 var(--admin-space-sm);
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
 .estimatesPage .headerButtonsRow {
   gap: var(--admin-space-xs);
+}
+
+.estimatesPage .headerButtonsRow .primaryBtn.estimatesCompactPrimaryLink,
+.estimatesPage .headerButtonsRow .secondaryBtn.estimatesGenerateFromMeasurementBtn {
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-sm, 1.25);
+  box-sizing: border-box;
+  min-height: 2.125rem;
 }
 
 .estimatesListSection {
@@ -4468,6 +4488,9 @@
 a.primaryBtn.estimatesCompactPrimaryLink {
   padding: var(--admin-space-sm) var(--admin-space-xl);
   font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-sm, 1.25);
+  box-sizing: border-box;
+  min-height: 2.125rem;
 }
 
 .estimatesSectionsStack {
@@ -4479,93 +4502,41 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   border-radius: 0;
 }
 
-/* Список расчётов — таблица (как договоры на /contracts) */
-.estimatesDirectoryTable thead {
-  box-shadow: 0 2px 0 var(--admin-border-strong);
-}
-
-.estimatesDirectoryTable thead th {
-  background: var(--admin-surface-soft);
-  color: var(--admin-text-secondary);
-  font-weight: 700;
-  border-bottom: 2px solid var(--admin-border-strong);
-}
-
-.estimatesDirectoryTable thead th:hover {
-  background: var(--admin-border);
-}
-
-.estimatesDirectoryTable .estimatesListTable th,
-.estimatesDirectoryTable .estimatesListTable td {
+/* Список расчётов — компактное тело; шапка как /admin/measurements */
+.estimatesDirectoryTable.repairContractsDirectoryTable
+  .repairContractsListTable.estimatesListTable
+  td {
   padding: 4px 6px;
   font-size: 0.75rem;
   line-height: 1.25;
   vertical-align: middle;
 }
 
-.estimatesDirectoryTable .estimatesListTable th {
-  letter-spacing: 0.02em;
-}
-
-.estimatesListOrderCol {
-  width: 52px;
-  min-width: 52px;
-  max-width: 52px;
-  padding-left: 2px !important;
-  padding-right: 2px !important;
-  text-align: center;
-}
-
-.estimatesListOrderCellInner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-}
-
-.estimatesListOrderStack {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  align-items: center;
-}
-
-.estimatesListExpandBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  margin: 0;
-  padding: 0;
-  font-size: 0.625rem;
-  line-height: 1;
-  border: none;
-  border-radius: var(--admin-radius-sm);
-  background: transparent;
-  color: var(--admin-text-secondary);
-  cursor: pointer;
-}
-
-.estimatesListExpandBtn:hover:not(:disabled) {
-  background: var(--admin-surface-hover, rgba(0, 0, 0, 0.06));
-}
-
-.estimatesListActionsCol {
-  width: 148px;
-  min-width: 148px;
-  text-align: right;
+.estimatesDirectoryTable.repairContractsDirectoryTable
+  .repairContractsListTable.estimatesListTable
+  thead
+  th {
+  padding: var(--admin-space-md) var(--admin-space-sm);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 700;
+  line-height: var(--admin-line-height-normal, 1.5);
+  text-transform: uppercase;
+  letter-spacing: var(--admin-letter-spacing-wider);
+  vertical-align: middle;
   white-space: nowrap;
 }
 
-.estimatesListTable th.estimatesListActionsCol,
-.estimatesListTable td.estimatesListActionsCol {
-  text-align: right;
+@media (min-width: 1280px) {
+  .estimatesDirectoryTable.repairContractsDirectoryTable
+    .repairContractsListTable.estimatesListTable
+    td {
+    padding: 4px 5px;
+  }
 }
 
 .estimatesListTitleCell {
-  min-width: 160px;
-  max-width: 280px;
+  min-width: 0;
+  max-width: 22rem;
 }
 
 .estimatesListTitleCell .estimatesCardTitleRow {
@@ -4574,7 +4545,8 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 }
 
 .estimatesListBindingCell {
-  max-width: 220px;
+  min-width: 0;
+  max-width: 14rem;
 }
 
 .estimatesListBindingCell .estimatesBadge {
@@ -4586,11 +4558,6 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   vertical-align: bottom;
 }
 
-.estimatesListCategoryCell {
-  white-space: nowrap;
-  color: var(--admin-text-secondary);
-}
-
 .estimatesListDateCell {
   white-space: nowrap;
   color: var(--admin-text-secondary);
@@ -4600,17 +4567,9 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   white-space: nowrap;
 }
 
-.estimatesListCostCell strong {
+.estimatesDirectoryTable .estimatesListCostCell {
   color: var(--admin-text-primary);
-  font-weight: 700;
-}
-
-.estimatesListObjectCell select {
-  width: 100%;
-  min-width: 120px;
-  max-width: 200px;
-  font-size: 0.75rem;
-  padding: 2px 4px;
+  font-weight: normal;
 }
 
 .estimatesListMarkupCell input {
@@ -4647,66 +4606,20 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   border: 0;
 }
 
-.estimatesListObjectTitleCell input {
-  width: 100%;
-  min-width: 140px;
-  font-weight: 600;
-  font-size: 0.8125rem;
-}
-
-.estimatesListObjectKindLabel {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--admin-info-strong);
-}
-
-.estimatesListObjectBadge {
-  display: inline-block;
-  font-size: 0.6875rem;
-  font-weight: 500;
-  color: var(--admin-text-secondary);
-}
-
-.estimatesListObjectRow td {
-  background: var(--admin-info-bg-soft, #eff6ff);
-  font-weight: 600;
-}
-
-.estimatesListObjectRow:hover td {
-  background: var(--admin-info-bg, #dbeafe);
-}
-
-.estimatesListObjectRowExpanded td {
-  background: var(--admin-info-bg, #dbeafe);
-}
-
-.estimatesListObjectRowHasBound td {
-  border-left: 3px solid var(--admin-info);
-}
-
-.estimatesListChildRow td {
-  background: var(--admin-contract-object-child-bg);
-}
-
-.estimatesListChildRow:hover td {
-  background: var(--admin-contract-object-child-bg-hover);
-}
-
 .estimatesListEstimateRow:hover td {
   background: var(--admin-surface-muted);
 }
 
-.estimatesListEstimateRowSplit td {
-  border-left: 2px solid var(--admin-chart-series-5, #8b5cf6);
-}
-
 .estimatesListSectionRow td {
   background: var(--admin-surface-muted);
-  font-weight: 600;
+  font-weight: normal;
   font-size: 0.8125rem;
   color: var(--admin-text-secondary);
+}
+
+/* В таблице расчётов жирным в строках — только название объекта (шапка — thead th) */
+.estimatesDirectoryTable .estimatesListTable .estimatesCardTitle {
+  font-weight: normal;
 }
 
 .estimatesListEmptyInGroupRow td {
@@ -4714,23 +4627,28 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   color: var(--admin-text-muted);
 }
 
-.estimatesDirectoryTable .estimatesCardActions {
-  justify-content: flex-end;
+.estimatesDirectoryTable .repairContractsListTable th.repairContractsListActionsCol,
+.estimatesDirectoryTable .repairContractsListTable td.repairContractsListActionsCol {
+  width: auto;
+  min-width: 11.5rem;
+  max-width: none;
+  white-space: nowrap;
+}
+
+.estimatesDirectoryTable .estimatesListActionsRow {
+  display: inline-flex;
+  flex-direction: row;
   flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
   gap: 2px;
+  width: max-content;
+  max-width: none;
+  margin-left: auto;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesListObjectRow td {
-  background: rgb(59 130 246 / 0.24);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesListObjectRow:hover td,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesListObjectRowExpanded td {
-  background: rgb(59 130 246 / 0.32);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesListChildRow td {
-  background: var(--admin-contract-object-child-bg);
+.estimatesDirectoryTable .estimatesListActionsRow > * {
+  flex-shrink: 0;
 }
 
 .estimatesGroupBlock {
@@ -7264,7 +7182,13 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 /* Строка-сводка по объекту — голубой фон */
 .repairContractsListObjectRow td {
   background: var(--admin-info-bg-soft, #eff6ff);
-  font-weight: 600;
+  font-weight: normal;
+}
+
+.repairContractsListObjectAddressLabel,
+.estimatesListObjectAddressLabel {
+  font-weight: 700;
+  color: var(--admin-text-primary);
 }
 
 .repairContractsListObjectRow:hover td {

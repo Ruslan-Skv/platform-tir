@@ -3,7 +3,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import {
   getContractDocumentEstimatePresetsTrash,
@@ -23,10 +23,12 @@ import { getMeasurements } from '@/shared/api/admin-crm';
 import confirmModalStyles from '@/shared/ui/ConfirmModal/ConfirmModal.module.css';
 import { Modal } from '@/shared/ui/Modal';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
+import { AdminTablePagination } from '@/shared/ui/admin/AdminTablePagination';
 import {
   AdminToolbarTrashButton,
   useAdminTrashCount,
 } from '@/shared/ui/admin/AdminToolbarIconButton';
+import toolbarBadgeStyles from '@/shared/ui/admin/AdminToolbarIconButton/AdminToolbarTrashButton.module.css';
 import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
@@ -34,11 +36,16 @@ import { EditIcon } from '@/shared/ui/icons/EditIcon';
 
 import styles from './ContractDocuments.module.css';
 import { EstimateTrashModal } from './EstimateTrashModal';
+import { ESTIMATE_TRASH_RETENTION_NOTICE } from './estimateTrashRetention';
 import {
+  ESTIMATES_PAGE_LIMIT_OPTIONS,
+  type EstimatesListViewMode,
+  type EstimatesPageLimit,
   loadEstimatesListFilters,
   persistEstimatesListFilters,
   reloadEstimatesListFiltersFromStorage,
 } from './estimatesListFilters';
+import { type EstimatesListSortBy, type EstimatesListSortOrder } from './estimatesListSort';
 import {
   type SiblingClaim,
   type WorkScopeCategoryRow,
@@ -107,6 +114,45 @@ function estimatesListFilterFieldClass(base: string, active: boolean, activeClas
   return active ? `${base} ${activeClass}` : base;
 }
 
+function normalizeEstimatesListSearch(raw: string): string {
+  return raw.trim().toLowerCase();
+}
+
+function estimateMatchesSearch(preset: ContractEstimatePreset, searchNorm: string): boolean {
+  if (!searchNorm) return true;
+  const haystack = [preset.title, preset.customerName, preset.objectAddress, preset.categoryName]
+    .map((s) => (s ?? '').trim())
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  return haystack.includes(searchNorm);
+}
+
+function estimateListFilterDay(preset: ContractEstimatePreset): string | null {
+  const raw = preset.updatedAt ?? preset.createdAt;
+  if (!raw) return null;
+  const t = Date.parse(raw);
+  if (!Number.isFinite(t)) return null;
+  const d = new Date(t);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function estimateMatchesDateRange(
+  preset: ContractEstimatePreset,
+  dateFrom: string,
+  dateTo: string
+): boolean {
+  if (!dateFrom && !dateTo) return true;
+  const day = estimateListFilterDay(preset);
+  if (!day) return false;
+  if (dateFrom && day < dateFrom) return false;
+  if (dateTo && day > dateTo) return false;
+  return true;
+}
+
 function repairPackageManagerCrmUserId(formData: Record<string, unknown>): string {
   const form = mergeRepairPackageFormData(formData);
   return form.executor.signatoryCrmUserId?.trim() ?? '';
@@ -134,7 +180,12 @@ function formatEstimatePresetTotalRub(total: number): string {
   return `${total.toFixed(2).replace('.', ',')} руб.`;
 }
 
-const ESTIMATES_LIST_TABLE_COL_SPAN = 9;
+function formatEstimateListTableCost(total: number): string {
+  return total.toFixed(2).replace('.', ',');
+}
+
+const ESTIMATES_LIST_TABLE_COL_SPAN = 7;
+const ESTIMATES_NO_ADDRESS_KEY = '__no_object_address__';
 
 /** Можно создать связанный экземпляр: уже есть сохранённый состав разделения сметы. */
 function isPresetEligibleForLinkedSplitInstance(p: ContractEstimatePreset): boolean {
@@ -185,132 +236,86 @@ function parseIsoTs(raw: string | undefined): number {
 }
 
 function presetSortTs(p: ContractEstimatePreset): number {
-  return parseIsoTs(p.updatedAt);
+  return parseIsoTs(p.updatedAt ?? p.createdAt);
 }
 
-type MergeSortRow =
-  | {
-      kind: 'group';
-      group: ContractEstimateGroup;
-      items: ContractEstimatePreset[];
-      sortTs: number;
-    }
-  | { kind: 'standalone'; preset: ContractEstimatePreset; sortTs: number };
-
-function mergeListOrderRank(sortTs: number, order: number | undefined): number {
-  if (order != null && Number.isFinite(order)) return order;
-  return 1e15 - sortTs;
-}
-
-function comparePresetsInGroup(a: ContractEstimatePreset, b: ContractEstimatePreset): number {
-  const ai = a.inGroupListOrder;
-  const bi = b.inGroupListOrder;
-  if (ai != null && bi != null && ai !== bi) return ai - bi;
-  if (ai != null && bi == null) return -1;
-  if (ai == null && bi != null) return 1;
-  const td = presetSortTs(b) - presetSortTs(a);
-  if (td !== 0) return td;
-  return a.title.localeCompare(b.title, 'ru');
-}
-
-function buildMergeSortRows(args: {
-  groupsForLayout: ContractEstimateGroup[];
-  visibleItems: ContractEstimatePreset[];
-}): MergeSortRow[] {
-  const { groupsForLayout, visibleItems } = args;
-  const sortPresets = (list: ContractEstimatePreset[]) =>
-    [...list].sort((a, b) => comparePresetsInGroup(a, b));
-
-  const groupIdSet = new Set(groupsForLayout.map((g) => g.id));
-  const rows: MergeSortRow[] = [];
-
-  for (const group of groupsForLayout) {
-    const inGroup = visibleItems.filter((it) => it.groupId === group.id);
-    const sorted = sortPresets(inGroup);
-    if (sorted.length === 0) continue;
-    const sortTs = Math.max(...sorted.map((p) => presetSortTs(p)));
-    rows.push({ kind: 'group', group, items: sorted, sortTs });
+function comparePresetsForListSort(
+  a: ContractEstimatePreset,
+  b: ContractEstimatePreset,
+  sortBy: EstimatesListSortBy,
+  sortOrder: EstimatesListSortOrder
+): number {
+  let cmp = 0;
+  if (sortBy === 'date') {
+    cmp = presetSortTs(a) - presetSortTs(b);
   }
-
-  const standaloneRaw = visibleItems.filter((it) => !it.groupId || !groupIdSet.has(it.groupId));
-  for (const preset of sortPresets(standaloneRaw)) {
-    rows.push({ kind: 'standalone', preset, sortTs: presetSortTs(preset) });
+  if (cmp === 0) {
+    cmp = a.title.localeCompare(b.title, 'ru');
   }
-
-  rows.sort((a, b) => {
-    const ra =
-      a.kind === 'group'
-        ? mergeListOrderRank(a.sortTs, a.group.mergeListOrder)
-        : mergeListOrderRank(a.sortTs, a.preset.mergeListOrder);
-    const rb =
-      b.kind === 'group'
-        ? mergeListOrderRank(b.sortTs, b.group.mergeListOrder)
-        : mergeListOrderRank(b.sortTs, b.preset.mergeListOrder);
-    if (ra !== rb) return ra - rb;
-    if (a.kind !== b.kind) return a.kind === 'group' ? -1 : 1;
-    if (a.kind === 'group' && b.kind === 'group') {
-      return a.group.title.localeCompare(b.group.title, 'ru');
-    }
-    if (a.kind === 'standalone' && b.kind === 'standalone') {
-      return a.preset.title.localeCompare(b.preset.title, 'ru');
-    }
-    return 0;
-  });
-
-  return rows;
+  return sortOrder === 'asc' ? cmp : -cmp;
 }
 
-function applyMergeListOrdersFromRows(
-  rows: MergeSortRow[],
-  baseItems: ContractEstimatePreset[],
-  baseGroups: ContractEstimateGroup[]
-): { nextItems: ContractEstimatePreset[]; nextGroups: ContractEstimateGroup[] } {
-  const gPatch = new Map<string, number>();
-  const pPatch = new Map<string, number>();
-  rows.forEach((row, idx) => {
-    const v = idx * 10;
-    if (row.kind === 'group') gPatch.set(row.group.id, v);
-    else pPatch.set(row.preset.id, v);
-  });
-  const nextGroups = baseGroups.map((g) =>
-    gPatch.has(g.id) ? { ...g, mergeListOrder: gPatch.get(g.id)! } : { ...g }
-  );
-  const nextItems = baseItems.map((it) =>
-    pPatch.has(it.id) ? { ...it, mergeListOrder: pPatch.get(it.id)! } : { ...it }
-  );
-  return { nextItems, nextGroups };
+function estimateObjectAddressKey(p: ContractEstimatePreset): string {
+  const addr = (p.objectAddress ?? '').trim();
+  return addr || ESTIMATES_NO_ADDRESS_KEY;
 }
 
-function applyInGroupListOrders(
-  groupId: string,
-  orderedVisible: ContractEstimatePreset[],
-  baseItems: ContractEstimatePreset[],
-  visibleIds: Set<string>
+function estimateObjectAddressDisplayLabel(addressKey: string): string {
+  return addressKey === ESTIMATES_NO_ADDRESS_KEY ? 'Без адреса объекта' : addressKey;
+}
+
+function sortEstimatesForList(
+  list: ContractEstimatePreset[],
+  sortBy: EstimatesListSortBy,
+  sortOrder: EstimatesListSortOrder
 ): ContractEstimatePreset[] {
-  const hidden = baseItems.filter((it) => it.groupId === groupId && !visibleIds.has(it.id));
-  const fullOrder = [...orderedVisible, ...hidden];
-  return baseItems.map((it) => {
-    if (it.groupId !== groupId) return it;
-    const idx = fullOrder.findIndex((p) => p.id === it.id);
-    if (idx < 0) return it;
-    return { ...it, inGroupListOrder: idx * 10 };
-  });
+  return [...list].sort((a, b) => comparePresetsForListSort(a, b, sortBy, sortOrder));
 }
 
-function EstimatesReorderArrowUp() {
+function EstimatesListSortableTh({
+  column,
+  title,
+  sortBy,
+  sortOrder,
+  onSort,
+}: {
+  column: EstimatesListSortBy;
+  title: string;
+  sortBy: EstimatesListSortBy;
+  sortOrder: EstimatesListSortOrder;
+  onSort: (column: EstimatesListSortBy) => void;
+}) {
+  const isActive = sortBy === column;
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width={8} height={8} viewBox="0 0 24 24" aria-hidden>
-      <polygon points="12,5 6,18 18,18" fill="currentColor" />
-    </svg>
+    <th
+      className={dataTableStyles.sortable}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSort(column);
+      }}
+      aria-sort={isActive ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+    >
+      <span className={dataTableStyles.headerContent}>
+        {title}
+        <span
+          className={`${dataTableStyles.sortIcon} ${
+            isActive ? dataTableStyles.sortIconActive : dataTableStyles.sortIconIdle
+          }`}
+          aria-hidden
+        >
+          {isActive ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
+        </span>
+      </span>
+    </th>
   );
 }
 
-function EstimatesReorderArrowDown() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width={8} height={8} viewBox="0 0 24 24" aria-hidden>
-      <polygon points="12,19 6,6 18,6" fill="currentColor" />
-    </svg>
+function unifiedGroupIdForEstimates(items: ContractEstimatePreset[]): string | null {
+  const ids = new Set(
+    items.map((it) => it.groupId?.trim()).filter((id): id is string => Boolean(id))
   );
+  if (ids.size !== 1) return null;
+  return [...ids][0];
 }
 
 function EstimatesArchiveIcon() {
@@ -867,6 +872,20 @@ function EstimateWorkScopeSplitModal({
 
 export function ContractDocumentsEstimatesPage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const archiveView = searchParams.get('archive') === '1';
+
+  const navigateArchiveView = useCallback(
+    (nextArchive: boolean) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (nextArchive) params.set('archive', '1');
+      else params.delete('archive');
+      const qs = params.toString();
+      router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams]
+  );
   const initialListFiltersRef = useRef(loadEstimatesListFilters());
   const listFiltersHydratedRef = useRef(false);
   const skipListFiltersPersistRef = useRef(true);
@@ -885,19 +904,17 @@ export function ContractDocumentsEstimatesPage() {
       crmContract?: { contractNumber: string; contractDate: string } | null;
     }>
   >([]);
-  const [collapsedGroupIds, setCollapsedGroupIds] = useState<Set<string>>(() => new Set());
+  /** В списке раскрыт только один адрес объекта (как на /contracts). */
+  const [expandedAddressKey, setExpandedAddressKey] = useState<string | null>(null);
   const [detachEditModal, setDetachEditModal] = useState<{
     estimateId: string;
     usages: EstimatePackageUsage[];
   } | null>(null);
-  const [detachDeleteModal, setDetachDeleteModal] = useState<{
-    estimateId: string;
-    usages: EstimatePackageUsage[];
-  } | null>(null);
-  const [simpleDeleteModal, setSimpleDeleteModal] = useState<{
+  const [trashConfirmModal, setTrashConfirmModal] = useState<{
     estimateId: string;
     title: string;
     inSplitBundle: boolean;
+    detachedUsages: EstimatePackageUsage[];
   } | null>(null);
   const [trashOpen, setTrashOpen] = useState(false);
   const fetchEstimateTrashTotal = useCallback(
@@ -917,10 +934,24 @@ export function ContractDocumentsEstimatesPage() {
   >([]);
   const [completedMeasurementsBusy, setCompletedMeasurementsBusy] = useState(false);
   const [selectedMeasurementId, setSelectedMeasurementId] = useState('');
-  const [archiveView, setArchiveView] = useState(false);
   const [workScopeModalPresetId, setWorkScopeModalPresetId] = useState<string | null>(null);
   const [managerOptions, setManagerOptions] = useState<ContractSignatoryProfile[]>([]);
+  const [search, setSearch] = useState(initialListFiltersRef.current.search);
   const [managerFilter, setManagerFilter] = useState(initialListFiltersRef.current.managerFilter);
+  const [listViewMode, setListViewMode] = useState<EstimatesListViewMode>(
+    initialListFiltersRef.current.listViewMode
+  );
+  const [dateFrom, setDateFrom] = useState(initialListFiltersRef.current.dateFrom);
+  const [dateTo, setDateTo] = useState(initialListFiltersRef.current.dateTo);
+  const [listSortBy, setListSortBy] = useState<EstimatesListSortBy>(
+    initialListFiltersRef.current.sortBy
+  );
+  const [listSortOrder, setListSortOrder] = useState<EstimatesListSortOrder>(
+    initialListFiltersRef.current.sortOrder
+  );
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState<EstimatesPageLimit>(initialListFiltersRef.current.pageLimit);
+  const searchNorm = useMemo(() => normalizeEstimatesListSearch(search), [search]);
 
   const openGenerateFromMeasurementModal = useCallback(async () => {
     setIsGenerateFromMeasurementOpen(true);
@@ -997,9 +1028,28 @@ export function ContractDocumentsEstimatesPage() {
 
   useEffect(() => {
     const saved = reloadEstimatesListFiltersFromStorage();
+    setSearch(saved.search);
     setManagerFilter(saved.managerFilter);
+    setListViewMode(saved.listViewMode);
+    setDateFrom(saved.dateFrom);
+    setDateTo(saved.dateTo);
+    setListSortBy(saved.sortBy);
+    setListSortOrder(saved.sortOrder);
+    setLimit(saved.pageLimit);
     listFiltersHydratedRef.current = true;
   }, []);
+
+  const handleListSortChange = useCallback(
+    (column: EstimatesListSortBy) => {
+      if (listSortBy === column) {
+        setListSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
+      } else {
+        setListSortBy(column);
+        setListSortOrder('asc');
+      }
+    },
+    [listSortBy]
+  );
 
   useEffect(() => {
     if (!listFiltersHydratedRef.current) return;
@@ -1007,8 +1057,34 @@ export function ContractDocumentsEstimatesPage() {
       skipListFiltersPersistRef.current = false;
       return;
     }
-    persistEstimatesListFilters({ managerFilter });
-  }, [managerFilter]);
+    persistEstimatesListFilters({
+      search,
+      managerFilter,
+      dateFrom,
+      dateTo,
+      sortBy: listSortBy,
+      sortOrder: listSortOrder,
+      pageLimit: limit,
+      listViewMode,
+    });
+  }, [search, managerFilter, dateFrom, dateTo, listSortBy, listSortOrder, limit, listViewMode]);
+
+  useEffect(() => {
+    if (listViewMode === 'flat') setExpandedAddressKey(null);
+  }, [listViewMode]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [
+    searchNorm,
+    managerFilter,
+    dateFrom,
+    dateTo,
+    listViewMode,
+    listSortBy,
+    listSortOrder,
+    archiveView,
+  ]);
 
   useEffect(() => {
     if (!managerFilter) return;
@@ -1086,37 +1162,12 @@ export function ContractDocumentsEstimatesPage() {
     if (ok) setWorkScopeModalPresetId(null);
   };
 
-  const createObjectGroup = () => {
-    const nextGroup: ContractEstimateGroup = {
-      id: `grp_${Date.now()}`,
-      title: `Объект ${groups.length + 1}`,
-      updatedAt: new Date().toISOString(),
-    };
-    void persistEstimates(items, [...groups, nextGroup]);
-  };
-
-  const renameObjectGroup = (groupId: string, title: string) => {
-    const trimmed = title.trim();
-    if (!trimmed) return;
-    const nextGroups = groups.map((g) =>
-      g.id === groupId ? { ...g, title: trimmed, updatedAt: new Date().toISOString() } : g
+  const setEstimatesArchivedByAddress = (addressKey: string, archived: boolean) => {
+    const ts = new Date().toISOString();
+    const nextItems = items.map((it) =>
+      estimateObjectAddressKey(it) === addressKey ? { ...it, archived, updatedAt: ts } : it
     );
-    void persistEstimates(items, nextGroups);
-  };
-
-  const removeObjectGroup = (groupId: string) => {
-    setCollapsedGroupIds((prev) => {
-      const next = new Set(prev);
-      next.delete(groupId);
-      return next;
-    });
-    const nextGroups = groups.filter((g) => g.id !== groupId);
-    const nextItems = items.map((it) => {
-      if (it.groupId !== groupId) return it;
-      const { groupId: _g, ...rest } = it;
-      return rest as ContractEstimatePreset;
-    });
-    void persistEstimates(nextItems, nextGroups);
+    void persistEstimates(nextItems, groups);
   };
 
   const setGroupArchived = (groupId: string, archived: boolean) => {
@@ -1148,34 +1199,6 @@ export function ContractDocumentsEstimatesPage() {
       }
       const { archived: _drop, ...rest } = it;
       return { ...rest, updatedAt: new Date().toISOString() } as ContractEstimatePreset;
-    });
-    void persistEstimates(nextItems, groups);
-  };
-
-  const assignEstimateToGroup = (estimateId: string, groupId: string | null) => {
-    const nextItems = items.map((it) => {
-      if (it.id !== estimateId) return it;
-      let next: ContractEstimatePreset;
-      if (!groupId) {
-        const { groupId: _g, inGroupListOrder: _ig, ...rest } = it;
-        next = rest as ContractEstimatePreset;
-      } else {
-        const maxInGroup = Math.max(
-          -1,
-          ...items.filter((x) => x.groupId === groupId).map((x) => x.inGroupListOrder ?? -1)
-        );
-        const { mergeListOrder: _ml, ...base } = it;
-        next = {
-          ...base,
-          groupId,
-          inGroupListOrder: maxInGroup + 10,
-        };
-        if (next.archived) {
-          const { archived: _a, ...r } = next;
-          next = { ...r } as ContractEstimatePreset;
-        }
-      }
-      return next;
     });
     void persistEstimates(nextItems, groups);
   };
@@ -1228,51 +1251,55 @@ export function ContractDocumentsEstimatesPage() {
     );
   };
 
-  const handleConfirmDetachDelete = async () => {
-    if (!detachDeleteModal) return;
-    const { estimateId, usages } = detachDeleteModal;
+  const handleConfirmTrashMove = async () => {
+    if (!trashConfirmModal) return;
+    const { estimateId, detachedUsages } = trashConfirmModal;
     const it = items.find((x) => x.id === estimateId);
     if (!it) {
-      setDetachDeleteModal(null);
+      setTrashConfirmModal(null);
       return;
     }
-    setSaving(true);
-    setError(null);
-    let detachOk = false;
-    try {
-      for (const u of usages) {
-        await persistRepairPackageAfterRemovingEstimatePreset(u.packageId, it.id, items, groups);
+    if (detachedUsages.length > 0) {
+      setSaving(true);
+      setError(null);
+      let detachOk = false;
+      try {
+        for (const u of detachedUsages) {
+          await persistRepairPackageAfterRemovingEstimatePreset(u.packageId, it.id, items, groups);
+        }
+        const packagesRes = await getContractDocumentPackages('REPAIR');
+        setRepairPackages(
+          (packagesRes ?? []).map((p) => ({
+            id: p.id,
+            title: p.title ?? null,
+            status:
+              p.status === 'CONTRACT_CONCLUDED'
+                ? 'CONTRACT_CONCLUDED'
+                : p.status === 'REFUSED'
+                  ? 'REFUSED'
+                  : 'IN_PROGRESS',
+            formData: (p.formData ?? {}) as Record<string, unknown>,
+            crmContract: p.crmContract
+              ? {
+                  contractNumber: p.crmContract.contractNumber,
+                  contractDate: p.crmContract.contractDate,
+                }
+              : null,
+          }))
+        );
+        detachOk = true;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Не удалось отвязать расчёт от договоров');
+      } finally {
+        setSaving(false);
       }
-      const packagesRes = await getContractDocumentPackages('REPAIR');
-      setRepairPackages(
-        (packagesRes ?? []).map((p) => ({
-          id: p.id,
-          title: p.title ?? null,
-          status:
-            p.status === 'CONTRACT_CONCLUDED'
-              ? 'CONTRACT_CONCLUDED'
-              : p.status === 'REFUSED'
-                ? 'REFUSED'
-                : 'IN_PROGRESS',
-          formData: (p.formData ?? {}) as Record<string, unknown>,
-          crmContract: p.crmContract
-            ? {
-                contractNumber: p.crmContract.contractNumber,
-                contractDate: p.crmContract.contractDate,
-              }
-            : null,
-        }))
-      );
-      detachOk = true;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось отвязать расчёт от договоров');
-    } finally {
-      setSaving(false);
+      if (!detachOk) return;
     }
-    if (!detachOk) return;
-    setDetachDeleteModal(null);
     const moved = await moveEstimateToTrashById(estimateId);
-    if (moved) setOk('Расчёт перемещён в корзину.');
+    if (moved) {
+      setTrashConfirmModal(null);
+      setOk('Расчёт перемещён в корзину.');
+    }
   };
 
   const moveEstimateToTrashById = async (estimateId: string): Promise<boolean> => {
@@ -1289,24 +1316,6 @@ export function ContractDocumentsEstimatesPage() {
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleConfirmSimpleDelete = async () => {
-    if (!simpleDeleteModal) return;
-    const ok = await moveEstimateToTrashById(simpleDeleteModal.estimateId);
-    if (ok) {
-      setSimpleDeleteModal(null);
-      setOk('Расчёт перемещён в корзину.');
-    }
-  };
-
-  const toggleGroupCollapsed = (groupId: string) => {
-    setCollapsedGroupIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(groupId)) next.delete(groupId);
-      else next.add(groupId);
-      return next;
-    });
   };
 
   const usageByEstimateId = useMemo(() => {
@@ -1490,289 +1499,189 @@ export function ContractDocumentsEstimatesPage() {
       const inArchiveCombined = groupArchived || rowArchived;
       const archiveOk = archiveView ? inArchiveCombined : !inArchiveCombined;
       if (!archiveOk) return false;
+      if (!estimateMatchesSearch(it, searchNorm)) return false;
+      if (!estimateMatchesDateRange(it, dateFrom, dateTo)) return false;
       return estimateMatchesManagerFilter(it.id, managerFilter, managerIdsByPresetId);
     });
-  }, [items, archiveView, groups, managerFilter, managerIdsByPresetId]);
+  }, [
+    items,
+    archiveView,
+    groups,
+    managerFilter,
+    managerIdsByPresetId,
+    searchNorm,
+    dateFrom,
+    dateTo,
+  ]);
 
-  const hasActiveManagerFilter = Boolean(managerFilter);
+  const hasActiveListFilters = Boolean(searchNorm || managerFilter || dateFrom || dateTo);
 
-  const hasAnythingInArchive = useMemo(
+  const archiveCount = useMemo(
     () =>
-      items.some((it) => {
+      items.filter((it) => {
         const g = it.groupId ? groups.find((x) => x.id === it.groupId) : undefined;
         return Boolean(it.archived) || Boolean(g?.archived);
-      }),
+      }).length,
     [items, groups]
   );
 
-  const groupsSortedMain = useMemo(
-    () => sortEstimateGroupsByTitle(groups.filter((g) => !g.archived)),
-    [groups]
-  );
-  const groupsSortedArchived = useMemo(
-    () => sortEstimateGroupsByTitle(groups.filter((g) => Boolean(g.archived))),
-    [groups]
-  );
-  const groupsForLayout = archiveView ? groupsSortedArchived : groupsSortedMain;
-  const groupsForSelect = groupsForLayout;
+  const hasAnythingInArchive = archiveCount > 0;
+
+  const addressGroupCount = useMemo(() => {
+    if (listViewMode === 'flat') return 0;
+    const keys = new Set(visibleItems.map((it) => estimateObjectAddressKey(it)));
+    return keys.size;
+  }, [visibleItems, listViewMode]);
 
   type EstimateLayoutBlock =
-    | {
-        kind: 'group';
-        group: ContractEstimateGroup;
-        items: ContractEstimatePreset[];
-        mergeGlobalIndex: number;
-        mergeGlobalTotal: number;
-      }
-    | {
-        kind: 'standaloneRun';
-        entries: Array<{
-          preset: ContractEstimatePreset;
-          mergeGlobalIndex: number;
-          mergeGlobalTotal: number;
-        }>;
-      }
+    | { kind: 'address'; addressKey: string; items: ContractEstimatePreset[] }
+    | { kind: 'flatRun'; items: ContractEstimatePreset[] }
     | { kind: 'soloArchived'; items: ContractEstimatePreset[] };
 
-  const { estimateLayoutBlocks } = useMemo(() => {
-    const mergeSortRows = buildMergeSortRows({
-      groupsForLayout,
-      visibleItems,
-    });
-    const mergeGlobalTotal = mergeSortRows.length;
+  const estimateLayoutBlocks = useMemo(() => {
+    const soloArchivedIds = new Set<string>();
+    if (archiveView) {
+      for (const it of visibleItems) {
+        if (!it.groupId || !it.archived) continue;
+        const g = groups.find((x) => x.id === it.groupId);
+        if (!g || g.archived) continue;
+        soloArchivedIds.add(it.id);
+      }
+    }
 
     const blocks: EstimateLayoutBlock[] = [];
-    let i = 0;
-    while (i < mergeSortRows.length) {
-      const row = mergeSortRows[i];
-      if (row.kind === 'group') {
-        blocks.push({
-          kind: 'group',
-          group: row.group,
-          items: row.items,
-          mergeGlobalIndex: i,
-          mergeGlobalTotal,
-        });
-        i++;
-      } else {
-        const entries: Array<{
-          preset: ContractEstimatePreset;
-          mergeGlobalIndex: number;
-          mergeGlobalTotal: number;
-        }> = [];
-        while (i < mergeSortRows.length && mergeSortRows[i].kind === 'standalone') {
-          const s = mergeSortRows[i];
-          if (s.kind !== 'standalone') break;
-          entries.push({
-            preset: s.preset,
-            mergeGlobalIndex: i,
-            mergeGlobalTotal,
-          });
-          i++;
-        }
-        if (entries.length > 0) blocks.push({ kind: 'standaloneRun', entries });
-      }
-    }
 
-    if (archiveView) {
-      const soloArchived = visibleItems.filter((it) => {
-        if (!it.groupId || !it.archived) return false;
-        const g = groups.find((x) => x.id === it.groupId);
-        if (!g) return false;
-        return !g.archived;
+    if (listViewMode === 'flat') {
+      const flatItems = visibleItems.filter((it) => !soloArchivedIds.has(it.id));
+      if (flatItems.length > 0) {
+        blocks.push({
+          kind: 'flatRun',
+          items: sortEstimatesForList(flatItems, listSortBy, listSortOrder),
+        });
+      }
+    } else {
+      const byAddress = new Map<string, ContractEstimatePreset[]>();
+      for (const it of visibleItems) {
+        if (soloArchivedIds.has(it.id)) continue;
+        const key = estimateObjectAddressKey(it);
+        const arr = byAddress.get(key) ?? [];
+        arr.push(it);
+        byAddress.set(key, arr);
+      }
+
+      const addressKeys = [...byAddress.keys()].sort((a, b) => {
+        if (a === ESTIMATES_NO_ADDRESS_KEY) return 1;
+        if (b === ESTIMATES_NO_ADDRESS_KEY) return -1;
+        return a.localeCompare(b, 'ru');
       });
-      if (soloArchived.length > 0) {
+
+      for (const addressKey of addressKeys) {
         blocks.push({
-          kind: 'soloArchived',
-          items: [...soloArchived].sort((a, b) => comparePresetsInGroup(a, b)),
+          kind: 'address',
+          addressKey,
+          items: sortEstimatesForList(byAddress.get(addressKey) ?? [], listSortBy, listSortOrder),
         });
       }
     }
 
-    return { estimateLayoutBlocks: blocks };
-  }, [groupsForLayout, visibleItems, archiveView, groups]);
-
-  type EstimateCardReorder =
-    | { scope: 'inGroup'; groupId: string; index: number; total: number }
-    | { scope: 'orphan'; mergeGlobalIndex: number; mergeGlobalTotal: number };
-
-  const handleMoveMergeGroup = (groupId: string, dir: -1 | 1) => {
-    const rows = buildMergeSortRows({
-      groupsForLayout,
-      visibleItems,
-    });
-    const idx = rows.findIndex((r) => r.kind === 'group' && r.group.id === groupId);
-    if (idx < 0) return;
-    const j = idx + dir;
-    if (j < 0 || j >= rows.length) return;
-    const swapped = [...rows];
-    [swapped[idx], swapped[j]] = [swapped[j], swapped[idx]];
-    const { nextItems, nextGroups } = applyMergeListOrdersFromRows(swapped, items, groups);
-    void persistEstimates(nextItems, nextGroups, { suppressSuccessMessage: true });
-  };
-
-  const handleMoveOrphanPreset = (presetId: string, dir: -1 | 1) => {
-    const rows = buildMergeSortRows({
-      groupsForLayout,
-      visibleItems,
-    });
-    const idx = rows.findIndex((r) => r.kind === 'standalone' && r.preset.id === presetId);
-    if (idx < 0) return;
-    const j = idx + dir;
-    if (j < 0 || j >= rows.length) return;
-    const swapped = [...rows];
-    [swapped[idx], swapped[j]] = [swapped[j], swapped[idx]];
-    const { nextItems, nextGroups } = applyMergeListOrdersFromRows(swapped, items, groups);
-    void persistEstimates(nextItems, nextGroups, { suppressSuccessMessage: true });
-  };
-
-  const handleMovePresetInGroup = (groupId: string, presetId: string, dir: -1 | 1) => {
-    const visibleIds = new Set(visibleItems.map((x) => x.id));
-    const peers = visibleItems
-      .filter((it) => it.groupId === groupId)
-      .sort((a, b) => comparePresetsInGroup(a, b));
-    const idx = peers.findIndex((p) => p.id === presetId);
-    if (idx < 0) return;
-    const j = idx + dir;
-    if (j < 0 || j >= peers.length) return;
-    const swapped = [...peers];
-    [swapped[idx], swapped[j]] = [swapped[j], swapped[idx]];
-    const nextItems = applyInGroupListOrders(groupId, swapped, items, visibleIds);
-    void persistEstimates(nextItems, groups, { suppressSuccessMessage: true });
-  };
-
-  const renderEstimateReorderCell = (reorder: EstimateCardReorder | undefined, itId: string) => {
-    if (!reorder) {
-      return <td className={styles.estimatesListOrderCol} />;
+    if (soloArchivedIds.size > 0) {
+      const soloArchived = visibleItems.filter((it) => soloArchivedIds.has(it.id));
+      blocks.push({
+        kind: 'soloArchived',
+        items: sortEstimatesForList(soloArchived, listSortBy, listSortOrder),
+      });
     }
-    return (
-      <td className={styles.estimatesListOrderCol} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.estimatesListOrderStack} role="group" aria-label="Порядок в списке">
-          <button
-            type="button"
-            className={`${styles.secondaryBtn} ${styles.estimatesIconBtn} ${styles.estimatesReorderStackBtn}`}
-            disabled={
-              saving ||
-              (reorder.scope === 'inGroup' ? reorder.index <= 0 : reorder.mergeGlobalIndex <= 0)
-            }
-            aria-label="Выше в списке"
-            title="Выше в списке"
-            onClick={() =>
-              reorder.scope === 'inGroup'
-                ? handleMovePresetInGroup(reorder.groupId, itId, -1)
-                : handleMoveOrphanPreset(itId, -1)
-            }
-          >
-            <EstimatesReorderArrowUp />
-          </button>
-          <button
-            type="button"
-            className={`${styles.secondaryBtn} ${styles.estimatesIconBtn} ${styles.estimatesReorderStackBtn}`}
-            disabled={
-              saving ||
-              (reorder.scope === 'inGroup'
-                ? reorder.index >= reorder.total - 1
-                : reorder.mergeGlobalIndex >= reorder.mergeGlobalTotal - 1)
-            }
-            aria-label="Ниже в списке"
-            title="Ниже в списке"
-            onClick={() =>
-              reorder.scope === 'inGroup'
-                ? handleMovePresetInGroup(reorder.groupId, itId, 1)
-                : handleMoveOrphanPreset(itId, 1)
-            }
-          >
-            <EstimatesReorderArrowDown />
-          </button>
-        </div>
-      </td>
-    );
-  };
 
-  const renderEstimateGroupTableRow = (
-    section: Extract<EstimateLayoutBlock, { kind: 'group' }>
+    return blocks;
+  }, [visibleItems, archiveView, groups, listViewMode, listSortBy, listSortOrder]);
+
+  type EstimatesTableDisplayItem =
+    | { type: 'address'; addressKey: string; items: ContractEstimatePreset[] }
+    | { type: 'estimate'; preset: ContractEstimatePreset; childOfAddress?: boolean }
+    | { type: 'soloArchivedSection' };
+
+  const tableDisplayItems = useMemo((): EstimatesTableDisplayItem[] => {
+    const out: EstimatesTableDisplayItem[] = [];
+    for (const block of estimateLayoutBlocks) {
+      if (block.kind === 'flatRun') {
+        for (const preset of block.items) {
+          out.push({ type: 'estimate', preset });
+        }
+      } else if (block.kind === 'address') {
+        out.push({
+          type: 'address',
+          addressKey: block.addressKey,
+          items: block.items,
+        });
+        if (expandedAddressKey === block.addressKey) {
+          for (const preset of block.items) {
+            out.push({ type: 'estimate', preset, childOfAddress: true });
+          }
+        }
+      } else if (block.kind === 'soloArchived') {
+        out.push({ type: 'soloArchivedSection' });
+        for (const preset of block.items) {
+          out.push({ type: 'estimate', preset });
+        }
+      }
+    }
+    return out;
+  }, [estimateLayoutBlocks, expandedAddressKey]);
+
+  const totalTableRows = tableDisplayItems.length;
+
+  const paginatedDisplayItems = useMemo(
+    () => tableDisplayItems.slice((page - 1) * limit, page * limit),
+    [tableDisplayItems, page, limit]
+  );
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(totalTableRows / limit));
+    if (page > totalPages) setPage(totalPages);
+  }, [totalTableRows, limit, page]);
+
+  const renderEstimateAddressGroupRow = (
+    section: Extract<EstimateLayoutBlock, { kind: 'address' }>
   ) => {
-    const groupCollapsed = collapsedGroupIds.has(section.group.id);
-    const allInGroup = items.filter((it) => it.groupId === section.group.id);
-    const totalInGroup = allInGroup.length;
-    const boundInGroup = allInGroup.filter(
+    const expanded = expandedAddressKey === section.addressKey;
+    const boundInGroup = section.items.filter(
       (it) => (usageByEstimateId.get(it.id)?.length ?? 0) > 0
     ).length;
     const hasBound = boundInGroup > 0;
+    const unifiedGroupId = unifiedGroupIdForEstimates(section.items);
+    const unifiedGroup = unifiedGroupId ? groups.find((g) => g.id === unifiedGroupId) : undefined;
 
     return (
       <tr
-        key={section.group.id}
-        className={`${dataTableStyles.row} ${styles.estimatesListObjectRow} ${
-          groupCollapsed ? '' : styles.estimatesListObjectRowExpanded
-        }${hasBound ? ` ${styles.estimatesListObjectRowHasBound}` : ''}`}
+        key={section.addressKey}
+        className={`${dataTableStyles.row} ${styles.repairContractsListObjectRow} ${
+          expanded ? styles.repairContractsListObjectRowExpanded : ''
+        }`}
       >
-        <td className={styles.estimatesListOrderCol}>
-          <div className={styles.estimatesListOrderCellInner}>
-            <button
-              type="button"
-              className={styles.estimatesListExpandBtn}
-              aria-expanded={!groupCollapsed}
-              aria-label={
-                groupCollapsed ? 'Развернуть расчёты объекта' : 'Свернуть расчёты объекта'
-              }
-              title={groupCollapsed ? 'Развернуть' : 'Свернуть'}
-              disabled={saving}
-              onClick={() => toggleGroupCollapsed(section.group.id)}
-            >
-              {groupCollapsed ? '▶' : '▼'}
-            </button>
-            <div
-              className={styles.estimatesListOrderStack}
-              role="group"
-              aria-label="Порядок объекта в списке"
-            >
-              <button
-                type="button"
-                className={`${styles.secondaryBtn} ${styles.estimatesIconBtn} ${styles.estimatesGroupReorderBtn}`}
-                disabled={saving || section.mergeGlobalTotal < 2 || section.mergeGlobalIndex <= 0}
-                aria-label="Объект выше в списке"
-                title="Объект выше в общем списке"
-                onClick={() => handleMoveMergeGroup(section.group.id, -1)}
-              >
-                <EstimatesReorderArrowUp />
-              </button>
-              <button
-                type="button"
-                className={`${styles.secondaryBtn} ${styles.estimatesIconBtn} ${styles.estimatesGroupReorderBtn}`}
-                disabled={
-                  saving ||
-                  section.mergeGlobalTotal < 2 ||
-                  section.mergeGlobalIndex >= section.mergeGlobalTotal - 1
-                }
-                aria-label="Объект ниже в списке"
-                title="Объект ниже в общем списке"
-                onClick={() => handleMoveMergeGroup(section.group.id, 1)}
-              >
-                <EstimatesReorderArrowDown />
-              </button>
-            </div>
-          </div>
+        <td className={styles.repairContractsListSelectCol}>
+          <button
+            type="button"
+            className={styles.repairContractsListExpandBtn}
+            aria-expanded={expanded}
+            aria-label={expanded ? 'Свернуть расчёты объекта' : 'Развернуть расчёты объекта'}
+            title={expanded ? 'Свернуть' : 'Развернуть'}
+            disabled={saving}
+            onClick={() =>
+              setExpandedAddressKey((current) =>
+                current === section.addressKey ? null : section.addressKey
+              )
+            }
+          >
+            {expanded ? '▼' : '▶'}
+          </button>
         </td>
-        <td className={styles.estimatesListObjectTitleCell}>
-          <label className={`${styles.field} ${styles.estimatesListInlineField}`}>
-            <span className={styles.estimatesListObjectKindLabel}>Объект</span>
-            <input
-              key={`${section.group.id}:${section.group.title}`}
-              defaultValue={section.group.title}
-              disabled={saving}
-              onBlur={(e) => {
-                const v = e.target.value.trim();
-                if (v && v !== section.group.title) {
-                  renameObjectGroup(section.group.id, v);
-                }
-              }}
-            />
-          </label>
-        </td>
-        <td className={styles.estimatesListCategoryCell}>
-          <span className={styles.estimatesListObjectBadge}>
-            {totalInGroup} расч. · привяз. {boundInGroup}
+        <td className={styles.estimatesListTitleCell}>
+          <span className={styles.estimatesListObjectAddressLabel}>
+            {estimateObjectAddressDisplayLabel(section.addressKey)}
+          </span>
+          <span className={styles.repairContractsListObjectBadge}>
+            {section.items.length} расч.
+            {boundInGroup > 0 ? ` · привяз. ${boundInGroup}` : ''}
           </span>
         </td>
         <td className={styles.estimatesListDateCell}>—</td>
@@ -1786,51 +1695,52 @@ export function ContractDocumentsEstimatesPage() {
             '—'
           )}
         </td>
-        <td className={styles.estimatesListObjectCell}>—</td>
         <td className={styles.estimatesListMarkupCell}>
-          <label
-            className={`${styles.field} ${styles.estimatesListInlineField}`}
-            title={
-              groupIdsWithLockedEstimate.has(section.group.id)
-                ? 'Нельзя менять наценку объекта: в группе есть расчёт, прикреплённый к пакету со статусом «Договор подписан» или к подписанному Д/с.'
-                : 'На все расчёты этого объекта: +% к цене каждой позиции в смете'
-            }
-          >
-            <span>Наценка, %</span>
-            <input
-              key={`${section.group.id}:markup:${section.group.additionalMarkupPercent ?? 'none'}`}
-              type="number"
-              min={0}
-              max={999}
-              step={0.1}
-              defaultValue={
-                typeof section.group.additionalMarkupPercent === 'number'
-                  ? String(section.group.additionalMarkupPercent)
-                  : '0'
+          {unifiedGroup ? (
+            <label
+              className={`${styles.field} ${styles.estimatesListInlineField}`}
+              title={
+                groupIdsWithLockedEstimate.has(unifiedGroup.id)
+                  ? 'Нельзя менять наценку: в группе есть расчёт, прикреплённый к подписанному договору или Д/с.'
+                  : 'На все расчёты с этим адресом в одной группе: +% к цене каждой позиции в смете'
               }
-              disabled={saving || groupIdsWithLockedEstimate.has(section.group.id)}
-              onFocus={(e) => {
-                e.currentTarget.dataset.markupAtFocus = e.currentTarget.value;
-              }}
-              onBlur={(e) => {
-                if (e.currentTarget.dataset.markupAtFocus === e.currentTarget.value) return;
-                updateGroupAdditionalMarkupPercent(section.group.id, e.target.value);
-              }}
-            />
-          </label>
+            >
+              <span className={styles.estimatesListVisuallyHidden}>Наценка, %</span>
+              <input
+                key={`${unifiedGroup.id}:markup:${unifiedGroup.additionalMarkupPercent ?? 'none'}`}
+                type="number"
+                min={0}
+                max={999}
+                step={0.1}
+                defaultValue={
+                  typeof unifiedGroup.additionalMarkupPercent === 'number'
+                    ? String(unifiedGroup.additionalMarkupPercent)
+                    : '0'
+                }
+                disabled={saving || groupIdsWithLockedEstimate.has(unifiedGroup.id)}
+                onFocus={(e) => {
+                  e.currentTarget.dataset.markupAtFocus = e.currentTarget.value;
+                }}
+                onBlur={(e) => {
+                  if (e.currentTarget.dataset.markupAtFocus === e.currentTarget.value) return;
+                  updateGroupAdditionalMarkupPercent(unifiedGroup.id, e.target.value);
+                }}
+              />
+            </label>
+          ) : (
+            '—'
+          )}
         </td>
-        <td className={styles.estimatesListActionsCol}>
-          <div
-            className={`${styles.estimatesCardActions} ${styles.repairContractsListActionsGrid}`}
-          >
-            {!archiveView && totalInGroup > 0 ? (
+        <td className={styles.repairContractsListActionsCol}>
+          <div className={`${styles.estimatesCardActions} ${styles.estimatesListActionsRow}`}>
+            {!archiveView && section.items.length > 0 ? (
               <button
                 type="button"
                 className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
                 disabled={saving}
                 aria-label="В архив"
-                title="Скрыть объект из основного списка и из выбора при оформлении договоров"
-                onClick={() => setGroupArchived(section.group.id, true)}
+                title="Отправить все расчёты по этому адресу в архив"
+                onClick={() => setEstimatesArchivedByAddress(section.addressKey, true)}
               >
                 <EstimatesArchiveIcon />
               </button>
@@ -1841,21 +1751,10 @@ export function ContractDocumentsEstimatesPage() {
                 className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
                 disabled={saving}
                 aria-label="Восстановить"
-                title="Вернуть объект в основной список и в выбор при оформлении договоров"
-                onClick={() => setGroupArchived(section.group.id, false)}
+                title="Вернуть все расчёты по этому адресу в основной список"
+                onClick={() => setEstimatesArchivedByAddress(section.addressKey, false)}
               >
                 <EstimatesRestoreFromArchiveIcon />
-              </button>
-            ) : null}
-            {totalInGroup === 0 ? (
-              <button
-                type="button"
-                className={`${styles.dangerBtn} ${styles.estimatesGroupDangerBtn}`}
-                disabled={saving}
-                title="Удалить пустой объект"
-                onClick={() => removeObjectGroup(section.group.id)}
-              >
-                Удалить
               </button>
             ) : null}
           </div>
@@ -1864,13 +1763,16 @@ export function ContractDocumentsEstimatesPage() {
     );
   };
 
-  const renderEstimateTableRow = (it: ContractEstimatePreset, reorder?: EstimateCardReorder) => {
+  const renderEstimateTableRow = (
+    it: ContractEstimatePreset,
+    options?: { childOfAddress?: boolean }
+  ) => {
     const usages = usageByEstimateId.get(it.id) ?? [];
     const isBound = usages.length > 0;
     const hasLockedUsage = usages.some((u) => isUsageLocked(u));
     const groupForIt = it.groupId ? groups.find((g) => g.id === it.groupId) : undefined;
     const groupArchived = Boolean(groupForIt?.archived);
-    const canPresetArchive = !isBound && !it.archived && !groupArchived && !it.groupId;
+    const canPresetArchive = !isBound && !it.archived && !groupArchived;
     const canPresetRestoreFromArchive = Boolean(it.archived) && !groupArchived;
     const primaryUsage = usages[0];
     const primaryLabel = primaryUsage ? formatEstimatePackageUsageLabel(primaryUsage) : '';
@@ -1920,19 +1822,19 @@ export function ContractDocumentsEstimatesPage() {
           minute: '2-digit',
         })
       : '—';
-    const isChildRow = Boolean(it.groupId && groups.some((g) => g.id === it.groupId));
+    const isChildRow = Boolean(options?.childOfAddress);
 
     return (
       <tr
         key={it.id}
         className={`${dataTableStyles.row} ${styles.estimatesListEstimateRow}${
-          it.splitBundleId ? ` ${styles.estimatesListEstimateRowSplit}` : ''
-        }${isChildRow ? ` ${styles.estimatesListChildRow}` : ''}`}
+          isChildRow ? ` ${styles.repairContractsListChildRow}` : ''
+        }`}
       >
-        {renderEstimateReorderCell(reorder, it.id)}
+        <td className={styles.repairContractsListSelectCol} />
         <td className={styles.estimatesListTitleCell}>
           <div className={styles.estimatesCardTitleRow}>
-            <strong className={styles.estimatesCardTitle}>{it.title}</strong>
+            <span className={styles.estimatesCardTitle}>{it.title}</span>
             {hasLockedUsage ? (
               <span
                 className={styles.estimatesBadge}
@@ -1956,16 +1858,15 @@ export function ContractDocumentsEstimatesPage() {
             ) : null}
           </div>
         </td>
-        <td className={styles.estimatesListCategoryCell}>{it.categoryName || '—'}</td>
         <td className={styles.estimatesListDateCell}>{updatedLabel}</td>
         <td className={styles.estimatesListCostCell}>
           {hasSnapshotTotal ? (
             <>
-              <strong>{formatEstimatePresetTotalRub(snapshotTotal)}</strong>
+              <span>{formatEstimateListTableCost(snapshotTotal)}</span>
               {showFullEstimateTotalInParens ? (
                 <span className={styles.estimatesCardCostFull}>
                   {' '}
-                  (всего {formatEstimatePresetTotalRub(fullSnapshotTotal)})
+                  ({formatEstimateListTableCost(fullSnapshotTotal)})
                 </span>
               ) : null}
             </>
@@ -1982,23 +1883,6 @@ export function ContractDocumentsEstimatesPage() {
           >
             {isBound ? boundBadgeText : 'Не привязан'}
           </span>
-        </td>
-        <td className={styles.estimatesListObjectCell}>
-          <label className={`${styles.field} ${styles.estimatesListInlineField}`}>
-            <span className={styles.estimatesListVisuallyHidden}>Объект</span>
-            <select
-              value={it.groupId && groups.some((g) => g.id === it.groupId) ? it.groupId : ''}
-              disabled={saving}
-              onChange={(e) => assignEstimateToGroup(it.id, e.target.value ? e.target.value : null)}
-            >
-              <option value="">Не в объекте</option>
-              {groupsForSelect.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.title}
-                </option>
-              ))}
-            </select>
-          </label>
         </td>
         <td className={styles.estimatesListMarkupCell}>
           <label
@@ -2032,10 +1916,8 @@ export function ContractDocumentsEstimatesPage() {
             />
           </label>
         </td>
-        <td className={styles.estimatesListActionsCol}>
-          <div
-            className={`${styles.estimatesCardActions} ${styles.repairContractsListActionsGrid}`}
-          >
+        <td className={styles.repairContractsListActionsCol}>
+          <div className={`${styles.estimatesCardActions} ${styles.estimatesListActionsRow}`}>
             {!archiveView && canPresetArchive ? (
               <button
                 type="button"
@@ -2176,17 +2058,11 @@ export function ContractDocumentsEstimatesPage() {
               disabled={saving || hasLockedUsage}
               onClick={() => {
                 if (hasLockedUsage) return;
-                if (usages.length > 0) {
-                  setDetachDeleteModal({
-                    estimateId: it.id,
-                    usages: [...usages],
-                  });
-                  return;
-                }
-                setSimpleDeleteModal({
+                setTrashConfirmModal({
                   estimateId: it.id,
                   title: it.title.trim() || 'Расчёт',
                   inSplitBundle: Boolean(it.splitBundleId),
+                  detachedUsages: usages.length > 0 ? [...usages] : [],
                 });
               }}
             >
@@ -2213,11 +2089,28 @@ export function ContractDocumentsEstimatesPage() {
 
   return (
     <div
-      className={`${styles.page} ${styles.pageWide} ${styles.estimatesPage}${archiveView ? ` ${styles.estimatesPageInArchive}` : ''}`}
+      className={`${styles.page} ${styles.pageWide} ${styles.repairContractsListPage} ${styles.estimatesPage}${archiveView ? ` ${styles.estimatesPageInArchive}` : ''}`}
     >
       <div className={styles.editorHeader}>
         <div>
-          <h1 className={styles.title}>{archiveView ? 'Архив расчётов' : 'Расчёты'}</h1>
+          {archiveView ? (
+            <button
+              type="button"
+              className={styles.backLink}
+              onClick={() => navigateArchiveView(false)}
+            >
+              ← К основному списку расчётов
+            </button>
+          ) : null}
+          <div className={styles.repairContractsListHeaderLeft}>
+            <h1 className={styles.title}>{archiveView ? 'Архив расчётов' : 'Расчёты'}</h1>
+            <span className={styles.repairContractsListCount}>
+              {visibleItems.length} расч.
+              {listViewMode === 'by_object' && addressGroupCount > 0
+                ? ` · ${addressGroupCount} объектов`
+                : ''}
+            </span>
+          </div>
         </div>
         <div className={styles.headerButtonsRow}>
           {!archiveView ? (
@@ -2272,213 +2165,264 @@ export function ContractDocumentsEstimatesPage() {
             title="Корзина расчётов"
             aria-label="Корзина расчётов"
           />
-          <button
-            type="button"
-            className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn} ${styles.estimatesPageArchiveIconBtn}`}
-            disabled={saving || refreshing}
-            aria-label={
-              archiveView
-                ? 'Вернуться к основному списку расчётов'
-                : 'Архив: объекты и расчёты, отправленные в архив'
-            }
-            title={
-              archiveView
-                ? 'Вернуться к основному списку расчётов'
-                : 'Объекты с расчётами, отправленные в архив'
-            }
-            onClick={() => setArchiveView((v) => !v)}
-          >
-            {archiveView ? (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width={18}
-                height={18}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-              >
-                <path d="M8 6h13" />
-                <path d="M8 12h13" />
-                <path d="M8 18h13" />
-                <path d="M3 6h.01" />
-                <path d="M3 12h.01" />
-                <path d="M3 18h.01" />
-              </svg>
-            ) : (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width={18}
-                height={18}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-              >
-                <path d="M21 8v13H3V8" />
-                <path d="M23 3v5H1V3z" />
-                <path d="M10 12h4" />
-              </svg>
-            )}
-          </button>
+          <span className={toolbarBadgeStyles.wrap}>
+            <button
+              type="button"
+              className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn} ${styles.estimatesPageArchiveIconBtn}`}
+              disabled={saving || refreshing}
+              aria-label={
+                archiveView
+                  ? 'Вернуться к основному списку расчётов'
+                  : archiveCount > 0
+                    ? `Архив: ${archiveCount > 99 ? 'более 99' : archiveCount} расч. в архиве`
+                    : 'Архив: объекты и расчёты, отправленные в архив'
+              }
+              title={
+                archiveView
+                  ? 'Вернуться к основному списку расчётов'
+                  : archiveCount > 0
+                    ? `Архив (${archiveCount > 99 ? '99+' : archiveCount})`
+                    : 'Объекты с расчётами, отправленные в архив'
+              }
+              onClick={() => navigateArchiveView(!archiveView)}
+            >
+              {archiveView ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width={18}
+                  height={18}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M8 6h13" />
+                  <path d="M8 12h13" />
+                  <path d="M8 18h13" />
+                  <path d="M3 6h.01" />
+                  <path d="M3 12h.01" />
+                  <path d="M3 18h.01" />
+                </svg>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width={18}
+                  height={18}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M21 8v13H3V8" />
+                  <path d="M23 3v5H1V3z" />
+                  <path d="M10 12h4" />
+                </svg>
+              )}
+            </button>
+            {archiveCount > 0 ? (
+              <span className={toolbarBadgeStyles.badge} aria-hidden>
+                {archiveCount > 99 ? '99+' : archiveCount}
+              </span>
+            ) : null}
+          </span>
         </div>
       </div>
 
       {error ? <p className={styles.error}>{error}</p> : null}
       {ok ? <p className={styles.success}>{ok}</p> : null}
 
+      <div className={styles.repairContractsListFilters}>
+        <input
+          type="search"
+          placeholder="Поиск по названию, заказчику, адресу..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          disabled={loading || saving}
+          className={estimatesListFilterFieldClass(
+            styles.repairContractsListSearchInput,
+            Boolean(search.trim()),
+            styles.repairContractsListFilterActive
+          )}
+          aria-label="Поиск по названию расчёта, заказчику, адресу"
+        />
+        <select
+          value={listViewMode}
+          onChange={(e) => setListViewMode(e.target.value as EstimatesListViewMode)}
+          disabled={loading || saving}
+          className={styles.repairContractsListSelect}
+          aria-label="Режим списка"
+        >
+          <option value="by_object">По объектам</option>
+          <option value="flat">Плоский список</option>
+        </select>
+        <select
+          id="estimates_list_manager_filter"
+          value={managerFilter}
+          onChange={(e) => setManagerFilter(e.target.value)}
+          disabled={loading || saving}
+          className={estimatesListFilterFieldClass(
+            styles.repairContractsListSelect,
+            Boolean(managerFilter),
+            styles.repairContractsListFilterActive
+          )}
+          aria-label="Менеджер"
+        >
+          <option value="">Все менеджеры</option>
+          {managerOptions.map((p) => (
+            <option key={p.crmUserId} value={p.crmUserId}>
+              {p.title?.trim() || p.directorNameNominative?.trim() || p.crmUserId}
+            </option>
+          ))}
+        </select>
+        <label className={styles.repairContractsListDateLabel}>
+          <span className={styles.repairContractsListDateLabelText}>Дата от</span>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            disabled={loading || saving}
+            className={estimatesListFilterFieldClass(
+              styles.repairContractsListDateInput,
+              Boolean(dateFrom),
+              styles.repairContractsListFilterActive
+            )}
+            aria-label="Дата от"
+          />
+        </label>
+        <label className={styles.repairContractsListDateLabel}>
+          <span className={styles.repairContractsListDateLabelText}>Дата до</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            disabled={loading || saving}
+            className={estimatesListFilterFieldClass(
+              styles.repairContractsListDateInput,
+              Boolean(dateTo),
+              styles.repairContractsListFilterActive
+            )}
+            aria-label="Дата до"
+          />
+        </label>
+        <select
+          value={limit}
+          onChange={(e) => {
+            setLimit(Number(e.target.value) as EstimatesPageLimit);
+            setPage(1);
+          }}
+          disabled={loading || saving}
+          className={styles.repairContractsListSelect}
+          aria-label="Количество строк на странице"
+        >
+          {ESTIMATES_PAGE_LIMIT_OPTIONS.map((n) => (
+            <option key={n} value={n}>
+              {n} на странице
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div
-        className={`${styles.sectionCard} ${styles.estimatesListSection}${archiveView ? ` ${styles.estimatesListSectionArchive}` : ''}`}
+        className={`${dataTableStyles.tableContainer} ${styles.repairContractsDirectoryTable} ${styles.estimatesDirectoryTable}${archiveView ? ` ${styles.estimatesDirectoryTableArchive}` : ''}`}
       >
-        <div
-          className={`${styles.estimatesControlsSingleRow}${archiveView ? ` ${styles.estimatesControlsSingleRowArchive}` : ''}`}
-        >
-          {!archiveView ? (
-            <>
-              <select
-                id="estimates_list_manager_filter"
-                value={managerFilter}
-                onChange={(e) => setManagerFilter(e.target.value)}
-                disabled={loading || saving}
-                className={estimatesListFilterFieldClass(
-                  styles.repairContractsListSelect,
-                  Boolean(managerFilter),
-                  styles.repairContractsListFilterActive
-                )}
-                aria-label="Менеджер"
+        <div className={dataTableStyles.tableWrapper}>
+          <div className={dataTableStyles.scrollContainer}>
+            <table
+              className={`${dataTableStyles.table} ${styles.repairContractsListTable} ${styles.estimatesListTable}`}
+            >
+              <thead className={dataTableStyles.stickyHeader}>
+                <tr>
+                  <th className={styles.repairContractsListSelectCol} aria-label="Группа" />
+                  <th>Расчёт</th>
+                  <EstimatesListSortableTh
+                    column="date"
+                    title="Дата"
+                    sortBy={listSortBy}
+                    sortOrder={listSortOrder}
+                    onSort={handleListSortChange}
+                  />
+                  <th>Стоимость</th>
+                  <th>Привязка</th>
+                  <th>Наценка, %</th>
+                  <th className={styles.repairContractsListActionsCol} aria-label="Действия" />
+                </tr>
+              </thead>
+              <tbody
+                className={loading || refreshing ? dataTableStyles.tbodyRefreshing : undefined}
               >
-                <option value="">Все менеджеры</option>
-                {managerOptions.map((p) => (
-                  <option key={p.crmUserId} value={p.crmUserId}>
-                    {p.title?.trim() || p.directorNameNominative?.trim() || p.crmUserId}
-                  </option>
-                ))}
-              </select>
-              <div className={styles.estimatesFilterRowSpacer} aria-hidden />
-              <div className={styles.estimatesFilterRowTrailing}>
-                <button
-                  type="button"
-                  className={`${styles.secondaryBtn} ${styles.estimatesAddObjectBtn}`}
-                  disabled={saving}
-                  onClick={createObjectGroup}
-                >
-                  + Новый объект
-                </button>
-              </div>
-            </>
-          ) : null}
-        </div>
-        <div
-          className={`${dataTableStyles.tableContainer} ${styles.estimatesDirectoryTable}${archiveView ? ` ${styles.estimatesDirectoryTableArchive}` : ''}`}
-        >
-          <div className={dataTableStyles.tableWrapper}>
-            <div className={dataTableStyles.scrollContainer}>
-              <table className={`${dataTableStyles.table} ${styles.estimatesListTable}`}>
-                <thead className={dataTableStyles.stickyHeader}>
+                {visibleItems.length === 0 ? (
                   <tr>
-                    <th className={styles.estimatesListOrderCol} aria-label="Порядок" />
-                    <th>Расчёт</th>
-                    <th>Категория</th>
-                    <th>Изменён</th>
-                    <th>Стоимость</th>
-                    <th>Привязка</th>
-                    <th>Объект</th>
-                    <th>Наценка, %</th>
-                    <th className={styles.estimatesListActionsCol} aria-label="Действия" />
+                    <td
+                      colSpan={ESTIMATES_LIST_TABLE_COL_SPAN}
+                      className={dataTableStyles.emptyCell}
+                    >
+                      {archiveView && !hasAnythingInArchive
+                        ? 'В архиве пока нет расчётов и объектов.'
+                        : hasActiveListFilters
+                          ? 'Нет расчётов по выбранным фильтрам.'
+                          : 'Нет расчётов для текущего фильтра.'}
+                    </td>
                   </tr>
-                </thead>
-                <tbody
-                  className={loading || refreshing ? dataTableStyles.tbodyRefreshing : undefined}
-                >
-                  {visibleItems.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={ESTIMATES_LIST_TABLE_COL_SPAN}
-                        className={dataTableStyles.emptyCell}
-                      >
-                        {archiveView && !hasAnythingInArchive
-                          ? 'В архиве пока нет расчётов и объектов.'
-                          : hasActiveManagerFilter
-                            ? 'Нет расчётов по выбранному менеджеру.'
-                            : 'Нет расчётов для текущего фильтра.'}
-                      </td>
-                    </tr>
-                  ) : (
-                    estimateLayoutBlocks.map((block) => {
-                      if (block.kind === 'group') {
-                        const section = block;
-                        const groupCollapsed = collapsedGroupIds.has(section.group.id);
-                        return (
-                          <Fragment key={section.group.id}>
-                            {renderEstimateGroupTableRow(section)}
-                            {!groupCollapsed ? (
-                              section.items.length === 0 ? (
-                                <tr
-                                  key={`${section.group.id}_empty`}
-                                  className={styles.estimatesListEmptyInGroupRow}
-                                >
-                                  <td
-                                    colSpan={ESTIMATES_LIST_TABLE_COL_SPAN}
-                                    className={dataTableStyles.emptyCell}
-                                  >
-                                    В этом объекте нет расчётов для текущего фильтра.
-                                  </td>
-                                </tr>
-                              ) : (
-                                section.items.map((it, idx) =>
-                                  renderEstimateTableRow(it, {
-                                    scope: 'inGroup',
-                                    groupId: section.group.id,
-                                    index: idx,
-                                    total: section.items.length,
-                                  })
-                                )
-                              )
-                            ) : null}
-                          </Fragment>
-                        );
-                      }
-                      if (block.kind === 'soloArchived') {
-                        return (
-                          <Fragment key="_soloArchived">
-                            <tr className={styles.estimatesListSectionRow}>
-                              <td colSpan={ESTIMATES_LIST_TABLE_COL_SPAN}>
-                                В архиве отдельно (объект в основном списке)
-                              </td>
-                            </tr>
-                            {block.items.map((it) => renderEstimateTableRow(it))}
-                          </Fragment>
-                        );
-                      }
+                ) : totalTableRows === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={ESTIMATES_LIST_TABLE_COL_SPAN}
+                      className={dataTableStyles.emptyCell}
+                    >
+                      Нет строк для отображения. Разверните объект или смените режим списка.
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedDisplayItems.map((item) => {
+                    if (item.type === 'address') {
                       return (
-                        <Fragment
-                          key={`standRun_${[...block.entries]
-                            .map((e) => e.preset.id)
-                            .sort()
-                            .join('|')}`}
-                        >
-                          {block.entries.map(({ preset, mergeGlobalIndex, mergeGlobalTotal }) =>
-                            renderEstimateTableRow(preset, {
-                              scope: 'orphan',
-                              mergeGlobalIndex,
-                              mergeGlobalTotal,
-                            })
-                          )}
+                        <Fragment key={`addr_${item.addressKey}`}>
+                          {renderEstimateAddressGroupRow({
+                            kind: 'address',
+                            addressKey: item.addressKey,
+                            items: item.items,
+                          })}
                         </Fragment>
                       );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    }
+                    if (item.type === 'soloArchivedSection') {
+                      return (
+                        <tr key="_soloArchived" className={styles.estimatesListSectionRow}>
+                          <td colSpan={ESTIMATES_LIST_TABLE_COL_SPAN}>
+                            В архиве отдельно (объект в основном списке)
+                          </td>
+                        </tr>
+                      );
+                    }
+                    return (
+                      <Fragment key={`est_${item.preset.id}`}>
+                        {renderEstimateTableRow(item.preset, {
+                          childOfAddress: item.childOfAddress,
+                        })}
+                      </Fragment>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
+        {!loading && !refreshing && totalTableRows > 0 ? (
+          <AdminTablePagination
+            page={page}
+            limit={limit}
+            total={totalTableRows}
+            onPageChange={setPage}
+            className={styles.repairContractsListPagination}
+            activePageClassName={styles.repairContractsListPaginationPageActive}
+          />
+        ) : null}
       </div>
 
       {workScopePreset ? (
@@ -2543,74 +2487,29 @@ export function ContractDocumentsEstimatesPage() {
         </div>
       ) : null}
 
-      {detachDeleteModal ? (
-        <div
-          className={styles.saveModalBackdrop}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="detach-delete-estimate-title"
-          onClick={(e) => {
-            if (e.target === e.currentTarget && !saving) {
-              setDetachDeleteModal(null);
-            }
-          }}
-        >
-          <div className={styles.saveModalCard} onClick={(e) => e.stopPropagation()}>
-            <h3 id="detach-delete-estimate-title" className={styles.saveModalTitle}>
-              Переместить в корзину?
-            </h3>
-            <p className={styles.saveModalText}>
-              Этот расчёт прикреплён к смете договора или к дополнительному соглашению. При
-              перемещении в корзину привязка будет снята автоматически, расчёт исчезнет из общего
-              списка. Восстановить можно из корзины на этой странице. Переместить в корзину?
-            </p>
-            <div
-              style={{
-                display: 'flex',
-                gap: 8,
-                justifyContent: 'flex-end',
-                flexWrap: 'wrap',
-                marginTop: 4,
-              }}
-            >
-              <button
-                type="button"
-                className={styles.secondaryBtn}
-                disabled={saving}
-                onClick={() => setDetachDeleteModal(null)}
-              >
-                Отмена
-              </button>
-              <button
-                type="button"
-                className={styles.dangerBtn}
-                disabled={saving}
-                onClick={() => void handleConfirmDetachDelete()}
-              >
-                {saving ? 'Подождите…' : 'В корзину'}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       <Modal
-        isOpen={simpleDeleteModal != null}
+        isOpen={trashConfirmModal != null}
         onClose={() => {
           if (saving) return;
-          setSimpleDeleteModal(null);
+          setTrashConfirmModal(null);
         }}
         title="Переместить в корзину?"
         size="sm"
         showCloseButton
       >
-        {simpleDeleteModal ? (
+        {trashConfirmModal ? (
           <div className={confirmModalStyles.content}>
             <p className={confirmModalStyles.message}>
-              Расчёт «<strong>{simpleDeleteModal.title}</strong>» будет скрыт из общего списка.
-              Восстановить его можно из корзины на этой странице.
+              Расчёт «<strong>{trashConfirmModal.title}</strong>» будет скрыт из общего списка.
+              Восстановить его можно из корзины на этой странице. {ESTIMATE_TRASH_RETENTION_NOTICE}
             </p>
-            {simpleDeleteModal.inSplitBundle ? (
+            {trashConfirmModal.detachedUsages.length > 0 ? (
+              <p className={confirmModalStyles.message}>
+                Расчёт прикреплён к смете договора или к дополнительному соглашению. При перемещении
+                в корзину привязка будет снята автоматически.
+              </p>
+            ) : null}
+            {trashConfirmModal.inSplitBundle ? (
               <p className={confirmModalStyles.message}>
                 Расчёт входит в связку разделения сметы: после перемещения в корзину остальные
                 экземпляры связки останутся; их набор выбранных позиций не пересчитается
@@ -2622,7 +2521,7 @@ export function ContractDocumentsEstimatesPage() {
                 type="button"
                 className={confirmModalStyles.cancelButton}
                 disabled={saving}
-                onClick={() => setSimpleDeleteModal(null)}
+                onClick={() => setTrashConfirmModal(null)}
               >
                 Отмена
               </button>
@@ -2630,7 +2529,7 @@ export function ContractDocumentsEstimatesPage() {
                 type="button"
                 className={`${confirmModalStyles.confirmButton} ${confirmModalStyles.danger}`}
                 disabled={saving}
-                onClick={() => void handleConfirmSimpleDelete()}
+                onClick={() => void handleConfirmTrashMove()}
               >
                 {saving ? 'Подождите…' : 'В корзину'}
               </button>
