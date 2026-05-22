@@ -3,6 +3,7 @@ import type {
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
 
+import { isEstimatePresetAttachableToContract } from './estimatePipelineStage';
 import {
   applyRepairContractDiscountToNullableBase,
   repairEstimateTotalToContractFields,
@@ -290,15 +291,12 @@ function presetObjectGroupKey(preset: ContractEstimatePreset): string {
   return preset.groupId ? preset.groupId : '__ungrouped__';
 }
 
-/** Расчёт из неархивного объекта (или вне объекта) — доступен для прикрепления к пакету в ремонте. */
+/** Расчёт из «В работе», неархивного объекта (или вне объекта) — доступен для прикрепления к пакету. */
 export function isContractEstimatePresetAttachable(
   preset: ContractEstimatePreset,
   groups: ContractEstimateGroup[]
 ): boolean {
-  if (preset.archived) return false;
-  if (!preset.groupId) return true;
-  const g = groups.find((x) => x.id === preset.groupId);
-  return !g?.archived;
+  return isEstimatePresetAttachableToContract(preset, groups);
 }
 
 /** Объект сметы договора: по первому прикреплённому расчёту или по полю формы до прикрепления. */

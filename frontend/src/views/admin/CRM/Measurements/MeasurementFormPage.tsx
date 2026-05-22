@@ -931,7 +931,7 @@ export function MeasurementFormPage({ measurementId }: MeasurementFormPageProps)
               role="status"
               aria-live="polite"
             >
-              Сохранено автоматически
+              Сохранено
             </span>
           </div>
           <div className={styles.titleControls}>

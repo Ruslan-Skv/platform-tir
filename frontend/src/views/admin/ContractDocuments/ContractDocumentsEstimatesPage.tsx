@@ -33,6 +33,7 @@ import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 import { EditIcon } from '@/shared/ui/icons/EditIcon';
+import measurementFormStyles from '@/views/admin/CRM/Measurements/MeasurementFormPage.module.css';
 
 import styles from './ContractDocuments.module.css';
 import { EstimateTrashModal } from './EstimateTrashModal';
@@ -47,6 +48,14 @@ import {
 } from './estimatesListFilters';
 import { type EstimatesListSortBy, type EstimatesListSortOrder } from './estimatesListSort';
 import { ensureEstimateObjectGroups } from './repair/estimateObjectGroupSync';
+import {
+  ESTIMATE_PIPELINE_TAB_LABELS,
+  type EstimatePipelineTab,
+  applyGroupPipelineTab,
+  applyPresetPipelineTab,
+  parseEstimatePipelineTab,
+  presetMatchesPipelineTab,
+} from './repair/estimatePipelineStage';
 import {
   type LinkedCopySplitTarget,
   generateSplitBundleId,
@@ -364,6 +373,46 @@ function EstimatesRestoreFromArchiveIcon() {
       <path d="M3 6h.01" />
       <path d="M3 12h.01" />
       <path d="M3 18h.01" />
+    </svg>
+  );
+}
+
+function EstimatesToProspectIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={14}
+      height={14}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="var(--admin-chart-series-4)"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M5 12h14" />
+      <path d="m13 6 6 6-6 6" />
+    </svg>
+  );
+}
+
+function EstimatesToActiveIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={14}
+      height={14}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="var(--admin-chart-series-1)"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M19 12H5" />
+      <path d="m11 6-6 6 6 6" />
     </svg>
   );
 }
@@ -1076,14 +1125,31 @@ export function ContractDocumentsEstimatesPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const archiveView = searchParams.get('archive') === '1';
+  const pipelineTab = archiveView
+    ? 'active'
+    : parseEstimatePipelineTab(searchParams.get('pipeline'));
 
   const navigateArchiveView = useCallback(
     (nextArchive: boolean) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (nextArchive) params.set('archive', '1');
-      else params.delete('archive');
+      if (nextArchive) {
+        params.set('archive', '1');
+        params.delete('pipeline');
+      } else params.delete('archive');
       const qs = params.toString();
       router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams]
+  );
+
+  const navigatePipelineTab = useCallback(
+    (nextTab: EstimatePipelineTab) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (nextTab === 'prospect') params.set('pipeline', 'prospect');
+      else params.delete('pipeline');
+      const qs = params.toString();
+      router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      setPage(1);
     },
     [pathname, router, searchParams]
   );
@@ -1094,6 +1160,32 @@ export function ContractDocumentsEstimatesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
+  const okMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showOkMessage = useCallback((text: string, dismissMs: number) => {
+    if (okMessageTimerRef.current) clearTimeout(okMessageTimerRef.current);
+    setOk(text);
+    okMessageTimerRef.current = setTimeout(() => {
+      setOk((prev) => (prev === text ? null : prev));
+      okMessageTimerRef.current = null;
+    }, dismissMs);
+  }, []);
+
+  const showAutosaveOk = useCallback(() => {
+    showOkMessage('Сохранено.', 1200);
+  }, [showOkMessage]);
+
+  const clearOkMessage = useCallback(() => {
+    if (okMessageTimerRef.current) clearTimeout(okMessageTimerRef.current);
+    okMessageTimerRef.current = null;
+    setOk(null);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (okMessageTimerRef.current) clearTimeout(okMessageTimerRef.current);
+    };
+  }, []);
   const [items, setItems] = useState<ContractEstimatePreset[]>([]);
   const [groups, setGroups] = useState<ContractEstimateGroup[]>([]);
   const [repairPackages, setRepairPackages] = useState<
@@ -1332,7 +1424,7 @@ export function ContractDocumentsEstimatesPage() {
     if (refreshing || saving) return;
     setRefreshing(true);
     setError(null);
-    setOk(null);
+    clearOkMessage();
     try {
       await fetchEstimatesFromServer();
     } catch (e) {
@@ -1350,7 +1442,7 @@ export function ContractDocumentsEstimatesPage() {
     setSaving(true);
     setError(null);
     if (!options?.suppressSuccessMessage) {
-      setOk(null);
+      clearOkMessage();
     }
     try {
       const stripped = stripOrphanGroupIds(nextItems, nextGroups);
@@ -1363,7 +1455,7 @@ export function ContractDocumentsEstimatesPage() {
       setItems(synced.items);
       setGroups(synced.groups);
       if (!options?.suppressSuccessMessage) {
-        setOk('Сохранено.');
+        showAutosaveOk();
       }
       return true;
     } catch (e) {
@@ -1426,6 +1518,40 @@ export function ContractDocumentsEstimatesPage() {
       const { archived: _drop, ...rest } = it;
       return { ...rest, updatedAt: new Date().toISOString() } as ContractEstimatePreset;
     });
+    void persistEstimates(nextItems, groups);
+  };
+
+  const setGroupPipelineStage = (groupId: string, tab: EstimatePipelineTab) => {
+    const ts = new Date().toISOString();
+    const nextGroups = groups.map((g) =>
+      g.id === groupId ? applyGroupPipelineTab(g, tab, ts) : g
+    );
+    const nextItems = items.map((it) =>
+      it.groupId === groupId ? applyPresetPipelineTab(it, tab, ts) : it
+    );
+    void persistEstimates(nextItems, nextGroups);
+  };
+
+  const setPresetPipelineStage = (estimateId: string, tab: EstimatePipelineTab) => {
+    const ts = new Date().toISOString();
+    const nextItems = items.map((it) =>
+      it.id === estimateId ? applyPresetPipelineTab(it, tab, ts) : it
+    );
+    void persistEstimates(nextItems, groups);
+  };
+
+  const setAddressPipelineStage = (addressKey: string, tab: EstimatePipelineTab) => {
+    const ts = new Date().toISOString();
+    const unifiedGroupId = unifiedGroupIdForEstimates(
+      items.filter((it) => estimateObjectAddressKey(it) === addressKey)
+    );
+    if (unifiedGroupId) {
+      setGroupPipelineStage(unifiedGroupId, tab);
+      return;
+    }
+    const nextItems = items.map((it) =>
+      estimateObjectAddressKey(it) === addressKey ? applyPresetPipelineTab(it, tab, ts) : it
+    );
     void persistEstimates(nextItems, groups);
   };
 
@@ -1524,7 +1650,7 @@ export function ContractDocumentsEstimatesPage() {
     const moved = await moveEstimateToTrashById(estimateId);
     if (moved) {
       setTrashConfirmModal(null);
-      setOk('Расчёт перемещён в корзину.');
+      showOkMessage('Расчёт перемещён в корзину.', 3000);
     }
   };
 
@@ -1725,6 +1851,7 @@ export function ContractDocumentsEstimatesPage() {
       const inArchiveCombined = groupArchived || rowArchived;
       const archiveOk = archiveView ? inArchiveCombined : !inArchiveCombined;
       if (!archiveOk) return false;
+      if (!archiveView && !presetMatchesPipelineTab(it, groups, pipelineTab)) return false;
       if (!estimateMatchesSearch(it, searchNorm)) return false;
       if (!estimateMatchesDateRange(it, dateFrom, dateTo)) return false;
       return estimateMatchesManagerFilter(it.id, managerFilter, managerIdsByPresetId);
@@ -1732,6 +1859,7 @@ export function ContractDocumentsEstimatesPage() {
   }, [
     items,
     archiveView,
+    pipelineTab,
     groups,
     managerFilter,
     managerIdsByPresetId,
@@ -1741,6 +1869,18 @@ export function ContractDocumentsEstimatesPage() {
   ]);
 
   const hasActiveListFilters = Boolean(searchNorm || managerFilter || dateFrom || dateTo);
+
+  const pipelineTabCounts = useMemo(() => {
+    let active = 0;
+    let prospect = 0;
+    for (const it of items) {
+      const g = it.groupId ? groups.find((x) => x.id === it.groupId) : undefined;
+      if (Boolean(it.archived) || Boolean(g?.archived)) continue;
+      if (presetMatchesPipelineTab(it, groups, 'prospect')) prospect += 1;
+      else active += 1;
+    }
+    return { active, prospect };
+  }, [items, groups]);
 
   const archiveCount = useMemo(
     () =>
@@ -1967,7 +2107,39 @@ export function ContractDocumentsEstimatesPage() {
         </td>
         <td className={styles.repairContractsListActionsCol}>
           <div className={`${styles.estimatesCardActions} ${styles.estimatesListActionsRow}`}>
-            {!archiveView && section.items.length > 0 ? (
+            {!archiveView && pipelineTab === 'active' && section.items.length > 0 ? (
+              <button
+                type="button"
+                className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+                disabled={saving}
+                aria-label="В перспективу"
+                title={
+                  unifiedGroup
+                    ? 'Перенести объект и все расчёты на вкладку «В перспективе»'
+                    : 'Перенести все расчёты по этому адресу на вкладку «В перспективе»'
+                }
+                onClick={() => setAddressPipelineStage(section.addressKey, 'prospect')}
+              >
+                <EstimatesToProspectIcon />
+              </button>
+            ) : null}
+            {!archiveView && pipelineTab === 'prospect' && section.items.length > 0 ? (
+              <button
+                type="button"
+                className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+                disabled={saving}
+                aria-label="В работе"
+                title={
+                  unifiedGroup
+                    ? 'Вернуть объект и все расчёты на вкладку «В работе»'
+                    : 'Вернуть все расчёты по этому адресу на вкладку «В работе»'
+                }
+                onClick={() => setAddressPipelineStage(section.addressKey, 'active')}
+              >
+                <EstimatesToActiveIcon />
+              </button>
+            ) : null}
+            {!archiveView && pipelineTab === 'active' && section.items.length > 0 ? (
               <button
                 type="button"
                 className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
@@ -2156,7 +2328,31 @@ export function ContractDocumentsEstimatesPage() {
         </td>
         <td className={styles.repairContractsListActionsCol}>
           <div className={`${styles.estimatesCardActions} ${styles.estimatesListActionsRow}`}>
-            {!archiveView && canPresetArchive ? (
+            {!archiveView && pipelineTab === 'active' ? (
+              <button
+                type="button"
+                className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+                disabled={saving}
+                aria-label="В перспективу"
+                title="Перенести расчёт на вкладку «В перспективе»"
+                onClick={() => setPresetPipelineStage(it.id, 'prospect')}
+              >
+                <EstimatesToProspectIcon />
+              </button>
+            ) : null}
+            {!archiveView && pipelineTab === 'prospect' ? (
+              <button
+                type="button"
+                className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
+                disabled={saving}
+                aria-label="В работе"
+                title="Вернуть расчёт на вкладку «В работе»"
+                onClick={() => setPresetPipelineStage(it.id, 'active')}
+              >
+                <EstimatesToActiveIcon />
+              </button>
+            ) : null}
+            {!archiveView && pipelineTab === 'active' && canPresetArchive ? (
               <button
                 type="button"
                 className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
@@ -2212,7 +2408,7 @@ export function ContractDocumentsEstimatesPage() {
             >
               <CopyIcon />
             </AdminTableIconButton>
-            {canOpenWorkScopeSplit && !archiveView ? (
+            {canOpenWorkScopeSplit && !archiveView && pipelineTab === 'active' ? (
               <button
                 type="button"
                 className={`${styles.secondaryBtn} ${styles.estimatesIconBtn}`}
@@ -2304,14 +2500,79 @@ export function ContractDocumentsEstimatesPage() {
               ← К основному списку расчётов
             </button>
           ) : null}
-          <div className={styles.repairContractsListHeaderLeft}>
-            <h1 className={styles.title}>{archiveView ? 'Архив расчётов' : 'Расчёты'}</h1>
-            <span className={styles.repairContractsListCount}>
-              {visibleItems.length} расч.
-              {listViewMode === 'by_object' && addressGroupCount > 0
-                ? ` · ${addressGroupCount} объектов`
-                : ''}
-            </span>
+          <div className={styles.estimatesEditorHeaderStack}>
+            <div className={styles.repairContractsListHeaderLeft}>
+              <h1 className={styles.title}>{archiveView ? 'Архив расчётов' : 'Расчёты'}</h1>
+              <div className={measurementFormStyles.titleWithAutosave}>
+                <span
+                  className={styles.repairContractsListCount}
+                  title={
+                    !archiveView
+                      ? listViewMode === 'by_object' && addressGroupCount > 0
+                        ? `${visibleItems.length} расчётов · ${addressGroupCount} объектов`
+                        : `${visibleItems.length} расчётов`
+                      : undefined
+                  }
+                >
+                  {!archiveView ? (
+                    listViewMode === 'by_object' && addressGroupCount > 0 ? (
+                      <>
+                        {visibleItems.length}/{addressGroupCount}
+                      </>
+                    ) : (
+                      visibleItems.length
+                    )
+                  ) : (
+                    <>
+                      {visibleItems.length} расч.
+                      {listViewMode === 'by_object' && addressGroupCount > 0
+                        ? ` · ${addressGroupCount} объектов`
+                        : ''}
+                    </>
+                  )}
+                </span>
+                <span
+                  className={`${measurementFormStyles.autosaveNotice} ${
+                    ok === 'Сохранено.' ? measurementFormStyles.autosaveNoticeVisible : ''
+                  }`}
+                  role="status"
+                  aria-live="polite"
+                >
+                  Сохранено.
+                </span>
+              </div>
+            </div>
+            {!archiveView ? (
+              <div
+                className={`${styles.tabBar} ${styles.estimatesPipelineTabBar}`}
+                role="tablist"
+                aria-label="Вкладки списка расчётов"
+              >
+                {(['active', 'prospect'] as const).map((tab) => {
+                  const count =
+                    tab === 'active' ? pipelineTabCounts.active : pipelineTabCounts.prospect;
+                  return (
+                    <button
+                      key={tab}
+                      type="button"
+                      role="tab"
+                      aria-selected={pipelineTab === tab}
+                      className={`${styles.tab} ${
+                        pipelineTab === tab
+                          ? tab === 'prospect'
+                            ? styles.estimatesPipelineTabActiveProspect
+                            : styles.estimatesPipelineTabActiveWork
+                          : ''
+                      }`}
+                      onClick={() => navigatePipelineTab(tab)}
+                    >
+                      {ESTIMATE_PIPELINE_TAB_LABELS[tab]}
+                      <span className={styles.estimatesPipelineTabCount}>{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
         </div>
         <div className={styles.headerButtonsRow}>
@@ -2437,7 +2698,7 @@ export function ContractDocumentsEstimatesPage() {
       </div>
 
       {error ? <p className={styles.error}>{error}</p> : null}
-      {ok ? <p className={styles.success}>{ok}</p> : null}
+      {ok && ok !== 'Сохранено.' ? <p className={styles.success}>{ok}</p> : null}
 
       <div className={styles.repairContractsListFilters}>
         <input
@@ -2568,7 +2829,9 @@ export function ContractDocumentsEstimatesPage() {
                         ? 'В архиве пока нет расчётов и объектов.'
                         : hasActiveListFilters
                           ? 'Нет расчётов по выбранным фильтрам.'
-                          : 'Нет расчётов для текущего фильтра.'}
+                          : pipelineTab === 'prospect'
+                            ? 'На вкладке «В перспективе» пока нет расчётов.'
+                            : 'На вкладке «В работе» пока нет расчётов.'}
                     </td>
                   </tr>
                 ) : totalTableRows === 0 ? (

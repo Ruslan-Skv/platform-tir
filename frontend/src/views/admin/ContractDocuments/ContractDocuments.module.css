@@ -4388,6 +4388,98 @@
   color: var(--admin-text-muted);
 }
 
+/* Вкладки «В работе» / «В перспективе» — под заголовком, на линии разделителя */
+.estimatesPage .editorHeader {
+  align-items: flex-start;
+}
+
+.estimatesPage .editorHeader > div:first-child {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: var(--admin-space-2xs);
+}
+
+.estimatesEditorHeaderStack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--admin-space-xs);
+  width: 100%;
+  min-width: 0;
+}
+
+.estimatesPage .estimatesEditorHeaderStack .repairContractsListHeaderLeft {
+  flex-wrap: wrap;
+}
+
+.estimatesPage .estimatesPipelineTabBar.tabBar {
+  flex: 0 0 auto;
+  margin: 0 0 calc(-1 * var(--admin-space-md));
+  padding: 0;
+  gap: var(--admin-space-xs);
+  border: none;
+  border-bottom: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.estimatesPage .estimatesPipelineTabBar .tab {
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
+  line-height: 1.25;
+  border: 1px solid var(--admin-border);
+  border-bottom: none;
+  border-radius: var(--admin-radius-md) var(--admin-radius-md) 0 0;
+  background: var(--admin-surface);
+}
+
+.estimatesPage .estimatesPipelineTabBar .tab:hover {
+  background: var(--admin-surface-soft);
+}
+
+.estimatesPage .estimatesPipelineTabBar .estimatesPipelineTabActiveWork {
+  background: var(--admin-success-bg-soft);
+  border-color: var(--admin-success-border-soft);
+  border-bottom: none;
+  color: var(--admin-success-strong);
+  font-weight: 600;
+}
+
+.estimatesPage .estimatesPipelineTabBar .estimatesPipelineTabActiveProspect {
+  background: var(--admin-info-bg-soft);
+  border-color: var(--admin-info-border-soft);
+  border-bottom: none;
+  color: var(--admin-info-strong);
+  font-weight: 600;
+}
+
+.estimatesPipelineTabCount {
+  margin-left: var(--admin-space-xs);
+  padding: 0 var(--admin-space-sm);
+  border-radius: var(--admin-radius-3xl);
+  background: var(--admin-border);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--admin-text-muted);
+}
+
+.estimatesPage .estimatesPipelineTabBar .estimatesPipelineTabActiveWork .estimatesPipelineTabCount {
+  background: var(--admin-success-border-soft);
+  color: var(--admin-success-strong);
+}
+
+.estimatesPage
+  .estimatesPipelineTabBar
+  .estimatesPipelineTabActiveProspect
+  .estimatesPipelineTabCount {
+  background: var(--admin-info-border-soft);
+  color: var(--admin-info-strong);
+}
+
 .estimatesListSectionArchive {
   background: var(--admin-surface);
 }

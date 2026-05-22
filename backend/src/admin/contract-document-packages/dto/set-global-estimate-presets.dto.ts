@@ -5,6 +5,7 @@ import {
   IsArray,
   IsBoolean,
   IsEnum,
+  IsIn,
   IsNumber,
   IsObject,
   IsOptional,
@@ -104,6 +105,10 @@ export class ContractEstimatePresetDto {
   @Type(() => Boolean)
   archived?: boolean;
 
+  @IsOptional()
+  @IsIn(['active', 'prospect'])
+  pipelineStage?: 'active' | 'prospect';
+
   /** Порядок в ленте для расчёта вне объекта. */
   @IsOptional()
   @Type(() => Number)
@@ -172,6 +177,10 @@ export class ContractEstimateGroupDto {
   @IsBoolean()
   @Type(() => Boolean)
   archived?: boolean;
+
+  @IsOptional()
+  @IsIn(['active', 'prospect'])
+  pipelineStage?: 'active' | 'prospect';
 
   /** Порядок блока объекта в общей ленте. */
   @IsOptional()

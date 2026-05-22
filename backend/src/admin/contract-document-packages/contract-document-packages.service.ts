@@ -83,6 +83,8 @@ export class ContractDocumentPackagesService {
     const ids = this.extractRepairEstimatePresetIds(formData);
     if (ids.length === 0) return;
 
+    await this.assertRepairEstimatePresetsPipelineActive(ids);
+
     const others = await this.prisma.contractDocumentPackage.findMany({
       where: {
         kind: ContractDocumentPackageKind.REPAIR,
@@ -97,6 +99,37 @@ export class ContractDocumentPackagesService {
       if (conflict) {
         throw new BadRequestException(
           'Этот расчёт уже прикреплён к другому договору. Сначала отвяжите его в том пакете или выберите другой расчёт.',
+        );
+      }
+    }
+  }
+
+  /** Прикреплять к договору можно только расчёты со вкладки «В работе» (не архив, не перспектива). */
+  private async assertRepairEstimatePresetsPipelineActive(presetIds: string[]): Promise<void> {
+    const raw = await this.loadGlobalEstimatePresetsBlob(ContractDocumentPackageKind.REPAIR);
+    const groupsById = new Map((raw.groups ?? []).map((g) => [g.id, g]));
+    for (const id of presetIds) {
+      const preset = raw.items.find((item) => item.id === id);
+      if (!preset) continue;
+      if (preset.archived) {
+        throw new BadRequestException(
+          'Нельзя прикрепить расчёт из архива. Восстановите его в списке расчётов.',
+        );
+      }
+      if (preset.pipelineStage === 'prospect') {
+        throw new BadRequestException(
+          'Нельзя прикрепить расчёт из вкладки «В перспективе». Перенесите его в «В работе».',
+        );
+      }
+      const group = preset.groupId ? groupsById.get(preset.groupId) : undefined;
+      if (group?.archived) {
+        throw new BadRequestException(
+          'Нельзя прикрепить расчёт архивного объекта. Восстановите объект в списке расчётов.',
+        );
+      }
+      if (group?.pipelineStage === 'prospect') {
+        throw new BadRequestException(
+          'Нельзя прикрепить расчёт объекта из вкладки «В перспективе». Перенесите объект в «В работе».',
         );
       }
     }
