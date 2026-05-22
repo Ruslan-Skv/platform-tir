@@ -192,6 +192,89 @@
   box-shadow: 0 0 0 2px var(--admin-overlay-color-136);
 }
 
+/* Редактор пакета договора (ремонт): рамка активных полей как в CrmCustomerSearchPanel */
+.repairContractEditorPage
+  .field
+  input:not([readonly]):not(:disabled):not([type='hidden']):not([type='file']):not(
+    [type='checkbox']
+  ):not([type='radio']),
+.repairContractEditorPage .field select:not(:disabled),
+.repairContractEditorPage .field textarea:not([readonly]):not(:disabled),
+.repairContractEditorPage .repairContractRefusalReasonTextarea:not(:disabled),
+.repairContractEditorPage .repairWorkStartModalDateFieldWrap input[type='date']:not(:disabled) {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+}
+
+.repairContractEditorPage
+  .field
+  input:not([readonly]):not(:disabled):not([type='hidden']):not([type='file']):not(
+    [type='checkbox']
+  ):not([type='radio']):focus,
+.repairContractEditorPage .field select:not(:disabled):focus,
+.repairContractEditorPage .field textarea:not([readonly]):not(:disabled):focus,
+.repairContractEditorPage .repairContractRefusalReasonTextarea:not(:disabled):focus,
+.repairContractEditorPage
+  .repairWorkStartModalDateFieldWrap
+  input[type='date']:not(:disabled):focus {
+  outline: none;
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 2px rgba(var(--admin-overlay-color-144), 0.2);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .field
+  input:not([readonly]):not(:disabled):not([type='hidden']):not([type='file']):not(
+    [type='checkbox']
+  ):not([type='radio']),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .field
+  select:not(:disabled),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .field
+  textarea:not([readonly]):not(:disabled),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .repairContractRefusalReasonTextarea:not(:disabled),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .repairWorkStartModalDateFieldWrap
+  input[type='date']:not(:disabled) {
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-sidebar-text);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .field
+  input:not([readonly]):not(:disabled):not([type='hidden']):not([type='file']):not(
+    [type='checkbox']
+  ):not([type='radio']):focus,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .field
+  select:not(:disabled):focus,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .field
+  textarea:not([readonly]):not(:disabled):focus,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .repairContractRefusalReasonTextarea:not(:disabled):focus,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .repairWorkStartModalDateFieldWrap
+  input[type='date']:not(:disabled):focus {
+  outline: none;
+  border-color: var(--admin-info-light);
+  box-shadow: 0 0 0 2px var(--admin-overlay-color-136);
+}
+
 .estimateWorkspaceCustomerFieldsRow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -1502,6 +1585,50 @@
   padding: var(--admin-space-md);
 }
 
+/* Страница договора: все жёлтые подложки на 50% светлее (как вкладка «Данные») */
+.repairContractEditorPage .blockData {
+  background: color-mix(in srgb, var(--admin-warning-bg) 50%, white);
+  border-color: color-mix(in srgb, var(--admin-warning-border-soft) 50%, white);
+}
+
+.repairContractEditorPage .estimateLockNotice,
+.repairContractEditorPage .contractLockNotice {
+  background: color-mix(in srgb, var(--admin-warning-bg) 50%, white);
+  border-color: color-mix(in srgb, var(--admin-warning-border) 50%, white);
+}
+
+.repairContractEditorPage .autoFilledInput {
+  background: color-mix(in srgb, var(--admin-warning-bg) 50%, white);
+  border-color: color-mix(in srgb, var(--admin-warning) 50%, white);
+}
+
+.repairContractEditorPage .paymentsTab .paymentsBlockAccentSummary {
+  background: color-mix(in srgb, var(--admin-warning-bg) 50%, white);
+  border-left-color: color-mix(in srgb, var(--admin-warning-strong) 50%, white);
+}
+
+.repairContractEditorPage .packageFlowPayPctOrbYellow {
+  background: color-mix(in srgb, #fef9c3 50%, white);
+  border-color: color-mix(in srgb, #eab308 50%, white);
+}
+
+.repairContractEditorPage .repairWorkOrderGradeBtnCompact {
+  padding: 3px 8px;
+  font-size: 0.72rem;
+}
+
+.repairContractEditorPage .repairWorkOrderGradeBtnActive {
+  background: color-mix(in srgb, var(--admin-warning-bg) 50%, white);
+  border-color: color-mix(in srgb, var(--admin-warning-strong) 50%, white);
+  color: var(--admin-warning-text);
+  font-weight: 700;
+  box-shadow: 0 0 0 2px color-mix(in srgb, rgb(245 158 11 / 0.35) 50%, white);
+}
+
+.repairContractEditorPage .paymentsKvOverpay {
+  color: color-mix(in srgb, var(--admin-warning-strong) 50%, white);
+}
+
 .dataCompact .formGrid {
   gap: 8px 10px;
 }
@@ -1766,34 +1893,21 @@
   max-width: 100%;
 }
 
-/* Вкладка «Данные» ремонта: у каждого блока свой оттенок фона */
-.repairContractDataTabDense .dataTopRow > .dataTopBlock:nth-child(1) > .sectionCard {
-  background: var(--admin-chart-cyan-bg);
-  border-color: var(--admin-chart-cyan-border);
-}
-
 .repairContractDataTabDense .dataTopRow > .dataTopBlock:nth-child(2) .repairCustomerSearchSlot {
   min-height: 0;
-}
-
-.repairContractDataTabDense .formGrid > .sectionCard:nth-child(2) {
-  background: var(--admin-info-bg-soft);
-  border-color: var(--admin-info-border-soft);
-}
-
-.repairContractDataTabDense .formGrid > .sectionCard:nth-child(3) {
-  background: var(--admin-accent-soft);
-  border-color: var(--admin-accent-border);
-}
-
-.repairContractDataTabDense .formGrid > .sectionCard:nth-child(4) {
-  background: var(--admin-warning-bg);
-  border-color: var(--admin-warning-border-soft);
 }
 
 .repairContractDataTabDense .sectionCard {
   padding: var(--admin-space-sm) var(--admin-space-md);
   border-radius: var(--admin-radius-md);
+}
+
+/* Карточки «Данные»: layout как .blankSheet; фон — в конце файла (перебивает .sectionCard) */
+.repairContractDataTabDense .sectionCard.repairDataBlankSheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  box-sizing: border-box;
 }
 
 .repairContractDataTabDense .sectionCard .sectionTitle {
@@ -1850,18 +1964,19 @@
   cursor: default;
 }
 
-.repairContractDataTabDense .field input:not([readonly]):not([type='hidden']),
+.repairContractDataTabDense
+  .field
+  input:not([readonly]):not(:disabled):not([type='hidden']):not([type='radio']),
 .repairContractDataTabDense .field select:not(:disabled),
-.repairContractDataTabDense .field textarea:not([readonly]) {
+.repairContractDataTabDense .field textarea:not([readonly]):not(:disabled) {
   background: var(--admin-surface);
-  border-color: var(--admin-border-strong);
 }
 
 .repairContractDataTabDense .field textarea {
   min-height: 48px;
 }
 
-.repairContractDataTabDense .sectionCustomer .customerBankDetailsField.field textarea {
+.repairContractDataTabDense .customerBankDetailsField.field textarea {
   min-height: calc(
     2 * var(--admin-space-xs) + var(--admin-font-size-sm) * var(--admin-line-height-sm)
   );
@@ -1872,7 +1987,7 @@
   gap: var(--admin-space-sm) var(--admin-space-md);
 }
 
-.repairContractDataTabDense .sectionCustomer .customerEmailPhonesRow .secondaryBtn {
+.repairContractDataTabDense .customerEmailPhonesRow .secondaryBtn {
   padding: var(--admin-space-xs) var(--admin-space-md);
   font-size: var(--admin-font-size-xs);
   border-radius: var(--admin-radius-sm);
@@ -5848,43 +5963,10 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .repairContractDataTabDense
   .dataTopRow
-  > .dataTopBlock:nth-child(1)
-  > .sectionCard {
-  background: color-mix(in srgb, var(--admin-bg-page) 91%, rgb(6 182 212) 9%);
-  border-color: rgb(34 211 238 / 0.35);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
-  .dataTopRow
   > .dataTopBlock:nth-child(2)
   .repairCustomerSearchWrap {
   background: color-mix(in srgb, var(--admin-bg-page) 89%, rgb(16 185 129) 11%);
   border-color: rgb(52 211 153 / 0.32);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
-  .formGrid
-  > .sectionCard:nth-child(2) {
-  background: color-mix(in srgb, var(--admin-bg-page) 89%, rgb(59 130 246) 11%);
-  border-color: rgb(96 165 250 / 0.35);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
-  .formGrid
-  > .sectionCard:nth-child(3) {
-  background: color-mix(in srgb, var(--admin-bg-page) 90%, rgb(var(--color-accent-rgb)) 10%);
-  border-color: var(--admin-accent-border);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
-  .formGrid
-  > .sectionCard:nth-child(4) {
-  background: color-mix(in srgb, var(--admin-bg-page) 89%, rgb(245 158 11) 11%);
-  border-color: rgb(251 191 36 / 0.38);
 }
 
 /* Контраст текста на затемнённых карточках вкладки «Данные» */
@@ -5901,12 +5983,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .repairContractDataTabDense
-  .sectionCustomer
-  .field
-  label,
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
-  .sectionExecutor
+  .sectionCard
   .field
   label,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
@@ -5950,23 +6027,6 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   select:disabled {
   background: rgb(17 24 39 / 0.65);
   border-color: var(--admin-border-strong);
-  color: var(--admin-text-primary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
-  .field
-  input:not([readonly]):not([type='hidden']),
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
-  .field
-  select:not(:disabled),
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
-  .field
-  textarea:not([readonly]) {
-  background: var(--admin-surface-soft);
-  border-color: var(--admin-sidebar-text);
   color: var(--admin-text-primary);
 }
 
@@ -6239,12 +6299,28 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   border-color: var(--admin-warning-border-soft);
 }
 
-/* Тёмная тема: вкладка «Интерактивная итоговая смета» */
-:where(html[data-theme='dark'], [data-app-theme='dark']) .interactiveFinalEstimateTab.blockData {
-  background: transparent;
-  border-color: transparent;
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractEditorPage .blockData {
+  /* Как вкладка «Данные»: без жёлтой подложки под карточки */
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .paymentsTab
+  .paymentsBlockAccentSummary {
+  background: color-mix(in srgb, var(--admin-bg-page) 94%, rgb(245 158 11) 6%);
+  border-left-color: color-mix(in srgb, rgb(251 191 36 / 0.4) 50%, var(--admin-border));
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .packageFlowPayPctOrbYellow {
+  background: color-mix(in srgb, rgb(66 32 6 / 0.55) 50%, var(--admin-surface));
+  border-color: color-mix(in srgb, #ca8a04 50%, var(--admin-surface));
+}
+
+/* Тёмная тема: вкладка «Интерактивная итоговая смета» */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .interactiveFinalEstimateTab .hint {
   color: rgba(243, 244, 246, 0.9);
 }
@@ -7432,4 +7508,27 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 .repairContractsListKindCol {
   white-space: nowrap;
   font-size: 0.8125rem;
+}
+
+/* Фон карточек «Данные» = .blankSheet замера (только светлая / только тёмная, без !important) */
+html[data-theme='light'] .repairContractDataTabDense .sectionCard.repairDataBlankSheet {
+  border: 1px solid var(--admin-info-border-soft, #bfdbfe);
+  border-radius: var(--admin-radius-md);
+  background: linear-gradient(
+    180deg,
+    var(--admin-info-bg-soft, #eff6ff) 0%,
+    var(--admin-surface-soft, #f8fafc) 100%
+  );
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .sectionCard.repairDataBlankSheet {
+  border-color: var(--admin-info-light);
+  border-radius: var(--admin-radius-md);
+  background: linear-gradient(
+    180deg,
+    var(--admin-overlay-color-136) 0%,
+    var(--admin-overlay-color-021) 100%
+  );
 }

@@ -3457,7 +3457,7 @@ export function RepairContractDocumentEditorPage({
       : null;
 
   return (
-    <div className={`${styles.page} ${styles.pageWide}`}>
+    <div className={`${styles.page} ${styles.pageWide} ${styles.repairContractEditorPage}`}>
       <div
         className={`${styles.editorHeader} ${styles.blockHeader} ${styles.repairEditorHeaderThreeCol}`}
       >
@@ -4510,7 +4510,7 @@ export function RepairContractDocumentEditorPage({
             <div className={styles.dataTopRow}>
               <div className={styles.dataTopBlock}>
                 <div
-                  className={`${styles.sectionCard} ${styles.sectionCustomer} ${
+                  className={`${styles.sectionCard} ${styles.repairDataBlankSheet} ${
                     contractAndEstimateLocked ? styles.repairDataSectionCardLocked : ''
                   }`}
                 >
@@ -4643,7 +4643,7 @@ export function RepairContractDocumentEditorPage({
             </div>
 
             <div
-              className={`${styles.sectionCard} ${styles.sectionCustomer} ${
+              className={`${styles.sectionCard} ${styles.repairDataBlankSheet} ${
                 contractAndEstimateLocked ? styles.repairDataSectionCardLocked : ''
               }`}
             >
@@ -4781,7 +4781,7 @@ export function RepairContractDocumentEditorPage({
             </div>
 
             <div
-              className={`${styles.sectionCard} ${styles.sectionExecutor} ${
+              className={`${styles.sectionCard} ${styles.repairDataBlankSheet} ${
                 contractAndEstimateLocked ? styles.repairDataSectionCardLocked : ''
               }`}
             >
@@ -4861,7 +4861,7 @@ export function RepairContractDocumentEditorPage({
             </div>
 
             <div
-              className={`${styles.sectionCard} ${styles.sectionExecutor} ${
+              className={`${styles.sectionCard} ${styles.repairDataBlankSheet} ${
                 contractAndEstimateLocked ? styles.repairDataSectionCardLocked : ''
               }`}
             >
@@ -5649,20 +5649,11 @@ export function RepairContractDocumentEditorPage({
                 </button>
                 <button
                   type="button"
-                  className={styles.secondaryBtn}
-                  style={
+                  className={`${styles.secondaryBtn} ${styles.repairWorkOrderGradeBtnCompact} ${
                     form.workOrder.gradeIncreasePercent === 5
-                      ? {
-                          background: 'var(--admin-warning-bg)',
-                          borderColor: 'var(--admin-warning-strong)',
-                          color: 'var(--admin-warning-text)',
-                          fontWeight: 700,
-                          boxShadow: '0 0 0 2px rgba(245, 158, 11, 0.35)',
-                          padding: '3px 8px',
-                          fontSize: '0.72rem',
-                        }
-                      : { padding: '3px 8px', fontSize: '0.72rem' }
-                  }
+                      ? styles.repairWorkOrderGradeBtnActive
+                      : ''
+                  }`}
                   onClick={() => updateWorkOrder('gradeIncreasePercent', 5)}
                 >
                   5 разряд
@@ -5916,20 +5907,11 @@ export function RepairContractDocumentEditorPage({
                 </button>
                 <button
                   type="button"
-                  className={styles.secondaryBtn}
-                  style={
+                  className={`${styles.secondaryBtn} ${styles.repairWorkOrderGradeBtnCompact} ${
                     form.workOrder.gradeIncreasePercent === 5
-                      ? {
-                          background: 'var(--admin-warning-bg)',
-                          borderColor: 'var(--admin-warning-strong)',
-                          color: 'var(--admin-warning-text)',
-                          fontWeight: 700,
-                          boxShadow: '0 0 0 2px rgba(245, 158, 11, 0.35)',
-                          padding: '3px 8px',
-                          fontSize: '0.72rem',
-                        }
-                      : { padding: '3px 8px', fontSize: '0.72rem' }
-                  }
+                      ? styles.repairWorkOrderGradeBtnActive
+                      : ''
+                  }`}
                   onClick={() => updateWorkOrder('gradeIncreasePercent', 5)}
                 >
                   5 разряд

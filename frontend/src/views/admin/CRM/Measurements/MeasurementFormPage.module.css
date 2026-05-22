@@ -458,12 +458,28 @@
   color: var(--admin-text-primary);
 }
 
+.blankSheet .input:not([readonly]):not([type='hidden']):focus,
+.blankSheet .select:not(:disabled):focus,
+.blankSheet .textarea:not([readonly]):focus {
+  outline: none;
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 2px rgba(var(--admin-overlay-color-144), 0.2);
+}
+
 .blankSheet .input.inputError,
 .blankSheet .input.inputReadonly.inputError,
 .blankSheet .input[readonly].inputError,
 .blankSheet .select.inputError,
 .blankSheet .textarea.inputError {
   border-color: var(--admin-error-strong);
+}
+
+.blankSheet .input.inputError:not([readonly]):focus,
+.blankSheet .input.inputReadonly.inputError:focus,
+.blankSheet .select.inputError:focus,
+.blankSheet .textarea.inputError:focus {
+  border-color: var(--admin-error-strong);
+  box-shadow: 0 0 0 2px var(--admin-overlay-color-166);
 }
 
 .blankMetaGrid {
@@ -1229,6 +1245,18 @@
   background: var(--admin-surface-soft);
   border-color: var(--admin-sidebar-text);
   color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .blankSheet
+  .input:not([readonly]):not([type='hidden']):focus,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .blankSheet .select:not(:disabled):focus,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .blankSheet
+  .textarea:not([readonly]):focus {
+  outline: none;
+  border-color: var(--admin-info-light);
+  box-shadow: 0 0 0 2px var(--admin-overlay-color-136);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input:focus,
