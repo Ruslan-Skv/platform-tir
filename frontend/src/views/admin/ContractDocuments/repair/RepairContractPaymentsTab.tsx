@@ -72,6 +72,8 @@ export interface RepairContractPaymentsTabProps {
     key: K,
     value: string
   ) => void;
+  /** После изменения журнала оплат (для бейджа % в шапке / модалке). */
+  onJournalChanged?: () => void;
 }
 
 export function RepairContractPaymentsTab({
@@ -79,6 +81,7 @@ export function RepairContractPaymentsTab({
   form,
   onError,
   onUpdateContract,
+  onJournalChanged,
 }: RepairContractPaymentsTabProps) {
   const [rows, setRows] = useState<ContractDocumentPackagePayment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -278,6 +281,7 @@ export function RepairContractPaymentsTab({
       setRows((prev) =>
         [...prev, created].sort((a, b) => a.paymentDate.localeCompare(b.paymentDate))
       );
+      onJournalChanged?.();
       resetDraft();
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Не удалось сохранить оплату');
@@ -330,6 +334,7 @@ export function RepairContractPaymentsTab({
           .map((x) => (x.id === updated.id ? updated : x))
           .sort((a, b) => a.paymentDate.localeCompare(b.paymentDate))
       );
+      onJournalChanged?.();
       cancelEdit();
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Не удалось обновить запись');
@@ -344,6 +349,7 @@ export function RepairContractPaymentsTab({
     try {
       await deleteContractDocumentPackagePayment(packageId, id);
       setRows((prev) => prev.filter((x) => x.id !== id));
+      onJournalChanged?.();
       if (editingId === id) cancelEdit();
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Не удалось удалить запись');

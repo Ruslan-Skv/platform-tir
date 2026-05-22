@@ -1629,6 +1629,69 @@
   color: color-mix(in srgb, var(--admin-warning-strong) 50%, white);
 }
 
+.repairPackageHubModalBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-lg);
+  max-height: min(78vh, 920px);
+  overflow-y: auto;
+  padding-right: var(--admin-space-2xs);
+}
+
+.repairPackageHubSectionTitle {
+  margin: 0 0 var(--admin-space-xs);
+  font-size: var(--admin-font-size-md);
+  font-weight: 700;
+  color: var(--admin-text-primary);
+}
+
+.repairPackageHubPipelineSection {
+  padding: var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface-soft, #f8fafc);
+}
+
+.repairPackageHubPipelineBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  align-items: center;
+  margin-bottom: var(--admin-space-sm);
+}
+
+.repairPackageHubPipelineActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  align-items: center;
+}
+
+.repairPackageHubRevertRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  margin-top: var(--admin-space-sm);
+  padding-top: var(--admin-space-sm);
+  border-top: 1px solid var(--admin-border);
+}
+
+.repairPackageHubPaymentsSection .paymentsTab.blockData {
+  margin-top: 0;
+}
+
+.repairEditorHeaderHubBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  white-space: nowrap;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairPackageHubPipelineSection {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+}
+
 .dataCompact .formGrid {
   gap: 8px 10px;
 }
@@ -5308,7 +5371,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 /* Список договоров: копировать / удалить / фото актов (слот фото всегда) */
 .repairContractsListActionsGrid.estimatesCardActions {
   display: grid;
-  grid-template-columns: repeat(3, 24px);
+  grid-template-columns: repeat(4, 24px);
   column-gap: 2px;
   row-gap: 0;
   justify-content: end;

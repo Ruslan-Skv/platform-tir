@@ -39,7 +39,8 @@ import { ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_HREF } from '@/views/admin/ContractD
 
 import styles from '../ContractDocuments.module.css';
 import { RepairAddendumEstimateBlock } from './RepairAddendumEstimateBlock';
-import { RepairContractPaymentsTab } from './RepairContractPaymentsTab';
+import { RepairContractPackageHubIcon } from './RepairContractPackageHubIcon';
+import { RepairContractPackageHubModal } from './RepairContractPackageHubModal';
 import { RepairManagerQuestionnaire1Tab } from './RepairManagerQuestionnaire1Tab';
 import { RepairPostWorkQuestionnaire2Tab } from './RepairPostWorkQuestionnaire2Tab';
 import { amountToRussianWords } from './amountToRussianWords';
@@ -79,6 +80,7 @@ import {
   repairContractDiscountMoneyFactor,
   repairEstimateTotalToContractFields,
 } from './repairContractDiscount';
+import { REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE } from './repairContractPackageHubConstants';
 import {
   REPAIR_DOCUMENT_TAB_IDS,
   REPAIR_DOCUMENT_TAB_LABELS,
@@ -634,6 +636,7 @@ export function RepairContractDocumentEditorPage({
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [activeTab, setActiveTab] = useState<RepairDocumentTabId>('data');
+  const [packageHubOpen, setPackageHubOpen] = useState(false);
   const [activeFinalWorkOrderDocId, setActiveFinalWorkOrderDocId] = useState<string>('common');
   const activeAddendumSlot = useMemo(() => {
     const m = /^addendum([1-5])$/.exec(activeTab);
@@ -1386,6 +1389,11 @@ export function RepairContractDocumentEditorPage({
       void refreshHeaderJournalPaidRub();
     }
   }, [activeTab, refreshHeaderJournalPaidRub]);
+
+  /** Вкладка «Оплаты» перенесена в модалку — сбрасываем устаревший activeTab из localStorage. */
+  useEffect(() => {
+    if (activeTab === 'payments') setActiveTab('data');
+  }, [activeTab]);
 
   useEffect(() => {
     if (isVersionsHistoryOpen && !loading) {
@@ -3389,9 +3397,10 @@ export function RepairContractDocumentEditorPage({
     );
   }
 
-  const visibleRepairTabs = repairTabOrder.filter((id) =>
-    isRepairAddendumTabVisible(id, form.addendumSlotCount)
+  const visibleRepairTabs = repairTabOrder.filter(
+    (id) => id !== 'payments' && isRepairAddendumTabVisible(id, form.addendumSlotCount)
   );
+
   const summaryTabs: RepairDocumentTabId[] = [
     'interactiveFinalEstimate',
     'finalEstimate',
@@ -3687,6 +3696,18 @@ export function RepairContractDocumentEditorPage({
         ) : null}
         <div className={styles.headerActions}>
           <div className={styles.repairEditorDraftTitleRow}>
+            {!loading ? (
+              <button
+                type="button"
+                className={`${styles.secondaryBtn} ${styles.repairEditorHeaderHubBtn}`}
+                onClick={() => setPackageHubOpen(true)}
+                title={REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE}
+                aria-label={REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE}
+              >
+                <RepairContractPackageHubIcon />
+                <span>Оплаты и этапы</span>
+              </button>
+            ) : null}
             {!loading ? (
               <button
                 type="button"
@@ -4928,13 +4949,6 @@ export function RepairContractDocumentEditorPage({
             . На вкладке «Договор» можно править HTML и вставлять плейсхолдеры.
           </p>
         </div>
-      ) : activeTab === 'payments' ? (
-        <RepairContractPaymentsTab
-          packageId={packageId}
-          form={form}
-          onError={setError}
-          onUpdateContract={updateContract}
-        />
       ) : activeTab === 'estimate' ? (
         <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
           <div className={styles.formGrid}>
@@ -6217,6 +6231,21 @@ export function RepairContractDocumentEditorPage({
           )}
         </>
       )}
+      <RepairContractPackageHubModal
+        packageId={packageId}
+        isOpen={packageHubOpen}
+        onClose={() => setPackageHubOpen(false)}
+        onUpdated={() => {
+          void load({ mode: 'refresh' });
+          void refreshHeaderJournalPaidRub();
+        }}
+        blockPipelineActions={activeTab === 'data' && dirty}
+        blockPipelineReason={
+          activeTab === 'data' && dirty
+            ? 'Сначала сохраните изменения на вкладке «Данные»'
+            : undefined
+        }
+      />
     </div>
   );
 }
