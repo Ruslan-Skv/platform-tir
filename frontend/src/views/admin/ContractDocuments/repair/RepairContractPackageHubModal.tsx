@@ -1,12 +1,20 @@
 'use client';
 
+import { BanknotesIcon } from '@heroicons/react/24/outline';
+
 import { useEffect, useRef, useState } from 'react';
 
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
+import { AdminToolbarIconButton } from '@/shared/ui/admin/AdminToolbarIconButton';
+import crmFormStyles from '@/views/admin/CRM/Customers/AddCrmCustomerModal.module.css';
+import crmDetailStyles from '@/views/admin/CRM/Customers/CrmCustomerDetailModal.module.css';
 
 import styles from '../ContractDocuments.module.css';
+import hubStyles from './RepairContractPackageHubModal.module.css';
+import { RepairContractPackageHubPayTitleAside } from './RepairContractPackageHubPayTitleAside';
 import { RepairContractPackagePipelineSection } from './RepairContractPackagePipelineSection';
+import { RepairContractPaymentsJournalModal } from './RepairContractPaymentsJournalModal';
 import { RepairContractPaymentsTab } from './RepairContractPaymentsTab';
 import { REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE } from './repairContractPackageHubConstants';
 import { useRepairContractPackageHub } from './useRepairContractPackageHub';
@@ -34,6 +42,17 @@ export function RepairContractPackageHubModal({
   const contractCloseFileInputRef = useRef<HTMLInputElement>(null);
   const [workStartFilePreview, setWorkStartFilePreview] = useState<string | null>(null);
   const [contractCloseFilePreview, setContractCloseFilePreview] = useState<string | null>(null);
+  const [paymentsJournalOpen, setPaymentsJournalOpen] = useState(false);
+  const [journalReloadToken, setJournalReloadToken] = useState(0);
+
+  useEffect(() => {
+    if (!isOpen) setPaymentsJournalOpen(false);
+  }, [isOpen]);
+
+  const handleJournalChanged = () => {
+    void hub.refreshJournalPaidRub();
+    setJournalReloadToken((t) => t + 1);
+  };
 
   useEffect(() => {
     if (!hub.workStartModalFile) {
@@ -55,58 +74,124 @@ export function RepairContractPackageHubModal({
     return () => URL.revokeObjectURL(u);
   }, [hub.contractCloseModalFile]);
 
-  const subtitle =
-    hub.headerConcludedDateLabel != null
-      ? `Договор ${hub.contractNumberLabel} от ${hub.headerConcludedDateLabel}`
-      : `Договор ${hub.contractNumberLabel}`;
+  const modalTitle = (
+    <span className={hubStyles.modalTitleRow}>
+      {REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE}
+      {!hub.loading ? (
+        <>
+          <span className={hubStyles.modalContractNumber}>
+            {hub.contractNumberLabel}
+            {hub.headerConcludedDateLabel != null ? ` от ${hub.headerConcludedDateLabel}` : null}
+          </span>
+          <AdminToolbarIconButton
+            type="button"
+            className={hubStyles.journalOpenBtn}
+            title="Журнал оплат"
+            aria-label="Журнал оплат"
+            onClick={() => setPaymentsJournalOpen(true)}
+          >
+            <BanknotesIcon width={20} height={20} />
+          </AdminToolbarIconButton>
+        </>
+      ) : null}
+    </span>
+  );
+
+  const journalPayTitleAside =
+    !hub.loading && hub.signedContractPayOrb != null ? (
+      <RepairContractPackageHubPayTitleAside orb={hub.signedContractPayOrb} />
+    ) : null;
+
+  const handleCloseMain = () => {
+    if (
+      hub.workStartModalBusy ||
+      hub.contractCloseModalBusy ||
+      hub.refusalModalBusy ||
+      hub.savingPackageStatus
+    ) {
+      return;
+    }
+    onClose();
+  };
 
   return (
     <>
       <Modal
         isOpen={isOpen}
-        onClose={() => {
-          if (
-            hub.workStartModalBusy ||
-            hub.contractCloseModalBusy ||
-            hub.refusalModalBusy ||
-            hub.savingPackageStatus
-          ) {
-            return;
-          }
-          onClose();
-        }}
-        title={REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE}
-        size="xl"
-        compactOnMobile
+        onClose={handleCloseMain}
+        title={modalTitle}
+        titleAside={journalPayTitleAside}
+        size="lg"
+        className={crmFormStyles.modalPanel}
+        showCloseButton
       >
-        <div className={styles.repairPackageHubModalBody}>
-          <p className={styles.hint} style={{ marginTop: 0 }}>
-            {subtitle}
-          </p>
-          {hub.error ? <p className={styles.error}>{hub.error}</p> : null}
-          {hub.loading ? (
-            <p className={styles.hint}>Загрузка…</p>
-          ) : (
-            <>
+        {hub.loading ? <p data-modal-form-hint>Загрузка…</p> : null}
+        {hub.error ? <p data-modal-form-error>{hub.error}</p> : null}
+        {!hub.loading ? (
+          <div
+            className={`${crmFormStyles.formShell} ${hubStyles.hubFormShell}`}
+            data-modal-form
+            data-modal-density="compact"
+          >
+            <section
+              data-modal-readonly-panel
+              data-modal-density="compact"
+              className={`${hubStyles.hubModalSection} ${hubStyles.pipelinePanel}`}
+            >
+              <h3 className={crmDetailStyles.linkedSectionTitle}>Этапы и статусы договора</h3>
               <RepairContractPackagePipelineSection
                 hub={hub}
                 blockPipelineActions={blockPipelineActions}
                 blockPipelineReason={blockPipelineReason}
               />
-              <section className={styles.repairPackageHubPaymentsSection}>
-                <h3 className={styles.repairPackageHubSectionTitle}>Журнал оплат</h3>
-                <RepairContractPaymentsTab
-                  packageId={packageId}
-                  form={hub.form}
-                  onError={hub.setError}
-                  onUpdateContract={hub.updateContract}
-                  onJournalChanged={() => void hub.refreshJournalPaidRub()}
-                />
-              </section>
-            </>
-          )}
-        </div>
+            </section>
+
+            <section
+              data-modal-readonly-panel
+              data-modal-density="compact"
+              className={`${hubStyles.hubModalSection} ${hubStyles.summaryPanel}`}
+            >
+              <RepairContractPaymentsTab
+                packageId={packageId}
+                form={hub.form}
+                layout="hub-summary"
+                journalReloadToken={journalReloadToken}
+                onError={hub.setError}
+                onUpdateContract={hub.updateContract}
+                onJournalChanged={handleJournalChanged}
+              />
+            </section>
+
+            <section
+              data-modal-readonly-panel
+              data-modal-density="compact"
+              className={`${hubStyles.hubModalSection} ${hubStyles.conductPanel}`}
+            >
+              <RepairContractPaymentsTab
+                packageId={packageId}
+                form={hub.form}
+                layout="hub-conduct"
+                journalReloadToken={journalReloadToken}
+                onError={hub.setError}
+                onUpdateContract={hub.updateContract}
+                onJournalChanged={handleJournalChanged}
+              />
+            </section>
+          </div>
+        ) : null}
       </Modal>
+
+      {!hub.loading ? (
+        <RepairContractPaymentsJournalModal
+          packageId={packageId}
+          form={hub.form}
+          isOpen={paymentsJournalOpen}
+          onClose={() => setPaymentsJournalOpen(false)}
+          onError={hub.setError}
+          onUpdateContract={hub.updateContract}
+          onJournalChanged={handleJournalChanged}
+        />
+      ) : null}
 
       <ConfirmModal
         isOpen={hub.revertRefusalConfirmOpen}
@@ -125,6 +210,8 @@ export function RepairContractPackageHubModal({
         }}
         title="Статус «В работе»"
         size="md"
+        className={crmFormStyles.modalPanel}
+        showCloseButton
         compactOnMobile
       >
         <div data-modal-form data-modal-density="compact">
@@ -205,6 +292,8 @@ export function RepairContractPackageHubModal({
         }}
         title="Закрытие договора"
         size="md"
+        className={crmFormStyles.modalPanel}
+        showCloseButton
         compactOnMobile
       >
         <div data-modal-form data-modal-density="compact">
@@ -286,6 +375,8 @@ export function RepairContractPackageHubModal({
         }}
         title="Отказ по проекту договора"
         size="md"
+        className={crmFormStyles.modalPanel}
+        showCloseButton
         compactOnMobile
       >
         <div data-modal-form data-modal-density="compact">
@@ -334,6 +425,8 @@ export function RepairContractPackageHubModal({
         onClose={() => hub.setRepairActPhotosModalOpen(false)}
         title="Фото актов к статусам договора"
         size="lg"
+        className={crmFormStyles.modalPanel}
+        showCloseButton
         compactOnMobile
       >
         <div data-modal-form data-modal-density="compact">

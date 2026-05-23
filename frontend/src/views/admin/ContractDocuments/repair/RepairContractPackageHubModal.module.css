@@ -1,0 +1,89 @@
+.modalTitleRow {
+  align-items: baseline;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-lg, 10px);
+  min-width: 0;
+}
+
+.modalContractNumber {
+  color: var(--modal-text-strong, #111827);
+  font-size: var(--modal-fs-title, 1.0625rem);
+  font-weight: 600;
+  line-height: var(--modal-lh-tight, 1.25);
+  white-space: nowrap;
+}
+
+.journalOpenBtn {
+  align-self: center;
+  flex-shrink: 0;
+  margin-left: var(--admin-space-sm, 6px);
+}
+
+/* Три визуально отделённых блока в теле модалки */
+.hubFormShell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xl, 12px);
+}
+
+.hubModalSection {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-lg, 10px);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 6%);
+  margin: 0;
+  padding: var(--admin-space-lg, 10px) var(--admin-space-xl, 12px);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .hubModalSection {
+  background: var(--admin-surface-muted, #111827);
+  border-color: var(--admin-border-strong, #374151);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 25%);
+}
+
+.hubModalSection :global(.linkedSectionTitle) {
+  margin-top: 0;
+}
+
+.pipelinePanel :global(.hint) {
+  margin-top: 0;
+}
+
+.pipelinePanel :global([data-modal-btn='secondary']) {
+  min-height: 1.75rem !important;
+  padding-bottom: 2px !important;
+  padding-top: 2px !important;
+}
+
+.summaryPanel :global(.blockData.paymentsTab),
+.conductPanel :global(.blockData.paymentsTab) {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  max-width: none;
+  padding: 0;
+}
+
+.summaryPanel :global(.paymentsHubCompactCard) {
+  border: none;
+  margin-bottom: 0;
+  padding: 0;
+}
+
+.summaryPanel :global(.paymentsHubBlockTitle),
+.conductPanel :global(.paymentsHubBlockTitle) {
+  margin-bottom: var(--admin-space-md, 8px);
+}
+
+.conductPanel :global(.paymentsFormCard) {
+  border: none;
+  margin-bottom: 0;
+  overflow: visible;
+  padding: 0;
+}
+
+.conductPanel :global(.paymentsFormHubRow) {
+  overflow-x: auto;
+  overflow-y: visible;
+}

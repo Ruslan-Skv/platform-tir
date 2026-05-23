@@ -26,8 +26,10 @@ import {
   CONTRACT_SIGNED_REVERT_WINDOW_MS,
 } from './repairContractPackageHubConstants';
 import {
+  REPAIR_CONTRACT_JOURNAL_PAY_BANNER_TOOLTIP,
   formatContractConcludedDateForHeader,
   formatRepairPipelineActDate,
+  getRepairContractJournalPayBannerStyle,
   isWithinMsSinceIso,
   isWithinRevertWindow,
   sumPackagePaymentAmountsRub,
@@ -346,18 +348,11 @@ export function useRepairContractPackageHub({
     } else {
       toneClass = styles.packageFlowPayPctOrbYellow;
     }
-    const paidFmt = new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-      maximumFractionDigits: 0,
-    }).format(paid);
-    const gtFmt = new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-      maximumFractionDigits: 0,
-    }).format(gt);
-    const title = `Внесено по журналу: ${paidFmt} (${label} от суммы «Итого»: ${gtFmt})`;
-    return { label, toneClass, title };
+    const displayPct = treatAsFull ? 100 : roundedPct;
+    const bannerText = `Всего оплачено: ${displayPct}%`;
+    const bannerStyle = getRepairContractJournalPayBannerStyle(displayPct);
+    const title = REPAIR_CONTRACT_JOURNAL_PAY_BANNER_TOOLTIP;
+    return { label, toneClass, title, bannerText, bannerStyle };
   }, [packageFlowStatus, headerPayableBreakdown.grandTotalRub, journalPaidRub]);
 
   const contractNumberLabel = getRepairContractNumberDisplayForForm(form);

@@ -25,8 +25,7 @@ export function RepairContractPackagePipelineSection({
   const pipelineTitle = blockPipelineReason ?? (hub.loading ? 'Загрузка…' : undefined);
 
   return (
-    <section className={styles.repairPackageHubPipelineSection}>
-      <h3 className={styles.repairPackageHubSectionTitle}>Этапы и статусы договора</h3>
+    <div>
       <p className={styles.hint} style={{ marginTop: 0 }}>
         Те же действия, что в шапке редактора договора: подписание, отказ, начало и закрытие работ,
         подписание доп. соглашений.
@@ -44,14 +43,6 @@ export function RepairContractPackagePipelineSection({
         {hub.packageFlowStatus === 'CONTRACT_CONCLUDED' ? (
           <span className={styles.packageFlowSignedLabelGroup} role="status">
             <span className={styles.packageFlowStatusBadge}>Договор подписан</span>
-            {hub.signedContractPayOrb != null ? (
-              <span
-                className={`${styles.packageFlowPayPctOrb} ${hub.signedContractPayOrb.toneClass}`}
-                title={hub.signedContractPayOrb.title}
-              >
-                {hub.signedContractPayOrb.label}
-              </span>
-            ) : null}
             {hub.signedAddendumOrdinals.map((n) => (
               <span key={`hub-signed-${n}`} className={styles.packageFlowStatusBadge}>
                 Д/с №{n} подписано
@@ -98,7 +89,7 @@ export function RepairContractPackagePipelineSection({
           </p>
           <button
             type="button"
-            className={styles.secondaryBtn}
+            data-modal-btn="secondary"
             disabled={hub.savingPackageStatus}
             onClick={() => hub.setRevertRefusalConfirmOpen(true)}
           >
@@ -111,7 +102,7 @@ export function RepairContractPackagePipelineSection({
             <>
               <button
                 type="button"
-                className={styles.secondaryBtn}
+                data-modal-btn="secondary"
                 disabled={pipelineDisabled}
                 title={pipelineTitle}
                 onClick={() => {
@@ -124,7 +115,7 @@ export function RepairContractPackagePipelineSection({
               </button>
               <button
                 type="button"
-                className={styles.secondaryBtn}
+                data-modal-btn="secondary"
                 disabled={pipelineDisabled}
                 title={pipelineTitle}
                 onClick={() => void hub.handleMarkContractConcluded()}
@@ -137,7 +128,7 @@ export function RepairContractPackagePipelineSection({
               {!hub.repairWorkStarted ? (
                 <button
                   type="button"
-                  className={styles.secondaryBtn}
+                  data-modal-btn="secondary"
                   disabled={pipelineDisabled}
                   title={pipelineTitle}
                   onClick={() => {
@@ -153,7 +144,7 @@ export function RepairContractPackagePipelineSection({
               {hub.repairWorkStarted && !hub.repairContractClosed ? (
                 <button
                   type="button"
-                  className={styles.secondaryBtn}
+                  data-modal-btn="secondary"
                   disabled={pipelineDisabled}
                   title={pipelineTitle}
                   onClick={() => {
@@ -173,7 +164,7 @@ export function RepairContractPackagePipelineSection({
             <button
               key={`hub-addendum-sign-${ordinal}`}
               type="button"
-              className={styles.secondaryBtn}
+              data-modal-btn="secondary"
               disabled={!hasAnyAttachedPresets || hub.refusalModalBusy || hub.savingPackageStatus}
               title={
                 !hasAnyAttachedPresets ? 'Сначала прикрепите хотя бы один расчёт к Д/с' : undefined
@@ -187,7 +178,7 @@ export function RepairContractPackagePipelineSection({
           {hub.attachedActPhotos.length > 0 ? (
             <button
               type="button"
-              className={styles.secondaryBtn}
+              data-modal-btn="secondary"
               onClick={() => hub.setRepairActPhotosModalOpen(true)}
             >
               Фото актов
@@ -201,7 +192,7 @@ export function RepairContractPackagePipelineSection({
           {hub.isContractPaid ? (
             <button
               type="button"
-              className={styles.secondaryBtn}
+              data-modal-btn="secondary"
               disabled={hub.savingPackageStatus || !hub.canRevertContractPaid}
               title={
                 hub.canRevertContractPaid
@@ -220,7 +211,8 @@ export function RepairContractPackagePipelineSection({
               </p>
               <button
                 type="button"
-                className={`${styles.secondaryBtn} ${styles.contractSignedRevertBtn}`}
+                className={styles.contractSignedRevertBtn}
+                data-modal-btn="secondary"
                 disabled={hub.savingPackageStatus}
                 onClick={() => void hub.confirmRevertContractConcluded()}
               >
@@ -237,7 +229,8 @@ export function RepairContractPackagePipelineSection({
                 </p>
                 <button
                   type="button"
-                  className={`${styles.secondaryBtn} ${styles.contractSignedRevertBtn}`}
+                  className={styles.contractSignedRevertBtn}
+                  data-modal-btn="secondary"
                   disabled={hub.savingPackageStatus}
                   onClick={() => void hub.unmarkAddendumSlotSigned(slotIndex0)}
                 >
@@ -248,6 +241,6 @@ export function RepairContractPackagePipelineSection({
           })}
         </div>
       ) : null}
-    </section>
+    </div>
   );
 }

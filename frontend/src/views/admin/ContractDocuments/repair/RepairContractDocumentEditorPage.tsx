@@ -3699,13 +3699,12 @@ export function RepairContractDocumentEditorPage({
             {!loading ? (
               <button
                 type="button"
-                className={`${styles.secondaryBtn} ${styles.repairEditorHeaderHubBtn}`}
+                className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn}`}
                 onClick={() => setPackageHubOpen(true)}
                 title={REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE}
                 aria-label={REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE}
               >
                 <RepairContractPackageHubIcon />
-                <span>Оплаты и этапы</span>
               </button>
             ) : null}
             {!loading ? (

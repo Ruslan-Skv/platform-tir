@@ -70,7 +70,24 @@ export function inferPaymentTypeFromBasisText(basis: string): {
   paymentType: ContractDocumentPackagePaymentKind;
   addendumNumber?: number;
 } {
-  const b = basis.toLowerCase();
+  const normalized = basis.trim().toLowerCase();
+  if (normalized === 'предоплата по договору') {
+    return { paymentType: 'PREPAYMENT' };
+  }
+  if (normalized === 'частичная оплата по договору') {
+    return { paymentType: 'ADVANCE' };
+  }
+  if (normalized === 'окончательный расчёт по договору') {
+    return { paymentType: 'FINAL' };
+  }
+  const addendumMatch = /^оплата по д\/с\s*(\d+)\s*$/i.exec(basis.trim());
+  if (addendumMatch) {
+    const n = Number.parseInt(addendumMatch[1], 10);
+    if (Number.isFinite(n) && n >= 1 && n <= 5) {
+      return { paymentType: 'AMENDMENT', addendumNumber: n };
+    }
+  }
+  const b = normalized;
   const m =
     /(?:д\/с|доп\.?\s*соглашен)[^\d]{0,40}№\s*(\d)/i.exec(basis) ||
     /дополнительн(?:ого|ому)\s+соглашен(?:ия|ию)[^\d]{0,20}№\s*(\d)/i.exec(basis);

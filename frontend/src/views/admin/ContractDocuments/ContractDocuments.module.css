@@ -1629,29 +1629,6 @@
   color: color-mix(in srgb, var(--admin-warning-strong) 50%, white);
 }
 
-.repairPackageHubModalBody {
-  display: flex;
-  flex-direction: column;
-  gap: var(--admin-space-lg);
-  max-height: min(78vh, 920px);
-  overflow-y: auto;
-  padding-right: var(--admin-space-2xs);
-}
-
-.repairPackageHubSectionTitle {
-  margin: 0 0 var(--admin-space-xs);
-  font-size: var(--admin-font-size-md);
-  font-weight: 700;
-  color: var(--admin-text-primary);
-}
-
-.repairPackageHubPipelineSection {
-  padding: var(--admin-space-md);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-md);
-  background: var(--admin-surface-soft, #f8fafc);
-}
-
 .repairPackageHubPipelineBadges {
   display: flex;
   flex-wrap: wrap;
@@ -1674,22 +1651,6 @@
   margin-top: var(--admin-space-sm);
   padding-top: var(--admin-space-sm);
   border-top: 1px solid var(--admin-border);
-}
-
-.repairPackageHubPaymentsSection .paymentsTab.blockData {
-  margin-top: 0;
-}
-
-.repairEditorHeaderHubBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--admin-space-xs);
-  white-space: nowrap;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairPackageHubPipelineSection {
-  background: var(--admin-surface);
-  border-color: var(--admin-border);
 }
 
 .dataCompact .formGrid {
@@ -6586,6 +6547,72 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   max-width: 1200px;
 }
 
+.paymentsTabHub {
+  max-width: none;
+}
+
+.paymentsTabHubPart {
+  background: transparent !important;
+  border: none !important;
+  max-width: none;
+  padding: 0 !important;
+}
+
+.paymentsHubBlockTitle {
+  margin: 0 0 var(--admin-space-md, 8px);
+}
+
+/* Компактная сводка в модалке «Оплаты и Управление договором» */
+.paymentsHubCompactCard {
+  margin-bottom: 0;
+  padding: var(--admin-space-md) var(--admin-space-lg);
+}
+
+.paymentsHubCompactHint {
+  margin: 0 0 var(--admin-space-sm) !important;
+  font-size: var(--admin-font-size-xs);
+}
+
+.paymentsHubCompactCard .paymentsTableWrap {
+  margin-top: 0;
+}
+
+.paymentsHubSummaryTable {
+  table-layout: auto;
+}
+
+.paymentsHubSummaryTable th,
+.paymentsHubSummaryTable td {
+  padding: var(--admin-space-xs) var(--admin-space-md);
+}
+
+.paymentsHubSummaryNumCol {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.paymentsHubSummaryRecommendedCol {
+  color: var(--admin-info-text);
+  font-weight: 600;
+}
+
+.paymentsHubSummaryFooterRow td {
+  background: var(--admin-surface-soft);
+  border-top-width: 2px;
+  font-weight: 600;
+}
+
+.paymentsHubSummaryFooterRow td:first-child {
+  color: var(--admin-text-secondary);
+}
+
+.paymentsHubCompactPct {
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 500;
+}
+
 /* Разные акценты карточек вкладки «Оплаты» */
 .paymentsTab .paymentsBlockAccentContract {
   background: var(--admin-info-bg-soft);
@@ -6723,7 +6750,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 /* Договор / Д/с: три поля (сумма | пропись | предоплата/100%) в одну строку */
 .paymentsTab .paymentsContractMoneyRow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--admin-space-md);
   align-items: start;
 }
@@ -6980,6 +7007,136 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   align-items: start;
 }
 
+/* Блок «Провести оплату» в модалке хаба — все поля в одну строку */
+.paymentsFormHubRow {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--admin-space-md);
+  margin-top: var(--admin-space-sm);
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.paymentsFormHubRow > .field {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.paymentsFormHubRow > .field:nth-child(1) {
+  flex: 0 0 10.5rem;
+}
+
+.paymentsFormHubRow > .field:nth-child(2) {
+  flex: 0 0 8.5rem;
+}
+
+.paymentsFormHubRow > .field:nth-child(3) {
+  flex: 0 0 9.5rem;
+}
+
+.paymentsFormHubRow > .field:nth-child(4) {
+  flex: 1 1 12rem;
+  min-width: 11rem;
+}
+
+.paymentsFormHubRow > .field input,
+.paymentsFormHubRow > .field select {
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+}
+
+.paymentsFormHubSubmitField {
+  flex: 0 0 auto;
+  min-width: max-content;
+}
+
+.paymentsFormHubSubmitSpacer {
+  display: block;
+  font-size: var(--admin-font-size-sm);
+  line-height: 1.25;
+  min-height: 1.25em;
+  visibility: hidden;
+}
+
+.paymentsFormHubSubmitField .paymentsHubConductBtn {
+  border-radius: var(--admin-radius-md, 8px);
+  box-sizing: border-box;
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  line-height: 1.25;
+  min-height: 2.5rem;
+  padding: var(--admin-space-md) var(--admin-space-xl);
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+  white-space: nowrap;
+}
+
+.paymentsFormHubSubmitField .paymentsHubConductBtn:disabled {
+  cursor: not-allowed;
+}
+
+.paymentsFormHubConductBtnIdle {
+  background: transparent !important;
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  box-shadow: none;
+  color: var(--admin-text-muted, #6b7280);
+}
+
+.paymentsFormHubConductBtnIdle:disabled {
+  opacity: 0.55;
+}
+
+.paymentsFormHubConductBtnReady {
+  background: #dc2626 !important;
+  border: 1px solid #b91c1c;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 12%);
+  color: #ffffff !important;
+}
+
+.paymentsFormHubConductBtnReady:disabled {
+  opacity: 0.7;
+}
+
+.paymentsFormHubConductBtnSuccess {
+  background: #bbf7d0 !important;
+  border: 1px solid #86efac;
+  box-shadow: none;
+  color: #166534 !important;
+}
+
+.paymentsFormHubConductBtnSuccess:disabled {
+  opacity: 1;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsFormHubConductBtnIdle {
+  background: transparent !important;
+  border-color: var(--admin-border-strong);
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsFormHubConductBtnReady {
+  background: #b91c1c !important;
+  border-color: #991b1b;
+  color: #ffffff !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsFormHubConductBtnSuccess {
+  background: rgb(22 101 52 / 0.45) !important;
+  border-color: #4ade80;
+  color: #bbf7d0 !important;
+}
+
+.paymentsFormHubHint {
+  flex: 1 1 100%;
+  margin: 0 !important;
+  min-width: 100%;
+}
+
 .paymentsFormGrid > .field {
   min-width: 0;
 }
@@ -7021,6 +7178,18 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 @media (max-width: 720px) {
   .paymentsFormGrid {
     grid-template-columns: 1fr;
+  }
+
+  .paymentsFormHubRow {
+    flex-wrap: wrap;
+  }
+
+  .paymentsFormHubSubmitField {
+    flex: 1 1 100%;
+  }
+
+  .paymentsFormHubSubmitField :global([data-modal-btn='primary']) {
+    width: 100%;
   }
 
   .paymentsAmountPairRow {
