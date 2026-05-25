@@ -891,6 +891,22 @@
   text-decoration: underline;
 }
 
+.repairSettingsCard {
+  margin-top: var(--admin-space-lg);
+  padding: var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  max-width: 420px;
+}
+
+.repairSettingsActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  margin-top: var(--admin-space-md);
+}
+
 .hubGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -1769,13 +1785,14 @@
   gap: var(--admin-space-md);
 }
 
-/* Номер | дата | срок договора — одна строка (срок правее, без наезда на соседние ячейки) */
+/* Номер | дата | срок | скидка — четыре равные колонки */
 .contractHeaderMetaRow {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.5fr);
-  column-gap: var(--admin-space-xl);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: var(--admin-space-md);
+  align-items: start;
 }
 
-/* Базовое правило .contractCompactBlock .field input задаёт min-width: 150px — в три колонки
+/* Базовое правило .contractCompactBlock .field input задаёт min-width: 150px — в узких колонках
    это ломает сетку; здесь явно сбрасываем, чтобы инпуты ужимались внутри ячеек */
 .contractCompactBlock .contractHeaderMetaRow .field input {
   width: 100%;
@@ -1783,9 +1800,9 @@
   min-width: 0;
 }
 
-/* Описание работ (уже не на всю ширину) | скидка по договору — одна строка сетки */
+/* Описание работ / объекта — на всю ширину строки */
 .contractObjectDescDiscountRow {
-  grid-template-columns: minmax(0, 1fr) minmax(7rem, 10.5rem);
+  grid-template-columns: minmax(0, 1fr);
   column-gap: var(--admin-space-xl);
   align-items: start;
 }
@@ -1798,10 +1815,18 @@
   resize: vertical;
 }
 
-.contractCompactBlock .contractObjectDescDiscountRow .field input {
+/* Исполнитель и менеджер (из справочников) — одна строка в «Договор и объект» */
+.contractProfilesRow {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: var(--admin-space-xl);
+}
+
+.contractCompactBlock .contractProfilesRow .field select {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
 }
 
 .contractDiscountFieldCell {
@@ -2041,6 +2066,125 @@
 .repairContractDataTabDense .sectionFields {
   gap: 6px 8px;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+/* Заказчик, Исполнитель, Менеджер — плотнее по вертикали */
+.repairContractDataTabDense .sectionCard.repairDataPartySection {
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  gap: var(--admin-space-2xs);
+}
+
+.repairContractDataTabDense .repairDataPartySection .sectionTitle {
+  margin: 0;
+  padding-top: 0;
+}
+
+.repairContractDataTabDense .repairDataPartySectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-sm);
+  flex-wrap: wrap;
+}
+
+.repairContractDataTabDense .repairDataPartySectionTitleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.repairContractDataTabDense .repairDataPartySectionTitleRow .sectionTitle {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.repairContractDataTabDense .repairDataSectionLockInline {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.repairContractDataTabDense .repairDataSectionLockInline .repairTabLockIcon {
+  width: 14px;
+  height: 14px;
+}
+
+.repairContractDataTabDense .repairDataPartySectionCollapseBtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 28px;
+  padding: var(--admin-space-xs);
+  border-radius: var(--admin-radius-sm);
+}
+
+.repairContractDataTabDense .repairDataPartySectionCollapseIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.repairContractDataTabDense .repairDataPartySectionIntroHint {
+  margin-top: 2px;
+  margin-bottom: 4px;
+}
+
+.repairContractDataTabDense .repairDataPartySectionFieldHint {
+  margin-top: 2px;
+  margin-bottom: 0;
+}
+
+.repairContractDataTabDense .repairDataPartySection .sectionFields {
+  gap: 4px 8px;
+}
+
+/* Заказчик (физлицо): две строки по 4 равные колонки */
+.repairContractDataTabDense .repairCustomerPrimaryRow,
+.repairContractDataTabDense .repairCustomerSecondaryRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.repairContractDataTabDense .repairCustomerPrimaryRow .field,
+.repairContractDataTabDense .repairCustomerSecondaryRow .field {
+  min-width: 0;
+}
+
+.repairContractDataTabDense .repairCustomerPrimaryRow .field input,
+.repairContractDataTabDense .repairCustomerPrimaryRow .field select,
+.repairContractDataTabDense .repairCustomerSecondaryRow .field input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.repairContractDataTabDense .repairDataPartySection .field {
+  gap: 2px;
+}
+
+.repairContractDataTabDense .repairDataPartySection .field input,
+.repairContractDataTabDense .repairDataPartySection .field select,
+.repairContractDataTabDense .repairDataPartySection .field textarea {
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+}
+
+.repairContractDataTabDense .repairDataPartySection .field textarea {
+  min-height: 2.5rem;
+}
+
+.repairContractDataTabDense .repairDataPartySection .customerBankDetailsField.field textarea,
+.repairContractDataTabDense .repairDataPartySection .executorBankDetailsField.field textarea {
+  min-height: calc(
+    2 * var(--admin-space-xs) + var(--admin-font-size-sm) * var(--admin-line-height-sm)
+  );
 }
 
 .repairContractDataTabDense .field input,
@@ -2894,6 +3038,27 @@
 .autoFilledInput:focus {
   outline: none;
   box-shadow: 0 0 0 2px var(--admin-overlay-color-171);
+}
+
+/* «Договор и объект»: поле изменено относительно загруженного пакета */
+.repairContractObjectFieldEdited {
+  background: var(--admin-success-bg-soft) !important;
+  border-color: var(--admin-success) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--admin-success) 35%, transparent);
+}
+
+.contractCompactBlock .repairContractObjectFieldEdited:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-success) 45%, transparent);
+}
+
+/* Перебивает .repairContractDataTabDense .field input/select { background: surface } */
+.repairContractDataTabDense .contractCompactBlock .field input.repairContractObjectFieldEdited,
+.repairContractDataTabDense .contractCompactBlock .field select.repairContractObjectFieldEdited,
+.repairContractDataTabDense .contractCompactBlock .field textarea.repairContractObjectFieldEdited {
+  background: var(--admin-success-bg-soft) !important;
+  border-color: var(--admin-success) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--admin-success) 35%, transparent);
 }
 
 .sectionTitle {
@@ -6578,6 +6743,39 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   background: var(--admin-surface-soft) !important;
   border-color: var(--admin-sidebar-text) !important;
   color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .contractCompactBlock
+  .field
+  input.repairContractObjectFieldEdited,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .contractCompactBlock
+  .field
+  select.repairContractObjectFieldEdited,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .contractCompactBlock
+  .field
+  textarea.repairContractObjectFieldEdited,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .contractCompactBlock
+  .field
+  input.repairContractObjectFieldEdited,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .contractCompactBlock
+  .field
+  select.repairContractObjectFieldEdited,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .contractCompactBlock
+  .field
+  textarea.repairContractObjectFieldEdited {
+  background: var(--admin-success-bg-soft) !important;
+  border-color: var(--admin-success) !important;
+  color: var(--admin-text-primary) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--admin-success) 40%, transparent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock input[readonly],

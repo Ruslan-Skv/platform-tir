@@ -24,6 +24,15 @@ import {
 } from './dto/set-global-estimate-presets.dto';
 import { SetGlobalContractTemplateDto } from './dto/set-global-contract-template.dto';
 import { UpdateContractDocumentPackageDto } from './dto/update-contract-document-package.dto';
+import {
+  ApplyRepairWorkPeriodToAllDto,
+  SetRepairContractSettingsDto,
+} from './dto/set-repair-settings.dto';
+import {
+  DEFAULT_REPAIR_CONTRACT_WORK_PERIOD_DAYS,
+  injectDefaultWorkPeriodIntoFormData,
+  setWorkPeriodInFormData,
+} from './repair-contract-work-period';
 
 @Injectable()
 export class ContractDocumentPackagesService {
@@ -139,14 +148,19 @@ export class ContractDocumentPackagesService {
     if (dto.crmContractId) {
       await this.assertCrmContractExists(dto.crmContractId);
     }
-    if (dto.kind === ContractDocumentPackageKind.REPAIR && dto.formData !== undefined) {
+    let formDataInput: unknown = dto.formData ?? {};
+    if (dto.kind === ContractDocumentPackageKind.REPAIR) {
+      const defaultDays = await this.resolveDefaultRepairWorkPeriodDays();
+      formDataInput = injectDefaultWorkPeriodIntoFormData(formDataInput, defaultDays);
+      await this.assertRepairEstimatePresetsExclusive(null, formDataInput);
+    } else if (dto.formData !== undefined) {
       await this.assertRepairEstimatePresetsExclusive(null, dto.formData);
     }
     const created = await this.prisma.contractDocumentPackage.create({
       data: {
         kind: dto.kind,
         title: dto.title ?? null,
-        formData: (dto.formData ?? {}) as Prisma.InputJsonValue,
+        formData: formDataInput as Prisma.InputJsonValue,
         createdById: createdById ?? null,
         crmContractId: dto.crmContractId ?? null,
       },
@@ -1143,5 +1157,68 @@ export class ContractDocumentPackagesService {
       // Не блокируем сохранение расчётов, если таблица истории ещё не создана.
     }
     return row;
+  }
+
+  async resolveDefaultRepairWorkPeriodDays(): Promise<number> {
+    const row = await this.prisma.contractDocumentRepairSettings.findUnique({
+      where: { kind: ContractDocumentPackageKind.REPAIR },
+      select: { defaultWorkPeriodDays: true },
+    });
+    const days = row?.defaultWorkPeriodDays ?? DEFAULT_REPAIR_CONTRACT_WORK_PERIOD_DAYS;
+    return Number.isFinite(days) && days >= 1
+      ? Math.trunc(days)
+      : DEFAULT_REPAIR_CONTRACT_WORK_PERIOD_DAYS;
+  }
+
+  async getRepairSettings() {
+    const days = await this.resolveDefaultRepairWorkPeriodDays();
+    const row = await this.prisma.contractDocumentRepairSettings.findUnique({
+      where: { kind: ContractDocumentPackageKind.REPAIR },
+      select: { updatedAt: true },
+    });
+    return {
+      defaultWorkPeriodDays: days,
+      updatedAt: row?.updatedAt?.toISOString() ?? null,
+    };
+  }
+
+  async setRepairSettings(dto: SetRepairContractSettingsDto, updatedById?: string) {
+    const row = await this.prisma.contractDocumentRepairSettings.upsert({
+      where: { kind: ContractDocumentPackageKind.REPAIR },
+      create: {
+        kind: ContractDocumentPackageKind.REPAIR,
+        defaultWorkPeriodDays: dto.defaultWorkPeriodDays,
+        updatedById: updatedById ?? null,
+      },
+      update: {
+        defaultWorkPeriodDays: dto.defaultWorkPeriodDays,
+        updatedById: updatedById ?? null,
+      },
+      select: { defaultWorkPeriodDays: true, updatedAt: true },
+    });
+    return {
+      defaultWorkPeriodDays: row.defaultWorkPeriodDays,
+      updatedAt: row.updatedAt.toISOString(),
+    };
+  }
+
+  async applyRepairWorkPeriodToAllPackages(dto: ApplyRepairWorkPeriodToAllDto) {
+    const packages = await this.prisma.contractDocumentPackage.findMany({
+      where: {
+        kind: ContractDocumentPackageKind.REPAIR,
+        deletedAt: null,
+      },
+      select: { id: true, formData: true },
+    });
+    let updated = 0;
+    for (const pkg of packages) {
+      const next = setWorkPeriodInFormData(pkg.formData, dto.workPeriodDays);
+      await this.prisma.contractDocumentPackage.update({
+        where: { id: pkg.id },
+        data: { formData: next as Prisma.InputJsonValue },
+      });
+      updated += 1;
+    }
+    return { updated, workPeriodDays: dto.workPeriodDays };
   }
 }

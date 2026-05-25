@@ -98,6 +98,7 @@ model User {
   contractDocumentPackagesDeleted ContractDocumentPackage[] @relation("ContractDocumentPackagesDeleted")
   contractDocumentPackagePaymentsRecorded ContractDocumentPackagePayment[] @relation("ContractDocumentPackagePaymentRecordedBy")
   contractDocumentGlobalTemplatesUpdated ContractDocumentGlobalTemplate[] @relation("GlobalContractTemplateUpdatedBy")
+  contractDocumentRepairSettingsUpdated ContractDocumentRepairSettings[] @relation("ContractDocumentRepairSettingsUpdatedBy")
   contractDocumentPackageVersionsSaved ContractDocumentPackageVersion[] @relation("ContractDocumentPackageVersionSavedBy")
   contractDocumentEstimatePresetsHistory ContractDocumentEstimatePresetsHistory[] @relation("ContractDocumentEstimatePresetsHistoryChangedBy")
 
@@ -2146,6 +2147,18 @@ model ContractDocumentGlobalTemplate {
 
   @@unique([kind, tab])
   @@map("contract_document_global_templates")
+}
+
+/// Настройки оформления договоров «Ремонт» (срок по умолчанию и т.п.).
+model ContractDocumentRepairSettings {
+  kind                  ContractDocumentPackageKind @id
+  defaultWorkPeriodDays Int                       @default(60)
+  updatedById           String?
+  updatedAt             DateTime                  @updatedAt
+
+  updatedBy User? @relation("ContractDocumentRepairSettingsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("contract_document_repair_settings")
 }
 
 enum MeasurementStatus {

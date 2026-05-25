@@ -35,6 +35,10 @@ import { SetGlobalContractTemplateDto } from './dto/set-global-contract-template
 import { CreateContractDocumentPackagePaymentDto } from './dto/create-contract-document-package-payment.dto';
 import { UpdateContractDocumentPackageDto } from './dto/update-contract-document-package.dto';
 import { UpdateContractDocumentPackagePaymentDto } from './dto/update-contract-document-package-payment.dto';
+import {
+  ApplyRepairWorkPeriodToAllDto,
+  SetRepairContractSettingsDto,
+} from './dto/set-repair-settings.dto';
 
 const CRM_ROLES = [
   'SUPER_ADMIN',
@@ -242,6 +246,23 @@ export class ContractDocumentPackagesController {
     @Req() req: RequestWithUser,
   ) {
     return this.service.setGlobalSignatoryProfiles(dto, req.user?.id);
+  }
+
+  @Get('repair-settings')
+  getRepairSettings() {
+    return this.service.getRepairSettings();
+  }
+
+  @Put('repair-settings')
+  @Roles('SUPER_ADMIN')
+  setRepairSettings(@Body() dto: SetRepairContractSettingsDto, @Req() req: RequestWithUser) {
+    return this.service.setRepairSettings(dto, req.user?.id);
+  }
+
+  @Post('repair-settings/apply-work-period-to-all')
+  @Roles('SUPER_ADMIN')
+  applyRepairWorkPeriodToAll(@Body() dto: ApplyRepairWorkPeriodToAllDto) {
+    return this.service.applyRepairWorkPeriodToAllPackages(dto);
   }
 
   @Get(':id/versions')

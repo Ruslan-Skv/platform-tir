@@ -622,6 +622,56 @@ export async function putContractDocumentSignatoryProfiles(body: {
   return res.json();
 }
 
+export type RepairContractSettings = {
+  defaultWorkPeriodDays: number;
+  updatedAt: string | null;
+};
+
+export async function getContractDocumentRepairSettings(): Promise<RepairContractSettings> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/repair-settings`,
+    { headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) throw new Error('Не удалось загрузить настройки договоров ремонта');
+  return res.json();
+}
+
+export async function putContractDocumentRepairSettings(body: {
+  defaultWorkPeriodDays: number;
+}): Promise<RepairContractSettings> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/repair-settings`,
+    {
+      method: 'PUT',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err.message || 'Не удалось сохранить настройки');
+  }
+  return res.json();
+}
+
+export async function applyRepairWorkPeriodToAllPackages(body: {
+  workPeriodDays: number;
+}): Promise<{ updated: number; workPeriodDays: number }> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/repair-settings/apply-work-period-to-all`,
+    {
+      method: 'POST',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err.message || 'Не удалось обновить срок во всех договорах');
+  }
+  return res.json();
+}
+
 export async function getContractDocumentTemplatePresets(
   kind: ContractDocumentPackageKind
 ): Promise<{ items: ContractTemplatePreset[]; updatedAt: string | null }> {

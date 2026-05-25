@@ -37,6 +37,12 @@ export function ContractDocumentsHubPage() {
             Именованные шаблоны договора «Ремонт»: создание, копирование и настройка по умолчанию.
           </p>
         </Link>
+        <Link className={styles.hubCard} href="/admin/contract-documents/settings">
+          <h2 className={styles.hubCardTitle}>Настройки «Ремонт»</h2>
+          <p className={styles.hubCardHint}>
+            Срок договора по умолчанию (календарные дни) и массовое обновление во всех договорах.
+          </p>
+        </Link>
       </div>
     </div>
   );
