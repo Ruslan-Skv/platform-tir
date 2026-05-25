@@ -984,9 +984,9 @@
 }
 
 .repairContractsListActionsCol {
-  width: 76px;
-  min-width: 76px;
-  max-width: 76px;
+  width: 130px;
+  min-width: 130px;
+  max-width: 130px;
   text-align: right;
   vertical-align: middle;
   padding-left: 2px;
@@ -1628,17 +1628,83 @@
   border-color: color-mix(in srgb, #eab308 50%, white);
 }
 
-.repairContractEditorPage .repairWorkOrderGradeBtnCompact {
-  padding: 3px 8px;
-  font-size: 0.72rem;
+.repairWorkOrderGradeField {
+  min-width: 280px;
 }
 
-.repairContractEditorPage .repairWorkOrderGradeBtnActive {
-  background: color-mix(in srgb, var(--admin-warning-bg) 50%, white);
-  border-color: color-mix(in srgb, var(--admin-warning-strong) 50%, white);
-  color: var(--admin-warning-text);
+.repairWorkOrderGradeBar {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 4px;
+  padding: 4px;
+  background: var(--admin-surface-soft, #f3f4f6);
+  border: 1px solid var(--admin-border, #d1d5db);
+  border-radius: var(--admin-radius-md, 8px);
+  box-shadow: inset 0 1px 2px rgb(17 24 39 / 0.04);
+}
+
+.repairWorkOrderGradeBtn {
+  appearance: none;
+  background: var(--admin-surface, #fff);
+  border: 1px solid var(--admin-border, #d1d5db);
+  border-radius: 6px;
+  color: var(--admin-text-secondary, #4b5563);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.25;
+  padding: 7px 16px;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    color 0.15s ease,
+    transform 0.1s ease;
+}
+
+.repairWorkOrderGradeBtn:hover {
+  background: var(--admin-info-bg-soft, #eff6ff);
+  border-color: var(--admin-info-border-soft, #bfdbfe);
+  color: var(--admin-info-strong, #1d4ed8);
+}
+
+.repairWorkOrderGradeBtn:focus {
+  outline: none;
+}
+
+.repairWorkOrderGradeBtn:focus-visible {
+  box-shadow: 0 0 0 2px var(--admin-info-border-soft, #bfdbfe);
+}
+
+.repairWorkOrderGradeBtnActive4 {
+  background: var(--admin-info-bg-soft, #eff6ff) !important;
+  border-color: var(--admin-info-strong, #2563eb) !important;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--admin-info-strong, #2563eb) 28%, transparent),
+    0 1px 2px rgb(37 99 235 / 0.12) !important;
+  color: var(--admin-info-strong, #1d4ed8) !important;
   font-weight: 700;
-  box-shadow: 0 0 0 2px color-mix(in srgb, rgb(245 158 11 / 0.35) 50%, white);
+}
+
+.repairWorkOrderGradeBtnActive5 {
+  background: var(--admin-warning-bg, #fef3c7) !important;
+  border-color: var(--admin-warning-strong, #d97706) !important;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--admin-warning-strong, #d97706) 32%, transparent),
+    0 1px 2px rgb(217 119 6 / 0.14) !important;
+  color: var(--admin-warning-text, #92400e) !important;
+  font-weight: 700;
+}
+
+.repairWorkOrderGradeBtnActive6 {
+  background: var(--admin-danger-bg, #fef2f2) !important;
+  border-color: var(--admin-danger-border-strong, #dc2626) !important;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--admin-danger-border-strong, #dc2626) 32%, transparent),
+    0 1px 2px rgb(220 38 38 / 0.14) !important;
+  color: var(--admin-danger-text, #991b1b) !important;
+  font-weight: 700;
 }
 
 .repairContractEditorPage .paymentsKvOverpay {
@@ -5568,7 +5634,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 /* Список договоров: копировать / удалить / фото актов (слот фото всегда) */
 .repairContractsListActionsGrid.estimatesCardActions {
   display: grid;
-  grid-template-columns: repeat(4, 24px);
+  grid-template-columns: repeat(5, 24px);
   column-gap: 2px;
   row-gap: 0;
   justify-content: end;
@@ -5634,6 +5700,15 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   flex-shrink: 0;
 }
 
+.workOrderParamsBar .repairWorkOrderShowAmountsLabel {
+  align-items: center;
+}
+
+.workOrderParamsBar .repairWorkOrderShowAmountsLabel input {
+  margin-top: 0;
+  align-self: center;
+}
+
 .workCategoryButtons {
   display: flex;
   flex-wrap: wrap;
@@ -5697,6 +5772,85 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   box-shadow: 0 0 0 2px var(--admin-overlay-color-102);
 }
 
+.interactiveInstallerPicker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  margin-bottom: 12px;
+}
+
+.interactiveInstallerAddField {
+  max-width: 420px;
+}
+
+.interactiveInstallerAddField label {
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.interactiveInstallerAddField select {
+  width: 100%;
+}
+
+.interactiveInstallerBadge {
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: var(--admin-radius-pill);
+  overflow: hidden;
+  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-surface);
+}
+
+.interactiveInstallerBadgeActive {
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-accent) 28%, transparent);
+}
+
+.interactiveInstallerBadge .workCategoryButton {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.interactiveInstallerBadgeActive .workCategoryButton.workCategoryButtonActive {
+  box-shadow: none;
+}
+
+.interactiveInstallerRemoveBtn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  border: none;
+  border-left: 1px solid var(--admin-border-strong);
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.interactiveInstallerRemoveBtn:hover {
+  background: var(--admin-danger-bg);
+  color: var(--admin-danger-text);
+}
+
+.interactiveInstallerRemoveBtn:focus {
+  outline: none;
+}
+
+.interactiveInstallerRemoveBtn:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--admin-danger-border-strong);
+}
+
+.interactiveInstallerRemoveIcon {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
 .interactiveEstimateRow {
   cursor: pointer;
 }
@@ -5705,8 +5859,23 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   background: var(--admin-surface-soft);
 }
 
+.interactiveEstimateRowUnassigned td {
+  background: color-mix(in srgb, var(--admin-warning-bg) 42%, var(--admin-surface));
+}
+
+.interactiveEstimateRowAssigned td {
+  background: color-mix(in srgb, var(--admin-success-bg) 50%, var(--admin-surface));
+}
+
 .interactiveEstimateRowActiveInstaller td {
-  background: var(--admin-success-bg);
+  background: color-mix(in srgb, var(--admin-success-bg) 72%, var(--admin-success-strong) 28%);
+}
+
+.interactiveEstimateUnassignedLabel {
+  color: var(--admin-warning-text);
+  font-size: var(--admin-font-size-xs);
+  font-style: italic;
+  font-weight: 600;
 }
 
 .interactiveAssignedInstaller {
@@ -5714,6 +5883,19 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   align-items: center;
   justify-content: space-between;
   gap: var(--admin-space-sm);
+}
+
+.interactiveAssignedInstallerName {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--admin-radius-pill);
+  background: color-mix(in srgb, var(--admin-success-bg) 80%, var(--admin-surface));
+  border: 1px solid color-mix(in srgb, var(--admin-success-deep) 35%, var(--admin-border));
+  color: var(--admin-success-deep);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 700;
+  line-height: 1.25;
 }
 
 .interactiveAssignedInstallerClearBtn {
@@ -5820,6 +6002,72 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 .interactiveUnassignedBadgeDone {
   background: var(--admin-success-strong);
   color: #fff;
+}
+
+/* Интерактивная итоговая смета: светлая тема (пакет и модалка заказ-нарядов) */
+.interactiveFinalEstimateTab.blockData {
+  background: color-mix(in srgb, var(--admin-warning-bg) 50%, white);
+  border-color: color-mix(in srgb, var(--admin-warning-border-soft) 50%, white);
+}
+
+.interactiveFinalEstimateTab .sectionCard {
+  background: color-mix(in srgb, var(--admin-info-bg-soft) 28%, var(--admin-surface));
+  border-color: var(--admin-info-border-soft);
+  box-shadow: 0 1px 3px rgb(17 24 39 / 0.06);
+}
+
+.interactiveFinalEstimateTab .workCategoryButtonMarked:not(.workCategoryButtonActive) {
+  border-color: var(--admin-success-deep);
+  background: var(--admin-success-bg);
+  color: var(--admin-success-deep);
+  font-weight: 700;
+}
+
+.interactiveFinalEstimateTab .workCategoryButtonActive.workCategoryButtonMarked {
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--admin-success-strong) 35%, transparent),
+    0 1px 2px rgb(22 163 74 / 0.2);
+}
+
+.interactiveFinalEstimateTab .interactiveEstimateTable.estimateA4Table th {
+  background: var(--admin-surface-muted);
+  color: var(--admin-text-primary);
+  border-color: var(--admin-border-strong);
+}
+
+.interactiveFinalEstimateTab .interactiveEstimateTable.estimateA4Table td {
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+  border-color: var(--admin-border);
+}
+
+.interactiveFinalEstimateTab
+  .interactiveEstimateTable.estimateA4Table
+  tr.interactiveEstimateRow:hover
+  td {
+  background: var(--admin-info-bg-soft);
+}
+
+.interactiveFinalEstimateTab
+  .interactiveEstimateTable.estimateA4Table
+  tr.interactiveEstimateRowUnassigned
+  td {
+  background: color-mix(in srgb, var(--admin-warning-bg) 42%, var(--admin-surface));
+}
+
+.interactiveFinalEstimateTab
+  .interactiveEstimateTable.estimateA4Table
+  tr.interactiveEstimateRowAssigned
+  td {
+  background: color-mix(in srgb, var(--admin-success-bg) 50%, var(--admin-surface));
+}
+
+.interactiveFinalEstimateTab
+  .interactiveEstimateTable.estimateA4Table
+  tr.interactiveEstimateRowActiveInstaller
+  td {
+  background: color-mix(in srgb, var(--admin-success-bg) 72%, var(--admin-success-strong) 28%);
+  color: var(--admin-text-primary);
 }
 
 .repairTabUnassignedBadge {
@@ -6430,6 +6678,30 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   border-color: var(--admin-border-strong);
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workOrderParamsBar
+  .repairWorkOrderGradeBar {
+  background: rgb(255 255 255 / 0.08);
+  border-color: var(--admin-border-strong);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.2);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workOrderParamsBar
+  .repairWorkOrderGradeBtn {
+  background: rgb(255 255 255 / 0.06);
+  border-color: var(--admin-border-strong);
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workOrderParamsBar
+  .repairWorkOrderGradeBtn:hover {
+  background: rgb(255 255 255 / 0.12);
+  border-color: var(--admin-accent-soft-strong);
+  color: var(--admin-text-primary);
+}
+
 /* Точечный dark-фикс для вкладок "Акт начала работ" / "Акт приёмки" */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .repairActTwinSheet {
   background: var(--admin-surface);
@@ -6585,6 +6857,11 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   color: rgba(243, 244, 246, 0.9);
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .interactiveFinalEstimateTab.blockData {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .interactiveFinalEstimateTab .sectionCard {
   background: color-mix(in srgb, var(--admin-bg-page) 91%, rgb(var(--color-accent-rgb)) 9%);
   border-color: var(--admin-accent-border);
@@ -6698,12 +6975,40 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .interactiveFinalEstimateTab
   .interactiveEstimateTable.estimateA4Table
+  tr.interactiveEstimateRowUnassigned
+  td {
+  background: color-mix(in srgb, var(--admin-surface-soft) 70%, rgb(245 158 11) 30%);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveEstimateTable.estimateA4Table
+  tr.interactiveEstimateRowAssigned
+  td {
+  background: color-mix(in srgb, var(--admin-surface-soft) 65%, rgb(34 197 94) 35%);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveEstimateTable.estimateA4Table
   tr.interactiveEstimateRowActiveInstaller
   td {
-  background: color-mix(in srgb, var(--admin-surface-soft) 55%, rgb(34 197 94) 45%);
+  background: color-mix(in srgb, var(--admin-surface-soft) 45%, rgb(34 197 94) 55%);
   color: var(--admin-text-primary);
-  border-color: rgb(52 211 153 / 0.55);
-  box-shadow: inset 0 0 0 1px rgb(52 211 153 / 0.35);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveAssignedInstallerName {
+  background: color-mix(in srgb, var(--admin-bg-page) 55%, rgb(34 197 94) 45%);
+  border-color: rgb(52 211 153 / 0.45);
+  color: rgb(220 252 231);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveEstimateUnassignedLabel {
+  color: rgb(253 230 138);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimateLockNotice,

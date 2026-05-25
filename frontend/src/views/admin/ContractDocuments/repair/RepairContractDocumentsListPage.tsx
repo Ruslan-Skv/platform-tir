@@ -51,6 +51,8 @@ import { CONTRACT_DOCUMENT_PACKAGE_KIND_LABELS } from '../contractDocumentsListK
 import { RepairContractPackageHubIcon } from './RepairContractPackageHubIcon';
 import { RepairContractPackageHubModal } from './RepairContractPackageHubModal';
 import { RepairContractTrashModal } from './RepairContractTrashModal';
+import { RepairContractWorkOrdersHubIcon } from './RepairContractWorkOrdersHubIcon';
+import { RepairContractWorkOrdersHubListModal } from './RepairContractWorkOrdersHubListModal';
 import { buildFormDataForRepairPackageCopy } from './cloneRepairPackageFormDataForCopy';
 import {
   REPAIR_COPY_CONTRACT_NUMBER_BASELINE_KEY,
@@ -76,6 +78,7 @@ import {
   type RepairContractsListSortOrder,
 } from './repairContractsListSort';
 import { type RepairPackageFormData, mergeRepairPackageFormData } from './repairPackageForm';
+import { REPAIR_WORK_ORDER_HUB_MODAL_TITLE } from './repairWorkOrderHubTabs';
 
 type RepairListActPhotoItem = {
   key: string;
@@ -813,6 +816,7 @@ export function RepairContractDocumentsListPage() {
   );
   const { trashCount, refreshTrashCount } = useAdminTrashCount(fetchRepairTrashTotal);
   const [packageHubPackageId, setPackageHubPackageId] = useState<string | null>(null);
+  const [workOrdersHubPackageId, setWorkOrdersHubPackageId] = useState<string | null>(null);
   const [actPhotosModal, setActPhotosModal] = useState<{
     items: RepairListActPhotoItem[];
     contractLabel: string;
@@ -1633,6 +1637,21 @@ export function RepairContractDocumentsListPage() {
                                 disabled={
                                   loading ||
                                   creating ||
+                                  copyingPackageId !== null ||
+                                  deletingPackageId !== null
+                                }
+                                title={REPAIR_WORK_ORDER_HUB_MODAL_TITLE}
+                                aria-label={`${REPAIR_WORK_ORDER_HUB_MODAL_TITLE} (${num})`}
+                                onClick={() => setWorkOrdersHubPackageId(r.id)}
+                              >
+                                <RepairContractWorkOrdersHubIcon />
+                              </AdminTableIconButton>
+                            </div>
+                            <div className={styles.repairContractsListActionsSlot}>
+                              <AdminTableIconButton
+                                disabled={
+                                  loading ||
+                                  creating ||
                                   (copyingPackageId !== null && !copyBusy) ||
                                   deletingPackageId !== null
                                 }
@@ -1814,6 +1833,15 @@ export function RepairContractDocumentsListPage() {
           packageId={packageHubPackageId}
           isOpen
           onClose={() => setPackageHubPackageId(null)}
+          onUpdated={() => void load()}
+        />
+      ) : null}
+
+      {workOrdersHubPackageId ? (
+        <RepairContractWorkOrdersHubListModal
+          packageId={workOrdersHubPackageId}
+          isOpen
+          onClose={() => setWorkOrdersHubPackageId(null)}
           onUpdated={() => void load()}
         />
       ) : null}

@@ -150,6 +150,78 @@ function buildPrintStylesheet(marginFooter?: PrintMarginFooterNames): string {
   .docPrint .estimateA4DocPrintEmbed .estimateA4Table th {
     background: #f9fafb; font-weight: 700; padding-top: 3pt; padding-bottom: 3pt;
   }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4TableWorkOrder th:nth-child(1),
+  .docPrint .estimateA4DocPrintEmbed .estimateA4TableWorkOrder td:nth-child(1) {
+    width: 5%; text-align: center;
+  }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4TableWorkOrder th:nth-child(2),
+  .docPrint .estimateA4DocPrintEmbed .estimateA4TableWorkOrder td:nth-child(2) {
+    width: 48%;
+  }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4TableWorkOrder th:nth-child(3),
+  .docPrint .estimateA4DocPrintEmbed .estimateA4TableWorkOrder td:nth-child(3) {
+    width: 18%; text-align: right;
+  }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4TableWorkOrder th:nth-child(4),
+  .docPrint .estimateA4DocPrintEmbed .estimateA4TableWorkOrder td:nth-child(4) {
+    width: 29%; text-align: right;
+  }
+  /* Итоговый заказ-наряд: плотность как на вкладке (≈11px), не общий docPrint 12pt */
+  .docPrint .repairFinalWorkOrderPrint {
+    font-size: 8.25pt;
+    line-height: 1.2;
+  }
+  .docPrint .repairFinalWorkOrderPrint p {
+    margin: 0 0 2pt;
+    line-height: 1.2;
+  }
+  .docPrint .repairFinalWorkOrderPrint .repairFinalWorkOrderPrintMeta {
+    margin: 0 0 7pt;
+  }
+  .docPrint .repairFinalWorkOrderPrint h4,
+  .docPrint .repairFinalWorkOrderPrint .estimateA4Title {
+    margin: 0 0 3pt;
+    font-size: 9pt;
+    line-height: 1.2;
+    font-weight: 700;
+    text-align: center;
+  }
+  .docPrint .repairFinalWorkOrderPrint .estimateA4CategorySection {
+    margin-bottom: 4pt;
+  }
+  .docPrint .repairFinalWorkOrderPrint .estimateA4Meta {
+    margin: 0 0 3pt;
+    font-size: 8pt;
+    line-height: 1.2;
+  }
+  .docPrint .repairFinalWorkOrderPrint .estimateA4Room {
+    margin-bottom: 7pt;
+  }
+  .docPrint .repairFinalWorkOrderPrint .estimateA4RoomHeader {
+    margin-bottom: 2pt;
+    font-size: 8.25pt;
+    line-height: 1.15;
+    gap: 6pt;
+  }
+  .docPrint .repairFinalWorkOrderPrint .estimateA4TableWorkOrder th,
+  .docPrint .repairFinalWorkOrderPrint .estimateA4TableWorkOrder td {
+    padding: 1pt 4pt;
+    font-size: 8.25pt;
+    line-height: 1.15;
+  }
+  .docPrint .repairFinalWorkOrderPrint .estimateA4TableWorkOrder th {
+    padding-top: 1pt;
+    padding-bottom: 1pt;
+  }
+  .docPrint .repairFinalWorkOrderPrint .estimateA4Total {
+    margin: 4pt 0 0;
+    font-size: 8.5pt;
+    line-height: 1.2;
+  }
+  .docPrint .repairFinalWorkOrderPrint .estimateA4Empty {
+    margin: 0;
+    font-size: 8.25pt;
+  }
   .docPrint .estimateA4DocPrintEmbed .estimateA4Summary {
     margin-top: 5pt; border-top: 1px solid #d1d5db; padding-top: 6pt;
   }
@@ -251,6 +323,23 @@ function buildPrintStylesheet(marginFooter?: PrintMarginFooterNames): string {
     .contractPageSignatures {
       page-break-inside: avoid !important;
       break-inside: avoid !important;
+    }
+    .docPrint .estimateA4DocPrintEmbed .estimateA4Table th,
+    .docPrint .estimateA4DocPrintEmbed .estimateA4Table td {
+      border: 1px solid #111 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .docPrint .estimateA4DocPrintEmbed .estimateA4Table th {
+      background: #f3f4f6 !important;
+    }
+    .docPrint .repairFinalWorkOrderPrint p {
+      margin: 0 0 2pt !important;
+    }
+    .docPrint .repairFinalWorkOrderPrint .estimateA4TableWorkOrder th,
+    .docPrint .repairFinalWorkOrderPrint .estimateA4TableWorkOrder td {
+      padding: 1pt 4pt !important;
+      line-height: 1.15 !important;
     }
   }
   .docPrint.docPrintWordCompact .WordSection1 table.MsoNormalTable {

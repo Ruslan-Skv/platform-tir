@@ -39,6 +39,12 @@ import styles from '../ContractDocuments.module.css';
 import { RepairAddendumEstimateBlock } from './RepairAddendumEstimateBlock';
 import { RepairContractPackageHubIcon } from './RepairContractPackageHubIcon';
 import { RepairContractPackageHubModal } from './RepairContractPackageHubModal';
+import {
+  type RepairContractWorkOrderHubContextValue,
+  RepairContractWorkOrderHubProvider,
+} from './RepairContractWorkOrderHubContext';
+import { RepairContractWorkOrdersHubIcon } from './RepairContractWorkOrdersHubIcon';
+import { RepairContractWorkOrdersHubModal } from './RepairContractWorkOrdersHubModal';
 import { RepairManagerQuestionnaire1Tab } from './RepairManagerQuestionnaire1Tab';
 import { RepairPostWorkQuestionnaire2Tab } from './RepairPostWorkQuestionnaire2Tab';
 import { amountToRussianWords } from './amountToRussianWords';
@@ -108,6 +114,11 @@ import {
   repairPackageFormForTemplate,
 } from './repairPackageForm';
 import { computeRepairPackagePayableBreakdown } from './repairPackagePaymentTotals';
+import {
+  type RepairWorkOrderHubTabId,
+  defaultRepairWorkOrderHubTab,
+  isRepairWorkOrderHubTabHiddenFromPackageEditor,
+} from './repairWorkOrderHubTabs';
 
 /** Класс на `document.body` при печати сметы — см. `@media print` в ContractDocuments.module.css */
 const BODY_PRINT_ESTIMATE_CLASS = 'body-print-estimate-sheet';
@@ -130,18 +141,21 @@ function isWithinMsSinceIso(iso: string | null | undefined, windowMs: number): b
 const FILE_REPAIR_CONTRACT_TEMPLATE = REPAIR_DOCUMENT_TEMPLATES.contract;
 const TEMPLATE_TAB_IDS = REPAIR_DOCUMENT_TAB_IDS.filter(
   (id) =>
-    id !== 'data' && id !== 'payments' && id !== 'estimate' && id !== 'interactiveFinalEstimate'
-) as Exclude<RepairDocumentTabId, 'data' | 'payments' | 'estimate' | 'interactiveFinalEstimate'>[];
+    id !== 'data' &&
+    id !== 'payments' &&
+    id !== 'estimate' &&
+    !isRepairWorkOrderHubTabHiddenFromPackageEditor(id)
+) as Exclude<RepairDocumentTabId, 'data' | 'payments' | 'estimate' | RepairWorkOrderHubTabId>[];
 
 function normalizeTemplateTabId(
   value: string | undefined
-): Exclude<RepairDocumentTabId, 'data' | 'payments' | 'estimate' | 'interactiveFinalEstimate'> {
+): Exclude<RepairDocumentTabId, 'data' | 'payments' | 'estimate' | RepairWorkOrderHubTabId> {
   if (!value) return 'contract';
   const v = normalizeLegacyRepairTabId(value);
   return (TEMPLATE_TAB_IDS as string[]).includes(v)
     ? (v as Exclude<
         RepairDocumentTabId,
-        'data' | 'payments' | 'estimate' | 'interactiveFinalEstimate'
+        'data' | 'payments' | 'estimate' | RepairWorkOrderHubTabId
       >)
     : 'contract';
 }
@@ -538,6 +552,10 @@ function RepairDataPartySectionCollapseButton({
 
 interface RepairContractDocumentEditorPageProps {
   packageId: string;
+  /** Только модалка «Заказ-наряды» (вызов из списка договоров). */
+  workOrdersHubListSurface?: boolean;
+  onWorkOrdersHubListClose?: () => void;
+  onWorkOrdersHubListUpdated?: () => void;
 }
 
 /** Реквизиты исполнителя из справочника «Исполнители» (блок формы без карточки менеджера). */
@@ -657,20 +675,26 @@ function snapshotRepairContractObjectBlockFields(
 
 export function RepairContractDocumentEditorPage({
   packageId,
+  workOrdersHubListSurface = false,
+  onWorkOrdersHubListClose,
+  onWorkOrdersHubListUpdated,
 }: RepairContractDocumentEditorPageProps) {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [activeTab, setActiveTab] = useState<RepairDocumentTabId>('data');
   const [packageHubOpen, setPackageHubOpen] = useState(false);
+  const [workOrdersHubOpen, setWorkOrdersHubOpen] = useState(workOrdersHubListSurface);
+  const [workOrdersHubPanelTab, setWorkOrdersHubPanelTab] =
+    useState<RepairWorkOrderHubTabId>('workOrder');
   const [activeFinalWorkOrderDocId, setActiveFinalWorkOrderDocId] = useState<string>('common');
   const activeAddendumSlot = useMemo(() => {
     const m = /^addendum([1-5])$/.exec(activeTab);
     return m ? Number(m[1]) : null;
   }, [activeTab]);
 
-  const [repairTabOrder, setRepairTabOrder] = useState<RepairDocumentTabId[]>(() => [
-    ...REPAIR_DOCUMENT_TAB_IDS,
-  ]);
+  const [repairTabOrder, setRepairTabOrder] = useState<RepairDocumentTabId[]>(() =>
+    REPAIR_DOCUMENT_TAB_IDS.filter((id) => !isRepairWorkOrderHubTabHiddenFromPackageEditor(id))
+  );
   /** Пропускаем первую запись в LS до применения порядка из хранилища (избегаем перезаписи дефолтом). */
   const skipRepairTabOrderPersistRef = useRef(true);
   const suppressRepairTabClickAfterReorderRef = useRef(false);
@@ -879,7 +903,11 @@ export function RepairContractDocumentEditorPage({
       const raw = JSON.parse(
         window.localStorage.getItem(REPAIR_DOCUMENT_TAB_ORDER_STORAGE_KEY) ?? 'null'
       );
-      setRepairTabOrder(normalizeRepairDocumentTabOrder(raw));
+      setRepairTabOrder(
+        normalizeRepairDocumentTabOrder(raw).filter(
+          (id) => !isRepairWorkOrderHubTabHiddenFromPackageEditor(id)
+        )
+      );
     } catch {
       /* keep default */
     }
@@ -1208,6 +1236,12 @@ export function RepairContractDocumentEditorPage({
     if (activeTab === 'payments') setActiveTab('data');
   }, [activeTab]);
 
+  /** Заказ-наряды и инт. смета — только в модалке «Заказ-наряды». */
+  useEffect(() => {
+    if (!isRepairWorkOrderHubTabHiddenFromPackageEditor(activeTab)) return;
+    setActiveTab('estimate');
+  }, [activeTab]);
+
   useEffect(() => {
     if (isVersionsHistoryOpen && !loading) {
       void refreshPackageVersions({ skipSpinner: true });
@@ -1385,23 +1419,28 @@ export function RepairContractDocumentEditorPage({
     },
     [touchPackageData]
   );
+  const addRepairInstallerToContract = useCallback(
+    (installerId: string) => {
+      toggleRepairInstallerForContract(installerId, true);
+      setActiveRepairInstallerId(installerId);
+    },
+    [toggleRepairInstallerForContract]
+  );
+  const removeRepairInstallerFromContract = useCallback(
+    (installerId: string) => {
+      toggleRepairInstallerForContract(installerId, false);
+    },
+    [toggleRepairInstallerForContract]
+  );
   const activateOrToggleRepairInstaller = useCallback(
     (installerId: string) => {
       const isSelected = (form.selectedRepairInstallerIds ?? []).includes(installerId);
       if (!isSelected) {
-        toggleRepairInstallerForContract(installerId, true);
-        setActiveRepairInstallerId(installerId);
+        addRepairInstallerToContract(installerId);
         return;
       }
       if (activeRepairInstallerId === installerId) {
-        toggleRepairInstallerForContract(installerId, false);
-        if ((form.selectedRepairInstallerIds ?? []).length <= 1) {
-          setActiveRepairInstallerId('');
-        } else {
-          const fallback =
-            (form.selectedRepairInstallerIds ?? []).find((id) => id !== installerId) ?? '';
-          setActiveRepairInstallerId(fallback);
-        }
+        removeRepairInstallerFromContract(installerId);
         return;
       }
       setActiveRepairInstallerId(installerId);
@@ -1409,8 +1448,8 @@ export function RepairContractDocumentEditorPage({
     [
       activeRepairInstallerId,
       form.selectedRepairInstallerIds,
-      toggleRepairInstallerForContract,
-      setActiveRepairInstallerId,
+      addRepairInstallerToContract,
+      removeRepairInstallerFromContract,
     ]
   );
   const assignInstallerToFinalEstimateRow = useCallback(
@@ -2474,6 +2513,104 @@ export function RepairContractDocumentEditorPage({
     contractAndEstimateLocked,
   ]);
 
+  const getTemplatePreviewHtml = useCallback(
+    (tab: RepairDocumentTabId): string => {
+      if (
+        tab === 'interactiveFinalEstimate' ||
+        tab === 'finalWorkOrder' ||
+        tab === 'finalEstimate'
+      ) {
+        return '';
+      }
+      if (tab === 'questionnaire1') {
+        return buildManagerQuestionnaire1PrintHtml(
+          repairPackageFormForTemplate(formMergedForTemplate, {
+            templateTab: 'estimate',
+            estimatePresets,
+            estimateGroups,
+          })
+        );
+      }
+      if (tab === 'questionnaire2') {
+        return buildPostWorkQuestionnaire2PrintHtml(
+          repairPackageFormForTemplate(formMergedForTemplate, {
+            templateTab: 'estimate',
+            estimatePresets,
+            estimateGroups,
+          })
+        );
+      }
+      const templateTab = tab as RepairDocumentTemplateTabId;
+      const formForTpl = repairPackageFormForTemplate(formMergedForTemplate, {
+        templateTab,
+        estimatePresets,
+        estimateGroups,
+      });
+      const tpl = templateOverrides[templateTab] ?? resolveTemplateHtml(templateTab);
+      return applyTemplate(tpl, formForTpl, {
+        autoInsertContractSignatures: tab === 'contract',
+        plainCustomerPlaceholders: isRepairPlainCustomerTab(tab),
+      });
+    },
+    [formMergedForTemplate, estimatePresets, estimateGroups, templateOverrides, resolveTemplateHtml]
+  );
+
+  const workOrderHubContextValue = useMemo((): RepairContractWorkOrderHubContextValue => {
+    return {
+      form,
+      formMergedForTemplate,
+      updateWorkOrder,
+      getTemplatePreviewHtml,
+      repairInstallers,
+      selectedRepairInstallers,
+      selectedRepairInstallersById,
+      activeRepairInstallerId,
+      addRepairInstallerToContract,
+      removeRepairInstallerFromContract,
+      setActiveRepairInstallerId,
+      activateOrToggleRepairInstaller,
+      assignInstallerToFinalEstimateRow,
+      assignInstallerToFinalEstimateRows,
+      interactiveFinalEstimateSections,
+      unassignedInteractiveRowsCount,
+      activeFinalWorkOrderDocId,
+      setActiveFinalWorkOrderDocId,
+      finalWorkOrderComputed,
+      finalWorkOrderCategorySections,
+      perInstallerWorkOrders,
+      activeInstallerWorkOrder,
+      estimateAppendixContractRef,
+      formatMoneyValue,
+      formatMoneyRubShort,
+      formatInstallerNameShort,
+      formatInstallerGradeShort: (grade: string | null | undefined) =>
+        formatInstallerGradeShort(grade ?? ''),
+    };
+  }, [
+    form,
+    formMergedForTemplate,
+    updateWorkOrder,
+    getTemplatePreviewHtml,
+    repairInstallers,
+    selectedRepairInstallers,
+    selectedRepairInstallersById,
+    activeRepairInstallerId,
+    addRepairInstallerToContract,
+    removeRepairInstallerFromContract,
+    setActiveRepairInstallerId,
+    activateOrToggleRepairInstaller,
+    assignInstallerToFinalEstimateRow,
+    assignInstallerToFinalEstimateRows,
+    interactiveFinalEstimateSections,
+    unassignedInteractiveRowsCount,
+    activeFinalWorkOrderDocId,
+    finalWorkOrderComputed,
+    finalWorkOrderCategorySections,
+    perInstallerWorkOrders,
+    activeInstallerWorkOrder,
+    estimateAppendixContractRef,
+  ]);
+
   const persistContractTemplatePresets = async (items: ContractTemplatePreset[]) => {
     if (contractAndEstimateLocked) return;
     setTemplateSaving(true);
@@ -2960,6 +3097,30 @@ export function RepairContractDocumentEditorPage({
     [form, packageFlowStatus]
   );
 
+  const headerContractConcludedDateLabel =
+    packageFlowStatus === 'CONTRACT_CONCLUDED'
+      ? formatContractConcludedDateForHeader(form.contractConcludedAt)
+      : null;
+
+  const closeWorkOrdersHub = useCallback(() => {
+    if (workOrdersHubListSurface) {
+      onWorkOrdersHubListClose?.();
+      onWorkOrdersHubListUpdated?.();
+      return;
+    }
+    setWorkOrdersHubOpen(false);
+  }, [workOrdersHubListSurface, onWorkOrdersHubListClose, onWorkOrdersHubListUpdated]);
+
+  if (loading && workOrdersHubListSurface) {
+    return (
+      <Modal isOpen onClose={closeWorkOrdersHub} title="Заказ-наряды" size="lg">
+        <p className={styles.hint} style={{ margin: 0 }}>
+          Загрузка…
+        </p>
+      </Modal>
+    );
+  }
+
   if (loading) {
     return (
       <div className={styles.page}>
@@ -2968,18 +3129,42 @@ export function RepairContractDocumentEditorPage({
     );
   }
 
+  if (workOrdersHubListSurface) {
+    return (
+      <RepairContractWorkOrderHubProvider value={workOrderHubContextValue}>
+        {error ? (
+          <Modal isOpen onClose={closeWorkOrdersHub} title="Заказ-наряды" size="lg">
+            <p data-modal-form-error style={{ margin: 0 }}>
+              {error}
+            </p>
+          </Modal>
+        ) : (
+          <RepairContractWorkOrdersHubModal
+            isOpen={workOrdersHubOpen}
+            onClose={closeWorkOrdersHub}
+            panelTab={workOrdersHubPanelTab}
+            onPanelTabChange={setWorkOrdersHubPanelTab}
+            addendumSlotCount={form.addendumSlotCount}
+            unassignedInteractiveRowsCount={unassignedInteractiveRowsCount}
+            headerContractNumberLabel={headerContractNumberLabel}
+            headerContractDateLabel={headerContractConcludedDateLabel ?? undefined}
+          />
+        )}
+      </RepairContractWorkOrderHubProvider>
+    );
+  }
+
   const visibleRepairTabs = repairTabOrder.filter(
-    (id) => id !== 'payments' && isRepairAddendumTabVisible(id, form.addendumSlotCount)
+    (id) =>
+      id !== 'payments' &&
+      !isRepairWorkOrderHubTabHiddenFromPackageEditor(id) &&
+      isRepairAddendumTabVisible(id, form.addendumSlotCount)
   );
 
-  const summaryTabs: RepairDocumentTabId[] = [
-    'interactiveFinalEstimate',
-    'finalEstimate',
-    'finalWorkOrder',
-  ];
+  const packageSummaryTailTabs: RepairDocumentTabId[] = ['finalEstimate'];
   const orderedVisibleRepairTabs = [
-    ...visibleRepairTabs.filter((id) => !summaryTabs.includes(id)),
-    ...summaryTabs.filter((id) => visibleRepairTabs.includes(id)),
+    ...visibleRepairTabs.filter((id) => !packageSummaryTailTabs.includes(id)),
+    ...packageSummaryTailTabs.filter((id) => visibleRepairTabs.includes(id)),
   ];
 
   type ToolButton = {
@@ -3031,132 +3216,115 @@ export function RepairContractDocumentEditorPage({
     return tool.label.toLowerCase().includes(q);
   });
 
-  const headerContractConcludedDateLabel =
-    packageFlowStatus === 'CONTRACT_CONCLUDED'
-      ? formatContractConcludedDateForHeader(form.contractConcludedAt)
-      : null;
-
   return (
-    <div className={`${styles.page} ${styles.pageWide} ${styles.repairContractEditorPage}`}>
-      <div className={`${styles.editorHeader} ${styles.blockHeader}`}>
-        <div className={styles.repairEditorHeaderLeft}>
-          <Link className={styles.backLink} href={ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_HREF}>
-            ← К списку договоров (Ремонт)
-          </Link>
-          <div className={styles.editorHeaderTitleRow}>
-            <h1
-              className={styles.title}
-              aria-label={
-                headerContractConcludedDateLabel
-                  ? `Договор ${headerContractNumberLabel} от ${headerContractConcludedDateLabel}`
-                  : 'Пакет документов'
-              }
-            >
-              {headerContractNumberLabel}
-              {headerContractConcludedDateLabel ? (
-                <span
-                  className={styles.repairHeaderContractSignedDate}
-                  title="Дата присвоения статуса «Договор подписан»"
-                >
-                  {` от ${headerContractConcludedDateLabel}`}
-                </span>
-              ) : null}
-            </h1>
-          </div>
-        </div>
-        <div className={styles.headerActions}>
-          <div className={styles.repairEditorDraftTitleRow}>
-            {!loading ? (
-              <button
-                type="button"
-                className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn} ${styles.repairEditorHubPrimaryBtn}`}
-                onClick={() => setPackageHubOpen(true)}
-                title={
-                  unsignedAddendumOrdinals.length > 0
-                    ? `${REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE}. Неподписанные Д/с: №${unsignedAddendumOrdinals.join(', №')}`
-                    : REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE
+    <RepairContractWorkOrderHubProvider value={workOrderHubContextValue}>
+      <div className={`${styles.page} ${styles.pageWide} ${styles.repairContractEditorPage}`}>
+        <div className={`${styles.editorHeader} ${styles.blockHeader}`}>
+          <div className={styles.repairEditorHeaderLeft}>
+            <Link className={styles.backLink} href={ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_HREF}>
+              ← К списку договоров (Ремонт)
+            </Link>
+            <div className={styles.editorHeaderTitleRow}>
+              <h1
+                className={styles.title}
+                aria-label={
+                  headerContractConcludedDateLabel
+                    ? `Договор ${headerContractNumberLabel} от ${headerContractConcludedDateLabel}`
+                    : 'Пакет документов'
                 }
-                aria-label={REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE}
               >
-                <RepairContractPackageHubIcon />
-                <span className={styles.repairEditorHubBtnLabel}>Оплаты и этапы</span>
-                {unsignedAddendumOrdinals.length > 0 ? (
+                {headerContractNumberLabel}
+                {headerContractConcludedDateLabel ? (
                   <span
-                    className={styles.repairEditorHubPendingBadge}
-                    title={`Неподписанные Д/с: ${unsignedAddendumOrdinals.map((n) => `№${n}`).join(', ')}`}
+                    className={styles.repairHeaderContractSignedDate}
+                    title="Дата присвоения статуса «Договор подписан»"
                   >
-                    {unsignedAddendumOrdinals.length}
+                    {` от ${headerContractConcludedDateLabel}`}
                   </span>
                 ) : null}
-              </button>
-            ) : null}
-            {!loading ? (
+              </h1>
+            </div>
+          </div>
+          <div className={styles.headerActions}>
+            <div className={styles.repairEditorDraftTitleRow}>
+              {!loading ? (
+                <button
+                  type="button"
+                  className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn} ${styles.repairEditorHubPrimaryBtn}`}
+                  onClick={() => setPackageHubOpen(true)}
+                  title={
+                    unsignedAddendumOrdinals.length > 0
+                      ? `${REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE}. Неподписанные Д/с: №${unsignedAddendumOrdinals.join(', №')}`
+                      : REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE
+                  }
+                  aria-label={REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE}
+                >
+                  <RepairContractPackageHubIcon />
+                  <span className={styles.repairEditorHubBtnLabel}>Оплаты и этапы</span>
+                  {unsignedAddendumOrdinals.length > 0 ? (
+                    <span
+                      className={styles.repairEditorHubPendingBadge}
+                      title={`Неподписанные Д/с: ${unsignedAddendumOrdinals.map((n) => `№${n}`).join(', ')}`}
+                    >
+                      {unsignedAddendumOrdinals.length}
+                    </span>
+                  ) : null}
+                </button>
+              ) : null}
+              {!loading ? (
+                <button
+                  type="button"
+                  className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn} ${styles.repairEditorHubPrimaryBtn}`}
+                  onClick={() => {
+                    setWorkOrdersHubPanelTab(
+                      defaultRepairWorkOrderHubTab(null, form.addendumSlotCount)
+                    );
+                    setWorkOrdersHubOpen(true);
+                  }}
+                  title="Заказ-наряды, интерактивная итоговая смета и итоговый заказ-наряд"
+                  aria-label="Заказ-наряды и итоговые сметы"
+                >
+                  <RepairContractWorkOrdersHubIcon />
+                  <span className={styles.repairEditorHubBtnLabel}>Заказ-наряды</span>
+                  {unassignedInteractiveRowsCount > 0 ? (
+                    <span
+                      className={styles.repairEditorHubPendingBadge}
+                      title="Неприкреплённые позиции в интерактивной итоговой смете"
+                    >
+                      {unassignedInteractiveRowsCount}
+                    </span>
+                  ) : null}
+                </button>
+              ) : null}
+              {!loading ? (
+                <button
+                  type="button"
+                  className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn}`}
+                  onClick={() => setIsVersionsHistoryOpen(true)}
+                  title="Журнал событий пакета"
+                  aria-label="Открыть журнал событий пакета"
+                >
+                  <VersionsHistoryIcon />
+                </button>
+              ) : null}
               <button
                 type="button"
                 className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn}`}
-                onClick={() => setIsVersionsHistoryOpen(true)}
-                title="Журнал событий пакета"
-                aria-label="Открыть журнал событий пакета"
-              >
-                <VersionsHistoryIcon />
-              </button>
-            ) : null}
-            <button
-              type="button"
-              className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn}`}
-              disabled={packageRefreshing || (activeTab === 'data' && dirty)}
-              aria-busy={packageRefreshing}
-              aria-label={
-                packageRefreshing
-                  ? 'Обновление данных'
-                  : activeTab === 'data' && dirty
+                disabled={packageRefreshing || (activeTab === 'data' && dirty)}
+                aria-busy={packageRefreshing}
+                aria-label={
+                  packageRefreshing
+                    ? 'Обновление данных'
+                    : activeTab === 'data' && dirty
+                      ? 'Сначала сохраните изменения на вкладке «Данные»'
+                      : 'Обновить данные с сервера'
+                }
+                title={
+                  activeTab === 'data' && dirty
                     ? 'Сначала сохраните изменения на вкладке «Данные»'
                     : 'Обновить данные с сервера'
-              }
-              title={
-                activeTab === 'data' && dirty
-                  ? 'Сначала сохраните изменения на вкладке «Данные»'
-                  : 'Обновить данные с сервера'
-              }
-              onClick={() => void load({ mode: 'refresh' })}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width={18}
-                height={18}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={packageRefreshing ? styles.estimatesRefreshIconSpinning : undefined}
-                aria-hidden
-              >
-                <path d="M23 4v6h-6" />
-                <path d="M1 20v-6h6" />
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-              </svg>
-            </button>
-            {activeTab !== 'data' ? (
-              <button
-                type="button"
-                className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn}`}
-                onClick={handlePrint}
-                title={
-                  activeTab === 'finalWorkOrder'
-                    ? 'Печать документа'
-                    : activeTab === 'finalEstimate'
-                      ? 'Печать итоговой сметы'
-                      : 'Печать'
                 }
-                aria-label={
-                  activeTab === 'finalWorkOrder'
-                    ? 'Печать документа'
-                    : activeTab === 'finalEstimate'
-                      ? 'Печать итоговой сметы'
-                      : 'Печать'
-                }
+                onClick={() => void load({ mode: 'refresh' })}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -3168,476 +3336,585 @@ export function RepairContractDocumentEditorPage({
                   strokeWidth={2}
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  className={packageRefreshing ? styles.estimatesRefreshIconSpinning : undefined}
                   aria-hidden
                 >
-                  <polyline points="6 9 6 2 18 2 18 9" />
-                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-                  <rect width="12" height="8" x="6" y="14" rx="1" />
+                  <path d="M23 4v6h-6" />
+                  <path d="M1 20v-6h6" />
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
                 </svg>
               </button>
-            ) : null}
+              {activeTab !== 'data' ? (
+                <button
+                  type="button"
+                  className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn}`}
+                  onClick={handlePrint}
+                  title={
+                    activeTab === 'finalWorkOrder'
+                      ? 'Печать документа'
+                      : activeTab === 'finalEstimate'
+                        ? 'Печать итоговой сметы'
+                        : 'Печать'
+                  }
+                  aria-label={
+                    activeTab === 'finalWorkOrder'
+                      ? 'Печать документа'
+                      : activeTab === 'finalEstimate'
+                        ? 'Печать итоговой сметы'
+                        : 'Печать'
+                  }
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={18}
+                    height={18}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <polyline points="6 9 6 2 18 2 18 9" />
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                    <rect width="12" height="8" x="6" y="14" rx="1" />
+                  </svg>
+                </button>
+              ) : null}
+            </div>
           </div>
         </div>
-      </div>
-      {packageFlowStatus === 'REFUSED' ? (
-        <div className={styles.repairPackageRefusedBanner} role="status">
-          <strong>Отказ по проекту договора.</strong>{' '}
-          {form.contractRefusalReason.trim() ? (
-            <span>{form.contractRefusalReason.trim()}</span>
-          ) : (
-            <span className={styles.hint}>Причина не указана.</span>
-          )}
-          <p
-            className={styles.hint}
-            style={{ marginTop: 'var(--admin-space-sm)', marginBottom: 0 }}
-          >
-            Если клиент передумал, откройте «Оплаты и Управление договором» и нажмите «Снять отказ»
-            — пакет снова станет «в проекте», данные можно будет редактировать.
-          </p>
-        </div>
-      ) : null}
-      {error ? <p className={styles.error}>{error}</p> : null}
-      {excelMessage ? <p className={styles.hint}>{excelMessage}</p> : null}
-      {isVersionsHistoryOpen ? (
-        <div
-          className={`${styles.saveModalBackdrop} ${styles.packageVersionsModalBackdrop}`}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="package-events-journal-title"
-          onClick={() => setIsVersionsHistoryOpen(false)}
-        >
-          <div
-            className={styles.packageVersionsModalCard}
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            <h3 className={styles.packageVersionsTitle} id="package-events-journal-title">
-              Журнал событий
-            </h3>
-            <p className={styles.packageVersionsHint}>
-              В журнал попадают события, для которых на сервере создан снимок метаданных пакета:
-              время, пользователь (если известен) и краткое описание изменений относительно
-              предыдущей записи. В том числе при отложенном автосохранении после правок на вкладке
-              «Данные».
+        {packageFlowStatus === 'REFUSED' ? (
+          <div className={styles.repairPackageRefusedBanner} role="status">
+            <strong>Отказ по проекту договора.</strong>{' '}
+            {form.contractRefusalReason.trim() ? (
+              <span>{form.contractRefusalReason.trim()}</span>
+            ) : (
+              <span className={styles.hint}>Причина не указана.</span>
+            )}
+            <p
+              className={styles.hint}
+              style={{ marginTop: 'var(--admin-space-sm)', marginBottom: 0 }}
+            >
+              Если клиент передумал, откройте «Оплаты и Управление договором» и нажмите «Снять
+              отказ» — пакет снова станет «в проекте», данные можно будет редактировать.
             </p>
-            <div>
-              <button
-                type="button"
-                className={styles.secondaryBtn}
-                disabled={versionsBusy}
-                onClick={() => void refreshPackageVersions()}
-              >
-                {versionsBusy ? 'Загрузка…' : 'Обновить список'}
-              </button>
-            </div>
-            {packageVersions.length === 0 && !versionsBusy ? (
-              <p className={styles.hint}>Пока нет записей в журнале.</p>
-            ) : null}
-            {packageVersions.length > 0 ? (
-              <div className={styles.tableWrap}>
-                <table className={styles.packageVersionsTable}>
-                  <thead>
-                    <tr>
-                      <th>Когда</th>
-                      <th>Кто</th>
-                      <th>Что сделано</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {packageVersions.map((v) => (
-                      <tr key={v.id}>
-                        <td>{formatPackageVersionDate(v.createdAt)}</td>
-                        <td>{formatPackageVersionActor(v)}</td>
-                        <td>{formatPackageVersionKeyMoments(v.keyMoments)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          </div>
+        ) : null}
+        {error ? <p className={styles.error}>{error}</p> : null}
+        {excelMessage ? <p className={styles.hint}>{excelMessage}</p> : null}
+        {isVersionsHistoryOpen ? (
+          <div
+            className={`${styles.saveModalBackdrop} ${styles.packageVersionsModalBackdrop}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="package-events-journal-title"
+            onClick={() => setIsVersionsHistoryOpen(false)}
+          >
+            <div
+              className={styles.packageVersionsModalCard}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              <h3 className={styles.packageVersionsTitle} id="package-events-journal-title">
+                Журнал событий
+              </h3>
+              <p className={styles.packageVersionsHint}>
+                В журнал попадают события, для которых на сервере создан снимок метаданных пакета:
+                время, пользователь (если известен) и краткое описание изменений относительно
+                предыдущей записи. В том числе при отложенном автосохранении после правок на вкладке
+                «Данные».
+              </p>
+              <div>
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  disabled={versionsBusy}
+                  onClick={() => void refreshPackageVersions()}
+                >
+                  {versionsBusy ? 'Загрузка…' : 'Обновить список'}
+                </button>
               </div>
-            ) : null}
-            <div className={styles.saveModalActionsRow}>
-              <button
-                type="button"
-                className={styles.primaryBtn}
-                onClick={() => setIsVersionsHistoryOpen(false)}
-              >
-                Закрыть
-              </button>
+              {packageVersions.length === 0 && !versionsBusy ? (
+                <p className={styles.hint}>Пока нет записей в журнале.</p>
+              ) : null}
+              {packageVersions.length > 0 ? (
+                <div className={styles.tableWrap}>
+                  <table className={styles.packageVersionsTable}>
+                    <thead>
+                      <tr>
+                        <th>Когда</th>
+                        <th>Кто</th>
+                        <th>Что сделано</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {packageVersions.map((v) => (
+                        <tr key={v.id}>
+                          <td>{formatPackageVersionDate(v.createdAt)}</td>
+                          <td>{formatPackageVersionActor(v)}</td>
+                          <td>{formatPackageVersionKeyMoments(v.keyMoments)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+              <div className={styles.saveModalActionsRow}>
+                <button
+                  type="button"
+                  className={styles.primaryBtn}
+                  onClick={() => setIsVersionsHistoryOpen(false)}
+                >
+                  Закрыть
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      ) : null}
-      <div className={styles.repairPackageTabBarRow}>
-        <div
-          className={`${styles.tabBar} ${styles.blockTabs} ${styles.repairPackageTabBarCompact}`}
-          role="tablist"
-          aria-label="Разделы пакета. Перетащите вкладку, чтобы изменить порядок."
-        >
-          {orderedVisibleRepairTabs.map((id) => {
-            const addendumTabMatch = /^addendum(\d)$/.exec(id);
-            const addendumTabOrdinal = addendumTabMatch ? Number(addendumTabMatch[1]) : null;
-            const isUnsignedAddendumTab =
-              addendumTabOrdinal != null && unsignedAddendumOrdinals.includes(addendumTabOrdinal);
+        ) : null}
+        <div className={styles.repairPackageTabBarRow}>
+          <div
+            className={`${styles.tabBar} ${styles.blockTabs} ${styles.repairPackageTabBarCompact}`}
+            role="tablist"
+            aria-label="Разделы пакета. Перетащите вкладку, чтобы изменить порядок."
+          >
+            {orderedVisibleRepairTabs.map((id) => {
+              const addendumTabMatch = /^addendum(\d)$/.exec(id);
+              const addendumTabOrdinal = addendumTabMatch ? Number(addendumTabMatch[1]) : null;
+              const isUnsignedAddendumTab =
+                addendumTabOrdinal != null && unsignedAddendumOrdinals.includes(addendumTabOrdinal);
 
-            return (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                draggable
-                aria-selected={activeTab === id}
-                title={
-                  isUnsignedAddendumTab
-                    ? `Д/с №${addendumTabOrdinal}: отметьте подписание во вкладке или в «Оплаты и Управление договором»`
-                    : contractAndEstimateLocked && (id === 'contract' || id === 'estimate')
-                      ? `${REPAIR_DOCUMENT_TAB_LABELS[id]} — только просмотр (договор подписан)`
-                      : `${REPAIR_DOCUMENT_TAB_LABELS[id]} — перетащите для смены порядка`
-                }
-                className={`${styles.tab} ${activeTab === id ? styles.tabActive : ''} ${
-                  isUnsignedAddendumTab ? styles.repairTabAddendumUnsigned : ''
-                } ${
-                  id === 'interactiveFinalEstimate' ||
-                  id === 'finalEstimate' ||
-                  id === 'finalWorkOrder'
-                    ? styles.summaryTab
-                    : ''
-                } ${id === 'interactiveFinalEstimate' ? styles.summaryTabFirst : ''} ${
-                  id === 'finalWorkOrder' ? styles.summaryTabLast : ''
-                }`}
-                onClick={() => handleRepairTabActivate(id)}
-                onDragStart={(e) => handleRepairTabDragStart(id, e)}
-                onDragOver={handleRepairTabDragOver}
-                onDrop={handleRepairTabDrop(id)}
-              >
-                <span className={styles.repairTabLabelInner}>
-                  {contractAndEstimateLocked && (id === 'contract' || id === 'estimate') ? (
-                    <RepairTabLockIcon />
-                  ) : null}
-                  <span>{REPAIR_DOCUMENT_TAB_LABELS_SHORT[id]}</span>
-                  {isUnsignedAddendumTab ? (
-                    <span
-                      className={styles.repairTabAddendumSignBadge}
-                      title="Доп. соглашение не отмечено как подписанное"
-                    >
-                      Подписать
-                    </span>
-                  ) : null}
-                  {id === 'interactiveFinalEstimate' ? (
-                    <span
-                      className={`${styles.repairTabUnassignedBadge} ${
-                        unassignedInteractiveRowsCount === 0
-                          ? styles.repairTabUnassignedBadgeDone
-                          : styles.repairTabUnassignedBadgePending
-                      }`}
-                      title="Количество неприкреплённых позиций"
-                    >
-                      {unassignedInteractiveRowsCount}
-                    </span>
-                  ) : null}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        {form.addendumSlotCount < 5 ? (
-          <button
-            type="button"
-            className={`${styles.secondaryBtn} ${styles.repairAddAddendumTabBtn}`}
-            title={
-              contractAndEstimateLocked &&
-              form.addendumSlots[form.addendumSlotCount - 1]?.status !== 'SIGNED'
-                ? 'Сначала отметьте текущее Д/с как подписанное'
-                : 'Показать ещё одну вкладку дополнительного соглашения (до пяти)'
-            }
-            disabled={
-              contractAndEstimateLocked &&
-              form.addendumSlots[form.addendumSlotCount - 1]?.status !== 'SIGNED'
-            }
-            onClick={() => {
-              if (
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  draggable
+                  aria-selected={activeTab === id}
+                  title={
+                    isUnsignedAddendumTab
+                      ? `Д/с №${addendumTabOrdinal}: отметьте подписание во вкладке или в «Оплаты и Управление договором»`
+                      : contractAndEstimateLocked && (id === 'contract' || id === 'estimate')
+                        ? `${REPAIR_DOCUMENT_TAB_LABELS[id]} — только просмотр (договор подписан)`
+                        : `${REPAIR_DOCUMENT_TAB_LABELS[id]} — перетащите для смены порядка`
+                  }
+                  className={`${styles.tab} ${activeTab === id ? styles.tabActive : ''} ${
+                    isUnsignedAddendumTab ? styles.repairTabAddendumUnsigned : ''
+                  } ${id === 'finalEstimate' ? styles.summaryTab : ''} ${
+                    id === 'finalEstimate' ? styles.summaryTabLast : ''
+                  }`}
+                  onClick={() => handleRepairTabActivate(id)}
+                  onDragStart={(e) => handleRepairTabDragStart(id, e)}
+                  onDragOver={handleRepairTabDragOver}
+                  onDrop={handleRepairTabDrop(id)}
+                >
+                  <span className={styles.repairTabLabelInner}>
+                    {contractAndEstimateLocked && (id === 'contract' || id === 'estimate') ? (
+                      <RepairTabLockIcon />
+                    ) : null}
+                    <span>{REPAIR_DOCUMENT_TAB_LABELS_SHORT[id]}</span>
+                    {isUnsignedAddendumTab ? (
+                      <span
+                        className={styles.repairTabAddendumSignBadge}
+                        title="Доп. соглашение не отмечено как подписанное"
+                      >
+                        Подписать
+                      </span>
+                    ) : null}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {form.addendumSlotCount < 5 ? (
+            <button
+              type="button"
+              className={`${styles.secondaryBtn} ${styles.repairAddAddendumTabBtn}`}
+              title={
                 contractAndEstimateLocked &&
                 form.addendumSlots[form.addendumSlotCount - 1]?.status !== 'SIGNED'
-              ) {
-                return;
+                  ? 'Сначала отметьте текущее Д/с как подписанное'
+                  : 'Показать ещё одну вкладку дополнительного соглашения (до пяти)'
               }
-              const next = form.addendumSlotCount + 1;
-              setForm((f) => ({ ...f, addendumSlotCount: next }));
-              touchPackageData();
-              setActiveTab(`addendum${next}` as RepairDocumentTabId);
-            }}
-          >
-            + Д/с №{form.addendumSlotCount + 1}
-          </button>
-        ) : null}
-        {form.addendumSlotCount > 1 ? (
-          <button
-            type="button"
-            className={`${styles.secondaryBtn} ${styles.repairAddAddendumTabBtn}`}
-            title={
-              isAddendumSlotEmpty(
-                form.addendumSlots[form.addendumSlotCount - 1],
-                form.addendumDocumentDates[form.addendumSlotCount - 1]
-              )
-                ? `Удалить пустое Д/с №${form.addendumSlotCount}`
-                : `Можно удалить только пустое Д/с №${form.addendumSlotCount}`
-            }
-            disabled={
-              !isAddendumSlotEmpty(
-                form.addendumSlots[form.addendumSlotCount - 1],
-                form.addendumDocumentDates[form.addendumSlotCount - 1]
-              )
-            }
-            onClick={() => {
-              const lastIdx = form.addendumSlotCount - 1;
-              if (
-                !isAddendumSlotEmpty(
-                  form.addendumSlots[lastIdx],
-                  form.addendumDocumentDates[lastIdx]
+              disabled={
+                contractAndEstimateLocked &&
+                form.addendumSlots[form.addendumSlotCount - 1]?.status !== 'SIGNED'
+              }
+              onClick={() => {
+                if (
+                  contractAndEstimateLocked &&
+                  form.addendumSlots[form.addendumSlotCount - 1]?.status !== 'SIGNED'
+                ) {
+                  return;
+                }
+                const next = form.addendumSlotCount + 1;
+                setForm((f) => ({ ...f, addendumSlotCount: next }));
+                touchPackageData();
+                setActiveTab(`addendum${next}` as RepairDocumentTabId);
+              }}
+            >
+              + Д/с №{form.addendumSlotCount + 1}
+            </button>
+          ) : null}
+          {form.addendumSlotCount > 1 ? (
+            <button
+              type="button"
+              className={`${styles.secondaryBtn} ${styles.repairAddAddendumTabBtn}`}
+              title={
+                isAddendumSlotEmpty(
+                  form.addendumSlots[form.addendumSlotCount - 1],
+                  form.addendumDocumentDates[form.addendumSlotCount - 1]
                 )
-              ) {
-                return;
+                  ? `Удалить пустое Д/с №${form.addendumSlotCount}`
+                  : `Можно удалить только пустое Д/с №${form.addendumSlotCount}`
               }
-              const nextCount = form.addendumSlotCount - 1;
-              setForm((f) => {
-                const nextDates = [
-                  ...f.addendumDocumentDates,
-                ] as RepairPackageFormData['addendumDocumentDates'];
-                nextDates[lastIdx] = '';
-                const nextSlots = [...f.addendumSlots] as RepairPackageFormData['addendumSlots'];
-                nextSlots[lastIdx] = {
-                  status: 'OPEN',
-                  signedAt: '',
-                  paidAt: '',
-                  selectedPresetIds: [],
-                  snapshot: null,
-                  excludedSelectedPresetIds: [],
-                  excludedSnapshot: null,
-                  notes: '',
-                  excludedNotes: '',
-                };
-                return {
-                  ...f,
-                  addendumSlotCount: nextCount,
-                  addendumDocumentDates: nextDates,
-                  addendumSlots: nextSlots,
-                };
-              });
-              touchPackageData();
-              const removedTabs = new Set<string>([
-                `addendum${form.addendumSlotCount}`,
-                `workOrderAddendum${form.addendumSlotCount}`,
-              ]);
-              if (removedTabs.has(activeTab)) {
-                setActiveTab(`addendum${nextCount}` as RepairDocumentTabId);
+              disabled={
+                !isAddendumSlotEmpty(
+                  form.addendumSlots[form.addendumSlotCount - 1],
+                  form.addendumDocumentDates[form.addendumSlotCount - 1]
+                )
               }
-            }}
-          >
-            − Д/с №{form.addendumSlotCount}
-          </button>
-        ) : null}
-      </div>
+              onClick={() => {
+                const lastIdx = form.addendumSlotCount - 1;
+                if (
+                  !isAddendumSlotEmpty(
+                    form.addendumSlots[lastIdx],
+                    form.addendumDocumentDates[lastIdx]
+                  )
+                ) {
+                  return;
+                }
+                const nextCount = form.addendumSlotCount - 1;
+                setForm((f) => {
+                  const nextDates = [
+                    ...f.addendumDocumentDates,
+                  ] as RepairPackageFormData['addendumDocumentDates'];
+                  nextDates[lastIdx] = '';
+                  const nextSlots = [...f.addendumSlots] as RepairPackageFormData['addendumSlots'];
+                  nextSlots[lastIdx] = {
+                    status: 'OPEN',
+                    signedAt: '',
+                    paidAt: '',
+                    selectedPresetIds: [],
+                    snapshot: null,
+                    excludedSelectedPresetIds: [],
+                    excludedSnapshot: null,
+                    notes: '',
+                    excludedNotes: '',
+                  };
+                  return {
+                    ...f,
+                    addendumSlotCount: nextCount,
+                    addendumDocumentDates: nextDates,
+                    addendumSlots: nextSlots,
+                  };
+                });
+                touchPackageData();
+                const removedTabs = new Set<string>([
+                  `addendum${form.addendumSlotCount}`,
+                  `workOrderAddendum${form.addendumSlotCount}`,
+                ]);
+                if (removedTabs.has(activeTab)) {
+                  setActiveTab(`addendum${nextCount}` as RepairDocumentTabId);
+                }
+              }}
+            >
+              − Д/с №{form.addendumSlotCount}
+            </button>
+          ) : null}
+        </div>
 
-      {activeTab === 'data' ? (
-        <div
-          className={`${styles.blockData} ${styles.dataCompact} ${styles.repairContractDataTabDense}`}
-        >
-          <div className={styles.formGrid}>
-            <div className={styles.dataTopRow}>
-              <div className={styles.dataTopBlock}>
-                <div className={`${styles.sectionCard} ${styles.repairDataBlankSheet}`}>
-                  <div className={styles.repairDataPartySectionTitleRow}>
-                    <h3 className={styles.sectionTitle}>Договор и объект</h3>
-                    {contractAndEstimateLocked ? (
-                      <RepairDataSectionLockInline title="Договор подписан: блок «Договор и объект» только для просмотра" />
-                    ) : null}
-                  </div>
-                  <div className={styles.contractCompactBlock}>
-                    <div className={`${styles.contractInlineRow} ${styles.contractHeaderMetaRow}`}>
-                      <div className={`${styles.field} ${styles.contractInlineField}`}>
-                        <label htmlFor="cn">Номер дог.</label>
-                        <input
-                          id="cn"
-                          value={form.contract.number}
-                          onChange={(e) => updateContract('number', e.target.value)}
-                          autoComplete="off"
-                          disabled={contractAndEstimateLocked}
-                          className={contractObjectBlockFieldClassName('contract.number')}
-                        />
-                      </div>
-                      <div className={`${styles.field} ${styles.contractInlineField}`}>
-                        <label htmlFor="cd">Дата закл.</label>
-                        <input
-                          id="cd"
-                          value={form.contract.date}
-                          onChange={(e) => updateContract('date', e.target.value)}
-                          placeholder="дд.мм.гггг"
-                          autoComplete="off"
-                          disabled={contractAndEstimateLocked}
-                          className={contractObjectBlockFieldClassName('contract.date')}
-                        />
-                      </div>
-                      <div className={`${styles.field} ${styles.contractInlineField}`}>
-                        <label htmlFor="wp">Срок дог.</label>
-                        <input
-                          id="wp"
-                          inputMode="numeric"
-                          value={form.contract.workPeriod}
-                          onChange={(e) => updateContract('workPeriod', e.target.value)}
-                          placeholder="60"
-                          title={
-                            isSuperAdmin
-                              ? 'Календарных дней; в шаблоне: {{contract.workPeriod}}'
-                              : 'Срок задаётся в настройках «Ремонт»; изменить может только суперадмин'
-                          }
-                          autoComplete="off"
-                          readOnly={!isSuperAdmin}
-                          disabled={contractAndEstimateLocked || !isSuperAdmin}
-                          className={contractObjectBlockFieldClassName('contract.workPeriod')}
-                        />
+        {activeTab === 'data' ? (
+          <div
+            className={`${styles.blockData} ${styles.dataCompact} ${styles.repairContractDataTabDense}`}
+          >
+            <div className={styles.formGrid}>
+              <div className={styles.dataTopRow}>
+                <div className={styles.dataTopBlock}>
+                  <div className={`${styles.sectionCard} ${styles.repairDataBlankSheet}`}>
+                    <div className={styles.repairDataPartySectionTitleRow}>
+                      <h3 className={styles.sectionTitle}>Договор и объект</h3>
+                      {contractAndEstimateLocked ? (
+                        <RepairDataSectionLockInline title="Договор подписан: блок «Договор и объект» только для просмотра" />
+                      ) : null}
+                    </div>
+                    <div className={styles.contractCompactBlock}>
+                      <div
+                        className={`${styles.contractInlineRow} ${styles.contractHeaderMetaRow}`}
+                      >
+                        <div className={`${styles.field} ${styles.contractInlineField}`}>
+                          <label htmlFor="cn">Номер дог.</label>
+                          <input
+                            id="cn"
+                            value={form.contract.number}
+                            onChange={(e) => updateContract('number', e.target.value)}
+                            autoComplete="off"
+                            disabled={contractAndEstimateLocked}
+                            className={contractObjectBlockFieldClassName('contract.number')}
+                          />
+                        </div>
+                        <div className={`${styles.field} ${styles.contractInlineField}`}>
+                          <label htmlFor="cd">Дата закл.</label>
+                          <input
+                            id="cd"
+                            value={form.contract.date}
+                            onChange={(e) => updateContract('date', e.target.value)}
+                            placeholder="дд.мм.гггг"
+                            autoComplete="off"
+                            disabled={contractAndEstimateLocked}
+                            className={contractObjectBlockFieldClassName('contract.date')}
+                          />
+                        </div>
+                        <div className={`${styles.field} ${styles.contractInlineField}`}>
+                          <label htmlFor="wp">Срок дог.</label>
+                          <input
+                            id="wp"
+                            inputMode="numeric"
+                            value={form.contract.workPeriod}
+                            onChange={(e) => updateContract('workPeriod', e.target.value)}
+                            placeholder="60"
+                            title={
+                              isSuperAdmin
+                                ? 'Календарных дней; в шаблоне: {{contract.workPeriod}}'
+                                : 'Срок задаётся в настройках «Ремонт»; изменить может только суперадмин'
+                            }
+                            autoComplete="off"
+                            readOnly={!isSuperAdmin}
+                            disabled={contractAndEstimateLocked || !isSuperAdmin}
+                            className={contractObjectBlockFieldClassName('contract.workPeriod')}
+                          />
+                        </div>
+                        <div
+                          className={`${styles.field} ${styles.contractInlineField} ${styles.contractDiscountFieldCell}`}
+                        >
+                          <label htmlFor="contract_discount_pct">Скидка (%)</label>
+                          <input
+                            id="contract_discount_pct"
+                            inputMode="decimal"
+                            value={form.contract.discountPercent}
+                            onChange={(e) => updateContract('discountPercent', e.target.value)}
+                            placeholder="0"
+                            title={
+                              contractAndEstimateLocked
+                                ? 'После статуса «Договор подписан» общие данные договора изменить нельзя'
+                                : 'Применяется к смете, доп. соглашениям, заказ-наряду и вкладке «Оплаты»'
+                            }
+                            autoComplete="off"
+                            disabled={contractAndEstimateLocked}
+                            className={contractObjectBlockFieldClassName(
+                              'contract.discountPercent'
+                            )}
+                          />
+                        </div>
                       </div>
                       <div
-                        className={`${styles.field} ${styles.contractInlineField} ${styles.contractDiscountFieldCell}`}
+                        className={`${styles.contractInlineRow} ${styles.contractObjectAddressRow}`}
                       >
-                        <label htmlFor="contract_discount_pct">Скидка (%)</label>
-                        <input
-                          id="contract_discount_pct"
-                          inputMode="decimal"
-                          value={form.contract.discountPercent}
-                          onChange={(e) => updateContract('discountPercent', e.target.value)}
-                          placeholder="0"
-                          title={
-                            contractAndEstimateLocked
-                              ? 'После статуса «Договор подписан» общие данные договора изменить нельзя'
-                              : 'Применяется к смете, доп. соглашениям, заказ-наряду и вкладке «Оплаты»'
-                          }
-                          autoComplete="off"
-                          disabled={contractAndEstimateLocked}
-                          className={contractObjectBlockFieldClassName('contract.discountPercent')}
-                        />
+                        <div className={`${styles.field} ${styles.contractInlineField}`}>
+                          <label htmlFor="o_addr">Адрес объекта</label>
+                          <input
+                            id="o_addr"
+                            value={form.object.objectAddress}
+                            onChange={(e) => updateObject('objectAddress', e.target.value)}
+                            autoComplete="off"
+                            disabled={contractAndEstimateLocked}
+                            className={contractObjectBlockFieldClassName('object.objectAddress')}
+                          />
+                        </div>
+                        <div className={`${styles.field} ${styles.contractInlineField}`}>
+                          <label htmlFor="o_floor">Этаж</label>
+                          <input
+                            id="o_floor"
+                            value={form.object.objectFloor}
+                            onChange={(e) => updateObject('objectFloor', e.target.value)}
+                            autoComplete="off"
+                            disabled={contractAndEstimateLocked}
+                            className={contractObjectBlockFieldClassName('object.objectFloor')}
+                          />
+                        </div>
                       </div>
-                    </div>
-                    <div
-                      className={`${styles.contractInlineRow} ${styles.contractObjectAddressRow}`}
-                    >
-                      <div className={`${styles.field} ${styles.contractInlineField}`}>
-                        <label htmlFor="o_addr">Адрес объекта</label>
-                        <input
-                          id="o_addr"
-                          value={form.object.objectAddress}
-                          onChange={(e) => updateObject('objectAddress', e.target.value)}
-                          autoComplete="off"
-                          disabled={contractAndEstimateLocked}
-                          className={contractObjectBlockFieldClassName('object.objectAddress')}
-                        />
+                      <div
+                        className={`${styles.contractInlineRow} ${styles.contractObjectDescDiscountRow}`}
+                      >
+                        <div className={`${styles.field} ${styles.contractInlineField}`}>
+                          <label htmlFor="o_desc">Описание работ / объекта</label>
+                          <textarea
+                            id="o_desc"
+                            value={form.object.objectDescription}
+                            onChange={(e) => updateObject('objectDescription', e.target.value)}
+                            disabled={contractAndEstimateLocked}
+                            className={contractObjectBlockFieldClassName(
+                              'object.objectDescription'
+                            )}
+                          />
+                        </div>
                       </div>
-                      <div className={`${styles.field} ${styles.contractInlineField}`}>
-                        <label htmlFor="o_floor">Этаж</label>
-                        <input
-                          id="o_floor"
-                          value={form.object.objectFloor}
-                          onChange={(e) => updateObject('objectFloor', e.target.value)}
-                          autoComplete="off"
-                          disabled={contractAndEstimateLocked}
-                          className={contractObjectBlockFieldClassName('object.objectFloor')}
-                        />
-                      </div>
-                    </div>
-                    <div
-                      className={`${styles.contractInlineRow} ${styles.contractObjectDescDiscountRow}`}
-                    >
-                      <div className={`${styles.field} ${styles.contractInlineField}`}>
-                        <label htmlFor="o_desc">Описание работ / объекта</label>
-                        <textarea
-                          id="o_desc"
-                          value={form.object.objectDescription}
-                          onChange={(e) => updateObject('objectDescription', e.target.value)}
-                          disabled={contractAndEstimateLocked}
-                          className={contractObjectBlockFieldClassName('object.objectDescription')}
-                        />
-                      </div>
-                    </div>
-                    <div className={`${styles.contractInlineRow} ${styles.contractProfilesRow}`}>
-                      <div className={`${styles.field} ${styles.contractInlineField}`}>
-                        <label htmlFor="e_profile">Исполнители (из справочника)</label>
-                        <select
-                          id="e_profile"
-                          value={form.executor.selectedProfileTitle}
-                          onChange={(e) => applyExecutorProfile(e.target.value)}
-                          disabled={contractAndEstimateLocked}
-                          className={contractObjectBlockFieldClassName(
-                            'executor.selectedProfileTitle'
-                          )}
-                        >
-                          <option value="">— выбрать набор —</option>
-                          {executorProfiles.map((profile) => (
-                            <option key={profile.title} value={profile.title}>
-                              {profile.title}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className={`${styles.field} ${styles.contractInlineField}`}>
-                        <label htmlFor="s_profile">Карточка менеджера (из справочника)</label>
-                        <select
-                          id="s_profile"
-                          value={form.executor.selectedSignatoryProfileTitle}
-                          onChange={(e) => applySignatoryProfile(e.target.value)}
-                          disabled={contractAndEstimateLocked}
-                          className={contractObjectBlockFieldClassName(
-                            'executor.selectedSignatoryProfileTitle'
-                          )}
-                        >
-                          <option value="">— выбрать карточку —</option>
-                          {signatoryProfiles.map((profile) => (
-                            <option key={profile.title} value={profile.title}>
-                              {profile.title}
-                            </option>
-                          ))}
-                        </select>
+                      <div className={`${styles.contractInlineRow} ${styles.contractProfilesRow}`}>
+                        <div className={`${styles.field} ${styles.contractInlineField}`}>
+                          <label htmlFor="e_profile">Исполнители (из справочника)</label>
+                          <select
+                            id="e_profile"
+                            value={form.executor.selectedProfileTitle}
+                            onChange={(e) => applyExecutorProfile(e.target.value)}
+                            disabled={contractAndEstimateLocked}
+                            className={contractObjectBlockFieldClassName(
+                              'executor.selectedProfileTitle'
+                            )}
+                          >
+                            <option value="">— выбрать набор —</option>
+                            {executorProfiles.map((profile) => (
+                              <option key={profile.title} value={profile.title}>
+                                {profile.title}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className={`${styles.field} ${styles.contractInlineField}`}>
+                          <label htmlFor="s_profile">Карточка менеджера (из справочника)</label>
+                          <select
+                            id="s_profile"
+                            value={form.executor.selectedSignatoryProfileTitle}
+                            onChange={(e) => applySignatoryProfile(e.target.value)}
+                            disabled={contractAndEstimateLocked}
+                            className={contractObjectBlockFieldClassName(
+                              'executor.selectedSignatoryProfileTitle'
+                            )}
+                          >
+                            <option value="">— выбрать карточку —</option>
+                            {signatoryProfiles.map((profile) => (
+                              <option key={profile.title} value={profile.title}>
+                                {profile.title}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div className={styles.dataTopBlock}>
-                <div
-                  className={`${styles.repairCustomerSearchSlot} ${
-                    contractAndEstimateLocked ? styles.repairCustomerSearchSlotLocked : ''
-                  }`}
-                >
-                  <CrmCustomerSearchPanel
-                    className={crmCustomerSearchPanelStyles.customerCrmPanelComfort}
-                    customerId={linkedCrmCustomerId}
-                    disabled={contractAndEstimateLocked}
-                    listboxId="repair-customer-crm-search-listbox"
-                    onCustomerApplied={handleRepairCrmCustomerApplied}
-                    onClear={handleRepairCrmCustomerClear}
-                    onError={(text) => setError(text)}
-                  />
+                <div className={styles.dataTopBlock}>
+                  <div
+                    className={`${styles.repairCustomerSearchSlot} ${
+                      contractAndEstimateLocked ? styles.repairCustomerSearchSlotLocked : ''
+                    }`}
+                  >
+                    <CrmCustomerSearchPanel
+                      className={crmCustomerSearchPanelStyles.customerCrmPanelComfort}
+                      customerId={linkedCrmCustomerId}
+                      disabled={contractAndEstimateLocked}
+                      listboxId="repair-customer-crm-search-listbox"
+                      onCustomerApplied={handleRepairCrmCustomerApplied}
+                      onClear={handleRepairCrmCustomerClear}
+                      onError={(text) => setError(text)}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div
-              className={`${styles.sectionCard} ${styles.repairDataBlankSheet} ${styles.repairDataPartySection}`}
-            >
-              <div className={styles.repairDataPartySectionTitleRow}>
-                <h3 className={styles.sectionTitle}>Заказчик</h3>
-                {contractAndEstimateLocked ? (
-                  <RepairDataSectionLockInline title="Договор подписан: блок «Заказчик» только для просмотра" />
-                ) : null}
-              </div>
-              <p className={`${styles.hint} ${styles.repairDataPartySectionIntroHint}`}>
-                Данные подставляются из карточки заказчика в блоке «Поиск заказчика в базе».
-                Редактировать здесь нельзя. Чтобы завести карточку и указать телефоны, нажмите
-                «Добавить нового заказчика» в блоке поиска.
-              </p>
-              <div className={styles.sectionFields}>
-                {form.customer.type === 'PERSON' ? (
-                  <>
-                    <div className={`${styles.repairCustomerPrimaryRow} ${styles.fieldSpanAll}`}>
+              <div
+                className={`${styles.sectionCard} ${styles.repairDataBlankSheet} ${styles.repairDataPartySection}`}
+              >
+                <div className={styles.repairDataPartySectionTitleRow}>
+                  <h3 className={styles.sectionTitle}>Заказчик</h3>
+                  {contractAndEstimateLocked ? (
+                    <RepairDataSectionLockInline title="Договор подписан: блок «Заказчик» только для просмотра" />
+                  ) : null}
+                </div>
+                <p className={`${styles.hint} ${styles.repairDataPartySectionIntroHint}`}>
+                  Данные подставляются из карточки заказчика в блоке «Поиск заказчика в базе».
+                  Редактировать здесь нельзя. Чтобы завести карточку и указать телефоны, нажмите
+                  «Добавить нового заказчика» в блоке поиска.
+                </p>
+                <div className={styles.sectionFields}>
+                  {form.customer.type === 'PERSON' ? (
+                    <>
+                      <div className={`${styles.repairCustomerPrimaryRow} ${styles.fieldSpanAll}`}>
+                        <div className={styles.field}>
+                          <label htmlFor="c_type">Тип заказчика</label>
+                          <select id="c_type" value={form.customer.type} disabled>
+                            <option value="PERSON">Физлицо</option>
+                            <option value="COMPANY">ЮЛ</option>
+                            <option value="ENTREPRENEUR">ИП</option>
+                          </select>
+                        </div>
+                        <div className={styles.field}>
+                          <label htmlFor="c_fullName">ФИО</label>
+                          <input id="c_fullName" value={form.customer.fullName} readOnly />
+                        </div>
+                        <div className={styles.field}>
+                          <label htmlFor="c_address">Адрес</label>
+                          <input id="c_address" value={form.customer.address} readOnly />
+                        </div>
+                        <div className={styles.field}>
+                          <label htmlFor="c_email">E-mail</label>
+                          <input
+                            id="c_email"
+                            type="email"
+                            autoComplete="email"
+                            value={form.customer.email}
+                            readOnly
+                          />
+                        </div>
+                      </div>
+                      <div
+                        className={`${styles.repairCustomerSecondaryRow} ${styles.fieldSpanAll}`}
+                      >
+                        <div className={styles.field}>
+                          <label htmlFor="c_phones_ro">Телефоны</label>
+                          <input
+                            id="c_phones_ro"
+                            type="text"
+                            readOnly
+                            value={repairCustomerPhonesReadonlyDisplay}
+                            title={repairCustomerPhonesReadonlyDisplay}
+                          />
+                          {/* <p className={`${styles.hint} ${styles.repairDataPartySectionFieldHint}`}>
+                        Несколько номеров — только в карточке CRM через «Добавить нового заказчика»; в
+                        шаблоне основной номер — <code>{'{{customer.phone}}'}</code>.
+                      </p> */}
+                        </div>
+                        <div className={styles.field}>
+                          <label htmlFor="c_passport">Паспорт (серия и номер)</label>
+                          <input
+                            id="c_passport"
+                            value={form.customer.passportSeriesNumber}
+                            readOnly
+                          />
+                        </div>
+                        <div className={styles.field}>
+                          <label htmlFor="c_passportBy">Кем выдан</label>
+                          <input
+                            id="c_passportBy"
+                            value={form.customer.passportIssuedBy}
+                            readOnly
+                          />
+                        </div>
+                        <div className={styles.field}>
+                          <label htmlFor="c_passportDate">Дата выдачи</label>
+                          <input
+                            id="c_passportDate"
+                            value={form.customer.passportIssueDate}
+                            readOnly
+                          />
+                        </div>
+                      </div>
+                      <div
+                        className={`${styles.field} ${styles.fieldSpanAll} ${styles.customerBankDetailsField}`}
+                      >
+                        <label htmlFor="c_bank_details">Банковские реквизиты</label>
+                        <textarea
+                          id="c_bank_details"
+                          rows={1}
+                          value={form.customer.bankDetails}
+                          readOnly
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
                       <div className={styles.field}>
                         <label htmlFor="c_type">Тип заказчика</label>
                         <select id="c_type" value={form.customer.type} disabled>
@@ -3647,14 +3924,54 @@ export function RepairContractDocumentEditorPage({
                         </select>
                       </div>
                       <div className={styles.field}>
-                        <label htmlFor="c_fullName">ФИО</label>
-                        <input id="c_fullName" value={form.customer.fullName} readOnly />
+                        <label htmlFor="c_repFullNameNom">ФИО представителя (именит.)</label>
+                        <input
+                          id="c_repFullNameNom"
+                          value={form.customer.representativeFullNameNominative}
+                          readOnly
+                        />
+                      </div>
+                      <div className={styles.field}>
+                        <label htmlFor="c_repFullNameGen">ФИО представителя (родит.)</label>
+                        <input
+                          id="c_repFullNameGen"
+                          value={form.customer.representativeFullNameGenitive}
+                          readOnly
+                        />
+                      </div>
+                      <div className={styles.field}>
+                        <label htmlFor="c_orgName">Наименование организации</label>
+                        <input id="c_orgName" value={form.customer.organizationName} readOnly />
+                      </div>
+                      <div className={styles.field}>
+                        <label htmlFor="c_posNom">Должность представ. (именит.)</label>
+                        <input
+                          id="c_posNom"
+                          value={form.customer.representativePositionNominative}
+                          readOnly
+                        />
+                      </div>
+                      <div className={styles.field}>
+                        <label htmlFor="c_posGen">Должность представ. (родит.)</label>
+                        <input
+                          id="c_posGen"
+                          value={form.customer.representativePositionGenitive}
+                          readOnly
+                        />
+                      </div>
+                      <div className={styles.field}>
+                        <label htmlFor="c_inn">ИНН</label>
+                        <input id="c_inn" value={form.customer.inn} readOnly />
+                      </div>
+                      <div className={styles.field}>
+                        <label htmlFor="c_ogrn">ОГРН</label>
+                        <input id="c_ogrn" value={form.customer.ogrn} readOnly />
                       </div>
                       <div className={styles.field}>
                         <label htmlFor="c_address">Адрес</label>
                         <input id="c_address" value={form.customer.address} readOnly />
                       </div>
-                      <div className={styles.field}>
+                      <div className={`${styles.field} ${styles.customerEmailInRow}`}>
                         <label htmlFor="c_email">E-mail</label>
                         <input
                           id="c_email"
@@ -3664,9 +3981,7 @@ export function RepairContractDocumentEditorPage({
                           readOnly
                         />
                       </div>
-                    </div>
-                    <div className={`${styles.repairCustomerSecondaryRow} ${styles.fieldSpanAll}`}>
-                      <div className={styles.field}>
+                      <div className={`${styles.field} ${styles.fieldSpanAll}`}>
                         <label htmlFor="c_phones_ro">Телефоны</label>
                         <input
                           id="c_phones_ro"
@@ -3680,1598 +3995,935 @@ export function RepairContractDocumentEditorPage({
                         шаблоне основной номер — <code>{'{{customer.phone}}'}</code>.
                       </p> */}
                       </div>
-                      <div className={styles.field}>
-                        <label htmlFor="c_passport">Паспорт (серия и номер)</label>
-                        <input
-                          id="c_passport"
-                          value={form.customer.passportSeriesNumber}
-                          readOnly
-                        />
-                      </div>
-                      <div className={styles.field}>
-                        <label htmlFor="c_passportBy">Кем выдан</label>
-                        <input id="c_passportBy" value={form.customer.passportIssuedBy} readOnly />
-                      </div>
-                      <div className={styles.field}>
-                        <label htmlFor="c_passportDate">Дата выдачи</label>
-                        <input
-                          id="c_passportDate"
-                          value={form.customer.passportIssueDate}
-                          readOnly
-                        />
-                      </div>
-                    </div>
-                    <div
-                      className={`${styles.field} ${styles.fieldSpanAll} ${styles.customerBankDetailsField}`}
-                    >
-                      <label htmlFor="c_bank_details">Банковские реквизиты</label>
-                      <textarea
-                        id="c_bank_details"
-                        rows={1}
-                        value={form.customer.bankDetails}
-                        readOnly
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className={styles.field}>
-                      <label htmlFor="c_type">Тип заказчика</label>
-                      <select id="c_type" value={form.customer.type} disabled>
-                        <option value="PERSON">Физлицо</option>
-                        <option value="COMPANY">ЮЛ</option>
-                        <option value="ENTREPRENEUR">ИП</option>
-                      </select>
-                    </div>
-                    <div className={styles.field}>
-                      <label htmlFor="c_repFullNameNom">ФИО представителя (именит.)</label>
-                      <input
-                        id="c_repFullNameNom"
-                        value={form.customer.representativeFullNameNominative}
-                        readOnly
-                      />
-                    </div>
-                    <div className={styles.field}>
-                      <label htmlFor="c_repFullNameGen">ФИО представителя (родит.)</label>
-                      <input
-                        id="c_repFullNameGen"
-                        value={form.customer.representativeFullNameGenitive}
-                        readOnly
-                      />
-                    </div>
-                    <div className={styles.field}>
-                      <label htmlFor="c_orgName">Наименование организации</label>
-                      <input id="c_orgName" value={form.customer.organizationName} readOnly />
-                    </div>
-                    <div className={styles.field}>
-                      <label htmlFor="c_posNom">Должность представ. (именит.)</label>
-                      <input
-                        id="c_posNom"
-                        value={form.customer.representativePositionNominative}
-                        readOnly
-                      />
-                    </div>
-                    <div className={styles.field}>
-                      <label htmlFor="c_posGen">Должность представ. (родит.)</label>
-                      <input
-                        id="c_posGen"
-                        value={form.customer.representativePositionGenitive}
-                        readOnly
-                      />
-                    </div>
-                    <div className={styles.field}>
-                      <label htmlFor="c_inn">ИНН</label>
-                      <input id="c_inn" value={form.customer.inn} readOnly />
-                    </div>
-                    <div className={styles.field}>
-                      <label htmlFor="c_ogrn">ОГРН</label>
-                      <input id="c_ogrn" value={form.customer.ogrn} readOnly />
-                    </div>
-                    <div className={styles.field}>
-                      <label htmlFor="c_address">Адрес</label>
-                      <input id="c_address" value={form.customer.address} readOnly />
-                    </div>
-                    <div className={`${styles.field} ${styles.customerEmailInRow}`}>
-                      <label htmlFor="c_email">E-mail</label>
-                      <input
-                        id="c_email"
-                        type="email"
-                        autoComplete="email"
-                        value={form.customer.email}
-                        readOnly
-                      />
-                    </div>
-                    <div className={`${styles.field} ${styles.fieldSpanAll}`}>
-                      <label htmlFor="c_phones_ro">Телефоны</label>
-                      <input
-                        id="c_phones_ro"
-                        type="text"
-                        readOnly
-                        value={repairCustomerPhonesReadonlyDisplay}
-                        title={repairCustomerPhonesReadonlyDisplay}
-                      />
-                      {/* <p className={`${styles.hint} ${styles.repairDataPartySectionFieldHint}`}>
-                        Несколько номеров — только в карточке CRM через «Добавить нового заказчика»; в
-                        шаблоне основной номер — <code>{'{{customer.phone}}'}</code>.
-                      </p> */}
-                    </div>
-                    <div
-                      className={`${styles.field} ${styles.fieldSpanAll} ${styles.customerBankDetailsField}`}
-                    >
-                      <label htmlFor="c_bank_details">Банковские реквизиты</label>
-                      <textarea
-                        id="c_bank_details"
-                        rows={1}
-                        value={form.customer.bankDetails}
-                        readOnly
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div
-              className={`${styles.sectionCard} ${styles.repairDataBlankSheet} ${styles.repairDataPartySection}`}
-            >
-              <div className={styles.repairDataPartySectionHeader}>
-                <div className={styles.repairDataPartySectionTitleRow}>
-                  <h3 className={styles.sectionTitle}>Исполнитель</h3>
-                  {contractAndEstimateLocked ? (
-                    <RepairDataSectionLockInline title="Договор подписан: блок «Исполнитель» только для просмотра" />
-                  ) : null}
-                </div>
-                <RepairDataPartySectionCollapseButton
-                  expanded={executorDataSectionExpanded}
-                  sectionLabel="Исполнитель"
-                  controlsId="repair-data-executor-section-body"
-                  onToggle={() => setExecutorDataSectionExpanded((open) => !open)}
-                />
-              </div>
-              {executorDataSectionExpanded ? (
-                <>
-                  <p className={`${styles.hint} ${styles.repairDataPartySectionIntroHint}`}>
-                    Реквизиты подставляются из набора, выбранного в блоке «Договор и объект».
-                    Редактировать здесь нельзя.
-                  </p>
-                  <div id="repair-data-executor-section-body" className={styles.sectionFields}>
-                    <div className={styles.field}>
-                      <label htmlFor="e_company">Наименование организации</label>
-                      <input id="e_company" readOnly value={form.executor.companyName} />
-                    </div>
-                    <div className={styles.field}>
-                      <label htmlFor="e_inn">ИНН</label>
-                      <input id="e_inn" readOnly value={form.executor.inn} />
-                    </div>
-                    {form.executor.executorKind === 'COMPANY' ? (
-                      <div className={styles.field}>
-                        <label htmlFor="e_kpp">КПП</label>
-                        <input id="e_kpp" readOnly value={form.executor.kpp} />
-                      </div>
-                    ) : null}
-                    {form.executor.executorKind === 'COMPANY' ? (
-                      <div className={styles.field}>
-                        <label htmlFor="e_ogrn">ОГРН</label>
-                        <input id="e_ogrn" readOnly value={form.executor.ogrn} />
-                      </div>
-                    ) : (
-                      <div className={styles.field}>
-                        <label htmlFor="e_ogrnip">ОГРНИП</label>
-                        <input id="e_ogrnip" readOnly value={form.executor.ogrnip} />
-                      </div>
-                    )}
-                    <div className={styles.field}>
-                      <label htmlFor="e_email">E-mail</label>
-                      <input
-                        id="e_email"
-                        type="email"
-                        autoComplete="email"
-                        readOnly
-                        value={form.executor.email}
-                      />
-                    </div>
-                    <div className={styles.field}>
-                      <label htmlFor="e_legal">Юридический адрес</label>
-                      <textarea id="e_legal" readOnly value={form.executor.legalAddress} />
-                    </div>
-                    <div className={styles.field}>
-                      <label htmlFor="e_actual">Адрес для корреспонденции</label>
-                      <textarea id="e_actual" readOnly value={form.executor.actualAddress} />
-                    </div>
-                    <div className={`${styles.field} ${styles.executorBankDetailsField}`}>
-                      <label htmlFor="e_bank">Банковские реквизиты</label>
-                      <textarea id="e_bank" readOnly value={form.executor.bankDetails} />
-                    </div>
-                  </div>
-                </>
-              ) : null}
-            </div>
-
-            <div
-              className={`${styles.sectionCard} ${styles.repairDataBlankSheet} ${styles.repairDataPartySection}`}
-            >
-              <div className={styles.repairDataPartySectionHeader}>
-                <div className={styles.repairDataPartySectionTitleRow}>
-                  <h3 className={styles.sectionTitle}>Менеджер</h3>
-                  {contractAndEstimateLocked ? (
-                    <RepairDataSectionLockInline title="Договор подписан: блок «Менеджер» только для просмотра" />
-                  ) : null}
-                </div>
-                <RepairDataPartySectionCollapseButton
-                  expanded={managerDataSectionExpanded}
-                  sectionLabel="Менеджер"
-                  controlsId="repair-data-manager-section-body"
-                  onToggle={() => setManagerDataSectionExpanded((open) => !open)}
-                />
-              </div>
-              {managerDataSectionExpanded ? (
-                <>
-                  <p className={`${styles.hint} ${styles.repairDataPartySectionIntroHint}`}>
-                    Данные подставляются из карточки, выбранной в блоке «Договор и объект».
-                    Редактировать здесь нельзя.
-                  </p>
-                  <div id="repair-data-manager-section-body" className={styles.sectionFields}>
-                    {form.executor.signatoryCrmUserId ? (
-                      <p
-                        className={`${styles.hint} ${styles.repairDataPartySectionFieldHint}`}
-                        style={{ gridColumn: '1 / -1' }}
+                      <div
+                        className={`${styles.field} ${styles.fieldSpanAll} ${styles.customerBankDetailsField}`}
                       >
-                        Связь с CRM: id сотрудника{' '}
-                        <code style={{ fontSize: '0.9em' }}>
-                          {form.executor.signatoryCrmUserId}
-                        </code>{' '}
-                        — пользователь из справочника «Менеджеры».
-                      </p>
-                    ) : null}
-                    <div className={styles.field}>
-                      <label htmlFor="e_directorNom">Менеджер (именит. падеж)</label>
-                      <input
-                        id="e_directorNom"
-                        readOnly
-                        value={form.executor.directorNameNominative}
-                      />
-                    </div>
-                    <div className={styles.field}>
-                      <label htmlFor="e_directorGen">Менеджер (родит. падеж)</label>
-                      <input
-                        id="e_directorGen"
-                        readOnly
-                        value={form.executor.directorNameGenitive}
-                      />
-                    </div>
-                    <div className={styles.field}>
-                      <label htmlFor="e_basis">Действует на основании</label>
-                      <input id="e_basis" readOnly value={form.executor.basis} />
-                    </div>
-                    <div className={styles.field}>
-                      <label htmlFor="e_sales_office">Офис продаж</label>
-                      <input id="e_sales_office" readOnly value={form.executor.salesOffice} />
-                    </div>
-                    <div className={styles.field}>
-                      <label htmlFor="e_office_phone">Телефон офиса</label>
-                      <input id="e_office_phone" readOnly value={form.executor.officePhone} />
-                    </div>
-                  </div>
-                </>
-              ) : null}
-            </div>
-          </div>
-          <p className={`${styles.hint} ${styles.contractInstructionHint}`}>
-            Полная инструкция:{' '}
-            <Link className={styles.link} href="/admin/contract-documents/instruction">
-              Оформление договоров → Инструкция
-            </Link>
-            . На вкладке «Договор» можно править HTML и вставлять плейсхолдеры.
-          </p>
-        </div>
-      ) : activeTab === 'estimate' ? (
-        <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
-          <div className={styles.formGrid}>
-            <div className={styles.sectionCard}>
-              {contractAndEstimateLocked ? (
-                <p className={`${styles.hint} ${styles.estimateLockNotice}`}>
-                  Договор подписан: смета договора и прикреплённые к ней расчёты только для
-                  просмотра и печати. Дополнительные объёмы оформляйте на вкладках «Д/с №1»…«Д/с
-                  №5»: там можно прикрепить новые расчёты к соответствующему дополнительному
-                  соглашению.
-                </p>
-              ) : null}
-              <div className={styles.estimateSectionHeader}>
-                <h3 className={`${styles.sectionTitle} ${styles.estimateSectionTitle}`}>Смета</h3>
-              </div>
-              <p className={styles.hint} style={{ marginTop: 0 }}>
-                Объект выбирается только здесь: все расчёты основной сметы и доп. соглашений должны
-                относиться к одному объекту. После первого прикреплённого расчёта объект фиксируется
-                автоматически.
-              </p>
-              <div className={styles.sectionFields}>
-                <div className={`${styles.estimatePickAndAttachedRow} ${styles.fieldSpanAll}`}>
-                  <div className={styles.estimatePickColumn}>
-                    <div className={styles.estimateSelectsRow}>
-                      <div className={styles.field}>
-                        <label htmlFor="estimate_group_select">Объект</label>
-                        <select
-                          id="estimate_group_select"
-                          value={
-                            (form.estimate.selectedPresetIds?.length ?? 0) > 0
-                              ? contractEstimateObjectKey
-                              : estimateAttachGroupKey
-                          }
-                          disabled={
-                            contractAndEstimateLocked ||
-                            (form.estimate.selectedPresetIds?.length ?? 0) > 0
-                          }
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            setEstimateAttachGroupKey(v);
-                            setEstimatePresetToAttach('');
-                            if (
-                              !contractAndEstimateLocked &&
-                              (form.estimate.selectedPresetIds?.length ?? 0) === 0
-                            ) {
-                              setForm((p) => ({ ...p, estimateObjectGroupKey: v }));
-                              touchPackageData();
-                            }
-                          }}
-                        >
-                          <option value="">— объект —</option>
-                          {attachEstimatePickMeta.hasUngrouped ? (
-                            <option value="__ungrouped__">Вне объекта</option>
-                          ) : null}
-                          {attachEstimatePickMeta.groupsOrdered.map((g) => (
-                            <option key={g.id} value={g.id}>
-                              {g.title}
-                            </option>
-                          ))}
-                        </select>
+                        <label htmlFor="c_bank_details">Банковские реквизиты</label>
+                        <textarea
+                          id="c_bank_details"
+                          rows={1}
+                          value={form.customer.bankDetails}
+                          readOnly
+                        />
                       </div>
-                      <div className={styles.field}>
-                        <label htmlFor="estimate_select">Расчёт</label>
-                        <select
-                          id="estimate_select"
-                          value={estimatePresetToAttach}
-                          disabled={
-                            contractAndEstimateLocked ||
-                            !((form.estimate.selectedPresetIds?.length ?? 0) > 0
-                              ? contractEstimateObjectKey
-                              : estimateAttachGroupKey || contractEstimateObjectKey)
-                          }
-                          onChange={(e) => setEstimatePresetToAttach(e.target.value)}
-                        >
-                          <option value="">
-                            {(form.estimate.selectedPresetIds?.length ?? 0) > 0
-                              ? '— расчёт —'
-                              : estimateAttachGroupKey || contractEstimateObjectKey
-                                ? '— расчёт —'
-                                : '— сначала выберите объект —'}
-                          </option>
-                          {attachableForSelectedGroup.map((preset) => (
-                            <option key={preset.id} value={preset.id}>
-                              {preset.title} · {preset.categoryName}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <div className={styles.estimateAttachBlock}>
-                      <div className={styles.estimateAttachActionsRow}>
-                        <button
-                          type="button"
-                          className={`${styles.primaryBtn} ${styles.estimateAttachPrimaryBtn}`}
-                          disabled={contractAndEstimateLocked || !estimatePresetToAttach}
-                          onClick={() => {
-                            addEstimatePresetToForm(estimatePresetToAttach);
-                            setEstimatePresetToAttach('');
-                          }}
-                        >
-                          Прикрепить
-                        </button>
-                      </div>
-                      {attachableEstimatePresets.length === 0 ? (
-                        <p className={`${styles.hint} ${styles.estimateTabHint}`}>
-                          Нет свободных расчётов для прикрепления.
-                        </p>
-                      ) : (
-                        <p className={`${styles.hint} ${styles.estimateTabHint}`}>
-                          Сначала объект, затем расчёт → «Прикрепить». Нельзя смешивать расчёты
-                          разных объектов. Справа — порядок в смете (перетаскивание).
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <aside className={styles.estimateAttachedColumn}>
-                    <div className={styles.estimateAttachedColumnTitle}>Прикреплённые</div>
-                    {(form.estimate.selectedPresetIds?.length ?? 0) > 0 ? (
-                      <div className={styles.estimateAttachedPresetList}>
-                        {(form.estimate.selectedPresetIds ?? []).map((presetId) => {
-                          const preset = estimatePresets.find((x) => x.id === presetId);
-                          const usageCount = estimateUsageById.get(presetId)?.length ?? 0;
-                          return (
-                            <div
-                              key={presetId}
-                              draggable={!contractAndEstimateLocked}
-                              onDragStart={() => {
-                                if (!contractAndEstimateLocked)
-                                  setDraggingEstimatePresetId(presetId);
-                              }}
-                              onDragEnd={() => setDraggingEstimatePresetId(null)}
-                              onDragOver={(e) => {
-                                if (!contractAndEstimateLocked) e.preventDefault();
-                              }}
-                              onDrop={(e) => {
-                                e.preventDefault();
-                                if (contractAndEstimateLocked) return;
-                                if (draggingEstimatePresetId) {
-                                  moveEstimatePresetInForm(draggingEstimatePresetId, presetId);
-                                }
-                                setDraggingEstimatePresetId(null);
-                              }}
-                              className={styles.estimateAttachedPresetRow}
-                              style={{
-                                opacity: draggingEstimatePresetId === presetId ? 0.6 : 1,
-                              }}
-                            >
-                              <div className={styles.estimateAttachedPresetMain}>
-                                <strong>{preset?.title ?? presetId}</strong>
-                                <span className={styles.estimateAttachedPresetMeta}>
-                                  {' '}
-                                  · {preset?.categoryName ?? '—'}
-                                  {usageCount > 0 ? ` · ещё в пакетах: ${usageCount}` : null}
-                                </span>
-                              </div>
-                              <button
-                                type="button"
-                                className={`${styles.secondaryBtn} ${styles.estimateAttachedRemoveBtn}`}
-                                aria-label="Убрать расчёт из сметы"
-                                title="Убрать"
-                                disabled={contractAndEstimateLocked}
-                                onClick={() => removeEstimatePresetFromForm(presetId)}
-                              >
-                                ×
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className={styles.estimateAttachedEmpty}>Пока нет</p>
-                    )}
-                  </aside>
+                    </>
+                  )}
                 </div>
-                {form.estimate.selectedPresetIds?.length &&
-                !(form.estimate.selectedPresetIds ?? []).every(
-                  (id) => (estimateUsageById.get(id)?.length ?? 0) === 0
-                ) ? (
-                  <p
-                    className={`${styles.hint} ${styles.estimateTabHint} ${styles.estimateTabHintFullWidth}`}
-                  >
-                    Часть расчётов уже прикреплена в других пакетах:{' '}
-                    {[
-                      ...new Set(
-                        (form.estimate.selectedPresetIds ?? [])
-                          .flatMap((id) => estimateUsageById.get(id) ?? [])
-                          .map((u) => `№ ${u.contractNumber} от ${u.contractDate}`)
-                      ),
-                    ].join('; ')}
+              </div>
+
+              <div
+                className={`${styles.sectionCard} ${styles.repairDataBlankSheet} ${styles.repairDataPartySection}`}
+              >
+                <div className={styles.repairDataPartySectionHeader}>
+                  <div className={styles.repairDataPartySectionTitleRow}>
+                    <h3 className={styles.sectionTitle}>Исполнитель</h3>
+                    {contractAndEstimateLocked ? (
+                      <RepairDataSectionLockInline title="Договор подписан: блок «Исполнитель» только для просмотра" />
+                    ) : null}
+                  </div>
+                  <RepairDataPartySectionCollapseButton
+                    expanded={executorDataSectionExpanded}
+                    sectionLabel="Исполнитель"
+                    controlsId="repair-data-executor-section-body"
+                    onToggle={() => setExecutorDataSectionExpanded((open) => !open)}
+                  />
+                </div>
+                {executorDataSectionExpanded ? (
+                  <>
+                    <p className={`${styles.hint} ${styles.repairDataPartySectionIntroHint}`}>
+                      Реквизиты подставляются из набора, выбранного в блоке «Договор и объект».
+                      Редактировать здесь нельзя.
+                    </p>
+                    <div id="repair-data-executor-section-body" className={styles.sectionFields}>
+                      <div className={styles.field}>
+                        <label htmlFor="e_company">Наименование организации</label>
+                        <input id="e_company" readOnly value={form.executor.companyName} />
+                      </div>
+                      <div className={styles.field}>
+                        <label htmlFor="e_inn">ИНН</label>
+                        <input id="e_inn" readOnly value={form.executor.inn} />
+                      </div>
+                      {form.executor.executorKind === 'COMPANY' ? (
+                        <div className={styles.field}>
+                          <label htmlFor="e_kpp">КПП</label>
+                          <input id="e_kpp" readOnly value={form.executor.kpp} />
+                        </div>
+                      ) : null}
+                      {form.executor.executorKind === 'COMPANY' ? (
+                        <div className={styles.field}>
+                          <label htmlFor="e_ogrn">ОГРН</label>
+                          <input id="e_ogrn" readOnly value={form.executor.ogrn} />
+                        </div>
+                      ) : (
+                        <div className={styles.field}>
+                          <label htmlFor="e_ogrnip">ОГРНИП</label>
+                          <input id="e_ogrnip" readOnly value={form.executor.ogrnip} />
+                        </div>
+                      )}
+                      <div className={styles.field}>
+                        <label htmlFor="e_email">E-mail</label>
+                        <input
+                          id="e_email"
+                          type="email"
+                          autoComplete="email"
+                          readOnly
+                          value={form.executor.email}
+                        />
+                      </div>
+                      <div className={styles.field}>
+                        <label htmlFor="e_legal">Юридический адрес</label>
+                        <textarea id="e_legal" readOnly value={form.executor.legalAddress} />
+                      </div>
+                      <div className={styles.field}>
+                        <label htmlFor="e_actual">Адрес для корреспонденции</label>
+                        <textarea id="e_actual" readOnly value={form.executor.actualAddress} />
+                      </div>
+                      <div className={`${styles.field} ${styles.executorBankDetailsField}`}>
+                        <label htmlFor="e_bank">Банковские реквизиты</label>
+                        <textarea id="e_bank" readOnly value={form.executor.bankDetails} />
+                      </div>
+                    </div>
+                  </>
+                ) : null}
+              </div>
+
+              <div
+                className={`${styles.sectionCard} ${styles.repairDataBlankSheet} ${styles.repairDataPartySection}`}
+              >
+                <div className={styles.repairDataPartySectionHeader}>
+                  <div className={styles.repairDataPartySectionTitleRow}>
+                    <h3 className={styles.sectionTitle}>Менеджер</h3>
+                    {contractAndEstimateLocked ? (
+                      <RepairDataSectionLockInline title="Договор подписан: блок «Менеджер» только для просмотра" />
+                    ) : null}
+                  </div>
+                  <RepairDataPartySectionCollapseButton
+                    expanded={managerDataSectionExpanded}
+                    sectionLabel="Менеджер"
+                    controlsId="repair-data-manager-section-body"
+                    onToggle={() => setManagerDataSectionExpanded((open) => !open)}
+                  />
+                </div>
+                {managerDataSectionExpanded ? (
+                  <>
+                    <p className={`${styles.hint} ${styles.repairDataPartySectionIntroHint}`}>
+                      Данные подставляются из карточки, выбранной в блоке «Договор и объект».
+                      Редактировать здесь нельзя.
+                    </p>
+                    <div id="repair-data-manager-section-body" className={styles.sectionFields}>
+                      {form.executor.signatoryCrmUserId ? (
+                        <p
+                          className={`${styles.hint} ${styles.repairDataPartySectionFieldHint}`}
+                          style={{ gridColumn: '1 / -1' }}
+                        >
+                          Связь с CRM: id сотрудника{' '}
+                          <code style={{ fontSize: '0.9em' }}>
+                            {form.executor.signatoryCrmUserId}
+                          </code>{' '}
+                          — пользователь из справочника «Менеджеры».
+                        </p>
+                      ) : null}
+                      <div className={styles.field}>
+                        <label htmlFor="e_directorNom">Менеджер (именит. падеж)</label>
+                        <input
+                          id="e_directorNom"
+                          readOnly
+                          value={form.executor.directorNameNominative}
+                        />
+                      </div>
+                      <div className={styles.field}>
+                        <label htmlFor="e_directorGen">Менеджер (родит. падеж)</label>
+                        <input
+                          id="e_directorGen"
+                          readOnly
+                          value={form.executor.directorNameGenitive}
+                        />
+                      </div>
+                      <div className={styles.field}>
+                        <label htmlFor="e_basis">Действует на основании</label>
+                        <input id="e_basis" readOnly value={form.executor.basis} />
+                      </div>
+                      <div className={styles.field}>
+                        <label htmlFor="e_sales_office">Офис продаж</label>
+                        <input id="e_sales_office" readOnly value={form.executor.salesOffice} />
+                      </div>
+                      <div className={styles.field}>
+                        <label htmlFor="e_office_phone">Телефон офиса</label>
+                        <input id="e_office_phone" readOnly value={form.executor.officePhone} />
+                      </div>
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            </div>
+            <p className={`${styles.hint} ${styles.contractInstructionHint}`}>
+              Полная инструкция:{' '}
+              <Link className={styles.link} href="/admin/contract-documents/instruction">
+                Оформление договоров → Инструкция
+              </Link>
+              . На вкладке «Договор» можно править HTML и вставлять плейсхолдеры.
+            </p>
+          </div>
+        ) : activeTab === 'estimate' ? (
+          <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
+            <div className={styles.formGrid}>
+              <div className={styles.sectionCard}>
+                {contractAndEstimateLocked ? (
+                  <p className={`${styles.hint} ${styles.estimateLockNotice}`}>
+                    Договор подписан: смета договора и прикреплённые к ней расчёты только для
+                    просмотра и печати. Дополнительные объёмы оформляйте на вкладках «Д/с №1»…«Д/с
+                    №5»: там можно прикрепить новые расчёты к соответствующему дополнительному
+                    соглашению.
                   </p>
                 ) : null}
-                <div
-                  className={`${styles.field} ${styles.fieldSpanAll} ${styles.estimateSheetField}`}
-                >
-                  <label>Содержимое объединённой сметы</label>
-                  <div className={styles.estimateA4Wrap}>
-                    <article
-                      ref={estimatePrintSheetRef}
-                      className={styles.estimateA4Sheet}
-                      data-print-target="estimate-sheet"
-                    >
-                      <p className={styles.estimateA4AppendixRef}>
-                        Приложение №1 к договору № {estimateAppendixContractRef.num} от{' '}
-                        {estimateAppendixContractRef.date}
-                      </p>
-                      {(form.estimate.snapshot?.rooms?.length ?? 0) > 0 ? (
-                        <>
-                          <h4 className={styles.estimateA4Title}>Смета работ</h4>
-                          {selectedEstimateSections.length > 0 ? (
-                            selectedEstimateSections.map((section) => (
-                              <section
-                                key={section.categoryName}
-                                className={styles.estimateA4CategorySection}
-                              >
-                                <p className={styles.estimateA4Meta}>
-                                  Категория работ: <strong>{section.categoryName}</strong>
-                                  ;&nbsp;&nbsp;&nbsp;&nbsp;Помещений: {section.rooms.length}
-                                </p>
-                                {section.rooms.map((room, roomIndex) => (
-                                  <section
-                                    key={`${section.categoryName}-${room.name}-${roomIndex}`}
-                                    className={styles.estimateA4Room}
-                                  >
-                                    <div className={styles.estimateA4RoomHeader}>
-                                      <span>
-                                        {roomIndex + 1}. {room.name}
-                                      </span>
-                                      <strong>{formatMoneyValue(room.total)} руб.</strong>
-                                    </div>
-                                    <table className={styles.estimateA4Table}>
-                                      <thead>
-                                        <tr>
-                                          <th>№</th>
-                                          <th>Наименование</th>
-                                          <th>Ед.</th>
-                                          <th>Кол-во</th>
-                                          <th>Цена</th>
-                                          <th>Сумма</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {room.lines.map((line, lineIndex) => (
-                                          <tr key={`${line.name}-${lineIndex}`}>
-                                            <td>{lineIndex + 1}</td>
-                                            <td>{line.name}</td>
-                                            <td>{line.unit}</td>
-                                            <td>{line.quantity}</td>
-                                            <td>{formatMoneyValue(line.price)}</td>
-                                            <td>{formatMoneyValue(line.amount)}</td>
-                                          </tr>
-                                        ))}
-                                      </tbody>
-                                    </table>
-                                  </section>
-                                ))}
-                              </section>
-                            ))
-                          ) : (
-                            <p className={styles.estimateA4Meta}>
-                              Категория работ: <strong>—</strong>
-                              ;&nbsp;&nbsp;&nbsp;&nbsp;Помещений:{' '}
-                              {form.estimate.snapshot?.rooms.length ?? 0}
-                            </p>
-                          )}
-                          <section className={styles.estimateA4Summary}>
-                            {selectedEstimateSections.length > 0 ? (
-                              <>
-                                <h5 className={styles.estimateA4SummaryTitle}>
-                                  Итоги по категориям
-                                </h5>
-                                <ul className={styles.estimateA4SummaryList}>
-                                  {selectedEstimateSections.map((section) => {
-                                    const categoryTotal = section.rooms.reduce(
-                                      (sum, room) => sum + room.total,
-                                      0
-                                    );
-                                    return (
-                                      <li key={`category-summary-${section.categoryName}`}>
-                                        <span>{section.categoryName}</span>
-                                        <strong>{formatMoneyValue(categoryTotal)} руб.</strong>
-                                      </li>
-                                    );
-                                  })}
-                                </ul>
-                              </>
+                <div className={styles.estimateSectionHeader}>
+                  <h3 className={`${styles.sectionTitle} ${styles.estimateSectionTitle}`}>Смета</h3>
+                </div>
+                <p className={styles.hint} style={{ marginTop: 0 }}>
+                  Объект выбирается только здесь: все расчёты основной сметы и доп. соглашений
+                  должны относиться к одному объекту. После первого прикреплённого расчёта объект
+                  фиксируется автоматически.
+                </p>
+                <div className={styles.sectionFields}>
+                  <div className={`${styles.estimatePickAndAttachedRow} ${styles.fieldSpanAll}`}>
+                    <div className={styles.estimatePickColumn}>
+                      <div className={styles.estimateSelectsRow}>
+                        <div className={styles.field}>
+                          <label htmlFor="estimate_group_select">Объект</label>
+                          <select
+                            id="estimate_group_select"
+                            value={
+                              (form.estimate.selectedPresetIds?.length ?? 0) > 0
+                                ? contractEstimateObjectKey
+                                : estimateAttachGroupKey
+                            }
+                            disabled={
+                              contractAndEstimateLocked ||
+                              (form.estimate.selectedPresetIds?.length ?? 0) > 0
+                            }
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setEstimateAttachGroupKey(v);
+                              setEstimatePresetToAttach('');
+                              if (
+                                !contractAndEstimateLocked &&
+                                (form.estimate.selectedPresetIds?.length ?? 0) === 0
+                              ) {
+                                setForm((p) => ({ ...p, estimateObjectGroupKey: v }));
+                                touchPackageData();
+                              }
+                            }}
+                          >
+                            <option value="">— объект —</option>
+                            {attachEstimatePickMeta.hasUngrouped ? (
+                              <option value="__ungrouped__">Вне объекта</option>
                             ) : null}
-                          </section>
-                          {contractDiscountPercentParsed > 0 ? (
-                            <>
+                            {attachEstimatePickMeta.groupsOrdered.map((g) => (
+                              <option key={g.id} value={g.id}>
+                                {g.title}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className={styles.field}>
+                          <label htmlFor="estimate_select">Расчёт</label>
+                          <select
+                            id="estimate_select"
+                            value={estimatePresetToAttach}
+                            disabled={
+                              contractAndEstimateLocked ||
+                              !((form.estimate.selectedPresetIds?.length ?? 0) > 0
+                                ? contractEstimateObjectKey
+                                : estimateAttachGroupKey || contractEstimateObjectKey)
+                            }
+                            onChange={(e) => setEstimatePresetToAttach(e.target.value)}
+                          >
+                            <option value="">
+                              {(form.estimate.selectedPresetIds?.length ?? 0) > 0
+                                ? '— расчёт —'
+                                : estimateAttachGroupKey || contractEstimateObjectKey
+                                  ? '— расчёт —'
+                                  : '— сначала выберите объект —'}
+                            </option>
+                            {attachableForSelectedGroup.map((preset) => (
+                              <option key={preset.id} value={preset.id}>
+                                {preset.title} · {preset.categoryName}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className={styles.estimateAttachBlock}>
+                        <div className={styles.estimateAttachActionsRow}>
+                          <button
+                            type="button"
+                            className={`${styles.primaryBtn} ${styles.estimateAttachPrimaryBtn}`}
+                            disabled={contractAndEstimateLocked || !estimatePresetToAttach}
+                            onClick={() => {
+                              addEstimatePresetToForm(estimatePresetToAttach);
+                              setEstimatePresetToAttach('');
+                            }}
+                          >
+                            Прикрепить
+                          </button>
+                        </div>
+                        {attachableEstimatePresets.length === 0 ? (
+                          <p className={`${styles.hint} ${styles.estimateTabHint}`}>
+                            Нет свободных расчётов для прикрепления.
+                          </p>
+                        ) : (
+                          <p className={`${styles.hint} ${styles.estimateTabHint}`}>
+                            Сначала объект, затем расчёт → «Прикрепить». Нельзя смешивать расчёты
+                            разных объектов. Справа — порядок в смете (перетаскивание).
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <aside className={styles.estimateAttachedColumn}>
+                      <div className={styles.estimateAttachedColumnTitle}>Прикреплённые</div>
+                      {(form.estimate.selectedPresetIds?.length ?? 0) > 0 ? (
+                        <div className={styles.estimateAttachedPresetList}>
+                          {(form.estimate.selectedPresetIds ?? []).map((presetId) => {
+                            const preset = estimatePresets.find((x) => x.id === presetId);
+                            const usageCount = estimateUsageById.get(presetId)?.length ?? 0;
+                            return (
+                              <div
+                                key={presetId}
+                                draggable={!contractAndEstimateLocked}
+                                onDragStart={() => {
+                                  if (!contractAndEstimateLocked)
+                                    setDraggingEstimatePresetId(presetId);
+                                }}
+                                onDragEnd={() => setDraggingEstimatePresetId(null)}
+                                onDragOver={(e) => {
+                                  if (!contractAndEstimateLocked) e.preventDefault();
+                                }}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  if (contractAndEstimateLocked) return;
+                                  if (draggingEstimatePresetId) {
+                                    moveEstimatePresetInForm(draggingEstimatePresetId, presetId);
+                                  }
+                                  setDraggingEstimatePresetId(null);
+                                }}
+                                className={styles.estimateAttachedPresetRow}
+                                style={{
+                                  opacity: draggingEstimatePresetId === presetId ? 0.6 : 1,
+                                }}
+                              >
+                                <div className={styles.estimateAttachedPresetMain}>
+                                  <strong>{preset?.title ?? presetId}</strong>
+                                  <span className={styles.estimateAttachedPresetMeta}>
+                                    {' '}
+                                    · {preset?.categoryName ?? '—'}
+                                    {usageCount > 0 ? ` · ещё в пакетах: ${usageCount}` : null}
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  className={`${styles.secondaryBtn} ${styles.estimateAttachedRemoveBtn}`}
+                                  aria-label="Убрать расчёт из сметы"
+                                  title="Убрать"
+                                  disabled={contractAndEstimateLocked}
+                                  onClick={() => removeEstimatePresetFromForm(presetId)}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className={styles.estimateAttachedEmpty}>Пока нет</p>
+                      )}
+                    </aside>
+                  </div>
+                  {form.estimate.selectedPresetIds?.length &&
+                  !(form.estimate.selectedPresetIds ?? []).every(
+                    (id) => (estimateUsageById.get(id)?.length ?? 0) === 0
+                  ) ? (
+                    <p
+                      className={`${styles.hint} ${styles.estimateTabHint} ${styles.estimateTabHintFullWidth}`}
+                    >
+                      Часть расчётов уже прикреплена в других пакетах:{' '}
+                      {[
+                        ...new Set(
+                          (form.estimate.selectedPresetIds ?? [])
+                            .flatMap((id) => estimateUsageById.get(id) ?? [])
+                            .map((u) => `№ ${u.contractNumber} от ${u.contractDate}`)
+                        ),
+                      ].join('; ')}
+                    </p>
+                  ) : null}
+                  <div
+                    className={`${styles.field} ${styles.fieldSpanAll} ${styles.estimateSheetField}`}
+                  >
+                    <label>Содержимое объединённой сметы</label>
+                    <div className={styles.estimateA4Wrap}>
+                      <article
+                        ref={estimatePrintSheetRef}
+                        className={styles.estimateA4Sheet}
+                        data-print-target="estimate-sheet"
+                      >
+                        <p className={styles.estimateA4AppendixRef}>
+                          Приложение №1 к договору № {estimateAppendixContractRef.num} от{' '}
+                          {estimateAppendixContractRef.date}
+                        </p>
+                        {(form.estimate.snapshot?.rooms?.length ?? 0) > 0 ? (
+                          <>
+                            <h4 className={styles.estimateA4Title}>Смета работ</h4>
+                            {selectedEstimateSections.length > 0 ? (
+                              selectedEstimateSections.map((section) => (
+                                <section
+                                  key={section.categoryName}
+                                  className={styles.estimateA4CategorySection}
+                                >
+                                  <p className={styles.estimateA4Meta}>
+                                    Категория работ: <strong>{section.categoryName}</strong>
+                                    ;&nbsp;&nbsp;&nbsp;&nbsp;Помещений: {section.rooms.length}
+                                  </p>
+                                  {section.rooms.map((room, roomIndex) => (
+                                    <section
+                                      key={`${section.categoryName}-${room.name}-${roomIndex}`}
+                                      className={styles.estimateA4Room}
+                                    >
+                                      <div className={styles.estimateA4RoomHeader}>
+                                        <span>
+                                          {roomIndex + 1}. {room.name}
+                                        </span>
+                                        <strong>{formatMoneyValue(room.total)} руб.</strong>
+                                      </div>
+                                      <table className={styles.estimateA4Table}>
+                                        <thead>
+                                          <tr>
+                                            <th>№</th>
+                                            <th>Наименование</th>
+                                            <th>Ед.</th>
+                                            <th>Кол-во</th>
+                                            <th>Цена</th>
+                                            <th>Сумма</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {room.lines.map((line, lineIndex) => (
+                                            <tr key={`${line.name}-${lineIndex}`}>
+                                              <td>{lineIndex + 1}</td>
+                                              <td>{line.name}</td>
+                                              <td>{line.unit}</td>
+                                              <td>{line.quantity}</td>
+                                              <td>{formatMoneyValue(line.price)}</td>
+                                              <td>{formatMoneyValue(line.amount)}</td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </section>
+                                  ))}
+                                </section>
+                              ))
+                            ) : (
+                              <p className={styles.estimateA4Meta}>
+                                Категория работ: <strong>—</strong>
+                                ;&nbsp;&nbsp;&nbsp;&nbsp;Помещений:{' '}
+                                {form.estimate.snapshot?.rooms.length ?? 0}
+                              </p>
+                            )}
+                            <section className={styles.estimateA4Summary}>
+                              {selectedEstimateSections.length > 0 ? (
+                                <>
+                                  <h5 className={styles.estimateA4SummaryTitle}>
+                                    Итоги по категориям
+                                  </h5>
+                                  <ul className={styles.estimateA4SummaryList}>
+                                    {selectedEstimateSections.map((section) => {
+                                      const categoryTotal = section.rooms.reduce(
+                                        (sum, room) => sum + room.total,
+                                        0
+                                      );
+                                      return (
+                                        <li key={`category-summary-${section.categoryName}`}>
+                                          <span>{section.categoryName}</span>
+                                          <strong>{formatMoneyValue(categoryTotal)} руб.</strong>
+                                        </li>
+                                      );
+                                    })}
+                                  </ul>
+                                </>
+                              ) : null}
+                            </section>
+                            {contractDiscountPercentParsed > 0 ? (
+                              <>
+                                <p className={styles.estimateA4Total}>
+                                  Итого по смете (без скидки):{' '}
+                                  <strong>
+                                    {formatMoneyValue(form.estimate.snapshot?.total ?? 0)} руб.
+                                  </strong>
+                                </p>
+                                <p className={styles.estimateA4DiscountMeta}>
+                                  Скидка по договору:{' '}
+                                  {String(contractDiscountPercentParsed).replace('.', ',')}%
+                                </p>
+                                <p className={styles.estimateA4Total}>
+                                  Итого со скидкой:{' '}
+                                  <strong>
+                                    {formatMoneyValue(
+                                      applyRepairContractDiscountToAmount(
+                                        form.estimate.snapshot?.total ?? 0,
+                                        contractDiscountPercentParsed
+                                      )
+                                    )}{' '}
+                                    руб.
+                                  </strong>
+                                </p>
+                              </>
+                            ) : (
                               <p className={styles.estimateA4Total}>
-                                Итого по смете (без скидки):{' '}
+                                Итого по смете:{' '}
                                 <strong>
                                   {formatMoneyValue(form.estimate.snapshot?.total ?? 0)} руб.
                                 </strong>
                               </p>
-                              <p className={styles.estimateA4DiscountMeta}>
-                                Скидка по договору:{' '}
-                                {String(contractDiscountPercentParsed).replace('.', ',')}%
-                              </p>
-                              <p className={styles.estimateA4Total}>
-                                Итого со скидкой:{' '}
-                                <strong>
-                                  {formatMoneyValue(
-                                    applyRepairContractDiscountToAmount(
-                                      form.estimate.snapshot?.total ?? 0,
-                                      contractDiscountPercentParsed
-                                    )
-                                  )}{' '}
-                                  руб.
-                                </strong>
-                              </p>
-                            </>
-                          ) : (
+                            )}
+                            <RepairEstimateSignaturesBlock
+                              directorName={formMergedForTemplate.executor.directorName}
+                              customerFullName={formMergedForTemplate.customer.fullName}
+                            />
+                            <div className={styles.estimateA4HandwritingNote}>
+                              <p className={styles.estimateA4HandwritingNoteLabel}>Примечание:</p>
+                              <div className={styles.estimateA4HandwritingLines} aria-hidden>
+                                {Array.from({ length: 3 }, (_, i) => (
+                                  <div key={i} className={styles.estimateA4HandwritingLine} />
+                                ))}
+                              </div>
+                            </div>
+                            <RepairEstimateSignaturesBlock
+                              directorName={formMergedForTemplate.executor.directorName}
+                              customerFullName={formMergedForTemplate.customer.fullName}
+                            />
+                          </>
+                        ) : (
+                          <p className={styles.estimateA4Empty}>Расчёты не прикреплены.</p>
+                        )}
+                      </article>
+                    </div>
+                  </div>
+                  <p className={styles.hint} style={{ margin: 0 }}>
+                    Создание и редактирование расчётов выполняется в разделе{' '}
+                    <Link className={styles.link} href="/admin/contract-documents/estimates">
+                      «Расчёты»
+                    </Link>
+                    . В таблице сметы суммы по строкам — без скидки по договору; скидка показывается
+                    только в итоговом блоке. Стоимость позиций со скидкой — в «Заказ-наряды» →
+                    «Итог. заказ-наряд».
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : activeTab === 'finalEstimate' ? (
+          <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
+            <div className={styles.formGrid}>
+              <div className={styles.sectionCard}>
+                <h3 className={`${styles.sectionTitle} ${styles.estimateSectionTitle}`}>
+                  Итоговая смета
+                </h3>
+                <p className={styles.hint} style={{ marginTop: 0 }}>
+                  Итог формируется из основной сметы и всех доп. соглашений. Одинаковые работы в
+                  одном помещении суммируются, а работы из блока «Непроводимые ремонтно-отделочные
+                  работы» вычитаются по количеству и сумме. В строках таблицы — суммы без скидки по
+                  договору; скидка только в итогах ниже; по позициям со скидкой см. «Заказ-наряды» →
+                  «Итог. заказ-наряд».
+                </p>
+                <div className={styles.estimateA4Wrap}>
+                  <article
+                    className={styles.estimateA4Sheet}
+                    data-print-target="final-estimate-sheet"
+                  >
+                    <p className={styles.estimateA4AppendixRef}>
+                      Приложение №1 к договору № {estimateAppendixContractRef.num} от{' '}
+                      {estimateAppendixContractRef.date}
+                    </p>
+                    {finalEstimateRooms.length === 0 ? (
+                      <p className={styles.estimateA4Empty}>Нет данных для итоговой сметы.</p>
+                    ) : (
+                      <>
+                        <h4 className={styles.estimateA4Title}>Итоговая смета работ</h4>
+                        <p className={styles.estimateA4Meta}>
+                          Помещений: {finalEstimateRooms.length}
+                        </p>
+                        {finalEstimateRooms.map((room, roomIndex) => (
+                          <section
+                            key={`final-estimate-room-${room.name}-${roomIndex}`}
+                            className={styles.estimateA4Room}
+                          >
+                            <div className={styles.estimateA4RoomHeader}>
+                              <span>
+                                {roomIndex + 1}. {room.name}
+                              </span>
+                              <strong>{formatMoneyValue(room.total)} руб.</strong>
+                            </div>
+                            <table className={styles.estimateA4Table}>
+                              <thead>
+                                <tr>
+                                  <th>№</th>
+                                  <th>Наименование</th>
+                                  <th>Ед.</th>
+                                  <th>Кол-во</th>
+                                  <th>Цена</th>
+                                  <th>Сумма</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {room.lines.map((line, lineIndex) => (
+                                  <tr key={`${room.name}-${line.name}-${lineIndex}`}>
+                                    <td>{lineIndex + 1}</td>
+                                    <td>
+                                      {line.name}
+                                      {line.excludedQuantity > 0 ? (
+                                        <div className={styles.estimateAttachedPresetMeta}>
+                                          Вычет: {formatMoneyValue(line.excludedQuantity)} из{' '}
+                                          {formatMoneyValue(line.includedQuantity)}
+                                        </div>
+                                      ) : null}
+                                    </td>
+                                    <td>{line.unit || '—'}</td>
+                                    <td>{formatMoneyValue(line.quantity)}</td>
+                                    <td>{formatMoneyValue(line.price)}</td>
+                                    <td>{formatMoneyValue(line.amount)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </section>
+                        ))}
+                        {contractDiscountPercentParsed > 0 ? (
+                          <>
                             <p className={styles.estimateA4Total}>
-                              Итого по смете:{' '}
+                              Итого по итоговой смете (без скидки):{' '}
                               <strong>
-                                {formatMoneyValue(form.estimate.snapshot?.total ?? 0)} руб.
+                                {formatMoneyValue(finalEstimateSummary.totalAmount)} руб.
                               </strong>
                             </p>
-                          )}
-                          <RepairEstimateSignaturesBlock
-                            directorName={formMergedForTemplate.executor.directorName}
-                            customerFullName={formMergedForTemplate.customer.fullName}
-                          />
-                          <div className={styles.estimateA4HandwritingNote}>
-                            <p className={styles.estimateA4HandwritingNoteLabel}>Примечание:</p>
-                            <div className={styles.estimateA4HandwritingLines} aria-hidden>
-                              {Array.from({ length: 3 }, (_, i) => (
-                                <div key={i} className={styles.estimateA4HandwritingLine} />
-                              ))}
-                            </div>
-                          </div>
-                          <RepairEstimateSignaturesBlock
-                            directorName={formMergedForTemplate.executor.directorName}
-                            customerFullName={formMergedForTemplate.customer.fullName}
-                          />
-                        </>
-                      ) : (
-                        <p className={styles.estimateA4Empty}>Расчёты не прикреплены.</p>
-                      )}
-                    </article>
-                  </div>
-                </div>
-                <p className={styles.hint} style={{ margin: 0 }}>
-                  Создание и редактирование расчётов выполняется в разделе{' '}
-                  <Link className={styles.link} href="/admin/contract-documents/estimates">
-                    «Расчёты»
-                  </Link>
-                  . В таблице сметы суммы по строкам — без скидки по договору; скидка показывается
-                  только в итоговом блоке. Стоимость позиций со скидкой — на вкладке «Итоговый
-                  заказ-наряд».
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : activeTab === 'interactiveFinalEstimate' ? (
-        <div
-          className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact} ${styles.interactiveFinalEstimateTab}`}
-        >
-          <div className={styles.formGrid}>
-            <div className={styles.sectionCard}>
-              <div className={styles.interactiveEstimateTitleRow}>
-                <h3 className={`${styles.sectionTitle} ${styles.estimateSectionTitle}`}>
-                  Интерактивная итоговая смета
-                </h3>
-                <span
-                  className={`${styles.interactiveUnassignedBadge} ${
-                    unassignedInteractiveRowsCount === 0
-                      ? styles.interactiveUnassignedBadgeDone
-                      : styles.interactiveUnassignedBadgePending
-                  }`}
-                  title="Количество неприкреплённых позиций"
-                >
-                  {unassignedInteractiveRowsCount}
-                </span>
-              </div>
-              <div className={styles.field} style={{ marginBottom: 12 }}>
-                {repairInstallers.length === 0 ? (
-                  <p className={styles.hint} style={{ margin: '6px 0 0' }}>
-                    Список мастеров пуст. Добавьте мастеров в разделе CRM → Мастера.
-                  </p>
-                ) : (
-                  <div className={styles.workCategoryButtons}>
-                    {repairInstallers.map((installer) => {
-                      const isSelected = (form.selectedRepairInstallerIds ?? []).includes(
-                        installer.id
-                      );
-                      const isActive = activeRepairInstallerId === installer.id;
-                      const assignedCount = installerAssignedCounts.get(installer.id) ?? 0;
-                      const isMarked = assignedCount > 0;
-                      return (
-                        <button
-                          key={installer.id}
-                          type="button"
-                          className={`${styles.workCategoryButton} ${
-                            isMarked ? styles.workCategoryButtonMarked : ''
-                          } ${isActive ? styles.workCategoryButtonActive : ''}`}
-                          onClick={() => activateOrToggleRepairInstaller(installer.id)}
-                          title={
-                            isSelected
-                              ? isActive
-                                ? 'Активный мастер (нажмите, чтобы убрать из договора)'
-                                : 'Выбранный мастер (нажмите, чтобы сделать активным)'
-                              : 'Нажмите, чтобы выбрать и сделать активным'
-                          }
-                        >
-                          <span>
-                            {installer.fullName} ({formatInstallerGradeShort(installer.grade)})
-                          </span>
-                          <span
-                            className={`${styles.installerAssignedCountBadge} ${
-                              assignedCount === 0 ? styles.installerAssignedCountBadgeZero : ''
-                            }`}
-                          >
-                            {assignedCount}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {interactiveFinalEstimateSections.length === 0 ? (
-                <p className={styles.estimateA4Empty}>Нет данных для назначения мастеров.</p>
-              ) : (
-                interactiveFinalEstimateSections.map((section) => (
-                  <section
-                    key={`interactive-section-${section.categoryName}`}
-                    className={`${styles.estimateA4CategorySection} ${styles.interactiveEstimateCategorySection}`}
-                  >
-                    {(() => {
-                      const sectionRowKeys = section.rooms.flatMap((room) =>
-                        room.lines.map((line) => line.key)
-                      );
-                      const isSectionAssignedToActive =
-                        Boolean(activeRepairInstallerId) &&
-                        sectionRowKeys.length > 0 &&
-                        sectionRowKeys.every(
-                          (rowKey) =>
-                            form.finalEstimateInstallerAssignments[rowKey]?.installerId ===
-                            activeRepairInstallerId
-                        );
-                      return (
-                        <div className={styles.interactiveEstimateCategoryHeader}>
-                          <p
-                            className={`${styles.estimateA4Meta} ${styles.interactiveEstimateCategoryMeta}`}
-                          >
-                            Категория работ: <strong>{section.categoryName}</strong>
-                            ;&nbsp;&nbsp;&nbsp;&nbsp;Помещений: {section.rooms.length}
-                          </p>
-                          <button
-                            type="button"
-                            className={`${styles.secondaryBtn} ${styles.interactiveEstimateAssignBtn}`}
-                            disabled={!activeRepairInstallerId}
-                            onClick={() =>
-                              assignInstallerToFinalEstimateRows(
-                                sectionRowKeys,
-                                activeRepairInstallerId
-                              )
-                            }
-                          >
-                            {isSectionAssignedToActive
-                              ? 'Снять активного с категории'
-                              : 'Назначить активного на категорию'}
-                          </button>
-                        </div>
-                      );
-                    })()}
-                    {section.rooms.map((room, roomIndex) => (
-                      <section
-                        key={`interactive-room-${section.categoryName}-${room.name}-${roomIndex}`}
-                        className={`${styles.estimateA4Room} ${styles.interactiveEstimateRoom}`}
-                      >
-                        <div
-                          className={`${styles.estimateA4RoomHeader} ${styles.interactiveEstimateRoomHeader}`}
-                        >
-                          <span>
-                            {roomIndex + 1}. {room.name}
-                          </span>
-                          <button
-                            type="button"
-                            className={`${styles.secondaryBtn} ${styles.interactiveEstimateAssignBtn}`}
-                            disabled={!activeRepairInstallerId}
-                            onClick={() =>
-                              assignInstallerToFinalEstimateRows(
-                                room.lines.map((line) => line.key),
-                                activeRepairInstallerId
-                              )
-                            }
-                          >
-                            {Boolean(activeRepairInstallerId) &&
-                            room.lines.length > 0 &&
-                            room.lines.every(
-                              (line) =>
-                                form.finalEstimateInstallerAssignments[line.key]?.installerId ===
-                                activeRepairInstallerId
-                            )
-                              ? 'Снять активного с помещения'
-                              : 'Назначить активного на помещение'}
-                          </button>
-                        </div>
-                        <table
-                          className={`${styles.estimateA4Table} ${styles.interactiveEstimateTable}`}
-                        >
-                          <thead>
-                            <tr>
-                              <th>№</th>
-                              <th>Работа</th>
-                              <th>Кол-во</th>
-                              <th className={styles.interactiveEstimateInstallerCol}>Мастер</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {room.lines.map((line, lineIndex) => (
-                              <tr
-                                key={line.key}
-                                className={`${styles.interactiveEstimateRow} ${
-                                  activeRepairInstallerId &&
-                                  line.installerId &&
-                                  line.installerId === activeRepairInstallerId
-                                    ? styles.interactiveEstimateRowActiveInstaller
-                                    : ''
-                                }`}
-                                onClick={() => {
-                                  if (!activeRepairInstallerId) return;
-                                  assignInstallerToFinalEstimateRow(
-                                    line.key,
-                                    activeRepairInstallerId
-                                  );
-                                }}
-                                title={
-                                  activeRepairInstallerId
-                                    ? 'Нажмите, чтобы назначить активного мастера на позицию'
-                                    : 'Сначала выберите активного мастера'
-                                }
-                              >
-                                <td>{lineIndex + 1}</td>
-                                <td>{line.workName}</td>
-                                <td>{formatMoneyValue(line.quantity)}</td>
-                                <td className={styles.interactiveEstimateInstallerCol}>
-                                  {line.installerId ? (
-                                    <div className={styles.interactiveAssignedInstaller}>
-                                      <span>
-                                        {selectedRepairInstallersById.get(line.installerId)
-                                          ?.fullName ?? 'Назначен'}
-                                      </span>
-                                      <button
-                                        type="button"
-                                        className={`${styles.secondaryBtn} ${styles.interactiveAssignedInstallerClearBtn}`}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          assignInstallerToFinalEstimateRow(line.key, '');
-                                        }}
-                                      >
-                                        Снять
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <span className={styles.hint}>Не назначен</span>
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </section>
-                    ))}
-                  </section>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      ) : activeTab === 'finalEstimate' ? (
-        <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
-          <div className={styles.formGrid}>
-            <div className={styles.sectionCard}>
-              <h3 className={`${styles.sectionTitle} ${styles.estimateSectionTitle}`}>
-                Итоговая смета
-              </h3>
-              <p className={styles.hint} style={{ marginTop: 0 }}>
-                Итог формируется из основной сметы и всех доп. соглашений. Одинаковые работы в одном
-                помещении суммируются, а работы из блока «Непроводимые ремонтно-отделочные работы»
-                вычитаются по количеству и сумме. В строках таблицы — суммы без скидки по договору;
-                скидка только в итогах ниже; по позициям со скидкой см. заказ-наряд.
-              </p>
-              <div className={styles.estimateA4Wrap}>
-                <article
-                  className={styles.estimateA4Sheet}
-                  data-print-target="final-estimate-sheet"
-                >
-                  <p className={styles.estimateA4AppendixRef}>
-                    Приложение №1 к договору № {estimateAppendixContractRef.num} от{' '}
-                    {estimateAppendixContractRef.date}
-                  </p>
-                  {finalEstimateRooms.length === 0 ? (
-                    <p className={styles.estimateA4Empty}>Нет данных для итоговой сметы.</p>
-                  ) : (
-                    <>
-                      <h4 className={styles.estimateA4Title}>Итоговая смета работ</h4>
-                      <p className={styles.estimateA4Meta}>
-                        Помещений: {finalEstimateRooms.length}
-                      </p>
-                      {finalEstimateRooms.map((room, roomIndex) => (
-                        <section
-                          key={`final-estimate-room-${room.name}-${roomIndex}`}
-                          className={styles.estimateA4Room}
-                        >
-                          <div className={styles.estimateA4RoomHeader}>
-                            <span>
-                              {roomIndex + 1}. {room.name}
-                            </span>
-                            <strong>{formatMoneyValue(room.total)} руб.</strong>
-                          </div>
-                          <table className={styles.estimateA4Table}>
-                            <thead>
-                              <tr>
-                                <th>№</th>
-                                <th>Наименование</th>
-                                <th>Ед.</th>
-                                <th>Кол-во</th>
-                                <th>Цена</th>
-                                <th>Сумма</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {room.lines.map((line, lineIndex) => (
-                                <tr key={`${room.name}-${line.name}-${lineIndex}`}>
-                                  <td>{lineIndex + 1}</td>
-                                  <td>
-                                    {line.name}
-                                    {line.excludedQuantity > 0 ? (
-                                      <div className={styles.estimateAttachedPresetMeta}>
-                                        Вычет: {formatMoneyValue(line.excludedQuantity)} из{' '}
-                                        {formatMoneyValue(line.includedQuantity)}
-                                      </div>
-                                    ) : null}
-                                  </td>
-                                  <td>{line.unit || '—'}</td>
-                                  <td>{formatMoneyValue(line.quantity)}</td>
-                                  <td>{formatMoneyValue(line.price)}</td>
-                                  <td>{formatMoneyValue(line.amount)}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </section>
-                      ))}
-                      {contractDiscountPercentParsed > 0 ? (
-                        <>
+                            <p className={styles.estimateA4DiscountMeta}>
+                              Скидка по договору:{' '}
+                              {String(contractDiscountPercentParsed).replace('.', ',')}%
+                            </p>
+                            <p className={styles.estimateA4Total}>
+                              Итого со скидкой:{' '}
+                              <strong>
+                                {formatMoneyValue(finalEstimateTotalAfterDiscount)} руб.
+                              </strong>
+                            </p>
+                          </>
+                        ) : (
                           <p className={styles.estimateA4Total}>
-                            Итого по итоговой смете (без скидки):{' '}
+                            Итого по итоговой смете:{' '}
                             <strong>
                               {formatMoneyValue(finalEstimateSummary.totalAmount)} руб.
                             </strong>
                           </p>
-                          <p className={styles.estimateA4DiscountMeta}>
-                            Скидка по договору:{' '}
-                            {String(contractDiscountPercentParsed).replace('.', ',')}%
-                          </p>
-                          <p className={styles.estimateA4Total}>
-                            Итого со скидкой:{' '}
-                            <strong>
-                              {formatMoneyValue(finalEstimateTotalAfterDiscount)} руб.
-                            </strong>
-                          </p>
-                        </>
-                      ) : (
-                        <p className={styles.estimateA4Total}>
-                          Итого по итоговой смете:{' '}
-                          <strong>{formatMoneyValue(finalEstimateSummary.totalAmount)} руб.</strong>
-                        </p>
-                      )}
-                    </>
-                  )}
-                </article>
+                        )}
+                      </>
+                    )}
+                  </article>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      ) : activeTab === 'finalWorkOrder' ? (
-        <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
-          <div
-            className={`${styles.formGrid} ${styles.workOrderParamsBar}`}
-            style={{ gap: '2px 6px', display: 'flex', alignItems: 'flex-end', flexWrap: 'nowrap' }}
-          >
-            <h3 className={styles.sectionTitle} style={{ margin: '0 0 1px', fontSize: '0.78rem' }}>
-              Параметры итогового заказ-наряда
-            </h3>
-            <div className={styles.field} style={{ gap: 1, minWidth: 240 }}>
-              <label style={{ fontSize: '0.62rem' }}>Разряд (после налога и наценки)</label>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  className={styles.secondaryBtn}
-                  style={
-                    form.workOrder.gradeIncreasePercent === 0
-                      ? {
-                          background: 'var(--admin-info-bg-soft)',
-                          borderColor: 'var(--admin-info-border-soft)',
-                          color: 'var(--admin-info-strong)',
-                          padding: '3px 8px',
-                          fontSize: '0.72rem',
-                        }
-                      : { padding: '3px 8px', fontSize: '0.72rem' }
-                  }
-                  onClick={() => updateWorkOrder('gradeIncreasePercent', 0)}
-                >
-                  4 разряд
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.secondaryBtn} ${styles.repairWorkOrderGradeBtnCompact} ${
-                    form.workOrder.gradeIncreasePercent === 5
-                      ? styles.repairWorkOrderGradeBtnActive
-                      : ''
-                  }`}
-                  onClick={() => updateWorkOrder('gradeIncreasePercent', 5)}
-                >
-                  5 разряд
-                </button>
-                <button
-                  type="button"
-                  className={styles.secondaryBtn}
-                  style={
-                    form.workOrder.gradeIncreasePercent === 10
-                      ? {
-                          background: 'var(--admin-danger-bg)',
-                          borderColor: 'var(--admin-danger-border-strong)',
-                          color: 'var(--admin-danger-text)',
-                          fontWeight: 700,
-                          boxShadow: '0 0 0 2px rgba(239, 68, 68, 0.35)',
-                          padding: '3px 8px',
-                          fontSize: '0.72rem',
-                        }
-                      : { padding: '3px 8px', fontSize: '0.72rem' }
-                  }
-                  onClick={() => updateWorkOrder('gradeIncreasePercent', 10)}
-                >
-                  6 разряд
-                </button>
-              </div>
-            </div>
-          </div>
-          <div className={styles.formGrid}>
-            <div className={styles.sectionCard}>
-              <h3 className={`${styles.sectionTitle} ${styles.estimateSectionTitle}`}>
-                Итоговый заказ-наряд
-              </h3>
-              <p className={styles.hint} style={{ marginTop: 0 }}>
-                Формируется из итоговой сметы: включает все проводимые работы по основной смете и
-                доп. соглашениям, с вычетом работ из блока «Непроводимые ремонтно-отделочные
-                работы».
-              </p>
-              <div
-                className={styles.tabBar}
-                style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}
-              >
-                <button
-                  type="button"
-                  className={`${styles.tab} ${activeFinalWorkOrderDocId === 'common' ? styles.tabActive : ''}`}
-                  onClick={() => setActiveFinalWorkOrderDocId('common')}
-                >
-                  Общий заказ-наряд
-                </button>
-                {perInstallerWorkOrders.map((doc) => (
-                  <button
-                    key={doc.installer.id}
-                    type="button"
-                    className={`${styles.tab} ${
-                      activeFinalWorkOrderDocId === doc.installer.id ? styles.tabActive : ''
-                    }`}
-                    onClick={() => setActiveFinalWorkOrderDocId(doc.installer.id)}
-                  >
-                    {formatInstallerNameShort(doc.installer.fullName)} (
-                    {formatInstallerGradeShort(doc.installer.grade)})
-                  </button>
-                ))}
-              </div>
-              <div className={styles.estimateA4Wrap}>
-                <article className={styles.estimateA4Sheet} data-print-target="work-order-sheet">
-                  <div className={styles.estimateA4Meta} style={{ marginBottom: 10 }}>
-                    <p style={{ margin: '0 0 3px' }}>
-                      <strong>Договор:</strong> № {estimateAppendixContractRef.num} от{' '}
-                      {estimateAppendixContractRef.date}
-                    </p>
-                    <p style={{ margin: '0 0 3px' }}>
-                      <strong>Адрес:</strong> {formMergedForTemplate.object.objectAddress || '—'}
-                    </p>
-                    <p style={{ margin: '0 0 3px' }}>
-                      <strong>Заказчик:</strong> {formMergedForTemplate.customer.fullName || '—'}
-                    </p>
-                    <p style={{ margin: 0 }}>
-                      <strong>Телефон заказчика:</strong>{' '}
-                      {formMergedForTemplate.customer.phone || '—'}
-                    </p>
-                  </div>
-                  {finalWorkOrderComputed.rooms.length === 0 ? (
-                    <p className={styles.estimateA4Empty}>Нет данных для итогового заказ-наряда.</p>
-                  ) : activeInstallerWorkOrder ? (
-                    <>
-                      <h4 className={styles.estimateA4Title}>
-                        Заказ-наряд мастера: {activeInstallerWorkOrder.installer.fullName} (
-                        {formatInstallerGradeShort(activeInstallerWorkOrder.installer.grade)})
-                      </h4>
-                      {activeInstallerWorkOrder.categories.map((section) => (
-                        <section
-                          key={`installer-doc-category-${activeInstallerWorkOrder.installer.id}-${section.categoryName}`}
-                          className={styles.estimateA4CategorySection}
-                        >
-                          <p className={styles.estimateA4Meta}>
-                            Категория работ: <strong>{section.categoryName}</strong>
-                          </p>
-                          {section.rooms.map((room, roomIndex) => (
-                            <section
-                              key={`installer-doc-room-${activeInstallerWorkOrder.installer.id}-${section.categoryName}-${room.name}-${roomIndex}`}
-                              className={styles.estimateA4Room}
-                            >
-                              <div className={styles.estimateA4RoomHeader}>
-                                <span>
-                                  {roomIndex + 1}. {room.name}
-                                </span>
-                                <strong>{formatMoneyValue(room.adjustedTotal)} руб.</strong>
-                              </div>
-                              <table className={styles.estimateA4Table}>
-                                <thead>
-                                  <tr>
-                                    <th>№</th>
-                                    <th>Вид работ</th>
-                                    <th>Кол-во</th>
-                                    {form.workOrder.showLineAmounts ? <th>Стоимость</th> : null}
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {room.lines.map((line, lineIndex) => (
-                                    <tr
-                                      key={`${line.key}-installer-doc-${activeInstallerWorkOrder.installer.id}`}
-                                    >
-                                      <td>{lineIndex + 1}</td>
-                                      <td>{line.workName}</td>
-                                      <td>
-                                        {formatMoneyValue(line.quantity)} {line.unit || ''}
-                                      </td>
-                                      {form.workOrder.showLineAmounts ? (
-                                        <td>{formatMoneyValue(line.adjustedAmount)}</td>
-                                      ) : null}
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </section>
-                          ))}
-                        </section>
-                      ))}
-                      <p className={styles.estimateA4Total}>
-                        Итого по мастеру:{' '}
-                        <strong>{formatMoneyValue(activeInstallerWorkOrder.total)} руб.</strong>
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <h4 className={styles.estimateA4Title}>Итоговый заказ-наряд</h4>
-                      {finalWorkOrderCategorySections.map((section) => (
-                        <section
-                          key={`final-work-order-category-${section.categoryName}`}
-                          className={styles.estimateA4CategorySection}
-                        >
-                          <p className={styles.estimateA4Meta}>
-                            Категория работ: <strong>{section.categoryName}</strong>
-                          </p>
-                          {section.rooms.map((room, roomIndex) => (
-                            <section
-                              key={`final-work-order-room-${section.categoryName}-${room.name}-${roomIndex}`}
-                              className={styles.estimateA4Room}
-                            >
-                              <div className={styles.estimateA4RoomHeader}>
-                                <span>
-                                  {roomIndex + 1}. {room.name}
-                                </span>
-                                <strong>{formatMoneyValue(room.adjustedTotal)} руб.</strong>
-                              </div>
-                              <table className={styles.estimateA4Table}>
-                                <thead>
-                                  <tr>
-                                    <th>№</th>
-                                    <th>Вид работ</th>
-                                    <th>Кол-во</th>
-                                    {form.workOrder.showLineAmounts ? <th>Стоимость</th> : null}
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {room.lines.map((line, lineIndex) => (
-                                    <tr key={`${room.name}-${line.workName}-wo-${lineIndex}`}>
-                                      <td>{lineIndex + 1}</td>
-                                      <td>{line.workName}</td>
-                                      <td>
-                                        {formatMoneyValue(line.quantity)} {line.unit || ''}
-                                      </td>
-                                      {form.workOrder.showLineAmounts ? (
-                                        <td>{formatMoneyValue(line.adjustedAmount)}</td>
-                                      ) : null}
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </section>
-                          ))}
-                        </section>
-                      ))}
-                      <p className={styles.estimateA4Total}>
-                        Итого по итоговому заказ-наряду:{' '}
-                        <strong>{formatMoneyValue(finalWorkOrderComputed.total)} руб.</strong>
-                      </p>
-                      {finalWorkOrderComputed.installerTotals.length > 0 ? (
-                        <section className={styles.estimateA4Room}>
-                          <div className={styles.estimateA4RoomHeader}>
-                            <span>Итоги по мастерам</span>
-                          </div>
-                          <div className={styles.estimateA4Meta}>
-                            {finalWorkOrderComputed.installerTotals.map((row) => (
-                              <p key={row.installer.id} style={{ margin: '0 0 4px' }}>
-                                {formatInstallerNameShort(row.installer.fullName)} (
-                                {formatInstallerGradeShort(row.installer.grade)}, {row.lineCount}
-                                шт.) - {formatMoneyRubShort(row.total)}руб.
-                              </p>
-                            ))}
-                          </div>
-                        </section>
-                      ) : null}
-                    </>
-                  )}
-                </article>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : activeTab === 'workOrder' || isRepairWorkOrderAddendumTab(activeTab) ? (
-        <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
-          <div
-            className={`${styles.formGrid} ${styles.workOrderParamsBar}`}
-            style={{ gap: '2px 6px', display: 'flex', alignItems: 'flex-end', flexWrap: 'nowrap' }}
-          >
-            <h3 className={styles.sectionTitle} style={{ margin: '0 0 1px', fontSize: '0.78rem' }}>
-              {isRepairWorkOrderAddendumTab(activeTab)
-                ? 'Параметры заказ-наряда к Д/с'
-                : 'Параметры заказ-наряда'}
-            </h3>
-            <div className={styles.field} style={{ gap: 1, minWidth: 240 }}>
-              <label style={{ fontSize: '0.62rem' }}>Разряд (после налога и наценки)</label>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  className={styles.secondaryBtn}
-                  style={
-                    form.workOrder.gradeIncreasePercent === 0
-                      ? {
-                          background: 'var(--admin-info-bg-soft)',
-                          borderColor: 'var(--admin-info-border-soft)',
-                          color: 'var(--admin-info-strong)',
-                          padding: '3px 8px',
-                          fontSize: '0.72rem',
-                        }
-                      : { padding: '3px 8px', fontSize: '0.72rem' }
-                  }
-                  onClick={() => updateWorkOrder('gradeIncreasePercent', 0)}
-                >
-                  4 разряд
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.secondaryBtn} ${styles.repairWorkOrderGradeBtnCompact} ${
-                    form.workOrder.gradeIncreasePercent === 5
-                      ? styles.repairWorkOrderGradeBtnActive
-                      : ''
-                  }`}
-                  onClick={() => updateWorkOrder('gradeIncreasePercent', 5)}
-                >
-                  5 разряд
-                </button>
-                <button
-                  type="button"
-                  className={styles.secondaryBtn}
-                  style={
-                    form.workOrder.gradeIncreasePercent === 10
-                      ? {
-                          background: 'var(--admin-danger-bg)',
-                          borderColor: 'var(--admin-danger-border-strong)',
-                          color: 'var(--admin-danger-text)',
-                          fontWeight: 700,
-                          boxShadow: '0 0 0 2px rgba(239, 68, 68, 0.35)',
-                          padding: '3px 8px',
-                          fontSize: '0.72rem',
-                        }
-                      : { padding: '3px 8px', fontSize: '0.72rem' }
-                  }
-                  onClick={() => updateWorkOrder('gradeIncreasePercent', 10)}
-                >
-                  6 разряд
-                </button>
-              </div>
-            </div>
-            <label
-              className={styles.managerQuestionnaireNeedRow}
-              htmlFor="repair_work_order_show_amounts"
-              style={{ margin: 0, fontSize: '0.74rem', whiteSpace: 'nowrap' }}
-            >
-              <input
-                id="repair_work_order_show_amounts"
-                type="checkbox"
-                checked={form.workOrder.showLineAmounts}
-                onChange={(e) => updateWorkOrder('showLineAmounts', e.target.checked)}
-              />
-              <span>Показывать стоимость в каждой позиции</span>
-            </label>
-          </div>
-          <div className={styles.estimateA4Wrap}>
-            <article className={styles.estimateA4Sheet}>
-              <div
-                className={styles.contractA4Preview}
-                dangerouslySetInnerHTML={{ __html: renderedDoc }}
-              />
-            </article>
-          </div>
-        </div>
-      ) : activeTab === 'questionnaire1' ? (
-        <div className={`${styles.blockData} ${styles.dataCompact}`}>
-          <RepairManagerQuestionnaire1Tab
-            form={form}
-            onPatch={patchManagerQuestionnaire1}
-            onToggleTrafficSource={toggleManagerQuestionnaire1Traffic}
-            onToggleWhyChosen={toggleManagerQuestionnaire1WhyChosen}
-            onToggleClientNeed={toggleManagerQuestionnaire1Need}
-          />
-          <div className={styles.estimateA4Wrap}>
-            <article className={styles.estimateA4Sheet}>
-              <div
-                className={styles.contractA4Preview}
-                dangerouslySetInnerHTML={{ __html: renderedDoc }}
-              />
-            </article>
-          </div>
-        </div>
-      ) : activeTab === 'questionnaire2' ? (
-        <div className={`${styles.blockData} ${styles.dataCompact}`}>
-          <RepairPostWorkQuestionnaire2Tab form={form} onPatch={patchPostWorkQuestionnaire2} />
-          <div className={styles.estimateA4Wrap}>
-            <article className={styles.estimateA4Sheet}>
-              <div
-                className={styles.contractA4Preview}
-                dangerouslySetInnerHTML={{ __html: renderedDoc }}
-              />
-            </article>
-          </div>
-        </div>
-      ) : (
-        <>
-          {activeAddendumSlot !== null && unsignedAddendumOrdinals.includes(activeAddendumSlot) ? (
-            <div className={styles.repairAddendumUnsignedBanner} role="status">
-              <strong>Д/с №{activeAddendumSlot} не отмечено как подписанное.</strong> Прикрепите
-              расчёты и нажмите «Д/с №{activeAddendumSlot} подписано» ниже или в модалке{' '}
-              <button
-                type="button"
-                className={styles.repairAddendumUnsignedBannerLink}
-                onClick={() => setPackageHubOpen(true)}
-              >
-                Оплаты и Управление договором
-              </button>
-              .
-            </div>
-          ) : null}
-          {activeAddendumSlot !== null ? (
-            contractAndEstimateLocked ? (
-              <RepairAddendumEstimateBlock
-                slotOrdinal={activeAddendumSlot}
-                slot={form.addendumSlots[activeAddendumSlot - 1]}
-                documentDate={form.addendumDocumentDates[activeAddendumSlot - 1] ?? ''}
-                onDocumentDateChange={(v) => patchAddendumDocumentDate(activeAddendumSlot - 1, v)}
-                estimatePresets={estimatePresets}
-                contractEstimateObjectLabel={
-                  contractEstimateObjectKey
-                    ? contractEstimateObjectKey === '__ungrouped__'
-                      ? 'Вне объекта'
-                      : (estimateGroups.find((g) => g.id === contractEstimateObjectKey)?.title ??
-                        contractEstimateObjectKey)
-                    : ''
-                }
-                addendumAttachablePresets={attachableAddendumEstimatePresets}
-                addendumExcludedAttachablePresets={attachableAddendumExcludedEstimatePresets}
-                presetToAttach={addendumPresetToAttach}
-                setPresetToAttach={setAddendumPresetToAttach}
-                excludedPresetToAttach={addendumExcludedPresetToAttach}
-                setExcludedPresetToAttach={setAddendumExcludedPresetToAttach}
-                onAttachPreset={() => {
-                  if (!addendumPresetToAttach || activeAddendumSlot === null) return;
-                  const idx = activeAddendumSlot - 1;
-                  const pid = addendumPresetToAttach;
-                  setForm((p) => {
-                    const next = applyEstimatePresetIdsToAddendumSlot(
-                      p,
-                      idx,
-                      [...(p.addendumSlots[idx].selectedPresetIds ?? []), pid],
-                      estimatePresets,
-                      estimateGroups,
-                      'additional'
-                    );
-                    formRef.current = next;
-                    schedulePersistRepairPackageDebounced();
-                    return next;
-                  });
-                  setDirty(true);
-                  setAddendumPresetToAttach('');
-                }}
-                onAttachExcludedPreset={() => {
-                  if (!addendumExcludedPresetToAttach || activeAddendumSlot === null) return;
-                  const idx = activeAddendumSlot - 1;
-                  const pid = addendumExcludedPresetToAttach;
-                  setForm((p) => {
-                    const next = applyEstimatePresetIdsToAddendumSlot(
-                      p,
-                      idx,
-                      [...(p.addendumSlots[idx].excludedSelectedPresetIds ?? []), pid],
-                      estimatePresets,
-                      estimateGroups,
-                      'excluded'
-                    );
-                    formRef.current = next;
-                    schedulePersistRepairPackageDebounced();
-                    return next;
-                  });
-                  setDirty(true);
-                  setAddendumExcludedPresetToAttach('');
-                }}
-                onRemovePreset={(presetId) => {
-                  if (activeAddendumSlot === null) return;
-                  const idx = activeAddendumSlot - 1;
-                  setForm((p) => {
-                    const next = applyEstimatePresetIdsToAddendumSlot(
-                      p,
-                      idx,
-                      (p.addendumSlots[idx].selectedPresetIds ?? []).filter(
-                        (id) => id !== presetId
-                      ),
-                      estimatePresets,
-                      estimateGroups,
-                      'additional'
-                    );
-                    formRef.current = next;
-                    schedulePersistRepairPackageDebounced();
-                    return next;
-                  });
-                  setDirty(true);
-                }}
-                onRemoveExcludedPreset={(presetId) => {
-                  if (activeAddendumSlot === null) return;
-                  const idx = activeAddendumSlot - 1;
-                  setForm((p) => {
-                    const next = applyEstimatePresetIdsToAddendumSlot(
-                      p,
-                      idx,
-                      (p.addendumSlots[idx].excludedSelectedPresetIds ?? []).filter(
-                        (id) => id !== presetId
-                      ),
-                      estimatePresets,
-                      estimateGroups,
-                      'excluded'
-                    );
-                    formRef.current = next;
-                    schedulePersistRepairPackageDebounced();
-                    return next;
-                  });
-                  setDirty(true);
-                }}
-                onReorderPresets={(sourceId, targetId) => {
-                  if (activeAddendumSlot === null) return;
-                  const idx = activeAddendumSlot - 1;
-                  setForm((p) => {
-                    const ids = [...(p.addendumSlots[idx].selectedPresetIds ?? [])];
-                    const from = ids.indexOf(sourceId);
-                    const to = ids.indexOf(targetId);
-                    if (from < 0 || to < 0) return p;
-                    const [moved] = ids.splice(from, 1);
-                    ids.splice(to, 0, moved);
-                    const next = applyEstimatePresetIdsToAddendumSlot(
-                      p,
-                      idx,
-                      ids,
-                      estimatePresets,
-                      estimateGroups,
-                      'additional'
-                    );
-                    formRef.current = next;
-                    schedulePersistRepairPackageDebounced();
-                    return next;
-                  });
-                  setDirty(true);
-                }}
-                onReorderExcludedPresets={(sourceId, targetId) => {
-                  if (activeAddendumSlot === null) return;
-                  const idx = activeAddendumSlot - 1;
-                  setForm((p) => {
-                    const ids = [...(p.addendumSlots[idx].excludedSelectedPresetIds ?? [])];
-                    const from = ids.indexOf(sourceId);
-                    const to = ids.indexOf(targetId);
-                    if (from < 0 || to < 0) return p;
-                    const [moved] = ids.splice(from, 1);
-                    ids.splice(to, 0, moved);
-                    const next = applyEstimatePresetIdsToAddendumSlot(
-                      p,
-                      idx,
-                      ids,
-                      estimatePresets,
-                      estimateGroups,
-                      'excluded'
-                    );
-                    formRef.current = next;
-                    schedulePersistRepairPackageDebounced();
-                    return next;
-                  });
-                  setDirty(true);
-                }}
-                estimateUsageById={estimateUsageById}
-                draggingPresetId={draggingAddendumEstimatePresetId}
-                setDraggingPresetId={setDraggingAddendumEstimatePresetId}
-                draggingExcludedPresetId={draggingAddendumExcludedEstimatePresetId}
-                setDraggingExcludedPresetId={setDraggingAddendumExcludedEstimatePresetId}
-                canUnmarkSigned={isWithinMsSinceIso(
-                  form.addendumSlots[activeAddendumSlot - 1]?.signedAt,
-                  CONTRACT_SIGNED_REVERT_WINDOW_MS
-                )}
-                onUnmarkSigned={() => unmarkAddendumSlotSigned(activeAddendumSlot - 1)}
-                canUnmarkPaid={isWithinRevertWindow(
-                  form.addendumSlots[activeAddendumSlot - 1]?.paidAt
-                )}
-                onUnmarkPaid={() => unmarkAddendumSlotPaid(activeAddendumSlot - 1)}
-              />
-            ) : (
-              <div className={`${styles.field} ${styles.repairAddendumDateFieldRow}`}>
-                <label htmlFor={`repair_addendum_date_${activeAddendumSlot}`}>
-                  Дата доп. соглашения (в шапке слева; полный ввод расчётов — после статуса «Договор
-                  подписан»)
-                </label>
-                <input
-                  id={`repair_addendum_date_${activeAddendumSlot}`}
-                  type="text"
-                  value={form.addendumDocumentDates[activeAddendumSlot - 1] ?? ''}
-                  onChange={(e) =>
-                    patchAddendumDocumentDate(activeAddendumSlot - 1, e.target.value)
-                  }
-                  placeholder="напр. 04.05.2026"
-                  autoComplete="off"
-                />
-              </div>
-            )
-          ) : null}
-          {activeTab === 'contract' && contractAndEstimateLocked ? (
-            <p className={`${styles.hint} ${styles.contractLockNotice}`}>
-              Договор подписан: текст договора на этой вкладке только для просмотра и печати.
-            </p>
-          ) : null}
-          {activeTab === 'contract' ||
-          isRepairActTwinOneSheetTab(activeTab) ||
-          activeTab === 'cashOrder' ||
-          activeTab === 'productionLog' ||
-          isRepairAddendumTab(activeTab) ||
-          isRepairWorkOrderAddendumTab(activeTab) ? (
+        ) : activeTab === 'questionnaire1' ? (
+          <div className={`${styles.blockData} ${styles.dataCompact}`}>
+            <RepairManagerQuestionnaire1Tab
+              form={form}
+              onPatch={patchManagerQuestionnaire1}
+              onToggleTrafficSource={toggleManagerQuestionnaire1Traffic}
+              onToggleWhyChosen={toggleManagerQuestionnaire1WhyChosen}
+              onToggleClientNeed={toggleManagerQuestionnaire1Need}
+            />
             <div className={styles.estimateA4Wrap}>
-              {isRepairActTwinOneSheetTab(activeTab) ? (
-                <article
-                  className={`${styles.estimateA4Sheet} ${styles.repairActTwinSheet}`}
-                  aria-label="Два экземпляра акта на одном листе"
+              <article className={styles.estimateA4Sheet}>
+                <div
+                  className={styles.contractA4Preview}
+                  dangerouslySetInnerHTML={{ __html: renderedDoc }}
+                />
+              </article>
+            </div>
+          </div>
+        ) : activeTab === 'questionnaire2' ? (
+          <div className={`${styles.blockData} ${styles.dataCompact}`}>
+            <RepairPostWorkQuestionnaire2Tab form={form} onPatch={patchPostWorkQuestionnaire2} />
+            <div className={styles.estimateA4Wrap}>
+              <article className={styles.estimateA4Sheet}>
+                <div
+                  className={styles.contractA4Preview}
+                  dangerouslySetInnerHTML={{ __html: renderedDoc }}
+                />
+              </article>
+            </div>
+          </div>
+        ) : (
+          <>
+            {activeAddendumSlot !== null &&
+            unsignedAddendumOrdinals.includes(activeAddendumSlot) ? (
+              <div className={styles.repairAddendumUnsignedBanner} role="status">
+                <strong>Д/с №{activeAddendumSlot} не отмечено как подписанное.</strong> Прикрепите
+                расчёты и нажмите «Д/с №{activeAddendumSlot} подписано» ниже или в модалке{' '}
+                <button
+                  type="button"
+                  className={styles.repairAddendumUnsignedBannerLink}
+                  onClick={() => setPackageHubOpen(true)}
                 >
-                  <div
-                    className={styles.contractA4Preview}
-                    dangerouslySetInnerHTML={{
-                      __html: wrapRepairActTwinCopiesOnOnePageHtml(renderedDoc),
-                    }}
-                  />
-                </article>
+                  Оплаты и Управление договором
+                </button>
+                .
+              </div>
+            ) : null}
+            {activeAddendumSlot !== null ? (
+              contractAndEstimateLocked ? (
+                <RepairAddendumEstimateBlock
+                  slotOrdinal={activeAddendumSlot}
+                  slot={form.addendumSlots[activeAddendumSlot - 1]}
+                  documentDate={form.addendumDocumentDates[activeAddendumSlot - 1] ?? ''}
+                  onDocumentDateChange={(v) => patchAddendumDocumentDate(activeAddendumSlot - 1, v)}
+                  estimatePresets={estimatePresets}
+                  contractEstimateObjectLabel={
+                    contractEstimateObjectKey
+                      ? contractEstimateObjectKey === '__ungrouped__'
+                        ? 'Вне объекта'
+                        : (estimateGroups.find((g) => g.id === contractEstimateObjectKey)?.title ??
+                          contractEstimateObjectKey)
+                      : ''
+                  }
+                  addendumAttachablePresets={attachableAddendumEstimatePresets}
+                  addendumExcludedAttachablePresets={attachableAddendumExcludedEstimatePresets}
+                  presetToAttach={addendumPresetToAttach}
+                  setPresetToAttach={setAddendumPresetToAttach}
+                  excludedPresetToAttach={addendumExcludedPresetToAttach}
+                  setExcludedPresetToAttach={setAddendumExcludedPresetToAttach}
+                  onAttachPreset={() => {
+                    if (!addendumPresetToAttach || activeAddendumSlot === null) return;
+                    const idx = activeAddendumSlot - 1;
+                    const pid = addendumPresetToAttach;
+                    setForm((p) => {
+                      const next = applyEstimatePresetIdsToAddendumSlot(
+                        p,
+                        idx,
+                        [...(p.addendumSlots[idx].selectedPresetIds ?? []), pid],
+                        estimatePresets,
+                        estimateGroups,
+                        'additional'
+                      );
+                      formRef.current = next;
+                      schedulePersistRepairPackageDebounced();
+                      return next;
+                    });
+                    setDirty(true);
+                    setAddendumPresetToAttach('');
+                  }}
+                  onAttachExcludedPreset={() => {
+                    if (!addendumExcludedPresetToAttach || activeAddendumSlot === null) return;
+                    const idx = activeAddendumSlot - 1;
+                    const pid = addendumExcludedPresetToAttach;
+                    setForm((p) => {
+                      const next = applyEstimatePresetIdsToAddendumSlot(
+                        p,
+                        idx,
+                        [...(p.addendumSlots[idx].excludedSelectedPresetIds ?? []), pid],
+                        estimatePresets,
+                        estimateGroups,
+                        'excluded'
+                      );
+                      formRef.current = next;
+                      schedulePersistRepairPackageDebounced();
+                      return next;
+                    });
+                    setDirty(true);
+                    setAddendumExcludedPresetToAttach('');
+                  }}
+                  onRemovePreset={(presetId) => {
+                    if (activeAddendumSlot === null) return;
+                    const idx = activeAddendumSlot - 1;
+                    setForm((p) => {
+                      const next = applyEstimatePresetIdsToAddendumSlot(
+                        p,
+                        idx,
+                        (p.addendumSlots[idx].selectedPresetIds ?? []).filter(
+                          (id) => id !== presetId
+                        ),
+                        estimatePresets,
+                        estimateGroups,
+                        'additional'
+                      );
+                      formRef.current = next;
+                      schedulePersistRepairPackageDebounced();
+                      return next;
+                    });
+                    setDirty(true);
+                  }}
+                  onRemoveExcludedPreset={(presetId) => {
+                    if (activeAddendumSlot === null) return;
+                    const idx = activeAddendumSlot - 1;
+                    setForm((p) => {
+                      const next = applyEstimatePresetIdsToAddendumSlot(
+                        p,
+                        idx,
+                        (p.addendumSlots[idx].excludedSelectedPresetIds ?? []).filter(
+                          (id) => id !== presetId
+                        ),
+                        estimatePresets,
+                        estimateGroups,
+                        'excluded'
+                      );
+                      formRef.current = next;
+                      schedulePersistRepairPackageDebounced();
+                      return next;
+                    });
+                    setDirty(true);
+                  }}
+                  onReorderPresets={(sourceId, targetId) => {
+                    if (activeAddendumSlot === null) return;
+                    const idx = activeAddendumSlot - 1;
+                    setForm((p) => {
+                      const ids = [...(p.addendumSlots[idx].selectedPresetIds ?? [])];
+                      const from = ids.indexOf(sourceId);
+                      const to = ids.indexOf(targetId);
+                      if (from < 0 || to < 0) return p;
+                      const [moved] = ids.splice(from, 1);
+                      ids.splice(to, 0, moved);
+                      const next = applyEstimatePresetIdsToAddendumSlot(
+                        p,
+                        idx,
+                        ids,
+                        estimatePresets,
+                        estimateGroups,
+                        'additional'
+                      );
+                      formRef.current = next;
+                      schedulePersistRepairPackageDebounced();
+                      return next;
+                    });
+                    setDirty(true);
+                  }}
+                  onReorderExcludedPresets={(sourceId, targetId) => {
+                    if (activeAddendumSlot === null) return;
+                    const idx = activeAddendumSlot - 1;
+                    setForm((p) => {
+                      const ids = [...(p.addendumSlots[idx].excludedSelectedPresetIds ?? [])];
+                      const from = ids.indexOf(sourceId);
+                      const to = ids.indexOf(targetId);
+                      if (from < 0 || to < 0) return p;
+                      const [moved] = ids.splice(from, 1);
+                      ids.splice(to, 0, moved);
+                      const next = applyEstimatePresetIdsToAddendumSlot(
+                        p,
+                        idx,
+                        ids,
+                        estimatePresets,
+                        estimateGroups,
+                        'excluded'
+                      );
+                      formRef.current = next;
+                      schedulePersistRepairPackageDebounced();
+                      return next;
+                    });
+                    setDirty(true);
+                  }}
+                  estimateUsageById={estimateUsageById}
+                  draggingPresetId={draggingAddendumEstimatePresetId}
+                  setDraggingPresetId={setDraggingAddendumEstimatePresetId}
+                  draggingExcludedPresetId={draggingAddendumExcludedEstimatePresetId}
+                  setDraggingExcludedPresetId={setDraggingAddendumExcludedEstimatePresetId}
+                  canUnmarkSigned={isWithinMsSinceIso(
+                    form.addendumSlots[activeAddendumSlot - 1]?.signedAt,
+                    CONTRACT_SIGNED_REVERT_WINDOW_MS
+                  )}
+                  onUnmarkSigned={() => unmarkAddendumSlotSigned(activeAddendumSlot - 1)}
+                  canUnmarkPaid={isWithinRevertWindow(
+                    form.addendumSlots[activeAddendumSlot - 1]?.paidAt
+                  )}
+                  onUnmarkPaid={() => unmarkAddendumSlotPaid(activeAddendumSlot - 1)}
+                />
               ) : (
-                <article className={styles.estimateA4Sheet}>
-                  <div
-                    className={styles.contractA4Preview}
-                    dangerouslySetInnerHTML={{ __html: renderedDoc }}
+                <div className={`${styles.field} ${styles.repairAddendumDateFieldRow}`}>
+                  <label htmlFor={`repair_addendum_date_${activeAddendumSlot}`}>
+                    Дата доп. соглашения (в шапке слева; полный ввод расчётов — после статуса
+                    «Договор подписан»)
+                  </label>
+                  <input
+                    id={`repair_addendum_date_${activeAddendumSlot}`}
+                    type="text"
+                    value={form.addendumDocumentDates[activeAddendumSlot - 1] ?? ''}
+                    onChange={(e) =>
+                      patchAddendumDocumentDate(activeAddendumSlot - 1, e.target.value)
+                    }
+                    placeholder="напр. 04.05.2026"
+                    autoComplete="off"
                   />
-                </article>
-              )}
-            </div>
-          ) : (
-            <div className={styles.docPane}>
-              <div dangerouslySetInnerHTML={{ __html: renderedDoc }} />
-            </div>
-          )}
-        </>
-      )}
-      <RepairContractPackageHubModal
-        packageId={packageId}
-        isOpen={packageHubOpen}
-        onClose={() => setPackageHubOpen(false)}
-        onUpdated={() => void load({ mode: 'refresh' })}
-        blockPipelineActions={activeTab === 'data' && dirty}
-        blockPipelineReason={
-          activeTab === 'data' && dirty
-            ? 'Сначала сохраните изменения на вкладке «Данные»'
-            : undefined
-        }
-      />
-    </div>
+                </div>
+              )
+            ) : null}
+            {activeTab === 'contract' && contractAndEstimateLocked ? (
+              <p className={`${styles.hint} ${styles.contractLockNotice}`}>
+                Договор подписан: текст договора на этой вкладке только для просмотра и печати.
+              </p>
+            ) : null}
+            {activeTab === 'contract' ||
+            isRepairActTwinOneSheetTab(activeTab) ||
+            activeTab === 'cashOrder' ||
+            activeTab === 'productionLog' ||
+            isRepairAddendumTab(activeTab) ||
+            isRepairWorkOrderAddendumTab(activeTab) ? (
+              <div className={styles.estimateA4Wrap}>
+                {isRepairActTwinOneSheetTab(activeTab) ? (
+                  <article
+                    className={`${styles.estimateA4Sheet} ${styles.repairActTwinSheet}`}
+                    aria-label="Два экземпляра акта на одном листе"
+                  >
+                    <div
+                      className={styles.contractA4Preview}
+                      dangerouslySetInnerHTML={{
+                        __html: wrapRepairActTwinCopiesOnOnePageHtml(renderedDoc),
+                      }}
+                    />
+                  </article>
+                ) : (
+                  <article className={styles.estimateA4Sheet}>
+                    <div
+                      className={styles.contractA4Preview}
+                      dangerouslySetInnerHTML={{ __html: renderedDoc }}
+                    />
+                  </article>
+                )}
+              </div>
+            ) : (
+              <div className={styles.docPane}>
+                <div dangerouslySetInnerHTML={{ __html: renderedDoc }} />
+              </div>
+            )}
+          </>
+        )}
+        <RepairContractWorkOrdersHubModal
+          isOpen={workOrdersHubOpen}
+          onClose={closeWorkOrdersHub}
+          panelTab={workOrdersHubPanelTab}
+          onPanelTabChange={setWorkOrdersHubPanelTab}
+          addendumSlotCount={form.addendumSlotCount}
+          unassignedInteractiveRowsCount={unassignedInteractiveRowsCount}
+          headerContractNumberLabel={headerContractNumberLabel}
+          headerContractDateLabel={headerContractConcludedDateLabel ?? undefined}
+        />
+        <RepairContractPackageHubModal
+          packageId={packageId}
+          isOpen={packageHubOpen}
+          onClose={() => setPackageHubOpen(false)}
+          onUpdated={() => void load({ mode: 'refresh' })}
+          blockPipelineActions={activeTab === 'data' && dirty}
+          blockPipelineReason={
+            activeTab === 'data' && dirty
+              ? 'Сначала сохраните изменения на вкладке «Данные»'
+              : undefined
+          }
+        />
+      </div>
+    </RepairContractWorkOrderHubProvider>
   );
 }

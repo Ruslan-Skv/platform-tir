@@ -1,0 +1,91 @@
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md, 8px);
+  min-height: 0;
+}
+
+.modalTitle {
+  padding-right: 0 !important;
+  width: 100%;
+}
+
+.modalHeaderRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--admin-space-md, 8px);
+  width: 100%;
+  min-width: 0;
+}
+
+.modalHeaderTitle {
+  flex: 1;
+  min-width: 0;
+  font-weight: inherit;
+  line-height: inherit;
+}
+
+.modalHeaderContractRef {
+  margin-left: 8px;
+  font-weight: 600;
+}
+
+.modalHeaderActions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--admin-space-xs, 4px);
+}
+
+.headerIconBtn {
+  appearance: none;
+  background: transparent;
+  border: 1px solid rgb(17 24 39 / 0.08);
+  border-radius: var(--admin-radius-md, 8px);
+  box-shadow: none;
+  color: var(--admin-text-muted, #6b7280);
+  flex-shrink: 0;
+  padding: var(--admin-space-sm, 6px);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.headerIconBtn:hover {
+  background: var(--admin-surface-soft, #f3f4f6);
+  border-color: rgb(17 24 39 / 0.12);
+  color: var(--admin-text-primary, #111827);
+}
+
+.headerIconBtn:focus {
+  outline: none;
+}
+
+.headerIconBtn:focus-visible {
+  border-color: rgb(17 24 39 / 0.14);
+  box-shadow: 0 0 0 1px rgb(17 24 39 / 0.1);
+}
+
+.headerIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.hubTabBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-xs, 4px);
+  margin-bottom: var(--admin-space-sm, 6px);
+  border-bottom: 1px solid var(--admin-border, #e5e7eb);
+  padding-bottom: 4px;
+}
+
+.hubTabActive {
+  background: var(--admin-info-bg-soft, #eff6ff);
+  border-color: var(--admin-info-border-soft, #bfdbfe);
+  color: var(--admin-info-strong, #1d4ed8);
+  font-weight: 600;
+}
