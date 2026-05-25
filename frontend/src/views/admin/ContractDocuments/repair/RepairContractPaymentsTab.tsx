@@ -5,11 +5,8 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import {
   type ContractDocumentPackagePayment,
   type ContractDocumentPackagePaymentInput,
-  type ContractDocumentPackagePaymentPatch,
   createContractDocumentPackagePayment,
-  deleteContractDocumentPackagePayment,
   getContractDocumentPackagePayments,
-  updateContractDocumentPackagePayment,
 } from '@/shared/api/admin-contract-document-packages';
 import crmDetailStyles from '@/views/admin/CRM/Customers/CrmCustomerDetailModal.module.css';
 import measurementBlankStyles from '@/views/admin/CRM/Measurements/MeasurementFormPage.module.css';
@@ -109,7 +106,6 @@ export function RepairContractPaymentsTab({
   const [rows, setRows] = useState<ContractDocumentPackagePayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [basisOptions, setBasisOptions] = useState<string[]>([]);
   const [newBasisDraft, setNewBasisDraft] = useState('');
   const [hubBasisKey, setHubBasisKey] = useState<RepairPaymentBasisOptionKey | ''>('');
@@ -121,23 +117,15 @@ export function RepairContractPaymentsTab({
   const showJournalTable = layout === 'full' || layout === 'journal';
   const isHubSummaryLayout = layout === 'hub' || layout === 'hub-summary';
   const isHubConductLayout = layout === 'hub' || layout === 'hub-conduct';
-  const showConductForm =
-    layout === 'full' ||
-    layout === 'hub-conduct' ||
-    (layout === 'hub' && !editingId) ||
-    (layout === 'journal' && editingId != null);
+  const showConductForm = layout === 'full' || layout === 'hub-conduct' || layout === 'hub';
 
   /** Поля только для режима «Изменить запись» в журнале (не трогаем contract.*). */
   const [draft, setDraft] = useState<{
     paymentDate: string;
     paymentForm: ContractDocumentPackagePaymentInput['paymentForm'];
-    editAmount: string;
-    editBasis: string;
   }>(() => ({
     paymentDate: new Date().toISOString().slice(0, 10),
     paymentForm: 'INVOICE',
-    editAmount: '',
-    editBasis: '',
   }));
 
   const refreshBasisOptions = useCallback(() => {
@@ -150,12 +138,12 @@ export function RepairContractPaymentsTab({
 
   /** Если список оснований из LS загрузился, а в договоре пусто — подставляем первый вариант (ПКО / полная вкладка). */
   useEffect(() => {
-    if (isHubConductLayout || editingId) return;
+    if (isHubConductLayout) return;
     const first = basisOptions[0];
     if (!first) return;
     if (form.contract.paymentBasis.trim()) return;
     onUpdateContract('paymentBasis', first);
-  }, [basisOptions, editingId, form.contract.paymentBasis, onUpdateContract, isHubConductLayout]);
+  }, [basisOptions, form.contract.paymentBasis, onUpdateContract, isHubConductLayout]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -250,16 +238,16 @@ export function RepairContractPaymentsTab({
     hubFixedBasisOptions.length > 0 && hubFixedBasisOptions.every((o) => o.disabled);
 
   useEffect(() => {
-    if (!isHubConductLayout || editingId) return;
+    if (!isHubConductLayout) return;
     if (hubConductSelectedBasis?.disabled) {
       setHubBasisKey('');
       setConductAmount('');
       hubConductPrefillBasisRef.current = '';
     }
-  }, [isHubConductLayout, editingId, hubConductSelectedBasis?.disabled]);
+  }, [isHubConductLayout, hubConductSelectedBasis?.disabled]);
 
   useEffect(() => {
-    if (!isHubConductLayout || editingId || !hubConductBasisReady || !hubConductSelectedBasis) {
+    if (!isHubConductLayout || !hubConductBasisReady || !hubConductSelectedBasis) {
       return;
     }
     if (hubConductPrefillBasisRef.current === hubBasisKey) return;
@@ -276,7 +264,6 @@ export function RepairContractPaymentsTab({
     }
   }, [
     isHubConductLayout,
-    editingId,
     hubConductBasisReady,
     hubConductSelectedBasis,
     hubBasisKey,
@@ -312,8 +299,6 @@ export function RepairContractPaymentsTab({
     setDraft({
       paymentDate: new Date().toISOString().slice(0, 10),
       paymentForm: 'INVOICE',
-      editAmount: '',
-      editBasis: '',
     });
   };
 
@@ -348,15 +333,6 @@ export function RepairContractPaymentsTab({
     return opts;
   }, [basisOptions, form.contract.paymentBasis]);
 
-  const basisSelectOptionsEdit = useMemo(() => {
-    const opts = [...basisOptions];
-    const t = draft.editBasis.trim();
-    if (t && !opts.includes(t)) {
-      opts.unshift(t);
-    }
-    return opts;
-  }, [basisOptions, draft.editBasis]);
-
   const handleAppendBasisOption = () => {
     const res = appendRepairPaymentBasisOption(newBasisDraft);
     if (!res.ok) {
@@ -366,11 +342,7 @@ export function RepairContractPaymentsTab({
     setBasisOptions(res.list);
     setNewBasisDraft('');
     const added = res.list[res.list.length - 1]!;
-    if (editingId) {
-      setDraft((d) => ({ ...d, editBasis: added }));
-    } else {
-      onUpdateContract('paymentBasis', added);
-    }
+    onUpdateContract('paymentBasis', added);
   };
 
   const submitHubConductPayment = async () => {
@@ -448,74 +420,6 @@ export function RepairContractPaymentsTab({
       resetDraft();
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Не удалось сохранить оплату');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const startEdit = (r: ContractDocumentPackagePayment) => {
-    setEditingId(r.id);
-    setDraft({
-      paymentDate: r.paymentDate,
-      paymentForm: r.paymentForm,
-      editAmount: r.amount.replace('.', ','),
-      editBasis: (r.basis ?? '').trim(),
-    });
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    resetDraft();
-  };
-
-  const submitUpdate = async () => {
-    if (!editingId) return;
-    const amountNum = parseRubAmountString(draft.editAmount);
-    if (amountNum == null || amountNum <= 0) {
-      onError('Укажите корректную сумму');
-      return;
-    }
-    const basisRaw = draft.editBasis.trim();
-    if (!basisRaw) {
-      onError('Укажите основание');
-      return;
-    }
-    const apiFields = paymentApiFieldsFromCustomBasis(basisRaw);
-    const body: ContractDocumentPackagePaymentPatch = {
-      paymentDate: draft.paymentDate,
-      amount: amountNum,
-      paymentForm: draft.paymentForm,
-      paymentType: apiFields.paymentType,
-      basis: apiFields.basis || null,
-      addendumNumber: apiFields.addendumNumber ?? null,
-    };
-    setSaving(true);
-    try {
-      const updated = await updateContractDocumentPackagePayment(packageId, editingId, body);
-      setRows((prev) =>
-        prev
-          .map((x) => (x.id === updated.id ? updated : x))
-          .sort((a, b) => a.paymentDate.localeCompare(b.paymentDate))
-      );
-      onJournalChanged?.();
-      cancelEdit();
-    } catch (e) {
-      onError(e instanceof Error ? e.message : 'Не удалось обновить запись');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const removeRow = async (id: string) => {
-    if (!window.confirm('Удалить запись об оплате?')) return;
-    setSaving(true);
-    try {
-      await deleteContractDocumentPackagePayment(packageId, id);
-      setRows((prev) => prev.filter((x) => x.id !== id));
-      onJournalChanged?.();
-      if (editingId === id) cancelEdit();
-    } catch (e) {
-      onError(e instanceof Error ? e.message : 'Не удалось удалить запись');
     } finally {
       setSaving(false);
     }
@@ -828,17 +732,8 @@ export function RepairContractPaymentsTab({
             : `${styles.sectionCard} ${styles.paymentsFormCard} ${styles.paymentsBlockAccentForm}`
         }
       >
-        {!isHubConductLayout ? (
-          <h3 className={styles.sectionTitle}>
-            {editingId ? 'Изменить запись журнала' : 'Добавить оплату'}
-          </h3>
-        ) : null}
-        {editingId ? (
-          <p className={styles.hint}>
-            Правки относятся только к строке журнала. Поля договора для ПКО при этом не меняются.
-          </p>
-        ) : null}
-        {isHubConductLayout && !editingId ? (
+        {!isHubConductLayout ? <h3 className={styles.sectionTitle}>Добавить оплату</h3> : null}
+        {isHubConductLayout ? (
           <div className={`${measurementBlankStyles.blankSheet} ${styles.paymentsHubConductBlank}`}>
             <div className={`${styles.paymentsFormHubRow} ${styles.paymentsFormHubRowCompact}`}>
               <div
@@ -974,27 +869,15 @@ export function RepairContractPaymentsTab({
                 />
               </div>
               <div className={`${styles.field} ${styles.paymentsAmountField}`}>
-                <label htmlFor="pay_tab_amount_num">
-                  {editingId ? 'Сумма, ₽' : 'Сумма оплаты, ₽'}
-                </label>
-                {editingId ? (
-                  <input
-                    id="pay_tab_amount_num"
-                    inputMode="decimal"
-                    value={draft.editAmount}
-                    onChange={(e) => setDraft((d) => ({ ...d, editAmount: e.target.value }))}
-                    placeholder="Напр. 175000 или 175000,50"
-                  />
-                ) : (
-                  <input
-                    id="pay_tab_amount_num"
-                    inputMode="decimal"
-                    value={form.contract.prepaymentAmount}
-                    onChange={(e) => onUpdateContract('prepaymentAmount', e.target.value)}
-                    placeholder="Напр. 175000 или 175000,50"
-                    autoComplete="off"
-                  />
-                )}
+                <label htmlFor="pay_tab_amount_num">Сумма оплаты, ₽</label>
+                <input
+                  id="pay_tab_amount_num"
+                  inputMode="decimal"
+                  value={form.contract.prepaymentAmount}
+                  onChange={(e) => onUpdateContract('prepaymentAmount', e.target.value)}
+                  placeholder="Напр. 175000 или 175000,50"
+                  autoComplete="off"
+                />
               </div>
               <div className={styles.field}>
                 <label htmlFor="pay_tab_form">Способ оплаты</label>
@@ -1017,39 +900,23 @@ export function RepairContractPaymentsTab({
                 </select>
               </div>
               <div className={`${styles.field} ${styles.fieldSpanAll}`}>
-                <label htmlFor="pay_tab_basis_select">
-                  {editingId ? 'Основание' : 'Основание (ПКО, договор, журнал)'}
-                </label>
+                <label htmlFor="pay_tab_basis_select">Основание (ПКО, договор, журнал)</label>
                 <div className={styles.paymentsBasisInlineRow}>
                   <div className={styles.paymentsBasisSelectWrap}>
                     <select
                       id="pay_tab_basis_select"
-                      value={editingId ? draft.editBasis : form.contract.paymentBasis}
-                      disabled={
-                        editingId
-                          ? basisSelectOptionsEdit.length === 0
-                          : basisSelectOptionsCreate.length === 0
-                      }
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        if (editingId) {
-                          setDraft((d) => ({ ...d, editBasis: v }));
-                        } else {
-                          onUpdateContract('paymentBasis', v);
-                        }
-                      }}
+                      value={form.contract.paymentBasis}
+                      disabled={basisSelectOptionsCreate.length === 0}
+                      onChange={(e) => onUpdateContract('paymentBasis', e.target.value)}
                     >
-                      {(editingId ? basisSelectOptionsEdit : basisSelectOptionsCreate).length ===
-                      0 ? (
+                      {basisSelectOptionsCreate.length === 0 ? (
                         <option value="">— Укажите текст справа и нажмите + —</option>
                       ) : (
-                        (editingId ? basisSelectOptionsEdit : basisSelectOptionsCreate).map(
-                          (text, idx) => (
-                            <option key={`${idx}_${text.slice(0, 48)}`} value={text}>
-                              {text.length > 120 ? `${text.slice(0, 117)}…` : text}
-                            </option>
-                          )
-                        )
+                        basisSelectOptionsCreate.map((text, idx) => (
+                          <option key={`${idx}_${text.slice(0, 48)}`} value={text}>
+                            {text.length > 120 ? `${text.slice(0, 117)}…` : text}
+                          </option>
+                        ))
                       )}
                     </select>
                   </div>
@@ -1086,35 +953,14 @@ export function RepairContractPaymentsTab({
               </div>
             </div>
             <div className={styles.paymentsFormActions}>
-              {editingId ? (
-                <>
-                  <button
-                    type="button"
-                    className={styles.primaryBtn}
-                    disabled={saving}
-                    onClick={() => void submitUpdate()}
-                  >
-                    Сохранить изменения
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.secondaryBtn}
-                    disabled={saving}
-                    onClick={cancelEdit}
-                  >
-                    Отмена
-                  </button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  className={styles.primaryBtn}
-                  disabled={saving}
-                  onClick={() => void submitCreate()}
-                >
-                  Добавить в журнал
-                </button>
-              )}
+              <button
+                type="button"
+                className={styles.primaryBtn}
+                disabled={saving}
+                onClick={() => void submitCreate()}
+              >
+                Добавить в журнал
+              </button>
             </div>
           </>
         )}
@@ -1146,7 +992,6 @@ export function RepairContractPaymentsTab({
                 <th>Способ оплаты</th>
                 <th>Основание</th>
                 <th>Кто внёс</th>
-                <th />
               </tr>
             </thead>
             <tbody>
@@ -1167,22 +1012,6 @@ export function RepairContractPaymentsTab({
                             .filter(Boolean)
                             .join(' ') || r.recordedBy.email
                         : '—'}
-                    </td>
-                    <td className={styles.paymentsTableActionsCell}>
-                      <button
-                        type="button"
-                        className={styles.secondaryBtn}
-                        onClick={() => startEdit(r)}
-                      >
-                        Изм.
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.secondaryBtn}
-                        onClick={() => void removeRow(r.id)}
-                      >
-                        Удал.
-                      </button>
                     </td>
                   </tr>
                 );
