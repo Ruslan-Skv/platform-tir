@@ -13,29 +13,23 @@ import {
 } from '@/shared/api/admin-contract-document-packages';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
-import styles from '../ContractDocuments.module.css';
 import {
   type RepairDocumentTemplateTabId,
   buildPersistedFormData,
   mergeFormDataFromStorage,
 } from './formDataTemplateStorage';
 import { getRepairContractNumberDisplayForForm } from './packageContractDisplay';
+import { CONTRACT_SIGNED_REVERT_WINDOW_MS } from './repairContractPackageHubConstants';
 import {
-  CONTRACT_SIGNED_REVERT_RING_C,
-  CONTRACT_SIGNED_REVERT_RING_R,
-  CONTRACT_SIGNED_REVERT_WINDOW_MS,
-} from './repairContractPackageHubConstants';
-import {
-  REPAIR_CONTRACT_JOURNAL_PAY_BANNER_TOOLTIP,
   formatContractConcludedDateForHeader,
   formatRepairPipelineActDate,
-  getRepairContractJournalPayBannerStyle,
   isWithinMsSinceIso,
-  isWithinRevertWindow,
-  sumPackagePaymentAmountsRub,
 } from './repairContractPackageHubUtils';
+import {
+  REPAIR_WORK_START_MIN_CONTRACT_PAY_PCT,
+  computeRepairPipelineModel,
+} from './repairContractPipeline';
 import { type RepairPackageFormData, mergeRepairPackageFormData } from './repairPackageForm';
-import { computeRepairPackagePayableBreakdown } from './repairPackagePaymentTotals';
 
 export type UseRepairContractPackageHubOptions = {
   packageId: string;
@@ -53,7 +47,7 @@ export function useRepairContractPackageHub({
   const [form, setForm] = useState<RepairPackageFormData>(() => mergeRepairPackageFormData({}));
   const [packageFlowStatus, setPackageFlowStatus] =
     useState<ContractDocumentPackageStatus>('IN_PROGRESS');
-  const [journalPaidRub, setJournalPaidRub] = useState(0);
+  const [paymentRows, setPaymentRows] = useState<ContractDocumentPackagePayment[]>([]);
   const [savingPackageStatus, setSavingPackageStatus] = useState(false);
   const [undoUiTick, setUndoUiTick] = useState(0);
 
@@ -116,10 +110,10 @@ export function useRepairContractPackageHub({
       ]);
       if (row.kind !== 'REPAIR') {
         setError('Этот пакет относится к другому направлению.');
-        setJournalPaidRub(0);
+        setPaymentRows([]);
         return;
       }
-      setJournalPaidRub(sumPackagePaymentAmountsRub(paymentsRes ?? []));
+      setPaymentRows(paymentsRes ?? []);
       setPackageFlowStatus(
         row.status === 'CONTRACT_CONCLUDED'
           ? 'CONTRACT_CONCLUDED'
@@ -151,7 +145,7 @@ export function useRepairContractPackageHub({
   const refreshJournalPaidRub = useCallback(async () => {
     try {
       const paymentsRes = await getContractDocumentPackagePayments(packageId);
-      setJournalPaidRub(sumPackagePaymentAmountsRub(paymentsRes ?? []));
+      setPaymentRows(paymentsRes ?? []);
     } catch {
       /* не блокируем UI */
     }
@@ -181,61 +175,16 @@ export function useRepairContractPackageHub({
     [persistForm, notifyUpdated]
   );
 
-  const isContractPaid = (form.contractPaidAt ?? '').trim() !== '';
-  const canRevertContractPaid = isContractPaid && isWithinRevertWindow(form.contractPaidAt);
-  const canRevertContractConcluded =
-    packageFlowStatus === 'CONTRACT_CONCLUDED' &&
-    isWithinMsSinceIso(form.contractConcludedAt, CONTRACT_SIGNED_REVERT_WINDOW_MS);
-
-  const signedAddendumOrdinals = useMemo(
+  const pipeline = useMemo(
     () =>
-      form.addendumSlots
-        .map((slot, i) => (slot.status === 'SIGNED' ? i + 1 : null))
-        .filter((v): v is number => v !== null),
-    [form.addendumSlots]
+      computeRepairPipelineModel({
+        packageFlowStatus,
+        form,
+        payments: paymentRows,
+        nowMs: Date.now(),
+      }),
+    [packageFlowStatus, form, paymentRows, undoUiTick]
   );
-
-  const paidAddendumOrdinals = useMemo(
-    () =>
-      form.addendumSlots
-        .map((slot, i) => (slot.status === 'PAID' ? i + 1 : null))
-        .filter((v): v is number => v !== null),
-    [form.addendumSlots]
-  );
-
-  const openAddendumSignActions = useMemo(() => {
-    const count = Math.min(
-      5,
-      Math.max(1, Number.isFinite(form.addendumSlotCount) ? form.addendumSlotCount : 1)
-    );
-    const rows: Array<{ slotIndex0: number; ordinal: number; hasAnyAttachedPresets: boolean }> = [];
-    for (let i = 0; i < count; i++) {
-      const slot = form.addendumSlots[i];
-      if (!slot || slot.status !== 'OPEN') continue;
-      const hasAnyAttachedPresets =
-        (slot.selectedPresetIds?.length ?? 0) > 0 ||
-        (slot.excludedSelectedPresetIds?.length ?? 0) > 0;
-      rows.push({ slotIndex0: i, ordinal: i + 1, hasAnyAttachedPresets });
-    }
-    return rows;
-  }, [form.addendumSlotCount, form.addendumSlots]);
-
-  const repairWorkStarted = useMemo(
-    () =>
-      Boolean(form.repairWorkStartActSignedAt?.trim() && form.repairWorkStartActPhotoUrl?.trim()),
-    [form.repairWorkStartActSignedAt, form.repairWorkStartActPhotoUrl]
-  );
-
-  const repairContractClosed = useMemo(() => {
-    if (
-      form.repairContractCloseActSignedAt?.trim() &&
-      form.repairContractCloseActPhotoUrl?.trim()
-    ) {
-      return true;
-    }
-    const anyForm = form as unknown as Record<string, unknown>;
-    return anyForm.repairContractClosed === true;
-  }, [form]);
 
   const attachedActPhotos = useMemo(() => {
     const items: Array<{ key: string; title: string; dateLabel: string; src: string }> = [];
@@ -264,34 +213,6 @@ export function useRepairContractPackageHub({
     form.repairContractCloseActPhotoUrl,
     form.repairContractCloseActSignedAt,
   ]);
-
-  const contractSignedRevertRemainingMs = useMemo(() => {
-    if (packageFlowStatus !== 'CONTRACT_CONCLUDED') return 0;
-    const iso = form.contractConcludedAt?.trim();
-    if (!iso) return 0;
-    const ts = Date.parse(iso);
-    if (!Number.isFinite(ts)) return 0;
-    return Math.max(0, ts + CONTRACT_SIGNED_REVERT_WINDOW_MS - Date.now());
-  }, [packageFlowStatus, form.contractConcludedAt, undoUiTick]);
-
-  const addendumSignedRevertUis = useMemo(() => {
-    const rows: Array<{ slotIndex0: number; remainingMs: number }> = [];
-    const count = Math.min(
-      5,
-      Math.max(1, Number.isFinite(form.addendumSlotCount) ? form.addendumSlotCount : 1)
-    );
-    for (let i = 0; i < count; i++) {
-      const slot = form.addendumSlots[i];
-      if (slot?.status !== 'SIGNED') continue;
-      const iso = slot.signedAt?.trim();
-      if (!iso) continue;
-      const ts = Date.parse(iso);
-      if (!Number.isFinite(ts)) continue;
-      const remainingMs = Math.max(0, ts + CONTRACT_SIGNED_REVERT_WINDOW_MS - Date.now());
-      if (remainingMs > 0) rows.push({ slotIndex0: i, remainingMs });
-    }
-    return rows;
-  }, [form.addendumSlotCount, form.addendumSlots, undoUiTick]);
 
   useEffect(() => {
     const now = Date.now();
@@ -328,33 +249,6 @@ export function useRepairContractPackageHub({
     return () => window.clearInterval(id);
   }, [packageFlowStatus, form.contractConcludedAt, form.addendumSlotCount, form.addendumSlots]);
 
-  const headerPayableBreakdown = useMemo(() => computeRepairPackagePayableBreakdown(form), [form]);
-
-  const signedContractPayOrb = useMemo(() => {
-    if (packageFlowStatus !== 'CONTRACT_CONCLUDED') return null;
-    const gt = headerPayableBreakdown.grandTotalRub;
-    if (gt == null || !Number.isFinite(gt) || gt <= 0) return null;
-    const paid = journalPaidRub;
-    const pct = (paid / gt) * 100;
-    const tolRub = 0.5;
-    const treatAsFull = paid >= gt - tolRub;
-    const roundedPct = Math.round(pct);
-    const label = treatAsFull ? '100%' : `${roundedPct}%`;
-    let toneClass: string;
-    if (treatAsFull || roundedPct >= 100) {
-      toneClass = styles.packageFlowPayPctOrbGreen;
-    } else if (roundedPct >= 70) {
-      toneClass = styles.packageFlowPayPctOrbLime;
-    } else {
-      toneClass = styles.packageFlowPayPctOrbYellow;
-    }
-    const displayPct = treatAsFull ? 100 : roundedPct;
-    const bannerText = `Всего оплачено: ${displayPct}%`;
-    const bannerStyle = getRepairContractJournalPayBannerStyle(displayPct);
-    const title = REPAIR_CONTRACT_JOURNAL_PAY_BANNER_TOOLTIP;
-    return { label, toneClass, title, bannerText, bannerStyle };
-  }, [packageFlowStatus, headerPayableBreakdown.grandTotalRub, journalPaidRub]);
-
   const contractNumberLabel = getRepairContractNumberDisplayForForm(form);
 
   const handleMarkContractConcluded = async () => {
@@ -374,7 +268,10 @@ export function useRepairContractPackageHub({
   };
 
   const confirmRevertContractConcluded = async () => {
-    if (!canRevertContractConcluded) {
+    const canRevert =
+      packageFlowStatusRef.current === 'CONTRACT_CONCLUDED' &&
+      isWithinMsSinceIso(formRef.current.contractConcludedAt, CONTRACT_SIGNED_REVERT_WINDOW_MS);
+    if (!canRevert) {
       setError('Снять статус «Договор подписан» можно только в течение 30 секунд после установки.');
       return;
     }
@@ -387,24 +284,6 @@ export function useRepairContractPackageHub({
       notifyUpdated();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось снять отметку');
-    } finally {
-      setSavingPackageStatus(false);
-    }
-  };
-
-  const handleRevertContractPaid = async () => {
-    if (!canRevertContractPaid) {
-      setError('Снять статус «Договор оплачен» можно только в течение 24 часов после установки.');
-      return;
-    }
-    setSavingPackageStatus(true);
-    setError(null);
-    try {
-      const nextForm = { ...formRef.current, contractPaidAt: '' };
-      await persistForm(nextForm, { status: packageFlowStatusRef.current, recordVersion: true });
-      notifyUpdated();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось снять статус «Договор оплачен»');
     } finally {
       setSavingPackageStatus(false);
     }
@@ -468,6 +347,17 @@ export function useRepairContractPackageHub({
       setWorkStartModalError('Прикрепите фотографию акта начала работ.');
       return;
     }
+    const payCheck = computeRepairPipelineModel({
+      packageFlowStatus: packageFlowStatusRef.current,
+      form: formRef.current,
+      payments: paymentRows,
+    });
+    if (!payCheck.workStartPaymentReady) {
+      setWorkStartModalError(
+        `Для этапа «В работе» нужна оплата по договору не менее ${REPAIR_WORK_START_MIN_CONTRACT_PAY_PCT}% (сейчас ${payCheck.contractPaidPct ?? 0}%).`
+      );
+      return;
+    }
     setWorkStartModalBusy(true);
     setWorkStartModalError(null);
     try {
@@ -500,6 +390,17 @@ export function useRepairContractPackageHub({
     }
     if (!contractCloseModalFile) {
       setContractCloseModalError('Прикрепите фотографию акта сдачи-приёмки.');
+      return;
+    }
+    const payCheck = computeRepairPipelineModel({
+      packageFlowStatus: packageFlowStatusRef.current,
+      form: formRef.current,
+      payments: paymentRows,
+    });
+    if (!payCheck.allPaymentsComplete) {
+      setContractCloseModalError(
+        'Для закрытия договора нужна 100% оплата по договору и по всем доп. соглашениям с расчётами.'
+      );
       return;
     }
     setContractCloseModalBusy(true);
@@ -586,29 +487,6 @@ export function useRepairContractPackageHub({
     [persistForm, notifyUpdated]
   );
 
-  const unmarkAddendumSlotPaid = useCallback(
-    async (slotIndex0: number) => {
-      const p = formRef.current;
-      const slots = [...p.addendumSlots] as RepairPackageFormData['addendumSlots'];
-      const cur = slots[slotIndex0];
-      if (!cur || cur.status !== 'PAID') return;
-      if (!isWithinRevertWindow(cur.paidAt)) return;
-      slots[slotIndex0] = { ...cur, status: 'SIGNED', paidAt: '' };
-      const nextForm = { ...p, addendumSlots: slots };
-      setSavingPackageStatus(true);
-      setError(null);
-      try {
-        await persistForm(nextForm, { recordVersion: true });
-        notifyUpdated();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Не удалось снять отметку оплаты Д/с');
-      } finally {
-        setSavingPackageStatus(false);
-      }
-    },
-    [persistForm, notifyUpdated]
-  );
-
   const headerConcludedDateLabel =
     packageFlowStatus === 'CONTRACT_CONCLUDED'
       ? formatContractConcludedDateForHeader(form.contractConcludedAt)
@@ -622,23 +500,10 @@ export function useRepairContractPackageHub({
     packageFlowStatus,
     contractNumberLabel,
     headerConcludedDateLabel,
-    journalPaidRub,
+    paymentRows,
+    pipeline,
     savingPackageStatus,
-    isContractPaid,
-    canRevertContractPaid,
-    canRevertContractConcluded,
-    signedAddendumOrdinals,
-    paidAddendumOrdinals,
-    openAddendumSignActions,
-    repairWorkStarted,
-    repairContractClosed,
     attachedActPhotos,
-    contractSignedRevertRemainingMs,
-    addendumSignedRevertUis,
-    signedContractPayOrb,
-    CONTRACT_SIGNED_REVERT_RING_R,
-    CONTRACT_SIGNED_REVERT_RING_C,
-    CONTRACT_SIGNED_REVERT_WINDOW_MS,
     workStartModalOpen,
     setWorkStartModalOpen,
     workStartModalDate,
@@ -673,14 +538,12 @@ export function useRepairContractPackageHub({
     updateContract,
     handleMarkContractConcluded,
     confirmRevertContractConcluded,
-    handleRevertContractPaid,
     handleConfirmContractRefusal,
     handleRevertRefusal,
     handleConfirmWorkStart,
     handleConfirmContractClose,
     markAddendumSlotSigned,
     unmarkAddendumSlotSigned,
-    unmarkAddendumSlotPaid,
   };
 }
 

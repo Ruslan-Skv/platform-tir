@@ -6,7 +6,6 @@ import Link from 'next/link';
 
 import { useAuth } from '@/features/auth';
 import {
-  type ContractDocumentPackagePayment,
   type ContractDocumentPackageStatus,
   type ContractDocumentPackageVersionListItem,
   type ContractEstimateGroup,
@@ -18,20 +17,15 @@ import {
   getContractDocumentExecutorProfiles,
   getContractDocumentGlobalTemplate,
   getContractDocumentPackage,
-  getContractDocumentPackagePayments,
   getContractDocumentPackageVersions,
   getContractDocumentPackages,
   getContractDocumentSignatoryProfiles,
   getContractDocumentTemplatePresets,
   putContractDocumentTemplatePresets,
   updateContractDocumentPackage,
-  uploadRepairPackageContractCloseActPhoto,
-  uploadRepairPackageWorkStartActPhoto,
 } from '@/shared/api/admin-contract-document-packages';
 import type { CrmCustomerDetail, InstallerMaster } from '@/shared/api/admin-crm';
 import { getInstallers } from '@/shared/api/admin-crm';
-import { publicUploadUrl } from '@/shared/lib/public-upload-url';
-import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
 import { VersionsHistoryIcon } from '@/shared/ui/icons/VersionsHistoryIcon';
 import { CrmCustomerSearchPanel } from '@/views/admin/CRM/Customers/CrmCustomerSearchPanel';
@@ -80,7 +74,11 @@ import {
   repairContractDiscountMoneyFactor,
   repairEstimateTotalToContractFields,
 } from './repairContractDiscount';
-import { REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE } from './repairContractPackageHubConstants';
+import {
+  CONTRACT_SIGNED_REVERT_WINDOW_MS,
+  REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE,
+} from './repairContractPackageHubConstants';
+import { getUnsignedAddendumOrdinals } from './repairContractPipeline';
 import {
   REPAIR_DOCUMENT_TAB_IDS,
   REPAIR_DOCUMENT_TAB_LABELS,
@@ -109,11 +107,6 @@ import { computeRepairPackagePayableBreakdown } from './repairPackagePaymentTota
 /** Класс на `document.body` при печати сметы — см. `@media print` в ContractDocuments.module.css */
 const BODY_PRINT_ESTIMATE_CLASS = 'body-print-estimate-sheet';
 const STATUS_REVERT_WINDOW_MS = 24 * 60 * 60 * 1000;
-/** Окно в шапке: отменить «Договор подписан» только сразу после установки статуса. */
-const CONTRACT_SIGNED_REVERT_WINDOW_MS = 30 * 1000;
-const CONTRACT_SIGNED_REVERT_RING_R = 15;
-const CONTRACT_SIGNED_REVERT_RING_C = 2 * Math.PI * CONTRACT_SIGNED_REVERT_RING_R;
-
 function isWithinRevertWindow(iso: string | null | undefined): boolean {
   if (!iso) return false;
   const ts = Date.parse(iso);
@@ -126,13 +119,6 @@ function isWithinMsSinceIso(iso: string | null | undefined, windowMs: number): b
   const ts = Date.parse(iso.trim());
   if (!Number.isFinite(ts)) return false;
   return Date.now() - ts <= windowMs;
-}
-
-function sumPackagePaymentAmountsRub(rows: ContractDocumentPackagePayment[]): number {
-  return rows.reduce((acc, r) => {
-    const n = Number.parseFloat(r.amount);
-    return acc + (Number.isFinite(n) ? n : 0);
-  }, 0);
 }
 
 /** Встроенный в код шаблон (если в БД нет общего шаблона). */
@@ -480,36 +466,6 @@ function formatPackageVersionActor(v: ContractDocumentPackageVersionListItem): s
   return '—';
 }
 
-/** Иконка «фото актов» в шапке (рядом с обновлением и печатью). */
-function RepairPackageActPhotosTriggerIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={18}
-      height={18}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <rect width={18} height={18} x={3} y={3} rx={2} ry={2} />
-      <circle cx={8.5} cy={8.5} r={1.5} />
-      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-    </svg>
-  );
-}
-
-function formatRepairPipelineActDate(raw: string): string {
-  const t = raw.trim();
-  if (!t) return '—';
-  const d = /\d{4}-\d{2}-\d{2}/.test(t) ? new Date(`${t}T12:00:00`) : new Date(t);
-  if (Number.isNaN(d.getTime())) return t;
-  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
 function RepairTabLockIcon() {
   return (
     <svg
@@ -704,9 +660,6 @@ export function RepairContractDocumentEditorPage({
     }>
   >([]);
   const [packageRefreshing, setPackageRefreshing] = useState(false);
-  /** Сумма строк журнала оплат (для бейджа % в шапке после «Договор подписан»). */
-  const [headerJournalPaidRub, setHeaderJournalPaidRub] = useState(0);
-  const [repairHeaderUndoUiTick, setRepairHeaderUndoUiTick] = useState(0);
   const [packageFlowStatus, setPackageFlowStatus] =
     useState<ContractDocumentPackageStatus>('IN_PROGRESS');
   const packageFlowStatusRef = useRef<ContractDocumentPackageStatus>('IN_PROGRESS');
@@ -721,209 +674,11 @@ export function RepairContractDocumentEditorPage({
     'paymentBasis',
     'totalAmountWords',
   ]);
-  const canRevertContractConcluded =
-    packageFlowStatus === 'CONTRACT_CONCLUDED' &&
-    isWithinMsSinceIso(form.contractConcludedAt, CONTRACT_SIGNED_REVERT_WINDOW_MS);
-  const isContractPaid = (form.contractPaidAt ?? '').trim() !== '';
-  const canRevertContractPaid = isContractPaid && isWithinRevertWindow(form.contractPaidAt);
-  const signedAddendumOrdinals = useMemo(
-    () =>
-      form.addendumSlots
-        .map((slot, i) => (slot.status === 'SIGNED' ? i + 1 : null))
-        .filter((v): v is number => v !== null),
-    [form.addendumSlots]
-  );
-  const paidAddendumOrdinals = useMemo(
-    () =>
-      form.addendumSlots
-        .map((slot, i) => (slot.status === 'PAID' ? i + 1 : null))
-        .filter((v): v is number => v !== null),
-    [form.addendumSlots]
-  );
-
-  /** Кнопка «Д/с №n подписано» в центре шапки (только на вкладке Д/с со статусом OPEN). */
-  const activeAddendumMarkSignedHeader = useMemo(() => {
-    if (activeAddendumSlot === null) return null;
-    const slot = form.addendumSlots[activeAddendumSlot - 1];
-    if (!slot || slot.status !== 'OPEN') return null;
-    const hasAnyAttachedPresets =
-      (slot.selectedPresetIds?.length ?? 0) > 0 ||
-      (slot.excludedSelectedPresetIds?.length ?? 0) > 0;
-    return { slotOrdinal: activeAddendumSlot, hasAnyAttachedPresets };
-  }, [activeAddendumSlot, form.addendumSlots]);
-
-  const repairWorkStarted = useMemo(
-    () =>
-      Boolean(form.repairWorkStartActSignedAt?.trim() && form.repairWorkStartActPhotoUrl?.trim()),
-    [form.repairWorkStartActSignedAt, form.repairWorkStartActPhotoUrl]
-  );
-
-  const repairContractClosed = useMemo(() => {
-    if (
-      form.repairContractCloseActSignedAt?.trim() &&
-      form.repairContractCloseActPhotoUrl?.trim()
-    ) {
-      return true;
-    }
-    const anyForm = form as unknown as Record<string, unknown>;
-    return anyForm.repairContractClosed === true;
-  }, [form]);
-
-  const attachedRepairActPhotos = useMemo(() => {
-    const items: Array<{ key: string; title: string; dateLabel: string; src: string }> = [];
-    const workPhoto = form.repairWorkStartActPhotoUrl?.trim();
-    if (workPhoto) {
-      items.push({
-        key: 'work-start',
-        title: 'Акт начала работ',
-        dateLabel: formatRepairPipelineActDate(form.repairWorkStartActSignedAt ?? ''),
-        src: publicUploadUrl(workPhoto),
-      });
-    }
-    const closePhoto = form.repairContractCloseActPhotoUrl?.trim();
-    if (closePhoto) {
-      items.push({
-        key: 'contract-close',
-        title: 'Акт сдачи-приёмки (закрытие договора)',
-        dateLabel: formatRepairPipelineActDate(form.repairContractCloseActSignedAt ?? ''),
-        src: publicUploadUrl(closePhoto),
-      });
-    }
-    return items;
-  }, [
-    form.repairWorkStartActPhotoUrl,
-    form.repairWorkStartActSignedAt,
-    form.repairContractCloseActPhotoUrl,
-    form.repairContractCloseActSignedAt,
-  ]);
-
-  const contractSignedRevertRemainingMs = useMemo(() => {
-    if (packageFlowStatus !== 'CONTRACT_CONCLUDED') return 0;
-    const iso = form.contractConcludedAt?.trim();
-    if (!iso) return 0;
-    const ts = Date.parse(iso);
-    if (!Number.isFinite(ts)) return 0;
-    const deadline = ts + CONTRACT_SIGNED_REVERT_WINDOW_MS;
-    return Math.max(0, deadline - Date.now());
-  }, [packageFlowStatus, form.contractConcludedAt, repairHeaderUndoUiTick]);
-
-  const addendumSignedRevertUis = useMemo(() => {
-    const rows: Array<{ slotIndex0: number; remainingMs: number }> = [];
-    const count = Math.min(
-      5,
-      Math.max(1, Number.isFinite(form.addendumSlotCount) ? form.addendumSlotCount : 1)
-    );
-    for (let i = 0; i < count; i++) {
-      const slot = form.addendumSlots[i];
-      if (slot?.status !== 'SIGNED') continue;
-      const iso = slot.signedAt?.trim();
-      if (!iso) continue;
-      const ts = Date.parse(iso);
-      if (!Number.isFinite(ts)) continue;
-      const deadline = ts + CONTRACT_SIGNED_REVERT_WINDOW_MS;
-      const remainingMs = Math.max(0, deadline - Date.now());
-      if (remainingMs > 0) {
-        rows.push({ slotIndex0: i, remainingMs });
-      }
-    }
-    return rows;
-  }, [form.addendumSlotCount, form.addendumSlots, repairHeaderUndoUiTick]);
-
-  useEffect(() => {
-    const now = Date.now();
-    let latestActiveEnd = 0;
-    if (packageFlowStatus === 'CONTRACT_CONCLUDED') {
-      const iso = form.contractConcludedAt?.trim();
-      if (iso) {
-        const ts = Date.parse(iso);
-        if (Number.isFinite(ts)) {
-          const d = ts + CONTRACT_SIGNED_REVERT_WINDOW_MS;
-          if (d > now) latestActiveEnd = Math.max(latestActiveEnd, d);
-        }
-      }
-    }
-    const count = Math.min(
-      5,
-      Math.max(1, Number.isFinite(form.addendumSlotCount) ? form.addendumSlotCount : 1)
-    );
-    for (let i = 0; i < count; i++) {
-      const slot = form.addendumSlots[i];
-      if (slot?.status !== 'SIGNED') continue;
-      const iso = slot.signedAt?.trim();
-      if (!iso) continue;
-      const ts = Date.parse(iso);
-      if (!Number.isFinite(ts)) continue;
-      const d = ts + CONTRACT_SIGNED_REVERT_WINDOW_MS;
-      if (d > now) latestActiveEnd = Math.max(latestActiveEnd, d);
-    }
-    if (latestActiveEnd === 0) return;
-    const id = window.setInterval(() => {
-      setRepairHeaderUndoUiTick((v) => v + 1);
-      if (Date.now() >= latestActiveEnd) {
-        window.clearInterval(id);
-      }
-    }, 100);
-    return () => window.clearInterval(id);
-  }, [packageFlowStatus, form.contractConcludedAt, form.addendumSlotCount, form.addendumSlots]);
-
-  const headerPayableBreakdown = useMemo(() => computeRepairPackagePayableBreakdown(form), [form]);
-
-  /** Круглый бейдж % оплаты от «Итого» (договор + Д/с) для шапки при статусе «Договор подписан». */
-  const signedContractPayOrb = useMemo(() => {
-    if (packageFlowStatus !== 'CONTRACT_CONCLUDED') return null;
-    const gt = headerPayableBreakdown.grandTotalRub;
-    if (gt == null || !Number.isFinite(gt) || gt <= 0) return null;
-    const paid = headerJournalPaidRub;
-    const pct = (paid / gt) * 100;
-    const tolRub = 0.5;
-    const treatAsFull = paid >= gt - tolRub;
-    const roundedPct = Math.round(pct);
-    const label = treatAsFull ? '100%' : `${roundedPct}%`;
-    let toneClass: string;
-    if (treatAsFull || roundedPct >= 100) {
-      toneClass = styles.packageFlowPayPctOrbGreen;
-    } else if (roundedPct >= 70) {
-      toneClass = styles.packageFlowPayPctOrbLime;
-    } else {
-      toneClass = styles.packageFlowPayPctOrbYellow;
-    }
-    const paidFmt = new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-      maximumFractionDigits: 0,
-    }).format(paid);
-    const gtFmt = new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-      maximumFractionDigits: 0,
-    }).format(gt);
-    const title = `Внесено по журналу: ${paidFmt} (${label} от суммы «Итого» на вкладке «Оплаты»: ${gtFmt})`;
-    return { label, toneClass, title };
-  }, [packageFlowStatus, headerPayableBreakdown.grandTotalRub, headerJournalPaidRub]);
-  const [savingPackageStatus, setSavingPackageStatus] = useState(false);
   const [packageVersions, setPackageVersions] = useState<ContractDocumentPackageVersionListItem[]>(
     []
   );
   const [versionsBusy, setVersionsBusy] = useState(false);
   const [isVersionsHistoryOpen, setIsVersionsHistoryOpen] = useState(false);
-  const [workStartModalOpen, setWorkStartModalOpen] = useState(false);
-  const [workStartModalDate, setWorkStartModalDate] = useState('');
-  const [workStartModalFile, setWorkStartModalFile] = useState<File | null>(null);
-  const [workStartFilePreview, setWorkStartFilePreview] = useState<string | null>(null);
-  const [workStartModalBusy, setWorkStartModalBusy] = useState(false);
-  const [workStartModalError, setWorkStartModalError] = useState<string | null>(null);
-  const [contractCloseModalOpen, setContractCloseModalOpen] = useState(false);
-  const [contractCloseModalDate, setContractCloseModalDate] = useState('');
-  const [contractCloseModalFile, setContractCloseModalFile] = useState<File | null>(null);
-  const [contractCloseFilePreview, setContractCloseFilePreview] = useState<string | null>(null);
-  const [contractCloseModalBusy, setContractCloseModalBusy] = useState(false);
-  const [contractCloseModalError, setContractCloseModalError] = useState<string | null>(null);
-  const [repairActPhotosModalOpen, setRepairActPhotosModalOpen] = useState(false);
-  const [refusalModalOpen, setRefusalModalOpen] = useState(false);
-  const [refusalReasonDraft, setRefusalReasonDraft] = useState('');
-  const [refusalModalBusy, setRefusalModalBusy] = useState(false);
-  const [refusalModalError, setRefusalModalError] = useState<string | null>(null);
-  const [revertRefusalConfirmOpen, setRevertRefusalConfirmOpen] = useState(false);
 
   /** Актуальная форма для отложенного сохранения (после setState ref обновится на следующем рендере). */
   const formRef = useRef(form);
@@ -934,32 +689,6 @@ export function RepairContractDocumentEditorPage({
   selectedTemplateIdsRef.current = selectedTemplateIds;
   const draftTitleRef = useRef(draftTitle);
   draftTitleRef.current = draftTitle;
-  const workStartFileInputRef = useRef<HTMLInputElement>(null);
-  const contractCloseFileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!workStartModalFile) {
-      setWorkStartFilePreview(null);
-      return;
-    }
-    const u = URL.createObjectURL(workStartModalFile);
-    setWorkStartFilePreview(u);
-    return () => {
-      URL.revokeObjectURL(u);
-    };
-  }, [workStartModalFile]);
-
-  useEffect(() => {
-    if (!contractCloseModalFile) {
-      setContractCloseFilePreview(null);
-      return;
-    }
-    const u = URL.createObjectURL(contractCloseModalFile);
-    setContractCloseFilePreview(u);
-    return () => {
-      URL.revokeObjectURL(u);
-    };
-  }, [contractCloseModalFile]);
 
   /** В браузере `setTimeout` возвращает `number`; при подмешанных типах Node — не `NodeJS.Timeout`. */
   const persistRepairPackageDebounceRef = useRef<number | null>(null);
@@ -1135,15 +864,6 @@ export function RepairContractDocumentEditorPage({
     [packageId]
   );
 
-  const refreshHeaderJournalPaidRub = useCallback(async () => {
-    try {
-      const list = await getContractDocumentPackagePayments(packageId);
-      setHeaderJournalPaidRub(sumPackagePaymentAmountsRub(list));
-    } catch {
-      /* не блокируем шапку */
-    }
-  }, [packageId]);
-
   const load = useCallback(
     async (opts?: { mode?: 'initial' | 'refresh' }) => {
       const isRefresh = opts?.mode === 'refresh';
@@ -1166,7 +886,6 @@ export function RepairContractDocumentEditorPage({
           estimateRes,
           packagesRes,
           installersRes,
-          paymentsRes,
         ] = await Promise.all([
           getContractDocumentPackage(packageId),
           getContractDocumentGlobalTemplate('REPAIR', 'contract').catch(() => ({
@@ -1192,16 +911,11 @@ export function RepairContractDocumentEditorPage({
           })),
           getContractDocumentPackages('REPAIR').catch(() => []),
           getInstallers().catch(() => [] as InstallerMaster[]),
-          getContractDocumentPackagePayments(packageId).catch(
-            () => [] as ContractDocumentPackagePayment[]
-          ),
         ]);
         if (row.kind !== 'REPAIR') {
           setError('Этот пакет относится к другому направлению.');
-          setHeaderJournalPaidRub(0);
           return;
         }
-        setHeaderJournalPaidRub(sumPackagePaymentAmountsRub(paymentsRes ?? []));
         setDraftTitle(row.title ?? '');
         setPackageFlowStatus(
           row.status === 'CONTRACT_CONCLUDED'
@@ -1381,15 +1095,6 @@ export function RepairContractDocumentEditorPage({
     void load();
   }, [load]);
 
-  const prevRepairActiveTabRef = useRef<RepairDocumentTabId>(activeTab);
-  useEffect(() => {
-    const prev = prevRepairActiveTabRef.current;
-    prevRepairActiveTabRef.current = activeTab;
-    if (prev === 'payments' && activeTab !== 'payments') {
-      void refreshHeaderJournalPaidRub();
-    }
-  }, [activeTab, refreshHeaderJournalPaidRub]);
-
   /** Вкладка «Оплаты» перенесена в модалку — сбрасываем устаревший activeTab из localStorage. */
   useEffect(() => {
     if (activeTab === 'payments') setActiveTab('data');
@@ -1433,256 +1138,6 @@ export function RepairContractDocumentEditorPage({
     setForm((p) => clearRepairFormCrmCustomerFields(p));
     touchPackageData();
   }, [contractAndEstimateLocked, touchPackageData]);
-
-  const handleMarkContractConcluded = async () => {
-    setSavingPackageStatus(true);
-    setError(null);
-    try {
-      const nowIso = new Date().toISOString();
-      const nextForm = { ...formRef.current, contractConcludedAt: nowIso, contractPaidAt: '' };
-      const formData = buildPersistedFormData(
-        nextForm,
-        templateOverridesRef.current,
-        selectedTemplateIdsRef.current
-      );
-      await updateContractDocumentPackage(packageId, {
-        status: 'CONTRACT_CONCLUDED',
-        formData,
-        recordVersion: true,
-      });
-      setPackageFlowStatus('CONTRACT_CONCLUDED');
-      setForm(nextForm);
-      formRef.current = nextForm;
-      await refreshPackageVersions({ skipSpinner: true });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось обновить статус пакета');
-    } finally {
-      setSavingPackageStatus(false);
-    }
-  };
-
-  const confirmRevertContractConcluded = async () => {
-    if (!canRevertContractConcluded) {
-      setError('Снять статус «Договор подписан» можно только в течение 30 секунд после установки.');
-      return;
-    }
-    setSavingPackageStatus(true);
-    setError(null);
-    try {
-      const nextForm = { ...formRef.current, contractConcludedAt: '', contractPaidAt: '' };
-      const formData = buildPersistedFormData(
-        nextForm,
-        templateOverridesRef.current,
-        selectedTemplateIdsRef.current
-      );
-      await updateContractDocumentPackage(packageId, {
-        status: 'IN_PROGRESS',
-        formData,
-        recordVersion: true,
-      });
-      setPackageFlowStatus('IN_PROGRESS');
-      setForm(nextForm);
-      formRef.current = nextForm;
-      await refreshPackageVersions({ skipSpinner: true });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось снять отметку');
-    } finally {
-      setSavingPackageStatus(false);
-    }
-  };
-
-  const handleConfirmContractRefusal = async () => {
-    const reason = refusalReasonDraft.trim();
-    if (!reason) {
-      setRefusalModalError('Укажите причину отказа.');
-      return;
-    }
-    setRefusalModalBusy(true);
-    setRefusalModalError(null);
-    setError(null);
-    try {
-      const nowIso = new Date().toISOString();
-      const nextForm: RepairPackageFormData = {
-        ...formRef.current,
-        contractRefusalReason: reason,
-        contractRefusedAt: nowIso,
-      };
-      const formData = buildPersistedFormData(
-        nextForm,
-        templateOverridesRef.current,
-        selectedTemplateIdsRef.current
-      );
-      await updateContractDocumentPackage(packageId, {
-        status: 'REFUSED',
-        formData,
-        recordVersion: true,
-      });
-      setPackageFlowStatus('REFUSED');
-      setForm(nextForm);
-      formRef.current = nextForm;
-      setDirty(false);
-      setRefusalModalOpen(false);
-      setRefusalReasonDraft('');
-      await refreshPackageVersions({ skipSpinner: true });
-    } catch (e) {
-      setRefusalModalError(e instanceof Error ? e.message : 'Не удалось сохранить отказ');
-    } finally {
-      setRefusalModalBusy(false);
-    }
-  };
-
-  const handleRevertRefusal = async () => {
-    setSavingPackageStatus(true);
-    setError(null);
-    try {
-      const nextForm: RepairPackageFormData = {
-        ...formRef.current,
-        contractRefusalReason: '',
-        contractRefusedAt: '',
-      };
-      const formData = buildPersistedFormData(
-        nextForm,
-        templateOverridesRef.current,
-        selectedTemplateIdsRef.current
-      );
-      await updateContractDocumentPackage(packageId, {
-        status: 'IN_PROGRESS',
-        formData,
-        recordVersion: true,
-      });
-      setPackageFlowStatus('IN_PROGRESS');
-      setForm(nextForm);
-      formRef.current = nextForm;
-      setDirty(false);
-      await refreshPackageVersions({ skipSpinner: true });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось снять статус «Отказ»');
-    } finally {
-      setSavingPackageStatus(false);
-    }
-  };
-
-  const handleRevertContractPaid = async () => {
-    if (!canRevertContractPaid) {
-      setError('Снять статус «Договор оплачен» можно только в течение 24 часов после установки.');
-      return;
-    }
-    setSavingPackageStatus(true);
-    setError(null);
-    try {
-      const nextForm = { ...formRef.current, contractPaidAt: '' };
-      const formData = buildPersistedFormData(
-        nextForm,
-        templateOverridesRef.current,
-        selectedTemplateIdsRef.current
-      );
-      await updateContractDocumentPackage(packageId, {
-        status: packageFlowStatus,
-        formData,
-        recordVersion: true,
-      });
-      setForm(nextForm);
-      formRef.current = nextForm;
-      await refreshPackageVersions({ skipSpinner: true });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось снять статус «Договор оплачен»');
-    } finally {
-      setSavingPackageStatus(false);
-    }
-  };
-
-  const handleConfirmWorkStart = async () => {
-    const dateRaw = workStartModalDate.trim();
-    if (!dateRaw) {
-      setWorkStartModalError('Укажите дату начала работ по акту.');
-      return;
-    }
-    if (!workStartModalFile) {
-      setWorkStartModalError('Прикрепите фотографию акта начала работ.');
-      return;
-    }
-    setWorkStartModalBusy(true);
-    setWorkStartModalError(null);
-    try {
-      const { imageUrl } = await uploadRepairPackageWorkStartActPhoto(
-        packageId,
-        workStartModalFile
-      );
-      const nextForm: RepairPackageFormData = {
-        ...formRef.current,
-        repairWorkStartActSignedAt: dateRaw,
-        repairWorkStartActPhotoUrl: imageUrl,
-      };
-      const formData = buildPersistedFormData(
-        nextForm,
-        templateOverridesRef.current,
-        selectedTemplateIdsRef.current
-      );
-      await updateContractDocumentPackage(packageId, {
-        formData,
-        recordVersion: true,
-      });
-      setForm(nextForm);
-      formRef.current = nextForm;
-      setDirty(false);
-      setWorkStartModalOpen(false);
-      setWorkStartModalDate('');
-      setWorkStartModalFile(null);
-      await refreshPackageVersions({ skipSpinner: true });
-    } catch (e) {
-      setWorkStartModalError(e instanceof Error ? e.message : 'Не удалось сохранить');
-    } finally {
-      setWorkStartModalBusy(false);
-    }
-  };
-
-  const handleConfirmContractClose = async () => {
-    const dateRaw = contractCloseModalDate.trim();
-    if (!dateRaw) {
-      setContractCloseModalError('Укажите дату подписания акта сдачи-приёмки.');
-      return;
-    }
-    if (!contractCloseModalFile) {
-      setContractCloseModalError('Прикрепите фотографию акта сдачи-приёмки.');
-      return;
-    }
-    setContractCloseModalBusy(true);
-    setContractCloseModalError(null);
-    try {
-      const { imageUrl } = await uploadRepairPackageContractCloseActPhoto(
-        packageId,
-        contractCloseModalFile
-      );
-      const nextForm: RepairPackageFormData = {
-        ...formRef.current,
-        repairContractCloseActSignedAt: dateRaw,
-        repairContractCloseActPhotoUrl: imageUrl,
-      };
-      const formData: Record<string, unknown> = {
-        ...buildPersistedFormData(
-          nextForm,
-          templateOverridesRef.current,
-          selectedTemplateIdsRef.current
-        ),
-        repairContractClosed: true,
-      };
-      await updateContractDocumentPackage(packageId, {
-        formData,
-        recordVersion: true,
-      });
-      setForm(nextForm);
-      formRef.current = nextForm;
-      setDirty(false);
-      setContractCloseModalOpen(false);
-      setContractCloseModalDate('');
-      setContractCloseModalFile(null);
-      await refreshPackageVersions({ skipSpinner: true });
-    } catch (e) {
-      setContractCloseModalError(e instanceof Error ? e.message : 'Не удалось сохранить');
-    } finally {
-      setContractCloseModalBusy(false);
-    }
-  };
 
   const repairCustomerPhonesReadonlyDisplay = useMemo(() => {
     const parts = (form.customer.phones ?? []).map((p) => p.trim()).filter(Boolean);
@@ -3389,6 +2844,11 @@ export function RepairContractDocumentEditorPage({
     [form.contract.number, form._repairCopyContractNumberBaseline]
   );
 
+  const unsignedAddendumOrdinals = useMemo(
+    () => getUnsignedAddendumOrdinals(form, packageFlowStatus),
+    [form, packageFlowStatus]
+  );
+
   if (loading) {
     return (
       <div className={styles.page}>
@@ -3467,9 +2927,7 @@ export function RepairContractDocumentEditorPage({
 
   return (
     <div className={`${styles.page} ${styles.pageWide} ${styles.repairContractEditorPage}`}>
-      <div
-        className={`${styles.editorHeader} ${styles.blockHeader} ${styles.repairEditorHeaderThreeCol}`}
-      >
+      <div className={`${styles.editorHeader} ${styles.blockHeader}`}>
         <div className={styles.repairEditorHeaderLeft}>
           <Link className={styles.backLink} href={ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_HREF}>
             ← К списку договоров (Ремонт)
@@ -3493,218 +2951,32 @@ export function RepairContractDocumentEditorPage({
                 </span>
               ) : null}
             </h1>
-            {packageFlowStatus === 'REFUSED' ? (
-              <>
-                <span
-                  className={`${styles.packageFlowStatusBadge} ${styles.repairContractsListStatusBadgeRefused}`}
-                  role="status"
-                  title={
-                    form.contractRefusalReason.trim()
-                      ? `Причина отказа: ${form.contractRefusalReason.trim()}`
-                      : 'Отказ по проекту договора'
-                  }
-                >
-                  Отказ
-                </span>
-                {!loading ? (
-                  <button
-                    type="button"
-                    className={styles.secondaryBtn}
-                    disabled={savingPackageStatus}
-                    title="Вернуть пакет в стадию «в проекте», если клиент передумал"
-                    onClick={() => setRevertRefusalConfirmOpen(true)}
-                  >
-                    {savingPackageStatus ? 'Сохранение…' : 'Снять отказ'}
-                  </button>
-                ) : null}
-              </>
-            ) : null}
-            {packageFlowStatus === 'CONTRACT_CONCLUDED' ? (
-              <span className={styles.packageFlowSignedLabelGroup} role="status">
-                <span className={styles.packageFlowStatusBadge}>Договор подписан</span>
-                {signedContractPayOrb != null ? (
-                  <span
-                    className={`${styles.packageFlowPayPctOrb} ${signedContractPayOrb.toneClass}`}
-                    title={signedContractPayOrb.title}
-                  >
-                    {signedContractPayOrb.label}
-                  </span>
-                ) : null}
-                {signedAddendumOrdinals.map((n) => (
-                  <span
-                    key={`signed-addendum-${n}`}
-                    className={styles.packageFlowStatusBadge}
-                    role="status"
-                  >
-                    Д/с №{n} подписано
-                  </span>
-                ))}
-              </span>
-            ) : null}
-            {isContractPaid ? (
-              <span className={styles.packageFlowStatusBadge} role="status">
-                Договор оплачен
-              </span>
-            ) : null}
-            {packageFlowStatus !== 'CONTRACT_CONCLUDED'
-              ? signedAddendumOrdinals.map((n) => (
-                  <span
-                    key={`signed-addendum-${n}`}
-                    className={styles.packageFlowStatusBadge}
-                    role="status"
-                  >
-                    Д/с №{n} подписано
-                  </span>
-                ))
-              : null}
-            {paidAddendumOrdinals.map((n) => (
-              <span
-                key={`paid-addendum-${n}`}
-                className={styles.packageFlowStatusBadge}
-                role="status"
-              >
-                Д/с №{n} оплачено
-              </span>
-            ))}
           </div>
         </div>
-        {!loading && packageFlowStatus !== 'REFUSED' ? (
-          <div className={styles.repairEditorHeaderCenterSlot}>
-            <div className={styles.repairEditorHeaderCenterControls}>
-              {packageFlowStatus === 'IN_PROGRESS' ? (
-                <>
-                  <button
-                    type="button"
-                    className={`${styles.secondaryBtn} ${styles.repairEditorHeaderPipelineBtn}`}
-                    disabled={savingPackageStatus || refusalModalBusy}
-                    onClick={() => {
-                      setRefusalModalError(null);
-                      setRefusalReasonDraft('');
-                      setRefusalModalOpen(true);
-                    }}
-                  >
-                    Отказ
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.secondaryBtn} ${styles.repairEditorHeaderPipelineBtn}`}
-                    disabled={savingPackageStatus || refusalModalBusy}
-                    onClick={() => void handleMarkContractConcluded()}
-                  >
-                    {savingPackageStatus ? 'Сохранение…' : 'Договор подписан'}
-                  </button>
-                </>
-              ) : (
-                <>
-                  {repairWorkStarted ? (
-                    <span
-                      className={styles.packageFlowStatusBadge}
-                      role="status"
-                      title="Работы начаты"
-                    >
-                      В работе
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      className={`${styles.secondaryBtn} ${styles.repairEditorHeaderPipelineBtn}`}
-                      disabled={
-                        savingPackageStatus ||
-                        workStartModalBusy ||
-                        contractCloseModalBusy ||
-                        refusalModalBusy ||
-                        (activeTab === 'data' && dirty) ||
-                        packageRefreshing
-                      }
-                      title={
-                        activeTab === 'data' && dirty
-                          ? 'Сначала сохраните изменения на вкладке «Данные»'
-                          : 'Зафиксировать начало работ по акту начала работ'
-                      }
-                      onClick={() => {
-                        setWorkStartModalError(null);
-                        setWorkStartModalDate('');
-                        setWorkStartModalFile(null);
-                        setWorkStartModalOpen(true);
-                      }}
-                    >
-                      В работе
-                    </button>
-                  )}
-                  {repairWorkStarted ? (
-                    repairContractClosed ? (
-                      <button
-                        type="button"
-                        disabled
-                        className={`${styles.packageFlowStatusBadge} ${styles.repairEditorHeaderClosedStatusBtn}`}
-                        role="status"
-                        title="Договор закрыт по акту сдачи-приёмки"
-                      >
-                        Договор закрыт
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className={`${styles.secondaryBtn} ${styles.repairEditorHeaderPipelineBtn}`}
-                        disabled={
-                          savingPackageStatus ||
-                          contractCloseModalBusy ||
-                          workStartModalBusy ||
-                          refusalModalBusy ||
-                          (activeTab === 'data' && dirty) ||
-                          packageRefreshing
-                        }
-                        title={
-                          activeTab === 'data' && dirty
-                            ? 'Сначала сохраните изменения на вкладке «Данные»'
-                            : 'Закрыть договор по акту сдачи-приёмки выполненных работ'
-                        }
-                        onClick={() => {
-                          setContractCloseModalError(null);
-                          setContractCloseModalDate('');
-                          setContractCloseModalFile(null);
-                          setContractCloseModalOpen(true);
-                        }}
-                      >
-                        Закрыть договор
-                      </button>
-                    )
-                  ) : null}
-                </>
-              )}
-              {activeAddendumMarkSignedHeader ? (
-                <button
-                  type="button"
-                  className={`${styles.secondaryBtn} ${styles.repairEditorHeaderPipelineBtn}`}
-                  disabled={
-                    !activeAddendumMarkSignedHeader.hasAnyAttachedPresets || refusalModalBusy
-                  }
-                  title={
-                    !activeAddendumMarkSignedHeader.hasAnyAttachedPresets
-                      ? 'Сначала прикрепите хотя бы один расчёт'
-                      : undefined
-                  }
-                  onClick={() =>
-                    markAddendumSlotSigned(activeAddendumMarkSignedHeader.slotOrdinal - 1)
-                  }
-                >
-                  Д/с №{activeAddendumMarkSignedHeader.slotOrdinal} подписано
-                </button>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
         <div className={styles.headerActions}>
           <div className={styles.repairEditorDraftTitleRow}>
             {!loading ? (
               <button
                 type="button"
-                className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn}`}
+                className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn} ${styles.repairEditorHubPrimaryBtn}`}
                 onClick={() => setPackageHubOpen(true)}
-                title={REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE}
+                title={
+                  unsignedAddendumOrdinals.length > 0
+                    ? `${REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE}. Неподписанные Д/с: №${unsignedAddendumOrdinals.join(', №')}`
+                    : REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE
+                }
                 aria-label={REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE}
               >
                 <RepairContractPackageHubIcon />
+                <span className={styles.repairEditorHubBtnLabel}>Оплаты и этапы</span>
+                {unsignedAddendumOrdinals.length > 0 ? (
+                  <span
+                    className={styles.repairEditorHubPendingBadge}
+                    title={`Неподписанные Д/с: ${unsignedAddendumOrdinals.map((n) => `№${n}`).join(', ')}`}
+                  >
+                    {unsignedAddendumOrdinals.length}
+                  </span>
+                ) : null}
               </button>
             ) : null}
             {!loading ? (
@@ -3721,7 +2993,7 @@ export function RepairContractDocumentEditorPage({
             <button
               type="button"
               className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn}`}
-              disabled={packageRefreshing || savingPackageStatus || (activeTab === 'data' && dirty)}
+              disabled={packageRefreshing || (activeTab === 'data' && dirty)}
               aria-busy={packageRefreshing}
               aria-label={
                 packageRefreshing
@@ -3793,141 +3065,6 @@ export function RepairContractDocumentEditorPage({
                 </svg>
               </button>
             ) : null}
-            {!loading && attachedRepairActPhotos.length > 0 ? (
-              <button
-                type="button"
-                className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn}`}
-                onClick={() => setRepairActPhotosModalOpen(true)}
-                title="Просмотр загруженных фото актов (статусы «В работе», «Договор закрыт»)"
-                aria-label="Просмотр загруженных фото актов к статусам договора"
-              >
-                <RepairPackageActPhotosTriggerIcon />
-              </button>
-            ) : null}
-          </div>
-          <div className={styles.headerButtonsRow}>
-            {packageFlowStatus === 'CONTRACT_CONCLUDED' ? (
-              <>
-                {isContractPaid ? (
-                  <button
-                    type="button"
-                    className={styles.secondaryBtn}
-                    disabled={savingPackageStatus || !canRevertContractPaid}
-                    title={
-                      canRevertContractPaid
-                        ? 'Снять статус «Договор оплачен»'
-                        : 'Снять статус можно только в течение 24 часов после установки'
-                    }
-                    onClick={() => void handleRevertContractPaid()}
-                  >
-                    {savingPackageStatus ? 'Сохранение…' : 'Снять статус «Договор оплачен»'}
-                  </button>
-                ) : null}
-                {contractSignedRevertRemainingMs > 0 ? (
-                  <div className={styles.contractSignedRevertUi}>
-                    <div
-                      className={styles.contractSignedRevertLoader}
-                      role="status"
-                      aria-live="polite"
-                      aria-label={`Осталось ${Math.ceil(contractSignedRevertRemainingMs / 1000)} секунд, чтобы отменить статус «Договор подписан»`}
-                    >
-                      <svg
-                        className={styles.contractSignedRevertRingSvg}
-                        viewBox="0 0 40 40"
-                        aria-hidden
-                      >
-                        <circle
-                          className={styles.contractSignedRevertRingTrack}
-                          cx="20"
-                          cy="20"
-                          r={CONTRACT_SIGNED_REVERT_RING_R}
-                          fill="none"
-                        />
-                        <circle
-                          className={styles.contractSignedRevertRingProgress}
-                          cx="20"
-                          cy="20"
-                          r={CONTRACT_SIGNED_REVERT_RING_R}
-                          fill="none"
-                          strokeDasharray={`${
-                            (contractSignedRevertRemainingMs / CONTRACT_SIGNED_REVERT_WINDOW_MS) *
-                            CONTRACT_SIGNED_REVERT_RING_C
-                          } ${CONTRACT_SIGNED_REVERT_RING_C}`}
-                          transform="rotate(-90 20 20)"
-                        />
-                      </svg>
-                      <span className={styles.contractSignedRevertRingSec} aria-hidden>
-                        {Math.max(1, Math.ceil(contractSignedRevertRemainingMs / 1000))}
-                      </span>
-                    </div>
-                    <p className={styles.contractSignedRevertHint}>
-                      Отменить статус «Договор подписан» можно в течение 30 секунд
-                    </p>
-                    <button
-                      type="button"
-                      className={`${styles.secondaryBtn} ${styles.contractSignedRevertBtn}`}
-                      disabled={savingPackageStatus}
-                      onClick={() => void confirmRevertContractConcluded()}
-                    >
-                      {savingPackageStatus ? 'Сохранение…' : 'Отменить'}
-                    </button>
-                  </div>
-                ) : null}
-              </>
-            ) : null}
-            {addendumSignedRevertUis.map(({ slotIndex0, remainingMs }) => {
-              const n = slotIndex0 + 1;
-              return (
-                <div key={`addendum-revert-${n}`} className={styles.contractSignedRevertUi}>
-                  <div
-                    className={styles.contractSignedRevertLoader}
-                    role="status"
-                    aria-live="polite"
-                    aria-label={`Осталось ${Math.ceil(remainingMs / 1000)} секунд, чтобы отменить подписание Д/с №${n}`}
-                  >
-                    <svg
-                      className={styles.contractSignedRevertRingSvg}
-                      viewBox="0 0 40 40"
-                      aria-hidden
-                    >
-                      <circle
-                        className={styles.contractSignedRevertRingTrack}
-                        cx="20"
-                        cy="20"
-                        r={CONTRACT_SIGNED_REVERT_RING_R}
-                        fill="none"
-                      />
-                      <circle
-                        className={styles.contractSignedRevertRingProgress}
-                        cx="20"
-                        cy="20"
-                        r={CONTRACT_SIGNED_REVERT_RING_R}
-                        fill="none"
-                        strokeDasharray={`${
-                          (remainingMs / CONTRACT_SIGNED_REVERT_WINDOW_MS) *
-                          CONTRACT_SIGNED_REVERT_RING_C
-                        } ${CONTRACT_SIGNED_REVERT_RING_C}`}
-                        transform="rotate(-90 20 20)"
-                      />
-                    </svg>
-                    <span className={styles.contractSignedRevertRingSec} aria-hidden>
-                      {Math.max(1, Math.ceil(remainingMs / 1000))}
-                    </span>
-                  </div>
-                  <p className={styles.contractSignedRevertHint}>
-                    Отменить подписание Д/с №{n} можно в течение 30 секунд
-                  </p>
-                  <button
-                    type="button"
-                    className={`${styles.secondaryBtn} ${styles.contractSignedRevertBtn}`}
-                    disabled={savingPackageStatus}
-                    onClick={() => unmarkAddendumSlotSigned(slotIndex0)}
-                  >
-                    {savingPackageStatus ? 'Сохранение…' : 'Отменить'}
-                  </button>
-                </div>
-              );
-            })}
           </div>
         </div>
       </div>
@@ -3943,8 +3080,8 @@ export function RepairContractDocumentEditorPage({
             className={styles.hint}
             style={{ marginTop: 'var(--admin-space-sm)', marginBottom: 0 }}
           >
-            Если клиент передумал и готов заключить договор, нажмите «Снять отказ» в строке
-            заголовка — пакет снова станет «в проекте», данные можно будет редактировать.
+            Если клиент передумал, откройте «Оплаты и Управление договором» и нажмите «Снять отказ»
+            — пакет снова станет «в проекте», данные можно будет редактировать.
           </p>
         </div>
       ) : null}
@@ -4020,409 +3157,77 @@ export function RepairContractDocumentEditorPage({
           </div>
         </div>
       ) : null}
-      <Modal
-        isOpen={workStartModalOpen}
-        onClose={() => {
-          if (workStartModalBusy || contractCloseModalBusy || refusalModalBusy) return;
-          setWorkStartModalOpen(false);
-        }}
-        title="Статус «В работе»"
-        size="md"
-        compactOnMobile
-      >
-        <div data-modal-form data-modal-density="compact">
-          <p data-modal-form-hint style={{ marginTop: 0 }}>
-            Укажите дату начала работ по договору согласно подписанному акту начала работ и
-            приложите фотографию акта. С этой даты в списке договоров для пакета отображается этап
-            «В работе».
-          </p>
-          <div data-modal-form-grid className={styles.repairWorkStartModalTopGrid}>
-            <div data-modal-form-group>
-              <label htmlFor="repair_work_start_act_date">Дата начала работ</label>
-              <div className={styles.repairWorkStartModalDateFieldWrap}>
-                <input
-                  id="repair_work_start_act_date"
-                  type="date"
-                  value={workStartModalDate}
-                  onChange={(e) => setWorkStartModalDate(e.target.value)}
-                  disabled={workStartModalBusy}
-                />
-              </div>
-            </div>
-            <div data-modal-form-group>
-              <label htmlFor="repair_work_start_act_photo" id="repair_work_start_file_legend">
-                Фото акта начала работ
-              </label>
-              <div
-                className={styles.repairWorkStartModalFileRow}
-                role="group"
-                aria-labelledby="repair_work_start_file_legend"
-              >
-                <input
-                  ref={workStartFileInputRef}
-                  id="repair_work_start_act_photo"
-                  type="file"
-                  className={styles.repairWorkStartModalFileInputSrOnly}
-                  accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
-                  disabled={workStartModalBusy}
-                  aria-label="Файл изображения акта начала работ"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0] ?? null;
-                    setWorkStartModalFile(f);
-                  }}
-                />
-                <label
-                  htmlFor="repair_work_start_act_photo"
-                  data-modal-btn="secondary"
-                  className={styles.repairWorkStartModalFilePickBtn}
-                >
-                  {workStartModalFile ? 'Заменить файл' : 'Выберите файл'}
-                </label>
-                {workStartModalFile ? (
-                  <>
-                    <span
-                      className={styles.repairWorkStartModalFileName}
-                      title={workStartModalFile.name}
-                    >
-                      {workStartModalFile.name}
-                    </span>
-                    <button
-                      type="button"
-                      data-modal-btn="secondary"
-                      className={styles.repairWorkStartModalFileRemoveBtn}
-                      disabled={workStartModalBusy}
-                      onClick={() => {
-                        setWorkStartModalFile(null);
-                        const el = workStartFileInputRef.current;
-                        if (el) el.value = '';
-                      }}
-                    >
-                      Убрать файл
-                    </button>
-                  </>
-                ) : null}
-              </div>
-            </div>
-          </div>
-          {workStartFilePreview ? (
-            <div className={styles.repairWorkStartModalPreview}>
-              <img src={workStartFilePreview} alt="Предпросмотр фото акта" />
-            </div>
-          ) : null}
-          {workStartModalError ? (
-            <p data-modal-form-error role="alert">
-              {workStartModalError}
-            </p>
-          ) : null}
-          <div data-modal-form-actions>
-            <button
-              type="button"
-              data-modal-btn="secondary"
-              disabled={workStartModalBusy}
-              onClick={() => {
-                if (!workStartModalBusy) setWorkStartModalOpen(false);
-              }}
-            >
-              Отмена
-            </button>
-            <button
-              type="button"
-              data-modal-btn="primary"
-              disabled={workStartModalBusy}
-              onClick={() => void handleConfirmWorkStart()}
-            >
-              {workStartModalBusy ? 'Сохранение…' : 'Сохранить'}
-            </button>
-          </div>
-        </div>
-      </Modal>
-      <Modal
-        isOpen={contractCloseModalOpen}
-        onClose={() => {
-          if (contractCloseModalBusy || workStartModalBusy || refusalModalBusy) return;
-          setContractCloseModalOpen(false);
-        }}
-        title="Закрытие договора"
-        size="md"
-        compactOnMobile
-      >
-        <div data-modal-form data-modal-density="compact">
-          <p data-modal-form-hint style={{ marginTop: 0 }}>
-            Укажите дату подписания акта сдачи-приёмки выполненных работ и приложите фотографию
-            акта. После сохранения в списке договоров для пакета отображается этап «Закрыт».
-          </p>
-          <div data-modal-form-grid className={styles.repairWorkStartModalTopGrid}>
-            <div data-modal-form-group>
-              <label htmlFor="repair_contract_close_act_date">Дата акта сдачи-приёмки</label>
-              <div className={styles.repairWorkStartModalDateFieldWrap}>
-                <input
-                  id="repair_contract_close_act_date"
-                  type="date"
-                  value={contractCloseModalDate}
-                  onChange={(e) => setContractCloseModalDate(e.target.value)}
-                  disabled={contractCloseModalBusy}
-                />
-              </div>
-            </div>
-            <div data-modal-form-group>
-              <label
-                htmlFor="repair_contract_close_act_photo"
-                id="repair_contract_close_file_legend"
-              >
-                Фото акта сдачи-приёмки
-              </label>
-              <div
-                className={styles.repairWorkStartModalFileRow}
-                role="group"
-                aria-labelledby="repair_contract_close_file_legend"
-              >
-                <input
-                  ref={contractCloseFileInputRef}
-                  id="repair_contract_close_act_photo"
-                  type="file"
-                  className={styles.repairWorkStartModalFileInputSrOnly}
-                  accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
-                  disabled={contractCloseModalBusy}
-                  aria-label="Файл изображения акта сдачи-приёмки"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0] ?? null;
-                    setContractCloseModalFile(f);
-                  }}
-                />
-                <label
-                  htmlFor="repair_contract_close_act_photo"
-                  data-modal-btn="secondary"
-                  className={styles.repairWorkStartModalFilePickBtn}
-                >
-                  {contractCloseModalFile ? 'Заменить файл' : 'Выберите файл'}
-                </label>
-                {contractCloseModalFile ? (
-                  <>
-                    <span
-                      className={styles.repairWorkStartModalFileName}
-                      title={contractCloseModalFile.name}
-                    >
-                      {contractCloseModalFile.name}
-                    </span>
-                    <button
-                      type="button"
-                      data-modal-btn="secondary"
-                      className={styles.repairWorkStartModalFileRemoveBtn}
-                      disabled={contractCloseModalBusy}
-                      onClick={() => {
-                        setContractCloseModalFile(null);
-                        const el = contractCloseFileInputRef.current;
-                        if (el) el.value = '';
-                      }}
-                    >
-                      Убрать файл
-                    </button>
-                  </>
-                ) : null}
-              </div>
-            </div>
-          </div>
-          {contractCloseFilePreview ? (
-            <div className={styles.repairWorkStartModalPreview}>
-              <img src={contractCloseFilePreview} alt="Предпросмотр фото акта сдачи-приёмки" />
-            </div>
-          ) : null}
-          {contractCloseModalError ? (
-            <p data-modal-form-error role="alert">
-              {contractCloseModalError}
-            </p>
-          ) : null}
-          <div data-modal-form-actions>
-            <button
-              type="button"
-              data-modal-btn="secondary"
-              disabled={contractCloseModalBusy}
-              onClick={() => {
-                if (!contractCloseModalBusy) setContractCloseModalOpen(false);
-              }}
-            >
-              Отмена
-            </button>
-            <button
-              type="button"
-              data-modal-btn="primary"
-              disabled={contractCloseModalBusy}
-              onClick={() => void handleConfirmContractClose()}
-            >
-              {contractCloseModalBusy ? 'Сохранение…' : 'Сохранить'}
-            </button>
-          </div>
-        </div>
-      </Modal>
-      <Modal
-        isOpen={refusalModalOpen}
-        onClose={() => {
-          if (refusalModalBusy) return;
-          setRefusalModalOpen(false);
-          setRefusalModalError(null);
-        }}
-        title="Отказ по проекту договора"
-        size="md"
-        compactOnMobile
-      >
-        <div data-modal-form data-modal-density="compact">
-          <p data-modal-form-hint style={{ marginTop: 0 }}>
-            Укажите причину отказа — она сохранится в пакете вместе со статусом «Отказ». После
-            сохранения редактирование данных договора будет недоступно.
-          </p>
-          <div data-modal-form-group>
-            <label htmlFor="repair_contract_refusal_reason">Причина отказа</label>
-            <textarea
-              id="repair_contract_refusal_reason"
-              className={styles.repairContractRefusalReasonTextarea}
-              rows={5}
-              value={refusalReasonDraft}
-              onChange={(e) => setRefusalReasonDraft(e.target.value)}
-              disabled={refusalModalBusy}
-              placeholder="Например: заказчик отказался от условий сроков / не устроила смета…"
-            />
-          </div>
-          {refusalModalError ? (
-            <p data-modal-form-error role="alert">
-              {refusalModalError}
-            </p>
-          ) : null}
-          <div data-modal-form-actions>
-            <button
-              type="button"
-              data-modal-btn="secondary"
-              disabled={refusalModalBusy}
-              onClick={() => {
-                if (!refusalModalBusy) {
-                  setRefusalModalOpen(false);
-                  setRefusalModalError(null);
-                }
-              }}
-            >
-              Отмена
-            </button>
-            <button
-              type="button"
-              data-modal-btn="primary"
-              disabled={refusalModalBusy}
-              onClick={() => void handleConfirmContractRefusal()}
-            >
-              {refusalModalBusy ? 'Сохранение…' : 'Сохранить отказ'}
-            </button>
-          </div>
-        </div>
-      </Modal>
-      <Modal
-        isOpen={repairActPhotosModalOpen}
-        onClose={() => setRepairActPhotosModalOpen(false)}
-        title="Фото актов к статусам договора"
-        size="lg"
-        compactOnMobile
-      >
-        <div data-modal-form data-modal-density="compact">
-          <p data-modal-form-hint style={{ marginTop: 0 }}>
-            Снимки, загруженные при установке этапов «В работе» и «Договор закрыт».
-          </p>
-          <div className={styles.repairAttachedActPhotosList}>
-            {attachedRepairActPhotos.map((it) => (
-              <section key={it.key} className={styles.repairAttachedActPhotoBlock}>
-                <h3 className={styles.repairAttachedActPhotoTitle}>{it.title}</h3>
-                <p className={styles.repairAttachedActPhotoMeta}>
-                  Дата по акту: <strong>{it.dateLabel}</strong>
-                </p>
-                <div className={styles.repairWorkStartModalPreview}>
-                  <a
-                    href={it.src}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.repairAttachedActPhotoImageLink}
-                  >
-                    <img src={it.src} alt={it.title} />
-                  </a>
-                </div>
-                <p className={styles.repairAttachedActPhotoLinkLine}>
-                  <a href={it.src} target="_blank" rel="noopener noreferrer">
-                    Открыть в полном размере
-                  </a>
-                </p>
-              </section>
-            ))}
-          </div>
-          <div data-modal-form-actions>
-            <button
-              type="button"
-              data-modal-btn="secondary"
-              onClick={() => setRepairActPhotosModalOpen(false)}
-            >
-              Закрыть
-            </button>
-          </div>
-        </div>
-      </Modal>
-      <ConfirmModal
-        isOpen={revertRefusalConfirmOpen}
-        onClose={() => {
-          if (!savingPackageStatus) setRevertRefusalConfirmOpen(false);
-        }}
-        onConfirm={() => void handleRevertRefusal()}
-        title="Снять статус «Отказ»?"
-        message="Пакет снова перейдёт в стадию «в проекте»: можно будет редактировать данные и при необходимости отметить «Договор подписан». Текст причины отказа в форме будет очищен (запись останется в журнале событий пакета)."
-        confirmText="Снять отказ"
-        cancelText="Отмена"
-        variant="default"
-      />
       <div className={styles.repairPackageTabBarRow}>
         <div
           className={`${styles.tabBar} ${styles.blockTabs} ${styles.repairPackageTabBarCompact}`}
           role="tablist"
           aria-label="Разделы пакета. Перетащите вкладку, чтобы изменить порядок."
         >
-          {orderedVisibleRepairTabs.map((id) => (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              draggable
-              aria-selected={activeTab === id}
-              title={
-                contractAndEstimateLocked && (id === 'contract' || id === 'estimate')
-                  ? `${REPAIR_DOCUMENT_TAB_LABELS[id]} — только просмотр (договор подписан)`
-                  : `${REPAIR_DOCUMENT_TAB_LABELS[id]} — перетащите для смены порядка`
-              }
-              className={`${styles.tab} ${activeTab === id ? styles.tabActive : ''} ${
-                id === 'interactiveFinalEstimate' ||
-                id === 'finalEstimate' ||
-                id === 'finalWorkOrder'
-                  ? styles.summaryTab
-                  : ''
-              } ${id === 'interactiveFinalEstimate' ? styles.summaryTabFirst : ''} ${
-                id === 'finalWorkOrder' ? styles.summaryTabLast : ''
-              }`}
-              onClick={() => handleRepairTabActivate(id)}
-              onDragStart={(e) => handleRepairTabDragStart(id, e)}
-              onDragOver={handleRepairTabDragOver}
-              onDrop={handleRepairTabDrop(id)}
-            >
-              <span className={styles.repairTabLabelInner}>
-                {contractAndEstimateLocked && (id === 'contract' || id === 'estimate') ? (
-                  <RepairTabLockIcon />
-                ) : null}
-                <span>{REPAIR_DOCUMENT_TAB_LABELS_SHORT[id]}</span>
-                {id === 'interactiveFinalEstimate' ? (
-                  <span
-                    className={`${styles.repairTabUnassignedBadge} ${
-                      unassignedInteractiveRowsCount === 0
-                        ? styles.repairTabUnassignedBadgeDone
-                        : styles.repairTabUnassignedBadgePending
-                    }`}
-                    title="Количество неприкреплённых позиций"
-                  >
-                    {unassignedInteractiveRowsCount}
-                  </span>
-                ) : null}
-              </span>
-            </button>
-          ))}
+          {orderedVisibleRepairTabs.map((id) => {
+            const addendumTabMatch = /^addendum(\d)$/.exec(id);
+            const addendumTabOrdinal = addendumTabMatch ? Number(addendumTabMatch[1]) : null;
+            const isUnsignedAddendumTab =
+              addendumTabOrdinal != null && unsignedAddendumOrdinals.includes(addendumTabOrdinal);
+
+            return (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                draggable
+                aria-selected={activeTab === id}
+                title={
+                  isUnsignedAddendumTab
+                    ? `Д/с №${addendumTabOrdinal}: отметьте подписание во вкладке или в «Оплаты и Управление договором»`
+                    : contractAndEstimateLocked && (id === 'contract' || id === 'estimate')
+                      ? `${REPAIR_DOCUMENT_TAB_LABELS[id]} — только просмотр (договор подписан)`
+                      : `${REPAIR_DOCUMENT_TAB_LABELS[id]} — перетащите для смены порядка`
+                }
+                className={`${styles.tab} ${activeTab === id ? styles.tabActive : ''} ${
+                  isUnsignedAddendumTab ? styles.repairTabAddendumUnsigned : ''
+                } ${
+                  id === 'interactiveFinalEstimate' ||
+                  id === 'finalEstimate' ||
+                  id === 'finalWorkOrder'
+                    ? styles.summaryTab
+                    : ''
+                } ${id === 'interactiveFinalEstimate' ? styles.summaryTabFirst : ''} ${
+                  id === 'finalWorkOrder' ? styles.summaryTabLast : ''
+                }`}
+                onClick={() => handleRepairTabActivate(id)}
+                onDragStart={(e) => handleRepairTabDragStart(id, e)}
+                onDragOver={handleRepairTabDragOver}
+                onDrop={handleRepairTabDrop(id)}
+              >
+                <span className={styles.repairTabLabelInner}>
+                  {contractAndEstimateLocked && (id === 'contract' || id === 'estimate') ? (
+                    <RepairTabLockIcon />
+                  ) : null}
+                  <span>{REPAIR_DOCUMENT_TAB_LABELS_SHORT[id]}</span>
+                  {isUnsignedAddendumTab ? (
+                    <span
+                      className={styles.repairTabAddendumSignBadge}
+                      title="Доп. соглашение не отмечено как подписанное"
+                    >
+                      Подписать
+                    </span>
+                  ) : null}
+                  {id === 'interactiveFinalEstimate' ? (
+                    <span
+                      className={`${styles.repairTabUnassignedBadge} ${
+                        unassignedInteractiveRowsCount === 0
+                          ? styles.repairTabUnassignedBadgeDone
+                          : styles.repairTabUnassignedBadgePending
+                      }`}
+                      title="Количество неприкреплённых позиций"
+                    >
+                      {unassignedInteractiveRowsCount}
+                    </span>
+                  ) : null}
+                </span>
+              </button>
+            );
+          })}
         </div>
         {form.addendumSlotCount < 5 ? (
           <button
@@ -6006,6 +4811,20 @@ export function RepairContractDocumentEditorPage({
         </div>
       ) : (
         <>
+          {activeAddendumSlot !== null && unsignedAddendumOrdinals.includes(activeAddendumSlot) ? (
+            <div className={styles.repairAddendumUnsignedBanner} role="status">
+              <strong>Д/с №{activeAddendumSlot} не отмечено как подписанное.</strong> Прикрепите
+              расчёты и нажмите «Д/с №{activeAddendumSlot} подписано» ниже или в модалке{' '}
+              <button
+                type="button"
+                className={styles.repairAddendumUnsignedBannerLink}
+                onClick={() => setPackageHubOpen(true)}
+              >
+                Оплаты и Управление договором
+              </button>
+              .
+            </div>
+          ) : null}
           {activeAddendumSlot !== null ? (
             contractAndEstimateLocked ? (
               <RepairAddendumEstimateBlock
@@ -6234,10 +5053,7 @@ export function RepairContractDocumentEditorPage({
         packageId={packageId}
         isOpen={packageHubOpen}
         onClose={() => setPackageHubOpen(false)}
-        onUpdated={() => {
-          void load({ mode: 'refresh' });
-          void refreshHeaderJournalPaidRub();
-        }}
+        onUpdated={() => void load({ mode: 'refresh' })}
         blockPipelineActions={activeTab === 'data' && dirty}
         blockPipelineReason={
           activeTab === 'data' && dirty

@@ -12,12 +12,17 @@ import {
   updateContractDocumentPackagePayment,
 } from '@/shared/api/admin-contract-document-packages';
 import crmDetailStyles from '@/views/admin/CRM/Customers/CrmCustomerDetailModal.module.css';
+import measurementBlankStyles from '@/views/admin/CRM/Measurements/MeasurementFormPage.module.css';
 
 import styles from '../ContractDocuments.module.css';
 import {
   applyRepairContractDiscountToAmount,
   parseRepairContractDiscountPercent,
 } from './repairContractDiscount';
+import {
+  computeRepairHubConductSuggestedAmountRub,
+  formatRepairHubConductAmountInput,
+} from './repairHubConductPayment';
 import type { RepairPackageFormData } from './repairPackageForm';
 import {
   computeRepairPackagePayableBreakdown,
@@ -26,7 +31,6 @@ import {
 import {
   type RepairPaymentBasisOptionKey,
   buildRepairPaymentBasisOptions,
-  firstEnabledRepairPaymentBasisKey,
   repairPaymentBasisOptionByKey,
 } from './repairPaymentBasisOptions';
 import {
@@ -110,11 +114,8 @@ export function RepairContractPaymentsTab({
   const [newBasisDraft, setNewBasisDraft] = useState('');
   const [hubBasisKey, setHubBasisKey] = useState<RepairPaymentBasisOptionKey | ''>('');
   const [conductAmount, setConductAmount] = useState('');
-  const [hubConductBtnState, setHubConductBtnState] = useState<
-    'idle' | 'ready' | 'saving' | 'success'
-  >('idle');
-  const hubConductSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hubFixedBasisOptionsRef = useRef<ReturnType<typeof buildRepairPaymentBasisOptions>>([]);
+  const [hubPaymentConductedNotice, setHubPaymentConductedNotice] = useState(false);
+  const hubConductPrefillBasisRef = useRef<RepairPaymentBasisOptionKey | ''>('');
 
   const showHubSummary = layout === 'full' || layout === 'hub' || layout === 'hub-summary';
   const showJournalTable = layout === 'full' || layout === 'journal';
@@ -206,31 +207,21 @@ export function RepairContractPaymentsTab({
     () => buildRepairPaymentBasisOptions(form, rows, payableBreakdown),
     [form, rows, payableBreakdown]
   );
-  hubFixedBasisOptionsRef.current = hubFixedBasisOptions;
 
-  const hubConductFormComplete = useMemo(() => {
-    if (!hubBasisKey) return false;
-    const option = repairPaymentBasisOptionByKey(hubFixedBasisOptions, hubBasisKey);
-    if (!option || option.disabled) return false;
-    const amountNum = parseRubAmountString(conductAmount);
-    if (amountNum == null || amountNum <= 0) return false;
-    return Boolean(draft.paymentDate.trim());
-  }, [hubBasisKey, hubFixedBasisOptions, conductAmount, draft.paymentDate]);
-
-  useEffect(() => {
-    if (!isHubConductLayout || editingId) return;
-    setHubBasisKey((prev) => {
-      const current = repairPaymentBasisOptionByKey(hubFixedBasisOptions, prev);
-      if (current && !current.disabled) return prev;
-      return firstEnabledRepairPaymentBasisKey(hubFixedBasisOptions);
-    });
-  }, [isHubConductLayout, editingId, hubFixedBasisOptions]);
-
-  useEffect(() => {
-    if (!isHubConductLayout || editingId) return;
-    if (hubConductBtnState === 'saving' || hubConductBtnState === 'success') return;
-    setHubConductBtnState(hubConductFormComplete ? 'ready' : 'idle');
-  }, [hubConductFormComplete, hubConductBtnState, isHubConductLayout, editingId]);
+  const paidAllocations = useMemo(() => {
+    let contractPaidRub = 0;
+    const byAddendum = new Map<number, number>();
+    for (const r of rows) {
+      const n = Number.parseFloat(r.amount);
+      if (!Number.isFinite(n)) continue;
+      if (r.paymentType === 'AMENDMENT' && r.addendumNumber != null && r.addendumNumber >= 1) {
+        byAddendum.set(r.addendumNumber, (byAddendum.get(r.addendumNumber) ?? 0) + n);
+      } else {
+        contractPaidRub += n;
+      }
+    }
+    return { contractPaidRub, byAddendum };
+  }, [rows]);
 
   const journalPaidRub = useMemo(
     () =>
@@ -240,6 +231,59 @@ export function RepairContractPaymentsTab({
       }, 0),
     [rows]
   );
+
+  const hubConductDateReady = Boolean(draft.paymentDate.trim());
+  const hubConductSelectedBasis = useMemo(
+    () => repairPaymentBasisOptionByKey(hubFixedBasisOptions, hubBasisKey),
+    [hubFixedBasisOptions, hubBasisKey]
+  );
+  const hubConductBasisReady = Boolean(
+    hubConductSelectedBasis && !hubConductSelectedBasis.disabled
+  );
+  const hubConductAmountReady = useMemo(() => {
+    const amountNum = parseRubAmountString(conductAmount);
+    return amountNum != null && amountNum > 0;
+  }, [conductAmount]);
+  const hubConductFormComplete =
+    hubConductDateReady && hubConductBasisReady && hubConductAmountReady;
+  const hubConductAllBasesDone =
+    hubFixedBasisOptions.length > 0 && hubFixedBasisOptions.every((o) => o.disabled);
+
+  useEffect(() => {
+    if (!isHubConductLayout || editingId) return;
+    if (hubConductSelectedBasis?.disabled) {
+      setHubBasisKey('');
+      setConductAmount('');
+      hubConductPrefillBasisRef.current = '';
+    }
+  }, [isHubConductLayout, editingId, hubConductSelectedBasis?.disabled]);
+
+  useEffect(() => {
+    if (!isHubConductLayout || editingId || !hubConductBasisReady || !hubConductSelectedBasis) {
+      return;
+    }
+    if (hubConductPrefillBasisRef.current === hubBasisKey) return;
+    hubConductPrefillBasisRef.current = hubBasisKey;
+    const suggested = computeRepairHubConductSuggestedAmountRub(
+      hubConductSelectedBasis,
+      payableBreakdown,
+      journalPaidRub,
+      paidAllocations.contractPaidRub,
+      paidAllocations.byAddendum
+    );
+    if (suggested != null && suggested > 0) {
+      setConductAmount(formatRepairHubConductAmountInput(suggested));
+    }
+  }, [
+    isHubConductLayout,
+    editingId,
+    hubConductBasisReady,
+    hubConductSelectedBasis,
+    hubBasisKey,
+    payableBreakdown,
+    journalPaidRub,
+    paidAllocations.contractPaidRub,
+  ]);
 
   const balancePerJournalRub = useMemo(() => {
     const gt = payableBreakdown.grandTotalRub;
@@ -264,21 +308,6 @@ export function RepairContractPaymentsTab({
     [payableBreakdown.mainContractRub, grandTotalRub]
   );
 
-  const paidAllocations = useMemo(() => {
-    let contractPaidRub = 0;
-    const byAddendum = new Map<number, number>();
-    for (const r of rows) {
-      const n = Number.parseFloat(r.amount);
-      if (!Number.isFinite(n)) continue;
-      if (r.paymentType === 'AMENDMENT' && r.addendumNumber != null && r.addendumNumber >= 1) {
-        byAddendum.set(r.addendumNumber, (byAddendum.get(r.addendumNumber) ?? 0) + n);
-      } else {
-        contractPaidRub += n;
-      }
-    }
-    return { contractPaidRub, byAddendum };
-  }, [rows]);
-
   const resetDraft = () => {
     setDraft({
       paymentDate: new Date().toISOString().slice(0, 10),
@@ -288,33 +317,27 @@ export function RepairContractPaymentsTab({
     });
   };
 
-  useEffect(() => {
-    return () => {
-      if (hubConductSuccessTimerRef.current != null) {
-        clearTimeout(hubConductSuccessTimerRef.current);
-      }
-    };
+  const resetHubConductForm = useCallback(() => {
+    setConductAmount('');
+    setHubBasisKey('');
+    hubConductPrefillBasisRef.current = '';
+    setDraft((d) => ({
+      ...d,
+      paymentDate: new Date().toISOString().slice(0, 10),
+      paymentForm: 'INVOICE',
+    }));
   }, []);
 
-  useEffect(() => {
-    if (hubConductBtnState !== 'success') return;
-    if (hubConductSuccessTimerRef.current != null) {
-      clearTimeout(hubConductSuccessTimerRef.current);
+  const handleHubBasisChange = (key: RepairPaymentBasisOptionKey | '') => {
+    setHubPaymentConductedNotice(false);
+    if (key !== hubBasisKey) {
+      hubConductPrefillBasisRef.current = '';
     }
-    hubConductSuccessTimerRef.current = setTimeout(() => {
-      hubConductSuccessTimerRef.current = null;
+    setHubBasisKey(key);
+    if (!key) {
       setConductAmount('');
-      resetDraft();
-      setHubConductBtnState('idle');
-      setHubBasisKey(firstEnabledRepairPaymentBasisKey(hubFixedBasisOptionsRef.current));
-    }, 3000);
-    return () => {
-      if (hubConductSuccessTimerRef.current != null) {
-        clearTimeout(hubConductSuccessTimerRef.current);
-        hubConductSuccessTimerRef.current = null;
-      }
-    };
-  }, [hubConductBtnState, hubFixedBasisOptions]);
+    }
+  };
 
   const basisSelectOptionsCreate = useMemo(() => {
     const opts = [...basisOptions];
@@ -376,7 +399,6 @@ export function RepairContractPaymentsTab({
       body.addendumNumber = option.addendumNumber;
     }
     setSaving(true);
-    setHubConductBtnState('saving');
     try {
       const created = await createContractDocumentPackagePayment(packageId, body);
       setRows((prev) =>
@@ -385,10 +407,10 @@ export function RepairContractPaymentsTab({
       onUpdateContract('paymentBasis', option.label);
       onUpdateContract('prepaymentAmount', conductAmount.trim());
       onJournalChanged?.();
-      setHubConductBtnState('success');
+      setHubPaymentConductedNotice(true);
+      resetHubConductForm();
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Не удалось провести оплату');
-      setHubConductBtnState(hubConductFormComplete ? 'ready' : 'idle');
     } finally {
       setSaving(false);
     }
@@ -537,7 +559,7 @@ export function RepairContractPaymentsTab({
             <table className={`${styles.paymentsTable} ${styles.paymentsHubSummaryTable}`}>
               <thead>
                 <tr>
-                  <th>Наимен. докум.</th>
+                  <th></th>
                   <th className={styles.paymentsHubSummaryNumCol}>Скидка</th>
                   <th className={styles.paymentsHubSummaryNumCol}>Стоимость</th>
                   <th className={styles.paymentsHubSummaryNumCol}>Рекоменд. предопл.</th>
@@ -788,12 +810,23 @@ export function RepairContractPaymentsTab({
   const conductFormSection = showConductForm ? (
     <>
       {isHubConductLayout ? (
-        <h3 className={`${crmDetailStyles.linkedSectionTitle} ${styles.paymentsHubBlockTitle}`}>
-          Провести оплату
-        </h3>
+        <div className={styles.paymentsHubConductTitleRow}>
+          <h3 className={`${crmDetailStyles.linkedSectionTitle} ${styles.paymentsHubBlockTitle}`}>
+            Провести оплату
+          </h3>
+          {hubPaymentConductedNotice ? (
+            <span className={styles.paymentsHubConductDoneMsg} role="status">
+              Оплата проведена
+            </span>
+          ) : null}
+        </div>
       ) : null}
       <div
-        className={`${styles.sectionCard} ${styles.paymentsFormCard} ${styles.paymentsBlockAccentForm}`}
+        className={
+          isHubConductLayout
+            ? styles.paymentsHubConductFormWrap
+            : `${styles.sectionCard} ${styles.paymentsFormCard} ${styles.paymentsBlockAccentForm}`
+        }
       >
         {!isHubConductLayout ? (
           <h3 className={styles.sectionTitle}>
@@ -806,33 +839,65 @@ export function RepairContractPaymentsTab({
           </p>
         ) : null}
         {isHubConductLayout && !editingId ? (
-          <>
-            <div className={styles.paymentsFormHubRow}>
-              <div className={styles.field}>
-                <label htmlFor="pay_tab_date">Дата оплаты</label>
+          <div className={`${measurementBlankStyles.blankSheet} ${styles.paymentsHubConductBlank}`}>
+            <div className={`${styles.paymentsFormHubRow} ${styles.paymentsFormHubRowCompact}`}>
+              <div
+                className={`${styles.paymentsHubConductField} ${styles.paymentsFormHubDateField}`}
+              >
+                <label
+                  className={`${measurementBlankStyles.label} ${styles.paymentsHubConductLabel}`}
+                  htmlFor="pay_tab_date"
+                >
+                  Дата оплаты
+                </label>
                 <input
                   id="pay_tab_date"
                   type="date"
+                  className={`${measurementBlankStyles.input} ${styles.paymentsHubConductControl}`}
                   value={draft.paymentDate}
                   onChange={(e) => setDraft((d) => ({ ...d, paymentDate: e.target.value }))}
                 />
               </div>
-              <div className={`${styles.field} ${styles.paymentsAmountField}`}>
-                <label htmlFor="pay_tab_amount_num">Сумма, ₽</label>
-                <input
-                  id="pay_tab_amount_num"
-                  inputMode="decimal"
-                  value={conductAmount}
-                  onChange={(e) => setConductAmount(e.target.value)}
-                  placeholder="175000"
-                  autoComplete="off"
-                />
+              <div
+                className={`${styles.paymentsHubConductField} ${styles.paymentsFormHubBasisField}`}
+              >
+                <label
+                  className={`${measurementBlankStyles.label} ${styles.paymentsHubConductLabel}`}
+                  htmlFor="pay_tab_basis_select"
+                >
+                  Основание
+                </label>
+                <select
+                  id="pay_tab_basis_select"
+                  className={`${measurementBlankStyles.select} ${styles.paymentsHubConductControl}`}
+                  value={hubBasisKey}
+                  disabled={!hubConductDateReady || hubConductAllBasesDone}
+                  onChange={(e) =>
+                    handleHubBasisChange(e.target.value as RepairPaymentBasisOptionKey | '')
+                  }
+                >
+                  <option value="">Выберите основание</option>
+                  {hubFixedBasisOptions.map((opt) => (
+                    <option key={opt.key} value={opt.key} disabled={opt.disabled}>
+                      {opt.disabled ? `${opt.label} (проведено)` : opt.label}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <div className={styles.field}>
-                <label htmlFor="pay_tab_form">Способ оплаты</label>
+              <div
+                className={`${styles.paymentsHubConductField} ${styles.paymentsFormHubFormField}`}
+              >
+                <label
+                  className={`${measurementBlankStyles.label} ${styles.paymentsHubConductLabel}`}
+                  htmlFor="pay_tab_form"
+                >
+                  Способ оплаты
+                </label>
                 <select
                   id="pay_tab_form"
+                  className={`${measurementBlankStyles.select} ${styles.paymentsHubConductControl}`}
                   value={draft.paymentForm}
+                  disabled={!hubConductBasisReady}
                   onChange={(e) =>
                     setDraft((d) => ({
                       ...d,
@@ -848,63 +913,54 @@ export function RepairContractPaymentsTab({
                   ))}
                 </select>
               </div>
-              <div className={styles.field}>
-                <label htmlFor="pay_tab_basis_select">Основание</label>
-                <select
-                  id="pay_tab_basis_select"
-                  value={hubBasisKey}
-                  disabled={hubFixedBasisOptions.length === 0}
-                  onChange={(e) => setHubBasisKey(e.target.value as RepairPaymentBasisOptionKey)}
+              <div
+                className={`${styles.paymentsHubConductField} ${styles.paymentsFormHubAmountField}`}
+              >
+                <label
+                  className={`${measurementBlankStyles.label} ${styles.paymentsHubConductLabel}`}
+                  htmlFor="pay_tab_amount_num"
                 >
-                  {hubFixedBasisOptions.length === 0 ? (
-                    <option value="">—</option>
-                  ) : (
-                    hubFixedBasisOptions.map((opt) => (
-                      <option key={opt.key} value={opt.key} disabled={opt.disabled}>
-                        {opt.disabled ? `${opt.label} (проведено)` : opt.label}
-                      </option>
-                    ))
-                  )}
-                </select>
+                  Сумма, ₽
+                </label>
+                <input
+                  id="pay_tab_amount_num"
+                  inputMode="decimal"
+                  className={`${measurementBlankStyles.input} ${styles.paymentsHubConductControl}`}
+                  value={conductAmount}
+                  disabled={!hubConductBasisReady}
+                  onChange={(e) => setConductAmount(e.target.value)}
+                  placeholder="175000"
+                  autoComplete="off"
+                />
               </div>
-              <div className={`${styles.field} ${styles.paymentsFormHubSubmitField}`}>
-                <label className={styles.paymentsFormHubSubmitSpacer} aria-hidden="true">
+              <div className={styles.paymentsFormHubSubmitField}>
+                <label
+                  className={`${measurementBlankStyles.label} ${styles.paymentsHubConductLabel} ${styles.paymentsFormHubSubmitSpacer}`}
+                  aria-hidden="true"
+                >
                   &nbsp;
                 </label>
                 <button
                   type="button"
-                  className={[
-                    styles.paymentsHubConductBtn,
-                    hubConductBtnState === 'idle' && styles.paymentsHubConductBtnIdle,
-                    hubConductBtnState === 'ready' && styles.paymentsHubConductBtnReady,
-                    hubConductBtnState === 'saving' && styles.paymentsHubConductBtnReady,
-                    hubConductBtnState === 'success' && styles.paymentsHubConductBtnSuccess,
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
+                  className={styles.paymentsHubConductBtn}
                   disabled={
-                    hubConductBtnState === 'saving' ||
-                    hubConductBtnState === 'success' ||
-                    hubConductBtnState === 'idle' ||
-                    hubFixedBasisOptions.length === 0 ||
-                    hubFixedBasisOptions.every((o) => o.disabled)
+                    saving ||
+                    hubPaymentConductedNotice ||
+                    hubConductAllBasesDone ||
+                    !hubConductFormComplete
                   }
                   onClick={() => void submitHubConductPayment()}
                 >
-                  {hubConductBtnState === 'success'
-                    ? 'Оплата проведена'
-                    : hubConductBtnState === 'saving'
-                      ? 'Сохранение…'
-                      : 'Провести оплату'}
+                  {saving ? 'Сохранение…' : 'Провести оплату'}
                 </button>
               </div>
-              {hubFixedBasisOptions.every((o) => o.disabled) ? (
+              {hubConductAllBasesDone ? (
                 <p className={`${styles.hint} ${styles.paymentsFormHubHint}`}>
                   Все основания по этому договору уже проведены.
                 </p>
               ) : null}
             </div>
-          </>
+          </div>
         ) : (
           <>
             <div className={styles.paymentsFormGrid}>

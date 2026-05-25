@@ -59,6 +59,11 @@ import {
 import { applyRepairContractDiscountToNullableBase } from './repairContractDiscount';
 import { REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE } from './repairContractPackageHubConstants';
 import {
+  type RepairListPipelineStatus,
+  repairListPipelineStatusFromPackage,
+  repairListPipelineStatusLabel,
+} from './repairContractPipeline';
+import {
   type ContractsListViewMode,
   REPAIR_CONTRACTS_PAGE_LIMIT_OPTIONS,
   type RepairContractsPageLimit,
@@ -478,20 +483,6 @@ function formatSigningDateOnly(r: ContractDocumentPackage): string {
   return formatRepairListActDate(iso);
 }
 
-/** Этапы жизненного цикла договора в списке (фильтр и колонка «Статус»). */
-type RepairListPipelineStatus = 'IN_PROJECT' | 'SIGNED' | 'WORK_IN_PROGRESS' | 'CLOSED' | 'REFUSED';
-
-/**
- * «В работе» и «Закрыт» задаются в редакторе пакета (дата + фото соответствующего акта).
- * `repairContractClosed: true` — устаревший признак «Закрыт», сохраняем для совместимости.
- */
-const REPAIR_PIPELINE_REFUSED_FD = 'repairContractClientRefused';
-const REPAIR_PIPELINE_CLOSED_FD = 'repairContractClosed';
-const REPAIR_PIPELINE_CLOSE_ACT_DATE_FD = 'repairContractCloseActSignedAt';
-const REPAIR_PIPELINE_CLOSE_ACT_PHOTO_FD = 'repairContractCloseActPhotoUrl';
-const REPAIR_PIPELINE_WORK_START_FD = 'repairWorkStartActSignedAt';
-const REPAIR_PIPELINE_WORK_START_PHOTO_FD = 'repairWorkStartActPhotoUrl';
-
 /** Статус для фильтра и колонки: ремонт — полный конвейер, остальные направления — упрощённо. */
 function listPipelineStatus(pkg: ContractDocumentPackage): RepairListPipelineStatus {
   if (pkg.kind !== 'REPAIR') {
@@ -499,46 +490,7 @@ function listPipelineStatus(pkg: ContractDocumentPackage): RepairListPipelineSta
     if (pkg.status === 'CONTRACT_CONCLUDED') return 'SIGNED';
     return 'IN_PROJECT';
   }
-  return repairListPipelineStatus(pkg);
-}
-
-function repairListPipelineStatus(pkg: ContractDocumentPackage): RepairListPipelineStatus {
-  if (pkg.status === 'REFUSED') return 'REFUSED';
-  const fd = (pkg.formData ?? {}) as Record<string, unknown>;
-  if (fd[REPAIR_PIPELINE_REFUSED_FD] === true) return 'REFUSED';
-  const closeDateRaw = fd[REPAIR_PIPELINE_CLOSE_ACT_DATE_FD];
-  const closePhotoRaw = fd[REPAIR_PIPELINE_CLOSE_ACT_PHOTO_FD];
-  const contractClosedByActs =
-    typeof closeDateRaw === 'string' &&
-    closeDateRaw.trim().length > 0 &&
-    typeof closePhotoRaw === 'string' &&
-    closePhotoRaw.trim().length > 0;
-  if (contractClosedByActs || fd[REPAIR_PIPELINE_CLOSED_FD] === true) return 'CLOSED';
-  const workStartRaw = fd[REPAIR_PIPELINE_WORK_START_FD];
-  const workPhotoRaw = fd[REPAIR_PIPELINE_WORK_START_PHOTO_FD];
-  const workStarted =
-    typeof workStartRaw === 'string' &&
-    workStartRaw.trim().length > 0 &&
-    typeof workPhotoRaw === 'string' &&
-    workPhotoRaw.trim().length > 0;
-  if (pkg.status === 'CONTRACT_CONCLUDED' && workStarted) return 'WORK_IN_PROGRESS';
-  if (pkg.status === 'CONTRACT_CONCLUDED') return 'SIGNED';
-  return 'IN_PROJECT';
-}
-
-function repairListPipelineStatusLabel(st: RepairListPipelineStatus): string {
-  switch (st) {
-    case 'IN_PROJECT':
-      return 'В проекте';
-    case 'SIGNED':
-      return 'Подписан';
-    case 'WORK_IN_PROGRESS':
-      return 'В работе';
-    case 'CLOSED':
-      return 'Закрыт';
-    case 'REFUSED':
-      return 'Отказ';
-  }
+  return repairListPipelineStatusFromPackage(pkg);
 }
 
 function repairListPipelineStatusBadgeClass(st: RepairListPipelineStatus): string {

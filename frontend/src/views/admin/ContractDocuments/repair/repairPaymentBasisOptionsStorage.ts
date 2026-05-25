@@ -80,6 +80,13 @@ export function inferPaymentTypeFromBasisText(basis: string): {
   if (normalized === 'окончательный расчёт по договору') {
     return { paymentType: 'FINAL' };
   }
+  const addendumPartialMatch = /^частичная оплата по д\/с\s*(\d+)\s*$/i.exec(basis.trim());
+  if (addendumPartialMatch) {
+    const n = Number.parseInt(addendumPartialMatch[1], 10);
+    if (Number.isFinite(n) && n >= 1 && n <= 5) {
+      return { paymentType: 'AMENDMENT', addendumNumber: n };
+    }
+  }
   const addendumMatch = /^оплата по д\/с\s*(\d+)\s*$/i.exec(basis.trim());
   if (addendumMatch) {
     const n = Number.parseInt(addendumMatch[1], 10);

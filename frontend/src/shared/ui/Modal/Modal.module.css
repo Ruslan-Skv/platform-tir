@@ -90,6 +90,16 @@
   --admin-radius-lg: 10px;
   --admin-shadow-focus-soft: 0 0 0 3px rgb(var(--color-accent-rgb, 217 6 82) / 0.22);
   --admin-error-text: #b91c1c;
+  --admin-info: #2563eb;
+  --admin-info-bg: #dbeafe;
+  --admin-info-bg-soft: #eff6ff;
+  --admin-info-border: #93c5fd;
+  --admin-info-border-soft: #bfdbfe;
+  --admin-info-bright: #3b82f6;
+  --admin-info-strong: #1d4ed8;
+  --admin-info-text: #1e40af;
+  --admin-overlay-color-129: rgb(37 99 235 / 0.14);
+  --admin-overlay-color-144: 37 99 235;
 
   background: var(--modal-surface);
   border: 1px solid var(--modal-border);
@@ -726,6 +736,18 @@
   --admin-border: #374151;
   --admin-border-strong: #4b5563;
   --admin-error-text: #fca5a5;
+  --admin-info: #3b82f6;
+  --admin-info-bg: #1e3a8a;
+  --admin-info-bg-soft: #1e40af;
+  --admin-info-border: #2563eb;
+  --admin-info-border-soft: #3b82f6;
+  --admin-info-bright: #60a5fa;
+  --admin-info-light: #60a5fa;
+  --admin-info-strong: #2563eb;
+  --admin-info-text: #dbeafe;
+  --admin-sidebar-text: rgba(255 255 255 / 0.72);
+  --admin-text-inverse: #f9fafb;
+  --admin-overlay-color-136: rgb(6 182 212 / 0.2);
   color-scheme: dark;
 }
 

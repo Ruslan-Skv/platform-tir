@@ -12,11 +12,16 @@ export function repairAddendumBasisLabel(addendumNumber: number): string {
   return `оплата по д/с ${addendumNumber}`;
 }
 
+export function repairAddendumPartialBasisLabel(addendumNumber: number): string {
+  return `частичная оплата по д/с ${addendumNumber}`;
+}
+
 export type RepairPaymentBasisOptionKey =
   | 'contract_prepayment'
   | 'contract_partial'
   | 'contract_final'
-  | `addendum_${number}`;
+  | `addendum_${number}`
+  | `addendum_partial_${number}`;
 
 export type RepairPaymentBasisOption = {
   key: RepairPaymentBasisOptionKey;
@@ -66,20 +71,32 @@ function inferLegacyContractBasisMatch(
   return false;
 }
 
-function sumPaidForAddendum(
+/** Сумма оплат по Д/с №N (все проводки с этим номером доп. соглашения). */
+export function sumRepairAddendumPaidRub(
   rows: ContractDocumentPackagePayment[],
-  addendumNumber: number,
-  label: string
+  addendumNumber: number
 ): number {
   return rows.reduce((acc, r) => {
     if (r.paymentType === 'AMENDMENT' && r.addendumNumber === addendumNumber) {
       return acc + paymentAmountRub(r);
     }
+    return acc;
+  }, 0);
+}
+
+function sumPaidForAddendum(
+  rows: ContractDocumentPackagePayment[],
+  addendumNumber: number,
+  label: string
+): number {
+  const byNumber = sumRepairAddendumPaidRub(rows, addendumNumber);
+  const byLabel = rows.reduce((acc, r) => {
     if (r.paymentType === 'AMENDMENT' && basisTextMatches(r, label)) {
       return acc + paymentAmountRub(r);
     }
     return acc;
   }, 0);
+  return Math.max(byNumber, byLabel);
 }
 
 function isAddendumBasisSatisfied(
@@ -109,7 +126,7 @@ export function buildRepairPaymentBasisOptions(
       key: 'contract_partial',
       label: REPAIR_BASIS_LABEL_PARTIAL,
       paymentType: 'ADVANCE',
-      disabled: hasContractBasisPayment(rows, 'ADVANCE', REPAIR_BASIS_LABEL_PARTIAL),
+      disabled: false,
     },
     {
       key: 'contract_final',
@@ -121,19 +138,29 @@ export function buildRepairPaymentBasisOptions(
 
   const count = Math.min(5, Math.max(1, form.addendumSlotCount || 1));
   for (let i = 0; i < count; i++) {
+    const n = i + 1;
     const slot = form.addendumSlots[i];
     const raw = slot?.snapshot?.total;
-    if (typeof raw !== 'number' || !Number.isFinite(raw)) continue;
-    const n = i + 1;
-    const label = repairAddendumBasisLabel(n);
     const totalRub = breakdown.addendumTotalsRub.find((a) => a.slotIndex1 === n)?.totalRub ?? null;
+
     options.push({
-      key: `addendum_${n}`,
-      label,
+      key: `addendum_partial_${n}`,
+      label: repairAddendumPartialBasisLabel(n),
       paymentType: 'AMENDMENT',
       addendumNumber: n,
-      disabled: isAddendumBasisSatisfied(rows, n, label, totalRub),
+      disabled: false,
     });
+
+    if (typeof raw === 'number' && Number.isFinite(raw)) {
+      const label = repairAddendumBasisLabel(n);
+      options.push({
+        key: `addendum_${n}`,
+        label,
+        paymentType: 'AMENDMENT',
+        addendumNumber: n,
+        disabled: isAddendumBasisSatisfied(rows, n, label, totalRub),
+      });
+    }
   }
 
   return options;

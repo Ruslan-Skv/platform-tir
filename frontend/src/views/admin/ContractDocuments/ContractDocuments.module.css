@@ -1653,6 +1653,76 @@
   border-top: 1px solid var(--admin-border);
 }
 
+.repairEditorHubPrimaryBtn {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--admin-space-sm);
+}
+
+.repairEditorHubBtnLabel {
+  font-size: var(--admin-fs-sm, 0.8125rem);
+  font-weight: 600;
+}
+
+.repairEditorHubPendingBadge {
+  align-items: center;
+  background: var(--admin-warning-strong, #d97706);
+  border-radius: 999px;
+  color: #fff;
+  display: inline-flex;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  justify-content: center;
+  line-height: 1;
+  min-width: 1.125rem;
+  padding: 2px 5px;
+}
+
+.repairTabAddendumUnsigned:not(.tabActive) {
+  border-color: rgb(245 158 11 / 45%);
+}
+
+.repairTabAddendumUnsigned.tabActive {
+  box-shadow: inset 0 -2px 0 rgb(245 158 11 / 70%);
+}
+
+.repairTabAddendumSignBadge {
+  background: rgb(254 243 199 / 90%);
+  border-radius: 999px;
+  color: rgb(146 64 14);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 1px 6px;
+  text-transform: uppercase;
+}
+
+.repairAddendumUnsignedBanner {
+  background: rgb(255 251 235);
+  border: 1px solid rgb(253 230 138);
+  border-radius: var(--admin-radius-md, 8px);
+  color: rgb(120 53 15);
+  font-size: var(--admin-fs-sm, 0.8125rem);
+  line-height: 1.45;
+  margin-bottom: var(--admin-space-md, 8px);
+  padding: var(--admin-space-md, 8px) var(--admin-space-lg, 10px);
+}
+
+.repairAddendumUnsignedBannerLink {
+  background: none;
+  border: none;
+  color: var(--admin-primary, #2563eb);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.repairAddendumUnsignedBannerLink:hover {
+  color: var(--admin-primary-hover, #1d4ed8);
+}
+
 .dataCompact .formGrid {
   gap: 8px 10px;
 }
@@ -7018,24 +7088,152 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   padding-bottom: 2px;
 }
 
+/* Компактная строка в модалке «Оплаты и Управление договором» — без горизонтального скролла */
+.paymentsHubConductTitleRow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-md);
+}
+
+.paymentsHubConductTitleRow .paymentsHubBlockTitle {
+  margin-bottom: 0;
+}
+
+.paymentsHubConductDoneMsg {
+  color: var(--admin-success, #16a34a);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+/* Обёртка формы «Провести оплату» в модалке — без accent-карточки вкладки оплат */
+.paymentsHubConductFormWrap {
+  background: transparent;
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Поля как на бланке замера (MeasurementFormPage .blankSheet + .blankMetaGrid) */
+.paymentsHubConductBlank {
+  margin-top: 0;
+}
+
+.paymentsHubConductField {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.paymentsHubConductLabel {
+  font-size: var(--admin-font-size-2xs, 0.6875rem) !important;
+  font-weight: 500 !important;
+  line-height: 1.25;
+  margin-bottom: 2px !important;
+}
+
+.paymentsHubConductControl {
+  box-sizing: border-box;
+  font-size: var(--admin-font-size-xs, 0.8125rem) !important;
+  min-height: 2rem !important;
+  padding: 4px var(--admin-space-md, 8px) !important;
+  width: 100%;
+}
+
+.paymentsHubConductControl:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.paymentsFormHubRowCompact > .paymentsHubConductField {
+  flex: unset;
+  min-width: 0;
+}
+
+.paymentsFormHubRowCompact .paymentsHubConductControl {
+  max-width: 100%;
+  min-width: 0;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsHubConductBlank .hint {
+  color: rgba(243, 244, 246, 0.9);
+}
+
+/* Тёмная тема: поля как бланк замера; синяя рамка только у активного (focus) поля */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsHubConductBlank {
+  border-color: var(--admin-info-light, #60a5fa);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .paymentsHubConductBlank
+  .paymentsHubConductControl:not(:disabled) {
+  background: var(--admin-surface-soft, #374151) !important;
+  border-color: var(--admin-sidebar-text, rgba(255 255 255 / 0.72)) !important;
+  color: var(--admin-text-primary, #f3f4f6) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .paymentsHubConductBlank
+  .paymentsHubConductControl:not(:disabled):focus,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .paymentsHubConductBlank
+  .paymentsHubConductControl:not(:disabled):focus-visible {
+  border-color: var(--admin-info-light, #60a5fa) !important;
+  box-shadow: 0 0 0 2px var(--admin-overlay-color-136, rgb(6 182 212 / 0.2)) !important;
+  outline: none !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .paymentsHubConductBlank
+  .paymentsHubConductControl:disabled {
+  border-color: var(--admin-border-strong, #4b5563) !important;
+  opacity: 0.55;
+}
+
+.paymentsFormHubRowCompact {
+  display: grid;
+  grid-template-columns:
+    minmax(7.25rem, 8.25rem)
+    minmax(0, 1fr)
+    minmax(6.75rem, 8rem)
+    minmax(5.25rem, 6.5rem)
+    auto;
+  overflow-x: visible;
+  overflow-y: visible;
+  padding-bottom: 0;
+}
+
+.paymentsFormHubRowCompact > .field {
+  flex: unset;
+  min-width: 0;
+}
+
+.paymentsFormHubRowCompact > .paymentsFormHubDateField,
+.paymentsFormHubRowCompact > .paymentsFormHubAmountField {
+  max-width: 100%;
+}
+
 .paymentsFormHubRow > .field {
   flex: 0 1 auto;
   min-width: 0;
 }
 
-.paymentsFormHubRow > .field:nth-child(1) {
+.paymentsFormHubRow:not(.paymentsFormHubRowCompact) > .field:nth-child(1) {
   flex: 0 0 10.5rem;
 }
 
-.paymentsFormHubRow > .field:nth-child(2) {
+.paymentsFormHubRow:not(.paymentsFormHubRowCompact) > .field:nth-child(2) {
   flex: 0 0 8.5rem;
 }
 
-.paymentsFormHubRow > .field:nth-child(3) {
+.paymentsFormHubRow:not(.paymentsFormHubRowCompact) > .field:nth-child(3) {
   flex: 0 0 9.5rem;
 }
 
-.paymentsFormHubRow > .field:nth-child(4) {
+.paymentsFormHubRow:not(.paymentsFormHubRowCompact) > .field:nth-child(4) {
   flex: 1 1 12rem;
   min-width: 11rem;
 }
@@ -7060,81 +7258,93 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   visibility: hidden;
 }
 
+/* Как «+ Новый расчёт из замера»; отдельный класс — в портале модалки нет токенов layout */
 .paymentsFormHubSubmitField .paymentsHubConductBtn {
+  align-items: center;
   border-radius: var(--admin-radius-md, 8px);
   box-sizing: border-box;
   cursor: pointer;
+  display: inline-flex;
   font-size: var(--admin-font-size-sm);
-  font-weight: 600;
-  line-height: 1.25;
-  min-height: 2.5rem;
-  padding: var(--admin-space-md) var(--admin-space-xl);
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease;
+  font-weight: 700;
+  justify-content: center;
+  line-height: var(--admin-line-height-sm, 1.25);
+  min-height: 2.125rem;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  text-decoration: none;
   white-space: nowrap;
 }
 
+.paymentsFormHubSubmitField .paymentsHubConductBtn:not(:disabled) {
+  border: 1px solid var(--admin-info, #2563eb);
+  background: linear-gradient(
+    180deg,
+    var(--admin-info-bg-soft, #eff6ff) 0%,
+    var(--admin-info-bg, #dbeafe) 100%
+  );
+  box-shadow: 0 2px 8px var(--admin-overlay-color-129, rgb(37 99 235 / 0.14));
+  color: var(--admin-info-strong, #1d4ed8);
+}
+
+.paymentsFormHubSubmitField .paymentsHubConductBtn:not(:disabled):hover {
+  border-color: var(--admin-info-bright, #3b82f6);
+  background: linear-gradient(
+    180deg,
+    var(--admin-info-bg, #dbeafe) 0%,
+    var(--admin-info-border-soft, #bfdbfe) 100%
+  );
+  color: var(--admin-info-text, #1e40af);
+}
+
+.paymentsFormHubSubmitField .paymentsHubConductBtn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--admin-surface, #ffffff),
+    0 0 0 4px rgb(37 99 235 / 0.35);
+}
+
 .paymentsFormHubSubmitField .paymentsHubConductBtn:disabled {
-  cursor: not-allowed;
-}
-
-.paymentsFormHubConductBtnIdle {
-  background: transparent !important;
+  background: var(--admin-surface-soft, #f3f4f6);
   border: 1px solid var(--admin-border-strong, #d1d5db);
-  box-shadow: none;
   color: var(--admin-text-muted, #6b7280);
-}
-
-.paymentsFormHubConductBtnIdle:disabled {
-  opacity: 0.55;
-}
-
-.paymentsFormHubConductBtnReady {
-  background: #dc2626 !important;
-  border: 1px solid #b91c1c;
-  box-shadow: 0 1px 2px rgb(15 23 42 / 12%);
-  color: #ffffff !important;
-}
-
-.paymentsFormHubConductBtnReady:disabled {
-  opacity: 0.7;
-}
-
-.paymentsFormHubConductBtnSuccess {
-  background: #bbf7d0 !important;
-  border: 1px solid #86efac;
+  cursor: not-allowed;
+  opacity: 0.65;
   box-shadow: none;
-  color: #166534 !important;
 }
 
-.paymentsFormHubConductBtnSuccess:disabled {
-  opacity: 1;
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .paymentsFormHubSubmitField
+  .paymentsHubConductBtn:not(:disabled) {
+  border-color: var(--admin-info-bright, #60a5fa);
+  background: linear-gradient(
+    180deg,
+    var(--admin-info, #3b82f6) 0%,
+    var(--admin-info-strong, #2563eb) 100%
+  );
+  color: var(--admin-text-inverse, #f9fafb);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsFormHubConductBtnIdle {
-  background: transparent !important;
-  border-color: var(--admin-border-strong);
-  color: var(--admin-text-muted);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsFormHubConductBtnReady {
-  background: #b91c1c !important;
-  border-color: #991b1b;
-  color: #ffffff !important;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsFormHubConductBtnSuccess {
-  background: rgb(22 101 52 / 0.45) !important;
-  border-color: #4ade80;
-  color: #bbf7d0 !important;
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .paymentsFormHubSubmitField
+  .paymentsHubConductBtn:not(:disabled):hover {
+  border-color: var(--admin-info-bright, #60a5fa);
+  background: linear-gradient(
+    180deg,
+    var(--admin-info-strong, #2563eb) 0%,
+    var(--admin-info, #3b82f6) 100%
+  );
+  color: var(--admin-text-inverse, #f9fafb);
 }
 
 .paymentsFormHubHint {
   flex: 1 1 100%;
+  grid-column: 1 / -1;
   margin: 0 !important;
-  min-width: 100%;
+  min-width: 0;
+}
+
+.paymentsFormHubRowCompact .paymentsFormHubHint {
+  flex: unset;
 }
 
 .paymentsFormGrid > .field {
@@ -7180,8 +7390,16 @@ a.primaryBtn.estimatesCompactPrimaryLink {
     grid-template-columns: 1fr;
   }
 
-  .paymentsFormHubRow {
+  .paymentsFormHubRow:not(.paymentsFormHubRowCompact) {
     flex-wrap: wrap;
+  }
+
+  .paymentsFormHubRowCompact {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .paymentsFormHubRowCompact .paymentsFormHubSubmitField {
+    grid-column: 1 / -1;
   }
 
   .paymentsFormHubSubmitField {

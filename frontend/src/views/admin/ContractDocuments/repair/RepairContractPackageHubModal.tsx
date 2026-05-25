@@ -6,13 +6,11 @@ import { useEffect, useRef, useState } from 'react';
 
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
-import { AdminToolbarIconButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import crmFormStyles from '@/views/admin/CRM/Customers/AddCrmCustomerModal.module.css';
 import crmDetailStyles from '@/views/admin/CRM/Customers/CrmCustomerDetailModal.module.css';
 
 import styles from '../ContractDocuments.module.css';
 import hubStyles from './RepairContractPackageHubModal.module.css';
-import { RepairContractPackageHubPayTitleAside } from './RepairContractPackageHubPayTitleAside';
 import { RepairContractPackagePipelineSection } from './RepairContractPackagePipelineSection';
 import { RepairContractPaymentsJournalModal } from './RepairContractPaymentsJournalModal';
 import { RepairContractPaymentsTab } from './RepairContractPaymentsTab';
@@ -44,6 +42,7 @@ export function RepairContractPackageHubModal({
   const [contractCloseFilePreview, setContractCloseFilePreview] = useState<string | null>(null);
   const [paymentsJournalOpen, setPaymentsJournalOpen] = useState(false);
   const [journalReloadToken, setJournalReloadToken] = useState(0);
+  const conductPanelRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!isOpen) setPaymentsJournalOpen(false);
@@ -52,6 +51,10 @@ export function RepairContractPackageHubModal({
   const handleJournalChanged = () => {
     void hub.refreshJournalPaidRub();
     setJournalReloadToken((t) => t + 1);
+  };
+
+  const scrollToConductPayment = () => {
+    conductPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   useEffect(() => {
@@ -75,32 +78,27 @@ export function RepairContractPackageHubModal({
   }, [hub.contractCloseModalFile]);
 
   const modalTitle = (
-    <span className={hubStyles.modalTitleRow}>
-      {REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE}
+    <span className={`${crmDetailStyles.titleWithEdit} ${hubStyles.modalTitleRow}`}>
+      <span>{REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE}</span>
       {!hub.loading ? (
         <>
           <span className={hubStyles.modalContractNumber}>
             {hub.contractNumberLabel}
             {hub.headerConcludedDateLabel != null ? ` от ${hub.headerConcludedDateLabel}` : null}
           </span>
-          <AdminToolbarIconButton
+          <button
             type="button"
-            className={hubStyles.journalOpenBtn}
+            className={crmDetailStyles.historyBtn}
             title="Журнал оплат"
             aria-label="Журнал оплат"
             onClick={() => setPaymentsJournalOpen(true)}
           >
-            <BanknotesIcon width={20} height={20} />
-          </AdminToolbarIconButton>
+            <BanknotesIcon className={crmDetailStyles.editIcon} aria-hidden />
+          </button>
         </>
       ) : null}
     </span>
   );
-
-  const journalPayTitleAside =
-    !hub.loading && hub.signedContractPayOrb != null ? (
-      <RepairContractPackageHubPayTitleAside orb={hub.signedContractPayOrb} />
-    ) : null;
 
   const handleCloseMain = () => {
     if (
@@ -120,7 +118,6 @@ export function RepairContractPackageHubModal({
         isOpen={isOpen}
         onClose={handleCloseMain}
         title={modalTitle}
-        titleAside={journalPayTitleAside}
         size="lg"
         className={crmFormStyles.modalPanel}
         showCloseButton
@@ -138,11 +135,41 @@ export function RepairContractPackageHubModal({
               data-modal-density="compact"
               className={`${hubStyles.hubModalSection} ${hubStyles.pipelinePanel}`}
             >
-              <h3 className={crmDetailStyles.linkedSectionTitle}>Этапы и статусы договора</h3>
+              <div className={hubStyles.pipelineSectionHead}>
+                <h3 className={crmDetailStyles.linkedSectionTitle}>Этапы и статусы договора</h3>
+                {!hub.loading && !hub.pipeline.isRefused ? (
+                  <button
+                    type="button"
+                    className={hubStyles.pipelineRefusalHeadBtn}
+                    disabled={
+                      blockPipelineActions ||
+                      hub.savingPackageStatus ||
+                      hub.workStartModalBusy ||
+                      hub.contractCloseModalBusy ||
+                      hub.refusalModalBusy
+                    }
+                    title={blockPipelineReason ?? (hub.loading ? 'Загрузка…' : undefined)}
+                    onClick={() => {
+                      hub.setRefusalModalError(null);
+                      hub.setRefusalReasonDraft('');
+                      hub.setRefusalModalOpen(true);
+                    }}
+                  >
+                    Отказ по проекту
+                  </button>
+                ) : null}
+              </div>
+              <p className={hubStyles.pipelineIntro}>
+                Последовательность этапов договора. Оплаты считаются по журналу; «В работе» — от{' '}
+                {70}% по договору и акту начала работ; «Закрыт» — 100% оплата и акт сдачи-приёмки.
+                Отказ возможен на любом этапе.
+              </p>
               <RepairContractPackagePipelineSection
                 hub={hub}
                 blockPipelineActions={blockPipelineActions}
                 blockPipelineReason={blockPipelineReason}
+                onOpenPaymentsJournal={() => setPaymentsJournalOpen(true)}
+                onScrollToConductPayment={scrollToConductPayment}
               />
             </section>
 
@@ -163,6 +190,7 @@ export function RepairContractPackageHubModal({
             </section>
 
             <section
+              ref={conductPanelRef}
               data-modal-readonly-panel
               data-modal-density="compact"
               className={`${hubStyles.hubModalSection} ${hubStyles.conductPanel}`}
