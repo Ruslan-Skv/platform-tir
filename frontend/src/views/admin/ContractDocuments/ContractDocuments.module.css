@@ -1885,6 +1885,7 @@
 
 .repairCustomerSearchSlot > article {
   height: 100%;
+  min-height: min-content;
 }
 
 /* Адрес объекта | этаж — под реквизитами договора */

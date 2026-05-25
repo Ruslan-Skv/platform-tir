@@ -42,6 +42,62 @@
   overflow: visible;
 }
 
+/**
+ * Крупнее типографика и элементы — как на странице замера (.page с переопределённой шкалой
+ * --admin-font-size-*). Используйте на вкладке «Данные» договора ремонта.
+ */
+.customerCrmPanelComfort {
+  --admin-font-size-2xs: 0.6875rem;
+  --admin-font-size-xs: 0.8125rem;
+  --admin-font-size-sm: 0.875rem;
+  --admin-font-size-md: 0.9375rem;
+  --admin-font-size-base: 1rem;
+  --customer-crm-result-row-height: 2.875rem;
+}
+
+.customerCrmPanelComfort .customerCrmTitle {
+  font-size: var(--admin-font-size-sm);
+}
+
+.customerCrmPanelComfort .customerCrmHint {
+  font-size: var(--admin-font-size-2xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+.customerCrmPanelComfort .searchInput {
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  font-size: var(--admin-font-size-sm);
+}
+
+.customerCrmPanelComfort .customerCrmAddButton,
+.customerCrmPanelComfort .customerCrmClearButton {
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+}
+
+.customerCrmPanelComfort .customerCrmLinkedBadge {
+  font-size: var(--admin-font-size-xs);
+  padding: 3px var(--admin-space-sm);
+}
+
+.customerCrmPanelComfort .customerCrmResultName {
+  font-size: var(--admin-font-size-sm);
+}
+
+.customerCrmPanelComfort .customerCrmResultMeta,
+.customerCrmPanelComfort .customerCrmResultObjectAddress {
+  font-size: var(--admin-font-size-xs);
+}
+
+.customerCrmPanelComfort .customerCrmResultButton {
+  padding: var(--admin-space-sm) var(--admin-space-md);
+}
+
+.customerCrmPanelComfort .customerCrmResultFill,
+.customerCrmPanelComfort .customerCrmResultEditBtn {
+  font-size: var(--admin-font-size-xs);
+}
+
 .customerCrmPanelHead {
   display: flex;
   align-items: flex-start;

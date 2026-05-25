@@ -32,6 +32,7 @@ import { getInstallers } from '@/shared/api/admin-crm';
 import { Modal } from '@/shared/ui/Modal';
 import { VersionsHistoryIcon } from '@/shared/ui/icons/VersionsHistoryIcon';
 import { CrmCustomerSearchPanel } from '@/views/admin/CRM/Customers/CrmCustomerSearchPanel';
+import crmCustomerSearchPanelStyles from '@/views/admin/CRM/Customers/CrmCustomerSearchPanel.module.css';
 import { ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_HREF } from '@/views/admin/ContractDocuments/contractDocumentsContractsRoutes';
 
 import styles from '../ContractDocuments.module.css';
@@ -3609,6 +3610,7 @@ export function RepairContractDocumentEditorPage({
                   }`}
                 >
                   <CrmCustomerSearchPanel
+                    className={crmCustomerSearchPanelStyles.customerCrmPanelComfort}
                     customerId={linkedCrmCustomerId}
                     disabled={contractAndEstimateLocked}
                     listboxId="repair-customer-crm-search-listbox"
