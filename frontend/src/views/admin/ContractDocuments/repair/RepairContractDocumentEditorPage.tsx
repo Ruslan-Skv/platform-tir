@@ -810,7 +810,6 @@ export function RepairContractDocumentEditorPage({
           await updateContractDocumentPackage(packageId, {
             title: draftTitleRef.current.trim() || null,
             formData,
-            crmContractId: null,
             recordVersion: true,
           });
           setDirty(false);
@@ -1165,8 +1164,7 @@ export function RepairContractDocumentEditorPage({
             await updateContractDocumentPackage(packageId, {
               title: row.title?.trim() || null,
               formData: buildPersistedFormData(finalForm, overridesSansContract, selectedIds),
-              crmContractId: null,
-              recordVersion: true,
+              recordVersion: false,
             });
             setRepairPackages((prev) =>
               prev.map((p) =>

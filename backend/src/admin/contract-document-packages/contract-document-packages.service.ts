@@ -88,11 +88,27 @@ export class ContractDocumentPackagesService {
   private async assertRepairEstimatePresetsExclusive(
     currentPackageId: string | null,
     formData: unknown,
+    options?: { previousFormData?: unknown },
   ): Promise<void> {
     const ids = this.extractRepairEstimatePresetIds(formData);
     if (ids.length === 0) return;
 
-    await this.assertRepairEstimatePresetsPipelineActive(ids);
+    const previousIdsList =
+      options?.previousFormData !== undefined
+        ? this.extractRepairEstimatePresetIds(options.previousFormData)
+        : null;
+    if (previousIdsList !== null) {
+      const previousSet = new Set(previousIdsList);
+      const unchanged =
+        ids.length === previousIdsList.length && ids.every((id) => previousSet.has(id));
+      if (unchanged) return;
+    }
+
+    const previousIds = previousIdsList !== null ? new Set(previousIdsList) : null;
+    const idsToValidatePipeline = previousIds ? ids.filter((id) => !previousIds.has(id)) : ids;
+    if (idsToValidatePipeline.length > 0) {
+      await this.assertRepairEstimatePresetsPipelineActive(idsToValidatePipeline);
+    }
 
     const others = await this.prisma.contractDocumentPackage.findMany({
       where: {
@@ -304,7 +320,9 @@ export class ContractDocumentPackagesService {
       await this.assertCrmContractExists(dto.crmContractId);
     }
     if (dto.formData !== undefined && row.kind === ContractDocumentPackageKind.REPAIR) {
-      await this.assertRepairEstimatePresetsExclusive(id, dto.formData);
+      await this.assertRepairEstimatePresetsExclusive(id, dto.formData, {
+        previousFormData: row.formData,
+      });
     }
     const recordVersion = dto.recordVersion === true;
     const updated = await this.prisma.contractDocumentPackage.update({
