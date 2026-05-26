@@ -5,4 +5,9 @@ export {
   AdminToolbarTrashButton,
   type AdminToolbarTrashButtonProps,
 } from './AdminToolbarTrashButton';
+export { AdminArchiveIcon, AdminArchiveListIcon } from './AdminArchiveIcon';
+export {
+  AdminToolbarArchiveButton,
+  type AdminToolbarArchiveButtonProps,
+} from './AdminToolbarArchiveButton';
 export { useAdminTrashCount } from './useAdminTrashCount';

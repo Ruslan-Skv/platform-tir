@@ -32,15 +32,21 @@ export class ContractTemplatePresetDto {
   @IsBoolean()
   isDefault?: boolean;
 
-  /** Нельзя удалить из списка и нельзя архивировать, пока включено (снимается отдельно). */
-  @IsOptional()
-  @IsBoolean()
-  isProtected?: boolean;
-
-  /** Мягкое удаление: не показывается в списках выбора, остаётся в JSON. */
+  /** Мягкое скрытие: не показывается в списках выбора, остаётся в JSON. */
   @IsOptional()
   @IsBoolean()
   archived?: boolean;
+
+  /** Корзина: ISO-дата удаления; через 30 дней запись удаляется безвозвратно. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  deletedAt?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  deletedById?: string;
 }
 
 export class SetGlobalContractTemplatesDto {

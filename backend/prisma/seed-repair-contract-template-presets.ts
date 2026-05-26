@@ -43,7 +43,6 @@ type PresetItem = {
   tabId: string;
   html: string;
   isDefault?: boolean;
-  isProtected?: boolean;
   archived?: boolean;
 };
 
@@ -77,7 +76,6 @@ function loadDefaultsFromFrontendRepo(): PresetItem[] {
     title: TAB_TITLES[tabId],
     html: extractTemplateFromTsFile(path.join(templatesDir, files[tabId])),
     isDefault: true,
-    isProtected: false,
     archived: false,
   }));
 }
@@ -95,7 +93,6 @@ function loadDefaultsFromSeedJson(): PresetItem[] | null {
       tabId: it.tabId,
       html: it.html ?? '',
       isDefault: Boolean(it.isDefault),
-      isProtected: Boolean(it.isProtected),
       archived: Boolean(it.archived),
     }));
 }

@@ -141,38 +141,4 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
       },
     ],
   },
-  {
-    title: 'Смета',
-    items: [
-      { path: 'estimate.notes', label: 'Текст сметы (автосводка/комментарий)' },
-      { path: 'estimate.total', label: 'Итоговая сумма сметы' },
-      { path: 'estimate.rooms', label: 'Список помещений и позиций (текстом)' },
-      { path: 'estimate.roomsHtml', label: 'Смета таблицей (готовый HTML-блок)' },
-      { path: 'estimate.roomsCount', label: 'Количество помещений в смете' },
-      { path: 'estimate.linesCount', label: 'Количество позиций в смете' },
-    ],
-  },
-  {
-    title: 'Заказ-наряд',
-    items: [
-      { path: 'workOrder.taxPercent', label: 'Налог (%) — значение из формы' },
-      { path: 'workOrder.markupPercent', label: 'Наценка (%) — значение из формы' },
-      {
-        path: 'workOrder.taxPercentNormalized',
-        label: 'Налог (%) — нормализованное число для печати',
-      },
-      {
-        path: 'workOrder.markupPercentNormalized',
-        label: 'Наценка (%) — нормализованное число для печати',
-      },
-      { path: 'workOrder.roomsHtml', label: 'Таблица работ заказ-наряда (HTML)' },
-      { path: 'workOrder.totalBeforeDeductions', label: 'Итого до вычетов' },
-      { path: 'workOrder.taxAmount', label: 'Сумма налога к вычету' },
-      { path: 'workOrder.markupAmount', label: 'Сумма наценки к вычету' },
-      { path: 'workOrder.totalReduction', label: 'Общее уменьшение' },
-      { path: 'workOrder.totalAfterDeductions', label: 'Итого к оплате' },
-      { path: 'workOrder.roomsCount', label: 'Количество помещений' },
-      { path: 'workOrder.linesCount', label: 'Количество позиций' },
-    ],
-  },
 ];

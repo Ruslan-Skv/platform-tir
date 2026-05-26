@@ -211,10 +211,11 @@ export interface ContractTemplatePreset {
   tabId?: string;
   html: string;
   isDefault?: boolean;
-  /** Защита от удаления и от архивации без предварительного снятия. */
-  isProtected?: boolean;
   /** Архив (скрыт из выбора; восстанавливается из библиотеки). */
   archived?: boolean;
+  /** Корзина (ISO); через 30 дней удаляется безвозвратно. */
+  deletedAt?: string;
+  deletedById?: string;
 }
 
 /** Объект (здание / проект): группа расчётов в списке команды. */

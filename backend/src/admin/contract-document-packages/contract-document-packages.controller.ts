@@ -144,6 +144,60 @@ export class ContractDocumentPackagesController {
     return this.service.setGlobalContractTemplates(dto, req.user?.id);
   }
 
+  @Get('contract-templates/trash')
+  findContractTemplatesTrash(
+    @Query('kind') kind: string,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const allowed = new Set<string>(Object.values(ContractDocumentPackageKind));
+    if (!kind || !allowed.has(kind)) {
+      throw new BadRequestException('Укажите корректный query-параметр kind');
+    }
+    return this.service.findContractTemplatesTrash(kind as ContractDocumentPackageKind, {
+      search,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 25,
+    });
+  }
+
+  @Post('contract-templates/:presetId/restore')
+  @Roles('SUPER_ADMIN')
+  restoreContractTemplate(
+    @Param('presetId') presetId: string,
+    @Query('kind') kind: string,
+    @Req() req: RequestWithUser,
+  ) {
+    const allowed = new Set<string>(Object.values(ContractDocumentPackageKind));
+    if (!kind || !allowed.has(kind)) {
+      throw new BadRequestException('Укажите корректный query-параметр kind');
+    }
+    return this.service.restoreContractTemplateFromTrash(
+      kind as ContractDocumentPackageKind,
+      presetId,
+      req.user?.id,
+    );
+  }
+
+  @Delete('contract-templates/:presetId')
+  @Roles('SUPER_ADMIN')
+  trashContractTemplate(
+    @Param('presetId') presetId: string,
+    @Query('kind') kind: string,
+    @Req() req: RequestWithUser,
+  ) {
+    const allowed = new Set<string>(Object.values(ContractDocumentPackageKind));
+    if (!kind || !allowed.has(kind)) {
+      throw new BadRequestException('Укажите корректный query-параметр kind');
+    }
+    return this.service.trashContractTemplate(
+      kind as ContractDocumentPackageKind,
+      presetId,
+      req.user?.id,
+    );
+  }
+
   @Get('estimate-presets')
   getGlobalEstimatePresets(@Query('kind') kind: string) {
     const allowed = new Set<string>(Object.values(ContractDocumentPackageKind));

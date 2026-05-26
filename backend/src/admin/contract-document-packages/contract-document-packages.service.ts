@@ -41,10 +41,13 @@ export class ContractDocumentPackagesService {
   private static readonly SIGNATORY_PROFILES_TAB = 'signatory_profiles';
   private static readonly CONTRACT_TEMPLATES_TAB = 'contract_templates';
   private static readonly ESTIMATE_PRESETS_TAB = 'estimate_presets';
-  /** Срок хранения расчёта в корзине до безвозвратного удаления. */
+  /** Срок хранения в корзине до безвозвратного удаления (расчёты, шаблоны). */
   static readonly ESTIMATE_PRESET_TRASH_RETENTION_DAYS = 30;
+  static readonly CONTRACT_TEMPLATE_TRASH_RETENTION_DAYS = 30;
   private static readonly ESTIMATE_PRESET_TRASH_RETENTION_MS =
     ContractDocumentPackagesService.ESTIMATE_PRESET_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+  private static readonly CONTRACT_TEMPLATE_TRASH_RETENTION_MS =
+    ContractDocumentPackagesService.CONTRACT_TEMPLATE_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
   private static readonly VERSION_MOMENT_FORM_DATA_UPDATED = 'packageFormDataUpdated';
   private static readonly VERSION_MOMENT_CUSTOMER_UPDATED = 'packageCustomerUpdated';
   private static readonly VERSION_MOMENT_ESTIMATE_UPDATED = 'packageEstimateUpdated';
@@ -637,7 +640,24 @@ export class ContractDocumentPackagesService {
     return row;
   }
 
-  async getGlobalContractTemplates(kind: ContractDocumentPackageKind) {
+  private isContractTemplateTrashed(item: ContractTemplatePresetDto): boolean {
+    return Boolean(item.deletedAt?.trim());
+  }
+
+  private isContractTemplateTrashExpired(deletedAt: string | undefined): boolean {
+    const trimmed = deletedAt?.trim();
+    if (!trimmed) return false;
+    const deletedMs = Date.parse(trimmed);
+    if (!Number.isFinite(deletedMs)) return false;
+    return (
+      deletedMs < Date.now() - ContractDocumentPackagesService.CONTRACT_TEMPLATE_TRASH_RETENTION_MS
+    );
+  }
+
+  private async loadGlobalContractTemplatesBlob(kind: ContractDocumentPackageKind): Promise<{
+    items: ContractTemplatePresetDto[];
+    updatedAt: string | null;
+  }> {
     const row = await this.prisma.contractDocumentGlobalTemplate.findUnique({
       where: {
         kind_tab: { kind, tab: ContractDocumentPackagesService.CONTRACT_TEMPLATES_TAB },
@@ -645,7 +665,7 @@ export class ContractDocumentPackagesService {
       select: { html: true, updatedAt: true },
     });
     if (!row) {
-      return { items: [] as ContractTemplatePresetDto[], updatedAt: null as string | null };
+      return { items: [] as ContractTemplatePresetDto[], updatedAt: null };
     }
     try {
       const parsed = JSON.parse(row.html) as { items?: ContractTemplatePresetDto[] };
@@ -658,34 +678,206 @@ export class ContractDocumentPackagesService {
     }
   }
 
-  private assertContractTemplatesProtectedRules(
-    previous: ContractTemplatePresetDto[],
-    incoming: ContractTemplatePresetDto[],
-  ): void {
-    const incomingById = new Map(incoming.map((it) => [it.id, it]));
-    for (const prev of previous) {
-      const wasProtected = Boolean(prev.isProtected) && !Boolean(prev.archived);
-      if (!wasProtected) continue;
-      const next = incomingById.get(prev.id);
-      if (!next) {
-        throw new BadRequestException(
-          'Нельзя удалить защищённый шаблон из хранилища. Снимите защиту в библиотеке шаблонов, затем перенесите в архив или измените.',
-        );
-      }
-      const nextProtected = Boolean(next.isProtected);
-      const nextArchived = Boolean(next.archived);
-      if (nextProtected && nextArchived) {
-        throw new BadRequestException(
-          'Нельзя архивировать защищённый шаблон, пока включена защита. Сначала снимите защиту.',
-        );
-      }
+  private async purgeExpiredTrashedContractTemplates(
+    kind: ContractDocumentPackageKind,
+  ): Promise<number> {
+    const raw = await this.loadGlobalContractTemplatesBlob(kind);
+    const nextItems = raw.items.filter(
+      (item) =>
+        !this.isContractTemplateTrashed(item) ||
+        !this.isContractTemplateTrashExpired(item.deletedAt),
+    );
+    const purged = raw.items.length - nextItems.length;
+    if (purged === 0) return 0;
+    const payload = JSON.stringify({ items: nextItems });
+    await this.prisma.contractDocumentGlobalTemplate.upsert({
+      where: {
+        kind_tab: { kind, tab: ContractDocumentPackagesService.CONTRACT_TEMPLATES_TAB },
+      },
+      create: {
+        kind,
+        tab: ContractDocumentPackagesService.CONTRACT_TEMPLATES_TAB,
+        html: payload,
+        updatedById: null,
+      },
+      update: { html: payload },
+      select: { id: true },
+    });
+    return purged;
+  }
+
+  private contractTemplateTabLabel(tabId: string | undefined): string {
+    const labels: Record<string, string> = {
+      contract: 'Договор',
+      actStart: 'Акт начала работ',
+      actAcceptance: 'Акт сдачи-приёмки',
+      cashOrder: 'ПКО',
+      productionLog: 'Производственный журнал',
+    };
+    const key = tabId?.trim() || 'contract';
+    return labels[key] ?? key;
+  }
+
+  private contractTemplateMatchesTrashSearch(
+    item: ContractTemplatePresetDto,
+    searchNorm: string,
+  ): boolean {
+    const haystack = [item.title, this.contractTemplateTabLabel(item.tabId), item.tabId ?? '']
+      .join(' ')
+      .toLowerCase();
+    return haystack.includes(searchNorm);
+  }
+
+  async getGlobalContractTemplates(kind: ContractDocumentPackageKind) {
+    await this.purgeExpiredTrashedContractTemplates(kind);
+    const raw = await this.loadGlobalContractTemplatesBlob(kind);
+    return {
+      items: raw.items.filter((item) => !this.isContractTemplateTrashed(item)),
+      updatedAt: raw.updatedAt,
+    };
+  }
+
+  async findContractTemplatesTrash(
+    kind: ContractDocumentPackageKind,
+    params?: { search?: string; page?: number; limit?: number },
+  ) {
+    await this.purgeExpiredTrashedContractTemplates(kind);
+    const raw = await this.loadGlobalContractTemplatesBlob(kind);
+    const page = params?.page ?? 1;
+    const limit = Math.min(Math.max(params?.limit ?? 25, 1), 100);
+    const skip = (page - 1) * limit;
+    const searchNorm = params?.search?.trim().toLowerCase() ?? '';
+
+    let trashed = raw.items.filter((item) => this.isContractTemplateTrashed(item));
+    trashed.sort((a, b) => {
+      const ta = Date.parse(a.deletedAt ?? '') || 0;
+      const tb = Date.parse(b.deletedAt ?? '') || 0;
+      return tb - ta;
+    });
+
+    if (searchNorm) {
+      trashed = trashed.filter((item) => this.contractTemplateMatchesTrashSearch(item, searchNorm));
     }
+
+    const total = trashed.length;
+    const pageRows = trashed.slice(skip, skip + limit);
+
+    const userIds = [
+      ...new Set(
+        pageRows.map((row) => row.deletedById?.trim()).filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const users =
+      userIds.length > 0
+        ? await this.prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, email: true, firstName: true, lastName: true },
+          })
+        : [];
+    const userById = new Map(users.map((u) => [u.id, u]));
+
+    return {
+      data: pageRows.map((item) => {
+        const deletedById = item.deletedById?.trim() ?? null;
+        const deletedBy = deletedById ? (userById.get(deletedById) ?? null) : null;
+        const deletedMs = Date.parse(item.deletedAt ?? '');
+        const permanentDeleteAt = Number.isFinite(deletedMs)
+          ? new Date(
+              deletedMs + ContractDocumentPackagesService.CONTRACT_TEMPLATE_TRASH_RETENTION_MS,
+            ).toISOString()
+          : null;
+        return {
+          id: item.id,
+          title: item.title,
+          tabId: item.tabId ?? 'contract',
+          tabLabel: this.contractTemplateTabLabel(item.tabId),
+          deletedAt: item.deletedAt!,
+          permanentDeleteAt,
+          deletedBy,
+        };
+      }),
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+      trashRetentionDays: ContractDocumentPackagesService.CONTRACT_TEMPLATE_TRASH_RETENTION_DAYS,
+    };
+  }
+
+  async trashContractTemplate(
+    kind: ContractDocumentPackageKind,
+    presetId: string,
+    actorUserId?: string,
+  ) {
+    await this.purgeExpiredTrashedContractTemplates(kind);
+    const raw = await this.loadGlobalContractTemplatesBlob(kind);
+    const index = raw.items.findIndex((item) => item.id === presetId);
+    if (index < 0) {
+      throw new NotFoundException('Шаблон не найден');
+    }
+    const item = raw.items[index];
+    if (this.isContractTemplateTrashed(item)) {
+      throw new BadRequestException('Шаблон уже в корзине');
+    }
+    const nextItems = [...raw.items];
+    nextItems[index] = {
+      ...item,
+      deletedAt: new Date().toISOString(),
+      deletedById: actorUserId ?? undefined,
+      archived: false,
+      isDefault: false,
+    };
+    await this.setGlobalContractTemplates({ kind, items: nextItems }, actorUserId);
+    return { ok: true };
+  }
+
+  async restoreContractTemplateFromTrash(
+    kind: ContractDocumentPackageKind,
+    presetId: string,
+    updatedById?: string,
+  ) {
+    await this.purgeExpiredTrashedContractTemplates(kind);
+    const raw = await this.loadGlobalContractTemplatesBlob(kind);
+    const index = raw.items.findIndex((item) => item.id === presetId);
+    if (index < 0) {
+      throw new NotFoundException('Шаблон не найден');
+    }
+    const item = raw.items[index];
+    if (!this.isContractTemplateTrashed(item)) {
+      throw new BadRequestException('Шаблон не в корзине');
+    }
+    const nextItems = [...raw.items];
+    const restored = { ...item };
+    delete restored.deletedAt;
+    delete restored.deletedById;
+    nextItems[index] = restored;
+    await this.setGlobalContractTemplates({ kind, items: nextItems }, updatedById);
+    return { ok: true };
   }
 
   async setGlobalContractTemplates(dto: SetGlobalContractTemplatesDto, updatedById?: string) {
-    const previous = await this.getGlobalContractTemplates(dto.kind);
-    this.assertContractTemplatesProtectedRules(previous.items, dto.items ?? []);
-    const payload = JSON.stringify({ items: dto.items ?? [] });
+    await this.purgeExpiredTrashedContractTemplates(dto.kind);
+    const previousRaw = await this.loadGlobalContractTemplatesBlob(dto.kind);
+    const previousTrashedItems = previousRaw.items.filter((item) =>
+      this.isContractTemplateTrashed(item),
+    );
+    const dtoItems = dto.items ?? [];
+    const activeFromDto = dtoItems
+      .filter((item) => !this.isContractTemplateTrashed(item))
+      .map((item) => {
+        const copy = { ...item };
+        delete copy.deletedAt;
+        delete copy.deletedById;
+        return copy;
+      });
+    const trashedFromDto = dtoItems.filter((item) => this.isContractTemplateTrashed(item));
+    const activeIds = new Set(activeFromDto.map((item) => item.id));
+    const trashedFromDtoIds = new Set(trashedFromDto.map((item) => item.id));
+    const preservedTrash = previousTrashedItems.filter(
+      (item) => !activeIds.has(item.id) && !trashedFromDtoIds.has(item.id),
+    );
+    const nextItems = [...activeFromDto, ...trashedFromDto, ...preservedTrash];
+    const payload = JSON.stringify({ items: nextItems });
     const row = await this.prisma.contractDocumentGlobalTemplate.upsert({
       where: {
         kind_tab: { kind: dto.kind, tab: ContractDocumentPackagesService.CONTRACT_TEMPLATES_TAB },

@@ -178,7 +178,6 @@ function normalizeContractTemplatePreset(it: ContractTemplatePreset): ContractTe
   return {
     ...it,
     tabId,
-    isProtected: Boolean(it.isProtected),
     archived: Boolean(it.archived),
   };
 }
@@ -2664,7 +2663,6 @@ export function RepairContractDocumentEditorPage({
                 (it) => normalizeTemplateTabId(it.tabId) === currentTab && !it.archived
               ).length === 0,
             archived: false,
-            isProtected: false,
           },
         ];
     await persistContractTemplatePresets(finalItems);
@@ -2687,12 +2685,6 @@ export function RepairContractDocumentEditorPage({
     if (contractAndEstimateLocked) return;
     const current = contractTemplatePresets.find((it) => it.id === editingTemplateId);
     if (!current) return;
-    if (current.isProtected) {
-      setError(
-        'Шаблон защищён. Снимите защиту в библиотеке шаблонов, затем можно перенести его в архив.'
-      );
-      return;
-    }
     if (current.archived) return;
     const name = (current.title ?? '').trim() || 'без названия';
     if (

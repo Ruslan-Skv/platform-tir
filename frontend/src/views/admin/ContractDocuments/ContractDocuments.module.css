@@ -2392,10 +2392,50 @@
   align-items: center;
 }
 
+.templatesLibraryHeaderActions {
+  display: flex;
+  flex: 1;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--admin-space-sm);
+  min-width: 0;
+}
+
+.templatesLibraryAddButton {
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  border: none;
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-info, #3b82f6);
+  color: var(--admin-surface, #ffffff);
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  font-weight: 600;
+  transition: background 0.15s ease;
+  white-space: nowrap;
+}
+
+.templatesLibraryAddButton:hover:not(:disabled) {
+  background: var(--admin-info-strong, #1d4ed8);
+}
+
+.templatesLibraryAddButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .templatesLibraryPage .title {
   margin: 0;
   font-size: var(--admin-font-size-xl);
   line-height: var(--admin-line-height-sm);
+}
+
+.templatesLibraryTitleWithAutosave {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  min-width: 0;
 }
 
 .templatesLibraryMessages {
@@ -2410,11 +2450,6 @@
 .templatesLibraryPage .error {
   margin: var(--admin-space-2xs) var(--admin-space-0);
   font-size: var(--admin-font-size-md);
-}
-
-.templatesLibraryPage .templatesLibraryToolbar {
-  margin-top: var(--admin-space-xs);
-  padding-top: 3px;
 }
 
 .templatesLibraryPage .templatesLibraryMetaRow {
@@ -2478,9 +2513,31 @@
 
 .templatesLibraryMeta {
   display: grid;
+  grid-template-columns: 1fr;
+  gap: 3px 8px;
+  align-items: end;
+}
+
+.templatesLibraryMetaWithActions {
+  grid-template-columns: 1fr auto;
+}
+
+.templatesLibraryMetaFields {
+  display: grid;
   grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
   gap: 3px 8px;
   align-items: end;
+  min-width: 0;
+}
+
+.templatesLibraryMetaActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+  align-self: end;
+  padding-bottom: 1px;
 }
 
 .templatesLibraryMeta .field {
@@ -2517,47 +2574,31 @@
   border-radius: var(--admin-radius-sm);
 }
 
-.templatesLibraryToolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px 6px;
-  align-items: center;
-  margin-top: var(--admin-space-sm);
-  padding-top: 5px;
-  border-top: 1px solid var(--admin-error-bg);
-}
-
-.templatesLibraryToolbar .primaryBtn,
-.templatesLibraryToolbar .secondaryBtn,
-.templatesLibraryToolbar .dangerBtn {
-  padding: var(--admin-space-sm) var(--admin-space-lg);
-  font-size: var(--admin-font-size-sm);
+.templatesLibraryModeBanner {
+  margin: 0 0 var(--admin-space-sm);
+  padding: var(--admin-space-sm) var(--admin-space-md);
   border-radius: var(--admin-radius-sm);
+  border: 1px solid var(--admin-warning-border, #e8c878);
+  background: var(--admin-warning-bg, #fff8e6);
+  font-size: var(--admin-font-size-sm);
+  line-height: 1.4;
+  color: var(--admin-text-primary);
 }
 
-.templatesLibraryToolbar .templatesLibraryCopyRow {
+.templatesLibraryProtectLabel {
   display: inline-flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 4px 6px;
-  margin: 0;
-  flex-direction: row;
-}
-
-.templatesLibraryToolbar .templatesLibraryCopyRow span {
+  gap: 6px;
+  cursor: pointer;
   font-size: var(--admin-font-size-xs);
   font-weight: 600;
   color: var(--admin-text-secondary);
-  white-space: nowrap;
 }
 
-.templatesLibraryToolbar .templatesLibraryCopyRow select {
-  padding: var(--admin-space-xs) var(--admin-space-sm);
-  font-size: var(--admin-font-size-sm);
-  border-radius: var(--admin-radius-sm);
-  border: 1px solid var(--admin-border-strong);
-  min-width: 0;
-  max-width: 200px;
+.templatesLibraryMetaHint {
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-secondary);
+  line-height: 1.35;
 }
 
 .sectionCard {

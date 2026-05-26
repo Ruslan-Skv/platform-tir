@@ -1,0 +1,9 @@
+.button:hover:not(:disabled) {
+  color: var(--admin-info, #3b82f6);
+}
+
+.archiveViewActive {
+  color: var(--admin-info, #3b82f6);
+  border-color: var(--admin-info, #3b82f6);
+  background: var(--admin-primary-muted, #eff6ff);
+}
