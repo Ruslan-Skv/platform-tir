@@ -37,7 +37,11 @@ import {
   REPAIR_WORK_START_MIN_CONTRACT_PAY_PCT,
   computeRepairPipelineModel,
 } from './repairContractPipeline';
-import { type RepairPackageFormData, mergeRepairPackageFormData } from './repairPackageForm';
+import {
+  type RepairPackageFormData,
+  clampRepairAddendumSlotCount,
+  mergeRepairPackageFormData,
+} from './repairPackageForm';
 import { resolveRepairTemplateHtml } from './resolveRepairTemplateHtml';
 
 export type UseRepairContractPackageHubOptions = {
@@ -297,10 +301,7 @@ export function useRepairContractPackageHub({
         }
       }
     }
-    const count = Math.min(
-      5,
-      Math.max(1, Number.isFinite(form.addendumSlotCount) ? form.addendumSlotCount : 1)
-    );
+    const count = clampRepairAddendumSlotCount(form.addendumSlotCount);
     for (let i = 0; i < count; i++) {
       const slot = form.addendumSlots[i];
       if (slot?.status !== 'SIGNED') continue;

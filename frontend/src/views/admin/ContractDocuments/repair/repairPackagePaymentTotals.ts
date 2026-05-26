@@ -2,7 +2,7 @@ import {
   applyRepairContractDiscountToAmount,
   parseRepairContractDiscountPercent,
 } from './repairContractDiscount';
-import type { RepairPackageFormData } from './repairPackageForm';
+import { type RepairPackageFormData, clampRepairAddendumSlotCount } from './repairPackageForm';
 
 /** Парсит сумму из полей договора (пробелы, «руб.», запятая как десятичный разделитель). */
 export function parseRubAmountString(raw: string | undefined | null): number | null {
@@ -37,7 +37,7 @@ export function computeRepairPackagePayableBreakdown(
   const mainContractRub = parseRubAmountString(form.contract.totalAmount);
   const discountPct = parseRepairContractDiscountPercent(form.contract.discountPercent);
   const addendumTotalsRub: RepairPackagePayableBreakdown['addendumTotalsRub'] = [];
-  const count = Math.min(5, Math.max(1, form.addendumSlotCount || 1));
+  const count = clampRepairAddendumSlotCount(form.addendumSlotCount);
   let addendumSumKnown = 0;
   for (let i = 0; i < count; i++) {
     const slot = form.addendumSlots[i];

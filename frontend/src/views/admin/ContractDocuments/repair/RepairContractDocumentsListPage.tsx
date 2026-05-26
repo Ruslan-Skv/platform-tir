@@ -277,8 +277,7 @@ function repairListMaxSignedAddendumSlotCount(packages: ContractDocumentPackage[
   let max = 0;
   for (const pkg of packages) {
     const form = mergeRepairPackageFormData(pkg.formData);
-    const slotCap = Math.min(5, Math.max(1, form.addendumSlotCount || 1));
-    for (let i = 0; i < slotCap; i++) {
+    for (let i = 0; i < 5; i++) {
       const st = form.addendumSlots[i]?.status;
       if (repairListIsAddendumSignedLikeStatus(st)) {
         max = Math.max(max, i + 1);

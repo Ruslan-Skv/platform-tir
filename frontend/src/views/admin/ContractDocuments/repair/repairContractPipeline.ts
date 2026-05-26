@@ -11,7 +11,7 @@ import type {
   RepairAddendumSlotStatus,
   RepairPackageFormData,
 } from './repairPackageForm';
-import { mergeRepairPackageFormData } from './repairPackageForm';
+import { clampRepairAddendumSlotCount, mergeRepairPackageFormData } from './repairPackageForm';
 import { computeRepairPackagePayableBreakdown } from './repairPackagePaymentTotals';
 
 /** Допуск при сравнении сумм оплат (руб.). */
@@ -122,10 +122,7 @@ export function getUnsignedAddendumOrdinals(
   packageFlowStatus: ContractDocumentPackageStatus
 ): number[] {
   if (packageFlowStatus !== 'CONTRACT_CONCLUDED') return [];
-  const count = Math.min(
-    5,
-    Math.max(1, Number.isFinite(form.addendumSlotCount) ? form.addendumSlotCount : 1)
-  );
+  const count = clampRepairAddendumSlotCount(form.addendumSlotCount);
   const ordinals: number[] = [];
   for (let i = 0; i < count; i++) {
     const slot = form.addendumSlots[i];
@@ -193,10 +190,7 @@ function buildAddendumCards(
   packageFlowStatus: ContractDocumentPackageStatus,
   nowMs: number
 ): RepairAddendumPipelineCard[] {
-  const count = Math.min(
-    5,
-    Math.max(1, Number.isFinite(form.addendumSlotCount) ? form.addendumSlotCount : 1)
-  );
+  const count = clampRepairAddendumSlotCount(form.addendumSlotCount);
   const cards: RepairAddendumPipelineCard[] = [];
   for (let i = 0; i < count; i++) {
     const slot = form.addendumSlots[i];

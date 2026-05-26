@@ -1484,7 +1484,32 @@
 }
 
 .repairPackageTabBarCompact.blockTabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-xs);
   padding: var(--admin-space-xs) var(--admin-space-sm);
+  margin-bottom: var(--admin-space-xs);
+}
+
+.repairPackageTabList {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.repairPackageTabBarAddendumActions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  flex-shrink: 0;
 }
 
 .repairPackageTabBarCompact .tab {
@@ -1535,7 +1560,7 @@
 .repairPackageTabBarRow {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: stretch;
   gap: var(--admin-space-md);
 }
 
@@ -1544,11 +1569,23 @@
   min-width: 0;
 }
 
-.repairAddAddendumTabBtn {
+.repairAddAddendumTabBtnWrap {
+  display: inline-flex;
+  flex-shrink: 0;
+  cursor: default;
+}
+
+.repairAddAddendumTabBtnWrap:has(button:disabled) {
+  cursor: not-allowed;
+}
+
+.repairPackageTabBarCompact .repairAddAddendumTabBtn {
   flex-shrink: 0;
   font-size: var(--admin-font-size-xs);
-  padding: var(--admin-space-xs) var(--admin-space-md);
+  line-height: var(--admin-line-height-xs);
+  padding: var(--admin-space-xs) var(--admin-space-sm);
   white-space: nowrap;
+  min-height: 0;
 }
 
 .repairAddendumDateFieldRow {
@@ -6446,6 +6483,32 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   .tab.tabActive:hover {
   color: var(--admin-info-strong);
   background: var(--admin-info-bg-soft);
+}
+
+/* «+ Д/с» / «− Д/с» на мятной панели: success-текст, не .secondaryBtn (светлый hover) */
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairPackageTabBarCompact.blockTabs
+  .repairAddAddendumTabBtn {
+  background: rgb(6 95 70 / 0.1);
+  border-color: var(--admin-success-text);
+  color: var(--admin-success-text-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairPackageTabBarCompact.blockTabs
+  .repairAddAddendumTabBtn:hover:not(:disabled) {
+  background: rgb(6 95 70 / 0.2);
+  border-color: var(--admin-success-deep);
+  color: var(--admin-success-text-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairPackageTabBarCompact.blockTabs
+  .repairAddAddendumTabBtn:disabled {
+  background: rgb(6 95 70 / 0.05);
+  border-color: rgb(6 95 70 / 0.35);
+  color: rgb(6 95 70 / 0.55);
+  opacity: 1;
 }
 
 /* Базовый dark-слой для всех вкладок Contract Documents */

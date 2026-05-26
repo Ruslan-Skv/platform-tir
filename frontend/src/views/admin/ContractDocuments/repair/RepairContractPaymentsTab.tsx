@@ -22,7 +22,7 @@ import {
   computeRepairHubConductSuggestedAmountRub,
   formatRepairHubConductAmountInput,
 } from './repairHubConductPayment';
-import type { RepairPackageFormData } from './repairPackageForm';
+import { type RepairPackageFormData, clampRepairAddendumSlotCount } from './repairPackageForm';
 import {
   computeRepairPackagePayableBreakdown,
   parseRubAmountString,
@@ -168,10 +168,7 @@ export function RepairContractPaymentsTab({
 
   const addendumPaymentSummaries = useMemo(() => {
     const discountPct = parseRepairContractDiscountPercent(form.contract.discountPercent);
-    const count = Math.min(
-      5,
-      Math.max(1, Number.isFinite(form.addendumSlotCount) ? form.addendumSlotCount : 1)
-    );
+    const count = clampRepairAddendumSlotCount(form.addendumSlotCount);
     return Array.from({ length: count }, (_, i) => {
       const raw = form.addendumSlots[i]?.snapshot?.total;
       if (typeof raw !== 'number' || !Number.isFinite(raw)) {

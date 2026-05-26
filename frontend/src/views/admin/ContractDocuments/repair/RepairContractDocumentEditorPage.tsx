@@ -223,8 +223,14 @@ function isAddendumSlotEmpty(
   const hasDate = (documentDate ?? '').trim() !== '';
   const hasSelected = (slot.selectedPresetIds?.length ?? 0) > 0;
   const hasExcluded = (slot.excludedSelectedPresetIds?.length ?? 0) > 0;
-  const hasSnapshot = Boolean(slot.snapshot?.rooms?.length);
-  const hasExcludedSnapshot = Boolean(slot.excludedSnapshot?.rooms?.length);
+  const snapshotTotal = slot.snapshot?.total;
+  const hasSnapshot =
+    Boolean(slot.snapshot?.rooms?.length) ||
+    (typeof snapshotTotal === 'number' && Number.isFinite(snapshotTotal));
+  const excludedTotal = slot.excludedSnapshot?.total;
+  const hasExcludedSnapshot =
+    Boolean(slot.excludedSnapshot?.rooms?.length) ||
+    (typeof excludedTotal === 'number' && Number.isFinite(excludedTotal));
   const hasNotes = (slot.notes ?? '').trim() !== '' || (slot.excludedNotes ?? '').trim() !== '';
   const isSigned =
     slot.status === 'SIGNED' || slot.status === 'PAID' || (slot.signedAt ?? '').trim() !== '';
@@ -935,8 +941,11 @@ export function RepairContractDocumentEditorPage({
     if (!m) return;
     const n = Number(m[1]);
     if (!Number.isFinite(n) || n <= form.addendumSlotCount) return;
-    const fallback = `addendum${form.addendumSlotCount}` as RepairDocumentTabId;
-    setActiveTab(fallback);
+    setActiveTab(
+      form.addendumSlotCount > 0
+        ? (`addendum${form.addendumSlotCount}` as RepairDocumentTabId)
+        : 'contract'
+    );
   }, [activeTab, form.addendumSlotCount]);
 
   useEffect(() => {
@@ -3103,6 +3112,30 @@ export function RepairContractDocumentEditorPage({
     [form, packageFlowStatus]
   );
 
+  const repairAddendumTabAddBlockedReason = useMemo((): string | null => {
+    if (packageFlowStatus === 'REFUSED') {
+      return `Отказ по проекту договора: вкладки Д/с недоступны. При необходимости снимите отказ в «${REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE}».`;
+    }
+    if (packageFlowStatus !== 'CONTRACT_CONCLUDED') {
+      return `Вкладки «Д/с №1»…«Д/с №5» доступны после подписания договора. Отметьте «Договор подписан» в «${REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE}».`;
+    }
+    if (
+      form.addendumSlotCount > 0 &&
+      form.addendumSlots[form.addendumSlotCount - 1]?.status !== 'SIGNED'
+    ) {
+      return `Сначала отметьте Д/с №${form.addendumSlotCount} как подписанное в «${REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE}».`;
+    }
+    return null;
+  }, [packageFlowStatus, form.addendumSlotCount, form.addendumSlots]);
+
+  const repairAddendumTabAddDisabled = repairAddendumTabAddBlockedReason !== null;
+
+  const repairAddAddendumTabTitle =
+    repairAddendumTabAddBlockedReason ??
+    (form.addendumSlotCount === 0
+      ? 'Добавить вкладку дополнительного соглашения (до пяти)'
+      : 'Показать ещё одну вкладку дополнительного соглашения (до пяти)');
+
   const headerContractConcludedDateLabel =
     packageFlowStatus === 'CONTRACT_CONCLUDED'
       ? formatContractConcludedDateForHeader(form.contractConcludedAt)
@@ -3483,153 +3516,170 @@ export function RepairContractDocumentEditorPage({
         <div className={styles.repairPackageTabBarRow}>
           <div
             className={`${styles.tabBar} ${styles.blockTabs} ${styles.repairPackageTabBarCompact}`}
-            role="tablist"
-            aria-label="Разделы пакета. Перетащите вкладку, чтобы изменить порядок."
           >
-            {orderedVisibleRepairTabs.map((id) => {
-              const addendumTabMatch = /^addendum(\d)$/.exec(id);
-              const addendumTabOrdinal = addendumTabMatch ? Number(addendumTabMatch[1]) : null;
-              const isUnsignedAddendumTab =
-                addendumTabOrdinal != null && unsignedAddendumOrdinals.includes(addendumTabOrdinal);
+            <div
+              className={styles.repairPackageTabList}
+              role="tablist"
+              aria-label="Разделы пакета. Перетащите вкладку, чтобы изменить порядок."
+            >
+              {orderedVisibleRepairTabs.map((id) => {
+                const addendumTabMatch = /^addendum(\d)$/.exec(id);
+                const addendumTabOrdinal = addendumTabMatch ? Number(addendumTabMatch[1]) : null;
+                const isUnsignedAddendumTab =
+                  addendumTabOrdinal != null &&
+                  unsignedAddendumOrdinals.includes(addendumTabOrdinal);
 
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  role="tab"
-                  draggable
-                  aria-selected={activeTab === id}
-                  title={
-                    isUnsignedAddendumTab
-                      ? `Д/с №${addendumTabOrdinal}: отметьте подписание во вкладке или в «Оплаты и Управление договором»`
-                      : contractAndEstimateLocked && (id === 'contract' || id === 'estimate')
-                        ? `${REPAIR_DOCUMENT_TAB_LABELS[id]} — только просмотр (договор подписан)`
-                        : `${REPAIR_DOCUMENT_TAB_LABELS[id]} — перетащите для смены порядка`
-                  }
-                  className={`${styles.tab} ${activeTab === id ? styles.tabActive : ''} ${
-                    isUnsignedAddendumTab ? styles.repairTabAddendumUnsigned : ''
-                  } ${id === 'finalEstimate' ? styles.summaryTab : ''} ${
-                    id === 'finalEstimate' ? styles.summaryTabLast : ''
-                  }`}
-                  onClick={() => handleRepairTabActivate(id)}
-                  onDragStart={(e) => handleRepairTabDragStart(id, e)}
-                  onDragOver={handleRepairTabDragOver}
-                  onDrop={handleRepairTabDrop(id)}
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    draggable
+                    aria-selected={activeTab === id}
+                    title={
+                      isUnsignedAddendumTab
+                        ? `Д/с №${addendumTabOrdinal}: отметьте подписание во вкладке или в «Оплаты и Управление договором»`
+                        : contractAndEstimateLocked && (id === 'contract' || id === 'estimate')
+                          ? `${REPAIR_DOCUMENT_TAB_LABELS[id]} — только просмотр (договор подписан)`
+                          : `${REPAIR_DOCUMENT_TAB_LABELS[id]} — перетащите для смены порядка`
+                    }
+                    className={`${styles.tab} ${activeTab === id ? styles.tabActive : ''} ${
+                      isUnsignedAddendumTab ? styles.repairTabAddendumUnsigned : ''
+                    } ${
+                      id === 'finalEstimate'
+                        ? `${styles.summaryTab} ${styles.summaryTabFirst} ${styles.summaryTabLast}`
+                        : ''
+                    }`}
+                    onClick={() => handleRepairTabActivate(id)}
+                    onDragStart={(e) => handleRepairTabDragStart(id, e)}
+                    onDragOver={handleRepairTabDragOver}
+                    onDrop={handleRepairTabDrop(id)}
+                  >
+                    <span className={styles.repairTabLabelInner}>
+                      {contractAndEstimateLocked && (id === 'contract' || id === 'estimate') ? (
+                        <RepairTabLockIcon />
+                      ) : null}
+                      <span>{REPAIR_DOCUMENT_TAB_LABELS_SHORT[id]}</span>
+                      {isUnsignedAddendumTab ? (
+                        <span
+                          className={styles.repairTabAddendumSignBadge}
+                          title="Доп. соглашение не отмечено как подписанное"
+                        >
+                          Подписать
+                        </span>
+                      ) : null}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <div
+              className={styles.repairPackageTabBarAddendumActions}
+              role="group"
+              aria-label="Добавить или убрать вкладку доп. соглашения"
+            >
+              {form.addendumSlotCount < 5 ? (
+                <span
+                  className={styles.repairAddAddendumTabBtnWrap}
+                  title={repairAddAddendumTabTitle}
                 >
-                  <span className={styles.repairTabLabelInner}>
-                    {contractAndEstimateLocked && (id === 'contract' || id === 'estimate') ? (
-                      <RepairTabLockIcon />
-                    ) : null}
-                    <span>{REPAIR_DOCUMENT_TAB_LABELS_SHORT[id]}</span>
-                    {isUnsignedAddendumTab ? (
-                      <span
-                        className={styles.repairTabAddendumSignBadge}
-                        title="Доп. соглашение не отмечено как подписанное"
-                      >
-                        Подписать
-                      </span>
-                    ) : null}
-                  </span>
-                </button>
-              );
-            })}
+                  <button
+                    type="button"
+                    className={`${styles.secondaryBtn} ${styles.repairAddAddendumTabBtn}`}
+                    disabled={repairAddendumTabAddDisabled}
+                    aria-disabled={repairAddendumTabAddDisabled}
+                    aria-label={`Добавить вкладку Д/с №${form.addendumSlotCount + 1}`}
+                    onClick={() => {
+                      if (repairAddendumTabAddDisabled) return;
+                      const next = form.addendumSlotCount + 1;
+                      setForm((f) => ({ ...f, addendumSlotCount: next }));
+                      touchPackageData();
+                      setActiveTab(`addendum${next}` as RepairDocumentTabId);
+                    }}
+                  >
+                    + Д/с №{form.addendumSlotCount + 1}
+                  </button>
+                </span>
+              ) : null}
+              {form.addendumSlotCount > 0 ? (
+                <span
+                  className={styles.repairAddAddendumTabBtnWrap}
+                  title={
+                    isAddendumSlotEmpty(
+                      form.addendumSlots[form.addendumSlotCount - 1],
+                      form.addendumDocumentDates[form.addendumSlotCount - 1]
+                    )
+                      ? `Удалить пустое Д/с №${form.addendumSlotCount}`
+                      : `Можно удалить только пустое Д/с №${form.addendumSlotCount}`
+                  }
+                >
+                  <button
+                    type="button"
+                    className={`${styles.secondaryBtn} ${styles.repairAddAddendumTabBtn}`}
+                    disabled={
+                      !isAddendumSlotEmpty(
+                        form.addendumSlots[form.addendumSlotCount - 1],
+                        form.addendumDocumentDates[form.addendumSlotCount - 1]
+                      )
+                    }
+                    aria-label={`Убрать вкладку Д/с №${form.addendumSlotCount}`}
+                    onClick={() => {
+                      const lastIdx = form.addendumSlotCount - 1;
+                      if (
+                        !isAddendumSlotEmpty(
+                          form.addendumSlots[lastIdx],
+                          form.addendumDocumentDates[lastIdx]
+                        )
+                      ) {
+                        return;
+                      }
+                      const nextCount = form.addendumSlotCount - 1;
+                      setForm((f) => {
+                        const nextDates = [
+                          ...f.addendumDocumentDates,
+                        ] as RepairPackageFormData['addendumDocumentDates'];
+                        nextDates[lastIdx] = '';
+                        const nextSlots = [
+                          ...f.addendumSlots,
+                        ] as RepairPackageFormData['addendumSlots'];
+                        nextSlots[lastIdx] = {
+                          status: 'OPEN',
+                          signedAt: '',
+                          paidAt: '',
+                          selectedPresetIds: [],
+                          snapshot: null,
+                          excludedSelectedPresetIds: [],
+                          excludedSnapshot: null,
+                          notes: '',
+                          excludedNotes: '',
+                        };
+                        return {
+                          ...f,
+                          addendumSlotCount: nextCount,
+                          addendumDocumentDates: nextDates,
+                          addendumSlots: nextSlots,
+                        };
+                      });
+                      touchPackageData();
+                      const removedTabs = new Set<string>([
+                        `addendum${form.addendumSlotCount}`,
+                        `workOrderAddendum${form.addendumSlotCount}`,
+                      ]);
+                      if (removedTabs.has(activeTab)) {
+                        setActiveTab(
+                          nextCount > 0
+                            ? (`addendum${nextCount}` as RepairDocumentTabId)
+                            : 'contract'
+                        );
+                      }
+                    }}
+                  >
+                    − Д/с №{form.addendumSlotCount}
+                  </button>
+                </span>
+              ) : null}
+            </div>
           </div>
-          {form.addendumSlotCount < 5 ? (
-            <button
-              type="button"
-              className={`${styles.secondaryBtn} ${styles.repairAddAddendumTabBtn}`}
-              title={
-                contractAndEstimateLocked &&
-                form.addendumSlots[form.addendumSlotCount - 1]?.status !== 'SIGNED'
-                  ? 'Сначала отметьте текущее Д/с как подписанное'
-                  : 'Показать ещё одну вкладку дополнительного соглашения (до пяти)'
-              }
-              disabled={
-                contractAndEstimateLocked &&
-                form.addendumSlots[form.addendumSlotCount - 1]?.status !== 'SIGNED'
-              }
-              onClick={() => {
-                if (
-                  contractAndEstimateLocked &&
-                  form.addendumSlots[form.addendumSlotCount - 1]?.status !== 'SIGNED'
-                ) {
-                  return;
-                }
-                const next = form.addendumSlotCount + 1;
-                setForm((f) => ({ ...f, addendumSlotCount: next }));
-                touchPackageData();
-                setActiveTab(`addendum${next}` as RepairDocumentTabId);
-              }}
-            >
-              + Д/с №{form.addendumSlotCount + 1}
-            </button>
-          ) : null}
-          {form.addendumSlotCount > 1 ? (
-            <button
-              type="button"
-              className={`${styles.secondaryBtn} ${styles.repairAddAddendumTabBtn}`}
-              title={
-                isAddendumSlotEmpty(
-                  form.addendumSlots[form.addendumSlotCount - 1],
-                  form.addendumDocumentDates[form.addendumSlotCount - 1]
-                )
-                  ? `Удалить пустое Д/с №${form.addendumSlotCount}`
-                  : `Можно удалить только пустое Д/с №${form.addendumSlotCount}`
-              }
-              disabled={
-                !isAddendumSlotEmpty(
-                  form.addendumSlots[form.addendumSlotCount - 1],
-                  form.addendumDocumentDates[form.addendumSlotCount - 1]
-                )
-              }
-              onClick={() => {
-                const lastIdx = form.addendumSlotCount - 1;
-                if (
-                  !isAddendumSlotEmpty(
-                    form.addendumSlots[lastIdx],
-                    form.addendumDocumentDates[lastIdx]
-                  )
-                ) {
-                  return;
-                }
-                const nextCount = form.addendumSlotCount - 1;
-                setForm((f) => {
-                  const nextDates = [
-                    ...f.addendumDocumentDates,
-                  ] as RepairPackageFormData['addendumDocumentDates'];
-                  nextDates[lastIdx] = '';
-                  const nextSlots = [...f.addendumSlots] as RepairPackageFormData['addendumSlots'];
-                  nextSlots[lastIdx] = {
-                    status: 'OPEN',
-                    signedAt: '',
-                    paidAt: '',
-                    selectedPresetIds: [],
-                    snapshot: null,
-                    excludedSelectedPresetIds: [],
-                    excludedSnapshot: null,
-                    notes: '',
-                    excludedNotes: '',
-                  };
-                  return {
-                    ...f,
-                    addendumSlotCount: nextCount,
-                    addendumDocumentDates: nextDates,
-                    addendumSlots: nextSlots,
-                  };
-                });
-                touchPackageData();
-                const removedTabs = new Set<string>([
-                  `addendum${form.addendumSlotCount}`,
-                  `workOrderAddendum${form.addendumSlotCount}`,
-                ]);
-                if (removedTabs.has(activeTab)) {
-                  setActiveTab(`addendum${nextCount}` as RepairDocumentTabId);
-                }
-              }}
-            >
-              − Д/с №{form.addendumSlotCount}
-            </button>
-          ) : null}
         </div>
 
         {activeTab === 'data' ? (
@@ -4849,22 +4899,10 @@ export function RepairContractDocumentEditorPage({
                   onUnmarkPaid={() => unmarkAddendumSlotPaid(activeAddendumSlot - 1)}
                 />
               ) : (
-                <div className={`${styles.field} ${styles.repairAddendumDateFieldRow}`}>
-                  <label htmlFor={`repair_addendum_date_${activeAddendumSlot}`}>
-                    Дата доп. соглашения (в шапке слева; полный ввод расчётов — после статуса
-                    «Договор подписан»)
-                  </label>
-                  <input
-                    id={`repair_addendum_date_${activeAddendumSlot}`}
-                    type="text"
-                    value={form.addendumDocumentDates[activeAddendumSlot - 1] ?? ''}
-                    onChange={(e) =>
-                      patchAddendumDocumentDate(activeAddendumSlot - 1, e.target.value)
-                    }
-                    placeholder="напр. 04.05.2026"
-                    autoComplete="off"
-                  />
-                </div>
+                <p className={`${styles.hint} ${styles.estimateTabHint}`}>
+                  Прикрепление расчётов к доп. соглашению доступно после статуса «Договор подписан»
+                  в «{REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE}».
+                </p>
               )
             ) : null}
             {activeTab === 'contract' && contractAndEstimateLocked ? (

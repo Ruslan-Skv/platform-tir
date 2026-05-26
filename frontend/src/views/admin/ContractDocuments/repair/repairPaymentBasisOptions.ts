@@ -1,7 +1,7 @@
 import type { ContractDocumentPackagePayment } from '@/shared/api/admin-contract-document-packages';
 import type { ContractDocumentPackagePaymentKind } from '@/shared/api/admin-contract-document-packages';
 
-import type { RepairPackageFormData } from './repairPackageForm';
+import { type RepairPackageFormData, clampRepairAddendumSlotCount } from './repairPackageForm';
 import type { RepairPackagePayableBreakdown } from './repairPackagePaymentTotals';
 
 export const REPAIR_BASIS_LABEL_PREPAYMENT = 'предоплата по договору';
@@ -136,7 +136,7 @@ export function buildRepairPaymentBasisOptions(
     },
   ];
 
-  const count = Math.min(5, Math.max(1, form.addendumSlotCount || 1));
+  const count = Math.min(5, clampRepairAddendumSlotCount(form.addendumSlotCount));
   for (let i = 0; i < count; i++) {
     const n = i + 1;
     const slot = form.addendumSlots[i];

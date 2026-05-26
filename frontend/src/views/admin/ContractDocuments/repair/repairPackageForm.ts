@@ -308,7 +308,7 @@ export interface RepairPackageFormData {
   estimateObjectGroupKey: string;
   managerQuestionnaire1: RepairManagerQuestionnaire1Block;
   postWorkQuestionnaire2: RepairPostWorkQuestionnaire2Block;
-  /** Сколько вкладок «Д/с №…» показывать (1–5). */
+  /** Сколько вкладок «Д/с №…» показывать в редакторе пакета (0–5). */
   addendumSlotCount: number;
   /**
    * Дата в шапке доп. соглашения (слева, под заголовком); индекс 0 = «Д/с №1», …, 4 = «Д/с №5».
@@ -423,7 +423,7 @@ export function defaultRepairPackageFormData(): RepairPackageFormData {
     estimateObjectGroupKey: '',
     managerQuestionnaire1: defaultRepairManagerQuestionnaire1Block(),
     postWorkQuestionnaire2: defaultRepairPostWorkQuestionnaire2Block(),
-    addendumSlotCount: 1,
+    addendumSlotCount: 0,
     addendumDocumentDates: ['', '', '', '', ''],
     addendumSlots: defaultAddendumSlots(),
     contractConcludedAt: '',
@@ -648,16 +648,76 @@ function normalizeAddendumDocumentDates(raw: unknown): [string, string, string, 
   return out as [string, string, string, string, string];
 }
 
-function normalizeAddendumSlotCount(raw: unknown): number {
+/** Сколько вкладок Д/с №1…№5 показано в редакторе пакета (0…5). */
+export function clampRepairAddendumSlotCount(raw: unknown): number {
   const x =
     typeof raw === 'number'
       ? raw
       : typeof raw === 'string'
         ? parseInt(String(raw).trim(), 10)
         : NaN;
-  if (!Number.isFinite(x) || x < 1) return 1;
+  if (!Number.isFinite(x) || x < 0) return 0;
   if (x > 5) return 5;
   return Math.trunc(x);
+}
+
+function normalizeAddendumSlotCount(raw: unknown): number {
+  return clampRepairAddendumSlotCount(raw);
+}
+
+function isRepairAddendumSlotUnused(
+  slot: RepairAddendumSlotEstimateBlock | undefined,
+  documentDate: string | undefined
+): boolean {
+  if ((documentDate ?? '').trim() !== '') return false;
+  if (!slot) return true;
+  const hasSelected = (slot.selectedPresetIds?.length ?? 0) > 0;
+  const hasExcluded = (slot.excludedSelectedPresetIds?.length ?? 0) > 0;
+  const snapshotTotal = slot.snapshot?.total;
+  const hasSnapshotTotal = typeof snapshotTotal === 'number' && Number.isFinite(snapshotTotal);
+  const hasSnapshot = Boolean(slot.snapshot?.rooms?.length) || hasSnapshotTotal;
+  const excludedTotal = slot.excludedSnapshot?.total;
+  const hasExcludedSnapshotTotal =
+    typeof excludedTotal === 'number' && Number.isFinite(excludedTotal);
+  const hasExcludedSnapshot =
+    Boolean(slot.excludedSnapshot?.rooms?.length) || hasExcludedSnapshotTotal;
+  const hasNotes = (slot.notes ?? '').trim() !== '' || (slot.excludedNotes ?? '').trim() !== '';
+  const isSigned =
+    slot.status === 'SIGNED' || slot.status === 'PAID' || (slot.signedAt ?? '').trim() !== '';
+  const isPaid = (slot.paidAt ?? '').trim() !== '';
+  return !(
+    hasSelected ||
+    hasExcluded ||
+    hasSnapshot ||
+    hasExcludedSnapshot ||
+    hasNotes ||
+    isSigned ||
+    isPaid
+  );
+}
+
+/** После загрузки: не показывать пустой хвост; не скрывать слот с данными. */
+function resolveRepairAddendumSlotCountAfterLoad(
+  storedCount: unknown,
+  slots: RepairAddendumSlotsTuple,
+  dates: [string, string, string, string, string]
+): number {
+  let count = clampRepairAddendumSlotCount(storedCount);
+
+  let minFromData = 0;
+  for (let i = 4; i >= 0; i--) {
+    if (!isRepairAddendumSlotUnused(slots[i], dates[i])) {
+      minFromData = i + 1;
+      break;
+    }
+  }
+  if (minFromData > count) count = minFromData;
+
+  while (count > 0 && isRepairAddendumSlotUnused(slots[count - 1], dates[count - 1])) {
+    count -= 1;
+  }
+
+  return count;
 }
 
 function normalizePostWorkQuestionnaire2AfterLoad(
@@ -684,6 +744,17 @@ export function mergeRepairPackageFormData(raw: unknown): RepairPackageFormData 
     raw
   ) as unknown as RepairPackageFormData;
   const mergedCustomer = normalizeRepairCustomerBlock(merged.customer);
+  const addendumDocumentDates = normalizeAddendumDocumentDates(
+    (merged as unknown as Record<string, unknown>).addendumDocumentDates
+  );
+  const addendumSlots = normalizeAddendumSlots(
+    (merged as unknown as Record<string, unknown>).addendumSlots
+  );
+  const addendumSlotCount = resolveRepairAddendumSlotCountAfterLoad(
+    (merged as unknown as Record<string, unknown>).addendumSlotCount,
+    addendumSlots,
+    addendumDocumentDates
+  );
   return {
     ...merged,
     customer: mergedCustomer,
@@ -717,15 +788,9 @@ export function mergeRepairPackageFormData(raw: unknown): RepairPackageFormData 
       }
     ),
     postWorkQuestionnaire2: normalizePostWorkQuestionnaire2AfterLoad(merged.postWorkQuestionnaire2),
-    addendumSlotCount: normalizeAddendumSlotCount(
-      (merged as unknown as Record<string, unknown>).addendumSlotCount
-    ),
-    addendumDocumentDates: normalizeAddendumDocumentDates(
-      (merged as unknown as Record<string, unknown>).addendumDocumentDates
-    ),
-    addendumSlots: normalizeAddendumSlots(
-      (merged as unknown as Record<string, unknown>).addendumSlots
-    ),
+    addendumSlotCount,
+    addendumDocumentDates,
+    addendumSlots,
     contractPaidAt:
       typeof (merged as unknown as Record<string, unknown>).contractPaidAt === 'string'
         ? String((merged as unknown as Record<string, unknown>).contractPaidAt)
