@@ -3565,6 +3565,13 @@
   margin: 14px 0 8px;
 }
 
+.contractA4Preview :global(.docPrint.repairQuestionnairePrint h1),
+.contractA4Preview :global(.docPrint.repairQuestionnairePrint h2),
+.contractA4Preview :global(.docPrint.repairQuestionnairePrint strong),
+.contractA4Preview :global(.docPrint.repairQuestionnairePrint th) {
+  font-weight: normal;
+}
+
 .contractA4Preview :global(.docPrint .repairAddendumHeaderBlock) {
   margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-lg);
 }
@@ -5717,6 +5724,10 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   font-size: 0.6875rem;
 }
 
+.managerQuestionnaire1Title {
+  text-align: center;
+}
+
 .managerQuestionnaireNeedsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -6128,6 +6139,19 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 .repairTabUnassignedBadgeDone {
   background: var(--admin-success-strong);
   color: #fff;
+}
+
+.postWorkQ2Header {
+  text-align: center;
+}
+
+.postWorkQ2Header .sectionTitle {
+  margin-bottom: var(--admin-space-xs, 4px);
+}
+
+.postWorkQ2Header .hint {
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .postWorkQ2RatingRow {

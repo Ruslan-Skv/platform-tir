@@ -19,8 +19,8 @@ export const REPAIR_DOCUMENT_TEMPLATES: Record<RepairDocumentTemplateTabId, stri
   actAcceptance: repairTemplateActAcceptance,
   cashOrder: repairTemplateCashOrder,
   /** Анкета 1 в пакете — онлайн-форма в редакторе; заглушка для совместимости выбора в библиотеке. */
-  questionnaire1: `<div class="docPrint"><p>Содержимое анкеты формируется на вкладке пакета «Анкета менеджера» из полей формы.</p></div>`,
-  questionnaire2: `<div class="docPrint"><p>Содержимое анкеты формируется на вкладке пакета «Анкета после работ» из полей формы.</p></div>`,
+  questionnaire1: `<div class="docPrint"><p>Содержимое анкеты формируется в модалке «Анкеты» → «Анкета» из полей формы.</p></div>`,
+  questionnaire2: `<div class="docPrint"><p>Содержимое анкеты формируется в модалке «Анкеты» → «Анкета №2» из полей формы.</p></div>`,
   addendum1: repairTemplateAddendum,
   addendum2: repairTemplateAddendum,
   addendum3: repairTemplateAddendum,

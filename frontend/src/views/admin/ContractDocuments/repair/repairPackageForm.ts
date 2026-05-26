@@ -1440,6 +1440,11 @@ export function repairPackageFormForTemplate(
     estimateGroups?: ContractEstimateGroup[];
   }
 ): RepairPackageFormData & {
+  meta: { currentDate: string };
+  contract: RepairContractBlock & {
+    grandTotalAmount: string;
+    grandTotalAmountWords: string;
+  };
   executor: RepairExecutorBlock & { innKppRegLine: string };
   estimate: RepairEstimateBlock & {
     total: string;

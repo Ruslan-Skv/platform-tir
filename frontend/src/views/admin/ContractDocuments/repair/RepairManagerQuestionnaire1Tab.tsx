@@ -29,7 +29,9 @@ function RepairManagerQuestionnaire1Tab({
   return (
     <div className={styles.formGrid}>
       <div className={`${styles.sectionCard} ${styles.fieldSpanAll}`}>
-        <h3 className={styles.sectionTitle}>Анкета менеджера</h3>
+        <h3 className={`${styles.sectionTitle} ${styles.managerQuestionnaire1Title}`}>
+          Анкета (опросник)
+        </h3>
         <p className={styles.hint} style={{ marginTop: 0 }}>
           Заполните по телефонному разговору или при личной встрече со слов клиента. Основные
           реквизиты заказчика и объекта редактируются на вкладке «Данные»; ниже — уточнения и

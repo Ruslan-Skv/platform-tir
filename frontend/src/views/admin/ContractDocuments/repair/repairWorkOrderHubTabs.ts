@@ -20,7 +20,7 @@ export const REPAIR_WORK_ORDER_HUB_TAB_IDS = [
 
 export type RepairWorkOrderHubTabId = (typeof REPAIR_WORK_ORDER_HUB_TAB_IDS)[number];
 
-export const REPAIR_WORK_ORDER_HUB_MODAL_TITLE = 'Заказ-наряды и итоговые сметы';
+export const REPAIR_WORK_ORDER_HUB_MODAL_TITLE = 'Заказ-наряды';
 
 export function isRepairWorkOrderHubTab(id: string): id is RepairWorkOrderHubTabId {
   return (REPAIR_WORK_ORDER_HUB_TAB_IDS as readonly string[]).includes(id);

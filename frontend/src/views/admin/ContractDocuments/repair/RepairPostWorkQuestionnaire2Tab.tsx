@@ -64,14 +64,9 @@ function RepairPostWorkQuestionnaire2Tab({ form, onPatch }: Props) {
 
   return (
     <div className={styles.formGrid}>
-      <div className={`${styles.sectionCard} ${styles.fieldSpanAll}`}>
+      <div className={`${styles.sectionCard} ${styles.fieldSpanAll} ${styles.postWorkQ2Header}`}>
         <h3 className={styles.sectionTitle}>Анкета (оценки после работ)</h3>
-        <p className={styles.hint} style={{ marginTop: 0 }}>
-          Анкета для заказчика после выполнения работ по договору. Номер и дата договора
-          подставляются из вкладки «Данные»; оценки и пожелания можно внести при получении
-          заполненного бланка или продиктованных оценок. Печать — кнопка «Печать».
-        </p>
-        <p className={styles.hint} style={{ marginBottom: 0 }}>
+        <p className={styles.hint}>
           <strong>к договору №</strong> {contract.number.trim() || '—'} <strong>от</strong>{' '}
           {formatContractDateRuLong(contract.date)}
         </p>

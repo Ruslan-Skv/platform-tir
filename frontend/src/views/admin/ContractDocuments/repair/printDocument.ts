@@ -163,6 +163,12 @@ function buildPrintStylesheet(
   .docPrint a { color: #111 !important; text-decoration: none; }
   .docPrint h1 { font-size: 14pt; text-align: center; margin: 0 0 12pt; }
   .docPrint h2 { font-size: 12pt; margin: 14pt 0 6pt; }
+  .docPrint.repairQuestionnairePrint h1,
+  .docPrint.repairQuestionnairePrint h2,
+  .docPrint.repairQuestionnairePrint strong,
+  .docPrint.repairQuestionnairePrint th {
+    font-weight: normal;
+  }
   .docPrint p { margin: 0 0 8pt; }
   .docPrint .repairAddendumHeaderBlock { margin: 0 0 10pt; }
   .docPrint h1.repairAddendumHeaderTitle { margin: 0 0 4pt; }

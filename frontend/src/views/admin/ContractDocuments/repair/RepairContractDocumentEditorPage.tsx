@@ -39,14 +39,14 @@ import styles from '../ContractDocuments.module.css';
 import { RepairAddendumEstimateBlock } from './RepairAddendumEstimateBlock';
 import { RepairContractPackageHubIcon } from './RepairContractPackageHubIcon';
 import { RepairContractPackageHubModal } from './RepairContractPackageHubModal';
+import { RepairContractQuestionnairesHubIcon } from './RepairContractQuestionnairesHubIcon';
+import { RepairContractQuestionnairesHubModal } from './RepairContractQuestionnairesHubModal';
 import {
   type RepairContractWorkOrderHubContextValue,
   RepairContractWorkOrderHubProvider,
 } from './RepairContractWorkOrderHubContext';
 import { RepairContractWorkOrdersHubIcon } from './RepairContractWorkOrdersHubIcon';
 import { RepairContractWorkOrdersHubModal } from './RepairContractWorkOrdersHubModal';
-import { RepairManagerQuestionnaire1Tab } from './RepairManagerQuestionnaire1Tab';
-import { RepairPostWorkQuestionnaire2Tab } from './RepairPostWorkQuestionnaire2Tab';
 import { amountToRussianWords } from './amountToRussianWords';
 import {
   clearRepairFormCrmCustomerFields,
@@ -115,10 +115,22 @@ import {
 } from './repairPackageForm';
 import { computeRepairPackagePayableBreakdown } from './repairPackagePaymentTotals';
 import {
+  type RepairQuestionnaireHubTabId,
+  defaultRepairQuestionnaireHubTab,
+  isRepairQuestionnaireHubTabHiddenFromPackageEditor,
+} from './repairQuestionnaireHubTabs';
+import {
   type RepairWorkOrderHubTabId,
   defaultRepairWorkOrderHubTab,
   isRepairWorkOrderHubTabHiddenFromPackageEditor,
 } from './repairWorkOrderHubTabs';
+
+function isRepairEditorPackageTabBarTab(id: string): boolean {
+  return (
+    !isRepairWorkOrderHubTabHiddenFromPackageEditor(id) &&
+    !isRepairQuestionnaireHubTabHiddenFromPackageEditor(id)
+  );
+}
 
 /** Класс на `document.body` при печати сметы — см. `@media print` в ContractDocuments.module.css */
 const BODY_PRINT_ESTIMATE_CLASS = 'body-print-estimate-sheet';
@@ -692,6 +704,9 @@ export function RepairContractDocumentEditorPage({
   const [workOrdersHubOpen, setWorkOrdersHubOpen] = useState(workOrdersHubListSurface);
   const [workOrdersHubPanelTab, setWorkOrdersHubPanelTab] =
     useState<RepairWorkOrderHubTabId>('workOrder');
+  const [questionnairesHubOpen, setQuestionnairesHubOpen] = useState(false);
+  const [questionnairesHubPanelTab, setQuestionnairesHubPanelTab] =
+    useState<RepairQuestionnaireHubTabId>('questionnaire1');
   const [activeFinalWorkOrderDocId, setActiveFinalWorkOrderDocId] = useState<string>('common');
   const activeAddendumSlot = useMemo(() => {
     const m = /^addendum([1-5])$/.exec(activeTab);
@@ -699,7 +714,7 @@ export function RepairContractDocumentEditorPage({
   }, [activeTab]);
 
   const [repairTabOrder, setRepairTabOrder] = useState<RepairDocumentTabId[]>(() =>
-    REPAIR_DOCUMENT_TAB_IDS.filter((id) => !isRepairWorkOrderHubTabHiddenFromPackageEditor(id))
+    REPAIR_DOCUMENT_TAB_IDS.filter((id) => isRepairEditorPackageTabBarTab(id))
   );
   /** Пропускаем первую запись в LS до применения порядка из хранилища (избегаем перезаписи дефолтом). */
   const skipRepairTabOrderPersistRef = useRef(true);
@@ -912,9 +927,7 @@ export function RepairContractDocumentEditorPage({
         window.localStorage.getItem(REPAIR_DOCUMENT_TAB_ORDER_STORAGE_KEY) ?? 'null'
       );
       setRepairTabOrder(
-        normalizeRepairDocumentTabOrder(raw).filter(
-          (id) => !isRepairWorkOrderHubTabHiddenFromPackageEditor(id)
-        )
+        normalizeRepairDocumentTabOrder(raw).filter((id) => isRepairEditorPackageTabBarTab(id))
       );
     } catch {
       /* keep default */
@@ -1255,6 +1268,12 @@ export function RepairContractDocumentEditorPage({
   useEffect(() => {
     if (!isRepairWorkOrderHubTabHiddenFromPackageEditor(activeTab)) return;
     setActiveTab('estimate');
+  }, [activeTab]);
+
+  /** Анкеты — только в модалке «Анкеты». */
+  useEffect(() => {
+    if (!isRepairQuestionnaireHubTabHiddenFromPackageEditor(activeTab)) return;
+    setActiveTab('contract');
   }, [activeTab]);
 
   useEffect(() => {
@@ -2497,12 +2516,6 @@ export function RepairContractDocumentEditorPage({
       activeTab === 'finalWorkOrder'
     )
       return '';
-    if (activeTab === 'questionnaire1') {
-      return buildManagerQuestionnaire1PrintHtml(repairFormForActiveTemplate);
-    }
-    if (activeTab === 'questionnaire2') {
-      return buildPostWorkQuestionnaire2PrintHtml(repairFormForActiveTemplate);
-    }
     const tab = activeTab as RepairDocumentTemplateTabId;
     let tpl: string;
     if (tab === 'contract') {
@@ -3196,7 +3209,7 @@ export function RepairContractDocumentEditorPage({
   const visibleRepairTabs = repairTabOrder.filter(
     (id) =>
       id !== 'payments' &&
-      !isRepairWorkOrderHubTabHiddenFromPackageEditor(id) &&
+      isRepairEditorPackageTabBarTab(id) &&
       isRepairAddendumTabVisible(id, form.addendumSlotCount)
   );
 
@@ -3333,6 +3346,21 @@ export function RepairContractDocumentEditorPage({
                       {unassignedInteractiveRowsCount}
                     </span>
                   ) : null}
+                </button>
+              ) : null}
+              {!loading ? (
+                <button
+                  type="button"
+                  className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn} ${styles.repairEditorHubPrimaryBtn}`}
+                  onClick={() => {
+                    setQuestionnairesHubPanelTab(defaultRepairQuestionnaireHubTab(null));
+                    setQuestionnairesHubOpen(true);
+                  }}
+                  title="Анкета-опросник и анкета с оценкой работы"
+                  aria-label="Анкеты"
+                >
+                  <RepairContractQuestionnairesHubIcon />
+                  <span className={styles.repairEditorHubBtnLabel}>Анкеты</span>
                 </button>
               ) : null}
               {!loading ? (
@@ -4686,36 +4714,6 @@ export function RepairContractDocumentEditorPage({
               </div>
             </div>
           </div>
-        ) : activeTab === 'questionnaire1' ? (
-          <div className={`${styles.blockData} ${styles.dataCompact}`}>
-            <RepairManagerQuestionnaire1Tab
-              form={form}
-              onPatch={patchManagerQuestionnaire1}
-              onToggleTrafficSource={toggleManagerQuestionnaire1Traffic}
-              onToggleWhyChosen={toggleManagerQuestionnaire1WhyChosen}
-              onToggleClientNeed={toggleManagerQuestionnaire1Need}
-            />
-            <div className={styles.estimateA4Wrap}>
-              <article className={styles.estimateA4Sheet}>
-                <div
-                  className={styles.contractA4Preview}
-                  dangerouslySetInnerHTML={{ __html: renderedDoc }}
-                />
-              </article>
-            </div>
-          </div>
-        ) : activeTab === 'questionnaire2' ? (
-          <div className={`${styles.blockData} ${styles.dataCompact}`}>
-            <RepairPostWorkQuestionnaire2Tab form={form} onPatch={patchPostWorkQuestionnaire2} />
-            <div className={styles.estimateA4Wrap}>
-              <article className={styles.estimateA4Sheet}>
-                <div
-                  className={styles.contractA4Preview}
-                  dangerouslySetInnerHTML={{ __html: renderedDoc }}
-                />
-              </article>
-            </div>
-          </div>
         ) : (
           <>
             {activeAddendumSlot !== null &&
@@ -4953,6 +4951,20 @@ export function RepairContractDocumentEditorPage({
           unassignedInteractiveRowsCount={unassignedInteractiveRowsCount}
           headerContractNumberLabel={headerContractNumberLabel}
           headerContractDateLabel={headerContractConcludedDateLabel ?? undefined}
+        />
+        <RepairContractQuestionnairesHubModal
+          isOpen={questionnairesHubOpen}
+          onClose={() => setQuestionnairesHubOpen(false)}
+          panelTab={questionnairesHubPanelTab}
+          onPanelTabChange={setQuestionnairesHubPanelTab}
+          form={form}
+          headerContractNumberLabel={headerContractNumberLabel}
+          headerContractDateLabel={headerContractConcludedDateLabel ?? undefined}
+          onPatchManagerQuestionnaire1={patchManagerQuestionnaire1}
+          onToggleManagerQuestionnaire1Traffic={toggleManagerQuestionnaire1Traffic}
+          onToggleManagerQuestionnaire1WhyChosen={toggleManagerQuestionnaire1WhyChosen}
+          onToggleManagerQuestionnaire1Need={toggleManagerQuestionnaire1Need}
+          onPatchPostWorkQuestionnaire2={patchPostWorkQuestionnaire2}
         />
         <RepairContractPackageHubModal
           packageId={packageId}

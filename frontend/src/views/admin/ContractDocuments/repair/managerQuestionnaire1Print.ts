@@ -177,19 +177,19 @@ export function buildManagerQuestionnaire1PrintHtml(form: RepairPackageFormData)
       : '<p style="color:#64748b;margin:4pt 0;">—</p>';
 
   return `
-<div class="docPrint">
-  <h1>Анкета менеджера</h1>
+<div class="docPrint repairQuestionnairePrint">
+  <h1>Анкета (опросник)</h1>
   <p style="color:#475569;font-size:10pt;margin:0 0 12pt;">Заполняется менеджером со слов клиента при оформлении договора. Блок ниже дублирует данные из вкладки «Данные» для удобства печати.</p>
 
   <h2>1. Контактные данные и объект</h2>
-  <p style="margin:4pt 0;"><strong>Заказчик:</strong> ${escapeHtml(c.fullName || '—')}</p>
-  <p style="margin:4pt 0;"><strong>Телефон:</strong> ${escapeHtml(c.phone || '—')} &nbsp;&nbsp; <strong>E-mail:</strong> ${escapeHtml(c.email || '—')}</p>
-  <p style="margin:4pt 0;"><strong>Адрес (карточка):</strong> ${escapeHtml(c.address || '—')}</p>
-  <p style="margin:4pt 0;"><strong>Адрес объекта:</strong> ${escapeHtml(object.objectAddress || '—')}${
+  <p style="margin:4pt 0;">Заказчик: ${escapeHtml(c.fullName || '—')}</p>
+  <p style="margin:4pt 0;">Телефон: ${escapeHtml(c.phone || '—')} &nbsp;&nbsp; E-mail: ${escapeHtml(c.email || '—')}</p>
+  <p style="margin:4pt 0;">Адрес (карточка): ${escapeHtml(c.address || '—')}</p>
+  <p style="margin:4pt 0;">Адрес объекта: ${escapeHtml(object.objectAddress || '—')}${
     object.objectFloor ? `, эт. ${escapeHtml(object.objectFloor)}` : ''
   }</p>
-  <p style="margin:4pt 0;"><strong>Описание работ (карточка):</strong> ${escapeHtml(object.objectDescription || '—')}</p>
-  <p style="margin:8pt 0 4pt;"><strong>Дополнительно по контакту / объекту (со слов клиента):</strong></p>
+  <p style="margin:4pt 0;">Описание работ (карточка): ${escapeHtml(object.objectDescription || '—')}</p>
+  <p style="margin:8pt 0 4pt;">Дополнительно по контакту / объекту (со слов клиента):</p>
   ${formatParagraph(q.contactNotesFromCall)}
 
   <h2>2. Информация о заказе (что нужно сделать?)</h2>

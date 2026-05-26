@@ -20,7 +20,7 @@ function ratingHeader(): string {
   return [5, 4, 3, 2, 1]
     .map(
       (n) =>
-        `<th style="border:1px solid #94a3b8;padding:6px 8px;text-align:center;width:42px;font-weight:600;">${n}</th>`
+        `<th style="border:1px solid #94a3b8;padding:6px 8px;text-align:center;width:42px;">${n}</th>`
     )
     .join('');
 }
@@ -43,7 +43,7 @@ export function buildPostWorkQuestionnaire2PrintHtml(form: RepairPackageFormData
 
   const question4Intro = `
 <tr>
-  <td style="border:1px solid #94a3b8;padding:8px 10px;font-weight:600;" colspan="7">4. Оцените пожалуйста работу наших мастеров по пятибалльной шкале:</td>
+  <td style="border:1px solid #94a3b8;padding:8px 10px;" colspan="7">4. Оцените пожалуйста работу наших мастеров по пятибалльной шкале:</td>
 </tr>`;
 
   const tradeRows = POST_WORK_QUESTIONNAIRE2_TRADE_ROWS.map(
@@ -67,9 +67,9 @@ export function buildPostWorkQuestionnaire2PrintHtml(form: RepairPackageFormData
     : '________';
 
   return `
-<div class="docPrint">
+<div class="docPrint repairQuestionnairePrint">
   <h1 style="text-align:center;margin:0 0 16pt;font-size:16pt;">АНКЕТА</h1>
-  <p style="text-align:center;margin:0 0 20pt;font-size:11pt;">к договору № <strong>${contractNo}</strong> от <strong>${contractDate}</strong></p>
+  <p style="text-align:center;margin:0 0 20pt;font-size:11pt;">к договору № ${contractNo} от ${contractDate}</p>
 
   <table style="width:100%;border-collapse:collapse;font-size:10pt;margin:0 0 16pt;">
     <thead>
@@ -99,7 +99,7 @@ export function buildPostWorkQuestionnaire2PrintHtml(form: RepairPackageFormData
     </tbody>
   </table>
 
-  <p style="margin:0 0 6pt;font-weight:600;">5. Ваши пожелания</p>
+  <p style="margin:0 0 6pt;">5. Ваши пожелания</p>
   <div style="min-height:72pt;border:1px solid #94a3b8;padding:10px;margin:0 0 24pt;">${wishes}</div>
 
   <table style="width:100%;border-collapse:collapse;font-size:10pt;margin:0 0 16pt;">
@@ -109,7 +109,7 @@ export function buildPostWorkQuestionnaire2PrintHtml(form: RepairPackageFormData
     </tr>
   </table>
 
-  <p style="text-align:center;margin:0;font-size:12pt;font-weight:700;">БОЛЬШОЕ СПАСИБО!</p>
+  <p style="text-align:center;margin:0;font-size:12pt;">БОЛЬШОЕ СПАСИБО!</p>
 </div>
 `.trim();
 }
