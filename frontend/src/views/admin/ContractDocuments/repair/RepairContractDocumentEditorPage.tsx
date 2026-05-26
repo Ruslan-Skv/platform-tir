@@ -104,6 +104,7 @@ import {
   normalizeRepairDocumentTabOrder,
 } from './repairDocumentTemplates';
 import { buildEstimateSectionsFromPresetIds } from './repairEstimateDocPrintEmbedHtml';
+import { repairLibraryTemplateTabIdFromPreset } from './repairLibraryTemplateTabs';
 import {
   type RepairManagerQuestionnaire1Block,
   type RepairPackageFormData,
@@ -117,6 +118,7 @@ import {
   defaultRepairQuestionnaireHubTab,
   isRepairQuestionnaireHubTabHiddenFromPackageEditor,
 } from './repairQuestionnaireHubTabs';
+import { repairTemplatePresetEditorTabId } from './repairTemplatePresetTab';
 import {
   type RepairWorkOrderHubTabId,
   defaultRepairWorkOrderHubTab,
@@ -169,9 +171,13 @@ function normalizeTemplateTabId(
 }
 
 function normalizeContractTemplatePreset(it: ContractTemplatePreset): ContractTemplatePreset {
+  const tabId =
+    repairLibraryTemplateTabIdFromPreset(it.tabId) ??
+    repairTemplatePresetEditorTabId(it) ??
+    normalizeTemplateTabId(it.tabId);
   return {
     ...it,
-    tabId: normalizeTemplateTabId(it.tabId),
+    tabId,
     isProtected: Boolean(it.isProtected),
     archived: Boolean(it.archived),
   };
@@ -971,7 +977,8 @@ export function RepairContractDocumentEditorPage({
     for (const tab of TEMPLATE_TAB_IDS) map.set(tab, []);
     for (const item of contractTemplatePresets) {
       if (item.archived) continue;
-      const tab = normalizeTemplateTabId(item.tabId);
+      const tab = repairTemplatePresetEditorTabId(item);
+      if (!tab) continue;
       map.set(tab, [...(map.get(tab) ?? []), { ...item, tabId: tab }]);
     }
     return map;
@@ -3015,7 +3022,9 @@ export function RepairContractDocumentEditorPage({
     printDocumentHtml(
       printBody,
       printTitle,
-      activeTab === 'contract' ? { marginFooter: pickPrintMarginFooterNames(form) } : {}
+      activeTab === 'contract'
+        ? { marginFooter: pickPrintMarginFooterNames(form), contractCompact: true }
+        : {}
     );
   };
 

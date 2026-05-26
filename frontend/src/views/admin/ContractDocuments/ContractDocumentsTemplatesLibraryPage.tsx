@@ -38,6 +38,7 @@ import {
   buildRepairTemplatePreviewFallbackData,
   repairPackageFormForTemplate,
 } from '@/views/admin/ContractDocuments/repair/repairPackageForm';
+import { isRepairLibraryTemplatePreset } from '@/views/admin/ContractDocuments/repair/repairTemplatePresetTab';
 import {
   applyWordImportedDocPrintCompact,
   readWordHtmlExportFileAsString,
@@ -886,6 +887,40 @@ export function ContractDocumentsTemplatesLibraryPage() {
     resetVisualHistory(copied.html);
   };
 
+  const handleArchiveLegacyTemplates = async () => {
+    if (!isSuperAdmin) return;
+    const legacyCount = items.filter(
+      (it) => !isRepairLibraryTemplatePreset(it) && !it.archived
+    ).length;
+    if (legacyCount === 0) {
+      setOk('Устаревших активных шаблонов нет.');
+      return;
+    }
+    const next = items.map((it) =>
+      !isRepairLibraryTemplatePreset(it) && !it.archived ? { ...it, archived: true } : it
+    );
+    await persist(next, `В архив перенесено устаревших шаблонов: ${legacyCount}.`);
+  };
+
+  const handleExportSeedJson = () => {
+    if (!isSuperAdmin) return;
+    const libraryItems = items
+      .filter((it) => isRepairLibraryTemplatePreset(it) && !it.archived)
+      .map((it) => normalizeContractTemplatePreset(it));
+    const blob = new Blob([JSON.stringify({ version: 1, items: libraryItems }, null, 2)], {
+      type: 'application/json;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'repair-library-templates.seed.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    setOk(
+      'Скачан repair-library-templates.seed.json — положите в backend/prisma/seed-data/ в репозиторий и на сервере выполните npm run prisma:seed-repair-contract-templates.'
+    );
+  };
+
   const updateHtmlBySelection = (
     transform: (
       selected: string,
@@ -1382,6 +1417,23 @@ export function ContractDocumentsTemplatesLibraryPage() {
             >
               Копия
             </button>
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              disabled={saving}
+              onClick={() => void handleArchiveLegacyTemplates()}
+              title="Скрыть шаблоны со старыми вкладками (смета, заказ-наряд и т.п.)"
+            >
+              Архив устаревших
+            </button>
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              onClick={handleExportSeedJson}
+              title="Для выкладки на прод: seed-data + npm run prisma:seed-repair-contract-templates"
+            >
+              Экспорт для прода
+            </button>
             <div className={styles.templatesLibraryCopyRow}>
               <span>Вкладка</span>
               <select
@@ -1463,7 +1515,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
                   printBody,
                   printDocTitle,
                   activeTemplateTab === 'contract'
-                    ? { marginFooter: pickPrintMarginFooterNames(templateData) }
+                    ? {
+                        marginFooter: pickPrintMarginFooterNames(templateData),
+                        contractCompact: true,
+                      }
                     : {}
                 );
               }}

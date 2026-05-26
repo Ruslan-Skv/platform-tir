@@ -1,4 +1,5 @@
 import type { RepairDocumentTemplateTabId } from '../formDataTemplateStorage';
+import type { RepairLibraryTemplateTabId } from '../repairLibraryTemplateTabs';
 import { repairTemplateActAcceptance } from './actAcceptance';
 import { repairTemplateActStart } from './actStart';
 import { repairTemplateCashOrder } from './cashOrder';
@@ -8,13 +9,17 @@ import { repairTemplateProductionLog } from './productionLog';
 
 const stub = (title: string) => repairLibraryFallbackStub(title);
 
-/** Резервные HTML, если в библиотеке нет пресета. Для «Ремонт» рабочие шаблоны — в библиотеке пресетов. */
-export const REPAIR_DOCUMENT_TEMPLATES: Record<RepairDocumentTemplateTabId, string> = {
+/** Резервный HTML, если в библиотеке нет пресета (только 5 вкладок библиотеки + заглушки для прочих вкладок пакета). */
+export const REPAIR_LIBRARY_TEMPLATE_HTML: Record<RepairLibraryTemplateTabId, string> = {
   contract: repairTemplateContract,
   actStart: repairTemplateActStart,
   actAcceptance: repairTemplateActAcceptance,
   cashOrder: repairTemplateCashOrder,
   productionLog: repairTemplateProductionLog,
+};
+
+export const REPAIR_DOCUMENT_TEMPLATES: Record<RepairDocumentTemplateTabId, string> = {
+  ...REPAIR_LIBRARY_TEMPLATE_HTML,
   estimate: stub('Смета'),
   finalEstimate: stub('Итоговая смета'),
   interactiveFinalEstimate: stub('Интерактивная итоговая смета'),

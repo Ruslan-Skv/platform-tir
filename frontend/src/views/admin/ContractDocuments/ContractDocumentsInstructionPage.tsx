@@ -120,7 +120,38 @@ export function ContractDocumentsInstructionPage() {
             Супер-админ редактирует HTML; менеджер в пакете только выбирает готовый шаблон на
             вкладке «Договор» (и аналогично для актов при необходимости).
           </li>
+          <li>
+            Кнопка <strong>«Архив устаревших»</strong> скрывает пресеты со старыми вкладками (смета,
+            заказ-наряд и др.), чтобы не путаться в списке.
+          </li>
         </ul>
+
+        <h3>Выгрузка на продакшен</h3>
+        <p>Шаблоны хранятся в базе (не в git). После доработки HTML локально:</p>
+        <ol>
+          <li>
+            В библиотеке: <strong>«Экспорт для прода»</strong> → файл{' '}
+            <code>repair-library-templates.seed.json</code>.
+          </li>
+          <li>
+            Положите файл в <code>backend/prisma/seed-data/</code> и закоммитьте в репозиторий.
+          </li>
+          <li>
+            На сервере после деплоя из каталога <code>backend</code>:{' '}
+            <code>npm run prisma:seed-repair-contract-templates</code> (добавляет недостающие
+            вкладки; архивирует устаревшие). Чтобы перезаписать HTML пяти вкладок из файла в
+            репозитории:{' '}
+            <code>
+              REPAIR_TEMPLATES_SEED_MODE=replace-library npm run
+              prisma:seed-repair-contract-templates
+            </code>
+            .
+          </li>
+        </ol>
+        <p>
+          Без seed-файла сид подставляет резервные HTML из{' '}
+          <code>frontend/.../repair/templates/*.ts</code> (из кода на сервере).
+        </p>
 
         <h2>5. Пакет «Ремонт»</h2>
         <ul>

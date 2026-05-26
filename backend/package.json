@@ -33,6 +33,7 @@
     "prisma:seed": "ts-node -r tsconfig-paths/register prisma/seed.ts",
     "prisma:seed-remont-kvartir": "ts-node -r tsconfig-paths/register prisma/seed-remont-kvartir-catalog.ts",
     "prisma:seed-product-card-badges": "ts-node -r tsconfig-paths/register prisma/seed-product-card-badges-only.ts",
+    "prisma:seed-repair-contract-templates": "ts-node -r tsconfig-paths/register prisma/seed-repair-contract-template-presets.ts",
     "create-super-admin": "ts-node -r tsconfig-paths/register prisma/create-super-admin.ts"
   },
   "dependencies": {

@@ -1,13 +1,15 @@
 import type { ContractTemplatePreset } from '@/shared/api/admin-contract-document-packages';
 
 import type { RepairDocumentTemplateTabId } from './formDataTemplateStorage';
-import { REPAIR_DOCUMENT_TEMPLATES } from './templates';
-
-function normalizeTemplateTabId(tabId: string): RepairDocumentTemplateTabId {
-  if (tabId === 'addendum') return 'addendum1';
-  if (tabId === 'workOrderAddendum') return 'workOrderAddendum1';
-  return tabId as RepairDocumentTemplateTabId;
-}
+import {
+  isRepairLibraryTemplateTabId,
+  repairLibraryTemplateTabIdFromPreset,
+} from './repairLibraryTemplateTabs';
+import {
+  isRepairLibraryTemplatePreset,
+  repairTemplatePresetEditorTabId,
+} from './repairTemplatePresetTab';
+import { REPAIR_DOCUMENT_TEMPLATES, REPAIR_LIBRARY_TEMPLATE_HTML } from './templates';
 
 export function resolveRepairTemplateHtml(
   tab: RepairDocumentTemplateTabId,
@@ -18,13 +20,20 @@ export function resolveRepairTemplateHtml(
   const override = templateOverrides[tab]?.trim();
   if (override) return override;
 
+  const libraryTab = isRepairLibraryTemplateTabId(tab) ? tab : null;
+
   const list = presets
     .filter((item) => {
-      const rawTabId = item.tabId?.trim();
-      if (!rawTabId || item.archived) return false;
-      return normalizeTemplateTabId(rawTabId) === tab;
+      if (item.archived) return false;
+      if (libraryTab) {
+        return isRepairLibraryTemplatePreset(item) && item.tabId === libraryTab;
+      }
+      return repairTemplatePresetEditorTabId(item) === tab;
     })
-    .map((item) => ({ ...item, tabId: normalizeTemplateTabId(item.tabId!.trim()) }));
+    .map((item) => {
+      const editorTab = repairTemplatePresetEditorTabId(item);
+      return editorTab ? { ...item, tabId: editorTab } : item;
+    });
 
   const selectedId = selectedTemplateIds[tab] ?? '';
   const selected = list.find((it) => it.id === selectedId);
@@ -33,5 +42,8 @@ export function resolveRepairTemplateHtml(
   const fallback = list.find((it) => it.isDefault) ?? list[0];
   if (fallback?.html?.trim()) return fallback.html;
 
+  if (libraryTab) {
+    return REPAIR_LIBRARY_TEMPLATE_HTML[libraryTab];
+  }
   return REPAIR_DOCUMENT_TEMPLATES[tab];
 }
