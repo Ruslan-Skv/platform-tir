@@ -17,6 +17,7 @@ import {
   buildEstimateDocPrintFooterHtml,
   buildEstimateSectionsFromPresetIds,
 } from './repairEstimateDocPrintEmbedHtml';
+import { computeRepairPackagePayableBreakdown } from './repairPackagePaymentTotals';
 
 /** ЮЛ — ОГРН и КПП; ИП — ОГРНИП (КПП в форме обычно пустой). */
 export type RepairExecutorKind = 'COMPANY' | 'ENTREPRENEUR';
@@ -85,6 +86,10 @@ export interface RepairContractBlock {
   prepaymentAmountWords: string;
   /** Основание платежа / перечисления (текст для подстановки в документы). */
   paymentBasis: string;
+  /** Дата последней/текущей оплаты для ПКО (дд.мм.гггг). */
+  prepaymentDate: string;
+  /** Способ оплаты текстом (для ПКО). */
+  paymentFormLabel: string;
   /** Срок договора в календарных днях (число строкой, напр. «60»); в шаблоне `{{contract.workPeriod}}`. */
   workPeriod: string;
   /** Скидка на стоимость по договору, % (применяется к смете, Д/с, заказ-нарядам и сводке оплат). */
@@ -396,6 +401,8 @@ export function defaultRepairPackageFormData(): RepairPackageFormData {
       prepaymentAmount: '',
       prepaymentAmountWords: '',
       paymentBasis: '',
+      prepaymentDate: '',
+      paymentFormLabel: '',
       workPeriod: '',
       discountPercent: '',
     },
@@ -926,6 +933,8 @@ export function mergeRepairPackageFormWithPreviewFallback(
         fallback.contract.prepaymentAmountWords
       ),
       paymentBasis: pickStr(form.contract.paymentBasis, fallback.contract.paymentBasis),
+      prepaymentDate: pickStr(form.contract.prepaymentDate, fallback.contract.prepaymentDate),
+      paymentFormLabel: pickStr(form.contract.paymentFormLabel, fallback.contract.paymentFormLabel),
       workPeriod: pickStr(form.contract.workPeriod, fallback.contract.workPeriod),
       discountPercent: pickStr(form.contract.discountPercent, fallback.contract.discountPercent),
     },
@@ -1451,6 +1460,11 @@ export function repairPackageFormForTemplate(
     ? amountToRussianWords(form.contract.prepaymentAmount)
     : '';
 
+  const { grandTotalRub } = computeRepairPackagePayableBreakdown(form);
+  const grandTotalAmount =
+    grandTotalRub != null && Number.isFinite(grandTotalRub) ? formatMoney(grandTotalRub) : '';
+  const grandTotalAmountWords = grandTotalAmount ? amountToRussianWords(grandTotalAmount) : '';
+
   const addendumTabMatch =
     options?.templateTab && /^(?:addendum|workOrderAddendum)([1-5])$/.exec(options.templateTab);
   const addendumSlot = addendumTabMatch ? Number(addendumTabMatch[1]) : null;
@@ -1626,6 +1640,8 @@ export function repairPackageFormForTemplate(
     contract: {
       ...form.contract,
       prepaymentAmountWords,
+      grandTotalAmount,
+      grandTotalAmountWords,
     },
     executor: {
       ...executor,

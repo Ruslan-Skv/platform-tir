@@ -1,4 +1,4 @@
-import type { RepairDocumentTabId } from '../repairDocumentTabs';
+import type { RepairDocumentTemplateTabId } from '../formDataTemplateStorage';
 import { repairTemplateActAcceptance } from './actAcceptance';
 import { repairTemplateActStart } from './actStart';
 import { repairTemplateAddendum } from './addendum';
@@ -9,10 +9,7 @@ import { repairTemplateProductionLog } from './productionLog';
 import { repairTemplateWorkOrder } from './workOrder';
 import { repairTemplateWorkOrderAddendum } from './workOrderAddendum';
 
-export const REPAIR_DOCUMENT_TEMPLATES: Record<
-  Exclude<RepairDocumentTabId, 'data' | 'payments'>,
-  string
-> = {
+export const REPAIR_DOCUMENT_TEMPLATES: Record<RepairDocumentTemplateTabId, string> = {
   contract: repairTemplateContract,
   estimate: repairTemplateEstimate,
   finalEstimate: `<div class="docPrint"><p>Итоговая смета формируется на соответствующей вкладке пакета.</p></div>`,

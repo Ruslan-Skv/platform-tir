@@ -10,6 +10,8 @@ export type PrintDocumentOptions = {
    * В диалоге печати отключите «Колонтитулы», чтобы не дублировать URL/дату.
    */
   marginFooter?: PrintMarginFooterNames;
+  /** ПКО: уменьшенные межстрочные интервалы и отступы (~−20% по высоте). */
+  cashOrderCompact?: boolean;
 };
 
 const MARGIN_FOOTER_MAX_EACH = 44;
@@ -87,10 +89,73 @@ export function pickPrintMarginFooterNames(data: unknown): PrintMarginFooterName
   };
 }
 
-function buildPrintStylesheet(marginFooter?: PrintMarginFooterNames): string {
+const CASH_ORDER_COMPACT_PRINT_CSS = `
+  .docPrintCashOrderCompact .docPrint {
+    font-size: 9.5pt;
+    line-height: 1.12;
+  }
+  .docPrintCashOrderCompact .docPrint h1 {
+    font-size: 11pt;
+    margin: 0 0 8pt;
+  }
+  .docPrintCashOrderCompact .docPrint h2 {
+    font-size: 9.5pt;
+    margin: 8pt 0 4pt;
+  }
+  .docPrintCashOrderCompact .docPrint p {
+    margin: 0 0 5pt;
+  }
+  .docPrintCashOrderCompact .docPrint table {
+    font-size: 9pt;
+    line-height: 1.1;
+  }
+  .docPrintCashOrderCompact .docPrint td,
+  .docPrintCashOrderCompact .docPrint th {
+    padding-top: 1pt;
+    padding-bottom: 1pt;
+    line-height: 1.1;
+  }
+  .docPrintCashOrderCompact .WordSection1 table.MsoNormalTable {
+    border-collapse: collapse !important;
+  }
+  .docPrintCashOrderCompact .WordSection1 table.MsoNormalTable td,
+  .docPrintCashOrderCompact .WordSection1 table.MsoNormalTable th {
+    padding: 0 0.5pt !important;
+    font-size: 9pt !important;
+    line-height: 1.08 !important;
+    vertical-align: top !important;
+  }
+  .docPrintCashOrderCompact .WordSection1 p.MsoNormal,
+  .docPrintCashOrderCompact .WordSection1 p {
+    margin: 0 !important;
+    font-size: 9pt !important;
+    line-height: 1.1 !important;
+  }
+  .docPrintCashOrderCompact .WordSection1 tr[style*="height"] {
+    height: auto !important;
+  }
+  @media print {
+    .docPrintCashOrderCompact .docPrint p {
+      margin: 0 0 4pt !important;
+    }
+    .docPrintCashOrderCompact .docPrint h1 {
+      margin: 0 0 7pt !important;
+    }
+    .docPrintCashOrderCompact .docPrint h2 {
+      margin: 6pt 0 3pt !important;
+    }
+  }
+`;
+
+function buildPrintStylesheet(
+  marginFooter?: PrintMarginFooterNames,
+  cashOrderCompact?: boolean
+): string {
   const pageBlock = marginFooter
     ? buildMarginFooterPageRule(marginFooter)
     : `@page { margin: 16mm; size: A4; }`;
+
+  const cashOrderBlock = cashOrderCompact ? CASH_ORDER_COMPACT_PRINT_CSS : '';
 
   return `${pageBlock}
   html, body { margin: 0; padding: 0; font-family: "Times New Roman", Times, serif; color: #111; }
@@ -379,6 +444,7 @@ function buildPrintStylesheet(marginFooter?: PrintMarginFooterNames): string {
     padding-right: 0 !important;
     box-sizing: border-box !important;
   }
+${cashOrderBlock}
 `;
 }
 
@@ -432,7 +498,7 @@ export function printDocumentHtml(
 
   const titleInner = documentTitle.trim() === '' ? '&#8203;' : escapeHtml(documentTitle);
 
-  const styles = buildPrintStylesheet(options?.marginFooter);
+  const styles = buildPrintStylesheet(options?.marginFooter, options?.cashOrderCompact);
 
   w.document.open();
   w.document

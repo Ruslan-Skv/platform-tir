@@ -7840,6 +7840,41 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   color: var(--admin-text-inverse, #f9fafb);
 }
 
+.paymentsHubConductActions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+}
+
+.paymentsFormHubSubmitField .paymentsHubConductSecondaryBtn {
+  align-items: center;
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-md, 8px);
+  box-sizing: border-box;
+  color: var(--admin-text, #111827);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--admin-font-size-xs, 0.8125rem);
+  font-weight: 600;
+  justify-content: center;
+  line-height: var(--admin-line-height-sm, 1.25);
+  min-height: 2.125rem;
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  white-space: nowrap;
+}
+
+.paymentsFormHubSubmitField .paymentsHubConductSecondaryBtn:not(:disabled):hover {
+  border-color: var(--admin-text-muted, #6b7280);
+  background: var(--admin-surface-soft, #f3f4f6);
+}
+
+.paymentsFormHubSubmitField .paymentsHubConductSecondaryBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .paymentsFormHubHint {
   flex: 1 1 100%;
   grid-column: 1 / -1;

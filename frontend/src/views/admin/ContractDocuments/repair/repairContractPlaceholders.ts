@@ -90,6 +90,14 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
       { path: 'contract.number', label: 'Номер договора' },
       { path: 'contract.date', label: 'Дата договора (дд.мм.гггг)' },
       { path: 'contract.totalAmount', label: 'Сумма (цифрами)' },
+      {
+        path: 'contract.grandTotalAmount',
+        label: 'СД итог. (договор + все Д/с со сметой, цифрами)',
+      },
+      {
+        path: 'contract.grandTotalAmountWords',
+        label: 'СД итог. (договор + все Д/с, прописью)',
+      },
       { path: 'contract.recommendedPrepayment', label: 'Рекомендованная предоплата (70%)' },
       { path: 'contract.totalAmountWords', label: 'Сумма прописью' },
       { path: 'contract.prepaymentAmount', label: 'Оплата (сумма)' },
@@ -98,6 +106,8 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
         label: 'Оплата прописью (из поля «Оплата»)',
       },
       { path: 'contract.paymentBasis', label: 'Основание (платёж / перечисление)' },
+      { path: 'contract.prepaymentDate', label: 'Дата оплаты (дд.мм.гггг, для ПКО)' },
+      { path: 'contract.paymentFormLabel', label: 'Способ оплаты (текст, для ПКО)' },
       { path: 'contract.workPeriod', label: 'Срок договора (календарных дней, число)' },
       {
         path: 'contract.discountPercent',

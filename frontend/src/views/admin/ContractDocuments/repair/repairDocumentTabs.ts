@@ -8,7 +8,6 @@ export const REPAIR_DOCUMENT_TAB_IDS = [
   'finalWorkOrder',
   'actStart',
   'actAcceptance',
-  'cashOrder',
   'questionnaire1',
   'questionnaire2',
   'addendum1',
@@ -82,7 +81,6 @@ export const REPAIR_DOCUMENT_TAB_LABELS: Record<RepairDocumentTabId, string> = {
   finalWorkOrder: 'Итог. заказ-наряд',
   actStart: 'Акт начала работ',
   actAcceptance: 'Акт сдачи-приёмки',
-  cashOrder: 'Приходно-кассовый ордер',
   questionnaire1: 'Анкета менеджера (звонок)',
   questionnaire2: 'Анкета после работ (оценки)',
   addendum1: 'Дополнительное соглашение №1',
@@ -110,7 +108,6 @@ export const REPAIR_DOCUMENT_TAB_LABELS_SHORT: Record<RepairDocumentTabId, strin
   finalWorkOrder: 'Итог. з-наряд',
   actStart: 'Акт нач.',
   actAcceptance: 'Акт приём.',
-  cashOrder: 'ПКО',
   questionnaire1: 'Анкета',
   questionnaire2: 'Анкета №2',
   addendum1: 'Д/с №1',
@@ -145,9 +142,12 @@ export function normalizeRepairDocumentTabOrder(raw: unknown): RepairDocumentTab
   for (const id of REPAIR_DOCUMENT_TAB_IDS) {
     if (!seen.has(id)) out.push(id);
   }
+  const withoutLegacyCashOrder = out.filter((id) => (id as string) !== 'cashOrder');
   const interactiveId: RepairDocumentTabId = 'interactiveFinalEstimate';
   const finalEstimateId: RepairDocumentTabId = 'finalEstimate';
-  const filtered: RepairDocumentTabId[] = out.filter((id) => id !== interactiveId);
+  const filtered: RepairDocumentTabId[] = withoutLegacyCashOrder.filter(
+    (id) => id !== interactiveId
+  );
   const finalEstimateIdx = filtered.indexOf(finalEstimateId);
   if (finalEstimateIdx < 0) return [...filtered, interactiveId];
   filtered.splice(finalEstimateIdx, 0, interactiveId);

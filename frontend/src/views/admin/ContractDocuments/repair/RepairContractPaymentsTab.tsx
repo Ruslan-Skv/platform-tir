@@ -12,6 +12,8 @@ import crmDetailStyles from '@/views/admin/CRM/Customers/CrmCustomerDetailModal.
 import measurementBlankStyles from '@/views/admin/CRM/Measurements/MeasurementFormPage.module.css';
 
 import styles from '../ContractDocuments.module.css';
+import { amountToRussianWords } from './amountToRussianWords';
+import type { RepairCashOrderConductDraft } from './repairCashOrderPrint';
 import {
   applyRepairContractDiscountToAmount,
   parseRepairContractDiscountPercent,
@@ -35,14 +37,10 @@ import {
   paymentApiFieldsFromCustomBasis,
   readRepairPaymentBasisOptions,
 } from './repairPaymentBasisOptionsStorage';
-
-const PAYMENT_FORM_LABELS: Record<string, string> = {
-  CASH: 'Наличные',
-  TERMINAL: 'Терминал',
-  QR: 'QR-код',
-  INVOICE: 'По счёту',
-  LC_TRANSFER: 'Переводы на ЛК',
-};
+import {
+  REPAIR_PAYMENT_FORM_LABELS,
+  formatRepairPaymentDateForTemplate,
+} from './repairPaymentFormLabels';
 
 function formatMoneyRub(n: number | null | undefined) {
   if (n == null || !Number.isFinite(n)) return '—';
@@ -92,6 +90,10 @@ export interface RepairContractPaymentsTabProps {
   layout?: RepairContractPaymentsTabLayout;
   /** Перезагрузка журнала (сводка «Оплачено» в другой секции модалки). */
   journalReloadToken?: number;
+  /** Печать ПКО из блока «Провести оплату» (модалка хаба). */
+  onPrintCashOrder?: (conduct: RepairCashOrderConductDraft) => void;
+  /** Сохранить поля оплаты в `contract.*` для ПКО (одним запросом). */
+  onUpdateContractFields?: (patch: Partial<RepairPackageFormData['contract']>) => void;
 }
 
 export function RepairContractPaymentsTab({
@@ -102,6 +104,8 @@ export function RepairContractPaymentsTab({
   onJournalChanged,
   layout = 'full',
   journalReloadToken = 0,
+  onPrintCashOrder,
+  onUpdateContractFields,
 }: RepairContractPaymentsTabProps) {
   const [rows, setRows] = useState<ContractDocumentPackagePayment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -236,6 +240,51 @@ export function RepairContractPaymentsTab({
     hubConductDateReady && hubConductBasisReady && hubConductAmountReady;
   const hubConductAllBasesDone =
     hubFixedBasisOptions.length > 0 && hubFixedBasisOptions.every((o) => o.disabled);
+
+  const buildHubCashOrderConductDraft = useCallback((): RepairCashOrderConductDraft | null => {
+    const option = repairPaymentBasisOptionByKey(hubFixedBasisOptions, hubBasisKey);
+    if (!option || option.disabled) return null;
+    const amount = conductAmount.trim();
+    if (!amount || !draft.paymentDate.trim()) return null;
+    return {
+      paymentDate: draft.paymentDate,
+      paymentForm: draft.paymentForm,
+      paymentBasis: option.label,
+      prepaymentAmount: amount,
+    };
+  }, [hubFixedBasisOptions, hubBasisKey, conductAmount, draft.paymentDate, draft.paymentForm]);
+
+  const syncHubConductToContractForPko = useCallback(
+    (conduct: RepairCashOrderConductDraft) => {
+      const prepaymentAmount = conduct.prepaymentAmount.trim();
+      const patch: Partial<RepairPackageFormData['contract']> = {
+        paymentBasis: conduct.paymentBasis.trim(),
+        prepaymentAmount,
+        prepaymentAmountWords: prepaymentAmount ? amountToRussianWords(prepaymentAmount) : '',
+        prepaymentDate: formatRepairPaymentDateForTemplate(conduct.paymentDate),
+        paymentFormLabel: REPAIR_PAYMENT_FORM_LABELS[conduct.paymentForm] ?? conduct.paymentForm,
+      };
+      if (onUpdateContractFields) {
+        onUpdateContractFields(patch);
+        return;
+      }
+      for (const [key, value] of Object.entries(patch)) {
+        onUpdateContract(key as keyof RepairPackageFormData['contract'], value);
+      }
+    },
+    [onUpdateContract, onUpdateContractFields]
+  );
+
+  const handleHubPrintCashOrder = () => {
+    const conduct = buildHubCashOrderConductDraft();
+    if (!conduct) {
+      onError('Заполните дату, основание и сумму оплаты для печати ПКО');
+      return;
+    }
+    if (!onPrintCashOrder) return;
+    syncHubConductToContractForPko(conduct);
+    onPrintCashOrder(conduct);
+  };
 
   useEffect(() => {
     if (!isHubConductLayout) return;
@@ -376,8 +425,13 @@ export function RepairContractPaymentsTab({
       setRows((prev) =>
         [...prev, created].sort((a, b) => a.paymentDate.localeCompare(b.paymentDate))
       );
-      onUpdateContract('paymentBasis', option.label);
-      onUpdateContract('prepaymentAmount', conductAmount.trim());
+      const conduct: RepairCashOrderConductDraft = {
+        paymentDate: draft.paymentDate,
+        paymentForm: draft.paymentForm,
+        paymentBasis: option.label,
+        prepaymentAmount: conductAmount.trim(),
+      };
+      syncHubConductToContractForPko(conduct);
       onJournalChanged?.();
       setHubPaymentConductedNotice(true);
       resetHubConductForm();
@@ -801,7 +855,7 @@ export function RepairContractPaymentsTab({
                     }))
                   }
                 >
-                  {Object.entries(PAYMENT_FORM_LABELS).map(([k, label]) => (
+                  {Object.entries(REPAIR_PAYMENT_FORM_LABELS).map(([k, label]) => (
                     <option key={k} value={k}>
                       {label}
                     </option>
@@ -835,19 +889,32 @@ export function RepairContractPaymentsTab({
                 >
                   &nbsp;
                 </label>
-                <button
-                  type="button"
-                  className={styles.paymentsHubConductBtn}
-                  disabled={
-                    saving ||
-                    hubPaymentConductedNotice ||
-                    hubConductAllBasesDone ||
-                    !hubConductFormComplete
-                  }
-                  onClick={() => void submitHubConductPayment()}
-                >
-                  {saving ? 'Сохранение…' : 'Провести оплату'}
-                </button>
+                <div className={styles.paymentsHubConductActions}>
+                  <button
+                    type="button"
+                    className={styles.paymentsHubConductBtn}
+                    disabled={
+                      saving ||
+                      hubPaymentConductedNotice ||
+                      hubConductAllBasesDone ||
+                      !hubConductFormComplete
+                    }
+                    onClick={() => void submitHubConductPayment()}
+                  >
+                    {saving ? 'Сохранение…' : 'Провести оплату'}
+                  </button>
+                  {onPrintCashOrder ? (
+                    <button
+                      type="button"
+                      className={styles.paymentsHubConductSecondaryBtn}
+                      disabled={!hubConductFormComplete}
+                      title="Печать ПКО (два экземпляра на листе)"
+                      onClick={handleHubPrintCashOrder}
+                    >
+                      Печать ПКО
+                    </button>
+                  ) : null}
+                </div>
               </div>
               {hubConductAllBasesDone ? (
                 <p className={`${styles.hint} ${styles.paymentsFormHubHint}`}>
@@ -892,7 +959,7 @@ export function RepairContractPaymentsTab({
                     }))
                   }
                 >
-                  {Object.entries(PAYMENT_FORM_LABELS).map(([k, label]) => (
+                  {Object.entries(REPAIR_PAYMENT_FORM_LABELS).map(([k, label]) => (
                     <option key={k} value={k}>
                       {label}
                     </option>
@@ -1004,7 +1071,7 @@ export function RepairContractPaymentsTab({
                     <td>{formatDateRu(r.paymentDate)}</td>
                     <td>{formatMoneyRub(Number.parseFloat(r.amount))}</td>
                     <td className={styles.paymentsTablePctCol}>{rowPct ?? '—'}</td>
-                    <td>{PAYMENT_FORM_LABELS[r.paymentForm] ?? r.paymentForm}</td>
+                    <td>{REPAIR_PAYMENT_FORM_LABELS[r.paymentForm] ?? r.paymentForm}</td>
                     <td className={styles.paymentsTableBasisCell}>{r.basis?.trim() || '—'}</td>
                     <td className={styles.paymentsTableUserCell}>
                       {r.recordedBy

@@ -5,8 +5,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type ContractDocumentPackagePayment,
   type ContractDocumentPackageStatus,
+  type ContractTemplatePreset,
   getContractDocumentPackage,
   getContractDocumentPackagePayments,
+  getContractDocumentTemplatePresets,
   updateContractDocumentPackage,
   uploadRepairPackageContractCloseActPhoto,
   uploadRepairPackageWorkStartActPhoto,
@@ -19,6 +21,12 @@ import {
   mergeFormDataFromStorage,
 } from './formDataTemplateStorage';
 import { getRepairContractNumberDisplayForForm } from './packageContractDisplay';
+import { REPAIR_CASH_ORDER_TEMPLATE_TAB } from './repairActTwinCopiesOnOnePageHtml';
+import {
+  type RepairCashOrderConductDraft,
+  buildRepairCashOrderPrintHtml,
+  printRepairCashOrder,
+} from './repairCashOrderPrint';
 import { CONTRACT_SIGNED_REVERT_WINDOW_MS } from './repairContractPackageHubConstants';
 import {
   formatContractConcludedDateForHeader,
@@ -30,6 +38,7 @@ import {
   computeRepairPipelineModel,
 } from './repairContractPipeline';
 import { type RepairPackageFormData, mergeRepairPackageFormData } from './repairPackageForm';
+import { resolveRepairTemplateHtml } from './resolveRepairTemplateHtml';
 
 export type UseRepairContractPackageHubOptions = {
   packageId: string;
@@ -76,6 +85,9 @@ export function useRepairContractPackageHub({
   const [refusalModalBusy, setRefusalModalBusy] = useState(false);
   const [refusalModalError, setRefusalModalError] = useState<string | null>(null);
   const [revertRefusalConfirmOpen, setRevertRefusalConfirmOpen] = useState(false);
+  const [contractTemplatePresets, setContractTemplatePresets] = useState<ContractTemplatePreset[]>(
+    []
+  );
 
   const persistForm = useCallback(
     async (
@@ -102,12 +114,17 @@ export function useRepairContractPackageHub({
     setLoading(true);
     setError(null);
     try {
-      const [row, paymentsRes] = await Promise.all([
+      const [row, paymentsRes, presetsRes] = await Promise.all([
         getContractDocumentPackage(packageId),
         getContractDocumentPackagePayments(packageId).catch(
           () => [] as ContractDocumentPackagePayment[]
         ),
+        getContractDocumentTemplatePresets('REPAIR').catch(() => ({
+          items: [] as ContractTemplatePreset[],
+          updatedAt: null,
+        })),
       ]);
+      setContractTemplatePresets(presetsRes.items ?? []);
       if (row.kind !== 'REPAIR') {
         setError('Этот пакет относится к другому направлению.');
         setPaymentRows([]);
@@ -173,6 +190,59 @@ export function useRepairContractPackageHub({
       })();
     },
     [persistForm, notifyUpdated]
+  );
+
+  const updateContractFields = useCallback(
+    (patch: Partial<RepairPackageFormData['contract']>) => {
+      if (packageFlowStatusRef.current === 'REFUSED') return;
+      if (Object.keys(patch).length === 0) return;
+      setForm((p) => {
+        const next = { ...p, contract: { ...p.contract, ...patch } };
+        formRef.current = next;
+        return next;
+      });
+      void (async () => {
+        try {
+          await persistForm(formRef.current, { recordVersion: true });
+          notifyUpdated();
+        } catch (e) {
+          setError(e instanceof Error ? e.message : 'Не удалось сохранить');
+        }
+      })();
+    },
+    [persistForm, notifyUpdated]
+  );
+
+  const resolveCashOrderTemplateHtml = useCallback((): string => {
+    return resolveRepairTemplateHtml(
+      REPAIR_CASH_ORDER_TEMPLATE_TAB,
+      contractTemplatePresets,
+      selectedTemplateIdsRef.current,
+      templateOverridesRef.current
+    );
+  }, [contractTemplatePresets]);
+
+  const buildCashOrderPrintHtml = useCallback(
+    (conduct?: RepairCashOrderConductDraft | null): string => {
+      return buildRepairCashOrderPrintHtml(
+        formRef.current,
+        resolveCashOrderTemplateHtml(),
+        conduct
+      );
+    },
+    [resolveCashOrderTemplateHtml]
+  );
+
+  const printCashOrder = useCallback(
+    (conduct?: RepairCashOrderConductDraft | null) => {
+      const html = buildCashOrderPrintHtml(conduct);
+      if (!html.trim()) {
+        setError('Нет данных для печати ПКО.');
+        return;
+      }
+      printRepairCashOrder(html);
+    },
+    [buildCashOrderPrintHtml]
   );
 
   const pipeline = useMemo(
@@ -536,6 +606,8 @@ export function useRepairContractPackageHub({
     refreshJournalPaidRub,
     loadHub,
     updateContract,
+    updateContractFields,
+    printCashOrder,
     handleMarkContractConcluded,
     confirmRevertContractConcluded,
     handleConfirmContractRefusal,

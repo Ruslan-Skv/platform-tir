@@ -765,6 +765,8 @@ export function RepairContractDocumentEditorPage({
     'prepaymentAmount',
     'prepaymentAmountWords',
     'paymentBasis',
+    'prepaymentDate',
+    'paymentFormLabel',
     'totalAmountWords',
   ]);
   const [packageVersions, setPackageVersions] = useState<ContractDocumentPackageVersionListItem[]>(
@@ -936,6 +938,10 @@ export function RepairContractDocumentEditorPage({
     const fallback = `addendum${form.addendumSlotCount}` as RepairDocumentTabId;
     setActiveTab(fallback);
   }, [activeTab, form.addendumSlotCount]);
+
+  useEffect(() => {
+    if ((activeTab as string) === 'cashOrder') setActiveTab('contract');
+  }, [activeTab]);
 
   useEffect(() => {
     return () => {
@@ -4868,7 +4874,6 @@ export function RepairContractDocumentEditorPage({
             ) : null}
             {activeTab === 'contract' ||
             isRepairActTwinOneSheetTab(activeTab) ||
-            activeTab === 'cashOrder' ||
             activeTab === 'productionLog' ||
             isRepairAddendumTab(activeTab) ||
             isRepairWorkOrderAddendumTab(activeTab) ? (

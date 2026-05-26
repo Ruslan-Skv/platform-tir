@@ -202,6 +202,8 @@ export function RepairContractPackageHubModal({
                 journalReloadToken={journalReloadToken}
                 onError={hub.setError}
                 onUpdateContract={hub.updateContract}
+                onUpdateContractFields={hub.updateContractFields}
+                onPrintCashOrder={hub.printCashOrder}
                 onJournalChanged={handleJournalChanged}
               />
             </section>
