@@ -17,7 +17,6 @@ import {
   type ExecutorRequisiteProfile,
   getContractDocumentEstimatePresets,
   getContractDocumentExecutorProfiles,
-  getContractDocumentGlobalTemplate,
   getContractDocumentPackage,
   getContractDocumentPackageVersions,
   getContractDocumentPackages,
@@ -89,6 +88,7 @@ import {
   REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE,
 } from './repairContractPackageHubConstants';
 import { getUnsignedAddendumOrdinals } from './repairContractPipeline';
+import { buildRepairContractRequisitesInsertHtml } from './repairContractRequisitesLayout';
 import { resolveRepairWorkPeriodForForm } from './repairContractWorkPeriod';
 import {
   REPAIR_DOCUMENT_TAB_IDS,
@@ -108,9 +108,7 @@ import {
   type RepairManagerQuestionnaire1Block,
   type RepairPackageFormData,
   type RepairPostWorkQuestionnaire2Block,
-  buildRepairTemplatePreviewFallbackData,
   mergeRepairPackageFormData,
-  mergeRepairPackageFormWithPreviewFallback,
   repairPackageFormForTemplate,
 } from './repairPackageForm';
 import { computeRepairPackagePayableBreakdown } from './repairPackagePaymentTotals';
@@ -149,8 +147,6 @@ function isWithinMsSinceIso(iso: string | null | undefined, windowMs: number): b
   return Date.now() - ts <= windowMs;
 }
 
-/** Встроенный в код шаблон (если в БД нет общего шаблона). */
-const FILE_REPAIR_CONTRACT_TEMPLATE = REPAIR_DOCUMENT_TEMPLATES.contract;
 const TEMPLATE_TAB_IDS = REPAIR_DOCUMENT_TAB_IDS.filter(
   (id) =>
     id !== 'data' &&
@@ -735,10 +731,6 @@ export function RepairContractDocumentEditorPage({
   const [formatToolbarLevel, setFormatToolbarLevel] = useState<'basic' | 'advanced'>('basic');
   const [formatToolbarQuery, setFormatToolbarQuery] = useState('');
   const [showAllFormatTools, setShowAllFormatTools] = useState(false);
-  const [globalContractState, setGlobalContractState] = useState<{
-    loaded: boolean;
-    html: string | null;
-  }>({ loaded: false, html: null });
   const [executorProfiles, setExecutorProfiles] = useState<ExecutorRequisiteProfile[]>([]);
   const [signatoryProfiles, setSignatoryProfiles] = useState<ContractSignatoryProfile[]>([]);
   const [contractTemplatePresets, setContractTemplatePresets] = useState<ContractTemplatePreset[]>(
@@ -993,13 +985,9 @@ export function RepairContractDocumentEditorPage({
       if (selected?.html?.trim()) return selected.html;
       const fallback = list.find((it) => it.isDefault) ?? list[0];
       if (fallback?.html?.trim()) return fallback.html;
-      if (tab === 'contract') {
-        if (!globalContractState.loaded) return FILE_REPAIR_CONTRACT_TEMPLATE;
-        if (globalContractState.html !== null) return globalContractState.html;
-      }
       return REPAIR_DOCUMENT_TEMPLATES[tab];
     },
-    [templatePresetsByTab, selectedTemplateIds, globalContractState]
+    [templatePresetsByTab, selectedTemplateIds]
   );
 
   const refreshPackageVersions = useCallback(
@@ -1032,7 +1020,6 @@ export function RepairContractDocumentEditorPage({
       try {
         const [
           row,
-          globalTpl,
           profilesRes,
           signatoryRes,
           templateRes,
@@ -1042,10 +1029,6 @@ export function RepairContractDocumentEditorPage({
           repairSettingsRes,
         ] = await Promise.all([
           getContractDocumentPackage(packageId),
-          getContractDocumentGlobalTemplate('REPAIR', 'contract').catch(() => ({
-            html: null as string | null,
-            updatedAt: null as string | null,
-          })),
           getContractDocumentExecutorProfiles('REPAIR').catch(() => ({
             items: [] as ExecutorRequisiteProfile[],
             updatedAt: null as string | null,
@@ -1175,7 +1158,6 @@ export function RepairContractDocumentEditorPage({
         const overridesSansContract = { ...ov };
         delete overridesSansContract.contract;
         setTemplateOverrides(overridesSansContract);
-        setGlobalContractState({ loaded: true, html: globalTpl.html });
         setExecutorProfiles(profilesRes.items ?? []);
         setSignatoryProfiles(signatoryRes.items ?? []);
         const templates = templateRes.items ?? [];
@@ -2452,32 +2434,9 @@ export function RepairContractDocumentEditorPage({
     return templateDraftHtml || resolveTemplateHtml('contract');
   }, [activeTab, templateDraftHtml, resolveTemplateHtml]);
 
-  const templatePreviewFallback = useMemo(
-    () =>
-      buildRepairTemplatePreviewFallbackData(
-        executorProfiles.find((it) => it.title === form.executor.selectedProfileTitle) ??
-          executorProfiles[0] ??
-          null,
-        signatoryProfiles.find((it) => it.title === form.executor.selectedSignatoryProfileTitle) ??
-          signatoryProfiles[0] ??
-          null
-      ),
-    [
-      executorProfiles,
-      signatoryProfiles,
-      form.executor.selectedProfileTitle,
-      form.executor.selectedSignatoryProfileTitle,
-    ]
-  );
-
-  const formMergedForTemplate = useMemo(
-    () => mergeRepairPackageFormWithPreviewFallback(form, templatePreviewFallback),
-    [form, templatePreviewFallback]
-  );
-
   const repairFormForActiveTemplate = useMemo(
     () =>
-      repairPackageFormForTemplate(formMergedForTemplate, {
+      repairPackageFormForTemplate(form, {
         templateTab:
           activeTab === 'finalEstimate' || activeTab === 'interactiveFinalEstimate'
             ? 'estimate'
@@ -2487,7 +2446,7 @@ export function RepairContractDocumentEditorPage({
         estimatePresets,
         estimateGroups,
       }),
-    [formMergedForTemplate, activeTab, estimatePresets, estimateGroups]
+    [form, activeTab, estimatePresets, estimateGroups]
   );
 
   const patchAddendumDocumentDate = useCallback(
@@ -2552,7 +2511,7 @@ export function RepairContractDocumentEditorPage({
       }
       if (tab === 'questionnaire1') {
         return buildManagerQuestionnaire1PrintHtml(
-          repairPackageFormForTemplate(formMergedForTemplate, {
+          repairPackageFormForTemplate(form, {
             templateTab: 'estimate',
             estimatePresets,
             estimateGroups,
@@ -2561,7 +2520,7 @@ export function RepairContractDocumentEditorPage({
       }
       if (tab === 'questionnaire2') {
         return buildPostWorkQuestionnaire2PrintHtml(
-          repairPackageFormForTemplate(formMergedForTemplate, {
+          repairPackageFormForTemplate(form, {
             templateTab: 'estimate',
             estimatePresets,
             estimateGroups,
@@ -2569,7 +2528,7 @@ export function RepairContractDocumentEditorPage({
         );
       }
       const templateTab = tab as RepairDocumentTemplateTabId;
-      const formForTpl = repairPackageFormForTemplate(formMergedForTemplate, {
+      const formForTpl = repairPackageFormForTemplate(form, {
         templateTab,
         estimatePresets,
         estimateGroups,
@@ -2580,13 +2539,12 @@ export function RepairContractDocumentEditorPage({
         plainCustomerPlaceholders: isRepairPlainCustomerTab(tab),
       });
     },
-    [formMergedForTemplate, estimatePresets, estimateGroups, templateOverrides, resolveTemplateHtml]
+    [form, estimatePresets, estimateGroups, templateOverrides, resolveTemplateHtml]
   );
 
   const workOrderHubContextValue = useMemo((): RepairContractWorkOrderHubContextValue => {
     return {
       form,
-      formMergedForTemplate,
       updateWorkOrder,
       getTemplatePreviewHtml,
       repairInstallers,
@@ -2616,7 +2574,6 @@ export function RepairContractDocumentEditorPage({
     };
   }, [
     form,
-    formMergedForTemplate,
     updateWorkOrder,
     getTemplatePreviewHtml,
     repairInstallers,
@@ -2896,7 +2853,7 @@ export function RepairContractDocumentEditorPage({
       <p style="margin: 0 0 22pt;">Подрядчик _____________________ / {{executor.directorName}}</p>
     </td>
     <td style="width: 50%; vertical-align: bottom; padding-left: 10px;">
-      <p style="margin: 0 0 22pt;">Заказчик _____________________ / {{customer.fullName}}</p>
+      <p style="margin: 0 0 22pt;">Заказчик _____________________ / {{customer.signatureName|plain}}</p>
     </td>
   </tr>
 </table>`.trim();
@@ -2931,37 +2888,9 @@ export function RepairContractDocumentEditorPage({
   };
 
   const insertRequisitesTemplate = () => {
-    const block = `
-<h2 style="text-align: center; margin: 16pt 0 8pt;">РЕКВИЗИТЫ И ПОДПИСИ СТОРОН</h2>
-<table class="contractRequisitesBlock" data-contract-signatures-embedded="1" style="width: 100%; border-collapse: collapse; margin-top: 8pt;">
-  <tr>
-    <td style="width: 50%; vertical-align: top; padding: 8px 10px 8px 0; border-right: 1px solid var(--admin-border-strong);">
-      <p style="text-align: center; margin: 0 0 8pt;">ПОДРЯДЧИК</p>
-      <p style="margin: 0 0 4pt;">{{executor.companyName}}</p>
-      <p style="margin: 0 0 4pt;">{{executor.innKppRegLine}}</p>
-      <p style="margin: 0 0 4pt;">E-mail: {{executor.email}}</p>
-      <p style="margin: 0 0 4pt;">Юр. адрес: {{executor.legalAddress}}</p>
-      <p style="margin: 0 0 4pt;">Адрес для корреспонденции: {{executor.actualAddress}}</p>
-      <p style="margin: 0 0 8pt; white-space: pre-wrap;">{{executor.bankDetails}}</p>
-      <p style="margin: 20pt 0 0;">___________________ / {{executor.directorName}}</p>
-      <p style="margin: 0; font-size: 9pt;">м.п.</p>
-    </td>
-    <td style="width: 50%; vertical-align: top; padding: 8px 0 8px 10px;">
-      <p style="text-align: center; margin: 0 0 8pt;">ЗАКАЗЧИК</p>
-      <p style="margin: 0 0 4pt;">{{customer.fullName|plain}}</p>
-      <p style="margin: 0 0 4pt;">Адрес: {{customer.address|plain}}</p>
-      <p style="margin: 0 0 4pt;">Тел.: {{customer.phone|plain}}</p>
-      <p style="margin: 0 0 4pt;">E-mail: {{customer.email|plain}}</p>
-      <p style="margin: 0 0 4pt;">Банковские реквизиты:</p>
-      <p style="margin: 0 0 4pt; white-space: pre-wrap;">{{customer.bankDetails|plain}}</p>
-      <p style="margin: 0 0 4pt;">Паспорт: {{customer.passportSeriesNumber|plain}}</p>
-      <p style="margin: 0 0 8pt;">Выдан: {{customer.passportIssuedBy|plain}}, {{customer.passportIssueDate|plain}}</p>
-      <p style="margin: 20pt 0 0;">___________________ / {{customer.fullName|plain}}</p>
-      <p style="margin: 0; font-size: 9pt;">подпись</p>
-    </td>
-  </tr>
-</table>`.trim();
-    updateContractHtmlBySelection(() => ({ content: block }));
+    updateContractHtmlBySelection(() => ({
+      content: buildRepairContractRequisitesInsertHtml({ embeddedSignatures: true }),
+    }));
   };
 
   const wrapParagraphWithSpacing = (lineHeight: number, marginBottomPt: number) => {
@@ -3086,9 +3015,7 @@ export function RepairContractDocumentEditorPage({
     printDocumentHtml(
       printBody,
       printTitle,
-      activeTab === 'contract'
-        ? { marginFooter: pickPrintMarginFooterNames(formMergedForTemplate) }
-        : {}
+      activeTab === 'contract' ? { marginFooter: pickPrintMarginFooterNames(form) } : {}
     );
   };
 
@@ -4569,8 +4496,8 @@ export function RepairContractDocumentEditorPage({
                               </p>
                             )}
                             <RepairEstimateSignaturesBlock
-                              directorName={formMergedForTemplate.executor.directorName}
-                              customerFullName={formMergedForTemplate.customer.fullName}
+                              directorName={form.executor.directorName}
+                              customerFullName={form.customer.fullName}
                             />
                             <div className={styles.estimateA4HandwritingNote}>
                               <p className={styles.estimateA4HandwritingNoteLabel}>Примечание:</p>
@@ -4581,8 +4508,8 @@ export function RepairContractDocumentEditorPage({
                               </div>
                             </div>
                             <RepairEstimateSignaturesBlock
-                              directorName={formMergedForTemplate.executor.directorName}
-                              customerFullName={formMergedForTemplate.customer.fullName}
+                              directorName={form.executor.directorName}
+                              customerFullName={form.customer.fullName}
                             />
                           </>
                         ) : (

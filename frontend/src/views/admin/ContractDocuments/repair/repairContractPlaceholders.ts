@@ -16,10 +16,27 @@ export interface RepairContractPlaceholderGroup {
 
 export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[] = [
   {
-    title: 'Заказчик',
+    title: 'Заказчик (автоподстановка по типу)',
     items: [
-      { path: 'customer.type', label: 'Тип заказчика (ФЛ/ЮЛ/ИП)' },
-      { path: 'customer.fullName', label: 'ФИО заказчика (физлицо)' },
+      {
+        path: 'customer.fullName',
+        label:
+          'Заказчик в тексте документа (ФЛ/ЮЛ/ИП — формулировка подбирается автоматически по вкладке)',
+      },
+      { path: 'customer.displayName', label: 'Краткое имя (ФИО или организация)' },
+      { path: 'customer.contractPartyLine', label: 'Преамбула договора (до «далее Заказчик»)' },
+      { path: 'customer.actPartyLine', label: 'Сторона в акте' },
+      { path: 'customer.payerLine', label: 'Плательщик в ПКО («От …»)' },
+      { path: 'customer.signatureName', label: 'Подпись в графе «Заказчик»' },
+      { path: 'customer.requisitesHtml', label: 'Реквизиты заказчика (HTML-блок)' },
+      { path: 'customer.typeLabel', label: 'Тип заказчика (текстом)' },
+    ],
+  },
+  {
+    title: 'Заказчик (поля формы)',
+    items: [
+      { path: 'customer.type', label: 'Тип заказчика (PERSON / COMPANY / ENTREPRENEUR)' },
+      { path: 'customer.fullName', label: 'ФИО (физлицо, поле формы)' },
       {
         path: 'customer.representativeFullNameNominative',
         label: 'ФИО представителя (именительный падеж)',

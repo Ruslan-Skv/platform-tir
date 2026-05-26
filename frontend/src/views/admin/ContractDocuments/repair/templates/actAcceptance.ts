@@ -6,6 +6,6 @@ export const repairTemplateActAcceptance = `
   <p>Объём и стоимость работ соответствуют договору на сумму {{contract.totalAmount}} ({{contract.totalAmountWords}}).</p>
   <p>Претензий по объёму, качеству и срокам у Заказчика не имеется.</p>
   <table class="signTable"><tr><td>Исполнитель</td><td>Заказчик</td></tr>
-  <tr><td>_________________/{{executor.directorName}}</td><td>_________________/{{customer.fullName}}</td></tr></table>
+  <tr><td>_________________/{{executor.directorName|plain}}</td><td>_________________/{{customer.signatureName|plain}}</td></tr></table>
 </div>
 `.trim();

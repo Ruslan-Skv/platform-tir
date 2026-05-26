@@ -25,11 +25,16 @@ import {
   wrapRepairActTwinCopiesOnOnePageHtml,
 } from '@/views/admin/ContractDocuments/repair/repairActTwinCopiesOnOnePageHtml';
 import { REPAIR_CONTRACT_PLACEHOLDER_GROUPS } from '@/views/admin/ContractDocuments/repair/repairContractPlaceholders';
+import { buildRepairContractRequisitesInsertHtml } from '@/views/admin/ContractDocuments/repair/repairContractRequisitesLayout';
 import {
-  REPAIR_DOCUMENT_TAB_LABELS,
-  type RepairDocumentTabId,
-} from '@/views/admin/ContractDocuments/repair/repairDocumentTabs';
+  REPAIR_LIBRARY_TEMPLATE_TAB_IDS,
+  REPAIR_LIBRARY_TEMPLATE_TAB_LABELS,
+  type RepairLibraryTemplateTabId,
+  normalizeRepairLibraryTemplateTabId,
+  repairLibraryTemplateTabIdFromPreset,
+} from '@/views/admin/ContractDocuments/repair/repairLibraryTemplateTabs';
 import {
+  type RepairTemplatePreviewCustomerKind,
   buildRepairTemplatePreviewFallbackData,
   repairPackageFormForTemplate,
 } from '@/views/admin/ContractDocuments/repair/repairPackageForm';
@@ -43,38 +48,16 @@ import styles from './ContractDocuments.module.css';
 type ToolButton = { label: string; onClick: () => void; secondary?: boolean };
 const TEMPLATES_UI_PREFS_KEY = 'admin.contractDocuments.templates.uiPrefs';
 type NormalizeMode = 'soft' | 'strict';
-type RepairTemplateTabId = Exclude<RepairDocumentTabId, 'data'>;
-const TEMPLATE_TAB_IDS: RepairTemplateTabId[] = [
-  'contract',
-  'actStart',
-  'actAcceptance',
-  'cashOrder',
-  'questionnaire1',
-  'questionnaire2',
-  'addendum1',
-  'addendum2',
-  'addendum3',
-  'addendum4',
-  'addendum5',
-  'workOrder',
-  'workOrderAddendum',
-  'productionLog',
-];
 
 /** Только экран редактора и предпросмотра; на сохранённый HTML и печать не влияет. */
 const TEMPLATE_EDITOR_ZOOM_MIN_PCT = 40;
 const TEMPLATE_EDITOR_ZOOM_MAX_PCT = 150;
 
-function normalizeTemplateTabId(value: string | undefined): RepairTemplateTabId {
-  if (!value) return 'contract';
-  const v = value === 'addendum' ? 'addendum1' : value;
-  return (TEMPLATE_TAB_IDS as string[]).includes(v) ? (v as RepairTemplateTabId) : 'contract';
-}
-
 function normalizeContractTemplatePreset(it: ContractTemplatePreset): ContractTemplatePreset {
+  const tabId = repairLibraryTemplateTabIdFromPreset(it.tabId);
   return {
     ...it,
-    tabId: normalizeTemplateTabId(it.tabId),
+    tabId: tabId ?? it.tabId,
     isProtected: Boolean(it.isProtected),
     archived: Boolean(it.archived),
   };
@@ -379,9 +362,12 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [items, setItems] = useState<ContractTemplatePreset[]>([]);
-  const [activeTemplateTab, setActiveTemplateTab] = useState<RepairTemplateTabId>('contract');
+  const [activeTemplateTab, setActiveTemplateTab] =
+    useState<RepairLibraryTemplateTabId>('contract');
+  const [previewCustomerKind, setPreviewCustomerKind] =
+    useState<RepairTemplatePreviewCustomerKind>('PERSON');
   const [showArchivedTemplates, setShowArchivedTemplates] = useState(false);
-  const [copyTargetTab, setCopyTargetTab] = useState<RepairTemplateTabId>('actStart');
+  const [copyTargetTab, setCopyTargetTab] = useState<RepairLibraryTemplateTabId>('actStart');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showSaveSuccessModal, setShowSaveSuccessModal] = useState(false);
@@ -593,10 +579,14 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const templateData = useMemo(
     () =>
       repairPackageFormForTemplate(
-        buildRepairTemplatePreviewFallbackData(firstExecutorProfile, firstSignatoryProfile),
+        buildRepairTemplatePreviewFallbackData(
+          firstExecutorProfile,
+          firstSignatoryProfile,
+          previewCustomerKind
+        ),
         { templateTab: activeTemplateTab }
       ),
-    [firstExecutorProfile, firstSignatoryProfile, activeTemplateTab]
+    [firstExecutorProfile, firstSignatoryProfile, activeTemplateTab, previewCustomerKind]
   );
 
   const renderedPreview = useMemo(
@@ -618,33 +608,19 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const itemsByActiveTab = useMemo(
     () =>
       items.filter((it) => {
-        if (normalizeTemplateTabId(it.tabId) !== activeTemplateTab) return false;
+        if (repairLibraryTemplateTabIdFromPreset(it.tabId) !== activeTemplateTab) return false;
         return showArchivedTemplates ? Boolean(it.archived) : !it.archived;
       }),
     [items, activeTemplateTab, showArchivedTemplates]
   );
   const templatesCountByTab = useMemo(() => {
-    const out: Record<RepairTemplateTabId, number> = {
-      contract: 0,
-      estimate: 0,
-      actStart: 0,
-      actAcceptance: 0,
-      cashOrder: 0,
-      questionnaire1: 0,
-      questionnaire2: 0,
-      addendum1: 0,
-      addendum2: 0,
-      addendum3: 0,
-      addendum4: 0,
-      addendum5: 0,
-      workOrder: 0,
-      workOrderAddendum: 0,
-      productionLog: 0,
-    };
+    const out = Object.fromEntries(
+      REPAIR_LIBRARY_TEMPLATE_TAB_IDS.map((tab) => [tab, 0])
+    ) as Record<RepairLibraryTemplateTabId, number>;
     for (const it of items) {
       if (it.archived) continue;
-      const tab = normalizeTemplateTabId(it.tabId);
-      out[tab] += 1;
+      const tab = repairLibraryTemplateTabIdFromPreset(it.tabId);
+      if (tab && tab in out) out[tab] += 1;
     }
     return out;
   }, [items]);
@@ -672,7 +648,8 @@ export function ContractDocumentsTemplatesLibraryPage() {
         );
         setItems(next);
         const tabItems = next.filter(
-          (it) => normalizeTemplateTabId(it.tabId) === activeTemplateTab && !it.archived
+          (it) =>
+            repairLibraryTemplateTabIdFromPreset(it.tabId) === activeTemplateTab && !it.archived
         );
         const firstId = tabItems.find((it) => it.isDefault)?.id ?? tabItems[0]?.id ?? '';
         setEditingId(firstId);
@@ -805,15 +782,19 @@ export function ContractDocumentsTemplatesLibraryPage() {
     let next = items.map((it) =>
       it.id === editingId ? { ...it, archived: true, isDefault: false } : it
     );
-    let activeOnTab = next.filter((it) => normalizeTemplateTabId(it.tabId) === tab && !it.archived);
+    let activeOnTab = next.filter(
+      (it) => repairLibraryTemplateTabIdFromPreset(it.tabId) === tab && !it.archived
+    );
     if (activeOnTab.length > 0 && !activeOnTab.some((it) => it.isDefault)) {
       const pickId = activeOnTab[0].id;
       next = next.map((it) =>
-        normalizeTemplateTabId(it.tabId) !== tab
+        repairLibraryTemplateTabIdFromPreset(it.tabId) !== tab
           ? it
           : { ...it, isDefault: !it.archived && it.id === pickId }
       );
-      activeOnTab = next.filter((it) => normalizeTemplateTabId(it.tabId) === tab && !it.archived);
+      activeOnTab = next.filter(
+        (it) => repairLibraryTemplateTabIdFromPreset(it.tabId) === tab && !it.archived
+      );
     }
     const saved = await persist(next, 'Шаблон перенесён в архив.');
     if (!saved) return;
@@ -862,7 +843,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     const next = items.map((it) => ({
       ...it,
       isDefault:
-        normalizeTemplateTabId(it.tabId) === activeTemplateTab
+        repairLibraryTemplateTabIdFromPreset(it.tabId) === activeTemplateTab
           ? it.id === editingId
           : Boolean(it.isDefault),
     }));
@@ -881,7 +862,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
       return;
     }
     const targetItems = items.filter(
-      (it) => normalizeTemplateTabId(it.tabId) === copyTargetTab && !it.archived
+      (it) => repairLibraryTemplateTabIdFromPreset(it.tabId) === copyTargetTab && !it.archived
     );
     const copied: ContractTemplatePreset = {
       id: `tpl_${Date.now()}`,
@@ -894,7 +875,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     };
     const okSaved = await persist(
       [...items, copied],
-      `Шаблон скопирован в «${REPAIR_DOCUMENT_TAB_LABELS[copyTargetTab]}».`
+      `Шаблон скопирован в «${REPAIR_LIBRARY_TEMPLATE_TAB_LABELS[copyTargetTab]}».`
     );
     if (!okSaved) return;
     setActiveTemplateTab(copyTargetTab);
@@ -1083,37 +1064,14 @@ export function ContractDocumentsTemplatesLibraryPage() {
       <p style="margin: 0 0 22pt;">Подрядчик _____________________ / {{executor.directorName}}</p>
     </td>
     <td style="width: 50%; vertical-align: bottom; padding-left: 10px;">
-      <p style="margin: 0 0 22pt;">Заказчик _____________________ / {{customer.fullName}}</p>
+      <p style="margin: 0 0 22pt;">Заказчик _____________________ / {{customer.signatureName|plain}}</p>
     </td>
   </tr>
 </table>`,
     }));
   const insertRequisitesTemplate = () =>
     updateHtmlBySelection(() => ({
-      content: `<h2 style="text-align: center; margin: 16pt 0 8pt;">РЕКВИЗИТЫ И ПОДПИСИ СТОРОН</h2>
-<table class="contractRequisitesBlock" style="width: 100%; border-collapse: collapse; margin-top: 8pt;">
-  <tr>
-    <td style="width: 50%; vertical-align: top; padding: 8px 10px 8px 0; border-right: 1px solid var(--admin-border-strong);">
-      <p style="text-align: center; margin: 0 0 8pt;">ПОДРЯДЧИК</p>
-      <p style="margin: 0 0 4pt;">{{executor.companyName}}</p>
-      <p style="margin: 0 0 4pt;">{{executor.innKppRegLine}}</p>
-      <p style="margin: 0 0 4pt;">E-mail: {{executor.email}}</p>
-      <p style="margin: 0 0 4pt;">Юр. адрес: {{executor.legalAddress}}</p>
-      <p style="margin: 0 0 4pt;">Адрес для корреспонденции: {{executor.actualAddress}}</p>
-      <p style="margin: 0 0 8pt; white-space: pre-wrap;">{{executor.bankDetails}}</p>
-      <p style="margin: 20pt 0 0;">___________________ / {{executor.directorName}}</p>
-    </td>
-    <td style="width: 50%; vertical-align: top; padding: 8px 0 8px 10px;">
-      <p style="text-align: center; margin: 0 0 8pt;">ЗАКАЗЧИК</p>
-      <p style="margin: 0 0 4pt;">{{customer.fullName|plain}}</p>
-      <p style="margin: 0 0 4pt;">Адрес: {{customer.address|plain}}</p>
-      <p style="margin: 0 0 4pt;">Тел.: {{customer.phone|plain}}</p>
-      <p style="margin: 0 0 4pt;">E-mail: {{customer.email|plain}}</p>
-      <p style="margin: 0 0 4pt;">Банковские реквизиты:</p>
-      <p style="margin: 0 0 4pt; white-space: pre-wrap;">{{customer.bankDetails|plain}}</p>
-    </td>
-  </tr>
-</table>`,
+      content: buildRepairContractRequisitesInsertHtml(),
     }));
   const insertQuoteBlock = () =>
     updateHtmlBySelection(() => ({
@@ -1140,8 +1098,8 @@ export function ContractDocumentsTemplatesLibraryPage() {
   <tr>
     <td style="width: 50%; vertical-align: top; padding: 8px 10px 8px 0; border-right: 1px solid var(--admin-border-strong);">
       <p style="text-align: center; font-weight: bold; margin: 0 0 8pt;">ЛЕВАЯ КОЛОНКА</p>
-      <p style="margin: 0 0 6pt;">{{customer.fullName}}</p>
-      <p style="margin: 0;">___________________ / подпись</p>
+      <p style="margin: 0 0 6pt;">{{customer.requisitesHtml|plain}}</p>
+      <p style="margin: 0;">___________________ / {{customer.signatureName|plain}}</p>
     </td>
     <td style="width: 50%; vertical-align: top; padding: 8px 0 8px 10px;">
       <p style="text-align: center; font-weight: bold; margin: 0 0 8pt;">ПРАВАЯ КОЛОНКА</p>
@@ -1322,16 +1280,31 @@ export function ContractDocumentsTemplatesLibraryPage() {
       <div className={`${styles.sectionCard} ${styles.templatesLibraryControls}`}>
         <div className={styles.templatesLibraryMeta}>
           <div className={styles.field}>
-            <label>Тип</label>
+            <label>Тип документа</label>
             <select
               value={activeTemplateTab}
-              onChange={(e) => setActiveTemplateTab(normalizeTemplateTabId(e.target.value))}
+              onChange={(e) =>
+                setActiveTemplateTab(normalizeRepairLibraryTemplateTabId(e.target.value))
+              }
             >
-              {TEMPLATE_TAB_IDS.map((tab) => (
+              {REPAIR_LIBRARY_TEMPLATE_TAB_IDS.map((tab) => (
                 <option key={tab} value={tab}>
-                  {REPAIR_DOCUMENT_TAB_LABELS[tab]} ({templatesCountByTab[tab]})
+                  {REPAIR_LIBRARY_TEMPLATE_TAB_LABELS[tab]} ({templatesCountByTab[tab]})
                 </option>
               ))}
+            </select>
+          </div>
+          <div className={styles.field}>
+            <label>Превью заказчика</label>
+            <select
+              value={previewCustomerKind}
+              onChange={(e) =>
+                setPreviewCustomerKind(e.target.value as RepairTemplatePreviewCustomerKind)
+              }
+            >
+              <option value="PERSON">Физическое лицо</option>
+              <option value="COMPANY">Юридическое лицо</option>
+              <option value="ENTREPRENEUR">ИП</option>
             </select>
           </div>
           <div className={styles.field}>
@@ -1413,11 +1386,13 @@ export function ContractDocumentsTemplatesLibraryPage() {
               <span>Вкладка</span>
               <select
                 value={copyTargetTab}
-                onChange={(e) => setCopyTargetTab(normalizeTemplateTabId(e.target.value))}
+                onChange={(e) =>
+                  setCopyTargetTab(normalizeRepairLibraryTemplateTabId(e.target.value))
+                }
               >
-                {TEMPLATE_TAB_IDS.map((tab) => (
+                {REPAIR_LIBRARY_TEMPLATE_TAB_IDS.map((tab) => (
                   <option key={tab} value={tab} disabled={tab === activeTemplateTab}>
-                    {REPAIR_DOCUMENT_TAB_LABELS[tab]}
+                    {REPAIR_LIBRARY_TEMPLATE_TAB_LABELS[tab]}
                   </option>
                 ))}
               </select>
@@ -1483,7 +1458,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
                   : renderedPreview;
                 const printDocTitle = actTwinTab
                   ? ''
-                  : `Шаблон: ${REPAIR_DOCUMENT_TAB_LABELS[activeTemplateTab]} / ${title || 'без названия'}`;
+                  : `Шаблон: ${REPAIR_LIBRARY_TEMPLATE_TAB_LABELS[activeTemplateTab]} / ${title || 'без названия'}`;
                 printDocumentHtml(
                   printBody,
                   printDocTitle,

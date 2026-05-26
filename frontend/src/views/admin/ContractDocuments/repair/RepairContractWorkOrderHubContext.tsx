@@ -29,7 +29,6 @@ export type RepairContractPerInstallerWorkOrder = {
 
 export type RepairContractWorkOrderHubContextValue = {
   form: RepairPackageFormData;
-  formMergedForTemplate: RepairPackageFormData;
   updateWorkOrder: <K extends keyof RepairPackageFormData['workOrder']>(
     key: K,
     value: RepairPackageFormData['workOrder'][K]

@@ -3239,6 +3239,22 @@
   font-style: normal;
 }
 
+.docPane
+  :global(.contractRequisitesBlock)
+  :global(tr.contractRequisitesSignaturesRow)
+  > :global(td) {
+  padding-top: 14pt;
+  vertical-align: top;
+}
+
+.docPane :global(.contractRequisitesBlock) :global(.contractRequisitesSignatures) :global(p) {
+  margin: 0;
+}
+
+.docPane :global(.contractRequisitesBlock) :global(.contractRequisitesSignatures) :global(p + p) {
+  margin-top: 2pt;
+}
+
 .docPane :global(.docPrint h1) {
   font-size: var(--admin-font-size-xl);
   margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl);
@@ -3552,6 +3568,28 @@
 .contractA4Preview :global(.contractRequisitesBlock) :global(em) {
   font-weight: normal;
   font-style: normal;
+}
+
+.contractA4Preview
+  :global(.contractRequisitesBlock)
+  :global(tr.contractRequisitesSignaturesRow)
+  > :global(td) {
+  padding-top: 14pt;
+  vertical-align: top;
+}
+
+.contractA4Preview
+  :global(.contractRequisitesBlock)
+  :global(.contractRequisitesSignatures)
+  :global(p) {
+  margin: 0;
+}
+
+.contractA4Preview
+  :global(.contractRequisitesBlock)
+  :global(.contractRequisitesSignatures)
+  :global(p + p) {
+  margin-top: 2pt;
 }
 
 .contractA4Preview :global(.docPrint h1) {

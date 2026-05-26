@@ -1,3 +1,5 @@
+import { CONTRACT_REQUISITES_LAYOUT_CSS } from './repairContractRequisitesLayout';
+
 /** Имена для нижнего колонтитула каждой страницы при печати (CSS @page margin box, Chrome 131+). */
 export type PrintMarginFooterNames = {
   contractorSignatory: string;
@@ -346,6 +348,7 @@ function buildPrintStylesheet(
     font-weight: normal !important;
     font-style: normal !important;
   }
+  ${CONTRACT_REQUISITES_LAYOUT_CSS}
   .contractPageSignatures {
     width: 100%;
     color: #111 !important;

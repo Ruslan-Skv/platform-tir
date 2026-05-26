@@ -1,3 +1,9 @@
+import {
+  alignContractRequisitesBlockSignatures,
+  htmlHasRepairEmbeddedRequisitesSignatures,
+  isRepairRequisitesSignaturesTableHtml,
+} from './repairContractRequisitesLayout';
+
 function flattenForTemplate(obj: unknown, prefix = ''): Record<string, string> {
   const out: Record<string, string> = {};
   if (obj === null || obj === undefined) return out;
@@ -27,6 +33,7 @@ function escapeHtml(text: string): string {
 
 function formatTemplateValue(path: string, raw: string, plainCustomer: boolean): string {
   if (
+    path === 'customer.requisitesHtml' ||
     path === 'estimate.roomsHtml' ||
     path === 'addendum.roomsHtml' ||
     path === 'workOrder.roomsHtml' ||
@@ -104,7 +111,7 @@ function findNextTableBlock(
   return { start, end: pos, block: html.slice(start, pos) };
 }
 
-/** Помечает таблицу с ПОДРЯДЧИК/ЗАКАЗЧИК, чтобы стили сняли <strong>/<em> в ячейках. */
+/** Помечает только таблицу реквизитов с подписями (не обёртку Word и не строку 1.1). */
 function ensureRequisitesTableClass(html: string): string {
   if (!html.includes('ПОДРЯДЧИК') || !html.includes('ЗАКАЗЧИК')) return html;
   let out = html;
@@ -113,11 +120,7 @@ function ensureRequisitesTableClass(html: string): string {
     const found = findNextTableBlock(out, from);
     if (!found) break;
     const { start, end, block } = found;
-    if (
-      block.includes('ПОДРЯДЧИК') &&
-      block.includes('ЗАКАЗЧИК') &&
-      !block.includes(REQUISITES_TABLE_CLASS)
-    ) {
+    if (isRepairRequisitesSignaturesTableHtml(block) && !block.includes(REQUISITES_TABLE_CLASS)) {
       const openMatch = block.match(/^<table\b[^>]*>/i);
       if (openMatch) {
         const fullTag = openMatch[0];
@@ -139,32 +142,6 @@ function ensureRequisitesTableClass(html: string): string {
     from = end;
   }
   return out;
-}
-
-/**
- * В шаблоне «Реквизиты» из редактора подписи уже в ячейках (м.п. / подпись и линия «___ / ФИО»).
- * Тогда не дублируем блок `contractPageSignatures` в конце.
- */
-function requisitesTableHasInlinePartySignatures(tableHtml: string): boolean {
-  if (!/\bcontractRequisitesBlock\b/i.test(tableHtml)) return false;
-  if (!tableHtml.includes('ПОДРЯДЧИК') || !tableHtml.includes('ЗАКАЗЧИК')) return false;
-  /* «м.п.» — без \b: в JS \b не работает с кириллицей рядом с > */
-  const hasMp = /м\s*\.\s*п/i.test(tableHtml);
-  const hasPodpis = /подпись/i.test(tableHtml);
-  const hasUnderscoreSlash = /_{4,}\s*\//.test(tableHtml);
-  const longUnderlineLines = (tableHtml.match(/_{10,}/g) ?? []).length;
-  return (hasMp && hasPodpis && hasUnderscoreSlash) || longUnderlineLines >= 2;
-}
-
-function htmlHasRequisitesWithEmbeddedSignatures(html: string): boolean {
-  let from = 0;
-  for (;;) {
-    const found = findNextTableBlock(html, from);
-    if (!found) break;
-    if (requisitesTableHasInlinePartySignatures(found.block)) return true;
-    from = found.end;
-  }
-  return false;
 }
 
 /** Убирает HTML-ссылки, оставляя только их текст (часто прилетают из Excel). */
@@ -246,7 +223,9 @@ function buildPageSignaturesBlock(
   placement: 'inlineBeforeBreak' | 'documentFooter' = 'inlineBeforeBreak'
 ): string {
   const exec = escapeHtml((flat['executor.directorName'] ?? '').trim() || '____________________');
-  const customer = escapeHtml((flat['customer.fullName'] ?? '').trim() || '____________________');
+  const customer = escapeHtml(
+    (flat['customer.signatureName'] ?? '').trim() || '____________________'
+  );
   const dataAttr =
     placement === 'documentFooter'
       ? ` ${FINAL_SIGNATURES_ATTR}`
@@ -298,8 +277,7 @@ function addPageSignatures(html: string, flat: Record<string, string>): string {
 /** Компактные подписи в конце договора (после раздела с реквизитами). */
 function ensureFinalSignaturesRow(html: string, flat: Record<string, string>): string {
   if (html.includes(FINAL_SIGNATURES_ATTR)) return html;
-  if (/data-contract-signatures-embedded\s*=\s*(["'])1\1/i.test(html)) return html;
-  if (htmlHasRequisitesWithEmbeddedSignatures(html)) return html;
+  if (htmlHasRepairEmbeddedRequisitesSignatures(html)) return html;
   const block = buildPageSignaturesBlock(flat, 'documentFooter');
   return insertInsideRootDocPrint(html, block);
 }
@@ -320,6 +298,7 @@ export type ApplyTemplateOptions = {
 /**
  * Подстановка плейсхолдеров вида `{{customer.fullName}}`.
  * Для обычного текста без жирного/курсива у заказчика: `{{customer.fullName|plain}}`.
+ * Готовый HTML-блок реквизитов: `{{customer.requisitesHtml|plain}}` (без экранирования тегов).
  * Служебные поля из `repairPackageFormForTemplate`, например `{{meta.currentDate}}` (дд.мм.гггг).
  */
 export function applyTemplate(
@@ -341,6 +320,9 @@ export function applyTemplate(
   html = html.replace(/\bbreak-before\s*:\s*page\b/gi, 'auto');
   if (options?.autoInsertContractSignatures) {
     html = addPageSignatures(html, flat);
+  }
+  html = alignContractRequisitesBlockSignatures(html);
+  if (options?.autoInsertContractSignatures) {
     html = ensureFinalSignaturesRow(html, flat);
   }
   return html;

@@ -12,6 +12,10 @@ import {
   parseRepairContractDiscountPercent,
 } from './repairContractDiscount';
 import {
+  enrichRepairCustomerForTemplate,
+  repairCustomerTemplateContextFromTab,
+} from './repairCustomerTemplateFields';
+import {
   type EstimateEmbedSection,
   buildEstimateDocPrintEmbedHtml,
   buildEstimateDocPrintFooterHtml,
@@ -828,9 +832,12 @@ function pickStr(formVal: string, fallbackVal: string): string {
  * Те же примерные данные, что в превью библиотеки шаблонов (плюс реквизиты из карточек).
  * Используется, чтобы пустые поля пакета не давали «пустой» договор при тех же {{…}} в HTML.
  */
+export type RepairTemplatePreviewCustomerKind = RepairCustomerBlock['type'];
+
 export function buildRepairTemplatePreviewFallbackData(
   executorProfile: ExecutorRequisiteProfile | null | undefined,
-  signatoryProfile: ContractSignatoryProfile | null | undefined
+  signatoryProfile: ContractSignatoryProfile | null | undefined,
+  customerKind: RepairTemplatePreviewCustomerKind = 'PERSON'
 ): RepairPackageFormData {
   const base = defaultRepairPackageFormData();
   const executorKind = executorProfile?.kind === 'ENTREPRENEUR' ? 'ENTREPRENEUR' : 'COMPANY';
@@ -839,15 +846,53 @@ export function buildRepairTemplatePreviewFallbackData(
     signatoryProfile?.directorNameGenitive ||
     'Петров Петр Петрович';
 
+  const customerByKind: RepairCustomerBlock =
+    customerKind === 'COMPANY'
+      ? {
+          ...base.customer,
+          type: 'COMPANY',
+          organizationName: 'ООО «Пример Заказчик»',
+          representativeFullNameNominative: 'Сидоров Сидор Сидорович',
+          representativeFullNameGenitive: 'Сидорова Сидора Сидоровича',
+          representativePositionNominative: 'Генеральный директор',
+          representativePositionGenitive: 'Генерального директора',
+          inn: '7701234567',
+          ogrn: '1027700132195',
+          address: 'г. Мурманск, ул. Примерная, д. 2',
+          phone: '+7 900 111-11-11',
+          phones: ['+7 900 111-11-11'],
+          email: 'client@example.com',
+          bankDetails: 'р/с 40702810… в ПАО «Банк»',
+        }
+      : customerKind === 'ENTREPRENEUR'
+        ? {
+            ...base.customer,
+            type: 'ENTREPRENEUR',
+            organizationName: 'Иванов Иван Иванович',
+            fullName: 'Иванов Иван Иванович',
+            inn: '510123456789',
+            ogrn: '324510000012345',
+            address: 'г. Мурманск, ул. Предпринимателя, д. 3',
+            phone: '+7 900 222-22-22',
+            phones: ['+7 900 222-22-22'],
+            email: 'ip@example.com',
+            bankDetails: 'р/с 40802810…',
+          }
+        : {
+            ...base.customer,
+            type: 'PERSON',
+            fullName: 'Иванов Иван Иванович',
+            address: 'г. Мурманск, ул. Примерная, д. 1',
+            phone: '+7 900 000-00-00',
+            phones: ['+7 900 000-00-00'],
+            passportSeriesNumber: '12 34 567890',
+            passportIssuedBy: 'ОВД Примерный',
+            passportIssueDate: '01.01.2010',
+          };
+
   return {
     ...base,
-    customer: {
-      ...base.customer,
-      fullName: 'Иванов Иван Иванович',
-      address: 'г. Краснодар, ул. Примерная, д. 1',
-      phone: '+7 900 000-00-00',
-      phones: ['+7 900 000-00-00'],
-    },
+    customer: customerByKind,
     executor: {
       ...base.executor,
       selectedProfileTitle: executorProfile?.title ?? '',
@@ -892,232 +937,16 @@ export function buildRepairTemplatePreviewFallbackData(
   };
 }
 
-/** Непустые значения из `form` сохраняются; пустые строки берутся из `fallback` (превью библиотеки). */
+/**
+ * Раньше подмешивал пример из библиотеки в пустые поля пакета (фиктивные ФИО, паспорт, суммы).
+ * Пакет договора больше не использует fallback — только данные вкладки «Данные» / CRM.
+ * Пример для превью шаблонов: `buildRepairTemplatePreviewFallbackData` в библиотеке.
+ */
 export function mergeRepairPackageFormWithPreviewFallback(
   form: RepairPackageFormData,
-  fallback: RepairPackageFormData
+  _fallback: RepairPackageFormData
 ): RepairPackageFormData {
-  return {
-    customer: normalizeRepairCustomerBlock({
-      ...form.customer,
-      type: form.customer.type,
-      fullName: pickStr(form.customer.fullName, fallback.customer.fullName),
-      representativeFullNameNominative: pickStr(
-        form.customer.representativeFullNameNominative,
-        fallback.customer.representativeFullNameNominative
-      ),
-      representativeFullNameGenitive: pickStr(
-        form.customer.representativeFullNameGenitive,
-        fallback.customer.representativeFullNameGenitive
-      ),
-      organizationName: pickStr(form.customer.organizationName, fallback.customer.organizationName),
-      representativePositionNominative: pickStr(
-        form.customer.representativePositionNominative,
-        fallback.customer.representativePositionNominative
-      ),
-      representativePositionGenitive: pickStr(
-        form.customer.representativePositionGenitive,
-        fallback.customer.representativePositionGenitive
-      ),
-      inn: pickStr(form.customer.inn, fallback.customer.inn),
-      ogrn: pickStr(form.customer.ogrn, fallback.customer.ogrn),
-      address: pickStr(form.customer.address, fallback.customer.address),
-      phone: pickStr(form.customer.phone, fallback.customer.phone),
-      phones:
-        form.customer.phones?.some((p) => p.trim()) && form.customer.phones.length > 0
-          ? form.customer.phones
-          : fallback.customer.phones?.some((p) => p.trim())
-            ? fallback.customer.phones
-            : [''],
-      email: pickStr(form.customer.email, fallback.customer.email),
-      bankDetails: pickStr(form.customer.bankDetails, fallback.customer.bankDetails),
-      passportSeriesNumber: pickStr(
-        form.customer.passportSeriesNumber,
-        fallback.customer.passportSeriesNumber
-      ),
-      passportIssuedBy: pickStr(form.customer.passportIssuedBy, fallback.customer.passportIssuedBy),
-      passportIssueDate: pickStr(
-        form.customer.passportIssueDate,
-        fallback.customer.passportIssueDate
-      ),
-    }),
-    executor: {
-      ...form.executor,
-      executorKind: form.executor.executorKind,
-      selectedProfileTitle: pickStr(
-        form.executor.selectedProfileTitle,
-        fallback.executor.selectedProfileTitle
-      ),
-      companyName: pickStr(form.executor.companyName, fallback.executor.companyName),
-      inn: pickStr(form.executor.inn, fallback.executor.inn),
-      kpp: pickStr(form.executor.kpp, fallback.executor.kpp),
-      ogrn: pickStr(form.executor.ogrn, fallback.executor.ogrn),
-      ogrnip: pickStr(form.executor.ogrnip, fallback.executor.ogrnip),
-      legalAddress: pickStr(form.executor.legalAddress, fallback.executor.legalAddress),
-      actualAddress: pickStr(form.executor.actualAddress, fallback.executor.actualAddress),
-      bankDetails: pickStr(form.executor.bankDetails, fallback.executor.bankDetails),
-      email: pickStr(form.executor.email, fallback.executor.email),
-      selectedSignatoryProfileTitle: pickStr(
-        form.executor.selectedSignatoryProfileTitle,
-        fallback.executor.selectedSignatoryProfileTitle
-      ),
-      signatoryCrmUserId: pickStr(
-        form.executor.signatoryCrmUserId,
-        fallback.executor.signatoryCrmUserId
-      ),
-      directorNameNominative: pickStr(
-        form.executor.directorNameNominative,
-        fallback.executor.directorNameNominative
-      ),
-      directorNameGenitive: pickStr(
-        form.executor.directorNameGenitive,
-        fallback.executor.directorNameGenitive
-      ),
-      directorName: pickStr(form.executor.directorName, fallback.executor.directorName),
-      basis: pickStr(form.executor.basis, fallback.executor.basis),
-      salesOffice: pickStr(form.executor.salesOffice, fallback.executor.salesOffice),
-      officePhone: pickStr(form.executor.officePhone, fallback.executor.officePhone),
-    },
-    object: {
-      objectAddress: pickStr(form.object.objectAddress, fallback.object.objectAddress),
-      objectFloor: pickStr(form.object.objectFloor, fallback.object.objectFloor),
-      objectDescription: pickStr(form.object.objectDescription, fallback.object.objectDescription),
-    },
-    contract: {
-      number: pickStr(form.contract.number, fallback.contract.number),
-      date: pickStr(form.contract.date, fallback.contract.date),
-      totalAmount: pickStr(form.contract.totalAmount, fallback.contract.totalAmount),
-      recommendedPrepayment: pickStr(
-        form.contract.recommendedPrepayment,
-        fallback.contract.recommendedPrepayment
-      ),
-      totalAmountWords: pickStr(form.contract.totalAmountWords, fallback.contract.totalAmountWords),
-      prepaymentAmount: pickStr(form.contract.prepaymentAmount, fallback.contract.prepaymentAmount),
-      prepaymentAmountWords: pickStr(
-        form.contract.prepaymentAmountWords,
-        fallback.contract.prepaymentAmountWords
-      ),
-      paymentBasis: pickStr(form.contract.paymentBasis, fallback.contract.paymentBasis),
-      prepaymentDate: pickStr(form.contract.prepaymentDate, fallback.contract.prepaymentDate),
-      paymentFormLabel: pickStr(form.contract.paymentFormLabel, fallback.contract.paymentFormLabel),
-      workPeriod: pickStr(form.contract.workPeriod, fallback.contract.workPeriod),
-      discountPercent: pickStr(form.contract.discountPercent, fallback.contract.discountPercent),
-    },
-    estimate: {
-      ...form.estimate,
-      notes: pickStr(form.estimate.notes, fallback.estimate.notes),
-    },
-    workOrder: {
-      taxPercent: pickStr(form.workOrder.taxPercent, fallback.workOrder.taxPercent),
-      markupPercent: pickStr(form.workOrder.markupPercent, fallback.workOrder.markupPercent),
-      showLineAmounts: form.workOrder.showLineAmounts,
-      gradeIncreasePercent: form.workOrder.gradeIncreasePercent,
-    },
-    selectedRepairInstallerIds: form.selectedRepairInstallerIds.filter(
-      (id) => id.trim().length > 0
-    ),
-    finalEstimateInstallerAssignments: Object.fromEntries(
-      Object.entries(form.finalEstimateInstallerAssignments ?? {}).filter(
-        ([key, value]) =>
-          key.trim().length > 0 &&
-          value &&
-          typeof value.installerId === 'string' &&
-          value.installerId.trim().length > 0
-      )
-    ),
-    estimateObjectGroupKey: pickStr(form.estimateObjectGroupKey, fallback.estimateObjectGroupKey),
-    managerQuestionnaire1: {
-      ...fallback.managerQuestionnaire1,
-      ...form.managerQuestionnaire1,
-      trafficSourceCheckedIds:
-        form.managerQuestionnaire1.trafficSourceCheckedIds.length > 0
-          ? form.managerQuestionnaire1.trafficSourceCheckedIds
-          : fallback.managerQuestionnaire1.trafficSourceCheckedIds,
-      whyChosenCheckedIds:
-        form.managerQuestionnaire1.whyChosenCheckedIds.length > 0
-          ? form.managerQuestionnaire1.whyChosenCheckedIds
-          : fallback.managerQuestionnaire1.whyChosenCheckedIds,
-      clientNeedsCheckedIds:
-        form.managerQuestionnaire1.clientNeedsCheckedIds.length > 0
-          ? form.managerQuestionnaire1.clientNeedsCheckedIds
-          : fallback.managerQuestionnaire1.clientNeedsCheckedIds,
-    },
-    postWorkQuestionnaire2: {
-      ...fallback.postWorkQuestionnaire2,
-      ...form.postWorkQuestionnaire2,
-      ratingCompany:
-        form.postWorkQuestionnaire2.ratingCompany ?? fallback.postWorkQuestionnaire2.ratingCompany,
-      ratingManager:
-        form.postWorkQuestionnaire2.ratingManager ?? fallback.postWorkQuestionnaire2.ratingManager,
-      ratingForeman:
-        form.postWorkQuestionnaire2.ratingForeman ?? fallback.postWorkQuestionnaire2.ratingForeman,
-      ratingTrades: {
-        ...fallback.postWorkQuestionnaire2.ratingTrades,
-        ...form.postWorkQuestionnaire2.ratingTrades,
-      },
-      wishes: pickStr(form.postWorkQuestionnaire2.wishes, fallback.postWorkQuestionnaire2.wishes),
-      filledDate: pickStr(
-        form.postWorkQuestionnaire2.filledDate,
-        fallback.postWorkQuestionnaire2.filledDate
-      ),
-      customerSignatory: pickStr(
-        form.postWorkQuestionnaire2.customerSignatory,
-        fallback.postWorkQuestionnaire2.customerSignatory
-      ),
-    },
-    addendumSlotCount: normalizeAddendumSlotCount(form.addendumSlotCount),
-    addendumDocumentDates: [
-      pickStr(form.addendumDocumentDates[0], fallback.addendumDocumentDates[0]),
-      pickStr(form.addendumDocumentDates[1], fallback.addendumDocumentDates[1]),
-      pickStr(form.addendumDocumentDates[2], fallback.addendumDocumentDates[2]),
-      pickStr(form.addendumDocumentDates[3], fallback.addendumDocumentDates[3]),
-      pickStr(form.addendumDocumentDates[4], fallback.addendumDocumentDates[4]),
-    ],
-    addendumSlots: [0, 1, 2, 3, 4].map((i) => {
-      const fb = fallback.addendumSlots[i];
-      const fm = form.addendumSlots[i];
-      const ids =
-        (fm.selectedPresetIds?.length ?? 0) > 0 ? fm.selectedPresetIds : fb.selectedPresetIds;
-      return {
-        status: fm.status,
-        signedAt:
-          fm.status === 'SIGNED' || fm.status === 'PAID' ? pickStr(fm.signedAt, fb.signedAt) : '',
-        paidAt: fm.status === 'PAID' ? pickStr(fm.paidAt, fb.paidAt) : '',
-        selectedPresetIds: ids,
-        snapshot: (fm.selectedPresetIds?.length ?? 0) > 0 ? fm.snapshot : fb.snapshot,
-        excludedSelectedPresetIds:
-          (fm.excludedSelectedPresetIds?.length ?? 0) > 0
-            ? fm.excludedSelectedPresetIds
-            : fb.excludedSelectedPresetIds,
-        excludedSnapshot:
-          (fm.excludedSelectedPresetIds?.length ?? 0) > 0
-            ? fm.excludedSnapshot
-            : fb.excludedSnapshot,
-        notes: pickStr(fm.notes, fb.notes),
-        excludedNotes: pickStr(fm.excludedNotes, fb.excludedNotes),
-      };
-    }) as RepairAddendumSlotsTuple,
-    contractConcludedAt: pickStr(form.contractConcludedAt, fallback.contractConcludedAt),
-    contractRefusalReason: pickStr(form.contractRefusalReason, fallback.contractRefusalReason),
-    contractRefusedAt: pickStr(form.contractRefusedAt, fallback.contractRefusedAt),
-    contractPaidAt: pickStr(form.contractPaidAt, fallback.contractPaidAt),
-    repairWorkStartActSignedAt: pickStr(
-      form.repairWorkStartActSignedAt,
-      fallback.repairWorkStartActSignedAt
-    ),
-    repairWorkStartActPhotoUrl: pickStr(
-      form.repairWorkStartActPhotoUrl,
-      fallback.repairWorkStartActPhotoUrl
-    ),
-    repairContractCloseActSignedAt: pickStr(
-      form.repairContractCloseActSignedAt,
-      fallback.repairContractCloseActSignedAt
-    ),
-    repairContractCloseActPhotoUrl: pickStr(
-      form.repairContractCloseActPhotoUrl,
-      fallback.repairContractCloseActPhotoUrl
-    ),
-  };
+  return form;
 }
 
 /** Подвал после таблицы сметы: скидка и итог со скидкой (не трогает суммы по строкам). */
@@ -1699,8 +1528,12 @@ export function repairPackageFormForTemplate(
         }
       : undefined;
 
+  const customerContext = repairCustomerTemplateContextFromTab(options?.templateTab);
+  const customerForTemplate = enrichRepairCustomerForTemplate(form.customer, customerContext);
+
   return {
     ...form,
+    customer: customerForTemplate,
     ...(addendumForTemplate ? { addendum: addendumForTemplate } : {}),
     ...(workOrderAddendumForTemplate ? { workOrderAddendum: workOrderAddendumForTemplate } : {}),
     meta: {

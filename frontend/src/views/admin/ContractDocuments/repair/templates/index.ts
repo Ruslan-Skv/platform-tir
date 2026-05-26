@@ -1,36 +1,35 @@
 import type { RepairDocumentTemplateTabId } from '../formDataTemplateStorage';
 import { repairTemplateActAcceptance } from './actAcceptance';
 import { repairTemplateActStart } from './actStart';
-import { repairTemplateAddendum } from './addendum';
 import { repairTemplateCashOrder } from './cashOrder';
 import { repairTemplateContract } from './contract';
-import { repairTemplateEstimate } from './estimate';
+import { repairLibraryFallbackStub } from './libraryFallbackStub';
 import { repairTemplateProductionLog } from './productionLog';
-import { repairTemplateWorkOrder } from './workOrder';
-import { repairTemplateWorkOrderAddendum } from './workOrderAddendum';
 
+const stub = (title: string) => repairLibraryFallbackStub(title);
+
+/** Резервные HTML, если в библиотеке нет пресета. Для «Ремонт» рабочие шаблоны — в библиотеке пресетов. */
 export const REPAIR_DOCUMENT_TEMPLATES: Record<RepairDocumentTemplateTabId, string> = {
   contract: repairTemplateContract,
-  estimate: repairTemplateEstimate,
-  finalEstimate: `<div class="docPrint"><p>Итоговая смета формируется на соответствующей вкладке пакета.</p></div>`,
-  interactiveFinalEstimate: `<div class="docPrint"><p>Интерактивная итоговая смета — на вкладке пакета.</p></div>`,
-  finalWorkOrder: `<div class="docPrint"><p>Итоговый заказ-наряд формируется на вкладке пакета.</p></div>`,
   actStart: repairTemplateActStart,
   actAcceptance: repairTemplateActAcceptance,
   cashOrder: repairTemplateCashOrder,
-  /** Анкета 1 в пакете — онлайн-форма в редакторе; заглушка для совместимости выбора в библиотеке. */
-  questionnaire1: `<div class="docPrint"><p>Содержимое анкеты формируется в модалке «Анкеты» → «Анкета» из полей формы.</p></div>`,
-  questionnaire2: `<div class="docPrint"><p>Содержимое анкеты формируется в модалке «Анкеты» → «Анкета №2» из полей формы.</p></div>`,
-  addendum1: repairTemplateAddendum,
-  addendum2: repairTemplateAddendum,
-  addendum3: repairTemplateAddendum,
-  addendum4: repairTemplateAddendum,
-  addendum5: repairTemplateAddendum,
-  workOrder: repairTemplateWorkOrder,
-  workOrderAddendum1: repairTemplateWorkOrderAddendum,
-  workOrderAddendum2: repairTemplateWorkOrderAddendum,
-  workOrderAddendum3: repairTemplateWorkOrderAddendum,
-  workOrderAddendum4: repairTemplateWorkOrderAddendum,
-  workOrderAddendum5: repairTemplateWorkOrderAddendum,
   productionLog: repairTemplateProductionLog,
+  estimate: stub('Смета'),
+  finalEstimate: stub('Итоговая смета'),
+  interactiveFinalEstimate: stub('Интерактивная итоговая смета'),
+  finalWorkOrder: stub('Итоговый заказ-наряд'),
+  questionnaire1: stub('Анкета 1'),
+  questionnaire2: stub('Анкета 2'),
+  addendum1: stub('Дополнительное соглашение №1'),
+  addendum2: stub('Дополнительное соглашение №2'),
+  addendum3: stub('Дополнительное соглашение №3'),
+  addendum4: stub('Дополнительное соглашение №4'),
+  addendum5: stub('Дополнительное соглашение №5'),
+  workOrder: stub('Заказ-наряд'),
+  workOrderAddendum1: stub('Заказ-наряд по Д/с №1'),
+  workOrderAddendum2: stub('Заказ-наряд по Д/с №2'),
+  workOrderAddendum3: stub('Заказ-наряд по Д/с №3'),
+  workOrderAddendum4: stub('Заказ-наряд по Д/с №4'),
+  workOrderAddendum5: stub('Заказ-наряд по Д/с №5'),
 };

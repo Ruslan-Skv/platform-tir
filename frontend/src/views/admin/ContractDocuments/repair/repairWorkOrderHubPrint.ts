@@ -48,9 +48,9 @@ function buildFinalWorkOrderPrintInput(
   return {
     contractNum: ctx.estimateAppendixContractRef.num,
     contractDate: ctx.estimateAppendixContractRef.date,
-    objectAddress: ctx.formMergedForTemplate.object.objectAddress,
-    customerFullName: ctx.formMergedForTemplate.customer.fullName,
-    customerPhone: ctx.formMergedForTemplate.customer.phone,
+    objectAddress: ctx.form.object.objectAddress,
+    customerFullName: ctx.form.customer.fullName,
+    customerPhone: ctx.form.customer.phone,
     showLineAmounts: ctx.form.workOrder.showLineAmounts,
     formatMoneyValue: ctx.formatMoneyValue,
     formatMoneyRubShort: ctx.formatMoneyRubShort,

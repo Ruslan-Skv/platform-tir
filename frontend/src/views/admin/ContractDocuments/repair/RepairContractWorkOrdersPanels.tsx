@@ -34,7 +34,6 @@ export function RepairContractWorkOrdersPanels({ panelTab }: RepairContractWorkO
   const ctx = useRepairContractWorkOrderHub();
   const {
     form,
-    formMergedForTemplate,
     updateWorkOrder,
     getTemplatePreviewHtml,
     repairInstallers,
@@ -316,14 +315,13 @@ export function RepairContractWorkOrdersPanels({ panelTab }: RepairContractWorkO
                     {estimateAppendixContractRef.date}
                   </p>
                   <p style={{ margin: '0 0 3px' }}>
-                    <strong>Адрес:</strong> {formMergedForTemplate.object.objectAddress || '—'}
+                    <strong>Адрес:</strong> {form.object.objectAddress || '—'}
                   </p>
                   <p style={{ margin: '0 0 3px' }}>
-                    <strong>Заказчик:</strong> {formMergedForTemplate.customer.fullName || '—'}
+                    <strong>Заказчик:</strong> {form.customer.fullName || '—'}
                   </p>
                   <p style={{ margin: 0 }}>
-                    <strong>Телефон заказчика:</strong>{' '}
-                    {formMergedForTemplate.customer.phone || '—'}
+                    <strong>Телефон заказчика:</strong> {form.customer.phone || '—'}
                   </p>
                 </div>
                 {finalWorkOrderComputed.rooms.length === 0 ? (

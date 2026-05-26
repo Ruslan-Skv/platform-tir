@@ -32,9 +32,9 @@ export function ContractDocumentsHubPage() {
           </p>
         </Link>
         <Link className={styles.hubCard} href="/admin/contract-documents/templates">
-          <h2 className={styles.hubCardTitle}>Библиотека шаблонов договоров</h2>
+          <h2 className={styles.hubCardTitle}>Библиотека шаблонов</h2>
           <p className={styles.hubCardHint}>
-            Именованные шаблоны договора «Ремонт»: создание, копирование и настройка по умолчанию.
+            Договор, акты, ПКО и производственный журнал для направления «Ремонт».
           </p>
         </Link>
         <Link className={styles.hubCard} href="/admin/contract-documents/settings">
