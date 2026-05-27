@@ -29,14 +29,21 @@ import {
 } from '@/shared/api/admin-contract-document-packages';
 import type { CrmCustomerDetail, InstallerMaster } from '@/shared/api/admin-crm';
 import { getInstallers } from '@/shared/api/admin-crm';
+import { listPackagePaymentInvoices } from '@/shared/api/admin-payment-invoices';
 import { Modal } from '@/shared/ui/Modal';
 import { VersionsHistoryIcon } from '@/shared/ui/icons/VersionsHistoryIcon';
 import { CrmCustomerSearchPanel } from '@/views/admin/CRM/Customers/CrmCustomerSearchPanel';
 import crmCustomerSearchPanelStyles from '@/views/admin/CRM/Customers/CrmCustomerSearchPanel.module.css';
 import { ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_HREF } from '@/views/admin/ContractDocuments/contractDocumentsContractsRoutes';
+import { normalizeExecutorRequisiteProfile } from '@/views/admin/ContractDocuments/repair/repairExecutorBankFields';
 
 import styles from '../ContractDocuments.module.css';
 import { RepairAddendumEstimateBlock } from './RepairAddendumEstimateBlock';
+import { RepairContractInvoicesHubIcon } from './RepairContractInvoicesHubIcon';
+import {
+  REPAIR_CONTRACT_INVOICES_MODAL_TITLE,
+  RepairContractInvoicesModal,
+} from './RepairContractInvoicesModal';
 import { RepairContractPackageHubIcon } from './RepairContractPackageHubIcon';
 import { RepairContractPackageHubModal } from './RepairContractPackageHubModal';
 import { RepairContractQuestionnairesHubIcon } from './RepairContractQuestionnairesHubIcon';
@@ -590,6 +597,10 @@ type RepairExecutorRequisitesFields = Pick<
   | 'legalAddress'
   | 'actualAddress'
   | 'bankDetails'
+  | 'bankName'
+  | 'bankBik'
+  | 'bankCorrAccount'
+  | 'bankSettlementAccount'
   | 'email'
 >;
 
@@ -607,6 +618,10 @@ function executorRequisitesFromProfile(
     legalAddress: profile.legalAddress ?? '',
     actualAddress: profile.actualAddress ?? '',
     bankDetails: profile.bankDetails ?? '',
+    bankName: profile.bankName ?? '',
+    bankBik: profile.bankBik ?? '',
+    bankCorrAccount: profile.bankCorrAccount ?? '',
+    bankSettlementAccount: profile.bankSettlementAccount ?? '',
     email: profile.email ?? '',
   };
 }
@@ -622,6 +637,10 @@ function emptyExecutorRequisites(): RepairExecutorRequisitesFields {
     legalAddress: '',
     actualAddress: '',
     bankDetails: '',
+    bankName: '',
+    bankBik: '',
+    bankCorrAccount: '',
+    bankSettlementAccount: '',
     email: '',
   };
 }
@@ -703,6 +722,8 @@ export function RepairContractDocumentEditorPage({
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [activeTab, setActiveTab] = useState<RepairDocumentTabId>('data');
   const [packageHubOpen, setPackageHubOpen] = useState(false);
+  const [invoicesHubOpen, setInvoicesHubOpen] = useState(false);
+  const [paymentInvoiceCount, setPaymentInvoiceCount] = useState(0);
   const [workOrdersHubOpen, setWorkOrdersHubOpen] = useState(workOrdersHubListSurface);
   const [workOrdersHubPanelTab, setWorkOrdersHubPanelTab] =
     useState<RepairWorkOrderHubTabId>('workOrder');
@@ -835,6 +856,26 @@ export function RepairContractDocumentEditorPage({
 
   /** В браузере `setTimeout` возвращает `number`; при подмешанных типах Node — не `NodeJS.Timeout`. */
   const persistRepairPackageDebounceRef = useRef<number | null>(null);
+
+  const persistRepairPackageForm = useCallback(
+    async (nextForm: RepairPackageFormData) => {
+      const formData = buildPersistedFormData(
+        nextForm,
+        templateOverridesRef.current,
+        selectedTemplateIdsRef.current
+      );
+      await updateContractDocumentPackage(packageId, {
+        title: draftTitleRef.current.trim() || null,
+        formData,
+        recordVersion: true,
+      });
+      setForm(nextForm);
+      formRef.current = nextForm;
+      setDirty(false);
+      setRepairPackages((prev) => prev.map((p) => (p.id === packageId ? { ...p, formData } : p)));
+    },
+    [packageId]
+  );
 
   const schedulePersistRepairPackageDebounced = useCallback(() => {
     if (loading) return;
@@ -1034,6 +1075,7 @@ export function RepairContractDocumentEditorPage({
           packagesRes,
           installersRes,
           repairSettingsRes,
+          paymentInvoicesRes,
         ] = await Promise.all([
           getContractDocumentPackage(packageId),
           getContractDocumentExecutorProfiles('REPAIR').catch(() => ({
@@ -1059,7 +1101,9 @@ export function RepairContractDocumentEditorPage({
             defaultWorkPeriodDays: 60,
             updatedAt: null as string | null,
           })),
+          listPackagePaymentInvoices(packageId).catch(() => []),
         ]);
+        setPaymentInvoiceCount(paymentInvoicesRes.length);
         if (row.kind !== 'REPAIR') {
           setError('Этот пакет относится к другому направлению.');
           return;
@@ -1165,7 +1209,7 @@ export function RepairContractDocumentEditorPage({
         const overridesSansContract = { ...ov };
         delete overridesSansContract.contract;
         setTemplateOverrides(overridesSansContract);
-        setExecutorProfiles(profilesRes.items ?? []);
+        setExecutorProfiles((profilesRes.items ?? []).map(normalizeExecutorRequisiteProfile));
         setSignatoryProfiles(signatoryRes.items ?? []);
         const templates = templateRes.items ?? [];
         setEstimatePresets(estimateRes.items ?? []);
@@ -3256,6 +3300,26 @@ export function RepairContractDocumentEditorPage({
                 <button
                   type="button"
                   className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn} ${styles.repairEditorHubPrimaryBtn}`}
+                  onClick={() => setInvoicesHubOpen(true)}
+                  title={REPAIR_CONTRACT_INVOICES_MODAL_TITLE}
+                  aria-label={REPAIR_CONTRACT_INVOICES_MODAL_TITLE}
+                >
+                  <RepairContractInvoicesHubIcon />
+                  <span className={styles.repairEditorHubBtnLabel}>Счета</span>
+                  {paymentInvoiceCount > 0 ? (
+                    <span
+                      className={styles.repairEditorHubPendingBadge}
+                      title={`Выставлено счетов: ${paymentInvoiceCount}`}
+                    >
+                      {paymentInvoiceCount}
+                    </span>
+                  ) : null}
+                </button>
+              ) : null}
+              {!loading ? (
+                <button
+                  type="button"
+                  className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn} ${styles.repairEditorHubPrimaryBtn}`}
                   onClick={() => {
                     setWorkOrdersHubPanelTab(
                       defaultRepairWorkOrderHubTab(null, form.addendumSlotCount)
@@ -4092,9 +4156,25 @@ export function RepairContractDocumentEditorPage({
                         <label htmlFor="e_actual">Адрес для корреспонденции</label>
                         <textarea id="e_actual" readOnly value={form.executor.actualAddress} />
                       </div>
-                      <div className={`${styles.field} ${styles.executorBankDetailsField}`}>
-                        <label htmlFor="e_bank">Банковские реквизиты</label>
-                        <textarea id="e_bank" readOnly value={form.executor.bankDetails} />
+                      <div className={styles.field}>
+                        <label htmlFor="e_bank_name">Банк</label>
+                        <input id="e_bank_name" readOnly value={form.executor.bankName} />
+                      </div>
+                      <div className={styles.field}>
+                        <label htmlFor="e_bank_bik">БИК</label>
+                        <input id="e_bank_bik" readOnly value={form.executor.bankBik} />
+                      </div>
+                      <div className={styles.field}>
+                        <label htmlFor="e_bank_corr">Корр. счёт (к/с)</label>
+                        <input id="e_bank_corr" readOnly value={form.executor.bankCorrAccount} />
+                      </div>
+                      <div className={styles.field}>
+                        <label htmlFor="e_bank_settlement">Расчётный счёт (р/с)</label>
+                        <input
+                          id="e_bank_settlement"
+                          readOnly
+                          value={form.executor.bankSettlementAccount}
+                        />
                       </div>
                     </div>
                   </>
@@ -4922,6 +5002,21 @@ export function RepairContractDocumentEditorPage({
               ? 'Сначала сохраните изменения на вкладке «Данные»'
               : undefined
           }
+        />
+        <RepairContractInvoicesModal
+          packageId={packageId}
+          form={form}
+          isOpen={invoicesHubOpen}
+          onClose={() => setInvoicesHubOpen(false)}
+          onError={setError}
+          onInvoicesChanged={() => {
+            void listPackagePaymentInvoices(packageId)
+              .then((list) => setPaymentInvoiceCount(list.length))
+              .catch(() => undefined);
+          }}
+          contractTemplatePresets={contractTemplatePresets}
+          templateOverrides={templateOverrides}
+          selectedTemplateIds={selectedTemplateIds}
         />
       </div>
     </RepairContractWorkOrderHubProvider>

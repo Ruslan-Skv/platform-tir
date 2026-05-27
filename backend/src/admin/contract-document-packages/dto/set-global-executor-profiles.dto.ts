@@ -54,6 +54,26 @@ export class ExecutorProfileDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(240)
+  bankName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(9)
+  bankBik?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  bankCorrAccount?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  bankSettlementAccount?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(320)
   email?: string;
 }

@@ -732,6 +732,7 @@ export class ContractDocumentPackagesService {
       actStart: 'Акт начала работ',
       actAcceptance: 'Акт сдачи-приёмки',
       cashOrder: 'ПКО',
+      paymentInvoice: 'Счёт на оплату',
       productionLog: 'Производственный журнал',
     };
     const key = tabId?.trim() || 'contract';

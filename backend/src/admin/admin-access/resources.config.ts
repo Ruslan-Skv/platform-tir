@@ -87,6 +87,12 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     label: 'Расчёты',
     path: '/admin/contract-documents/estimates',
   },
+  { id: 'admin.accounting', label: 'Бухгалтерия', path: '/admin/accounting/invoices' },
+  {
+    id: 'admin.accounting.invoices',
+    label: 'Счета на оплату',
+    path: '/admin/accounting/invoices',
+  },
   { id: 'admin.content', label: 'Контент', path: '/admin/content' },
   { id: 'admin.content.home', label: 'Главная страница', path: '/admin/content/home' },
   { id: 'admin.content.hero', label: 'Первый блок', path: '/admin/content/hero' },

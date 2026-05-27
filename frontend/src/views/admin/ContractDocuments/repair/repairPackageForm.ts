@@ -22,6 +22,8 @@ import {
   buildEstimateDocPrintFooterHtml,
   buildEstimateSectionsFromPresetIds,
 } from './repairEstimateDocPrintEmbedHtml';
+import { resolveExecutorBankFields } from './repairExecutorBankFields';
+import { buildRepairInvoiceTemplateExtras } from './repairInvoiceTemplateFields';
 import { computeRepairPackagePayableBreakdown } from './repairPackagePaymentTotals';
 
 /** ЮЛ — ОГРН и КПП; ИП — ОГРНИП (КПП в форме обычно пустой). */
@@ -60,7 +62,12 @@ export interface RepairExecutorBlock {
   ogrnip: string;
   legalAddress: string;
   actualAddress: string;
+  /** Сводная строка для договоров (из справочника или из отдельных полей). */
   bankDetails: string;
+  bankName: string;
+  bankBik: string;
+  bankCorrAccount: string;
+  bankSettlementAccount: string;
   email: string;
   /** Карточка из справочника «Менеджеры». */
   selectedSignatoryProfileTitle: string;
@@ -95,6 +102,8 @@ export interface RepairContractBlock {
   prepaymentDate: string;
   /** Способ оплаты текстом (для ПКО). */
   paymentFormLabel: string;
+  /** Номер счёта на оплату (для печати / шаблона). */
+  invoiceNumber: string;
   /** Срок договора в календарных днях (число строкой, напр. «60»); в шаблоне `{{contract.workPeriod}}`. */
   workPeriod: string;
   /** Скидка на стоимость по договору, % (применяется к смете, Д/с, заказ-нарядам и сводке оплат). */
@@ -289,6 +298,18 @@ export interface RepairAddendumSlotEstimateBlock {
   excludedNotes: string;
 }
 
+/** Выставленный счёт на оплату (без проводки в журнале до фактической оплаты). */
+export interface RepairIssuedInvoice {
+  id: string;
+  number: string;
+  /** Дата счёта (YYYY-MM-DD). */
+  date: string;
+  amountRub: number;
+  basis: string;
+  paymentType: 'PREPAYMENT' | 'ADVANCE' | 'FINAL' | 'AMENDMENT';
+  addendumNumber?: number;
+}
+
 export type RepairAddendumSlotsTuple = [
   RepairAddendumSlotEstimateBlock,
   RepairAddendumSlotEstimateBlock,
@@ -353,6 +374,8 @@ export interface RepairPackageFormData {
    * Пока совпадает с `contract.number`, к отображаемому номеру добавляется слово «копия».
    */
   _repairCopyContractNumberBaseline?: string;
+  /** Журнал выставленных счетов на оплату по этому договору. */
+  issuedInvoices: RepairIssuedInvoice[];
 }
 
 export function defaultRepairPackageFormData(): RepairPackageFormData {
@@ -387,6 +410,10 @@ export function defaultRepairPackageFormData(): RepairPackageFormData {
       legalAddress: '',
       actualAddress: '',
       bankDetails: '',
+      bankName: '',
+      bankBik: '',
+      bankCorrAccount: '',
+      bankSettlementAccount: '',
       email: '',
       selectedSignatoryProfileTitle: '',
       signatoryCrmUserId: '',
@@ -413,6 +440,7 @@ export function defaultRepairPackageFormData(): RepairPackageFormData {
       paymentBasis: '',
       prepaymentDate: '',
       paymentFormLabel: '',
+      invoiceNumber: '',
       workPeriod: '',
       discountPercent: '',
     },
@@ -444,7 +472,48 @@ export function defaultRepairPackageFormData(): RepairPackageFormData {
     repairWorkStartActPhotoUrl: '',
     repairContractCloseActSignedAt: '',
     repairContractCloseActPhotoUrl: '',
+    issuedInvoices: [],
   };
+}
+
+function normalizeIssuedInvoices(raw: unknown): RepairIssuedInvoice[] {
+  if (!Array.isArray(raw)) return [];
+  const out: RepairIssuedInvoice[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const o = item as Record<string, unknown>;
+    const id = typeof o.id === 'string' ? o.id.trim() : '';
+    const number = typeof o.number === 'string' ? o.number.trim() : '';
+    const date = typeof o.date === 'string' ? o.date.trim() : '';
+    const amountRub = Number(o.amountRub);
+    const basis = typeof o.basis === 'string' ? o.basis.trim() : '';
+    const paymentType = o.paymentType;
+    if (!id || !number || !date || !basis || !Number.isFinite(amountRub) || amountRub <= 0) {
+      continue;
+    }
+    if (
+      paymentType !== 'PREPAYMENT' &&
+      paymentType !== 'ADVANCE' &&
+      paymentType !== 'FINAL' &&
+      paymentType !== 'AMENDMENT'
+    ) {
+      continue;
+    }
+    const row: RepairIssuedInvoice = {
+      id,
+      number,
+      date,
+      amountRub,
+      basis,
+      paymentType,
+    };
+    const addendumNumber = Number(o.addendumNumber);
+    if (Number.isFinite(addendumNumber) && addendumNumber >= 1 && addendumNumber <= 5) {
+      row.addendumNumber = addendumNumber;
+    }
+    out.push(row);
+  }
+  return out.sort((a, b) => a.date.localeCompare(b.date) || a.number.localeCompare(b.number));
 }
 
 function defaultAddendumSlot(): RepairAddendumSlotEstimateBlock {
@@ -754,6 +823,16 @@ export function mergeRepairPackageFormData(raw: unknown): RepairPackageFormData 
     raw
   ) as unknown as RepairPackageFormData;
   const mergedCustomer = normalizeRepairCustomerBlock(merged.customer);
+  const executorBank = resolveExecutorBankFields(merged.executor);
+  const mergedExecutor = {
+    ...merged.executor,
+    bankName: merged.executor.bankName?.trim() || executorBank.bankName,
+    bankBik: merged.executor.bankBik?.trim() || executorBank.bankBik,
+    bankCorrAccount: merged.executor.bankCorrAccount?.trim() || executorBank.bankCorrAccount,
+    bankSettlementAccount:
+      merged.executor.bankSettlementAccount?.trim() || executorBank.bankSettlementAccount,
+    bankDetails: merged.executor.bankDetails?.trim() || executorBank.bankDetailsComposed,
+  };
   const addendumDocumentDates = normalizeAddendumDocumentDates(
     (merged as unknown as Record<string, unknown>).addendumDocumentDates
   );
@@ -768,6 +847,7 @@ export function mergeRepairPackageFormData(raw: unknown): RepairPackageFormData 
   return {
     ...merged,
     customer: mergedCustomer,
+    executor: mergedExecutor,
     selectedRepairInstallerIds: Array.isArray(
       (merged as unknown as Record<string, unknown>).selectedRepairInstallerIds
     )
@@ -827,6 +907,9 @@ export function mergeRepairPackageFormData(raw: unknown): RepairPackageFormData 
       typeof (merged as unknown as Record<string, unknown>).estimateObjectGroupKey === 'string'
         ? String((merged as unknown as Record<string, unknown>).estimateObjectGroupKey)
         : '',
+    issuedInvoices: normalizeIssuedInvoices(
+      (merged as unknown as Record<string, unknown>).issuedInvoices
+    ),
   };
 }
 
@@ -911,6 +994,10 @@ export function buildRepairTemplatePreviewFallbackData(
       legalAddress: executorProfile?.legalAddress || '',
       actualAddress: executorProfile?.actualAddress || '',
       bankDetails: executorProfile?.bankDetails || '',
+      bankName: executorProfile?.bankName ?? '',
+      bankBik: executorProfile?.bankBik ?? '',
+      bankCorrAccount: executorProfile?.bankCorrAccount ?? '',
+      bankSettlementAccount: executorProfile?.bankSettlementAccount ?? '',
       email: executorProfile?.email || 'info@example.com',
       selectedSignatoryProfileTitle: signatoryProfile?.title ?? '',
       signatoryCrmUserId: signatoryProfile?.crmUserId ?? '',
@@ -1535,24 +1622,68 @@ export function repairPackageFormForTemplate(
   const customerContext = repairCustomerTemplateContextFromTab(options?.templateTab);
   const customerForTemplate = enrichRepairCustomerForTemplate(form.customer, customerContext);
 
+  const bankResolved = resolveExecutorBankFields(executor);
+  const executorForTemplate = {
+    ...executor,
+    innKppRegLine,
+    bankDetails: bankResolved.bankDetailsComposed || executor.bankDetails,
+    bankName: bankResolved.bankName,
+    bankBik: bankResolved.bankBik,
+    bankCorrAccount: bankResolved.bankCorrAccountDisplay,
+    bankSettlementAccount: bankResolved.bankSettlementAccountDisplay,
+  };
+
+  const isPaymentInvoiceTab = options?.templateTab === 'paymentInvoice';
+  const invoiceExtras = isPaymentInvoiceTab
+    ? buildRepairInvoiceTemplateExtras(executorForTemplate, form.customer, {
+        invoiceNumber: form.contract.invoiceNumber,
+        prepaymentDate: form.contract.prepaymentDate,
+        prepaymentAmount: form.contract.prepaymentAmount,
+        prepaymentAmountWords,
+      })
+    : null;
+
+  const contractForTemplate = {
+    ...form.contract,
+    prepaymentAmountWords,
+    grandTotalAmount,
+    grandTotalAmountWords,
+    ...(invoiceExtras
+      ? {
+          prepaymentAmountFormatted: invoiceExtras.prepaymentAmountFormatted,
+          prepaymentAmountWordsInvoice: invoiceExtras.prepaymentAmountWordsInvoice,
+          invoiceTitleLine: invoiceExtras.invoiceTitleLine,
+        }
+      : {}),
+  };
+
+  const customerWithInvoice =
+    invoiceExtras != null
+      ? { ...customerForTemplate, buyerLine: invoiceExtras.buyerLine }
+      : customerForTemplate;
+
   return {
     ...form,
-    customer: customerForTemplate,
+    customer: customerWithInvoice,
     ...(addendumForTemplate ? { addendum: addendumForTemplate } : {}),
     ...(workOrderAddendumForTemplate ? { workOrderAddendum: workOrderAddendumForTemplate } : {}),
     meta: {
       /** Текущая календарная дата в формате дд.мм.гггг (момент предпросмотра/печати). Шаблон: `{{meta.currentDate}}`. */
       currentDate: todayContractDateDdMmYyyy(),
     },
-    contract: {
-      ...form.contract,
-      prepaymentAmountWords,
-      grandTotalAmount,
-      grandTotalAmountWords,
-    },
+    contract: contractForTemplate,
     executor: {
-      ...executor,
-      innKppRegLine,
+      ...executorForTemplate,
+      ...(invoiceExtras
+        ? {
+            supplierLine: invoiceExtras.supplierLine,
+            buyerLine: invoiceExtras.buyerLine,
+            bankName: invoiceExtras.bankName,
+            bankBik: invoiceExtras.bankBik,
+            bankCorrAccount: invoiceExtras.bankCorrAccount,
+            bankSettlementAccount: invoiceExtras.bankSettlementAccount,
+          }
+        : {}),
     },
     estimate: {
       ...estimate,

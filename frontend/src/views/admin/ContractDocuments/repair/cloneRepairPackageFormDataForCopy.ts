@@ -33,6 +33,7 @@ export function buildFormDataForRepairPackageCopy(raw: unknown): Record<string, 
     addendumSlots,
     finalEstimateInstallerAssignments: {},
     estimateObjectGroupKey: '',
+    issuedInvoices: [],
   };
 
   const fd = buildPersistedFormData(next, templateOverrides, templatePresetIds);

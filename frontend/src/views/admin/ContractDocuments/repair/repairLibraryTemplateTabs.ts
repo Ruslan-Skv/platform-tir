@@ -7,6 +7,7 @@ export const REPAIR_LIBRARY_TEMPLATE_TAB_IDS = [
   'actStart',
   'actAcceptance',
   'cashOrder',
+  'paymentInvoice',
   'productionLog',
 ] as const;
 
@@ -17,6 +18,7 @@ export const REPAIR_LIBRARY_TEMPLATE_TAB_LABELS: Record<RepairLibraryTemplateTab
   actStart: 'Акт начала работ',
   actAcceptance: 'Акт сдачи-приёмки',
   cashOrder: 'ПКО',
+  paymentInvoice: 'Счёт на оплату',
   productionLog: 'Производственный журнал',
 };
 

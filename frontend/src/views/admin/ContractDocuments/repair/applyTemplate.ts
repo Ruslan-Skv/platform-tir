@@ -31,16 +31,28 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#39;');
 }
 
-function formatTemplateValue(path: string, raw: string, plainCustomer: boolean): string {
-  if (
-    path === 'customer.requisitesHtml' ||
-    path === 'estimate.roomsHtml' ||
-    path === 'addendum.roomsHtml' ||
-    path === 'workOrder.roomsHtml' ||
-    path === 'workOrder.categoryTotalsHtml' ||
-    path === 'workOrderAddendum.roomsHtml' ||
-    path === 'workOrderAddendum.categoryTotalsHtml'
-  ) {
+const RAW_HTML_TEMPLATE_PATHS = new Set([
+  'customer.requisitesHtml',
+  'estimate.roomsHtml',
+  'addendum.roomsHtml',
+  'workOrder.roomsHtml',
+  'workOrder.categoryTotalsHtml',
+  'workOrderAddendum.roomsHtml',
+  'workOrderAddendum.categoryTotalsHtml',
+  'invoice.linesHtml',
+]);
+
+function isRawHtmlTemplatePath(path: string, htmlModifier: boolean): boolean {
+  return htmlModifier || RAW_HTML_TEMPLATE_PATHS.has(path);
+}
+
+function formatTemplateValue(
+  path: string,
+  raw: string,
+  plainCustomer: boolean,
+  htmlModifier: boolean
+): string {
+  if (isRawHtmlTemplatePath(path, htmlModifier)) {
     return raw || '';
   }
   const trimmed = raw.trim();
@@ -299,6 +311,7 @@ export type ApplyTemplateOptions = {
  * Подстановка плейсхолдеров вида `{{customer.fullName}}`.
  * Для обычного текста без жирного/курсива у заказчика: `{{customer.fullName|plain}}`.
  * Готовый HTML-блок реквизитов: `{{customer.requisitesHtml|plain}}` (без экранирования тегов).
+ * Строки таблицы счёта: `{{invoice.linesHtml}}` или `{{invoice.linesHtml|html}}`.
  * Служебные поля из `repairPackageFormForTemplate`, например `{{meta.currentDate}}` (дд.мм.гггг).
  */
 export function applyTemplate(
@@ -309,10 +322,12 @@ export function applyTemplate(
   const flat = flattenForTemplate(data);
   const plainCustomerDefault = Boolean(options?.plainCustomerPlaceholders);
   const replaced = template.replace(
-    /\{\{\s*([\w.]+)\s*(\|\s*plain\s*)?\}\}/g,
-    (_, path: string, plainMod: string) => {
-      const plain = Boolean(plainMod) || (plainCustomerDefault && path.startsWith('customer.'));
-      return formatTemplateValue(path, flat[path] ?? '', plain);
+    /\{\{\s*([\w.]+)\s*(\|\s*(plain|html)\s*)?\}\}/g,
+    (_, path: string, mod: string | undefined) => {
+      const htmlModifier = mod === 'html';
+      const plain =
+        mod === 'plain' || (plainCustomerDefault && path.startsWith('customer.') && !htmlModifier);
+      return formatTemplateValue(path, flat[path] ?? '', plain, htmlModifier);
     }
   );
   let html = ensureRequisitesTableClass(balanceStrongEmTags(stripAnchorTags(replaced)));

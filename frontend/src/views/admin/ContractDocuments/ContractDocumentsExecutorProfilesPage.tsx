@@ -12,6 +12,7 @@ import {
 } from '@/shared/api/admin-contract-document-packages';
 
 import styles from './ContractDocuments.module.css';
+import { normalizeExecutorRequisiteProfile } from './repair/repairExecutorBankFields';
 
 const EMPTY_PROFILE: ExecutorRequisiteProfile = {
   title: '',
@@ -24,24 +25,11 @@ const EMPTY_PROFILE: ExecutorRequisiteProfile = {
   legalAddress: '',
   actualAddress: '',
   bankDetails: '',
+  bankName: '',
+  bankBik: '',
+  bankCorrAccount: '',
+  bankSettlementAccount: '',
   email: '',
-};
-
-const normalizeExecutorProfile = (raw: ExecutorRequisiteProfile): ExecutorRequisiteProfile => {
-  const kind: ExecutorRequisiteKind = raw.kind === 'ENTREPRENEUR' ? 'ENTREPRENEUR' : 'COMPANY';
-  return {
-    title: raw.title ?? '',
-    kind,
-    companyName: raw.companyName ?? '',
-    inn: raw.inn ?? '',
-    kpp: kind === 'ENTREPRENEUR' ? '' : (raw.kpp ?? ''),
-    ogrn: kind === 'ENTREPRENEUR' ? '' : (raw.ogrn ?? ''),
-    ogrnip: kind === 'ENTREPRENEUR' ? (raw.ogrnip ?? '') : '',
-    legalAddress: raw.legalAddress ?? '',
-    actualAddress: raw.actualAddress ?? '',
-    bankDetails: raw.bankDetails ?? '',
-    email: raw.email ?? '',
-  };
 };
 
 export function ContractDocumentsExecutorProfilesPage() {
@@ -59,7 +47,7 @@ export function ContractDocumentsExecutorProfilesPage() {
       setError(null);
       try {
         const res = await getContractDocumentExecutorProfiles('REPAIR');
-        setItems((res.items ?? []).map(normalizeExecutorProfile));
+        setItems((res.items ?? []).map(normalizeExecutorRequisiteProfile));
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Не удалось загрузить реквизиты');
       } finally {
@@ -78,7 +66,7 @@ export function ContractDocumentsExecutorProfilesPage() {
     setError(null);
     setOk(null);
     try {
-      const normalizedItems = nextItems.map(normalizeExecutorProfile);
+      const normalizedItems = nextItems.map(normalizeExecutorRequisiteProfile);
       await putContractDocumentExecutorProfiles({ kind: 'REPAIR', items: normalizedItems });
       setItems(normalizedItems);
       setOk('Сохранено.');
@@ -95,7 +83,7 @@ export function ContractDocumentsExecutorProfilesPage() {
       return;
     }
     const next = [...items];
-    const normalized: ExecutorRequisiteProfile = normalizeExecutorProfile({
+    const normalized: ExecutorRequisiteProfile = normalizeExecutorRequisiteProfile({
       ...draft,
       title: draft.title.trim(),
     });
@@ -223,12 +211,59 @@ export function ContractDocumentsExecutorProfilesPage() {
             />
           </div>
           <div className={styles.field} style={{ gridColumn: '1 / -1' }}>
-            <label>Банковские реквизиты</label>
-            <textarea
-              value={draft.bankDetails ?? ''}
-              onChange={(e) => setDraft((p) => ({ ...p, bankDetails: e.target.value }))}
+            <label>Банк (наименование)</label>
+            <input
+              value={draft.bankName ?? ''}
+              onChange={(e) => setDraft((p) => ({ ...p, bankName: e.target.value }))}
+              placeholder="Например: АО «Альфа-Банк»"
             />
           </div>
+          <div className={styles.field}>
+            <label>БИК</label>
+            <input
+              value={draft.bankBik ?? ''}
+              onChange={(e) =>
+                setDraft((p) => ({ ...p, bankBik: e.target.value.replace(/\D/g, '').slice(0, 9) }))
+              }
+              placeholder="044030786"
+              inputMode="numeric"
+              autoComplete="off"
+            />
+          </div>
+          <div className={styles.field}>
+            <label>Корр. счёт (к/с)</label>
+            <input
+              value={draft.bankCorrAccount ?? ''}
+              onChange={(e) =>
+                setDraft((p) => ({
+                  ...p,
+                  bankCorrAccount: e.target.value.replace(/\D/g, '').slice(0, 20),
+                }))
+              }
+              placeholder="30101810200000000786"
+              inputMode="numeric"
+              autoComplete="off"
+            />
+          </div>
+          <div className={styles.field}>
+            <label>Расчётный счёт (р/с)</label>
+            <input
+              value={draft.bankSettlementAccount ?? ''}
+              onChange={(e) =>
+                setDraft((p) => ({
+                  ...p,
+                  bankSettlementAccount: e.target.value.replace(/\D/g, '').slice(0, 20),
+                }))
+              }
+              placeholder="40802810232160002046"
+              inputMode="numeric"
+              autoComplete="off"
+            />
+          </div>
+          <p className={styles.hint} style={{ gridColumn: '1 / -1', margin: 0 }}>
+            Для счёта на оплату и договора используются эти поля. Старая сводная строка
+            пересобирается при сохранении.
+          </p>
         </div>
         <div className={styles.toolbar} style={{ marginTop: 8, marginBottom: 0 }}>
           <button

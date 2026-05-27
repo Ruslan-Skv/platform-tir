@@ -60,6 +60,7 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
       { path: 'customer.phone', label: 'Телефон' },
       { path: 'customer.email', label: 'E-mail' },
       { path: 'customer.bankDetails', label: 'Банковские реквизиты заказчика' },
+      { path: 'customer.buyerLine', label: 'Покупатель в счёте (наименование и ИНН)' },
       { path: 'customer.passportSeriesNumber', label: 'Паспорт (серия и номер)' },
       { path: 'customer.passportIssuedBy', label: 'Паспорт кем выдан' },
       { path: 'customer.passportIssueDate', label: 'Паспорт дата выдачи' },
@@ -78,6 +79,11 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
       { path: 'executor.legalAddress', label: 'Юр. адрес' },
       { path: 'executor.actualAddress', label: 'Адрес для корреспонденции' },
       { path: 'executor.bankDetails', label: 'Банк. реквизиты' },
+      { path: 'executor.bankName', label: 'Банк (из реквизитов, для счёта)' },
+      { path: 'executor.bankBik', label: 'БИК (из реквизитов)' },
+      { path: 'executor.bankCorrAccount', label: 'Корр. счёт (из реквизитов)' },
+      { path: 'executor.bankSettlementAccount', label: 'Р/с (из реквизитов)' },
+      { path: 'executor.supplierLine', label: 'Поставщик (наименование и ИНН)' },
       { path: 'executor.email', label: 'E-mail исполнителя' },
       {
         path: 'executor.directorNameNominative',
@@ -123,6 +129,16 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
         label: 'Оплата прописью (из поля «Оплата»)',
       },
       { path: 'contract.paymentBasis', label: 'Основание (платёж / перечисление)' },
+      { path: 'contract.invoiceNumber', label: 'Номер счёта на оплату' },
+      { path: 'contract.invoiceTitleLine', label: 'Заголовок счёта («Счёт на оплату № … от …»)' },
+      {
+        path: 'contract.prepaymentAmountFormatted',
+        label: 'Сумма счёта (с разделителем тысяч)',
+      },
+      {
+        path: 'contract.prepaymentAmountWordsInvoice',
+        label: 'Сумма счёта прописью (краткий формат)',
+      },
       { path: 'contract.prepaymentDate', label: 'Дата оплаты (дд.мм.гггг, для ПКО)' },
       { path: 'contract.paymentFormLabel', label: 'Способ оплаты (текст, для ПКО)' },
       { path: 'contract.workPeriod', label: 'Срок договора (календарных дней, число)' },
@@ -130,6 +146,16 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
         path: 'contract.discountPercent',
         label: 'Скидка по договору (%, число; применяется к смете и Д/с)',
       },
+    ],
+  },
+  {
+    title: 'Счёт на оплату (таблица)',
+    items: [
+      {
+        path: 'invoice.linesHtml',
+        label: 'Строки таблицы товаров/услуг (HTML, вставка в <tbody>)',
+      },
+      { path: 'invoice.itemsCount', label: 'Количество позиций' },
     ],
   },
   {

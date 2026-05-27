@@ -189,7 +189,12 @@ export interface ExecutorRequisiteProfile {
   ogrnip?: string;
   legalAddress?: string;
   actualAddress?: string;
+  /** Сводная строка для договоров (собирается из полей ниже при сохранении). */
   bankDetails?: string;
+  bankName?: string;
+  bankBik?: string;
+  bankCorrAccount?: string;
+  bankSettlementAccount?: string;
   email?: string;
 }
 

@@ -5,6 +5,7 @@ export type RepairCustomerTemplateContext =
   | 'contract'
   | 'act'
   | 'cashOrder'
+  | 'paymentInvoice'
   | 'productionLog'
   | 'general';
 
@@ -14,6 +15,7 @@ export function repairCustomerTemplateContextFromTab(
   if (templateTab === 'contract') return 'contract';
   if (templateTab === 'actStart' || templateTab === 'actAcceptance') return 'act';
   if (templateTab === 'cashOrder') return 'cashOrder';
+  if (templateTab === 'paymentInvoice') return 'paymentInvoice';
   if (templateTab === 'productionLog') return 'productionLog';
   return 'general';
 }
@@ -202,6 +204,7 @@ export function repairCustomerContextualFullName(
     case 'act':
       return fields.actPartyLine;
     case 'cashOrder':
+    case 'paymentInvoice':
       return fields.payerLine;
     case 'productionLog':
     case 'general':

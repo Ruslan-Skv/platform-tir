@@ -97,6 +97,7 @@ model User {
   contractDocumentPackagesCreated ContractDocumentPackage[] @relation("ContractDocumentPackagesCreated")
   contractDocumentPackagesDeleted ContractDocumentPackage[] @relation("ContractDocumentPackagesDeleted")
   contractDocumentPackagePaymentsRecorded ContractDocumentPackagePayment[] @relation("ContractDocumentPackagePaymentRecordedBy")
+  contractDocumentPaymentInvoicesIssued ContractDocumentPaymentInvoice[] @relation("ContractDocumentPaymentInvoiceIssuedBy")
   contractDocumentGlobalTemplatesUpdated ContractDocumentGlobalTemplate[] @relation("GlobalContractTemplateUpdatedBy")
   contractDocumentRepairSettingsUpdated ContractDocumentRepairSettings[] @relation("ContractDocumentRepairSettingsUpdatedBy")
   contractDocumentPackageVersionsSaved ContractDocumentPackageVersion[] @relation("ContractDocumentPackageVersionSavedBy")
@@ -2061,6 +2062,7 @@ model ContractDocumentPackage {
   crmContract    Contract?               @relation(fields: [crmContractId], references: [id], onDelete: SetNull)
   versions       ContractDocumentPackageVersion[]
   payments       ContractDocumentPackagePayment[]
+  paymentInvoices ContractDocumentPaymentInvoice[]
 
   @@index([kind])
   @@index([createdAt])
@@ -2094,6 +2096,42 @@ model ContractDocumentPackagePayment {
   @@index([packageId])
   @@index([paymentDate])
   @@map("contract_document_package_payments")
+}
+
+/// Выставленные счета на оплату по договорам (единая нумерация по всей организации).
+model ContractDocumentPaymentInvoice {
+  id             String      @id @default(cuid())
+  packageId      String
+  /// Порядковый номер счёта в общей нумерации (отображается как № счёта).
+  sequenceNumber Int         @unique
+  invoiceDate    DateTime    @db.Date
+  amount         Decimal     @db.Decimal(12, 2)
+  paymentType    PaymentType
+  addendumNumber Int?
+  basis          String      @db.Text
+  /// Позиции счёта: [{ name, quantity, unit, vatLabel, unitPrice, amount }, ...]
+  lineItems      Json        @default("[]")
+  /// Id из formData.issuedInvoices[] до миграции в БД.
+  legacyFormId   String?
+  issuedById     String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  package  ContractDocumentPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  issuedBy User?                   @relation("ContractDocumentPaymentInvoiceIssuedBy", fields: [issuedById], references: [id], onDelete: SetNull)
+
+  @@unique([packageId, legacyFormId])
+  @@index([packageId])
+  @@index([invoiceDate])
+  @@map("contract_document_payment_invoices")
+}
+
+/// Счётчик для атомарной выдачи sequenceNumber (одна строка id = global).
+model ContractDocumentPaymentInvoiceCounter {
+  id    String @id @default("global")
+  value Int    @default(0)
+
+  @@map("contract_document_payment_invoice_counter")
 }
 
 /// Снимок пакета документов (история версий при явном сохранении и при восстановлении).

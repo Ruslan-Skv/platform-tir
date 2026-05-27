@@ -8016,6 +8016,65 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   margin-top: 0;
 }
 
+.invoiceLinesSection {
+  margin-top: 12px;
+}
+
+.invoiceLinesSectionTitle {
+  font-size: var(--admin-font-size-sm, 0.875rem);
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.invoiceLinesTable input,
+.invoiceLinesTable select {
+  box-sizing: border-box;
+  font-size: var(--admin-font-size-xs, 0.8125rem);
+  min-height: 1.75rem;
+  padding: 2px 6px;
+  width: 100%;
+}
+
+.invoiceLinesTable .invoiceLinesNameCol input {
+  min-width: 140px;
+}
+
+.invoiceLinesKindCol {
+  width: 88px;
+  min-width: 88px;
+}
+
+.invoiceLinesTable .invoiceLinesKindCol select {
+  width: 100%;
+  min-width: 0;
+}
+
+.invoiceLinesGroupHeader td {
+  background: #f1f5f9;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  padding: 6px 8px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.invoiceLinesActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.invoiceLinesLoadRow {
+  align-items: flex-end;
+  margin-bottom: 10px;
+}
+
+.invoiceLinesLoadField {
+  flex: 1 1 220px;
+  min-width: 200px;
+  max-width: 420px;
+}
+
 .paymentsHubConductField {
   display: flex;
   flex-direction: column;

@@ -5,13 +5,15 @@ import { mergeRepairPackageFormData } from './repairPackageForm';
 /** Вкладки с HTML-шаблоном (можно переопределить текст, в т.ч. загрузкой из Excel). */
 export type RepairDocumentTemplateTabId =
   | Exclude<RepairDocumentTabId, 'data' | 'payments'>
-  | 'cashOrder';
+  | 'cashOrder'
+  | 'paymentInvoice';
 
 const TEMPLATE_TAB_IDS: RepairDocumentTemplateTabId[] = [
   'contract',
   'actStart',
   'actAcceptance',
   'cashOrder',
+  'paymentInvoice',
   'questionnaire1',
   'questionnaire2',
   'addendum1',

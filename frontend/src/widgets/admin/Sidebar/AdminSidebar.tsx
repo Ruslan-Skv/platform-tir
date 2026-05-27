@@ -140,6 +140,19 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.crm.installers',
   },
   {
+    label: 'Бухгалтерия',
+    href: '/admin/accounting/invoices',
+    icon: '🧾',
+    resourceId: 'admin.accounting',
+    children: [
+      {
+        label: 'Счета на оплату',
+        href: '/admin/accounting/invoices',
+        resourceId: 'admin.accounting.invoices',
+      },
+    ],
+  },
+  {
     label: 'Договора',
     href: '/admin/contract-documents/contracts',
     icon: '📋',

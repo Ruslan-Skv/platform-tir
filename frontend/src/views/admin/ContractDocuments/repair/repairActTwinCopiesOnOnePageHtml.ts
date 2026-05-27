@@ -1,6 +1,8 @@
 /** Id шаблона ПКО (вкладка убрана из редактора; печать — в модалке оплат). */
 export const REPAIR_CASH_ORDER_TEMPLATE_TAB = 'cashOrder';
 
+export const REPAIR_PAYMENT_INVOICE_TEMPLATE_TAB = 'paymentInvoice';
+
 /** Вкладки пакета ремонта: два экземпляра акта на одном листе A4. */
 export function isRepairActTwinOneSheetTab(tab: string): boolean {
   return tab === 'actStart' || tab === 'actAcceptance';

@@ -24,8 +24,10 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
+import { ContractDocumentPaymentInvoicesService } from './contract-document-payment-invoices.service';
 import { ContractDocumentPackagePaymentsService } from './contract-document-package-payments.service';
 import { ContractDocumentPackagesService } from './contract-document-packages.service';
+import { CreateContractDocumentPaymentInvoiceDto } from './dto/create-contract-document-payment-invoice.dto';
 import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
 import { SetGlobalExecutorProfilesDto } from './dto/set-global-executor-profiles.dto';
 import { SetGlobalContractTemplatesDto } from './dto/set-global-contract-templates.dto';
@@ -76,6 +78,7 @@ export class ContractDocumentPackagesController {
   constructor(
     private readonly service: ContractDocumentPackagesService,
     private readonly packagePayments: ContractDocumentPackagePaymentsService,
+    private readonly paymentInvoices: ContractDocumentPaymentInvoicesService,
   ) {}
 
   @Post()
@@ -357,6 +360,20 @@ export class ContractDocumentPackagesController {
     return this.packagePayments.remove(id, paymentId);
   }
 
+  @Get(':id/payment-invoices')
+  listPackagePaymentInvoices(@Param('id') id: string) {
+    return this.paymentInvoices.listForPackage(id);
+  }
+
+  @Post(':id/payment-invoices')
+  createPackagePaymentInvoice(
+    @Param('id') id: string,
+    @Body() dto: CreateContractDocumentPaymentInvoiceDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.paymentInvoices.create(id, dto, req.user?.id);
+  }
+
   @Post(':id/upload-work-start-act-photo')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -435,6 +452,24 @@ export class ContractDocumentPackagesController {
     }
     const filename = path.basename(file.path);
     return { imageUrl: `/uploads/contract-document-packages/contract-close-acts/${filename}` };
+  }
+
+  @Get('payment-invoices/next-number')
+  peekPaymentInvoiceNumber() {
+    return this.paymentInvoices.peekNextInvoiceNumber();
+  }
+
+  @Get('payment-invoices')
+  listAllPaymentInvoices(
+    @Query('search') search?: string,
+    @Query('packageId') packageId?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.paymentInvoices.listAll({
+      search,
+      packageId,
+      limit: limit ? parseInt(limit, 10) : undefined,
+    });
   }
 
   @Get(':id')

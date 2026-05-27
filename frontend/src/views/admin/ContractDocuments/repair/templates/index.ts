@@ -6,17 +6,19 @@ import { repairTemplateAddendum } from './addendum';
 import { repairTemplateCashOrder } from './cashOrder';
 import { repairTemplateContract } from './contract';
 import { repairLibraryFallbackStub } from './libraryFallbackStub';
+import { repairTemplatePaymentInvoice } from './paymentInvoice';
 import { repairTemplateProductionLog } from './productionLog';
 import { repairTemplateWorkOrder, repairTemplateWorkOrderAddendum } from './workOrder';
 
 const stub = (title: string) => repairLibraryFallbackStub(title);
 
-/** Резервный HTML, если в библиотеке нет пресета (только 5 вкладок библиотеки + заглушки для прочих вкладок пакета). */
+/** Резервный HTML, если в библиотеке нет пресета (вкладки библиотеки + заглушки для прочих вкладок пакета). */
 export const REPAIR_LIBRARY_TEMPLATE_HTML: Record<RepairLibraryTemplateTabId, string> = {
   contract: repairTemplateContract,
   actStart: repairTemplateActStart,
   actAcceptance: repairTemplateActAcceptance,
   cashOrder: repairTemplateCashOrder,
+  paymentInvoice: repairTemplatePaymentInvoice,
   productionLog: repairTemplateProductionLog,
 };
 
