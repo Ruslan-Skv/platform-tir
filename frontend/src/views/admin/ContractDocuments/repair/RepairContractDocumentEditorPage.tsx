@@ -24,6 +24,7 @@ import {
   getContractDocumentSignatoryProfiles,
   getContractDocumentTemplatePresets,
   putContractDocumentTemplatePresets,
+  sanitizeContractTemplatePresetForApi,
   updateContractDocumentPackage,
 } from '@/shared/api/admin-contract-document-packages';
 import type { CrmCustomerDetail, InstallerMaster } from '@/shared/api/admin-crm';
@@ -175,11 +176,11 @@ function normalizeContractTemplatePreset(it: ContractTemplatePreset): ContractTe
     repairLibraryTemplateTabIdFromPreset(it.tabId) ??
     repairTemplatePresetEditorTabId(it) ??
     normalizeTemplateTabId(it.tabId);
-  return {
+  return sanitizeContractTemplatePresetForApi({
     ...it,
     tabId,
     archived: Boolean(it.archived),
-  };
+  });
 }
 
 /** ID расчётов из сметы пакета и из всех слотов Д/с (для учёта «ещё в пакетах»). */

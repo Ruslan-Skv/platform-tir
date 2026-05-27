@@ -1,5 +1,23 @@
 'use client';
 
+import {
+  ArrowsPointingOutIcon,
+  Bars3BottomLeftIcon,
+  Bars3BottomRightIcon,
+  Bars3Icon,
+  Bars4Icon,
+  BuildingOffice2Icon,
+  ChatBubbleBottomCenterTextIcon,
+  DocumentPlusIcon,
+  ListBulletIcon,
+  MinusIcon,
+  NumberedListIcon,
+  PencilSquareIcon,
+  SparklesIcon,
+  Square2StackIcon,
+  TableCellsIcon,
+} from '@heroicons/react/24/outline';
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
@@ -11,11 +29,13 @@ import {
   getContractDocumentSignatoryProfiles,
   getContractDocumentTemplatePresets,
   putContractDocumentTemplatePresets,
+  sanitizeContractTemplatePresetForApi,
 } from '@/shared/api/admin-contract-document-packages';
 import {
   getContractDocumentTemplatePresetsTrash,
   trashContractTemplatePreset,
 } from '@/shared/api/admin-contract-document-template-presets-trash';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import {
   AdminToolbarArchiveButton,
@@ -54,7 +74,24 @@ import {
 
 import styles from './ContractDocuments.module.css';
 
-type ToolButton = { label: string; onClick: () => void; secondary?: boolean };
+type FormatTool = {
+  id: string;
+  title: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+};
+
+function FormatToolbarSvgIcon({
+  icon: Icon,
+}: {
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+}) {
+  return <Icon className={styles.formatToolbarSvg} aria-hidden />;
+}
+
+function FormatToolbarGlyph({ children }: { children: React.ReactNode }) {
+  return <span className={styles.formatToolbarGlyph}>{children}</span>;
+}
 const TEMPLATES_UI_PREFS_KEY = 'admin.contractDocuments.templates.uiPrefs';
 type NormalizeMode = 'soft' | 'strict';
 
@@ -131,11 +168,11 @@ function EstimatesRestoreFromArchiveIcon() {
 
 function normalizeContractTemplatePreset(it: ContractTemplatePreset): ContractTemplatePreset {
   const tabId = repairLibraryTemplateTabIdFromPreset(it.tabId);
-  return {
+  return sanitizeContractTemplatePresetForApi({
     ...it,
     tabId: tabId ?? it.tabId,
     archived: Boolean(it.archived),
-  };
+  });
 }
 
 function clampInt(value: number, min: number, max: number): number {
@@ -426,18 +463,27 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [trashOpen, setTrashOpen] = useState(false);
+  const [templateTrashPending, setTemplateTrashPending] = useState<{
+    presetId: string;
+    name: string;
+  } | null>(null);
+  const [templateArchivePending, setTemplateArchivePending] = useState<{
+    presetId: string;
+    name: string;
+  } | null>(null);
   const [autosaveSavedVisible, setAutosaveSavedVisible] = useState(false);
   const lastSavedSnapshotRef = useRef<string>('');
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isInitialHydrationRef = useRef(true);
+  /** Блокирует отложенный autosave, пока снимок предыдущей вкладки уходит на сервер. */
+  const templateTabSwitchRef = useRef(false);
+  /** Блокирует autosave при переключении шаблона после архивации (иначе stale items снимают archived). */
+  const templateArchiveSwitchRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [editingId, setEditingId] = useState('');
   const [title, setTitle] = useState('');
   const [html, setHtml] = useState('');
-  const [formatToolbarLevel, setFormatToolbarLevel] = useState<'basic' | 'advanced'>('basic');
-  const [formatToolbarQuery, setFormatToolbarQuery] = useState('');
-  const [showAllFormatTools, setShowAllFormatTools] = useState(false);
   const [editorMode, setEditorMode] = useState<'html' | 'visual'>('html');
   const [visualDraftHtml, setVisualDraftHtml] = useState('');
   const [visualHistory, setVisualHistory] = useState<string[]>([]);
@@ -584,6 +630,8 @@ export function ContractDocumentsTemplatesLibraryPage() {
     }
   };
 
+  const readVisualEditorHtml = (): string => visualEditorRef.current?.innerHTML ?? visualDraftHtml;
+
   const applyVisualSnapshot = (htmlSnapshot: string) => {
     setVisualDraftHtml(htmlSnapshot);
     setHtml(htmlSnapshot);
@@ -599,6 +647,33 @@ export function ContractDocumentsTemplatesLibraryPage() {
       }
     });
   };
+
+  const syncVisualEditorToHtmlState = useCallback(() => {
+    const next = readVisualEditorHtml();
+    setVisualDraftHtml(next);
+    setHtml(next);
+    return next;
+  }, [visualDraftHtml]);
+
+  const switchEditorMode = useCallback(
+    (mode: 'html' | 'visual') => {
+      if (mode === editorMode) return;
+      if (mode === 'html') {
+        const next = visualEditorRef.current?.innerHTML ?? visualDraftHtml;
+        setVisualDraftHtml(next);
+        setHtml(next);
+        setEditorMode('html');
+        return;
+      }
+      setVisualDraftHtml(html);
+      resetVisualHistory(html);
+      setEditorMode('visual');
+      if (visualEditorRef.current) {
+        visualEditorRef.current.innerHTML = html || '';
+      }
+    },
+    [editorMode, html, visualDraftHtml]
+  );
 
   const captureVisualSelection = () => {
     const editor = visualEditorRef.current;
@@ -806,9 +881,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     itemsByActiveTab.length,
   ]);
 
-  const persistAutosave = useCallback(async () => {
-    const next = buildItemsForAutosave();
-    if (!next) return;
+  const persistItemsSnapshot = useCallback(async (next: ContractTemplatePreset[]) => {
     const snapshot = JSON.stringify(next.map((it) => normalizeContractTemplatePreset(it)));
     if (snapshot === lastSavedSnapshotRef.current) return;
     setSaving(true);
@@ -825,7 +898,13 @@ export function ContractDocumentsTemplatesLibraryPage() {
     } finally {
       setSaving(false);
     }
-  }, [buildItemsForAutosave]);
+  }, []);
+
+  const persistAutosave = useCallback(async () => {
+    const next = buildItemsForAutosave();
+    if (!next) return;
+    await persistItemsSnapshot(next);
+  }, [buildItemsForAutosave, persistItemsSnapshot]);
 
   const flushAutosave = useCallback(async () => {
     if (autosaveTimerRef.current) {
@@ -835,8 +914,32 @@ export function ContractDocumentsTemplatesLibraryPage() {
     await persistAutosave();
   }, [persistAutosave]);
 
+  const handleActiveTemplateTabChange = useCallback(
+    (nextTab: RepairLibraryTemplateTabId) => {
+      if (nextTab === activeTemplateTab) return;
+      const pendingSave = buildItemsForAutosave();
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+      templateTabSwitchRef.current = true;
+      setActiveTemplateTab(nextTab);
+      void (async () => {
+        try {
+          if (pendingSave) {
+            await persistItemsSnapshot(pendingSave);
+          }
+        } finally {
+          templateTabSwitchRef.current = false;
+        }
+      })();
+    },
+    [activeTemplateTab, buildItemsForAutosave, persistItemsSnapshot]
+  );
+
   useEffect(() => {
     if (loading || !isSuperAdmin) return;
+    if (templateTabSwitchRef.current || templateArchiveSwitchRef.current) return;
     if (isInitialHydrationRef.current) {
       isInitialHydrationRef.current = false;
       const initial = buildItemsForAutosave();
@@ -894,13 +997,13 @@ export function ContractDocumentsTemplatesLibraryPage() {
   };
 
   useEffect(() => {
-    if (editorMode === 'visual' && visualEditorRef.current) {
-      visualEditorRef.current.innerHTML = visualDraftHtml || '';
-      if (visualHistoryRef.current.length === 0) {
-        resetVisualHistory(visualDraftHtml || '');
-      }
+    if (!visualEditorRef.current) return;
+    const source = visualDraftHtml || html || '';
+    visualEditorRef.current.innerHTML = source;
+    if (editorMode === 'visual' && visualHistoryRef.current.length === 0) {
+      resetVisualHistory(source);
     }
-    // Важно: НЕ зависим от visualDraftHtml, иначе при каждом onInput перезаписываем DOM
+    // Важно: НЕ зависим от visualDraftHtml/html, иначе при каждом onInput перезаписываем DOM
     // и курсор прыгает в начало.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editorMode, editingId]);
@@ -917,46 +1020,58 @@ export function ContractDocumentsTemplatesLibraryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTemplateTab, items.length, showArchivedTemplates]);
 
-  const moveTemplateToTrash = async () => {
+  const requestMoveTemplateToTrash = () => {
     if (!isSuperAdmin || !editingId) return;
-    await flushAutosave();
-    const current = items.find((it) => it.id === editingId);
-    if (!current) return;
-    const name = (current.title ?? title).trim() || 'без названия';
-    const ok = window.confirm(
-      `Шаблон «${name}» будет перемещён в корзину и скрыт из пакета «Ремонт». Через 30 дней он удалится безвозвратно. Восстановить можно из корзины. Продолжить?`
-    );
-    if (!ok) return;
-    setSaving(true);
-    setError(null);
-    try {
-      await trashContractTemplatePreset(editingId);
-      const templatesRes = await getContractDocumentTemplatePresets('REPAIR');
-      const next = (templatesRes.items ?? []).map((it) => normalizeContractTemplatePreset(it));
-      setItems(next);
-      void refreshTrashCount();
-      setOk('Шаблон перемещён в корзину.');
-      const tabItems = next.filter((it) => {
-        if (repairLibraryTemplateTabIdFromPreset(it.tabId) !== activeTemplateTab) return false;
-        return showArchivedTemplates ? Boolean(it.archived) : !it.archived;
-      });
-      const fallback = tabItems.find((it) => it.isDefault)?.id ?? tabItems[0]?.id ?? '';
-      if (fallback) selectTemplate(fallback);
-      else {
-        setEditingId('');
-        setTitle('');
-        setHtml('');
-        setVisualDraftHtml('');
-        resetVisualHistory('');
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось переместить шаблон в корзину');
-    } finally {
-      setSaving(false);
-    }
+    void (async () => {
+      await flushAutosave();
+      const current = items.find((it) => it.id === editingId);
+      if (!current) return;
+      const name = (current.title ?? title).trim() || 'без названия';
+      setTemplateTrashPending({ presetId: editingId, name });
+    })();
   };
 
-  const deleteTemplate = async () => {
+  const confirmMoveTemplateToTrash = () => {
+    const pending = templateTrashPending;
+    if (!pending || !isSuperAdmin) return;
+    const presetId = pending.presetId;
+    void (async () => {
+      setSaving(true);
+      setError(null);
+      try {
+        await trashContractTemplatePreset(presetId);
+        const templatesRes = await getContractDocumentTemplatePresets('REPAIR');
+        const next = (templatesRes.items ?? []).map((it) => normalizeContractTemplatePreset(it));
+        setItems(next);
+        void refreshTrashCount();
+        setOk('Шаблон перемещён в корзину.');
+        const tabItems = next.filter((it) => {
+          if (repairLibraryTemplateTabIdFromPreset(it.tabId) !== activeTemplateTab) return false;
+          return showArchivedTemplates ? Boolean(it.archived) : !it.archived;
+        });
+        const fallback = tabItems.find((it) => it.isDefault)?.id ?? tabItems[0]?.id ?? '';
+        if (fallback) selectTemplate(fallback);
+        else {
+          setEditingId('');
+          setTitle('');
+          setHtml('');
+          setVisualDraftHtml('');
+          resetVisualHistory('');
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Не удалось переместить шаблон в корзину');
+      } finally {
+        setSaving(false);
+      }
+    })();
+  };
+
+  const templateTrashConfirmMessage =
+    templateTrashPending != null
+      ? `Шаблон «${templateTrashPending.name}» будет перемещён в корзину и скрыт из пакета «Ремонт». Через 30 дней он удалится безвозвратно. Восстановить можно из корзины.`
+      : '';
+
+  const requestArchiveTemplate = () => {
     if (!isSuperAdmin || !editingId) return;
     const current = items.find((it) => it.id === editingId);
     if (!current) return;
@@ -964,42 +1079,76 @@ export function ContractDocumentsTemplatesLibraryPage() {
       setError('Этот шаблон уже в архиве.');
       return;
     }
-    const name = (current.title ?? title).trim() || 'без названия';
-    const ok = window.confirm(
-      `Шаблон «${name}» будет скрыт из пакета «Ремонт» (останется в архиве). Восстановление: «Показать архивные» → «Восстановить». Продолжить?`
-    );
-    if (!ok) return;
-    await flushAutosave();
-    const tab = activeTemplateTab;
-    let next = items.map((it) =>
-      it.id === editingId ? { ...it, archived: true, isDefault: false } : it
-    );
-    let activeOnTab = next.filter(
-      (it) => repairLibraryTemplateTabIdFromPreset(it.tabId) === tab && !it.archived
-    );
-    if (activeOnTab.length > 0 && !activeOnTab.some((it) => it.isDefault)) {
-      const pickId = activeOnTab[0].id;
-      next = next.map((it) =>
-        repairLibraryTemplateTabIdFromPreset(it.tabId) !== tab
-          ? it
-          : { ...it, isDefault: !it.archived && it.id === pickId }
-      );
-      activeOnTab = next.filter(
-        (it) => repairLibraryTemplateTabIdFromPreset(it.tabId) === tab && !it.archived
-      );
-    }
-    const saved = await persist(next, 'Шаблон перенесён в архив.');
-    if (!saved) return;
-    const fallback = activeOnTab.find((it) => it.isDefault)?.id ?? activeOnTab[0]?.id ?? '';
-    if (fallback) selectTemplate(fallback);
-    else {
-      setEditingId('');
-      setTitle('');
-      setHtml('');
-      setVisualDraftHtml('');
-      resetVisualHistory('');
-    }
+    void (async () => {
+      await flushAutosave();
+      const fresh = items.find((it) => it.id === editingId);
+      if (!fresh || fresh.archived) return;
+      const name = (fresh.title ?? title).trim() || 'без названия';
+      setTemplateArchivePending({ presetId: editingId, name });
+    })();
   };
+
+  const applyEditingTemplateFromList = (list: ContractTemplatePreset[], id: string) => {
+    setEditingId(id);
+    const t = list.find((it) => it.id === id);
+    setTitle(t?.title ?? '');
+    setHtml(t?.html ?? '');
+    setVisualDraftHtml(t?.html ?? '');
+    resetVisualHistory(t?.html ?? '');
+  };
+
+  const confirmArchiveTemplate = () => {
+    const pending = templateArchivePending;
+    if (!pending || !isSuperAdmin) return;
+    const presetId = pending.presetId;
+    void (async () => {
+      templateArchiveSwitchRef.current = true;
+      try {
+        await flushAutosave();
+        const tab = activeTemplateTab;
+        let next = items.map((it) =>
+          it.id === presetId ? { ...it, archived: true, isDefault: false } : it
+        );
+        let activeOnTab = next.filter(
+          (it) => repairLibraryTemplateTabIdFromPreset(it.tabId) === tab && !it.archived
+        );
+        if (activeOnTab.length > 0 && !activeOnTab.some((it) => it.isDefault)) {
+          const pickId = activeOnTab[0].id;
+          next = next.map((it) =>
+            repairLibraryTemplateTabIdFromPreset(it.tabId) !== tab
+              ? it
+              : { ...it, isDefault: !it.archived && it.id === pickId }
+          );
+          activeOnTab = next.filter(
+            (it) => repairLibraryTemplateTabIdFromPreset(it.tabId) === tab && !it.archived
+          );
+        }
+        const saved = await persist(next, 'Шаблон перенесён в архив.');
+        if (!saved) return;
+        if (autosaveTimerRef.current) {
+          clearTimeout(autosaveTimerRef.current);
+          autosaveTimerRef.current = null;
+        }
+        const fallback = activeOnTab.find((it) => it.isDefault)?.id ?? activeOnTab[0]?.id ?? '';
+        if (fallback) {
+          applyEditingTemplateFromList(next, fallback);
+        } else {
+          setEditingId('');
+          setTitle('');
+          setHtml('');
+          setVisualDraftHtml('');
+          resetVisualHistory('');
+        }
+      } finally {
+        templateArchiveSwitchRef.current = false;
+      }
+    })();
+  };
+
+  const templateArchiveConfirmMessage =
+    templateArchivePending != null
+      ? `Шаблон «${templateArchivePending.name}» будет скрыт из пакета «Ремонт» (останется в архиве). Восстановление: «Показать архивные» → «Восстановить».`
+      : '';
 
   const restoreArchivedTemplate = async () => {
     if (!isSuperAdmin || !editingId) return;
@@ -1031,13 +1180,12 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const handleSyncHtmlWithVisualEditor = () => {
     if (!isSuperAdmin) return;
     if (editorMode === 'visual') {
-      const next = visualEditorRef.current?.innerHTML ?? visualDraftHtml;
-      setVisualDraftHtml(next);
-      setHtml(next);
+      const next = syncVisualEditorToHtmlState();
       pushVisualHistory(next);
     } else {
       setVisualDraftHtml(html);
       resetVisualHistory(html);
+      setEditorMode('visual');
     }
   };
 
@@ -1301,49 +1449,213 @@ export function ContractDocumentsTemplatesLibraryPage() {
     );
   };
 
-  const basicTools: ToolButton[] = [
-    { label: 'H1', onClick: () => wrapAsHeading(1) },
-    { label: 'H2', onClick: () => wrapAsHeading(2) },
-    { label: 'Слева', onClick: () => wrapParagraphWithAlign('left') },
-    { label: 'Центр', onClick: () => wrapParagraphWithAlign('center') },
-    { label: 'По ширине', onClick: () => wrapParagraphWithAlign('justify') },
-    { label: 'Абзац+отступ', onClick: wrapParagraphWithIndent },
-    { label: 'Жирный', onClick: () => wrapSelection('<strong>', '</strong>', 'жирный текст') },
-    { label: 'Курсив', onClick: () => wrapSelection('<em>', '</em>', 'курсив') },
-    { label: 'Марк. список', onClick: () => wrapAsList(false) },
-    { label: 'Нум. список', onClick: () => wrapAsList(true) },
-    { label: 'Нормализовать (мягко)', onClick: () => normalizeTemplateText('soft') },
-    { label: 'Нормализовать (строго)', onClick: () => normalizeTemplateText('strict') },
-    { label: '2 колонки', onClick: insertTwoColumnsBlock },
-    { label: 'Подписи сторон', onClick: insertSignatureLines },
-    { label: 'Реквизиты (готово)', onClick: insertRequisitesTemplate, secondary: true },
+  const formatTools: FormatTool[] = [
+    {
+      id: 'h1',
+      title: 'Заголовок H1',
+      icon: <FormatToolbarGlyph>H1</FormatToolbarGlyph>,
+      onClick: () => wrapAsHeading(1),
+    },
+    {
+      id: 'h2',
+      title: 'Заголовок H2',
+      icon: <FormatToolbarGlyph>H2</FormatToolbarGlyph>,
+      onClick: () => wrapAsHeading(2),
+    },
+    {
+      id: 'h3',
+      title: 'Заголовок H3',
+      icon: <FormatToolbarGlyph>H3</FormatToolbarGlyph>,
+      onClick: () => wrapAsHeading(3),
+    },
+    {
+      id: 'align-left',
+      title: 'Выравнивание по левому краю',
+      icon: <FormatToolbarSvgIcon icon={Bars3BottomLeftIcon} />,
+      onClick: () => wrapParagraphWithAlign('left'),
+    },
+    {
+      id: 'align-center',
+      title: 'Выравнивание по центру',
+      icon: <FormatToolbarSvgIcon icon={Bars3Icon} />,
+      onClick: () => wrapParagraphWithAlign('center'),
+    },
+    {
+      id: 'align-right',
+      title: 'Выравнивание по правому краю',
+      icon: <FormatToolbarSvgIcon icon={Bars3BottomRightIcon} />,
+      onClick: () => wrapParagraphWithAlign('right'),
+    },
+    {
+      id: 'align-justify',
+      title: 'Выравнивание по ширине',
+      icon: <FormatToolbarSvgIcon icon={Bars4Icon} />,
+      onClick: () => wrapParagraphWithAlign('justify'),
+    },
+    {
+      id: 'paragraph-indent',
+      title: 'Абзац с отступом первой строки',
+      icon: <FormatToolbarGlyph>¶</FormatToolbarGlyph>,
+      onClick: wrapParagraphWithIndent,
+    },
+    {
+      id: 'indent-none',
+      title: 'Абзац без отступа первой строки',
+      icon: <FormatToolbarGlyph>⇤</FormatToolbarGlyph>,
+      onClick: () => wrapParagraphWithIndentCm(0),
+    },
+    {
+      id: 'indent-125',
+      title: 'Отступ первой строки 1,25 см',
+      icon: <FormatToolbarGlyph>⇥</FormatToolbarGlyph>,
+      onClick: () => wrapParagraphWithIndentCm(1.25),
+    },
+    {
+      id: 'spacing-tight',
+      title: 'Узкий межстрочный интервал',
+      icon: <FormatToolbarGlyph>↕</FormatToolbarGlyph>,
+      onClick: () => wrapParagraphWithSpacing(1.3, 6),
+    },
+    {
+      id: 'spacing-wide',
+      title: 'Широкий межстрочный интервал',
+      icon: <FormatToolbarGlyph>⇕</FormatToolbarGlyph>,
+      onClick: () => wrapParagraphWithSpacing(1.6, 10),
+    },
+    {
+      id: 'bold',
+      title: 'Жирный текст',
+      icon: <FormatToolbarGlyph>B</FormatToolbarGlyph>,
+      onClick: () => wrapSelection('<strong>', '</strong>', 'жирный текст'),
+    },
+    {
+      id: 'italic',
+      title: 'Курсив',
+      icon: <FormatToolbarGlyph>I</FormatToolbarGlyph>,
+      onClick: () => wrapSelection('<em>', '</em>', 'курсив'),
+    },
+    {
+      id: 'underline',
+      title: 'Подчёркивание',
+      icon: <FormatToolbarGlyph>U</FormatToolbarGlyph>,
+      onClick: () => wrapSelection('<u>', '</u>', 'подчёркнуто'),
+    },
+    {
+      id: 'uppercase',
+      title: 'ВЕРХНИЙ РЕГИСТР',
+      icon: <FormatToolbarGlyph>AA</FormatToolbarGlyph>,
+      onClick: uppercaseSelection,
+    },
+    {
+      id: 'clear-format',
+      title: 'Очистить форматирование выделения',
+      icon: <FormatToolbarGlyph>Tx</FormatToolbarGlyph>,
+      onClick: clearFormattingInSelection,
+    },
+    {
+      id: 'list-ul',
+      title: 'Маркированный список',
+      icon: <FormatToolbarSvgIcon icon={ListBulletIcon} />,
+      onClick: () => wrapAsList(false),
+    },
+    {
+      id: 'list-ol',
+      title: 'Нумерованный список',
+      icon: <FormatToolbarSvgIcon icon={NumberedListIcon} />,
+      onClick: () => wrapAsList(true),
+    },
+    {
+      id: 'normalize-soft',
+      title: 'Нормализовать (мягко): убрать лишние пробелы и пустые строки',
+      icon: <FormatToolbarSvgIcon icon={SparklesIcon} />,
+      onClick: () => normalizeTemplateText('soft'),
+    },
+    {
+      id: 'normalize-strict',
+      title: 'Нормализовать (строго): пробелы, пустые строки и выравнивание абзацев',
+      icon: <FormatToolbarGlyph>N+</FormatToolbarGlyph>,
+      onClick: () => normalizeTemplateText('strict'),
+    },
+    {
+      id: 'columns-2',
+      title: 'Блок из двух колонок',
+      icon: <FormatToolbarSvgIcon icon={Square2StackIcon} />,
+      onClick: insertTwoColumnsBlock,
+    },
+    {
+      id: 'signatures',
+      title: 'Подписи сторон',
+      icon: <FormatToolbarSvgIcon icon={PencilSquareIcon} />,
+      onClick: insertSignatureLines,
+    },
+    {
+      id: 'requisites',
+      title: 'Реквизиты (готовый блок)',
+      icon: <FormatToolbarSvgIcon icon={BuildingOffice2Icon} />,
+      onClick: insertRequisitesTemplate,
+    },
+    {
+      id: 'section-template',
+      title: 'Шаблон раздела',
+      icon: <FormatToolbarSvgIcon icon={DocumentPlusIcon} />,
+      onClick: insertSectionTemplate,
+    },
+    {
+      id: 'quote',
+      title: 'Цитата / примечание',
+      icon: <FormatToolbarSvgIcon icon={ChatBubbleBottomCenterTextIcon} />,
+      onClick: insertQuoteBlock,
+    },
+    {
+      id: 'table-2x2',
+      title: 'Таблица 2×2',
+      icon: <FormatToolbarSvgIcon icon={TableCellsIcon} />,
+      onClick: insertSimpleTable,
+    },
+    {
+      id: 'spacer',
+      title: 'Пустая строка (отступ)',
+      icon: <FormatToolbarGlyph>⏎</FormatToolbarGlyph>,
+      onClick: insertEmptySpacer,
+    },
+    {
+      id: 'hr',
+      title: 'Горизонтальный разделитель',
+      icon: <FormatToolbarSvgIcon icon={MinusIcon} />,
+      onClick: insertHorizontalRule,
+    },
+    {
+      id: 'page-break',
+      title: 'Разрыв страницы',
+      icon: <FormatToolbarSvgIcon icon={ArrowsPointingOutIcon} />,
+      onClick: insertPageBreak,
+    },
   ];
-  const advancedTools: ToolButton[] = [
-    { label: 'H3', onClick: () => wrapAsHeading(3) },
-    { label: 'Справа', onClick: () => wrapParagraphWithAlign('right') },
-    { label: 'Без отступа', onClick: () => wrapParagraphWithIndentCm(0) },
-    { label: 'Отступ 1.25см', onClick: () => wrapParagraphWithIndentCm(1.25) },
-    { label: 'Интервал узкий', onClick: () => wrapParagraphWithSpacing(1.3, 6) },
-    { label: 'Интервал широкий', onClick: () => wrapParagraphWithSpacing(1.6, 10) },
-    { label: 'Подчерк.', onClick: () => wrapSelection('<u>', '</u>', 'подчёркнуто') },
-    { label: 'ВЕРХНИЙ РЕГИСТР', onClick: uppercaseSelection },
-    { label: 'Очистить формат', onClick: clearFormattingInSelection },
-    { label: 'Нормализовать (мягко)', onClick: () => normalizeTemplateText('soft') },
-    { label: 'Нормализовать (строго)', onClick: () => normalizeTemplateText('strict') },
-    { label: 'Шаблон раздела', onClick: insertSectionTemplate },
-    { label: 'Цитата / примеч.', onClick: insertQuoteBlock },
-    { label: 'Таблица 2×2', onClick: insertSimpleTable },
-    { label: 'Пустая строка', onClick: insertEmptySpacer, secondary: true },
-    { label: 'Разделитель', onClick: insertHorizontalRule, secondary: true },
-    { label: 'Разрыв страницы', onClick: insertPageBreak, secondary: true },
-  ];
-  const sourceTools = formatToolbarLevel === 'basic' ? basicTools : advancedTools;
-  const q = formatToolbarQuery.trim().toLowerCase();
-  const visibleTools = sourceTools.filter((tool) => {
-    if (!showAllFormatTools && tool.secondary) return false;
-    if (!q) return true;
-    return tool.label.toLowerCase().includes(q);
-  });
+
+  const editorModeToggle = (
+    <div
+      className={`${styles.formatLevelBar} ${styles.templatesLibraryEditorModeToggle}`}
+      role="group"
+      aria-label="Режим редактора шаблона"
+    >
+      <button
+        type="button"
+        className={editorMode === 'html' ? styles.formatLevelBtnActive : styles.formatLevelBtn}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => switchEditorMode('html')}
+      >
+        HTML
+      </button>
+      <button
+        type="button"
+        className={editorMode === 'visual' ? styles.formatLevelBtnActive : styles.formatLevelBtn}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => switchEditorMode('visual')}
+      >
+        Визуальный конструктор
+      </button>
+    </div>
+  );
 
   return (
     <div className={`${styles.page} ${styles.pageWide} ${styles.templatesLibraryPage}`}>
@@ -1415,7 +1727,9 @@ export function ContractDocumentsTemplatesLibraryPage() {
         <p className={styles.hint}>Изменение библиотеки шаблонов доступно только супер-админу.</p>
       ) : null}
 
-      <div className={`${styles.sectionCard} ${styles.templatesLibraryControls}`}>
+      <div
+        className={`${styles.sectionCard} ${styles.templatesLibraryControls} ${measurementFormStyles.blankSheet}`}
+      >
         {showArchivedTemplates ? (
           <p className={styles.templatesLibraryModeBanner} role="status">
             Режим архива: видны только скрытые шаблоны. Выберите шаблон и нажмите «Восстановить» или
@@ -1428,28 +1742,47 @@ export function ContractDocumentsTemplatesLibraryPage() {
             isSuperAdmin && editingId ? styles.templatesLibraryMetaWithActions : ''
           }`}
         >
-          <div className={styles.templatesLibraryMetaFields}>
-            <div className={styles.field}>
-              <label title="Пять типов документов библиотеки">Тип документа</label>
+          <div
+            className={`${measurementFormStyles.grid} ${measurementFormStyles.blankMetaGrid} ${styles.templatesLibraryMetaFields}`}
+          >
+            <div
+              className={`${measurementFormStyles.row} ${styles.templatesLibraryDocumentTypeField}`}
+            >
+              <label
+                className={measurementFormStyles.label}
+                htmlFor="templates-library-tab"
+                title="Пять типов документов библиотеки"
+              >
+                Тип документа
+              </label>
               <select
+                id="templates-library-tab"
+                className={measurementFormStyles.select}
                 value={activeTemplateTab}
-                onChange={(e) => {
-                  void (async () => {
-                    await flushAutosave();
-                    setActiveTemplateTab(normalizeRepairLibraryTemplateTabId(e.target.value));
-                  })();
-                }}
+                onChange={(e) =>
+                  handleActiveTemplateTabChange(
+                    normalizeRepairLibraryTemplateTabId(e.currentTarget.value)
+                  )
+                }
               >
                 {REPAIR_LIBRARY_TEMPLATE_TAB_IDS.map((tab) => (
                   <option key={tab} value={tab}>
-                    {REPAIR_LIBRARY_TEMPLATE_TAB_LABELS[tab]} — активных: {templatesCountByTab[tab]}
+                    {REPAIR_LIBRARY_TEMPLATE_TAB_LABELS[tab]} ({templatesCountByTab[tab]})
                   </option>
                 ))}
               </select>
             </div>
-            <div className={styles.field}>
-              <label title="Тестовые данные в предпросмотре справа">Превью заказчика</label>
+            <div className={measurementFormStyles.row}>
+              <label
+                className={measurementFormStyles.label}
+                htmlFor="templates-library-preview-customer"
+                title="Тестовые данные в предпросмотре справа"
+              >
+                Превью заказчика
+              </label>
               <select
+                id="templates-library-preview-customer"
+                className={measurementFormStyles.select}
                 value={previewCustomerKind}
                 onChange={(e) =>
                   setPreviewCustomerKind(e.target.value as RepairTemplatePreviewCustomerKind)
@@ -1460,8 +1793,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
                 <option value="ENTREPRENEUR">ИП</option>
               </select>
             </div>
-            <div className={styles.field}>
+            <div className={measurementFormStyles.row}>
               <label
+                className={measurementFormStyles.label}
+                htmlFor="templates-library-template"
                 title={
                   showArchivedTemplates
                     ? 'Скрытые шаблоны этой вкладки'
@@ -1471,6 +1806,8 @@ export function ContractDocumentsTemplatesLibraryPage() {
                 {showArchivedTemplates ? 'Архивный шаблон' : 'Активный шаблон'}
               </label>
               <select
+                id="templates-library-template"
+                className={measurementFormStyles.select}
                 value={editingId}
                 disabled={loading || itemsByActiveTab.length === 0}
                 onChange={(e) => selectTemplate(e.target.value)}
@@ -1488,9 +1825,18 @@ export function ContractDocumentsTemplatesLibraryPage() {
                 ))}
               </select>
             </div>
-            <div className={styles.field}>
-              <label title="Отображается в списке шаблонов">Название шаблона</label>
+            <div className={measurementFormStyles.row}>
+              <label
+                className={measurementFormStyles.label}
+                htmlFor="templates-library-title"
+                title="Отображается в списке шаблонов"
+              >
+                Название шаблона
+              </label>
               <input
+                id="templates-library-title"
+                type="text"
+                className={measurementFormStyles.input}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 disabled={!isSuperAdmin}
@@ -1519,7 +1865,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
                     disabled={!editingId || saving}
                     aria-label="В архив"
                     title="Скрыть из пакета без удаления; восстановление через архив в шапке"
-                    onClick={() => void deleteTemplate()}
+                    onClick={requestArchiveTemplate}
                   >
                     <EstimatesArchiveIcon />
                   </button>
@@ -1527,7 +1873,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
                     aria-label="В корзину"
                     title="Корзина: восстановление в течение 30 дней"
                     disabled={!editingId || saving}
-                    onClick={() => void moveTemplateToTrash()}
+                    onClick={requestMoveTemplateToTrash}
                   >
                     <DeleteIcon />
                   </AdminTableIconButton>
@@ -1549,84 +1895,35 @@ export function ContractDocumentsTemplatesLibraryPage() {
         </div>
       </div>
 
-      <div className={`${styles.contractTopTools} ${styles.blockTools}`}>
-        <div className={styles.contractEditorMain}>
-          <div className={styles.formatLevelBar}>
+      <div
+        className={`${styles.contractTopTools} ${styles.blockTools} ${styles.templatesLibraryTopToolsStack}`}
+      >
+        <div
+          className={`${styles.formatToolbar} ${styles.templatesLibraryFormatToolbarRow}`}
+          role="toolbar"
+          aria-label="Инструменты форматирования"
+        >
+          {formatTools.map((tool) => (
             <button
+              key={tool.id}
               type="button"
-              className={
-                editorMode === 'html' ? styles.formatLevelBtnActive : styles.formatLevelBtn
-              }
-              onClick={() => setEditorMode('html')}
+              className={styles.formatBtn}
+              title={tool.title}
+              aria-label={tool.title}
+              onClick={tool.onClick}
+              onMouseDown={(e) => e.preventDefault()}
+              disabled={!isSuperAdmin}
             >
-              HTML
+              {tool.icon}
             </button>
-            <button
-              type="button"
-              className={
-                editorMode === 'visual' ? styles.formatLevelBtnActive : styles.formatLevelBtn
-              }
-              onClick={() => setEditorMode('visual')}
-            >
-              Визуальный конструктор
-            </button>
-          </div>
-          <div className={styles.formatLevelBar}>
-            <button
-              type="button"
-              className={
-                formatToolbarLevel === 'basic' ? styles.formatLevelBtnActive : styles.formatLevelBtn
-              }
-              onClick={() => setFormatToolbarLevel('basic')}
-            >
-              Базовые
-            </button>
-            <button
-              type="button"
-              className={
-                formatToolbarLevel === 'advanced'
-                  ? styles.formatLevelBtnActive
-                  : styles.formatLevelBtn
-              }
-              onClick={() => setFormatToolbarLevel('advanced')}
-            >
-              Расширенные
-            </button>
-          </div>
-          <div className={styles.formatToolbarTopRow}>
-            <input
-              type="text"
-              value={formatToolbarQuery}
-              onChange={(e) => setFormatToolbarQuery(e.target.value)}
-              placeholder="Поиск инструмента…"
-              className={styles.formatSearchInput}
-            />
-            <button
-              type="button"
-              className={showAllFormatTools ? styles.formatLevelBtnActive : styles.formatLevelBtn}
-              onClick={() => setShowAllFormatTools((v) => !v)}
-            >
-              {showAllFormatTools ? 'Только частые' : 'Показать все'}
-            </button>
-          </div>
-          <div className={styles.formatToolbar}>
-            {visibleTools.map((tool) => (
-              <button
-                key={tool.label}
-                type="button"
-                className={styles.formatBtn}
-                onClick={tool.onClick}
-                onMouseDown={(e) => e.preventDefault()}
-                disabled={!isSuperAdmin}
-              >
-                {tool.label}
-              </button>
-            ))}
-          </div>
+          ))}
         </div>
-        <aside className={styles.placeholderPanelTop} aria-label="Плейсхолдеры для вставки">
+        <aside
+          className={`${styles.placeholderPanelTop} ${styles.templatesLibraryPlaceholderPanel}`}
+          aria-label="Плейсхолдеры для вставки"
+        >
           {REPAIR_CONTRACT_PLACEHOLDER_GROUPS.map((group) => (
-            <div key={group.title}>
+            <div key={group.title} className={styles.templatesLibraryPlaceholderGroup}>
               <div className={styles.placeholderGroupTitle}>{group.title}</div>
               <div className={styles.placeholderChips}>
                 {group.items.map((item) => (
@@ -1650,32 +1947,26 @@ export function ContractDocumentsTemplatesLibraryPage() {
 
       <div className={styles.contractLiveGrid}>
         <div className={styles.contractEditColumn}>
-          {editorMode === 'html' ? (
-            <>
-              <label className={styles.contractEditorLabel} htmlFor="contract_template_html_source">
-                HTML шаблона договора
-              </label>
-              <div
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: 8,
-                  alignItems: 'center',
-                  marginBottom: 8,
-                }}
-              >
+          <div
+            className={`${measurementFormStyles.blankSheet} ${styles.templatesLibraryPaneBlank}`}
+          >
+            <div
+              className={`${styles.templatesLibraryEditorPaneHead} ${styles.templatesLibraryEditorPaneHeadMode}`}
+            >
+              {editorModeToggle}
+              <div className={styles.templatesLibraryEditorHeadActions}>
                 <button
                   type="button"
-                  className={styles.secondaryBtn}
+                  className={styles.templatesLibraryEditorHeadActionBtn}
                   disabled={!isSuperAdmin}
                   title="Загрузить .html / .htm (например, файл «Веб-страница, отфильтрованная» из Word). RTF и .docx сюда не подходят — сначала сохраните как отфильтрованную веб-страницу."
                   onClick={() => templateHtmlFileInputRef.current?.click()}
                 >
-                  Импорт из HTML-файла…
+                  Импорт из HTML…
                 </button>
                 <button
                   type="button"
-                  className={styles.secondaryBtn}
+                  className={styles.templatesLibraryEditorHeadActionBtn}
                   disabled={!isSuperAdmin}
                   title="Загрузить HTML из поля в визуальный конструктор"
                   onClick={handleSyncHtmlWithVisualEditor}
@@ -1689,47 +1980,44 @@ export function ContractDocumentsTemplatesLibraryPage() {
                   style={{ display: 'none' }}
                   onChange={(ev) => void handleTemplateHtmlFileImport(ev)}
                 />
-                {/* <span className={styles.hint} style={{ margin: 0, fontSize: 12, maxWidth: '100%' }}>
-                  ПКО из Word: «Файл» → «Сохранить как» → тип «Веб-страница, отфильтрованная
-                  (*.html)» — затем импорт сюда. Вставка RTF или сложной вёрстки в визуальный
-                  редактор в браузере даёт плохой результат; правьте при необходимости в режиме
-                  HTML.
-                </span> */}
               </div>
+            </div>
+            <div
+              className={editorMode === 'html' ? undefined : styles.editorPaneHidden}
+              aria-hidden={editorMode !== 'html'}
+            >
               <textarea
                 id="contract_template_html_source"
                 ref={htmlTextareaRef}
-                className={styles.contractHtmlTextarea}
+                className={`${measurementFormStyles.textarea} ${styles.contractHtmlTextarea} ${styles.templatesLibraryHtmlSource}`}
                 spellCheck={false}
+                aria-label="HTML шаблона договора"
                 value={html}
                 onChange={(e) => setHtml(e.target.value)}
                 disabled={!isSuperAdmin}
+                tabIndex={editorMode === 'html' ? 0 : -1}
               />
-            </>
-          ) : (
-            <>
+            </div>
+            <div
+              className={editorMode === 'visual' ? undefined : styles.editorPaneHidden}
+              aria-hidden={editorMode !== 'visual'}
+            >
               <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 6,
-                  marginBottom: 3,
-                }}
+                className={styles.templatesLibraryEditorPaneHead}
+                aria-label="Панель визуального конструктора"
               >
-                <label className={styles.contractEditorLabel} style={{ marginBottom: 0 }}>
-                  Визуальный конструктор
-                </label>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <label
-                    className={styles.field}
-                    style={{ minWidth: 150, gap: 4, flexDirection: 'row', alignItems: 'center' }}
-                  >
-                    <span style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+                <div className={styles.templatesLibraryPaneToolbar}>
+                  <div className={styles.templatesLibraryInlineField}>
+                    <label
+                      className={measurementFormStyles.label}
+                      htmlFor="templates-library-visual-zoom"
+                    >
                       Масштаб: {visualZoomPct}%
-                    </span>
+                    </label>
                     <input
+                      id="templates-library-visual-zoom"
                       type="number"
+                      className={`${measurementFormStyles.input} ${styles.templatesLibraryNumberInput}`}
                       min={TEMPLATE_EDITOR_ZOOM_MIN_PCT}
                       max={TEMPLATE_EDITOR_ZOOM_MAX_PCT}
                       step={5}
@@ -1744,9 +2032,8 @@ export function ContractDocumentsTemplatesLibraryPage() {
                           )
                         );
                       }}
-                      style={{ height: 24, padding: '2px 6px', width: 66 }}
                     />
-                  </label>
+                  </div>
                   <button
                     type="button"
                     className={styles.secondaryBtn}
@@ -1773,8 +2060,8 @@ export function ContractDocumentsTemplatesLibraryPage() {
               </div>
               <div
                 ref={visualEditorRef}
-                className={`${styles.contractHtmlTextarea} ${styles.visualEditor} ${styles.visualEditorScrollable}`}
-                contentEditable={isSuperAdmin}
+                className={`${measurementFormStyles.textarea} ${styles.contractHtmlTextarea} ${styles.visualEditor} ${styles.visualEditorScrollable} ${styles.templatesLibraryVisualEditor}`}
+                contentEditable={isSuperAdmin && editorMode === 'visual'}
                 suppressContentEditableWarning
                 onInput={(e) => {
                   const next = (e.currentTarget as HTMLDivElement).innerHTML;
@@ -1786,106 +2073,118 @@ export function ContractDocumentsTemplatesLibraryPage() {
                 onKeyUp={captureVisualSelection}
                 onMouseUp={captureVisualSelection}
                 onFocus={captureVisualSelection}
-                onBlur={captureVisualEditorHeight}
+                onBlur={() => {
+                  if (editorMode !== 'visual') return;
+                  syncVisualEditorToHtmlState();
+                  captureVisualEditorHeight();
+                }}
                 style={{
                   whiteSpace: 'normal',
-                  zoom: `${visualZoomPct}%`,
+                  zoom: editorMode === 'visual' ? `${visualZoomPct}%` : undefined,
                   height: visualEditorHeightPx ? `${visualEditorHeightPx}px` : undefined,
                 }}
               />
-            </>
-          )}
+            </div>
+          </div>
         </div>
         <div className={styles.contractPreviewColumn}>
           <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 6,
-              marginBottom: 3,
-            }}
+            className={`${measurementFormStyles.blankSheet} ${styles.templatesLibraryPaneBlank}`}
           >
-            <h3 className={styles.previewBlockTitle} style={{ margin: 0 }}>
-              Предпросмотр
-            </h3>
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'nowrap',
-                gap: 10,
-                alignItems: 'center',
-                fontSize: 12,
-              }}
-            >
-              <label
-                className={styles.field}
-                style={{ minWidth: 180, gap: 6, flexDirection: 'row', alignItems: 'center' }}
-              >
-                <span style={{ fontSize: 12, lineHeight: 1.1, whiteSpace: 'nowrap' }}>
-                  Текст: {previewFontSizePx}px
-                </span>
-                <input
-                  type="number"
-                  min={10}
-                  max={20}
-                  step={1}
-                  value={previewFontSizePx}
-                  onChange={(e) => {
-                    const n = Number(e.target.value);
-                    if (!Number.isFinite(n)) return;
-                    setPreviewFontSizePx(Math.max(10, Math.min(20, n)));
-                  }}
-                  style={{ height: 24, padding: '2px 6px', width: 64 }}
-                />
-              </label>
-              <label
-                className={styles.field}
-                style={{ minWidth: 190, gap: 6, flexDirection: 'row', alignItems: 'center' }}
-              >
-                <span style={{ fontSize: 12, lineHeight: 1.1, whiteSpace: 'nowrap' }}>
-                  Масштаб: {previewZoomPct}%
-                </span>
-                <input
-                  type="number"
-                  min={TEMPLATE_EDITOR_ZOOM_MIN_PCT}
-                  max={TEMPLATE_EDITOR_ZOOM_MAX_PCT}
-                  step={5}
-                  value={previewZoomPct}
-                  onChange={(e) => {
-                    const n = Number(e.target.value);
-                    if (!Number.isFinite(n)) return;
-                    setPreviewZoomPct(
-                      Math.max(
-                        TEMPLATE_EDITOR_ZOOM_MIN_PCT,
-                        Math.min(TEMPLATE_EDITOR_ZOOM_MAX_PCT, n)
-                      )
-                    );
-                  }}
-                  style={{ height: 24, padding: '2px 6px', width: 68 }}
-                />
-              </label>
+            <div className={styles.templatesLibraryPreviewHead}>
+              <h3 className={styles.previewBlockTitle}>Предпросмотр</h3>
+              <div className={styles.templatesLibraryPaneToolbar}>
+                <div className={styles.templatesLibraryInlineField}>
+                  <label
+                    className={measurementFormStyles.label}
+                    htmlFor="templates-library-preview-font-size"
+                  >
+                    Текст: {previewFontSizePx}px
+                  </label>
+                  <input
+                    id="templates-library-preview-font-size"
+                    type="number"
+                    className={`${measurementFormStyles.input} ${styles.templatesLibraryNumberInput}`}
+                    min={10}
+                    max={20}
+                    step={1}
+                    value={previewFontSizePx}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      if (!Number.isFinite(n)) return;
+                      setPreviewFontSizePx(Math.max(10, Math.min(20, n)));
+                    }}
+                  />
+                </div>
+                <div className={styles.templatesLibraryInlineField}>
+                  <label
+                    className={measurementFormStyles.label}
+                    htmlFor="templates-library-preview-zoom"
+                  >
+                    Масштаб: {previewZoomPct}%
+                  </label>
+                  <input
+                    id="templates-library-preview-zoom"
+                    type="number"
+                    className={`${measurementFormStyles.input} ${styles.templatesLibraryNumberInput}`}
+                    min={TEMPLATE_EDITOR_ZOOM_MIN_PCT}
+                    max={TEMPLATE_EDITOR_ZOOM_MAX_PCT}
+                    step={5}
+                    value={previewZoomPct}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      if (!Number.isFinite(n)) return;
+                      setPreviewZoomPct(
+                        Math.max(
+                          TEMPLATE_EDITOR_ZOOM_MIN_PCT,
+                          Math.min(TEMPLATE_EDITOR_ZOOM_MAX_PCT, n)
+                        )
+                      );
+                    }}
+                  />
+                </div>
+              </div>
             </div>
-          </div>
-          <div
-            ref={previewPaneRef}
-            className={`${styles.docPane} ${styles.previewResizable}`}
-            style={{ height: previewPaneHeightPx ? `${previewPaneHeightPx}px` : undefined }}
-            onMouseUp={capturePreviewPaneHeight}
-            onTouchEnd={capturePreviewPaneHeight}
-          >
             <div
-              style={{
-                fontSize: `${previewFontSizePx}px`,
-                zoom: `${previewZoomPct}%`,
-                width: '100%',
-                overflowX: 'hidden',
-              }}
-              dangerouslySetInnerHTML={{ __html: renderedPreviewDisplay }}
-            />
+              ref={previewPaneRef}
+              className={`${styles.docPane} ${styles.previewResizable}`}
+              style={{ height: previewPaneHeightPx ? `${previewPaneHeightPx}px` : undefined }}
+              onMouseUp={capturePreviewPaneHeight}
+              onTouchEnd={capturePreviewPaneHeight}
+            >
+              <div
+                style={{
+                  fontSize: `${previewFontSizePx}px`,
+                  zoom: `${previewZoomPct}%`,
+                  width: '100%',
+                  overflowX: 'hidden',
+                }}
+                dangerouslySetInnerHTML={{ __html: renderedPreviewDisplay }}
+              />
+            </div>
           </div>
         </div>
       </div>
+      <ConfirmModal
+        isOpen={templateArchivePending != null}
+        onClose={() => setTemplateArchivePending(null)}
+        onConfirm={confirmArchiveTemplate}
+        title="В архив?"
+        message={templateArchiveConfirmMessage}
+        confirmText="В архив"
+        cancelText="Отмена"
+        variant="danger"
+      />
+      <ConfirmModal
+        isOpen={templateTrashPending != null}
+        onClose={() => setTemplateTrashPending(null)}
+        onConfirm={confirmMoveTemplateToTrash}
+        title="Переместить в корзину?"
+        message={templateTrashConfirmMessage}
+        confirmText="В корзину"
+        cancelText="Отмена"
+        variant="danger"
+      />
       <TemplateTrashModal
         isOpen={trashOpen}
         onClose={() => setTrashOpen(false)}

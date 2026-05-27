@@ -218,6 +218,25 @@ export interface ContractTemplatePreset {
   deletedById?: string;
 }
 
+/** Только поля, допустимые в PUT /admin/contract-document-packages/contract-templates. */
+export function sanitizeContractTemplatePresetForApi(
+  item: ContractTemplatePreset
+): ContractTemplatePreset {
+  const tabId = item.tabId?.trim();
+  const deletedAt = item.deletedAt?.trim();
+  const deletedById = item.deletedById?.trim();
+  return {
+    id: item.id,
+    title: item.title,
+    html: item.html,
+    ...(tabId ? { tabId } : {}),
+    ...(item.isDefault != null ? { isDefault: Boolean(item.isDefault) } : {}),
+    ...(item.archived != null ? { archived: Boolean(item.archived) } : {}),
+    ...(deletedAt ? { deletedAt } : {}),
+    ...(deletedById ? { deletedById } : {}),
+  };
+}
+
 /** Объект (здание / проект): группа расчётов в списке команды. */
 export interface ContractEstimateGroup {
   id: string;
@@ -687,12 +706,16 @@ export async function putContractDocumentTemplatePresets(body: {
   kind: ContractDocumentPackageKind;
   items: ContractTemplatePreset[];
 }): Promise<{ id: string; kind: string; tab: string; updatedAt: string }> {
+  const payload = {
+    kind: body.kind,
+    items: body.items.map(sanitizeContractTemplatePresetForApi),
+  };
   const res = await apiFetch(
     `${getApiBaseUrl()}/admin/contract-document-packages/contract-templates`,
     {
       method: 'PUT',
       headers: getAdminAuthHeaders(),
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload),
     }
   );
   if (!res.ok) {

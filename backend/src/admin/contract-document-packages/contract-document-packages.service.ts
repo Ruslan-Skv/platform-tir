@@ -640,6 +640,26 @@ export class ContractDocumentPackagesService {
     return row;
   }
 
+  /** Убирает legacy-поля из JSON (например isProtected из seed), чтобы не ломать PUT и хранилище. */
+  private sanitizeContractTemplatePresetItem(
+    item: ContractTemplatePresetDto,
+  ): ContractTemplatePresetDto {
+    const tabId = item.tabId?.trim();
+    const deletedAt = item.deletedAt?.trim();
+    const deletedById = item.deletedById?.trim();
+    const out: ContractTemplatePresetDto = {
+      id: item.id,
+      title: item.title,
+      html: item.html,
+    };
+    if (tabId) out.tabId = tabId;
+    if (item.isDefault != null) out.isDefault = Boolean(item.isDefault);
+    if (item.archived != null) out.archived = Boolean(item.archived);
+    if (deletedAt) out.deletedAt = deletedAt;
+    if (deletedById) out.deletedById = deletedById;
+    return out;
+  }
+
   private isContractTemplateTrashed(item: ContractTemplatePresetDto): boolean {
     return Boolean(item.deletedAt?.trim());
   }
@@ -732,7 +752,9 @@ export class ContractDocumentPackagesService {
     await this.purgeExpiredTrashedContractTemplates(kind);
     const raw = await this.loadGlobalContractTemplatesBlob(kind);
     return {
-      items: raw.items.filter((item) => !this.isContractTemplateTrashed(item)),
+      items: raw.items
+        .filter((item) => !this.isContractTemplateTrashed(item))
+        .map((item) => this.sanitizeContractTemplatePresetItem(item)),
       updatedAt: raw.updatedAt,
     };
   }
@@ -876,7 +898,9 @@ export class ContractDocumentPackagesService {
     const preservedTrash = previousTrashedItems.filter(
       (item) => !activeIds.has(item.id) && !trashedFromDtoIds.has(item.id),
     );
-    const nextItems = [...activeFromDto, ...trashedFromDto, ...preservedTrash];
+    const nextItems = [...activeFromDto, ...trashedFromDto, ...preservedTrash].map((item) =>
+      this.sanitizeContractTemplatePresetItem(item),
+    );
     const payload = JSON.stringify({ items: nextItems });
     const row = await this.prisma.contractDocumentGlobalTemplate.upsert({
       where: {

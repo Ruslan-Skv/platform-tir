@@ -2461,6 +2461,30 @@
   gap: var(--admin-space-xs);
 }
 
+.templatesLibraryPage .templatesLibraryTopToolsStack {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  grid-template-columns: unset;
+}
+
+.templatesLibraryPage .templatesLibraryFormatToolbarRow {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+
+.templatesLibraryPage .templatesLibraryPlaceholderPanel {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
 .templatesLibraryPage .blockTools {
   padding: var(--admin-space-xs) var(--admin-space-sm);
 }
@@ -2479,13 +2503,74 @@
 }
 
 .templatesLibraryPage .placeholderPanelTop {
-  padding: var(--admin-space-sm) var(--admin-space-md);
-  max-height: 180px;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  max-height: 200px;
+  border-radius: var(--admin-radius-md);
+}
+
+.templatesLibraryPage .templatesLibraryPlaceholderGroup {
+  margin-bottom: var(--admin-space-2xs);
+}
+
+.templatesLibraryPage .templatesLibraryPlaceholderGroup:last-child {
+  margin-bottom: 0;
 }
 
 .templatesLibraryPage .placeholderGroupTitle {
-  margin: 4px 0 2px;
+  margin: 0 0 4px;
   font-size: var(--admin-font-size-sm);
+  line-height: 1.3;
+}
+
+.templatesLibraryPage .placeholderGroupTitle:first-child {
+  margin-top: 0;
+}
+
+.templatesLibraryPage .placeholderChips {
+  gap: var(--admin-space-xs);
+}
+
+.templatesLibraryPage .placeholderChip {
+  padding: 3px 8px;
+  font-size: var(--admin-font-size-xs);
+  line-height: 1.35;
+}
+
+.templatesLibraryPage .placeholderChip code {
+  font-size: var(--admin-font-size-xs);
+  line-height: 1.35;
+}
+
+.templatesLibraryPage .formatToolbar {
+  gap: 3px;
+  max-height: none;
+  margin-bottom: 0;
+}
+
+.templatesLibraryPage .formatBtn {
+  min-width: 26px;
+  height: 26px;
+  padding: 0 4px;
+  border-radius: var(--admin-radius-sm);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.templatesLibraryPage .formatToolbarSvg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.templatesLibraryPage .formatToolbarGlyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 14px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
 }
 
 .templatesLibraryPage .docPane {
@@ -2497,18 +2582,144 @@
   min-height: 180px;
 }
 
-.templatesLibraryPage .contractHtmlTextarea {
+.templatesLibraryPage .templatesLibraryHtmlSource {
   min-height: 280px;
-  padding: var(--admin-space-md) var(--admin-space-lg);
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-md);
+  resize: vertical;
+}
+
+.templatesLibraryPage .templatesLibraryVisualEditor {
+  font-family: inherit;
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-md);
+  resize: vertical;
 }
 
 .templatesLibraryPage .visualEditorScrollable {
   min-height: 180px;
 }
 
-/* Библиотека шаблонов: плотный блок «тип / шаблон / действия» */
+/* Режимы HTML / конструктор: оба блока в DOM, неактивный полностью скрыт (без «дубля» при zoom). */
+.editorPaneHidden {
+  display: none !important;
+}
+
+.templatesLibraryEditorPaneHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+  margin-bottom: 6px;
+}
+
+.templatesLibraryEditorPaneHeadMode {
+  justify-content: space-between;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.templatesLibraryEditorModeToggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.templatesLibraryEditorHeadActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.templatesLibraryEditorHeadActionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  font-size: var(--admin-font-size-xs);
+  line-height: 1.25;
+  font-weight: 500;
+  border-radius: var(--admin-radius-sm);
+  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.templatesLibraryEditorHeadActionBtn:hover:not(:disabled) {
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-primary);
+}
+
+.templatesLibraryEditorHeadActionBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Библиотека шаблонов: блок полей как бланк замера */
 .templatesLibraryControls {
-  padding: var(--admin-space-sm) var(--admin-space-sm);
+  padding: var(--admin-space-sm) var(--admin-space-md);
+}
+
+.templatesLibraryPaneBlank {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.templatesLibraryPreviewHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-sm);
+  margin-bottom: var(--admin-space-2xs);
+}
+
+.templatesLibraryPreviewHead .previewBlockTitle {
+  margin: 0;
+}
+
+.templatesLibraryPaneToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--admin-space-sm);
+}
+
+.templatesLibraryInlineField {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  margin-bottom: 0;
+}
+
+.templatesLibraryInlineField .label {
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+.templatesLibraryNumberInput {
+  width: 4.25rem;
+  min-width: 4.25rem;
+  flex-shrink: 0;
 }
 
 .templatesLibraryMeta {
@@ -2524,10 +2735,18 @@
 
 .templatesLibraryMetaFields {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  grid-template-columns: minmax(222px, 1.5fr) repeat(auto-fill, minmax(148px, 1fr));
   gap: 3px 8px;
   align-items: end;
   min-width: 0;
+}
+
+.templatesLibraryDocumentTypeField {
+  min-width: 0;
+}
+
+.templatesLibraryMetaFields .row {
+  margin-bottom: 0;
 }
 
 .templatesLibraryMetaActions {
@@ -2538,25 +2757,6 @@
   flex-shrink: 0;
   align-self: end;
   padding-bottom: 1px;
-}
-
-.templatesLibraryMeta .field {
-  gap: var(--admin-space-2xs);
-  min-width: 0;
-}
-
-.templatesLibraryMeta .field label {
-  font-size: var(--admin-font-size-xs);
-  line-height: var(--admin-line-height-xs);
-  font-weight: 600;
-  color: var(--admin-text-secondary);
-}
-
-.templatesLibraryMeta .field input,
-.templatesLibraryMeta .field select {
-  padding: var(--admin-space-sm) var(--admin-space-md);
-  font-size: var(--admin-font-size-sm);
-  border-radius: var(--admin-radius-sm);
 }
 
 .templatesLibraryMetaRow {
@@ -6784,7 +6984,6 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   color: var(--admin-text-secondary);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .templatesLibraryControls,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .templatesLibraryPage .blockTools,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractEditColumn,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractPreviewColumn,
@@ -6794,17 +6993,13 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   border-color: var(--admin-sidebar-text);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .templatesLibraryMeta .field label,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractEditorLabel,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .placeholderGroupTitle,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .previewBlockTitle {
   color: var(--admin-text-secondary);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .templatesLibraryMeta .field input,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .templatesLibraryMeta .field select,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .formatSearchInput,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .contractHtmlTextarea {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formatSearchInput {
   background: var(--admin-surface-soft);
   border-color: var(--admin-sidebar-text);
   color: var(--admin-text-primary);
