@@ -35,13 +35,38 @@ export function parseExecutorBankDetails(raw: string): ParsedExecutorBankDetails
     return { bankName: '', bik: '', corrAccount: '', settlementAccount: '' };
   }
 
-  const bikMatch = text.match(/\bБИК[:\s]*(\d{9})\b/i);
-  const corrMatch = text.match(/\bк\/\s*с\.?\s*[:.]?\s*([\d\s]+)/i);
-  const settlementMatch = text.match(/\bр\/\s*с\.?\s*[:.]?\s*([\d\s]+)/i);
+  const bikMatch = text.match(/БИК[:\s]*(\d{9})/i);
+  const corrMatch = text.match(/\b(?:к\/\s*с|кор\.?\s*сч)\.?\s*№?\s*[:.]?\s*([\d\s]+)/i);
+  const settlementMatch = text.match(/\bр\/\s*с\.?\s*№?\s*[:.]?\s*([\d\s]+)/i);
 
   const bik = bikMatch?.[1] ?? '';
-  const corrAccount = corrMatch ? formatInvoiceBankAccount(corrMatch[1]) : '';
-  const settlementAccount = settlementMatch ? formatInvoiceBankAccount(settlementMatch[1]) : '';
+  let corrAccount = corrMatch ? formatInvoiceBankAccount(corrMatch[1]) : '';
+  let settlementAccount = settlementMatch ? formatInvoiceBankAccount(settlementMatch[1]) : '';
+
+  if (!corrAccount || !settlementAccount) {
+    const schetAccounts = [...text.matchAll(/Сч[её]т\s*№\s*([\d\s]+)/gi)]
+      .map((m) => normalizeBankAccountDigits(m[1] ?? ''))
+      .filter((digits) => digits.length === 20);
+
+    for (const digits of schetAccounts) {
+      if (!corrAccount && digits.startsWith('301')) {
+        corrAccount = formatInvoiceBankAccount(digits);
+      } else if (!settlementAccount && (digits.startsWith('408') || digits.startsWith('407'))) {
+        settlementAccount = formatInvoiceBankAccount(digits);
+      }
+    }
+
+    if (schetAccounts.length >= 2) {
+      if (!corrAccount) corrAccount = formatInvoiceBankAccount(schetAccounts[0]);
+      if (!settlementAccount) settlementAccount = formatInvoiceBankAccount(schetAccounts[1]);
+    } else if (schetAccounts.length === 1) {
+      const only = schetAccounts[0];
+      if (!corrAccount && only.startsWith('301')) corrAccount = formatInvoiceBankAccount(only);
+      if (!settlementAccount && !only.startsWith('301')) {
+        settlementAccount = formatInvoiceBankAccount(only);
+      }
+    }
+  }
 
   let bankName =
     text
@@ -67,8 +92,13 @@ export function parseExecutorBankDetails(raw: string): ParsedExecutorBankDetails
     bankName =
       text
         .split(/\bБИК\b/i)[0]
-        ?.trim()
+        ?.replace(/^Банк\s+получателя\s*/i, '')
+        .trim()
         .replace(/[,\s]+$/, '') ?? '';
+  }
+
+  if (bankName) {
+    bankName = bankName.replace(/\s+/g, ' ').trim();
   }
 
   return { bankName, bik, corrAccount, settlementAccount };
@@ -183,11 +213,30 @@ export function resolveExecutorBankFields(source: ExecutorBankSource): ExecutorB
   };
 
   if (hasStructuredBankFields(structured)) {
+    const legacy =
+      (source.bankDetails ?? '').trim() &&
+      (!structured.bankName.trim() ||
+        normalizeBankAccountDigits(structured.bankCorrAccount).length !== 20 ||
+        normalizeBankAccountDigits(structured.bankSettlementAccount).length !== 20)
+        ? parseExecutorBankDetails(source.bankDetails ?? '')
+        : null;
+
+    const merged: ExecutorBankFields = {
+      bankName: structured.bankName.trim() || legacy?.bankName || '',
+      bankBik: structured.bankBik || normalizeBankBik(legacy?.bik ?? ''),
+      bankCorrAccount:
+        normalizeBankAccountDigits(structured.bankCorrAccount) ||
+        normalizeBankAccountDigits(legacy?.corrAccount ?? ''),
+      bankSettlementAccount:
+        normalizeBankAccountDigits(structured.bankSettlementAccount) ||
+        normalizeBankAccountDigits(legacy?.settlementAccount ?? ''),
+    };
+
     return {
-      ...structured,
-      bankCorrAccountDisplay: formatBankAccountForDisplay(structured.bankCorrAccount),
-      bankSettlementAccountDisplay: formatBankAccountForDisplay(structured.bankSettlementAccount),
-      bankDetailsComposed: composeExecutorBankDetails(structured),
+      ...merged,
+      bankCorrAccountDisplay: formatBankAccountForDisplay(merged.bankCorrAccount),
+      bankSettlementAccountDisplay: formatBankAccountForDisplay(merged.bankSettlementAccount),
+      bankDetailsComposed: composeExecutorBankDetails(merged),
     };
   }
 

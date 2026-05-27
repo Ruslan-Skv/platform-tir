@@ -20,7 +20,10 @@ import {
   repairInvoiceEstimateSourceFromBasisKey,
 } from './repairInvoiceLinesFromEstimate';
 import { formatRepairIssuedInvoiceAmountRub } from './repairInvoiceNumber';
-import type { RepairInvoiceConductDraft } from './repairInvoicePrint';
+import {
+  type RepairInvoiceConductDraft,
+  lineItemsForPaymentInvoiceReprint,
+} from './repairInvoicePrint';
 import type { RepairPackageFormData } from './repairPackageForm';
 import {
   computeRepairPackagePayableBreakdown,
@@ -60,6 +63,8 @@ export type RepairIssueInvoicePanelProps = {
   ) => Promise<void>;
 
   onPrint: (conduct: RepairInvoiceConductDraft) => void;
+
+  onDownload?: (conduct: RepairInvoiceConductDraft) => void | Promise<void>;
 
   saving?: boolean;
 
@@ -117,6 +122,8 @@ export function RepairIssueInvoicePanel({
 
   onPrint,
 
+  onDownload,
+
   saving = false,
 
   showIssuedTable = true,
@@ -136,6 +143,8 @@ export function RepairIssueInvoicePanel({
   const [estimateLoadSource, setEstimateLoadSource] = useState<RepairInvoiceEstimateSourceId | ''>(
     ''
   );
+
+  const [downloadBusy, setDownloadBusy] = useState(false);
 
   const [issuedNotice, setIssuedNotice] = useState(false);
 
@@ -367,6 +376,16 @@ export function RepairIssueInvoicePanel({
     };
   };
 
+  const handleDownload = async (conduct: RepairInvoiceConductDraft) => {
+    if (!onDownload) return;
+    setDownloadBusy(true);
+    try {
+      await onDownload(conduct);
+    } finally {
+      setDownloadBusy(false);
+    }
+  };
+
   const renderInvoiceLineRow = (line: PaymentInvoiceLineItem, index: number) => (
     <tr key={`line-${index}`}>
       <td className={styles.invoiceLinesKindCol}>
@@ -474,7 +493,9 @@ export function RepairIssueInvoicePanel({
         className={`${measurementBlankStyles.blankSheet} ${styles.paymentsHubConductBlank}`}
         style={{ marginBottom: showIssuedTable ? 16 : 0 }}
       >
-        <div className={`${styles.paymentsFormHubRow} ${styles.paymentsFormHubRowCompact}`}>
+        <div
+          className={`${styles.paymentsFormHubRow} ${styles.paymentsFormHubRowCompact} ${styles.paymentsFormHubRowInvoice}`}
+        >
           <div className={`${styles.paymentsHubConductField} ${styles.paymentsFormHubDateField}`}>
             <label
               className={`${measurementBlankStyles.label} ${styles.paymentsHubConductLabel}`}
@@ -492,7 +513,9 @@ export function RepairIssueInvoicePanel({
             />
           </div>
 
-          <div className={`${styles.paymentsHubConductField} ${styles.paymentsFormHubDateField}`}>
+          <div
+            className={`${styles.paymentsHubConductField} ${styles.paymentsFormHubInvoiceNumberField}`}
+          >
             <label
               className={`${measurementBlankStyles.label} ${styles.paymentsHubConductLabel}`}
               htmlFor={`repair_invoice_number_${packageId}`}
@@ -580,6 +603,20 @@ export function RepairIssueInvoicePanel({
               >
                 Печать
               </button>
+
+              {onDownload ? (
+                <button
+                  type="button"
+                  className={styles.paymentsHubConductSecondaryBtn}
+                  disabled={!formComplete || downloadBusy}
+                  onClick={() => {
+                    const conduct = buildConductDraft();
+                    if (conduct) void handleDownload(conduct);
+                  }}
+                >
+                  {downloadBusy ? 'PDF…' : 'Скачать PDF'}
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
@@ -733,13 +770,33 @@ export function RepairIssueInvoicePanel({
 
                       {onReprint ? (
                         <td>
-                          <button
-                            type="button"
-                            className={styles.paymentsHubConductSecondaryBtn}
-                            onClick={() => onReprint(row)}
-                          >
-                            Печать
-                          </button>
+                          <div className={styles.invoiceIssuedRowActions}>
+                            <button
+                              type="button"
+                              className={styles.paymentsHubConductSecondaryBtn}
+                              onClick={() => onReprint(row)}
+                            >
+                              Печать
+                            </button>
+                            {onDownload ? (
+                              <button
+                                type="button"
+                                className={styles.paymentsHubConductSecondaryBtn}
+                                disabled={downloadBusy}
+                                onClick={() =>
+                                  void handleDownload({
+                                    invoiceDate: row.invoiceDate,
+                                    invoiceNumber: row.invoiceNumber,
+                                    paymentBasis: row.basis,
+                                    amount: formatRepairIssuedInvoiceAmountRub(Number(row.amount)),
+                                    lineItems: lineItemsForPaymentInvoiceReprint(row),
+                                  })
+                                }
+                              >
+                                {downloadBusy ? 'PDF…' : 'PDF'}
+                              </button>
+                            ) : null}
+                          </div>
                         </td>
                       ) : null}
                     </tr>

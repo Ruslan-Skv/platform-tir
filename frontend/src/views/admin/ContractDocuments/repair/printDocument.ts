@@ -611,6 +611,137 @@ function attachPrintWindowCloseHandlers(w: Window): void {
   }, 120_000);
 }
 
+/** Полный HTML-документ с теми же стилями, что и окно печати. */
+export function buildPrintableHtmlDocument(
+  innerHtml: string,
+  documentTitle: string,
+  options?: PrintDocumentOptions
+): string {
+  const titleInner = documentTitle.trim() === '' ? '&#8203;' : escapeHtml(documentTitle);
+  const styles = buildPrintStylesheet(
+    options?.marginFooter,
+    options?.cashOrderCompact,
+    options?.contractCompact
+  );
+  const printBody = options?.contractCompact ? markDocPrintContractCompact(innerHtml) : innerHtml;
+  return `<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"/><title>${titleInner}</title>
+<style>${styles}</style></head><body>${printBody}</body></html>`;
+}
+
+function sanitizeDownloadFileName(fileName: string, extension: 'html' | 'pdf' = 'html'): string {
+  const trimmed = fileName.trim().replace(/\.(html?|pdf)$/i, '');
+  const withExt = `${trimmed}.${extension}`;
+  const safe = withExt.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_').replace(/\s+/g, '_');
+  return safe || `document.${extension}`;
+}
+
+async function waitForDocumentImages(doc: Document): Promise<void> {
+  const images = Array.from(doc.images);
+  await Promise.all(
+    images.map(
+      (img) =>
+        new Promise<void>((resolve) => {
+          if (img.complete) {
+            resolve();
+            return;
+          }
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+        })
+    )
+  );
+}
+
+/** Скачать HTML на компьютер (открыть в браузере, увеличить масштаб, отсканировать QR). */
+export function downloadDocumentHtml(
+  innerHtml: string,
+  documentTitle: string,
+  downloadFileName: string,
+  options?: PrintDocumentOptions
+): void {
+  const fullHtml = buildPrintableHtmlDocument(innerHtml, documentTitle, options);
+  const blob = new Blob(['\uFEFF', fullHtml], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = sanitizeDownloadFileName(downloadFileName);
+  link.rel = 'noopener';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+/** Скачать PDF (рендер того же HTML, что и при печати). Только в браузере. */
+export async function downloadDocumentPdf(
+  innerHtml: string,
+  documentTitle: string,
+  downloadFileName: string,
+  options?: PrintDocumentOptions
+): Promise<void> {
+  const fullHtml = buildPrintableHtmlDocument(innerHtml, documentTitle, options);
+  const fileName = sanitizeDownloadFileName(downloadFileName, 'pdf');
+
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.style.cssText =
+    'position:fixed;left:-10000px;top:0;width:210mm;height:297mm;border:0;visibility:hidden;';
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentDocument;
+  if (!doc) {
+    iframe.remove();
+    throw new Error('Не удалось подготовить PDF');
+  }
+
+  doc.open();
+  doc.write(fullHtml);
+  doc.close();
+
+  await new Promise<void>((resolve) => {
+    const finish = () => requestAnimationFrame(() => resolve());
+    if (doc.readyState === 'complete') {
+      finish();
+      return;
+    }
+    iframe.addEventListener('load', () => finish(), { once: true });
+  });
+
+  if (doc.fonts?.ready) {
+    try {
+      await doc.fonts.ready;
+    } catch {
+      /* ignore */
+    }
+  }
+
+  await waitForDocumentImages(doc);
+
+  const html2pdf = (await import('html2pdf.js')).default;
+
+  try {
+    await html2pdf()
+      .set({
+        margin: [10, 10, 10, 10],
+        filename: fileName,
+        image: { type: 'jpeg', quality: 0.96 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          windowWidth: doc.documentElement.scrollWidth,
+          scrollX: 0,
+          scrollY: 0,
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      })
+      .from(doc.body)
+      .save();
+  } finally {
+    iframe.remove();
+  }
+}
+
 /**
  * Отдельное окно + синхронный `print()` из клика (сохраняется user activation).
  * При `options.marginFooter` нижний колонтитул с номером страницы задаётся через CSS @page (Chrome 131+);
@@ -627,20 +758,8 @@ export function printDocumentHtml(
     return;
   }
 
-  const titleInner = documentTitle.trim() === '' ? '&#8203;' : escapeHtml(documentTitle);
-
-  const styles = buildPrintStylesheet(
-    options?.marginFooter,
-    options?.cashOrderCompact,
-    options?.contractCompact
-  );
-
-  const printBody = options?.contractCompact ? markDocPrintContractCompact(innerHtml) : innerHtml;
-
   w.document.open();
-  w.document
-    .write(`<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"/><title>${titleInner}</title>
-<style>${styles}</style></head><body>${printBody}</body></html>`);
+  w.document.write(buildPrintableHtmlDocument(innerHtml, documentTitle, options));
   w.document.close();
 
   if (options?.contractCompact) {

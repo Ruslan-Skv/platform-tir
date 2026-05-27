@@ -40,6 +40,7 @@ const RAW_HTML_TEMPLATE_PATHS = new Set([
   'workOrderAddendum.roomsHtml',
   'workOrderAddendum.categoryTotalsHtml',
   'invoice.linesHtml',
+  'invoice.qrCodeHtml',
 ]);
 
 function isRawHtmlTemplatePath(path: string, htmlModifier: boolean): boolean {

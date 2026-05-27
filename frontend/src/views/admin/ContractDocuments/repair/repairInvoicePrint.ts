@@ -3,7 +3,7 @@ import type { ContractDocumentPaymentInvoice } from '@/shared/api/admin-payment-
 import { amountToRussianWords } from './amountToRussianWords';
 import { applyTemplate } from './applyTemplate';
 import type { RepairDocumentTemplateTabId } from './formDataTemplateStorage';
-import { printDocumentHtml } from './printDocument';
+import { downloadDocumentPdf, printDocumentHtml } from './printDocument';
 import { REPAIR_PAYMENT_INVOICE_TEMPLATE_TAB } from './repairActTwinCopiesOnOnePageHtml';
 import { formatRepairIssuedInvoiceAmountRub } from './repairInvoiceNumber';
 import type { RepairPackageFormData } from './repairPackageForm';
@@ -17,6 +17,7 @@ import {
   paymentInvoiceLineItemsForApi,
   sumPaymentInvoiceLineItems,
 } from './repairPaymentInvoiceLineItems';
+import { buildRepairPaymentInvoiceQrHtml } from './repairPaymentInvoiceQr';
 
 export type { PaymentInvoiceLineItem };
 
@@ -96,16 +97,50 @@ export function buildRepairInvoiceFormForPrint(
   };
 }
 
-export function buildRepairInvoicePrintHtml(
+export async function buildRepairInvoicePrintHtml(
   baseForm: RepairPackageFormData,
   templateHtml: string,
   conduct: RepairInvoiceConductDraft
-): string {
+): Promise<string> {
+  const formWithInvoice = buildRepairInvoiceFormForPrint(baseForm, conduct);
+  const qrCodeHtml = await buildRepairPaymentInvoiceQrHtml(baseForm, conduct);
   const formForTpl = repairPackageFormForTemplate(
-    buildRepairInvoiceFormForPrint(baseForm, conduct),
+    {
+      ...formWithInvoice,
+      invoice: {
+        ...formWithInvoice.invoice,
+        qrCodeHtml,
+      },
+    } as RepairPackageFormData,
     { templateTab: REPAIR_PAYMENT_INVOICE_TEMPLATE_TAB as RepairDocumentTemplateTabId }
   );
-  return applyTemplate(templateHtml, formForTpl, { plainCustomerPlaceholders: true });
+  const formWithQr = {
+    ...formForTpl,
+    invoice: {
+      ...formWithInvoice.invoice,
+      qrCodeHtml,
+    },
+  };
+  return applyTemplate(templateHtml, formWithQr, { plainCustomerPlaceholders: true });
+}
+
+export function buildRepairPaymentInvoiceDownloadFileName(
+  conduct: RepairInvoiceConductDraft
+): string {
+  const num = conduct.invoiceNumber.trim().replace(/[^\dA-Za-zА-Яа-яЁё_-]+/g, '_') || 'bez_nomera';
+  const date = conduct.invoiceDate.trim() || 'bez_daty';
+  return `Schet_${num}_${date}.pdf`;
+}
+
+export async function downloadRepairPaymentInvoice(
+  html: string,
+  conduct: RepairInvoiceConductDraft
+): Promise<void> {
+  await downloadDocumentPdf(
+    html,
+    'Счёт на оплату',
+    buildRepairPaymentInvoiceDownloadFileName(conduct)
+  );
 }
 
 export function printRepairPaymentInvoice(html: string): void {

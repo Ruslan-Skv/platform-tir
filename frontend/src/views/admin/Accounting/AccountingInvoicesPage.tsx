@@ -29,6 +29,7 @@ import { getRepairContractNumberDisplayForForm } from '@/views/admin/ContractDoc
 import { REPAIR_PAYMENT_INVOICE_TEMPLATE_TAB } from '@/views/admin/ContractDocuments/repair/repairActTwinCopiesOnOnePageHtml';
 import {
   buildRepairInvoicePrintHtml,
+  downloadRepairPaymentInvoice,
   paymentInvoiceLineItemsForApi,
   printRepairPaymentInvoice,
 } from '@/views/admin/ContractDocuments/repair/repairInvoicePrint';
@@ -335,7 +336,7 @@ export function AccountingInvoicesPage() {
                       ? { addendumNumber: option.addendumNumber }
                       : {}),
                   });
-                  const html = buildRepairInvoicePrintHtml(
+                  const html = await buildRepairInvoicePrintHtml(
                     issuePackageForm,
                     resolveIssueTemplateHtml(),
                     conduct
@@ -352,16 +353,36 @@ export function AccountingInvoicesPage() {
                 }
               }}
               onPrint={(conduct) => {
-                const html = buildRepairInvoicePrintHtml(
-                  issuePackageForm,
-                  resolveIssueTemplateHtml(),
-                  conduct
-                );
-                if (!html.trim()) {
-                  setError('Нет данных для печати счёта');
-                  return;
-                }
-                printRepairPaymentInvoice(html);
+                void (async () => {
+                  const html = await buildRepairInvoicePrintHtml(
+                    issuePackageForm,
+                    resolveIssueTemplateHtml(),
+                    conduct
+                  );
+                  if (!html.trim()) {
+                    setError('Нет данных для печати счёта');
+                    return;
+                  }
+                  printRepairPaymentInvoice(html);
+                })();
+              }}
+              onDownload={(conduct) => {
+                void (async () => {
+                  try {
+                    const html = await buildRepairInvoicePrintHtml(
+                      issuePackageForm,
+                      resolveIssueTemplateHtml(),
+                      conduct
+                    );
+                    if (!html.trim()) {
+                      setError('Нет данных для скачивания счёта');
+                      return;
+                    }
+                    await downloadRepairPaymentInvoice(html, conduct);
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : 'Не удалось сформировать PDF');
+                  }
+                })();
               }}
               showIssuedTable={false}
             />

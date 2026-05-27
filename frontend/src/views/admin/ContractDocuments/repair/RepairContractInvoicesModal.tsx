@@ -26,6 +26,7 @@ import { formatRepairIssuedInvoiceAmountRub } from './repairInvoiceNumber';
 import {
   type RepairInvoiceConductDraft,
   buildRepairInvoicePrintHtml,
+  downloadRepairPaymentInvoice,
   lineItemsForPaymentInvoiceReprint,
   paymentInvoiceLineItemsForApi,
   printRepairPaymentInvoice,
@@ -100,13 +101,27 @@ export function RepairContractInvoicesModal({
     void load();
   }, [isOpen, load]);
 
-  const printConduct = (conduct: RepairInvoiceConductDraft) => {
-    const html = buildRepairInvoicePrintHtml(form, resolveInvoiceTemplateHtml(), conduct);
+  const buildInvoiceHtml = async (conduct: RepairInvoiceConductDraft) => {
+    const html = await buildRepairInvoicePrintHtml(form, resolveInvoiceTemplateHtml(), conduct);
     if (!html.trim()) {
       onError('Нет данных для печати счёта');
-      return;
+      return null;
     }
-    printRepairPaymentInvoice(html);
+    return html;
+  };
+
+  const printConduct = async (conduct: RepairInvoiceConductDraft) => {
+    const html = await buildInvoiceHtml(conduct);
+    if (html) printRepairPaymentInvoice(html);
+  };
+
+  const downloadConduct = async (conduct: RepairInvoiceConductDraft) => {
+    try {
+      const html = await buildInvoiceHtml(conduct);
+      if (html) await downloadRepairPaymentInvoice(html, conduct);
+    } catch (e) {
+      onError(e instanceof Error ? e.message : 'Не удалось сформировать PDF');
+    }
   };
 
   const handleIssue = async (
@@ -135,7 +150,7 @@ export function RepairContractInvoicesModal({
       });
       await load();
       onInvoicesChanged?.();
-      printConduct(conduct);
+      await printConduct(conduct);
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Не удалось выставить счёт');
     } finally {
@@ -144,7 +159,7 @@ export function RepairContractInvoicesModal({
   };
 
   const reprintIssued = (row: ContractDocumentPaymentInvoice) => {
-    printConduct({
+    void printConduct({
       invoiceDate: row.invoiceDate,
       invoiceNumber: row.invoiceNumber,
       paymentBasis: row.basis,
@@ -155,8 +170,10 @@ export function RepairContractInvoicesModal({
 
   const modalTitle = (
     <span className={crmDetailStyles.titleWithEdit}>
-      <span>{REPAIR_CONTRACT_INVOICES_MODAL_TITLE}</span>
-      <span style={{ fontWeight: 400, marginLeft: 8 }}>{contractNumberLabel}</span>
+      <span>Счета на оплату по договору</span>
+      {contractNumberLabel ? (
+        <span style={{ fontWeight: 400, marginLeft: 8 }}>№{contractNumberLabel}</span>
+      ) : null}
     </span>
   );
 
@@ -172,8 +189,9 @@ export function RepairContractInvoicesModal({
       <div data-modal-form data-modal-density="compact">
         <p data-modal-form-hint style={{ marginTop: 0 }}>
           Нумерация счетов единая для всей организации. «Выставить счёт» сохраняет запись в{' '}
-          <Link href="/admin/accounting/invoices">бухгалтерии</Link> и открывает печать. Оплату
-          проводите в «Оплаты и этапы».
+          <Link href="/admin/accounting/invoices">бухгалтерии</Link> и открывает печать. «Скачать
+          PDF» — файл счёта для отправки клиенту или оплаты по QR. Оплату проводите в «Оплаты и
+          этапы».
         </p>
         {loading ? <p data-modal-form-hint>Загрузка…</p> : null}
         {!loading ? (
@@ -185,6 +203,7 @@ export function RepairContractInvoicesModal({
             onError={onError}
             onIssue={handleIssue}
             onPrint={printConduct}
+            onDownload={downloadConduct}
             saving={saving}
             onReprint={reprintIssued}
           />

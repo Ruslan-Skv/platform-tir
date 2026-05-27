@@ -8064,6 +8064,12 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   margin-top: 8px;
 }
 
+.invoiceIssuedRowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .invoiceLinesLoadRow {
   align-items: flex-end;
   margin-bottom: 10px;
@@ -8159,6 +8165,16 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   overflow-x: visible;
   overflow-y: visible;
   padding-bottom: 0;
+}
+
+/* Модалка «Счета на оплату»: дата | узкий № | широкое основание | итого | кнопки */
+.paymentsFormHubRowCompact.paymentsFormHubRowInvoice {
+  grid-template-columns:
+    minmax(7.25rem, 8.25rem)
+    minmax(4.25rem, 5.25rem)
+    minmax(0, 1fr)
+    minmax(5.25rem, 6.5rem)
+    auto;
 }
 
 .paymentsFormHubRowCompact > .field {

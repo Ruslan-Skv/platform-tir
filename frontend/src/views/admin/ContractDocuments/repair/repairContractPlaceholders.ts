@@ -156,6 +156,10 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
         label: 'Строки таблицы товаров/услуг (HTML, вставка в <tbody>)',
       },
       { path: 'invoice.itemsCount', label: 'Количество позиций' },
+      {
+        path: 'invoice.qrCodeHtml',
+        label: 'QR-код для оплаты (HTML, ST0001 по реквизитам исполнителя)',
+      },
     ],
   },
   {

@@ -20,13 +20,13 @@ export const repairTemplatePaymentInvoice = `
       <tr>
         <td style="${INV_CELL} border-right:none; border-top:none;"></td>
         <td style="${INV_CELL} border-left:none; border-right:none; border-top:none;"></td>
-        <td style="${INV_CELL}">Счёт №</td>
+        <td style="${INV_CELL}">Кор.сч. №</td>
         <td style="${INV_CELL}">{{executor.bankCorrAccount}}</td>
       </tr>
       <tr>
         <td style="${INV_CELL}">ИНН {{executor.inn}}</td>
         <td style="${INV_CELL}"></td>
-        <td style="${INV_CELL}">Счёт №</td>
+        <td style="${INV_CELL}">Р/с №</td>
         <td style="${INV_CELL}">{{executor.bankSettlementAccount}}</td>
       </tr>
       <tr>
@@ -81,13 +81,22 @@ export const repairTemplatePaymentInvoice = `
     Всего наименований {{invoice.itemsCount}} на {{contract.prepaymentAmountFormatted}} руб.
     <span style="float:right; font-weight:bold;">Без НДС</span>
   </p>
-  <p style="margin:0 0 16pt; font-size:10pt;">
-    <strong>{{contract.prepaymentAmountWordsInvoice}}</strong>
-    <span style="float:right;">
-      <strong>Итого к оплате:</strong>
-      <span style="display:inline-block; min-width:90px; text-align:right;">{{contract.prepaymentAmountFormatted}}</span>
-    </span>
-  </p>
+  <table style="width:100%; border-collapse:collapse; margin:0 0 16pt;">
+    <tr>
+      <td style="vertical-align:top; font-size:10pt;">
+        <p style="margin:0;">
+          <strong>{{contract.prepaymentAmountWordsInvoice}}</strong>
+        </p>
+        <p style="margin:8pt 0 0;">
+          <strong>Итого к оплате:</strong>
+          <span style="display:inline-block; min-width:90px; text-align:right;">{{contract.prepaymentAmountFormatted}}</span>
+        </p>
+      </td>
+      <td style="width:112px; vertical-align:top; text-align:center; padding-left:8pt;">
+        {{invoice.qrCodeHtml|html}}
+      </td>
+    </tr>
+  </table>
 
   <hr style="border:none; border-top:1px solid #000; margin:0 0 24pt;" />
   <p style="margin:0; text-align:right; font-size:10pt;"><strong>М. П.</strong></p>

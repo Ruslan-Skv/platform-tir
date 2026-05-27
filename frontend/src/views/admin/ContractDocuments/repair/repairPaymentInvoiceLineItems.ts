@@ -223,6 +223,7 @@ function escapeHtml(text: string): string {
 export type PaymentInvoicePrintFields = {
   linesHtml: string;
   itemsCount: string;
+  qrCodeHtml?: string;
 };
 
 export function buildPaymentInvoicePrintFields(
