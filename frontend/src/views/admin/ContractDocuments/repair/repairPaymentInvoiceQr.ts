@@ -6,7 +6,7 @@ import {
   normalizeBankBik,
   resolveExecutorBankFields,
 } from './repairExecutorBankFields';
-import type { RepairInvoiceConductDraft } from './repairInvoicePrint';
+import type { RepairInvoiceConductDraft } from './repairInvoiceConduct';
 import type { RepairPackageFormData } from './repairPackageForm';
 import { sumPaymentInvoiceLineItems } from './repairPaymentInvoiceLineItems';
 

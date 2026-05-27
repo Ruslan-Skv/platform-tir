@@ -5,6 +5,7 @@ import { applyTemplate } from './applyTemplate';
 import type { RepairDocumentTemplateTabId } from './formDataTemplateStorage';
 import { downloadDocumentPdf, printDocumentHtml } from './printDocument';
 import { REPAIR_PAYMENT_INVOICE_TEMPLATE_TAB } from './repairActTwinCopiesOnOnePageHtml';
+import type { RepairInvoiceConductDraft } from './repairInvoiceConduct';
 import { formatRepairIssuedInvoiceAmountRub } from './repairInvoiceNumber';
 import type { RepairPackageFormData } from './repairPackageForm';
 import { repairPackageFormForTemplate } from './repairPackageForm';
@@ -20,14 +21,7 @@ import {
 import { buildRepairPaymentInvoiceQrHtml } from './repairPaymentInvoiceQr';
 
 export type { PaymentInvoiceLineItem };
-
-export type RepairInvoiceConductDraft = {
-  invoiceDate: string;
-  invoiceNumber: string;
-  paymentBasis: string;
-  amount: string;
-  lineItems: PaymentInvoiceLineItem[];
-};
+export type { RepairInvoiceConductDraft } from './repairInvoiceConduct';
 
 export function lineItemsFromStoredInvoice(
   raw: Array<{
