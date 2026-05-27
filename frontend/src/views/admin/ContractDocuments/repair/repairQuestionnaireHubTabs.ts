@@ -11,6 +11,16 @@ export type RepairQuestionnaireHubTabId = (typeof REPAIR_QUESTIONNAIRE_HUB_TAB_I
 
 export const REPAIR_QUESTIONNAIRE_HUB_MODAL_TITLE = 'Анкеты';
 
+export function formatRepairQuestionnaireHubModalTitle(
+  contractNumberLabel?: string,
+  contractDateLabel?: string | null
+): string {
+  const num = contractNumberLabel?.trim();
+  if (!num) return REPAIR_QUESTIONNAIRE_HUB_MODAL_TITLE;
+  const dateSuffix = contractDateLabel ? ` от ${contractDateLabel}` : '';
+  return `Анкеты договора №${num}${dateSuffix}`;
+}
+
 export function isRepairQuestionnaireHubTab(id: string): id is RepairQuestionnaireHubTabId {
   return (REPAIR_QUESTIONNAIRE_HUB_TAB_IDS as readonly string[]).includes(id);
 }

@@ -33,6 +33,7 @@ import {
   injectDefaultWorkPeriodIntoFormData,
   setWorkPeriodInFormData,
 } from './repair-contract-work-period';
+import { buildPackageVersionKeyMoments } from './package-version-key-moments';
 
 @Injectable()
 export class ContractDocumentPackagesService {
@@ -48,14 +49,6 @@ export class ContractDocumentPackagesService {
     ContractDocumentPackagesService.ESTIMATE_PRESET_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
   private static readonly CONTRACT_TEMPLATE_TRASH_RETENTION_MS =
     ContractDocumentPackagesService.CONTRACT_TEMPLATE_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
-  private static readonly VERSION_MOMENT_FORM_DATA_UPDATED = 'packageFormDataUpdated';
-  private static readonly VERSION_MOMENT_CUSTOMER_UPDATED = 'packageCustomerUpdated';
-  private static readonly VERSION_MOMENT_ESTIMATE_UPDATED = 'packageEstimateUpdated';
-  private static readonly VERSION_MOMENT_STATUS_UPDATED = 'packageStatusUpdated';
-  private static readonly VERSION_MOMENT_TITLE_UPDATED = 'packageTitleUpdated';
-  private static readonly VERSION_MOMENT_CRM_CONTRACT_UPDATED = 'packageCrmContractUpdated';
-  private static readonly VERSION_MOMENT_ROLLBACK = 'packageRollbackApplied';
-
   private async assertCrmContractExists(contractId: string) {
     const row = await this.prisma.contract.findUnique({
       where: { id: contractId },
@@ -364,6 +357,22 @@ export class ContractDocumentPackagesService {
     savedById?: string | null,
   ) {
     await this.prisma.$transaction(async (tx) => {
+      const latest = await tx.contractDocumentPackageVersion.findFirst({
+        where: { packageId },
+        orderBy: { versionNumber: 'desc' },
+        select: {
+          title: true,
+          formData: true,
+          crmContractId: true,
+          status: true,
+        },
+      });
+      if (
+        latest &&
+        this.buildVersionSnapshotSignature(latest) === this.buildVersionSnapshotSignature(snapshot)
+      ) {
+        return;
+      }
       const agg = await tx.contractDocumentPackageVersion.aggregate({
         where: { packageId },
         _max: { versionNumber: true },
@@ -381,63 +390,6 @@ export class ContractDocumentPackagesService {
         },
       });
     });
-  }
-
-  private asObject(value: unknown): Record<string, unknown> {
-    return value && typeof value === 'object' && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
-      : {};
-  }
-
-  private buildVersionKeyMoments(args: {
-    previous: {
-      title: string | null;
-      status: ContractDocumentPackageStatus;
-      crmContractId: string | null;
-      formData: unknown;
-    } | null;
-    current: {
-      title: string | null;
-      status: ContractDocumentPackageStatus;
-      crmContractId: string | null;
-      formData: unknown;
-    };
-  }): string[] {
-    const { previous, current } = args;
-    if (!previous) {
-      return ['packageCreated'];
-    }
-
-    const moments: string[] = [];
-    if ((previous.title ?? null) !== (current.title ?? null)) {
-      moments.push(ContractDocumentPackagesService.VERSION_MOMENT_TITLE_UPDATED);
-    }
-    if (previous.status !== current.status) {
-      moments.push(ContractDocumentPackagesService.VERSION_MOMENT_STATUS_UPDATED);
-    }
-    if ((previous.crmContractId ?? null) !== (current.crmContractId ?? null)) {
-      moments.push(ContractDocumentPackagesService.VERSION_MOMENT_CRM_CONTRACT_UPDATED);
-    }
-
-    const prevFormRaw = previous.formData ?? {};
-    const nextFormRaw = current.formData ?? {};
-    const prevFormText = JSON.stringify(prevFormRaw);
-    const nextFormText = JSON.stringify(nextFormRaw);
-    if (prevFormText !== nextFormText) {
-      moments.push(ContractDocumentPackagesService.VERSION_MOMENT_FORM_DATA_UPDATED);
-      const prevForm = this.asObject(prevFormRaw);
-      const nextForm = this.asObject(nextFormRaw);
-      if (JSON.stringify(prevForm.customer ?? {}) !== JSON.stringify(nextForm.customer ?? {})) {
-        moments.push(ContractDocumentPackagesService.VERSION_MOMENT_CUSTOMER_UPDATED);
-      }
-      if (JSON.stringify(prevForm.estimate ?? {}) !== JSON.stringify(nextForm.estimate ?? {})) {
-        moments.push(ContractDocumentPackagesService.VERSION_MOMENT_ESTIMATE_UPDATED);
-      }
-    }
-
-    return moments.length
-      ? moments
-      : [ContractDocumentPackagesService.VERSION_MOMENT_FORM_DATA_UPDATED];
   }
 
   private buildVersionSnapshotSignature(snapshot: {
@@ -495,7 +447,7 @@ export class ContractDocumentPackagesService {
     return versions.map(({ formData, ...compactVersion }, index) => {
       const previous = versions[index + 1] ?? null;
       const action = this.resolveVersionAction({ index, versions });
-      const keyMoments = this.buildVersionKeyMoments({
+      const keyMoments = buildPackageVersionKeyMoments({
         previous: previous
           ? {
               title: previous.title,
@@ -510,14 +462,12 @@ export class ContractDocumentPackagesService {
           crmContractId: compactVersion.crmContractId,
           formData,
         },
+        action,
       });
       return {
         ...compactVersion,
         action,
-        keyMoments:
-          action === 'ROLLBACK'
-            ? [ContractDocumentPackagesService.VERSION_MOMENT_ROLLBACK, ...keyMoments]
-            : keyMoments,
+        keyMoments,
       };
     });
   }

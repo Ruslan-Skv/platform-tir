@@ -1,6 +1,11 @@
 'use client';
 
-import { ClockIcon, PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
+import {
+  ClipboardDocumentListIcon,
+  ClockIcon,
+  PencilSquareIcon,
+  TrashIcon,
+} from '@heroicons/react/24/outline';
 
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -20,6 +25,7 @@ import formStyles from './AddCrmCustomerModal.module.css';
 import styles from './CrmCustomerDetailModal.module.css';
 import { CrmCustomerFormFields } from './CrmCustomerFormFields';
 import { CrmCustomerHistoryModal } from './CrmCustomerHistoryModal';
+import { CrmCustomerManagerQuestionnaire1Modal } from './CrmCustomerManagerQuestionnaire1Modal';
 import {
   crmContractDetailHref,
   crmMeasurementDetailHref,
@@ -167,6 +173,7 @@ export function CrmCustomerDetailModal({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<CrmCustomerFormFieldErrors>({});
   const [showHistory, setShowHistory] = useState(false);
+  const [showManagerQuestionnaire, setShowManagerQuestionnaire] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [trashing, setTrashing] = useState(false);
 
@@ -197,6 +204,7 @@ export function CrmCustomerDetailModal({
       setSaveError(null);
       setFieldErrors({});
       setShowHistory(false);
+      setShowManagerQuestionnaire(false);
       setShowDeleteConfirm(false);
       return;
     }
@@ -376,6 +384,15 @@ export function CrmCustomerDetailModal({
             aria-label="Редактировать карточку"
           >
             <PencilSquareIcon className={styles.editIcon} aria-hidden />
+          </button>
+          <button
+            type="button"
+            className={styles.historyBtn}
+            onClick={() => setShowManagerQuestionnaire(true)}
+            title="Анкета (опросник)"
+            aria-label="Анкета (опросник)"
+          >
+            <ClipboardDocumentListIcon className={styles.editIcon} aria-hidden />
           </button>
           <button
             type="button"
@@ -646,6 +663,16 @@ export function CrmCustomerDetailModal({
           customer={data}
           customerLabel={displayName !== '—' ? displayName : undefined}
           onClose={() => setShowHistory(false)}
+        />
+      ) : null}
+      {showManagerQuestionnaire && customerId ? (
+        <CrmCustomerManagerQuestionnaire1Modal
+          customerId={customerId}
+          isOpen={showManagerQuestionnaire}
+          onClose={() => setShowManagerQuestionnaire(false)}
+          onUpdated={() => {
+            if (customerId) void loadCustomer(customerId);
+          }}
         />
       ) : null}
 

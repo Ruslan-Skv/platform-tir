@@ -18,9 +18,9 @@ import type {
 } from './repairPackageForm';
 import { printRepairQuestionnaireHubTab } from './repairQuestionnaireHubPrint';
 import {
-  REPAIR_QUESTIONNAIRE_HUB_MODAL_TITLE,
   REPAIR_QUESTIONNAIRE_HUB_TAB_IDS,
   type RepairQuestionnaireHubTabId,
+  formatRepairQuestionnaireHubModalTitle,
   repairQuestionnaireHubTabLabel,
 } from './repairQuestionnaireHubTabs';
 
@@ -32,6 +32,7 @@ export type RepairContractQuestionnairesHubModalProps = {
   form: RepairPackageFormData;
   headerContractNumberLabel?: string;
   headerContractDateLabel?: string;
+  linkedCrmCustomerId?: string | null;
   onPatchManagerQuestionnaire1: (patch: Partial<RepairManagerQuestionnaire1Block>) => void;
   onToggleManagerQuestionnaire1Traffic: (id: string) => void;
   onToggleManagerQuestionnaire1WhyChosen: (id: string) => void;
@@ -47,6 +48,7 @@ export function RepairContractQuestionnairesHubModal({
   form,
   headerContractNumberLabel,
   headerContractDateLabel,
+  linkedCrmCustomerId,
   onPatchManagerQuestionnaire1,
   onToggleManagerQuestionnaire1Traffic,
   onToggleManagerQuestionnaire1WhyChosen,
@@ -62,13 +64,7 @@ export function RepairContractQuestionnairesHubModal({
   const modalTitle = (
     <div className={hubStyles.modalHeaderRow}>
       <span className={hubStyles.modalHeaderTitle}>
-        <span>{REPAIR_QUESTIONNAIRE_HUB_MODAL_TITLE}</span>
-        {headerContractNumberLabel ? (
-          <span className={hubStyles.modalHeaderContractRef}>
-            {headerContractNumberLabel}
-            {headerContractDateLabel != null ? ` от ${headerContractDateLabel}` : null}
-          </span>
-        ) : null}
+        {formatRepairQuestionnaireHubModalTitle(headerContractNumberLabel, headerContractDateLabel)}
       </span>
       <div className={hubStyles.modalHeaderActions}>
         <button
@@ -126,6 +122,7 @@ export function RepairContractQuestionnairesHubModal({
           panelTab={panelTab}
           form={form}
           previewHtml={previewHtml}
+          linkedCrmCustomerId={linkedCrmCustomerId}
           onPatchManagerQuestionnaire1={onPatchManagerQuestionnaire1}
           onToggleManagerQuestionnaire1Traffic={onToggleManagerQuestionnaire1Traffic}
           onToggleManagerQuestionnaire1WhyChosen={onToggleManagerQuestionnaire1WhyChosen}

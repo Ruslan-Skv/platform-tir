@@ -78,7 +78,7 @@ import {
   type RepairContractsListSortOrder,
 } from './repairContractsListSort';
 import { type RepairPackageFormData, mergeRepairPackageFormData } from './repairPackageForm';
-import { REPAIR_WORK_ORDER_HUB_MODAL_TITLE } from './repairWorkOrderHubTabs';
+import { formatRepairWorkOrderHubModalTitle } from './repairWorkOrderHubTabs';
 
 type RepairListActPhotoItem = {
   key: string;
@@ -1639,8 +1639,8 @@ export function RepairContractDocumentsListPage() {
                                   copyingPackageId !== null ||
                                   deletingPackageId !== null
                                 }
-                                title={REPAIR_WORK_ORDER_HUB_MODAL_TITLE}
-                                aria-label={`${REPAIR_WORK_ORDER_HUB_MODAL_TITLE} (${num})`}
+                                title={formatRepairWorkOrderHubModalTitle(num)}
+                                aria-label={`Открыть ${formatRepairWorkOrderHubModalTitle(num)}`}
                                 onClick={() => setWorkOrdersHubPackageId(r.id)}
                               >
                                 <RepairContractWorkOrdersHubIcon />

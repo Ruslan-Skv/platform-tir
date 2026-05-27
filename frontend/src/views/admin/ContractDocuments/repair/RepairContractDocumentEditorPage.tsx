@@ -44,6 +44,7 @@ import {
   REPAIR_CONTRACT_INVOICES_MODAL_TITLE,
   RepairContractInvoicesModal,
 } from './RepairContractInvoicesModal';
+import { RepairContractPackageEventsJournalModal } from './RepairContractPackageEventsJournalModal';
 import { RepairContractPackageHubIcon } from './RepairContractPackageHubIcon';
 import { RepairContractPackageHubModal } from './RepairContractPackageHubModal';
 import { RepairContractQuestionnairesHubIcon } from './RepairContractQuestionnairesHubIcon';
@@ -61,6 +62,11 @@ import {
 } from './applyCrmContractToForm';
 import { applyTemplate } from './applyTemplate';
 import { contractDateToDdMmYyyy, todayContractDateDdMmYyyy } from './contractDateFormat';
+import {
+  hydrateManagerQuestionnaire1FromLinkedCrmCustomer,
+  parseLinkedCrmCustomerIdFromFormData,
+  persistManagerQuestionnaire1ToCrmCustomer,
+} from './crmManagerQuestionnaire1';
 import {
   type RepairDocumentTemplateTabId,
   buildPersistedFormData,
@@ -120,6 +126,10 @@ import {
   mergeRepairPackageFormData,
   repairPackageFormForTemplate,
 } from './repairPackageForm';
+import {
+  type PackageJournalScheduler,
+  createPackageJournalScheduler,
+} from './repairPackageJournalSchedule';
 import { computeRepairPackagePayableBreakdown } from './repairPackagePaymentTotals';
 import {
   type RepairQuestionnaireHubTabId,
@@ -453,21 +463,6 @@ function RepairEstimateSignaturesBlock({
   );
 }
 
-function formatPackageVersionDate(iso: string) {
-  try {
-    return new Date(iso).toLocaleString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } catch {
-    return iso;
-  }
-}
-
-/** Дата присвоения статуса «Договор подписан»: «25.05.2026г.» */
 function formatContractConcludedDateForHeader(iso: string | undefined): string | null {
   const s = iso?.trim();
   if (!s) return null;
@@ -483,33 +478,6 @@ function formatContractConcludedDateForHeader(iso: string | undefined): string |
   } catch {
     return null;
   }
-}
-
-const PACKAGE_VERSION_MOMENT_LABELS: Record<string, string> = {
-  packageCreated: 'Создание пакета',
-  packageRollbackApplied: 'Восстановлено состояние из сохранённого снимка',
-  packageFormDataUpdated: 'Изменены данные пакета',
-  packageCustomerUpdated: 'Изменены данные заказчика',
-  packageEstimateUpdated: 'Изменена смета',
-  packageStatusUpdated: 'Изменён статус пакета',
-  packageTitleUpdated: 'Изменено название черновика',
-  packageCrmContractUpdated: 'Изменён связанный договор CRM',
-};
-
-function formatPackageVersionKeyMoments(keyMoments: string[] | undefined): string {
-  if (!Array.isArray(keyMoments) || keyMoments.length === 0) return '—';
-  const labels = keyMoments.map((key) => PACKAGE_VERSION_MOMENT_LABELS[key] ?? key);
-  return labels.join(', ');
-}
-
-function formatPackageVersionActor(v: ContractDocumentPackageVersionListItem): string {
-  const u = v.savedBy;
-  if (!u) return '—';
-  const name = [u.lastName, u.firstName].filter(Boolean).join(' ').trim();
-  if (name) return name;
-  const email = u.email?.trim();
-  if (email) return email;
-  return '—';
 }
 
 function RepairTabLockIcon() {
@@ -748,6 +716,9 @@ export function RepairContractDocumentEditorPage({
   const [error, setError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [linkedCrmCustomerId, setLinkedCrmCustomerId] = useState<string | null>(null);
+  const linkedCrmCustomerIdRef = useRef<string | null>(null);
+  linkedCrmCustomerIdRef.current = linkedCrmCustomerId;
+  const mq1CrmSyncDebounceRef = useRef<number | null>(null);
   const [templateOverrides, setTemplateOverrides] = useState<
     Partial<Record<RepairDocumentTemplateTabId, string>>
   >({});
@@ -856,19 +827,85 @@ export function RepairContractDocumentEditorPage({
 
   /** В браузере `setTimeout` возвращает `number`; при подмешанных типах Node — не `NodeJS.Timeout`. */
   const persistRepairPackageDebounceRef = useRef<number | null>(null);
+  const packageJournalSchedulerRef = useRef<PackageJournalScheduler | null>(null);
+  const isVersionsHistoryOpenRef = useRef(isVersionsHistoryOpen);
+  isVersionsHistoryOpenRef.current = isVersionsHistoryOpen;
+  const refreshPackageVersionsRef = useRef<(opts?: { skipSpinner?: boolean }) => Promise<void>>(
+    async () => {}
+  );
+
+  const buildEditorPersistedFormData = useCallback((nextForm: RepairPackageFormData) => {
+    return buildPersistedFormData(
+      nextForm,
+      templateOverridesRef.current,
+      selectedTemplateIdsRef.current,
+      { linkedCrmCustomerId: linkedCrmCustomerIdRef.current }
+    );
+  }, []);
+
+  const scheduleManagerQuestionnaire1CrmSync = useCallback(
+    (block: RepairManagerQuestionnaire1Block) => {
+      const customerId = linkedCrmCustomerIdRef.current?.trim();
+      if (!customerId) return;
+      if (mq1CrmSyncDebounceRef.current !== null) {
+        window.clearTimeout(mq1CrmSyncDebounceRef.current);
+      }
+      mq1CrmSyncDebounceRef.current = window.setTimeout(() => {
+        mq1CrmSyncDebounceRef.current = null;
+        void persistManagerQuestionnaire1ToCrmCustomer(customerId, block).catch((e) => {
+          setError(
+            e instanceof Error ? e.message : 'Не удалось сохранить анкету в карточке клиента'
+          );
+        });
+      }, 400);
+    },
+    []
+  );
+
+  useEffect(() => {
+    return () => {
+      if (mq1CrmSyncDebounceRef.current !== null) {
+        window.clearTimeout(mq1CrmSyncDebounceRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    packageJournalSchedulerRef.current = createPackageJournalScheduler({
+      packageId,
+      getPayload: () => ({
+        title: draftTitleRef.current.trim() || null,
+        formData: buildEditorPersistedFormData(formRef.current),
+      }),
+      onFlushed: () => {
+        if (isVersionsHistoryOpenRef.current) {
+          void refreshPackageVersionsRef.current({ skipSpinner: true });
+        }
+      },
+    });
+    return () => {
+      packageJournalSchedulerRef.current?.dispose();
+      packageJournalSchedulerRef.current = null;
+    };
+  }, [packageId]);
 
   const persistRepairPackageForm = useCallback(
-    async (nextForm: RepairPackageFormData) => {
-      const formData = buildPersistedFormData(
-        nextForm,
-        templateOverridesRef.current,
-        selectedTemplateIdsRef.current
-      );
+    async (nextForm: RepairPackageFormData, opts?: { recordVersion?: boolean }) => {
+      const formData = buildEditorPersistedFormData(nextForm);
+      const recordVersion = opts?.recordVersion === true;
       await updateContractDocumentPackage(packageId, {
         title: draftTitleRef.current.trim() || null,
         formData,
-        recordVersion: true,
+        recordVersion,
       });
+      if (recordVersion) {
+        packageJournalSchedulerRef.current?.acknowledgeImmediateVersion();
+        if (isVersionsHistoryOpenRef.current) {
+          void refreshPackageVersionsRef.current({ skipSpinner: true });
+        }
+      } else {
+        packageJournalSchedulerRef.current?.schedule();
+      }
       setForm(nextForm);
       formRef.current = nextForm;
       setDirty(false);
@@ -886,18 +923,15 @@ export function RepairContractDocumentEditorPage({
       persistRepairPackageDebounceRef.current = null;
       if (packageFlowStatusRef.current === 'REFUSED') return;
       const payload = formRef.current;
-      const formData = buildPersistedFormData(
-        payload,
-        templateOverridesRef.current,
-        selectedTemplateIdsRef.current
-      );
+      const formData = buildEditorPersistedFormData(payload);
       void (async () => {
         try {
           await updateContractDocumentPackage(packageId, {
             title: draftTitleRef.current.trim() || null,
             formData,
-            recordVersion: true,
+            recordVersion: false,
           });
+          packageJournalSchedulerRef.current?.schedule();
           setDirty(false);
           setRepairPackages((prev) =>
             prev.map((p) => (p.id === packageId ? { ...p, formData } : p))
@@ -1052,6 +1086,7 @@ export function RepairContractDocumentEditorPage({
     },
     [packageId]
   );
+  refreshPackageVersionsRef.current = refreshPackageVersions;
 
   const load = useCallback(
     async (opts?: { mode?: 'initial' | 'refresh' }) => {
@@ -1204,8 +1239,23 @@ export function RepairContractDocumentEditorPage({
             );
           }
         }
-        setForm(finalForm);
-        setContractObjectBlockBaseline(snapshotRepairContractObjectBlockFields(finalForm));
+        const linkedId = parseLinkedCrmCustomerIdFromFormData(row.formData);
+        setLinkedCrmCustomerId(linkedId);
+        let formToApply = finalForm;
+        if (linkedId) {
+          try {
+            const hydrated = await hydrateManagerQuestionnaire1FromLinkedCrmCustomer(
+              linkedId,
+              finalForm
+            );
+            formToApply = hydrated.form;
+          } catch {
+            /* оставляем анкету из пакета */
+          }
+        }
+        setForm(formToApply);
+        formRef.current = formToApply;
+        setContractObjectBlockBaseline(snapshotRepairContractObjectBlockFields(formToApply));
         const overridesSansContract = { ...ov };
         delete overridesSansContract.contract;
         setTemplateOverrides(overridesSansContract);
@@ -1252,7 +1302,9 @@ export function RepairContractDocumentEditorPage({
           try {
             await updateContractDocumentPackage(packageId, {
               title: row.title?.trim() || null,
-              formData: buildPersistedFormData(finalForm, overridesSansContract, selectedIds),
+              formData: buildPersistedFormData(finalForm, overridesSansContract, selectedIds, {
+                linkedCrmCustomerId: linkedId,
+              }),
               recordVersion: false,
             });
             setRepairPackages((prev) =>
@@ -1263,7 +1315,8 @@ export function RepairContractDocumentEditorPage({
                       formData: buildPersistedFormData(
                         finalForm,
                         overridesSansContract,
-                        selectedIds
+                        selectedIds,
+                        { linkedCrmCustomerId: linkedId }
                       ) as Record<string, unknown>,
                     }
                   : p
@@ -1316,26 +1369,37 @@ export function RepairContractDocumentEditorPage({
   }, [isVersionsHistoryOpen, loading, refreshPackageVersions]);
 
   useEffect(() => {
-    if (!isVersionsHistoryOpen) return;
-    const prevOverflow = document.body.style.overflow;
-    const prevPaddingRight = document.body.style.paddingRight;
-    const scrollbarGap = window.innerWidth - document.documentElement.clientWidth;
-    document.body.style.overflow = 'hidden';
-    if (scrollbarGap > 0) {
-      document.body.style.paddingRight = `${scrollbarGap}px`;
-    }
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      document.body.style.paddingRight = prevPaddingRight;
-    };
-  }, [isVersionsHistoryOpen]);
+    if (!questionnairesHubOpen || !linkedCrmCustomerId) return;
+    void (async () => {
+      try {
+        const hydrated = await hydrateManagerQuestionnaire1FromLinkedCrmCustomer(
+          linkedCrmCustomerId,
+          formRef.current
+        );
+        setForm((prev) => {
+          if (
+            JSON.stringify(prev.managerQuestionnaire1) ===
+            JSON.stringify(hydrated.form.managerQuestionnaire1)
+          ) {
+            return prev;
+          }
+          const next = { ...prev, managerQuestionnaire1: hydrated.form.managerQuestionnaire1 };
+          formRef.current = next;
+          return next;
+        });
+      } catch {
+        /* оставляем локальную копию */
+      }
+    })();
+  }, [questionnairesHubOpen, linkedCrmCustomerId]);
 
   const handleRepairCrmCustomerApplied = useCallback(
     (detail: CrmCustomerDetail) => {
       if (contractAndEstimateLocked) return;
       const next = mergeRepairFormFromCrmCustomerDetail(detail, formRef.current);
-      setForm(next);
       setLinkedCrmCustomerId(detail.id);
+      setForm(next);
+      formRef.current = next;
       touchPackageData();
     },
     [contractAndEstimateLocked, touchPackageData]
@@ -1564,13 +1628,16 @@ export function RepairContractDocumentEditorPage({
 
   const patchManagerQuestionnaire1 = useCallback(
     (patch: Partial<RepairManagerQuestionnaire1Block>) => {
-      setForm((p) => ({
-        ...p,
-        managerQuestionnaire1: { ...p.managerQuestionnaire1, ...patch },
-      }));
+      setForm((p) => {
+        const nextBlock = { ...p.managerQuestionnaire1, ...patch };
+        scheduleManagerQuestionnaire1CrmSync(nextBlock);
+        const next = { ...p, managerQuestionnaire1: nextBlock };
+        formRef.current = next;
+        return next;
+      });
       touchPackageData();
     },
-    [touchPackageData]
+    [scheduleManagerQuestionnaire1CrmSync, touchPackageData]
   );
 
   const patchPostWorkQuestionnaire2 = useCallback(
@@ -1598,14 +1665,15 @@ export function RepairContractDocumentEditorPage({
         const idx = ids.indexOf(id);
         if (idx >= 0) ids.splice(idx, 1);
         else ids.push(id);
-        return {
-          ...p,
-          managerQuestionnaire1: { ...p.managerQuestionnaire1, clientNeedsCheckedIds: ids },
-        };
+        const nextBlock = { ...p.managerQuestionnaire1, clientNeedsCheckedIds: ids };
+        scheduleManagerQuestionnaire1CrmSync(nextBlock);
+        const next = { ...p, managerQuestionnaire1: nextBlock };
+        formRef.current = next;
+        return next;
       });
       touchPackageData();
     },
-    [touchPackageData]
+    [scheduleManagerQuestionnaire1CrmSync, touchPackageData]
   );
 
   const toggleManagerQuestionnaire1Traffic = useCallback(
@@ -1615,14 +1683,15 @@ export function RepairContractDocumentEditorPage({
         const idx = ids.indexOf(id);
         if (idx >= 0) ids.splice(idx, 1);
         else ids.push(id);
-        return {
-          ...p,
-          managerQuestionnaire1: { ...p.managerQuestionnaire1, trafficSourceCheckedIds: ids },
-        };
+        const nextBlock = { ...p.managerQuestionnaire1, trafficSourceCheckedIds: ids };
+        scheduleManagerQuestionnaire1CrmSync(nextBlock);
+        const next = { ...p, managerQuestionnaire1: nextBlock };
+        formRef.current = next;
+        return next;
       });
       touchPackageData();
     },
-    [touchPackageData]
+    [scheduleManagerQuestionnaire1CrmSync, touchPackageData]
   );
 
   const toggleManagerQuestionnaire1WhyChosen = useCallback(
@@ -1632,14 +1701,15 @@ export function RepairContractDocumentEditorPage({
         const idx = ids.indexOf(id);
         if (idx >= 0) ids.splice(idx, 1);
         else ids.push(id);
-        return {
-          ...p,
-          managerQuestionnaire1: { ...p.managerQuestionnaire1, whyChosenCheckedIds: ids },
-        };
+        const nextBlock = { ...p.managerQuestionnaire1, whyChosenCheckedIds: ids };
+        scheduleManagerQuestionnaire1CrmSync(nextBlock);
+        const next = { ...p, managerQuestionnaire1: nextBlock };
+        formRef.current = next;
+        return next;
       });
       touchPackageData();
     },
-    [touchPackageData]
+    [scheduleManagerQuestionnaire1CrmSync, touchPackageData]
   );
 
   const updateContract = <K extends keyof RepairPackageFormData['contract']>(
@@ -3326,8 +3396,16 @@ export function RepairContractDocumentEditorPage({
                     );
                     setWorkOrdersHubOpen(true);
                   }}
-                  title="Заказ-наряды, интерактивная итоговая смета и итоговый заказ-наряд"
-                  aria-label="Заказ-наряды и итоговые сметы"
+                  title={
+                    headerContractNumberLabel
+                      ? `Заказ-наряды договора №${headerContractNumberLabel}`
+                      : 'Заказ-наряды'
+                  }
+                  aria-label={
+                    headerContractNumberLabel
+                      ? `Заказ-наряды договора №${headerContractNumberLabel}`
+                      : 'Заказ-наряды и итоговые сметы'
+                  }
                 >
                   <RepairContractWorkOrdersHubIcon />
                   <span className={styles.repairEditorHubBtnLabel}>Заказ-наряды</span>
@@ -3349,8 +3427,16 @@ export function RepairContractDocumentEditorPage({
                     setQuestionnairesHubPanelTab(defaultRepairQuestionnaireHubTab(null));
                     setQuestionnairesHubOpen(true);
                   }}
-                  title="Анкета-опросник и анкета с оценкой работы"
-                  aria-label="Анкеты"
+                  title={
+                    headerContractNumberLabel
+                      ? `Анкеты договора №${headerContractNumberLabel}`
+                      : 'Анкеты'
+                  }
+                  aria-label={
+                    headerContractNumberLabel
+                      ? `Анкеты договора №${headerContractNumberLabel}`
+                      : 'Анкеты'
+                  }
                 >
                   <RepairContractQuestionnairesHubIcon />
                   <span className={styles.repairEditorHubBtnLabel}>Анкеты</span>
@@ -3361,8 +3447,16 @@ export function RepairContractDocumentEditorPage({
                   type="button"
                   className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn}`}
                   onClick={() => setIsVersionsHistoryOpen(true)}
-                  title="Журнал событий пакета"
-                  aria-label="Открыть журнал событий пакета"
+                  title={
+                    headerContractNumberLabel
+                      ? `Журнал событий договора №${headerContractNumberLabel}`
+                      : 'Журнал событий договора'
+                  }
+                  aria-label={
+                    headerContractNumberLabel
+                      ? `Открыть журнал событий договора №${headerContractNumberLabel}`
+                      : 'Открыть журнал событий договора'
+                  }
                 >
                   <VersionsHistoryIcon />
                 </button>
@@ -3464,76 +3558,6 @@ export function RepairContractDocumentEditorPage({
         ) : null}
         {error ? <p className={styles.error}>{error}</p> : null}
         {excelMessage ? <p className={styles.hint}>{excelMessage}</p> : null}
-        {isVersionsHistoryOpen ? (
-          <div
-            className={`${styles.saveModalBackdrop} ${styles.packageVersionsModalBackdrop}`}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="package-events-journal-title"
-            onClick={() => setIsVersionsHistoryOpen(false)}
-          >
-            <div
-              className={styles.packageVersionsModalCard}
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              <h3 className={styles.packageVersionsTitle} id="package-events-journal-title">
-                Журнал событий
-              </h3>
-              <p className={styles.packageVersionsHint}>
-                В журнал попадают события, для которых на сервере создан снимок метаданных пакета:
-                время, пользователь (если известен) и краткое описание изменений относительно
-                предыдущей записи. В том числе при отложенном автосохранении после правок на вкладке
-                «Данные».
-              </p>
-              <div>
-                <button
-                  type="button"
-                  className={styles.secondaryBtn}
-                  disabled={versionsBusy}
-                  onClick={() => void refreshPackageVersions()}
-                >
-                  {versionsBusy ? 'Загрузка…' : 'Обновить список'}
-                </button>
-              </div>
-              {packageVersions.length === 0 && !versionsBusy ? (
-                <p className={styles.hint}>Пока нет записей в журнале.</p>
-              ) : null}
-              {packageVersions.length > 0 ? (
-                <div className={styles.tableWrap}>
-                  <table className={styles.packageVersionsTable}>
-                    <thead>
-                      <tr>
-                        <th>Когда</th>
-                        <th>Кто</th>
-                        <th>Что сделано</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {packageVersions.map((v) => (
-                        <tr key={v.id}>
-                          <td>{formatPackageVersionDate(v.createdAt)}</td>
-                          <td>{formatPackageVersionActor(v)}</td>
-                          <td>{formatPackageVersionKeyMoments(v.keyMoments)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : null}
-              <div className={styles.saveModalActionsRow}>
-                <button
-                  type="button"
-                  className={styles.primaryBtn}
-                  onClick={() => setIsVersionsHistoryOpen(false)}
-                >
-                  Закрыть
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : null}
         <div className={styles.repairPackageTabBarRow}>
           <div
             className={`${styles.tabBar} ${styles.blockTabs} ${styles.repairPackageTabBarCompact}`}
@@ -4985,11 +5009,21 @@ export function RepairContractDocumentEditorPage({
           form={form}
           headerContractNumberLabel={headerContractNumberLabel}
           headerContractDateLabel={headerContractConcludedDateLabel ?? undefined}
+          linkedCrmCustomerId={linkedCrmCustomerId}
           onPatchManagerQuestionnaire1={patchManagerQuestionnaire1}
           onToggleManagerQuestionnaire1Traffic={toggleManagerQuestionnaire1Traffic}
           onToggleManagerQuestionnaire1WhyChosen={toggleManagerQuestionnaire1WhyChosen}
           onToggleManagerQuestionnaire1Need={toggleManagerQuestionnaire1Need}
           onPatchPostWorkQuestionnaire2={patchPostWorkQuestionnaire2}
+        />
+        <RepairContractPackageEventsJournalModal
+          isOpen={isVersionsHistoryOpen}
+          onClose={() => setIsVersionsHistoryOpen(false)}
+          versions={packageVersions}
+          versionsBusy={versionsBusy}
+          onRefresh={() => void refreshPackageVersions()}
+          contractNumberLabel={headerContractNumberLabel}
+          contractDateLabel={headerContractConcludedDateLabel}
         />
         <RepairContractPackageHubModal
           packageId={packageId}

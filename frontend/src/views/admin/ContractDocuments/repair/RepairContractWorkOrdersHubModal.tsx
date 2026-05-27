@@ -10,8 +10,8 @@ import hubStyles from './RepairContractWorkOrdersHubModal.module.css';
 import { RepairContractWorkOrdersPanels } from './RepairContractWorkOrdersPanels';
 import { printRepairWorkOrderHubTab } from './repairWorkOrderHubPrint';
 import {
-  REPAIR_WORK_ORDER_HUB_MODAL_TITLE,
   type RepairWorkOrderHubTabId,
+  formatRepairWorkOrderHubModalTitle,
   repairWorkOrderHubTabLabel,
   repairWorkOrderHubTabsForPackage,
 } from './repairWorkOrderHubTabs';
@@ -43,13 +43,7 @@ export function RepairContractWorkOrdersHubModal({
   const modalTitle = (
     <div className={hubStyles.modalHeaderRow}>
       <span className={hubStyles.modalHeaderTitle}>
-        <span>{REPAIR_WORK_ORDER_HUB_MODAL_TITLE}</span>
-        {headerContractNumberLabel ? (
-          <span className={hubStyles.modalHeaderContractRef}>
-            {headerContractNumberLabel}
-            {headerContractDateLabel != null ? ` от ${headerContractDateLabel}` : null}
-          </span>
-        ) : null}
+        {formatRepairWorkOrderHubModalTitle(headerContractNumberLabel, headerContractDateLabel)}
       </span>
       <div className={hubStyles.modalHeaderActions}>
         <button

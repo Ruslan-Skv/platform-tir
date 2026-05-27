@@ -1,0 +1,106 @@
+.journalPanel {
+  max-height: min(92vh, 52rem);
+}
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs, 4px);
+  padding: var(--admin-space-xs, 4px);
+}
+
+.shell :global([data-modal-form-hint]) {
+  margin: 0;
+  padding: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
+}
+
+.subtitle {
+  margin: 0;
+  padding: 0 var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
+  line-height: 1.45;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs, 4px);
+  max-height: min(58vh, 28rem);
+  overflow-y: auto;
+  padding: var(--admin-space-sm, 6px) !important;
+}
+
+.entry {
+  background: var(--admin-surface, #fff);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-md, 8px);
+  padding: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .entry {
+  background: var(--admin-surface-muted, #111827);
+  border-color: var(--admin-border-strong, #374151);
+}
+
+.entryMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-md, 8px);
+  font-size: var(--admin-font-size-sm);
+}
+
+.entryDate {
+  font-weight: 500;
+  color: var(--admin-text-secondary);
+}
+
+.entryUser {
+  color: var(--admin-text-muted);
+}
+
+.entryAction {
+  padding: var(--admin-space-2xs) var(--admin-space-md);
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
+  border-radius: var(--admin-radius-xl);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 500;
+}
+
+.actionRollback {
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning-text);
+}
+
+.actionCreate {
+  background: var(--admin-success-bg-soft, #dcfce7);
+  color: var(--admin-success-text, #166534);
+}
+
+.eventList {
+  margin: var(--admin-space-sm, 6px) 0 0;
+  padding-left: var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-secondary);
+  line-height: 1.45;
+}
+
+.eventList li + li {
+  margin-top: var(--admin-space-2xs);
+}
+
+.refreshSpinning {
+  animation: packageEventsJournalRefreshSpin 0.85s linear infinite;
+}
+
+@keyframes packageEventsJournalRefreshSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}

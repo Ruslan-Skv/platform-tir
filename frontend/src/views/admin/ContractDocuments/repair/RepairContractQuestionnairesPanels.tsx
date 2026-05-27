@@ -14,6 +14,7 @@ export type RepairContractQuestionnairesPanelsProps = {
   panelTab: RepairQuestionnaireHubTabId;
   form: RepairPackageFormData;
   previewHtml: string;
+  linkedCrmCustomerId?: string | null;
   onPatchManagerQuestionnaire1: (patch: Partial<RepairManagerQuestionnaire1Block>) => void;
   onToggleManagerQuestionnaire1Traffic: (id: string) => void;
   onToggleManagerQuestionnaire1WhyChosen: (id: string) => void;
@@ -25,6 +26,7 @@ export function RepairContractQuestionnairesPanels({
   panelTab,
   form,
   previewHtml,
+  linkedCrmCustomerId,
   onPatchManagerQuestionnaire1,
   onToggleManagerQuestionnaire1Traffic,
   onToggleManagerQuestionnaire1WhyChosen,
@@ -40,6 +42,7 @@ export function RepairContractQuestionnairesPanels({
           onToggleTrafficSource={onToggleManagerQuestionnaire1Traffic}
           onToggleWhyChosen={onToggleManagerQuestionnaire1WhyChosen}
           onToggleClientNeed={onToggleManagerQuestionnaire1Need}
+          syncSourceLabel={linkedCrmCustomerId ? 'package' : 'unlinked'}
         />
       ) : (
         <RepairPostWorkQuestionnaire2Tab form={form} onPatch={onPatchPostWorkQuestionnaire2} />

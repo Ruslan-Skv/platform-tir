@@ -42,6 +42,7 @@ import {
   clampRepairAddendumSlotCount,
   mergeRepairPackageFormData,
 } from './repairPackageForm';
+import { createPackageJournalScheduler } from './repairPackageJournalSchedule';
 import { resolveRepairTemplateHtml } from './resolveRepairTemplateHtml';
 
 export type UseRepairContractPackageHubOptions = {
@@ -70,6 +71,10 @@ export function useRepairContractPackageHub({
   packageFlowStatusRef.current = packageFlowStatus;
   const templateOverridesRef = useRef<Partial<Record<RepairDocumentTemplateTabId, string>>>({});
   const selectedTemplateIdsRef = useRef<Partial<Record<RepairDocumentTemplateTabId, string>>>({});
+  const draftTitleRef = useRef<string | null>(null);
+  const packageJournalSchedulerRef = useRef<ReturnType<
+    typeof createPackageJournalScheduler
+  > | null>(null);
 
   const [workStartModalOpen, setWorkStartModalOpen] = useState(false);
   const [workStartModalDate, setWorkStartModalDate] = useState('');
@@ -103,16 +108,42 @@ export function useRepairContractPackageHub({
         templateOverridesRef.current,
         selectedTemplateIdsRef.current
       );
+      const recordVersion = opts?.recordVersion === true;
       await updateContractDocumentPackage(packageId, {
         status: opts?.status,
         formData,
-        recordVersion: opts?.recordVersion ?? true,
+        recordVersion,
       });
+      if (recordVersion) {
+        packageJournalSchedulerRef.current?.acknowledgeImmediateVersion();
+      } else {
+        packageJournalSchedulerRef.current?.schedule();
+      }
       setForm(nextForm);
       formRef.current = nextForm;
     },
     [packageId]
   );
+
+  useEffect(() => {
+    if (!isOpen || !packageId) return;
+    packageJournalSchedulerRef.current = createPackageJournalScheduler({
+      packageId,
+      getPayload: () => ({
+        title: draftTitleRef.current,
+        formData: buildPersistedFormData(
+          formRef.current,
+          templateOverridesRef.current,
+          selectedTemplateIdsRef.current
+        ),
+        status: packageFlowStatusRef.current,
+      }),
+    });
+    return () => {
+      packageJournalSchedulerRef.current?.dispose();
+      packageJournalSchedulerRef.current = null;
+    };
+  }, [isOpen, packageId]);
 
   const loadHub = useCallback(async () => {
     setLoading(true);
@@ -151,6 +182,7 @@ export function useRepairContractPackageHub({
       selectedTemplateIdsRef.current = templatePresetIds;
       setForm(mergedForm);
       formRef.current = mergedForm;
+      draftTitleRef.current = row.title?.trim() || null;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось загрузить пакет');
     } finally {
@@ -186,7 +218,7 @@ export function useRepairContractPackageHub({
       });
       void (async () => {
         try {
-          await persistForm(formRef.current, { recordVersion: true });
+          await persistForm(formRef.current);
           notifyUpdated();
         } catch (e) {
           setError(e instanceof Error ? e.message : 'Не удалось сохранить');
@@ -207,7 +239,7 @@ export function useRepairContractPackageHub({
       });
       void (async () => {
         try {
-          await persistForm(formRef.current, { recordVersion: true });
+          await persistForm(formRef.current);
           notifyUpdated();
         } catch (e) {
           setError(e instanceof Error ? e.message : 'Не удалось сохранить');
@@ -495,6 +527,7 @@ export function useRepairContractPackageHub({
         repairContractClosed: true,
       };
       await updateContractDocumentPackage(packageId, { formData, recordVersion: true });
+      packageJournalSchedulerRef.current?.acknowledgeImmediateVersion();
       setForm(nextForm);
       formRef.current = nextForm;
       setContractCloseModalOpen(false);

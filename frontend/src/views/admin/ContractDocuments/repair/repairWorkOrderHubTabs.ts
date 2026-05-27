@@ -22,6 +22,16 @@ export type RepairWorkOrderHubTabId = (typeof REPAIR_WORK_ORDER_HUB_TAB_IDS)[num
 
 export const REPAIR_WORK_ORDER_HUB_MODAL_TITLE = 'Заказ-наряды';
 
+export function formatRepairWorkOrderHubModalTitle(
+  contractNumberLabel?: string,
+  contractDateLabel?: string | null
+): string {
+  const num = contractNumberLabel?.trim();
+  if (!num) return REPAIR_WORK_ORDER_HUB_MODAL_TITLE;
+  const dateSuffix = contractDateLabel ? ` от ${contractDateLabel}` : '';
+  return `Заказ-наряды договора №${num}${dateSuffix}`;
+}
+
 export function isRepairWorkOrderHubTab(id: string): id is RepairWorkOrderHubTabId {
   return (REPAIR_WORK_ORDER_HUB_TAB_IDS as readonly string[]).includes(id);
 }

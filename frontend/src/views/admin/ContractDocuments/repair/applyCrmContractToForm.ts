@@ -10,6 +10,10 @@ import { joinPersonFullName } from '@/views/admin/CRM/Customers/crmCustomerName'
 import { amountToRussianWords } from './amountToRussianWords';
 import { isoOrCrmDateToContractDdMmYyyy } from './contractDateFormat';
 import {
+  isManagerQuestionnaire1Filled,
+  readManagerQuestionnaire1FromCrmDetail,
+} from './crmManagerQuestionnaire1';
+import {
   type RepairCustomerBlock,
   type RepairPackageFormData,
   defaultRepairPackageFormData,
@@ -105,6 +109,7 @@ export function mergeRepairFormFromCrmCustomerDetail(
 ): RepairPackageFormData {
   const { form } = formFromCrmCustomerDetail(detail);
   const objectAddress = (form.objectAddresses[0] ?? '').trim();
+  const fromCustomer = readManagerQuestionnaire1FromCrmDetail(detail);
 
   return {
     ...prev,
@@ -113,6 +118,9 @@ export function mergeRepairFormFromCrmCustomerDetail(
       ...prev.object,
       objectAddress,
     },
+    managerQuestionnaire1: isManagerQuestionnaire1Filled(fromCustomer)
+      ? fromCustomer
+      : prev.managerQuestionnaire1,
   };
 }
 

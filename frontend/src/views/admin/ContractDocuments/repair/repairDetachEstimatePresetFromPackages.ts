@@ -73,6 +73,6 @@ export async function persistRepairPackageAfterRemovingEstimatePreset(
     title: row.title?.trim() || null,
     formData,
     crmContractId: null,
-    recordVersion: true,
+    recordVersion: false,
   });
 }

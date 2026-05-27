@@ -4816,15 +4816,6 @@
   padding: var(--admin-space-2xl);
 }
 
-/* История версий: без вертикального «прыжка» при подгрузке таблицы (рост только вниз). */
-.packageVersionsModalBackdrop {
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: max(24px, 4vh);
-  padding-bottom: max(24px, 4vh);
-  overflow-y: auto;
-}
-
 .saveModalCard {
   width: min(420px, 100%);
   background: var(--admin-surface);
@@ -4999,68 +4990,9 @@
   text-decoration: none;
 }
 
-.packageVersionsModalCard {
-  width: min(720px, 94vw);
-  max-height: min(88vh, 900px);
-  overflow: auto;
-  scrollbar-gutter: stable;
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border-strong);
-  border-radius: var(--admin-radius-xl);
-  box-shadow: 0 18px 40px var(--admin-overlay-color-027);
-  padding: var(--admin-space-2xl);
-  display: flex;
-  flex-direction: column;
-  gap: var(--admin-space-lg);
-  flex-shrink: 0;
-}
-
-.packageVersionsModalCard .packageVersionsTitle {
-  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-sm);
-}
-
-.packageVersionsTitle {
-  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xs);
-  font-size: var(--admin-font-size-base);
-  font-weight: 600;
-  color: var(--admin-text-primary);
-}
-
-.packageVersionsHint {
-  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-md);
-  font-size: var(--admin-font-size-sm);
-  color: var(--admin-text-muted);
-  line-height: var(--admin-line-height-base);
-}
-
-.packageVersionsTable {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--admin-font-size-sm);
-}
-
-.packageVersionsTable th,
-.packageVersionsTable td {
-  border: 1px solid var(--admin-border-strong);
-  padding: var(--admin-space-sm) var(--admin-space-md);
-  text-align: left;
-  vertical-align: top;
-}
-
-.packageVersionsTable th {
-  background: var(--admin-scrollbar-track);
-  font-weight: 600;
-}
-
 .finalEstimateTable tfoot th {
   background: var(--admin-info-bg-soft);
   font-weight: 700;
-}
-
-.packageVersionsActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--admin-space-xs);
 }
 
 .versionJsonPre {
@@ -6510,7 +6442,6 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 }
 
 /* Тёмная тема: страница /contract-documents/estimates */
-:where(html[data-theme='dark'], [data-app-theme='dark']) .packageVersionsModalCard,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .saveModalCard {
   background: var(--admin-surface);
   border-color: var(--admin-sidebar-text);
@@ -6521,24 +6452,12 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   border-color: var(--admin-sidebar-text);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .packageVersionsTitle,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .saveModalTitle {
   color: var(--admin-text-primary);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .packageVersionsHint,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .saveModalText {
   color: var(--admin-text-secondary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .packageVersionsTable th {
-  background: var(--admin-surface-soft);
-  color: var(--admin-text-secondary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .packageVersionsTable td {
-  color: var(--admin-text-primary);
-  border-color: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .versionJsonPre {

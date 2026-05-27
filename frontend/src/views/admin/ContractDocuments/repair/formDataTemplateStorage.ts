@@ -59,6 +59,7 @@ export function stripInternalFormDataKeys(raw: unknown): unknown {
     _templateOverrides: _t,
     _contractTemplateId: _ct,
     _templatePresetIds: _tp,
+    _linkedCrmCustomerId: _lc,
     ...rest
   } = raw as Record<string, unknown>;
   return rest;
@@ -97,12 +98,23 @@ export function mergeFormDataFromStorage(raw: unknown): {
   };
 }
 
+export type BuildPersistedFormDataOptions = {
+  linkedCrmCustomerId?: string | null;
+};
+
 export function buildPersistedFormData(
   form: RepairPackageFormData,
   templateOverrides: Partial<Record<RepairDocumentTemplateTabId, string>>,
-  templatePresetIds?: Partial<Record<RepairDocumentTemplateTabId, string>>
+  templatePresetIds?: Partial<Record<RepairDocumentTemplateTabId, string>>,
+  options?: BuildPersistedFormDataOptions
 ): Record<string, unknown> {
   const base = { ...(form as unknown as Record<string, unknown>) };
+  const linkedCrmCustomerId = options?.linkedCrmCustomerId?.trim();
+  if (linkedCrmCustomerId) {
+    base._linkedCrmCustomerId = linkedCrmCustomerId;
+  } else {
+    delete base._linkedCrmCustomerId;
+  }
   const cleaned = Object.fromEntries(
     Object.entries(templateOverrides).filter(
       ([k, v]) => isTemplateTabId(k) && typeof v === 'string' && v.trim().length > 0

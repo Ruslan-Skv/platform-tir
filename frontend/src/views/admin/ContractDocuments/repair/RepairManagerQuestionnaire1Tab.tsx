@@ -14,6 +14,8 @@ type Props = {
   onToggleTrafficSource: (id: string) => void;
   onToggleWhyChosen: (id: string) => void;
   onToggleClientNeed: (id: string) => void;
+  /** `crm` — анкета из карточки клиента; `package` — привязан CRM; иначе подсказка о привязке. */
+  syncSourceLabel?: 'crm' | 'package' | 'unlinked' | null;
 };
 
 function RepairManagerQuestionnaire1Tab({
@@ -22,6 +24,7 @@ function RepairManagerQuestionnaire1Tab({
   onToggleTrafficSource,
   onToggleWhyChosen,
   onToggleClientNeed,
+  syncSourceLabel = null,
 }: Props) {
   const q = form.managerQuestionnaire1;
   const { customer: c, object: o } = form;
@@ -37,6 +40,17 @@ function RepairManagerQuestionnaire1Tab({
           реквизиты заказчика и объекта редактируются на вкладке «Данные»; ниже — уточнения и
           маркетинговые ответы. Печать — как у других документов пакета (кнопка «Печать»).
         </p>
+        {syncSourceLabel === 'crm' || syncSourceLabel === 'package' ? (
+          <p className={styles.hint} style={{ margin: '8px 0 0' }}>
+            Анкета хранится в карточке клиента CRM и одинакова во всех договорах этого заказчика.
+            Изменения можно вносить в любое время.
+          </p>
+        ) : syncSourceLabel === 'unlinked' ? (
+          <p className={styles.hint} style={{ margin: '8px 0 0' }}>
+            Чтобы анкета была общей для всех договоров, привяжите карточку CRM на вкладке «Данные».
+            До привязки данные сохраняются только в этом договоре.
+          </p>
+        ) : null}
       </div>
 
       <div className={`${styles.sectionCard} ${styles.fieldSpanAll}`}>
