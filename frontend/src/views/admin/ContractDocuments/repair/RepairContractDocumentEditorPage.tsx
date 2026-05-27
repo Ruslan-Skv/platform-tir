@@ -3603,6 +3603,7 @@ export function RepairContractDocumentEditorPage({
                           status: 'OPEN',
                           signedAt: '',
                           paidAt: '',
+                          workPeriodIncreaseDays: '',
                           selectedPresetIds: [],
                           snapshot: null,
                           excludedSelectedPresetIds: [],
@@ -4667,6 +4668,21 @@ export function RepairContractDocumentEditorPage({
                   slot={form.addendumSlots[activeAddendumSlot - 1]}
                   documentDate={form.addendumDocumentDates[activeAddendumSlot - 1] ?? ''}
                   onDocumentDateChange={(v) => patchAddendumDocumentDate(activeAddendumSlot - 1, v)}
+                  workPeriodIncreaseDays={
+                    form.addendumSlots[activeAddendumSlot - 1]?.workPeriodIncreaseDays ?? ''
+                  }
+                  onWorkPeriodIncreaseDaysChange={(v) => {
+                    const idx = activeAddendumSlot - 1;
+                    setForm((p) => {
+                      const slots = [...p.addendumSlots] as RepairPackageFormData['addendumSlots'];
+                      slots[idx] = { ...slots[idx], workPeriodIncreaseDays: v };
+                      const next = { ...p, addendumSlots: slots };
+                      formRef.current = next;
+                      schedulePersistRepairPackageDebounced();
+                      return next;
+                    });
+                    setDirty(true);
+                  }}
                   estimatePresets={estimatePresets}
                   contractEstimateObjectLabel={
                     contractEstimateObjectKey

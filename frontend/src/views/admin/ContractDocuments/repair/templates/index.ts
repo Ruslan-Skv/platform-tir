@@ -2,10 +2,12 @@ import type { RepairDocumentTemplateTabId } from '../formDataTemplateStorage';
 import type { RepairLibraryTemplateTabId } from '../repairLibraryTemplateTabs';
 import { repairTemplateActAcceptance } from './actAcceptance';
 import { repairTemplateActStart } from './actStart';
+import { repairTemplateAddendum } from './addendum';
 import { repairTemplateCashOrder } from './cashOrder';
 import { repairTemplateContract } from './contract';
 import { repairLibraryFallbackStub } from './libraryFallbackStub';
 import { repairTemplateProductionLog } from './productionLog';
+import { repairTemplateWorkOrder, repairTemplateWorkOrderAddendum } from './workOrder';
 
 const stub = (title: string) => repairLibraryFallbackStub(title);
 
@@ -26,15 +28,15 @@ export const REPAIR_DOCUMENT_TEMPLATES: Record<RepairDocumentTemplateTabId, stri
   finalWorkOrder: stub('Итоговый заказ-наряд'),
   questionnaire1: stub('Анкета 1'),
   questionnaire2: stub('Анкета 2'),
-  addendum1: stub('Дополнительное соглашение №1'),
-  addendum2: stub('Дополнительное соглашение №2'),
-  addendum3: stub('Дополнительное соглашение №3'),
-  addendum4: stub('Дополнительное соглашение №4'),
-  addendum5: stub('Дополнительное соглашение №5'),
-  workOrder: stub('Заказ-наряд'),
-  workOrderAddendum1: stub('Заказ-наряд по Д/с №1'),
-  workOrderAddendum2: stub('Заказ-наряд по Д/с №2'),
-  workOrderAddendum3: stub('Заказ-наряд по Д/с №3'),
-  workOrderAddendum4: stub('Заказ-наряд по Д/с №4'),
-  workOrderAddendum5: stub('Заказ-наряд по Д/с №5'),
+  addendum1: repairTemplateAddendum,
+  addendum2: repairTemplateAddendum,
+  addendum3: repairTemplateAddendum,
+  addendum4: repairTemplateAddendum,
+  addendum5: repairTemplateAddendum,
+  workOrder: repairTemplateWorkOrder,
+  workOrderAddendum1: repairTemplateWorkOrderAddendum,
+  workOrderAddendum2: repairTemplateWorkOrderAddendum,
+  workOrderAddendum3: repairTemplateWorkOrderAddendum,
+  workOrderAddendum4: repairTemplateWorkOrderAddendum,
+  workOrderAddendum5: repairTemplateWorkOrderAddendum,
 };

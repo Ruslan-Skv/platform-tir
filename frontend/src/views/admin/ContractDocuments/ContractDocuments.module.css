@@ -1593,6 +1593,28 @@
   margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-lg);
 }
 
+.repairAddendumMetaInlineRow {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--admin-space-md);
+  align-items: flex-end;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-lg);
+}
+
+.repairAddendumMetaInlineRow .repairAddendumDateFieldRow {
+  margin: 0;
+  max-width: 320px;
+}
+
+.repairAddendumWorkPeriodIncreaseFieldRow {
+  margin: 0;
+  max-width: 240px;
+}
+
+.repairAddendumWorkPeriodIncreaseFieldRow input {
+  width: 100%;
+}
+
 .repairAddendumEstimateHeading {
   font-size: var(--admin-print-font-size-11pt);
   margin: 12pt 0 6pt;
@@ -4311,6 +4333,15 @@
   font-size: var(--admin-print-font-size-12px);
   line-height: var(--admin-line-height-sm);
   text-align: right;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4DiscountMeta),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4DiscountMeta) {
+  margin: 6px 0 0;
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-sm);
+  text-align: right;
+  color: var(--admin-text-muted);
 }
 
 .docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Signatures),

@@ -17,6 +17,7 @@ import {
 } from './repairCustomerTemplateFields';
 import {
   type EstimateEmbedSection,
+  buildEstimateDiscountTotalsBlockHtml,
   buildEstimateDocPrintEmbedHtml,
   buildEstimateDocPrintFooterHtml,
   buildEstimateSectionsFromPresetIds,
@@ -275,6 +276,11 @@ export interface RepairAddendumSlotEstimateBlock {
   signedAt: string;
   /** Время установки статуса PAID (ISO). */
   paidAt: string;
+  /**
+   * На сколько рабочих дней увеличивается срок договора при подписании этого Д/с.
+   * Храним строкой (как и большинство полей формы) — менеджер может оставить пустым.
+   */
+  workPeriodIncreaseDays: string;
   selectedPresetIds: string[];
   snapshot: RepairEstimateBlock['snapshot'];
   excludedSelectedPresetIds: string[];
@@ -446,6 +452,7 @@ function defaultAddendumSlot(): RepairAddendumSlotEstimateBlock {
     status: 'OPEN',
     signedAt: '',
     paidAt: '',
+    workPeriodIncreaseDays: '',
     selectedPresetIds: [],
     snapshot: null,
     excludedSelectedPresetIds: [],
@@ -554,6 +561,8 @@ function normalizeAddendumSlots(raw: unknown): RepairAddendumSlotsTuple {
       status: normalizeAddendumSlotStatus(o.status),
       signedAt: typeof o.signedAt === 'string' ? o.signedAt : '',
       paidAt: typeof o.paidAt === 'string' ? o.paidAt : '',
+      workPeriodIncreaseDays:
+        typeof o.workPeriodIncreaseDays === 'string' ? o.workPeriodIncreaseDays : '',
       selectedPresetIds: ids,
       snapshot,
       excludedSelectedPresetIds: excludedIds,
@@ -675,6 +684,7 @@ function isRepairAddendumSlotUnused(
 ): boolean {
   if ((documentDate ?? '').trim() !== '') return false;
   if (!slot) return true;
+  if ((slot.workPeriodIncreaseDays ?? '').trim() !== '') return false;
   const hasSelected = (slot.selectedPresetIds?.length ?? 0) > 0;
   const hasExcluded = (slot.excludedSelectedPresetIds?.length ?? 0) > 0;
   const snapshotTotal = slot.snapshot?.total;
@@ -716,10 +726,6 @@ function resolveRepairAddendumSlotCountAfterLoad(
     }
   }
   if (minFromData > count) count = minFromData;
-
-  while (count > 0 && isRepairAddendumSlotUnused(slots[count - 1], dates[count - 1])) {
-    count -= 1;
-  }
 
   return count;
 }
@@ -1309,6 +1315,7 @@ export function repairPackageFormForTemplate(
     headerTitle: string;
     documentDate: string;
     roomsHtml: string;
+    workPeriodIncreaseSentence: string;
   };
 } {
   const estimateGroupsForTpl = options?.estimateGroups ?? [];
@@ -1403,6 +1410,7 @@ export function repairPackageFormForTemplate(
                 directorName: form.executor.directorName,
                 customerFullName: form.customer.fullName,
                 includeFooter: false,
+                includeTotals: false,
               })
             : '';
           const excludedHtml = addendumExcludedSnap
@@ -1412,46 +1420,34 @@ export function repairPackageFormForTemplate(
                 directorName: form.executor.directorName,
                 customerFullName: form.customer.fullName,
                 includeFooter: false,
+                includeTotals: false,
               })
             : '';
           const additionalTotal = addendumSlotSnap?.total ?? 0;
           const excludedTotal = addendumExcludedSnap?.total ?? 0;
           const summaryTotal = additionalTotal - excludedTotal;
-          const formatMoney = (value: number) => value.toFixed(2).replace('.', ',');
-          const addendumDiscountPct = parseRepairContractDiscountPercent(
-            form.contract.discountPercent
-          );
-          const summaryAfterDiscount = applyRepairContractDiscountToAmount(
-            summaryTotal,
-            addendumDiscountPct
-          );
-          const addendumDiscountFooter =
-            addendumDiscountPct > 0 && summaryTotal > 0
-              ? `<p class="estimateA4DiscountMeta">Скидка по договору: ${String(addendumDiscountPct).replace('.', ',')}%</p><p class="estimateA4Total"><strong>Итого по доп. соглашению со скидкой: ${formatMoney(summaryAfterDiscount)} руб.</strong></p>`
-              : '';
           const sectionsHtml: string[] = [];
           if (additionalHtml) {
             sectionsHtml.push(
-              `<section><h2 class="repairAddendumEstimateHeading">Смета дополнительных ремонтно-отделочных работ</h2>${additionalHtml}<p class="estimateA4Total">Итог по разделу: <strong>${formatMoney(additionalTotal)} руб.</strong></p></section>`
+              `<section><h2 class="repairAddendumEstimateHeading">Смета дополнительных ремонтно-отделочных работ</h2>${additionalHtml}</section>`
             );
           }
           if (excludedHtml) {
             sectionsHtml.push(
-              `<section><h2 class="repairAddendumEstimateHeading">Непроводимые ремонтно-отделочные работы</h2>${excludedHtml}<p class="estimateA4Total">Итог по разделу: <strong>${formatMoney(excludedTotal)} руб.</strong></p></section>`
+              `<section><h2 class="repairAddendumEstimateHeading">Непроводимые ремонтно-отделочные работы</h2>${excludedHtml}</section>`
             );
           }
           if (sectionsHtml.length === 0) return '';
-          return [
-            ...sectionsHtml,
-            addendumDiscountPct > 0 && summaryTotal > 0
-              ? `<p class="estimateA4Total"><strong>Общий итог по дополнительному соглашению (без скидки): ${formatMoney(summaryTotal)} руб.</strong></p>`
-              : `<p class="estimateA4Total"><strong>Общий итог по дополнительному соглашению: ${formatMoney(summaryTotal)} руб.</strong></p>`,
-            addendumDiscountFooter,
-            buildEstimateDocPrintFooterHtml({
-              directorName: form.executor.directorName,
-              customerFullName: form.customer.fullName,
-            }),
-          ].join('');
+          const totalsAndFooterHtml = `<div class="estimateA4DocPrintEmbed">${buildEstimateDiscountTotalsBlockHtml(
+            {
+              grossTotal: summaryTotal,
+              contractDiscountPercent: form.contract.discountPercent,
+            }
+          )}${buildEstimateDocPrintFooterHtml({
+            directorName: form.executor.directorName,
+            customerFullName: form.customer.fullName,
+          })}</div>`;
+          return [...sectionsHtml, totalsAndFooterHtml].join('');
         })()
       : '';
   const addendumForTemplate =
@@ -1459,12 +1455,20 @@ export function repairPackageFormForTemplate(
       ? (() => {
           const headerMain = `Дополнительное соглашение №${addendumSlot}`;
           const headerSub = `к договору на проведение ремонтно-отделочных работ с использованием материалов заказчика № ${form.contract.number.trim()} от ${form.contract.date.trim()}`;
+          const increaseRaw =
+            form.addendumSlots[addendumSlot - 1]?.workPeriodIncreaseDays?.trim() ?? '';
+          const increaseDays = Number.parseInt(increaseRaw, 10);
+          const workPeriodIncreaseSentence =
+            Number.isFinite(increaseDays) && increaseDays > 0
+              ? `В связи с увеличением объема работ, срок по договору увеличивается на ${increaseDays} рабочих дней.`
+              : '';
           return {
             headerMain,
             headerSub,
             headerTitle: `${headerMain} ${headerSub}`,
             documentDate: form.addendumDocumentDates[addendumSlot - 1] ?? '',
             roomsHtml: addendumRoomsHtml,
+            workPeriodIncreaseSentence,
           };
         })()
       : undefined;

@@ -17,6 +17,8 @@ export function RepairAddendumEstimateBlock({
   slot,
   documentDate,
   onDocumentDateChange,
+  workPeriodIncreaseDays,
+  onWorkPeriodIncreaseDaysChange,
   estimatePresets,
   contractEstimateObjectLabel,
   addendumAttachablePresets,
@@ -45,6 +47,8 @@ export function RepairAddendumEstimateBlock({
   slot: RepairAddendumSlotEstimateBlock;
   documentDate: string;
   onDocumentDateChange: (value: string) => void;
+  workPeriodIncreaseDays: string;
+  onWorkPeriodIncreaseDaysChange: (value: string) => void;
   estimatePresets: ContractEstimatePreset[];
   /** Подпись объекта из вкладки «Смета» (пусто — объект ещё не задан). */
   contractEstimateObjectLabel: string;
@@ -81,19 +85,38 @@ export function RepairAddendumEstimateBlock({
               Дополнительное соглашение №{slotOrdinal}
             </h3>
           </div>
-          <div className={`${styles.field} ${styles.repairAddendumDateFieldRow}`}>
-            <label htmlFor={`repair_addendum_date_${slotOrdinal}`}>
-              Дата доп. соглашения (в шапке слева)
-            </label>
-            <input
-              id={`repair_addendum_date_${slotOrdinal}`}
-              type="text"
-              value={documentDate}
-              onChange={(e) => onDocumentDateChange(e.target.value)}
-              placeholder="напр. 04.05.2026"
-              autoComplete="off"
-              disabled={readOnly}
-            />
+          <div className={styles.repairAddendumMetaInlineRow}>
+            <div className={`${styles.field} ${styles.repairAddendumDateFieldRow}`}>
+              <label htmlFor={`repair_addendum_date_${slotOrdinal}`}>
+                Дата доп. соглашения (в шапке слева)
+              </label>
+              <input
+                id={`repair_addendum_date_${slotOrdinal}`}
+                type="text"
+                value={documentDate}
+                onChange={(e) => onDocumentDateChange(e.target.value)}
+                placeholder="напр. 04.05.2026"
+                autoComplete="off"
+                disabled={readOnly}
+              />
+            </div>
+            <div className={`${styles.field} ${styles.repairAddendumWorkPeriodIncreaseFieldRow}`}>
+              <label htmlFor={`repair_addendum_work_period_increase_${slotOrdinal}`}>
+                Увеличение срока по договору
+              </label>
+              <input
+                id={`repair_addendum_work_period_increase_${slotOrdinal}`}
+                type="number"
+                inputMode="numeric"
+                value={workPeriodIncreaseDays}
+                onChange={(e) => onWorkPeriodIncreaseDaysChange(e.target.value)}
+                placeholder="дн."
+                autoComplete="off"
+                disabled={readOnly}
+                min={0}
+                step={1}
+              />
+            </div>
           </div>
           <p className={styles.hint}>
             Объект задаётся только на вкладке «Смета». Здесь доступны свободные расчёты того же

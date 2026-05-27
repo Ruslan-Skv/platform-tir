@@ -192,6 +192,23 @@ function buildHandwritingNoteHtml(): string {
 </div>`;
 }
 
+/** Итоги сметы в подвале: как на вкладке «Смета» договора. */
+export function buildEstimateDiscountTotalsBlockHtml(options: {
+  grossTotal: number;
+  contractDiscountPercent?: string;
+}): string {
+  const grossTotal = options.grossTotal;
+  if (!Number.isFinite(grossTotal)) return '';
+  const discountPercent = parseRepairContractDiscountPercent(options.contractDiscountPercent ?? '');
+  if (discountPercent > 0 && grossTotal > 0) {
+    const totalAfterDiscount = applyRepairContractDiscountToAmount(grossTotal, discountPercent);
+    return `<p class="estimateA4Total">Итого по смете (без скидки): <strong>${formatMoney(grossTotal)} руб.</strong></p>
+<p class="estimateA4DiscountMeta">Скидка по договору: ${String(discountPercent).replace('.', ',')}%</p>
+<p class="estimateA4Total">Итого со скидкой: <strong>${formatMoney(totalAfterDiscount)} руб.</strong></p>`;
+  }
+  return `<p class="estimateA4Total">Итого по смете: <strong>${formatMoney(grossTotal)} руб.</strong></p>`;
+}
+
 /**
  * HTML-блок сметы для вставки в `.docPrint` (Д/с и т.п.): как на вкладке «Смета» —
  * категории, таблицы по помещениям, итоги по категориям, итого, подписи, примечание, подписи.
@@ -206,6 +223,8 @@ export function buildEstimateDocPrintEmbedHtml(options: {
   directorName: string;
   customerFullName: string;
   includeFooter?: boolean;
+  /** Итого по смете / скидка / итого со скидкой в конце блока. */
+  includeTotals?: boolean;
   /** Скидка по договору, % — блок в подвале сметы. */
   contractDiscountPercent?: string;
 }): string {
@@ -214,6 +233,7 @@ export function buildEstimateDocPrintEmbedHtml(options: {
     directorName,
     customerFullName,
     includeFooter = true,
+    includeTotals = true,
     contractDiscountPercent = '',
   } = options;
   if (!snapshot?.rooms?.length) return '';
@@ -280,15 +300,12 @@ export function buildEstimateDocPrintEmbedHtml(options: {
   </ul>`
       : '';
 
-  const discountPercent = parseRepairContractDiscountPercent(contractDiscountPercent);
-  const grossTotal = snapshot.total;
-  const totalAfterDiscount = applyRepairContractDiscountToAmount(grossTotal, discountPercent);
-  const discountBlock =
-    discountPercent > 0 && grossTotal > 0
-      ? `<p class="estimateA4DiscountMeta">Скидка по договору: ${String(discountPercent).replace('.', ',')}%</p>
-<p class="estimateA4Total">Итого по смете (без скидки): <strong>${formatMoney(grossTotal)} руб.</strong></p>
-<p class="estimateA4Total">Итого со скидкой: <strong>${formatMoney(totalAfterDiscount)} руб.</strong></p>`
-      : `<p class="estimateA4Total">Итого по смете: <strong>${formatMoney(grossTotal)} руб.</strong></p>`;
+  const discountBlock = includeTotals
+    ? buildEstimateDiscountTotalsBlockHtml({
+        grossTotal: snapshot.total,
+        contractDiscountPercent,
+      })
+    : '';
 
   const bodyHtml = `<div class="estimateA4DocPrintEmbed estimateRoomsEmbed">
 ${categoriesHtml}
