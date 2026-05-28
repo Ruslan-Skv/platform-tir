@@ -8,6 +8,7 @@ import Link from 'next/link';
 
 import { useAuth } from '@/features/auth';
 import {
+  type ContractDocumentPackageKind,
   type ContractDocumentPackageStatus,
   type ContractDocumentPackageVersionListItem,
   type ContractEstimateGroup,
@@ -149,6 +150,15 @@ function isRepairEditorPackageTabBarTab(id: string): boolean {
     !isRepairQuestionnaireHubTabHiddenFromPackageEditor(id)
   );
 }
+
+const PACKAGE_KIND_UI_LABEL: Record<ContractDocumentPackageKind, string> = {
+  REPAIR: 'Ремонт',
+  WINDOWS: 'Окна',
+  DOORS: 'Двери',
+  CEILINGS: 'Потолки',
+  BLINDS: 'Жалюзи',
+  FURNITURE: 'Мебель',
+};
 
 /** Класс на `document.body` при печати сметы — см. `@media print` в ContractDocuments.module.css */
 const BODY_PRINT_ESTIMATE_CLASS = 'body-print-estimate-sheet';
@@ -545,6 +555,34 @@ function RepairDataPartySectionCollapseButton({
   );
 }
 
+function isFilledContractDataField(value: unknown): boolean {
+  if (value == null) return false;
+  if (typeof value === 'string') return value.trim().length > 0;
+  if (typeof value === 'number') return Number.isFinite(value);
+  if (typeof value === 'boolean') return value;
+  if (Array.isArray(value)) return value.length > 0;
+  return true;
+}
+
+function calcSectionCompletionPercent(values: readonly unknown[]): number {
+  if (!values.length) return 0;
+  let filled = 0;
+  for (const value of values) {
+    if (isFilledContractDataField(value)) filled += 1;
+  }
+  return Math.round((filled / values.length) * 100);
+}
+
+function completionBadgeStyle(percent: number): React.CSSProperties {
+  const normalized = Math.max(0, Math.min(100, percent));
+  const hue = Math.round((normalized / 100) * 120);
+  return {
+    color: `hsl(${hue} 80% 28%)`,
+    background: `hsl(${hue} 85% 94%)`,
+    borderColor: `hsl(${hue} 65% 72%)`,
+  };
+}
+
 interface RepairContractDocumentEditorPageProps {
   packageId: string;
   /** Только модалка «Заказ-наряды» (вызов из списка договоров). */
@@ -688,6 +726,7 @@ export function RepairContractDocumentEditorPage({
 }: RepairContractDocumentEditorPageProps) {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const [packageKind, setPackageKind] = useState<ContractDocumentPackageKind>('REPAIR');
   const [activeTab, setActiveTab] = useState<RepairDocumentTabId>('data');
   const [packageHubOpen, setPackageHubOpen] = useState(false);
   const [invoicesHubOpen, setInvoicesHubOpen] = useState(false);
@@ -714,6 +753,7 @@ export function RepairContractDocumentEditorPage({
   const [form, setForm] = useState<RepairPackageFormData>(() => mergeRepairPackageFormData({}));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isWindowsPackage = packageKind === 'WINDOWS';
   const [dirty, setDirty] = useState(false);
   const [linkedCrmCustomerId, setLinkedCrmCustomerId] = useState<string | null>(null);
   const linkedCrmCustomerIdRef = useRef<string | null>(null);
@@ -764,6 +804,7 @@ export function RepairContractDocumentEditorPage({
     }>
   >([]);
   const [packageRefreshing, setPackageRefreshing] = useState(false);
+  const [customerDataSectionExpanded, setCustomerDataSectionExpanded] = useState(false);
   const [packageFlowStatus, setPackageFlowStatus] =
     useState<ContractDocumentPackageStatus>('IN_PROGRESS');
   const packageFlowStatusRef = useRef<ContractDocumentPackageStatus>('IN_PROGRESS');
@@ -1101,8 +1142,13 @@ export function RepairContractDocumentEditorPage({
         setPackageVersions([]);
       }
       try {
+        const row = await getContractDocumentPackage(packageId);
+        const currentKind = row.kind;
+        const profilesKind: ContractDocumentPackageKind =
+          currentKind === 'WINDOWS' ? 'REPAIR' : currentKind;
+        const signatoriesKind: ContractDocumentPackageKind =
+          currentKind === 'WINDOWS' ? 'REPAIR' : currentKind;
         const [
-          row,
           profilesRes,
           signatoryRes,
           templateRes,
@@ -1112,25 +1158,24 @@ export function RepairContractDocumentEditorPage({
           repairSettingsRes,
           paymentInvoicesRes,
         ] = await Promise.all([
-          getContractDocumentPackage(packageId),
-          getContractDocumentExecutorProfiles('REPAIR').catch(() => ({
+          getContractDocumentExecutorProfiles(profilesKind).catch(() => ({
             items: [] as ExecutorRequisiteProfile[],
             updatedAt: null as string | null,
           })),
-          getContractDocumentSignatoryProfiles('REPAIR').catch(() => ({
+          getContractDocumentSignatoryProfiles(signatoriesKind).catch(() => ({
             items: [] as ContractSignatoryProfile[],
             updatedAt: null as string | null,
           })),
-          getContractDocumentTemplatePresets('REPAIR').catch(() => ({
+          getContractDocumentTemplatePresets(currentKind).catch(() => ({
             items: [] as ContractTemplatePreset[],
             updatedAt: null as string | null,
           })),
-          getContractDocumentEstimatePresets('REPAIR').catch(() => ({
+          getContractDocumentEstimatePresets(currentKind).catch(() => ({
             items: [] as ContractEstimatePreset[],
             groups: [],
             updatedAt: null as string | null,
           })),
-          getContractDocumentPackages('REPAIR').catch(() => []),
+          getContractDocumentPackages(currentKind).catch(() => []),
           getInstallers().catch(() => [] as InstallerMaster[]),
           getContractDocumentRepairSettings().catch(() => ({
             defaultWorkPeriodDays: 60,
@@ -1138,11 +1183,8 @@ export function RepairContractDocumentEditorPage({
           })),
           listPackagePaymentInvoices(packageId).catch(() => []),
         ]);
+        setPackageKind(currentKind);
         setPaymentInvoiceCount(paymentInvoicesRes.length);
-        if (row.kind !== 'REPAIR') {
-          setError('Этот пакет относится к другому направлению.');
-          return;
-        }
         setDraftTitle(row.title ?? '');
         setPackageFlowStatus(
           row.status === 'CONTRACT_CONCLUDED'
@@ -3253,14 +3295,84 @@ export function RepairContractDocumentEditorPage({
     (id) =>
       id !== 'payments' &&
       isRepairEditorPackageTabBarTab(id) &&
+      (!isWindowsPackage ||
+        (id !== 'actStart' &&
+          id !== 'productionLog' &&
+          id !== 'interactiveFinalEstimate' &&
+          id !== 'finalWorkOrder' &&
+          !/^workOrderAddendum[1-5]$/.test(id))) &&
       isRepairAddendumTabVisible(id, form.addendumSlotCount)
   );
 
   const packageSummaryTailTabs: RepairDocumentTabId[] = ['finalEstimate'];
-  const orderedVisibleRepairTabs = [
+  const baseOrderedVisibleRepairTabs = [
     ...visibleRepairTabs.filter((id) => !packageSummaryTailTabs.includes(id)),
     ...packageSummaryTailTabs.filter((id) => visibleRepairTabs.includes(id)),
   ];
+  const orderedVisibleRepairTabs = isWindowsPackage
+    ? (() => {
+        const tabs = [...baseOrderedVisibleRepairTabs];
+        const specIndex = tabs.indexOf('finalEstimate');
+        if (specIndex < 0) return tabs;
+        tabs.splice(specIndex, 1);
+        const invoiceOrderIndex = tabs.indexOf('estimate');
+        const insertAt = invoiceOrderIndex >= 0 ? invoiceOrderIndex + 1 : 0;
+        tabs.splice(insertAt, 0, 'finalEstimate');
+        return tabs;
+      })()
+    : baseOrderedVisibleRepairTabs;
+  const customerSectionCompletionPercent = linkedCrmCustomerId
+    ? form.customer.type === 'PERSON'
+      ? calcSectionCompletionPercent([
+          form.customer.fullName,
+          form.customer.address,
+          form.customer.email,
+          form.customer.phones,
+          form.customer.passportSeriesNumber,
+          form.customer.passportIssuedBy,
+          form.customer.passportIssueDate,
+          form.customer.bankDetails,
+        ])
+      : calcSectionCompletionPercent([
+          form.customer.representativeFullNameNominative,
+          form.customer.representativeFullNameGenitive,
+          form.customer.organizationName,
+          form.customer.representativePositionNominative,
+          form.customer.representativePositionGenitive,
+          form.customer.inn,
+          form.customer.ogrn,
+          form.customer.address,
+          form.customer.email,
+          form.customer.phones,
+          form.customer.bankDetails,
+        ])
+    : 0;
+  const executorSectionCompletionPercent = calcSectionCompletionPercent([
+    form.executor.companyName,
+    form.executor.inn,
+    form.executor.executorKind === 'COMPANY' ? form.executor.kpp : form.executor.ogrnip,
+    form.executor.ogrn,
+    form.executor.email,
+    form.executor.legalAddress,
+    form.executor.actualAddress,
+    form.executor.bankName,
+    form.executor.bankBik,
+    form.executor.bankCorrAccount,
+    form.executor.bankSettlementAccount,
+  ]);
+  const managerSectionCompletionPercent = calcSectionCompletionPercent([
+    form.executor.signatoryCrmUserId,
+    form.executor.directorNameNominative,
+    form.executor.directorNameGenitive,
+    form.executor.basis,
+    form.executor.salesOffice,
+    form.executor.officePhone,
+  ]);
+  const uiTabLabel = (id: RepairDocumentTabId, short = false): string => {
+    if (isWindowsPackage && id === 'estimate') return 'Счёт-заказ';
+    if (isWindowsPackage && id === 'finalEstimate') return 'Спецификация';
+    return short ? REPAIR_DOCUMENT_TAB_LABELS_SHORT[id] : REPAIR_DOCUMENT_TAB_LABELS[id];
+  };
 
   type ToolButton = {
     label: string;
@@ -3317,7 +3429,7 @@ export function RepairContractDocumentEditorPage({
         <div className={`${styles.editorHeader} ${styles.blockHeader}`}>
           <div className={styles.repairEditorHeaderLeft}>
             <Link className={styles.backLink} href={ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_HREF}>
-              ← К списку договоров (Ремонт)
+              ← К списку договоров ({PACKAGE_KIND_UI_LABEL[packageKind]})
             </Link>
             <div className={styles.editorHeaderTitleRow}>
               <h1
@@ -3585,13 +3697,13 @@ export function RepairContractDocumentEditorPage({
                       isUnsignedAddendumTab
                         ? `Д/с №${addendumTabOrdinal}: отметьте подписание во вкладке или в «Оплаты и Управление договором»`
                         : contractAndEstimateLocked && (id === 'contract' || id === 'estimate')
-                          ? `${REPAIR_DOCUMENT_TAB_LABELS[id]} — только просмотр (договор подписан)`
-                          : `${REPAIR_DOCUMENT_TAB_LABELS[id]} — перетащите для смены порядка`
+                          ? `${uiTabLabel(id)} — только просмотр (договор подписан)`
+                          : `${uiTabLabel(id)} — перетащите для смены порядка`
                     }
                     className={`${styles.tab} ${activeTab === id ? styles.tabActive : ''} ${
                       isUnsignedAddendumTab ? styles.repairTabAddendumUnsigned : ''
                     } ${
-                      id === 'finalEstimate'
+                      id === 'finalEstimate' && !isWindowsPackage
                         ? `${styles.summaryTab} ${styles.summaryTabFirst} ${styles.summaryTabLast}`
                         : ''
                     }`}
@@ -3604,7 +3716,7 @@ export function RepairContractDocumentEditorPage({
                       {contractAndEstimateLocked && (id === 'contract' || id === 'estimate') ? (
                         <RepairTabLockIcon />
                       ) : null}
-                      <span>{REPAIR_DOCUMENT_TAB_LABELS_SHORT[id]}</span>
+                      <span>{uiTabLabel(id, true)}</span>
                       {isUnsignedAddendumTab ? (
                         <span
                           className={styles.repairTabAddendumSignBadge}
@@ -3919,198 +4031,221 @@ export function RepairContractDocumentEditorPage({
               <div
                 className={`${styles.sectionCard} ${styles.repairDataBlankSheet} ${styles.repairDataPartySection}`}
               >
-                <div className={styles.repairDataPartySectionTitleRow}>
-                  <h3 className={styles.sectionTitle}>Заказчик</h3>
-                  {contractAndEstimateLocked ? (
-                    <RepairDataSectionLockInline title="Договор подписан: блок «Заказчик» только для просмотра" />
-                  ) : null}
+                <div className={styles.repairDataPartySectionHeader}>
+                  <div className={styles.repairDataPartySectionTitleRow}>
+                    <h3 className={styles.sectionTitle}>Заказчик</h3>
+                    {contractAndEstimateLocked ? (
+                      <RepairDataSectionLockInline title="Договор подписан: блок «Заказчик» только для просмотра" />
+                    ) : null}
+                  </div>
+                  <div className={styles.repairDataPartySectionHeaderActions}>
+                    <span
+                      className={styles.repairDataPartySectionCompletion}
+                      title="Процент заполненности блока"
+                      style={completionBadgeStyle(customerSectionCompletionPercent)}
+                    >
+                      {customerSectionCompletionPercent}%
+                    </span>
+                    <RepairDataPartySectionCollapseButton
+                      expanded={customerDataSectionExpanded}
+                      sectionLabel="Заказчик"
+                      controlsId="repair-data-customer-section-body"
+                      onToggle={() => setCustomerDataSectionExpanded((open) => !open)}
+                    />
+                  </div>
                 </div>
-                <p className={`${styles.hint} ${styles.repairDataPartySectionIntroHint}`}>
-                  Данные подставляются из карточки заказчика в блоке «Поиск заказчика в базе».
-                  Редактировать здесь нельзя. Чтобы завести карточку и указать телефоны, нажмите
-                  «Добавить нового заказчика» в блоке поиска.
-                </p>
-                <div className={styles.sectionFields}>
-                  {form.customer.type === 'PERSON' ? (
-                    <>
-                      <div className={`${styles.repairCustomerPrimaryRow} ${styles.fieldSpanAll}`}>
-                        <div className={styles.field}>
-                          <label htmlFor="c_type">Тип заказчика</label>
-                          <select id="c_type" value={form.customer.type} disabled>
-                            <option value="PERSON">Физлицо</option>
-                            <option value="COMPANY">ЮЛ</option>
-                            <option value="ENTREPRENEUR">ИП</option>
-                          </select>
-                        </div>
-                        <div className={styles.field}>
-                          <label htmlFor="c_fullName">ФИО</label>
-                          <input id="c_fullName" value={form.customer.fullName} readOnly />
-                        </div>
-                        <div className={styles.field}>
-                          <label htmlFor="c_address">Адрес</label>
-                          <input id="c_address" value={form.customer.address} readOnly />
-                        </div>
-                        <div className={styles.field}>
-                          <label htmlFor="c_email">E-mail</label>
-                          <input
-                            id="c_email"
-                            type="email"
-                            autoComplete="email"
-                            value={form.customer.email}
-                            readOnly
-                          />
-                        </div>
-                      </div>
-                      <div
-                        className={`${styles.repairCustomerSecondaryRow} ${styles.fieldSpanAll}`}
-                      >
-                        <div className={styles.field}>
-                          <label htmlFor="c_phones_ro">Телефоны</label>
-                          <input
-                            id="c_phones_ro"
-                            type="text"
-                            readOnly
-                            value={repairCustomerPhonesReadonlyDisplay}
-                            title={repairCustomerPhonesReadonlyDisplay}
-                          />
-                          {/* <p className={`${styles.hint} ${styles.repairDataPartySectionFieldHint}`}>
+                {customerDataSectionExpanded ? (
+                  <>
+                    <p className={`${styles.hint} ${styles.repairDataPartySectionIntroHint}`}>
+                      Данные подставляются из карточки заказчика в блоке «Поиск заказчика в базе».
+                      Редактировать здесь нельзя. Чтобы завести карточку и указать телефоны, нажмите
+                      «Добавить нового заказчика» в блоке поиска.
+                    </p>
+                    <div id="repair-data-customer-section-body" className={styles.sectionFields}>
+                      {form.customer.type === 'PERSON' ? (
+                        <>
+                          <div
+                            className={`${styles.repairCustomerPrimaryRow} ${styles.fieldSpanAll}`}
+                          >
+                            <div className={styles.field}>
+                              <label htmlFor="c_type">Тип заказчика</label>
+                              <select id="c_type" value={form.customer.type} disabled>
+                                <option value="PERSON">Физлицо</option>
+                                <option value="COMPANY">ЮЛ</option>
+                                <option value="ENTREPRENEUR">ИП</option>
+                              </select>
+                            </div>
+                            <div className={styles.field}>
+                              <label htmlFor="c_fullName">ФИО</label>
+                              <input id="c_fullName" value={form.customer.fullName} readOnly />
+                            </div>
+                            <div className={styles.field}>
+                              <label htmlFor="c_address">Адрес</label>
+                              <input id="c_address" value={form.customer.address} readOnly />
+                            </div>
+                            <div className={styles.field}>
+                              <label htmlFor="c_email">E-mail</label>
+                              <input
+                                id="c_email"
+                                type="email"
+                                autoComplete="email"
+                                value={form.customer.email}
+                                readOnly
+                              />
+                            </div>
+                          </div>
+                          <div
+                            className={`${styles.repairCustomerSecondaryRow} ${styles.fieldSpanAll}`}
+                          >
+                            <div className={styles.field}>
+                              <label htmlFor="c_phones_ro">Телефоны</label>
+                              <input
+                                id="c_phones_ro"
+                                type="text"
+                                readOnly
+                                value={repairCustomerPhonesReadonlyDisplay}
+                                title={repairCustomerPhonesReadonlyDisplay}
+                              />
+                              {/* <p className={`${styles.hint} ${styles.repairDataPartySectionFieldHint}`}>
                         Несколько номеров — только в карточке CRM через «Добавить нового заказчика»; в
                         шаблоне основной номер — <code>{'{{customer.phone}}'}</code>.
                       </p> */}
-                        </div>
-                        <div className={styles.field}>
-                          <label htmlFor="c_passport">Паспорт (серия и номер)</label>
-                          <input
-                            id="c_passport"
-                            value={form.customer.passportSeriesNumber}
-                            readOnly
-                          />
-                        </div>
-                        <div className={styles.field}>
-                          <label htmlFor="c_passportBy">Кем выдан</label>
-                          <input
-                            id="c_passportBy"
-                            value={form.customer.passportIssuedBy}
-                            readOnly
-                          />
-                        </div>
-                        <div className={styles.field}>
-                          <label htmlFor="c_passportDate">Дата выдачи</label>
-                          <input
-                            id="c_passportDate"
-                            value={form.customer.passportIssueDate}
-                            readOnly
-                          />
-                        </div>
-                      </div>
-                      <div
-                        className={`${styles.field} ${styles.fieldSpanAll} ${styles.customerBankDetailsField}`}
-                      >
-                        <label htmlFor="c_bank_details">Банковские реквизиты</label>
-                        <textarea
-                          id="c_bank_details"
-                          rows={1}
-                          value={form.customer.bankDetails}
-                          readOnly
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className={styles.field}>
-                        <label htmlFor="c_type">Тип заказчика</label>
-                        <select id="c_type" value={form.customer.type} disabled>
-                          <option value="PERSON">Физлицо</option>
-                          <option value="COMPANY">ЮЛ</option>
-                          <option value="ENTREPRENEUR">ИП</option>
-                        </select>
-                      </div>
-                      <div className={styles.field}>
-                        <label htmlFor="c_repFullNameNom">ФИО представителя (именит.)</label>
-                        <input
-                          id="c_repFullNameNom"
-                          value={form.customer.representativeFullNameNominative}
-                          readOnly
-                        />
-                      </div>
-                      <div className={styles.field}>
-                        <label htmlFor="c_repFullNameGen">ФИО представителя (родит.)</label>
-                        <input
-                          id="c_repFullNameGen"
-                          value={form.customer.representativeFullNameGenitive}
-                          readOnly
-                        />
-                      </div>
-                      <div className={styles.field}>
-                        <label htmlFor="c_orgName">Наименование организации</label>
-                        <input id="c_orgName" value={form.customer.organizationName} readOnly />
-                      </div>
-                      <div className={styles.field}>
-                        <label htmlFor="c_posNom">Должность представ. (именит.)</label>
-                        <input
-                          id="c_posNom"
-                          value={form.customer.representativePositionNominative}
-                          readOnly
-                        />
-                      </div>
-                      <div className={styles.field}>
-                        <label htmlFor="c_posGen">Должность представ. (родит.)</label>
-                        <input
-                          id="c_posGen"
-                          value={form.customer.representativePositionGenitive}
-                          readOnly
-                        />
-                      </div>
-                      <div className={styles.field}>
-                        <label htmlFor="c_inn">ИНН</label>
-                        <input id="c_inn" value={form.customer.inn} readOnly />
-                      </div>
-                      <div className={styles.field}>
-                        <label htmlFor="c_ogrn">ОГРН</label>
-                        <input id="c_ogrn" value={form.customer.ogrn} readOnly />
-                      </div>
-                      <div className={styles.field}>
-                        <label htmlFor="c_address">Адрес</label>
-                        <input id="c_address" value={form.customer.address} readOnly />
-                      </div>
-                      <div className={`${styles.field} ${styles.customerEmailInRow}`}>
-                        <label htmlFor="c_email">E-mail</label>
-                        <input
-                          id="c_email"
-                          type="email"
-                          autoComplete="email"
-                          value={form.customer.email}
-                          readOnly
-                        />
-                      </div>
-                      <div className={`${styles.field} ${styles.fieldSpanAll}`}>
-                        <label htmlFor="c_phones_ro">Телефоны</label>
-                        <input
-                          id="c_phones_ro"
-                          type="text"
-                          readOnly
-                          value={repairCustomerPhonesReadonlyDisplay}
-                          title={repairCustomerPhonesReadonlyDisplay}
-                        />
-                        {/* <p className={`${styles.hint} ${styles.repairDataPartySectionFieldHint}`}>
+                            </div>
+                            <div className={styles.field}>
+                              <label htmlFor="c_passport">Паспорт (серия и номер)</label>
+                              <input
+                                id="c_passport"
+                                value={form.customer.passportSeriesNumber}
+                                readOnly
+                              />
+                            </div>
+                            <div className={styles.field}>
+                              <label htmlFor="c_passportBy">Кем выдан</label>
+                              <input
+                                id="c_passportBy"
+                                value={form.customer.passportIssuedBy}
+                                readOnly
+                              />
+                            </div>
+                            <div className={styles.field}>
+                              <label htmlFor="c_passportDate">Дата выдачи</label>
+                              <input
+                                id="c_passportDate"
+                                value={form.customer.passportIssueDate}
+                                readOnly
+                              />
+                            </div>
+                          </div>
+                          <div
+                            className={`${styles.field} ${styles.fieldSpanAll} ${styles.customerBankDetailsField}`}
+                          >
+                            <label htmlFor="c_bank_details">Банковские реквизиты</label>
+                            <textarea
+                              id="c_bank_details"
+                              rows={1}
+                              value={form.customer.bankDetails}
+                              readOnly
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className={styles.field}>
+                            <label htmlFor="c_type">Тип заказчика</label>
+                            <select id="c_type" value={form.customer.type} disabled>
+                              <option value="PERSON">Физлицо</option>
+                              <option value="COMPANY">ЮЛ</option>
+                              <option value="ENTREPRENEUR">ИП</option>
+                            </select>
+                          </div>
+                          <div className={styles.field}>
+                            <label htmlFor="c_repFullNameNom">ФИО представителя (именит.)</label>
+                            <input
+                              id="c_repFullNameNom"
+                              value={form.customer.representativeFullNameNominative}
+                              readOnly
+                            />
+                          </div>
+                          <div className={styles.field}>
+                            <label htmlFor="c_repFullNameGen">ФИО представителя (родит.)</label>
+                            <input
+                              id="c_repFullNameGen"
+                              value={form.customer.representativeFullNameGenitive}
+                              readOnly
+                            />
+                          </div>
+                          <div className={styles.field}>
+                            <label htmlFor="c_orgName">Наименование организации</label>
+                            <input id="c_orgName" value={form.customer.organizationName} readOnly />
+                          </div>
+                          <div className={styles.field}>
+                            <label htmlFor="c_posNom">Должность представ. (именит.)</label>
+                            <input
+                              id="c_posNom"
+                              value={form.customer.representativePositionNominative}
+                              readOnly
+                            />
+                          </div>
+                          <div className={styles.field}>
+                            <label htmlFor="c_posGen">Должность представ. (родит.)</label>
+                            <input
+                              id="c_posGen"
+                              value={form.customer.representativePositionGenitive}
+                              readOnly
+                            />
+                          </div>
+                          <div className={styles.field}>
+                            <label htmlFor="c_inn">ИНН</label>
+                            <input id="c_inn" value={form.customer.inn} readOnly />
+                          </div>
+                          <div className={styles.field}>
+                            <label htmlFor="c_ogrn">ОГРН</label>
+                            <input id="c_ogrn" value={form.customer.ogrn} readOnly />
+                          </div>
+                          <div className={styles.field}>
+                            <label htmlFor="c_address">Адрес</label>
+                            <input id="c_address" value={form.customer.address} readOnly />
+                          </div>
+                          <div className={`${styles.field} ${styles.customerEmailInRow}`}>
+                            <label htmlFor="c_email">E-mail</label>
+                            <input
+                              id="c_email"
+                              type="email"
+                              autoComplete="email"
+                              value={form.customer.email}
+                              readOnly
+                            />
+                          </div>
+                          <div className={`${styles.field} ${styles.fieldSpanAll}`}>
+                            <label htmlFor="c_phones_ro">Телефоны</label>
+                            <input
+                              id="c_phones_ro"
+                              type="text"
+                              readOnly
+                              value={repairCustomerPhonesReadonlyDisplay}
+                              title={repairCustomerPhonesReadonlyDisplay}
+                            />
+                            {/* <p className={`${styles.hint} ${styles.repairDataPartySectionFieldHint}`}>
                         Несколько номеров — только в карточке CRM через «Добавить нового заказчика»; в
                         шаблоне основной номер — <code>{'{{customer.phone}}'}</code>.
                       </p> */}
-                      </div>
-                      <div
-                        className={`${styles.field} ${styles.fieldSpanAll} ${styles.customerBankDetailsField}`}
-                      >
-                        <label htmlFor="c_bank_details">Банковские реквизиты</label>
-                        <textarea
-                          id="c_bank_details"
-                          rows={1}
-                          value={form.customer.bankDetails}
-                          readOnly
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
+                          </div>
+                          <div
+                            className={`${styles.field} ${styles.fieldSpanAll} ${styles.customerBankDetailsField}`}
+                          >
+                            <label htmlFor="c_bank_details">Банковские реквизиты</label>
+                            <textarea
+                              id="c_bank_details"
+                              rows={1}
+                              value={form.customer.bankDetails}
+                              readOnly
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </>
+                ) : null}
               </div>
 
               <div
@@ -4123,12 +4258,21 @@ export function RepairContractDocumentEditorPage({
                       <RepairDataSectionLockInline title="Договор подписан: блок «Исполнитель» только для просмотра" />
                     ) : null}
                   </div>
-                  <RepairDataPartySectionCollapseButton
-                    expanded={executorDataSectionExpanded}
-                    sectionLabel="Исполнитель"
-                    controlsId="repair-data-executor-section-body"
-                    onToggle={() => setExecutorDataSectionExpanded((open) => !open)}
-                  />
+                  <div className={styles.repairDataPartySectionHeaderActions}>
+                    <span
+                      className={styles.repairDataPartySectionCompletion}
+                      title="Процент заполненности блока"
+                      style={completionBadgeStyle(executorSectionCompletionPercent)}
+                    >
+                      {executorSectionCompletionPercent}%
+                    </span>
+                    <RepairDataPartySectionCollapseButton
+                      expanded={executorDataSectionExpanded}
+                      sectionLabel="Исполнитель"
+                      controlsId="repair-data-executor-section-body"
+                      onToggle={() => setExecutorDataSectionExpanded((open) => !open)}
+                    />
+                  </div>
                 </div>
                 {executorDataSectionExpanded ? (
                   <>
@@ -4215,12 +4359,21 @@ export function RepairContractDocumentEditorPage({
                       <RepairDataSectionLockInline title="Договор подписан: блок «Менеджер» только для просмотра" />
                     ) : null}
                   </div>
-                  <RepairDataPartySectionCollapseButton
-                    expanded={managerDataSectionExpanded}
-                    sectionLabel="Менеджер"
-                    controlsId="repair-data-manager-section-body"
-                    onToggle={() => setManagerDataSectionExpanded((open) => !open)}
-                  />
+                  <div className={styles.repairDataPartySectionHeaderActions}>
+                    <span
+                      className={styles.repairDataPartySectionCompletion}
+                      title="Процент заполненности блока"
+                      style={completionBadgeStyle(managerSectionCompletionPercent)}
+                    >
+                      {managerSectionCompletionPercent}%
+                    </span>
+                    <RepairDataPartySectionCollapseButton
+                      expanded={managerDataSectionExpanded}
+                      sectionLabel="Менеджер"
+                      controlsId="repair-data-manager-section-body"
+                      onToggle={() => setManagerDataSectionExpanded((open) => !open)}
+                    />
+                  </div>
                 </div>
                 {managerDataSectionExpanded ? (
                   <>

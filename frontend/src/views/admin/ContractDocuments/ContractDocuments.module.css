@@ -2213,6 +2213,28 @@
   flex-wrap: wrap;
 }
 
+.repairContractDataTabDense .repairDataPartySectionHeaderActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.repairContractDataTabDense .repairDataPartySectionCompletion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface-soft);
+  color: var(--admin-text);
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 600;
+}
+
 .repairContractDataTabDense .repairDataPartySectionTitleRow {
   display: flex;
   align-items: center;
@@ -2411,17 +2433,26 @@
 .templatesLibraryPage .editorHeader {
   margin-bottom: var(--admin-space-2xs);
   gap: var(--admin-space-sm);
-  align-items: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
 }
 
 .templatesLibraryHeaderActions {
   display: flex;
-  flex: 1;
+  flex: 1 1 520px;
   flex-shrink: 0;
   align-items: center;
   justify-content: flex-end;
   gap: var(--admin-space-sm);
   min-width: 0;
+  flex-wrap: wrap;
+}
+
+.templatesLibraryHeaderButtons {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  margin-left: auto;
 }
 
 .templatesLibraryAddButton {
@@ -2457,12 +2488,65 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--admin-space-sm);
+  flex: 1 1 460px;
   min-width: 0;
 }
 
+.templatesLibraryTitleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.templatesLibraryTitleRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.templatesLibraryCurrentTemplateTitle {
+  color: #15803d;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
+}
+
+.templatesLibraryRenameTitleBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #15803d;
+  cursor: pointer;
+}
+
+.templatesLibraryRenameTitleBtn:hover:not(:disabled) {
+  background: rgba(21, 128, 61, 0.12);
+}
+
+.templatesLibraryRenameTitleBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.templatesLibrarySaveHelp {
+  margin: 0;
+  font-size: 11px;
+  color: var(--admin-text-secondary);
+  line-height: 1.35;
+  max-width: 78ch;
+}
+
 .templatesLibraryMessages {
-  min-height: 20px;
-  margin-bottom: var(--admin-space-2xs);
+  min-height: 10px;
+  margin-bottom: 0;
 }
 
 .templatesLibraryPage .hint {

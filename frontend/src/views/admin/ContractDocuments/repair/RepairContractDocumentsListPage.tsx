@@ -796,6 +796,9 @@ export function RepairContractDocumentsListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [createDirectionModalOpen, setCreateDirectionModalOpen] = useState(false);
+  const [createDirectionBusyKind, setCreateDirectionBusyKind] =
+    useState<ContractDocumentPackageKind | null>(null);
   const [copyingPackageId, setCopyingPackageId] = useState<string | null>(null);
   const [deletingPackageId, setDeletingPackageId] = useState<string | null>(null);
   const [packagePendingDelete, setPackagePendingDelete] = useState<ContractDocumentPackage | null>(
@@ -1109,19 +1112,22 @@ export function RepairContractDocumentsListPage() {
     void load();
   }, [load]);
 
-  const handleCreate = async () => {
+  const handleCreate = async (kind: ContractDocumentPackageKind) => {
     setCreating(true);
+    setCreateDirectionBusyKind(kind);
     setError(null);
     try {
       const created = await createContractDocumentPackage({
-        kind: 'REPAIR',
+        kind,
         title: undefined,
         formData: {},
       });
+      setCreateDirectionModalOpen(false);
       router.push(adminContractDocumentsContractsRepairPackageHref(created.id));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось создать');
     } finally {
+      setCreateDirectionBusyKind(null);
       setCreating(false);
     }
   };
@@ -1206,7 +1212,7 @@ export function RepairContractDocumentsListPage() {
             disabled={
               creating || loading || copyingPackageId !== null || deletingPackageId !== null
             }
-            onClick={() => void handleCreate()}
+            onClick={() => setCreateDirectionModalOpen(true)}
           >
             {creating ? 'Создание…' : '+ Новый договор'}
           </button>
@@ -1749,6 +1755,51 @@ export function RepairContractDocumentsListPage() {
           />
         ) : null}
       </div>
+
+      <Modal
+        isOpen={createDirectionModalOpen}
+        onClose={() => {
+          if (creating) return;
+          setCreateDirectionModalOpen(false);
+        }}
+        title="Новое оформление договора"
+        size="sm"
+        compactOnMobile
+      >
+        <div data-modal-form data-modal-density="compact">
+          <p data-modal-form-hint style={{ marginTop: 0 }}>
+            Выберите направление, по которому создаётся пакет документов.
+          </p>
+          <div data-modal-form-actions>
+            <button
+              type="button"
+              data-modal-btn="primary"
+              disabled={creating}
+              aria-busy={createDirectionBusyKind === 'REPAIR'}
+              onClick={() => void handleCreate('REPAIR')}
+            >
+              {createDirectionBusyKind === 'REPAIR' ? 'Создание…' : 'Ремонт'}
+            </button>
+            <button
+              type="button"
+              data-modal-btn="secondary"
+              disabled={creating}
+              aria-busy={createDirectionBusyKind === 'WINDOWS'}
+              onClick={() => void handleCreate('WINDOWS')}
+            >
+              {createDirectionBusyKind === 'WINDOWS' ? 'Создание…' : 'Окна'}
+            </button>
+            <button
+              type="button"
+              data-modal-btn="ghost"
+              disabled={creating}
+              onClick={() => setCreateDirectionModalOpen(false)}
+            >
+              Отмена
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         isOpen={actPhotosModal != null}

@@ -22,6 +22,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 import {
+  type ContractDocumentPackageKind,
   type ContractSignatoryProfile,
   type ContractTemplatePreset,
   type ExecutorRequisiteProfile,
@@ -451,10 +452,21 @@ function ensureDocPrintRootWrapper(inner: string): string {
   return `<div class="docPrint">\n${t}\n</div>`;
 }
 
+const TEMPLATE_LIBRARY_KIND_OPTIONS = [
+  { value: 'REPAIR' as const, label: 'Ремонт' },
+  { value: 'WINDOWS' as const, label: 'Окна' },
+];
+
+function templateLibraryKindLabel(kind: ContractDocumentPackageKind): string {
+  const found = TEMPLATE_LIBRARY_KIND_OPTIONS.find((it) => it.value === kind);
+  return found?.label ?? kind;
+}
+
 export function ContractDocumentsTemplatesLibraryPage() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [items, setItems] = useState<ContractTemplatePreset[]>([]);
+  const [activeLibraryKind, setActiveLibraryKind] = useState<ContractDocumentPackageKind>('REPAIR');
   const [activeTemplateTab, setActiveTemplateTab] =
     useState<RepairLibraryTemplateTabId>('contract');
   const [previewCustomerKind, setPreviewCustomerKind] =
@@ -506,6 +518,15 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const visualHistoryRef = useRef<string[]>([]);
   const visualHistoryIndexRef = useRef(-1);
   const uiPrefsLoadedRef = useRef(false);
+
+  const ensureTemplateDraftForEditing = useCallback(() => {
+    if (editingId) return editingId;
+    const nextId = `tpl_${Date.now()}`;
+    const nextTitle = `Новый шаблон (${REPAIR_LIBRARY_TEMPLATE_TAB_LABELS[activeTemplateTab]})`;
+    setEditingId(nextId);
+    setTitle(nextTitle);
+    return nextId;
+  }, [editingId, activeTemplateTab]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -783,9 +804,9 @@ export function ContractDocumentsTemplatesLibraryPage() {
       setError(null);
       try {
         const [templatesRes, executorRes, signatoryRes] = await Promise.allSettled([
-          getContractDocumentTemplatePresets('REPAIR'),
-          getContractDocumentExecutorProfiles('REPAIR'),
-          getContractDocumentSignatoryProfiles('REPAIR'),
+          getContractDocumentTemplatePresets(activeLibraryKind),
+          getContractDocumentExecutorProfiles(activeLibraryKind),
+          getContractDocumentSignatoryProfiles(activeLibraryKind),
         ]);
         if (executorRes.status === 'fulfilled') {
           setFirstExecutorProfile(executorRes.value.items?.[0] ?? null);
@@ -823,7 +844,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [activeLibraryKind]);
 
   const persist = async (next: ContractTemplatePreset[], successText: string): Promise<boolean> => {
     setSaving(true);
@@ -831,7 +852,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     setOk(null);
     try {
       const normalized = next.map((it) => normalizeContractTemplatePreset(it));
-      await putContractDocumentTemplatePresets({ kind: 'REPAIR', items: normalized });
+      await putContractDocumentTemplatePresets({ kind: activeLibraryKind, items: normalized });
       setItems(normalized);
       lastSavedSnapshotRef.current = JSON.stringify(normalized);
       setOk(successText);
@@ -881,30 +902,61 @@ export function ContractDocumentsTemplatesLibraryPage() {
     itemsByActiveTab.length,
   ]);
 
-  const persistItemsSnapshot = useCallback(async (next: ContractTemplatePreset[]) => {
-    const snapshot = JSON.stringify(next.map((it) => normalizeContractTemplatePreset(it)));
-    if (snapshot === lastSavedSnapshotRef.current) return;
-    setSaving(true);
-    setError(null);
-    try {
-      const normalized = next.map((it) => normalizeContractTemplatePreset(it));
-      await putContractDocumentTemplatePresets({ kind: 'REPAIR', items: normalized });
-      setItems(normalized);
-      lastSavedSnapshotRef.current = JSON.stringify(normalized);
-      setAutosaveSavedVisible(true);
-      window.setTimeout(() => setAutosaveSavedVisible(false), 1200);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось сохранить шаблон');
-    } finally {
-      setSaving(false);
-    }
-  }, []);
+  const persistItemsSnapshot = useCallback(
+    async (next: ContractTemplatePreset[]) => {
+      const snapshot = JSON.stringify(next.map((it) => normalizeContractTemplatePreset(it)));
+      if (snapshot === lastSavedSnapshotRef.current) return;
+      setSaving(true);
+      setError(null);
+      try {
+        const normalized = next.map((it) => normalizeContractTemplatePreset(it));
+        await putContractDocumentTemplatePresets({ kind: activeLibraryKind, items: normalized });
+        setItems(normalized);
+        lastSavedSnapshotRef.current = JSON.stringify(normalized);
+        setAutosaveSavedVisible(true);
+        window.setTimeout(() => setAutosaveSavedVisible(false), 1200);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Не удалось сохранить шаблон');
+      } finally {
+        setSaving(false);
+      }
+    },
+    [activeLibraryKind]
+  );
 
   const persistAutosave = useCallback(async () => {
     const next = buildItemsForAutosave();
     if (!next) return;
     await persistItemsSnapshot(next);
   }, [buildItemsForAutosave, persistItemsSnapshot]);
+
+  const handleSaveNow = useCallback(async () => {
+    if (!isSuperAdmin || showArchivedTemplates) return;
+    if (!editingId) ensureTemplateDraftForEditing();
+    const hasHtml =
+      (editorMode === 'visual' ? (visualEditorRef.current?.innerHTML ?? html) : html).trim()
+        .length > 0;
+    if (!hasHtml) {
+      setError('Шаблон пустой. Добавьте текст и сохраните снова.');
+      return;
+    }
+    if (!title.trim()) {
+      setError('Укажите название шаблона перед сохранением.');
+      return;
+    }
+    await persistAutosave();
+    setOk(`Шаблон сохранён для направления «${templateLibraryKindLabel(activeLibraryKind)}».`);
+  }, [
+    isSuperAdmin,
+    showArchivedTemplates,
+    editingId,
+    ensureTemplateDraftForEditing,
+    editorMode,
+    html,
+    title,
+    persistAutosave,
+    activeLibraryKind,
+  ]);
 
   const flushAutosave = useCallback(async () => {
     if (autosaveTimerRef.current) {
@@ -913,6 +965,16 @@ export function ContractDocumentsTemplatesLibraryPage() {
     }
     await persistAutosave();
   }, [persistAutosave]);
+
+  const handleRenameTemplateTitle = useCallback(() => {
+    if (!isSuperAdmin || !editingId || showArchivedTemplates) return;
+    const current = title.trim();
+    const next = window.prompt('Введите новое название шаблона', current);
+    if (next == null) return;
+    const normalized = next.trim();
+    if (!normalized || normalized === current) return;
+    setTitle(normalized);
+  }, [isSuperAdmin, editingId, showArchivedTemplates, title]);
 
   const handleActiveTemplateTabChange = useCallback(
     (nextTab: RepairLibraryTemplateTabId) => {
@@ -1040,7 +1102,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
       setError(null);
       try {
         await trashContractTemplatePreset(presetId);
-        const templatesRes = await getContractDocumentTemplatePresets('REPAIR');
+        const templatesRes = await getContractDocumentTemplatePresets(activeLibraryKind);
         const next = (templatesRes.items ?? []).map((it) => normalizeContractTemplatePreset(it));
         setItems(next);
         void refreshTrashCount();
@@ -1068,7 +1130,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
 
   const templateTrashConfirmMessage =
     templateTrashPending != null
-      ? `Шаблон «${templateTrashPending.name}» будет перемещён в корзину и скрыт из пакета «Ремонт». Через 30 дней он удалится безвозвратно. Восстановить можно из корзины.`
+      ? `Шаблон «${templateTrashPending.name}» будет перемещён в корзину и скрыт из пакета «${templateLibraryKindLabel(activeLibraryKind)}». Через 30 дней он удалится безвозвратно. Восстановить можно из корзины.`
       : '';
 
   const requestArchiveTemplate = () => {
@@ -1147,7 +1209,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
 
   const templateArchiveConfirmMessage =
     templateArchivePending != null
-      ? `Шаблон «${templateArchivePending.name}» будет скрыт из пакета «Ремонт» (останется в архиве). Восстановление: «Показать архивные» → «Восстановить».`
+      ? `Шаблон «${templateArchivePending.name}» будет скрыт из пакета «${templateLibraryKindLabel(activeLibraryKind)}» (останется в архиве). Восстановление: «Показать архивные» → «Восстановить».`
       : '';
 
   const restoreArchivedTemplate = async () => {
@@ -1169,11 +1231,12 @@ export function ContractDocumentsTemplatesLibraryPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'repair-library-templates.seed.json';
+    const kindSlug = activeLibraryKind.toLowerCase();
+    a.download = `${kindSlug}-library-templates.seed.json`;
     a.click();
     URL.revokeObjectURL(url);
     setOk(
-      'Скачан repair-library-templates.seed.json — положите в backend/prisma/seed-data/ в репозиторий и на сервере выполните npm run prisma:seed-repair-contract-templates.'
+      `Скачан ${kindSlug}-library-templates.seed.json — положите в backend/prisma/seed-data/ в репозиторий и выполните сидирование соответствующего направления.`
     );
   };
 
@@ -1661,7 +1724,33 @@ export function ContractDocumentsTemplatesLibraryPage() {
     <div className={`${styles.page} ${styles.pageWide} ${styles.templatesLibraryPage}`}>
       <div className={styles.editorHeader}>
         <div className={styles.templatesLibraryTitleWithAutosave}>
-          <h1 className={styles.title}>Библиотека шаблонов документов</h1>
+          <div className={styles.templatesLibraryTitleBlock}>
+            <div className={styles.templatesLibraryTitleRow}>
+              <h1 className={styles.title}>Библиотека шаблонов документов</h1>
+              <span className={styles.templatesLibraryCurrentTemplateTitle}>
+                {' - '}
+                {title.trim() ||
+                  `${REPAIR_LIBRARY_TEMPLATE_TAB_LABELS[activeTemplateTab]} ${templateLibraryKindLabel(activeLibraryKind)}`}
+              </span>
+              {isSuperAdmin ? (
+                <button
+                  type="button"
+                  className={styles.templatesLibraryRenameTitleBtn}
+                  aria-label="Переименовать название шаблона"
+                  title="Переименовать название шаблона"
+                  disabled={!editingId || showArchivedTemplates}
+                  onClick={handleRenameTemplateTitle}
+                >
+                  <PencilSquareIcon style={{ width: 12, height: 12 }} />
+                </button>
+              ) : null}
+            </div>
+            <p className={styles.templatesLibrarySaveHelp}>
+              Сохранение работает так: первый раз нажмите «Сохранить», чтобы создать шаблон в
+              выбранном направлении и типе документа. После этого изменения названия и содержимого
+              сохраняются автоматически.
+            </p>
+          </div>
           {isSuperAdmin ? (
             <span
               className={`${measurementFormStyles.autosaveNotice} ${
@@ -1675,53 +1764,61 @@ export function ContractDocumentsTemplatesLibraryPage() {
           ) : null}
         </div>
         <div className={styles.templatesLibraryHeaderActions}>
-          {isSuperAdmin ? (
-            <button
-              type="button"
-              className={styles.templatesLibraryAddButton}
-              disabled={showArchivedTemplates}
-              title={
-                showArchivedTemplates
-                  ? 'Вернитесь к активным шаблонам, чтобы создать новый'
-                  : `Пустой шаблон для «${REPAIR_LIBRARY_TEMPLATE_TAB_LABELS[activeTemplateTab]}» (сохранится автоматически)`
-              }
-              onClick={createNewTemplate}
-            >
-              + Новый шаблон
-            </button>
-          ) : null}
-          {isSuperAdmin ? (
-            <AdminToolbarIconButton
-              aria-label="Экспорт"
-              title="Выгрузка шаблонов на прод"
-              disabled={saving}
-              onClick={handleExportSeedJson}
-            >
-              <TemplatesLibraryExportIcon size={18} />
-            </AdminToolbarIconButton>
-          ) : null}
-          <AdminToolbarArchiveButton
-            archiveCount={archivedTemplatesCount}
-            archiveView={showArchivedTemplates}
-            disabled={loading}
-            title="Архив шаблонов"
-            aria-label="Архив шаблонов"
-            onClick={() => setShowArchivedTemplates((v) => !v)}
-          />
-          {isSuperAdmin ? (
-            <AdminToolbarTrashButton
-              trashCount={trashCount}
-              onClick={() => setTrashOpen(true)}
-              title="Корзина шаблонов"
-              aria-label="Корзина шаблонов"
+          <div className={styles.templatesLibraryHeaderButtons}>
+            {isSuperAdmin ? (
+              <button
+                type="button"
+                className={styles.templatesLibraryAddButton}
+                disabled={showArchivedTemplates}
+                title={
+                  showArchivedTemplates
+                    ? 'Вернитесь к активным шаблонам, чтобы создать новый'
+                    : `Пустой шаблон для «${REPAIR_LIBRARY_TEMPLATE_TAB_LABELS[activeTemplateTab]}», направление «${templateLibraryKindLabel(activeLibraryKind)}» (сохранится автоматически)`
+                }
+                onClick={createNewTemplate}
+              >
+                + Новый шаблон
+              </button>
+            ) : null}
+            {isSuperAdmin ? (
+              <AdminToolbarIconButton
+                aria-label="Экспорт"
+                title="Выгрузка шаблонов на прод"
+                disabled={saving}
+                onClick={handleExportSeedJson}
+              >
+                <TemplatesLibraryExportIcon size={18} />
+              </AdminToolbarIconButton>
+            ) : null}
+            <AdminToolbarArchiveButton
+              archiveCount={archivedTemplatesCount}
+              archiveView={showArchivedTemplates}
+              disabled={loading}
+              title="Архив шаблонов"
+              aria-label="Архив шаблонов"
+              onClick={() => setShowArchivedTemplates((v) => !v)}
             />
-          ) : null}
+            {isSuperAdmin ? (
+              <AdminToolbarTrashButton
+                trashCount={trashCount}
+                onClick={() => setTrashOpen(true)}
+                title="Корзина шаблонов"
+                aria-label="Корзина шаблонов"
+              />
+            ) : null}
+          </div>
         </div>
       </div>
 
       <div className={styles.templatesLibraryMessages}>
         {error ? <p className={styles.error}>{error}</p> : null}
         {!error && ok ? <p className={styles.hint}>{ok}</p> : null}
+        {!error && !ok && !editingId && !showArchivedTemplates ? (
+          <p className={styles.hint}>
+            Нет активного шаблона. Нажмите «+ Новый шаблон», при необходимости переименуйте его
+            кнопкой возле заголовка, вставьте текст и нажмите «Сохранить».
+          </p>
+        ) : null}
       </div>
       {!isSuperAdmin ? (
         <p className={styles.hint}>Изменение библиотеки шаблонов доступно только супер-админу.</p>
@@ -1745,6 +1842,29 @@ export function ContractDocumentsTemplatesLibraryPage() {
           <div
             className={`${measurementFormStyles.grid} ${measurementFormStyles.blankMetaGrid} ${styles.templatesLibraryMetaFields}`}
           >
+            <div className={measurementFormStyles.row}>
+              <label
+                className={measurementFormStyles.label}
+                htmlFor="templates-library-kind"
+                title="Для какого направления загружается и сохраняется библиотека"
+              >
+                Направление
+              </label>
+              <select
+                id="templates-library-kind"
+                className={measurementFormStyles.select}
+                value={activeLibraryKind}
+                onChange={(e) =>
+                  setActiveLibraryKind(e.currentTarget.value as ContractDocumentPackageKind)
+                }
+              >
+                {TEMPLATE_LIBRARY_KIND_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div
               className={`${measurementFormStyles.row} ${styles.templatesLibraryDocumentTypeField}`}
             >
@@ -1805,47 +1925,63 @@ export function ContractDocumentsTemplatesLibraryPage() {
               >
                 {showArchivedTemplates ? 'Архивный шаблон' : 'Активный шаблон'}
               </label>
-              <select
-                id="templates-library-template"
-                className={measurementFormStyles.select}
-                value={editingId}
-                disabled={loading || itemsByActiveTab.length === 0}
-                onChange={(e) => selectTemplate(e.target.value)}
-              >
-                {itemsByActiveTab.length === 0 ? (
-                  <option value="">
-                    {showArchivedTemplates ? '— в архиве пусто —' : '— нет активных —'}
-                  </option>
-                ) : null}
-                {itemsByActiveTab.map((it) => (
-                  <option key={it.id} value={it.id}>
-                    {it.title}
-                    {it.isDefault ? ' ★ по умолчанию' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className={measurementFormStyles.row}>
-              <label
-                className={measurementFormStyles.label}
-                htmlFor="templates-library-title"
-                title="Отображается в списке шаблонов"
-              >
-                Название шаблона
-              </label>
-              <input
-                id="templates-library-title"
-                type="text"
-                className={measurementFormStyles.input}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                disabled={!isSuperAdmin}
-                placeholder="Например: Договор 2026"
-              />
+              {itemsByActiveTab.length > 1 ? (
+                <select
+                  id="templates-library-template"
+                  className={measurementFormStyles.select}
+                  value={editingId}
+                  disabled={loading}
+                  onChange={(e) => selectTemplate(e.target.value)}
+                >
+                  {itemsByActiveTab.map((it) => (
+                    <option key={it.id} value={it.id}>
+                      {it.title}
+                    </option>
+                  ))}
+                </select>
+              ) : itemsByActiveTab.length === 1 ? (
+                <input
+                  id="templates-library-template"
+                  className={measurementFormStyles.input}
+                  value={`Шаблон: ${itemsByActiveTab[0].title}`}
+                  readOnly
+                />
+              ) : showArchivedTemplates ? (
+                <input
+                  id="templates-library-template"
+                  className={measurementFormStyles.input}
+                  value="Архив пуст"
+                  readOnly
+                />
+              ) : (
+                <button
+                  id="templates-library-template"
+                  type="button"
+                  className={styles.templatesLibraryAddButton}
+                  disabled={!isSuperAdmin || loading}
+                  onClick={createNewTemplate}
+                  title="Создать первый шаблон для выбранного типа документа"
+                >
+                  Создать шаблон
+                </button>
+              )}
             </div>
           </div>
           {isSuperAdmin && editingId ? (
             <div className={`${styles.templatesLibraryMetaActions} ${styles.estimatesCardActions}`}>
+              <button
+                type="button"
+                className={styles.templatesLibraryAddButton}
+                disabled={saving || showArchivedTemplates}
+                title={
+                  showArchivedTemplates
+                    ? 'Сохранение недоступно в режиме архива'
+                    : `Сохранить шаблон в направлении «${templateLibraryKindLabel(activeLibraryKind)}»`
+                }
+                onClick={() => void handleSaveNow()}
+              >
+                Сохранить
+              </button>
               {showArchivedTemplates ? (
                 <button
                   type="button"
@@ -1993,7 +2129,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
                 spellCheck={false}
                 aria-label="HTML шаблона договора"
                 value={html}
-                onChange={(e) => setHtml(e.target.value)}
+                onChange={(e) => {
+                  ensureTemplateDraftForEditing();
+                  setHtml(e.target.value);
+                }}
                 disabled={!isSuperAdmin}
                 tabIndex={editorMode === 'html' ? 0 : -1}
               />
@@ -2064,6 +2203,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
                 contentEditable={isSuperAdmin && editorMode === 'visual'}
                 suppressContentEditableWarning
                 onInput={(e) => {
+                  ensureTemplateDraftForEditing();
                   const next = (e.currentTarget as HTMLDivElement).innerHTML;
                   setVisualDraftHtml(next);
                   setHtml(next);
@@ -2192,7 +2332,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
           void refreshTrashCount();
           void (async () => {
             try {
-              const templatesRes = await getContractDocumentTemplatePresets('REPAIR');
+              const templatesRes = await getContractDocumentTemplatePresets(activeLibraryKind);
               const next = (templatesRes.items ?? []).map((it) =>
                 normalizeContractTemplatePreset(it)
               );
