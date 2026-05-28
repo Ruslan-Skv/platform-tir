@@ -196,32 +196,141 @@ const CONTRACT_COMPACT_PRINT_CSS = `
   .docPrint.docPrintContractCompact p {
     margin: 0 0 6pt !important;
   }
+  body.contractPrintCompact .docPrintContractCompact ol.contractLegalList[data-section],
+  .docPrint.docPrintContractCompact ol.contractLegalList[data-section] {
+    list-style: none !important;
+    margin: 0 0 6pt !important;
+    padding: 0 !important;
+    counter-reset: contract-clause !important;
+  }
+  body.contractPrintCompact .docPrintContractCompact ol.contractLegalList[data-section] > li,
+  .docPrint.docPrintContractCompact ol.contractLegalList[data-section] > li {
+    position: relative !important;
+    margin: 0 0 5pt !important;
+    padding: 0 0 0 1.45cm !important;
+    text-align: justify !important;
+    counter-increment: contract-clause !important;
+  }
+  body.contractPrintCompact .docPrintContractCompact ol.contractLegalList > li[data-section]::before,
+  .docPrint.docPrintContractCompact ol.contractLegalList > li[data-section]::before {
+    content: attr(data-section) '.' counter(contract-clause) '.' !important;
+    position: absolute !important;
+    left: 0 !important;
+    width: 1.35cm !important;
+    text-align: right !important;
+  }
+  body.contractPrintCompact
+    .docPrintContractCompact
+    ol.contractLegalList[data-section]
+    > li
+    > ol.contractLegalList[data-section],
+  .docPrint.docPrintContractCompact
+    ol.contractLegalList[data-section]
+    > li
+    > ol.contractLegalList[data-section] {
+    counter-reset: contract-subclause !important;
+    margin: 3pt 0 0 !important;
+    padding: 0 !important;
+  }
+  body.contractPrintCompact
+    .docPrintContractCompact
+    ol.contractLegalList[data-section]
+    > li
+    > ol.contractLegalList[data-section]
+    > li,
+  .docPrint.docPrintContractCompact
+    ol.contractLegalList[data-section]
+    > li
+    > ol.contractLegalList[data-section]
+    > li {
+    counter-increment: contract-subclause !important;
+    padding-left: 1.85cm !important;
+  }
+  body.contractPrintCompact
+    .docPrintContractCompact
+    ol.contractLegalList
+    > li
+    > ol.contractLegalList
+    > li[data-section]::before,
+  .docPrint.docPrintContractCompact
+    ol.contractLegalList
+    > li
+    > ol.contractLegalList
+    > li[data-section]::before {
+    content: attr(data-section) '.' counter(contract-clause) '.' counter(contract-subclause) '.'
+      !important;
+    position: absolute !important;
+    left: 0 !important;
+    width: 1.85cm !important;
+    text-align: right !important;
+  }
 `;
 
-function stripFontSizeFromInlineStyle(style: string): string {
-  return style
-    .replace(/\bfont-size\s*:\s*[^;]+;?/gi, '')
-    .replace(/\bmso-(?:bidi-)?font-size\s*:\s*[^;]+;?/gi, '')
+function stripTypographyFromInlineStyle(style: string, keepFontSize = false): string {
+  let next = style
+    .replace(/\b(?:font-family|mso-(?:ascii|hansi|cs|fareast)-font-family)\s*:\s*[^;]+;?/gi, '')
+    .replace(/\bmso-(?:bidi-)?font-size\s*:\s*[^;]+;?/gi, '');
+  if (!keepFontSize) {
+    next = next.replace(/\bfont-size\s*:\s*[^;]+;?/gi, '');
+  }
+  return next
     .replace(/;\s*;/g, ';')
     .replace(/^[\s;]+|[\s;]+$/g, '')
     .trim();
 }
 
-/** Убирает inline font-size (Word), чтобы сработали стили печати договора. */
-export function prepareContractHtmlForCompactPrint(html: string): string {
-  const withoutFontSize = html.replace(
+function cleanElementInlineTypography(el: HTMLElement, preserveHeadingFontSizes: boolean): void {
+  const styleAttr = el.getAttribute('style');
+  if (!styleAttr) return;
+  const isHeading = /^H[1-6]$/i.test(el.tagName);
+  const cleaned = stripTypographyFromInlineStyle(styleAttr, preserveHeadingFontSizes && isHeading);
+  if (cleaned) el.setAttribute('style', cleaned);
+  else el.removeAttribute('style');
+}
+
+/** Убирает inline font-family (Word); font-size — по желанию (для печати сбрасываем, для H1–H6 в превью сохраняем). */
+export function prepareContractHtmlForCompactPrint(
+  html: string,
+  options?: { preserveHeadingFontSizes?: boolean }
+): string {
+  const preserveHeadingFontSizes = Boolean(options?.preserveHeadingFontSizes);
+
+  if (typeof window !== 'undefined') {
+    const container = window.document.createElement('div');
+    container.innerHTML = html || '';
+    for (const el of container.querySelectorAll<HTMLElement>('[style]')) {
+      cleanElementInlineTypography(el, preserveHeadingFontSizes);
+    }
+    return container.innerHTML
+      .replace(/\s*style\s*=\s*(["'])\s*\1/gi, '')
+      .replace(/\sface\s*=\s*(["'])[^"']*\1/gi, '')
+      .replace(/\sface\s*=\s*[^\s>]+/gi, '');
+  }
+
+  const withoutTypography = html.replace(
     /\bstyle\s*=\s*(["'])([\s\S]*?)\1/gi,
     (_match, quote: string, style: string) => {
-      const cleaned = stripFontSizeFromInlineStyle(style);
+      const cleaned = stripTypographyFromInlineStyle(style, false);
       if (!cleaned) return '';
       return `style=${quote}${cleaned}${quote}`;
     }
   );
-  return withoutFontSize.replace(/\s*style\s*=\s*(["'])\s*\1/gi, '');
+  return withoutTypography
+    .replace(/\s*style\s*=\s*(["'])\s*\1/gi, '')
+    .replace(/\sface\s*=\s*(["'])[^"']*\1/gi, '')
+    .replace(/\sface\s*=\s*[^\s>]+/gi, '');
 }
 
-function markDocPrintContractCompact(html: string): string {
-  const prepared = prepareContractHtmlForCompactPrint(html);
+/** Предпросмотр в админке: сброс Word-стилей, но размеры H1–H3 из конструктора сохраняются. */
+export function prepareContractHtmlForScreenPreview(html: string): string {
+  return markDocPrintContractCompact(html, { preserveHeadingFontSizes: true });
+}
+
+function markDocPrintContractCompact(
+  html: string,
+  options?: { preserveHeadingFontSizes?: boolean }
+): string {
+  const prepared = prepareContractHtmlForCompactPrint(html, options);
   if (/\bdocPrintContractCompact\b/i.test(prepared)) return prepared;
 
   if (/\bclass\s*=\s*(["'])([^"']*\bdocPrint\b[^"']*)\1/i.test(prepared)) {

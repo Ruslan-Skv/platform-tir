@@ -63,6 +63,7 @@ import {
 } from './applyCrmContractToForm';
 import { applyTemplate } from './applyTemplate';
 import { contractDateToDdMmYyyy, todayContractDateDdMmYyyy } from './contractDateFormat';
+import { prepareContractTemplateHtmlForPreview } from './contractTemplateTypography';
 import {
   hydrateManagerQuestionnaire1FromLinkedCrmCustomer,
   parseLinkedCrmCustomerIdFromFormData,
@@ -2648,10 +2649,12 @@ export function RepairContractDocumentEditorPage({
     } else {
       tpl = templateOverrides[tab] ?? resolveTemplateHtml(tab);
     }
-    return applyTemplate(tpl, repairFormForActiveTemplate, {
-      autoInsertContractSignatures: activeTab === 'contract',
-      plainCustomerPlaceholders: isRepairPlainCustomerTab(activeTab),
-    });
+    return prepareContractTemplateHtmlForPreview(
+      applyTemplate(tpl, repairFormForActiveTemplate, {
+        autoInsertContractSignatures: activeTab === 'contract',
+        plainCustomerPlaceholders: isRepairPlainCustomerTab(activeTab),
+      })
+    );
   }, [
     activeTab,
     repairFormForActiveTemplate,
@@ -2697,10 +2700,12 @@ export function RepairContractDocumentEditorPage({
         estimateGroups,
       });
       const tpl = templateOverrides[templateTab] ?? resolveTemplateHtml(templateTab);
-      return applyTemplate(tpl, formForTpl, {
-        autoInsertContractSignatures: tab === 'contract',
-        plainCustomerPlaceholders: isRepairPlainCustomerTab(tab),
-      });
+      return prepareContractTemplateHtmlForPreview(
+        applyTemplate(tpl, formForTpl, {
+          autoInsertContractSignatures: tab === 'contract',
+          plainCustomerPlaceholders: isRepairPlainCustomerTab(tab),
+        })
+      );
     },
     [form, estimatePresets, estimateGroups, templateOverrides, resolveTemplateHtml]
   );

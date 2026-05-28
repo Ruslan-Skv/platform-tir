@@ -49,6 +49,19 @@ import measurementFormStyles from '@/views/admin/CRM/Measurements/MeasurementFor
 import { TemplateTrashModal } from '@/views/admin/ContractDocuments/TemplateTrashModal';
 import { applyTemplate } from '@/views/admin/ContractDocuments/repair/applyTemplate';
 import {
+  applyContractLegalListInVisualEditor,
+  buildContractLegalListHtml,
+  changeContractLegalListLevel,
+  detectSectionNumber,
+  handleContractLegalListEnter,
+  isNodeInsideContractLegalList,
+} from '@/views/admin/ContractDocuments/repair/contractLegalList';
+import {
+  normalizeContractTemplateTypography,
+  prepareContractTemplateHtmlForPreview,
+  sanitizePastedContractHtml,
+} from '@/views/admin/ContractDocuments/repair/contractTemplateTypography';
+import {
   isRepairActTwinOneSheetTab,
   isRepairPlainCustomerTab,
   wrapRepairActTwinCopiesOnOnePageHtml,
@@ -80,6 +93,9 @@ type FormatTool = {
   title: string;
   icon: React.ReactNode;
   onClick: () => void;
+  isActive?: boolean;
+  ariaPressed?: boolean;
+  wideGlyph?: boolean;
 };
 
 function FormatToolbarSvgIcon({
@@ -93,6 +109,419 @@ function FormatToolbarSvgIcon({
 function FormatToolbarGlyph({ children }: { children: React.ReactNode }) {
   return <span className={styles.formatToolbarGlyph}>{children}</span>;
 }
+
+type InlineFormatKind = 'bold' | 'italic' | 'underline';
+
+const INLINE_FORMAT_TAGS: Record<InlineFormatKind, string[]> = {
+  bold: ['strong', 'b'],
+  italic: ['em', 'i'],
+  underline: ['u'],
+};
+
+const INLINE_FORMAT_EXEC: Record<InlineFormatKind, 'bold' | 'italic' | 'underline'> = {
+  bold: 'bold',
+  italic: 'italic',
+  underline: 'underline',
+};
+
+const INLINE_FORMAT_WRAP: Record<
+  InlineFormatKind,
+  { before: string; after: string; placeholder: string }
+> = {
+  bold: { before: '<strong>', after: '</strong>', placeholder: 'жирный текст' },
+  italic: { before: '<em>', after: '</em>', placeholder: 'курсив' },
+  underline: { before: '<u>', after: '</u>', placeholder: 'подчёркнуто' },
+};
+
+function tryUnwrapHtmlInlineTags(
+  source: string,
+  start: number,
+  end: number,
+  tags: string[]
+): { next: string; cursor: number; selectLength: number } | null {
+  const selected = source.slice(start, end);
+  for (const tag of tags) {
+    const wrappedRe = new RegExp(`^\\s*<${tag}(\\s[^>]*)?>([\\s\\S]*)</${tag}>\\s*$`, 'i');
+    const wrapped = selected.match(wrappedRe);
+    if (wrapped) {
+      const inner = wrapped[2] ?? '';
+      return {
+        next: source.slice(0, start) + inner + source.slice(end),
+        cursor: start,
+        selectLength: inner.length,
+      };
+    }
+  }
+  for (const tag of tags) {
+    const openRe = new RegExp(`<${tag}(\\s[^>]*)?>\\s*$`, 'i');
+    const closeRe = new RegExp(`^\\s*</${tag}>`, 'i');
+    const before = source.slice(0, start);
+    const after = source.slice(end);
+    const openM = before.match(openRe);
+    const closeM = after.match(closeRe);
+    if (openM && closeM) {
+      const openStart = start - openM[0].length;
+      const closeEnd = end + closeM[0].length;
+      return {
+        next: source.slice(0, openStart) + selected + source.slice(closeEnd),
+        cursor: openStart,
+        selectLength: selected.length,
+      };
+    }
+  }
+  return null;
+}
+
+const HTML_FONT_WEIGHT_BOLD_STYLE_RE = /font-weight\s*:\s*(?:bold|bolder|[7-9]00)\b/i;
+const HTML_BOLD_STYLE_TAG_NAMES = 'span|p|div|td|th|li|b|strong';
+
+function htmlTagChunkIsBoldMarkup(tagName: string, attrs: string): boolean {
+  const tag = tagName.toLowerCase();
+  if (tag === 'b' || tag === 'strong') return true;
+  return HTML_FONT_WEIGHT_BOLD_STYLE_RE.test(attrs);
+}
+
+function tryUnwrapHtmlFontWeightBold(
+  source: string,
+  start: number,
+  end: number
+): { next: string; cursor: number; selectLength: number } | null {
+  const selected = source.slice(start, end);
+  const wrappedRe = new RegExp(
+    `^\\s*<(${HTML_BOLD_STYLE_TAG_NAMES})(\\s[^>]*)>([\\s\\S]*)<\\/\\1>\\s*$`,
+    'i'
+  );
+  const wrapped = selected.match(wrappedRe);
+  if (wrapped) {
+    const tagName = wrapped[1] ?? '';
+    const attrs = wrapped[2] ?? '';
+    if (!htmlTagChunkIsBoldMarkup(tagName, attrs)) return null;
+    const inner = wrapped[3] ?? '';
+    return {
+      next: source.slice(0, start) + inner + source.slice(end),
+      cursor: start,
+      selectLength: inner.length,
+    };
+  }
+  const openRe = new RegExp(`<(${HTML_BOLD_STYLE_TAG_NAMES})(\\s[^>]*)>\\s*$`, 'i');
+  const closeRe = new RegExp(`^\\s*<\\/${HTML_BOLD_STYLE_TAG_NAMES}>`, 'i');
+  const before = source.slice(0, start);
+  const after = source.slice(end);
+  const openM = before.match(openRe);
+  const closeM = after.match(closeRe);
+  if (openM && closeM) {
+    const tagName = openM[1] ?? '';
+    const attrs = openM[2] ?? '';
+    if (!htmlTagChunkIsBoldMarkup(tagName, attrs)) return null;
+    const openStart = start - openM[0].length;
+    const closeEnd = end + closeM[0].length;
+    return {
+      next: source.slice(0, openStart) + selected + source.slice(closeEnd),
+      cursor: openStart,
+      selectLength: selected.length,
+    };
+  }
+  return null;
+}
+
+function isBoldFontWeightValue(value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return false;
+  if (normalized === 'bold' || normalized === 'bolder') return true;
+  const numeric = Number.parseInt(normalized, 10);
+  return !Number.isNaN(numeric) && numeric >= 700;
+}
+
+function rangeCloneContainsBoldMarkup(range: Range): boolean {
+  const fragment = range.cloneContents();
+  if (fragment.querySelector('b, strong, B, STRONG')) return true;
+  for (const el of fragment.querySelectorAll<HTMLElement>('[style]')) {
+    const styleAttr = el.getAttribute('style') ?? '';
+    if (HTML_FONT_WEIGHT_BOLD_STYLE_RE.test(styleAttr)) return true;
+    if (isBoldFontWeightValue(el.style.fontWeight)) return true;
+  }
+  return false;
+}
+
+function unwrapElementNode(el: Element): void {
+  const parent = el.parentNode;
+  if (!parent) return;
+  while (el.firstChild) parent.insertBefore(el.firstChild, el);
+  parent.removeChild(el);
+}
+
+function rangeFullyContainsNode(range: Range, node: Node): boolean {
+  const nodeRange = document.createRange();
+  nodeRange.selectNode(node);
+  const startsBeforeOrAt = range.compareBoundaryPoints(Range.START_TO_START, nodeRange) <= 0;
+  const endsAfterOrAt = range.compareBoundaryPoints(Range.END_TO_END, nodeRange) >= 0;
+  return startsBeforeOrAt && endsAfterOrAt;
+}
+
+function stripBoldFontWeightFromElementStyle(el: HTMLElement): void {
+  const styleAttr = el.getAttribute('style') ?? '';
+  if (
+    !HTML_FONT_WEIGHT_BOLD_STYLE_RE.test(styleAttr) &&
+    !isBoldFontWeightValue(el.style.fontWeight)
+  ) {
+    return;
+  }
+  el.style.fontWeight = 'normal';
+  const nextStyle = styleAttr
+    .replace(/font-weight\s*:\s*(?:bold|bolder|[7-9]00)\s*;?/gi, '')
+    .replace(/;;+/g, ';')
+    .trim()
+    .replace(/^;|;$/g, '');
+  if (nextStyle) el.setAttribute('style', nextStyle);
+  else el.removeAttribute('style');
+}
+
+function stripBoldFromHtmlFragment(fragment: DocumentFragment): DocumentFragment {
+  const holder = document.createElement('div');
+  holder.appendChild(fragment);
+  for (const el of [...holder.querySelectorAll('b, strong, B, STRONG')]) {
+    unwrapElementNode(el);
+  }
+  for (const el of holder.querySelectorAll<HTMLElement>('[style]')) {
+    stripBoldFontWeightFromElementStyle(el);
+  }
+  const result = document.createDocumentFragment();
+  while (holder.firstChild) result.appendChild(holder.firstChild);
+  return result;
+}
+
+function stripBoldFromRangeInEditor(editor: HTMLElement, range: Range): void {
+  const boldElements = [...editor.querySelectorAll<HTMLElement>('b, strong, B, STRONG')];
+  for (const el of boldElements) {
+    if (!range.intersectsNode(el)) continue;
+    if (!rangeFullyContainsNode(range, el)) continue;
+    unwrapElementNode(el);
+  }
+  const styledElements = [...editor.querySelectorAll<HTMLElement>('[style]')];
+  for (const el of styledElements) {
+    if (!range.intersectsNode(el)) continue;
+    if (!rangeFullyContainsNode(range, el)) continue;
+    stripBoldFontWeightFromElementStyle(el);
+  }
+}
+
+function toggleVisualBoldInEditor(editor: HTMLElement): void {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+  const range = sel.getRangeAt(0);
+  if (!editor.contains(range.commonAncestorContainer)) return;
+  if (range.collapsed) {
+    document.execCommand('bold');
+    return;
+  }
+  const shouldUnbold = document.queryCommandState('bold') || rangeCloneContainsBoldMarkup(range);
+  if (shouldUnbold) {
+    if (document.queryCommandState('bold')) {
+      document.execCommand('bold');
+      return;
+    }
+    stripBoldFromRangeInEditor(editor, range);
+    return;
+  }
+  document.execCommand('bold');
+}
+
+/** Размеры как в списке Word (пт). */
+const VISUAL_FONT_SIZE_PT_OPTIONS = [
+  8, 9, 10, 10.5, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72,
+] as const;
+
+const DEFAULT_VISUAL_FONT_SIZE_PT = 11;
+
+function pxToPt(px: number): number {
+  return Math.round(((px * 72) / 96) * 2) / 2;
+}
+
+function parseCssFontSizeToPt(value: string): number | null {
+  const normalized = value.trim().toLowerCase();
+  const ptMatch = normalized.match(/^([\d.]+)\s*pt$/);
+  if (ptMatch) {
+    const pt = Number.parseFloat(ptMatch[1]);
+    return Number.isFinite(pt) ? pt : null;
+  }
+  const pxMatch = normalized.match(/^([\d.]+)\s*px$/);
+  if (pxMatch) {
+    const px = Number.parseFloat(pxMatch[1]);
+    return Number.isFinite(px) ? pxToPt(px) : null;
+  }
+  return null;
+}
+
+function getInlineFontSizePt(el: HTMLElement): number | null {
+  const styleAttr = el.getAttribute('style') ?? '';
+  const fromAttr = styleAttr.match(/font-size\s*:\s*([^;]+)/i)?.[1]?.trim();
+  if (fromAttr) {
+    const pt = parseCssFontSizeToPt(fromAttr);
+    if (pt != null) return pt;
+  }
+  if (el.style.fontSize) {
+    const pt = parseCssFontSizeToPt(el.style.fontSize);
+    if (pt != null) return pt;
+  }
+  return null;
+}
+
+function collectSelectionFontSizesPt(editor: HTMLElement, range: Range): number[] {
+  const sizes: number[] = [];
+  const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!range.intersectsNode(node)) return NodeFilter.FILTER_REJECT;
+      const text = node.textContent?.replace(/\u200B/g, '').trim() ?? '';
+      return text ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+    },
+  });
+  let node: Node | null;
+  while ((node = walker.nextNode())) {
+    const parent = node.parentElement;
+    if (!parent) continue;
+    let pt = getInlineFontSizePt(parent);
+    if (pt == null) {
+      const computed = window.getComputedStyle(parent).fontSize;
+      pt = parseCssFontSizeToPt(computed) ?? DEFAULT_VISUAL_FONT_SIZE_PT;
+    }
+    sizes.push(pt);
+  }
+  return sizes;
+}
+
+function getVisualSelectionFontSizePt(
+  editor: HTMLElement,
+  range: Range
+): { pt: number; mixed: boolean } {
+  const sizes = collectSelectionFontSizesPt(editor, range);
+  if (sizes.length === 0) {
+    return { pt: DEFAULT_VISUAL_FONT_SIZE_PT, mixed: false };
+  }
+  const first = sizes[0];
+  const mixed = sizes.some((size) => Math.abs(size - first) > 0.01);
+  return { pt: first, mixed };
+}
+
+function stripFontSizeFromElementStyle(el: HTMLElement): void {
+  const styleAttr = el.getAttribute('style') ?? '';
+  if (!/font-size\s*:/i.test(styleAttr) && !el.style.fontSize) return;
+  el.style.fontSize = '';
+  const nextStyle = styleAttr
+    .replace(/font-size\s*:\s*[^;]+;?/gi, '')
+    .replace(/;;+/g, ';')
+    .trim()
+    .replace(/^;|;$/g, '');
+  if (nextStyle) el.setAttribute('style', nextStyle);
+  else el.removeAttribute('style');
+}
+
+function replaceFontElementWithSizedSpan(fontEl: Element, sizePt: number): HTMLSpanElement {
+  const span = document.createElement('span');
+  span.style.fontSize = `${sizePt}pt`;
+  while (fontEl.firstChild) span.appendChild(fontEl.firstChild);
+  return span;
+}
+
+function applyVisualFontSizePt(editor: HTMLElement, sizePt: number): void {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+  const range = sel.getRangeAt(0);
+  if (!editor.contains(range.commonAncestorContainer)) return;
+
+  if (range.collapsed) {
+    const span = document.createElement('span');
+    span.style.fontSize = `${sizePt}pt`;
+    span.appendChild(document.createTextNode('\u200B'));
+    range.insertNode(span);
+    const caret = document.createRange();
+    caret.setStart(span.firstChild!, 1);
+    caret.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(caret);
+    return;
+  }
+
+  const extracted = range.extractContents();
+  const holder = document.createElement('div');
+  holder.appendChild(extracted);
+  for (const fontEl of [...holder.querySelectorAll('font')]) {
+    fontEl.replaceWith(replaceFontElementWithSizedSpan(fontEl, sizePt));
+  }
+  for (const el of holder.querySelectorAll<HTMLElement>('*')) {
+    stripFontSizeFromElementStyle(el);
+  }
+  const span = document.createElement('span');
+  span.style.fontSize = `${sizePt}pt`;
+  while (holder.firstChild) span.appendChild(holder.firstChild);
+  range.insertNode(span);
+  const nextRange = document.createRange();
+  nextRange.selectNodeContents(span);
+  sel.removeAllRanges();
+  sel.addRange(nextRange);
+}
+
+const EMPTY_INLINE_FORMAT_ACTIVE: Record<InlineFormatKind, boolean> = {
+  bold: false,
+  italic: false,
+  underline: false,
+};
+
+function isHtmlCaretInsideTag(source: string, pos: number, tag: string): boolean {
+  const before = source.slice(0, pos);
+  const openRe = new RegExp(`<${tag}(\\s[^>]*)?>`, 'gi');
+  const closeRe = new RegExp(`</${tag}>`, 'gi');
+  let openCount = 0;
+  let closeCount = 0;
+  let m: RegExpExecArray | null;
+  while ((m = openRe.exec(before)) !== null) {
+    openCount += 1;
+    void m;
+  }
+  while ((m = closeRe.exec(before)) !== null) {
+    closeCount += 1;
+    void m;
+  }
+  if (openCount <= closeCount) return false;
+  const after = source.slice(pos);
+  return new RegExp(`^[\\s\\S]*?</${tag}>`, 'i').test(after);
+}
+
+function isHtmlCaretInsideFontWeightBold(source: string, pos: number): boolean {
+  const before = source.slice(0, pos);
+  const openRe = /<(span|p)(\s+[^>]*style="[^"]*font-weight\s*:\s*bold[^"]*"[^>]*)>/gi;
+  const closeRe = /<\/(span|p)>/gi;
+  let openCount = 0;
+  let closeCount = 0;
+  let m: RegExpExecArray | null;
+  while ((m = openRe.exec(before)) !== null) {
+    openCount += 1;
+    void m;
+  }
+  while ((m = closeRe.exec(before)) !== null) {
+    closeCount += 1;
+    void m;
+  }
+  if (openCount <= closeCount) return false;
+  const after = source.slice(pos);
+  return /^[\s\S]*?<\/(span|p)>/i.test(after);
+}
+
+function isHtmlInlineFormatActive(
+  source: string,
+  start: number,
+  end: number,
+  kind: InlineFormatKind
+): boolean {
+  const tags = INLINE_FORMAT_TAGS[kind];
+  if (tryUnwrapHtmlInlineTags(source, start, end, tags)) return true;
+  if (kind === 'bold' && tryUnwrapHtmlFontWeightBold(source, start, end)) return true;
+  const positions = start === end ? [start] : [start, end];
+  if (kind === 'bold') {
+    if (positions.some((pos) => isHtmlCaretInsideFontWeightBold(source, pos))) return true;
+  }
+  return tags.some((tag) => positions.some((pos) => isHtmlCaretInsideTag(source, pos, tag)));
+}
+
 const TEMPLATES_UI_PREFS_KEY = 'admin.contractDocuments.templates.uiPrefs';
 const TEMPLATES_PLACEHOLDERS_COLLAPSED_KEY =
   'admin.contractDocuments.templates.placeholdersCollapsed';
@@ -1043,6 +1472,69 @@ export function ContractDocumentsTemplatesLibraryPage() {
     [editorMode, html, visualDraftHtml]
   );
 
+  const [inlineFormatActive, setInlineFormatActive] = useState<Record<InlineFormatKind, boolean>>(
+    EMPTY_INLINE_FORMAT_ACTIVE
+  );
+  const [visualFontSizeControl, setVisualFontSizeControl] = useState<{
+    pt: number;
+    mixed: boolean;
+  }>({ pt: DEFAULT_VISUAL_FONT_SIZE_PT, mixed: false });
+
+  const refreshInlineFormatActiveState = useCallback(() => {
+    if (editorMode === 'visual') {
+      const editor = visualEditorRef.current;
+      if (!editor) {
+        setInlineFormatActive(EMPTY_INLINE_FORMAT_ACTIVE);
+        setVisualFontSizeControl({ pt: DEFAULT_VISUAL_FONT_SIZE_PT, mixed: false });
+        return;
+      }
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) {
+        setInlineFormatActive(EMPTY_INLINE_FORMAT_ACTIVE);
+        setVisualFontSizeControl({ pt: DEFAULT_VISUAL_FONT_SIZE_PT, mixed: false });
+        return;
+      }
+      const range = sel.getRangeAt(0);
+      if (!editor.contains(range.commonAncestorContainer)) {
+        setInlineFormatActive(EMPTY_INLINE_FORMAT_ACTIVE);
+        setVisualFontSizeControl({ pt: DEFAULT_VISUAL_FONT_SIZE_PT, mixed: false });
+        return;
+      }
+      setInlineFormatActive({
+        bold: document.queryCommandState('bold'),
+        italic: document.queryCommandState('italic'),
+        underline: document.queryCommandState('underline'),
+      });
+      setVisualFontSizeControl(getVisualSelectionFontSizePt(editor, range));
+      return;
+    }
+    setVisualFontSizeControl({ pt: DEFAULT_VISUAL_FONT_SIZE_PT, mixed: false });
+    const el = htmlTextareaRef.current;
+    if (!el) {
+      setInlineFormatActive(EMPTY_INLINE_FORMAT_ACTIVE);
+      return;
+    }
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? start;
+    setInlineFormatActive({
+      bold: isHtmlInlineFormatActive(html, start, end, 'bold'),
+      italic: isHtmlInlineFormatActive(html, start, end, 'italic'),
+      underline: isHtmlInlineFormatActive(html, start, end, 'underline'),
+    });
+  }, [editorMode, html]);
+
+  useEffect(() => {
+    const onSelectionChange = () => {
+      refreshInlineFormatActiveState();
+    };
+    document.addEventListener('selectionchange', onSelectionChange);
+    return () => document.removeEventListener('selectionchange', onSelectionChange);
+  }, [refreshInlineFormatActiveState]);
+
+  useEffect(() => {
+    refreshInlineFormatActiveState();
+  }, [editorMode, refreshInlineFormatActiveState]);
+
   const captureVisualSelection = () => {
     const editor = visualEditorRef.current;
     if (!editor) return;
@@ -1051,6 +1543,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     const range = sel.getRangeAt(0);
     if (!editor.contains(range.commonAncestorContainer)) return;
     visualSelectionRangeRef.current = range.cloneRange();
+    refreshInlineFormatActiveState();
   };
 
   const restoreVisualSelection = (): Range | null => {
@@ -1094,13 +1587,12 @@ export function ContractDocumentsTemplatesLibraryPage() {
     [html, templateData, activeTemplateTab]
   );
 
-  const renderedPreviewDisplay = useMemo(
-    () =>
-      isRepairActTwinOneSheetTab(activeTemplateTab)
-        ? wrapRepairActTwinCopiesOnOnePageHtml(renderedPreview)
-        : renderedPreview,
-    [renderedPreview, activeTemplateTab]
-  );
+  const renderedPreviewDisplay = useMemo(() => {
+    const withTypography = prepareContractTemplateHtmlForPreview(renderedPreview);
+    return isRepairActTwinOneSheetTab(activeTemplateTab)
+      ? wrapRepairActTwinCopiesOnOnePageHtml(withTypography)
+      : withTypography;
+  }, [renderedPreview, activeTemplateTab]);
   const itemsByActiveTab = useMemo(
     () =>
       items.filter((it) => {
@@ -1782,6 +2274,68 @@ export function ContractDocumentsTemplatesLibraryPage() {
     }));
   };
 
+  const toggleInlineFormat = (kind: InlineFormatKind) => {
+    const { before, after, placeholder } = INLINE_FORMAT_WRAP[kind];
+
+    if (editorMode === 'visual') {
+      const el = visualEditorRef.current;
+      if (!el) return;
+      el.focus();
+      restoreVisualSelection();
+      if (kind === 'bold') {
+        toggleVisualBoldInEditor(el);
+      } else {
+        document.execCommand(INLINE_FORMAT_EXEC[kind]);
+      }
+      const next = el.innerHTML;
+      setVisualDraftHtml(next);
+      setHtml(next);
+      pushVisualHistory(next);
+      captureVisualSelection();
+      window.requestAnimationFrame(() => refreshInlineFormatActiveState());
+      return;
+    }
+
+    const el = htmlTextareaRef.current;
+    const current = html;
+    if (!el) {
+      wrapSelection(before, after, placeholder);
+      return;
+    }
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? start;
+    const unwrapped =
+      tryUnwrapHtmlInlineTags(current, start, end, INLINE_FORMAT_TAGS[kind]) ??
+      (kind === 'bold' ? tryUnwrapHtmlFontWeightBold(current, start, end) : null);
+    if (unwrapped) {
+      setHtml(unwrapped.next);
+      window.requestAnimationFrame(() => {
+        el.focus();
+        el.setSelectionRange(unwrapped.cursor, unwrapped.cursor + unwrapped.selectLength);
+        refreshInlineFormatActiveState();
+      });
+      return;
+    }
+    wrapSelection(before, after, placeholder);
+    window.requestAnimationFrame(() => refreshInlineFormatActiveState());
+  };
+
+  const applyVisualFontSizeFromToolbar = (sizePt: number) => {
+    if (editorMode !== 'visual' || !Number.isFinite(sizePt) || sizePt <= 0) return;
+    const el = visualEditorRef.current;
+    if (!el) return;
+    el.focus();
+    restoreVisualSelection();
+    applyVisualFontSizePt(el, sizePt);
+    const next = el.innerHTML;
+    setVisualDraftHtml(next);
+    setHtml(next);
+    pushVisualHistory(next);
+    setVisualFontSizeControl({ pt: sizePt, mixed: false });
+    captureVisualSelection();
+    window.requestAnimationFrame(() => refreshInlineFormatActiveState());
+  };
+
   const wrapParagraphWithAlign = (align: 'left' | 'center' | 'right' | 'justify') => {
     if (editorMode === 'visual') {
       const cmd =
@@ -1819,18 +2373,80 @@ export function ContractDocumentsTemplatesLibraryPage() {
       level === 1 ? 'Название договора' : level === 2 ? 'Название раздела' : 'Название подпункта'
     );
   };
+  const syncVisualEditorFromDom = () => {
+    const el = visualEditorRef.current;
+    if (!el) return;
+    const next = el.innerHTML;
+    setVisualDraftHtml(next);
+    setHtml(next);
+    pushVisualHistory(next);
+    captureVisualSelection();
+  };
+
   const wrapAsList = (ordered: boolean) => {
+    if (ordered && editorMode === 'visual') {
+      const el = visualEditorRef.current;
+      if (!el) return;
+      el.focus();
+      restoreVisualSelection();
+      applyContractLegalListInVisualEditor(el, 1);
+      syncVisualEditorFromDom();
+      return;
+    }
     updateHtmlBySelection((selected, hasSelection) => {
       const lines = (hasSelection ? selected : 'Пункт 1\nПункт 2')
         .split(/\r?\n/)
         .map((s) => s.trim())
         .filter(Boolean);
+      if (ordered) {
+        const section =
+          typeof window !== 'undefined' && visualEditorRef.current
+            ? detectSectionNumber(visualEditorRef.current, null)
+            : '1';
+        return { content: buildContractLegalListHtml(lines, section) };
+      }
       const itemsHtml = lines.map((line) => `  <li>${line}</li>`).join('\n');
-      const tag = ordered ? 'ol' : 'ul';
       return {
-        content: `<${tag} style="margin: 0 0 8pt 22px; padding: 0;">\n${itemsHtml}\n</${tag}>`,
+        content: `<ul style="margin: 0 0 8pt 22px; padding: 0;">\n${itemsHtml}\n</ul>`,
       };
     });
+  };
+
+  const applyContractClauseListLevel = (depth: 1 | 2) => {
+    if (editorMode !== 'visual') {
+      setError('Нумерация 1.1 / 1.1.1 доступна в визуальном конструкторе.');
+      return;
+    }
+    const el = visualEditorRef.current;
+    if (!el) return;
+    el.focus();
+    restoreVisualSelection();
+    applyContractLegalListInVisualEditor(el, depth);
+    syncVisualEditorFromDom();
+  };
+
+  const handleVisualEditorKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (editorMode !== 'visual' || !isSuperAdmin) return;
+    const el = visualEditorRef.current;
+    if (!el) return;
+
+    if (e.key === 'Tab') {
+      const sel = window.getSelection();
+      const node = sel?.rangeCount ? sel.getRangeAt(0).commonAncestorContainer : null;
+      if (isNodeInsideContractLegalList(el, node)) {
+        e.preventDefault();
+        changeContractLegalListLevel(el, e.shiftKey ? 'outdent' : 'indent');
+        syncVisualEditorFromDom();
+      }
+      return;
+    }
+
+    if (e.key === 'Enter' && !e.shiftKey) {
+      if (handleContractLegalListEnter(el)) {
+        e.preventDefault();
+        syncVisualEditorFromDom();
+      }
+    }
   };
   const insertHorizontalRule = () =>
     updateHtmlBySelection(() => ({
@@ -1864,11 +2480,14 @@ export function ContractDocumentsTemplatesLibraryPage() {
       'Абзац'
     );
   };
+
   const insertSectionTemplate = () =>
     updateHtmlBySelection(() => ({
       content: `<h2 style="text-align: center; margin: 14pt 0 8pt;">N. НАЗВАНИЕ РАЗДЕЛА</h2>
-<p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">N.1. Первый пункт раздела.</p>
-<p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">N.2. Второй пункт раздела.</p>`,
+<ol class="contractLegalList" data-section="N">
+  <li data-section="N">Первый пункт раздела</li>
+  <li data-section="N">Второй пункт раздела</li>
+</ol>`,
     }));
   const insertSignatureLines = () =>
     updateHtmlBySelection(() => ({
@@ -1940,6 +2559,46 @@ export function ContractDocumentsTemplatesLibraryPage() {
     setVisualHistoryIndex(nextIndex);
     applyVisualSnapshot(snapshot);
   };
+  const normalizeContractTypographyInEditor = () => {
+    const source =
+      editorMode === 'visual' ? (visualEditorRef.current?.innerHTML ?? visualDraftHtml) : html;
+    const next = normalizeContractTemplateTypography(source);
+    if (!next || next === source) {
+      setOk('Типографика уже соответствует стандарту договора (10pt, Times New Roman).');
+      return;
+    }
+    setVisualDraftHtml(next);
+    setHtml(next);
+    if (visualEditorRef.current) {
+      visualEditorRef.current.innerHTML = next;
+    }
+    pushVisualHistory(next);
+    setOk(
+      'Шрифты приведены к стандарту договора: убраны стили Word, единый кегль в предпросмотре и печати.'
+    );
+  };
+
+  const handleVisualEditorPaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    if (!isSuperAdmin || editorMode !== 'visual') return;
+    e.preventDefault();
+    const pastedHtml = e.clipboardData.getData('text/html');
+    const pastedText = e.clipboardData.getData('text/plain');
+    const sanitized = pastedHtml.trim()
+      ? sanitizePastedContractHtml(pastedHtml)
+      : pastedText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    visualEditorRef.current?.focus();
+    restoreVisualSelection();
+    document.execCommand('insertHTML', false, sanitized || '');
+    const el = visualEditorRef.current;
+    if (!el) return;
+    const next = el.innerHTML;
+    setVisualDraftHtml(next);
+    setHtml(next);
+    pushVisualHistory(next);
+    captureVisualSelection();
+    window.requestAnimationFrame(() => refreshInlineFormatActiveState());
+  };
+
   const normalizeTemplateText = (mode: NormalizeMode) => {
     const source = editorMode === 'visual' ? (visualEditorRef.current?.innerHTML ?? html) : html;
     const next = normalizeTemplateHtmlWhitespace(source, mode);
@@ -2022,6 +2681,48 @@ export function ContractDocumentsTemplatesLibraryPage() {
       onClick: () => wrapParagraphWithIndentCm(1.25),
     },
     {
+      id: 'clause-1-1',
+      title:
+        'Пункт 1.1 / 1.2 (список договора): номер раздела из заголовка H2, Enter — следующий пункт',
+      icon: <FormatToolbarGlyph>1.1</FormatToolbarGlyph>,
+      wideGlyph: true,
+      onClick: () => applyContractClauseListLevel(1),
+    },
+    {
+      id: 'clause-1-1-1',
+      title:
+        'Подпункт 1.1.1 (вложенный список): Tab — вложить, Shift+Tab — вынести, Enter — новый подпункт',
+      icon: <FormatToolbarGlyph>1.1.1</FormatToolbarGlyph>,
+      wideGlyph: true,
+      onClick: () => applyContractClauseListLevel(2),
+    },
+    {
+      id: 'list-outdent',
+      title: 'Уменьшить уровень списка (Shift+Tab)',
+      icon: <FormatToolbarGlyph>⇤</FormatToolbarGlyph>,
+      onClick: () => {
+        if (editorMode !== 'visual' || !visualEditorRef.current) return;
+        visualEditorRef.current.focus();
+        restoreVisualSelection();
+        if (changeContractLegalListLevel(visualEditorRef.current, 'outdent')) {
+          syncVisualEditorFromDom();
+        }
+      },
+    },
+    {
+      id: 'list-indent',
+      title: 'Увеличить уровень списка (Tab)',
+      icon: <FormatToolbarGlyph>⇥</FormatToolbarGlyph>,
+      onClick: () => {
+        if (editorMode !== 'visual' || !visualEditorRef.current) return;
+        visualEditorRef.current.focus();
+        restoreVisualSelection();
+        if (changeContractLegalListLevel(visualEditorRef.current, 'indent')) {
+          syncVisualEditorFromDom();
+        }
+      },
+    },
+    {
       id: 'spacing-tight',
       title: 'Узкий межстрочный интервал',
       icon: <FormatToolbarGlyph>↕</FormatToolbarGlyph>,
@@ -2035,21 +2736,27 @@ export function ContractDocumentsTemplatesLibraryPage() {
     },
     {
       id: 'bold',
-      title: 'Жирный текст',
-      icon: <FormatToolbarGlyph>B</FormatToolbarGlyph>,
-      onClick: () => wrapSelection('<strong>', '</strong>', 'жирный текст'),
+      title: 'Жирный (Ж)',
+      icon: <FormatToolbarGlyph>Ж</FormatToolbarGlyph>,
+      onClick: () => toggleInlineFormat('bold'),
+      isActive: inlineFormatActive.bold,
+      ariaPressed: inlineFormatActive.bold,
     },
     {
       id: 'italic',
-      title: 'Курсив',
-      icon: <FormatToolbarGlyph>I</FormatToolbarGlyph>,
-      onClick: () => wrapSelection('<em>', '</em>', 'курсив'),
+      title: 'Курсив (К)',
+      icon: <FormatToolbarGlyph>К</FormatToolbarGlyph>,
+      onClick: () => toggleInlineFormat('italic'),
+      isActive: inlineFormatActive.italic,
+      ariaPressed: inlineFormatActive.italic,
     },
     {
       id: 'underline',
-      title: 'Подчёркивание',
-      icon: <FormatToolbarGlyph>U</FormatToolbarGlyph>,
-      onClick: () => wrapSelection('<u>', '</u>', 'подчёркнуто'),
+      title: 'Подчёркивание (Ч)',
+      icon: <FormatToolbarGlyph>Ч</FormatToolbarGlyph>,
+      onClick: () => toggleInlineFormat('underline'),
+      isActive: inlineFormatActive.underline,
+      ariaPressed: inlineFormatActive.underline,
     },
     {
       id: 'uppercase',
@@ -2064,6 +2771,12 @@ export function ContractDocumentsTemplatesLibraryPage() {
       onClick: clearFormattingInSelection,
     },
     {
+      id: 'normalize-typography',
+      title: 'Шрифты договора: убрать стили Word, единый кегль (10pt) и семейство как при печати',
+      icon: <FormatToolbarGlyph>Tt</FormatToolbarGlyph>,
+      onClick: normalizeContractTypographyInEditor,
+    },
+    {
       id: 'list-ul',
       title: 'Маркированный список',
       icon: <FormatToolbarSvgIcon icon={ListBulletIcon} />,
@@ -2071,7 +2784,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     },
     {
       id: 'list-ol',
-      title: 'Нумерованный список',
+      title: 'Список пунктов договора (1.1, 1.2…) — номер раздела берётся из H2 выше',
       icon: <FormatToolbarSvgIcon icon={NumberedListIcon} />,
       onClick: () => wrapAsList(true),
     },
@@ -2541,20 +3254,75 @@ export function ContractDocumentsTemplatesLibraryPage() {
           role="toolbar"
           aria-label="Инструменты форматирования"
         >
-          {formatTools.map((tool) => (
-            <button
-              key={tool.id}
-              type="button"
-              className={styles.formatBtn}
-              title={tool.title}
-              aria-label={tool.title}
-              onClick={tool.onClick}
-              onMouseDown={(e) => e.preventDefault()}
-              disabled={!isSuperAdmin}
-            >
-              {tool.icon}
-            </button>
-          ))}
+          {formatTools.map((tool) => {
+            const formatButton = (
+              <button
+                key={tool.id}
+                type="button"
+                className={`${styles.formatBtn} ${tool.wideGlyph ? styles.formatBtnWideGlyph : ''} ${tool.isActive ? styles.formatBtnActive : ''}`}
+                title={tool.title}
+                aria-label={tool.title}
+                aria-pressed={tool.ariaPressed}
+                onClick={tool.onClick}
+                onMouseDown={(e) => e.preventDefault()}
+                disabled={!isSuperAdmin}
+              >
+                {tool.icon}
+              </button>
+            );
+            if (tool.id !== 'bold') return formatButton;
+            return (
+              <span key={`${tool.id}-with-font-size`} className={styles.formatToolbarInlineGroup}>
+                <div
+                  className={styles.formatFontSizeWrap}
+                  title={
+                    editorMode === 'visual'
+                      ? 'Размер шрифта выделенного фрагмента (пт)'
+                      : 'Размер шрифта — только в визуальном конструкторе'
+                  }
+                >
+                  <label
+                    className={styles.formatFontSizeLabel}
+                    htmlFor="templates-library-visual-font-size"
+                  >
+                    <span
+                      className={styles.formatFontSizeLabelText}
+                      onMouseDown={(e) => e.preventDefault()}
+                    >
+                      пт
+                    </span>
+                    <select
+                      id="templates-library-visual-font-size"
+                      className={styles.formatFontSizeSelect}
+                      value={visualFontSizeControl.mixed ? '' : String(visualFontSizeControl.pt)}
+                      disabled={!isSuperAdmin || editorMode !== 'visual'}
+                      aria-label="Размер шрифта"
+                      onMouseDown={() => {
+                        captureVisualSelection();
+                      }}
+                      onChange={(e) => {
+                        const next = Number.parseFloat(e.target.value);
+                        if (!Number.isFinite(next)) return;
+                        applyVisualFontSizeFromToolbar(next);
+                      }}
+                    >
+                      {visualFontSizeControl.mixed ? (
+                        <option value="" disabled>
+                          —
+                        </option>
+                      ) : null}
+                      {VISUAL_FONT_SIZE_PT_OPTIONS.map((pt) => (
+                        <option key={pt} value={String(pt)}>
+                          {Number.isInteger(pt) ? pt : pt.toString().replace('.', ',')}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                {formatButton}
+              </span>
+            );
+          })}
         </div>
         <aside
           className={`${styles.placeholderPanelTop} ${styles.templatesLibraryPlaceholderPanel}`}
@@ -2650,7 +3418,13 @@ export function ContractDocumentsTemplatesLibraryPage() {
                 }}
                 disabled={!isSuperAdmin}
                 tabIndex={editorMode === 'html' ? 0 : -1}
-                onMouseUp={captureHtmlEditorHeight}
+                onSelect={refreshInlineFormatActiveState}
+                onKeyUp={refreshInlineFormatActiveState}
+                onClick={refreshInlineFormatActiveState}
+                onMouseUp={(e) => {
+                  captureHtmlEditorHeight();
+                  refreshInlineFormatActiveState();
+                }}
                 onTouchEnd={captureHtmlEditorHeight}
                 onBlur={captureHtmlEditorHeight}
                 style={{ height: htmlEditorHeightPx ? `${htmlEditorHeightPx}px` : undefined }}
@@ -2721,6 +3495,8 @@ export function ContractDocumentsTemplatesLibraryPage() {
                 className={`${measurementFormStyles.textarea} ${styles.contractHtmlTextarea} ${styles.visualEditor} ${styles.visualEditorScrollable} ${styles.templatesLibraryVisualEditor}`}
                 contentEditable={isSuperAdmin && editorMode === 'visual'}
                 suppressContentEditableWarning
+                onPaste={handleVisualEditorPaste}
+                onKeyDown={handleVisualEditorKeyDown}
                 onInput={(e) => {
                   ensureTemplateDraftForEditing();
                   const next = (e.currentTarget as HTMLDivElement).innerHTML;
