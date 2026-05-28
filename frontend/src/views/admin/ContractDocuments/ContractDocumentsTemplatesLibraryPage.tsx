@@ -480,6 +480,17 @@ function ensureDocPrintRootWrapper(inner: string): string {
   return `<div class="docPrint">\n${t}\n</div>`;
 }
 
+function filterTemplatesByActiveKind(
+  items: ContractTemplatePreset[],
+  activeKind: ContractDocumentPackageKind
+): ContractTemplatePreset[] {
+  return items.filter((it) => {
+    const kind = (it as ContractTemplatePreset & { kind?: unknown }).kind;
+    if (typeof kind !== 'string' || !kind.trim()) return true;
+    return kind === activeKind;
+  });
+}
+
 const TEMPLATE_LIBRARY_KIND_OPTIONS = [
   { value: 'REPAIR' as const, label: 'Ремонт' },
   { value: 'WINDOWS' as const, label: 'Окна' },
@@ -554,6 +565,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const uiPrefsLoadedRef = useRef(false);
   const skipInitialUiPrefsPersistRef = useRef(true);
   const skipInitialSizingPersistRef = useRef(true);
+  const templatesLoadRequestIdRef = useRef(0);
   const preferredTemplateIdsRef = useRef<Record<string, string>>({});
 
   const templatesScopeKey = useCallback(
@@ -1134,6 +1146,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const { trashCount, refreshTrashCount } = useAdminTrashCount(fetchTemplateTrashTotal);
 
   useEffect(() => {
+    const requestId = ++templatesLoadRequestIdRef.current;
     void (async () => {
       setLoading(true);
       setError(null);
@@ -1143,6 +1156,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
           getContractDocumentExecutorProfiles(activeLibraryKind),
           getContractDocumentSignatoryProfiles(activeLibraryKind),
         ]);
+        if (templatesLoadRequestIdRef.current !== requestId) return;
         if (executorRes.status === 'fulfilled') {
           setFirstExecutorProfile(executorRes.value.items?.[0] ?? null);
         }
@@ -1152,9 +1166,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
         if (templatesRes.status !== 'fulfilled') {
           throw new Error('Не удалось загрузить библиотеку шаблонов');
         }
-        const next = (templatesRes.value.items ?? []).map((it) =>
+        const nextRaw = (templatesRes.value.items ?? []).map((it) =>
           normalizeContractTemplatePreset(it)
         );
+        const next = filterTemplatesByActiveKind(nextRaw, activeLibraryKind);
         setItems(next);
         lastSavedSnapshotRef.current = JSON.stringify(
           next.map((it) => normalizeContractTemplatePreset(it))
@@ -1181,8 +1196,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
         resetVisualHistory(t?.html ?? '');
         void refreshTrashCount();
       } catch (e) {
+        if (templatesLoadRequestIdRef.current !== requestId) return;
         setError(e instanceof Error ? e.message : 'Не удалось загрузить библиотеку шаблонов');
       } finally {
+        if (templatesLoadRequestIdRef.current !== requestId) return;
         setLoading(false);
       }
     })();
@@ -1332,16 +1349,20 @@ export function ContractDocumentsTemplatesLibraryPage() {
     });
   }, []);
 
-  const handleActiveLibraryKindChange = useCallback((nextKind: ContractDocumentPackageKind) => {
-    setActiveLibraryKind(nextKind);
-    if (typeof window !== 'undefined') {
-      try {
-        window.localStorage.setItem(TEMPLATES_ACTIVE_KIND_KEY, nextKind);
-      } catch {
-        // ignore localStorage write issues
+  const handleActiveLibraryKindChange = useCallback(
+    (nextKind: ContractDocumentPackageKind) => {
+      if (nextKind === activeLibraryKind) return;
+      setActiveLibraryKind(nextKind);
+      if (typeof window !== 'undefined') {
+        try {
+          window.localStorage.setItem(TEMPLATES_ACTIVE_KIND_KEY, nextKind);
+        } catch {
+          // ignore localStorage write issues
+        }
       }
-    }
-  }, []);
+    },
+    [activeLibraryKind]
+  );
 
   const handlePreviewCustomerKindChange = useCallback(
     (nextKind: RepairTemplatePreviewCustomerKind) => {
@@ -1529,7 +1550,8 @@ export function ContractDocumentsTemplatesLibraryPage() {
       try {
         await trashContractTemplatePreset(presetId);
         const templatesRes = await getContractDocumentTemplatePresets(activeLibraryKind);
-        const next = (templatesRes.items ?? []).map((it) => normalizeContractTemplatePreset(it));
+        const nextRaw = (templatesRes.items ?? []).map((it) => normalizeContractTemplatePreset(it));
+        const next = filterTemplatesByActiveKind(nextRaw, activeLibraryKind);
         setItems(next);
         void refreshTrashCount();
         setOk('Шаблон перемещён в корзину.');
@@ -2834,9 +2856,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
           void (async () => {
             try {
               const templatesRes = await getContractDocumentTemplatePresets(activeLibraryKind);
-              const next = (templatesRes.items ?? []).map((it) =>
+              const nextRaw = (templatesRes.items ?? []).map((it) =>
                 normalizeContractTemplatePreset(it)
               );
+              const next = filterTemplatesByActiveKind(nextRaw, activeLibraryKind);
               setItems(next);
             } catch {
               /* ignore */
