@@ -94,6 +94,19 @@ function FormatToolbarGlyph({ children }: { children: React.ReactNode }) {
   return <span className={styles.formatToolbarGlyph}>{children}</span>;
 }
 const TEMPLATES_UI_PREFS_KEY = 'admin.contractDocuments.templates.uiPrefs';
+const TEMPLATES_PLACEHOLDERS_COLLAPSED_KEY =
+  'admin.contractDocuments.templates.placeholdersCollapsed';
+const TEMPLATES_ACTIVE_KIND_KEY = 'admin.contractDocuments.templates.activeKind';
+const TEMPLATES_ACTIVE_TAB_KEY = 'admin.contractDocuments.templates.activeTab';
+const TEMPLATES_ARCHIVE_MODE_KEY = 'admin.contractDocuments.templates.archiveMode';
+const TEMPLATES_PREVIEW_CUSTOMER_KIND_KEY = 'admin.contractDocuments.templates.previewCustomerKind';
+const TEMPLATES_PREVIEW_FONT_SIZE_KEY = 'admin.contractDocuments.templates.previewFontSizePx';
+const TEMPLATES_PREVIEW_ZOOM_KEY = 'admin.contractDocuments.templates.previewZoomPct';
+const TEMPLATES_VISUAL_ZOOM_KEY = 'admin.contractDocuments.templates.visualZoomPct';
+const TEMPLATES_VISUAL_HEIGHT_KEY = 'admin.contractDocuments.templates.visualEditorHeightPx';
+const TEMPLATES_PREVIEW_HEIGHT_KEY = 'admin.contractDocuments.templates.previewPaneHeightPx';
+const TEMPLATES_EDITOR_MODE_KEY = 'admin.contractDocuments.templates.editorMode';
+const TEMPLATES_HTML_HEIGHT_KEY = 'admin.contractDocuments.templates.htmlEditorHeightPx';
 type NormalizeMode = 'soft' | 'strict';
 type TemplatesUiPrefs = {
   previewFontSizePx?: number;
@@ -101,10 +114,13 @@ type TemplatesUiPrefs = {
   visualZoomPct?: number;
   visualEditorHeightPx?: number;
   previewPaneHeightPx?: number;
+  editorMode?: 'html' | 'visual';
+  htmlEditorHeightPx?: number;
   activeLibraryKind?: ContractDocumentPackageKind;
   activeTemplateTab?: string;
   previewCustomerKind?: RepairTemplatePreviewCustomerKind;
   showArchivedTemplates?: boolean;
+  placeholdersCollapsed?: boolean;
   selectedTemplateByScope?: Record<string, string>;
 };
 
@@ -523,6 +539,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const [visualZoomPct, setVisualZoomPct] = useState(100);
   const [placeholdersCollapsed, setPlaceholdersCollapsed] = useState(false);
   const [createTemplateHelpOpen, setCreateTemplateHelpOpen] = useState(false);
+  const [htmlEditorHeightPx, setHtmlEditorHeightPx] = useState<number | null>(null);
   const [visualEditorHeightPx, setVisualEditorHeightPx] = useState<number | null>(null);
   const [previewPaneHeightPx, setPreviewPaneHeightPx] = useState<number | null>(null);
   const htmlTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -535,6 +552,8 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const visualHistoryRef = useRef<string[]>([]);
   const visualHistoryIndexRef = useRef(-1);
   const uiPrefsLoadedRef = useRef(false);
+  const skipInitialUiPrefsPersistRef = useRef(true);
+  const skipInitialSizingPersistRef = useRef(true);
   const preferredTemplateIdsRef = useRef<Record<string, string>>({});
 
   const templatesScopeKey = useCallback(
@@ -565,12 +584,15 @@ export function ContractDocumentsTemplatesLibraryPage() {
     if (typeof window === 'undefined') return;
     try {
       const raw = window.localStorage.getItem(TEMPLATES_UI_PREFS_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as TemplatesUiPrefs;
-      if (typeof parsed.previewFontSizePx === 'number') {
+      const parsed = raw ? (JSON.parse(raw) as TemplatesUiPrefs) : null;
+      if (parsed && typeof parsed.previewFontSizePx === 'number') {
         setPreviewFontSizePx(clampInt(parsed.previewFontSizePx, 10, 20));
       }
-      if (typeof parsed.previewZoomPct === 'number') {
+      const previewFontRaw = window.localStorage.getItem(TEMPLATES_PREVIEW_FONT_SIZE_KEY);
+      if (previewFontRaw != null && Number.isFinite(Number(previewFontRaw))) {
+        setPreviewFontSizePx(clampInt(Number(previewFontRaw), 10, 20));
+      }
+      if (parsed && typeof parsed.previewZoomPct === 'number') {
         setPreviewZoomPct(
           clampInt(
             parsed.previewZoomPct,
@@ -579,37 +601,105 @@ export function ContractDocumentsTemplatesLibraryPage() {
           )
         );
       }
-      if (typeof parsed.visualZoomPct === 'number') {
+      const previewZoomRaw = window.localStorage.getItem(TEMPLATES_PREVIEW_ZOOM_KEY);
+      if (previewZoomRaw != null && Number.isFinite(Number(previewZoomRaw))) {
+        setPreviewZoomPct(
+          clampInt(
+            Number(previewZoomRaw),
+            TEMPLATE_EDITOR_ZOOM_MIN_PCT,
+            TEMPLATE_EDITOR_ZOOM_MAX_PCT
+          )
+        );
+      }
+      if (parsed && typeof parsed.visualZoomPct === 'number') {
         setVisualZoomPct(
           clampInt(parsed.visualZoomPct, TEMPLATE_EDITOR_ZOOM_MIN_PCT, TEMPLATE_EDITOR_ZOOM_MAX_PCT)
         );
       }
-      if (typeof parsed.visualEditorHeightPx === 'number') {
+      const visualZoomRaw = window.localStorage.getItem(TEMPLATES_VISUAL_ZOOM_KEY);
+      if (visualZoomRaw != null && Number.isFinite(Number(visualZoomRaw))) {
+        setVisualZoomPct(
+          clampInt(
+            Number(visualZoomRaw),
+            TEMPLATE_EDITOR_ZOOM_MIN_PCT,
+            TEMPLATE_EDITOR_ZOOM_MAX_PCT
+          )
+        );
+      }
+      if (parsed && typeof parsed.visualEditorHeightPx === 'number') {
         setVisualEditorHeightPx(clampInt(parsed.visualEditorHeightPx, 220, 2400));
       }
-      if (typeof parsed.previewPaneHeightPx === 'number') {
+      const visualHeightRaw = window.localStorage.getItem(TEMPLATES_VISUAL_HEIGHT_KEY);
+      if (visualHeightRaw != null && Number.isFinite(Number(visualHeightRaw))) {
+        setVisualEditorHeightPx(clampInt(Number(visualHeightRaw), 220, 2400));
+      }
+      if (parsed && typeof parsed.previewPaneHeightPx === 'number') {
         setPreviewPaneHeightPx(clampInt(parsed.previewPaneHeightPx, 220, 2400));
       }
+      const previewHeightRaw = window.localStorage.getItem(TEMPLATES_PREVIEW_HEIGHT_KEY);
+      if (previewHeightRaw != null && Number.isFinite(Number(previewHeightRaw))) {
+        setPreviewPaneHeightPx(clampInt(Number(previewHeightRaw), 220, 2400));
+      }
+      if (parsed && (parsed.editorMode === 'html' || parsed.editorMode === 'visual')) {
+        setEditorMode(parsed.editorMode);
+      }
+      const editorModeRaw = window.localStorage.getItem(TEMPLATES_EDITOR_MODE_KEY);
+      if (editorModeRaw === 'html' || editorModeRaw === 'visual') {
+        setEditorMode(editorModeRaw);
+      }
+      if (parsed && typeof parsed.htmlEditorHeightPx === 'number') {
+        setHtmlEditorHeightPx(clampInt(parsed.htmlEditorHeightPx, 220, 2400));
+      }
+      const htmlHeightRaw = window.localStorage.getItem(TEMPLATES_HTML_HEIGHT_KEY);
+      if (htmlHeightRaw != null && Number.isFinite(Number(htmlHeightRaw))) {
+        setHtmlEditorHeightPx(clampInt(Number(htmlHeightRaw), 220, 2400));
+      }
       if (
+        parsed &&
         parsed.activeLibraryKind &&
         TEMPLATE_LIBRARY_KIND_OPTIONS.some((o) => o.value === parsed.activeLibraryKind)
       ) {
         setActiveLibraryKind(parsed.activeLibraryKind);
       }
-      if (typeof parsed.activeTemplateTab === 'string') {
+      const activeKindRaw = window.localStorage.getItem(TEMPLATES_ACTIVE_KIND_KEY);
+      if (activeKindRaw && TEMPLATE_LIBRARY_KIND_OPTIONS.some((o) => o.value === activeKindRaw)) {
+        setActiveLibraryKind(activeKindRaw as ContractDocumentPackageKind);
+      }
+      if (parsed && typeof parsed.activeTemplateTab === 'string') {
         setActiveTemplateTab(normalizeRepairLibraryTemplateTabId(parsed.activeTemplateTab));
       }
-      if (
-        parsed.previewCustomerKind === 'PERSON' ||
-        parsed.previewCustomerKind === 'COMPANY' ||
-        parsed.previewCustomerKind === 'ENTREPRENEUR'
-      ) {
-        setPreviewCustomerKind(parsed.previewCustomerKind);
+      const activeTabRaw = window.localStorage.getItem(TEMPLATES_ACTIVE_TAB_KEY);
+      if (typeof activeTabRaw === 'string' && activeTabRaw.trim()) {
+        setActiveTemplateTab(normalizeRepairLibraryTemplateTabId(activeTabRaw));
       }
-      if (typeof parsed.showArchivedTemplates === 'boolean') {
+      if (
+        (parsed && parsed.previewCustomerKind === 'PERSON') ||
+        (parsed && parsed.previewCustomerKind === 'COMPANY') ||
+        (parsed && parsed.previewCustomerKind === 'ENTREPRENEUR')
+      ) {
+        setPreviewCustomerKind(parsed.previewCustomerKind as RepairTemplatePreviewCustomerKind);
+      }
+      const previewKindRaw = window.localStorage.getItem(TEMPLATES_PREVIEW_CUSTOMER_KIND_KEY);
+      if (
+        previewKindRaw === 'PERSON' ||
+        previewKindRaw === 'COMPANY' ||
+        previewKindRaw === 'ENTREPRENEUR'
+      ) {
+        setPreviewCustomerKind(previewKindRaw);
+      }
+      if (parsed && typeof parsed.showArchivedTemplates === 'boolean') {
         setShowArchivedTemplates(parsed.showArchivedTemplates);
       }
-      if (parsed.selectedTemplateByScope && typeof parsed.selectedTemplateByScope === 'object') {
+      const archiveModeRaw = window.localStorage.getItem(TEMPLATES_ARCHIVE_MODE_KEY);
+      if (archiveModeRaw === '1') setShowArchivedTemplates(true);
+      else if (archiveModeRaw === '0') setShowArchivedTemplates(false);
+      const collapsedRaw = window.localStorage.getItem(TEMPLATES_PLACEHOLDERS_COLLAPSED_KEY);
+      if (collapsedRaw === '1') setPlaceholdersCollapsed(true);
+      else if (collapsedRaw === '0') setPlaceholdersCollapsed(false);
+      else if (parsed && typeof parsed.placeholdersCollapsed === 'boolean') {
+        setPlaceholdersCollapsed(parsed.placeholdersCollapsed);
+      }
+      if (parsed?.selectedTemplateByScope && typeof parsed.selectedTemplateByScope === 'object') {
         preferredTemplateIdsRef.current = parsed.selectedTemplateByScope;
       }
     } catch {
@@ -622,19 +712,39 @@ export function ContractDocumentsTemplatesLibraryPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!uiPrefsLoadedRef.current) return;
+    if (skipInitialUiPrefsPersistRef.current) {
+      skipInitialUiPrefsPersistRef.current = false;
+      return;
+    }
     try {
+      window.localStorage.setItem(TEMPLATES_PREVIEW_FONT_SIZE_KEY, String(previewFontSizePx));
+      window.localStorage.setItem(TEMPLATES_PREVIEW_ZOOM_KEY, String(previewZoomPct));
+      window.localStorage.setItem(TEMPLATES_VISUAL_ZOOM_KEY, String(visualZoomPct));
+      if (visualEditorHeightPx != null) {
+        window.localStorage.setItem(TEMPLATES_VISUAL_HEIGHT_KEY, String(visualEditorHeightPx));
+      }
+      if (previewPaneHeightPx != null) {
+        window.localStorage.setItem(TEMPLATES_PREVIEW_HEIGHT_KEY, String(previewPaneHeightPx));
+      }
+      window.localStorage.setItem(TEMPLATES_EDITOR_MODE_KEY, editorMode);
+      if (htmlEditorHeightPx != null) {
+        window.localStorage.setItem(TEMPLATES_HTML_HEIGHT_KEY, String(htmlEditorHeightPx));
+      }
       window.localStorage.setItem(
         TEMPLATES_UI_PREFS_KEY,
         JSON.stringify({
           previewFontSizePx,
           previewZoomPct,
           visualZoomPct,
+          editorMode,
+          htmlEditorHeightPx,
           visualEditorHeightPx,
           previewPaneHeightPx,
           activeLibraryKind,
           activeTemplateTab,
           previewCustomerKind,
           showArchivedTemplates,
+          placeholdersCollapsed,
           selectedTemplateByScope: preferredTemplateIdsRef.current,
         })
       );
@@ -645,12 +755,49 @@ export function ContractDocumentsTemplatesLibraryPage() {
     previewFontSizePx,
     previewZoomPct,
     visualZoomPct,
+    editorMode,
+    htmlEditorHeightPx,
     visualEditorHeightPx,
     previewPaneHeightPx,
     activeLibraryKind,
     activeTemplateTab,
     previewCustomerKind,
     showArchivedTemplates,
+    placeholdersCollapsed,
+  ]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!uiPrefsLoadedRef.current) return;
+    if (skipInitialSizingPersistRef.current) {
+      skipInitialSizingPersistRef.current = false;
+      return;
+    }
+    try {
+      window.localStorage.setItem(TEMPLATES_PREVIEW_FONT_SIZE_KEY, String(previewFontSizePx));
+      window.localStorage.setItem(TEMPLATES_PREVIEW_ZOOM_KEY, String(previewZoomPct));
+      window.localStorage.setItem(TEMPLATES_VISUAL_ZOOM_KEY, String(visualZoomPct));
+      if (visualEditorHeightPx != null) {
+        window.localStorage.setItem(TEMPLATES_VISUAL_HEIGHT_KEY, String(visualEditorHeightPx));
+      }
+      if (previewPaneHeightPx != null) {
+        window.localStorage.setItem(TEMPLATES_PREVIEW_HEIGHT_KEY, String(previewPaneHeightPx));
+      }
+      window.localStorage.setItem(TEMPLATES_EDITOR_MODE_KEY, editorMode);
+      if (htmlEditorHeightPx != null) {
+        window.localStorage.setItem(TEMPLATES_HTML_HEIGHT_KEY, String(htmlEditorHeightPx));
+      }
+    } catch {
+      // ignore localStorage write issues
+    }
+  }, [
+    previewFontSizePx,
+    previewZoomPct,
+    visualZoomPct,
+    editorMode,
+    htmlEditorHeightPx,
+    visualEditorHeightPx,
+    previewPaneHeightPx,
   ]);
 
   useEffect(() => {
@@ -658,18 +805,37 @@ export function ContractDocumentsTemplatesLibraryPage() {
     const persistOnUnload = () => {
       if (!uiPrefsLoadedRef.current) return;
       try {
+        const visualEditorHeightSnapshot =
+          visualEditorRef.current?.offsetHeight && visualEditorRef.current.offsetHeight > 0
+            ? clampInt(visualEditorRef.current.offsetHeight, 220, 2400)
+            : visualEditorHeightPx;
+        const previewPaneHeightSnapshot =
+          previewPaneRef.current?.offsetHeight && previewPaneRef.current.offsetHeight > 0
+            ? clampInt(previewPaneRef.current.offsetHeight, 220, 2400)
+            : previewPaneHeightPx;
+        const htmlEditorHeightSnapshot =
+          htmlTextareaRef.current?.offsetHeight && htmlTextareaRef.current.offsetHeight > 0
+            ? clampInt(htmlTextareaRef.current.offsetHeight, 220, 2400)
+            : htmlEditorHeightPx;
+        window.localStorage.setItem(TEMPLATES_EDITOR_MODE_KEY, editorMode);
+        if (htmlEditorHeightSnapshot != null) {
+          window.localStorage.setItem(TEMPLATES_HTML_HEIGHT_KEY, String(htmlEditorHeightSnapshot));
+        }
         window.localStorage.setItem(
           TEMPLATES_UI_PREFS_KEY,
           JSON.stringify({
             previewFontSizePx,
             previewZoomPct,
             visualZoomPct,
-            visualEditorHeightPx,
-            previewPaneHeightPx,
+            editorMode,
+            htmlEditorHeightPx: htmlEditorHeightSnapshot,
+            visualEditorHeightPx: visualEditorHeightSnapshot,
+            previewPaneHeightPx: previewPaneHeightSnapshot,
             activeLibraryKind,
             activeTemplateTab,
             previewCustomerKind,
             showArchivedTemplates,
+            placeholdersCollapsed,
             selectedTemplateByScope: preferredTemplateIdsRef.current,
           })
         );
@@ -683,24 +849,57 @@ export function ContractDocumentsTemplatesLibraryPage() {
     previewFontSizePx,
     previewZoomPct,
     visualZoomPct,
+    editorMode,
+    htmlEditorHeightPx,
     visualEditorHeightPx,
     previewPaneHeightPx,
     activeLibraryKind,
     activeTemplateTab,
     previewCustomerKind,
     showArchivedTemplates,
+    placeholdersCollapsed,
   ]);
 
   const captureVisualEditorHeight = () => {
     const h = visualEditorRef.current?.offsetHeight;
     if (!h) return;
-    setVisualEditorHeightPx(clampInt(h, 220, 2400));
+    const next = clampInt(h, 220, 2400);
+    setVisualEditorHeightPx(next);
+    if (typeof window !== 'undefined' && uiPrefsLoadedRef.current) {
+      try {
+        window.localStorage.setItem(TEMPLATES_VISUAL_HEIGHT_KEY, String(next));
+      } catch {
+        // ignore localStorage write issues
+      }
+    }
   };
 
   const capturePreviewPaneHeight = () => {
     const h = previewPaneRef.current?.offsetHeight;
     if (!h) return;
-    setPreviewPaneHeightPx(clampInt(h, 220, 2400));
+    const next = clampInt(h, 220, 2400);
+    setPreviewPaneHeightPx(next);
+    if (typeof window !== 'undefined' && uiPrefsLoadedRef.current) {
+      try {
+        window.localStorage.setItem(TEMPLATES_PREVIEW_HEIGHT_KEY, String(next));
+      } catch {
+        // ignore localStorage write issues
+      }
+    }
+  };
+
+  const captureHtmlEditorHeight = () => {
+    const h = htmlTextareaRef.current?.offsetHeight;
+    if (!h) return;
+    const next = clampInt(h, 220, 2400);
+    setHtmlEditorHeightPx(next);
+    if (typeof window !== 'undefined' && uiPrefsLoadedRef.current) {
+      try {
+        window.localStorage.setItem(TEMPLATES_HTML_HEIGHT_KEY, String(next));
+      } catch {
+        // ignore localStorage write issues
+      }
+    }
   };
 
   useEffect(() => {
@@ -808,6 +1007,13 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const switchEditorMode = useCallback(
     (mode: 'html' | 'visual') => {
       if (mode === editorMode) return;
+      if (typeof window !== 'undefined' && uiPrefsLoadedRef.current) {
+        try {
+          window.localStorage.setItem(TEMPLATES_EDITOR_MODE_KEY, mode);
+        } catch {
+          // ignore localStorage write issues
+        }
+      }
       if (mode === 'html') {
         const next = visualEditorRef.current?.innerHTML ?? visualDraftHtml;
         setVisualDraftHtml(next);
@@ -1103,6 +1309,68 @@ export function ContractDocumentsTemplatesLibraryPage() {
     await persistAutosave();
   }, [persistAutosave]);
 
+  const togglePlaceholdersCollapsed = useCallback(() => {
+    setPlaceholdersCollapsed((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined' && uiPrefsLoadedRef.current) {
+        try {
+          window.localStorage.setItem(TEMPLATES_PLACEHOLDERS_COLLAPSED_KEY, next ? '1' : '0');
+          const raw = window.localStorage.getItem(TEMPLATES_UI_PREFS_KEY);
+          const parsed = raw ? (JSON.parse(raw) as TemplatesUiPrefs) : {};
+          window.localStorage.setItem(
+            TEMPLATES_UI_PREFS_KEY,
+            JSON.stringify({
+              ...parsed,
+              placeholdersCollapsed: next,
+            })
+          );
+        } catch {
+          // ignore localStorage write issues
+        }
+      }
+      return next;
+    });
+  }, []);
+
+  const handleActiveLibraryKindChange = useCallback((nextKind: ContractDocumentPackageKind) => {
+    setActiveLibraryKind(nextKind);
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem(TEMPLATES_ACTIVE_KIND_KEY, nextKind);
+      } catch {
+        // ignore localStorage write issues
+      }
+    }
+  }, []);
+
+  const handlePreviewCustomerKindChange = useCallback(
+    (nextKind: RepairTemplatePreviewCustomerKind) => {
+      setPreviewCustomerKind(nextKind);
+      if (typeof window !== 'undefined') {
+        try {
+          window.localStorage.setItem(TEMPLATES_PREVIEW_CUSTOMER_KIND_KEY, nextKind);
+        } catch {
+          // ignore localStorage write issues
+        }
+      }
+    },
+    []
+  );
+
+  const toggleArchiveMode = useCallback(() => {
+    setShowArchivedTemplates((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        try {
+          window.localStorage.setItem(TEMPLATES_ARCHIVE_MODE_KEY, next ? '1' : '0');
+        } catch {
+          // ignore localStorage write issues
+        }
+      }
+      return next;
+    });
+  }, []);
+
   const handleRenameTemplateTitle = useCallback(() => {
     if (!isSuperAdmin || !editingId || showArchivedTemplates) return;
     setTitleRenameMode(true);
@@ -1111,6 +1379,13 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const handleActiveTemplateTabChange = useCallback(
     (nextTab: RepairLibraryTemplateTabId) => {
       if (nextTab === activeTemplateTab) return;
+      if (typeof window !== 'undefined') {
+        try {
+          window.localStorage.setItem(TEMPLATES_ACTIVE_TAB_KEY, nextTab);
+        } catch {
+          // ignore localStorage write issues
+        }
+      }
       const pendingSave = buildItemsForAutosave();
       if (autosaveTimerRef.current) {
         clearTimeout(autosaveTimerRef.current);
@@ -1997,7 +2272,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
               disabled={loading}
               title="Архив шаблонов"
               aria-label="Архив шаблонов"
-              onClick={() => setShowArchivedTemplates((v) => !v)}
+              onClick={toggleArchiveMode}
             />
             {isSuperAdmin ? (
               <AdminToolbarTrashButton
@@ -2056,7 +2331,9 @@ export function ContractDocumentsTemplatesLibraryPage() {
                 className={measurementFormStyles.select}
                 value={activeLibraryKind}
                 onChange={(e) =>
-                  setActiveLibraryKind(e.currentTarget.value as ContractDocumentPackageKind)
+                  handleActiveLibraryKindChange(
+                    e.currentTarget.value as ContractDocumentPackageKind
+                  )
                 }
               >
                 {TEMPLATE_LIBRARY_KIND_OPTIONS.map((opt) => (
@@ -2106,7 +2383,9 @@ export function ContractDocumentsTemplatesLibraryPage() {
                 className={measurementFormStyles.select}
                 value={previewCustomerKind}
                 onChange={(e) =>
-                  setPreviewCustomerKind(e.target.value as RepairTemplatePreviewCustomerKind)
+                  handlePreviewCustomerKindChange(
+                    e.target.value as RepairTemplatePreviewCustomerKind
+                  )
                 }
               >
                 <option value="PERSON">Физическое лицо</option>
@@ -2265,7 +2544,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
               type="button"
               className={styles.templatesLibraryPlaceholderToggleBtn}
               aria-expanded={!placeholdersCollapsed}
-              onClick={() => setPlaceholdersCollapsed((v) => !v)}
+              onClick={togglePlaceholdersCollapsed}
             >
               {placeholdersCollapsed ? 'Развернуть' : 'Свернуть'}
             </button>
@@ -2349,6 +2628,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
                 }}
                 disabled={!isSuperAdmin}
                 tabIndex={editorMode === 'html' ? 0 : -1}
+                onMouseUp={captureHtmlEditorHeight}
+                onTouchEnd={captureHtmlEditorHeight}
+                onBlur={captureHtmlEditorHeight}
+                style={{ height: htmlEditorHeightPx ? `${htmlEditorHeightPx}px` : undefined }}
               />
             </div>
             <div
@@ -2425,13 +2708,17 @@ export function ContractDocumentsTemplatesLibraryPage() {
                   captureVisualSelection();
                 }}
                 onKeyUp={captureVisualSelection}
-                onMouseUp={captureVisualSelection}
+                onMouseUp={() => {
+                  captureVisualSelection();
+                  captureVisualEditorHeight();
+                }}
                 onFocus={captureVisualSelection}
                 onBlur={() => {
                   if (editorMode !== 'visual') return;
                   syncVisualEditorToHtmlState();
                   captureVisualEditorHeight();
                 }}
+                onTouchEnd={captureVisualEditorHeight}
                 style={{
                   whiteSpace: 'normal',
                   zoom: editorMode === 'visual' ? `${visualZoomPct}%` : undefined,
