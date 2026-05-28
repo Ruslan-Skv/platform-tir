@@ -95,6 +95,18 @@ function FormatToolbarGlyph({ children }: { children: React.ReactNode }) {
 }
 const TEMPLATES_UI_PREFS_KEY = 'admin.contractDocuments.templates.uiPrefs';
 type NormalizeMode = 'soft' | 'strict';
+type TemplatesUiPrefs = {
+  previewFontSizePx?: number;
+  previewZoomPct?: number;
+  visualZoomPct?: number;
+  visualEditorHeightPx?: number;
+  previewPaneHeightPx?: number;
+  activeLibraryKind?: ContractDocumentPackageKind;
+  activeTemplateTab?: string;
+  previewCustomerKind?: RepairTemplatePreviewCustomerKind;
+  showArchivedTemplates?: boolean;
+  selectedTemplateByScope?: Record<string, string>;
+};
 
 /** Только экран редактора и предпросмотра; на сохранённый HTML и печать не влияет. */
 const TEMPLATE_EDITOR_ZOOM_MIN_PCT = 40;
@@ -495,6 +507,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const [ok, setOk] = useState<string | null>(null);
   const [editingId, setEditingId] = useState('');
   const [title, setTitle] = useState('');
+  const [titleRenameMode, setTitleRenameMode] = useState(false);
   const [html, setHtml] = useState('');
   const [editorMode, setEditorMode] = useState<'html' | 'visual'>('html');
   const [visualDraftHtml, setVisualDraftHtml] = useState('');
@@ -508,16 +521,27 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const [previewFontSizePx, setPreviewFontSizePx] = useState(12);
   const [previewZoomPct, setPreviewZoomPct] = useState(100);
   const [visualZoomPct, setVisualZoomPct] = useState(100);
+  const [placeholdersCollapsed, setPlaceholdersCollapsed] = useState(false);
+  const [createTemplateHelpOpen, setCreateTemplateHelpOpen] = useState(false);
   const [visualEditorHeightPx, setVisualEditorHeightPx] = useState<number | null>(null);
   const [previewPaneHeightPx, setPreviewPaneHeightPx] = useState<number | null>(null);
   const htmlTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const titleRenameInputRef = useRef<HTMLInputElement>(null);
   const templateHtmlFileInputRef = useRef<HTMLInputElement>(null);
+  const createTemplateHelpHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const visualEditorRef = useRef<HTMLDivElement>(null);
   const previewPaneRef = useRef<HTMLDivElement>(null);
   const visualSelectionRangeRef = useRef<Range | null>(null);
   const visualHistoryRef = useRef<string[]>([]);
   const visualHistoryIndexRef = useRef(-1);
   const uiPrefsLoadedRef = useRef(false);
+  const preferredTemplateIdsRef = useRef<Record<string, string>>({});
+
+  const templatesScopeKey = useCallback(
+    (kind: ContractDocumentPackageKind, tab: RepairLibraryTemplateTabId, archived: boolean) =>
+      `${kind}:${tab}:${archived ? 'arch' : 'active'}`,
+    []
+  );
 
   const ensureTemplateDraftForEditing = useCallback(() => {
     if (editingId) return editingId;
@@ -529,17 +553,20 @@ export function ContractDocumentsTemplatesLibraryPage() {
   }, [editingId, activeTemplateTab]);
 
   useEffect(() => {
+    if (!titleRenameMode) return;
+    const id = window.setTimeout(() => {
+      titleRenameInputRef.current?.focus();
+      titleRenameInputRef.current?.select();
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, [titleRenameMode]);
+
+  useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
       const raw = window.localStorage.getItem(TEMPLATES_UI_PREFS_KEY);
       if (!raw) return;
-      const parsed = JSON.parse(raw) as {
-        previewFontSizePx?: number;
-        previewZoomPct?: number;
-        visualZoomPct?: number;
-        visualEditorHeightPx?: number;
-        previewPaneHeightPx?: number;
-      };
+      const parsed = JSON.parse(raw) as TemplatesUiPrefs;
       if (typeof parsed.previewFontSizePx === 'number') {
         setPreviewFontSizePx(clampInt(parsed.previewFontSizePx, 10, 20));
       }
@@ -563,6 +590,28 @@ export function ContractDocumentsTemplatesLibraryPage() {
       if (typeof parsed.previewPaneHeightPx === 'number') {
         setPreviewPaneHeightPx(clampInt(parsed.previewPaneHeightPx, 220, 2400));
       }
+      if (
+        parsed.activeLibraryKind &&
+        TEMPLATE_LIBRARY_KIND_OPTIONS.some((o) => o.value === parsed.activeLibraryKind)
+      ) {
+        setActiveLibraryKind(parsed.activeLibraryKind);
+      }
+      if (typeof parsed.activeTemplateTab === 'string') {
+        setActiveTemplateTab(normalizeRepairLibraryTemplateTabId(parsed.activeTemplateTab));
+      }
+      if (
+        parsed.previewCustomerKind === 'PERSON' ||
+        parsed.previewCustomerKind === 'COMPANY' ||
+        parsed.previewCustomerKind === 'ENTREPRENEUR'
+      ) {
+        setPreviewCustomerKind(parsed.previewCustomerKind);
+      }
+      if (typeof parsed.showArchivedTemplates === 'boolean') {
+        setShowArchivedTemplates(parsed.showArchivedTemplates);
+      }
+      if (parsed.selectedTemplateByScope && typeof parsed.selectedTemplateByScope === 'object') {
+        preferredTemplateIdsRef.current = parsed.selectedTemplateByScope;
+      }
     } catch {
       // ignore broken localStorage payload
     } finally {
@@ -582,12 +631,65 @@ export function ContractDocumentsTemplatesLibraryPage() {
           visualZoomPct,
           visualEditorHeightPx,
           previewPaneHeightPx,
+          activeLibraryKind,
+          activeTemplateTab,
+          previewCustomerKind,
+          showArchivedTemplates,
+          selectedTemplateByScope: preferredTemplateIdsRef.current,
         })
       );
     } catch {
       // ignore localStorage write issues
     }
-  }, [previewFontSizePx, previewZoomPct, visualZoomPct, visualEditorHeightPx, previewPaneHeightPx]);
+  }, [
+    previewFontSizePx,
+    previewZoomPct,
+    visualZoomPct,
+    visualEditorHeightPx,
+    previewPaneHeightPx,
+    activeLibraryKind,
+    activeTemplateTab,
+    previewCustomerKind,
+    showArchivedTemplates,
+  ]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const persistOnUnload = () => {
+      if (!uiPrefsLoadedRef.current) return;
+      try {
+        window.localStorage.setItem(
+          TEMPLATES_UI_PREFS_KEY,
+          JSON.stringify({
+            previewFontSizePx,
+            previewZoomPct,
+            visualZoomPct,
+            visualEditorHeightPx,
+            previewPaneHeightPx,
+            activeLibraryKind,
+            activeTemplateTab,
+            previewCustomerKind,
+            showArchivedTemplates,
+            selectedTemplateByScope: preferredTemplateIdsRef.current,
+          })
+        );
+      } catch {
+        // ignore
+      }
+    };
+    window.addEventListener('beforeunload', persistOnUnload);
+    return () => window.removeEventListener('beforeunload', persistOnUnload);
+  }, [
+    previewFontSizePx,
+    previewZoomPct,
+    visualZoomPct,
+    visualEditorHeightPx,
+    previewPaneHeightPx,
+    activeLibraryKind,
+    activeTemplateTab,
+    previewCustomerKind,
+    showArchivedTemplates,
+  ]);
 
   const captureVisualEditorHeight = () => {
     const h = visualEditorRef.current?.offsetHeight;
@@ -650,6 +752,33 @@ export function ContractDocumentsTemplatesLibraryPage() {
       setError('Не удалось прочитать файл');
     }
   };
+
+  const showCreateTemplateHelp = useCallback(() => {
+    if (createTemplateHelpHideTimerRef.current) {
+      clearTimeout(createTemplateHelpHideTimerRef.current);
+      createTemplateHelpHideTimerRef.current = null;
+    }
+    setCreateTemplateHelpOpen(true);
+  }, []);
+
+  const hideCreateTemplateHelpWithDelay = useCallback(() => {
+    if (createTemplateHelpHideTimerRef.current) {
+      clearTimeout(createTemplateHelpHideTimerRef.current);
+    }
+    createTemplateHelpHideTimerRef.current = setTimeout(() => {
+      setCreateTemplateHelpOpen(false);
+      createTemplateHelpHideTimerRef.current = null;
+    }, 250);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (createTemplateHelpHideTimerRef.current) {
+        clearTimeout(createTemplateHelpHideTimerRef.current);
+      }
+    },
+    []
+  );
 
   const readVisualEditorHtml = (): string => visualEditorRef.current?.innerHTML ?? visualDraftHtml;
 
@@ -829,7 +958,15 @@ export function ContractDocumentsTemplatesLibraryPage() {
           (it) =>
             repairLibraryTemplateTabIdFromPreset(it.tabId) === activeTemplateTab && !it.archived
         );
-        const firstId = tabItems.find((it) => it.isDefault)?.id ?? tabItems[0]?.id ?? '';
+        const preferredId =
+          preferredTemplateIdsRef.current[
+            templatesScopeKey(activeLibraryKind, activeTemplateTab, false)
+          ];
+        const firstId =
+          tabItems.find((it) => it.id === preferredId)?.id ??
+          tabItems.find((it) => it.isDefault)?.id ??
+          tabItems[0]?.id ??
+          '';
         setEditingId(firstId);
         const t = tabItems.find((it) => it.id === firstId);
         setTitle(t?.title ?? '');
@@ -844,7 +981,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeLibraryKind]);
+  }, [activeLibraryKind, activeTemplateTab, templatesScopeKey]);
 
   const persist = async (next: ContractTemplatePreset[], successText: string): Promise<boolean> => {
     setSaving(true);
@@ -968,13 +1105,8 @@ export function ContractDocumentsTemplatesLibraryPage() {
 
   const handleRenameTemplateTitle = useCallback(() => {
     if (!isSuperAdmin || !editingId || showArchivedTemplates) return;
-    const current = title.trim();
-    const next = window.prompt('Введите новое название шаблона', current);
-    if (next == null) return;
-    const normalized = next.trim();
-    if (!normalized || normalized === current) return;
-    setTitle(normalized);
-  }, [isSuperAdmin, editingId, showArchivedTemplates, title]);
+    setTitleRenameMode(true);
+  }, [isSuperAdmin, editingId, showArchivedTemplates]);
 
   const handleActiveTemplateTabChange = useCallback(
     (nextTab: RepairLibraryTemplateTabId) => {
@@ -1036,6 +1168,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const selectTemplate = (id: string) => {
     void (async () => {
       await flushAutosave();
+      preferredTemplateIdsRef.current[
+        templatesScopeKey(activeLibraryKind, activeTemplateTab, showArchivedTemplates)
+      ] = id;
+      setTitleRenameMode(false);
       setEditingId(id);
       const t = itemsByActiveTab.find((it) => it.id === id);
       setTitle(t?.title ?? '');
@@ -1049,6 +1185,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     if (!isSuperAdmin || showArchivedTemplates) return;
     void (async () => {
       await flushAutosave();
+      setTitleRenameMode(true);
       setEditingId(`tpl_${Date.now()}`);
       setTitle('Новый шаблон');
       const next = '<div class="docPrint"></div>';
@@ -1071,8 +1208,16 @@ export function ContractDocumentsTemplatesLibraryPage() {
   }, [editorMode, editingId]);
 
   useEffect(() => {
+    const preferredId =
+      preferredTemplateIdsRef.current[
+        templatesScopeKey(activeLibraryKind, activeTemplateTab, showArchivedTemplates)
+      ];
     const firstId =
-      itemsByActiveTab.find((it) => it.isDefault)?.id ?? itemsByActiveTab[0]?.id ?? '';
+      itemsByActiveTab.find((it) => it.id === preferredId)?.id ??
+      itemsByActiveTab.find((it) => it.isDefault)?.id ??
+      itemsByActiveTab[0]?.id ??
+      '';
+    setTitleRenameMode(false);
     setEditingId(firstId);
     const t = itemsByActiveTab.find((it) => it.id === firstId);
     setTitle(t?.title ?? '');
@@ -1080,7 +1225,13 @@ export function ContractDocumentsTemplatesLibraryPage() {
     setVisualDraftHtml(t?.html ?? '');
     resetVisualHistory(t?.html ?? '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTemplateTab, items.length, showArchivedTemplates]);
+  }, [
+    activeLibraryKind,
+    activeTemplateTab,
+    items.length,
+    showArchivedTemplates,
+    templatesScopeKey,
+  ]);
 
   const requestMoveTemplateToTrash = () => {
     if (!isSuperAdmin || !editingId) return;
@@ -1727,11 +1878,29 @@ export function ContractDocumentsTemplatesLibraryPage() {
           <div className={styles.templatesLibraryTitleBlock}>
             <div className={styles.templatesLibraryTitleRow}>
               <h1 className={styles.title}>Библиотека шаблонов документов</h1>
-              <span className={styles.templatesLibraryCurrentTemplateTitle}>
-                {' - '}
-                {title.trim() ||
-                  `${REPAIR_LIBRARY_TEMPLATE_TAB_LABELS[activeTemplateTab]} ${templateLibraryKindLabel(activeLibraryKind)}`}
-              </span>
+              {titleRenameMode ? (
+                <input
+                  ref={titleRenameInputRef}
+                  type="text"
+                  className={styles.templatesLibraryCurrentTemplateTitleInput}
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  onBlur={() => setTitleRenameMode(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === 'Escape') {
+                      e.preventDefault();
+                      setTitleRenameMode(false);
+                    }
+                  }}
+                  aria-label="Название шаблона"
+                />
+              ) : (
+                <span className={styles.templatesLibraryCurrentTemplateTitle}>
+                  {' - '}
+                  {title.trim() ||
+                    `${REPAIR_LIBRARY_TEMPLATE_TAB_LABELS[activeTemplateTab]} ${templateLibraryKindLabel(activeLibraryKind)}`}
+                </span>
+              )}
               {isSuperAdmin ? (
                 <button
                   type="button"
@@ -1766,19 +1935,51 @@ export function ContractDocumentsTemplatesLibraryPage() {
         <div className={styles.templatesLibraryHeaderActions}>
           <div className={styles.templatesLibraryHeaderButtons}>
             {isSuperAdmin ? (
-              <button
-                type="button"
-                className={styles.templatesLibraryAddButton}
-                disabled={showArchivedTemplates}
-                title={
-                  showArchivedTemplates
-                    ? 'Вернитесь к активным шаблонам, чтобы создать новый'
-                    : `Пустой шаблон для «${REPAIR_LIBRARY_TEMPLATE_TAB_LABELS[activeTemplateTab]}», направление «${templateLibraryKindLabel(activeLibraryKind)}» (сохранится автоматически)`
-                }
-                onClick={createNewTemplate}
+              <div
+                className={styles.templatesLibraryAddButtonWithTooltip}
+                onMouseEnter={showCreateTemplateHelp}
+                onMouseLeave={hideCreateTemplateHelpWithDelay}
               >
-                + Новый шаблон
-              </button>
+                <button
+                  type="button"
+                  className={styles.templatesLibraryAddButton}
+                  disabled={showArchivedTemplates}
+                  aria-describedby={
+                    createTemplateHelpOpen && !showArchivedTemplates
+                      ? 'templates-library-create-help'
+                      : undefined
+                  }
+                  onFocus={showCreateTemplateHelp}
+                  onBlur={hideCreateTemplateHelpWithDelay}
+                  onClick={createNewTemplate}
+                >
+                  + Новый шаблон
+                </button>
+                {createTemplateHelpOpen && !showArchivedTemplates ? (
+                  <div
+                    id="templates-library-create-help"
+                    role="tooltip"
+                    className={styles.templatesLibraryCreateTemplateTooltip}
+                    onMouseEnter={showCreateTemplateHelp}
+                    onMouseLeave={hideCreateTemplateHelpWithDelay}
+                  >
+                    <strong>Как создать шаблон</strong>
+                    <ol>
+                      <li>Выберите направление и тип документа.</li>
+                      <li>Нажмите «+ Новый шаблон».</li>
+                      <li>При необходимости переименуйте шаблон у заголовка.</li>
+                      <li>Заполните шаблон (HTML или Визуальный конструктор).</li>
+                      <li>Нажмите «Сохранить» для первичного создания.</li>
+                      <li>Дальше изменения сохраняются автоматически.</li>
+                    </ol>
+                    <p>
+                      Сейчас будет создан пустой шаблон для «
+                      {REPAIR_LIBRARY_TEMPLATE_TAB_LABELS[activeTemplateTab]}», направление «
+                      {templateLibraryKindLabel(activeLibraryKind)}».
+                    </p>
+                  </div>
+                ) : null}
+              </div>
             ) : null}
             {isSuperAdmin ? (
               <AdminToolbarIconButton
@@ -2058,26 +2259,39 @@ export function ContractDocumentsTemplatesLibraryPage() {
           className={`${styles.placeholderPanelTop} ${styles.templatesLibraryPlaceholderPanel}`}
           aria-label="Плейсхолдеры для вставки"
         >
-          {REPAIR_CONTRACT_PLACEHOLDER_GROUPS.map((group) => (
-            <div key={group.title} className={styles.templatesLibraryPlaceholderGroup}>
-              <div className={styles.placeholderGroupTitle}>{group.title}</div>
-              <div className={styles.placeholderChips}>
-                {group.items.map((item) => (
-                  <button
-                    key={item.path}
-                    type="button"
-                    className={styles.placeholderChip}
-                    title={`Вставить {{${item.path}}}`}
-                    onClick={() => insertPlaceholder(item.path)}
-                    onMouseDown={(e) => e.preventDefault()}
-                    disabled={!isSuperAdmin}
-                  >
-                    {item.label} <code>{`{{${item.path}}}`}</code>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
+          <div className={styles.templatesLibraryPlaceholderHeader}>
+            <span className={styles.templatesLibraryPlaceholderTitle}>Плейсхолдеры</span>
+            <button
+              type="button"
+              className={styles.templatesLibraryPlaceholderToggleBtn}
+              aria-expanded={!placeholdersCollapsed}
+              onClick={() => setPlaceholdersCollapsed((v) => !v)}
+            >
+              {placeholdersCollapsed ? 'Развернуть' : 'Свернуть'}
+            </button>
+          </div>
+          {!placeholdersCollapsed
+            ? REPAIR_CONTRACT_PLACEHOLDER_GROUPS.map((group) => (
+                <div key={group.title} className={styles.templatesLibraryPlaceholderGroup}>
+                  <div className={styles.placeholderGroupTitle}>{group.title}</div>
+                  <div className={styles.placeholderChips}>
+                    {group.items.map((item) => (
+                      <button
+                        key={item.path}
+                        type="button"
+                        className={styles.placeholderChip}
+                        title={`Вставить {{${item.path}}}`}
+                        onClick={() => insertPlaceholder(item.path)}
+                        onMouseDown={(e) => e.preventDefault()}
+                        disabled={!isSuperAdmin}
+                      >
+                        {item.label} <code>{`{{${item.path}}}`}</code>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))
+            : null}
         </aside>
       </div>
 

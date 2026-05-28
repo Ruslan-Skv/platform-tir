@@ -2455,6 +2455,43 @@
   margin-left: auto;
 }
 
+.templatesLibraryAddButtonWithTooltip {
+  position: relative;
+  display: inline-flex;
+}
+
+.templatesLibraryCreateTemplateTooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 25;
+  width: min(420px, 80vw);
+  padding: 10px 12px;
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-lg);
+  color: var(--admin-text);
+  font-size: var(--admin-font-size-xs);
+  line-height: 1.35;
+}
+
+.templatesLibraryCreateTemplateTooltip strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: var(--admin-font-size-sm);
+}
+
+.templatesLibraryCreateTemplateTooltip ol {
+  margin: 0 0 8px;
+  padding-left: 18px;
+}
+
+.templatesLibraryCreateTemplateTooltip p {
+  margin: 0;
+  color: var(--admin-text-secondary);
+}
+
 .templatesLibraryAddButton {
   padding: var(--admin-space-sm) var(--admin-space-xl);
   border: none;
@@ -2511,6 +2548,25 @@
   color: #15803d;
   font-size: var(--admin-font-size-sm);
   font-weight: 700;
+}
+
+.templatesLibraryCurrentTemplateTitleInput {
+  min-width: 280px;
+  max-width: 520px;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid #86efac;
+  border-radius: var(--admin-radius-sm);
+  background: #f0fdf4;
+  color: #15803d;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
+}
+
+.templatesLibraryCurrentTemplateTitleInput:focus {
+  outline: none;
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 2px rgba(var(--admin-overlay-color-144), 0.2);
 }
 
 .templatesLibraryRenameTitleBtn {
@@ -2591,6 +2647,29 @@
   box-sizing: border-box;
 }
 
+.templatesLibraryPage .templatesLibraryPlaceholderHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-sm);
+  margin-bottom: var(--admin-space-2xs);
+}
+
+.templatesLibraryPage .templatesLibraryPlaceholderTitle {
+  font-size: var(--admin-font-size-xs);
+  font-weight: 700;
+}
+
+.templatesLibraryPage .templatesLibraryPlaceholderToggleBtn {
+  padding: 2px 8px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+  font-size: 11px;
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+}
+
 .templatesLibraryPage .blockTools {
   padding: var(--admin-space-xs) var(--admin-space-sm);
 }
@@ -2624,7 +2703,7 @@
 
 .templatesLibraryPage .placeholderGroupTitle {
   margin: 0 0 4px;
-  font-size: var(--admin-font-size-sm);
+  font-size: var(--admin-font-size-xs);
   line-height: 1.3;
 }
 
@@ -2638,12 +2717,12 @@
 
 .templatesLibraryPage .placeholderChip {
   padding: 3px 8px;
-  font-size: var(--admin-font-size-xs);
+  font-size: 11px;
   line-height: 1.35;
 }
 
 .templatesLibraryPage .placeholderChip code {
-  font-size: var(--admin-font-size-xs);
+  font-size: 11px;
   line-height: 1.35;
 }
 
