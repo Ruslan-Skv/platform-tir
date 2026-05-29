@@ -460,6 +460,70 @@ function applyVisualFontSizePt(editor: HTMLElement, sizePt: number): void {
   sel.addRange(nextRange);
 }
 
+const VISUAL_BLOCK_TAGS = new Set([
+  'P',
+  'LI',
+  'H1',
+  'H2',
+  'H3',
+  'H4',
+  'H5',
+  'H6',
+  'TD',
+  'TH',
+  'BLOCKQUOTE',
+]);
+
+function findVisualBlockElement(editor: HTMLElement, node: Node | null): HTMLElement | null {
+  let current: Node | null = node;
+  while (current && current !== editor) {
+    if (current instanceof HTMLElement && VISUAL_BLOCK_TAGS.has(current.tagName)) {
+      return current;
+    }
+    current = current.parentNode;
+  }
+  return null;
+}
+
+function collectVisualBlocksInRange(editor: HTMLElement, range: Range): HTMLElement[] {
+  const blocks = new Set<HTMLElement>();
+
+  if (range.collapsed) {
+    const block = findVisualBlockElement(editor, range.startContainer);
+    if (block) blocks.add(block);
+    return [...blocks];
+  }
+
+  for (const el of editor.querySelectorAll<HTMLElement>(
+    'p, li, h1, h2, h3, h4, h5, h6, td, th, blockquote'
+  )) {
+    if (range.intersectsNode(el)) blocks.add(el);
+  }
+
+  if (blocks.size === 0) {
+    const block = findVisualBlockElement(editor, range.commonAncestorContainer);
+    if (block) blocks.add(block);
+  }
+
+  return [...blocks];
+}
+
+function applyVisualLineSpacing(
+  editor: HTMLElement,
+  lineHeight: number,
+  marginBottomPt: number
+): void {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+  const range = sel.getRangeAt(0);
+  if (!editor.contains(range.commonAncestorContainer)) return;
+
+  for (const block of collectVisualBlocksInRange(editor, range)) {
+    block.style.lineHeight = String(lineHeight);
+    block.style.marginBottom = `${marginBottomPt}pt`;
+  }
+}
+
 const EMPTY_INLINE_FORMAT_ACTIVE: Record<InlineFormatKind, boolean> = {
   bold: false,
   italic: false,
@@ -2467,6 +2531,15 @@ export function ContractDocumentsTemplatesLibraryPage() {
       content: (hasSelection ? selected : 'ТЕКСТ').toUpperCase(),
     }));
   const wrapParagraphWithSpacing = (lineHeight: number, marginBottomPt: number) => {
+    if (editorMode === 'visual') {
+      const el = visualEditorRef.current;
+      if (!el) return;
+      el.focus();
+      restoreVisualSelection();
+      applyVisualLineSpacing(el, lineHeight, marginBottomPt);
+      syncVisualEditorFromDom();
+      return;
+    }
     wrapSelection(
       `<p style="text-align: justify; line-height: ${lineHeight}; margin: 0 0 ${marginBottomPt}pt;">`,
       '</p>',
