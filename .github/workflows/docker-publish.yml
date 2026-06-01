@@ -11,6 +11,8 @@ on:
 env:
   REGISTRY: ghcr.io
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # Убирает предупреждение о deprecation Node 20
+  HUSKY: 0  # git hooks не нужны при сборке образов
+  CI: true
 
 jobs:
   build-and-push:

@@ -1,16 +1,22 @@
 # Build stage: Bullseye нужен для libssl1.1 (Prisma query engine), Alpine/musl не подходят для Prisma
 FROM node:20-bullseye-slim AS builder
 
-RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-certificates \
+# Husky/git hooks не нужны в образе; CI=true — стандартный маркер для install-скриптов
+ENV HUSKY=0
+ENV CI=true
+
+RUN apt-get update -y && apt-get install -y --no-install-recommends \
+    openssl ca-certificates python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 # Install dependencies (retry config for flaky networks)
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json ./
 RUN npm config set fetch-retries 5 && \
     npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set audit false && \
     npm ci
 
 # Copy prisma and generate client
@@ -31,16 +37,21 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-c
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV HUSKY=0
+ENV CI=true
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nestjs
 
 # Install production dependencies only (retry config for flaky networks)
-COPY package.json package-lock.json* ./
-RUN npm config set fetch-retries 5 && \
+COPY package.json package-lock.json ./
+# prepare/husky — devDependency; postinstall пропускается без prisma CLI (--omit=dev)
+RUN npm pkg delete scripts.prepare && \
+    npm config set fetch-retries 5 && \
     npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set audit false && \
     npm ci --omit=dev && npm cache clean --force
 
 # Copy prisma schema, migrations and create-super-admin script

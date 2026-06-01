@@ -1,11 +1,18 @@
 # Build stage (Debian-based: Next.js 16 Turbopack/SWC requires glibc)
 FROM node:20-slim AS builder
 
+ENV HUSKY=0
+ENV CI=true
+
 WORKDIR /app
 
 # Install dependencies
-COPY package.json package-lock.json* ./
-RUN npm ci
+COPY package.json package-lock.json ./
+RUN npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set audit false && \
+    npm ci
 
 # Build arguments for Next.js (baked in at build time)
 ARG NEXT_PUBLIC_API_URL

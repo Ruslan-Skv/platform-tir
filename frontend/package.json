@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "node scripts/inject-sw-version.js && next build",
     "start": "next start",
-    "prepare": "husky install",
+    "prepare": "node -e \"if(process.env.HUSKY==='0'||process.env.CI){process.exit(0)}\" && husky install || true",
     "type-check": "tsc --noEmit --skipLibCheck",
     "lint": "eslint src --max-warnings=50",
     "lint:fix": "eslint src --fix --max-warnings=50",
