@@ -1,5 +1,7 @@
 import { prepareContractHtmlForScreenPreview } from '@/views/admin/ContractDocuments/repair/printDocument';
 
+import { repairContractTemplateStructureInHtml } from './contractTemplateStructure';
+
 const MSO_CLASS_RE = /\bMso\S*/gi;
 const FONT_FAMILY_STYLE_RE =
   /\b(?:font-family|mso-(?:ascii|hansi|cs|fareast)-font-family)\s*:\s*[^;]+;?/gi;
@@ -100,8 +102,59 @@ export function normalizeContractTemplateTypography(html: string): string {
   return prepareContractHtmlForScreenPreview(container.innerHTML);
 }
 
+export const FONT_SIZE_TOOLTIP = {
+  title: 'Размер шрифта (пт)',
+  steps: [
+    'Только в визуальном конструкторе: выделите фрагмент или поставьте курсор в абзац, выберите размер в списке «пт».',
+    'Размер записывается в HTML шаблона (inline или весь абзац) и виден в предпросмотре справа и в пакете документов.',
+    'Заголовки договора задавайте кнопками H1–H3 (14 / 12 / 11 пт по центру) — так надёжнее, чем произвольный кегль.',
+    'Кнопка Tt снимает стили Word, но размеры заголовков H1–H3 в шаблоне сохраняет.',
+  ],
+  note: 'Масштаб «− [100] % +» у конструктора и предпросмотра только увеличивает картинку на экране, на печать не влияет.',
+} as const;
+
+export const CLEANUP_TOOLTIP = {
+  clearFormat: {
+    title: 'Очистить форматирование (Tx)',
+    steps: [
+      'Выделите фрагмент текста (абзац, фразу) — не весь договор целиком.',
+      'Нажмите Tx — с выделения снимаются жирный, курсив, подчёркивание, ссылки и inline-стили.',
+      'Структура документа (абзацы, списки, таблицы) сохраняется.',
+    ],
+    note: 'Не путать с Tt и «Нормализовать»: Tx только для выделенного фрагмента, без изменения всего шаблона.',
+  },
+  wordTypography: {
+    title: 'Шрифты договора — убрать стили Word (Tt)',
+    steps: [
+      'Применяется ко всему шаблону (после вставки из Word или HTML).',
+      'Удаляются классы Mso*, теги font, inline font-family и font-size из Word.',
+      'Включается компактная вёрстка договора для экрана и печати (10pt, Times New Roman).',
+      'Пробелы, пустые строки и выравнивание абзацев эта кнопка не трогает.',
+    ],
+    note: 'Следующий шаг после импорта из Word — затем при необходимости «Нормализовать».',
+  },
+  normalizeSoft: {
+    title: 'Нормализовать — мягко',
+    steps: [
+      'Обрабатывается весь шаблон.',
+      'Убираются лишние пробелы, переносы внутри строк и пустые абзацы.',
+      'Разметка и стили абзацев (выравнивание, отступы) не меняются.',
+    ],
+    note: 'Если текст «разъехался» после правок — сначала мягко, при необходимости — строго.',
+  },
+  normalizeStrict: {
+    title: 'Нормализовать — строго (для договора)',
+    steps: [
+      'Всё, что делает «мягко», плюс объединение соседних абзацев-дублей.',
+      'Простым абзацам задаётся вид договора: по ширине, красная строка 1,25 см.',
+      'Упрощаются некоторые таблицы-«простыни» из Word (вводная часть).',
+    ],
+    note: 'Используйте на готовом тексте договора. Не заменяет Tt после импорта Word.',
+  },
+} as const;
+
 /** Для предпросмотра на экране (библиотека, пакет документов). */
 export function prepareContractTemplateHtmlForPreview(html: string): string {
-  if (!/\bdocPrint\b/i.test(html)) return html;
-  return prepareContractHtmlForScreenPreview(html);
+  const structured = repairContractTemplateStructureInHtml(html || '');
+  return prepareContractHtmlForScreenPreview(structured);
 }

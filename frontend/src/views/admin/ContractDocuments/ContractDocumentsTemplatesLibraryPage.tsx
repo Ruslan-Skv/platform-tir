@@ -2,23 +2,26 @@
 
 import {
   ArrowsPointingOutIcon,
-  Bars3BottomLeftIcon,
-  Bars3BottomRightIcon,
-  Bars3Icon,
-  Bars4Icon,
   BuildingOffice2Icon,
   ChatBubbleBottomCenterTextIcon,
-  DocumentPlusIcon,
   ListBulletIcon,
   MinusIcon,
   NumberedListIcon,
   PencilSquareIcon,
   SparklesIcon,
-  Square2StackIcon,
   TableCellsIcon,
 } from '@heroicons/react/24/outline';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { createPortal } from 'react-dom';
 
 import { useAuth } from '@/features/auth';
 import {
@@ -49,14 +52,54 @@ import measurementFormStyles from '@/views/admin/CRM/Measurements/MeasurementFor
 import { TemplateTrashModal } from '@/views/admin/ContractDocuments/TemplateTrashModal';
 import { applyTemplate } from '@/views/admin/ContractDocuments/repair/applyTemplate';
 import {
-  applyContractLegalListInVisualEditor,
   buildContractLegalListHtml,
   changeContractLegalListLevel,
-  detectSectionNumber,
   handleContractLegalListEnter,
   isNodeInsideContractLegalList,
 } from '@/views/admin/ContractDocuments/repair/contractLegalList';
 import {
+  toggleContractParagraphSpacingInHtmlRange,
+  toggleContractParagraphSpacingInHtmlWhole,
+  toggleContractParagraphSpacingInVisualDocument,
+  toggleContractSpacingOnBlockElements,
+} from '@/views/admin/ContractDocuments/repair/contractTemplateCompactSpacing';
+import {
+  INSERT_BLOCK_TOOLTIP,
+  buildSimpleContractTableHtml,
+} from '@/views/admin/ContractDocuments/repair/contractTemplateInsertBlocks';
+import {
+  BULLET_MARKER_OPTIONS,
+  type BulletMarkerId,
+  LIST_TOOLTIP,
+  applyBulletedListInVisualEditor,
+  applyContractMultilevelListInVisualEditor,
+  applyNumberedListInVisualEditor,
+  buildBulletedListHtml,
+  buildNumberedListHtml,
+  detectSectionForListHtml,
+  getLinesForListFromHtmlSelection,
+} from '@/views/admin/ContractDocuments/repair/contractTemplateLists';
+import {
+  buildContractTemplatePageBreakHtml,
+  normalizeContractTemplatePageBreaksInHtml,
+} from '@/views/admin/ContractDocuments/repair/contractTemplatePageBreak';
+import { repairContractTemplateStructureInHtml } from '@/views/admin/ContractDocuments/repair/contractTemplateStructure';
+import {
+  addTableColumnAfterCell,
+  addTableColumnInHtml,
+  addTableRowBelowCell,
+  addTableRowInHtml,
+  findTableCellInEditor,
+  focusTableCell,
+  isCursorInsideHtmlTable,
+} from '@/views/admin/ContractDocuments/repair/contractTemplateTableEditor';
+import {
+  isLikelyContractTitleElement,
+  normalizeContractTitleInDom,
+} from '@/views/admin/ContractDocuments/repair/contractTemplateTitle';
+import {
+  CLEANUP_TOOLTIP,
+  FONT_SIZE_TOOLTIP,
   normalizeContractTemplateTypography,
   prepareContractTemplateHtmlForPreview,
   sanitizePastedContractHtml,
@@ -67,7 +110,7 @@ import {
   wrapRepairActTwinCopiesOnOnePageHtml,
 } from '@/views/admin/ContractDocuments/repair/repairActTwinCopiesOnOnePageHtml';
 import { REPAIR_CONTRACT_PLACEHOLDER_GROUPS } from '@/views/admin/ContractDocuments/repair/repairContractPlaceholders';
-import { buildRepairContractRequisitesInsertHtml } from '@/views/admin/ContractDocuments/repair/repairContractRequisitesLayout';
+import { buildRepairContractRequisitesInsertHtmlForToolbar } from '@/views/admin/ContractDocuments/repair/repairContractRequisitesLayout';
 import {
   REPAIR_LIBRARY_TEMPLATE_TAB_IDS,
   REPAIR_LIBRARY_TEMPLATE_TAB_LABELS,
@@ -82,11 +125,23 @@ import {
 } from '@/views/admin/ContractDocuments/repair/repairPackageForm';
 import { isRepairLibraryTemplatePreset } from '@/views/admin/ContractDocuments/repair/repairTemplatePresetTab';
 import {
+  TEMPLATE_EDITOR_ZOOM_MAX_PCT,
+  TEMPLATE_EDITOR_ZOOM_MIN_PCT,
+  appendTemplateHistoryEntry,
+  clampTemplateEditorZoomPct,
+} from '@/views/admin/ContractDocuments/repair/templateEditorHistory';
+import {
   applyWordImportedDocPrintCompact,
   readWordHtmlExportFileAsString,
 } from '@/views/admin/ContractDocuments/repair/wordHtmlImport';
 
 import styles from './ContractDocuments.module.css';
+
+type FormatToolHelp = {
+  title: string;
+  steps: readonly string[];
+  note?: string;
+};
 
 type FormatTool = {
   id: string;
@@ -96,6 +151,7 @@ type FormatTool = {
   isActive?: boolean;
   ariaPressed?: boolean;
   wideGlyph?: boolean;
+  help?: FormatToolHelp;
 };
 
 function FormatToolbarSvgIcon({
@@ -108,6 +164,247 @@ function FormatToolbarSvgIcon({
 
 function FormatToolbarGlyph({ children }: { children: React.ReactNode }) {
   return <span className={styles.formatToolbarGlyph}>{children}</span>;
+}
+
+function FormatToolbarHelpTooltip({
+  title,
+  steps,
+  note,
+  disabled,
+  isActive,
+  ariaPressed,
+  wideGlyph,
+  onClick,
+  children,
+}: {
+  title: string;
+  steps: readonly string[];
+  note?: string;
+  disabled?: boolean;
+  isActive?: boolean;
+  ariaPressed?: boolean;
+  wideGlyph?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const [tooltipPortalReady, setTooltipPortalReady] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
+
+  useEffect(() => {
+    setTooltipPortalReady(true);
+  }, []);
+
+  const updateTooltipPosition = useCallback(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setTooltipPos({
+      top: rect.bottom + 8,
+      left: rect.left + rect.width / 2,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    updateTooltipPosition();
+    const onScrollOrResize = () => updateTooltipPosition();
+    window.addEventListener('scroll', onScrollOrResize, true);
+    window.addEventListener('resize', onScrollOrResize);
+    return () => {
+      window.removeEventListener('scroll', onScrollOrResize, true);
+      window.removeEventListener('resize', onScrollOrResize);
+    };
+  }, [open, updateTooltipPosition]);
+
+  const showHelp = () => {
+    updateTooltipPosition();
+    setOpen(true);
+  };
+
+  const hideHelp = () => setOpen(false);
+
+  const portalTarget = tooltipPortalReady && typeof document !== 'undefined' ? document.body : null;
+
+  const tooltipPanel =
+    open && tooltipPos && portalTarget
+      ? createPortal(
+          <div
+            role="tooltip"
+            className={styles.formatToolbarHelpTooltip}
+            style={{
+              top: tooltipPos.top,
+              left: tooltipPos.left,
+            }}
+            onMouseEnter={showHelp}
+            onMouseLeave={hideHelp}
+          >
+            <strong>{title}</strong>
+            <ol>
+              {steps.map((step, index) => (
+                <li key={`${title}-${index}`}>{step}</li>
+              ))}
+            </ol>
+            {note ? <p>{note}</p> : null}
+          </div>,
+          portalTarget
+        )
+      : null;
+
+  return (
+    <div
+      ref={wrapRef}
+      className={styles.formatToolbarHelpWrap}
+      onMouseEnter={showHelp}
+      onMouseLeave={hideHelp}
+    >
+      <button
+        type="button"
+        className={`${styles.formatBtn} ${wideGlyph ? styles.formatBtnWideGlyph : ''} ${isActive ? styles.formatBtnActive : ''}`}
+        aria-label={title}
+        aria-pressed={ariaPressed}
+        disabled={disabled}
+        onClick={onClick}
+        onMouseDown={(e) => e.preventDefault()}
+        onFocus={showHelp}
+        onBlur={hideHelp}
+      >
+        {children}
+      </button>
+      {tooltipPanel}
+    </div>
+  );
+}
+
+function TemplateEditorZoomControl({
+  id,
+  value,
+  draft,
+  disabled,
+  ariaLabel,
+  title,
+  onDraftChange,
+  onCommit,
+  onStep,
+}: {
+  id: string;
+  value: number;
+  draft: string | null;
+  disabled?: boolean;
+  ariaLabel: string;
+  title?: string;
+  onDraftChange: (draft: string | null) => void;
+  onCommit: () => void;
+  onStep: (delta: number) => void;
+}) {
+  const atMin = value <= TEMPLATE_EDITOR_ZOOM_MIN_PCT;
+  const atMax = value >= TEMPLATE_EDITOR_ZOOM_MAX_PCT;
+
+  return (
+    <div
+      className={styles.templatesLibraryVisualZoom}
+      role="group"
+      aria-label={ariaLabel}
+      title={title}
+    >
+      <button
+        type="button"
+        className={styles.templatesLibraryVisualZoomBtn}
+        disabled={disabled || atMin}
+        aria-label="Уменьшить масштаб"
+        onClick={() => onStep(-5)}
+      >
+        −
+      </button>
+      <input
+        id={id}
+        type="text"
+        inputMode="numeric"
+        className={styles.templatesLibraryVisualZoomInput}
+        value={draft ?? String(value)}
+        disabled={disabled}
+        aria-label={`${ariaLabel}, проценты`}
+        onChange={(e) => {
+          onDraftChange(e.target.value.replace(/\D/g, '').slice(0, 3));
+        }}
+        onBlur={onCommit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            onCommit();
+            (e.currentTarget as HTMLInputElement).blur();
+          }
+        }}
+      />
+      <span className={styles.templatesLibraryVisualZoomSuffix} aria-hidden>
+        %
+      </span>
+      <button
+        type="button"
+        className={styles.templatesLibraryVisualZoomBtn}
+        disabled={disabled || atMax}
+        aria-label="Увеличить масштаб"
+        onClick={() => onStep(5)}
+      >
+        +
+      </button>
+    </div>
+  );
+}
+
+type ParagraphTextAlign = 'left' | 'center' | 'right' | 'justify';
+
+function FormatToolbarTextAlignIcon({ kind }: { kind: ParagraphTextAlign }) {
+  const lineProps = {
+    stroke: 'currentColor',
+    strokeWidth: 1.75,
+    strokeLinecap: 'round' as const,
+  };
+  const lines: { x1: number; x2: number; y: number }[] =
+    kind === 'left'
+      ? [
+          { x1: 4, x2: 18, y: 7 },
+          { x1: 4, x2: 20, y: 12 },
+          { x1: 4, x2: 15, y: 17 },
+        ]
+      : kind === 'center'
+        ? [
+            { x1: 6, x2: 18, y: 7 },
+            { x1: 5, x2: 19, y: 12 },
+            { x1: 7, x2: 17, y: 17 },
+          ]
+        : kind === 'right'
+          ? [
+              { x1: 6, x2: 20, y: 7 },
+              { x1: 4, x2: 20, y: 12 },
+              { x1: 9, x2: 20, y: 17 },
+            ]
+          : [
+              { x1: 4, x2: 20, y: 7 },
+              { x1: 4, x2: 20, y: 12 },
+              { x1: 4, x2: 20, y: 17 },
+            ];
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      className={styles.formatToolbarSvg}
+      aria-hidden
+    >
+      {lines.map((line) => (
+        <line
+          key={`${line.y}-${line.x1}`}
+          x1={line.x1}
+          y1={line.y}
+          x2={line.x2}
+          y2={line.y}
+          {...lineProps}
+        />
+      ))}
+    </svg>
+  );
 }
 
 type InlineFormatKind = 'bold' | 'italic' | 'underline';
@@ -173,12 +470,63 @@ function tryUnwrapHtmlInlineTags(
 }
 
 const HTML_FONT_WEIGHT_BOLD_STYLE_RE = /font-weight\s*:\s*(?:bold|bolder|[7-9]00)\b/i;
+const HTML_FONT_STYLE_ITALIC_RE = /font-style\s*:\s*italic\b/i;
 const HTML_BOLD_STYLE_TAG_NAMES = 'span|p|div|td|th|li|b|strong';
+const HTML_ITALIC_STYLE_TAG_NAMES = 'span|p|div|td|th|li|em|i';
 
 function htmlTagChunkIsBoldMarkup(tagName: string, attrs: string): boolean {
   const tag = tagName.toLowerCase();
   if (tag === 'b' || tag === 'strong') return true;
   return HTML_FONT_WEIGHT_BOLD_STYLE_RE.test(attrs);
+}
+
+function htmlTagChunkIsItalicMarkup(tagName: string, attrs: string): boolean {
+  const tag = tagName.toLowerCase();
+  if (tag === 'em' || tag === 'i') return true;
+  return HTML_FONT_STYLE_ITALIC_RE.test(attrs);
+}
+
+function tryUnwrapHtmlFontStyleItalic(
+  source: string,
+  start: number,
+  end: number
+): { next: string; cursor: number; selectLength: number } | null {
+  const selected = source.slice(start, end);
+  const wrappedRe = new RegExp(
+    `^\\s*<(${HTML_ITALIC_STYLE_TAG_NAMES})(\\s[^>]*)>([\\s\\S]*)<\\/\\1>\\s*$`,
+    'i'
+  );
+  const wrapped = selected.match(wrappedRe);
+  if (wrapped) {
+    const tagName = wrapped[1] ?? '';
+    const attrs = wrapped[2] ?? '';
+    if (!htmlTagChunkIsItalicMarkup(tagName, attrs)) return null;
+    const inner = wrapped[3] ?? '';
+    return {
+      next: source.slice(0, start) + inner + source.slice(end),
+      cursor: start,
+      selectLength: inner.length,
+    };
+  }
+  const openRe = new RegExp(`<(${HTML_ITALIC_STYLE_TAG_NAMES})(\\s[^>]*)>\\s*$`, 'i');
+  const closeRe = new RegExp(`^\\s*<\\/(${HTML_ITALIC_STYLE_TAG_NAMES})>`, 'i');
+  const before = source.slice(0, start);
+  const after = source.slice(end);
+  const openM = before.match(openRe);
+  const closeM = after.match(closeRe);
+  if (openM && closeM) {
+    const tagName = openM[1] ?? '';
+    const attrs = openM[2] ?? '';
+    if (!htmlTagChunkIsItalicMarkup(tagName, attrs)) return null;
+    const openStart = start - openM[0].length;
+    const closeEnd = end + closeM[0].length;
+    return {
+      next: source.slice(0, openStart) + selected + source.slice(closeEnd),
+      cursor: openStart,
+      selectLength: selected.length,
+    };
+  }
+  return null;
 }
 
 function tryUnwrapHtmlFontWeightBold(
@@ -239,6 +587,21 @@ function rangeCloneContainsBoldMarkup(range: Range): boolean {
     const styleAttr = el.getAttribute('style') ?? '';
     if (HTML_FONT_WEIGHT_BOLD_STYLE_RE.test(styleAttr)) return true;
     if (isBoldFontWeightValue(el.style.fontWeight)) return true;
+  }
+  return false;
+}
+
+function isItalicFontStyleValue(value: string): boolean {
+  return value.trim().toLowerCase() === 'italic';
+}
+
+function rangeCloneContainsItalicMarkup(range: Range): boolean {
+  const fragment = range.cloneContents();
+  if (fragment.querySelector('em, i, EM, I')) return true;
+  for (const el of fragment.querySelectorAll<HTMLElement>('[style]')) {
+    const styleAttr = el.getAttribute('style') ?? '';
+    if (HTML_FONT_STYLE_ITALIC_RE.test(styleAttr)) return true;
+    if (isItalicFontStyleValue(el.style.fontStyle)) return true;
   }
   return false;
 }
@@ -305,6 +668,36 @@ function stripBoldFromRangeInEditor(editor: HTMLElement, range: Range): void {
   }
 }
 
+function stripItalicFontStyleFromElementStyle(el: HTMLElement): void {
+  const styleAttr = el.getAttribute('style') ?? '';
+  if (!HTML_FONT_STYLE_ITALIC_RE.test(styleAttr) && !isItalicFontStyleValue(el.style.fontStyle)) {
+    return;
+  }
+  el.style.fontStyle = 'normal';
+  const nextStyle = styleAttr
+    .replace(/font-style\s*:\s*italic\s*;?/gi, '')
+    .replace(/;;+/g, ';')
+    .trim()
+    .replace(/^;|;$/g, '');
+  if (nextStyle) el.setAttribute('style', nextStyle);
+  else el.removeAttribute('style');
+}
+
+function stripItalicFromRangeInEditor(editor: HTMLElement, range: Range): void {
+  const italicElements = [...editor.querySelectorAll<HTMLElement>('em, i, EM, I')];
+  for (const el of italicElements) {
+    if (!range.intersectsNode(el)) continue;
+    if (!rangeFullyContainsNode(range, el)) continue;
+    unwrapElementNode(el);
+  }
+  const styledElements = [...editor.querySelectorAll<HTMLElement>('[style]')];
+  for (const el of styledElements) {
+    if (!range.intersectsNode(el)) continue;
+    if (!rangeFullyContainsNode(range, el)) continue;
+    stripItalicFontStyleFromElementStyle(el);
+  }
+}
+
 function toggleVisualBoldInEditor(editor: HTMLElement): void {
   const sel = window.getSelection();
   if (!sel || sel.rangeCount === 0) return;
@@ -324,6 +717,28 @@ function toggleVisualBoldInEditor(editor: HTMLElement): void {
     return;
   }
   document.execCommand('bold');
+}
+
+function toggleVisualItalicInEditor(editor: HTMLElement): void {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+  const range = sel.getRangeAt(0);
+  if (!editor.contains(range.commonAncestorContainer)) return;
+  if (range.collapsed) {
+    document.execCommand('italic');
+    return;
+  }
+  const shouldUnitalic =
+    document.queryCommandState('italic') || rangeCloneContainsItalicMarkup(range);
+  if (shouldUnitalic) {
+    if (document.queryCommandState('italic')) {
+      document.execCommand('italic');
+      return;
+    }
+    stripItalicFromRangeInEditor(editor, range);
+    return;
+  }
+  document.execCommand('italic');
 }
 
 /** Размеры как в списке Word (пт). */
@@ -429,6 +844,11 @@ function applyVisualFontSizePt(editor: HTMLElement, sizePt: number): void {
   if (!editor.contains(range.commonAncestorContainer)) return;
 
   if (range.collapsed) {
+    const block = findVisualBlockElement(editor, range.startContainer);
+    if (block) {
+      block.style.fontSize = `${sizePt}pt`;
+      return;
+    }
     const span = document.createElement('span');
     span.style.fontSize = `${sizePt}pt`;
     span.appendChild(document.createTextNode('\u200B'));
@@ -485,11 +905,25 @@ function findVisualBlockElement(editor: HTMLElement, node: Node | null): HTMLEle
   return null;
 }
 
+function findVisualBlockAtCollapsedCaret(editor: HTMLElement, range: Range): HTMLElement | null {
+  const direct = findVisualBlockElement(editor, range.startContainer);
+  if (direct) return direct;
+
+  if (range.startContainer === editor) {
+    const next = editor.children[range.startOffset];
+    if (next instanceof HTMLElement && VISUAL_BLOCK_TAGS.has(next.tagName)) return next;
+    const prev = editor.children[range.startOffset - 1];
+    if (prev instanceof HTMLElement && VISUAL_BLOCK_TAGS.has(prev.tagName)) return prev;
+  }
+
+  return null;
+}
+
 function collectVisualBlocksInRange(editor: HTMLElement, range: Range): HTMLElement[] {
   const blocks = new Set<HTMLElement>();
 
   if (range.collapsed) {
-    const block = findVisualBlockElement(editor, range.startContainer);
+    const block = findVisualBlockAtCollapsedCaret(editor, range);
     if (block) blocks.add(block);
     return [...blocks];
   }
@@ -508,6 +942,215 @@ function collectVisualBlocksInRange(editor: HTMLElement, range: Range): HTMLElem
   return [...blocks];
 }
 
+const HTML_BLOCK_ALIGN_TAGS = [
+  'p',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'li',
+  'td',
+  'th',
+  'blockquote',
+] as const;
+
+function normalizeTextAlignKeyword(raw: string): ParagraphTextAlign | null {
+  const value = raw.toLowerCase();
+  if (value === 'center') return 'center';
+  if (value === 'right' || value === 'end') return 'right';
+  if (value === 'justify') return 'justify';
+  if (value === 'left' || value === 'start') return 'left';
+  return null;
+}
+
+/** Только явный text-align в CSS-тексте (атрибут style или style.*). */
+function parseExplicitTextAlign(cssText: string | null | undefined): ParagraphTextAlign | null {
+  if (!cssText) return null;
+  const match = cssText.match(/text-align\s*:\s*([\w-]+)/i);
+  if (!match) return null;
+  return normalizeTextAlignKeyword(match[1]);
+}
+
+function getBlockTextAlign(block: HTMLElement): ParagraphTextAlign | null {
+  const fromAttr = parseExplicitTextAlign(block.getAttribute('style'));
+  if (fromAttr) return fromAttr;
+  const fromInline = parseExplicitTextAlign(block.style.cssText);
+  if (fromInline) return fromInline;
+  return normalizeTextAlignKeyword(window.getComputedStyle(block).textAlign);
+}
+
+function getVisualSelectionTextAlign(editor: HTMLElement, range: Range): ParagraphTextAlign | null {
+  const blocks = collectVisualBlocksInRange(editor, range);
+  if (blocks.length === 0) return null;
+  const aligns = blocks.map(getBlockTextAlign);
+  if (aligns.some((align) => align === null)) return null;
+  const first = aligns[0];
+  return aligns.every((align) => align === first) ? first : null;
+}
+
+type HeadingLevel = 1 | 2 | 3;
+
+function getBlockHeadingLevel(block: HTMLElement): HeadingLevel | null {
+  const tag = block.tagName;
+  if (tag === 'H1') return 1;
+  if (tag === 'H2') return 2;
+  if (tag === 'H3') return 3;
+  return null;
+}
+
+function getVisualSelectionHeadingLevelFromCommand(): HeadingLevel | null {
+  const formatBlock = String(document.queryCommandValue('formatBlock') ?? '')
+    .trim()
+    .toLowerCase();
+  const match = formatBlock.match(/^h([1-3])$/);
+  if (!match) return null;
+  return Number(match[1]) as HeadingLevel;
+}
+
+function getVisualSelectionHeadingLevel(editor: HTMLElement, range: Range): HeadingLevel | null {
+  const blocks = collectVisualBlocksInRange(editor, range);
+  if (blocks.length === 0) return getVisualSelectionHeadingLevelFromCommand();
+  const levels = blocks.map(getBlockHeadingLevel);
+  const first = levels[0];
+  return levels.every((level) => level === first) ? first : null;
+}
+
+function parseHeadingLevelFromOpenTagHtml(openTag: string): HeadingLevel | null {
+  const match = openTag.match(/^<h([1-3])\b/i);
+  if (!match) return null;
+  return Number(match[1]) as HeadingLevel;
+}
+
+function getHtmlSelectionHeadingLevel(
+  source: string,
+  start: number,
+  end: number
+): HeadingLevel | null {
+  const blocks = collectHtmlBlockOpenTagRefsIntersectingRange(source, start, end);
+  if (blocks.length === 0) return null;
+  const levels = blocks.map((block) =>
+    parseHeadingLevelFromOpenTagHtml(source.slice(block.openTagStart, block.openTagEnd))
+  );
+  const first = levels[0];
+  return levels.every((level) => level === first) ? first : null;
+}
+
+function parseTextAlignFromHtmlAttrs(attrs: string): ParagraphTextAlign | null {
+  const styleMatch = attrs.match(/\bstyle\s*=\s*("([^"]*)"|'([^']*)')/i);
+  const styleValue = styleMatch?.[2] ?? styleMatch?.[3] ?? '';
+  return parseExplicitTextAlign(styleValue);
+}
+
+type HtmlBlockOpenTagRef = {
+  openTagStart: number;
+  openTagEnd: number;
+  attrs: string;
+};
+
+function findHtmlBlockOpenTagRefAtOffset(
+  source: string,
+  offset: number
+): HtmlBlockOpenTagRef | null {
+  for (const tag of HTML_BLOCK_ALIGN_TAGS) {
+    const re = new RegExp(`<${tag}(\\s[^>]*)?>`, 'gi');
+    let match: RegExpExecArray | null;
+    while ((match = re.exec(source)) !== null) {
+      const openStart = match.index;
+      const openEnd = openStart + match[0].length;
+      const closeRe = new RegExp(`</${tag}>`, 'gi');
+      closeRe.lastIndex = openEnd;
+      const closeMatch = closeRe.exec(source);
+      if (!closeMatch) continue;
+      if (offset >= openEnd && offset <= closeMatch.index) {
+        return { openTagStart: openStart, openTagEnd: openEnd, attrs: match[1] ?? '' };
+      }
+    }
+  }
+  return null;
+}
+
+function collectHtmlBlockOpenTagRefsIntersectingRange(
+  source: string,
+  start: number,
+  end: number
+): HtmlBlockOpenTagRef[] {
+  const blocks: {
+    openTagStart: number;
+    openTagEnd: number;
+    attrs: string;
+    contentStart: number;
+    contentEnd: number;
+  }[] = [];
+  for (const tag of HTML_BLOCK_ALIGN_TAGS) {
+    const re = new RegExp(`<${tag}(\\s[^>]*)?>`, 'gi');
+    let match: RegExpExecArray | null;
+    while ((match = re.exec(source)) !== null) {
+      const openStart = match.index;
+      const openEnd = openStart + match[0].length;
+      const closeRe = new RegExp(`</${tag}>`, 'gi');
+      closeRe.lastIndex = openEnd;
+      const closeMatch = closeRe.exec(source);
+      if (!closeMatch) continue;
+      blocks.push({
+        openTagStart: openStart,
+        openTagEnd: openEnd,
+        attrs: match[1] ?? '',
+        contentStart: openEnd,
+        contentEnd: closeMatch.index,
+      });
+    }
+  }
+  const rangeStart = Math.min(start, end);
+  const rangeEnd = Math.max(start, end);
+  const hits = blocks.filter(
+    (block) => block.contentStart < rangeEnd && block.contentEnd > rangeStart
+  );
+  if (hits.length > 0) {
+    hits.sort((a, b) => b.openTagStart - a.openTagStart);
+    return hits.map(({ openTagStart, openTagEnd, attrs }) => ({ openTagStart, openTagEnd, attrs }));
+  }
+
+  const caretBlock = findHtmlBlockOpenTagRefAtOffset(source, rangeStart);
+  if (caretBlock) return [caretBlock];
+
+  const ahead = source.slice(rangeStart);
+  const beforeTag = ahead.match(/^<(p|h[1-6]|li|td|th|blockquote)(\s[^>]*)?>/i);
+  if (beforeTag) {
+    return [
+      {
+        openTagStart: rangeStart,
+        openTagEnd: rangeStart + beforeTag[0].length,
+        attrs: beforeTag[2] ?? '',
+      },
+    ];
+  }
+
+  return [];
+}
+
+function collectHtmlBlocksIntersectingRange(
+  source: string,
+  start: number,
+  end: number
+): { attrs: string }[] {
+  return collectHtmlBlockOpenTagRefsIntersectingRange(source, start, end);
+}
+
+function getHtmlSelectionTextAlign(
+  source: string,
+  start: number,
+  end: number
+): ParagraphTextAlign | null {
+  const blocks = collectHtmlBlockOpenTagRefsIntersectingRange(source, start, end);
+  if (blocks.length === 0) return null;
+  const aligns = blocks.map((block) => parseTextAlignFromHtmlAttrs(block.attrs));
+  if (aligns.some((align) => align === null)) return null;
+  const first = aligns[0];
+  return aligns.every((align) => align === first) ? first : null;
+}
+
 function applyVisualLineSpacing(
   editor: HTMLElement,
   lineHeight: number,
@@ -521,6 +1164,72 @@ function applyVisualLineSpacing(
   for (const block of collectVisualBlocksInRange(editor, range)) {
     block.style.lineHeight = String(lineHeight);
     block.style.marginBottom = `${marginBottomPt}pt`;
+  }
+}
+
+function setTextIndentInStyleString(style: string, indentCm: number): string {
+  let next = style
+    .replace(/text-indent\s*:\s*[^;]+;?/gi, '')
+    .replace(/;;+/g, ';')
+    .trim()
+    .replace(/^;|;$/g, '');
+  if (indentCm > 0) {
+    const indent = `text-indent: ${indentCm}cm`;
+    next = next ? `${next}; ${indent}` : indent;
+  }
+  return next;
+}
+
+function syncBlockElementStyleAttribute(block: HTMLElement): void {
+  const cssText = block.style.cssText.trim().replace(/;;+/g, ';');
+  if (cssText) block.setAttribute('style', cssText);
+  else block.removeAttribute('style');
+}
+
+function applyTextIndentToBlockElement(block: HTMLElement, indentCm: number): void {
+  if (indentCm <= 0) block.style.removeProperty('text-indent');
+  else block.style.textIndent = `${indentCm}cm`;
+  syncBlockElementStyleAttribute(block);
+}
+
+function patchHtmlOpenTagTextIndent(openTag: string, indentCm: number): string {
+  const styleMatch = openTag.match(/\bstyle\s*=\s*("([^"]*)"|'([^']*)')/i);
+  if (styleMatch) {
+    const quote = styleMatch[0].includes('"') ? '"' : "'";
+    const current = styleMatch[2] ?? styleMatch[3] ?? '';
+    const updated = setTextIndentInStyleString(current, indentCm);
+    return openTag.replace(styleMatch[0], `style=${quote}${updated}${quote}`);
+  }
+  if (indentCm <= 0) return openTag;
+  return openTag.replace(/>$/, ` style="text-indent: ${indentCm}cm;">`);
+}
+
+function applyHtmlParagraphIndentCm(
+  source: string,
+  start: number,
+  end: number,
+  indentCm: number
+): string {
+  const blocks = collectHtmlBlockOpenTagRefsIntersectingRange(source, start, end);
+  if (blocks.length === 0) return source;
+
+  let next = source;
+  for (const block of blocks) {
+    const openTag = next.slice(block.openTagStart, block.openTagEnd);
+    const patched = patchHtmlOpenTagTextIndent(openTag, indentCm);
+    next = next.slice(0, block.openTagStart) + patched + next.slice(block.openTagEnd);
+  }
+  return next;
+}
+
+function applyVisualParagraphIndent(editor: HTMLElement, indentCm: number): void {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+  const range = sel.getRangeAt(0);
+  if (!editor.contains(range.commonAncestorContainer)) return;
+
+  for (const block of collectVisualBlocksInRange(editor, range)) {
+    applyTextIndentToBlockElement(block, indentCm);
   }
 }
 
@@ -550,6 +1259,27 @@ function isHtmlCaretInsideTag(source: string, pos: number, tag: string): boolean
   return new RegExp(`^[\\s\\S]*?</${tag}>`, 'i').test(after);
 }
 
+function isHtmlCaretInsideFontStyleItalic(source: string, pos: number): boolean {
+  const before = source.slice(0, pos);
+  const openRe =
+    /<(span|p|div|td|th|li|em|i)(\s+[^>]*style="[^"]*font-style\s*:\s*italic[^"]*"[^>]*)>/gi;
+  const closeRe = /<\/(span|p|div|td|th|li|em|i)>/gi;
+  let openCount = 0;
+  let closeCount = 0;
+  let m: RegExpExecArray | null;
+  while ((m = openRe.exec(before)) !== null) {
+    openCount += 1;
+    void m;
+  }
+  while ((m = closeRe.exec(before)) !== null) {
+    closeCount += 1;
+    void m;
+  }
+  if (openCount <= closeCount) return false;
+  const after = source.slice(pos);
+  return /^[\s\S]*?<\/(span|p|div|td|th|li|em|i)>/i.test(after);
+}
+
 function isHtmlCaretInsideFontWeightBold(source: string, pos: number): boolean {
   const before = source.slice(0, pos);
   const openRe = /<(span|p)(\s+[^>]*style="[^"]*font-weight\s*:\s*bold[^"]*"[^>]*)>/gi;
@@ -570,6 +1300,43 @@ function isHtmlCaretInsideFontWeightBold(source: string, pos: number): boolean {
   return /^[\s\S]*?<\/(span|p)>/i.test(after);
 }
 
+function selectionPlainTextForCaseCheck(text: string): string {
+  return text.replace(/<[^>]+>/g, '');
+}
+
+function selectionHasLetters(text: string): boolean {
+  return /\p{L}/u.test(text);
+}
+
+function isSelectionAllUppercaseLetters(text: string): boolean {
+  const letters = text.match(/\p{L}/gu);
+  if (!letters?.length) return false;
+  return letters.every(
+    (ch) => ch === ch.toLocaleUpperCase('ru-RU') && ch !== ch.toLocaleLowerCase('ru-RU')
+  );
+}
+
+function applyCaseToPlainText(text: string, mode: 'upper' | 'lower'): string {
+  return mode === 'upper' ? text.toLocaleUpperCase('ru-RU') : text.toLocaleLowerCase('ru-RU');
+}
+
+function applyCaseToHtmlFragment(html: string, mode: 'upper' | 'lower'): string {
+  if (!/<[a-z][\s/>]/i.test(html)) {
+    return applyCaseToPlainText(html, mode);
+  }
+  const doc = new DOMParser().parseFromString(`<div id="__case_root">${html}</div>`, 'text/html');
+  const root = doc.getElementById('__case_root');
+  if (!root) return applyCaseToPlainText(html, mode);
+  const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let node: Node | null;
+  while ((node = walker.nextNode())) {
+    const value = node.textContent ?? '';
+    if (!value) continue;
+    node.textContent = applyCaseToPlainText(value, mode);
+  }
+  return root.innerHTML;
+}
+
 function isHtmlInlineFormatActive(
   source: string,
   start: number,
@@ -579,9 +1346,13 @@ function isHtmlInlineFormatActive(
   const tags = INLINE_FORMAT_TAGS[kind];
   if (tryUnwrapHtmlInlineTags(source, start, end, tags)) return true;
   if (kind === 'bold' && tryUnwrapHtmlFontWeightBold(source, start, end)) return true;
+  if (kind === 'italic' && tryUnwrapHtmlFontStyleItalic(source, start, end)) return true;
   const positions = start === end ? [start] : [start, end];
   if (kind === 'bold') {
     if (positions.some((pos) => isHtmlCaretInsideFontWeightBold(source, pos))) return true;
+  }
+  if (kind === 'italic') {
+    if (positions.some((pos) => isHtmlCaretInsideFontStyleItalic(source, pos))) return true;
   }
   return tags.some((tag) => positions.some((pos) => isHtmlCaretInsideTag(source, pos, tag)));
 }
@@ -593,7 +1364,6 @@ const TEMPLATES_ACTIVE_KIND_KEY = 'admin.contractDocuments.templates.activeKind'
 const TEMPLATES_ACTIVE_TAB_KEY = 'admin.contractDocuments.templates.activeTab';
 const TEMPLATES_ARCHIVE_MODE_KEY = 'admin.contractDocuments.templates.archiveMode';
 const TEMPLATES_PREVIEW_CUSTOMER_KIND_KEY = 'admin.contractDocuments.templates.previewCustomerKind';
-const TEMPLATES_PREVIEW_FONT_SIZE_KEY = 'admin.contractDocuments.templates.previewFontSizePx';
 const TEMPLATES_PREVIEW_ZOOM_KEY = 'admin.contractDocuments.templates.previewZoomPct';
 const TEMPLATES_VISUAL_ZOOM_KEY = 'admin.contractDocuments.templates.visualZoomPct';
 const TEMPLATES_VISUAL_HEIGHT_KEY = 'admin.contractDocuments.templates.visualEditorHeightPx';
@@ -602,7 +1372,6 @@ const TEMPLATES_EDITOR_MODE_KEY = 'admin.contractDocuments.templates.editorMode'
 const TEMPLATES_HTML_HEIGHT_KEY = 'admin.contractDocuments.templates.htmlEditorHeightPx';
 type NormalizeMode = 'soft' | 'strict';
 type TemplatesUiPrefs = {
-  previewFontSizePx?: number;
   previewZoomPct?: number;
   visualZoomPct?: number;
   visualEditorHeightPx?: number;
@@ -617,9 +1386,7 @@ type TemplatesUiPrefs = {
   selectedTemplateByScope?: Record<string, string>;
 };
 
-/** Только экран редактора и предпросмотра; на сохранённый HTML и печать не влияет. */
-const TEMPLATE_EDITOR_ZOOM_MIN_PCT = 40;
-const TEMPLATE_EDITOR_ZOOM_MAX_PCT = 150;
+const TEMPLATE_HTML_HISTORY_DEBOUNCE_MS = 400;
 
 /** Те же SVG, что в списке расчётов (`ContractDocumentsEstimatesPage`). */
 function EstimatesArchiveIcon() {
@@ -774,6 +1541,10 @@ function normalizeTemplateHtmlWhitespace(sourceHtml: string, mode: NormalizeMode
           j += 1;
         }
         if (group.length > 1) {
+          if (group.some((el) => isLikelyContractTitleElement(el))) {
+            i = j;
+            continue;
+          }
           const merged = normalizeTextWhitespace(
             group
               .map((el) => normalizeBlockText(el))
@@ -932,6 +1703,7 @@ function normalizeTemplateHtmlWhitespace(sourceHtml: string, mode: NormalizeMode
     const paragraphs = Array.from(container.querySelectorAll('p'));
     for (const p of paragraphs) {
       if (p.classList.contains('docPrint')) continue;
+      if (isLikelyContractTitleElement(p)) continue;
       const brNodes = Array.from(p.querySelectorAll('br'));
       for (const br of brNodes) {
         br.replaceWith(window.document.createTextNode(' '));
@@ -939,6 +1711,8 @@ function normalizeTemplateHtmlWhitespace(sourceHtml: string, mode: NormalizeMode
       p.setAttribute('style', 'text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;');
       p.textContent = normalizeTextWhitespace(p.textContent ?? '');
     }
+
+    normalizeContractTitleInDom(container);
 
     const spans = Array.from(container.querySelectorAll('span'));
     for (const span of spans) {
@@ -1031,18 +1805,26 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const [html, setHtml] = useState('');
   const [editorMode, setEditorMode] = useState<'html' | 'visual'>('html');
   const [visualDraftHtml, setVisualDraftHtml] = useState('');
-  const [visualHistory, setVisualHistory] = useState<string[]>([]);
-  const [visualHistoryIndex, setVisualHistoryIndex] = useState(-1);
+  const [templateHistory, setTemplateHistory] = useState<string[]>([]);
+  const [templateHistoryIndex, setTemplateHistoryIndex] = useState(-1);
   const [firstExecutorProfile, setFirstExecutorProfile] = useState<ExecutorRequisiteProfile | null>(
     null
   );
   const [firstSignatoryProfile, setFirstSignatoryProfile] =
     useState<ContractSignatoryProfile | null>(null);
-  const [previewFontSizePx, setPreviewFontSizePx] = useState(12);
   const [previewZoomPct, setPreviewZoomPct] = useState(100);
+  const [previewZoomDraft, setPreviewZoomDraft] = useState<string | null>(null);
   const [visualZoomPct, setVisualZoomPct] = useState(100);
+  const [visualZoomDraft, setVisualZoomDraft] = useState<string | null>(null);
   const [placeholdersCollapsed, setPlaceholdersCollapsed] = useState(false);
+  const [tableEditActive, setTableEditActive] = useState(false);
   const [createTemplateHelpOpen, setCreateTemplateHelpOpen] = useState(false);
+  const [createTemplateHelpPortalReady, setCreateTemplateHelpPortalReady] = useState(false);
+  const createTemplateHelpWrapRef = useRef<HTMLDivElement>(null);
+  const [createTemplateTooltipPos, setCreateTemplateTooltipPos] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
   const [htmlEditorHeightPx, setHtmlEditorHeightPx] = useState<number | null>(null);
   const [visualEditorHeightPx, setVisualEditorHeightPx] = useState<number | null>(null);
   const [previewPaneHeightPx, setPreviewPaneHeightPx] = useState<number | null>(null);
@@ -1053,8 +1835,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const visualEditorRef = useRef<HTMLDivElement>(null);
   const previewPaneRef = useRef<HTMLDivElement>(null);
   const visualSelectionRangeRef = useRef<Range | null>(null);
-  const visualHistoryRef = useRef<string[]>([]);
-  const visualHistoryIndexRef = useRef(-1);
+  const templateHistoryRef = useRef<string[]>([]);
+  const templateHistoryIndexRef = useRef(-1);
+  const skipNextTemplateHistoryPushRef = useRef(false);
+  const htmlHistoryDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const uiPrefsLoadedRef = useRef(false);
   const skipInitialUiPrefsPersistRef = useRef(true);
   const skipInitialSizingPersistRef = useRef(true);
@@ -1090,46 +1874,19 @@ export function ContractDocumentsTemplatesLibraryPage() {
     try {
       const raw = window.localStorage.getItem(TEMPLATES_UI_PREFS_KEY);
       const parsed = raw ? (JSON.parse(raw) as TemplatesUiPrefs) : null;
-      if (parsed && typeof parsed.previewFontSizePx === 'number') {
-        setPreviewFontSizePx(clampInt(parsed.previewFontSizePx, 10, 20));
-      }
-      const previewFontRaw = window.localStorage.getItem(TEMPLATES_PREVIEW_FONT_SIZE_KEY);
-      if (previewFontRaw != null && Number.isFinite(Number(previewFontRaw))) {
-        setPreviewFontSizePx(clampInt(Number(previewFontRaw), 10, 20));
-      }
       if (parsed && typeof parsed.previewZoomPct === 'number') {
-        setPreviewZoomPct(
-          clampInt(
-            parsed.previewZoomPct,
-            TEMPLATE_EDITOR_ZOOM_MIN_PCT,
-            TEMPLATE_EDITOR_ZOOM_MAX_PCT
-          )
-        );
+        setPreviewZoomPct(clampTemplateEditorZoomPct(parsed.previewZoomPct));
       }
       const previewZoomRaw = window.localStorage.getItem(TEMPLATES_PREVIEW_ZOOM_KEY);
       if (previewZoomRaw != null && Number.isFinite(Number(previewZoomRaw))) {
-        setPreviewZoomPct(
-          clampInt(
-            Number(previewZoomRaw),
-            TEMPLATE_EDITOR_ZOOM_MIN_PCT,
-            TEMPLATE_EDITOR_ZOOM_MAX_PCT
-          )
-        );
+        setPreviewZoomPct(clampTemplateEditorZoomPct(Number(previewZoomRaw)));
       }
       if (parsed && typeof parsed.visualZoomPct === 'number') {
-        setVisualZoomPct(
-          clampInt(parsed.visualZoomPct, TEMPLATE_EDITOR_ZOOM_MIN_PCT, TEMPLATE_EDITOR_ZOOM_MAX_PCT)
-        );
+        setVisualZoomPct(clampTemplateEditorZoomPct(parsed.visualZoomPct));
       }
       const visualZoomRaw = window.localStorage.getItem(TEMPLATES_VISUAL_ZOOM_KEY);
       if (visualZoomRaw != null && Number.isFinite(Number(visualZoomRaw))) {
-        setVisualZoomPct(
-          clampInt(
-            Number(visualZoomRaw),
-            TEMPLATE_EDITOR_ZOOM_MIN_PCT,
-            TEMPLATE_EDITOR_ZOOM_MAX_PCT
-          )
-        );
+        setVisualZoomPct(clampTemplateEditorZoomPct(Number(visualZoomRaw)));
       }
       if (parsed && typeof parsed.visualEditorHeightPx === 'number') {
         setVisualEditorHeightPx(clampInt(parsed.visualEditorHeightPx, 220, 2400));
@@ -1222,7 +1979,6 @@ export function ContractDocumentsTemplatesLibraryPage() {
       return;
     }
     try {
-      window.localStorage.setItem(TEMPLATES_PREVIEW_FONT_SIZE_KEY, String(previewFontSizePx));
       window.localStorage.setItem(TEMPLATES_PREVIEW_ZOOM_KEY, String(previewZoomPct));
       window.localStorage.setItem(TEMPLATES_VISUAL_ZOOM_KEY, String(visualZoomPct));
       if (visualEditorHeightPx != null) {
@@ -1238,7 +1994,6 @@ export function ContractDocumentsTemplatesLibraryPage() {
       window.localStorage.setItem(
         TEMPLATES_UI_PREFS_KEY,
         JSON.stringify({
-          previewFontSizePx,
           previewZoomPct,
           visualZoomPct,
           editorMode,
@@ -1257,7 +2012,6 @@ export function ContractDocumentsTemplatesLibraryPage() {
       // ignore localStorage write issues
     }
   }, [
-    previewFontSizePx,
     previewZoomPct,
     visualZoomPct,
     editorMode,
@@ -1279,7 +2033,6 @@ export function ContractDocumentsTemplatesLibraryPage() {
       return;
     }
     try {
-      window.localStorage.setItem(TEMPLATES_PREVIEW_FONT_SIZE_KEY, String(previewFontSizePx));
       window.localStorage.setItem(TEMPLATES_PREVIEW_ZOOM_KEY, String(previewZoomPct));
       window.localStorage.setItem(TEMPLATES_VISUAL_ZOOM_KEY, String(visualZoomPct));
       if (visualEditorHeightPx != null) {
@@ -1296,7 +2049,6 @@ export function ContractDocumentsTemplatesLibraryPage() {
       // ignore localStorage write issues
     }
   }, [
-    previewFontSizePx,
     previewZoomPct,
     visualZoomPct,
     editorMode,
@@ -1329,7 +2081,6 @@ export function ContractDocumentsTemplatesLibraryPage() {
         window.localStorage.setItem(
           TEMPLATES_UI_PREFS_KEY,
           JSON.stringify({
-            previewFontSizePx,
             previewZoomPct,
             visualZoomPct,
             editorMode,
@@ -1351,7 +2102,6 @@ export function ContractDocumentsTemplatesLibraryPage() {
     window.addEventListener('beforeunload', persistOnUnload);
     return () => window.removeEventListener('beforeunload', persistOnUnload);
   }, [
-    previewFontSizePx,
     previewZoomPct,
     visualZoomPct,
     editorMode,
@@ -1408,31 +2158,61 @@ export function ContractDocumentsTemplatesLibraryPage() {
   };
 
   useEffect(() => {
-    visualHistoryRef.current = visualHistory;
-  }, [visualHistory]);
+    templateHistoryRef.current = templateHistory;
+  }, [templateHistory]);
 
   useEffect(() => {
-    visualHistoryIndexRef.current = visualHistoryIndex;
-  }, [visualHistoryIndex]);
+    templateHistoryIndexRef.current = templateHistoryIndex;
+  }, [templateHistoryIndex]);
 
-  const pushVisualHistory = (nextHtml: string) => {
-    const prev = visualHistoryRef.current;
-    const idx = visualHistoryIndexRef.current;
-    const base = idx >= 0 ? prev.slice(0, idx + 1) : [];
-    if (base.length > 0 && base[base.length - 1] === nextHtml) return;
-    const next = [...base, nextHtml];
-    visualHistoryRef.current = next;
-    visualHistoryIndexRef.current = next.length - 1;
-    setVisualHistory(next);
-    setVisualHistoryIndex(next.length - 1);
-  };
+  useEffect(
+    () => () => {
+      if (htmlHistoryDebounceRef.current) {
+        clearTimeout(htmlHistoryDebounceRef.current);
+      }
+    },
+    []
+  );
 
-  const resetVisualHistory = (htmlSnapshot: string) => {
-    visualHistoryRef.current = [htmlSnapshot];
-    visualHistoryIndexRef.current = 0;
-    setVisualHistory([htmlSnapshot]);
-    setVisualHistoryIndex(0);
-  };
+  const pushTemplateHistory = useCallback((nextHtml: string) => {
+    if (skipNextTemplateHistoryPushRef.current) {
+      skipNextTemplateHistoryPushRef.current = false;
+      return;
+    }
+    const { history: next, index } = appendTemplateHistoryEntry(
+      templateHistoryRef.current,
+      templateHistoryIndexRef.current,
+      nextHtml
+    );
+    templateHistoryRef.current = next;
+    templateHistoryIndexRef.current = index;
+    setTemplateHistory(next);
+    setTemplateHistoryIndex(index);
+  }, []);
+
+  const schedulePushTemplateHistoryFromHtml = useCallback(
+    (nextHtml: string) => {
+      if (htmlHistoryDebounceRef.current) {
+        clearTimeout(htmlHistoryDebounceRef.current);
+      }
+      htmlHistoryDebounceRef.current = setTimeout(() => {
+        htmlHistoryDebounceRef.current = null;
+        pushTemplateHistory(nextHtml);
+      }, TEMPLATE_HTML_HISTORY_DEBOUNCE_MS);
+    },
+    [pushTemplateHistory]
+  );
+
+  const resetTemplateHistory = useCallback((htmlSnapshot: string) => {
+    if (htmlHistoryDebounceRef.current) {
+      clearTimeout(htmlHistoryDebounceRef.current);
+      htmlHistoryDebounceRef.current = null;
+    }
+    templateHistoryRef.current = [htmlSnapshot];
+    templateHistoryIndexRef.current = 0;
+    setTemplateHistory([htmlSnapshot]);
+    setTemplateHistoryIndex(0);
+  }, []);
 
   const handleTemplateHtmlFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target;
@@ -1448,7 +2228,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
       setHtml(next);
       setEditorMode('html');
       setVisualDraftHtml(next);
-      resetVisualHistory(next);
+      resetTemplateHistory(next);
       setOk(
         `Файл «${file.name}» загружен в поле HTML (кодировка windows-1251/UTF-8 определяется автоматически). Для фрагментов Word с классом WordSection1 добавлены более плотные отступы и печать с тем же классом docPrintWordCompact. Ползунок «Масштаб» у конструктора/предпросмотра меняет только отображение на экране, не печать. Для правок в конструкторе нажмите «HTML → конструктор».`
       );
@@ -1457,13 +2237,40 @@ export function ContractDocumentsTemplatesLibraryPage() {
     }
   };
 
+  const updateCreateTemplateTooltipPosition = useCallback(() => {
+    const el = createTemplateHelpWrapRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setCreateTemplateTooltipPos({
+      top: rect.bottom + 8,
+      left: rect.right,
+    });
+  }, []);
+
+  useEffect(() => {
+    setCreateTemplateHelpPortalReady(true);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!createTemplateHelpOpen) return;
+    updateCreateTemplateTooltipPosition();
+    const onScrollOrResize = () => updateCreateTemplateTooltipPosition();
+    window.addEventListener('scroll', onScrollOrResize, true);
+    window.addEventListener('resize', onScrollOrResize);
+    return () => {
+      window.removeEventListener('scroll', onScrollOrResize, true);
+      window.removeEventListener('resize', onScrollOrResize);
+    };
+  }, [createTemplateHelpOpen, updateCreateTemplateTooltipPosition]);
+
   const showCreateTemplateHelp = useCallback(() => {
     if (createTemplateHelpHideTimerRef.current) {
       clearTimeout(createTemplateHelpHideTimerRef.current);
       createTemplateHelpHideTimerRef.current = null;
     }
+    updateCreateTemplateTooltipPosition();
     setCreateTemplateHelpOpen(true);
-  }, []);
+  }, [updateCreateTemplateTooltipPosition]);
 
   const hideCreateTemplateHelpWithDelay = useCallback(() => {
     if (createTemplateHelpHideTimerRef.current) {
@@ -1486,21 +2293,23 @@ export function ContractDocumentsTemplatesLibraryPage() {
 
   const readVisualEditorHtml = (): string => visualEditorRef.current?.innerHTML ?? visualDraftHtml;
 
-  const applyVisualSnapshot = (htmlSnapshot: string) => {
-    setVisualDraftHtml(htmlSnapshot);
-    setHtml(htmlSnapshot);
+  const applyTemplateHistorySnapshot = useCallback((htmlSnapshot: string) => {
+    skipNextTemplateHistoryPushRef.current = true;
+    const normalized = normalizeContractTemplatePageBreaksInHtml(htmlSnapshot);
+    setVisualDraftHtml(normalized);
+    setHtml(normalized);
     const editor = visualEditorRef.current;
     if (!editor) return;
     const prevScrollTop = editor.scrollTop;
     const wasFocused = window.document.activeElement === editor;
-    editor.innerHTML = htmlSnapshot;
+    editor.innerHTML = normalized;
     window.requestAnimationFrame(() => {
       editor.scrollTop = prevScrollTop;
       if (wasFocused) {
         editor.focus({ preventScroll: true });
       }
     });
-  };
+  }, []);
 
   const syncVisualEditorToHtmlState = useCallback(() => {
     const next = readVisualEditorHtml();
@@ -1523,22 +2332,27 @@ export function ContractDocumentsTemplatesLibraryPage() {
         const next = visualEditorRef.current?.innerHTML ?? visualDraftHtml;
         setVisualDraftHtml(next);
         setHtml(next);
+        pushTemplateHistory(next);
         setEditorMode('html');
         return;
       }
-      setVisualDraftHtml(html);
-      resetVisualHistory(html);
+      const normalized = normalizeContractTemplatePageBreaksInHtml(html);
+      setVisualDraftHtml(normalized);
+      setHtml(normalized);
+      pushTemplateHistory(normalized);
       setEditorMode('visual');
       if (visualEditorRef.current) {
-        visualEditorRef.current.innerHTML = html || '';
+        visualEditorRef.current.innerHTML = normalized || '';
       }
     },
-    [editorMode, html, visualDraftHtml]
+    [editorMode, html, visualDraftHtml, pushTemplateHistory]
   );
 
   const [inlineFormatActive, setInlineFormatActive] = useState<Record<InlineFormatKind, boolean>>(
     EMPTY_INLINE_FORMAT_ACTIVE
   );
+  const [paragraphAlignActive, setParagraphAlignActive] = useState<ParagraphTextAlign | null>(null);
+  const [headingLevelActive, setHeadingLevelActive] = useState<HeadingLevel | null>(null);
   const [visualFontSizeControl, setVisualFontSizeControl] = useState<{
     pt: number;
     mixed: boolean;
@@ -1549,19 +2363,28 @@ export function ContractDocumentsTemplatesLibraryPage() {
       const editor = visualEditorRef.current;
       if (!editor) {
         setInlineFormatActive(EMPTY_INLINE_FORMAT_ACTIVE);
+        setParagraphAlignActive(null);
+        setHeadingLevelActive(null);
         setVisualFontSizeControl({ pt: DEFAULT_VISUAL_FONT_SIZE_PT, mixed: false });
+        setTableEditActive(false);
         return;
       }
       const sel = window.getSelection();
       if (!sel || sel.rangeCount === 0) {
         setInlineFormatActive(EMPTY_INLINE_FORMAT_ACTIVE);
+        setParagraphAlignActive(null);
+        setHeadingLevelActive(null);
         setVisualFontSizeControl({ pt: DEFAULT_VISUAL_FONT_SIZE_PT, mixed: false });
+        setTableEditActive(false);
         return;
       }
       const range = sel.getRangeAt(0);
       if (!editor.contains(range.commonAncestorContainer)) {
         setInlineFormatActive(EMPTY_INLINE_FORMAT_ACTIVE);
+        setParagraphAlignActive(null);
+        setHeadingLevelActive(null);
         setVisualFontSizeControl({ pt: DEFAULT_VISUAL_FONT_SIZE_PT, mixed: false });
+        setTableEditActive(false);
         return;
       }
       setInlineFormatActive({
@@ -1569,13 +2392,19 @@ export function ContractDocumentsTemplatesLibraryPage() {
         italic: document.queryCommandState('italic'),
         underline: document.queryCommandState('underline'),
       });
+      setParagraphAlignActive(getVisualSelectionTextAlign(editor, range));
+      setHeadingLevelActive(getVisualSelectionHeadingLevel(editor, range));
       setVisualFontSizeControl(getVisualSelectionFontSizePt(editor, range));
+      setTableEditActive(!!findTableCellInEditor(editor, sel));
       return;
     }
     setVisualFontSizeControl({ pt: DEFAULT_VISUAL_FONT_SIZE_PT, mixed: false });
     const el = htmlTextareaRef.current;
     if (!el) {
       setInlineFormatActive(EMPTY_INLINE_FORMAT_ACTIVE);
+      setParagraphAlignActive(null);
+      setHeadingLevelActive(null);
+      setTableEditActive(false);
       return;
     }
     const start = el.selectionStart ?? 0;
@@ -1585,6 +2414,9 @@ export function ContractDocumentsTemplatesLibraryPage() {
       italic: isHtmlInlineFormatActive(html, start, end, 'italic'),
       underline: isHtmlInlineFormatActive(html, start, end, 'underline'),
     });
+    setParagraphAlignActive(getHtmlSelectionTextAlign(html, start, end));
+    setHeadingLevelActive(getHtmlSelectionHeadingLevel(html, start, end));
+    setTableEditActive(isCursorInsideHtmlTable(html, start));
   }, [editorMode, html]);
 
   useEffect(() => {
@@ -1749,7 +2581,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
         setTitle(t?.title ?? '');
         setHtml(t?.html ?? '');
         setVisualDraftHtml(t?.html ?? '');
-        resetVisualHistory(t?.html ?? '');
+        resetTemplateHistory(t?.html ?? '');
         void refreshTrashCount();
       } catch (e) {
         if (templatesLoadRequestIdRef.current !== requestId) return;
@@ -1784,9 +2616,13 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const buildItemsForAutosave = useCallback((): ContractTemplatePreset[] | null => {
     if (!isSuperAdmin || !editingId || showArchivedTemplates) return null;
     const t = title.trim();
-    const contentHtml = (
+    const rawContentHtml = (
       editorMode === 'visual' ? (visualEditorRef.current?.innerHTML ?? visualDraftHtml) : html
     ).trim();
+    const contentHtml =
+      activeTemplateTab === 'contract'
+        ? repairContractTemplateStructureInHtml(rawContentHtml)
+        : rawContentHtml;
     if (!t || !contentHtml) return null;
     const exists = items.some((it) => it.id === editingId);
     if (exists) {
@@ -2029,7 +2865,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
       setTitle(t?.title ?? '');
       setHtml(t?.html ?? '');
       setVisualDraftHtml(t?.html ?? '');
-      resetVisualHistory(t?.html ?? '');
+      resetTemplateHistory(t?.html ?? '');
     })();
   };
 
@@ -2043,16 +2879,21 @@ export function ContractDocumentsTemplatesLibraryPage() {
       const next = '<div class="docPrint"></div>';
       setHtml(next);
       setVisualDraftHtml(next);
-      resetVisualHistory(next);
+      resetTemplateHistory(next);
     })();
   };
 
   useEffect(() => {
     if (!visualEditorRef.current) return;
-    const source = visualDraftHtml || html || '';
+    const raw = visualDraftHtml || html || '';
+    const source = normalizeContractTemplatePageBreaksInHtml(raw);
     visualEditorRef.current.innerHTML = source;
-    if (editorMode === 'visual' && visualHistoryRef.current.length === 0) {
-      resetVisualHistory(source);
+    if (editorMode === 'visual' && source !== raw) {
+      setVisualDraftHtml(source);
+      setHtml(source);
+    }
+    if (editorMode === 'visual' && templateHistoryRef.current.length === 0) {
+      resetTemplateHistory(source);
     }
     // Важно: НЕ зависим от visualDraftHtml/html, иначе при каждом onInput перезаписываем DOM
     // и курсор прыгает в начало.
@@ -2073,9 +2914,14 @@ export function ContractDocumentsTemplatesLibraryPage() {
     setEditingId(firstId);
     const t = itemsByActiveTab.find((it) => it.id === firstId);
     setTitle(t?.title ?? '');
-    setHtml(t?.html ?? '');
-    setVisualDraftHtml(t?.html ?? '');
-    resetVisualHistory(t?.html ?? '');
+    const loadedHtml = t?.html ?? '';
+    const repairedHtml =
+      activeTemplateTab === 'contract'
+        ? repairContractTemplateStructureInHtml(loadedHtml)
+        : loadedHtml;
+    setHtml(repairedHtml);
+    setVisualDraftHtml(repairedHtml);
+    resetTemplateHistory(repairedHtml);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     activeLibraryKind,
@@ -2122,7 +2968,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
           setTitle('');
           setHtml('');
           setVisualDraftHtml('');
-          resetVisualHistory('');
+          resetTemplateHistory('');
         }
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Не удалось переместить шаблон в корзину');
@@ -2160,7 +3006,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     setTitle(t?.title ?? '');
     setHtml(t?.html ?? '');
     setVisualDraftHtml(t?.html ?? '');
-    resetVisualHistory(t?.html ?? '');
+    resetTemplateHistory(t?.html ?? '');
   };
 
   const confirmArchiveTemplate = () => {
@@ -2203,7 +3049,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
           setTitle('');
           setHtml('');
           setVisualDraftHtml('');
-          resetVisualHistory('');
+          resetTemplateHistory('');
         }
       } finally {
         templateArchiveSwitchRef.current = false;
@@ -2248,11 +3094,16 @@ export function ContractDocumentsTemplatesLibraryPage() {
     if (!isSuperAdmin) return;
     if (editorMode === 'visual') {
       const next = syncVisualEditorToHtmlState();
-      pushVisualHistory(next);
+      pushTemplateHistory(next);
     } else {
-      setVisualDraftHtml(html);
-      resetVisualHistory(html);
+      const normalized = normalizeContractTemplatePageBreaksInHtml(html);
+      setVisualDraftHtml(normalized);
+      setHtml(normalized);
+      pushTemplateHistory(normalized);
       setEditorMode('visual');
+      if (visualEditorRef.current) {
+        visualEditorRef.current.innerHTML = normalized || '';
+      }
     }
   };
 
@@ -2299,7 +3150,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
       const next = el.innerHTML;
       setVisualDraftHtml(next);
       setHtml(next);
-      pushVisualHistory(next);
+      pushTemplateHistory(next);
       return;
     }
 
@@ -2348,13 +3199,15 @@ export function ContractDocumentsTemplatesLibraryPage() {
       restoreVisualSelection();
       if (kind === 'bold') {
         toggleVisualBoldInEditor(el);
+      } else if (kind === 'italic') {
+        toggleVisualItalicInEditor(el);
       } else {
         document.execCommand(INLINE_FORMAT_EXEC[kind]);
       }
       const next = el.innerHTML;
       setVisualDraftHtml(next);
       setHtml(next);
-      pushVisualHistory(next);
+      pushTemplateHistory(next);
       captureVisualSelection();
       window.requestAnimationFrame(() => refreshInlineFormatActiveState());
       return;
@@ -2370,7 +3223,11 @@ export function ContractDocumentsTemplatesLibraryPage() {
     const end = el.selectionEnd ?? start;
     const unwrapped =
       tryUnwrapHtmlInlineTags(current, start, end, INLINE_FORMAT_TAGS[kind]) ??
-      (kind === 'bold' ? tryUnwrapHtmlFontWeightBold(current, start, end) : null);
+      (kind === 'bold'
+        ? tryUnwrapHtmlFontWeightBold(current, start, end)
+        : kind === 'italic'
+          ? tryUnwrapHtmlFontStyleItalic(current, start, end)
+          : null);
     if (unwrapped) {
       setHtml(unwrapped.next);
       window.requestAnimationFrame(() => {
@@ -2394,7 +3251,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     const next = el.innerHTML;
     setVisualDraftHtml(next);
     setHtml(next);
-    pushVisualHistory(next);
+    pushTemplateHistory(next);
     setVisualFontSizeControl({ pt: sizePt, mixed: false });
     captureVisualSelection();
     window.requestAnimationFrame(() => refreshInlineFormatActiveState());
@@ -2415,19 +3272,39 @@ export function ContractDocumentsTemplatesLibraryPage() {
       const next = visualEditorRef.current?.innerHTML ?? '';
       setVisualDraftHtml(next);
       setHtml(next);
-      pushVisualHistory(next);
+      pushTemplateHistory(next);
       captureVisualSelection();
+      window.requestAnimationFrame(() => refreshInlineFormatActiveState());
       return;
     }
     wrapSelection(`<p style="text-align: ${align}; margin: 0 0 8pt;">`, '</p>', 'Новый абзац');
+    window.requestAnimationFrame(() => refreshInlineFormatActiveState());
   };
-  const wrapParagraphWithIndent = () => {
-    wrapSelection(
-      '<p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">',
-      '</p>',
-      'Абзац с красной строкой'
-    );
+  const applyParagraphIndentCm = (indentCm: number) => {
+    if (editorMode === 'visual') {
+      const el = visualEditorRef.current;
+      if (!el) return;
+      el.focus();
+      restoreVisualSelection();
+      applyVisualParagraphIndent(el, indentCm);
+      syncVisualEditorFromDom();
+      return;
+    }
+
+    const el = htmlTextareaRef.current;
+    if (!el) return;
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? start;
+    const next = applyHtmlParagraphIndentCm(html, start, end, indentCm);
+    if (next === html) return;
+    setHtml(next);
+    window.requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start, end);
+    });
   };
+
+  const wrapParagraphWithIndent = () => applyParagraphIndentCm(1.25);
   const wrapAsHeading = (level: 1 | 2 | 3) => {
     const tag = `h${level}`;
     const fontSize = level === 1 ? '14pt' : level === 2 ? '12pt' : '11pt';
@@ -2436,6 +3313,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
       `</${tag}>`,
       level === 1 ? 'Название договора' : level === 2 ? 'Название раздела' : 'Название подпункта'
     );
+    window.requestAnimationFrame(() => refreshInlineFormatActiveState());
   };
   const syncVisualEditorFromDom = () => {
     const el = visualEditorRef.current;
@@ -2443,51 +3321,222 @@ export function ContractDocumentsTemplatesLibraryPage() {
     const next = el.innerHTML;
     setVisualDraftHtml(next);
     setHtml(next);
-    pushVisualHistory(next);
+    pushTemplateHistory(next);
     captureVisualSelection();
   };
 
-  const wrapAsList = (ordered: boolean) => {
-    if (ordered && editorMode === 'visual') {
+  const [bulletMarker, setBulletMarker] = useState<BulletMarkerId>('disc');
+
+  const applyBulletedList = () => {
+    if (editorMode === 'visual') {
       const el = visualEditorRef.current;
       if (!el) return;
       el.focus();
       restoreVisualSelection();
-      applyContractLegalListInVisualEditor(el, 1);
+      if (!applyBulletedListInVisualEditor(el, bulletMarker)) {
+        setError(
+          'Маркированный список нельзя применить внутри нумерации договора (1.1). Выйдите из неё: Enter в пустом пункте.'
+        );
+        return;
+      }
+      setError(null);
       syncVisualEditorFromDom();
       return;
     }
     updateHtmlBySelection((selected, hasSelection) => {
-      const lines = (hasSelection ? selected : 'Пункт 1\nПункт 2')
-        .split(/\r?\n/)
-        .map((s) => s.trim())
-        .filter(Boolean);
-      if (ordered) {
-        const section =
-          typeof window !== 'undefined' && visualEditorRef.current
-            ? detectSectionNumber(visualEditorRef.current, null)
-            : '1';
-        return { content: buildContractLegalListHtml(lines, section) };
-      }
-      const itemsHtml = lines.map((line) => `  <li>${line}</li>`).join('\n');
-      return {
-        content: `<ul style="margin: 0 0 8pt 22px; padding: 0;">\n${itemsHtml}\n</ul>`,
-      };
+      const lines = getLinesForListFromHtmlSelection(selected, hasSelection, ['Пункт списка']);
+      return { content: buildBulletedListHtml(lines, bulletMarker) };
     });
   };
 
-  const applyContractClauseListLevel = (depth: 1 | 2) => {
-    if (editorMode !== 'visual') {
-      setError('Нумерация 1.1 / 1.1.1 доступна в визуальном конструкторе.');
+  const applyNumberedList = () => {
+    if (editorMode === 'visual') {
+      const el = visualEditorRef.current;
+      if (!el) return;
+      el.focus();
+      restoreVisualSelection();
+      if (!applyNumberedListInVisualEditor(el)) {
+        setError(
+          'Обычную нумерацию 1. 2. 3. нельзя смешивать с пунктами договора 1.1. Выйдите из договорного списка.'
+        );
+        return;
+      }
+      setError(null);
+      syncVisualEditorFromDom();
       return;
     }
-    const el = visualEditorRef.current;
-    if (!el) return;
-    el.focus();
-    restoreVisualSelection();
-    applyContractLegalListInVisualEditor(el, depth);
-    syncVisualEditorFromDom();
+    updateHtmlBySelection((selected, hasSelection) => {
+      const lines = getLinesForListFromHtmlSelection(selected, hasSelection, [
+        'Пункт 1',
+        'Пункт 2',
+      ]);
+      return { content: buildNumberedListHtml(lines) };
+    });
   };
+
+  const applyMultilevelContractList = () => {
+    if (editorMode === 'visual') {
+      const el = visualEditorRef.current;
+      if (!el) return;
+      el.focus();
+      restoreVisualSelection();
+      applyContractMultilevelListInVisualEditor(el);
+      setError(null);
+      syncVisualEditorFromDom();
+      return;
+    }
+    updateHtmlBySelection((selected, hasSelection) => {
+      const lines = getLinesForListFromHtmlSelection(selected, hasSelection, ['Текст пункта']);
+      const section = detectSectionForListHtml(visualEditorRef.current);
+      return { content: buildContractLegalListHtml(lines, section) };
+    });
+    setError(null);
+  };
+
+  const changeListLevel = (direction: 'indent' | 'outdent') => {
+    if (editorMode !== 'visual' || !visualEditorRef.current) return;
+    visualEditorRef.current.focus();
+    restoreVisualSelection();
+    if (changeContractLegalListLevel(visualEditorRef.current, direction)) {
+      syncVisualEditorFromDom();
+      setError(null);
+    } else {
+      setError(
+        'Смена уровня работает только внутри многоуровневого списка договора (1.1 / 1.1.1).'
+      );
+    }
+  };
+
+  const renderCleanupToolbar = () => (
+    <>
+      <FormatToolbarHelpTooltip
+        title={CLEANUP_TOOLTIP.normalizeSoft.title}
+        steps={CLEANUP_TOOLTIP.normalizeSoft.steps}
+        note={CLEANUP_TOOLTIP.normalizeSoft.note}
+        disabled={!isSuperAdmin}
+        onClick={() => normalizeTemplateText('soft')}
+      >
+        <FormatToolbarSvgIcon icon={SparklesIcon} />
+      </FormatToolbarHelpTooltip>
+      <FormatToolbarHelpTooltip
+        title={CLEANUP_TOOLTIP.normalizeStrict.title}
+        steps={CLEANUP_TOOLTIP.normalizeStrict.steps}
+        note={CLEANUP_TOOLTIP.normalizeStrict.note}
+        disabled={!isSuperAdmin}
+        wideGlyph
+        onClick={() => normalizeTemplateText('strict')}
+      >
+        <FormatToolbarGlyph>N+</FormatToolbarGlyph>
+      </FormatToolbarHelpTooltip>
+      <FormatToolbarHelpTooltip
+        title={CLEANUP_TOOLTIP.clearFormat.title}
+        steps={CLEANUP_TOOLTIP.clearFormat.steps}
+        note={CLEANUP_TOOLTIP.clearFormat.note}
+        disabled={!isSuperAdmin}
+        onClick={clearFormattingInSelection}
+      >
+        <FormatToolbarGlyph>Tx</FormatToolbarGlyph>
+      </FormatToolbarHelpTooltip>
+      <FormatToolbarHelpTooltip
+        title={CLEANUP_TOOLTIP.wordTypography.title}
+        steps={CLEANUP_TOOLTIP.wordTypography.steps}
+        note={CLEANUP_TOOLTIP.wordTypography.note}
+        disabled={!isSuperAdmin}
+        onClick={normalizeContractTypographyInEditor}
+      >
+        <FormatToolbarGlyph>Tt</FormatToolbarGlyph>
+      </FormatToolbarHelpTooltip>
+    </>
+  );
+
+  const renderTableStructureToolbar = () => (
+    <span className={styles.formatToolbarTableGroup}>
+      <FormatToolbarHelpTooltip
+        title={INSERT_BLOCK_TOOLTIP.tableAddRow.title}
+        steps={INSERT_BLOCK_TOOLTIP.tableAddRow.steps}
+        note={INSERT_BLOCK_TOOLTIP.tableAddRow.note}
+        disabled={!isSuperAdmin || !tableEditActive}
+        onClick={handleAddTableRow}
+      >
+        <FormatToolbarGlyph>+стр</FormatToolbarGlyph>
+      </FormatToolbarHelpTooltip>
+      <FormatToolbarHelpTooltip
+        title={INSERT_BLOCK_TOOLTIP.tableAddColumn.title}
+        steps={INSERT_BLOCK_TOOLTIP.tableAddColumn.steps}
+        note={INSERT_BLOCK_TOOLTIP.tableAddColumn.note}
+        disabled={!isSuperAdmin || !tableEditActive}
+        onClick={handleAddTableColumn}
+      >
+        <FormatToolbarGlyph>+стб</FormatToolbarGlyph>
+      </FormatToolbarHelpTooltip>
+    </span>
+  );
+
+  const renderListToolbar = () => (
+    <>
+      <span className={styles.formatToolbarListGroup}>
+        <select
+          className={styles.formatToolbarListMarkerSelect}
+          value={bulletMarker}
+          disabled={!isSuperAdmin}
+          aria-label="Вид маркера маркированного списка"
+          title="Вид маркера"
+          onChange={(e) => setBulletMarker(e.target.value as BulletMarkerId)}
+        >
+          {BULLET_MARKER_OPTIONS.map((option) => (
+            <option key={option.id} value={option.id} title={option.title}>
+              {option.glyph}
+            </option>
+          ))}
+        </select>
+        <FormatToolbarHelpTooltip
+          title={LIST_TOOLTIP.bullet.title}
+          steps={LIST_TOOLTIP.bullet.steps}
+          note={LIST_TOOLTIP.bullet.note}
+          disabled={!isSuperAdmin}
+          onClick={applyBulletedList}
+        >
+          <FormatToolbarSvgIcon icon={ListBulletIcon} />
+        </FormatToolbarHelpTooltip>
+      </span>
+      <FormatToolbarHelpTooltip
+        title={LIST_TOOLTIP.numbered.title}
+        steps={LIST_TOOLTIP.numbered.steps}
+        note={LIST_TOOLTIP.numbered.note}
+        disabled={!isSuperAdmin}
+        onClick={applyNumberedList}
+      >
+        <FormatToolbarSvgIcon icon={NumberedListIcon} />
+      </FormatToolbarHelpTooltip>
+      <FormatToolbarHelpTooltip
+        title={LIST_TOOLTIP.multilevel.title}
+        steps={LIST_TOOLTIP.multilevel.steps}
+        note={LIST_TOOLTIP.multilevel.note}
+        disabled={!isSuperAdmin}
+        onClick={applyMultilevelContractList}
+      >
+        <FormatToolbarGlyph>1.1</FormatToolbarGlyph>
+      </FormatToolbarHelpTooltip>
+      <FormatToolbarHelpTooltip
+        title={LIST_TOOLTIP.outdent.title}
+        steps={LIST_TOOLTIP.outdent.steps}
+        note={LIST_TOOLTIP.outdent.note}
+        disabled={!isSuperAdmin}
+        onClick={() => changeListLevel('outdent')}
+      >
+        <FormatToolbarGlyph>⇤</FormatToolbarGlyph>
+      </FormatToolbarHelpTooltip>
+      <FormatToolbarHelpTooltip
+        title={LIST_TOOLTIP.indent.title}
+        steps={LIST_TOOLTIP.indent.steps}
+        note={LIST_TOOLTIP.indent.note}
+        disabled={!isSuperAdmin}
+        onClick={() => changeListLevel('indent')}
+      >
+        <FormatToolbarGlyph>⇥</FormatToolbarGlyph>
+      </FormatToolbarHelpTooltip>
+    </>
+  );
 
   const handleVisualEditorKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (editorMode !== 'visual' || !isSuperAdmin) return;
@@ -2518,18 +3567,160 @@ export function ContractDocumentsTemplatesLibraryPage() {
         '<hr style="border: 0; border-top: 1px solid var(--admin-border-strong); margin: 12pt 0;" />',
     }));
   const insertPageBreak = () =>
-    updateHtmlBySelection(() => ({ content: '<div style="page-break-after: always;"></div>' }));
+    updateHtmlBySelection(() => ({ content: buildContractTemplatePageBreakHtml() }));
   const clearFormattingInSelection = () => {
-    updateHtmlBySelection((selected, hasSelection) => {
-      const source = (hasSelection ? selected : html).trim();
-      const cleaned = source.replace(/<[^>]+>/g, '').trim();
-      return { content: cleaned || 'текст' };
+    if (editorMode === 'visual') {
+      const el = visualEditorRef.current;
+      if (!el) return;
+      el.focus();
+      restoreVisualSelection();
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      const range = sel.getRangeAt(0);
+      if (range.collapsed || !el.contains(range.commonAncestorContainer)) {
+        setError('Выделите фрагмент текста, с которого нужно снять форматирование.');
+        return;
+      }
+      document.execCommand('removeFormat');
+      document.execCommand('unlink');
+      const next = el.innerHTML;
+      setVisualDraftHtml(next);
+      setHtml(next);
+      pushTemplateHistory(next);
+      captureVisualSelection();
+      setError(null);
+      setOk('Форматирование снято с выделенного фрагмента.');
+      return;
+    }
+
+    const el = htmlTextareaRef.current;
+    if (!el) return;
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? start;
+    if (start === end) {
+      setError('Выделите фрагмент в HTML, с которого нужно снять форматирование.');
+      return;
+    }
+    const selected = html.slice(start, end);
+    const cleaned = selected.replace(/<[^>]+>/g, '').trim();
+    const next = html.slice(0, start) + (cleaned || 'текст') + html.slice(end);
+    setHtml(next);
+    setError(null);
+    setOk('Форматирование снято с выделенного фрагмента.');
+    window.requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start, start + (cleaned || 'текст').length);
     });
   };
-  const uppercaseSelection = () =>
-    updateHtmlBySelection((selected, hasSelection) => ({
-      content: (hasSelection ? selected : 'ТЕКСТ').toUpperCase(),
-    }));
+  const toggleUppercaseSelection = () => {
+    if (editorMode === 'visual') {
+      const el = visualEditorRef.current;
+      if (!el) return;
+      el.focus();
+      restoreVisualSelection();
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      const range = sel.getRangeAt(0);
+      if (range.collapsed || !el.contains(range.commonAncestorContainer)) return;
+      const text = range.toString();
+      if (!selectionHasLetters(text)) return;
+      const mode = isSelectionAllUppercaseLetters(text) ? 'lower' : 'upper';
+      const nextText = applyCaseToPlainText(text, mode);
+      range.deleteContents();
+      const textNode = document.createTextNode(nextText);
+      range.insertNode(textNode);
+      const nextRange = document.createRange();
+      nextRange.selectNodeContents(textNode);
+      sel.removeAllRanges();
+      sel.addRange(nextRange);
+      visualSelectionRangeRef.current = nextRange.cloneRange();
+      const next = el.innerHTML;
+      setVisualDraftHtml(next);
+      setHtml(next);
+      pushTemplateHistory(next);
+      return;
+    }
+
+    const el = htmlTextareaRef.current;
+    if (!el) return;
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? start;
+    if (start === end) return;
+    const selected = html.slice(start, end);
+    const plainForCheck = selectionPlainTextForCaseCheck(selected);
+    if (!selectionHasLetters(plainForCheck)) return;
+    const mode = isSelectionAllUppercaseLetters(plainForCheck) ? 'lower' : 'upper';
+    const next = applyCaseToHtmlFragment(selected, mode);
+    const updated = html.slice(0, start) + next + html.slice(end);
+    setHtml(updated);
+    window.requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start, start + next.length);
+    });
+  };
+  const contractSpacingToggleMessage = (result: {
+    dense: boolean;
+    blockCount: number;
+    scope: 'document' | 'selection';
+  }): string => {
+    const action = result.dense ? 'Уплотнены' : 'Увеличены';
+    if (result.scope === 'selection' && result.blockCount > 0) {
+      return `${action} интервалы в ${result.blockCount} абзац(ах) выделения. Повторный клик — обратно.`;
+    }
+    return `${action} интервалы во всём договоре. Повторный клик — обратно.`;
+  };
+
+  const applyCompactContractSpacing = () => {
+    if (!isSuperAdmin) return;
+    ensureTemplateDraftForEditing();
+
+    if (editorMode === 'visual') {
+      const el = visualEditorRef.current;
+      if (!el) return;
+      el.focus();
+      restoreVisualSelection();
+      const sel = window.getSelection();
+      const range =
+        sel && sel.rangeCount > 0 && el.contains(sel.getRangeAt(0).commonAncestorContainer)
+          ? sel.getRangeAt(0)
+          : null;
+      const hasTextSelection = Boolean(range && !range.collapsed);
+
+      syncVisualEditorFromDom();
+      const result = hasTextSelection
+        ? toggleContractSpacingOnBlockElements(collectVisualBlocksInRange(el, range!), el.innerHTML)
+        : toggleContractParagraphSpacingInVisualDocument(el);
+
+      pushTemplateHistory(el.innerHTML);
+      setOk(contractSpacingToggleMessage(result));
+      return;
+    }
+
+    const textarea = htmlTextareaRef.current;
+    const start = textarea?.selectionStart ?? 0;
+    const end = textarea?.selectionEnd ?? start;
+    const hasTextSelection = start !== end;
+
+    if (hasTextSelection) {
+      const toggled = toggleContractParagraphSpacingInHtmlRange(html, start, end);
+      setHtml(toggled.html);
+      setVisualDraftHtml(toggled.html);
+      pushTemplateHistory(toggled.html);
+      window.requestAnimationFrame(() => {
+        textarea?.focus();
+        textarea?.setSelectionRange(start, end);
+      });
+      setOk(contractSpacingToggleMessage(toggled));
+      return;
+    }
+
+    const whole = toggleContractParagraphSpacingInHtmlWhole(html);
+    setHtml(whole.html);
+    setVisualDraftHtml(whole.html);
+    pushTemplateHistory(whole.html);
+    setOk(contractSpacingToggleMessage(whole));
+  };
+
   const wrapParagraphWithSpacing = (lineHeight: number, marginBottomPt: number) => {
     if (editorMode === 'visual') {
       const el = visualEditorRef.current;
@@ -2546,22 +3737,8 @@ export function ContractDocumentsTemplatesLibraryPage() {
       'Абзац'
     );
   };
-  const wrapParagraphWithIndentCm = (indentCm: number) => {
-    wrapSelection(
-      `<p style="text-align: justify; text-indent: ${indentCm}cm; margin: 0 0 8pt;">`,
-      '</p>',
-      'Абзац'
-    );
-  };
+  const wrapParagraphWithIndentCm = (indentCm: number) => applyParagraphIndentCm(indentCm);
 
-  const insertSectionTemplate = () =>
-    updateHtmlBySelection(() => ({
-      content: `<h2 style="text-align: center; margin: 14pt 0 8pt;">N. НАЗВАНИЕ РАЗДЕЛА</h2>
-<ol class="contractLegalList" data-section="N">
-  <li data-section="N">Первый пункт раздела</li>
-  <li data-section="N">Второй пункт раздела</li>
-</ol>`,
-    }));
   const insertSignatureLines = () =>
     updateHtmlBySelection(() => ({
       content: `<table style="width: 100%; border-collapse: collapse; margin-top: 16pt;">
@@ -2577,7 +3754,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     }));
   const insertRequisitesTemplate = () =>
     updateHtmlBySelection(() => ({
-      content: buildRepairContractRequisitesInsertHtml(),
+      content: buildRepairContractRequisitesInsertHtmlForToolbar(),
     }));
   const insertQuoteBlock = () =>
     updateHtmlBySelection(() => ({
@@ -2585,53 +3762,174 @@ export function ContractDocumentsTemplatesLibraryPage() {
   <p style="margin: 0; font-style: italic;">Текст примечания / важного условия.</p>
 </blockquote>`,
     }));
-  const insertEmptySpacer = () =>
-    updateHtmlBySelection(() => ({ content: '<div style="height: 10pt;"></div>' }));
-  const insertTwoColumnsBlock = () =>
+  const insertSimpleTable = () => {
     updateHtmlBySelection(() => ({
-      content: `<table style="width: 100%; border-collapse: collapse; margin-top: 8pt;">
-  <tr>
-    <td style="width: 50%; vertical-align: top; padding: 8px 10px 8px 0; border-right: 1px solid var(--admin-border-strong);">
-      <p style="text-align: center; font-weight: bold; margin: 0 0 8pt;">ЛЕВАЯ КОЛОНКА</p>
-      <p style="margin: 0 0 6pt;">{{customer.requisitesHtml|plain}}</p>
-      <p style="margin: 0;">___________________ / {{customer.signatureName|plain}}</p>
-    </td>
-    <td style="width: 50%; vertical-align: top; padding: 8px 0 8px 10px;">
-      <p style="text-align: center; font-weight: bold; margin: 0 0 8pt;">ПРАВАЯ КОЛОНКА</p>
-      <p style="margin: 0 0 6pt;">{{executor.companyName}}</p>
-      <p style="margin: 0;">___________________ / подпись</p>
-    </td>
-  </tr>
-</table>`,
+      content: buildSimpleContractTableHtml(),
     }));
-  const insertSimpleTable = () =>
-    updateHtmlBySelection(() => ({
-      content:
-        '<table style="width: 100%; border-collapse: collapse; margin: 8pt 0;"><tr><th style="border: 1px solid var(--admin-border); padding: 6px; text-align: left;">Пункт</th><th style="border: 1px solid var(--admin-border); padding: 6px; text-align: left;">Содержание</th></tr><tr><td style="border: 1px solid var(--admin-border); padding: 6px;">1</td><td style="border: 1px solid var(--admin-border); padding: 6px;">Описание</td></tr></table>',
-    }));
-  const handleVisualUndo = () => {
-    if (!isSuperAdmin || editorMode !== 'visual') return;
-    if (visualHistoryIndexRef.current <= 0) return;
-    const nextIndex = visualHistoryIndexRef.current - 1;
-    const snapshot = visualHistoryRef.current[nextIndex] ?? '';
-    visualHistoryIndexRef.current = nextIndex;
-    setVisualHistoryIndex(nextIndex);
-    applyVisualSnapshot(snapshot);
+    if (editorMode === 'visual') {
+      window.requestAnimationFrame(() => {
+        const editor = visualEditorRef.current;
+        if (!editor) return;
+        const cell = editor.querySelector('table td, table th');
+        if (cell instanceof HTMLTableCellElement) {
+          focusTableCell(editor, cell);
+          captureVisualSelection();
+        }
+      });
+    }
   };
-  const handleVisualRedo = () => {
-    if (!isSuperAdmin || editorMode !== 'visual') return;
+
+  const handleAddTableRow = () => {
+    if (!isSuperAdmin) return;
+    if (editorMode === 'visual') {
+      const editor = visualEditorRef.current;
+      if (!editor) return;
+      editor.focus();
+      restoreVisualSelection();
+      const cell = findTableCellInEditor(editor, window.getSelection());
+      if (!cell) {
+        setError('Поставьте курсор в ячейку таблицы, затем нажмите «+стр».');
+        return;
+      }
+      const nextCell = addTableRowBelowCell(cell);
+      focusTableCell(editor, nextCell);
+      syncVisualEditorFromDom();
+      setError(null);
+      return;
+    }
+    const textarea = htmlTextareaRef.current;
+    if (!textarea) return;
+    const cursor = textarea.selectionStart ?? 0;
+    const next = addTableRowInHtml(html, cursor);
+    if (!next) {
+      setError('Поставьте курсор внутрь таблицы (<table>…</table>), затем нажмите «+стр».');
+      return;
+    }
+    setHtml(next);
+    setError(null);
+    window.requestAnimationFrame(() => {
+      textarea.focus();
+      textarea.setSelectionRange(cursor, cursor);
+      refreshInlineFormatActiveState();
+    });
+  };
+
+  const handleAddTableColumn = () => {
+    if (!isSuperAdmin) return;
+    if (editorMode === 'visual') {
+      const editor = visualEditorRef.current;
+      if (!editor) return;
+      editor.focus();
+      restoreVisualSelection();
+      const cell = findTableCellInEditor(editor, window.getSelection());
+      if (!cell) {
+        setError('Поставьте курсор в ячейку таблицы, затем нажмите «+стб».');
+        return;
+      }
+      const nextCell = addTableColumnAfterCell(cell);
+      focusTableCell(editor, nextCell);
+      syncVisualEditorFromDom();
+      setError(null);
+      return;
+    }
+    const textarea = htmlTextareaRef.current;
+    if (!textarea) return;
+    const cursor = textarea.selectionStart ?? 0;
+    const next = addTableColumnInHtml(html, cursor);
+    if (!next) {
+      setError('Поставьте курсор внутрь таблицы (<table>…</table>), затем нажмите «+стб».');
+      return;
+    }
+    setHtml(next);
+    setError(null);
+    window.requestAnimationFrame(() => {
+      textarea.focus();
+      textarea.setSelectionRange(cursor, cursor);
+      refreshInlineFormatActiveState();
+    });
+  };
+  const templateHistoryCanUndo = templateHistoryIndex > 0;
+  const templateHistoryCanRedo =
+    templateHistoryIndex >= 0 && templateHistoryIndex < templateHistory.length - 1;
+
+  const handleTemplateUndo = useCallback(() => {
+    if (!isSuperAdmin) return;
+    if (templateHistoryIndexRef.current <= 0) return;
+    const nextIndex = templateHistoryIndexRef.current - 1;
+    const snapshot = templateHistoryRef.current[nextIndex] ?? '';
+    templateHistoryIndexRef.current = nextIndex;
+    setTemplateHistoryIndex(nextIndex);
+    applyTemplateHistorySnapshot(snapshot);
+  }, [applyTemplateHistorySnapshot, isSuperAdmin]);
+
+  const handleTemplateRedo = useCallback(() => {
+    if (!isSuperAdmin) return;
     if (
-      visualHistoryIndexRef.current < 0 ||
-      visualHistoryIndexRef.current >= visualHistoryRef.current.length - 1
+      templateHistoryIndexRef.current < 0 ||
+      templateHistoryIndexRef.current >= templateHistoryRef.current.length - 1
     ) {
       return;
     }
-    const nextIndex = visualHistoryIndexRef.current + 1;
-    const snapshot = visualHistoryRef.current[nextIndex] ?? '';
-    visualHistoryIndexRef.current = nextIndex;
-    setVisualHistoryIndex(nextIndex);
-    applyVisualSnapshot(snapshot);
-  };
+    const nextIndex = templateHistoryIndexRef.current + 1;
+    const snapshot = templateHistoryRef.current[nextIndex] ?? '';
+    templateHistoryIndexRef.current = nextIndex;
+    setTemplateHistoryIndex(nextIndex);
+    applyTemplateHistorySnapshot(snapshot);
+  }, [applyTemplateHistorySnapshot, isSuperAdmin]);
+
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      const target = e.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable || target.tagName === 'TEXTAREA' || target.tagName === 'INPUT')
+      ) {
+        // handled in editors; still allow undo for template when focus in our editors
+      }
+      if (e.key === 'z' && !e.shiftKey) {
+        if (templateHistoryIndexRef.current <= 0) return;
+        e.preventDefault();
+        handleTemplateUndo();
+      } else if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) {
+        if (templateHistoryIndexRef.current >= templateHistoryRef.current.length - 1) return;
+        e.preventDefault();
+        handleTemplateRedo();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleTemplateRedo, handleTemplateUndo, isSuperAdmin]);
+
+  const commitVisualZoomDraft = useCallback(() => {
+    const raw = (visualZoomDraft ?? '').trim();
+    setVisualZoomDraft(null);
+    if (!raw) return;
+    const n = Number.parseInt(raw, 10);
+    if (!Number.isFinite(n)) return;
+    setVisualZoomPct(clampTemplateEditorZoomPct(n));
+  }, [visualZoomDraft]);
+
+  const stepVisualZoom = useCallback((delta: number) => {
+    setVisualZoomDraft(null);
+    setVisualZoomPct((prev) => clampTemplateEditorZoomPct(prev + delta));
+  }, []);
+
+  const commitPreviewZoomDraft = useCallback(() => {
+    const raw = (previewZoomDraft ?? '').trim();
+    setPreviewZoomDraft(null);
+    if (!raw) return;
+    const n = Number.parseInt(raw, 10);
+    if (!Number.isFinite(n)) return;
+    setPreviewZoomPct(clampTemplateEditorZoomPct(n));
+  }, [previewZoomDraft]);
+
+  const stepPreviewZoom = useCallback((delta: number) => {
+    setPreviewZoomDraft(null);
+    setPreviewZoomPct((prev) => clampTemplateEditorZoomPct(prev + delta));
+  }, []);
+
   const normalizeContractTypographyInEditor = () => {
     const source =
       editorMode === 'visual' ? (visualEditorRef.current?.innerHTML ?? visualDraftHtml) : html;
@@ -2645,7 +3943,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     if (visualEditorRef.current) {
       visualEditorRef.current.innerHTML = next;
     }
-    pushVisualHistory(next);
+    pushTemplateHistory(next);
     setOk(
       'Шрифты приведены к стандарту договора: убраны стили Word, единый кегль в предпросмотре и печати.'
     );
@@ -2667,7 +3965,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     const next = el.innerHTML;
     setVisualDraftHtml(next);
     setHtml(next);
-    pushVisualHistory(next);
+    pushTemplateHistory(next);
     captureVisualSelection();
     window.requestAnimationFrame(() => refreshInlineFormatActiveState());
   };
@@ -2684,7 +3982,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     if (visualEditorRef.current) {
       visualEditorRef.current.innerHTML = next;
     }
-    pushVisualHistory(next);
+    pushTemplateHistory(next);
     setOk(
       mode === 'strict'
         ? 'Выполнена строгая нормализация: очищены пробелы, пустые строки и выровнены абзацы.'
@@ -2698,52 +3996,66 @@ export function ContractDocumentsTemplatesLibraryPage() {
       title: 'Заголовок H1',
       icon: <FormatToolbarGlyph>H1</FormatToolbarGlyph>,
       onClick: () => wrapAsHeading(1),
+      isActive: headingLevelActive === 1,
+      ariaPressed: headingLevelActive === 1,
     },
     {
       id: 'h2',
       title: 'Заголовок H2',
       icon: <FormatToolbarGlyph>H2</FormatToolbarGlyph>,
       onClick: () => wrapAsHeading(2),
+      isActive: headingLevelActive === 2,
+      ariaPressed: headingLevelActive === 2,
     },
     {
       id: 'h3',
       title: 'Заголовок H3',
       icon: <FormatToolbarGlyph>H3</FormatToolbarGlyph>,
       onClick: () => wrapAsHeading(3),
+      isActive: headingLevelActive === 3,
+      ariaPressed: headingLevelActive === 3,
     },
     {
       id: 'align-left',
       title: 'Выравнивание по левому краю',
-      icon: <FormatToolbarSvgIcon icon={Bars3BottomLeftIcon} />,
+      icon: <FormatToolbarTextAlignIcon kind="left" />,
       onClick: () => wrapParagraphWithAlign('left'),
+      isActive: paragraphAlignActive === 'left',
+      ariaPressed: paragraphAlignActive === 'left',
     },
     {
       id: 'align-center',
       title: 'Выравнивание по центру',
-      icon: <FormatToolbarSvgIcon icon={Bars3Icon} />,
+      icon: <FormatToolbarTextAlignIcon kind="center" />,
       onClick: () => wrapParagraphWithAlign('center'),
+      isActive: paragraphAlignActive === 'center',
+      ariaPressed: paragraphAlignActive === 'center',
     },
     {
       id: 'align-right',
       title: 'Выравнивание по правому краю',
-      icon: <FormatToolbarSvgIcon icon={Bars3BottomRightIcon} />,
+      icon: <FormatToolbarTextAlignIcon kind="right" />,
       onClick: () => wrapParagraphWithAlign('right'),
+      isActive: paragraphAlignActive === 'right',
+      ariaPressed: paragraphAlignActive === 'right',
     },
     {
       id: 'align-justify',
       title: 'Выравнивание по ширине',
-      icon: <FormatToolbarSvgIcon icon={Bars4Icon} />,
+      icon: <FormatToolbarTextAlignIcon kind="justify" />,
       onClick: () => wrapParagraphWithAlign('justify'),
+      isActive: paragraphAlignActive === 'justify',
+      ariaPressed: paragraphAlignActive === 'justify',
     },
     {
       id: 'paragraph-indent',
-      title: 'Абзац с отступом первой строки',
+      title: 'Красная строка 1,25 см для текущего абзаца (не создаёт новый)',
       icon: <FormatToolbarGlyph>¶</FormatToolbarGlyph>,
       onClick: wrapParagraphWithIndent,
     },
     {
       id: 'indent-none',
-      title: 'Абзац без отступа первой строки',
+      title: 'Убрать отступ первой строки у текущего абзаца',
       icon: <FormatToolbarGlyph>⇤</FormatToolbarGlyph>,
       onClick: () => wrapParagraphWithIndentCm(0),
     },
@@ -2754,58 +4066,32 @@ export function ContractDocumentsTemplatesLibraryPage() {
       onClick: () => wrapParagraphWithIndentCm(1.25),
     },
     {
-      id: 'clause-1-1',
-      title:
-        'Пункт 1.1 / 1.2 (список договора): номер раздела из заголовка H2, Enter — следующий пункт',
-      icon: <FormatToolbarGlyph>1.1</FormatToolbarGlyph>,
-      wideGlyph: true,
-      onClick: () => applyContractClauseListLevel(1),
-    },
-    {
-      id: 'clause-1-1-1',
-      title:
-        'Подпункт 1.1.1 (вложенный список): Tab — вложить, Shift+Tab — вынести, Enter — новый подпункт',
-      icon: <FormatToolbarGlyph>1.1.1</FormatToolbarGlyph>,
-      wideGlyph: true,
-      onClick: () => applyContractClauseListLevel(2),
-    },
-    {
-      id: 'list-outdent',
-      title: 'Уменьшить уровень списка (Shift+Tab)',
-      icon: <FormatToolbarGlyph>⇤</FormatToolbarGlyph>,
-      onClick: () => {
-        if (editorMode !== 'visual' || !visualEditorRef.current) return;
-        visualEditorRef.current.focus();
-        restoreVisualSelection();
-        if (changeContractLegalListLevel(visualEditorRef.current, 'outdent')) {
-          syncVisualEditorFromDom();
-        }
-      },
-    },
-    {
-      id: 'list-indent',
-      title: 'Увеличить уровень списка (Tab)',
-      icon: <FormatToolbarGlyph>⇥</FormatToolbarGlyph>,
-      onClick: () => {
-        if (editorMode !== 'visual' || !visualEditorRef.current) return;
-        visualEditorRef.current.focus();
-        restoreVisualSelection();
-        if (changeContractLegalListLevel(visualEditorRef.current, 'indent')) {
-          syncVisualEditorFromDom();
-        }
-      },
-    },
-    {
       id: 'spacing-tight',
-      title: 'Узкий межстрочный интервал',
+      title: 'Узкий межстрочный интервал (выделенный абзац)',
       icon: <FormatToolbarGlyph>↕</FormatToolbarGlyph>,
       onClick: () => wrapParagraphWithSpacing(1.3, 6),
     },
     {
       id: 'spacing-wide',
-      title: 'Широкий межстрочный интервал',
+      title: 'Широкий межстрочный интервал (выделенный абзац)',
       icon: <FormatToolbarGlyph>⇕</FormatToolbarGlyph>,
       onClick: () => wrapParagraphWithSpacing(1.6, 10),
+    },
+    {
+      id: 'spacing-contract-dense',
+      title:
+        'Уплотнить / разредить договор (≡): весь договор без выделения; с выделением — только выбранные абзацы. Повторный клик — обратно',
+      icon: <FormatToolbarGlyph>≡</FormatToolbarGlyph>,
+      onClick: applyCompactContractSpacing,
+      help: {
+        title: 'Интервалы между абзацами',
+        steps: [
+          'Без выделения: переключает весь договор (уплотнить ↔ обычные отступы).',
+          'С выделенным текстом: только затронутые абзацы и заголовки разделов.',
+          'Повторный клик по ≡ возвращает прежние отступы (≈6pt между абзацами).',
+        ],
+        note: 'Сохраните шаблон и проверьте печать. Для одного абзаца можно выделить его и нажать ≡.',
+      },
     },
     {
       id: 'bold',
@@ -2833,51 +4119,9 @@ export function ContractDocumentsTemplatesLibraryPage() {
     },
     {
       id: 'uppercase',
-      title: 'ВЕРХНИЙ РЕГИСТР',
+      title: 'Верхний регистр (повторный клик — нижний регистр)',
       icon: <FormatToolbarGlyph>AA</FormatToolbarGlyph>,
-      onClick: uppercaseSelection,
-    },
-    {
-      id: 'clear-format',
-      title: 'Очистить форматирование выделения',
-      icon: <FormatToolbarGlyph>Tx</FormatToolbarGlyph>,
-      onClick: clearFormattingInSelection,
-    },
-    {
-      id: 'normalize-typography',
-      title: 'Шрифты договора: убрать стили Word, единый кегль (10pt) и семейство как при печати',
-      icon: <FormatToolbarGlyph>Tt</FormatToolbarGlyph>,
-      onClick: normalizeContractTypographyInEditor,
-    },
-    {
-      id: 'list-ul',
-      title: 'Маркированный список',
-      icon: <FormatToolbarSvgIcon icon={ListBulletIcon} />,
-      onClick: () => wrapAsList(false),
-    },
-    {
-      id: 'list-ol',
-      title: 'Список пунктов договора (1.1, 1.2…) — номер раздела берётся из H2 выше',
-      icon: <FormatToolbarSvgIcon icon={NumberedListIcon} />,
-      onClick: () => wrapAsList(true),
-    },
-    {
-      id: 'normalize-soft',
-      title: 'Нормализовать (мягко): убрать лишние пробелы и пустые строки',
-      icon: <FormatToolbarSvgIcon icon={SparklesIcon} />,
-      onClick: () => normalizeTemplateText('soft'),
-    },
-    {
-      id: 'normalize-strict',
-      title: 'Нормализовать (строго): пробелы, пустые строки и выравнивание абзацев',
-      icon: <FormatToolbarGlyph>N+</FormatToolbarGlyph>,
-      onClick: () => normalizeTemplateText('strict'),
-    },
-    {
-      id: 'columns-2',
-      title: 'Блок из двух колонок',
-      icon: <FormatToolbarSvgIcon icon={Square2StackIcon} />,
-      onClick: insertTwoColumnsBlock,
+      onClick: toggleUppercaseSelection,
     },
     {
       id: 'signatures',
@@ -2892,28 +4136,18 @@ export function ContractDocumentsTemplatesLibraryPage() {
       onClick: insertRequisitesTemplate,
     },
     {
-      id: 'section-template',
-      title: 'Шаблон раздела',
-      icon: <FormatToolbarSvgIcon icon={DocumentPlusIcon} />,
-      onClick: insertSectionTemplate,
-    },
-    {
       id: 'quote',
-      title: 'Цитата / примечание',
+      title: INSERT_BLOCK_TOOLTIP.noteBlock.title,
       icon: <FormatToolbarSvgIcon icon={ChatBubbleBottomCenterTextIcon} />,
       onClick: insertQuoteBlock,
+      help: INSERT_BLOCK_TOOLTIP.noteBlock,
     },
     {
       id: 'table-2x2',
-      title: 'Таблица 2×2',
+      title: INSERT_BLOCK_TOOLTIP.tableSimple.title,
       icon: <FormatToolbarSvgIcon icon={TableCellsIcon} />,
       onClick: insertSimpleTable,
-    },
-    {
-      id: 'spacer',
-      title: 'Пустая строка (отступ)',
-      icon: <FormatToolbarGlyph>⏎</FormatToolbarGlyph>,
-      onClick: insertEmptySpacer,
+      help: INSERT_BLOCK_TOOLTIP.tableSimple,
     },
     {
       id: 'hr',
@@ -2923,9 +4157,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
     },
     {
       id: 'page-break',
-      title: 'Разрыв страницы',
+      title: INSERT_BLOCK_TOOLTIP.pageBreak.title,
       icon: <FormatToolbarSvgIcon icon={ArrowsPointingOutIcon} />,
       onClick: insertPageBreak,
+      help: INSERT_BLOCK_TOOLTIP.pageBreak,
     },
   ];
 
@@ -3019,6 +4254,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
           <div className={styles.templatesLibraryHeaderButtons}>
             {isSuperAdmin ? (
               <div
+                ref={createTemplateHelpWrapRef}
                 className={styles.templatesLibraryAddButtonWithTooltip}
                 onMouseEnter={showCreateTemplateHelp}
                 onMouseLeave={hideCreateTemplateHelpWithDelay}
@@ -3038,30 +4274,41 @@ export function ContractDocumentsTemplatesLibraryPage() {
                 >
                   + Новый шаблон
                 </button>
-                {createTemplateHelpOpen && !showArchivedTemplates ? (
-                  <div
-                    id="templates-library-create-help"
-                    role="tooltip"
-                    className={styles.templatesLibraryCreateTemplateTooltip}
-                    onMouseEnter={showCreateTemplateHelp}
-                    onMouseLeave={hideCreateTemplateHelpWithDelay}
-                  >
-                    <strong>Как создать шаблон</strong>
-                    <ol>
-                      <li>Выберите направление и тип документа.</li>
-                      <li>Нажмите «+ Новый шаблон».</li>
-                      <li>При необходимости переименуйте шаблон у заголовка.</li>
-                      <li>Заполните шаблон (HTML или Визуальный конструктор).</li>
-                      <li>Нажмите «Сохранить» для первичного создания.</li>
-                      <li>Дальше изменения сохраняются автоматически.</li>
-                    </ol>
-                    <p>
-                      Сейчас будет создан пустой шаблон для «
-                      {REPAIR_LIBRARY_TEMPLATE_TAB_LABELS[activeTemplateTab]}», направление «
-                      {templateLibraryKindLabel(activeLibraryKind)}».
-                    </p>
-                  </div>
-                ) : null}
+                {createTemplateHelpOpen &&
+                !showArchivedTemplates &&
+                createTemplateTooltipPos &&
+                createTemplateHelpPortalReady &&
+                typeof document !== 'undefined'
+                  ? createPortal(
+                      <div
+                        id="templates-library-create-help"
+                        role="tooltip"
+                        className={`${styles.formatToolbarHelpTooltip} ${styles.formatToolbarHelpTooltipAlignEnd}`}
+                        style={{
+                          top: createTemplateTooltipPos.top,
+                          left: createTemplateTooltipPos.left,
+                        }}
+                        onMouseEnter={showCreateTemplateHelp}
+                        onMouseLeave={hideCreateTemplateHelpWithDelay}
+                      >
+                        <strong>Как создать шаблон</strong>
+                        <ol>
+                          <li>Выберите направление и тип документа.</li>
+                          <li>Нажмите «+ Новый шаблон».</li>
+                          <li>При необходимости переименуйте шаблон у заголовка.</li>
+                          <li>Заполните шаблон (HTML или Визуальный конструктор).</li>
+                          <li>Нажмите «Сохранить» для первичного создания.</li>
+                          <li>Дальше изменения сохраняются автоматически.</li>
+                        </ol>
+                        <p>
+                          Сейчас будет создан пустой шаблон для «
+                          {REPAIR_LIBRARY_TEMPLATE_TAB_LABELS[activeTemplateTab]}», направление «
+                          {templateLibraryKindLabel(activeLibraryKind)}».
+                        </p>
+                      </div>,
+                      document.body
+                    )
+                  : null}
               </div>
             ) : null}
             {isSuperAdmin ? (
@@ -3328,6 +4575,96 @@ export function ContractDocumentsTemplatesLibraryPage() {
           aria-label="Инструменты форматирования"
         >
           {formatTools.map((tool) => {
+            if (tool.id === 'spacing-contract-dense' && activeTemplateTab !== 'contract') {
+              return null;
+            }
+            if (tool.id === 'spacing-contract-dense' && tool.help) {
+              return (
+                <FormatToolbarHelpTooltip
+                  key={tool.id}
+                  title={tool.help.title}
+                  steps={tool.help.steps}
+                  note={tool.help.note}
+                  disabled={!isSuperAdmin}
+                  onClick={tool.onClick}
+                >
+                  {tool.icon}
+                </FormatToolbarHelpTooltip>
+              );
+            }
+            if (tool.id === 'signatures') {
+              return (
+                <Fragment key="cleanup-and-insert-toolbar">
+                  {renderCleanupToolbar()}
+                  <button
+                    key="signatures"
+                    type="button"
+                    className={`${styles.formatBtn} ${tool.isActive ? styles.formatBtnActive : ''}`}
+                    title={tool.title}
+                    aria-label={tool.title}
+                    aria-pressed={tool.ariaPressed}
+                    onClick={tool.onClick}
+                    onMouseDown={(e) => e.preventDefault()}
+                    disabled={!isSuperAdmin}
+                  >
+                    {tool.icon}
+                  </button>
+                </Fragment>
+              );
+            }
+            if (tool.id === 'spacing-tight') {
+              return (
+                <Fragment key="list-toolbar">
+                  {renderListToolbar()}
+                  <button
+                    key={tool.id}
+                    type="button"
+                    className={`${styles.formatBtn} ${tool.isActive ? styles.formatBtnActive : ''}`}
+                    title={tool.title}
+                    aria-label={tool.title}
+                    aria-pressed={tool.ariaPressed}
+                    onClick={tool.onClick}
+                    onMouseDown={(e) => e.preventDefault()}
+                    disabled={!isSuperAdmin}
+                  >
+                    {tool.icon}
+                  </button>
+                </Fragment>
+              );
+            }
+            if (tool.id === 'table-2x2' && tool.help) {
+              return (
+                <Fragment key="table-toolbar">
+                  <FormatToolbarHelpTooltip
+                    title={tool.help.title}
+                    steps={tool.help.steps}
+                    note={tool.help.note}
+                    disabled={!isSuperAdmin}
+                    onClick={tool.onClick}
+                  >
+                    {tool.icon}
+                  </FormatToolbarHelpTooltip>
+                  {renderTableStructureToolbar()}
+                </Fragment>
+              );
+            }
+            if (tool.help) {
+              return (
+                <FormatToolbarHelpTooltip
+                  key={tool.id}
+                  title={tool.help.title}
+                  steps={tool.help.steps}
+                  note={tool.help.note}
+                  disabled={!isSuperAdmin}
+                  isActive={tool.isActive}
+                  ariaPressed={tool.ariaPressed}
+                  wideGlyph={tool.wideGlyph}
+                  onClick={tool.onClick}
+                >
+                  {tool.icon}
+                </FormatToolbarHelpTooltip>
+              );
+            }
             const formatButton = (
               <button
                 key={tool.id}
@@ -3346,14 +4683,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
             if (tool.id !== 'bold') return formatButton;
             return (
               <span key={`${tool.id}-with-font-size`} className={styles.formatToolbarInlineGroup}>
-                <div
-                  className={styles.formatFontSizeWrap}
-                  title={
-                    editorMode === 'visual'
-                      ? 'Размер шрифта выделенного фрагмента (пт)'
-                      : 'Размер шрифта — только в визуальном конструкторе'
-                  }
-                >
+                <div className={styles.formatFontSizeWrap} title={FONT_SIZE_TOOLTIP.note}>
                   <label
                     className={styles.formatFontSizeLabel}
                     htmlFor="templates-library-visual-font-size"
@@ -3445,7 +4775,52 @@ export function ContractDocumentsTemplatesLibraryPage() {
             <div
               className={`${styles.templatesLibraryEditorPaneHead} ${styles.templatesLibraryEditorPaneHeadMode}`}
             >
-              {editorModeToggle}
+              <div className={styles.templatesLibraryEditorHeadLeading}>
+                {editorModeToggle}
+                <div className={styles.templatesLibraryEditorHeadTools}>
+                  <div
+                    className={styles.templatesLibraryHistoryButtons}
+                    role="group"
+                    aria-label="История изменений шаблона"
+                  >
+                    <button
+                      type="button"
+                      className={styles.secondaryBtn}
+                      disabled={!isSuperAdmin || !templateHistoryCanUndo}
+                      onClick={handleTemplateUndo}
+                      title="Отменить последнее изменение (Ctrl+Z). До 100 шагов в HTML и конструкторе."
+                      style={{ padding: '2px 8px', minWidth: 32, lineHeight: 1 }}
+                      aria-label="Отменить"
+                    >
+                      ↶
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.secondaryBtn}
+                      disabled={!isSuperAdmin || !templateHistoryCanRedo}
+                      onClick={handleTemplateRedo}
+                      title="Вернуть отменённое (Ctrl+Y). Работает в HTML и визуальном конструкторе."
+                      style={{ padding: '2px 8px', minWidth: 32, lineHeight: 1 }}
+                      aria-label="Вернуть"
+                    >
+                      ↷
+                    </button>
+                  </div>
+                  {editorMode === 'visual' ? (
+                    <TemplateEditorZoomControl
+                      id="templates-library-visual-zoom"
+                      value={visualZoomPct}
+                      draft={visualZoomDraft}
+                      disabled={!isSuperAdmin}
+                      ariaLabel="Масштаб конструктора"
+                      title="Масштаб конструктора на экране (не влияет на печать)"
+                      onDraftChange={setVisualZoomDraft}
+                      onCommit={commitVisualZoomDraft}
+                      onStep={stepVisualZoom}
+                    />
+                  ) : null}
+                </div>
+              </div>
               <div className={styles.templatesLibraryEditorHeadActions}>
                 <button
                   type="button"
@@ -3487,7 +4862,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
                 value={html}
                 onChange={(e) => {
                   ensureTemplateDraftForEditing();
-                  setHtml(e.target.value);
+                  const next = e.target.value;
+                  setHtml(next);
+                  setVisualDraftHtml(next);
+                  schedulePushTemplateHistoryFromHtml(next);
                 }}
                 disabled={!isSuperAdmin}
                 tabIndex={editorMode === 'html' ? 0 : -1}
@@ -3508,94 +4886,46 @@ export function ContractDocumentsTemplatesLibraryPage() {
               aria-hidden={editorMode !== 'visual'}
             >
               <div
-                className={styles.templatesLibraryEditorPaneHead}
-                aria-label="Панель визуального конструктора"
-              >
-                <div className={styles.templatesLibraryPaneToolbar}>
-                  <div className={styles.templatesLibraryInlineField}>
-                    <label
-                      className={measurementFormStyles.label}
-                      htmlFor="templates-library-visual-zoom"
-                    >
-                      Масштаб: {visualZoomPct}%
-                    </label>
-                    <input
-                      id="templates-library-visual-zoom"
-                      type="number"
-                      className={`${measurementFormStyles.input} ${styles.templatesLibraryNumberInput}`}
-                      min={TEMPLATE_EDITOR_ZOOM_MIN_PCT}
-                      max={TEMPLATE_EDITOR_ZOOM_MAX_PCT}
-                      step={5}
-                      value={visualZoomPct}
-                      onChange={(e) => {
-                        const n = Number(e.target.value);
-                        if (!Number.isFinite(n)) return;
-                        setVisualZoomPct(
-                          Math.max(
-                            TEMPLATE_EDITOR_ZOOM_MIN_PCT,
-                            Math.min(TEMPLATE_EDITOR_ZOOM_MAX_PCT, n)
-                          )
-                        );
-                      }}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    className={styles.secondaryBtn}
-                    disabled={!isSuperAdmin || editorMode !== 'visual'}
-                    onClick={handleVisualUndo}
-                    title="Назад"
-                    style={{ padding: '2px 8px', minWidth: 32, lineHeight: 1 }}
-                    aria-label="Назад"
-                  >
-                    ↶
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.secondaryBtn}
-                    disabled={!isSuperAdmin || editorMode !== 'visual'}
-                    onClick={handleVisualRedo}
-                    title="Вперёд"
-                    style={{ padding: '2px 8px', minWidth: 32, lineHeight: 1 }}
-                    aria-label="Вперёд"
-                  >
-                    ↷
-                  </button>
-                </div>
-              </div>
-              <div
-                ref={visualEditorRef}
-                className={`${measurementFormStyles.textarea} ${styles.contractHtmlTextarea} ${styles.visualEditor} ${styles.visualEditorScrollable} ${styles.templatesLibraryVisualEditor}`}
-                contentEditable={isSuperAdmin && editorMode === 'visual'}
-                suppressContentEditableWarning
-                onPaste={handleVisualEditorPaste}
-                onKeyDown={handleVisualEditorKeyDown}
-                onInput={(e) => {
-                  ensureTemplateDraftForEditing();
-                  const next = (e.currentTarget as HTMLDivElement).innerHTML;
-                  setVisualDraftHtml(next);
-                  setHtml(next);
-                  pushVisualHistory(next);
-                  captureVisualSelection();
-                }}
-                onKeyUp={captureVisualSelection}
-                onMouseUp={() => {
-                  captureVisualSelection();
-                  captureVisualEditorHeight();
-                }}
-                onFocus={captureVisualSelection}
-                onBlur={() => {
-                  if (editorMode !== 'visual') return;
-                  syncVisualEditorToHtmlState();
-                  captureVisualEditorHeight();
-                }}
-                onTouchEnd={captureVisualEditorHeight}
+                className={styles.templatesLibraryVisualEditorZoomHost}
                 style={{
-                  whiteSpace: 'normal',
-                  zoom: editorMode === 'visual' ? `${visualZoomPct}%` : undefined,
                   height: visualEditorHeightPx ? `${visualEditorHeightPx}px` : undefined,
                 }}
-              />
+              >
+                <div
+                  className={styles.templatesLibraryVisualEditorZoomInner}
+                  style={{ zoom: `${visualZoomPct}%` }}
+                >
+                  <div
+                    ref={visualEditorRef}
+                    className={`${measurementFormStyles.textarea} ${styles.contractHtmlTextarea} ${styles.visualEditor} ${styles.visualEditorScrollable} ${styles.templatesLibraryVisualEditor}`}
+                    contentEditable={isSuperAdmin && editorMode === 'visual'}
+                    suppressContentEditableWarning
+                    onPaste={handleVisualEditorPaste}
+                    onKeyDown={handleVisualEditorKeyDown}
+                    onInput={(e) => {
+                      ensureTemplateDraftForEditing();
+                      const next = (e.currentTarget as HTMLDivElement).innerHTML;
+                      setVisualDraftHtml(next);
+                      setHtml(next);
+                      pushTemplateHistory(next);
+                      captureVisualSelection();
+                    }}
+                    onKeyUp={captureVisualSelection}
+                    onMouseUp={() => {
+                      captureVisualSelection();
+                      captureVisualEditorHeight();
+                    }}
+                    onFocus={captureVisualSelection}
+                    onBlur={() => {
+                      if (editorMode !== 'visual') return;
+                      syncVisualEditorToHtmlState();
+                      captureVisualEditorHeight();
+                    }}
+                    onTouchEnd={captureVisualEditorHeight}
+                    style={{ whiteSpace: 'normal' }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -3606,55 +4936,16 @@ export function ContractDocumentsTemplatesLibraryPage() {
             <div className={styles.templatesLibraryPreviewHead}>
               <h3 className={styles.previewBlockTitle}>Предпросмотр</h3>
               <div className={styles.templatesLibraryPaneToolbar}>
-                <div className={styles.templatesLibraryInlineField}>
-                  <label
-                    className={measurementFormStyles.label}
-                    htmlFor="templates-library-preview-font-size"
-                  >
-                    Текст: {previewFontSizePx}px
-                  </label>
-                  <input
-                    id="templates-library-preview-font-size"
-                    type="number"
-                    className={`${measurementFormStyles.input} ${styles.templatesLibraryNumberInput}`}
-                    min={10}
-                    max={20}
-                    step={1}
-                    value={previewFontSizePx}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (!Number.isFinite(n)) return;
-                      setPreviewFontSizePx(Math.max(10, Math.min(20, n)));
-                    }}
-                  />
-                </div>
-                <div className={styles.templatesLibraryInlineField}>
-                  <label
-                    className={measurementFormStyles.label}
-                    htmlFor="templates-library-preview-zoom"
-                  >
-                    Масштаб: {previewZoomPct}%
-                  </label>
-                  <input
-                    id="templates-library-preview-zoom"
-                    type="number"
-                    className={`${measurementFormStyles.input} ${styles.templatesLibraryNumberInput}`}
-                    min={TEMPLATE_EDITOR_ZOOM_MIN_PCT}
-                    max={TEMPLATE_EDITOR_ZOOM_MAX_PCT}
-                    step={5}
-                    value={previewZoomPct}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (!Number.isFinite(n)) return;
-                      setPreviewZoomPct(
-                        Math.max(
-                          TEMPLATE_EDITOR_ZOOM_MIN_PCT,
-                          Math.min(TEMPLATE_EDITOR_ZOOM_MAX_PCT, n)
-                        )
-                      );
-                    }}
-                  />
-                </div>
+                <TemplateEditorZoomControl
+                  id="templates-library-preview-zoom"
+                  value={previewZoomPct}
+                  draft={previewZoomDraft}
+                  ariaLabel="Масштаб предпросмотра"
+                  title="Масштаб предпросмотра на экране (не влияет на печать)"
+                  onDraftChange={setPreviewZoomDraft}
+                  onCommit={commitPreviewZoomDraft}
+                  onStep={stepPreviewZoom}
+                />
               </div>
             </div>
             <div
@@ -3666,7 +4957,6 @@ export function ContractDocumentsTemplatesLibraryPage() {
             >
               <div
                 style={{
-                  fontSize: `${previewFontSizePx}px`,
                   zoom: `${previewZoomPct}%`,
                   width: '100%',
                   overflowX: 'hidden',

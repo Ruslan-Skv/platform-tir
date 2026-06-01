@@ -102,8 +102,8 @@ export function buildRepairCustomerTemplateFields(
       ', '
     );
     const requisitesHtml = [
-      `<p style="margin: 0 0 6pt;">${org || '—'}</p>`,
-      innLine ? `<p style="margin: 0 0 4pt;">${innLine}</p>` : '',
+      `<p style="margin: 0 0 6pt; font-weight: normal;">${org || '—'}</p>`,
+      innLine ? `<p style="margin: 0 0 4pt; font-weight: normal;">${innLine}</p>` : '',
       customer.address
         ? `<p style="margin: 0 0 4pt;">Юридический адрес: ${customer.address}</p>`
         : '',

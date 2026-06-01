@@ -1,3 +1,11 @@
+import { CONTRACT_DENSE_SPACING_CSS } from './contractTemplateCompactSpacing';
+import { normalizeContractHeaderCustomerTypography } from './contractTemplateHeader';
+import { repairContractTemplateStructureInDom } from './contractTemplateStructure';
+import {
+  clearNestedFontSizeInsideHeading,
+  normalizeContractTitleInDom,
+} from './contractTemplateTitle';
+import { alignContractRequisitesBlockSignatures } from './repairContractRequisitesLayout';
 import { CONTRACT_REQUISITES_LAYOUT_CSS } from './repairContractRequisitesLayout';
 
 /** Имена для нижнего колонтитула каждой страницы при печати (CSS @page margin box, Chrome 131+). */
@@ -152,8 +160,10 @@ const CASH_ORDER_COMPACT_PRINT_CSS = `
 `;
 
 const CONTRACT_COMPACT_BODY_PT = '10pt';
-const CONTRACT_COMPACT_H1_PT = '12pt';
-const CONTRACT_COMPACT_H2_PT = '10.5pt';
+/** Как в конструкторе шаблонов (H1 / H2 / H3). */
+const CONTRACT_COMPACT_H1_PT = '14pt';
+const CONTRACT_COMPACT_H2_PT = '12pt';
+const CONTRACT_COMPACT_H3_PT = '11pt';
 
 /** Договор: плотнее по кеглю (≈10pt). Селекторы покрывают Word (.WordSection1) без .docPrint. */
 const CONTRACT_COMPACT_PRINT_CSS = `
@@ -163,19 +173,17 @@ const CONTRACT_COMPACT_PRINT_CSS = `
     font-size: ${CONTRACT_COMPACT_BODY_PT} !important;
     line-height: 1.32 !important;
   }
-  body.contractPrintCompact .docPrintContractCompact p,
-  body.contractPrintCompact .docPrintContractCompact span,
-  body.contractPrintCompact .docPrintContractCompact div,
-  body.contractPrintCompact .docPrintContractCompact td,
-  body.contractPrintCompact .docPrintContractCompact th,
-  body.contractPrintCompact .docPrintContractCompact li,
+  body.contractPrintCompact .docPrintContractCompact p:not([style*='font-size']),
+  body.contractPrintCompact .docPrintContractCompact div:not([style*='font-size']),
+  body.contractPrintCompact .docPrintContractCompact td:not([style*='font-size']),
+  body.contractPrintCompact .docPrintContractCompact th:not([style*='font-size']),
+  body.contractPrintCompact .docPrintContractCompact li:not([style*='font-size']),
   body.contractPrintCompact .docPrintContractCompact font,
-  .docPrint.docPrintContractCompact p,
-  .docPrint.docPrintContractCompact span,
-  .docPrint.docPrintContractCompact div,
-  .docPrint.docPrintContractCompact td,
-  .docPrint.docPrintContractCompact th,
-  .docPrint.docPrintContractCompact li,
+  .docPrint.docPrintContractCompact p:not([style*='font-size']),
+  .docPrint.docPrintContractCompact div:not([style*='font-size']),
+  .docPrint.docPrintContractCompact td:not([style*='font-size']),
+  .docPrint.docPrintContractCompact th:not([style*='font-size']),
+  .docPrint.docPrintContractCompact li:not([style*='font-size']),
   .docPrint.docPrintContractCompact font {
     font-size: ${CONTRACT_COMPACT_BODY_PT} !important;
     line-height: 1.32 !important;
@@ -191,6 +199,22 @@ const CONTRACT_COMPACT_PRINT_CSS = `
     font-size: ${CONTRACT_COMPACT_H2_PT} !important;
     line-height: 1.28 !important;
     margin: 11pt 0 5pt !important;
+  }
+  body.contractPrintCompact .docPrintContractCompact h3,
+  .docPrint.docPrintContractCompact h3 {
+    font-size: ${CONTRACT_COMPACT_H3_PT} !important;
+    line-height: 1.28 !important;
+    margin: 11pt 0 5pt !important;
+    text-align: center !important;
+    font-weight: bold !important;
+  }
+  body.contractPrintCompact .docPrintContractCompact h1 *,
+  body.contractPrintCompact .docPrintContractCompact h2 *,
+  body.contractPrintCompact .docPrintContractCompact h3 *,
+  .docPrint.docPrintContractCompact h1 *,
+  .docPrint.docPrintContractCompact h2 *,
+  .docPrint.docPrintContractCompact h3 * {
+    font-size: inherit !important;
   }
   body.contractPrintCompact .docPrintContractCompact p,
   .docPrint.docPrintContractCompact p {
@@ -279,28 +303,61 @@ function stripTypographyFromInlineStyle(style: string, keepFontSize = false): st
     .trim();
 }
 
-function cleanElementInlineTypography(el: HTMLElement, preserveHeadingFontSizes: boolean): void {
+export type ContractCompactTypographyOptions = {
+  /** Сохранять font-size на H1–H6 (кнопки заголовков в конструкторе). */
+  preserveHeadingFontSizes?: boolean;
+  /** Сохранять font-size на абзацах, span и т.д. (кегль «пт» в конструкторе). */
+  preserveInlineFontSizes?: boolean;
+};
+
+function shouldKeepElementFontSize(
+  el: HTMLElement,
+  options?: ContractCompactTypographyOptions
+): boolean {
+  if (options?.preserveInlineFontSizes) return true;
+  if (!options?.preserveHeadingFontSizes) return false;
+  return /^H[1-6]$/i.test(el.tagName);
+}
+
+function cleanElementInlineTypography(
+  el: HTMLElement,
+  options?: ContractCompactTypographyOptions
+): void {
   const styleAttr = el.getAttribute('style');
   if (!styleAttr) return;
-  const isHeading = /^H[1-6]$/i.test(el.tagName);
-  const cleaned = stripTypographyFromInlineStyle(styleAttr, preserveHeadingFontSizes && isHeading);
+  const cleaned = stripTypographyFromInlineStyle(styleAttr, shouldKeepElementFontSize(el, options));
   if (cleaned) el.setAttribute('style', cleaned);
   else el.removeAttribute('style');
 }
 
-/** Убирает inline font-family (Word); font-size — по желанию (для печати сбрасываем, для H1–H6 в превью сохраняем). */
+/** Убирает кегль Word внутри H1–H3 (вложенные span/font), чтобы не перебивали 14/12/11 pt. */
+function clearNestedFontSizeInsideHeadings(root: ParentNode): void {
+  root.querySelectorAll('h1, h2, h3').forEach((heading) => {
+    clearNestedFontSizeInsideHeading(heading);
+  });
+}
+
+/** Убирает inline font-family (Word); font-size — по опциям (Tt сбрасывает, превью/печать — сохраняют кегль конструктора). */
 export function prepareContractHtmlForCompactPrint(
   html: string,
-  options?: { preserveHeadingFontSizes?: boolean }
+  options?: ContractCompactTypographyOptions
 ): string {
-  const preserveHeadingFontSizes = Boolean(options?.preserveHeadingFontSizes);
+  const preserveInlineFontSizes = Boolean(options?.preserveInlineFontSizes);
+  const preserveHeadingFontSizes = Boolean(
+    options?.preserveHeadingFontSizes ?? options?.preserveInlineFontSizes
+  );
+  const compactOptions: ContractCompactTypographyOptions = {
+    preserveHeadingFontSizes,
+    preserveInlineFontSizes,
+  };
 
   if (typeof window !== 'undefined') {
     const container = window.document.createElement('div');
     container.innerHTML = html || '';
     for (const el of container.querySelectorAll<HTMLElement>('[style]')) {
-      cleanElementInlineTypography(el, preserveHeadingFontSizes);
+      cleanElementInlineTypography(el, compactOptions);
     }
+    clearNestedFontSizeInsideHeadings(container);
     return container.innerHTML
       .replace(/\s*style\s*=\s*(["'])\s*\1/gi, '')
       .replace(/\sface\s*=\s*(["'])[^"']*\1/gi, '')
@@ -310,7 +367,7 @@ export function prepareContractHtmlForCompactPrint(
   const withoutTypography = html.replace(
     /\bstyle\s*=\s*(["'])([\s\S]*?)\1/gi,
     (_match, quote: string, style: string) => {
-      const cleaned = stripTypographyFromInlineStyle(style, false);
+      const cleaned = stripTypographyFromInlineStyle(style, preserveInlineFontSizes);
       if (!cleaned) return '';
       return `style=${quote}${cleaned}${quote}`;
     }
@@ -321,27 +378,48 @@ export function prepareContractHtmlForCompactPrint(
     .replace(/\sface\s*=\s*[^\s>]+/gi, '');
 }
 
-/** Предпросмотр в админке: сброс Word-стилей, но размеры H1–H3 из конструктора сохраняются. */
+/** Предпросмотр в админке: сброс Word-стилей, кегли из конструктора (пт, H1–H3) сохраняются. */
 export function prepareContractHtmlForScreenPreview(html: string): string {
-  return markDocPrintContractCompact(html, { preserveHeadingFontSizes: true });
+  return markDocPrintContractCompact(html, {
+    preserveHeadingFontSizes: true,
+    preserveInlineFontSizes: true,
+  });
+}
+
+function addDocPrintContractCompactClassToHtml(html: string): string {
+  if (!/\bdocPrint\b/i.test(html)) {
+    return `<div class="docPrint docPrintContractCompact">${html}</div>`;
+  }
+  let marked = html.replace(
+    /\bclass\s*=\s*(["'])([\s\S]*?\bdocPrint\b[\s\S]*?)\1/gi,
+    (_match, quote: string, classes: string) => {
+      if (/\bdocPrintContractCompact\b/i.test(classes)) return _match;
+      return `class=${quote}${classes.trim()} docPrintContractCompact${quote}`;
+    }
+  );
+  if (!/\bdocPrintContractCompact\b/i.test(marked)) {
+    marked = `<div class="docPrint docPrintContractCompact">${marked}</div>`;
+  }
+  return marked;
 }
 
 function markDocPrintContractCompact(
   html: string,
-  options?: { preserveHeadingFontSizes?: boolean }
+  options?: ContractCompactTypographyOptions
 ): string {
   const prepared = prepareContractHtmlForCompactPrint(html, options);
-  if (/\bdocPrintContractCompact\b/i.test(prepared)) return prepared;
+  const marked = addDocPrintContractCompactClassToHtml(prepared);
 
-  if (/\bclass\s*=\s*(["'])([^"']*\bdocPrint\b[^"']*)\1/i.test(prepared)) {
-    return prepared.replace(
-      /\bclass\s*=\s*(["'])([^"']*\bdocPrint\b[^"']*)\1/i,
-      (_match, quote: string, classes: string) =>
-        `class=${quote}${classes} docPrintContractCompact${quote}`
+  if (typeof window !== 'undefined') {
+    const container = window.document.createElement('div');
+    container.innerHTML = marked;
+    repairContractTemplateStructureInDom(container);
+    normalizeContractTitleInDom(container);
+    return normalizeContractHeaderCustomerTypography(
+      alignContractRequisitesBlockSignatures(container.innerHTML)
     );
   }
-
-  return `<div class="docPrint docPrintContractCompact">${prepared}</div>`;
+  return marked;
 }
 
 function getContractPrintRoot(doc: Document): HTMLElement {
@@ -368,10 +446,14 @@ function applyContractCompactFontSizesInPrintDocument(doc: Document): void {
 
   root.querySelectorAll<HTMLElement>('h1').forEach((el) => setSize(el, CONTRACT_COMPACT_H1_PT));
   root.querySelectorAll<HTMLElement>('h2').forEach((el) => setSize(el, CONTRACT_COMPACT_H2_PT));
+  root.querySelectorAll<HTMLElement>('h3').forEach((el) => setSize(el, CONTRACT_COMPACT_H3_PT));
+  clearNestedFontSizeInsideHeadings(root);
+  normalizeContractTitleInDom(root);
 
   const all = root.querySelectorAll<HTMLElement>('*');
   all.forEach((el) => {
-    if (el.tagName === 'H1' || el.tagName === 'H2') return;
+    if (/^H[1-3]$/i.test(el.tagName)) return;
+    if (el.style.fontSize) return;
     setSize(el, CONTRACT_COMPACT_BODY_PT);
   });
   setSize(root, CONTRACT_COMPACT_BODY_PT);
@@ -387,14 +469,17 @@ function buildPrintStylesheet(
     : `@page { margin: 16mm; size: A4; }`;
 
   const cashOrderBlock = cashOrderCompact ? CASH_ORDER_COMPACT_PRINT_CSS : '';
-  const contractBlock = contractCompact ? CONTRACT_COMPACT_PRINT_CSS : '';
+  const contractBlock = contractCompact
+    ? `${CONTRACT_COMPACT_PRINT_CSS}\n${CONTRACT_DENSE_SPACING_CSS}`
+    : '';
 
   return `${pageBlock}
   html, body { margin: 0; padding: 0; font-family: "Times New Roman", Times, serif; color: #111; }
   .docPrint { font-size: 12pt; line-height: 1.42; }
   .docPrint a { color: #111 !important; text-decoration: none; }
-  .docPrint h1 { font-size: 14pt; text-align: center; margin: 0 0 12pt; }
-  .docPrint h2 { font-size: 12pt; margin: 14pt 0 6pt; }
+  .docPrint h1 { font-size: 14pt; text-align: center; margin: 0 0 12pt; font-weight: bold; }
+  .docPrint h2 { font-size: 12pt; margin: 14pt 0 6pt; text-align: center; font-weight: bold; }
+  .docPrint h3 { font-size: 11pt; margin: 14pt 0 6pt; text-align: center; font-weight: bold; }
   .docPrint.repairQuestionnairePrint h1,
   .docPrint.repairQuestionnairePrint h2,
   .docPrint.repairQuestionnairePrint strong,
@@ -574,7 +659,12 @@ function buildPrintStylesheet(
     margin: 0;
   }
   .contractRequisitesBlock strong,
-  .contractRequisitesBlock em {
+  .contractRequisitesBlock b,
+  .contractRequisitesBlock em,
+  .contractRequisitesBlock i,
+  .contractRequisitesBlock .contractRequisitesColBody,
+  .contractRequisitesBlock .contractRequisitesColBody p,
+  .contractRequisitesBlock .contractRequisitesColBody div {
     font-weight: normal !important;
     font-style: normal !important;
   }
@@ -732,7 +822,12 @@ export function buildPrintableHtmlDocument(
     options?.cashOrderCompact,
     options?.contractCompact
   );
-  const printBody = options?.contractCompact ? markDocPrintContractCompact(innerHtml) : innerHtml;
+  const printBody = options?.contractCompact
+    ? markDocPrintContractCompact(innerHtml, {
+        preserveHeadingFontSizes: true,
+        preserveInlineFontSizes: true,
+      })
+    : innerHtml;
   return `<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"/><title>${titleInner}</title>
 <style>${styles}</style></head><body>${printBody}</body></html>`;
 }

@@ -12,7 +12,7 @@ export const repairTemplateContract = `
   <p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 10pt;">
     <strong>{{executor.companyName}}</strong>, именуемое в дальнейшем «<strong>Подрядчик</strong>», в лице
     {{executor.directorName}}, действующего на основании {{executor.basis}}, с одной стороны, и
-    <strong>{{customer.fullName}}</strong>, именуемый(ая) в дальнейшем «<strong>Заказчик</strong>», с другой стороны,
+    {{customer.fullName|plain}}, именуемый(ая) в дальнейшем «<strong>Заказчик</strong>», с другой стороны,
     совместно именуемые «Стороны», а по отдельности «Сторона», заключили настоящий договор (далее — Договор) о
     нижеследующем:
   </p>

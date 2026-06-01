@@ -12,9 +12,9 @@ export function isRepairCashOrderTemplateTab(tab: string): boolean {
   return tab === REPAIR_CASH_ORDER_TEMPLATE_TAB;
 }
 
-/** ПКО и «двойные» акты: `customer.*` без авто-обёртки в жирный/курсив в `applyTemplate`. */
+/** Договор, ПКО и акты: `customer.*` без авто-обёртки в жирный/курсив в `applyTemplate`. */
 export function isRepairPlainCustomerTab(tab: string): boolean {
-  return isRepairActTwinOneSheetTab(tab) || isRepairCashOrderTemplateTab(tab);
+  return tab === 'contract' || isRepairActTwinOneSheetTab(tab) || isRepairCashOrderTemplateTab(tab);
 }
 
 /**

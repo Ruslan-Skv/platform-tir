@@ -104,7 +104,7 @@ import {
   REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE,
 } from './repairContractPackageHubConstants';
 import { getUnsignedAddendumOrdinals } from './repairContractPipeline';
-import { buildRepairContractRequisitesInsertHtml } from './repairContractRequisitesLayout';
+import { buildRepairContractRequisitesInsertHtmlForToolbar } from './repairContractRequisitesLayout';
 import { resolveRepairWorkPeriodForForm } from './repairContractWorkPeriod';
 import {
   REPAIR_DOCUMENT_TAB_IDS,
@@ -3050,7 +3050,7 @@ export function RepairContractDocumentEditorPage({
 
   const insertRequisitesTemplate = () => {
     updateContractHtmlBySelection(() => ({
-      content: buildRepairContractRequisitesInsertHtml({ embeddedSignatures: true }),
+      content: buildRepairContractRequisitesInsertHtmlForToolbar(),
     }));
   };
 

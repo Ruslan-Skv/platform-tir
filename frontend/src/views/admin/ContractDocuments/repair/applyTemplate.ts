@@ -1,7 +1,9 @@
+import { normalizeContractHeaderCustomerTypography } from './contractTemplateHeader';
 import {
   alignContractRequisitesBlockSignatures,
   htmlHasRepairEmbeddedRequisitesSignatures,
   isRepairRequisitesSignaturesTableHtml,
+  normalizeRequisitesBlockTypography,
 } from './repairContractRequisitesLayout';
 
 function flattenForTemplate(obj: unknown, prefix = ''): Record<string, string> {
@@ -65,11 +67,7 @@ function formatTemplateValue(
   return safe;
 }
 
-/**
- * Закрывает незакрытые `<strong>` / `<em>` (частая ошибка после правок в contenteditable),
- * из‑за которой жирный/курсив «тянется» на следующие абзацы (например, на примечание).
- */
-function balanceStrongEmTags(html: string): string {
+function collectOpenStrongEmStack(html: string): ('strong' | 'em')[] {
   const re = /<\s*(\/?)\s*(strong|em)\b[^>]*>/gi;
   const stack: ('strong' | 'em')[] = [];
   let m: RegExpExecArray | null;
@@ -83,9 +81,40 @@ function balanceStrongEmTags(html: string): string {
       stack.push(name);
     }
   }
-  if (stack.length === 0) return html;
+  return stack;
+}
+
+/** Незакрытый жирный из преамбулы не должен охватывать таблицу реквизитов. */
+function closeStrongEmBeforeRequisitesBlock(html: string): string {
+  const tableRe = /<table\b[^>]*\bcontractRequisitesBlock\b/gi;
+  let match: RegExpExecArray | null;
+  let out = html;
+  let shift = 0;
+  while ((match = tableRe.exec(html)) !== null) {
+    const idx = match.index + shift;
+    const before = out.slice(0, idx);
+    const stack = collectOpenStrongEmStack(before);
+    if (stack.length === 0) continue;
+    const insert = stack
+      .reverse()
+      .map((t) => `</${t}>`)
+      .join('');
+    out = before + insert + out.slice(idx);
+    shift += insert.length;
+  }
+  return out;
+}
+
+/**
+ * Закрывает незакрытые `<strong>` / `<em>` (частая ошибка после правок в contenteditable),
+ * из‑за которой жирный/курсив «тянется» на следующие абзацы (например, на примечание).
+ */
+function balanceStrongEmTags(html: string): string {
+  const withRequisitesGuard = closeStrongEmBeforeRequisitesBlock(html);
+  const stack = collectOpenStrongEmStack(withRequisitesGuard);
+  if (stack.length === 0) return withRequisitesGuard;
   return (
-    html +
+    withRequisitesGuard +
     [...stack]
       .reverse()
       .map((t) => `</${t}>`)
@@ -126,7 +155,12 @@ function findNextTableBlock(
 
 /** Помечает только таблицу реквизитов с подписями (не обёртку Word и не строку 1.1). */
 function ensureRequisitesTableClass(html: string): string {
-  if (!html.includes('ПОДРЯДЧИК') || !html.includes('ЗАКАЗЧИК')) return html;
+  const plain = html.replace(/<[^>]+>/g, ' ');
+  const hasContractor = /(?:^|[^\p{L}\p{N}_])(?:ПОДРЯДЧИК|ИСПОЛНИТЕЛЬ)(?:[^\p{L}\p{N}_]|$)/iu.test(
+    plain
+  );
+  const hasCustomer = /(?:^|[^\p{L}\p{N}_])ЗАКАЗЧИК(?:[^\p{L}\p{N}_]|$)/iu.test(plain);
+  if (!hasContractor || !hasCustomer) return html;
   let out = html;
   let from = 0;
   for (;;) {
@@ -338,7 +372,9 @@ export function applyTemplate(
     html = addPageSignatures(html, flat);
   }
   html = alignContractRequisitesBlockSignatures(html);
+  html = normalizeRequisitesBlockTypography(html);
   if (options?.autoInsertContractSignatures) {
+    html = normalizeContractHeaderCustomerTypography(html);
     html = ensureFinalSignaturesRow(html, flat);
   }
   return html;
