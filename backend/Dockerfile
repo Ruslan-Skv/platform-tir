@@ -12,8 +12,10 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Install dependencies (retry config for flaky networks)
+# scripts/ ещё не скопирован — postinstall удаляем; prisma generate ниже после COPY prisma/
 COPY package.json package-lock.json ./
-RUN npm config set fetch-retries 5 && \
+RUN npm pkg delete scripts.postinstall && \
+    npm config set fetch-retries 5 && \
     npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000 && \
     npm config set audit false && \
@@ -46,8 +48,8 @@ RUN adduser --system --uid 1001 nestjs
 
 # Install production dependencies only (retry config for flaky networks)
 COPY package.json package-lock.json ./
-# prepare/husky — devDependency; postinstall пропускается без prisma CLI (--omit=dev)
-RUN npm pkg delete scripts.prepare && \
+# prepare/husky и postinstall — только для локальной разработки; prisma generate ниже
+RUN npm pkg delete scripts.prepare scripts.postinstall && \
     npm config set fetch-retries 5 && \
     npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000 && \
