@@ -20,12 +20,17 @@ function isCreatedCrmCustomer(x: unknown): x is { id: string } {
   return typeof x === 'object' && x !== null && typeof (x as { id?: unknown }).id === 'string';
 }
 
+/** Контекст выбора из строки справочника (подпись как в результатах поиска). */
+export type CrmCustomerAppliedContext = {
+  displayName?: string;
+};
+
 export type CrmCustomerSearchPanelProps = {
   customerId: string | null;
   disabled?: boolean;
   listboxId?: string;
   className?: string;
-  onCustomerApplied: (detail: CrmCustomerDetail) => void;
+  onCustomerApplied: (detail: CrmCustomerDetail, context?: CrmCustomerAppliedContext) => void;
   onClear: () => void;
   onError?: (message: string) => void;
   addCustomerDraft?: {
@@ -120,7 +125,9 @@ export function CrmCustomerSearchPanel({
       if (disabled || row.rowSource !== 'customer') return;
       try {
         const detail = await getCrmCustomer(row.id);
-        onCustomerApplied(crmDetailWithPreferredObjectAddress(detail, row.objectAddress));
+        onCustomerApplied(crmDetailWithPreferredObjectAddress(detail, row.objectAddress), {
+          displayName: row.displayName,
+        });
         setCrmSearchResults([]);
         setCrmSearchInput('');
         setCrmSearchDebounced('');

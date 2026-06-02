@@ -2,6 +2,7 @@
  * Группы плейсхолдеров для вставки в шаблон договора (пути совпадают с `repairPackageForm.ts`).
  * Для заказчика без жирного в предпросмотре: `{{customer.field|plain}}` (см. `applyTemplate`).
  * `meta.currentDate` подставляется из `repairPackageFormForTemplate` (дата на момент рендера).
+ * `contract.contractCost` / `productsCost` / `worksCost` — из сметы, спецификации (Окна) и скидки по договору.
  */
 
 export interface RepairContractPlaceholderItem {
@@ -113,6 +114,9 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
       { path: 'contract.number', label: 'Номер договора' },
       { path: 'contract.date', label: 'Дата договора (дд.мм.гггг)' },
       { path: 'contract.totalAmount', label: 'Сумма (цифрами)' },
+      { path: 'contract.contractCost', label: 'Стоимость договора' },
+      { path: 'contract.productsCost', label: 'Стоимость изделий' },
+      { path: 'contract.worksCost', label: 'Стоимость работ' },
       {
         path: 'contract.grandTotalAmount',
         label: 'СД итог. (договор + все Д/с со сметой, цифрами)',
@@ -141,7 +145,7 @@ export const REPAIR_CONTRACT_PLACEHOLDER_GROUPS: RepairContractPlaceholderGroup[
       },
       { path: 'contract.prepaymentDate', label: 'Дата оплаты (дд.мм.гггг, для ПКО)' },
       { path: 'contract.paymentFormLabel', label: 'Способ оплаты (текст, для ПКО)' },
-      { path: 'contract.workPeriod', label: 'Срок договора (календарных дней, число)' },
+      { path: 'contract.workPeriod', label: 'Срок договора (рабочих дней, число)' },
       {
         path: 'contract.discountPercent',
         label: 'Скидка по договору (%, число; применяется к смете и Д/с)',

@@ -299,6 +299,20 @@ export function isContractEstimatePresetAttachable(
   return isEstimatePresetAttachableToContract(preset, groups);
 }
 
+/** Для пакета «Окна» — только расчёты карточки заказчика, привязанной к договору. */
+export function isEstimatePresetForLinkedContractCustomer(
+  preset: ContractEstimatePreset,
+  options: {
+    filterByLinkedCustomer: boolean;
+    linkedCrmCustomerId: string | null | undefined;
+  }
+): boolean {
+  if (!options.filterByLinkedCustomer) return true;
+  const linkedId = options.linkedCrmCustomerId?.trim();
+  if (!linkedId) return false;
+  return (preset.crmCustomerId ?? '').trim() === linkedId;
+}
+
 /** Объект сметы договора: по первому прикреплённому расчёту или по полю формы до прикрепления. */
 export function getContractEstimateObjectGroupKey(
   form: RepairPackageFormData,

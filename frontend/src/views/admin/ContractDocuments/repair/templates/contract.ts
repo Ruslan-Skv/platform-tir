@@ -51,7 +51,7 @@ export const repairTemplateContract = `
 
   <h2 style="text-align: center; font-size: 12pt; margin: 16pt 0 8pt;">3. СРОКИ ВЫПОЛНЕНИЯ РАБОТ</h2>
   <p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">
-    3.1. Срок выполнения работ по Договору: <strong>{{contract.workPeriod}}</strong> календарных дней (если иное не
+    3.1. Срок выполнения работ по Договору: <strong>{{contract.workPeriod}}</strong> рабочих дней (если иное не
     согласовано дополнительным соглашением).
   </p>
   <p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">

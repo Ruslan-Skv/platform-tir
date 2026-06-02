@@ -67,6 +67,48 @@ export function resolvePersonNameParts(sources: PersonNameSources): CrmPersonNam
   return { lastName: '', firstName: '', patronymic: '' };
 }
 
+/** Как `CustomersService.resolvePersonDisplayName` (справочник GET /admin/customers/directory). */
+export function personDisplayNameFromCrmDetail(data: {
+  firstName?: string | null;
+  lastName?: string | null;
+  company?: string | null;
+  email?: string | null;
+  entityType?: string | null;
+  extendedProfile?: Record<string, unknown> | null;
+}): string {
+  const entityType = data.entityType?.trim();
+  const isPerson = !entityType || entityType === 'PERSON';
+  if (!isPerson) {
+    const company = (data.company ?? '').trim();
+    if (company) return company;
+    const ext = data.extendedProfile ?? {};
+    const org = typeof ext.organizationName === 'string' ? ext.organizationName.trim() : '';
+    if (org) return org;
+    const row = [(data.firstName ?? '').trim(), (data.lastName ?? '').trim()]
+      .filter(Boolean)
+      .join(' ');
+    return row || (data.email ?? '').trim();
+  }
+
+  const ext = data.extendedProfile ?? {};
+  const str = (key: string) => {
+    const v = ext[key];
+    return typeof v === 'string' ? v.trim() : '';
+  };
+  const extLn = str('lastName');
+  const extFn = str('firstName');
+  const extPat = str('patronymic');
+  if (extLn || extFn || extPat) {
+    return [extLn, extFn, extPat].filter(Boolean).join(' ');
+  }
+  const full = str('fullName');
+  if (full) return full;
+  const rowFn = (data.firstName ?? '').trim();
+  const rowLn = (data.lastName ?? '').trim();
+  if (rowFn && /\s/.test(rowFn) && !rowLn) return rowFn;
+  return [rowLn, rowFn].filter(Boolean).join(' ');
+}
+
 export function resolvePersonNamePartsFromDetail(data: {
   firstName?: string | null;
   lastName?: string | null;

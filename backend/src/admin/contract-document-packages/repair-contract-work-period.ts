@@ -1,4 +1,5 @@
 export const DEFAULT_REPAIR_CONTRACT_WORK_PERIOD_DAYS = 60;
+export const DEFAULT_WINDOWS_CONTRACT_WORK_PERIOD_DAYS = 90;
 
 export function workPeriodDaysToFormValue(days: number): string {
   const n = Math.trunc(days);
@@ -15,6 +16,21 @@ export function parseWorkPeriodDaysFromFormValue(raw: unknown): number | null {
   return n;
 }
 
+function contractBlockFromFormData(formData: unknown): Record<string, unknown> {
+  const base =
+    formData && typeof formData === 'object' && !Array.isArray(formData)
+      ? (formData as Record<string, unknown>)
+      : {};
+  const contractRaw = base.contract;
+  return contractRaw && typeof contractRaw === 'object' && !Array.isArray(contractRaw)
+    ? { ...(contractRaw as Record<string, unknown>) }
+    : {};
+}
+
+export function isWorkPeriodManualInFormData(formData: unknown): boolean {
+  return contractBlockFromFormData(formData).workPeriodIsManual === true;
+}
+
 export function injectDefaultWorkPeriodIntoFormData(
   formData: unknown,
   defaultDays: number,
@@ -23,13 +39,13 @@ export function injectDefaultWorkPeriodIntoFormData(
     formData && typeof formData === 'object' && !Array.isArray(formData)
       ? { ...(formData as Record<string, unknown>) }
       : {};
-  const contractRaw = base.contract;
-  const contract =
-    contractRaw && typeof contractRaw === 'object' && !Array.isArray(contractRaw)
-      ? { ...(contractRaw as Record<string, unknown>) }
-      : {};
+  const contract = contractBlockFromFormData(formData);
+  if (contract.workPeriodIsManual === true) {
+    return { ...base, contract };
+  }
   if (!parseWorkPeriodDaysFromFormValue(contract.workPeriod)) {
     contract.workPeriod = workPeriodDaysToFormValue(defaultDays);
+    contract.workPeriodIsManual = false;
   }
   return { ...base, contract };
 }
@@ -42,11 +58,8 @@ export function setWorkPeriodInFormData(
     formData && typeof formData === 'object' && !Array.isArray(formData)
       ? { ...(formData as Record<string, unknown>) }
       : {};
-  const contractRaw = base.contract;
-  const contract =
-    contractRaw && typeof contractRaw === 'object' && !Array.isArray(contractRaw)
-      ? { ...(contractRaw as Record<string, unknown>) }
-      : {};
+  const contract = contractBlockFromFormData(formData);
   contract.workPeriod = workPeriodDaysToFormValue(workPeriodDays);
+  contract.workPeriodIsManual = false;
   return { ...base, contract };
 }

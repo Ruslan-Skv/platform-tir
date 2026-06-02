@@ -71,6 +71,27 @@ const repairContractCloseActsDir = path.join(
   'contract-close-acts',
 );
 
+const windowsSpecificationsDir = path.join(
+  process.cwd(),
+  'uploads',
+  'contract-document-packages',
+  'windows-specifications',
+);
+
+const WINDOWS_SPEC_BLOCKED_EXTENSIONS =
+  /\.(exe|bat|cmd|com|msi|scr|dll|vbs|ps1|sh|jar|cpl|inf|reg|hta|msc|lnk|pif)$/i;
+
+function sanitizeWindowsSpecificationStoredFilename(originalname: string): string {
+  const ext = path.extname(originalname).toLowerCase();
+  const base =
+    path
+      .basename(originalname, ext)
+      .replace(/[^\w\u0400-\u04FF.\-()+ ]/gu, '_')
+      .replace(/_+/g, '_')
+      .slice(0, 80) || 'file';
+  return `windows-spec-${Date.now()}-${base}${ext}`;
+}
+
 @Controller('admin/contract-document-packages')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(...CRM_ROLES)
@@ -322,6 +343,23 @@ export class ContractDocumentPackagesController {
     return this.service.applyRepairWorkPeriodToAllPackages(dto);
   }
 
+  @Get('windows-settings')
+  getWindowsSettings() {
+    return this.service.getWindowsSettings();
+  }
+
+  @Put('windows-settings')
+  @Roles('SUPER_ADMIN')
+  setWindowsSettings(@Body() dto: SetRepairContractSettingsDto, @Req() req: RequestWithUser) {
+    return this.service.setWindowsSettings(dto, req.user?.id);
+  }
+
+  @Post('windows-settings/apply-work-period-to-all')
+  @Roles('SUPER_ADMIN')
+  applyWindowsWorkPeriodToAll(@Body() dto: ApplyRepairWorkPeriodToAllDto) {
+    return this.service.applyWindowsWorkPeriodToAllPackages(dto);
+  }
+
   @Get(':id/versions')
   listVersions(@Param('id') id: string) {
     return this.service.listVersions(id);
@@ -452,6 +490,65 @@ export class ContractDocumentPackagesController {
     }
     const filename = path.basename(file.path);
     return { imageUrl: `/uploads/contract-document-packages/contract-close-acts/${filename}` };
+  }
+
+  @Post(':id/upload-windows-specification-file')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (_req, _file, cb) => {
+          if (!fs.existsSync(windowsSpecificationsDir)) {
+            fs.mkdirSync(windowsSpecificationsDir, { recursive: true });
+          }
+          cb(null, windowsSpecificationsDir);
+        },
+        filename: (_req, file, cb) => {
+          cb(null, sanitizeWindowsSpecificationStoredFilename(file.originalname));
+        },
+      }),
+      limits: { fileSize: 50 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        if (!ext) {
+          cb(
+            new BadRequestException(
+              'Укажите файл с расширением (например pdf, docx, xlsx, dwg, zip, jpg).',
+            ),
+            false,
+          );
+          return;
+        }
+        if (WINDOWS_SPEC_BLOCKED_EXTENSIONS.test(ext)) {
+          cb(
+            new BadRequestException(
+              'Этот тип файла нельзя загружать. Используйте документы, изображения, архивы или файлы САПР.',
+            ),
+            false,
+          );
+          return;
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async uploadWindowsSpecificationFile(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file?.path) {
+      throw new BadRequestException('Файл не загружен');
+    }
+    const pkg = await this.service.findOne(id);
+    if (pkg.kind !== ContractDocumentPackageKind.WINDOWS) {
+      throw new BadRequestException('Доступно только для пакета «Окна»');
+    }
+    const filename = path.basename(file.path);
+    return {
+      fileUrl: `/uploads/contract-document-packages/windows-specifications/${filename}`,
+      fileName: file.originalname,
+      mimeType: file.mimetype || null,
+      size: file.size ?? null,
+    };
   }
 
   @Get('payment-invoices/next-number')

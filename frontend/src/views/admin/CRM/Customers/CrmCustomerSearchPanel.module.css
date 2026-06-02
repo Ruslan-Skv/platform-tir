@@ -98,6 +98,88 @@
   font-size: var(--admin-font-size-xs);
 }
 
+/** Компактная панель — вкладка «Данные» договора (ниже по высоте, чем comfort). */
+.customerCrmPanelCompact {
+  --customer-crm-result-row-height: 2.125rem;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+}
+
+.customerCrmPanelCompact .customerCrmPanelHead {
+  margin-bottom: 2px;
+}
+
+.customerCrmPanelCompact .customerCrmTitle {
+  font-size: var(--admin-font-size-xs);
+  margin-bottom: 0;
+}
+
+.customerCrmPanelCompact .customerCrmHint {
+  display: none;
+}
+
+.customerCrmPanelCompact .customerCrmAddButton,
+.customerCrmPanelCompact .customerCrmClearButton {
+  padding: 4px var(--admin-space-sm);
+  font-size: var(--admin-font-size-xs);
+}
+
+.customerCrmPanelCompact .customerCrmLinkedBadge {
+  font-size: var(--admin-font-size-2xs);
+  padding: 2px 6px;
+}
+
+.customerCrmPanelCompact .customerCrmSearchWrap {
+  margin-top: var(--admin-space-2xs);
+  padding-bottom: 0;
+  flex: 0 0 auto;
+}
+
+.customerCrmPanelCompact .searchInput {
+  padding: 4px var(--admin-space-sm);
+  font-size: var(--admin-font-size-xs);
+}
+
+.customerCrmPanelCompact .customerCrmResultName {
+  font-size: var(--admin-font-size-xs);
+}
+
+.customerCrmPanelCompact .customerCrmResultMeta,
+.customerCrmPanelCompact .customerCrmResultObjectAddress {
+  font-size: var(--admin-font-size-2xs);
+}
+
+.customerCrmPanelCompact .customerCrmResultButton {
+  padding: 4px var(--admin-space-sm);
+}
+
+.customerCrmPanelCompact .customerCrmResultFill,
+.customerCrmPanelCompact .customerCrmResultEditBtn {
+  font-size: var(--admin-font-size-2xs);
+}
+
+/**
+ * Растягивается по высоте слота на вкладке «Данные» договора
+ * (вместе с полями стоимости — на уровень блока «Договор и объект»).
+ */
+.customerCrmPanelDataTopFill {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.customerCrmPanelDataTopFill .customerCrmSearchWrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-bottom: 1rem;
+}
+
+.customerCrmPanelDataTopFill.customerCrmPanelCompact .customerCrmSearchWrap {
+  flex: 1 1 auto;
+  margin-top: auto;
+}
+
 .customerCrmPanelHead {
   display: flex;
   align-items: flex-start;

@@ -2187,7 +2187,7 @@ model ContractDocumentGlobalTemplate {
   @@map("contract_document_global_templates")
 }
 
-/// Настройки оформления договоров «Ремонт» (срок по умолчанию и т.п.).
+/// Срок договора по умолчанию (рабочие дни) по направлению: REPAIR, WINDOWS, …
 model ContractDocumentRepairSettings {
   kind                  ContractDocumentPackageKind @id
   defaultWorkPeriodDays Int                       @default(60)

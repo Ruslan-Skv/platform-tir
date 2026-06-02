@@ -500,6 +500,39 @@ export async function uploadRepairPackageContractCloseActPhoto(
   return res.json() as Promise<{ imageUrl: string }>;
 }
 
+/** Файл спецификации ПВХ для пакета «Окна» (широкий набор форматов, до 50 МБ). */
+export async function uploadWindowsSpecificationFile(
+  packageId: string,
+  file: File
+): Promise<{
+  fileUrl: string;
+  fileName: string;
+  mimeType: string | null;
+  size: number | null;
+}> {
+  const body = new FormData();
+  body.append('file', file);
+  const headers = getAdminAuthHeaders() as Record<string, string>;
+  delete headers['Content-Type'];
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/upload-windows-specification-file`,
+    {
+      method: 'POST',
+      headers: { ...headers, Accept: 'application/json' },
+      body,
+    }
+  );
+  if (!res.ok) {
+    throw new Error(await readAdminContractPackagesError(res));
+  }
+  return res.json() as Promise<{
+    fileUrl: string;
+    fileName: string;
+    mimeType: string | null;
+    size: number | null;
+  }>;
+}
+
 export interface RepairContractPackageTrashRow {
   id: string;
   contractNumber: string;
@@ -679,11 +712,64 @@ export async function putContractDocumentRepairSettings(body: {
   return res.json();
 }
 
+export type ApplyWorkPeriodToAllPackagesResult = {
+  updated: number;
+  workPeriodDays: number;
+  skippedSigned?: number;
+  skippedManual?: number;
+  kind?: ContractDocumentPackageKind;
+};
+
 export async function applyRepairWorkPeriodToAllPackages(body: {
   workPeriodDays: number;
-}): Promise<{ updated: number; workPeriodDays: number }> {
+}): Promise<ApplyWorkPeriodToAllPackagesResult> {
   const res = await apiFetch(
     `${getApiBaseUrl()}/admin/contract-document-packages/repair-settings/apply-work-period-to-all`,
+    {
+      method: 'POST',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err.message || 'Не удалось обновить срок во всех договорах');
+  }
+  return res.json();
+}
+
+export async function getContractDocumentWindowsSettings(): Promise<RepairContractSettings> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/windows-settings`,
+    { headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) throw new Error('Не удалось загрузить настройки договоров «Окна»');
+  return res.json();
+}
+
+export async function putContractDocumentWindowsSettings(body: {
+  defaultWorkPeriodDays: number;
+}): Promise<RepairContractSettings> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/windows-settings`,
+    {
+      method: 'PUT',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err.message || 'Не удалось сохранить настройки');
+  }
+  return res.json();
+}
+
+export async function applyWindowsWorkPeriodToAllPackages(body: {
+  workPeriodDays: number;
+}): Promise<ApplyWorkPeriodToAllPackagesResult> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/windows-settings/apply-work-period-to-all`,
     {
       method: 'POST',
       headers: getAdminAuthHeaders(),

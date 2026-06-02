@@ -24,6 +24,7 @@ import {
   getContractDocumentRepairSettings,
   getContractDocumentSignatoryProfiles,
   getContractDocumentTemplatePresets,
+  getContractDocumentWindowsSettings,
   putContractDocumentTemplatePresets,
   sanitizeContractTemplatePresetForApi,
   updateContractDocumentPackage,
@@ -39,6 +40,7 @@ import { ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_HREF } from '@/views/admin/ContractD
 import { normalizeExecutorRequisiteProfile } from '@/views/admin/ContractDocuments/repair/repairExecutorBankFields';
 
 import styles from '../ContractDocuments.module.css';
+import { ContractDocumentsHelpTooltip } from '../ContractDocumentsHelpTooltip';
 import { RepairAddendumEstimateBlock } from './RepairAddendumEstimateBlock';
 import { RepairContractInvoicesHubIcon } from './RepairContractInvoicesHubIcon';
 import {
@@ -56,6 +58,8 @@ import {
 } from './RepairContractWorkOrderHubContext';
 import { RepairContractWorkOrdersHubIcon } from './RepairContractWorkOrdersHubIcon';
 import { RepairContractWorkOrdersHubModal } from './RepairContractWorkOrdersHubModal';
+import { WindowsContractCostFields } from './WindowsContractCostFields';
+import { WindowsSpecificationTab } from './WindowsSpecificationTab';
 import { amountToRussianWords } from './amountToRussianWords';
 import {
   clearRepairFormCrmCustomerFields,
@@ -69,6 +73,7 @@ import {
   parseLinkedCrmCustomerIdFromFormData,
   persistManagerQuestionnaire1ToCrmCustomer,
 } from './crmManagerQuestionnaire1';
+import { estimatePresetsCatalogKind } from './estimatePresetsCatalogKind';
 import {
   type RepairDocumentTemplateTabId,
   buildPersistedFormData,
@@ -92,9 +97,12 @@ import {
   applyEstimatePresetIdsToRepairForm,
   getContractEstimateObjectGroupKey,
   isContractEstimatePresetAttachable,
+  isEstimatePresetForLinkedContractCustomer,
 } from './repairApplyEstimatePresetIds';
+import { repairContractDateFieldHelp } from './repairContractDateFieldHelp';
 import {
   applyRepairContractDiscountToAmount,
+  applyRepairContractDiscountToNullableBase,
   parseRepairContractDiscountPercent,
   repairContractDiscountMoneyFactor,
   repairEstimateTotalToContractFields,
@@ -105,7 +113,12 @@ import {
 } from './repairContractPackageHubConstants';
 import { getUnsignedAddendumOrdinals } from './repairContractPipeline';
 import { buildRepairContractRequisitesInsertHtmlForToolbar } from './repairContractRequisitesLayout';
-import { resolveRepairWorkPeriodForForm } from './repairContractWorkPeriod';
+import {
+  DEFAULT_REPAIR_CONTRACT_WORK_PERIOD_DAYS,
+  DEFAULT_WINDOWS_CONTRACT_WORK_PERIOD_DAYS,
+  resolveRepairWorkPeriodForForm,
+} from './repairContractWorkPeriod';
+import { repairDiscountFieldHelp } from './repairDiscountFieldHelp';
 import {
   REPAIR_DOCUMENT_TAB_IDS,
   REPAIR_DOCUMENT_TAB_LABELS,
@@ -144,6 +157,11 @@ import {
   defaultRepairWorkOrderHubTab,
   isRepairWorkOrderHubTabHiddenFromPackageEditor,
 } from './repairWorkOrderHubTabs';
+import { repairWorkPeriodFieldHelp } from './repairWorkPeriodFieldHelp';
+import {
+  computeWindowsContractCostBreakdown,
+  windowsContractTotalToContractFields,
+} from './windowsContractCostBreakdown';
 
 function isRepairEditorPackageTabBarTab(id: string): boolean {
   return (
@@ -1149,6 +1167,7 @@ export function RepairContractDocumentEditorPage({
           currentKind === 'WINDOWS' ? 'REPAIR' : currentKind;
         const signatoriesKind: ContractDocumentPackageKind =
           currentKind === 'WINDOWS' ? 'REPAIR' : currentKind;
+        const estimatePresetsKind = estimatePresetsCatalogKind(currentKind);
         const [
           profilesRes,
           signatoryRes,
@@ -1171,15 +1190,21 @@ export function RepairContractDocumentEditorPage({
             items: [] as ContractTemplatePreset[],
             updatedAt: null as string | null,
           })),
-          getContractDocumentEstimatePresets(currentKind).catch(() => ({
+          getContractDocumentEstimatePresets(estimatePresetsKind).catch(() => ({
             items: [] as ContractEstimatePreset[],
             groups: [],
             updatedAt: null as string | null,
           })),
           getContractDocumentPackages(currentKind).catch(() => []),
           getInstallers().catch(() => [] as InstallerMaster[]),
-          getContractDocumentRepairSettings().catch(() => ({
-            defaultWorkPeriodDays: 60,
+          (currentKind === 'WINDOWS'
+            ? getContractDocumentWindowsSettings()
+            : getContractDocumentRepairSettings()
+          ).catch(() => ({
+            defaultWorkPeriodDays:
+              currentKind === 'WINDOWS'
+                ? DEFAULT_WINDOWS_CONTRACT_WORK_PERIOD_DAYS
+                : DEFAULT_REPAIR_CONTRACT_WORK_PERIOD_DAYS,
             updatedAt: null as string | null,
           })),
           listPackagePaymentInvoices(packageId).catch(() => []),
@@ -1223,9 +1248,14 @@ export function RepairContractDocumentEditorPage({
           : normalizedStoredDate;
         const persistContractDate = contractDateAutofill || dateMigratedFromLegacy;
 
+        const workPeriodPackageKind: 'REPAIR' | 'WINDOWS' =
+          currentKind === 'WINDOWS' ? 'WINDOWS' : 'REPAIR';
+        const workPeriodIsManualStored = mergedForm.contract.workPeriodIsManual === true;
         const { value: workPeriod, autofill: workPeriodAutofill } = resolveRepairWorkPeriodForForm(
           mergedForm.contract.workPeriod,
-          repairSettingsRes.defaultWorkPeriodDays
+          repairSettingsRes.defaultWorkPeriodDays,
+          workPeriodPackageKind,
+          workPeriodIsManualStored
         );
 
         const mergedContractNumber = mergedForm.contract.number?.trim() ?? '';
@@ -1239,6 +1269,7 @@ export function RepairContractDocumentEditorPage({
             number: contractNumber,
             date: contractDate,
             workPeriod,
+            workPeriodIsManual: workPeriodAutofill ? false : workPeriodIsManualStored,
           },
           estimate: {
             ...mergedForm.estimate,
@@ -1770,6 +1801,9 @@ export function RepairContractDocumentEditorPage({
     }
     setForm((p) => {
       const nextContract = { ...p.contract, [key]: value };
+      if (key === 'workPeriod') {
+        nextContract.workPeriodIsManual = true;
+      }
       if (key === 'discountPercent') {
         const base = p.estimate.snapshot?.total;
         if (typeof base === 'number' && Number.isFinite(base)) {
@@ -1833,6 +1867,14 @@ export function RepairContractDocumentEditorPage({
     }
     return map;
   }, [repairPackages, packageId]);
+  const estimateCustomerFilter = useMemo(
+    () => ({
+      filterByLinkedCustomer: isWindowsPackage,
+      linkedCrmCustomerId,
+    }),
+    [isWindowsPackage, linkedCrmCustomerId]
+  );
+
   /** Расчёты, доступные для прикрепления: не в этом пакете и ни в каком другом пакете договора. */
   const attachableEstimatePresets = useMemo(() => {
     const selected = new Set(form.estimate.selectedPresetIds ?? []);
@@ -1844,6 +1886,9 @@ export function RepairContractDocumentEditorPage({
     }
     return estimatePresets.filter((preset) => {
       if (!isContractEstimatePresetAttachable(preset, estimateGroups)) return false;
+      if (!isEstimatePresetForLinkedContractCustomer(preset, estimateCustomerFilter)) {
+        return false;
+      }
       if (selected.has(preset.id)) return false;
       if (usedOnAddenda.has(preset.id)) return false;
       return (estimateUsageById.get(preset.id)?.length ?? 0) === 0;
@@ -1854,6 +1899,7 @@ export function RepairContractDocumentEditorPage({
     estimateUsageById,
     form.estimate.selectedPresetIds,
     form.addendumSlots,
+    estimateCustomerFilter,
   ]);
 
   const contractEstimateObjectKey = useMemo(
@@ -1915,6 +1961,7 @@ export function RepairContractDocumentEditorPage({
     return estimatePresets
       .filter((p) => {
         if (!isContractEstimatePresetAttachable(p, estimateGroups)) return false;
+        if (!isEstimatePresetForLinkedContractCustomer(p, estimateCustomerFilter)) return false;
         if (usedElsewhere.has(p.id)) return false;
         if ((estimateUsageById.get(p.id)?.length ?? 0) !== 0) return false;
         const g = p.groupId ? p.groupId : '__ungrouped__';
@@ -1930,6 +1977,7 @@ export function RepairContractDocumentEditorPage({
     estimatePresets,
     estimateGroups,
     estimateUsageById,
+    estimateCustomerFilter,
   ]);
   const attachableAddendumExcludedEstimatePresets = attachableAddendumEstimatePresets;
 
@@ -2016,6 +2064,121 @@ export function RepairContractDocumentEditorPage({
     const date = !raw ? '—' : contractDateToDdMmYyyy(raw) || raw;
     return { num, date };
   }, [form.contract.number, form.contract.date]);
+
+  const windowsContractCostBreakdown = useMemo(
+    () => (isWindowsPackage ? computeWindowsContractCostBreakdown(form) : null),
+    [
+      isWindowsPackage,
+      form.estimate.snapshot?.total,
+      form.estimate.selectedPresetIds,
+      form.windowsSpecificationAmount,
+      form.contract.discountPercent,
+    ]
+  );
+
+  const repairContractTotalFromEstimate = useMemo(() => {
+    if (isWindowsPackage) return null;
+    return applyRepairContractDiscountToNullableBase(
+      form.estimate.snapshot?.total ?? null,
+      form.contract.discountPercent
+    );
+  }, [
+    isWindowsPackage,
+    form.estimate.snapshot?.total,
+    form.estimate.selectedPresetIds,
+    form.contract.discountPercent,
+  ]);
+
+  /** Ремонт: «Стоимость договора» = итог сметы с учётом скидки по договору. */
+  useEffect(() => {
+    if (isWindowsPackage) return;
+    const contractFields = repairEstimateTotalToContractFields(repairContractTotalFromEstimate);
+    const cur = formRef.current.contract;
+    if (
+      cur.totalAmount === contractFields.totalAmount &&
+      cur.totalAmountWords === contractFields.totalAmountWords &&
+      cur.recommendedPrepayment === contractFields.recommendedPrepayment
+    ) {
+      return;
+    }
+    setForm((p) => ({
+      ...p,
+      contract: {
+        ...p.contract,
+        totalAmount: contractFields.totalAmount,
+        totalAmountWords: contractFields.totalAmountWords,
+        recommendedPrepayment: contractFields.recommendedPrepayment,
+      },
+    }));
+    touchPackageData();
+  }, [isWindowsPackage, repairContractTotalFromEstimate, touchPackageData]);
+
+  /** Пакет «Окна»: общая сумма договора = работы (счёт-заказ) + изделия (спецификация). */
+  useEffect(() => {
+    if (!isWindowsPackage || !windowsContractCostBreakdown) return;
+    const contractFields = windowsContractTotalToContractFields(
+      windowsContractCostBreakdown.totalAmount
+    );
+    const cur = formRef.current.contract;
+    if (
+      cur.totalAmount === contractFields.totalAmount &&
+      cur.totalAmountWords === contractFields.totalAmountWords &&
+      cur.recommendedPrepayment === contractFields.recommendedPrepayment
+    ) {
+      return;
+    }
+    setForm((p) => ({
+      ...p,
+      contract: {
+        ...p.contract,
+        totalAmount: contractFields.totalAmount,
+        totalAmountWords: contractFields.totalAmountWords,
+        recommendedPrepayment: contractFields.recommendedPrepayment,
+      },
+    }));
+    touchPackageData();
+  }, [isWindowsPackage, windowsContractCostBreakdown, touchPackageData]);
+
+  const workPeriodFieldHelp = useMemo(
+    () =>
+      repairWorkPeriodFieldHelp({
+        packageKindLabel: PACKAGE_KIND_UI_LABEL[packageKind],
+        contractLocked: contractAndEstimateLocked,
+        workPeriodIsManual: form.contract.workPeriodIsManual === true,
+        isSuperAdmin,
+        placeholderDays:
+          form.contract.workPeriod.trim() ||
+          (isWindowsPackage
+            ? String(DEFAULT_WINDOWS_CONTRACT_WORK_PERIOD_DAYS)
+            : String(DEFAULT_REPAIR_CONTRACT_WORK_PERIOD_DAYS)),
+      }),
+    [
+      packageKind,
+      contractAndEstimateLocked,
+      form.contract.workPeriodIsManual,
+      form.contract.workPeriod,
+      isSuperAdmin,
+      isWindowsPackage,
+    ]
+  );
+
+  const discountFieldHelp = useMemo(
+    () =>
+      repairDiscountFieldHelp({
+        isWindowsPackage,
+        contractLocked: contractAndEstimateLocked,
+      }),
+    [isWindowsPackage, contractAndEstimateLocked]
+  );
+
+  const contractDateFieldHelp = useMemo(
+    () =>
+      repairContractDateFieldHelp({
+        isWindowsPackage,
+        contractLocked: contractAndEstimateLocked,
+      }),
+    [isWindowsPackage, contractAndEstimateLocked]
+  );
 
   const finalEstimateSummary = useMemo(() => buildFinalEstimateSummary(form), [form]);
   const contractDiscountPercentParsed = useMemo(
@@ -3321,7 +3484,7 @@ export function RepairContractDocumentEditorPage({
         if (specIndex < 0) return tabs;
         tabs.splice(specIndex, 1);
         const invoiceOrderIndex = tabs.indexOf('estimate');
-        const insertAt = invoiceOrderIndex >= 0 ? invoiceOrderIndex + 1 : 0;
+        const insertAt = invoiceOrderIndex >= 0 ? invoiceOrderIndex : 0;
         tabs.splice(insertAt, 0, 'finalEstimate');
         return tabs;
       })()
@@ -3874,59 +4037,86 @@ export function RepairContractDocumentEditorPage({
                             className={contractObjectBlockFieldClassName('contract.number')}
                           />
                         </div>
-                        <div className={`${styles.field} ${styles.contractInlineField}`}>
-                          <label htmlFor="cd">Дата закл.</label>
-                          <input
-                            id="cd"
-                            value={form.contract.date}
-                            onChange={(e) => updateContract('date', e.target.value)}
-                            placeholder="дд.мм.гггг"
-                            autoComplete="off"
-                            disabled={contractAndEstimateLocked}
-                            className={contractObjectBlockFieldClassName('contract.date')}
-                          />
-                        </div>
-                        <div className={`${styles.field} ${styles.contractInlineField}`}>
-                          <label htmlFor="wp">Срок дог.</label>
-                          <input
-                            id="wp"
-                            inputMode="numeric"
-                            value={form.contract.workPeriod}
-                            onChange={(e) => updateContract('workPeriod', e.target.value)}
-                            placeholder="60"
-                            title={
-                              isSuperAdmin
-                                ? 'Календарных дней; в шаблоне: {{contract.workPeriod}}'
-                                : 'Срок задаётся в настройках «Ремонт»; изменить может только суперадмин'
-                            }
-                            autoComplete="off"
-                            readOnly={!isSuperAdmin}
-                            disabled={contractAndEstimateLocked || !isSuperAdmin}
-                            className={contractObjectBlockFieldClassName('contract.workPeriod')}
-                          />
-                        </div>
-                        <div
-                          className={`${styles.field} ${styles.contractInlineField} ${styles.contractDiscountFieldCell}`}
+                        <ContractDocumentsHelpTooltip
+                          title={contractDateFieldHelp.title}
+                          steps={contractDateFieldHelp.steps}
+                          note={contractDateFieldHelp.note}
+                          align="end"
                         >
-                          <label htmlFor="contract_discount_pct">Скидка (%)</label>
-                          <input
-                            id="contract_discount_pct"
-                            inputMode="decimal"
-                            value={form.contract.discountPercent}
-                            onChange={(e) => updateContract('discountPercent', e.target.value)}
-                            placeholder="0"
-                            title={
-                              contractAndEstimateLocked
-                                ? 'После статуса «Договор подписан» общие данные договора изменить нельзя'
-                                : 'Применяется к смете, доп. соглашениям, заказ-наряду и вкладке «Оплаты»'
-                            }
-                            autoComplete="off"
-                            disabled={contractAndEstimateLocked}
-                            className={contractObjectBlockFieldClassName(
-                              'contract.discountPercent'
-                            )}
-                          />
-                        </div>
+                          <div className={`${styles.field} ${styles.contractInlineField}`}>
+                            <label htmlFor="cd">Дата закл.</label>
+                            <input
+                              id="cd"
+                              value={form.contract.date}
+                              onChange={(e) => updateContract('date', e.target.value)}
+                              placeholder="дд.мм.гггг"
+                              autoComplete="off"
+                              disabled={contractAndEstimateLocked}
+                              readOnly={contractAndEstimateLocked}
+                              className={
+                                contractAndEstimateLocked
+                                  ? styles.autoFilledInput
+                                  : contractObjectBlockFieldClassName('contract.date')
+                              }
+                            />
+                          </div>
+                        </ContractDocumentsHelpTooltip>
+                        <ContractDocumentsHelpTooltip
+                          title={workPeriodFieldHelp.title}
+                          steps={workPeriodFieldHelp.steps}
+                          note={workPeriodFieldHelp.note}
+                          align="end"
+                        >
+                          <div className={`${styles.field} ${styles.contractInlineField}`}>
+                            <label htmlFor="wp">Срок дог.</label>
+                            <input
+                              id="wp"
+                              inputMode="numeric"
+                              value={form.contract.workPeriod}
+                              onChange={(e) => updateContract('workPeriod', e.target.value)}
+                              placeholder={
+                                isWindowsPackage
+                                  ? String(DEFAULT_WINDOWS_CONTRACT_WORK_PERIOD_DAYS)
+                                  : String(DEFAULT_REPAIR_CONTRACT_WORK_PERIOD_DAYS)
+                              }
+                              autoComplete="off"
+                              readOnly={!isSuperAdmin || contractAndEstimateLocked}
+                              disabled={contractAndEstimateLocked || !isSuperAdmin}
+                              className={
+                                !isSuperAdmin || contractAndEstimateLocked
+                                  ? styles.autoFilledInput
+                                  : contractObjectBlockFieldClassName('contract.workPeriod')
+                              }
+                            />
+                          </div>
+                        </ContractDocumentsHelpTooltip>
+                        <ContractDocumentsHelpTooltip
+                          title={discountFieldHelp.title}
+                          steps={discountFieldHelp.steps}
+                          note={discountFieldHelp.note}
+                          align="end"
+                        >
+                          <div
+                            className={`${styles.field} ${styles.contractInlineField} ${styles.contractDiscountFieldCell}`}
+                          >
+                            <label htmlFor="contract_discount_pct">Скидка (%)</label>
+                            <input
+                              id="contract_discount_pct"
+                              inputMode="decimal"
+                              value={form.contract.discountPercent}
+                              onChange={(e) => updateContract('discountPercent', e.target.value)}
+                              placeholder="0"
+                              autoComplete="off"
+                              disabled={contractAndEstimateLocked}
+                              readOnly={contractAndEstimateLocked}
+                              className={
+                                contractAndEstimateLocked
+                                  ? styles.autoFilledInput
+                                  : contractObjectBlockFieldClassName('contract.discountPercent')
+                              }
+                            />
+                          </div>
+                        </ContractDocumentsHelpTooltip>
                       </div>
                       <div
                         className={`${styles.contractInlineRow} ${styles.contractObjectAddressRow}`}
@@ -4014,14 +4204,14 @@ export function RepairContractDocumentEditorPage({
                   </div>
                 </div>
 
-                <div className={styles.dataTopBlock}>
+                <div className={`${styles.dataTopBlock} ${styles.dataTopBlockCustomerCol}`}>
                   <div
                     className={`${styles.repairCustomerSearchSlot} ${
                       contractAndEstimateLocked ? styles.repairCustomerSearchSlotLocked : ''
                     }`}
                   >
                     <CrmCustomerSearchPanel
-                      className={crmCustomerSearchPanelStyles.customerCrmPanelComfort}
+                      className={`${crmCustomerSearchPanelStyles.customerCrmPanelCompact} ${crmCustomerSearchPanelStyles.customerCrmPanelDataTopFill}`}
                       customerId={linkedCrmCustomerId}
                       disabled={contractAndEstimateLocked}
                       listboxId="repair-customer-crm-search-listbox"
@@ -4030,6 +4220,23 @@ export function RepairContractDocumentEditorPage({
                       onError={(text) => setError(text)}
                     />
                   </div>
+                  {isWindowsPackage && windowsContractCostBreakdown ? (
+                    <WindowsContractCostFields breakdown={windowsContractCostBreakdown} />
+                  ) : (
+                    <div className={`${styles.field} ${styles.repairDataContractAmountField}`}>
+                      <label htmlFor="repair_data_contract_total">Стоимость договора</label>
+                      <input
+                        id="repair_data_contract_total"
+                        type="text"
+                        readOnly
+                        value={form.contract.totalAmount}
+                        placeholder="—"
+                        autoComplete="off"
+                        title="Из вкладки «Смета» (с учётом скидки по договору)"
+                        className={styles.autoFilledInput}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -4446,20 +4653,27 @@ export function RepairContractDocumentEditorPage({
               <div className={styles.sectionCard}>
                 {contractAndEstimateLocked ? (
                   <p className={`${styles.hint} ${styles.estimateLockNotice}`}>
-                    Договор подписан: смета договора и прикреплённые к ней расчёты только для
-                    просмотра и печати. Дополнительные объёмы оформляйте на вкладках «Д/с №1»…«Д/с
-                    №5»: там можно прикрепить новые расчёты к соответствующему дополнительному
-                    соглашению.
+                    {isWindowsPackage
+                      ? 'Договор подписан: счёт-заказ и прикреплённые расчёты только для просмотра и печати.'
+                      : 'Договор подписан: смета договора и прикреплённые к ней расчёты только для просмотра и печати. Дополнительные объёмы оформляйте на вкладках «Д/с №1»…«Д/с №5»: там можно прикрепить новые расчёты к соответствующему дополнительному соглашению.'}
                   </p>
                 ) : null}
                 <div className={styles.estimateSectionHeader}>
-                  <h3 className={`${styles.sectionTitle} ${styles.estimateSectionTitle}`}>Смета</h3>
+                  <h3 className={`${styles.sectionTitle} ${styles.estimateSectionTitle}`}>
+                    {isWindowsPackage ? 'Счёт-заказ' : 'Смета'}
+                  </h3>
                 </div>
                 <p className={styles.hint} style={{ marginTop: 0 }}>
-                  Объект выбирается только здесь: все расчёты основной сметы и доп. соглашений
-                  должны относиться к одному объекту. После первого прикреплённого расчёта объект
-                  фиксируется автоматически.
+                  {isWindowsPackage
+                    ? 'Прикрепляются расчёты заказчика из раздела «Расчёты» (тот же, что выбран в блоке «Данные»). Объект выбирается здесь: все расчёты счёта-заказа должны относиться к одному объекту. После первого прикрепления объект фиксируется.'
+                    : 'Объект выбирается только здесь: все расчёты основной сметы и доп. соглашений должны относиться к одному объекту. После первого прикреплённого расчёта объект фиксируется автоматически.'}
                 </p>
+                {isWindowsPackage && !linkedCrmCustomerId?.trim() && !contractAndEstimateLocked ? (
+                  <p className={`${styles.hint} ${styles.estimateTabHint}`} role="status">
+                    Сначала выберите заказчика в блоке «Поиск заказчика в базе» на вкладке «Данные»
+                    — тогда появятся его расчёты для прикрепления.
+                  </p>
+                ) : null}
                 <div className={styles.sectionFields}>
                   <div className={`${styles.estimatePickAndAttachedRow} ${styles.fieldSpanAll}`}>
                     <div className={styles.estimatePickColumn}>
@@ -4545,12 +4759,17 @@ export function RepairContractDocumentEditorPage({
                         </div>
                         {attachableEstimatePresets.length === 0 ? (
                           <p className={`${styles.hint} ${styles.estimateTabHint}`}>
-                            Нет свободных расчётов для прикрепления.
+                            {isWindowsPackage && !linkedCrmCustomerId?.trim()
+                              ? 'Выберите заказчика на вкладке «Данные».'
+                              : isWindowsPackage
+                                ? 'Нет свободных расчётов этого заказчика для прикрепления (проверьте раздел «Расчёты» и статус «В работе»).'
+                                : 'Нет свободных расчётов для прикрепления.'}
                           </p>
                         ) : (
                           <p className={`${styles.hint} ${styles.estimateTabHint}`}>
                             Сначала объект, затем расчёт → «Прикрепить». Нельзя смешивать расчёты
-                            разных объектов. Справа — порядок в смете (перетаскивание).
+                            разных объектов. Справа — порядок{' '}
+                            {isWindowsPackage ? 'в счёте-заказе' : 'в смете'} (перетаскивание).
                           </p>
                         )}
                       </div>
@@ -4642,12 +4861,14 @@ export function RepairContractDocumentEditorPage({
                         data-print-target="estimate-sheet"
                       >
                         <p className={styles.estimateA4AppendixRef}>
-                          Приложение №1 к договору № {estimateAppendixContractRef.num} от{' '}
-                          {estimateAppendixContractRef.date}
+                          Приложение №{isWindowsPackage ? 2 : 1} к договору №{' '}
+                          {estimateAppendixContractRef.num} от {estimateAppendixContractRef.date}
                         </p>
                         {(form.estimate.snapshot?.rooms?.length ?? 0) > 0 ? (
                           <>
-                            <h4 className={styles.estimateA4Title}>Смета работ</h4>
+                            <h4 className={styles.estimateA4Title}>
+                              {isWindowsPackage ? 'Счёт-заказ на работы.' : 'Смета работ'}
+                            </h4>
                             {selectedEstimateSections.length > 0 ? (
                               selectedEstimateSections.map((section) => (
                                 <section
@@ -4730,7 +4951,9 @@ export function RepairContractDocumentEditorPage({
                             {contractDiscountPercentParsed > 0 ? (
                               <>
                                 <p className={styles.estimateA4Total}>
-                                  Итого по смете (без скидки):{' '}
+                                  {isWindowsPackage
+                                    ? 'Итого по счёт-заказу (без скидки):'
+                                    : 'Итого по смете (без скидки):'}{' '}
                                   <strong>
                                     {formatMoneyValue(form.estimate.snapshot?.total ?? 0)} руб.
                                   </strong>
@@ -4754,7 +4977,7 @@ export function RepairContractDocumentEditorPage({
                               </>
                             ) : (
                               <p className={styles.estimateA4Total}>
-                                Итого по смете:{' '}
+                                {isWindowsPackage ? 'Итого по счёт-заказу:' : 'Итого по смете:'}{' '}
                                 <strong>
                                   {formatMoneyValue(form.estimate.snapshot?.total ?? 0)} руб.
                                 </strong>
@@ -4797,115 +5020,150 @@ export function RepairContractDocumentEditorPage({
             </div>
           </div>
         ) : activeTab === 'finalEstimate' ? (
-          <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
-            <div className={styles.formGrid}>
-              <div className={styles.sectionCard}>
-                <h3 className={`${styles.sectionTitle} ${styles.estimateSectionTitle}`}>
-                  Итоговая смета
-                </h3>
-                <p className={styles.hint} style={{ marginTop: 0 }}>
-                  Итог формируется из основной сметы и всех доп. соглашений. Одинаковые работы в
-                  одном помещении суммируются, а работы из блока «Непроводимые ремонтно-отделочные
-                  работы» вычитаются по количеству и сумме. В строках таблицы — суммы без скидки по
-                  договору; скидка только в итогах ниже; по позициям со скидкой см. «Заказ-наряды» →
-                  «Итог. заказ-наряд».
-                </p>
-                <div className={styles.estimateA4Wrap}>
-                  <article
-                    className={styles.estimateA4Sheet}
-                    data-print-target="final-estimate-sheet"
-                  >
-                    <p className={styles.estimateA4AppendixRef}>
-                      Приложение №1 к договору № {estimateAppendixContractRef.num} от{' '}
-                      {estimateAppendixContractRef.date}
-                    </p>
-                    {finalEstimateRooms.length === 0 ? (
-                      <p className={styles.estimateA4Empty}>Нет данных для итоговой сметы.</p>
-                    ) : (
-                      <>
-                        <h4 className={styles.estimateA4Title}>Итоговая смета работ</h4>
-                        <p className={styles.estimateA4Meta}>
-                          Помещений: {finalEstimateRooms.length}
-                        </p>
-                        {finalEstimateRooms.map((room, roomIndex) => (
-                          <section
-                            key={`final-estimate-room-${room.name}-${roomIndex}`}
-                            className={styles.estimateA4Room}
-                          >
-                            <div className={styles.estimateA4RoomHeader}>
-                              <span>
-                                {roomIndex + 1}. {room.name}
-                              </span>
-                              <strong>{formatMoneyValue(room.total)} руб.</strong>
-                            </div>
-                            <table className={styles.estimateA4Table}>
-                              <thead>
-                                <tr>
-                                  <th>№</th>
-                                  <th>Наименование</th>
-                                  <th>Ед.</th>
-                                  <th>Кол-во</th>
-                                  <th>Цена</th>
-                                  <th>Сумма</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {room.lines.map((line, lineIndex) => (
-                                  <tr key={`${room.name}-${line.name}-${lineIndex}`}>
-                                    <td>{lineIndex + 1}</td>
-                                    <td>
-                                      {line.name}
-                                      {line.excludedQuantity > 0 ? (
-                                        <div className={styles.estimateAttachedPresetMeta}>
-                                          Вычет: {formatMoneyValue(line.excludedQuantity)} из{' '}
-                                          {formatMoneyValue(line.includedQuantity)}
-                                        </div>
-                                      ) : null}
-                                    </td>
-                                    <td>{line.unit || '—'}</td>
-                                    <td>{formatMoneyValue(line.quantity)}</td>
-                                    <td>{formatMoneyValue(line.price)}</td>
-                                    <td>{formatMoneyValue(line.amount)}</td>
+          isWindowsPackage ? (
+            <WindowsSpecificationTab
+              packageId={packageId}
+              amount={form.windowsSpecificationAmount}
+              fileUrl={form.windowsSpecificationFileUrl}
+              fileName={form.windowsSpecificationFileName}
+              contractNumberLabel={estimateAppendixContractRef.num}
+              contractDateLabel={estimateAppendixContractRef.date}
+              disabled={contractAndEstimateLocked}
+              onAmountChange={(value) => {
+                setForm((p) => ({ ...p, windowsSpecificationAmount: value }));
+                touchPackageData();
+              }}
+              onFileAttached={({ fileUrl, fileName }) => {
+                setForm((p) => ({
+                  ...p,
+                  windowsSpecificationFileUrl: fileUrl,
+                  windowsSpecificationFileName: fileName,
+                }));
+                touchPackageData();
+              }}
+              onFileClear={() => {
+                setForm((p) => ({
+                  ...p,
+                  windowsSpecificationFileUrl: '',
+                  windowsSpecificationFileName: '',
+                }));
+                touchPackageData();
+              }}
+              onError={(text) => setError(text)}
+            />
+          ) : (
+            <div
+              className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}
+            >
+              <div className={styles.formGrid}>
+                <div className={styles.sectionCard}>
+                  <h3 className={`${styles.sectionTitle} ${styles.estimateSectionTitle}`}>
+                    Итоговая смета
+                  </h3>
+                  <p className={styles.hint} style={{ marginTop: 0 }}>
+                    Итог формируется из основной сметы и всех доп. соглашений. Одинаковые работы в
+                    одном помещении суммируются, а работы из блока «Непроводимые ремонтно-отделочные
+                    работы» вычитаются по количеству и сумме. В строках таблицы — суммы без скидки
+                    по договору; скидка только в итогах ниже; по позициям со скидкой см.
+                    «Заказ-наряды» → «Итог. заказ-наряд».
+                  </p>
+                  <div className={styles.estimateA4Wrap}>
+                    <article
+                      className={styles.estimateA4Sheet}
+                      data-print-target="final-estimate-sheet"
+                    >
+                      <p className={styles.estimateA4AppendixRef}>
+                        Приложение №1 к договору № {estimateAppendixContractRef.num} от{' '}
+                        {estimateAppendixContractRef.date}
+                      </p>
+                      {finalEstimateRooms.length === 0 ? (
+                        <p className={styles.estimateA4Empty}>Нет данных для итоговой сметы.</p>
+                      ) : (
+                        <>
+                          <h4 className={styles.estimateA4Title}>Итоговая смета работ</h4>
+                          <p className={styles.estimateA4Meta}>
+                            Помещений: {finalEstimateRooms.length}
+                          </p>
+                          {finalEstimateRooms.map((room, roomIndex) => (
+                            <section
+                              key={`final-estimate-room-${room.name}-${roomIndex}`}
+                              className={styles.estimateA4Room}
+                            >
+                              <div className={styles.estimateA4RoomHeader}>
+                                <span>
+                                  {roomIndex + 1}. {room.name}
+                                </span>
+                                <strong>{formatMoneyValue(room.total)} руб.</strong>
+                              </div>
+                              <table className={styles.estimateA4Table}>
+                                <thead>
+                                  <tr>
+                                    <th>№</th>
+                                    <th>Наименование</th>
+                                    <th>Ед.</th>
+                                    <th>Кол-во</th>
+                                    <th>Цена</th>
+                                    <th>Сумма</th>
                                   </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </section>
-                        ))}
-                        {contractDiscountPercentParsed > 0 ? (
-                          <>
+                                </thead>
+                                <tbody>
+                                  {room.lines.map((line, lineIndex) => (
+                                    <tr key={`${room.name}-${line.name}-${lineIndex}`}>
+                                      <td>{lineIndex + 1}</td>
+                                      <td>
+                                        {line.name}
+                                        {line.excludedQuantity > 0 ? (
+                                          <div className={styles.estimateAttachedPresetMeta}>
+                                            Вычет: {formatMoneyValue(line.excludedQuantity)} из{' '}
+                                            {formatMoneyValue(line.includedQuantity)}
+                                          </div>
+                                        ) : null}
+                                      </td>
+                                      <td>{line.unit || '—'}</td>
+                                      <td>{formatMoneyValue(line.quantity)}</td>
+                                      <td>{formatMoneyValue(line.price)}</td>
+                                      <td>{formatMoneyValue(line.amount)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </section>
+                          ))}
+                          {contractDiscountPercentParsed > 0 ? (
+                            <>
+                              <p className={styles.estimateA4Total}>
+                                Итого по итоговой смете (без скидки):{' '}
+                                <strong>
+                                  {formatMoneyValue(finalEstimateSummary.totalAmount)} руб.
+                                </strong>
+                              </p>
+                              <p className={styles.estimateA4DiscountMeta}>
+                                Скидка по договору:{' '}
+                                {String(contractDiscountPercentParsed).replace('.', ',')}%
+                              </p>
+                              <p className={styles.estimateA4Total}>
+                                Итого со скидкой:{' '}
+                                <strong>
+                                  {formatMoneyValue(finalEstimateTotalAfterDiscount)} руб.
+                                </strong>
+                              </p>
+                            </>
+                          ) : (
                             <p className={styles.estimateA4Total}>
-                              Итого по итоговой смете (без скидки):{' '}
+                              Итого по итоговой смете:{' '}
                               <strong>
                                 {formatMoneyValue(finalEstimateSummary.totalAmount)} руб.
                               </strong>
                             </p>
-                            <p className={styles.estimateA4DiscountMeta}>
-                              Скидка по договору:{' '}
-                              {String(contractDiscountPercentParsed).replace('.', ',')}%
-                            </p>
-                            <p className={styles.estimateA4Total}>
-                              Итого со скидкой:{' '}
-                              <strong>
-                                {formatMoneyValue(finalEstimateTotalAfterDiscount)} руб.
-                              </strong>
-                            </p>
-                          </>
-                        ) : (
-                          <p className={styles.estimateA4Total}>
-                            Итого по итоговой смете:{' '}
-                            <strong>
-                              {formatMoneyValue(finalEstimateSummary.totalAmount)} руб.
-                            </strong>
-                          </p>
-                        )}
-                      </>
-                    )}
-                  </article>
+                          )}
+                        </>
+                      )}
+                    </article>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )
         ) : (
           <>
             {activeAddendumSlot !== null &&

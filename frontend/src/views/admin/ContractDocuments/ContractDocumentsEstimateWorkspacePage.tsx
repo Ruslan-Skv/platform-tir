@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -15,7 +15,10 @@ import { type CrmCustomerDetail, getCrmCustomer, getMeasurement } from '@/shared
 import { ApprovedOrderGuardProvider } from '@/shared/lib/contexts/ApprovedOrderGuardContext';
 import { CartProvider } from '@/shared/lib/contexts/CartContext';
 import { Modal } from '@/shared/ui/Modal';
-import { CrmCustomerSearchPanel } from '@/views/admin/CRM/Customers/CrmCustomerSearchPanel';
+import {
+  type CrmCustomerAppliedContext,
+  CrmCustomerSearchPanel,
+} from '@/views/admin/CRM/Customers/CrmCustomerSearchPanel';
 import { crmDetailWithPreferredObjectAddress } from '@/views/admin/CRM/Customers/crmCustomerExtendedProfile';
 import measurementFormStyles from '@/views/admin/CRM/Measurements/MeasurementFormPage.module.css';
 import { ServiceCategoryPage } from '@/views/services/ui/ServiceCategoryPage/ServiceCategoryPage';
@@ -129,6 +132,28 @@ function estimateCustomerFieldsFromPreset(
     customerName: (preset.customerName ?? '').trim(),
     objectAddress: (preset.objectAddress ?? '').trim(),
   };
+}
+
+/** Актуальные поля заказчика из CRM (снимок в пресете может устареть). */
+async function resolveEstimateCustomerFieldsFromPreset(
+  preset: ContractEstimatePreset
+): Promise<EstimateCrmCustomerFields> {
+  const fromPreset = estimateCustomerFieldsFromPreset(preset);
+  const crmId = fromPreset.crmCustomerId?.trim();
+  if (!crmId) return fromPreset;
+  try {
+    const detail = await getCrmCustomer(crmId);
+    const fromCrm = estimateFieldsFromCrmCustomerDetail(
+      crmDetailWithPreferredObjectAddress(detail, fromPreset.objectAddress || undefined)
+    );
+    return {
+      crmCustomerId: fromCrm.crmCustomerId,
+      customerName: fromCrm.customerName || fromPreset.customerName,
+      objectAddress: fromCrm.objectAddress || fromPreset.objectAddress,
+    };
+  } catch {
+    return fromPreset;
+  }
 }
 
 type AdminMultiCategoryMeta = {
@@ -490,6 +515,8 @@ function ContractDocumentsEstimateWorkspaceInner() {
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   /** Пока true — считаем черновик несохранённым (режим «копия»), чтобы была кнопка «Сохранить». */
   const [copySessionPendingSave, setCopySessionPendingSave] = useState(false);
+  const workspaceLoadGenRef = useRef(0);
+  const customerChosenDuringLoadRef = useRef(false);
 
   const applyEstimateCustomerFields = useCallback((fields: EstimateCrmCustomerFields) => {
     setCrmCustomerId(fields.crmCustomerId);
@@ -498,8 +525,14 @@ function ContractDocumentsEstimateWorkspaceInner() {
   }, []);
 
   const handleEstimateCrmCustomerApplied = useCallback(
-    (detail: CrmCustomerDetail) => {
-      applyEstimateCustomerFields(estimateFieldsFromCrmCustomerDetail(detail));
+    (detail: CrmCustomerDetail, context?: CrmCustomerAppliedContext) => {
+      customerChosenDuringLoadRef.current = true;
+      const fields = estimateFieldsFromCrmCustomerDetail(detail);
+      const displayName = context?.displayName?.trim();
+      applyEstimateCustomerFields({
+        ...fields,
+        customerName: displayName || fields.customerName,
+      });
       setEstimateCustomerError(null);
       setEstimateObjectAddressError(null);
     },
@@ -507,19 +540,30 @@ function ContractDocumentsEstimateWorkspaceInner() {
   );
 
   const handleEstimateCrmCustomerClear = useCallback(() => {
+    customerChosenDuringLoadRef.current = true;
     applyEstimateCustomerFields(emptyEstimateCrmCustomerFields());
     setEstimateCustomerError(null);
     setEstimateObjectAddressError(null);
   }, [applyEstimateCustomerFields]);
 
   useEffect(() => {
+    let cancelled = false;
+    const loadGen = ++workspaceLoadGenRef.current;
+    customerChosenDuringLoadRef.current = false;
+
+    const applyCustomerFromLoader = (fields: EstimateCrmCustomerFields) => {
+      if (cancelled || workspaceLoadGenRef.current !== loadGen) return;
+      if (customerChosenDuringLoadRef.current) return;
+      applyEstimateCustomerFields(fields);
+    };
+
     void (async () => {
       setLoading(true);
       setError(null);
       setOk(null);
       setBaseline(null);
       setCopySessionPendingSave(false);
-      applyEstimateCustomerFields(emptyEstimateCrmCustomerFields());
+      applyCustomerFromLoader(emptyEstimateCrmCustomerFields());
       try {
         const [presetsRes, categoriesRes] = await Promise.all([
           getContractDocumentEstimatePresets('REPAIR'),
@@ -565,8 +609,8 @@ function ContractDocumentsEstimateWorkspaceInner() {
             setSelectedEstimateId('');
             baselineSlugs = sourceSlugs;
             baselineName = copyTitle;
-            baselineCustomer = estimateCustomerFieldsFromPreset(source);
-            applyEstimateCustomerFields(baselineCustomer);
+            baselineCustomer = await resolveEstimateCustomerFieldsFromPreset(source);
+            applyCustomerFromLoader(baselineCustomer);
             setCopySessionPendingSave(true);
           } else {
             setError('Исходный расчёт не найден. Вернитесь к списку и обновите страницу.');
@@ -596,8 +640,8 @@ function ContractDocumentsEstimateWorkspaceInner() {
             setSelectedEstimateId(preset.id);
             baselineSlugs = presetSlugs;
             baselineName = preset.title;
-            baselineCustomer = estimateCustomerFieldsFromPreset(preset);
-            applyEstimateCustomerFields(baselineCustomer);
+            baselineCustomer = await resolveEstimateCustomerFieldsFromPreset(preset);
+            applyCustomerFromLoader(baselineCustomer);
           } else {
             setError('Расчёт не найден. Вернитесь к списку и обновите страницу.');
             setSelectedEstimateId('');
@@ -631,7 +675,7 @@ function ContractDocumentsEstimateWorkspaceInner() {
                 objectAddress: (measurement.customerAddress ?? '').trim(),
               };
             }
-            applyEstimateCustomerFields(measurementCustomer);
+            applyCustomerFromLoader(measurementCustomer);
             const rooms = parseMeasurementRooms(measurement.comments);
             if (rooms.length === 0) {
               setError('В выбранном замере нет данных для автогенерации расчёта.');
@@ -695,18 +739,28 @@ function ContractDocumentsEstimateWorkspaceInner() {
           const baselineKey = calculatorDraftStorageKey(slug);
           baselineDraftsByCategory[slug] = window.localStorage.getItem(baselineKey);
         }
-        setBaseline({
-          categorySlugs: baselineSlugs,
-          name: baselineName,
-          draftsByCategory: baselineDraftsByCategory,
-          customer: baselineCustomer,
-        });
+        if (!cancelled && workspaceLoadGenRef.current === loadGen) {
+          setBaseline({
+            categorySlugs: baselineSlugs,
+            name: baselineName,
+            draftsByCategory: baselineDraftsByCategory,
+            customer: baselineCustomer,
+          });
+        }
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Не удалось загрузить данные');
+        if (!cancelled && workspaceLoadGenRef.current === loadGen) {
+          setError(e instanceof Error ? e.message : 'Не удалось загрузить данные');
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled && workspaceLoadGenRef.current === loadGen) {
+          setLoading(false);
+        }
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     estimateIdFromUrl,
     copyFromId,

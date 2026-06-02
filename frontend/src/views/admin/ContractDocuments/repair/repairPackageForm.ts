@@ -25,6 +25,7 @@ import {
 import { resolveExecutorBankFields } from './repairExecutorBankFields';
 import { buildRepairInvoiceTemplateExtras } from './repairInvoiceTemplateFields';
 import { computeRepairPackagePayableBreakdown } from './repairPackagePaymentTotals';
+import { repairContractCostFieldsForTemplate } from './windowsContractCostBreakdown';
 
 /** ЮЛ — ОГРН и КПП; ИП — ОГРНИП (КПП в форме обычно пустой). */
 export type RepairExecutorKind = 'COMPANY' | 'ENTREPRENEUR';
@@ -104,8 +105,10 @@ export interface RepairContractBlock {
   paymentFormLabel: string;
   /** Номер счёта на оплату (для печати / шаблона). */
   invoiceNumber: string;
-  /** Срок договора в календарных днях (число строкой, напр. «60»); в шаблоне `{{contract.workPeriod}}`. */
+  /** Срок договора в рабочих днях (число строкой, напр. «60»); в шаблоне `{{contract.workPeriod}}`. */
   workPeriod: string;
+  /** Суперадмин задал срок в карточке договора — не перезаписывать из «Сроки договоров». */
+  workPeriodIsManual?: boolean;
   /** Скидка на стоимость по договору, % (применяется к смете, Д/с, заказ-нарядам и сводке оплат). */
   discountPercent: string;
 }
@@ -369,6 +372,12 @@ export interface RepairPackageFormData {
   repairContractCloseActSignedAt: string;
   /** URL фото акта сдачи-приёмки. */
   repairContractCloseActPhotoUrl: string;
+  /** Стоимость спецификации ПВХ-изделий (пакет «Окна»), ввод менеджера. */
+  windowsSpecificationAmount: string;
+  /** Файл спецификации (эскиз, расчёт из внешней программы) — относительный URL на сервере. */
+  windowsSpecificationFileUrl: string;
+  /** Исходное имя прикреплённого файла для отображения. */
+  windowsSpecificationFileName: string;
   /**
    * Номер договора на момент создания копии пакета (из поля «Номер договора»).
    * Пока совпадает с `contract.number`, к отображаемому номеру добавляется слово «копия».
@@ -442,6 +451,7 @@ export function defaultRepairPackageFormData(): RepairPackageFormData {
       paymentFormLabel: '',
       invoiceNumber: '',
       workPeriod: '',
+      workPeriodIsManual: false,
       discountPercent: '',
     },
     estimate: {
@@ -472,6 +482,9 @@ export function defaultRepairPackageFormData(): RepairPackageFormData {
     repairWorkStartActPhotoUrl: '',
     repairContractCloseActSignedAt: '',
     repairContractCloseActPhotoUrl: '',
+    windowsSpecificationAmount: '',
+    windowsSpecificationFileUrl: '',
+    windowsSpecificationFileName: '',
     issuedInvoices: [],
   };
 }
@@ -902,6 +915,19 @@ export function mergeRepairPackageFormData(raw: unknown): RepairPackageFormData 
       typeof (merged as unknown as Record<string, unknown>).repairContractCloseActPhotoUrl ===
       'string'
         ? String((merged as unknown as Record<string, unknown>).repairContractCloseActPhotoUrl)
+        : '',
+    windowsSpecificationAmount:
+      typeof (merged as unknown as Record<string, unknown>).windowsSpecificationAmount === 'string'
+        ? String((merged as unknown as Record<string, unknown>).windowsSpecificationAmount)
+        : '',
+    windowsSpecificationFileUrl:
+      typeof (merged as unknown as Record<string, unknown>).windowsSpecificationFileUrl === 'string'
+        ? String((merged as unknown as Record<string, unknown>).windowsSpecificationFileUrl)
+        : '',
+    windowsSpecificationFileName:
+      typeof (merged as unknown as Record<string, unknown>).windowsSpecificationFileName ===
+      'string'
+        ? String((merged as unknown as Record<string, unknown>).windowsSpecificationFileName)
         : '',
     estimateObjectGroupKey:
       typeof (merged as unknown as Record<string, unknown>).estimateObjectGroupKey === 'string'
@@ -1366,6 +1392,9 @@ export function repairPackageFormForTemplate(
   contract: RepairContractBlock & {
     grandTotalAmount: string;
     grandTotalAmountWords: string;
+    contractCost: string;
+    productsCost: string;
+    worksCost: string;
   };
   executor: RepairExecutorBlock & { innKppRegLine: string };
   estimate: RepairEstimateBlock & {
@@ -1643,11 +1672,16 @@ export function repairPackageFormForTemplate(
       })
     : null;
 
+  const contractCostFields = repairContractCostFieldsForTemplate(form);
+
   const contractForTemplate = {
     ...form.contract,
     prepaymentAmountWords,
     grandTotalAmount,
     grandTotalAmountWords,
+    contractCost: contractCostFields.contractCost,
+    productsCost: contractCostFields.productsCost,
+    worksCost: contractCostFields.worksCost,
     ...(invoiceExtras
       ? {
           prepaymentAmountFormatted: invoiceExtras.prepaymentAmountFormatted,

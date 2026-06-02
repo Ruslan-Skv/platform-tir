@@ -1,9 +1,6 @@
 import type { CrmCustomerDetail } from '@/shared/api/admin-crm';
 import { parseObjectAddresses } from '@/views/admin/CRM/Customers/crmCustomerExtendedProfile';
-import {
-  joinPersonFullName,
-  resolvePersonNamePartsFromDetail,
-} from '@/views/admin/CRM/Customers/crmCustomerName';
+import { personDisplayNameFromCrmDetail } from '@/views/admin/CRM/Customers/crmCustomerName';
 import { formatCrmPhoneDisplay } from '@/views/admin/CRM/Customers/crmCustomerPhone';
 
 /** Первый адрес объекта из карточки (не адрес проживания). */
@@ -27,7 +24,14 @@ export function measurementFieldsFromCrmCustomerDetail(detail: CrmCustomerDetail
       ? (detail.extendedProfile as Record<string, unknown>)
       : null;
 
-  const fullName = joinPersonFullName(resolvePersonNamePartsFromDetail(detail));
+  const fullName = personDisplayNameFromCrmDetail({
+    firstName: detail.firstName,
+    lastName: detail.lastName,
+    company: detail.company,
+    email: detail.email,
+    entityType: detail.entityType,
+    extendedProfile: ext,
+  });
   const rawPhone =
     (typeof detail.phone === 'string' && detail.phone.trim()) ||
     (Array.isArray(detail.phones) ? detail.phones.find((p) => p?.trim()) : undefined) ||

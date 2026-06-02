@@ -79,7 +79,7 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   },
   {
     id: 'admin.contract-documents.repair-settings',
-    label: 'Настройки — Оформление договоров — Настройки «Ремонт»',
+    label: 'Настройки — Оформление договоров — Сроки договоров',
     path: '/admin/contract-documents/settings',
   },
   {

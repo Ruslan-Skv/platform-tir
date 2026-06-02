@@ -891,6 +891,13 @@
   text-decoration: underline;
 }
 
+.contractTermsSettingsStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md);
+  max-width: 36rem;
+}
+
 .repairSettingsCard {
   margin-top: var(--admin-space-lg);
   padding: var(--admin-space-lg);
@@ -2138,6 +2145,62 @@
   max-width: 100%;
 }
 
+.repairContractDataTabDense .dataTopBlockCustomerCol {
+  gap: var(--admin-space-xs);
+  min-height: 100%;
+}
+
+/* Панель поиска растягивается; поля стоимости — фиксированная строка внизу колонки */
+.repairContractDataTabDense .dataTopBlockCustomerCol .repairCustomerSearchSlot {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.repairContractDataTabDense .dataTopBlockCustomerCol .repairCustomerSearchSlot > article {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.repairContractDataTabDense .dataTopBlock:first-child > .sectionCard {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.repairContractDataTabDense .repairDataContractAmountField {
+  flex: 0 0 auto;
+  max-width: 12.5rem;
+  margin-bottom: 0;
+}
+
+.repairContractDataTabDense .repairDataContractAmountField input {
+  width: 100%;
+  max-width: 12.5rem;
+}
+
+.repairContractDataTabDense .windowsContractCostStack {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px 8px;
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+.repairContractDataTabDense .windowsContractCostStack .field {
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.repairContractDataTabDense .windowsContractCostStack .field input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
 .repairContractDataTabDense .dataTopRow > .dataTopBlock:nth-child(2) .repairCustomerSearchSlot {
   min-height: 0;
 }
@@ -2350,6 +2413,15 @@
   cursor: default;
 }
 
+/* Автоподстановка / нередактируемая стоимость и срок — как .autoFilledInput, не серый readonly */
+.repairContractEditorPage .repairContractDataTabDense .field input.autoFilledInput,
+.repairContractEditorPage .repairContractDataTabDense .field input.autoFilledInput[readonly],
+.repairContractEditorPage .repairContractDataTabDense .field input.autoFilledInput:disabled {
+  background: color-mix(in srgb, var(--admin-warning-bg) 50%, white);
+  border-color: color-mix(in srgb, var(--admin-warning) 50%, white);
+  cursor: default;
+}
+
 .repairContractDataTabDense
   .field
   input:not([readonly]):not(:disabled):not([type='hidden']):not([type='radio']),
@@ -2497,6 +2569,13 @@
   margin: 0;
   color: var(--admin-text-secondary, #374151);
   font-size: inherit;
+}
+
+.contractFieldHelpWrap {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
 }
 
 .templatesLibraryPage .formatToolbarHelpWrap {
@@ -5992,6 +6071,96 @@
   max-height: 220px;
   object-fit: contain;
   border-radius: var(--admin-radius-sm);
+}
+
+.windowsSpecMainRow {
+  display: grid;
+  grid-template-columns: minmax(9.5rem, 12.5rem) minmax(0, 1fr);
+  gap: var(--admin-space-xs) var(--admin-space-md);
+  align-items: start;
+}
+
+.windowsSpecMainRow > .field {
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.windowsSpecAmountField {
+  max-width: 12.5rem;
+}
+
+.windowsSpecAmountField input {
+  width: 100%;
+  max-width: 12.5rem;
+}
+
+.windowsSpecFileField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xs);
+}
+
+.estimateTabCompact.dataCompact .windowsSpecFieldCaption {
+  display: block;
+  font-size: var(--admin-font-size-2xs);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  line-height: 1.25;
+}
+
+.windowsSpecFileControlRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-xs) var(--admin-space-sm);
+  min-height: calc(
+    2 * var(--admin-space-xs) + var(--admin-font-size-xs) * var(--admin-line-height-sm)
+  );
+}
+
+.windowsSpecFilePickBtn {
+  margin: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+  align-self: center;
+}
+
+.windowsSpecFilePickBtn[data-disabled] {
+  opacity: 0.55;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.windowsSpecFileHint {
+  flex: 1 1 10rem;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--admin-font-size-2xs);
+  line-height: 1.35;
+  color: var(--admin-text-muted);
+}
+
+.windowsSpecFileRemoveBtn {
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.windowsSpecFileMeta {
+  margin: 0;
+  font-size: var(--admin-font-size-2xs);
+  color: var(--admin-text-muted);
+  line-height: 1.35;
+}
+
+@media (max-width: 720px) {
+  .windowsSpecMainRow {
+    grid-template-columns: 1fr;
+  }
+
+  .windowsSpecAmountField,
+  .windowsSpecAmountField input {
+    max-width: 100%;
+  }
 }
 
 .repairAttachedActPhotosList {

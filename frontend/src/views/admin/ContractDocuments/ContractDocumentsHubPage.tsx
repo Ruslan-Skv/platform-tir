@@ -38,9 +38,9 @@ export function ContractDocumentsHubPage() {
           </p>
         </Link>
         <Link className={styles.hubCard} href="/admin/contract-documents/settings">
-          <h2 className={styles.hubCardTitle}>Настройки «Ремонт»</h2>
+          <h2 className={styles.hubCardTitle}>Сроки договоров</h2>
           <p className={styles.hubCardHint}>
-            Срок договора по умолчанию (календарные дни) и массовое обновление во всех договорах.
+            Срок по умолчанию для «Ремонт» и «Окна» (рабочие дни); меняет только суперадмин.
           </p>
         </Link>
       </div>
