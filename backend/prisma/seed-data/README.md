@@ -17,3 +17,14 @@ npm run prisma:seed-repair-contract-templates
 
 - по умолчанию (`fill-missing`) — добавить пресет, если на вкладке нет активного; устаревшие `tabId` → в архив;
 - `REPAIR_TEMPLATES_SEED_MODE=replace-library` — перезаписать HTML активных пресетов на вкладках из seed-файла или из `.ts` в репозитории.
+
+## Библиотека шаблонов «Окна»
+
+Стартовый пресет **«Акт сдачи-приёмки»** (`actAcceptance`, HTML из `windowsActAcceptance.ts`):
+
+```bash
+cd backend
+npm run prisma:seed-windows-contract-templates
+```
+
+Режимы: `fill-missing` (по умолчанию), `WINDOWS_TEMPLATES_SEED_MODE=replace-library` — перезаписать активный пресет вкладки.

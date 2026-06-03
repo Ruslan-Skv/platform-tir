@@ -4462,6 +4462,96 @@
   padding: var(--admin-space-md);
 }
 
+.docPane :global(.signTableActHandwritten) :global(.signTableSignRow) td,
+.contractA4Preview :global(.signTableActHandwritten) :global(.signTableSignRow) td,
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.signTableActHandwritten .signTableSignRow td) {
+  vertical-align: bottom;
+}
+
+.docPane :global(.signTableActHandwritten) :global(td),
+.contractA4Preview :global(.signTableActHandwritten) :global(td),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.signTableActHandwritten td) {
+  margin: 0 !important;
+  line-height: inherit !important;
+}
+
+.docPane :global(.signTableActHandwritten) :global(.signTableDateRow) td {
+  padding-top: var(--admin-space-lg);
+  font-size: 10pt;
+  vertical-align: top;
+}
+
+.docPane :global(.signTableActHandwritten .contractSignSlashRow),
+.docPane :global(.signTableActHandwritten .contractSignCustomerSlash),
+.contractA4Preview :global(.signTableActHandwritten .contractSignSlashRow),
+.contractA4Preview :global(.signTableActHandwritten .contractSignCustomerSlash),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.signTableActHandwritten .contractSignSlashRow),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.signTableActHandwritten .contractSignCustomerSlash) {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 0;
+  white-space: nowrap;
+  line-height: 1;
+  vertical-align: bottom;
+}
+
+.docPane :global(.signTableActHandwritten .contractSignSignatureLine),
+.docPane :global(.signTableActHandwritten .contractSignFioLine),
+.contractA4Preview :global(.signTableActHandwritten .contractSignSignatureLine),
+.contractA4Preview :global(.signTableActHandwritten .contractSignFioLine),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.signTableActHandwritten .contractSignSignatureLine),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.signTableActHandwritten .contractSignFioLine) {
+  display: block;
+  flex-shrink: 0;
+  height: 1.05em;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+  border-bottom: 1px solid var(--admin-text-primary, #111827);
+  box-sizing: border-box;
+}
+
+.docPane :global(.signTableActHandwritten .contractSignSignatureLine),
+.contractA4Preview :global(.signTableActHandwritten .contractSignSignatureLine),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.signTableActHandwritten .contractSignSignatureLine) {
+  width: 8.5em;
+}
+
+.docPane :global(.signTableActHandwritten .contractSignFioLine),
+.contractA4Preview :global(.signTableActHandwritten .contractSignFioLine),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.signTableActHandwritten .contractSignFioLine) {
+  width: 12em;
+  max-width: 55%;
+}
+
+.docPane :global(.signTableActHandwritten .contractSignNameText),
+.contractA4Preview :global(.signTableActHandwritten .contractSignNameText),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.signTableActHandwritten .contractSignNameText) {
+  display: block;
+  flex: 0 1 auto;
+  min-width: 10em;
+  margin: 0;
+  padding: 0 0 1px;
+  line-height: 1.05em;
+  white-space: nowrap;
+}
+
 .docPane :global(.estimatePre) {
   white-space: pre-wrap;
   font-family: inherit;
@@ -4736,7 +4826,7 @@
   margin: 0 0 6pt;
 }
 
-/* Нумерованный список договора: 1.1, 1.2, 1.1.1 (как в Word). */
+/* Договорный список: пункты 1, 2, 3…; подпункты 1.1, 1.2… (data-numbering=clause). */
 .docPane :global(ol.contractLegalList[data-section]),
 .contractA4Preview :global(ol.contractLegalList[data-section]),
 .templatesLibraryPage .templatesLibraryVisualEditor :global(ol.contractLegalList[data-section]) {
@@ -4756,13 +4846,37 @@
   padding: 0 0 0 1.45cm;
   text-align: justify;
   counter-increment: contract-clause;
+  min-height: 1.35em;
 }
 
-.docPane :global(ol.contractLegalList > li[data-section]::before),
-.contractA4Preview :global(ol.contractLegalList > li[data-section]::before),
+.docPane
+  :global(.docPrint > ol.contractLegalList[data-numbering='clause'] > li[data-section]::before),
+.contractA4Preview
+  :global(.docPrint > ol.contractLegalList[data-numbering='clause'] > li[data-section]::before),
 .templatesLibraryPage
   .templatesLibraryVisualEditor
-  :global(ol.contractLegalList > li[data-section]::before) {
+  :global(.docPrint > ol.contractLegalList[data-numbering='clause'] > li[data-section]::before),
+.docPane :global(.docPrint > ol.contractLegalList:not([data-numbering]) > li[data-section]::before),
+.contractA4Preview
+  :global(.docPrint > ol.contractLegalList:not([data-numbering]) > li[data-section]::before),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint > ol.contractLegalList:not([data-numbering]) > li[data-section]::before) {
+  content: counter(contract-clause) '.';
+  position: absolute;
+  left: 0;
+  width: 1.35cm;
+  text-align: right;
+  font-weight: normal;
+}
+
+.docPane
+  :global(.docPrint > ol.contractLegalList[data-numbering='section'] > li[data-section]::before),
+.contractA4Preview
+  :global(.docPrint > ol.contractLegalList[data-numbering='section'] > li[data-section]::before),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint > ol.contractLegalList[data-numbering='section'] > li[data-section]::before) {
   content: attr(data-section) '.' counter(contract-clause) '.';
   position: absolute;
   left: 0;
@@ -4782,26 +4896,140 @@
   padding: 0;
 }
 
-.docPane :global(ol.contractLegalList[data-section] > li > ol.contractLegalList[data-section] > li),
+.docPane
+  :global(
+    ol.contractLegalList[data-section]
+      > li
+      > ol.contractLegalList[data-section]
+      > li:not(.contractRemarkBlankLines)
+  ),
 .contractA4Preview
-  :global(ol.contractLegalList[data-section] > li > ol.contractLegalList[data-section] > li),
+  :global(
+    ol.contractLegalList[data-section]
+      > li
+      > ol.contractLegalList[data-section]
+      > li:not(.contractRemarkBlankLines)
+  ),
 .templatesLibraryPage
   .templatesLibraryVisualEditor
-  :global(ol.contractLegalList[data-section] > li > ol.contractLegalList[data-section] > li) {
+  :global(
+    ol.contractLegalList[data-section]
+      > li
+      > ol.contractLegalList[data-section]
+      > li:not(.contractRemarkBlankLines)
+  ) {
   counter-increment: contract-subclause;
   padding-left: 1.85cm;
 }
 
-.docPane :global(ol.contractLegalList > li > ol.contractLegalList > li[data-section]::before),
+.docPane
+  :global(
+    ol.contractLegalList
+      > li
+      > ol.contractLegalList
+      > li[data-section]:not(.contractRemarkBlankLines)::before
+  ),
 .contractA4Preview
-  :global(ol.contractLegalList > li > ol.contractLegalList > li[data-section]::before),
+  :global(
+    ol.contractLegalList
+      > li
+      > ol.contractLegalList
+      > li[data-section]:not(.contractRemarkBlankLines)::before
+  ),
 .templatesLibraryPage
   .templatesLibraryVisualEditor
-  :global(ol.contractLegalList > li > ol.contractLegalList > li[data-section]::before) {
-  content: attr(data-section) '.' counter(contract-clause) '.' counter(contract-subclause) '.';
+  :global(
+    ol.contractLegalList
+      > li
+      > ol.contractLegalList
+      > li[data-section]:not(.contractRemarkBlankLines)::before
+  ) {
+  content: counter(contract-clause) '.' counter(contract-subclause) '.';
   width: 1.85cm;
   left: 0;
   text-align: right;
+}
+
+/* 2 пустые строки для замечаний — без номера, не увеличивают счётчик (важно: после правил [data-section] > li). */
+.docPane :global(ol.contractLegalList[data-section] > li.contractRemarkBlankLines),
+.contractA4Preview :global(ol.contractLegalList[data-section] > li.contractRemarkBlankLines),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(ol.contractLegalList[data-section] > li.contractRemarkBlankLines),
+.docPane
+  :global(
+    ol.contractLegalList[data-section]
+      > li
+      > ol.contractLegalList[data-section]
+      > li.contractRemarkBlankLines
+  ),
+.contractA4Preview
+  :global(
+    ol.contractLegalList[data-section]
+      > li
+      > ol.contractLegalList[data-section]
+      > li.contractRemarkBlankLines
+  ),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(
+    ol.contractLegalList[data-section]
+      > li
+      > ol.contractLegalList[data-section]
+      > li.contractRemarkBlankLines
+  ) {
+  counter-increment: none !important;
+  list-style: none;
+  min-height: 0;
+  margin: 0 0 3pt;
+}
+
+.docPane :global(ol.contractLegalList > li.contractRemarkBlankLines::before),
+.contractA4Preview :global(ol.contractLegalList > li.contractRemarkBlankLines::before),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(ol.contractLegalList > li.contractRemarkBlankLines::before),
+.docPane
+  :global(ol.contractLegalList > li > ol.contractLegalList > li.contractRemarkBlankLines::before),
+.contractA4Preview
+  :global(ol.contractLegalList > li > ol.contractLegalList > li.contractRemarkBlankLines::before),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(ol.contractLegalList > li > ol.contractLegalList > li.contractRemarkBlankLines::before) {
+  content: none !important;
+  display: none;
+}
+
+.docPane :global(li.contractRemarkBlankLines > p.contractRemarkBlankLine),
+.contractA4Preview :global(li.contractRemarkBlankLines > p.contractRemarkBlankLine),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(li.contractRemarkBlankLines > p.contractRemarkBlankLine) {
+  display: block;
+  margin: 0 0 3pt;
+  padding: 0 0 1pt;
+  min-height: 0.75em;
+  line-height: 1.1;
+  text-indent: 0;
+  border-bottom: 1px solid var(--admin-text-primary, #111827);
+  box-sizing: border-box;
+}
+
+.docPane :global(li.contractRemarkBlankLines > p.contractRemarkBlankLine:last-child),
+.contractA4Preview :global(li.contractRemarkBlankLines > p.contractRemarkBlankLine:last-child),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(li.contractRemarkBlankLines > p.contractRemarkBlankLine:last-child) {
+  margin-bottom: 0;
+}
+
+.docPane :global(ol.contractLegalList > li > ol.contractLegalList > li.contractRemarkBlankLines),
+.contractA4Preview
+  :global(ol.contractLegalList > li > ol.contractLegalList > li.contractRemarkBlankLines),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(ol.contractLegalList > li > ol.contractLegalList > li.contractRemarkBlankLines) {
+  padding-left: 1.85cm;
 }
 
 .contractA4Preview :global(.docPrint a) {
@@ -5045,6 +5273,16 @@
   width: 50%;
   vertical-align: bottom;
   padding: var(--admin-space-md);
+}
+
+.contractA4Preview :global(.signTableActHandwritten) :global(.signTableSignRow) td {
+  vertical-align: bottom;
+}
+
+.contractA4Preview :global(.signTableActHandwritten) :global(.signTableDateRow) td {
+  padding-top: var(--admin-space-lg);
+  font-size: 10pt;
+  vertical-align: top;
 }
 
 .contractA4Preview :global(.estimatePre) {

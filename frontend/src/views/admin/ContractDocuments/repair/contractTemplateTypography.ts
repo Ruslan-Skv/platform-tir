@@ -1,6 +1,21 @@
-import { prepareContractHtmlForScreenPreview } from '@/views/admin/ContractDocuments/repair/printDocument';
+import {
+  CONTRACT_PARAGRAPH_SPACING_ATTR,
+  applyContractParagraphSpacingToHtml,
+  stripMarginAndLineHeightFromStyle,
+} from './contractTemplateCompactSpacing';
+import {
+  ensureContractContentInDocPrint,
+  repairContractTemplateStructureInDom,
+  repairContractTemplateStructureInHtml,
+  sanitizeContractHeadingMarkup,
+} from './contractTemplateStructure';
+import {
+  addDocPrintContractCompactClassToHtml,
+  prepareContractHtmlForCompactPrint,
+  prepareContractHtmlForScreenPreview,
+} from './printDocument';
 
-import { repairContractTemplateStructureInHtml } from './contractTemplateStructure';
+const SIGN_TABLE_SELECTOR = '.signTable, .signTableActHandwritten';
 
 const MSO_CLASS_RE = /\bMso\S*/gi;
 const FONT_FAMILY_STYLE_RE =
@@ -90,6 +105,60 @@ function sanitizeContractTemplateDom(root: ParentNode): void {
   }
 }
 
+function unwrapRedundantBodyFontSpans(root: ParentNode): void {
+  for (const span of [
+    ...root.querySelectorAll<HTMLSpanElement>('.docPrint p span, .docPrint li span'),
+  ]) {
+    if (span.closest(SIGN_TABLE_SELECTOR)) continue;
+    const style = span.getAttribute('style') ?? '';
+    const onlyFontSize =
+      /\bfont-size\s*:/i.test(style) &&
+      !/\b(?:text-align|text-indent|line-height|margin)\s*:/i.test(style);
+    if (onlyFontSize && !span.className.trim() && span.attributes.length <= 1) {
+      unwrapElementNode(span);
+    }
+  }
+}
+
+function clearSignTableCellSpacing(root: ParentNode): void {
+  for (const td of root.querySelectorAll<HTMLTableCellElement>(`${SIGN_TABLE_SELECTOR} td`)) {
+    td.removeAttribute(CONTRACT_PARAGRAPH_SPACING_ATTR);
+    const style = td.getAttribute('style') ?? '';
+    const cleaned = stripMarginAndLineHeightFromStyle(style);
+    if (cleaned) td.setAttribute('style', cleaned);
+    else td.removeAttribute('style');
+  }
+}
+
+/**
+ * Единая типографика тела документа: 10pt, line-height 1.32, одинаковые интервалы у p/li,
+ * без смешения px/pt и без «уплотнения» таблицы подписей.
+ */
+export function unifyContractDocumentTypographyInHtml(html: string): string {
+  if (typeof window === 'undefined') return html;
+
+  const wrapped = ensureContractContentInDocPrint(html || '');
+  const container = window.document.createElement('div');
+  container.innerHTML = wrapped;
+  repairContractTemplateStructureInDom(container);
+  sanitizeContractHeadingMarkup(container);
+  unwrapRedundantBodyFontSpans(container);
+
+  const withoutWordBodyFonts = prepareContractHtmlForCompactPrint(container.innerHTML, {
+    preserveHeadingFontSizes: true,
+    preserveInlineFontSizes: false,
+  });
+
+  container.innerHTML = withoutWordBodyFonts;
+  clearSignTableCellSpacing(container);
+
+  const withUniformSpacing = applyContractParagraphSpacingToHtml(container.innerHTML, {
+    dense: false,
+  });
+
+  return addDocPrintContractCompactClassToHtml(withUniformSpacing);
+}
+
 /**
  * Приводит шаблон к типографике договора: убирает «мусор» Word,
  * inline font-size / font-family, включает `.docPrintContractCompact` (как при печати).
@@ -99,7 +168,7 @@ export function normalizeContractTemplateTypography(html: string): string {
   const container = window.document.createElement('div');
   container.innerHTML = html || '';
   sanitizeContractTemplateDom(container);
-  return prepareContractHtmlForScreenPreview(container.innerHTML);
+  return unifyContractDocumentTypographyInHtml(container.innerHTML);
 }
 
 export const FONT_SIZE_TOOLTIP = {
@@ -156,5 +225,5 @@ export const CLEANUP_TOOLTIP = {
 /** Для предпросмотра на экране (библиотека, пакет документов). */
 export function prepareContractTemplateHtmlForPreview(html: string): string {
   const structured = repairContractTemplateStructureInHtml(html || '');
-  return prepareContractHtmlForScreenPreview(structured);
+  return unifyContractDocumentTypographyInHtml(structured);
 }

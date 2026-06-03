@@ -35,8 +35,10 @@ export const CONTRACT_DEFAULT_SPACING_PRESET: ContractParagraphSpacingPreset = {
 const SPACING_BLOCK_TAGS = new Set(['p', 'h1', 'h2', 'h3', 'li']);
 const HTML_SPACING_BLOCK_TAGS = ['p', 'h1', 'h2', 'h3', 'li'] as const;
 const EMBED_SKIP_SELECTOR = '.estimateRoomsEmbed, .estimateA4DocPrintEmbed';
+const SIGN_TABLE_SKIP_SELECTOR = '.signTable, .signTableActHandwritten';
 
-function stripMarginAndLineHeightFromStyle(style: string): string {
+/** Сбрасывает margin / line-height в inline-стиле (без трогания выравнивания и отступа красной строки). */
+export function stripMarginAndLineHeightFromStyle(style: string): string {
   return style
     .replace(/\bmargin(?:-(?:top|right|bottom|left))?\s*:\s*[^;]+;?/gi, '')
     .replace(/\bline-height\s*:\s*[^;]+;?/gi, '')
@@ -72,6 +74,7 @@ export function isContractSpacingBlockElement(el: Element): boolean {
   const tag = el.tagName.toLowerCase();
   if (!SPACING_BLOCK_TAGS.has(tag)) return false;
   if (el.closest(EMBED_SKIP_SELECTOR)) return false;
+  if (el.closest(SIGN_TABLE_SKIP_SELECTOR)) return false;
   return true;
 }
 

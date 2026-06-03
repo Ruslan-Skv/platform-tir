@@ -37,6 +37,17 @@ export const INSERT_BLOCK_TOOLTIP = {
     ],
     note: 'Работает в визуальном конструкторе и в режиме HTML, если курсор внутри <table>.',
   },
+  signaturesActHandwritten: {
+    title: 'Подписи сторон (акт, ФИО заказчика вручную)',
+    steps: [
+      'Поставьте курсор после текста акта (обычно после последнего пункта нумерованного списка).',
+      'Нажмите кнопку — вставится таблица подписей в формате акта: Исполнитель и Заказчик.',
+      'У Исполнителя подставится ФИО из шаблона ({{executor.directorName|plain}}); у Заказчика только линия для подписи.',
+      'Под данными Заказчика — строка для даты и линия для собственноручного ФИО.',
+      'Таблица подписей на всю ширину листа, как основной текст акта.',
+    ],
+    note: 'Для договоров с автоподстановкой ФИО заказчика используйте кнопку «Подписи сторон» (иконка карандаша).',
+  },
   pageBreak: {
     title: 'Разрыв страницы',
     steps: [
@@ -56,4 +67,35 @@ export function buildSimpleContractTableHtml(): string {
   const td = (left: string, right: string) =>
     `<tr><td style="${SIMPLE_TABLE_CELL_STYLE}">${left}</td><td style="${SIMPLE_TABLE_CELL_STYLE}">${right}</td></tr>`;
   return `<table style="width: 100%; border-collapse: collapse; margin: 8pt 0;"><tr><th style="${SIMPLE_TABLE_CELL_STYLE} text-align: left;">Пункт</th><th style="${SIMPLE_TABLE_CELL_STYLE} text-align: left;">Содержание</th></tr>${td('1', 'Описание')}${td('2', '')}${td('3', '')}</table>`;
+}
+
+/** Подписи сторон для договора: ФИО заказчика подставляется из шаблона. */
+export function buildContractPartySignaturesHtml(): string {
+  return `<table style="width: 100%; border-collapse: collapse; margin-top: 16pt;">
+  <tr>
+    <td style="width: 50%; vertical-align: bottom; padding-right: 10px;">
+      <p style="margin: 0 0 22pt;">Подрядчик _____________________ / {{executor.directorName}}</p>
+    </td>
+    <td style="width: 50%; vertical-align: bottom; padding-left: 10px;">
+      <p style="margin: 0 0 22pt;">Заказчик _____________________ / {{customer.signatureName|plain}}</p>
+    </td>
+  </tr>
+</table>`;
+}
+
+/** @deprecated используйте {@link CONTRACT_SIGN_SLASH_ROW_CLASS} */
+export const CONTRACT_SIGN_CUSTOMER_SLASH_CLASS = 'contractSignCustomerSlash';
+export const CONTRACT_SIGN_SLASH_ROW_CLASS = 'contractSignSlashRow';
+export const CONTRACT_SIGN_SIGNATURE_LINE_CLASS = 'contractSignSignatureLine';
+export const CONTRACT_SIGN_NAME_TEXT_CLASS = 'contractSignNameText';
+export const CONTRACT_SIGN_FIO_LINE_CLASS = 'contractSignFioLine';
+export const CONTRACT_SIGN_TABLE_SIGN_ROW_CLASS = 'signTableSignRow';
+
+const nbsp = '\u00A0';
+
+/** Подписи для акта: на всю ширину листа; у заказчика линия для ФИО, без {{customer.signatureName}}. */
+export function buildContractActHandwrittenCustomerSignaturesHtml(): string {
+  return `<table class="signTable signTableActHandwritten" style="width: 100%; border-collapse: collapse;" data-contract-signatures-handwritten-customer="1"><tr><td>Исполнитель</td><td>Заказчик</td></tr>
+<tr class="${CONTRACT_SIGN_TABLE_SIGN_ROW_CLASS}"><td><span class="${CONTRACT_SIGN_SLASH_ROW_CLASS}"><span class="${CONTRACT_SIGN_SIGNATURE_LINE_CLASS}">${nbsp}</span>/<span class="${CONTRACT_SIGN_NAME_TEXT_CLASS}">{{executor.directorName|plain}}</span></span></td><td><span class="${CONTRACT_SIGN_SLASH_ROW_CLASS}"><span class="${CONTRACT_SIGN_SIGNATURE_LINE_CLASS}">${nbsp}</span>/<span class="${CONTRACT_SIGN_FIO_LINE_CLASS}">${nbsp}</span></span></td></tr>
+<tr class="signTableDateRow"><td></td><td>«____» ________________ 20__ г.</td></tr></table>`;
 }

@@ -1,11 +1,22 @@
+import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
+
 /** Id шаблона ПКО (вкладка убрана из редактора; печать — в модалке оплат). */
 export const REPAIR_CASH_ORDER_TEMPLATE_TAB = 'cashOrder';
 
 export const REPAIR_PAYMENT_INVOICE_TEMPLATE_TAB = 'paymentInvoice';
 
-/** Вкладки пакета ремонта: два экземпляра акта на одном листе A4. */
-export function isRepairActTwinOneSheetTab(tab: string): boolean {
+/** Акты начала / приёмки: превью и печать на листе A4. */
+export function isRepairActA4PreviewTab(tab: string): boolean {
   return tab === 'actStart' || tab === 'actAcceptance';
+}
+
+/** Два экземпляра акта на одном листе A4 — только направление «Ремонт». */
+export function isRepairActTwinOneSheetTab(
+  tab: string,
+  packageKind: ContractDocumentPackageKind = 'REPAIR'
+): boolean {
+  if (packageKind === 'WINDOWS') return false;
+  return isRepairActA4PreviewTab(tab);
 }
 
 export function isRepairCashOrderTemplateTab(tab: string): boolean {

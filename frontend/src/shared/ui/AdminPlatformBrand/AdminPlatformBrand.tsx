@@ -33,9 +33,6 @@ export function AdminPlatformBrand({
         .join(' ')}
       title={PLATFORM_TITLE}
     >
-      {!showHouseOnly && size === 'sidebar' && (
-        <span className={styles.platformTitle}>{PLATFORM_TITLE}</span>
-      )}
       {showHouseOnly ? (
         <span className={styles.logoWrap}>
           <Image
@@ -53,6 +50,9 @@ export function AdminPlatformBrand({
           className={size === 'login' ? styles.logoLogin : styles.logoSidebar}
           linkClassName={styles.logoWrap}
         />
+      )}
+      {!showHouseOnly && size === 'sidebar' && (
+        <span className={styles.platformTitle}>{PLATFORM_TITLE}</span>
       )}
     </span>
   );

@@ -165,6 +165,157 @@ const CONTRACT_COMPACT_H1_PT = '14pt';
 const CONTRACT_COMPACT_H2_PT = '12pt';
 const CONTRACT_COMPACT_H3_PT = '11pt';
 
+/** Нумерация contractLegalList и линии замечаний — для любого .docPrintContractCompact (договор, акты). */
+export const CONTRACT_LEGAL_LIST_PRINT_CSS = `
+  body.contractPrintCompact .docPrintContractCompact ol.contractLegalList[data-section],
+  .docPrint.docPrintContractCompact ol.contractLegalList[data-section] {
+    list-style: none !important;
+    margin: 0 0 6pt !important;
+    padding: 0 !important;
+    counter-reset: contract-clause !important;
+  }
+  body.contractPrintCompact .docPrintContractCompact ol.contractLegalList[data-section] > li,
+  .docPrint.docPrintContractCompact ol.contractLegalList[data-section] > li {
+    position: relative !important;
+    margin: 0 0 5pt !important;
+    padding: 0 0 0 1.45cm !important;
+    text-align: justify !important;
+    counter-increment: contract-clause !important;
+  }
+  body.contractPrintCompact
+    .docPrintContractCompact
+    > ol.contractLegalList[data-numbering='clause']
+    > li[data-section]::before,
+  .docPrint.docPrintContractCompact
+    > ol.contractLegalList[data-numbering='clause']
+    > li[data-section]::before,
+  body.contractPrintCompact
+    .docPrintContractCompact
+    > ol.contractLegalList:not([data-numbering])
+    > li[data-section]::before,
+  .docPrint.docPrintContractCompact
+    > ol.contractLegalList:not([data-numbering])
+    > li[data-section]::before {
+    content: counter(contract-clause) '.' !important;
+    position: absolute !important;
+    left: 0 !important;
+    width: 1.35cm !important;
+    text-align: right !important;
+  }
+  body.contractPrintCompact
+    .docPrintContractCompact
+    > ol.contractLegalList[data-numbering='section']
+    > li[data-section]::before,
+  .docPrint.docPrintContractCompact
+    > ol.contractLegalList[data-numbering='section']
+    > li[data-section]::before {
+    content: attr(data-section) '.' counter(contract-clause) '.' !important;
+    position: absolute !important;
+    left: 0 !important;
+    width: 1.35cm !important;
+    text-align: right !important;
+  }
+  body.contractPrintCompact
+    .docPrintContractCompact
+    ol.contractLegalList[data-section]
+    > li
+    > ol.contractLegalList[data-section],
+  .docPrint.docPrintContractCompact
+    ol.contractLegalList[data-section]
+    > li
+    > ol.contractLegalList[data-section] {
+    counter-reset: contract-subclause !important;
+    margin: 3pt 0 0 !important;
+    padding: 0 !important;
+  }
+  body.contractPrintCompact
+    .docPrintContractCompact
+    ol.contractLegalList[data-section]
+    > li
+    > ol.contractLegalList[data-section]
+    > li:not(.contractRemarkBlankLines),
+  .docPrint.docPrintContractCompact
+    ol.contractLegalList[data-section]
+    > li
+    > ol.contractLegalList[data-section]
+    > li:not(.contractRemarkBlankLines) {
+    counter-increment: contract-subclause !important;
+    padding-left: 1.85cm !important;
+  }
+  body.contractPrintCompact
+    .docPrintContractCompact
+    ol.contractLegalList
+    > li
+    > ol.contractLegalList
+    > li[data-section]:not(.contractRemarkBlankLines)::before,
+  .docPrint.docPrintContractCompact
+    ol.contractLegalList
+    > li
+    > ol.contractLegalList
+    > li[data-section]:not(.contractRemarkBlankLines)::before {
+    content: counter(contract-clause) '.' counter(contract-subclause) '.' !important;
+    position: absolute !important;
+    left: 0 !important;
+    width: 1.85cm !important;
+    text-align: right !important;
+  }
+  body.contractPrintCompact
+    .docPrintContractCompact
+    ol.contractLegalList[data-section]
+    > li.contractRemarkBlankLines,
+  .docPrint.docPrintContractCompact
+    ol.contractLegalList[data-section]
+    > li.contractRemarkBlankLines,
+  body.contractPrintCompact
+    .docPrintContractCompact
+    ol.contractLegalList[data-section]
+    > li
+    > ol.contractLegalList[data-section]
+    > li.contractRemarkBlankLines,
+  .docPrint.docPrintContractCompact
+    ol.contractLegalList[data-section]
+    > li
+    > ol.contractLegalList[data-section]
+    > li.contractRemarkBlankLines {
+    counter-increment: none !important;
+    min-height: 0 !important;
+    margin: 0 0 3pt !important;
+    padding-left: 1.85cm !important;
+  }
+  body.contractPrintCompact
+    .docPrintContractCompact
+    ol.contractLegalList
+    > li.contractRemarkBlankLines::before,
+  .docPrint.docPrintContractCompact ol.contractLegalList > li.contractRemarkBlankLines::before,
+  body.contractPrintCompact
+    .docPrintContractCompact
+    ol.contractLegalList
+    > li
+    > ol.contractLegalList
+    > li.contractRemarkBlankLines::before,
+  .docPrint.docPrintContractCompact
+    ol.contractLegalList
+    > li
+    > ol.contractLegalList
+    > li.contractRemarkBlankLines::before {
+    content: none !important;
+    display: none !important;
+  }
+  body.contractPrintCompact .docPrintContractCompact li.contractRemarkBlankLines > p.contractRemarkBlankLine,
+  .docPrint.docPrintContractCompact li.contractRemarkBlankLines > p.contractRemarkBlankLine {
+    display: block !important;
+    margin: 0 0 3pt !important;
+    padding: 0 0 1pt !important;
+    min-height: 0.75em !important;
+    line-height: 1.1 !important;
+    text-indent: 0 !important;
+    border-bottom: 1px solid #000 !important;
+    box-sizing: border-box !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+`;
+
 /** Договор: плотнее по кеглю (≈10pt). Селекторы покрывают Word (.WordSection1) без .docPrint. */
 const CONTRACT_COMPACT_PRINT_CSS = `
   body.contractPrintCompact,
@@ -219,74 +370,6 @@ const CONTRACT_COMPACT_PRINT_CSS = `
   body.contractPrintCompact .docPrintContractCompact p,
   .docPrint.docPrintContractCompact p {
     margin: 0 0 6pt !important;
-  }
-  body.contractPrintCompact .docPrintContractCompact ol.contractLegalList[data-section],
-  .docPrint.docPrintContractCompact ol.contractLegalList[data-section] {
-    list-style: none !important;
-    margin: 0 0 6pt !important;
-    padding: 0 !important;
-    counter-reset: contract-clause !important;
-  }
-  body.contractPrintCompact .docPrintContractCompact ol.contractLegalList[data-section] > li,
-  .docPrint.docPrintContractCompact ol.contractLegalList[data-section] > li {
-    position: relative !important;
-    margin: 0 0 5pt !important;
-    padding: 0 0 0 1.45cm !important;
-    text-align: justify !important;
-    counter-increment: contract-clause !important;
-  }
-  body.contractPrintCompact .docPrintContractCompact ol.contractLegalList > li[data-section]::before,
-  .docPrint.docPrintContractCompact ol.contractLegalList > li[data-section]::before {
-    content: attr(data-section) '.' counter(contract-clause) '.' !important;
-    position: absolute !important;
-    left: 0 !important;
-    width: 1.35cm !important;
-    text-align: right !important;
-  }
-  body.contractPrintCompact
-    .docPrintContractCompact
-    ol.contractLegalList[data-section]
-    > li
-    > ol.contractLegalList[data-section],
-  .docPrint.docPrintContractCompact
-    ol.contractLegalList[data-section]
-    > li
-    > ol.contractLegalList[data-section] {
-    counter-reset: contract-subclause !important;
-    margin: 3pt 0 0 !important;
-    padding: 0 !important;
-  }
-  body.contractPrintCompact
-    .docPrintContractCompact
-    ol.contractLegalList[data-section]
-    > li
-    > ol.contractLegalList[data-section]
-    > li,
-  .docPrint.docPrintContractCompact
-    ol.contractLegalList[data-section]
-    > li
-    > ol.contractLegalList[data-section]
-    > li {
-    counter-increment: contract-subclause !important;
-    padding-left: 1.85cm !important;
-  }
-  body.contractPrintCompact
-    .docPrintContractCompact
-    ol.contractLegalList
-    > li
-    > ol.contractLegalList
-    > li[data-section]::before,
-  .docPrint.docPrintContractCompact
-    ol.contractLegalList
-    > li
-    > ol.contractLegalList
-    > li[data-section]::before {
-    content: attr(data-section) '.' counter(contract-clause) '.' counter(contract-subclause) '.'
-      !important;
-    position: absolute !important;
-    left: 0 !important;
-    width: 1.85cm !important;
-    text-align: right !important;
   }
 `;
 
@@ -386,7 +469,7 @@ export function prepareContractHtmlForScreenPreview(html: string): string {
   });
 }
 
-function addDocPrintContractCompactClassToHtml(html: string): string {
+export function addDocPrintContractCompactClassToHtml(html: string): string {
   if (!/\bdocPrint\b/i.test(html)) {
     return `<div class="docPrint docPrintContractCompact">${html}</div>`;
   }
@@ -474,6 +557,7 @@ function buildPrintStylesheet(
     : '';
 
   return `${pageBlock}
+  ${CONTRACT_LEGAL_LIST_PRINT_CSS}
   html, body { margin: 0; padding: 0; font-family: "Times New Roman", Times, serif; color: #111; }
   .docPrint { font-size: 12pt; line-height: 1.42; }
   .docPrint a { color: #111 !important; text-decoration: none; }
@@ -650,6 +734,25 @@ function buildPrintStylesheet(
   }
   .signTable { width: 100%; border-collapse: collapse; margin-top: 18pt; }
   .signTable td { width: 50%; vertical-align: bottom; padding: 6pt; }
+  .signTableActHandwritten td { margin: 0 !important; line-height: inherit !important; }
+  .signTableActHandwritten .signTableSignRow td { vertical-align: bottom; }
+  .signTableActHandwritten .signTableDateRow td { padding-top: 8pt; font-size: 10pt; vertical-align: top; }
+  .signTableActHandwritten .contractSignSlashRow,
+  .signTableActHandwritten .contractSignCustomerSlash {
+    display: inline-flex; align-items: flex-end; gap: 0; white-space: nowrap; line-height: 1;
+    vertical-align: bottom;
+  }
+  .signTableActHandwritten .contractSignSignatureLine,
+  .signTableActHandwritten .contractSignFioLine {
+    display: block; flex-shrink: 0; height: 1.05em; margin: 0; padding: 0; line-height: 1;
+    border-bottom: 1px solid #111; box-sizing: border-box;
+  }
+  .signTableActHandwritten .contractSignSignatureLine { width: 8.5em; }
+  .signTableActHandwritten .contractSignFioLine { width: 12em; max-width: 55%; }
+  .signTableActHandwritten .contractSignNameText {
+    display: block; flex: 0 1 auto; min-width: 10em; margin: 0; padding: 0 0 1px;
+    line-height: 1.05em; white-space: nowrap;
+  }
   .estimatePre {
     white-space: pre-wrap;
     font-family: inherit;
@@ -822,7 +925,9 @@ export function buildPrintableHtmlDocument(
     options?.cashOrderCompact,
     options?.contractCompact
   );
-  const printBody = options?.contractCompact
+  const needsContractCompactMarkup =
+    options?.contractCompact || /\bcontractLegalList\b/i.test(innerHtml);
+  const printBody = needsContractCompactMarkup
     ? markDocPrintContractCompact(innerHtml, {
         preserveHeadingFontSizes: true,
         preserveInlineFontSizes: true,
@@ -966,7 +1071,7 @@ export function printDocumentHtml(
   w.document.write(buildPrintableHtmlDocument(innerHtml, documentTitle, options));
   w.document.close();
 
-  if (options?.contractCompact) {
+  if (options?.contractCompact || /\bcontractLegalList\b/i.test(innerHtml)) {
     try {
       applyContractCompactFontSizesInPrintDocument(w.document);
     } catch {

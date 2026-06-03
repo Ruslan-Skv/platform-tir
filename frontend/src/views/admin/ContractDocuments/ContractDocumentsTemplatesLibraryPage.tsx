@@ -54,9 +54,13 @@ import { applyTemplate } from '@/views/admin/ContractDocuments/repair/applyTempl
 import {
   buildContractLegalListHtml,
   changeContractLegalListLevel,
+  handleContractLegalListBackspace,
   handleContractLegalListEnter,
+  handleContractLegalListShiftEnter,
   isNodeInsideContractLegalList,
+  normalizeContractLegalListInHtml,
 } from '@/views/admin/ContractDocuments/repair/contractLegalList';
+import { normalizeContractActHandwrittenSignaturesInHtml } from '@/views/admin/ContractDocuments/repair/contractTemplateActSignatures';
 import {
   toggleContractParagraphSpacingInHtmlRange,
   toggleContractParagraphSpacingInHtmlWhole,
@@ -65,6 +69,8 @@ import {
 } from '@/views/admin/ContractDocuments/repair/contractTemplateCompactSpacing';
 import {
   INSERT_BLOCK_TOOLTIP,
+  buildContractActHandwrittenCustomerSignaturesHtml,
+  buildContractPartySignaturesHtml,
   buildSimpleContractTableHtml,
 } from '@/views/admin/ContractDocuments/repair/contractTemplateInsertBlocks';
 import {
@@ -83,6 +89,10 @@ import {
   buildContractTemplatePageBreakHtml,
   normalizeContractTemplatePageBreaksInHtml,
 } from '@/views/admin/ContractDocuments/repair/contractTemplatePageBreak';
+import {
+  REMARK_BLANK_LINES_TOOLTIP,
+  insertContractRemarkBlankLinesInVisualEditor,
+} from '@/views/admin/ContractDocuments/repair/contractTemplateRemarkBlankLines';
 import { repairContractTemplateStructureInHtml } from '@/views/admin/ContractDocuments/repair/contractTemplateStructure';
 import {
   addTableColumnAfterCell,
@@ -103,6 +113,7 @@ import {
   normalizeContractTemplateTypography,
   prepareContractTemplateHtmlForPreview,
   sanitizePastedContractHtml,
+  unifyContractDocumentTypographyInHtml,
 } from '@/views/admin/ContractDocuments/repair/contractTemplateTypography';
 import {
   isRepairActTwinOneSheetTab,
@@ -115,7 +126,9 @@ import {
   REPAIR_LIBRARY_TEMPLATE_TAB_IDS,
   REPAIR_LIBRARY_TEMPLATE_TAB_LABELS,
   type RepairLibraryTemplateTabId,
-  normalizeRepairLibraryTemplateTabId,
+  isRepairLibraryTemplateTabId,
+  libraryTemplateTabIdsForPackageKind,
+  normalizeLibraryTemplateTabForPackageKind,
   repairLibraryTemplateTabIdFromPreset,
 } from '@/views/admin/ContractDocuments/repair/repairLibraryTemplateTabs';
 import {
@@ -130,6 +143,7 @@ import {
   appendTemplateHistoryEntry,
   clampTemplateEditorZoomPct,
 } from '@/views/admin/ContractDocuments/repair/templateEditorHistory';
+import { libraryTemplateFallbackHtml } from '@/views/admin/ContractDocuments/repair/templates';
 import {
   applyWordImportedDocPrintCompact,
   readWordHtmlExportFileAsString,
@@ -1468,6 +1482,16 @@ function clampInt(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, Math.trunc(value)));
 }
 
+function normalizeTemplateEditorHtml(raw: string): string {
+  return unifyContractDocumentTypographyInHtml(
+    normalizeContractActHandwrittenSignaturesInHtml(
+      normalizeContractTemplatePageBreaksInHtml(
+        normalizeContractLegalListInHtml(repairContractTemplateStructureInHtml(raw))
+      )
+    )
+  );
+}
+
 function normalizeTextWhitespace(input: string): string {
   return input
     .replace(/\u00A0/g, ' ')
@@ -1775,6 +1799,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const [activeLibraryKind, setActiveLibraryKind] = useState<ContractDocumentPackageKind>('REPAIR');
   const [activeTemplateTab, setActiveTemplateTab] =
     useState<RepairLibraryTemplateTabId>('contract');
+  const libraryTemplateTabIds = useMemo(
+    () => libraryTemplateTabIdsForPackageKind(activeLibraryKind),
+    [activeLibraryKind]
+  );
   const [previewCustomerKind, setPreviewCustomerKind] =
     useState<RepairTemplatePreviewCustomerKind>('PERSON');
   const [showArchivedTemplates, setShowArchivedTemplates] = useState(false);
@@ -1916,23 +1944,29 @@ export function ContractDocumentsTemplatesLibraryPage() {
       if (htmlHeightRaw != null && Number.isFinite(Number(htmlHeightRaw))) {
         setHtmlEditorHeightPx(clampInt(Number(htmlHeightRaw), 220, 2400));
       }
+      let hydratedLibraryKind: ContractDocumentPackageKind = 'REPAIR';
       if (
         parsed &&
         parsed.activeLibraryKind &&
         TEMPLATE_LIBRARY_KIND_OPTIONS.some((o) => o.value === parsed.activeLibraryKind)
       ) {
-        setActiveLibraryKind(parsed.activeLibraryKind);
+        hydratedLibraryKind = parsed.activeLibraryKind;
       }
       const activeKindRaw = window.localStorage.getItem(TEMPLATES_ACTIVE_KIND_KEY);
       if (activeKindRaw && TEMPLATE_LIBRARY_KIND_OPTIONS.some((o) => o.value === activeKindRaw)) {
-        setActiveLibraryKind(activeKindRaw as ContractDocumentPackageKind);
+        hydratedLibraryKind = activeKindRaw as ContractDocumentPackageKind;
       }
+      setActiveLibraryKind(hydratedLibraryKind);
       if (parsed && typeof parsed.activeTemplateTab === 'string') {
-        setActiveTemplateTab(normalizeRepairLibraryTemplateTabId(parsed.activeTemplateTab));
+        setActiveTemplateTab(
+          normalizeLibraryTemplateTabForPackageKind(parsed.activeTemplateTab, hydratedLibraryKind)
+        );
       }
       const activeTabRaw = window.localStorage.getItem(TEMPLATES_ACTIVE_TAB_KEY);
       if (typeof activeTabRaw === 'string' && activeTabRaw.trim()) {
-        setActiveTemplateTab(normalizeRepairLibraryTemplateTabId(activeTabRaw));
+        setActiveTemplateTab(
+          normalizeLibraryTemplateTabForPackageKind(activeTabRaw, hydratedLibraryKind)
+        );
       }
       if (
         (parsed && parsed.previewCustomerKind === 'PERSON') ||
@@ -2295,7 +2329,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
 
   const applyTemplateHistorySnapshot = useCallback((htmlSnapshot: string) => {
     skipNextTemplateHistoryPushRef.current = true;
-    const normalized = normalizeContractTemplatePageBreaksInHtml(htmlSnapshot);
+    const normalized = normalizeTemplateEditorHtml(htmlSnapshot);
     setVisualDraftHtml(normalized);
     setHtml(normalized);
     const editor = visualEditorRef.current;
@@ -2336,7 +2370,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
         setEditorMode('html');
         return;
       }
-      const normalized = normalizeContractTemplatePageBreaksInHtml(html);
+      const normalized = normalizeTemplateEditorHtml(html);
       setVisualDraftHtml(normalized);
       setHtml(normalized);
       pushTemplateHistory(normalized);
@@ -2485,10 +2519,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
 
   const renderedPreviewDisplay = useMemo(() => {
     const withTypography = prepareContractTemplateHtmlForPreview(renderedPreview);
-    return isRepairActTwinOneSheetTab(activeTemplateTab)
+    return isRepairActTwinOneSheetTab(activeTemplateTab, activeLibraryKind)
       ? wrapRepairActTwinCopiesOnOnePageHtml(withTypography)
       : withTypography;
-  }, [renderedPreview, activeTemplateTab]);
+  }, [renderedPreview, activeTemplateTab, activeLibraryKind]);
   const itemsByActiveTab = useMemo(
     () =>
       items.filter((it) => {
@@ -2579,9 +2613,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
         setEditingId(firstId);
         const t = tabItems.find((it) => it.id === firstId);
         setTitle(t?.title ?? '');
-        setHtml(t?.html ?? '');
-        setVisualDraftHtml(t?.html ?? '');
-        resetTemplateHistory(t?.html ?? '');
+        const loadedHtml = normalizeTemplateEditorHtml(t?.html ?? '');
+        setHtml(loadedHtml);
+        setVisualDraftHtml(loadedHtml);
+        resetTemplateHistory(loadedHtml);
         void refreshTrashCount();
       } catch (e) {
         if (templatesLoadRequestIdRef.current !== requestId) return;
@@ -2619,10 +2654,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     const rawContentHtml = (
       editorMode === 'visual' ? (visualEditorRef.current?.innerHTML ?? visualDraftHtml) : html
     ).trim();
-    const contentHtml =
-      activeTemplateTab === 'contract'
-        ? repairContractTemplateStructureInHtml(rawContentHtml)
-        : rawContentHtml;
+    const contentHtml = normalizeTemplateEditorHtml(rawContentHtml);
     if (!t || !contentHtml) return null;
     const exists = items.some((it) => it.id === editingId);
     if (exists) {
@@ -2745,6 +2777,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     (nextKind: ContractDocumentPackageKind) => {
       if (nextKind === activeLibraryKind) return;
       setActiveLibraryKind(nextKind);
+      setActiveTemplateTab((tab) => normalizeLibraryTemplateTabForPackageKind(tab, nextKind));
       if (typeof window !== 'undefined') {
         try {
           window.localStorage.setItem(TEMPLATES_ACTIVE_KIND_KEY, nextKind);
@@ -2755,6 +2788,12 @@ export function ContractDocumentsTemplatesLibraryPage() {
     },
     [activeLibraryKind]
   );
+
+  useEffect(() => {
+    setActiveTemplateTab((tab) =>
+      normalizeLibraryTemplateTabForPackageKind(tab, activeLibraryKind)
+    );
+  }, [activeLibraryKind]);
 
   const handlePreviewCustomerKindChange = useCallback(
     (nextKind: RepairTemplatePreviewCustomerKind) => {
@@ -2863,9 +2902,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
       setEditingId(id);
       const t = itemsByActiveTab.find((it) => it.id === id);
       setTitle(t?.title ?? '');
-      setHtml(t?.html ?? '');
-      setVisualDraftHtml(t?.html ?? '');
-      resetTemplateHistory(t?.html ?? '');
+      const loadedHtml = normalizeTemplateEditorHtml(t?.html ?? '');
+      setHtml(loadedHtml);
+      setVisualDraftHtml(loadedHtml);
+      resetTemplateHistory(loadedHtml);
     })();
   };
 
@@ -2876,7 +2916,9 @@ export function ContractDocumentsTemplatesLibraryPage() {
       setTitleRenameMode(true);
       setEditingId(`tpl_${Date.now()}`);
       setTitle('Новый шаблон');
-      const next = '<div class="docPrint"></div>';
+      const next = isRepairLibraryTemplateTabId(activeTemplateTab)
+        ? libraryTemplateFallbackHtml(activeLibraryKind, activeTemplateTab)
+        : '<div class="docPrint"></div>';
       setHtml(next);
       setVisualDraftHtml(next);
       resetTemplateHistory(next);
@@ -2886,7 +2928,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
   useEffect(() => {
     if (!visualEditorRef.current) return;
     const raw = visualDraftHtml || html || '';
-    const source = normalizeContractTemplatePageBreaksInHtml(raw);
+    const source = normalizeTemplateEditorHtml(raw);
     visualEditorRef.current.innerHTML = source;
     if (editorMode === 'visual' && source !== raw) {
       setVisualDraftHtml(source);
@@ -3004,9 +3046,10 @@ export function ContractDocumentsTemplatesLibraryPage() {
     setEditingId(id);
     const t = list.find((it) => it.id === id);
     setTitle(t?.title ?? '');
-    setHtml(t?.html ?? '');
-    setVisualDraftHtml(t?.html ?? '');
-    resetTemplateHistory(t?.html ?? '');
+    const loadedHtml = normalizeTemplateEditorHtml(t?.html ?? '');
+    setHtml(loadedHtml);
+    setVisualDraftHtml(loadedHtml);
+    resetTemplateHistory(loadedHtml);
   };
 
   const confirmArchiveTemplate = () => {
@@ -3096,7 +3139,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
       const next = syncVisualEditorToHtmlState();
       pushTemplateHistory(next);
     } else {
-      const normalized = normalizeContractTemplatePageBreaksInHtml(html);
+      const normalized = normalizeTemplateEditorHtml(html);
       setVisualDraftHtml(normalized);
       setHtml(normalized);
       pushTemplateHistory(normalized);
@@ -3335,7 +3378,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
       restoreVisualSelection();
       if (!applyBulletedListInVisualEditor(el, bulletMarker)) {
         setError(
-          'Маркированный список нельзя применить внутри нумерации договора (1.1). Выйдите из неё: Enter в пустом пункте.'
+          'Маркированный список нельзя применить внутри договорной нумерации. Выйдите: Enter в пустом пункте.'
         );
         return;
       }
@@ -3357,7 +3400,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
       restoreVisualSelection();
       if (!applyNumberedListInVisualEditor(el)) {
         setError(
-          'Обычную нумерацию 1. 2. 3. нельзя смешивать с пунктами договора 1.1. Выйдите из договорного списка.'
+          'Обычную нумерацию 1. 2. 3. нельзя смешивать с договорным списком (1. / 1.1.). Выйдите из договорного списка.'
         );
         return;
       }
@@ -3386,12 +3429,42 @@ export function ContractDocumentsTemplatesLibraryPage() {
       return;
     }
     updateHtmlBySelection((selected, hasSelection) => {
-      const lines = getLinesForListFromHtmlSelection(selected, hasSelection, ['Текст пункта']);
+      const lines = getLinesForListFromHtmlSelection(selected, hasSelection, ['']);
       const section = detectSectionForListHtml(visualEditorRef.current);
       return { content: buildContractLegalListHtml(lines, section) };
     });
     setError(null);
   };
+
+  const insertRemarkBlankLines = () => {
+    if (editorMode !== 'visual') {
+      setError(
+        'Вставка пустых строк для замечаний — в визуальном конструкторе: курсор в пункт списка (1., 1.1., 2.3. …).'
+      );
+      return;
+    }
+    const el = visualEditorRef.current;
+    if (!el) return;
+    el.focus();
+    restoreVisualSelection();
+    if (insertContractRemarkBlankLinesInVisualEditor(el)) {
+      syncVisualEditorFromDom();
+      setError(null);
+      setOk('Добавлены 2 строки с линией для замечаний. Enter — следующий пункт списка.');
+    } else {
+      setError(
+        'Поставьте курсор в пункт договорного списка (1., 1.1., 2.3. …), после которого нужны пустые строки, и нажмите снова.'
+      );
+    }
+  };
+
+  const repairContractLegalListsInEditor = useCallback(() => {
+    if (!isSuperAdmin || editorMode !== 'visual') return;
+    const next = normalizeTemplateEditorHtml(readVisualEditorHtml());
+    applyTemplateHistorySnapshot(next);
+    setOk('Списки исправлены: убрана лишняя обёртка, пустые пункты (1.3) и служебные комментарии.');
+    setError(null);
+  }, [applyTemplateHistorySnapshot, editorMode, isSuperAdmin, readVisualEditorHtml]);
 
   const changeListLevel = (direction: 'indent' | 'outdent') => {
     if (editorMode !== 'visual' || !visualEditorRef.current) return;
@@ -3402,7 +3475,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
       setError(null);
     } else {
       setError(
-        'Смена уровня работает только внутри многоуровневого списка договора (1.1 / 1.1.1).'
+        '⇤: поднять подпункт на уровень выше. Раздел 2 — Shift+Enter, не Tab (Tab вложит 2 внутрь 1).'
       );
     }
   };
@@ -3515,7 +3588,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
         disabled={!isSuperAdmin}
         onClick={applyMultilevelContractList}
       >
-        <FormatToolbarGlyph>1.1</FormatToolbarGlyph>
+        <FormatToolbarGlyph>1.</FormatToolbarGlyph>
       </FormatToolbarHelpTooltip>
       <FormatToolbarHelpTooltip
         title={LIST_TOOLTIP.outdent.title}
@@ -3534,6 +3607,28 @@ export function ContractDocumentsTemplatesLibraryPage() {
         onClick={() => changeListLevel('indent')}
       >
         <FormatToolbarGlyph>⇥</FormatToolbarGlyph>
+      </FormatToolbarHelpTooltip>
+      <FormatToolbarHelpTooltip
+        title={REMARK_BLANK_LINES_TOOLTIP.title}
+        steps={REMARK_BLANK_LINES_TOOLTIP.steps}
+        note={REMARK_BLANK_LINES_TOOLTIP.note}
+        disabled={!isSuperAdmin}
+        onClick={insertRemarkBlankLines}
+      >
+        <FormatToolbarGlyph>2⏎</FormatToolbarGlyph>
+      </FormatToolbarHelpTooltip>
+      <FormatToolbarHelpTooltip
+        title="Починить списки"
+        steps={[
+          'Если пустой подпункт мешает — нажмите эту кнопку.',
+          'Убирается лишний обычный список, выравнивается структура 1 / 1.1 и пустые пункты.',
+          'После исправления сохраните шаблон.',
+        ]}
+        note="Выполняется автоматически при открытии и сохранении шаблона."
+        disabled={!isSuperAdmin}
+        onClick={repairContractLegalListsInEditor}
+      >
+        <FormatToolbarGlyph>Списки</FormatToolbarGlyph>
       </FormatToolbarHelpTooltip>
     </>
   );
@@ -3554,8 +3649,24 @@ export function ContractDocumentsTemplatesLibraryPage() {
       return;
     }
 
+    if (e.key === 'Enter' && e.shiftKey) {
+      if (handleContractLegalListShiftEnter(el)) {
+        e.preventDefault();
+        syncVisualEditorFromDom();
+        return;
+      }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       if (handleContractLegalListEnter(el)) {
+        e.preventDefault();
+        syncVisualEditorFromDom();
+        return;
+      }
+    }
+
+    if (e.key === 'Backspace') {
+      if (handleContractLegalListBackspace(el)) {
         e.preventDefault();
         syncVisualEditorFromDom();
       }
@@ -3741,17 +3852,24 @@ export function ContractDocumentsTemplatesLibraryPage() {
 
   const insertSignatureLines = () =>
     updateHtmlBySelection(() => ({
-      content: `<table style="width: 100%; border-collapse: collapse; margin-top: 16pt;">
-  <tr>
-    <td style="width: 50%; vertical-align: bottom; padding-right: 10px;">
-      <p style="margin: 0 0 22pt;">Подрядчик _____________________ / {{executor.directorName}}</p>
-    </td>
-    <td style="width: 50%; vertical-align: bottom; padding-left: 10px;">
-      <p style="margin: 0 0 22pt;">Заказчик _____________________ / {{customer.signatureName|plain}}</p>
-    </td>
-  </tr>
-</table>`,
+      content: buildContractPartySignaturesHtml(),
     }));
+  const insertActHandwrittenCustomerSignatures = () => {
+    updateHtmlBySelection(() => ({
+      content: buildContractActHandwrittenCustomerSignaturesHtml(),
+    }));
+    if (editorMode !== 'visual') return;
+    window.requestAnimationFrame(() => {
+      const el = visualEditorRef.current;
+      if (!el) return;
+      const fixed = normalizeContractActHandwrittenSignaturesInHtml(el.innerHTML);
+      if (fixed === el.innerHTML) return;
+      el.innerHTML = fixed;
+      setVisualDraftHtml(fixed);
+      setHtml(fixed);
+      pushTemplateHistory(fixed);
+    });
+  };
   const insertRequisitesTemplate = () =>
     updateHtmlBySelection(() => ({
       content: buildRepairContractRequisitesInsertHtmlForToolbar(),
@@ -4130,6 +4248,13 @@ export function ContractDocumentsTemplatesLibraryPage() {
       onClick: insertSignatureLines,
     },
     {
+      id: 'signatures-act-handwritten',
+      title: INSERT_BLOCK_TOOLTIP.signaturesActHandwritten.title,
+      icon: <FormatToolbarGlyph>Пдп</FormatToolbarGlyph>,
+      onClick: insertActHandwrittenCustomerSignatures,
+      help: INSERT_BLOCK_TOOLTIP.signaturesActHandwritten,
+    },
+    {
       id: 'requisites',
       title: 'Реквизиты (готовый блок)',
       icon: <FormatToolbarSvgIcon icon={BuildingOffice2Icon} />,
@@ -4414,11 +4539,14 @@ export function ContractDocumentsTemplatesLibraryPage() {
                 value={activeTemplateTab}
                 onChange={(e) =>
                   handleActiveTemplateTabChange(
-                    normalizeRepairLibraryTemplateTabId(e.currentTarget.value)
+                    normalizeLibraryTemplateTabForPackageKind(
+                      e.currentTarget.value,
+                      activeLibraryKind
+                    )
                   )
                 }
               >
-                {REPAIR_LIBRARY_TEMPLATE_TAB_IDS.map((tab) => (
+                {libraryTemplateTabIds.map((tab) => (
                   <option key={tab} value={tab}>
                     {REPAIR_LIBRARY_TEMPLATE_TAB_LABELS[tab]} ({templatesCountByTab[tab]})
                   </option>
@@ -4593,6 +4721,9 @@ export function ContractDocumentsTemplatesLibraryPage() {
               );
             }
             if (tool.id === 'signatures') {
+              const actSignaturesTool = formatTools.find(
+                (t) => t.id === 'signatures-act-handwritten'
+              );
               return (
                 <Fragment key="cleanup-and-insert-toolbar">
                   {renderCleanupToolbar()}
@@ -4609,8 +4740,23 @@ export function ContractDocumentsTemplatesLibraryPage() {
                   >
                     {tool.icon}
                   </button>
+                  {actSignaturesTool?.help ? (
+                    <FormatToolbarHelpTooltip
+                      key={actSignaturesTool.id}
+                      title={actSignaturesTool.help.title}
+                      steps={actSignaturesTool.help.steps}
+                      note={actSignaturesTool.help.note}
+                      disabled={!isSuperAdmin}
+                      onClick={actSignaturesTool.onClick}
+                    >
+                      {actSignaturesTool.icon}
+                    </FormatToolbarHelpTooltip>
+                  ) : null}
                 </Fragment>
               );
+            }
+            if (tool.id === 'signatures-act-handwritten') {
+              return null;
             }
             if (tool.id === 'spacing-tight') {
               return (

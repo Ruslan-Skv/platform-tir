@@ -1,3 +1,5 @@
+import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
+
 import type { RepairDocumentTemplateTabId } from '../formDataTemplateStorage';
 import type { RepairLibraryTemplateTabId } from '../repairLibraryTemplateTabs';
 import { repairTemplateActAcceptance } from './actAcceptance';
@@ -8,6 +10,7 @@ import { repairTemplateContract } from './contract';
 import { repairLibraryFallbackStub } from './libraryFallbackStub';
 import { repairTemplatePaymentInvoice } from './paymentInvoice';
 import { repairTemplateProductionLog } from './productionLog';
+import { windowsTemplateActAcceptance } from './windowsActAcceptance';
 import { repairTemplateWorkOrder, repairTemplateWorkOrderAddendum } from './workOrder';
 
 const stub = (title: string) => repairLibraryFallbackStub(title);
@@ -21,6 +24,22 @@ export const REPAIR_LIBRARY_TEMPLATE_HTML: Record<RepairLibraryTemplateTabId, st
   paymentInvoice: repairTemplatePaymentInvoice,
   productionLog: repairTemplateProductionLog,
 };
+
+const WINDOWS_LIBRARY_TEMPLATE_OVERRIDES: Partial<Record<RepairLibraryTemplateTabId, string>> = {
+  actAcceptance: windowsTemplateActAcceptance,
+};
+
+/** Резервный HTML вкладки библиотеки с учётом направления пакета. */
+export function libraryTemplateFallbackHtml(
+  kind: ContractDocumentPackageKind,
+  tab: RepairLibraryTemplateTabId
+): string {
+  if (kind === 'WINDOWS') {
+    const windowsHtml = WINDOWS_LIBRARY_TEMPLATE_OVERRIDES[tab];
+    if (windowsHtml) return windowsHtml;
+  }
+  return REPAIR_LIBRARY_TEMPLATE_HTML[tab];
+}
 
 export const REPAIR_DOCUMENT_TEMPLATES: Record<RepairDocumentTemplateTabId, string> = {
   ...REPAIR_LIBRARY_TEMPLATE_HTML,

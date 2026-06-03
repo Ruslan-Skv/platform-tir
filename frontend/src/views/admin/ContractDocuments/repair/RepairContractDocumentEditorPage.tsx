@@ -88,6 +88,7 @@ import {
 import { buildPostWorkQuestionnaire2PrintHtml } from './postWorkQuestionnaire2Print';
 import { pickPrintMarginFooterNames, printDocumentHtml } from './printDocument';
 import {
+  isRepairActA4PreviewTab,
   isRepairActTwinOneSheetTab,
   isRepairPlainCustomerTab,
   wrapRepairActTwinCopiesOnOnePageHtml,
@@ -133,7 +134,10 @@ import {
   normalizeRepairDocumentTabOrder,
 } from './repairDocumentTemplates';
 import { buildEstimateSectionsFromPresetIds } from './repairEstimateDocPrintEmbedHtml';
-import { repairLibraryTemplateTabIdFromPreset } from './repairLibraryTemplateTabs';
+import {
+  isRepairLibraryTemplateTabId,
+  repairLibraryTemplateTabIdFromPreset,
+} from './repairLibraryTemplateTabs';
 import {
   type RepairManagerQuestionnaire1Block,
   type RepairPackageFormData,
@@ -158,6 +162,7 @@ import {
   isRepairWorkOrderHubTabHiddenFromPackageEditor,
 } from './repairWorkOrderHubTabs';
 import { repairWorkPeriodFieldHelp } from './repairWorkPeriodFieldHelp';
+import { libraryTemplateFallbackHtml } from './templates';
 import {
   computeWindowsContractCostBreakdown,
   windowsContractTotalToContractFields,
@@ -1127,9 +1132,12 @@ export function RepairContractDocumentEditorPage({
       if (selected?.html?.trim()) return selected.html;
       const fallback = list.find((it) => it.isDefault) ?? list[0];
       if (fallback?.html?.trim()) return fallback.html;
+      if (isRepairLibraryTemplateTabId(tab)) {
+        return libraryTemplateFallbackHtml(packageKind, tab);
+      }
       return REPAIR_DOCUMENT_TEMPLATES[tab];
     },
-    [templatePresetsByTab, selectedTemplateIds]
+    [templatePresetsByTab, selectedTemplateIds, packageKind]
   );
 
   const refreshPackageVersions = useCallback(
@@ -3329,19 +3337,24 @@ export function RepairContractDocumentEditorPage({
     }
     if (activeTab === 'interactiveFinalEstimate') return;
     if (!renderedDoc) return;
+    const actTwinOnOneSheet = isRepairActTwinOneSheetTab(activeTab, packageKind);
     const printTitle =
-      activeTab === 'contract' || isRepairActTwinOneSheetTab(activeTab)
-        ? ''
-        : REPAIR_DOCUMENT_TAB_LABELS[activeTab];
-    const printBody = isRepairActTwinOneSheetTab(activeTab)
+      activeTab === 'contract' || actTwinOnOneSheet ? '' : REPAIR_DOCUMENT_TAB_LABELS[activeTab];
+    const printBody = actTwinOnOneSheet
       ? wrapRepairActTwinCopiesOnOnePageHtml(renderedDoc)
       : renderedDoc;
+    const contractCompactPrint =
+      activeTab === 'contract' ||
+      isRepairActA4PreviewTab(activeTab) ||
+      activeTab === 'productionLog';
     printDocumentHtml(
       printBody,
       printTitle,
       activeTab === 'contract'
         ? { marginFooter: pickPrintMarginFooterNames(form), contractCompact: true }
-        : {}
+        : contractCompactPrint
+          ? { contractCompact: true }
+          : {}
     );
   };
 
@@ -5374,12 +5387,12 @@ export function RepairContractDocumentEditorPage({
               </p>
             ) : null}
             {activeTab === 'contract' ||
-            isRepairActTwinOneSheetTab(activeTab) ||
+            isRepairActA4PreviewTab(activeTab) ||
             activeTab === 'productionLog' ||
             isRepairAddendumTab(activeTab) ||
             isRepairWorkOrderAddendumTab(activeTab) ? (
               <div className={styles.estimateA4Wrap}>
-                {isRepairActTwinOneSheetTab(activeTab) ? (
+                {isRepairActTwinOneSheetTab(activeTab, packageKind) ? (
                   <article
                     className={`${styles.estimateA4Sheet} ${styles.repairActTwinSheet}`}
                     aria-label="Два экземпляра акта на одном листе"

@@ -163,7 +163,7 @@ export function WindowsSpecificationTab({
               <p className={styles.estimateA4AppendixRef}>
                 Приложение №1 к договору № {contractNumberLabel} от {contractDateLabel}
               </p>
-              <h4 className={styles.estimateA4Title}>Спецификация ПВХ-изделий</h4>
+              <h4 className={styles.estimateA4Title}>Спецификация</h4>
               {amount.trim() ? (
                 <p className={styles.estimateA4Total}>
                   Стоимость спецификации: <strong>{amount.trim()} руб.</strong>

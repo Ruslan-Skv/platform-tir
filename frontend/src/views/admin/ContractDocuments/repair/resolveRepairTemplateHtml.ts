@@ -1,4 +1,7 @@
-import type { ContractTemplatePreset } from '@/shared/api/admin-contract-document-packages';
+import type {
+  ContractDocumentPackageKind,
+  ContractTemplatePreset,
+} from '@/shared/api/admin-contract-document-packages';
 
 import type { RepairDocumentTemplateTabId } from './formDataTemplateStorage';
 import {
@@ -9,13 +12,14 @@ import {
   isRepairLibraryTemplatePreset,
   repairTemplatePresetEditorTabId,
 } from './repairTemplatePresetTab';
-import { REPAIR_DOCUMENT_TEMPLATES, REPAIR_LIBRARY_TEMPLATE_HTML } from './templates';
+import { REPAIR_DOCUMENT_TEMPLATES, libraryTemplateFallbackHtml } from './templates';
 
 export function resolveRepairTemplateHtml(
   tab: RepairDocumentTemplateTabId,
   presets: ContractTemplatePreset[],
   selectedTemplateIds: Partial<Record<RepairDocumentTemplateTabId, string>>,
-  templateOverrides: Partial<Record<RepairDocumentTemplateTabId, string>>
+  templateOverrides: Partial<Record<RepairDocumentTemplateTabId, string>>,
+  packageKind: ContractDocumentPackageKind = 'REPAIR'
 ): string {
   const override = templateOverrides[tab]?.trim();
   if (override) return override;
@@ -43,7 +47,7 @@ export function resolveRepairTemplateHtml(
   if (fallback?.html?.trim()) return fallback.html;
 
   if (libraryTab) {
-    return REPAIR_LIBRARY_TEMPLATE_HTML[libraryTab];
+    return libraryTemplateFallbackHtml(packageKind, libraryTab);
   }
   return REPAIR_DOCUMENT_TEMPLATES[tab];
 }
