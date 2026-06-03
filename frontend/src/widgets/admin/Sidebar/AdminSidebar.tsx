@@ -8,6 +8,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { useAdminAccessibleResources } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { useAuth } from '@/features/auth';
 import { getSafeHref } from '@/shared/lib/sanitize';
+import { AdminPlatformBrand } from '@/shared/ui/AdminPlatformBrand';
 import { AdminAccessIcon } from '@/shared/ui/icons/AdminAccessIcon';
 
 import { AccessModal } from './AccessModal';
@@ -676,8 +677,8 @@ export function AdminSidebar({
         />
       )}
       <div className={styles.header}>
-        <Link href="/admin" className={styles.logo}>
-          {collapsed ? 'T' : 'ТИР Админ'}
+        <Link href="/admin" className={styles.logo} aria-label="Цифровая платформа">
+          <AdminPlatformBrand collapsed={collapsed} />
         </Link>
         <button className={styles.toggleBtn} onClick={onToggle}>
           {collapsed ? '→' : '←'}

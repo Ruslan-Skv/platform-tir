@@ -51,23 +51,48 @@
 }
 
 .header {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: var(--admin-space-md) var(--admin-space-md);
+  justify-content: center;
+  padding: var(--admin-space-md) calc(var(--admin-space-md) + 28px) var(--admin-space-md)
+    var(--admin-space-md);
   border-bottom: 1px solid var(--admin-sidebar-divider);
 }
 
+.sidebar.collapsed .header {
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: var(--admin-space-md);
+}
+
+.sidebar.collapsed .toggleBtn {
+  position: static;
+  align-self: center;
+}
+
+/* По вертикали — на уровне логотипа (под заголовком «Цифровая платформа») */
+.sidebar:not(.collapsed) .toggleBtn {
+  top: calc(var(--admin-space-md) + 0.875rem * 1.2 + 0.25rem + 1.625rem / 2);
+  transform: translateY(-50%);
+}
+
 .logo {
-  font-size: var(--admin-font-size-lg);
-  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
   color: var(--admin-sidebar-text-strong);
   text-decoration: none;
-  white-space: nowrap;
   overflow: hidden;
 }
 
 .toggleBtn {
+  position: absolute;
+  top: var(--admin-space-md);
+  right: var(--admin-space-md);
+  flex-shrink: 0;
   background: var(--admin-sidebar-hover-bg);
   border: none;
   color: var(--admin-sidebar-text-strong);

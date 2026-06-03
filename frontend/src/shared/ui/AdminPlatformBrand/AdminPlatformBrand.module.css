@@ -1,0 +1,91 @@
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.375rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.sidebar {
+  align-items: center;
+  width: 100%;
+  gap: 0.25rem;
+  text-align: center;
+}
+
+.sidebar .logoWrap {
+  margin-inline: auto;
+}
+
+.sidebar .platformTitle {
+  width: 100%;
+}
+
+.login {
+  align-items: center;
+  gap: 0.625rem;
+  text-align: center;
+  width: 100%;
+}
+
+.brand.collapsed {
+  align-items: center;
+  width: 100%;
+}
+
+.brand.collapsed .platformTitle {
+  display: none;
+}
+
+.houseMark {
+  display: block;
+  width: 1.75rem;
+  height: auto;
+  margin-inline: auto;
+}
+
+.logoWrap {
+  display: block;
+  max-width: 100%;
+  padding-right: 0;
+}
+
+.logoSidebar {
+  height: 1.625rem;
+  max-width: 100%;
+  width: auto;
+}
+
+.logoLogin {
+  height: 2.5rem;
+  max-width: min(100%, 18rem);
+  width: auto;
+}
+
+.platformTitle {
+  font-weight: 600;
+  line-height: 1.2;
+  color: inherit;
+}
+
+.sidebar .platformTitle {
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* В админке без hover-анимаций публичного сайта */
+.brand :global(.logo:hover) {
+  transform: none;
+}
+
+.brand :global(.logo:hover .color1),
+.brand :global(.logo:hover .color2),
+.brand :global(.logo:hover .color3),
+.brand :global(.logo:hover .color4),
+.brand :global(.logo:hover .color5),
+.brand :global(.logo:hover rect) {
+  animation: none;
+}

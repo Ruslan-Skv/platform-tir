@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
 import { useTheme } from '@/features/theme';
+import { AdminPlatformBrand } from '@/shared/ui/AdminPlatformBrand';
 import { Modal } from '@/shared/ui/Modal';
 
 import styles from './login.module.css';
@@ -71,7 +72,7 @@ export default function AdminLoginPage() {
       <Modal
         isOpen={true}
         onClose={() => {}}
-        title="Вход в админ-панель"
+        title="Вход в цифровую платформу"
         size="sm"
         showCloseButton={false}
         className={styles.loginModalPanel}
@@ -79,8 +80,7 @@ export default function AdminLoginPage() {
       >
         <div className={styles.loginCard}>
           <div className={styles.logo}>
-            <h1>ТИР</h1>
-            <p>Административная панель</p>
+            <AdminPlatformBrand size="login" />
           </div>
 
           <form onSubmit={handleSubmit} className={styles.form} autoComplete="off">
