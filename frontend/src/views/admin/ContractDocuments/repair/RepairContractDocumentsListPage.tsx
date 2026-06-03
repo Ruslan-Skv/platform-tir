@@ -485,14 +485,14 @@ function formatSigningDateOnly(r: ContractDocumentPackage): string {
   return formatRepairListActDate(iso);
 }
 
-/** Статус для фильтра и колонки: ремонт — полный конвейер, остальные направления — упрощённо. */
+/** Статус для фильтра и колонки: «Ремонт» и «Окна» — полный конвейер, прочие — упрощённо. */
 function listPipelineStatus(pkg: ContractDocumentPackage): RepairListPipelineStatus {
-  if (pkg.kind !== 'REPAIR') {
-    if (pkg.status === 'REFUSED') return 'REFUSED';
-    if (pkg.status === 'CONTRACT_CONCLUDED') return 'SIGNED';
-    return 'IN_PROJECT';
+  if (pkg.kind === 'REPAIR' || pkg.kind === 'WINDOWS') {
+    return repairListPipelineStatusFromPackage(pkg);
   }
-  return repairListPipelineStatusFromPackage(pkg);
+  if (pkg.status === 'REFUSED') return 'REFUSED';
+  if (pkg.status === 'CONTRACT_CONCLUDED') return 'SIGNED';
+  return 'IN_PROJECT';
 }
 
 function repairListPipelineStatusBadgeClass(st: RepairListPipelineStatus): string {

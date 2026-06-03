@@ -11,10 +11,34 @@
   white-space: nowrap;
 }
 
+.modalContractNumberPlaceholder {
+  color: transparent;
+  font-size: var(--modal-fs-title, 1.0625rem);
+  font-weight: 600;
+  line-height: var(--modal-lh-tight, 1.25);
+  user-select: none;
+  white-space: nowrap;
+}
+
 .hubFormShell {
   display: flex;
   flex-direction: column;
   gap: var(--admin-space-xl, 12px);
+  min-height: min(72vh, 40rem);
+  position: relative;
+}
+
+.hubFormShellLoading {
+  pointer-events: none;
+}
+
+.hubLoadingOverlay {
+  left: 50%;
+  margin: 0;
+  position: absolute;
+  top: var(--admin-space-3xl, 20px);
+  transform: translateX(-50%);
+  z-index: 1;
 }
 
 .hubModalSection {
@@ -41,6 +65,64 @@
   font-size: var(--admin-fs-sm, 0.8125rem);
   line-height: 1.45;
   margin: 0 0 var(--admin-space-md, 8px);
+}
+
+.windowsDeadlinePanel {
+  background: var(--admin-surface-muted, #f9fafb);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-md, 8px);
+  margin: 0 0 var(--admin-space-md, 8px);
+  padding: var(--admin-space-md, 8px) var(--admin-space-lg, 10px);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .windowsDeadlinePanel {
+  background: rgb(17 24 39 / 60%);
+  border-color: var(--admin-border-strong, #374151);
+}
+
+.windowsDeadlineTitle {
+  color: var(--admin-text-strong, #111827);
+  font-size: var(--admin-fs-sm, 0.8125rem);
+  font-weight: 600;
+  margin: 0 0 var(--admin-space-sm, 6px);
+}
+
+.windowsDeadlineGrid {
+  display: grid;
+  gap: var(--admin-space-xs, 4px);
+  margin: 0;
+}
+
+.windowsDeadlineRow {
+  display: grid;
+  gap: 2px var(--admin-space-md, 8px);
+  grid-template-columns: minmax(8.5rem, 11rem) 1fr;
+}
+
+.windowsDeadlineRow dt {
+  color: var(--admin-text-muted, #6b7280);
+  font-size: var(--admin-fs-sm, 0.8125rem);
+  font-weight: 500;
+  margin: 0;
+}
+
+.windowsDeadlineRow dd {
+  color: var(--admin-text, #374151);
+  font-size: var(--admin-fs-sm, 0.8125rem);
+  margin: 0;
+}
+
+.windowsDeadlineDateValue {
+  color: var(--admin-text-strong, #111827);
+  font-size: var(--admin-fs-base, 0.875rem);
+  font-weight: 700;
+}
+
+.windowsDeadlinePending {
+  color: var(--admin-text-muted, #6b7280);
+  font-size: var(--admin-fs-sm, 0.8125rem);
+  line-height: 1.45;
+  margin: 0;
 }
 
 .pipelinePanel :global([data-modal-btn='secondary']),

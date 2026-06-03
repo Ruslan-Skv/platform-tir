@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
+  type ContractDocumentPackageKind,
   type ContractDocumentPackagePayment,
   type ContractDocumentPackageStatus,
   type ContractTemplatePreset,
@@ -15,7 +16,9 @@ import {
 } from '@/shared/api/admin-contract-document-packages';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
+import { parseLinkedCrmCustomerIdFromFormData } from './crmManagerQuestionnaire1';
 import {
+  type BuildPersistedFormDataOptions,
   type RepairDocumentTemplateTabId,
   buildPersistedFormData,
   mergeFormDataFromStorage,
@@ -36,6 +39,7 @@ import {
 import {
   REPAIR_WORK_START_MIN_CONTRACT_PAY_PCT,
   computeRepairPipelineModel,
+  inferWindowsPrepayment70StartDate,
 } from './repairContractPipeline';
 import {
   type RepairPackageFormData,
@@ -43,22 +47,31 @@ import {
   mergeRepairPackageFormData,
 } from './repairPackageForm';
 import { createPackageJournalScheduler } from './repairPackageJournalSchedule';
+import { computePackagePayableBreakdown } from './repairPackagePaymentTotals';
 import { resolveRepairTemplateHtml } from './resolveRepairTemplateHtml';
 
 export type UseRepairContractPackageHubOptions = {
   packageId: string;
   isOpen: boolean;
   onUpdated?: () => void;
+  /** Актуальная форма из страницы редактора (если пакет открыт в редакторе). */
+  getLiveForm?: () => RepairPackageFormData;
+  getLivePersistOptions?: () => BuildPersistedFormDataOptions;
 };
 
 export function useRepairContractPackageHub({
   packageId,
   isOpen,
   onUpdated,
+  getLiveForm,
+  getLivePersistOptions,
 }: UseRepairContractPackageHubOptions) {
   const [loading, setLoading] = useState(false);
+  const [contentReady, setContentReady] = useState(false);
+  const hubContentReadyRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<RepairPackageFormData>(() => mergeRepairPackageFormData({}));
+  const [packageKind, setPackageKind] = useState<ContractDocumentPackageKind>('REPAIR');
   const [packageFlowStatus, setPackageFlowStatus] =
     useState<ContractDocumentPackageStatus>('IN_PROGRESS');
   const [paymentRows, setPaymentRows] = useState<ContractDocumentPackagePayment[]>([]);
@@ -72,9 +85,37 @@ export function useRepairContractPackageHub({
   const templateOverridesRef = useRef<Partial<Record<RepairDocumentTemplateTabId, string>>>({});
   const selectedTemplateIdsRef = useRef<Partial<Record<RepairDocumentTemplateTabId, string>>>({});
   const draftTitleRef = useRef<string | null>(null);
+  const linkedCrmCustomerIdRef = useRef<string | null>(null);
+  const getLiveFormRef = useRef(getLiveForm);
+  const getLivePersistOptionsRef = useRef(getLivePersistOptions);
+  getLiveFormRef.current = getLiveForm;
+  getLivePersistOptionsRef.current = getLivePersistOptions;
   const packageJournalSchedulerRef = useRef<ReturnType<
     typeof createPackageJournalScheduler
   > | null>(null);
+
+  useEffect(() => {
+    hubContentReadyRef.current = false;
+    setContentReady(false);
+  }, [packageId]);
+
+  const hubFormBase = useCallback((): RepairPackageFormData => {
+    return getLiveFormRef.current?.() ?? formRef.current;
+  }, []);
+
+  const buildHubPersistedFormData = useCallback((nextForm: RepairPackageFormData) => {
+    const persistOptions =
+      getLivePersistOptionsRef.current?.() ??
+      (linkedCrmCustomerIdRef.current
+        ? { linkedCrmCustomerId: linkedCrmCustomerIdRef.current }
+        : undefined);
+    return buildPersistedFormData(
+      nextForm,
+      templateOverridesRef.current,
+      selectedTemplateIdsRef.current,
+      persistOptions
+    );
+  }, []);
 
   const [workStartModalOpen, setWorkStartModalOpen] = useState(false);
   const [workStartModalDate, setWorkStartModalDate] = useState('');
@@ -103,11 +144,7 @@ export function useRepairContractPackageHub({
       nextForm: RepairPackageFormData,
       opts?: { status?: ContractDocumentPackageStatus; recordVersion?: boolean }
     ) => {
-      const formData = buildPersistedFormData(
-        nextForm,
-        templateOverridesRef.current,
-        selectedTemplateIdsRef.current
-      );
+      const formData = buildHubPersistedFormData(nextForm);
       const recordVersion = opts?.recordVersion === true;
       await updateContractDocumentPackage(packageId, {
         status: opts?.status,
@@ -122,7 +159,7 @@ export function useRepairContractPackageHub({
       setForm(nextForm);
       formRef.current = nextForm;
     },
-    [packageId]
+    [packageId, buildHubPersistedFormData]
   );
 
   useEffect(() => {
@@ -131,11 +168,7 @@ export function useRepairContractPackageHub({
       packageId,
       getPayload: () => ({
         title: draftTitleRef.current,
-        formData: buildPersistedFormData(
-          formRef.current,
-          templateOverridesRef.current,
-          selectedTemplateIdsRef.current
-        ),
+        formData: buildHubPersistedFormData(formRef.current),
         status: packageFlowStatusRef.current,
       }),
     });
@@ -146,25 +179,29 @@ export function useRepairContractPackageHub({
   }, [isOpen, packageId]);
 
   const loadHub = useCallback(async () => {
-    setLoading(true);
+    const background = hubContentReadyRef.current;
+    if (!background) setLoading(true);
     setError(null);
     try {
-      const [row, paymentsRes, presetsRes] = await Promise.all([
-        getContractDocumentPackage(packageId),
+      const row = await getContractDocumentPackage(packageId);
+      const presetsKind = row.kind === 'WINDOWS' ? 'WINDOWS' : 'REPAIR';
+      const [paymentsRes, presetsRes] = await Promise.all([
         getContractDocumentPackagePayments(packageId).catch(
           () => [] as ContractDocumentPackagePayment[]
         ),
-        getContractDocumentTemplatePresets('REPAIR').catch(() => ({
+        getContractDocumentTemplatePresets(presetsKind).catch(() => ({
           items: [] as ContractTemplatePreset[],
           updatedAt: null,
         })),
       ]);
       setContractTemplatePresets(presetsRes.items ?? []);
-      if (row.kind !== 'REPAIR') {
+      if (row.kind !== 'REPAIR' && row.kind !== 'WINDOWS') {
         setError('Этот пакет относится к другому направлению.');
         setPaymentRows([]);
+        setPackageKind('REPAIR');
         return;
       }
+      setPackageKind(row.kind);
       setPaymentRows(paymentsRes ?? []);
       setPackageFlowStatus(
         row.status === 'CONTRACT_CONCLUDED'
@@ -180,73 +217,135 @@ export function useRepairContractPackageHub({
       } = mergeFormDataFromStorage(row.formData);
       templateOverridesRef.current = templateOverrides;
       selectedTemplateIdsRef.current = templatePresetIds;
-      setForm(mergedForm);
-      formRef.current = mergedForm;
+      linkedCrmCustomerIdRef.current = parseLinkedCrmCustomerIdFromFormData(row.formData);
+      const live = getLiveFormRef.current?.();
+      const formToShow = live ?? mergedForm;
+      setForm(formToShow);
+      formRef.current = formToShow;
       draftTitleRef.current = row.title?.trim() || null;
+      const flowStatus: ContractDocumentPackageStatus =
+        row.status === 'CONTRACT_CONCLUDED'
+          ? 'CONTRACT_CONCLUDED'
+          : row.status === 'REFUSED'
+            ? 'REFUSED'
+            : 'IN_PROGRESS';
+      if (row.kind === 'WINDOWS' && flowStatus === 'CONTRACT_CONCLUDED') {
+        const { grandTotalRub } = computePackagePayableBreakdown(mergedForm, 'WINDOWS');
+        const inferred = inferWindowsPrepayment70StartDate(paymentsRes ?? [], grandTotalRub);
+        const baseForPipeline = getLiveFormRef.current?.() ?? mergedForm;
+        if (inferred && baseForPipeline.repairWorkStartActSignedAt?.trim() !== inferred) {
+          const nextForm: RepairPackageFormData = {
+            ...baseForPipeline,
+            repairWorkStartActSignedAt: inferred,
+            repairWorkStartActPhotoUrl: '',
+          };
+          await persistForm(nextForm);
+          setForm(nextForm);
+          formRef.current = nextForm;
+        }
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось загрузить пакет');
     } finally {
       setLoading(false);
+      hubContentReadyRef.current = true;
+      setContentReady(true);
     }
-  }, [packageId]);
+  }, [packageId, persistForm]);
 
   useEffect(() => {
     if (!isOpen || !packageId) return;
     void loadHub();
   }, [isOpen, packageId, loadHub]);
 
-  const refreshJournalPaidRub = useCallback(async () => {
-    try {
-      const paymentsRes = await getContractDocumentPackagePayments(packageId);
-      setPaymentRows(paymentsRes ?? []);
-    } catch {
-      /* не блокируем UI */
-    }
-  }, [packageId]);
-
   const notifyUpdated = useCallback(() => {
     onUpdated?.();
   }, [onUpdated]);
 
+  const syncWindowsWorkPeriodStartFromPayments = useCallback(
+    async (
+      payments: ContractDocumentPackagePayment[],
+      baseForm: RepairPackageFormData
+    ): Promise<void> => {
+      if (packageKind !== 'WINDOWS' || packageFlowStatusRef.current !== 'CONTRACT_CONCLUDED') {
+        return;
+      }
+      const { grandTotalRub } = computePackagePayableBreakdown(baseForm, 'WINDOWS');
+      const inferred = inferWindowsPrepayment70StartDate(payments, grandTotalRub);
+      if (!inferred || baseForm.repairWorkStartActSignedAt?.trim() === inferred) {
+        return;
+      }
+      const nextForm: RepairPackageFormData = {
+        ...hubFormBase(),
+        repairWorkStartActSignedAt: inferred,
+        repairWorkStartActPhotoUrl: '',
+      };
+      try {
+        await persistForm(nextForm);
+        setForm(nextForm);
+        formRef.current = nextForm;
+        notifyUpdated();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Не удалось сохранить дату начала срока');
+      }
+    },
+    [packageKind, persistForm, notifyUpdated, hubFormBase]
+  );
+
+  const refreshJournalPaidRub = useCallback(async () => {
+    try {
+      const paymentsRes = await getContractDocumentPackagePayments(packageId);
+      const rows = paymentsRes ?? [];
+      setPaymentRows(rows);
+      await syncWindowsWorkPeriodStartFromPayments(rows, formRef.current);
+    } catch {
+      /* не блокируем UI */
+    }
+  }, [packageId, syncWindowsWorkPeriodStartFromPayments]);
+
   const updateContract = useCallback(
     <K extends keyof RepairPackageFormData['contract']>(key: K, value: string) => {
       if (packageFlowStatusRef.current === 'REFUSED') return;
-      setForm((p) => {
-        const next = { ...p, contract: { ...p.contract, [key]: value } };
-        formRef.current = next;
-        return next;
-      });
+      const base = hubFormBase();
+      const next = {
+        ...base,
+        contract: { ...base.contract, [key]: value },
+      };
+      setForm(next);
+      formRef.current = next;
       void (async () => {
         try {
-          await persistForm(formRef.current);
+          await persistForm(next);
           notifyUpdated();
         } catch (e) {
           setError(e instanceof Error ? e.message : 'Не удалось сохранить');
         }
       })();
     },
-    [persistForm, notifyUpdated]
+    [persistForm, notifyUpdated, hubFormBase]
   );
 
   const updateContractFields = useCallback(
     (patch: Partial<RepairPackageFormData['contract']>) => {
       if (packageFlowStatusRef.current === 'REFUSED') return;
       if (Object.keys(patch).length === 0) return;
-      setForm((p) => {
-        const next = { ...p, contract: { ...p.contract, ...patch } };
-        formRef.current = next;
-        return next;
-      });
+      const base = hubFormBase();
+      const next = {
+        ...base,
+        contract: { ...base.contract, ...patch },
+      };
+      setForm(next);
+      formRef.current = next;
       void (async () => {
         try {
-          await persistForm(formRef.current);
+          await persistForm(next);
           notifyUpdated();
         } catch (e) {
           setError(e instanceof Error ? e.message : 'Не удалось сохранить');
         }
       })();
     },
-    [persistForm, notifyUpdated]
+    [persistForm, notifyUpdated, hubFormBase]
   );
 
   const resolveCashOrderTemplateHtml = useCallback((): string => {
@@ -254,9 +353,10 @@ export function useRepairContractPackageHub({
       REPAIR_CASH_ORDER_TEMPLATE_TAB,
       contractTemplatePresets,
       selectedTemplateIdsRef.current,
-      templateOverridesRef.current
+      templateOverridesRef.current,
+      packageKind
     );
-  }, [contractTemplatePresets]);
+  }, [contractTemplatePresets, packageKind]);
 
   const buildCashOrderPrintHtml = useCallback(
     (conduct?: RepairCashOrderConductDraft | null): string => {
@@ -284,12 +384,13 @@ export function useRepairContractPackageHub({
   const pipeline = useMemo(
     () =>
       computeRepairPipelineModel({
+        packageKind,
         packageFlowStatus,
         form,
         payments: paymentRows,
         nowMs: Date.now(),
       }),
-    [packageFlowStatus, form, paymentRows, undoUiTick]
+    [packageKind, packageFlowStatus, form, paymentRows, undoUiTick]
   );
 
   const attachedActPhotos = useMemo(() => {
@@ -307,7 +408,10 @@ export function useRepairContractPackageHub({
     if (closePhoto) {
       items.push({
         key: 'contract-close',
-        title: 'Акт сдачи-приёмки (закрытие договора)',
+        title:
+          packageKind === 'WINDOWS'
+            ? 'Акт приёмки-передачи'
+            : 'Акт сдачи-приёмки (закрытие договора)',
         dateLabel: formatRepairPipelineActDate(form.repairContractCloseActSignedAt ?? ''),
         src: publicUploadUrl(closePhoto),
       });
@@ -318,6 +422,7 @@ export function useRepairContractPackageHub({
     form.repairWorkStartActSignedAt,
     form.repairContractCloseActPhotoUrl,
     form.repairContractCloseActSignedAt,
+    packageKind,
   ]);
 
   useEffect(() => {
@@ -359,7 +464,7 @@ export function useRepairContractPackageHub({
     setError(null);
     try {
       const nowIso = new Date().toISOString();
-      const nextForm = { ...formRef.current, contractConcludedAt: nowIso, contractPaidAt: '' };
+      const nextForm = { ...hubFormBase(), contractConcludedAt: nowIso, contractPaidAt: '' };
       await persistForm(nextForm, { status: 'CONTRACT_CONCLUDED', recordVersion: true });
       setPackageFlowStatus('CONTRACT_CONCLUDED');
       notifyUpdated();
@@ -381,7 +486,7 @@ export function useRepairContractPackageHub({
     setSavingPackageStatus(true);
     setError(null);
     try {
-      const nextForm = { ...formRef.current, contractConcludedAt: '', contractPaidAt: '' };
+      const nextForm = { ...hubFormBase(), contractConcludedAt: '', contractPaidAt: '' };
       await persistForm(nextForm, { status: 'IN_PROGRESS', recordVersion: true });
       setPackageFlowStatus('IN_PROGRESS');
       notifyUpdated();
@@ -404,7 +509,7 @@ export function useRepairContractPackageHub({
     try {
       const nowIso = new Date().toISOString();
       const nextForm: RepairPackageFormData = {
-        ...formRef.current,
+        ...hubFormBase(),
         contractRefusalReason: reason,
         contractRefusedAt: nowIso,
       };
@@ -425,7 +530,7 @@ export function useRepairContractPackageHub({
     setError(null);
     try {
       const nextForm: RepairPackageFormData = {
-        ...formRef.current,
+        ...hubFormBase(),
         contractRefusalReason: '',
         contractRefusedAt: '',
       };
@@ -443,33 +548,41 @@ export function useRepairContractPackageHub({
   const handleConfirmWorkStart = async () => {
     const dateRaw = workStartModalDate.trim();
     if (!dateRaw) {
-      setWorkStartModalError('Укажите дату начала работ по акту.');
+      setWorkStartModalError(
+        packageKind === 'WINDOWS'
+          ? 'Укажите дату получения предоплаты (начало отсчёта срока).'
+          : 'Укажите дату начала работ по акту.'
+      );
       return;
     }
-    if (!workStartModalFile) {
+    if (packageKind === 'REPAIR' && !workStartModalFile) {
       setWorkStartModalError('Прикрепите фотографию акта начала работ.');
       return;
     }
     const payCheck = computeRepairPipelineModel({
+      packageKind,
       packageFlowStatus: packageFlowStatusRef.current,
       form: formRef.current,
       payments: paymentRows,
     });
     if (!payCheck.workStartPaymentReady) {
       setWorkStartModalError(
-        `Для этапа «В работе» нужна оплата по договору не менее ${REPAIR_WORK_START_MIN_CONTRACT_PAY_PCT}% (сейчас ${payCheck.contractPaidPct ?? 0}%).`
+        packageKind === 'WINDOWS'
+          ? `Для этапа «В работе» нужна предоплата не менее ${REPAIR_WORK_START_MIN_CONTRACT_PAY_PCT}% от суммы договора (сейчас ${payCheck.grandPaidPct ?? payCheck.contractPaidPct ?? 0}%).`
+          : `Для этапа «В работе» нужна оплата по договору не менее ${REPAIR_WORK_START_MIN_CONTRACT_PAY_PCT}% (сейчас ${payCheck.contractPaidPct ?? 0}%).`
       );
       return;
     }
     setWorkStartModalBusy(true);
     setWorkStartModalError(null);
     try {
-      const { imageUrl } = await uploadRepairPackageWorkStartActPhoto(
-        packageId,
-        workStartModalFile
-      );
+      let imageUrl = '';
+      if (packageKind === 'REPAIR' && workStartModalFile) {
+        const uploaded = await uploadRepairPackageWorkStartActPhoto(packageId, workStartModalFile);
+        imageUrl = uploaded.imageUrl;
+      }
       const nextForm: RepairPackageFormData = {
-        ...formRef.current,
+        ...hubFormBase(),
         repairWorkStartActSignedAt: dateRaw,
         repairWorkStartActPhotoUrl: imageUrl,
       };
@@ -496,13 +609,18 @@ export function useRepairContractPackageHub({
       return;
     }
     const payCheck = computeRepairPipelineModel({
+      packageKind,
       packageFlowStatus: packageFlowStatusRef.current,
       form: formRef.current,
       payments: paymentRows,
     });
     if (!payCheck.allPaymentsComplete) {
       setContractCloseModalError(
-        'Для закрытия договора нужна 100% оплата по договору и по всем доп. соглашениям с расчётами.'
+        packageKind === 'WINDOWS'
+          ? payCheck.hasAddendumsInPackage
+            ? 'Для закрытия нужна 100% оплата по договору (спецификация + счёт-заказ) и по всем Д/с с расчётами.'
+            : 'Для закрытия договора нужна 100% оплата (изделия по спецификации и работы по счёту-заказу).'
+          : 'Для закрытия договора нужна 100% оплата по договору и по всем доп. соглашениям с расчётами.'
       );
       return;
     }
@@ -514,16 +632,12 @@ export function useRepairContractPackageHub({
         contractCloseModalFile
       );
       const nextForm: RepairPackageFormData = {
-        ...formRef.current,
+        ...hubFormBase(),
         repairContractCloseActSignedAt: dateRaw,
         repairContractCloseActPhotoUrl: imageUrl,
       };
       const formData: Record<string, unknown> = {
-        ...buildPersistedFormData(
-          nextForm,
-          templateOverridesRef.current,
-          selectedTemplateIdsRef.current
-        ),
+        ...buildHubPersistedFormData(nextForm),
         repairContractClosed: true,
       };
       await updateContractDocumentPackage(packageId, { formData, recordVersion: true });
@@ -543,7 +657,7 @@ export function useRepairContractPackageHub({
 
   const markAddendumSlotSigned = useCallback(
     async (slotIndex0: number) => {
-      const p = formRef.current;
+      const p = hubFormBase();
       const slots = [...p.addendumSlots] as RepairPackageFormData['addendumSlots'];
       const cur = slots[slotIndex0];
       if (!cur || cur.status !== 'OPEN') return;
@@ -565,12 +679,12 @@ export function useRepairContractPackageHub({
         setSavingPackageStatus(false);
       }
     },
-    [persistForm, notifyUpdated]
+    [persistForm, notifyUpdated, hubFormBase]
   );
 
   const unmarkAddendumSlotSigned = useCallback(
     async (slotIndex0: number) => {
-      const p = formRef.current;
+      const p = hubFormBase();
       const slots = [...p.addendumSlots] as RepairPackageFormData['addendumSlots'];
       const cur = slots[slotIndex0];
       if (!cur || cur.status !== 'SIGNED') return;
@@ -588,7 +702,7 @@ export function useRepairContractPackageHub({
         setSavingPackageStatus(false);
       }
     },
-    [persistForm, notifyUpdated]
+    [persistForm, notifyUpdated, hubFormBase]
   );
 
   const headerConcludedDateLabel =
@@ -598,9 +712,11 @@ export function useRepairContractPackageHub({
 
   return {
     loading,
+    contentReady,
     error,
     setError,
     form,
+    packageKind,
     packageFlowStatus,
     contractNumberLabel,
     headerConcludedDateLabel,

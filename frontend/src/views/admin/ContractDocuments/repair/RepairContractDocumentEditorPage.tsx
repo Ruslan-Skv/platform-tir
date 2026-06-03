@@ -779,6 +779,8 @@ export function RepairContractDocumentEditorPage({
   const [error, setError] = useState<string | null>(null);
   const isWindowsPackage = packageKind === 'WINDOWS';
   const [dirty, setDirty] = useState(false);
+  const dirtyRef = useRef(false);
+  dirtyRef.current = dirty;
   const [linkedCrmCustomerId, setLinkedCrmCustomerId] = useState<string | null>(null);
   const linkedCrmCustomerIdRef = useRef<string | null>(null);
   linkedCrmCustomerIdRef.current = linkedCrmCustomerId;
@@ -979,6 +981,26 @@ export function RepairContractDocumentEditorPage({
     [packageId]
   );
 
+  const flushPersistRepairPackageDebounced = useCallback(async (): Promise<void> => {
+    const hadPendingTimer = persistRepairPackageDebounceRef.current !== null;
+    if (hadPendingTimer && persistRepairPackageDebounceRef.current !== null) {
+      window.clearTimeout(persistRepairPackageDebounceRef.current);
+      persistRepairPackageDebounceRef.current = null;
+    }
+    if (loading || packageFlowStatusRef.current === 'REFUSED') return;
+    if (!hadPendingTimer && !dirtyRef.current) return;
+    const payload = formRef.current;
+    const formData = buildEditorPersistedFormData(payload);
+    await updateContractDocumentPackage(packageId, {
+      title: draftTitleRef.current.trim() || null,
+      formData,
+      recordVersion: false,
+    });
+    packageJournalSchedulerRef.current?.schedule();
+    setDirty(false);
+    setRepairPackages((prev) => prev.map((p) => (p.id === packageId ? { ...p, formData } : p)));
+  }, [loading, packageId, buildEditorPersistedFormData]);
+
   const schedulePersistRepairPackageDebounced = useCallback(() => {
     if (loading) return;
     if (persistRepairPackageDebounceRef.current !== null) {
@@ -986,27 +1008,11 @@ export function RepairContractDocumentEditorPage({
     }
     persistRepairPackageDebounceRef.current = window.setTimeout(() => {
       persistRepairPackageDebounceRef.current = null;
-      if (packageFlowStatusRef.current === 'REFUSED') return;
-      const payload = formRef.current;
-      const formData = buildEditorPersistedFormData(payload);
-      void (async () => {
-        try {
-          await updateContractDocumentPackage(packageId, {
-            title: draftTitleRef.current.trim() || null,
-            formData,
-            recordVersion: false,
-          });
-          packageJournalSchedulerRef.current?.schedule();
-          setDirty(false);
-          setRepairPackages((prev) =>
-            prev.map((p) => (p.id === packageId ? { ...p, formData } : p))
-          );
-        } catch (e) {
-          setError(e instanceof Error ? e.message : 'Не удалось сохранить прикреплённые расчёты');
-        }
-      })();
+      void flushPersistRepairPackageDebounced().catch((e) => {
+        setError(e instanceof Error ? e.message : 'Не удалось сохранить данные пакета');
+      });
     }, 300);
-  }, [loading, packageId]);
+  }, [loading, flushPersistRepairPackageDebounced]);
 
   /** Любые правки данных пакета: помечаем «грязным» и откладываем запись на сервер (~300 мс). */
   const touchPackageData = useCallback(() => {
@@ -1384,7 +1390,7 @@ export function RepairContractDocumentEditorPage({
           try {
             await updateContractDocumentPackage(packageId, {
               title: row.title?.trim() || null,
-              formData: buildPersistedFormData(finalForm, overridesSansContract, selectedIds, {
+              formData: buildPersistedFormData(formToApply, overridesSansContract, selectedIds, {
                 linkedCrmCustomerId: linkedId,
               }),
               recordVersion: false,
@@ -1395,7 +1401,7 @@ export function RepairContractDocumentEditorPage({
                   ? {
                       ...p,
                       formData: buildPersistedFormData(
-                        finalForm,
+                        formToApply,
                         overridesSansContract,
                         selectedIds,
                         { linkedCrmCustomerId: linkedId }
@@ -1422,6 +1428,35 @@ export function RepairContractDocumentEditorPage({
     },
     [packageId, refreshPackageVersions]
   );
+
+  const getLiveFormForHub = useCallback(() => formRef.current, []);
+  const getLivePersistOptionsForHub = useCallback(
+    () => ({ linkedCrmCustomerId: linkedCrmCustomerIdRef.current }),
+    []
+  );
+
+  const openPackageHub = useCallback(() => {
+    setPackageHubOpen(true);
+    void flushPersistRepairPackageDebounced().catch((e) => {
+      setError(e instanceof Error ? e.message : 'Не удалось сохранить данные пакета');
+    });
+  }, [flushPersistRepairPackageDebounced]);
+
+  const handlePackageHubUpdated = useCallback(() => {
+    void flushPersistRepairPackageDebounced()
+      .then(() => load({ mode: 'refresh' }))
+      .catch((e) => {
+        setError(e instanceof Error ? e.message : 'Не удалось обновить данные пакета');
+      });
+  }, [flushPersistRepairPackageDebounced, load]);
+
+  const refreshPackageFromServer = useCallback(() => {
+    void flushPersistRepairPackageDebounced()
+      .then(() => load({ mode: 'refresh' }))
+      .catch((e) => {
+        setError(e instanceof Error ? e.message : 'Не удалось обновить данные пакета');
+      });
+  }, [flushPersistRepairPackageDebounced, load]);
 
   useEffect(() => {
     void load();
@@ -3649,7 +3684,7 @@ export function RepairContractDocumentEditorPage({
                 <button
                   type="button"
                   className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn} ${styles.repairEditorHubPrimaryBtn}`}
-                  onClick={() => setPackageHubOpen(true)}
+                  onClick={openPackageHub}
                   title={
                     unsignedAddendumOrdinals.length > 0
                       ? `${REPAIR_CONTRACT_PACKAGE_HUB_MODAL_TITLE}. Неподписанные Д/с: №${unsignedAddendumOrdinals.join(', №')}`
@@ -3767,21 +3802,11 @@ export function RepairContractDocumentEditorPage({
               <button
                 type="button"
                 className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn}`}
-                disabled={packageRefreshing || (activeTab === 'data' && dirty)}
+                disabled={packageRefreshing}
                 aria-busy={packageRefreshing}
-                aria-label={
-                  packageRefreshing
-                    ? 'Обновление данных'
-                    : activeTab === 'data' && dirty
-                      ? 'Сначала сохраните изменения на вкладке «Данные»'
-                      : 'Обновить данные с сервера'
-                }
-                title={
-                  activeTab === 'data' && dirty
-                    ? 'Сначала сохраните изменения на вкладке «Данные»'
-                    : 'Обновить данные с сервера'
-                }
-                onClick={() => void load({ mode: 'refresh' })}
+                aria-label={packageRefreshing ? 'Обновление данных' : 'Обновить данные с сервера'}
+                title="Сохранить несохранённые правки и обновить данные с сервера"
+                onClick={refreshPackageFromServer}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -5197,7 +5222,7 @@ export function RepairContractDocumentEditorPage({
                 <button
                   type="button"
                   className={styles.repairAddendumUnsignedBannerLink}
-                  onClick={() => setPackageHubOpen(true)}
+                  onClick={openPackageHub}
                 >
                   Оплаты и Управление договором
                 </button>
@@ -5469,7 +5494,11 @@ export function RepairContractDocumentEditorPage({
           packageId={packageId}
           isOpen={packageHubOpen}
           onClose={() => setPackageHubOpen(false)}
-          onUpdated={() => void load({ mode: 'refresh' })}
+          onUpdated={handlePackageHubUpdated}
+          contractNumberLabel={headerContractNumberLabel}
+          headerConcludedDateLabel={headerContractConcludedDateLabel}
+          getLiveForm={getLiveFormForHub}
+          getLivePersistOptions={getLivePersistOptionsForHub}
           blockPipelineActions={activeTab === 'data' && dirty}
           blockPipelineReason={
             activeTab === 'data' && dirty
@@ -5479,6 +5508,7 @@ export function RepairContractDocumentEditorPage({
         />
         <RepairContractInvoicesModal
           packageId={packageId}
+          packageKind={packageKind}
           form={form}
           isOpen={invoicesHubOpen}
           onClose={() => setInvoicesHubOpen(false)}

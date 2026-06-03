@@ -1,8 +1,11 @@
+import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
+
 import {
   applyRepairContractDiscountToAmount,
   parseRepairContractDiscountPercent,
 } from './repairContractDiscount';
 import { type RepairPackageFormData, clampRepairAddendumSlotCount } from './repairPackageForm';
+import { computeWindowsContractCostBreakdown } from './windowsContractCostBreakdown';
 
 /** Парсит сумму из полей договора (пробелы, «руб.», запятая как десятичный разделитель). */
 export function parseRubAmountString(raw: string | undefined | null): number | null {
@@ -53,4 +56,39 @@ export function computeRepairPackagePayableBreakdown(
   /** Итого: стоимость основного договора + суммы по Д/с, где в пакете уже есть смета (остальные слоты не увеличивают итог). */
   const grandTotalRub = mainContractRub != null ? mainContractRub + addendumSumKnown : null;
   return { mainContractRub, addendumTotalsRub, grandTotalRub };
+}
+
+/** Сводка к оплате для пакета «Окна»: изделия + работы + доп. соглашения с расчётами. */
+export function computeWindowsPackagePayableBreakdown(
+  form: RepairPackageFormData
+): RepairPackagePayableBreakdown {
+  const breakdown = computeWindowsContractCostBreakdown(form);
+  const mainContractRub = breakdown.totalAmount > 0 ? breakdown.totalAmount : null;
+  const discountPct = parseRepairContractDiscountPercent(form.contract.discountPercent);
+  const addendumTotalsRub: RepairPackagePayableBreakdown['addendumTotalsRub'] = [];
+  const count = clampRepairAddendumSlotCount(form.addendumSlotCount);
+  let addendumSumKnown = 0;
+  for (let i = 0; i < count; i++) {
+    const slot = form.addendumSlots[i];
+    const t = slot?.snapshot?.total;
+    const rawTotal = typeof t === 'number' && Number.isFinite(t) ? t : null;
+    const totalRub =
+      rawTotal != null ? applyRepairContractDiscountToAmount(rawTotal, discountPct) : null;
+    addendumTotalsRub.push({ slotIndex1: i + 1, totalRub });
+    if (totalRub != null) {
+      addendumSumKnown += totalRub;
+    }
+  }
+  const grandTotalRub = mainContractRub != null ? mainContractRub + addendumSumKnown : null;
+  return { mainContractRub, addendumTotalsRub, grandTotalRub };
+}
+
+export function computePackagePayableBreakdown(
+  form: RepairPackageFormData,
+  packageKind: ContractDocumentPackageKind = 'REPAIR'
+): RepairPackagePayableBreakdown {
+  if (packageKind === 'WINDOWS') {
+    return computeWindowsPackagePayableBreakdown(form);
+  }
+  return computeRepairPackagePayableBreakdown(form);
 }

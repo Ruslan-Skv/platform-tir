@@ -271,15 +271,28 @@ export function RepairContractPipelineTimeline({
                     !pipeline.workStartPaymentReady &&
                     pipeline.packageFlowStatus === 'CONTRACT_CONCLUDED' ? (
                       <p className={hubStyles.pipelineStepHint}>
-                        Для «В работе» по договору нужно не менее{' '}
-                        {REPAIR_WORK_START_MIN_CONTRACT_PAY_PCT}% (сейчас{' '}
-                        {pipeline.contractPaidPct ?? 0}%).
+                        {pipeline.packageKind === 'WINDOWS' ? (
+                          <>
+                            Для «В работе» нужна предоплата не менее{' '}
+                            {REPAIR_WORK_START_MIN_CONTRACT_PAY_PCT}% от суммы договора (сейчас{' '}
+                            {pipeline.grandPaidPct ?? pipeline.contractPaidPct ?? 0}%).
+                          </>
+                        ) : (
+                          <>
+                            Для «В работе» по договору нужно не менее{' '}
+                            {REPAIR_WORK_START_MIN_CONTRACT_PAY_PCT}% (сейчас{' '}
+                            {pipeline.contractPaidPct ?? 0}%).
+                          </>
+                        )}
                       </p>
                     ) : null}
                   </>
                 ) : null}
 
-                {step.id === 'work' && step.state === 'current' && !pipeline.repairWorkStarted ? (
+                {step.id === 'work' &&
+                hub.packageKind === 'REPAIR' &&
+                step.state === 'current' &&
+                !pipeline.repairWorkStarted ? (
                   <div className={hubStyles.pipelineStepActions}>
                     <button
                       type="button"
@@ -312,7 +325,9 @@ export function RepairContractPipelineTimeline({
                       disabled={actionsDisabled || !pipeline.allPaymentsComplete}
                       title={
                         !pipeline.allPaymentsComplete
-                          ? 'Нужна 100% оплата по договору и всем доп. соглашениям'
+                          ? pipeline.packageKind === 'WINDOWS' && pipeline.hasAddendumsInPackage
+                            ? 'Нужна 100% оплата по договору и всем Д/с'
+                            : 'Нужна 100% оплата по договору и всем доп. соглашениям'
                           : actionsTitle
                       }
                       onClick={() => {
@@ -328,7 +343,7 @@ export function RepairContractPipelineTimeline({
                 ) : null}
 
                 {hub.attachedActPhotos.length > 0 &&
-                (step.id === 'work' || step.id === 'closed') &&
+                (step.id === 'closed' || (step.id === 'work' && hub.packageKind === 'REPAIR')) &&
                 (step.state === 'current' || step.state === 'completed') ? (
                   <div className={hubStyles.pipelineStepActionsSecondary}>
                     <button

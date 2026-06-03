@@ -6,6 +6,7 @@ import Link from 'next/link';
 
 import {
   type ContractDocumentPackage,
+  type ContractDocumentPackageKind,
   getContractDocumentPackage,
   getContractDocumentPackagePayments,
   getContractDocumentPackages,
@@ -422,6 +423,7 @@ function RepairContractInvoicesModalLoader({
   onInvoicesChanged?: () => void;
 }) {
   const [ready, setReady] = useState(false);
+  const [packageKind, setPackageKind] = useState<ContractDocumentPackageKind>('REPAIR');
   const [form, setForm] = useState(() => mergeFormDataFromStorage({}).form);
   const [templateOverrides, setTemplateOverrides] = useState({});
   const [selectedTemplateIds, setSelectedTemplateIds] = useState({});
@@ -432,14 +434,13 @@ function RepairContractInvoicesModalLoader({
     let cancelled = false;
     void (async () => {
       try {
-        const [row, presetsRes] = await Promise.all([
-          getContractDocumentPackage(packageId),
-          import('@/shared/api/admin-contract-document-packages').then((m) =>
-            m.getContractDocumentTemplatePresets('REPAIR')
-          ),
-        ]);
+        const row = await getContractDocumentPackage(packageId);
+        const presetsKind: ContractDocumentPackageKind =
+          row.kind === 'WINDOWS' ? 'WINDOWS' : 'REPAIR';
+        const presetsRes = await getContractDocumentTemplatePresets(presetsKind);
         if (cancelled) return;
         const merged = mergeFormDataFromStorage(row.formData);
+        setPackageKind(presetsKind);
         setForm(merged.form);
         setTemplateOverrides(merged.templateOverrides);
         setSelectedTemplateIds(merged.templatePresetIds);
@@ -460,6 +461,7 @@ function RepairContractInvoicesModalLoader({
   return (
     <RepairContractInvoicesModal
       packageId={packageId}
+      packageKind={packageKind}
       form={form}
       isOpen={isOpen}
       onClose={onClose}

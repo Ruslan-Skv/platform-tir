@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
 
+import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 import {
   type ContractDocumentPackagePayment,
   getContractDocumentPackagePayments,
@@ -39,6 +40,7 @@ export const REPAIR_CONTRACT_INVOICES_MODAL_TITLE = 'Счета на оплат�
 
 export type RepairContractInvoicesModalProps = {
   packageId: string;
+  packageKind?: ContractDocumentPackageKind;
   form: RepairPackageFormData;
   isOpen: boolean;
   onClose: () => void;
@@ -51,6 +53,7 @@ export type RepairContractInvoicesModalProps = {
 
 export function RepairContractInvoicesModal({
   packageId,
+  packageKind = 'REPAIR',
   form,
   isOpen,
   onClose,
@@ -63,7 +66,14 @@ export function RepairContractInvoicesModal({
   const [issuedRows, setIssuedRows] = useState<ContractDocumentPaymentInvoice[]>([]);
   const [paymentRows, setPaymentRows] = useState<ContractDocumentPackagePayment[]>([]);
   const [loading, setLoading] = useState(false);
+  const [contentReady, setContentReady] = useState(false);
+  const invoicesContentReadyRef = useRef(false);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    invoicesContentReadyRef.current = false;
+    setContentReady(false);
+  }, [packageId]);
 
   const contractNumberLabel = getRepairContractNumberDisplayForForm(form);
 
@@ -77,7 +87,8 @@ export function RepairContractInvoicesModal({
   }, [contractTemplatePresets, selectedTemplateIds, templateOverrides]);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    const background = invoicesContentReadyRef.current;
+    if (!background) setLoading(true);
     try {
       const [invoices, payments] = await Promise.all([
         listPackagePaymentInvoices(packageId),
@@ -93,6 +104,8 @@ export function RepairContractInvoicesModal({
       setPaymentRows([]);
     } finally {
       setLoading(false);
+      invoicesContentReadyRef.current = true;
+      setContentReady(true);
     }
   }, [packageId, onError]);
 
@@ -186,17 +199,27 @@ export function RepairContractInvoicesModal({
       className={crmFormStyles.modalPanel}
       showCloseButton
     >
-      <div data-modal-form data-modal-density="compact">
+      <div
+        data-modal-form
+        data-modal-density="compact"
+        style={{ minHeight: 'min(60vh, 28rem)', position: 'relative' }}
+        aria-busy={loading && !contentReady}
+      >
         <p data-modal-form-hint style={{ marginTop: 0 }}>
           Нумерация счетов единая для всей организации. «Выставить счёт» сохраняет запись в{' '}
           <Link href="/admin/accounting/invoices">бухгалтерии</Link> и открывает печать. «Скачать
           PDF» — файл счёта для отправки клиенту или оплаты по QR. Оплату проводите в «Оплаты и
           этапы».
         </p>
-        {loading ? <p data-modal-form-hint>Загрузка…</p> : null}
-        {!loading ? (
+        {loading && !contentReady ? (
+          <p data-modal-form-hint style={{ margin: '12px 0 0' }}>
+            Загрузка…
+          </p>
+        ) : null}
+        {contentReady ? (
           <RepairIssueInvoicePanel
             packageId={packageId}
+            packageKind={packageKind}
             form={form}
             issuedRows={issuedRows}
             paymentRows={paymentRows}

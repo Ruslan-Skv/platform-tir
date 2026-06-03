@@ -2,7 +2,10 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import type { ContractDocumentPackagePayment } from '@/shared/api/admin-contract-document-packages';
+import type {
+  ContractDocumentPackageKind,
+  ContractDocumentPackagePayment,
+} from '@/shared/api/admin-contract-document-packages';
 import type { ContractDocumentPaymentInvoice } from '@/shared/api/admin-payment-invoices';
 import { peekNextPaymentInvoiceNumber } from '@/shared/api/admin-payment-invoices';
 import measurementBlankStyles from '@/views/admin/CRM/Measurements/MeasurementFormPage.module.css';
@@ -17,6 +20,7 @@ import {
   buildRepairInvoiceEstimateSourceOptions,
   formatRepairInvoiceEstimateSourceLabel,
   paymentInvoiceLinesFromEstimateSource,
+  repairInvoiceContractSourceSummaryHint,
   repairInvoiceEstimateSourceFromBasisKey,
 } from './repairInvoiceLinesFromEstimate';
 import { formatRepairIssuedInvoiceAmountRub } from './repairInvoiceNumber';
@@ -25,10 +29,7 @@ import {
   lineItemsForPaymentInvoiceReprint,
 } from './repairInvoicePrint';
 import type { RepairPackageFormData } from './repairPackageForm';
-import {
-  computeRepairPackagePayableBreakdown,
-  parseRubAmountString,
-} from './repairPackagePaymentTotals';
+import { computePackagePayableBreakdown, parseRubAmountString } from './repairPackagePaymentTotals';
 import {
   type RepairPaymentBasisOptionKey,
   buildRepairPaymentBasisOptions,
@@ -48,6 +49,8 @@ import {
 
 export type RepairIssueInvoicePanelProps = {
   packageId: string;
+
+  packageKind?: ContractDocumentPackageKind;
 
   form: RepairPackageFormData;
 
@@ -110,6 +113,8 @@ function recalcLineFromPriceQty(line: PaymentInvoiceLineItem): PaymentInvoiceLin
 export function RepairIssueInvoicePanel({
   packageId,
 
+  packageKind = 'REPAIR',
+
   form,
 
   issuedRows,
@@ -150,7 +155,12 @@ export function RepairIssueInvoicePanel({
 
   const prefillBasisRef = useRef<RepairPaymentBasisOptionKey | ''>('');
 
-  const payableBreakdown = useMemo(() => computeRepairPackagePayableBreakdown(form), [form]);
+  const payableBreakdown = useMemo(
+    () => computePackagePayableBreakdown(form, packageKind),
+    [form, packageKind]
+  );
+
+  const isWindowsPackage = packageKind === 'WINDOWS';
 
   const paidAllocations = useMemo(() => {
     let contractPaidRub = 0;
@@ -191,8 +201,13 @@ export function RepairIssueInvoicePanel({
   const selectedBasis = repairPaymentBasisOptionByKey(basisOptions, basisKey);
 
   const estimateSourceOptions = useMemo(
-    () => buildRepairInvoiceEstimateSourceOptions(form),
-    [form]
+    () => buildRepairInvoiceEstimateSourceOptions(form, packageKind),
+    [form, packageKind]
+  );
+
+  const contractSourceSummaryHint = useMemo(
+    () => repairInvoiceContractSourceSummaryHint(form, packageKind),
+    [form, packageKind]
   );
 
   const selectedEstimateSource = estimateSourceOptions.find((o) => o.id === estimateLoadSource);
@@ -315,10 +330,14 @@ export function RepairIssueInvoicePanel({
 
   const loadLinesFromEstimate = () => {
     if (!estimateLoadSource) {
-      onError('Выберите смету или доп. соглашение');
+      onError(
+        isWindowsPackage
+          ? 'Выберите счёт-заказ или доп. соглашение'
+          : 'Выберите смету или доп. соглашение'
+      );
       return;
     }
-    const loaded = paymentInvoiceLinesFromEstimateSource(form, estimateLoadSource);
+    const loaded = paymentInvoiceLinesFromEstimateSource(form, estimateLoadSource, packageKind);
     if (loaded.length === 0) {
       onError('В выбранном документе нет позиций для загрузки');
       return;
@@ -625,8 +644,16 @@ export function RepairIssueInvoicePanel({
           <h4 className={styles.invoiceLinesSectionTitle}>Товары и услуги</h4>
 
           <p className={styles.hint} style={{ marginTop: 0, marginBottom: 8 }}>
-            В печатной форме основание уходит в поле «Основание», позиции — в таблицу. Суммы из
-            сметы/Д/с — с учётом скидки по договору.
+            В печатной форме основание уходит в поле «Основание», позиции — в таблицу.{' '}
+            {isWindowsPackage ? (
+              <>
+                Автозагрузка — только из счёт-заказа и Д/с (скидка по договору на работы). Позиции
+                по изделиям из спецификации добавляйте в таблицу вручную.
+                {contractSourceSummaryHint ? <> {contractSourceSummaryHint}.</> : null}
+              </>
+            ) : (
+              <>Суммы из сметы/Д/с — с учётом скидки по договору.</>
+            )}
           </p>
           <div className={`${styles.invoiceLinesActions} ${styles.invoiceLinesLoadRow}`}>
             <div className={styles.invoiceLinesLoadField}>

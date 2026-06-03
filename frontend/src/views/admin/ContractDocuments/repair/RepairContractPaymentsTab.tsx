@@ -3,6 +3,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
+  type ContractDocumentPackageKind,
   type ContractDocumentPackagePayment,
   type ContractDocumentPackagePaymentInput,
   createContractDocumentPackagePayment,
@@ -23,10 +24,7 @@ import {
   formatRepairHubConductAmountInput,
 } from './repairHubConductPayment';
 import { type RepairPackageFormData, clampRepairAddendumSlotCount } from './repairPackageForm';
-import {
-  computeRepairPackagePayableBreakdown,
-  parseRubAmountString,
-} from './repairPackagePaymentTotals';
+import { computePackagePayableBreakdown, parseRubAmountString } from './repairPackagePaymentTotals';
 import {
   type RepairPaymentBasisOptionKey,
   buildRepairPaymentBasisOptions,
@@ -41,6 +39,7 @@ import {
   REPAIR_PAYMENT_FORM_LABELS,
   formatRepairPaymentDateForTemplate,
 } from './repairPaymentFormLabels';
+import { computeWindowsContractCostBreakdown } from './windowsContractCostBreakdown';
 
 function formatMoneyRub(n: number | null | undefined) {
   if (n == null || !Number.isFinite(n)) return '—';
@@ -78,6 +77,7 @@ export type RepairContractPaymentsTabLayout =
 
 export interface RepairContractPaymentsTabProps {
   packageId: string;
+  packageKind?: ContractDocumentPackageKind;
   form: RepairPackageFormData;
   onError: (message: string) => void;
   onUpdateContract: <K extends keyof RepairPackageFormData['contract']>(
@@ -98,6 +98,7 @@ export interface RepairContractPaymentsTabProps {
 
 export function RepairContractPaymentsTab({
   packageId,
+  packageKind = 'REPAIR',
   form,
   onError,
   onUpdateContract,
@@ -190,7 +191,14 @@ export function RepairContractPaymentsTab({
     [form.contract.discountPercent]
   );
 
-  const payableBreakdown = useMemo(() => computeRepairPackagePayableBreakdown(form), [form]);
+  const payableBreakdown = useMemo(
+    () => computePackagePayableBreakdown(form, packageKind),
+    [form, packageKind]
+  );
+  const windowsCostBreakdown = useMemo(
+    () => (packageKind === 'WINDOWS' ? computeWindowsContractCostBreakdown(form) : null),
+    [packageKind, form]
+  );
 
   const hubFixedBasisOptions = useMemo(
     () => buildRepairPaymentBasisOptions(form, rows, payableBreakdown),
@@ -266,6 +274,7 @@ export function RepairContractPaymentsTab({
         return;
       }
       for (const [key, value] of Object.entries(patch)) {
+        if (typeof value !== 'string') continue;
         onUpdateContract(key as keyof RepairPackageFormData['contract'], value);
       }
     },
@@ -523,37 +532,72 @@ export function RepairContractPaymentsTab({
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>Договор</td>
-                  <td className={styles.paymentsHubSummaryNumCol}>
-                    {formatHubDiscountCell(paymentsContractDiscountPct)}
-                  </td>
-                  <td className={styles.paymentsHubSummaryNumCol}>
-                    {form.contract.totalAmount.trim() ||
-                      formatMoneyRub(payableBreakdown.mainContractRub)}
-                  </td>
-                  <td
-                    className={`${styles.paymentsHubSummaryNumCol} ${styles.paymentsHubSummaryRecommendedCol}`}
-                  >
-                    {form.contract.recommendedPrepayment.trim() || '—'}
-                  </td>
-                  <td className={styles.paymentsHubSummaryNumCol}>
-                    {loading
-                      ? '…'
-                      : renderHubPaidValue(
-                          paidAllocations.contractPaidRub,
-                          payableBreakdown.mainContractRub
-                        )}
-                  </td>
-                  <td className={styles.paymentsHubSummaryNumCol}>
-                    {loading
-                      ? '…'
-                      : renderHubRemainderValue(
-                          paidAllocations.contractPaidRub,
-                          payableBreakdown.mainContractRub
-                        )}
-                  </td>
-                </tr>
+                {packageKind === 'WINDOWS' && windowsCostBreakdown ? (
+                  <>
+                    <tr>
+                      <td>Изделия (спецификация)</td>
+                      <td className={styles.paymentsHubSummaryNumCol}>—</td>
+                      <td className={styles.paymentsHubSummaryNumCol}>
+                        {formatMoneyRub(windowsCostBreakdown.productsAmount)}
+                      </td>
+                      <td
+                        className={`${styles.paymentsHubSummaryNumCol} ${styles.paymentsHubSummaryRecommendedCol}`}
+                      >
+                        —
+                      </td>
+                      <td className={styles.paymentsHubSummaryNumCol}>—</td>
+                      <td className={styles.paymentsHubSummaryNumCol}>—</td>
+                    </tr>
+                    <tr>
+                      <td>Работы (счёт-заказ)</td>
+                      <td className={styles.paymentsHubSummaryNumCol}>
+                        {formatHubDiscountCell(paymentsContractDiscountPct)}
+                      </td>
+                      <td className={styles.paymentsHubSummaryNumCol}>
+                        {formatMoneyRub(windowsCostBreakdown.worksAmount)}
+                      </td>
+                      <td
+                        className={`${styles.paymentsHubSummaryNumCol} ${styles.paymentsHubSummaryRecommendedCol}`}
+                      >
+                        {form.contract.recommendedPrepayment.trim() || '—'}
+                      </td>
+                      <td className={styles.paymentsHubSummaryNumCol}>—</td>
+                      <td className={styles.paymentsHubSummaryNumCol}>—</td>
+                    </tr>
+                  </>
+                ) : (
+                  <tr>
+                    <td>Договор</td>
+                    <td className={styles.paymentsHubSummaryNumCol}>
+                      {formatHubDiscountCell(paymentsContractDiscountPct)}
+                    </td>
+                    <td className={styles.paymentsHubSummaryNumCol}>
+                      {form.contract.totalAmount.trim() ||
+                        formatMoneyRub(payableBreakdown.mainContractRub)}
+                    </td>
+                    <td
+                      className={`${styles.paymentsHubSummaryNumCol} ${styles.paymentsHubSummaryRecommendedCol}`}
+                    >
+                      {form.contract.recommendedPrepayment.trim() || '—'}
+                    </td>
+                    <td className={styles.paymentsHubSummaryNumCol}>
+                      {loading
+                        ? '…'
+                        : renderHubPaidValue(
+                            paidAllocations.contractPaidRub,
+                            payableBreakdown.mainContractRub
+                          )}
+                    </td>
+                    <td className={styles.paymentsHubSummaryNumCol}>
+                      {loading
+                        ? '…'
+                        : renderHubRemainderValue(
+                            paidAllocations.contractPaidRub,
+                            payableBreakdown.mainContractRub
+                          )}
+                    </td>
+                  </tr>
+                )}
                 {addendumPaymentSummaries
                   .filter((row) => row.hasData)
                   .map((row) => {

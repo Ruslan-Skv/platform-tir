@@ -1,3 +1,5 @@
+import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
+
 import {
   applyRepairContractDiscountToAmount,
   parseRepairContractDiscountPercent,
@@ -10,6 +12,7 @@ import {
   formatPaymentInvoiceLineAmount,
   formatPaymentInvoiceQuantity,
 } from './repairPaymentInvoiceLineItems';
+import { computeWindowsContractCostBreakdown } from './windowsContractCostBreakdown';
 
 type EstimateSnapshot = NonNullable<RepairPackageFormData['estimate']['snapshot']>;
 
@@ -45,6 +48,12 @@ function sumSnapshotAmountRub(
   );
 }
 
+export function repairInvoiceContractSourceLabel(
+  packageKind: ContractDocumentPackageKind = 'REPAIR'
+): string {
+  return packageKind === 'WINDOWS' ? 'Счёт-заказ' : 'Смета договора';
+}
+
 function snapshotForSource(
   form: RepairPackageFormData,
   sourceId: RepairInvoiceEstimateSourceId
@@ -57,18 +66,22 @@ function snapshotForSource(
   return form.addendumSlots[idx]?.snapshot ?? null;
 }
 
-/** Документы с позициями сметы для загрузки в счёт. */
+/** Документы с позициями для загрузки в счёт (смета / счёт-заказ и Д/с). */
 export function buildRepairInvoiceEstimateSourceOptions(
-  form: RepairPackageFormData
+  form: RepairPackageFormData,
+  packageKind: ContractDocumentPackageKind = 'REPAIR'
 ): RepairInvoiceEstimateSourceOption[] {
   const discountRaw = form.contract.discountPercent;
+  const contractLinesCount = countSnapshotLines(form.estimate.snapshot);
+  const contractTotalRub = sumSnapshotAmountRub(form.estimate.snapshot, discountRaw);
+
   const options: RepairInvoiceEstimateSourceOption[] = [
     {
       id: 'contract',
-      label: 'Смета договора',
-      linesCount: countSnapshotLines(form.estimate.snapshot),
-      totalRub: sumSnapshotAmountRub(form.estimate.snapshot, discountRaw),
-      disabled: countSnapshotLines(form.estimate.snapshot) === 0,
+      label: repairInvoiceContractSourceLabel(packageKind),
+      linesCount: contractLinesCount,
+      totalRub: contractTotalRub,
+      disabled: contractLinesCount === 0,
     },
   ];
 
@@ -88,10 +101,11 @@ export function buildRepairInvoiceEstimateSourceOptions(
   return options;
 }
 
-/** Позиции счёта из сметы договора или Д/с (с учётом скидки по договору). */
+/** Позиции счёта из сметы / счёт-заказа или Д/с (скидка по договору — на работы). */
 export function paymentInvoiceLinesFromEstimateSource(
   form: RepairPackageFormData,
-  sourceId: RepairInvoiceEstimateSourceId
+  sourceId: RepairInvoiceEstimateSourceId,
+  _packageKind: ContractDocumentPackageKind = 'REPAIR'
 ): PaymentInvoiceLineItem[] {
   const snapshot = snapshotForSource(form, sourceId);
   if (!snapshot?.rooms?.length) return [];
@@ -123,6 +137,24 @@ export function paymentInvoiceLinesFromEstimateSource(
   }
 
   return result;
+}
+
+/** Сводка по договору для подсказки (окна: справочно, без автозагрузки в счёт). */
+export function repairInvoiceContractSourceSummaryHint(
+  form: RepairPackageFormData,
+  packageKind: ContractDocumentPackageKind = 'REPAIR'
+): string | null {
+  if (packageKind !== 'WINDOWS') return null;
+  const breakdown = computeWindowsContractCostBreakdown(form);
+  if (breakdown.totalAmount <= 0) return null;
+  const parts: string[] = [];
+  if (breakdown.productsAmount > 0) {
+    parts.push(`изделия по спецификации ${breakdown.productsDisplay} ₽ (в счёт вручную)`);
+  }
+  if (breakdown.worksAmount > 0) {
+    parts.push(`работы по счёт-заказу ${breakdown.worksDisplay} ₽`);
+  }
+  return parts.length > 0 ? parts.join('; ') : null;
 }
 
 /** Подбор источника сметы по выбранному основанию платежа. */

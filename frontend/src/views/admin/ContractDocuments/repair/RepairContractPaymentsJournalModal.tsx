@@ -1,5 +1,6 @@
 'use client';
 
+import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 import { Modal } from '@/shared/ui/Modal';
 import crmFormStyles from '@/views/admin/CRM/Customers/AddCrmCustomerModal.module.css';
 
@@ -8,6 +9,7 @@ import type { RepairPackageFormData } from './repairPackageForm';
 
 export type RepairContractPaymentsJournalModalProps = {
   packageId: string;
+  packageKind?: ContractDocumentPackageKind;
   form: RepairPackageFormData;
   isOpen: boolean;
   onClose: () => void;
@@ -21,6 +23,7 @@ export type RepairContractPaymentsJournalModalProps = {
 
 export function RepairContractPaymentsJournalModal({
   packageId,
+  packageKind = 'REPAIR',
   form,
   isOpen,
   onClose,
@@ -39,6 +42,7 @@ export function RepairContractPaymentsJournalModal({
     >
       <RepairContractPaymentsTab
         packageId={packageId}
+        packageKind={packageKind}
         form={form}
         layout="journal"
         onError={onError}
