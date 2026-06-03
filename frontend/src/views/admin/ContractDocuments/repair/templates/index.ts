@@ -8,6 +8,7 @@ import { repairTemplateAddendum } from './addendum';
 import { repairTemplateCashOrder } from './cashOrder';
 import { repairTemplateContract } from './contract';
 import { repairLibraryFallbackStub } from './libraryFallbackStub';
+import { windowsTemplateMemo } from './memo';
 import { repairTemplatePaymentInvoice } from './paymentInvoice';
 import { repairTemplateProductionLog } from './productionLog';
 import { windowsTemplateActAcceptance } from './windowsActAcceptance';
@@ -20,6 +21,7 @@ export const REPAIR_LIBRARY_TEMPLATE_HTML: Record<RepairLibraryTemplateTabId, st
   contract: repairTemplateContract,
   actStart: repairTemplateActStart,
   actAcceptance: repairTemplateActAcceptance,
+  memo: windowsTemplateMemo,
   cashOrder: repairTemplateCashOrder,
   paymentInvoice: repairTemplatePaymentInvoice,
   productionLog: repairTemplateProductionLog,
@@ -27,6 +29,7 @@ export const REPAIR_LIBRARY_TEMPLATE_HTML: Record<RepairLibraryTemplateTabId, st
 
 const WINDOWS_LIBRARY_TEMPLATE_OVERRIDES: Partial<Record<RepairLibraryTemplateTabId, string>> = {
   actAcceptance: windowsTemplateActAcceptance,
+  memo: windowsTemplateMemo,
 };
 
 /** Резервный HTML вкладки библиотеки с учётом направления пакета. */

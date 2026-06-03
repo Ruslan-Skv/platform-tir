@@ -15,10 +15,16 @@ config({ path: path.join(__dirname, '..', '..', '.env') });
 const CONTRACT_TEMPLATES_TAB = 'contract_templates';
 const KIND = 'WINDOWS' as const;
 
-const LIBRARY_TABS = ['actAcceptance'] as const;
+const LIBRARY_TABS = ['actAcceptance', 'memo'] as const;
 
 const TAB_TITLES: Record<(typeof LIBRARY_TABS)[number], string> = {
   actAcceptance: 'Акт сдачи-приёмки',
+  memo: 'Памятка',
+};
+
+const TAB_TEMPLATE_FILES: Record<(typeof LIBRARY_TABS)[number], string> = {
+  actAcceptance: 'windowsActAcceptance.ts',
+  memo: 'memo.ts',
 };
 
 type PresetItem = {
@@ -50,7 +56,7 @@ function loadDefaultsFromFrontendRepo(): PresetItem[] {
     id: `seed-windows-${tabId}`,
     tabId,
     title: TAB_TITLES[tabId],
-    html: extractTemplateFromTsFile(path.join(templatesDir, 'windowsActAcceptance.ts')),
+    html: extractTemplateFromTsFile(path.join(templatesDir, TAB_TEMPLATE_FILES[tabId])),
     isDefault: true,
     archived: false,
   }));
@@ -112,9 +118,11 @@ export async function seedWindowsContractTemplatePresets(): Promise<void> {
   }
 
   await writeItems(items);
-  console.log(
-    `✅ Библиотека шаблонов WINDOWS: ${items.filter((it) => !it.archived && it.tabId === 'actAcceptance').length} активных пресетов actAcceptance (режим ${mode})`
-  );
+  const activeByTab = LIBRARY_TABS.map(
+    (tabId) =>
+      `${tabId}: ${items.filter((it) => !it.archived && it.tabId === tabId).length}`
+  ).join(', ');
+  console.log(`✅ Библиотека шаблонов WINDOWS (${activeByTab}); режим ${mode}`);
 }
 
 async function main() {

@@ -8,6 +8,7 @@ export const REPAIR_LIBRARY_TEMPLATE_TAB_IDS = [
   'contract',
   'actStart',
   'actAcceptance',
+  'memo',
   'cashOrder',
   'paymentInvoice',
   'productionLog',
@@ -19,6 +20,7 @@ export const REPAIR_LIBRARY_TEMPLATE_TAB_LABELS: Record<RepairLibraryTemplateTab
   contract: 'Договор',
   actStart: 'Акт начала работ',
   actAcceptance: 'Акт сдачи-приёмки',
+  memo: 'Памятка',
   cashOrder: 'ПКО',
   paymentInvoice: 'Счёт на оплату',
   productionLog: 'Производственный журнал',
@@ -50,6 +52,8 @@ const WINDOWS_LIBRARY_TEMPLATE_TAB_EXCLUDED = new Set<RepairLibraryTemplateTabId
   'productionLog',
 ]);
 
+const REPAIR_ONLY_LIBRARY_TEMPLATE_TAB_EXCLUDED = new Set<RepairLibraryTemplateTabId>(['memo']);
+
 /** Вкладки библиотеки для направления: в «Окнах» без ремонтного акта начала работ и журнала. */
 export function libraryTemplateTabIdsForPackageKind(
   kind: ContractDocumentPackageKind
@@ -59,7 +63,9 @@ export function libraryTemplateTabIdsForPackageKind(
       (tab) => !WINDOWS_LIBRARY_TEMPLATE_TAB_EXCLUDED.has(tab)
     );
   }
-  return REPAIR_LIBRARY_TEMPLATE_TAB_IDS;
+  return REPAIR_LIBRARY_TEMPLATE_TAB_IDS.filter(
+    (tab) => !REPAIR_ONLY_LIBRARY_TEMPLATE_TAB_EXCLUDED.has(tab)
+  );
 }
 
 export function normalizeLibraryTemplateTabForPackageKind(

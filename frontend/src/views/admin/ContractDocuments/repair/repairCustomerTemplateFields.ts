@@ -17,6 +17,7 @@ export function repairCustomerTemplateContextFromTab(
   if (templateTab === 'cashOrder') return 'cashOrder';
   if (templateTab === 'paymentInvoice') return 'paymentInvoice';
   if (templateTab === 'productionLog') return 'productionLog';
+  if (templateTab === 'memo') return 'general';
   return 'general';
 }
 

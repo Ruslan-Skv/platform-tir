@@ -688,6 +688,7 @@ export class ContractDocumentPackagesService {
       contract: 'Договор',
       actStart: 'Акт начала работ',
       actAcceptance: 'Акт сдачи-приёмки',
+      memo: 'Памятка',
       cashOrder: 'ПКО',
       paymentInvoice: 'Счёт на оплату',
       productionLog: 'Производственный журнал',

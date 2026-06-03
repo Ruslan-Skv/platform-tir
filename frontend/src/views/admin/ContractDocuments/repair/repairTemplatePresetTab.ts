@@ -12,6 +12,7 @@ export const REPAIR_EDITOR_TEMPLATE_TAB_IDS = [
   'contract',
   'actStart',
   'actAcceptance',
+  'memo',
   'cashOrder',
   'paymentInvoice',
   'questionnaire1',

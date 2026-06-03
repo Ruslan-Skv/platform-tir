@@ -3346,7 +3346,8 @@ export function RepairContractDocumentEditorPage({
     const contractCompactPrint =
       activeTab === 'contract' ||
       isRepairActA4PreviewTab(activeTab) ||
-      activeTab === 'productionLog';
+      activeTab === 'productionLog' ||
+      activeTab === 'memo';
     printDocumentHtml(
       printBody,
       printTitle,
@@ -3476,6 +3477,7 @@ export function RepairContractDocumentEditorPage({
     (id) =>
       id !== 'payments' &&
       isRepairEditorPackageTabBarTab(id) &&
+      (id !== 'memo' || isWindowsPackage) &&
       (!isWindowsPackage ||
         (id !== 'actStart' &&
           id !== 'productionLog' &&
@@ -3494,11 +3496,19 @@ export function RepairContractDocumentEditorPage({
     ? (() => {
         const tabs = [...baseOrderedVisibleRepairTabs];
         const specIndex = tabs.indexOf('finalEstimate');
-        if (specIndex < 0) return tabs;
-        tabs.splice(specIndex, 1);
-        const invoiceOrderIndex = tabs.indexOf('estimate');
-        const insertAt = invoiceOrderIndex >= 0 ? invoiceOrderIndex : 0;
-        tabs.splice(insertAt, 0, 'finalEstimate');
+        if (specIndex >= 0) {
+          tabs.splice(specIndex, 1);
+          const invoiceOrderIndex = tabs.indexOf('estimate');
+          const insertAt = invoiceOrderIndex >= 0 ? invoiceOrderIndex : 0;
+          tabs.splice(insertAt, 0, 'finalEstimate');
+        }
+        const memoIndex = tabs.indexOf('memo');
+        if (memoIndex >= 0) {
+          tabs.splice(memoIndex, 1);
+          const actIndex = tabs.indexOf('actAcceptance');
+          const memoInsertAt = actIndex >= 0 ? actIndex + 1 : tabs.length;
+          tabs.splice(memoInsertAt, 0, 'memo');
+        }
         return tabs;
       })()
     : baseOrderedVisibleRepairTabs;
@@ -5389,6 +5399,7 @@ export function RepairContractDocumentEditorPage({
             {activeTab === 'contract' ||
             isRepairActA4PreviewTab(activeTab) ||
             activeTab === 'productionLog' ||
+            activeTab === 'memo' ||
             isRepairAddendumTab(activeTab) ||
             isRepairWorkOrderAddendumTab(activeTab) ? (
               <div className={styles.estimateA4Wrap}>

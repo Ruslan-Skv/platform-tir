@@ -83,6 +83,7 @@ const TEMPLATE_TAB_LABELS: Record<string, string> = {
   contract: 'договор',
   actStart: 'акт начала работ',
   actAcceptance: 'акт сдачи-приёмки',
+  memo: 'памятка',
   cashOrder: 'ПКО',
   paymentInvoice: 'счёт на оплату',
   questionnaire1: 'анкета 1',

@@ -12,6 +12,7 @@ const TEMPLATE_TAB_IDS: RepairDocumentTemplateTabId[] = [
   'contract',
   'actStart',
   'actAcceptance',
+  'memo',
   'cashOrder',
   'paymentInvoice',
   'questionnaire1',

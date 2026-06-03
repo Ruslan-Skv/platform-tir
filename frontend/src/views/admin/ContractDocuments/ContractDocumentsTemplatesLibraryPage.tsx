@@ -4529,7 +4529,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
               <label
                 className={measurementFormStyles.label}
                 htmlFor="templates-library-tab"
-                title="Пять типов документов библиотеки"
+                title="Тип документа в библиотеке шаблонов"
               >
                 Тип документа
               </label>
