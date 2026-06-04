@@ -113,6 +113,8 @@ export function buildPersistedFormData(
   const linkedCrmCustomerId = options?.linkedCrmCustomerId?.trim();
   if (linkedCrmCustomerId) {
     base._linkedCrmCustomerId = linkedCrmCustomerId;
+    // Опросник — в CRM; в пакете не дублируем, чтобы все договоры клиента совпадали.
+    delete base.managerQuestionnaire1;
   } else {
     delete base._linkedCrmCustomerId;
   }

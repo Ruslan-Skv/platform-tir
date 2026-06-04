@@ -26,11 +26,15 @@ import {
 import { resolveExecutorBankFields } from './repairExecutorBankFields';
 import { buildRepairInvoiceTemplateExtras } from './repairInvoiceTemplateFields';
 import { computeRepairPackagePayableBreakdown } from './repairPackagePaymentTotals';
-import { buildWindowsWorkOrderComputed } from './repairWindowsWorkOrder';
+import {
+  buildWindowsWorkOrderAddendumForTemplate,
+  buildWindowsWorkOrderComputed,
+} from './repairWindowsWorkOrder';
 import {
   type WindowsAddendumSpecificationLine,
   buildWindowsAddendumPrintHtml,
   normalizeWindowsAddendumSpecificationLines,
+  windowsAddendumSlotHasAccountOrderContent,
   windowsAddendumSlotHasAnyPrintContent,
   windowsAddendumSlotHasSpecificationContent,
 } from './windowsAddendumSpecification';
@@ -193,6 +197,8 @@ export interface RepairPostWorkQuestionnaire2Block {
   ratingCompany: PostWorkSatisfactionRating;
   ratingManager: PostWorkSatisfactionRating;
   ratingForeman: PostWorkSatisfactionRating;
+  /** «Окна»: единая оценка мастеров (п. 4). */
+  ratingMasters: PostWorkSatisfactionRating;
   ratingTrades: RepairPostWorkQuestionnaire2TradeRatings;
   wishes: string;
   /** Дата заполнения (дд.мм.гггг). */
@@ -220,6 +226,7 @@ export function defaultRepairPostWorkQuestionnaire2Block(): RepairPostWorkQuesti
     ratingCompany: null,
     ratingManager: null,
     ratingForeman: null,
+    ratingMasters: null,
     ratingTrades: defaultRepairPostWorkQuestionnaire2TradeRatings(),
     wishes: '',
     filledDate: '',
@@ -869,9 +876,24 @@ function normalizePostWorkQuestionnaire2AfterLoad(
   const base = defaultRepairPostWorkQuestionnaire2Block();
   if (!q || typeof q !== 'object') return base;
   const rt = q.ratingTrades && typeof q.ratingTrades === 'object' ? q.ratingTrades : {};
+  const ratingMasters =
+    q.ratingMasters === 1 ||
+    q.ratingMasters === 2 ||
+    q.ratingMasters === 3 ||
+    q.ratingMasters === 4 ||
+    q.ratingMasters === 5
+      ? q.ratingMasters
+      : rt.windows === 1 ||
+          rt.windows === 2 ||
+          rt.windows === 3 ||
+          rt.windows === 4 ||
+          rt.windows === 5
+        ? rt.windows
+        : null;
   return {
     ...base,
     ...q,
+    ratingMasters,
     ratingTrades: {
       ...base.ratingTrades,
       ...rt,
@@ -1467,39 +1489,6 @@ function buildWorkOrderRoomsHtmlFromSnapshot(
   return buildWorkOrderRoomsHtmlFromComputed(computed, sections, showLineAmounts);
 }
 
-function buildWorkOrderCategoryTotalsHtml(options: {
-  sections: EstimateEmbedSection[];
-  roomTotals: number[];
-}): string {
-  const escapeHtml = (value: string): string =>
-    value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  const { sections, roomTotals } = options;
-  if (sections.length === 0) return '';
-  let cursor = 0;
-  const rows = sections
-    .map((section) => {
-      const count = section.rooms.length;
-      const total = roomTotals.slice(cursor, cursor + count).reduce((sum, x) => sum + x, 0);
-      cursor += count;
-      return `<li style="display:flex;justify-content:space-between;gap:8px;padding:1px 0;">
-  <span>${escapeHtml(section.categoryName || '—')}</span>
-  <strong>${formatMoney(total)} руб.</strong>
-</li>`;
-    })
-    .join('');
-  return `<section style="margin-top:6pt;">
-  <h2 style="margin:0 0 3pt;">Итоги по категориям работ</h2>
-  <ul style="list-style:none;margin:0;padding:0;">
-    ${rows}
-  </ul>
-</section>`;
-}
-
 /** Данные для подстановки в HTML: добавляет вычисляемое поле `executor.innKppRegLine`. */
 export function repairPackageFormForTemplate(
   form: RepairPackageFormData,
@@ -1776,51 +1765,81 @@ export function repairPackageFormForTemplate(
     options?.estimatePresets ?? [],
     estimateGroupsForTpl
   );
-  const workOrderCategoryTotalsHtml = buildWorkOrderCategoryTotalsHtml({
-    sections: workOrderSections,
-    roomTotals: workOrderComputed.rooms.map((room) => room.adjustedTotal),
-  });
-  const workOrderAddendumComputed =
-    addendumSlot !== null && addendumSlot >= 1 && addendumSlot <= 5
-      ? resolveWorkOrderComputedForTemplate(
-          form.addendumSlots[addendumSlot - 1]?.snapshot ?? null,
-          form,
-          options
-        )
-      : null;
-  const workOrderAddendumSections =
-    addendumSlot !== null && addendumSlot >= 1 && addendumSlot <= 5
-      ? buildEstimateSectionsFromPresetIds(
-          form.addendumSlots[addendumSlot - 1]?.selectedPresetIds ?? [],
-          options?.estimatePresets ?? [],
-          estimateGroupsForTpl
-        )
-      : [];
-  const workOrderAddendumCategoryTotalsHtml = buildWorkOrderCategoryTotalsHtml({
-    sections: workOrderAddendumSections,
-    roomTotals: workOrderAddendumComputed?.rooms.map((room) => room.adjustedTotal) ?? [],
-  });
-  const workOrderAddendumRoomsHtml =
-    addendumSlot !== null && addendumSlot >= 1 && addendumSlot <= 5 && workOrderAddendumComputed
-      ? buildWorkOrderRoomsHtmlFromSnapshot(
-          form.addendumSlots[addendumSlot - 1]?.snapshot ?? null,
-          form.workOrder.taxPercent,
-          form.workOrder.markupPercent,
-          form.workOrder.gradeIncreasePercent,
-          form.contract.discountPercent,
-          workOrderAddendumSections,
-          form.workOrder.showLineAmounts,
-          workOrderAddendumComputed
-        )
-      : '';
   const workOrderAddendumForTemplate =
-    addendumSlot !== null && addendumSlot >= 1 && addendumSlot <= 5
-      ? {
-          slotNumber: String(addendumSlot),
-          roomsHtml: workOrderAddendumRoomsHtml,
-          categoryTotalsHtml: workOrderAddendumCategoryTotalsHtml,
-          totalAfterDeductions: formatMoney(workOrderAddendumComputed?.adjustedTotal ?? 0),
-        }
+    addendumSlot !== null && Number.isFinite(addendumSlot) && addendumSlot >= 1 && addendumSlot <= 5
+      ? (() => {
+          const slotIdx = addendumSlot - 1;
+          const slot = form.addendumSlots[slotIdx];
+          if (options?.packageKind === 'WINDOWS') {
+            if (!slot || !windowsAddendumSlotHasAccountOrderContent(slot)) {
+              return {
+                slotNumber: String(addendumSlot),
+                roomsHtml: '',
+                categoryTotalsHtml: '',
+                totalAfterDeductions: formatMoney(0),
+              };
+            }
+            const showLineAmounts = form.workOrder.showLineAmounts;
+            const additionalComputed = addendumSlotSnap
+              ? resolveWorkOrderComputedForTemplate(addendumSlotSnap, form, options)
+              : null;
+            const excludedComputed = addendumExcludedSnap
+              ? resolveWorkOrderComputedForTemplate(addendumExcludedSnap, form, options)
+              : null;
+            const additionalRoomsHtml =
+              additionalComputed && additionalComputed.rooms.length > 0
+                ? buildWorkOrderRoomsHtmlFromComputed(
+                    additionalComputed,
+                    addendumSections,
+                    showLineAmounts
+                  )
+                : '';
+            const excludedRoomsHtml =
+              excludedComputed && excludedComputed.rooms.length > 0
+                ? buildWorkOrderRoomsHtmlFromComputed(
+                    excludedComputed,
+                    addendumExcludedSections,
+                    showLineAmounts
+                  )
+                : '';
+            return buildWindowsWorkOrderAddendumForTemplate({
+              slotNumber: addendumSlot,
+              additionalRoomsHtml,
+              excludedRoomsHtml,
+              additionalAdjustedTotal: additionalComputed?.adjustedTotal ?? 0,
+              excludedAdjustedTotal: excludedComputed?.adjustedTotal ?? 0,
+              formatMoney,
+            });
+          }
+          const workOrderAddendumComputed = resolveWorkOrderComputedForTemplate(
+            slot?.snapshot ?? null,
+            form,
+            options
+          );
+          const workOrderAddendumSections = buildEstimateSectionsFromPresetIds(
+            slot?.selectedPresetIds ?? [],
+            options?.estimatePresets ?? [],
+            estimateGroupsForTpl
+          );
+          const workOrderAddendumRoomsHtml = workOrderAddendumComputed
+            ? buildWorkOrderRoomsHtmlFromSnapshot(
+                slot?.snapshot ?? null,
+                form.workOrder.taxPercent,
+                form.workOrder.markupPercent,
+                form.workOrder.gradeIncreasePercent,
+                form.contract.discountPercent,
+                workOrderAddendumSections,
+                form.workOrder.showLineAmounts,
+                workOrderAddendumComputed
+              )
+            : '';
+          return {
+            slotNumber: String(addendumSlot),
+            roomsHtml: workOrderAddendumRoomsHtml,
+            categoryTotalsHtml: '',
+            totalAfterDeductions: formatMoney(workOrderAddendumComputed?.adjustedTotal ?? 0),
+          };
+        })()
       : undefined;
 
   const customerContext = repairCustomerTemplateContextFromTab(options?.templateTab);
@@ -1914,7 +1933,7 @@ export function repairPackageFormForTemplate(
         form.workOrder.showLineAmounts,
         workOrderComputed
       ),
-      categoryTotalsHtml: workOrderCategoryTotalsHtml,
+      categoryTotalsHtml: '',
       showLineAmounts: form.workOrder.showLineAmounts,
       totalBeforeDeductions: formatMoney(workOrderComputed.originalTotal),
       taxPercentNormalized: toPercentValue(form.workOrder.taxPercent),

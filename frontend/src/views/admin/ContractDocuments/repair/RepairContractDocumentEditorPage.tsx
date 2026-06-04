@@ -126,13 +126,13 @@ import {
   REPAIR_DOCUMENT_TAB_LABELS,
   REPAIR_DOCUMENT_TAB_LABELS_SHORT,
   REPAIR_DOCUMENT_TAB_ORDER_STORAGE_KEY,
-  REPAIR_DOCUMENT_TEMPLATES,
   type RepairDocumentTabId,
   isRepairAddendumTab,
   isRepairAddendumTabVisible,
   isRepairWorkOrderAddendumTab,
   normalizeLegacyRepairTabId,
   normalizeRepairDocumentTabOrder,
+  repairDocumentTemplateFallbackHtml,
 } from './repairDocumentTemplates';
 import {
   buildEstimateSectionsFromPresetIds,
@@ -1164,7 +1164,7 @@ export function RepairContractDocumentEditorPage({
       if (isRepairLibraryTemplateTabId(tab)) {
         return libraryTemplateFallbackHtml(packageKind, tab);
       }
-      return REPAIR_DOCUMENT_TEMPLATES[tab];
+      return repairDocumentTemplateFallbackHtml(packageKind, tab);
     },
     [templatePresetsByTab, selectedTemplateIds, packageKind]
   );
@@ -2963,7 +2963,8 @@ export function RepairContractDocumentEditorPage({
             templateTab: 'estimate',
             estimatePresets,
             estimateGroups,
-          })
+          }),
+          { packageKind }
         );
       }
       const templateTab = tab as RepairDocumentTemplateTabId;
@@ -5845,6 +5846,7 @@ export function RepairContractDocumentEditorPage({
           panelTab={questionnairesHubPanelTab}
           onPanelTabChange={setQuestionnairesHubPanelTab}
           form={form}
+          packageKind={packageKind}
           headerContractNumberLabel={headerContractNumberLabel}
           headerContractDateLabel={headerContractConcludedDateLabel ?? undefined}
           linkedCrmCustomerId={linkedCrmCustomerId}

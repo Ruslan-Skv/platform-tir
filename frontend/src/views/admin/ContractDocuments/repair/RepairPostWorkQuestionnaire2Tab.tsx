@@ -1,5 +1,7 @@
 'use client';
 
+import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
+
 import styles from '../ContractDocuments.module.css';
 import { formatContractDateRuLong } from './contractDateFormat';
 import type {
@@ -11,8 +13,11 @@ import { POST_WORK_QUESTIONNAIRE2_TRADE_ROWS } from './repairPackageForm';
 
 const SCALE = [5, 4, 3, 2, 1] as const;
 
+const MASTERS_RATING_QUESTION = 'Оцените пожалуйста работу наших мастеров:';
+
 type Props = {
   form: RepairPackageFormData;
+  packageKind?: ContractDocumentPackageKind;
   onPatch: (patch: Partial<RepairPostWorkQuestionnaire2Block>) => void;
 };
 
@@ -58,9 +63,10 @@ function RatingRow({
   );
 }
 
-function RepairPostWorkQuestionnaire2Tab({ form, onPatch }: Props) {
+function RepairPostWorkQuestionnaire2Tab({ form, packageKind, onPatch }: Props) {
   const q = form.postWorkQuestionnaire2;
   const { contract } = form;
+  const isWindowsPackage = packageKind === 'WINDOWS';
 
   return (
     <div className={styles.formGrid}>
@@ -73,49 +79,60 @@ function RepairPostWorkQuestionnaire2Tab({ form, onPatch }: Props) {
       </div>
 
       <div className={`${styles.sectionCard} ${styles.fieldSpanAll}`}>
-        <h4 className={styles.sectionTitle}>Оценки по пятибалльной шкале</h4>
+        {/* <h4 className={styles.sectionTitle}>Оценки по пятибалльной шкале</h4> */}
         <RatingRow
           name="pw2_company"
-          label="1. Оцените пожалуйста работу нашей компании по пятибалльной шкале:"
+          label="1. Оцените пожалуйста работу нашей компании:"
           value={q.ratingCompany}
           onChange={(v) => onPatch({ ratingCompany: v })}
         />
         <RatingRow
           name="pw2_manager"
-          label="2. Оцените пожалуйста работу нашего менеджера по пятибалльной шкале:"
+          label="2. Оцените пожалуйста работу нашего менеджера:"
           value={q.ratingManager}
           onChange={(v) => onPatch({ ratingManager: v })}
         />
         <RatingRow
           name="pw2_foreman"
-          label="3. Оцените пожалуйста работу нашего бригадира по пятибалльной шкале:"
+          label="3. Оцените пожалуйста работу нашего бригадира:"
           value={q.ratingForeman}
           onChange={(v) => onPatch({ ratingForeman: v })}
         />
-        <p
-          className={styles.postWorkQ2RatingQuestion}
-          style={{
-            marginTop: 12,
-            marginBottom: 4,
-            borderTop: '1px solid var(--admin-border)',
-            paddingTop: 12,
-          }}
-        >
-          4. Оцените пожалуйста работу наших мастеров по пятибалльной шкале:
-        </p>
-        {POST_WORK_QUESTIONNAIRE2_TRADE_ROWS.map(({ key, label }) => (
+        {isWindowsPackage ? (
           <RatingRow
-            key={key}
-            name={`pw2_trade_${key}`}
-            label={label}
-            value={q.ratingTrades[key]}
-            onChange={(v) =>
-              onPatch({
-                ratingTrades: { ...q.ratingTrades, [key]: v },
-              })
-            }
+            name="pw2_masters"
+            label={`4. ${MASTERS_RATING_QUESTION}`}
+            value={q.ratingMasters}
+            onChange={(v) => onPatch({ ratingMasters: v })}
           />
-        ))}
+        ) : (
+          <>
+            <p
+              className={styles.postWorkQ2RatingQuestion}
+              style={{
+                marginTop: 12,
+                marginBottom: 4,
+                borderTop: '1px solid var(--admin-border)',
+                paddingTop: 12,
+              }}
+            >
+              4. {MASTERS_RATING_QUESTION}
+            </p>
+            {POST_WORK_QUESTIONNAIRE2_TRADE_ROWS.map(({ key, label }) => (
+              <RatingRow
+                key={key}
+                name={`pw2_trade_${key}`}
+                label={label}
+                value={q.ratingTrades[key]}
+                onChange={(v) =>
+                  onPatch({
+                    ratingTrades: { ...q.ratingTrades, [key]: v },
+                  })
+                }
+              />
+            ))}
+          </>
+        )}
       </div>
 
       <div className={`${styles.sectionCard} ${styles.fieldSpanAll}`}>

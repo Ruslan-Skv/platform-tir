@@ -90,9 +90,10 @@ export function ContractDocumentsMarkupSettingsPage() {
       <Link className={styles.backLink} href="/admin/contract-documents">
         ← Оформление договоров
       </Link>
-      <h1 className={styles.title}>Наценки в договорах</h1>
+      <h1 className={styles.title}>Наценки договоров</h1>
       <p className={styles.subtitle}>
-        Параметры расчёта заказ-нарядов по направлению «Окна». Изменять может только суперадмин.
+        Наценка при расчёте заказ-наряда по договорам «Окна». Сохранять значение может только
+        суперадмин; остальные пользователи видят текущий процент.
       </p>
 
       {error ? <p className={styles.error}>{error}</p> : null}

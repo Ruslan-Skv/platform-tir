@@ -56,9 +56,6 @@ export function repairWorkOrderHubTabsForPackage(
   packageKind: ContractDocumentPackageKind = 'REPAIR'
 ): RepairWorkOrderHubTabId[] {
   return REPAIR_WORK_ORDER_HUB_TAB_IDS.filter((id) => {
-    if (packageKind === 'WINDOWS' && isRepairWorkOrderAddendumTab(id)) {
-      return false;
-    }
     if (isRepairWorkOrderAddendumTab(id)) {
       return isRepairAddendumTabVisible(id as RepairDocumentTabId, addendumSlotCount);
     }

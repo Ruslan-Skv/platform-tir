@@ -44,7 +44,7 @@ export function ContractDocumentsHubPage() {
           </p>
         </Link>
         <Link className={styles.hubCard} href="/admin/contract-documents/settings/markups">
-          <h2 className={styles.hubCardTitle}>Наценки в договорах</h2>
+          <h2 className={styles.hubCardTitle}>Наценки договоров</h2>
           <p className={styles.hubCardHint}>
             Наценка при расчёте заказ-наряда по «Окна» (цена счёт-заказа минус %); меняет
             суперадмин.

@@ -469,6 +469,11 @@ const baseNavItems: NavItem[] = [
             href: '/admin/contract-documents/settings',
             resourceId: 'admin.contract-documents.repair-settings',
           },
+          {
+            label: 'Наценки договоров',
+            href: '/admin/contract-documents/settings/markups',
+            resourceId: 'admin.contract-documents.markups',
+          },
         ],
       },
       { label: 'Роли', href: '/admin/settings/roles', resourceId: 'admin.settings.roles' },

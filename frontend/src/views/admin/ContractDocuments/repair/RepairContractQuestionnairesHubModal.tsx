@@ -4,6 +4,7 @@ import { PrinterIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 import { useMemo } from 'react';
 
+import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 import { Modal } from '@/shared/ui/Modal';
 
 import styles from '../ContractDocuments.module.css';
@@ -30,6 +31,7 @@ export type RepairContractQuestionnairesHubModalProps = {
   panelTab: RepairQuestionnaireHubTabId;
   onPanelTabChange: (tab: RepairQuestionnaireHubTabId) => void;
   form: RepairPackageFormData;
+  packageKind?: ContractDocumentPackageKind;
   headerContractNumberLabel?: string;
   headerContractDateLabel?: string;
   linkedCrmCustomerId?: string | null;
@@ -46,6 +48,7 @@ export function RepairContractQuestionnairesHubModal({
   panelTab,
   onPanelTabChange,
   form,
+  packageKind,
   headerContractNumberLabel,
   headerContractDateLabel,
   linkedCrmCustomerId,
@@ -58,8 +61,8 @@ export function RepairContractQuestionnairesHubModal({
   const previewHtml = useMemo(() => {
     return panelTab === 'questionnaire1'
       ? buildManagerQuestionnaire1PrintHtml(form)
-      : buildPostWorkQuestionnaire2PrintHtml(form);
-  }, [form, panelTab]);
+      : buildPostWorkQuestionnaire2PrintHtml(form, { packageKind });
+  }, [form, panelTab, packageKind]);
 
   const modalTitle = (
     <div className={hubStyles.modalHeaderRow}>
@@ -72,7 +75,7 @@ export function RepairContractQuestionnairesHubModal({
           className={hubStyles.headerIconBtn}
           title="Печать"
           aria-label="Печать"
-          onClick={() => printRepairQuestionnaireHubTab(panelTab, form)}
+          onClick={() => printRepairQuestionnaireHubTab(panelTab, form, { packageKind })}
         >
           <PrinterIcon className={hubStyles.headerIcon} aria-hidden />
         </button>
@@ -122,6 +125,7 @@ export function RepairContractQuestionnairesHubModal({
           panelTab={panelTab}
           form={form}
           previewHtml={previewHtml}
+          packageKind={packageKind}
           linkedCrmCustomerId={linkedCrmCustomerId}
           onPatchManagerQuestionnaire1={onPatchManagerQuestionnaire1}
           onToggleManagerQuestionnaire1Traffic={onToggleManagerQuestionnaire1Traffic}

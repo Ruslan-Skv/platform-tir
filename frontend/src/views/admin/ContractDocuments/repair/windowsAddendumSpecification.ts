@@ -315,6 +315,40 @@ export function buildWindowsAddendumGrandTotalsHtml(
   return `<section class="windowsAddendumGrandTotals"><p class="estimateA4Total windowsAddendumGrandTotal" style="margin:4pt 0 2pt;text-align:right;">Итого по дополнительному соглашению: ${grandSigned} руб.</p></section>`;
 }
 
+/** Блок «2. Изменения в Счёт-заказе» — для печати Д/с и заказ-наряда по Д/с. */
+export function buildWindowsAddendumAccountOrderPartHtml(options: {
+  slot: RepairAddendumSlotEstimateBlock;
+  additionalEmbedHtml: string;
+  excludedEmbedHtml: string;
+  accountAdditionalTotal: number;
+  accountExcludedTotal: number;
+  contractDiscountPercent: string;
+}): string {
+  if (!windowsAddendumSlotHasAccountOrderContent(options.slot)) return '';
+
+  const breakdown = computeWindowsAddendumTotals({
+    slot: options.slot,
+    accountAdditionalTotal: options.accountAdditionalTotal,
+    accountExcludedTotal: options.accountExcludedTotal,
+    contractDiscountPercent: options.contractDiscountPercent,
+  });
+
+  const accountSections: string[] = [];
+  if (options.additionalEmbedHtml.trim()) {
+    accountSections.push(
+      `<section><h3 class="windowsAddendumSubsectionHeading">Дополнительные работы</h3>${options.additionalEmbedHtml}${buildWindowsAddendumSectionTotalHtml(breakdown.accountAdditionalTotal, 'increase')}</section>`
+    );
+  }
+  if (options.excludedEmbedHtml.trim()) {
+    accountSections.push(
+      `<section><h3 class="windowsAddendumSubsectionHeading">Непроводимые работы</h3>${options.excludedEmbedHtml}${buildWindowsAddendumSectionTotalHtml(breakdown.accountExcludedTotal, 'decrease')}</section>`
+    );
+  }
+  if (accountSections.length === 0) return '';
+
+  return `<section class="windowsAddendumAccountPart estimateA4DocPrintEmbed"><h2 class="repairAddendumEstimateHeading">Изменения в Счёт-заказе</h2>${accountSections.join('')}</section>`;
+}
+
 export function buildWindowsAddendumPrintHtml(options: {
   slot: RepairAddendumSlotEstimateBlock;
   additionalEmbedHtml: string;
@@ -338,24 +372,15 @@ export function buildWindowsAddendumPrintHtml(options: {
   const specPart = buildWindowsSpecificationPartHtml(options.slot);
   if (specPart) parts.push(specPart);
 
-  if (windowsAddendumSlotHasAccountOrderContent(options.slot)) {
-    const accountSections: string[] = [];
-    if (options.additionalEmbedHtml) {
-      accountSections.push(
-        `<section><h3 class="windowsAddendumSubsectionHeading">Дополнительные работы</h3>${options.additionalEmbedHtml}${buildWindowsAddendumSectionTotalHtml(breakdown.accountAdditionalTotal, 'increase')}</section>`
-      );
-    }
-    if (options.excludedEmbedHtml) {
-      accountSections.push(
-        `<section><h3 class="windowsAddendumSubsectionHeading">Непроводимые работы</h3>${options.excludedEmbedHtml}${buildWindowsAddendumSectionTotalHtml(breakdown.accountExcludedTotal, 'decrease')}</section>`
-      );
-    }
-    if (accountSections.length > 0) {
-      parts.push(
-        `<section class="windowsAddendumAccountPart"><h2 class="repairAddendumEstimateHeading">Изменения в Счёт-заказе</h2>${accountSections.join('')}</section>`
-      );
-    }
-  }
+  const accountPart = buildWindowsAddendumAccountOrderPartHtml({
+    slot: options.slot,
+    additionalEmbedHtml: options.additionalEmbedHtml,
+    excludedEmbedHtml: options.excludedEmbedHtml,
+    accountAdditionalTotal: options.accountAdditionalTotal,
+    accountExcludedTotal: options.accountExcludedTotal,
+    contractDiscountPercent: options.contractDiscountPercent,
+  });
+  if (accountPart) parts.push(accountPart);
 
   parts.push(buildWindowsAddendumGrandTotalsHtml(breakdown));
   parts.push(

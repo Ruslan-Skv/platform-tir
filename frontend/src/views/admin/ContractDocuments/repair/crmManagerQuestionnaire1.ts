@@ -8,11 +8,27 @@ import {
   mergeRepairPackageFormData,
 } from './repairPackageForm';
 
-/** Ключ в `Customer.extendedProfile` — общая анкета (опросник) для всех договоров клиента. */
-export const CRM_PROFILE_REPAIR_MANAGER_QUESTIONNAIRE1_KEY = 'repairManagerQuestionnaire1';
+/**
+ * Единый ключ в `Customer.extendedProfile` — одна анкета (опросник) на заказчика
+ * для всех направлений (Ремонт, Окна, …) и всех договоров.
+ */
+export const CRM_PROFILE_MANAGER_QUESTIONNAIRE1_KEY = 'repairManagerQuestionnaire1';
+
+/** @deprecated Дублировался по «Окна»; при чтении подмешивается, при записи удаляется. */
+const CRM_PROFILE_LEGACY_WINDOWS_MANAGER_QUESTIONNAIRE1_KEY = 'windowsManagerQuestionnaire1';
+
+/** Совместимость со старыми импортами. */
+export const CRM_PROFILE_REPAIR_MANAGER_QUESTIONNAIRE1_KEY = CRM_PROFILE_MANAGER_QUESTIONNAIRE1_KEY;
 
 /** Id карточки CRM в `formData` пакета договора. */
 export const REPAIR_PACKAGE_LINKED_CRM_CUSTOMER_ID_KEY = '_linkedCrmCustomerId';
+
+function blockFromExtendedProfileRaw(raw: unknown): RepairManagerQuestionnaire1Block | null {
+  if (!raw || typeof raw !== 'object') return null;
+  return mergeRepairPackageFormData({
+    managerQuestionnaire1: raw as RepairManagerQuestionnaire1Block,
+  }).managerQuestionnaire1;
+}
 
 export function parseLinkedCrmCustomerIdFromFormData(raw: unknown): string | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -20,16 +36,21 @@ export function parseLinkedCrmCustomerIdFromFormData(raw: unknown): string | nul
   return typeof id === 'string' && id.trim() ? id.trim() : null;
 }
 
+/** Читает единую анкету заказчика (основной ключ, затем устаревший «Окна»). */
 export function parseManagerQuestionnaire1FromExtendedProfile(
   ext: Record<string, unknown> | null | undefined
 ): RepairManagerQuestionnaire1Block {
-  const raw = ext?.[CRM_PROFILE_REPAIR_MANAGER_QUESTIONNAIRE1_KEY];
-  if (!raw || typeof raw !== 'object') {
-    return defaultRepairManagerQuestionnaire1Block();
+  const primary = blockFromExtendedProfileRaw(ext?.[CRM_PROFILE_MANAGER_QUESTIONNAIRE1_KEY]);
+  if (primary && isManagerQuestionnaire1Filled(primary)) {
+    return primary;
   }
-  return mergeRepairPackageFormData({
-    managerQuestionnaire1: raw as RepairManagerQuestionnaire1Block,
-  }).managerQuestionnaire1;
+  const legacyWindows = blockFromExtendedProfileRaw(
+    ext?.[CRM_PROFILE_LEGACY_WINDOWS_MANAGER_QUESTIONNAIRE1_KEY]
+  );
+  if (legacyWindows && isManagerQuestionnaire1Filled(legacyWindows)) {
+    return legacyWindows;
+  }
+  return primary ?? legacyWindows ?? defaultRepairManagerQuestionnaire1Block();
 }
 
 export function readManagerQuestionnaire1FromCrmDetail(
@@ -46,10 +67,9 @@ export function mergeManagerQuestionnaire1IntoCrmExtendedProfile(
   ext: Record<string, unknown>,
   block: RepairManagerQuestionnaire1Block
 ): Record<string, unknown> {
-  return {
-    ...ext,
-    [CRM_PROFILE_REPAIR_MANAGER_QUESTIONNAIRE1_KEY]: block,
-  };
+  const next = { ...ext, [CRM_PROFILE_MANAGER_QUESTIONNAIRE1_KEY]: block };
+  delete next[CRM_PROFILE_LEGACY_WINDOWS_MANAGER_QUESTIONNAIRE1_KEY];
+  return next;
 }
 
 export function isManagerQuestionnaire1Filled(block: RepairManagerQuestionnaire1Block): boolean {
@@ -87,6 +107,17 @@ export async function hydrateManagerQuestionnaire1FromLinkedCrmCustomer(
   const fromPackage = form.managerQuestionnaire1;
 
   if (isManagerQuestionnaire1Filled(fromCustomer)) {
+    const ext =
+      customer.extendedProfile && typeof customer.extendedProfile === 'object'
+        ? (customer.extendedProfile as Record<string, unknown>)
+        : {};
+    const canonical = blockFromExtendedProfileRaw(ext[CRM_PROFILE_MANAGER_QUESTIONNAIRE1_KEY]);
+    if (
+      ext[CRM_PROFILE_LEGACY_WINDOWS_MANAGER_QUESTIONNAIRE1_KEY] != null &&
+      (!canonical || !isManagerQuestionnaire1Filled(canonical))
+    ) {
+      await persistManagerQuestionnaire1ToCrmCustomer(customerId, fromCustomer, customer);
+    }
     return {
       form: { ...form, managerQuestionnaire1: fromCustomer },
       migratedPackageToCustomer: false,

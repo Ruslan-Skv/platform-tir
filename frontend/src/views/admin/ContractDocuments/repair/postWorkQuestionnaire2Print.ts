@@ -1,6 +1,10 @@
+import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
+
 import { formatContractDateRuLong } from './contractDateFormat';
 import type { PostWorkSatisfactionRating, RepairPackageFormData } from './repairPackageForm';
 import { POST_WORK_QUESTIONNAIRE2_TRADE_ROWS } from './repairPackageForm';
+
+const MASTERS_RATING_QUESTION = 'Оцените пожалуйста работу наших мастеров по пятибалльной шкале:';
 
 function escapeHtml(s: string): string {
   return s
@@ -26,8 +30,12 @@ function ratingHeader(): string {
 }
 
 /** HTML для предпросмотра и печати вкладки «Анкета 2». */
-export function buildPostWorkQuestionnaire2PrintHtml(form: RepairPackageFormData): string {
+export function buildPostWorkQuestionnaire2PrintHtml(
+  form: RepairPackageFormData,
+  options?: { packageKind?: ContractDocumentPackageKind }
+): string {
   const { contract, postWorkQuestionnaire2: q } = form;
+  const isWindowsPackage = options?.packageKind === 'WINDOWS';
   const contractNo = escapeHtml(contract.number.trim() || '_______');
   const contractDate = escapeHtml(formatContractDateRuLong(contract.date));
 
@@ -41,13 +49,14 @@ export function buildPostWorkQuestionnaire2PrintHtml(form: RepairPackageFormData
   ${ratingCell(rating, 1)}
 </tr>`;
 
-  const question4Intro = `
+  const question4Rows = isWindowsPackage
+    ? rowSimple(4, MASTERS_RATING_QUESTION, q.ratingMasters)
+    : `
 <tr>
-  <td style="border:1px solid #94a3b8;padding:8px 10px;" colspan="7">4. Оцените пожалуйста работу наших мастеров по пятибалльной шкале:</td>
-</tr>`;
-
-  const tradeRows = POST_WORK_QUESTIONNAIRE2_TRADE_ROWS.map(
-    ({ key, label }) => `
+  <td style="border:1px solid #94a3b8;padding:8px 10px;" colspan="7">4. ${MASTERS_RATING_QUESTION}</td>
+</tr>
+${POST_WORK_QUESTIONNAIRE2_TRADE_ROWS.map(
+  ({ key, label }) => `
 <tr>
   <td style="border:1px solid #94a3b8;padding:6px 10px;" colspan="2">${escapeHtml(label)}</td>
   ${ratingCell(q.ratingTrades[key], 5)}
@@ -56,7 +65,7 @@ export function buildPostWorkQuestionnaire2PrintHtml(form: RepairPackageFormData
   ${ratingCell(q.ratingTrades[key], 2)}
   ${ratingCell(q.ratingTrades[key], 1)}
 </tr>`
-  ).join('');
+).join('')}`;
 
   const wishes = q.wishes.trim()
     ? escapeHtml(q.wishes).replace(/\n/g, '<br/>')
@@ -94,8 +103,7 @@ export function buildPostWorkQuestionnaire2PrintHtml(form: RepairPackageFormData
         'Оцените пожалуйста работу нашего бригадира по пятибалльной шкале:',
         q.ratingForeman
       )}
-      ${question4Intro}
-      ${tradeRows}
+      ${question4Rows}
     </tbody>
   </table>
 

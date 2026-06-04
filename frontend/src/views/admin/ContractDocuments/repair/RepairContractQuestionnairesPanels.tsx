@@ -1,5 +1,7 @@
 'use client';
 
+import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
+
 import styles from '../ContractDocuments.module.css';
 import { RepairManagerQuestionnaire1Tab } from './RepairManagerQuestionnaire1Tab';
 import { RepairPostWorkQuestionnaire2Tab } from './RepairPostWorkQuestionnaire2Tab';
@@ -14,6 +16,7 @@ export type RepairContractQuestionnairesPanelsProps = {
   panelTab: RepairQuestionnaireHubTabId;
   form: RepairPackageFormData;
   previewHtml: string;
+  packageKind?: ContractDocumentPackageKind;
   linkedCrmCustomerId?: string | null;
   onPatchManagerQuestionnaire1: (patch: Partial<RepairManagerQuestionnaire1Block>) => void;
   onToggleManagerQuestionnaire1Traffic: (id: string) => void;
@@ -26,6 +29,7 @@ export function RepairContractQuestionnairesPanels({
   panelTab,
   form,
   previewHtml,
+  packageKind,
   linkedCrmCustomerId,
   onPatchManagerQuestionnaire1,
   onToggleManagerQuestionnaire1Traffic,
@@ -42,10 +46,14 @@ export function RepairContractQuestionnairesPanels({
           onToggleTrafficSource={onToggleManagerQuestionnaire1Traffic}
           onToggleWhyChosen={onToggleManagerQuestionnaire1WhyChosen}
           onToggleClientNeed={onToggleManagerQuestionnaire1Need}
-          syncSourceLabel={linkedCrmCustomerId ? 'package' : 'unlinked'}
+          syncSourceLabel={linkedCrmCustomerId ? 'crm' : 'unlinked'}
         />
       ) : (
-        <RepairPostWorkQuestionnaire2Tab form={form} onPatch={onPatchPostWorkQuestionnaire2} />
+        <RepairPostWorkQuestionnaire2Tab
+          form={form}
+          packageKind={packageKind}
+          onPatch={onPatchPostWorkQuestionnaire2}
+        />
       )}
       <div className={styles.estimateA4Wrap}>
         <article className={styles.estimateA4Sheet}>

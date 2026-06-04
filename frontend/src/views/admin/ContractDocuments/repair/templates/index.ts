@@ -12,7 +12,11 @@ import { windowsTemplateMemo } from './memo';
 import { repairTemplatePaymentInvoice } from './paymentInvoice';
 import { repairTemplateProductionLog } from './productionLog';
 import { windowsTemplateActAcceptance } from './windowsActAcceptance';
-import { repairTemplateWorkOrder, repairTemplateWorkOrderAddendum } from './workOrder';
+import {
+  repairTemplateWindowsWorkOrderAddendum,
+  repairTemplateWorkOrder,
+  repairTemplateWorkOrderAddendum,
+} from './workOrder';
 
 const stub = (title: string) => repairLibraryFallbackStub(title);
 
@@ -42,6 +46,26 @@ export function libraryTemplateFallbackHtml(
     if (windowsHtml) return windowsHtml;
   }
   return REPAIR_LIBRARY_TEMPLATE_HTML[tab];
+}
+
+const WINDOWS_DOCUMENT_TEMPLATE_OVERRIDES: Partial<Record<RepairDocumentTemplateTabId, string>> = {
+  workOrderAddendum1: repairTemplateWindowsWorkOrderAddendum,
+  workOrderAddendum2: repairTemplateWindowsWorkOrderAddendum,
+  workOrderAddendum3: repairTemplateWindowsWorkOrderAddendum,
+  workOrderAddendum4: repairTemplateWindowsWorkOrderAddendum,
+  workOrderAddendum5: repairTemplateWindowsWorkOrderAddendum,
+};
+
+/** Резервный HTML вкладки редактора с учётом направления пакета. */
+export function repairDocumentTemplateFallbackHtml(
+  kind: ContractDocumentPackageKind,
+  tab: RepairDocumentTemplateTabId
+): string {
+  if (kind === 'WINDOWS') {
+    const windowsHtml = WINDOWS_DOCUMENT_TEMPLATE_OVERRIDES[tab];
+    if (windowsHtml) return windowsHtml;
+  }
+  return REPAIR_DOCUMENT_TEMPLATES[tab];
 }
 
 export const REPAIR_DOCUMENT_TEMPLATES: Record<RepairDocumentTemplateTabId, string> = {

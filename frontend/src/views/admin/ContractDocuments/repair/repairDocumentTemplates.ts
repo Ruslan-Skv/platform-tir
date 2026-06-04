@@ -14,4 +14,4 @@ export {
   normalizeRepairDocumentTabOrder,
   type RepairDocumentTabId,
 } from './repairDocumentTabs';
-export { REPAIR_DOCUMENT_TEMPLATES } from './templates';
+export { REPAIR_DOCUMENT_TEMPLATES, repairDocumentTemplateFallbackHtml } from './templates';

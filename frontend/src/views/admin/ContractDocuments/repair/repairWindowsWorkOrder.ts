@@ -90,3 +90,55 @@ export function buildWindowsWorkOrderComputed(
     adjustedTotal,
   };
 }
+
+export type WindowsWorkOrderAddendumTemplateBlock = {
+  slotNumber: string;
+  roomsHtml: string;
+  categoryTotalsHtml: string;
+  totalAfterDeductions: string;
+};
+
+function escapeWorkOrderHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function buildWorkOrderAddendumSubsectionHtml(heading: string, tableHtml: string): string {
+  if (!tableHtml.trim()) return '';
+  return `<section style="margin-bottom:8pt;">
+<h2 style="margin:0 0 4pt;font-size:10pt;font-weight:700;text-align:left;">${escapeWorkOrderHtml(heading)}</h2>
+${tableHtml}
+</section>`;
+}
+
+/**
+ * Шаблон «З-н Д/с №…»: таблицы заказ-наряда (как основной З-наряд) с наценкой «Окна» на позициях.
+ */
+export function buildWindowsWorkOrderAddendumForTemplate(options: {
+  slotNumber: number;
+  additionalRoomsHtml: string;
+  excludedRoomsHtml: string;
+  additionalAdjustedTotal: number;
+  excludedAdjustedTotal: number;
+  formatMoney: (value: number) => string;
+}): WindowsWorkOrderAddendumTemplateBlock {
+  const roomsHtml = [
+    buildWorkOrderAddendumSubsectionHtml('Дополнительные работы', options.additionalRoomsHtml),
+    buildWorkOrderAddendumSubsectionHtml('Непроводимые работы', options.excludedRoomsHtml),
+  ]
+    .filter(Boolean)
+    .join('');
+
+  const netTotal = options.additionalAdjustedTotal - options.excludedAdjustedTotal;
+
+  return {
+    slotNumber: String(options.slotNumber),
+    roomsHtml,
+    categoryTotalsHtml: '',
+    totalAfterDeductions: options.formatMoney(netTotal),
+  };
+}

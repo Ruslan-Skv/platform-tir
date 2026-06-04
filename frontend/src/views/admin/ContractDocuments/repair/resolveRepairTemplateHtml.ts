@@ -12,7 +12,7 @@ import {
   isRepairLibraryTemplatePreset,
   repairTemplatePresetEditorTabId,
 } from './repairTemplatePresetTab';
-import { REPAIR_DOCUMENT_TEMPLATES, libraryTemplateFallbackHtml } from './templates';
+import { libraryTemplateFallbackHtml, repairDocumentTemplateFallbackHtml } from './templates';
 
 export function resolveRepairTemplateHtml(
   tab: RepairDocumentTemplateTabId,
@@ -49,5 +49,5 @@ export function resolveRepairTemplateHtml(
   if (libraryTab) {
     return libraryTemplateFallbackHtml(packageKind, libraryTab);
   }
-  return REPAIR_DOCUMENT_TEMPLATES[tab];
+  return repairDocumentTemplateFallbackHtml(packageKind, tab);
 }

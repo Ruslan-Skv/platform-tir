@@ -83,6 +83,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/contract-documents/settings',
   },
   {
+    id: 'admin.contract-documents.markups',
+    label: 'Настройки — Оформление договоров — Наценки договоров',
+    path: '/admin/contract-documents/settings/markups',
+  },
+  {
     id: 'admin.contract-documents.estimates',
     label: 'Расчёты',
     path: '/admin/contract-documents/estimates',
