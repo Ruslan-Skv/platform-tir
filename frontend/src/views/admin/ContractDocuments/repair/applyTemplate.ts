@@ -37,6 +37,7 @@ const RAW_HTML_TEMPLATE_PATHS = new Set([
   'customer.requisitesHtml',
   'estimate.roomsHtml',
   'addendum.roomsHtml',
+  'addendum.workPeriodIncreaseHtml',
   'workOrder.roomsHtml',
   'workOrder.categoryTotalsHtml',
   'workOrderAddendum.roomsHtml',
@@ -44,6 +45,9 @@ const RAW_HTML_TEMPLATE_PATHS = new Set([
   'invoice.linesHtml',
   'invoice.qrCodeHtml',
 ]);
+
+/** Пустое значение — пустая строка, без плейсхолдера «__________». */
+const EMPTY_OK_TEMPLATE_PATHS = new Set(['addendum.workPeriodIncreaseSentence']);
 
 function isRawHtmlTemplatePath(path: string, htmlModifier: boolean): boolean {
   return htmlModifier || RAW_HTML_TEMPLATE_PATHS.has(path);
@@ -59,6 +63,9 @@ function formatTemplateValue(
     return raw || '';
   }
   const trimmed = raw.trim();
+  if (EMPTY_OK_TEMPLATE_PATHS.has(path) && !trimmed) {
+    return '';
+  }
   const fallback = path.startsWith('customer.') && !trimmed ? 'Не предоставлено' : trimmed;
   const safe = escapeHtml(fallback || '__________');
   if (path.startsWith('customer.') && !plainCustomer) {

@@ -49,11 +49,28 @@ interface InstallerFormValues {
   grade: string;
 }
 
+/** В БД поле обязательное; для направлений кроме «Ремонт» сохраняем заглушку. */
+const INSTALLER_GRADE_NOT_USED = '—';
+
 const EMPTY_FORM: InstallerFormValues = {
   direction: 'REPAIR',
   fullName: '',
   grade: '',
 };
+
+function isRepairInstallerDirection(direction: InstallerDirection): boolean {
+  return direction === 'REPAIR';
+}
+
+function gradeForApi(direction: InstallerDirection, grade: string): string {
+  return isRepairInstallerDirection(direction) ? grade.trim() : INSTALLER_GRADE_NOT_USED;
+}
+
+function gradeForForm(direction: InstallerDirection, grade: string): string {
+  if (!isRepairInstallerDirection(direction)) return '';
+  if (grade === INSTALLER_GRADE_NOT_USED) return '';
+  return grade;
+}
 
 export function InstallersPage() {
   const [installers, setInstallers] = useState<InstallerMaster[]>([]);
@@ -123,7 +140,7 @@ export function InstallersPage() {
     setFormValues({
       direction: item.direction,
       fullName: item.fullName,
-      grade: item.grade,
+      grade: gradeForForm(item.direction, item.grade),
     });
     setFormError(null);
     setSubmitting(false);
@@ -132,7 +149,9 @@ export function InstallersPage() {
 
   const validateForm = () => {
     if (!formValues.fullName.trim()) return 'Укажите ФИО мастера';
-    if (!formValues.grade.trim()) return 'Укажите разряд мастера';
+    if (isRepairInstallerDirection(formValues.direction) && !formValues.grade.trim()) {
+      return 'Укажите разряд мастера';
+    }
     return null;
   };
 
@@ -149,7 +168,7 @@ export function InstallersPage() {
       await createInstaller({
         direction: formValues.direction,
         fullName: formValues.fullName.trim(),
-        grade: formValues.grade.trim(),
+        grade: gradeForApi(formValues.direction, formValues.grade),
       });
       setCreateModalOpen(false);
       resetForm();
@@ -176,7 +195,7 @@ export function InstallersPage() {
       await updateInstaller(editItem.id, {
         direction: formValues.direction,
         fullName: formValues.fullName.trim(),
-        grade: formValues.grade.trim(),
+        grade: gradeForApi(formValues.direction, formValues.grade),
       });
       setEditItem(null);
       resetForm();
@@ -225,7 +244,8 @@ export function InstallersPage() {
     {
       key: 'grade',
       title: 'Разряд',
-      render: (item: InstallerMaster) => item.grade,
+      render: (item: InstallerMaster) =>
+        isRepairInstallerDirection(item.direction) ? item.grade : '—',
     },
     {
       key: 'actions',
@@ -367,6 +387,16 @@ function InstallerForm({
   onChange: (next: InstallerFormValues) => void;
   formError: string | null;
 }) {
+  const gradeApplies = isRepairInstallerDirection(values.direction);
+
+  const handleDirectionChange = (direction: InstallerDirection) => {
+    onChange({
+      ...values,
+      direction,
+      grade: isRepairInstallerDirection(direction) ? values.grade : '',
+    });
+  };
+
   return (
     <>
       <div data-modal-form-grid>
@@ -375,9 +405,7 @@ function InstallerForm({
           <select
             id="installer-direction"
             value={values.direction}
-            onChange={(e) =>
-              onChange({ ...values, direction: e.target.value as InstallerDirection })
-            }
+            onChange={(e) => handleDirectionChange(e.target.value as InstallerDirection)}
           >
             {DIRECTION_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -388,13 +416,20 @@ function InstallerForm({
         </div>
 
         <div data-modal-form-group>
-          <label htmlFor="installer-grade">Разряд *</label>
+          <label htmlFor="installer-grade">Разряд{gradeApplies ? ' *' : ''}</label>
           <input
             id="installer-grade"
             type="text"
             value={values.grade}
+            disabled={!gradeApplies}
+            readOnly={!gradeApplies}
             onChange={(e) => onChange({ ...values, grade: e.target.value })}
-            placeholder="Например: 4 разряд"
+            placeholder={gradeApplies ? 'Например: 4 разряд' : 'Только для направления «Ремонт»'}
+            title={
+              gradeApplies
+                ? undefined
+                : 'Разряд указывается только для мастеров направления «Ремонт»'
+            }
           />
         </div>
       </div>

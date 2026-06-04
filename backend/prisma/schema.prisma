@@ -2189,10 +2189,12 @@ model ContractDocumentGlobalTemplate {
 
 /// Срок договора по умолчанию (рабочие дни) по направлению: REPAIR, WINDOWS, …
 model ContractDocumentRepairSettings {
-  kind                  ContractDocumentPackageKind @id
-  defaultWorkPeriodDays Int                       @default(60)
-  updatedById           String?
-  updatedAt             DateTime                  @updatedAt
+  kind                          ContractDocumentPackageKind @id
+  defaultWorkPeriodDays         Int                       @default(60)
+  /// Наценка при расчёте заказ-наряда «Окна» (вычитается из цены счёт-заказа), %.
+  windowsWorkOrderMarkupPercent Int                       @default(33)
+  updatedById                   String?
+  updatedAt                     DateTime                  @updatedAt
 
   updatedBy User? @relation("ContractDocumentRepairSettingsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 

@@ -58,6 +58,7 @@ import {
 } from './RepairContractWorkOrderHubContext';
 import { RepairContractWorkOrdersHubIcon } from './RepairContractWorkOrdersHubIcon';
 import { RepairContractWorkOrdersHubModal } from './RepairContractWorkOrdersHubModal';
+import { WindowsAddendumTab } from './WindowsAddendumTab';
 import { WindowsContractCostFields } from './WindowsContractCostFields';
 import { WindowsSpecificationTab } from './WindowsSpecificationTab';
 import { amountToRussianWords } from './amountToRussianWords';
@@ -133,7 +134,10 @@ import {
   normalizeLegacyRepairTabId,
   normalizeRepairDocumentTabOrder,
 } from './repairDocumentTemplates';
-import { buildEstimateSectionsFromPresetIds } from './repairEstimateDocPrintEmbedHtml';
+import {
+  buildEstimateSectionsFromPresetIds,
+  buildEstimateSheetPrintHtml,
+} from './repairEstimateDocPrintEmbedHtml';
 import {
   isRepairLibraryTemplateTabId,
   repairLibraryTemplateTabIdFromPreset,
@@ -142,6 +146,7 @@ import {
   type RepairManagerQuestionnaire1Block,
   type RepairPackageFormData,
   type RepairPostWorkQuestionnaire2Block,
+  applyOpenAddendumDocumentDateAutofill,
   mergeRepairPackageFormData,
   repairPackageFormForTemplate,
 } from './repairPackageForm';
@@ -157,12 +162,25 @@ import {
 } from './repairQuestionnaireHubTabs';
 import { repairTemplatePresetEditorTabId } from './repairTemplatePresetTab';
 import {
+  WINDOWS_PACKAGE_UNIFIED_PRINT_CLASS,
+  pickWindowsPackagePrintDocumentOptions,
+  printWindowsEstimateSheetFromDom,
+  printWindowsEstimateSheetHtml,
+  resolveRepairEditorPrintOptions,
+  shouldUseWindowsPackageCompactPrint,
+} from './repairWindowsPackagePrint';
+import {
+  DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT,
+  normalizeWindowsWorkOrderMarkupPercent,
+} from './repairWindowsWorkOrder';
+import {
   type RepairWorkOrderHubTabId,
   defaultRepairWorkOrderHubTab,
   isRepairWorkOrderHubTabHiddenFromPackageEditor,
 } from './repairWorkOrderHubTabs';
 import { repairWorkPeriodFieldHelp } from './repairWorkPeriodFieldHelp';
 import { libraryTemplateFallbackHtml } from './templates';
+import { windowsAddendumSlotHasSpecificationContent } from './windowsAddendumSpecification';
 import {
   computeWindowsContractCostBreakdown,
   windowsContractTotalToContractFields,
@@ -297,6 +315,7 @@ function isAddendumSlotEmpty(
     Boolean(slot.excludedSnapshot?.rooms?.length) ||
     (typeof excludedTotal === 'number' && Number.isFinite(excludedTotal));
   const hasNotes = (slot.notes ?? '').trim() !== '' || (slot.excludedNotes ?? '').trim() !== '';
+  const hasSpecLines = windowsAddendumSlotHasSpecificationContent(slot);
   const isSigned =
     slot.status === 'SIGNED' || slot.status === 'PAID' || (slot.signedAt ?? '').trim() !== '';
   const isPaid = (slot.paidAt ?? '').trim() !== '';
@@ -307,6 +326,7 @@ function isAddendumSlotEmpty(
     hasSnapshot ||
     hasExcludedSnapshot ||
     hasNotes ||
+    hasSpecLines ||
     isSigned ||
     isPaid
   );
@@ -751,6 +771,9 @@ export function RepairContractDocumentEditorPage({
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [packageKind, setPackageKind] = useState<ContractDocumentPackageKind>('REPAIR');
+  const [windowsWorkOrderMarkupPercent, setWindowsWorkOrderMarkupPercent] = useState(
+    DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT
+  );
   const [activeTab, setActiveTab] = useState<RepairDocumentTabId>('data');
   const [packageHubOpen, setPackageHubOpen] = useState(false);
   const [invoicesHubOpen, setInvoicesHubOpen] = useState(false);
@@ -1214,16 +1237,29 @@ export function RepairContractDocumentEditorPage({
           (currentKind === 'WINDOWS'
             ? getContractDocumentWindowsSettings()
             : getContractDocumentRepairSettings()
-          ).catch(() => ({
-            defaultWorkPeriodDays:
-              currentKind === 'WINDOWS'
-                ? DEFAULT_WINDOWS_CONTRACT_WORK_PERIOD_DAYS
-                : DEFAULT_REPAIR_CONTRACT_WORK_PERIOD_DAYS,
-            updatedAt: null as string | null,
-          })),
+          ).catch(() =>
+            currentKind === 'WINDOWS'
+              ? {
+                  defaultWorkPeriodDays: DEFAULT_WINDOWS_CONTRACT_WORK_PERIOD_DAYS,
+                  windowsWorkOrderMarkupPercent: DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT,
+                  updatedAt: null as string | null,
+                }
+              : {
+                  defaultWorkPeriodDays: DEFAULT_REPAIR_CONTRACT_WORK_PERIOD_DAYS,
+                  updatedAt: null as string | null,
+                }
+          ),
           listPackagePaymentInvoices(packageId).catch(() => []),
         ]);
         setPackageKind(currentKind);
+        if (currentKind === 'WINDOWS') {
+          const windowsSettings = repairSettingsRes as {
+            windowsWorkOrderMarkupPercent?: number;
+          };
+          setWindowsWorkOrderMarkupPercent(
+            normalizeWindowsWorkOrderMarkupPercent(windowsSettings.windowsWorkOrderMarkupPercent)
+          );
+        }
         setPaymentInvoiceCount(paymentInvoicesRes.length);
         setDraftTitle(row.title ?? '');
         setPackageFlowStatus(
@@ -1341,6 +1377,14 @@ export function RepairContractDocumentEditorPage({
             /* оставляем анкету из пакета */
           }
         }
+        const addendumDateAutofill = applyOpenAddendumDocumentDateAutofill(
+          formToApply,
+          todayContractDateDdMmYyyy()
+        );
+        if (addendumDateAutofill.changed) {
+          formToApply = addendumDateAutofill.form;
+        }
+        const persistAddendumDocumentDates = addendumDateAutofill.changed;
         setForm(formToApply);
         formRef.current = formToApply;
         setContractObjectBlockBaseline(snapshotRepairContractObjectBlockFields(formToApply));
@@ -1351,9 +1395,7 @@ export function RepairContractDocumentEditorPage({
         setSignatoryProfiles(signatoryRes.items ?? []);
         const templates = templateRes.items ?? [];
         setEstimatePresets(estimateRes.items ?? []);
-        setRepairInstallers(
-          (installersRes ?? []).filter((installer) => installer.direction === 'REPAIR')
-        );
+        setRepairInstallers(installersRes ?? []);
         setEstimateGroups(estimateRes.groups ?? []);
         setEstimateAttachGroupKey('');
         setEstimatePresetToAttach('');
@@ -1386,7 +1428,7 @@ export function RepairContractDocumentEditorPage({
         setTemplateDraftTitle(initialTpl?.title ?? '');
         setTemplateDraftHtml(initialTpl?.html ?? '');
         setExcelMessage(null);
-        if (persistContractMeta) {
+        if (persistContractMeta || persistAddendumDocumentDates) {
           try {
             await updateContractDocumentPackage(packageId, {
               title: row.title?.trim() || null,
@@ -2236,10 +2278,16 @@ export function RepairContractDocumentEditorPage({
       ),
     [finalEstimateSummary.totalAmount, contractDiscountPercentParsed]
   );
+  /** Мастера, доступные для назначения на договор (по направлению пакета). */
+  const installersForContract = useMemo(() => {
+    const direction = packageKind === 'WINDOWS' ? 'WINDOWS' : 'REPAIR';
+    return repairInstallers.filter((installer) => installer.direction === direction);
+  }, [repairInstallers, packageKind]);
+
   const selectedRepairInstallers = useMemo(() => {
     const selectedIds = new Set(form.selectedRepairInstallerIds ?? []);
-    return repairInstallers.filter((installer) => selectedIds.has(installer.id));
-  }, [repairInstallers, form.selectedRepairInstallerIds]);
+    return installersForContract.filter((installer) => selectedIds.has(installer.id));
+  }, [installersForContract, form.selectedRepairInstallerIds]);
   const selectedRepairInstallersById = useMemo(
     () => new Map(selectedRepairInstallers.map((installer) => [installer.id, installer])),
     [selectedRepairInstallers]
@@ -2264,7 +2312,7 @@ export function RepairContractDocumentEditorPage({
     }
   }, [form.selectedRepairInstallerIds, activeRepairInstallerId]);
   useEffect(() => {
-    const allowedIds = new Set(repairInstallers.map((installer) => installer.id));
+    const allowedIds = new Set(installersForContract.map((installer) => installer.id));
     setForm((p) => {
       const selected = (p.selectedRepairInstallerIds ?? []).filter((id) => allowedIds.has(id));
       const selectedSet = new Set(selected);
@@ -2286,7 +2334,7 @@ export function RepairContractDocumentEditorPage({
         finalEstimateInstallerAssignments: assignments,
       };
     });
-  }, [repairInstallers]);
+  }, [installersForContract]);
   const finalEstimateRooms = useMemo(() => {
     const roomMap = new Map<
       string,
@@ -2448,14 +2496,19 @@ export function RepairContractDocumentEditorPage({
 
   /** Итоговый заказ-наряд: скидка по договору на уровне каждой позиции (в сметах — только в итогах). */
   const finalWorkOrderComputed = useMemo(() => {
-    const taxPercent = parsePercentForWorkOrder(form.workOrder.taxPercent);
-    const markupPercent = parsePercentForWorkOrder(form.workOrder.markupPercent);
     const discountFactor = repairContractDiscountMoneyFactor(
       parseRepairContractDiscountPercent(form.contract.discountPercent)
     );
-    const fallbackGradeIncreasePercent = normalizeWorkOrderGrade(
-      form.workOrder.gradeIncreasePercent
-    );
+    const windowsMarkupFactor = isWindowsPackage
+      ? 1 - normalizeWindowsWorkOrderMarkupPercent(windowsWorkOrderMarkupPercent) / 100
+      : 1;
+    const taxPercent = isWindowsPackage ? 0 : parsePercentForWorkOrder(form.workOrder.taxPercent);
+    const markupPercent = isWindowsPackage
+      ? normalizeWindowsWorkOrderMarkupPercent(windowsWorkOrderMarkupPercent)
+      : parsePercentForWorkOrder(form.workOrder.markupPercent);
+    const fallbackGradeIncreasePercent = isWindowsPackage
+      ? 0
+      : normalizeWorkOrderGrade(form.workOrder.gradeIncreasePercent);
     const roomTotals: number[] = [];
     const installerTotalsMap = new Map<
       string,
@@ -2471,22 +2524,17 @@ export function RepairContractDocumentEditorPage({
         const assignedInstallerId =
           form.finalEstimateInstallerAssignments[line.key]?.installerId ?? '';
         const assignedInstaller = selectedRepairInstallersById.get(assignedInstallerId) ?? null;
-        const gradeIncreasePercent = assignedInstaller
-          ? parseInstallerGradePercent(assignedInstaller.grade)
-          : fallbackGradeIncreasePercent;
-        const gradeFactor = 1 + gradeIncreasePercent / 100;
-        const adjustedPrice =
-          line.price *
-          discountFactor *
-          (1 - taxPercent / 100) *
-          (1 - markupPercent / 100) *
-          gradeFactor;
-        const adjustedAmount =
-          line.amount *
-          discountFactor *
-          (1 - taxPercent / 100) *
-          (1 - markupPercent / 100) *
-          gradeFactor;
+        const gradeIncreasePercent = isWindowsPackage
+          ? 0
+          : assignedInstaller
+            ? parseInstallerGradePercent(assignedInstaller.grade)
+            : fallbackGradeIncreasePercent;
+        const gradeFactor = isWindowsPackage ? 1 : 1 + gradeIncreasePercent / 100;
+        const priceFactor = isWindowsPackage
+          ? discountFactor * windowsMarkupFactor
+          : discountFactor * (1 - taxPercent / 100) * (1 - markupPercent / 100) * gradeFactor;
+        const adjustedPrice = line.price * priceFactor;
+        const adjustedAmount = line.amount * priceFactor;
         if (assignedInstaller) {
           const prev = installerTotalsMap.get(assignedInstaller.id) ?? {
             installer: assignedInstaller,
@@ -2519,6 +2567,8 @@ export function RepairContractDocumentEditorPage({
     return { rooms, total, installerTotals };
   }, [
     finalEstimateRooms,
+    isWindowsPackage,
+    windowsWorkOrderMarkupPercent,
     form.workOrder.taxPercent,
     form.workOrder.markupPercent,
     form.workOrder.gradeIncreasePercent,
@@ -2815,8 +2865,10 @@ export function RepairContractDocumentEditorPage({
               : activeTab,
         estimatePresets,
         estimateGroups,
+        packageKind,
+        windowsWorkOrderMarkupPercent,
       }),
-    [form, activeTab, estimatePresets, estimateGroups]
+    [form, activeTab, estimatePresets, estimateGroups, packageKind, windowsWorkOrderMarkupPercent]
   );
 
   const patchAddendumDocumentDate = useCallback(
@@ -2836,6 +2888,21 @@ export function RepairContractDocumentEditorPage({
     },
     [touchPackageData]
   );
+
+  useEffect(() => {
+    if (activeAddendumSlot === null) return;
+    const idx = activeAddendumSlot - 1;
+    if (idx < 0 || idx >= 5) return;
+    const slot = form.addendumSlots[idx];
+    if (slot?.status === 'SIGNED' || slot?.status === 'PAID') return;
+    if (form.addendumDocumentDates[idx]?.trim()) return;
+    patchAddendumDocumentDate(idx, todayContractDateDdMmYyyy());
+  }, [
+    activeAddendumSlot,
+    form.addendumSlots,
+    form.addendumDocumentDates,
+    patchAddendumDocumentDate,
+  ]);
 
   const renderedDoc = useMemo(() => {
     if (activeTab === 'data' || activeTab === 'payments') return '';
@@ -2904,6 +2971,8 @@ export function RepairContractDocumentEditorPage({
         templateTab,
         estimatePresets,
         estimateGroups,
+        packageKind,
+        windowsWorkOrderMarkupPercent,
       });
       const tpl = templateOverrides[templateTab] ?? resolveTemplateHtml(templateTab);
       return prepareContractTemplateHtmlForPreview(
@@ -2913,15 +2982,26 @@ export function RepairContractDocumentEditorPage({
         })
       );
     },
-    [form, estimatePresets, estimateGroups, templateOverrides, resolveTemplateHtml]
+    [
+      form,
+      estimatePresets,
+      estimateGroups,
+      templateOverrides,
+      resolveTemplateHtml,
+      packageKind,
+      windowsWorkOrderMarkupPercent,
+    ]
   );
 
   const workOrderHubContextValue = useMemo((): RepairContractWorkOrderHubContextValue => {
     return {
+      packageKind,
+      isWindowsPackage,
+      windowsWorkOrderMarkupPercent,
       form,
       updateWorkOrder,
       getTemplatePreviewHtml,
-      repairInstallers,
+      repairInstallers: installersForContract,
       selectedRepairInstallers,
       selectedRepairInstallersById,
       activeRepairInstallerId,
@@ -2947,10 +3027,13 @@ export function RepairContractDocumentEditorPage({
         formatInstallerGradeShort(grade ?? ''),
     };
   }, [
+    packageKind,
+    isWindowsPackage,
+    windowsWorkOrderMarkupPercent,
     form,
     updateWorkOrder,
     getTemplatePreviewHtml,
-    repairInstallers,
+    installersForContract,
     selectedRepairInstallers,
     selectedRepairInstallersById,
     activeRepairInstallerId,
@@ -3348,6 +3431,8 @@ export function RepairContractDocumentEditorPage({
   };
 
   const handlePrint = () => {
+    const windowsPrintOptions = resolveRepairEditorPrintOptions(packageKind, activeTab, form);
+
     if (
       activeTab === 'estimate' ||
       activeTab === 'finalWorkOrder' ||
@@ -3361,6 +3446,28 @@ export function RepairContractDocumentEditorPage({
             : 'final-estimate-sheet';
       const target = document.querySelector(`[data-print-target='${printTargetId}']`);
       if (!target) return;
+      if (shouldUseWindowsPackageCompactPrint(packageKind, activeTab)) {
+        const printOpts =
+          windowsPrintOptions ?? pickWindowsPackagePrintDocumentOptions(activeTab, form);
+        if (activeTab === 'estimate') {
+          const sheetHtml = buildEstimateSheetPrintHtml({
+            variant: 'windows',
+            appendixNumber: 2,
+            contractNum: estimateAppendixContractRef.num,
+            contractDate: estimateAppendixContractRef.date,
+            sections: selectedEstimateSections,
+            snapshot: form.estimate.snapshot,
+            directorName: form.executor.directorName,
+            customerFullName: form.customer.fullName,
+            contractDiscountPercent: form.contract.discountPercent,
+            docPrintRootClass: WINDOWS_PACKAGE_UNIFIED_PRINT_CLASS,
+          });
+          printWindowsEstimateSheetHtml(sheetHtml, uiTabLabel(activeTab), printOpts);
+          return;
+        }
+        printWindowsEstimateSheetFromDom(target, uiTabLabel(activeTab), printOpts);
+        return;
+      }
       document.body.classList.add(BODY_PRINT_ESTIMATE_CLASS);
       const cleanup = (): void => {
         document.body.classList.remove(BODY_PRINT_ESTIMATE_CLASS);
@@ -3374,11 +3481,16 @@ export function RepairContractDocumentEditorPage({
     if (!renderedDoc) return;
     const actTwinOnOneSheet = isRepairActTwinOneSheetTab(activeTab, packageKind);
     const printTitle =
-      activeTab === 'contract' || actTwinOnOneSheet ? '' : REPAIR_DOCUMENT_TAB_LABELS[activeTab];
+      activeTab === 'contract' || actTwinOnOneSheet
+        ? ''
+        : isWindowsPackage
+          ? uiTabLabel(activeTab)
+          : REPAIR_DOCUMENT_TAB_LABELS[activeTab];
     const printBody = actTwinOnOneSheet
       ? wrapRepairActTwinCopiesOnOnePageHtml(renderedDoc)
       : renderedDoc;
     const contractCompactPrint =
+      windowsPrintOptions != null ||
       activeTab === 'contract' ||
       isRepairActA4PreviewTab(activeTab) ||
       activeTab === 'productionLog' ||
@@ -3386,11 +3498,12 @@ export function RepairContractDocumentEditorPage({
     printDocumentHtml(
       printBody,
       printTitle,
-      activeTab === 'contract'
-        ? { marginFooter: pickPrintMarginFooterNames(form), contractCompact: true }
-        : contractCompactPrint
-          ? { contractCompact: true }
-          : {}
+      windowsPrintOptions ??
+        (activeTab === 'contract'
+          ? { marginFooter: pickPrintMarginFooterNames(form), contractCompact: true }
+          : contractCompactPrint
+            ? { contractCompact: true }
+            : {})
     );
   };
 
@@ -3499,6 +3612,7 @@ export function RepairContractDocumentEditorPage({
             panelTab={workOrdersHubPanelTab}
             onPanelTabChange={setWorkOrdersHubPanelTab}
             addendumSlotCount={form.addendumSlotCount}
+            packageKind={packageKind}
             unassignedInteractiveRowsCount={unassignedInteractiveRowsCount}
             headerContractNumberLabel={headerContractNumberLabel}
             headerContractDateLabel={headerContractConcludedDateLabel ?? undefined}
@@ -3730,7 +3844,7 @@ export function RepairContractDocumentEditorPage({
                   className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn} ${styles.repairEditorHubPrimaryBtn}`}
                   onClick={() => {
                     setWorkOrdersHubPanelTab(
-                      defaultRepairWorkOrderHubTab(null, form.addendumSlotCount)
+                      defaultRepairWorkOrderHubTab(null, form.addendumSlotCount, packageKind)
                     );
                     setWorkOrdersHubOpen(true);
                   }}
@@ -3965,7 +4079,20 @@ export function RepairContractDocumentEditorPage({
                     onClick={() => {
                       if (repairAddendumTabAddDisabled) return;
                       const next = form.addendumSlotCount + 1;
-                      setForm((f) => ({ ...f, addendumSlotCount: next }));
+                      const newSlotIdx = next - 1;
+                      setForm((f) => {
+                        const nextDates = [
+                          ...f.addendumDocumentDates,
+                        ] as RepairPackageFormData['addendumDocumentDates'];
+                        if (newSlotIdx >= 0 && newSlotIdx < 5 && !nextDates[newSlotIdx]?.trim()) {
+                          nextDates[newSlotIdx] = todayContractDateDdMmYyyy();
+                        }
+                        return {
+                          ...f,
+                          addendumSlotCount: next,
+                          addendumDocumentDates: nextDates,
+                        };
+                      });
                       touchPackageData();
                       setActiveTab(`addendum${next}` as RepairDocumentTabId);
                     }}
@@ -4026,6 +4153,8 @@ export function RepairContractDocumentEditorPage({
                           excludedSnapshot: null,
                           notes: '',
                           excludedNotes: '',
+                          specificationAddedLines: [],
+                          specificationExcludedLines: [],
                         };
                         return {
                           ...f,
@@ -4696,7 +4825,9 @@ export function RepairContractDocumentEditorPage({
             </p>
           </div>
         ) : activeTab === 'estimate' ? (
-          <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
+          <div
+            className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}${isWindowsPackage ? ` ${styles.windowsContractTabTypography}` : ''}`}
+          >
             <div className={styles.formGrid}>
               <div className={styles.sectionCard}>
                 {contractAndEstimateLocked ? (
@@ -5231,184 +5362,425 @@ export function RepairContractDocumentEditorPage({
             ) : null}
             {activeAddendumSlot !== null ? (
               contractAndEstimateLocked ? (
-                <RepairAddendumEstimateBlock
-                  slotOrdinal={activeAddendumSlot}
-                  slot={form.addendumSlots[activeAddendumSlot - 1]}
-                  documentDate={form.addendumDocumentDates[activeAddendumSlot - 1] ?? ''}
-                  onDocumentDateChange={(v) => patchAddendumDocumentDate(activeAddendumSlot - 1, v)}
-                  workPeriodIncreaseDays={
-                    form.addendumSlots[activeAddendumSlot - 1]?.workPeriodIncreaseDays ?? ''
-                  }
-                  onWorkPeriodIncreaseDaysChange={(v) => {
-                    const idx = activeAddendumSlot - 1;
-                    setForm((p) => {
-                      const slots = [...p.addendumSlots] as RepairPackageFormData['addendumSlots'];
-                      slots[idx] = { ...slots[idx], workPeriodIncreaseDays: v };
-                      const next = { ...p, addendumSlots: slots };
-                      formRef.current = next;
-                      schedulePersistRepairPackageDebounced();
-                      return next;
-                    });
-                    setDirty(true);
-                  }}
-                  estimatePresets={estimatePresets}
-                  contractEstimateObjectLabel={
-                    contractEstimateObjectKey
-                      ? contractEstimateObjectKey === '__ungrouped__'
-                        ? 'Вне объекта'
-                        : (estimateGroups.find((g) => g.id === contractEstimateObjectKey)?.title ??
-                          contractEstimateObjectKey)
-                      : ''
-                  }
-                  addendumAttachablePresets={attachableAddendumEstimatePresets}
-                  addendumExcludedAttachablePresets={attachableAddendumExcludedEstimatePresets}
-                  presetToAttach={addendumPresetToAttach}
-                  setPresetToAttach={setAddendumPresetToAttach}
-                  excludedPresetToAttach={addendumExcludedPresetToAttach}
-                  setExcludedPresetToAttach={setAddendumExcludedPresetToAttach}
-                  onAttachPreset={() => {
-                    if (!addendumPresetToAttach || activeAddendumSlot === null) return;
-                    const idx = activeAddendumSlot - 1;
-                    const pid = addendumPresetToAttach;
-                    setForm((p) => {
-                      const next = applyEstimatePresetIdsToAddendumSlot(
-                        p,
-                        idx,
-                        [...(p.addendumSlots[idx].selectedPresetIds ?? []), pid],
-                        estimatePresets,
-                        estimateGroups,
-                        'additional'
-                      );
-                      formRef.current = next;
-                      schedulePersistRepairPackageDebounced();
-                      return next;
-                    });
-                    setDirty(true);
-                    setAddendumPresetToAttach('');
-                  }}
-                  onAttachExcludedPreset={() => {
-                    if (!addendumExcludedPresetToAttach || activeAddendumSlot === null) return;
-                    const idx = activeAddendumSlot - 1;
-                    const pid = addendumExcludedPresetToAttach;
-                    setForm((p) => {
-                      const next = applyEstimatePresetIdsToAddendumSlot(
-                        p,
-                        idx,
-                        [...(p.addendumSlots[idx].excludedSelectedPresetIds ?? []), pid],
-                        estimatePresets,
-                        estimateGroups,
-                        'excluded'
-                      );
-                      formRef.current = next;
-                      schedulePersistRepairPackageDebounced();
-                      return next;
-                    });
-                    setDirty(true);
-                    setAddendumExcludedPresetToAttach('');
-                  }}
-                  onRemovePreset={(presetId) => {
-                    if (activeAddendumSlot === null) return;
-                    const idx = activeAddendumSlot - 1;
-                    setForm((p) => {
-                      const next = applyEstimatePresetIdsToAddendumSlot(
-                        p,
-                        idx,
-                        (p.addendumSlots[idx].selectedPresetIds ?? []).filter(
-                          (id) => id !== presetId
-                        ),
-                        estimatePresets,
-                        estimateGroups,
-                        'additional'
-                      );
-                      formRef.current = next;
-                      schedulePersistRepairPackageDebounced();
-                      return next;
-                    });
-                    setDirty(true);
-                  }}
-                  onRemoveExcludedPreset={(presetId) => {
-                    if (activeAddendumSlot === null) return;
-                    const idx = activeAddendumSlot - 1;
-                    setForm((p) => {
-                      const next = applyEstimatePresetIdsToAddendumSlot(
-                        p,
-                        idx,
-                        (p.addendumSlots[idx].excludedSelectedPresetIds ?? []).filter(
-                          (id) => id !== presetId
-                        ),
-                        estimatePresets,
-                        estimateGroups,
-                        'excluded'
-                      );
-                      formRef.current = next;
-                      schedulePersistRepairPackageDebounced();
-                      return next;
-                    });
-                    setDirty(true);
-                  }}
-                  onReorderPresets={(sourceId, targetId) => {
-                    if (activeAddendumSlot === null) return;
-                    const idx = activeAddendumSlot - 1;
-                    setForm((p) => {
-                      const ids = [...(p.addendumSlots[idx].selectedPresetIds ?? [])];
-                      const from = ids.indexOf(sourceId);
-                      const to = ids.indexOf(targetId);
-                      if (from < 0 || to < 0) return p;
-                      const [moved] = ids.splice(from, 1);
-                      ids.splice(to, 0, moved);
-                      const next = applyEstimatePresetIdsToAddendumSlot(
-                        p,
-                        idx,
-                        ids,
-                        estimatePresets,
-                        estimateGroups,
-                        'additional'
-                      );
-                      formRef.current = next;
-                      schedulePersistRepairPackageDebounced();
-                      return next;
-                    });
-                    setDirty(true);
-                  }}
-                  onReorderExcludedPresets={(sourceId, targetId) => {
-                    if (activeAddendumSlot === null) return;
-                    const idx = activeAddendumSlot - 1;
-                    setForm((p) => {
-                      const ids = [...(p.addendumSlots[idx].excludedSelectedPresetIds ?? [])];
-                      const from = ids.indexOf(sourceId);
-                      const to = ids.indexOf(targetId);
-                      if (from < 0 || to < 0) return p;
-                      const [moved] = ids.splice(from, 1);
-                      ids.splice(to, 0, moved);
-                      const next = applyEstimatePresetIdsToAddendumSlot(
-                        p,
-                        idx,
-                        ids,
-                        estimatePresets,
-                        estimateGroups,
-                        'excluded'
-                      );
-                      formRef.current = next;
-                      schedulePersistRepairPackageDebounced();
-                      return next;
-                    });
-                    setDirty(true);
-                  }}
-                  estimateUsageById={estimateUsageById}
-                  draggingPresetId={draggingAddendumEstimatePresetId}
-                  setDraggingPresetId={setDraggingAddendumEstimatePresetId}
-                  draggingExcludedPresetId={draggingAddendumExcludedEstimatePresetId}
-                  setDraggingExcludedPresetId={setDraggingAddendumExcludedEstimatePresetId}
-                  canUnmarkSigned={isWithinMsSinceIso(
-                    form.addendumSlots[activeAddendumSlot - 1]?.signedAt,
-                    CONTRACT_SIGNED_REVERT_WINDOW_MS
-                  )}
-                  onUnmarkSigned={() => unmarkAddendumSlotSigned(activeAddendumSlot - 1)}
-                  canUnmarkPaid={isWithinRevertWindow(
-                    form.addendumSlots[activeAddendumSlot - 1]?.paidAt
-                  )}
-                  onUnmarkPaid={() => unmarkAddendumSlotPaid(activeAddendumSlot - 1)}
-                />
+                isWindowsPackage ? (
+                  <WindowsAddendumTab
+                    slotOrdinal={activeAddendumSlot}
+                    slot={form.addendumSlots[activeAddendumSlot - 1]}
+                    contractDiscountPercent={form.contract.discountPercent}
+                    documentDate={form.addendumDocumentDates[activeAddendumSlot - 1] ?? ''}
+                    onDocumentDateChange={(v) =>
+                      patchAddendumDocumentDate(activeAddendumSlot - 1, v)
+                    }
+                    workPeriodIncreaseDays={
+                      form.addendumSlots[activeAddendumSlot - 1]?.workPeriodIncreaseDays ?? ''
+                    }
+                    onWorkPeriodIncreaseDaysChange={(v) => {
+                      const idx = activeAddendumSlot - 1;
+                      setForm((p) => {
+                        const slots = [
+                          ...p.addendumSlots,
+                        ] as RepairPackageFormData['addendumSlots'];
+                        slots[idx] = { ...slots[idx], workPeriodIncreaseDays: v };
+                        const next = { ...p, addendumSlots: slots };
+                        formRef.current = next;
+                        schedulePersistRepairPackageDebounced();
+                        return next;
+                      });
+                      setDirty(true);
+                    }}
+                    onSpecificationAddedLinesChange={(lines) => {
+                      const idx = activeAddendumSlot - 1;
+                      setForm((p) => {
+                        const slots = [
+                          ...p.addendumSlots,
+                        ] as RepairPackageFormData['addendumSlots'];
+                        slots[idx] = { ...slots[idx], specificationAddedLines: lines };
+                        const next = { ...p, addendumSlots: slots };
+                        formRef.current = next;
+                        schedulePersistRepairPackageDebounced();
+                        return next;
+                      });
+                      setDirty(true);
+                    }}
+                    onSpecificationExcludedLinesChange={(lines) => {
+                      const idx = activeAddendumSlot - 1;
+                      setForm((p) => {
+                        const slots = [
+                          ...p.addendumSlots,
+                        ] as RepairPackageFormData['addendumSlots'];
+                        slots[idx] = { ...slots[idx], specificationExcludedLines: lines };
+                        const next = { ...p, addendumSlots: slots };
+                        formRef.current = next;
+                        schedulePersistRepairPackageDebounced();
+                        return next;
+                      });
+                      setDirty(true);
+                    }}
+                    estimateBlockProps={{
+                      slotOrdinal: activeAddendumSlot,
+                      slot: form.addendumSlots[activeAddendumSlot - 1],
+                      isWindowsPackage: true,
+                      documentDate: form.addendumDocumentDates[activeAddendumSlot - 1] ?? '',
+                      onDocumentDateChange: (v) =>
+                        patchAddendumDocumentDate(activeAddendumSlot - 1, v),
+                      workPeriodIncreaseDays:
+                        form.addendumSlots[activeAddendumSlot - 1]?.workPeriodIncreaseDays ?? '',
+                      onWorkPeriodIncreaseDaysChange: (v) => {
+                        const idx = activeAddendumSlot - 1;
+                        setForm((p) => {
+                          const slots = [
+                            ...p.addendumSlots,
+                          ] as RepairPackageFormData['addendumSlots'];
+                          slots[idx] = { ...slots[idx], workPeriodIncreaseDays: v };
+                          const next = { ...p, addendumSlots: slots };
+                          formRef.current = next;
+                          schedulePersistRepairPackageDebounced();
+                          return next;
+                        });
+                        setDirty(true);
+                      },
+                      estimatePresets,
+                      contractEstimateObjectLabel: contractEstimateObjectKey
+                        ? contractEstimateObjectKey === '__ungrouped__'
+                          ? 'Вне объекта'
+                          : (estimateGroups.find((g) => g.id === contractEstimateObjectKey)
+                              ?.title ?? contractEstimateObjectKey)
+                        : '',
+                      addendumAttachablePresets: attachableAddendumEstimatePresets,
+                      addendumExcludedAttachablePresets: attachableAddendumExcludedEstimatePresets,
+                      presetToAttach: addendumPresetToAttach,
+                      setPresetToAttach: setAddendumPresetToAttach,
+                      excludedPresetToAttach: addendumExcludedPresetToAttach,
+                      setExcludedPresetToAttach: setAddendumExcludedPresetToAttach,
+                      onAttachPreset: () => {
+                        if (!addendumPresetToAttach || activeAddendumSlot === null) return;
+                        const idx = activeAddendumSlot - 1;
+                        const pid = addendumPresetToAttach;
+                        setForm((p) => {
+                          const next = applyEstimatePresetIdsToAddendumSlot(
+                            p,
+                            idx,
+                            [...(p.addendumSlots[idx].selectedPresetIds ?? []), pid],
+                            estimatePresets,
+                            estimateGroups,
+                            'additional'
+                          );
+                          formRef.current = next;
+                          schedulePersistRepairPackageDebounced();
+                          return next;
+                        });
+                        setDirty(true);
+                        setAddendumPresetToAttach('');
+                      },
+                      onAttachExcludedPreset: () => {
+                        if (!addendumExcludedPresetToAttach || activeAddendumSlot === null) return;
+                        const idx = activeAddendumSlot - 1;
+                        const pid = addendumExcludedPresetToAttach;
+                        setForm((p) => {
+                          const next = applyEstimatePresetIdsToAddendumSlot(
+                            p,
+                            idx,
+                            [...(p.addendumSlots[idx].excludedSelectedPresetIds ?? []), pid],
+                            estimatePresets,
+                            estimateGroups,
+                            'excluded'
+                          );
+                          formRef.current = next;
+                          schedulePersistRepairPackageDebounced();
+                          return next;
+                        });
+                        setDirty(true);
+                        setAddendumExcludedPresetToAttach('');
+                      },
+                      onRemovePreset: (presetId) => {
+                        if (activeAddendumSlot === null) return;
+                        const idx = activeAddendumSlot - 1;
+                        setForm((p) => {
+                          const next = applyEstimatePresetIdsToAddendumSlot(
+                            p,
+                            idx,
+                            (p.addendumSlots[idx].selectedPresetIds ?? []).filter(
+                              (id) => id !== presetId
+                            ),
+                            estimatePresets,
+                            estimateGroups,
+                            'additional'
+                          );
+                          formRef.current = next;
+                          schedulePersistRepairPackageDebounced();
+                          return next;
+                        });
+                        setDirty(true);
+                      },
+                      onRemoveExcludedPreset: (presetId) => {
+                        if (activeAddendumSlot === null) return;
+                        const idx = activeAddendumSlot - 1;
+                        setForm((p) => {
+                          const next = applyEstimatePresetIdsToAddendumSlot(
+                            p,
+                            idx,
+                            (p.addendumSlots[idx].excludedSelectedPresetIds ?? []).filter(
+                              (id) => id !== presetId
+                            ),
+                            estimatePresets,
+                            estimateGroups,
+                            'excluded'
+                          );
+                          formRef.current = next;
+                          schedulePersistRepairPackageDebounced();
+                          return next;
+                        });
+                        setDirty(true);
+                      },
+                      onReorderPresets: (sourceId, targetId) => {
+                        if (activeAddendumSlot === null) return;
+                        const idx = activeAddendumSlot - 1;
+                        setForm((p) => {
+                          const ids = [...(p.addendumSlots[idx].selectedPresetIds ?? [])];
+                          const from = ids.indexOf(sourceId);
+                          const to = ids.indexOf(targetId);
+                          if (from < 0 || to < 0) return p;
+                          const [moved] = ids.splice(from, 1);
+                          ids.splice(to, 0, moved);
+                          const next = applyEstimatePresetIdsToAddendumSlot(
+                            p,
+                            idx,
+                            ids,
+                            estimatePresets,
+                            estimateGroups,
+                            'additional'
+                          );
+                          formRef.current = next;
+                          schedulePersistRepairPackageDebounced();
+                          return next;
+                        });
+                        setDirty(true);
+                      },
+                      onReorderExcludedPresets: (sourceId, targetId) => {
+                        if (activeAddendumSlot === null) return;
+                        const idx = activeAddendumSlot - 1;
+                        setForm((p) => {
+                          const ids = [...(p.addendumSlots[idx].excludedSelectedPresetIds ?? [])];
+                          const from = ids.indexOf(sourceId);
+                          const to = ids.indexOf(targetId);
+                          if (from < 0 || to < 0) return p;
+                          const [moved] = ids.splice(from, 1);
+                          ids.splice(to, 0, moved);
+                          const next = applyEstimatePresetIdsToAddendumSlot(
+                            p,
+                            idx,
+                            ids,
+                            estimatePresets,
+                            estimateGroups,
+                            'excluded'
+                          );
+                          formRef.current = next;
+                          schedulePersistRepairPackageDebounced();
+                          return next;
+                        });
+                        setDirty(true);
+                      },
+                      estimateUsageById,
+                      draggingPresetId: draggingAddendumEstimatePresetId,
+                      setDraggingPresetId: setDraggingAddendumEstimatePresetId,
+                      draggingExcludedPresetId: draggingAddendumExcludedEstimatePresetId,
+                      setDraggingExcludedPresetId: setDraggingAddendumExcludedEstimatePresetId,
+                      canUnmarkSigned: isWithinMsSinceIso(
+                        form.addendumSlots[activeAddendumSlot - 1]?.signedAt,
+                        CONTRACT_SIGNED_REVERT_WINDOW_MS
+                      ),
+                      onUnmarkSigned: () => unmarkAddendumSlotSigned(activeAddendumSlot - 1),
+                      canUnmarkPaid: isWithinRevertWindow(
+                        form.addendumSlots[activeAddendumSlot - 1]?.paidAt
+                      ),
+                      onUnmarkPaid: () => unmarkAddendumSlotPaid(activeAddendumSlot - 1),
+                    }}
+                  />
+                ) : (
+                  <RepairAddendumEstimateBlock
+                    slotOrdinal={activeAddendumSlot}
+                    slot={form.addendumSlots[activeAddendumSlot - 1]}
+                    isWindowsPackage={isWindowsPackage}
+                    documentDate={form.addendumDocumentDates[activeAddendumSlot - 1] ?? ''}
+                    onDocumentDateChange={(v) =>
+                      patchAddendumDocumentDate(activeAddendumSlot - 1, v)
+                    }
+                    workPeriodIncreaseDays={
+                      form.addendumSlots[activeAddendumSlot - 1]?.workPeriodIncreaseDays ?? ''
+                    }
+                    onWorkPeriodIncreaseDaysChange={(v) => {
+                      const idx = activeAddendumSlot - 1;
+                      setForm((p) => {
+                        const slots = [
+                          ...p.addendumSlots,
+                        ] as RepairPackageFormData['addendumSlots'];
+                        slots[idx] = { ...slots[idx], workPeriodIncreaseDays: v };
+                        const next = { ...p, addendumSlots: slots };
+                        formRef.current = next;
+                        schedulePersistRepairPackageDebounced();
+                        return next;
+                      });
+                      setDirty(true);
+                    }}
+                    estimatePresets={estimatePresets}
+                    contractEstimateObjectLabel={
+                      contractEstimateObjectKey
+                        ? contractEstimateObjectKey === '__ungrouped__'
+                          ? 'Вне объекта'
+                          : (estimateGroups.find((g) => g.id === contractEstimateObjectKey)
+                              ?.title ?? contractEstimateObjectKey)
+                        : ''
+                    }
+                    addendumAttachablePresets={attachableAddendumEstimatePresets}
+                    addendumExcludedAttachablePresets={attachableAddendumExcludedEstimatePresets}
+                    presetToAttach={addendumPresetToAttach}
+                    setPresetToAttach={setAddendumPresetToAttach}
+                    excludedPresetToAttach={addendumExcludedPresetToAttach}
+                    setExcludedPresetToAttach={setAddendumExcludedPresetToAttach}
+                    onAttachPreset={() => {
+                      if (!addendumPresetToAttach || activeAddendumSlot === null) return;
+                      const idx = activeAddendumSlot - 1;
+                      const pid = addendumPresetToAttach;
+                      setForm((p) => {
+                        const next = applyEstimatePresetIdsToAddendumSlot(
+                          p,
+                          idx,
+                          [...(p.addendumSlots[idx].selectedPresetIds ?? []), pid],
+                          estimatePresets,
+                          estimateGroups,
+                          'additional'
+                        );
+                        formRef.current = next;
+                        schedulePersistRepairPackageDebounced();
+                        return next;
+                      });
+                      setDirty(true);
+                      setAddendumPresetToAttach('');
+                    }}
+                    onAttachExcludedPreset={() => {
+                      if (!addendumExcludedPresetToAttach || activeAddendumSlot === null) return;
+                      const idx = activeAddendumSlot - 1;
+                      const pid = addendumExcludedPresetToAttach;
+                      setForm((p) => {
+                        const next = applyEstimatePresetIdsToAddendumSlot(
+                          p,
+                          idx,
+                          [...(p.addendumSlots[idx].excludedSelectedPresetIds ?? []), pid],
+                          estimatePresets,
+                          estimateGroups,
+                          'excluded'
+                        );
+                        formRef.current = next;
+                        schedulePersistRepairPackageDebounced();
+                        return next;
+                      });
+                      setDirty(true);
+                      setAddendumExcludedPresetToAttach('');
+                    }}
+                    onRemovePreset={(presetId) => {
+                      if (activeAddendumSlot === null) return;
+                      const idx = activeAddendumSlot - 1;
+                      setForm((p) => {
+                        const next = applyEstimatePresetIdsToAddendumSlot(
+                          p,
+                          idx,
+                          (p.addendumSlots[idx].selectedPresetIds ?? []).filter(
+                            (id) => id !== presetId
+                          ),
+                          estimatePresets,
+                          estimateGroups,
+                          'additional'
+                        );
+                        formRef.current = next;
+                        schedulePersistRepairPackageDebounced();
+                        return next;
+                      });
+                      setDirty(true);
+                    }}
+                    onRemoveExcludedPreset={(presetId) => {
+                      if (activeAddendumSlot === null) return;
+                      const idx = activeAddendumSlot - 1;
+                      setForm((p) => {
+                        const next = applyEstimatePresetIdsToAddendumSlot(
+                          p,
+                          idx,
+                          (p.addendumSlots[idx].excludedSelectedPresetIds ?? []).filter(
+                            (id) => id !== presetId
+                          ),
+                          estimatePresets,
+                          estimateGroups,
+                          'excluded'
+                        );
+                        formRef.current = next;
+                        schedulePersistRepairPackageDebounced();
+                        return next;
+                      });
+                      setDirty(true);
+                    }}
+                    onReorderPresets={(sourceId, targetId) => {
+                      if (activeAddendumSlot === null) return;
+                      const idx = activeAddendumSlot - 1;
+                      setForm((p) => {
+                        const ids = [...(p.addendumSlots[idx].selectedPresetIds ?? [])];
+                        const from = ids.indexOf(sourceId);
+                        const to = ids.indexOf(targetId);
+                        if (from < 0 || to < 0) return p;
+                        const [moved] = ids.splice(from, 1);
+                        ids.splice(to, 0, moved);
+                        const next = applyEstimatePresetIdsToAddendumSlot(
+                          p,
+                          idx,
+                          ids,
+                          estimatePresets,
+                          estimateGroups,
+                          'additional'
+                        );
+                        formRef.current = next;
+                        schedulePersistRepairPackageDebounced();
+                        return next;
+                      });
+                      setDirty(true);
+                    }}
+                    onReorderExcludedPresets={(sourceId, targetId) => {
+                      if (activeAddendumSlot === null) return;
+                      const idx = activeAddendumSlot - 1;
+                      setForm((p) => {
+                        const ids = [...(p.addendumSlots[idx].excludedSelectedPresetIds ?? [])];
+                        const from = ids.indexOf(sourceId);
+                        const to = ids.indexOf(targetId);
+                        if (from < 0 || to < 0) return p;
+                        const [moved] = ids.splice(from, 1);
+                        ids.splice(to, 0, moved);
+                        const next = applyEstimatePresetIdsToAddendumSlot(
+                          p,
+                          idx,
+                          ids,
+                          estimatePresets,
+                          estimateGroups,
+                          'excluded'
+                        );
+                        formRef.current = next;
+                        schedulePersistRepairPackageDebounced();
+                        return next;
+                      });
+                      setDirty(true);
+                    }}
+                    estimateUsageById={estimateUsageById}
+                    draggingPresetId={draggingAddendumEstimatePresetId}
+                    setDraggingPresetId={setDraggingAddendumEstimatePresetId}
+                    draggingExcludedPresetId={draggingAddendumExcludedEstimatePresetId}
+                    setDraggingExcludedPresetId={setDraggingAddendumExcludedEstimatePresetId}
+                    canUnmarkSigned={isWithinMsSinceIso(
+                      form.addendumSlots[activeAddendumSlot - 1]?.signedAt,
+                      CONTRACT_SIGNED_REVERT_WINDOW_MS
+                    )}
+                    onUnmarkSigned={() => unmarkAddendumSlotSigned(activeAddendumSlot - 1)}
+                    canUnmarkPaid={isWithinRevertWindow(
+                      form.addendumSlots[activeAddendumSlot - 1]?.paidAt
+                    )}
+                    onUnmarkPaid={() => unmarkAddendumSlotPaid(activeAddendumSlot - 1)}
+                  />
+                )
               ) : (
                 <p className={`${styles.hint} ${styles.estimateTabHint}`}>
                   Прикрепление расчётов к доп. соглашению доступно после статуса «Договор подписан»
@@ -5462,6 +5834,7 @@ export function RepairContractDocumentEditorPage({
           panelTab={workOrdersHubPanelTab}
           onPanelTabChange={setWorkOrdersHubPanelTab}
           addendumSlotCount={form.addendumSlotCount}
+          packageKind={packageKind}
           unassignedInteractiveRowsCount={unassignedInteractiveRowsCount}
           headerContractNumberLabel={headerContractNumberLabel}
           headerContractDateLabel={headerContractConcludedDateLabel ?? undefined}

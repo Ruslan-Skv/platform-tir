@@ -31,6 +31,7 @@ export type FinalWorkOrderPrintEmbedInput = {
   objectAddress: string;
   customerFullName: string;
   customerPhone: string;
+  showInstallerGrades: boolean;
   showLineAmounts: boolean;
   formatMoneyValue: (n: number) => string;
   formatMoneyRubShort: (n: number) => string;
@@ -130,10 +131,13 @@ function buildCommonFinalWorkOrderBodyHtml(input: FinalWorkOrderPrintEmbedInput)
   <div class="estimateA4RoomHeader"><span>Итоги по мастерам</span></div>
   <div class="estimateA4Meta">
     ${finalWorkOrderComputed.installerTotals
-      .map(
-        (row) =>
-          `<p style="margin:0 0 4pt;">${escapeHtml(input.formatInstallerNameShort(row.installer.fullName))} (${escapeHtml(input.formatInstallerGradeShort(row.installer.grade))}, ${row.lineCount} шт.) - ${input.formatMoneyRubShort(row.total)}руб.</p>`
-      )
+      .map((row) => {
+        const name = escapeHtml(input.formatInstallerNameShort(row.installer.fullName));
+        const tail = input.showInstallerGrades
+          ? ` (${escapeHtml(input.formatInstallerGradeShort(row.installer.grade))}, ${row.lineCount} шт.) - ${input.formatMoneyRubShort(row.total)}руб.`
+          : ` (${row.lineCount} шт.) - ${input.formatMoneyRubShort(row.total)}руб.`;
+        return `<p style="margin:0 0 4pt;">${name}${tail}</p>`;
+      })
       .join('')}
   </div>
 </section>`
@@ -154,7 +158,10 @@ function buildInstallerFinalWorkOrderBodyHtml(
     input.showLineAmounts,
     input.formatMoneyValue
   );
-  return `<h4 class="estimateA4Title">Заказ-наряд мастера: ${escapeHtml(doc.installer.fullName)} (${escapeHtml(input.formatInstallerGradeShort(doc.installer.grade))})</h4>
+  const gradeSuffix = input.showInstallerGrades
+    ? ` (${escapeHtml(input.formatInstallerGradeShort(doc.installer.grade))})`
+    : '';
+  return `<h4 class="estimateA4Title">Заказ-наряд мастера: ${escapeHtml(doc.installer.fullName)}${gradeSuffix}</h4>
 ${categoriesHtml}
 <p class="estimateA4Total">Итого по мастеру: <strong>${input.formatMoneyValue(doc.total)} руб.</strong></p>`;
 }
@@ -162,26 +169,33 @@ ${categoriesHtml}
 /** HTML итогового заказ-наряда для печати в отдельном окне (`.docPrint` + стили из `printDocument`). */
 export function buildFinalWorkOrderPrintEmbedHtml(
   input: FinalWorkOrderPrintEmbedInput,
-  variant: 'common' | RepairContractPerInstallerWorkOrder
+  variant: 'common' | RepairContractPerInstallerWorkOrder,
+  windowsPackagePrint = false
 ): string {
   const body =
     variant === 'common'
       ? buildCommonFinalWorkOrderBodyHtml(input)
       : buildInstallerFinalWorkOrderBodyHtml(variant, input);
 
-  return `<div class="docPrint"><div class="estimateA4DocPrintEmbed estimateRoomsEmbed repairFinalWorkOrderPrint">
+  const docPrintClass = windowsPackagePrint ? 'docPrint windowsPackageUnifiedPrint' : 'docPrint';
+  return `<div class="${docPrintClass}"><div class="estimateA4DocPrintEmbed estimateRoomsEmbed repairFinalWorkOrderPrint">
 ${buildMetaBlock(input)}
 ${body}
 </div></div>`;
 }
 
 /** Общий + заказ-наряды по каждому мастеру (разрывы страниц между блоками). */
-export function buildAllFinalWorkOrdersPrintHtml(input: FinalWorkOrderPrintEmbedInput): string {
+export function buildAllFinalWorkOrdersPrintHtml(
+  input: FinalWorkOrderPrintEmbedInput,
+  windowsPackagePrint = false
+): string {
   if (input.finalWorkOrderComputed.rooms.length === 0) return '';
 
-  const chunks: string[] = [buildFinalWorkOrderPrintEmbedHtml(input, 'common')];
+  const chunks: string[] = [
+    buildFinalWorkOrderPrintEmbedHtml(input, 'common', windowsPackagePrint),
+  ];
   for (const doc of input.perInstallerWorkOrders) {
-    chunks.push(buildFinalWorkOrderPrintEmbedHtml(input, doc));
+    chunks.push(buildFinalWorkOrderPrintEmbedHtml(input, doc, windowsPackagePrint));
   }
   return chunks
     .map(

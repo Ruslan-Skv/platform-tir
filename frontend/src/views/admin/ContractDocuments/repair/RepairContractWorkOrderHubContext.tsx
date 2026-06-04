@@ -2,6 +2,7 @@
 
 import { type ReactNode, createContext, useContext } from 'react';
 
+import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 import type { InstallerMaster } from '@/shared/api/admin-crm';
 
 import type { RepairDocumentTabId } from './repairDocumentTabs';
@@ -28,6 +29,9 @@ export type RepairContractPerInstallerWorkOrder = {
 };
 
 export type RepairContractWorkOrderHubContextValue = {
+  packageKind: ContractDocumentPackageKind;
+  isWindowsPackage: boolean;
+  windowsWorkOrderMarkupPercent: number;
   form: RepairPackageFormData;
   updateWorkOrder: <K extends keyof RepairPackageFormData['workOrder']>(
     key: K,

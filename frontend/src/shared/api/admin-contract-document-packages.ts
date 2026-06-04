@@ -685,6 +685,10 @@ export type RepairContractSettings = {
   updatedAt: string | null;
 };
 
+export type WindowsContractSettings = RepairContractSettings & {
+  windowsWorkOrderMarkupPercent: number;
+};
+
 export async function getContractDocumentRepairSettings(): Promise<RepairContractSettings> {
   const res = await apiFetch(
     `${getApiBaseUrl()}/admin/contract-document-packages/repair-settings`,
@@ -738,7 +742,7 @@ export async function applyRepairWorkPeriodToAllPackages(body: {
   return res.json();
 }
 
-export async function getContractDocumentWindowsSettings(): Promise<RepairContractSettings> {
+export async function getContractDocumentWindowsSettings(): Promise<WindowsContractSettings> {
   const res = await apiFetch(
     `${getApiBaseUrl()}/admin/contract-document-packages/windows-settings`,
     { headers: getAdminAuthHeaders() }
@@ -748,8 +752,9 @@ export async function getContractDocumentWindowsSettings(): Promise<RepairContra
 }
 
 export async function putContractDocumentWindowsSettings(body: {
-  defaultWorkPeriodDays: number;
-}): Promise<RepairContractSettings> {
+  defaultWorkPeriodDays?: number;
+  windowsWorkOrderMarkupPercent?: number;
+}): Promise<WindowsContractSettings> {
   const res = await apiFetch(
     `${getApiBaseUrl()}/admin/contract-document-packages/windows-settings`,
     {
@@ -763,6 +768,29 @@ export async function putContractDocumentWindowsSettings(body: {
     throw new Error(err.message || 'Не удалось сохранить настройки');
   }
   return res.json();
+}
+
+export type WindowsWorkOrderMarkupSettings = {
+  windowsWorkOrderMarkupPercent: number;
+  updatedAt: string | null;
+};
+
+export async function getContractDocumentWindowsWorkOrderMarkup(): Promise<WindowsWorkOrderMarkupSettings> {
+  const settings = await getContractDocumentWindowsSettings();
+  return {
+    windowsWorkOrderMarkupPercent: settings.windowsWorkOrderMarkupPercent,
+    updatedAt: settings.updatedAt,
+  };
+}
+
+export async function putContractDocumentWindowsWorkOrderMarkup(body: {
+  windowsWorkOrderMarkupPercent: number;
+}): Promise<WindowsWorkOrderMarkupSettings> {
+  const settings = await putContractDocumentWindowsSettings(body);
+  return {
+    windowsWorkOrderMarkupPercent: settings.windowsWorkOrderMarkupPercent,
+    updatedAt: settings.updatedAt,
+  };
 }
 
 export async function applyWindowsWorkPeriodToAllPackages(body: {

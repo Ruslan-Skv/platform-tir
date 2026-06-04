@@ -160,15 +160,22 @@ function formatMoney(value: number): string {
   return value.toFixed(2).replace('.', ',');
 }
 
-function buildSignaturesHtml(directorName: string, customerFullName: string): string {
+export type EstimateDocPrintExecutorPartyLabel = 'Подрядчик' | 'Исполнитель';
+
+function buildSignaturesHtml(
+  directorName: string,
+  customerFullName: string,
+  executorPartyLabel: EstimateDocPrintExecutorPartyLabel = 'Подрядчик'
+): string {
   const d = escapeHtml(directorName.trim() || '____________');
   const c = escapeHtml(customerFullName.trim() || '____________');
+  const executor = escapeHtml(executorPartyLabel);
   return `<div class="estimateA4Signatures">
   <table class="estimateA4SignaturesTable">
     <tbody>
       <tr>
         <td class="estimateA4SignaturesCellLeft">
-          <p class="estimateA4SignaturePartyLine">Подрядчик _____________________ / ${d}</p>
+          <p class="estimateA4SignaturePartyLine">${executor} _____________________ / ${d}</p>
           <p class="estimateA4SignNote">м.п.</p>
         </td>
         <td class="estimateA4SignaturesCellRight">
@@ -192,21 +199,29 @@ function buildHandwritingNoteHtml(): string {
 </div>`;
 }
 
+export type EstimateSheetPrintVariant = 'repair' | 'windows';
+
 /** Итоги сметы в подвале: как на вкладке «Смета» договора. */
 export function buildEstimateDiscountTotalsBlockHtml(options: {
   grossTotal: number;
   contractDiscountPercent?: string;
+  /** Подпись «Итого … (без скидки)» — для «Окна» это счёт-заказ. */
+  grossLabel?: string;
+  /** Подпись итога без скидки по договору. */
+  finalLabel?: string;
 }): string {
   const grossTotal = options.grossTotal;
   if (!Number.isFinite(grossTotal)) return '';
+  const grossLabel = options.grossLabel ?? 'Итого по смете (без скидки):';
+  const finalLabel = options.finalLabel ?? 'Итого по смете:';
   const discountPercent = parseRepairContractDiscountPercent(options.contractDiscountPercent ?? '');
   if (discountPercent > 0 && grossTotal > 0) {
     const totalAfterDiscount = applyRepairContractDiscountToAmount(grossTotal, discountPercent);
-    return `<p class="estimateA4Total">Итого по смете (без скидки): <strong>${formatMoney(grossTotal)} руб.</strong></p>
+    return `<p class="estimateA4Total">${escapeHtml(grossLabel)} <strong>${formatMoney(grossTotal)} руб.</strong></p>
 <p class="estimateA4DiscountMeta">Скидка по договору: ${String(discountPercent).replace('.', ',')}%</p>
 <p class="estimateA4Total">Итого со скидкой: <strong>${formatMoney(totalAfterDiscount)} руб.</strong></p>`;
   }
-  return `<p class="estimateA4Total">Итого по смете: <strong>${formatMoney(grossTotal)} руб.</strong></p>`;
+  return `<p class="estimateA4Total">${escapeHtml(finalLabel)} <strong>${formatMoney(grossTotal)} руб.</strong></p>`;
 }
 
 /**
@@ -227,6 +242,9 @@ export function buildEstimateDocPrintEmbedHtml(options: {
   includeTotals?: boolean;
   /** Скидка по договору, % — блок в подвале сметы. */
   contractDiscountPercent?: string;
+  grossLabel?: string;
+  finalLabel?: string;
+  executorPartyLabel?: EstimateDocPrintExecutorPartyLabel;
 }): string {
   const {
     snapshot,
@@ -235,6 +253,9 @@ export function buildEstimateDocPrintEmbedHtml(options: {
     includeFooter = true,
     includeTotals = true,
     contractDiscountPercent = '',
+    grossLabel,
+    finalLabel,
+    executorPartyLabel = 'Подрядчик',
   } = options;
   if (!snapshot?.rooms?.length) return '';
 
@@ -304,6 +325,8 @@ export function buildEstimateDocPrintEmbedHtml(options: {
     ? buildEstimateDiscountTotalsBlockHtml({
         grossTotal: snapshot.total,
         contractDiscountPercent,
+        grossLabel,
+        finalLabel,
       })
     : '';
 
@@ -316,17 +339,85 @@ ${discountBlock}
 </div>`;
   if (!includeFooter) return bodyHtml;
   return `${bodyHtml}
-${buildEstimateDocPrintFooterHtml({ directorName, customerFullName })}`;
+${buildEstimateDocPrintFooterHtml({ directorName, customerFullName, executorPartyLabel })}`;
+}
+
+/**
+ * Полный лист сметы / счёт-заказа для печати (семантические классы как в `printDocument`).
+ * Используется для пакета «Окна», чтобы вид совпадал со «Сметой работ» в «Ремонт».
+ */
+export function buildEstimateSheetPrintHtml(options: {
+  variant: EstimateSheetPrintVariant;
+  appendixNumber: number;
+  contractNum: string;
+  contractDate: string;
+  sections: EstimateEmbedSection[];
+  snapshot: EstimateSnapshot | null;
+  directorName: string;
+  customerFullName: string;
+  contractDiscountPercent?: string;
+  /** Класс корня `.docPrint` (например `windowsPackageUnifiedPrint`). */
+  docPrintRootClass?: string;
+}): string {
+  const snapshot = options.snapshot;
+  if (!snapshot?.rooms?.length) {
+    return `<div class="docPrint ${options.docPrintRootClass ?? ''}"><div class="estimateA4DocPrintEmbed estimateA4Sheet"><p class="estimateA4Empty">Расчёты не прикреплены.</p></div></div>`;
+  }
+
+  const isWindows = options.variant === 'windows';
+  const title = isWindows ? 'Счёт-заказ на работы.' : 'Смета работ';
+  const grossLabel = isWindows ? 'Итого по счёт-заказу (без скидки):' : undefined;
+  const finalLabel = isWindows ? 'Итого по счёт-заказу:' : undefined;
+  const appendixRef = `Приложение №${options.appendixNumber} к договору № ${escapeHtml(options.contractNum.trim() || '—')} от ${escapeHtml(options.contractDate.trim() || '—')}`;
+  const rootClass = ['docPrint', options.docPrintRootClass].filter(Boolean).join(' ');
+
+  const body = buildEstimateDocPrintEmbedHtml({
+    sections: options.sections,
+    snapshot,
+    directorName: options.directorName,
+    customerFullName: options.customerFullName,
+    includeFooter: false,
+    contractDiscountPercent: options.contractDiscountPercent,
+    grossLabel,
+    finalLabel,
+  });
+  const footer = buildEstimateDocPrintFooterHtml({
+    directorName: options.directorName,
+    customerFullName: options.customerFullName,
+    executorPartyLabel: isWindows ? 'Исполнитель' : 'Подрядчик',
+  });
+
+  return `<div class="${rootClass}"><div class="estimateA4DocPrintEmbed estimateA4Sheet estimateRoomsEmbed">
+<p class="estimateA4AppendixRef contractAppendixRef">${appendixRef}</p>
+<h4 class="estimateA4Title">${escapeHtml(title)}</h4>
+${body}
+${footer}
+</div></div>`;
 }
 
 export function buildEstimateDocPrintFooterHtml(options: {
   directorName: string;
   customerFullName: string;
+  /** В договорах «Окна» в подписи — «Исполнитель», в «Ремонт» — «Подрядчик». */
+  executorPartyLabel?: EstimateDocPrintExecutorPartyLabel;
+  /** Блок «Примечание» с линиями для рукописного текста (как на вкладке «Смета»). */
+  includeHandwritingNote?: boolean;
+  /** Повтор блока подписей после примечания. */
+  repeatSignatures?: boolean;
 }): string {
-  const { directorName, customerFullName } = options;
+  const {
+    directorName,
+    customerFullName,
+    executorPartyLabel = 'Подрядчик',
+    includeHandwritingNote = true,
+    repeatSignatures = true,
+  } = options;
+  const signatures = buildSignaturesHtml(directorName, customerFullName, executorPartyLabel);
+  const handwriting = includeHandwritingNote ? buildHandwritingNoteHtml() : '';
+  const signaturesRepeat = repeatSignatures ? signatures : '';
   return `<div class="estimateA4DocPrintEmbed estimateRoomsEmbed">
-${buildSignaturesHtml(directorName, customerFullName)}
-${buildHandwritingNoteHtml()}
-${buildSignaturesHtml(directorName, customerFullName)}
+${signatures}
+${handwriting}
+${signaturesRepeat}
 </div>`;
 }

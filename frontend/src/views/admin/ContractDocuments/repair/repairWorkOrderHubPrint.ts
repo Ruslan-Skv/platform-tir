@@ -1,6 +1,7 @@
 import type { RepairContractWorkOrderHubContextValue } from './RepairContractWorkOrderHubContext';
 import { printDocumentHtml } from './printDocument';
 import { isRepairWorkOrderAddendumTab } from './repairDocumentTabs';
+import { pickWindowsPackagePrintDocumentOptions } from './repairWindowsPackagePrint';
 import {
   REPAIR_WORK_ORDER_HUB_MODAL_TITLE,
   type RepairWorkOrderHubTabId,
@@ -35,9 +36,10 @@ function isRepairWorkOrderTemplateHubTab(tab: RepairWorkOrderHubTabId): boolean 
 
 /** Вкладки заказ-нарядов для пакетной печати (без интерактивной сметы). */
 export function repairWorkOrderHubTabsForBatchPrint(
-  addendumSlotCount: number
+  addendumSlotCount: number,
+  packageKind: RepairContractWorkOrderHubContextValue['packageKind'] = 'REPAIR'
 ): RepairWorkOrderHubTabId[] {
-  return repairWorkOrderHubTabsForPackage(addendumSlotCount).filter(
+  return repairWorkOrderHubTabsForPackage(addendumSlotCount, packageKind).filter(
     (id) => isRepairWorkOrderTemplateHubTab(id) || id === 'finalWorkOrder'
   );
 }
@@ -51,6 +53,7 @@ function buildFinalWorkOrderPrintInput(
     objectAddress: ctx.form.object.objectAddress,
     customerFullName: ctx.form.customer.fullName,
     customerPhone: ctx.form.customer.phone,
+    showInstallerGrades: !ctx.isWindowsPackage,
     showLineAmounts: ctx.form.workOrder.showLineAmounts,
     formatMoneyValue: ctx.formatMoneyValue,
     formatMoneyRubShort: ctx.formatMoneyRubShort,
@@ -62,10 +65,19 @@ function buildFinalWorkOrderPrintInput(
   };
 }
 
-function wrapTemplateWorkOrderHtml(html: string): string {
+function wrapTemplateWorkOrderHtml(html: string, windowsPackage: boolean): string {
   const trimmed = html.trim();
   if (!trimmed) return '';
-  return `<div class="docPrint">${trimmed}</div>`;
+  const rootClass = windowsPackage ? 'docPrint windowsPackageUnifiedPrint' : 'docPrint';
+  return `<div class="${rootClass}">${trimmed}</div>`;
+}
+
+function workOrderHubPrintOptions(
+  ctx: RepairContractWorkOrderHubContextValue
+): ReturnType<typeof pickWindowsPackagePrintDocumentOptions> | undefined {
+  return ctx.isWindowsPackage
+    ? pickWindowsPackagePrintDocumentOptions('estimate', ctx.form)
+    : undefined;
 }
 
 function printTemplateWorkOrderTab(
@@ -77,7 +89,11 @@ function printTemplateWorkOrderTab(
     window.alert('Нет данных для печати этого заказ-наряда.');
     return;
   }
-  printDocumentHtml(wrapTemplateWorkOrderHtml(html), repairWorkOrderHubTabLabel(tab, false));
+  printDocumentHtml(
+    wrapTemplateWorkOrderHtml(html, ctx.isWindowsPackage),
+    repairWorkOrderHubTabLabel(tab, false, ctx.packageKind),
+    workOrderHubPrintOptions(ctx)
+  );
 }
 
 function printFinalWorkOrderTab(ctx: RepairContractWorkOrderHubContextValue): void {
@@ -94,8 +110,9 @@ function printFinalWorkOrderTab(ctx: RepairContractWorkOrderHubContextValue): vo
         'common');
 
   printDocumentHtml(
-    buildFinalWorkOrderPrintEmbedHtml(input, variant),
-    repairWorkOrderHubTabLabel('finalWorkOrder', false)
+    buildFinalWorkOrderPrintEmbedHtml(input, variant, ctx.isWindowsPackage),
+    repairWorkOrderHubTabLabel('finalWorkOrder', false, ctx.packageKind),
+    workOrderHubPrintOptions(ctx)
   );
 }
 
@@ -121,7 +138,11 @@ export function printRepairWorkOrderHubTab(
   ctx: RepairContractWorkOrderHubContextValue
 ): void {
   if (panelTab === 'interactiveFinalEstimate') {
-    window.alert('Печать интерактивной итоговой сметы из этого окна недоступна.');
+    window.alert(
+      ctx.isWindowsPackage
+        ? 'Печать интерактивного счёт-заказа из этого окна недоступна.'
+        : 'Печать интерактивной итоговой сметы из этого окна недоступна.'
+    );
     return;
   }
   if (isRepairWorkOrderTemplateHubTab(panelTab)) {
@@ -139,7 +160,7 @@ export function printAllRepairWorkOrdersFromHub(
   ctx: RepairContractWorkOrderHubContextValue,
   addendumSlotCount: number
 ): void {
-  const tabs = repairWorkOrderHubTabsForBatchPrint(addendumSlotCount);
+  const tabs = repairWorkOrderHubTabsForBatchPrint(addendumSlotCount, ctx.packageKind);
   const chunks: string[] = [];
 
   for (const tab of tabs) {
@@ -148,17 +169,20 @@ export function printAllRepairWorkOrdersFromHub(
     if (!html.trim()) continue;
     chunks.push(
       `<div class="repairWorkOrderHubPrintChunk">
-  <p class="repairWorkOrderHubPrintHeading">${repairWorkOrderHubTabLabel(tab, false)}</p>
-  ${wrapTemplateWorkOrderHtml(html)}
+  <p class="repairWorkOrderHubPrintHeading">${repairWorkOrderHubTabLabel(tab, false, ctx.packageKind)}</p>
+  ${wrapTemplateWorkOrderHtml(html, ctx.isWindowsPackage)}
 </div>`
     );
   }
 
-  const finalHtml = buildAllFinalWorkOrdersPrintHtml(buildFinalWorkOrderPrintInput(ctx));
+  const finalHtml = buildAllFinalWorkOrdersPrintHtml(
+    buildFinalWorkOrderPrintInput(ctx),
+    ctx.isWindowsPackage
+  );
   if (finalHtml.trim()) {
     chunks.push(
       `<div class="repairWorkOrderHubPrintChunk">
-  <p class="repairWorkOrderHubPrintHeading">${repairWorkOrderHubTabLabel('finalWorkOrder', false)}</p>
+  <p class="repairWorkOrderHubPrintHeading">${repairWorkOrderHubTabLabel('finalWorkOrder', false, ctx.packageKind)}</p>
   ${finalHtml}
 </div>`
     );
@@ -171,6 +195,7 @@ export function printAllRepairWorkOrdersFromHub(
 
   printDocumentHtml(
     `${HUB_PRINT_PAGE_BREAK_CSS}\n${chunks.join('\n')}`,
-    REPAIR_WORK_ORDER_HUB_MODAL_TITLE
+    REPAIR_WORK_ORDER_HUB_MODAL_TITLE,
+    workOrderHubPrintOptions(ctx)
   );
 }

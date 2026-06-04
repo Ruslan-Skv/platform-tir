@@ -24,6 +24,8 @@ export type PrintDocumentOptions = {
   cashOrderCompact?: boolean;
   /** Договор: уменьшенный кегль основного текста при печати (10pt вместо 12pt). */
   contractCompact?: boolean;
+  /** Пакет «Окна»: единая типографика, плотные поля страницы, смета/спецификация как договор. */
+  windowsPackagePrint?: boolean;
 };
 
 const MARGIN_FOOTER_MAX_EACH = 44;
@@ -47,16 +49,17 @@ function cssDoubleQuotedStringFragment(s: string): string {
  * Подписи — в `@bottom-center`, номера — в `@bottom-right`: в одном длинном `content`
  * счётчики иногда не отображаются в Chromium (см. примеры с отдельными margin boxes).
  */
-function buildMarginFooterPageRule(names: PrintMarginFooterNames): string {
+function buildMarginFooterPageRule(names: PrintMarginFooterNames, tightMargins = false): string {
   const c = cssDoubleQuotedStringFragment(
     truncateOneLine(names.contractorSignatory, MARGIN_FOOTER_MAX_EACH)
   );
   const u = cssDoubleQuotedStringFragment(
     truncateOneLine(names.customerName, MARGIN_FOOTER_MAX_EACH)
   );
+  const pageMargin = tightMargins ? '10mm 10mm 24mm 10mm' : '16mm 16mm 28mm 16mm';
   return `
   @page {
-    margin: 16mm 16mm 28mm 16mm;
+    margin: ${pageMargin};
     size: A4;
     @bottom-center {
       content: "Подрядчик ______________ / ${c}     Заказчик ______________ / ${u}";
@@ -316,6 +319,33 @@ export const CONTRACT_LEGAL_LIST_PRINT_CSS = `
   }
 `;
 
+/** Маркированный список с тире (класс contractTemplateBulletDash в шаблоне). */
+export const CONTRACT_TEMPLATE_BULLET_DASH_PRINT_CSS = `
+  body.contractPrintCompact .docPrintContractCompact ul.contractTemplateBulletDash,
+  .docPrint.docPrintContractCompact ul.contractTemplateBulletDash {
+    list-style: none !important;
+    padding-left: 0 !important;
+    margin: 0 0 8pt 22px !important;
+  }
+  body.contractPrintCompact .docPrintContractCompact ul.contractTemplateBulletDash > li,
+  .docPrint.docPrintContractCompact ul.contractTemplateBulletDash > li {
+    position: relative !important;
+    padding-left: 1.1em !important;
+    margin: 0 0 5pt !important;
+    text-align: justify !important;
+  }
+  body.contractPrintCompact
+    .docPrintContractCompact
+    ul.contractTemplateBulletDash
+    > li::before,
+  .docPrint.docPrintContractCompact ul.contractTemplateBulletDash > li::before {
+    content: '\\2013\\00a0' !important;
+    position: absolute !important;
+    left: 0 !important;
+    font-weight: normal !important;
+  }
+`;
+
 /** Договор: плотнее по кеглю (≈10pt). Селекторы покрывают Word (.WordSection1) без .docPrint. */
 const CONTRACT_COMPACT_PRINT_CSS = `
   body.contractPrintCompact,
@@ -370,6 +400,93 @@ const CONTRACT_COMPACT_PRINT_CSS = `
   body.contractPrintCompact .docPrintContractCompact p,
   .docPrint.docPrintContractCompact p {
     margin: 0 0 6pt !important;
+  }
+  body.contractPrintCompact .docPrintContractCompact p.contractAppendixRef,
+  .docPrint.docPrintContractCompact p.contractAppendixRef,
+  body.contractPrintCompact .docPrintContractCompact p.contractAppendixRef *,
+  .docPrint.docPrintContractCompact p.contractAppendixRef * {
+    text-align: left !important;
+    font-size: 9pt !important;
+    font-weight: normal !important;
+    margin: 0 0 4pt !important;
+    line-height: 1.32 !important;
+  }
+`;
+
+/** Пакет «Окна»: смета/спецификация/счёт-заказ в одном кегле с договором; без уменьшенного заказ-наряда 8.25pt. */
+const WINDOWS_PACKAGE_UNIFIED_PRINT_CSS = `
+  .docPrint.windowsPackageUnifiedPrint .estimateA4DocPrintEmbed {
+    font-size: ${CONTRACT_COMPACT_BODY_PT} !important;
+    line-height: 1.32 !important;
+    color: #111 !important;
+    padding: 0 !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .estimateA4AppendixRef {
+    margin: 0 0 4pt !important;
+    font-size: 9pt !important;
+    font-weight: normal !important;
+    text-align: left !important;
+    line-height: 1.32 !important;
+    color: #444 !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .estimateA4DocPrintEmbed .estimateA4Title {
+    font-size: ${CONTRACT_COMPACT_H2_PT} !important;
+    line-height: 1.28 !important;
+    font-weight: bold !important;
+    text-align: center !important;
+    margin: 0 0 6pt !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .estimateA4SignaturesTable th,
+  .docPrint.windowsPackageUnifiedPrint .estimateA4SignaturesTable td {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .estimateA4HandwritingLines {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 5pt !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .estimateA4HandwritingLine {
+    min-height: 1.1em !important;
+    border-bottom: 1px solid #111 !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .repairFinalWorkOrderPrint,
+  .docPrint.windowsPackageUnifiedPrint .repairFinalWorkOrderPrint :where(p, h4, td, th, span, div) {
+    font-size: ${CONTRACT_COMPACT_BODY_PT} !important;
+    line-height: 1.32 !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .repairFinalWorkOrderPrint h4,
+  .docPrint.windowsPackageUnifiedPrint .repairFinalWorkOrderPrint .estimateA4Title {
+    font-size: ${CONTRACT_COMPACT_H2_PT} !important;
+    line-height: 1.28 !important;
+    margin: 0 0 6pt !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .repairFinalWorkOrderPrint .estimateA4CategorySection {
+    margin-bottom: 4pt !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .repairFinalWorkOrderPrint .estimateA4Meta {
+    margin: 0 0 4pt !important;
+    font-size: ${CONTRACT_COMPACT_BODY_PT} !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .repairFinalWorkOrderPrint .estimateA4Room {
+    margin-bottom: 6pt !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .repairFinalWorkOrderPrint .estimateA4RoomHeader {
+    margin-bottom: 2pt !important;
+    font-size: ${CONTRACT_COMPACT_BODY_PT} !important;
+    line-height: 1.28 !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .repairFinalWorkOrderPrint .estimateA4TableWorkOrder th,
+  .docPrint.windowsPackageUnifiedPrint .repairFinalWorkOrderPrint .estimateA4TableWorkOrder td {
+    padding: 2pt 4pt !important;
+    font-size: ${CONTRACT_COMPACT_BODY_PT} !important;
+    line-height: 1.28 !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .repairFinalWorkOrderPrint .estimateA4Total {
+    margin: 4pt 0 0 !important;
+    font-size: ${CONTRACT_COMPACT_BODY_PT} !important;
+    line-height: 1.32 !important;
   }
 `;
 
@@ -545,19 +662,25 @@ function applyContractCompactFontSizesInPrintDocument(doc: Document): void {
 function buildPrintStylesheet(
   marginFooter?: PrintMarginFooterNames,
   cashOrderCompact?: boolean,
-  contractCompact?: boolean
+  contractCompact?: boolean,
+  windowsPackagePrint?: boolean
 ): string {
   const pageBlock = marginFooter
-    ? buildMarginFooterPageRule(marginFooter)
-    : `@page { margin: 16mm; size: A4; }`;
+    ? buildMarginFooterPageRule(marginFooter, windowsPackagePrint)
+    : windowsPackagePrint
+      ? `@page { margin: 10mm; size: A4 portrait; }`
+      : `@page { margin: 16mm; size: A4; }`;
 
   const cashOrderBlock = cashOrderCompact ? CASH_ORDER_COMPACT_PRINT_CSS : '';
   const contractBlock = contractCompact
-    ? `${CONTRACT_COMPACT_PRINT_CSS}\n${CONTRACT_DENSE_SPACING_CSS}`
-    : '';
+    ? `${CONTRACT_COMPACT_PRINT_CSS}\n${CONTRACT_DENSE_SPACING_CSS}${windowsPackagePrint ? `\n${WINDOWS_PACKAGE_UNIFIED_PRINT_CSS}` : ''}`
+    : windowsPackagePrint
+      ? WINDOWS_PACKAGE_UNIFIED_PRINT_CSS
+      : '';
 
   return `${pageBlock}
   ${CONTRACT_LEGAL_LIST_PRINT_CSS}
+  ${CONTRACT_TEMPLATE_BULLET_DASH_PRINT_CSS}
   html, body { margin: 0; padding: 0; font-family: "Times New Roman", Times, serif; color: #111; }
   .docPrint { font-size: 12pt; line-height: 1.42; }
   .docPrint a { color: #111 !important; text-decoration: none; }
@@ -573,12 +696,19 @@ function buildPrintStylesheet(
   .docPrint p { margin: 0 0 8pt; }
   .docPrint .repairAddendumHeaderBlock { margin: 0 0 10pt; }
   .docPrint h1.repairAddendumHeaderTitle { margin: 0 0 4pt; }
-  .docPrint .repairAddendumHeaderSub {
+  .docPrint .repairAddendumHeaderSub,
+  .docPrint.windowsAddendumPrintCompactDoc .repairAddendumHeaderSub,
+  .docPrint.docPrintContractCompact .repairAddendumHeaderSub {
     margin: 0 0 12pt;
     text-align: center;
     font-size: 12pt;
     line-height: 1.35;
-    font-weight: normal;
+    font-weight: normal !important;
+  }
+  .docPrint .repairAddendumHeaderSub.contractDocTitle,
+  .docPrint.windowsAddendumPrintCompactDoc .repairAddendumHeaderSub.contractDocTitle {
+    font-weight: normal !important;
+    font-size: 12pt !important;
   }
   .docPrint .repairAddendumMetaRow {
     display: grid;
@@ -591,6 +721,21 @@ function buildPrintStylesheet(
   .docPrint .repairAddendumMetaDate { text-align: left; }
   .docPrint .repairAddendumMetaCity { text-align: right; }
   .docPrint h2.repairAddendumEstimateHeading { text-align: center; }
+  .docPrint .windowsAddendumPrintCompact .windowsAddendumSubsectionHeading {
+    font-weight: normal;
+    text-align: left;
+  }
+  .docPrint.windowsAddendumPrintCompactDoc :where(strong, b, h1, h2, h3, h4, h5, h6, th),
+  .docPrint.windowsAddendumPrintCompactDoc
+    :is(.repairAddendumEstimateHeading, .estimateA4RoomHeader, .estimateA4SummaryTitle, .estimateA4HandwritingNoteLabel) {
+    font-weight: normal;
+  }
+  .docPrint.windowsAddendumPrintCompactDoc .windowsAddendumSpecPrintTable th,
+  .docPrint.windowsAddendumPrintCompactDoc .estimateA4DocPrintEmbed .estimateA4Table th,
+  .docPrint .windowsAddendumPrintCompact .windowsAddendumSpecPrintTable th,
+  .docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4Table th {
+    font-weight: normal;
+  }
   .docPrint .estimateA4DocPrintEmbed { line-height: 1.32; color: #111; }
   .docPrint .estimateA4DocPrintEmbed .estimateA4CategorySection { margin-bottom: 6pt; }
   .docPrint .estimateA4DocPrintEmbed .estimateA4Meta { margin: 0 0 6pt; color: #333; line-height: 1.35; }
@@ -608,7 +753,7 @@ function buildPrintStylesheet(
     line-height: 1.28; overflow-wrap: break-word; word-break: break-word;
   }
   .docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(1),
-  .docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(1) { width: 3%; text-align: center; }
+  .docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(1) { width: 5%; text-align: center; }
   .docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(2),
   .docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(2) { width: 52%; }
   .docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(3),
@@ -923,18 +1068,27 @@ export function buildPrintableHtmlDocument(
   const styles = buildPrintStylesheet(
     options?.marginFooter,
     options?.cashOrderCompact,
-    options?.contractCompact
+    options?.contractCompact,
+    options?.windowsPackagePrint
   );
   const needsContractCompactMarkup =
-    options?.contractCompact || /\bcontractLegalList\b/i.test(innerHtml);
+    options?.contractCompact ||
+    options?.windowsPackagePrint ||
+    /\bcontractLegalList\b/i.test(innerHtml);
   const printBody = needsContractCompactMarkup
     ? markDocPrintContractCompact(innerHtml, {
         preserveHeadingFontSizes: true,
         preserveInlineFontSizes: true,
       })
     : innerHtml;
+  const bodyClass = [
+    options?.contractCompact || options?.windowsPackagePrint ? 'contractPrintCompact' : '',
+    options?.windowsPackagePrint ? 'windowsPackagePrint' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
   return `<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"/><title>${titleInner}</title>
-<style>${styles}</style></head><body>${printBody}</body></html>`;
+<style>${styles}</style></head><body${bodyClass ? ` class="${bodyClass}"` : ''}>${printBody}</body></html>`;
 }
 
 function sanitizeDownloadFileName(fileName: string, extension: 'html' | 'pdf' = 'html'): string {
@@ -1071,7 +1225,11 @@ export function printDocumentHtml(
   w.document.write(buildPrintableHtmlDocument(innerHtml, documentTitle, options));
   w.document.close();
 
-  if (options?.contractCompact || /\bcontractLegalList\b/i.test(innerHtml)) {
+  if (
+    options?.contractCompact ||
+    options?.windowsPackagePrint ||
+    /\bcontractLegalList\b/i.test(innerHtml)
+  ) {
     try {
       applyContractCompactFontSizesInPrintDocument(w.document);
     } catch {

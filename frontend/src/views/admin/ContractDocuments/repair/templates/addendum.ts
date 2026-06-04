@@ -1,6 +1,6 @@
 /** Универсальный шаблон для вкладок «Дополнительное соглашение №1..№5». */
 export const repairTemplateAddendum = `
-<div class="docPrint">
+<div class="docPrint{{addendum.printDocClass}}">
   <div class="repairAddendumHeaderBlock">
     <h1 class="repairAddendumHeaderTitle">{{addendum.headerMain}}</h1>
     <p class="repairAddendumHeaderSub">{{addendum.headerSub}}</p>
@@ -19,7 +19,7 @@ export const repairTemplateAddendum = `
     {{addendum.roomsHtml}}
   </section>
 
-  <p style="margin: 10pt 0 0;">{{addendum.workPeriodIncreaseSentence}}</p>
+  {{addendum.workPeriodIncreaseHtml}}
   <p style="margin: 6pt 0 0;">
     Настоящее дополнительное соглашение является неотъемлемой частью договора.
   </p>

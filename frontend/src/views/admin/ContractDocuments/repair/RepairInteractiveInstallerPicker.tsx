@@ -10,6 +10,8 @@ import styles from '../ContractDocuments.module.css';
 
 export type RepairInteractiveInstallerPickerProps = {
   allInstallers: InstallerMaster[];
+  /** Подсказка, если список мастеров для выбора пуст (например, по направлению). */
+  emptyListHint?: string;
   selectedInstallers: InstallerMaster[];
   activeInstallerId: string;
   installerAssignedCounts: Map<string, number>;
@@ -21,6 +23,7 @@ export type RepairInteractiveInstallerPickerProps = {
 
 export function RepairInteractiveInstallerPicker({
   allInstallers,
+  emptyListHint,
   selectedInstallers,
   activeInstallerId,
   installerAssignedCounts,
@@ -47,7 +50,7 @@ export function RepairInteractiveInstallerPicker({
   if (allInstallers.length === 0) {
     return (
       <p className={styles.hint} style={{ margin: '6px 0 0' }}>
-        Список мастеров пуст. Добавьте мастеров в разделе CRM → Мастера.
+        {emptyListHint ?? 'Список мастеров пуст. Добавьте мастеров в разделе CRM → Мастера.'}
       </p>
     );
   }

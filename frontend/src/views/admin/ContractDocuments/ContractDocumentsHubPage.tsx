@@ -43,6 +43,13 @@ export function ContractDocumentsHubPage() {
             Срок по умолчанию для «Ремонт» и «Окна» (рабочие дни); меняет только суперадмин.
           </p>
         </Link>
+        <Link className={styles.hubCard} href="/admin/contract-documents/settings/markups">
+          <h2 className={styles.hubCardTitle}>Наценки в договорах</h2>
+          <p className={styles.hubCardHint}>
+            Наценка при расчёте заказ-наряда по «Окна» (цена счёт-заказа минус %); меняет
+            суперадмин.
+          </p>
+        </Link>
       </div>
     </div>
   );

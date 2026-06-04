@@ -66,7 +66,9 @@ export function WindowsSpecificationTab({
   const downloadHref = fileUrl.trim() ? publicUploadUrl(fileUrl) : '';
 
   return (
-    <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
+    <div
+      className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact} ${styles.windowsContractTabTypography}`}
+    >
       <div className={styles.formGrid}>
         <div className={styles.sectionCard}>
           <h3 className={`${styles.sectionTitle} ${styles.estimateSectionTitle}`}>Спецификация</h3>

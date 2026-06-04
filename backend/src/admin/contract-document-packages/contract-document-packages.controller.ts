@@ -41,6 +41,8 @@ import {
   ApplyRepairWorkPeriodToAllDto,
   SetRepairContractSettingsDto,
 } from './dto/set-repair-settings.dto';
+import { SetWindowsWorkOrderMarkupDto } from './dto/set-windows-work-order-markup.dto';
+import { SetWindowsContractSettingsDto } from './dto/set-windows-settings.dto';
 
 const CRM_ROLES = [
   'SUPER_ADMIN',
@@ -350,7 +352,7 @@ export class ContractDocumentPackagesController {
 
   @Put('windows-settings')
   @Roles('SUPER_ADMIN')
-  setWindowsSettings(@Body() dto: SetRepairContractSettingsDto, @Req() req: RequestWithUser) {
+  setWindowsSettings(@Body() dto: SetWindowsContractSettingsDto, @Req() req: RequestWithUser) {
     return this.service.setWindowsSettings(dto, req.user?.id);
   }
 
@@ -358,6 +360,22 @@ export class ContractDocumentPackagesController {
   @Roles('SUPER_ADMIN')
   applyWindowsWorkPeriodToAll(@Body() dto: ApplyRepairWorkPeriodToAllDto) {
     return this.service.applyWindowsWorkPeriodToAllPackages(dto);
+  }
+
+  /** @deprecated Используйте GET windows-settings (поле windowsWorkOrderMarkupPercent). */
+  @Get('windows-settings/work-order-markup')
+  getWindowsWorkOrderMarkupSettings() {
+    return this.service.getWindowsWorkOrderMarkupSettings();
+  }
+
+  /** @deprecated Используйте PUT windows-settings. */
+  @Put('windows-settings/work-order-markup')
+  @Roles('SUPER_ADMIN')
+  setWindowsWorkOrderMarkupSettings(
+    @Body() dto: SetWindowsWorkOrderMarkupDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.service.setWindowsWorkOrderMarkupSettings(dto, req.user?.id);
   }
 
   @Get(':id/versions')

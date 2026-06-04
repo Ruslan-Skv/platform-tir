@@ -81,25 +81,44 @@ function buildSlashSignRow(doc: Document, afterSlash: Node): HTMLSpanElement {
   return wrap;
 }
 
+function isCompleteExecutorSignCell(cell: HTMLTableCellElement): boolean {
+  const slash = cell.querySelector(`.${CONTRACT_SIGN_SLASH_ROW_CLASS}`);
+  if (!slash) return false;
+  return Boolean(
+    slash.querySelector(`.${CONTRACT_SIGN_SIGNATURE_LINE_CLASS}`) &&
+    slash.querySelector(`.${CONTRACT_SIGN_NAME_TEXT_CLASS}`)
+  );
+}
+
+function isCompleteCustomerSignCell(cell: HTMLTableCellElement): boolean {
+  const slash = cell.querySelector(`.${CONTRACT_SIGN_SLASH_ROW_CLASS}`);
+  if (!slash) return false;
+  return Boolean(
+    slash.querySelector(`.${CONTRACT_SIGN_SIGNATURE_LINE_CLASS}`) &&
+    slash.querySelector(`.${CONTRACT_SIGN_FIO_LINE_CLASS}`)
+  );
+}
+
+function resolveExecutorNameText(cell: HTMLTableCellElement): string {
+  const existingName = cell.querySelector(`.${CONTRACT_SIGN_NAME_TEXT_CLASS}`);
+  if (existingName?.textContent?.trim()) {
+    return existingName.textContent.trim();
+  }
+  const placeholderMatch = cell.innerHTML.match(EXECUTOR_NAME_PLACEHOLDER_RE);
+  if (placeholderMatch) return placeholderMatch[0];
+  const text = cell.textContent ?? '';
+  const slashIdx = text.lastIndexOf('/');
+  return slashIdx >= 0 ? text.slice(slashIdx + 1).trim() : text.trim();
+}
+
 function upgradeExecutorSignCell(executorCell: HTMLTableCellElement): void {
   renameLegacySlashRowClass(executorCell);
-  const existing = executorCell.querySelector(
-    `.${CONTRACT_SIGN_SLASH_ROW_CLASS} .${CONTRACT_SIGN_NAME_TEXT_CLASS}`
-  );
-  if (existing) return;
+  if (isCompleteExecutorSignCell(executorCell)) return;
 
   const doc = executorCell.ownerDocument;
   const nameSpan = doc.createElement('span');
   nameSpan.className = CONTRACT_SIGN_NAME_TEXT_CLASS;
-
-  const placeholderMatch = executorCell.innerHTML.match(EXECUTOR_NAME_PLACEHOLDER_RE);
-  if (placeholderMatch) {
-    nameSpan.textContent = placeholderMatch[0];
-  } else {
-    const text = executorCell.textContent ?? '';
-    const slashIdx = text.lastIndexOf('/');
-    nameSpan.textContent = slashIdx >= 0 ? text.slice(slashIdx + 1).trim() : text.trim();
-  }
+  nameSpan.textContent = resolveExecutorNameText(executorCell);
 
   executorCell.textContent = '';
   executorCell.append(buildSlashSignRow(doc, nameSpan));
@@ -107,11 +126,7 @@ function upgradeExecutorSignCell(executorCell: HTMLTableCellElement): void {
 
 function upgradeCustomerSignCell(customerCell: HTMLTableCellElement): void {
   renameLegacySlashRowClass(customerCell);
-  if (
-    customerCell.querySelector(`.${CONTRACT_SIGN_SLASH_ROW_CLASS} .${CONTRACT_SIGN_FIO_LINE_CLASS}`)
-  ) {
-    return;
-  }
+  if (isCompleteCustomerSignCell(customerCell)) return;
 
   const doc = customerCell.ownerDocument;
   const fioLine = doc.createElement('span');
@@ -150,6 +165,31 @@ function ensureCanonicalHandwrittenSignTable(table: HTMLTableElement): void {
   }
 }
 
+function normalizeContractActHandwrittenSignaturesInRoot(root: ParentNode): void {
+  while (unwrapLegacyActSignatureWrappers(root)) {
+    // повторяем, пока есть вложенные обёртки
+  }
+
+  const tables = [...root.querySelectorAll<HTMLTableElement>(HANDWRITTEN_SIGN_TABLE_SELECTOR)];
+  for (const table of tables) {
+    ensureCanonicalHandwrittenSignTable(table);
+  }
+}
+
+/** DOM: устаревшие обёртки и каноническая строка подписи (линия / ФИО). */
+export function normalizeContractActHandwrittenSignaturesInDom(root: ParentNode): void {
+  if (typeof window === 'undefined') return;
+  const docPrint =
+    root instanceof Element && root.classList.contains('docPrint')
+      ? root
+      : root.querySelector('.docPrint');
+  if (docPrint) {
+    normalizeContractActHandwrittenSignaturesInRoot(docPrint);
+    return;
+  }
+  normalizeContractActHandwrittenSignaturesInRoot(root);
+}
+
 /** Убирает устаревшие обёртки (50% ширины) и выносит таблицу подписей на всю ширину листа. */
 export function normalizeContractActHandwrittenSignaturesInHtml(html: string): string {
   if (!htmlIncludesLegacyActSignatureMarkup(html)) return html;
@@ -163,19 +203,7 @@ export function normalizeContractActHandwrittenSignaturesInHtml(html: string): s
     const root = doc.getElementById('__sig_root');
     if (!root) return html;
 
-    while (unwrapLegacyActSignatureWrappers(root)) {
-      // повторяем, пока есть вложенные обёртки
-    }
-
-    const tables = [...root.querySelectorAll<HTMLTableElement>(HANDWRITTEN_SIGN_TABLE_SELECTOR)];
-    if (tables.length === 0) {
-      return root.innerHTML;
-    }
-
-    for (const table of tables) {
-      ensureCanonicalHandwrittenSignTable(table);
-    }
-
+    normalizeContractActHandwrittenSignaturesInRoot(root);
     return root.innerHTML;
   } catch {
     return normalizeContractActHandwrittenSignaturesString(html);

@@ -2,6 +2,7 @@
 
 import { PrinterIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
+import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 import { Modal } from '@/shared/ui/Modal';
 
 import styles from '../ContractDocuments.module.css';
@@ -22,6 +23,7 @@ export type RepairContractWorkOrdersHubModalProps = {
   panelTab: RepairWorkOrderHubTabId;
   onPanelTabChange: (tab: RepairWorkOrderHubTabId) => void;
   addendumSlotCount: number;
+  packageKind?: ContractDocumentPackageKind;
   unassignedInteractiveRowsCount: number;
   headerContractNumberLabel?: string;
   headerContractDateLabel?: string;
@@ -33,12 +35,13 @@ export function RepairContractWorkOrdersHubModal({
   panelTab,
   onPanelTabChange,
   addendumSlotCount,
+  packageKind = 'REPAIR',
   unassignedInteractiveRowsCount,
   headerContractNumberLabel,
   headerContractDateLabel,
 }: RepairContractWorkOrdersHubModalProps) {
   const hubCtx = useRepairContractWorkOrderHub();
-  const hubTabs = repairWorkOrderHubTabsForPackage(addendumSlotCount);
+  const hubTabs = repairWorkOrderHubTabsForPackage(addendumSlotCount, packageKind);
 
   const modalTitle = (
     <div className={hubStyles.modalHeaderRow}>
@@ -87,7 +90,7 @@ export function RepairContractWorkOrdersHubModal({
               type="button"
               role="tab"
               aria-selected={panelTab === id}
-              title={repairWorkOrderHubTabLabel(id, false)}
+              title={repairWorkOrderHubTabLabel(id, false, packageKind)}
               className={`${styles.tab} ${panelTab === id ? `${styles.tabActive} ${hubStyles.hubTabActive}` : ''} ${
                 id === 'interactiveFinalEstimate' || id === 'finalWorkOrder'
                   ? styles.summaryTab
@@ -98,7 +101,7 @@ export function RepairContractWorkOrdersHubModal({
               onClick={() => onPanelTabChange(id)}
             >
               <span className={styles.repairTabLabelInner}>
-                <span>{repairWorkOrderHubTabLabel(id)}</span>
+                <span>{repairWorkOrderHubTabLabel(id, true, packageKind)}</span>
                 {id === 'interactiveFinalEstimate' ? (
                   <span
                     className={`${styles.repairTabUnassignedBadge} ${

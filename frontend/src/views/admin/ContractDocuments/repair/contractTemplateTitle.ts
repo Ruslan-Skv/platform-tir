@@ -1,8 +1,10 @@
 /** Класс для блока «шапки» договора (название + подзаголовок при необходимости). */
 export const CONTRACT_DOC_TITLE_CLASS = 'contractDocTitle';
 
-const CONTRACT_TITLE_TEXT_RE = /\bдоговор\b/i;
-const CONTRACT_TITLE_NUMBER_RE = /(?:\b№\b|№\s*\{\{contract\.number\}\}|{{contract\.number}})/i;
+/** Без \\b: в JS границы слов для кириллицы и «№» работают ненадёжно. */
+const CONTRACT_TITLE_TEXT_RE = /договор/i;
+const CONTRACT_TITLE_NUMBER_RE =
+  /(?:№\s*\{\{contract\.number\}\}|{{contract\.number}}|№\s*\d|(?:^|\s)№(?:\s|$))/i;
 
 const MAX_TITLE_INLINE_PT = 14;
 
@@ -13,17 +15,32 @@ export function normalizeTitleText(text: string): string {
     .trim();
 }
 
+/** Преамбулы Д/с и приложений — не заголовок договора, хотя есть «договор» и №. */
+const NON_CONTRACT_TITLE_PREFIX_RE =
+  /^(?:Приложение\s*№|Стороны\b|Настоящее\b|к\s+договор|Дополнительное\s+соглашение)/iu;
+
 /** Текст похож на название договора (после Word / строгой нормализации). */
 export function isLikelyContractTitleText(text: string): boolean {
   const t = normalizeTitleText(text);
   if (!t || t.length > 280) return false;
+  if (NON_CONTRACT_TITLE_PREFIX_RE.test(t)) return false;
   if (!CONTRACT_TITLE_TEXT_RE.test(t)) return false;
-  if (CONTRACT_TITLE_NUMBER_RE.test(t)) return true;
-  if (/^договор\b/i.test(t) && t.length < 140) return true;
+  if (/^договор/i.test(t) && t.length < 140) return true;
+  if (CONTRACT_TITLE_NUMBER_RE.test(t) && /^договор/i.test(t)) return true;
   return false;
 }
 
+/** Шапка Д/с: подзаголовок «к Договору…» содержит «договор» и №, но не название договора. */
+function isRepairAddendumHeaderElement(el: Element): boolean {
+  const node = el as HTMLElement;
+  if (node.classList.contains('repairAddendumHeaderSub')) return true;
+  if (node.classList.contains('repairAddendumHeaderTitle')) return true;
+  if (node.classList.contains('repairAddendumHeaderBlock')) return true;
+  return node.closest('.repairAddendumHeaderBlock') != null;
+}
+
 export function isLikelyContractTitleElement(el: Element): boolean {
+  if (isRepairAddendumHeaderElement(el)) return false;
   const tag = el.tagName.toLowerCase();
   if (!['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'td', 'th'].includes(tag)) return false;
   if ((el as HTMLElement).classList.contains('docPrint')) return false;
@@ -104,6 +121,7 @@ function findContractTitleCandidate(docPrint: HTMLElement): HTMLElement | null {
   ];
   for (const el of ordered) {
     if (el.classList.contains('docPrint')) continue;
+    if (isRepairAddendumHeaderElement(el)) continue;
     if (!isLikelyContractTitleElement(el)) continue;
     return el;
   }
@@ -137,6 +155,7 @@ export function normalizeContractTitleInDom(root: ParentNode): void {
       ? (root as HTMLElement)
       : (root.querySelector('.docPrint') as HTMLElement | null);
   if (!docPrint) return;
+  if (docPrint.querySelector('.repairAddendumHeaderBlock')) return;
 
   const candidate = findContractTitleCandidate(docPrint);
   if (!candidate) return;

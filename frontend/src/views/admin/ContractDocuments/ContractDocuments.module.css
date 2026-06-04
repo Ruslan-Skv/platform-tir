@@ -1632,6 +1632,604 @@
   margin-bottom: 8pt;
 }
 
+/* Д/с «Окна»: компактная печать */
+.contractA4Preview
+  :global(.docPrint.windowsAddendumPrintCompactDoc :where(strong, b, h1, h2, h3, h4, h5, h6, th)),
+.docPane
+  :global(.docPrint.windowsAddendumPrintCompactDoc :where(strong, b, h1, h2, h3, h4, h5, h6, th)),
+.contractA4Preview
+  :global(
+    .docPrint.windowsAddendumPrintCompactDoc
+      :is(
+        .repairAddendumEstimateHeading,
+        .estimateA4RoomHeader,
+        .estimateA4SummaryTitle,
+        .estimateA4HandwritingNoteLabel
+      )
+  ),
+.docPane
+  :global(
+    .docPrint.windowsAddendumPrintCompactDoc
+      :is(
+        .repairAddendumEstimateHeading,
+        .estimateA4RoomHeader,
+        .estimateA4SummaryTitle,
+        .estimateA4HandwritingNoteLabel
+      )
+  ) {
+  font-weight: normal;
+}
+
+.contractA4Preview :global(.docPrint.windowsAddendumPrintCompactDoc),
+.docPane :global(.docPrint.windowsAddendumPrintCompactDoc) {
+  font-size: 9pt;
+  line-height: 1.2;
+}
+
+.contractA4Preview :global(.docPrint.windowsAddendumPrintCompactDoc .repairAddendumHeaderBlock),
+.docPane :global(.docPrint.windowsAddendumPrintCompactDoc .repairAddendumHeaderBlock) {
+  margin: 0 0 6pt;
+}
+
+.contractA4Preview :global(.docPrint.windowsAddendumPrintCompactDoc h1.repairAddendumHeaderTitle),
+.docPane :global(.docPrint.windowsAddendumPrintCompactDoc h1.repairAddendumHeaderTitle) {
+  margin: 0 0 3pt;
+  font-size: 10pt;
+}
+
+.contractA4Preview :global(.docPrint.windowsAddendumPrintCompactDoc .repairAddendumHeaderSub),
+.docPane :global(.docPrint.windowsAddendumPrintCompactDoc .repairAddendumHeaderSub) {
+  margin: 0 0 6pt;
+  font-size: 8.5pt;
+  line-height: 1.2;
+}
+
+.contractA4Preview :global(.docPrint.windowsAddendumPrintCompactDoc .repairAddendumMetaRow),
+.docPane :global(.docPrint.windowsAddendumPrintCompactDoc .repairAddendumMetaRow) {
+  margin: 0 0 6pt;
+  font-size: 8.5pt;
+}
+
+.contractA4Preview :global(.docPrint.windowsAddendumPrintCompactDoc > p),
+.docPane :global(.docPrint.windowsAddendumPrintCompactDoc > p) {
+  margin: 0 0 5pt;
+  font-size: 9pt;
+  line-height: 1.25;
+}
+
+.contractA4Preview :global(.docPrint .windowsAddendumPrintCompact),
+.docPane :global(.docPrint .windowsAddendumPrintCompact) {
+  font-size: 8.5pt;
+  line-height: 1.2;
+}
+
+.contractA4Preview :global(.docPrint .windowsAddendumPrintCompact h2.repairAddendumEstimateHeading),
+.docPane :global(.docPrint .windowsAddendumPrintCompact h2.repairAddendumEstimateHeading) {
+  font-size: 9pt;
+  margin: 4pt 0 2pt;
+  font-weight: normal;
+}
+
+.contractA4Preview
+  :global(.docPrint .windowsAddendumPrintCompact .windowsAddendumSubsectionHeading),
+.docPane :global(.docPrint .windowsAddendumPrintCompact .windowsAddendumSubsectionHeading) {
+  font-size: 8.5pt;
+  margin: 3pt 0 2pt;
+  font-weight: normal;
+  text-align: left;
+}
+
+.contractA4Preview :global(.docPrint .windowsAddendumPrintCompact .windowsAddendumSpecPrintTable),
+.docPane :global(.docPrint .windowsAddendumPrintCompact .windowsAddendumSpecPrintTable) {
+  font-size: 8pt;
+  margin: 2pt 0;
+}
+
+.contractA4Preview
+  :global(.docPrint.windowsAddendumPrintCompactDoc .windowsAddendumSpecPrintTable th),
+.docPane :global(.docPrint.windowsAddendumPrintCompactDoc .windowsAddendumSpecPrintTable th),
+.contractA4Preview
+  :global(.docPrint .windowsAddendumPrintCompact .windowsAddendumSpecPrintTable th),
+.docPane :global(.docPrint .windowsAddendumPrintCompact .windowsAddendumSpecPrintTable th),
+.contractA4Preview
+  :global(.docPrint.windowsAddendumPrintCompactDoc .estimateA4DocPrintEmbed .estimateA4Table th),
+.docPane
+  :global(.docPrint.windowsAddendumPrintCompactDoc .estimateA4DocPrintEmbed .estimateA4Table th),
+.contractA4Preview
+  :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4Table th),
+.docPane
+  :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4Table th) {
+  font-weight: normal;
+}
+
+.contractA4Preview :global(.docPrint .windowsAddendumPrintCompact .windowsAddendumSectionTotal),
+.docPane :global(.docPrint .windowsAddendumPrintCompact .windowsAddendumSectionTotal) {
+  font-size: 8pt;
+  margin: 2pt 0 3pt;
+}
+
+.contractA4Preview
+  :global(.docPrint .windowsAddendumPrintCompact .windowsAddendumGrandTotalsHeading),
+.docPane :global(.docPrint .windowsAddendumPrintCompact .windowsAddendumGrandTotalsHeading) {
+  margin: 5pt 0 2pt;
+}
+
+.contractA4Preview :global(.docPrint .windowsAddendumPrintCompact .windowsAddendumGrandTotalsLine),
+.docPane :global(.docPrint .windowsAddendumPrintCompact .windowsAddendumGrandTotalsLine) {
+  font-size: 8pt;
+  margin: 1pt 0;
+}
+
+.contractA4Preview :global(.docPrint .windowsAddendumPrintCompact .windowsAddendumGrandTotal),
+.docPane :global(.docPrint .windowsAddendumPrintCompact .windowsAddendumGrandTotal) {
+  font-size: 8.5pt;
+  margin: 3pt 0 2pt;
+}
+
+.contractA4Preview :global(.docPrint .windowsAddendumPrintCompact .windowsAddendumPrintSeparator),
+.docPane :global(.docPrint .windowsAddendumPrintCompact .windowsAddendumPrintSeparator) {
+  margin: 5pt 0 3pt;
+}
+
+.contractA4Preview :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed),
+.docPane :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed) {
+  font-size: 8pt;
+  line-height: 1.15;
+}
+
+.contractA4Preview
+  :global(
+    .docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4CategorySection
+  ),
+.docPane
+  :global(
+    .docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4CategorySection
+  ) {
+  margin-bottom: 4pt;
+}
+
+.contractA4Preview
+  :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4Meta),
+.docPane :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4Meta) {
+  margin: 0 0 3pt;
+  font-size: 8pt;
+}
+
+.contractA4Preview
+  :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4Room),
+.docPane :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4Room) {
+  margin-bottom: 5pt;
+}
+
+.contractA4Preview
+  :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4RoomHeader),
+.docPane
+  :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4RoomHeader) {
+  margin-bottom: 2pt;
+  font-size: 8pt;
+}
+
+.contractA4Preview
+  :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4Table th),
+.contractA4Preview
+  :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4Table td),
+.docPane
+  :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4Table th),
+.docPane
+  :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4Table td) {
+  padding: 1px 3px;
+  font-size: 8pt;
+  line-height: 1.15;
+}
+
+.contractA4Preview
+  :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4Table th),
+.docPane
+  :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4Table th) {
+  font-weight: normal;
+}
+
+.contractA4Preview
+  :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4Summary),
+.docPane
+  :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4Summary) {
+  margin-top: 3pt;
+  padding-top: 3pt;
+}
+
+.contractA4Preview
+  :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4SummaryTitle),
+.docPane
+  :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4SummaryTitle) {
+  margin: 0 0 2pt;
+  font-size: 8pt;
+}
+
+.contractA4Preview
+  :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4SummaryList),
+.docPane
+  :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4SummaryList) {
+  gap: 1px;
+  font-size: 8pt;
+}
+
+.contractA4Preview
+  :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4Total),
+.docPane :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4Total) {
+  margin: 3pt 0 0;
+  font-size: 8pt;
+}
+
+.contractA4Preview
+  :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4DiscountMeta),
+.docPane
+  :global(.docPrint .windowsAddendumPrintCompact .estimateA4DocPrintEmbed .estimateA4DiscountMeta) {
+  margin: 2pt 0 0;
+  font-size: 8pt;
+}
+
+.contractA4Preview :global(.docPrint .windowsAddendumPrintCompact .estimateA4Signatures),
+.docPane :global(.docPrint .windowsAddendumPrintCompact .estimateA4Signatures) {
+  margin-top: 6pt;
+}
+
+.contractA4Preview :global(.docPrint .windowsAddendumPrintCompact .estimateA4SignaturePartyLine),
+.docPane :global(.docPrint .windowsAddendumPrintCompact .estimateA4SignaturePartyLine) {
+  font-size: 8.5pt;
+  margin: 0 0 1pt;
+}
+
+.contractA4Preview :global(.docPrint .windowsAddendumPrintCompact .estimateA4SignNote),
+.docPane :global(.docPrint .windowsAddendumPrintCompact .estimateA4SignNote) {
+  font-size: 7.5pt;
+}
+
+.contractA4Preview :global(.docPrint .windowsAddendumPrintCompact .estimateA4HandwritingNote),
+.docPane :global(.docPrint .windowsAddendumPrintCompact .estimateA4HandwritingNote) {
+  margin-top: 4pt;
+}
+
+.contractA4Preview :global(.docPrint .windowsAddendumPrintCompact .estimateA4HandwritingNoteLabel),
+.docPane :global(.docPrint .windowsAddendumPrintCompact .estimateA4HandwritingNoteLabel) {
+  margin: 0 0 2pt;
+  font-size: 8pt;
+}
+
+.contractA4Preview :global(.docPrint .windowsAddendumPrintCompact .estimateA4HandwritingLines),
+.docPane :global(.docPrint .windowsAddendumPrintCompact .estimateA4HandwritingLines) {
+  gap: 3px;
+}
+
+.contractA4Preview :global(.docPrint .windowsAddendumPrintCompact .estimateA4HandwritingLine),
+.docPane :global(.docPrint .windowsAddendumPrintCompact .estimateA4HandwritingLine) {
+  min-height: 0.95em;
+}
+
+/* «Окна»: единый средний шрифт — Спецификация, Счёт-заказ, Д/с */
+.windowsContractTabTypography {
+  --windows-contract-tab-font-size: var(--admin-font-size-sm);
+  font-size: var(--windows-contract-tab-font-size);
+  line-height: var(--admin-line-height-sm);
+}
+
+.estimateTabCompact.windowsContractTabTypography.dataCompact .sectionTitle,
+.estimateTabCompact.windowsContractTabTypography .estimateSectionTitle {
+  font-size: var(--windows-contract-tab-font-size);
+  font-weight: 600;
+}
+
+.estimateTabCompact.windowsContractTabTypography.dataCompact .field label,
+.estimateTabCompact.windowsContractTabTypography .windowsSpecFieldCaption,
+.estimateTabCompact.windowsContractTabTypography .estimateSheetField > label {
+  font-size: var(--windows-contract-tab-font-size);
+  font-weight: 600;
+}
+
+.estimateTabCompact.windowsContractTabTypography.dataCompact .field input,
+.estimateTabCompact.windowsContractTabTypography.dataCompact .field select,
+.estimateTabCompact.windowsContractTabTypography.dataCompact .field textarea {
+  font-size: var(--windows-contract-tab-font-size);
+}
+
+.estimateTabCompact.windowsContractTabTypography .hint,
+.estimateTabCompact.windowsContractTabTypography .estimateTabHint,
+.estimateTabCompact.windowsContractTabTypography .estimateLockNotice,
+.estimateTabCompact.windowsContractTabTypography .windowsSpecFileHint,
+.estimateTabCompact.windowsContractTabTypography .windowsSpecFileMeta,
+.estimateTabCompact.windowsContractTabTypography .link {
+  font-size: var(--windows-contract-tab-font-size);
+}
+
+.estimateTabCompact.windowsContractTabTypography .secondaryBtn,
+.estimateTabCompact.windowsContractTabTypography .primaryBtn,
+.estimateTabCompact.windowsContractTabTypography .estimateAttachPrimaryBtn {
+  font-size: var(--windows-contract-tab-font-size);
+}
+
+.estimateTabCompact.windowsContractTabTypography .estimateAttachedColumnTitle {
+  font-size: var(--windows-contract-tab-font-size);
+  font-weight: normal;
+  letter-spacing: normal;
+  text-align: left;
+}
+
+.estimateTabCompact.windowsContractTabTypography .estimateAttachedEmpty,
+.estimateTabCompact.windowsContractTabTypography .estimateAttachedPresetMeta {
+  font-size: var(--windows-contract-tab-font-size);
+}
+
+.estimateTabCompact.windowsContractTabTypography .estimateAttachedPresetMain strong {
+  font-size: var(--windows-contract-tab-font-size);
+}
+
+.estimateTabCompact.windowsContractTabTypography .windowsAddendumSpecSectionTotal {
+  font-size: var(--windows-contract-tab-font-size);
+}
+
+.windowsContractTabTypography .estimateA4Sheet,
+.windowsContractTabTypography .estimateA4AppendixRef,
+.windowsContractTabTypography .estimateA4Title,
+.windowsContractTabTypography .estimateA4Meta,
+.windowsContractTabTypography .estimateA4Category,
+.windowsContractTabTypography .estimateA4RoomHeader,
+.windowsContractTabTypography .estimateA4Table,
+.windowsContractTabTypography .estimateA4Total,
+.windowsContractTabTypography .estimateA4DiscountMeta,
+.windowsContractTabTypography .estimateA4Empty,
+.windowsContractTabTypography .estimateA4SummaryTitle,
+.windowsContractTabTypography .estimateA4SummaryList,
+.windowsContractTabTypography .estimateA4SignaturePartyLine,
+.windowsContractTabTypography .estimateA4SignNote,
+.windowsContractTabTypography .estimateA4HandwritingNoteLabel {
+  font-size: var(--windows-contract-tab-font-size);
+}
+
+/* «Приложение №N к договору…» — обычный шрифт (не как заголовок). */
+.windowsContractTabTypography .estimateA4AppendixRef {
+  font-weight: normal;
+}
+
+.windowsAddendumMajorSection {
+  margin-top: var(--admin-space-lg);
+}
+
+.windowsAddendumMajorHeading {
+  margin: 0 0 var(--admin-space-md);
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-weight: normal;
+}
+
+.windowsAddendumSpecSubsection {
+  margin-bottom: var(--admin-space-lg);
+}
+
+.windowsAddendumSubsectionHeading {
+  margin: 0 0 var(--admin-space-sm);
+  font-size: inherit;
+  font-weight: normal;
+  text-align: left;
+}
+
+.windowsAddendumSpecTableWrap {
+  overflow-x: auto;
+}
+
+.windowsAddendumSpecTable {
+  width: 100%;
+  min-width: 640px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: inherit;
+  border: 1px solid color-mix(in srgb, var(--admin-border, #e2e8f0) 45%, transparent);
+}
+
+.windowsAddendumSpecColIndex {
+  width: 2.25rem;
+}
+
+.windowsAddendumSpecColName {
+  width: 54%;
+}
+
+.windowsAddendumSpecColQty {
+  width: 3.5rem;
+}
+
+.windowsAddendumSpecColUnit {
+  width: 2.75rem;
+}
+
+.windowsAddendumSpecColPrice {
+  width: 4.75rem;
+}
+
+.windowsAddendumSpecColAmount {
+  width: 4.75rem;
+}
+
+.windowsAddendumSpecColActions {
+  width: 2.25rem;
+}
+
+.windowsAddendumSpecTable th,
+.windowsAddendumSpecTable td {
+  border: 1px solid color-mix(in srgb, var(--admin-border, #e2e8f0) 32%, transparent);
+  padding: 3px 5px;
+  vertical-align: middle;
+}
+
+.windowsAddendumSpecTable th {
+  text-align: left;
+  font-weight: normal;
+  background: var(--admin-surface-muted, #f8fafc);
+  border-bottom-color: color-mix(in srgb, var(--admin-border, #e2e8f0) 48%, transparent);
+}
+
+.windowsAddendumSpecTable tbody td {
+  background: color-mix(in srgb, var(--admin-surface-muted, #f1f5f9) 55%, transparent);
+}
+
+.windowsAddendumSpecTable input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 4px 6px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  font-size: inherit;
+  color: inherit;
+  box-shadow: none;
+}
+
+/* Редактируемые ячейки — светлее фона строки */
+.windowsAddendumSpecTable input:not(.windowsAddendumSpecAmountReadonly) {
+  background: var(--admin-surface, #fff);
+  border: 1px solid color-mix(in srgb, var(--admin-border, #e2e8f0) 38%, transparent);
+}
+
+.windowsAddendumSpecTable input:not(.windowsAddendumSpecAmountReadonly):focus {
+  outline: 2px solid color-mix(in srgb, var(--admin-primary, #3b82f6) 28%, transparent);
+  outline-offset: -1px;
+  border-color: color-mix(in srgb, var(--admin-primary, #3b82f6) 35%, transparent);
+  background: var(--admin-surface, #fff);
+}
+
+.windowsAddendumSpecTable input:not(.windowsAddendumSpecAmountReadonly):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--admin-primary, #3b82f6) 28%, transparent);
+  outline-offset: -1px;
+}
+
+.windowsAddendumSpecTable input:not(.windowsAddendumSpecAmountReadonly):disabled {
+  background: color-mix(
+    in srgb,
+    var(--admin-surface-muted, #f1f5f9) 70%,
+    var(--admin-surface, #fff)
+  );
+  border-color: color-mix(in srgb, var(--admin-border, #e2e8f0) 25%, transparent);
+  color: var(--admin-text-secondary, #64748b);
+  cursor: not-allowed;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .windowsAddendumSpecTable {
+  border-color: color-mix(in srgb, var(--admin-border) 40%, transparent);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .windowsAddendumSpecTable th,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .windowsAddendumSpecTable td {
+  border-color: color-mix(in srgb, var(--admin-border) 28%, transparent);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .windowsAddendumSpecTable tbody td {
+  background: color-mix(in srgb, var(--admin-surface-muted) 45%, transparent);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .windowsAddendumSpecTable
+  input:not(.windowsAddendumSpecAmountReadonly) {
+  background: color-mix(in srgb, var(--admin-surface) 88%, transparent);
+  border-color: color-mix(in srgb, var(--admin-border) 35%, transparent);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .windowsAddendumSpecTable
+  input:not(.windowsAddendumSpecAmountReadonly):focus {
+  background: var(--admin-surface);
+}
+
+.windowsAddendumSpecIndexCell {
+  text-align: center;
+}
+
+.windowsAddendumSpecNameCell input {
+  min-width: 0;
+}
+
+.windowsAddendumSpecAmountCell {
+  text-align: right;
+}
+
+.windowsAddendumSpecAmountReadonly {
+  cursor: default;
+  background: color-mix(in srgb, var(--admin-surface-muted, #e8edf2) 75%, transparent);
+  border: 1px solid transparent;
+  color: var(--admin-text-secondary, #64748b);
+}
+
+.windowsAddendumSpecAmountReadonly:focus {
+  outline: none;
+  background: color-mix(in srgb, var(--admin-surface-muted, #e8edf2) 75%, transparent);
+}
+
+.windowsAddendumSpecActionsCell {
+  text-align: center;
+  padding-left: 2px;
+  padding-right: 2px;
+}
+
+.windowsAddendumSpecActionsRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-sm);
+  margin-top: var(--admin-space-sm);
+}
+
+.windowsAddendumSpecSectionTotal {
+  margin: 0;
+  font-size: inherit;
+}
+
+.windowsAddendumGrandTotalsCard {
+  margin-top: var(--admin-space-lg);
+  padding: var(--admin-space-md);
+  border: 1px solid var(--admin-border-subtle, #cbd5e1);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface-muted, #f8fafc);
+}
+
+.windowsAddendumGrandTotalsHeading {
+  margin: 0 0 var(--admin-space-sm);
+  font-size: inherit;
+  font-weight: normal;
+}
+
+/* Д/с «Окна»: без жирного (редактор) */
+.windowsAddendumTab :where(strong, b, h1, h2, h3, h4) {
+  font-weight: normal;
+}
+
+.windowsAddendumTab.estimateTabCompact.windowsContractTabTypography.dataCompact .sectionTitle,
+.windowsAddendumTab.estimateTabCompact.windowsContractTabTypography .estimateSectionTitle,
+.windowsAddendumTab.estimateTabCompact.windowsContractTabTypography.dataCompact .field label,
+.windowsAddendumTab .field label,
+.windowsAddendumTab .windowsAddendumMajorHeading,
+.windowsAddendumTab .windowsAddendumGrandTotalsHeading,
+.windowsAddendumTab .windowsAddendumSpecTable th,
+.windowsAddendumTab .windowsAddendumSpecTable thead th,
+.windowsAddendumTab .estimateAttachedColumnTitle {
+  font-weight: normal;
+}
+
+.windowsAddendumGrandTotalsList {
+  margin: 0 0 var(--admin-space-sm);
+  padding-left: 1.25rem;
+  font-size: inherit;
+}
+
+.windowsAddendumGrandTotalsFinal {
+  margin: 0;
+  font-size: inherit;
+  text-align: right;
+}
+
+.estimateTabCompact.windowsContractTabTypography .windowsAddendumGrandTotalsCard,
+.estimateTabCompact.windowsContractTabTypography .windowsAddendumGrandTotalsCard .hint {
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+}
+
 .repairTabLabelInner {
   display: inline-flex;
   align-items: center;
@@ -1647,11 +2245,14 @@
 .contractLockNotice {
   margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-lg);
   padding: var(--admin-space-sm) var(--admin-space-md);
-  background: var(--admin-warning-bg);
-  border: 1px solid var(--admin-warning-border);
+  background: color-mix(in srgb, var(--admin-surface, #fff) 92%, var(--admin-warning-bg));
+  border: 1px solid
+    color-mix(in srgb, var(--admin-warning-border) 70%, var(--admin-border, #e2e8f0));
+  border-left: 3px solid var(--admin-warning, #d97706);
   border-radius: var(--admin-radius-md);
-  color: var(--admin-warning-text);
+  color: var(--admin-warning-text, #92400e);
   font-size: var(--admin-font-size-sm);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
 }
 
 .formGrid {
@@ -1675,8 +2276,10 @@
 
 .repairContractEditorPage .estimateLockNotice,
 .repairContractEditorPage .contractLockNotice {
-  background: color-mix(in srgb, var(--admin-warning-bg) 50%, white);
-  border-color: color-mix(in srgb, var(--admin-warning-border) 50%, white);
+  background: var(--admin-surface, #fff);
+  border-color: color-mix(in srgb, var(--admin-warning-border) 55%, var(--admin-border, #e2e8f0));
+  border-left-color: var(--admin-warning, #d97706);
+  box-shadow: 0 1px 3px rgb(15 23 42 / 0.08);
 }
 
 .repairContractEditorPage .autoFilledInput {
@@ -4058,6 +4661,14 @@
   overflow-wrap: anywhere;
 }
 
+.visualEditor :global(.signTable td),
+.visualEditor :global(.signTable th),
+.visualEditor :global(.signTableActHandwritten td),
+.visualEditor :global(.signTableActHandwritten th) {
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
 .docPane :global(.docPrint) {
   font-size: var(--admin-font-size-xs);
   line-height: var(--admin-line-height-base);
@@ -4450,13 +5061,16 @@
   box-sizing: border-box !important;
 }
 
-.docPane :global(.signTable) {
+.docPane :global(.signTable),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.signTable) {
   width: 100%;
   margin-top: var(--admin-space-4xl);
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
-.docPane :global(.signTable td) {
+.docPane :global(.signTable td),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.signTable td) {
   width: 50%;
   vertical-align: bottom;
   padding: var(--admin-space-md);
@@ -4740,21 +5354,83 @@
   text-align: center;
 }
 
-.docPane :global(.docPrint.docPrintContractCompact) :global(h2),
-.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(h2),
+.docPane :global(.docPrint.docPrintContractCompact) :global(h2:not(.contractDocTitle)),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(h2:not(.contractDocTitle)),
 .templatesLibraryPage
   .templatesLibraryVisualEditor
   :global(.docPrint.docPrintContractCompact)
-  :global(h2),
-.templatesLibraryPage .templatesLibraryVisualEditor :global(.docPrint) :global(h2),
-.templatesLibraryPage .docPane :global(.docPrint) :global(h2),
-.contractA4Preview :global(.docPrint) :global(h2) {
+  :global(h2:not(.contractDocTitle)),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint)
+  :global(h2:not(.contractDocTitle)),
+.templatesLibraryPage .docPane :global(.docPrint) :global(h2:not(.contractDocTitle)),
+.contractA4Preview :global(.docPrint) :global(h2:not(.contractDocTitle)) {
+  font-size: 12pt !important;
+  line-height: 1.28 !important;
+  margin: 14pt 0 8pt;
+  font-family: inherit !important;
+  font-weight: normal;
+  text-align: center;
+}
+
+.docPane :global(.docPrint.docPrintContractCompact) :global(h2.contractDocTitle),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(h2.contractDocTitle),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(h2.contractDocTitle),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.docPrint) :global(h2.contractDocTitle),
+.templatesLibraryPage .docPane :global(.docPrint) :global(h2.contractDocTitle),
+.contractA4Preview :global(.docPrint) :global(h2.contractDocTitle) {
   font-size: 12pt !important;
   line-height: 1.28 !important;
   margin: 14pt 0 8pt;
   font-family: inherit !important;
   font-weight: bold;
   text-align: center;
+}
+
+.docPane :global(.docPrint.docPrintContractCompact) :global(p.contractAppendixRef),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(p.contractAppendixRef),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(p.contractAppendixRef),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint)
+  :global(p.contractAppendixRef),
+.templatesLibraryPage .docPane :global(.docPrint) :global(p.contractAppendixRef),
+.contractA4Preview :global(.docPrint) :global(p.contractAppendixRef) {
+  font-size: 9pt !important;
+  line-height: 1.32 !important;
+  margin: 0 0 4pt !important;
+  font-weight: normal !important;
+  text-align: left !important;
+  color: inherit;
+}
+
+.docPane :global(.docPrint.docPrintContractCompact) :global(p.contractAppendixRef) :global(*),
+.contractA4Preview
+  :global(.docPrint.docPrintContractCompact)
+  :global(p.contractAppendixRef)
+  :global(*),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(p.contractAppendixRef)
+  :global(*),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint)
+  :global(p.contractAppendixRef)
+  :global(*),
+.templatesLibraryPage .docPane :global(.docPrint) :global(p.contractAppendixRef) :global(*),
+.contractA4Preview :global(.docPrint) :global(p.contractAppendixRef) :global(*) {
+  font-size: inherit !important;
+  font-weight: normal !important;
+  text-align: left !important;
 }
 
 .docPane :global(.docPrint.docPrintContractCompact) :global(h3),
@@ -4779,8 +5455,35 @@
   line-height: 1.28 !important;
   margin: 14pt 0 8pt;
   font-family: inherit !important;
-  font-weight: bold;
+  font-weight: normal;
   text-align: center;
+}
+
+.docPane :global(.docPrint.docPrintContractCompact) :global(h3.contractDocTitle),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(h3.contractDocTitle),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(h3.contractDocTitle),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.docPrint) :global(h3.contractDocTitle),
+.templatesLibraryPage .docPane :global(.docPrint) :global(h3.contractDocTitle),
+.contractA4Preview :global(.docPrint) :global(h3.contractDocTitle) {
+  font-weight: bold;
+}
+
+/* До нормализации: h3 внутри h1 из Word/конструктора — жирный заголовок договора. */
+.docPane :global(.docPrint.docPrintContractCompact) :global(h1) :global(h3),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(h1) :global(h3),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(h1)
+  :global(h3),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.docPrint) :global(h1) :global(h3),
+.templatesLibraryPage .docPane :global(.docPrint) :global(h1) :global(h3),
+.contractA4Preview :global(.docPrint) :global(h1) :global(h3) {
+  font-weight: bold !important;
+  font-size: 14pt !important;
 }
 
 .docPane :global(.docPrint.docPrintContractCompact) :global(h1) :global(*),
@@ -6158,6 +6861,12 @@
   margin-top: var(--admin-space-xs);
 }
 
+.hint.estimateLockNotice,
+.hint.contractLockNotice {
+  color: var(--admin-warning-text, #92400e);
+  margin-top: var(--admin-space-0);
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractInstructionHint {
   color: var(--admin-bg-page);
 }
@@ -6340,10 +7049,13 @@
 
 .estimateTabCompact.dataCompact .windowsSpecFieldCaption {
   display: block;
-  font-size: var(--admin-font-size-2xs);
   font-weight: 600;
   color: var(--admin-text-secondary);
   line-height: 1.25;
+}
+
+.estimateTabCompact.dataCompact:not(.windowsContractTabTypography) .windowsSpecFieldCaption {
+  font-size: var(--admin-font-size-2xs);
 }
 
 .windowsSpecFileControlRow {
@@ -6373,9 +7085,12 @@
   flex: 1 1 10rem;
   min-width: 0;
   margin: 0;
-  font-size: var(--admin-font-size-2xs);
   line-height: 1.35;
   color: var(--admin-text-muted);
+}
+
+.estimateTabCompact:not(.windowsContractTabTypography) .windowsSpecFileHint {
+  font-size: var(--admin-font-size-2xs);
 }
 
 .windowsSpecFileRemoveBtn {
@@ -6385,9 +7100,12 @@
 
 .windowsSpecFileMeta {
   margin: 0;
-  font-size: var(--admin-font-size-2xs);
   color: var(--admin-text-muted);
   line-height: 1.35;
+}
+
+.estimateTabCompact:not(.windowsContractTabTypography) .windowsSpecFileMeta {
+  font-size: var(--admin-font-size-2xs);
 }
 
 @media (max-width: 720px) {
@@ -8788,9 +9506,25 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .estimateLockNotice,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractLockNotice {
-  background: var(--admin-overlay-color-091);
-  border-color: var(--admin-warning-border);
-  color: var(--admin-bg-page);
+  background: color-mix(in srgb, var(--admin-surface) 88%, var(--admin-warning-bg));
+  border-color: color-mix(in srgb, var(--admin-warning-border) 65%, var(--admin-border));
+  border-left-color: var(--admin-warning, #f59e0b);
+  color: var(--admin-warning-text, #fcd34d);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .estimateLockNotice,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .contractLockNotice {
+  background: var(--admin-surface);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .hint.estimateLockNotice,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .hint.contractLockNotice {
+  color: var(--admin-warning-text, #fcd34d);
 }
 
 /* Точечный фикс: вкладка "Данные" -> блок "Договор" */

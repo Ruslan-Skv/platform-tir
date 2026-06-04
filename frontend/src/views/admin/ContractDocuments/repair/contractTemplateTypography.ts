@@ -9,6 +9,7 @@ import {
   repairContractTemplateStructureInHtml,
   sanitizeContractHeadingMarkup,
 } from './contractTemplateStructure';
+import { normalizeContractTitleInDom } from './contractTemplateTitle';
 import {
   addDocPrintContractCompactClassToHtml,
   prepareContractHtmlForCompactPrint,
@@ -141,6 +142,7 @@ export function unifyContractDocumentTypographyInHtml(html: string): string {
   const container = window.document.createElement('div');
   container.innerHTML = wrapped;
   repairContractTemplateStructureInDom(container);
+  normalizeContractTitleInDom(container);
   sanitizeContractHeadingMarkup(container);
   unwrapRedundantBodyFontSpans(container);
 

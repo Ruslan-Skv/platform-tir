@@ -1,3 +1,5 @@
+import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
+
 import {
   REPAIR_DOCUMENT_TAB_LABELS,
   REPAIR_DOCUMENT_TAB_LABELS_SHORT,
@@ -41,10 +43,22 @@ export function isRepairWorkOrderHubTabHiddenFromPackageEditor(id: string): bool
   return isRepairWorkOrderHubTab(id);
 }
 
+const WINDOWS_WORK_ORDER_HUB_TAB_LABELS_SHORT: Partial<Record<RepairWorkOrderHubTabId, string>> = {
+  interactiveFinalEstimate: 'Инт. счёт-заказ',
+};
+
+const WINDOWS_WORK_ORDER_HUB_TAB_LABELS: Partial<Record<RepairWorkOrderHubTabId, string>> = {
+  interactiveFinalEstimate: 'Интерактивный счёт-заказ',
+};
+
 export function repairWorkOrderHubTabsForPackage(
-  addendumSlotCount: number
+  addendumSlotCount: number,
+  packageKind: ContractDocumentPackageKind = 'REPAIR'
 ): RepairWorkOrderHubTabId[] {
   return REPAIR_WORK_ORDER_HUB_TAB_IDS.filter((id) => {
+    if (packageKind === 'WINDOWS' && isRepairWorkOrderAddendumTab(id)) {
+      return false;
+    }
     if (isRepairWorkOrderAddendumTab(id)) {
       return isRepairAddendumTabVisible(id as RepairDocumentTabId, addendumSlotCount);
     }
@@ -52,15 +66,26 @@ export function repairWorkOrderHubTabsForPackage(
   });
 }
 
-export function repairWorkOrderHubTabLabel(id: RepairWorkOrderHubTabId, short = true): string {
+export function repairWorkOrderHubTabLabel(
+  id: RepairWorkOrderHubTabId,
+  short = true,
+  packageKind: ContractDocumentPackageKind = 'REPAIR'
+): string {
+  if (packageKind === 'WINDOWS') {
+    const override = short
+      ? WINDOWS_WORK_ORDER_HUB_TAB_LABELS_SHORT[id]
+      : WINDOWS_WORK_ORDER_HUB_TAB_LABELS[id];
+    if (override) return override;
+  }
   return short ? REPAIR_DOCUMENT_TAB_LABELS_SHORT[id] : REPAIR_DOCUMENT_TAB_LABELS[id];
 }
 
 export function defaultRepairWorkOrderHubTab(
   preferred: RepairDocumentTabId | null,
-  addendumSlotCount: number
+  addendumSlotCount: number,
+  packageKind: ContractDocumentPackageKind = 'REPAIR'
 ): RepairWorkOrderHubTabId {
-  const visible = repairWorkOrderHubTabsForPackage(addendumSlotCount);
+  const visible = repairWorkOrderHubTabsForPackage(addendumSlotCount, packageKind);
   if (preferred && isRepairWorkOrderHubTab(preferred) && visible.includes(preferred)) {
     return preferred;
   }

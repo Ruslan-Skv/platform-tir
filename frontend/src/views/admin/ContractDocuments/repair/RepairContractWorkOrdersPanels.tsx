@@ -33,6 +33,7 @@ export type RepairContractWorkOrdersPanelsProps = {
 export function RepairContractWorkOrdersPanels({ panelTab }: RepairContractWorkOrdersPanelsProps) {
   const ctx = useRepairContractWorkOrderHub();
   const {
+    isWindowsPackage,
     form,
     updateWorkOrder,
     getTemplatePreviewHtml,
@@ -81,7 +82,7 @@ export function RepairContractWorkOrdersPanels({ panelTab }: RepairContractWorkO
           <div className={styles.sectionCard}>
             <div className={styles.interactiveEstimateTitleRow}>
               <h3 className={`${styles.sectionTitle} ${styles.estimateSectionTitle}`}>
-                Интерактивная итоговая смета
+                {isWindowsPackage ? 'Интерактивный счёт-заказ' : 'Интерактивная итоговая смета'}
               </h3>
               <span
                 className={`${styles.interactiveUnassignedBadge} ${
@@ -96,6 +97,11 @@ export function RepairContractWorkOrdersPanels({ panelTab }: RepairContractWorkO
             </div>
             <RepairInteractiveInstallerPicker
               allInstallers={repairInstallers}
+              emptyListHint={
+                isWindowsPackage
+                  ? 'Нет мастеров по направлению «Окна». Добавьте их в CRM → Мастера.'
+                  : undefined
+              }
               selectedInstallers={selectedRepairInstallers}
               activeInstallerId={activeRepairInstallerId}
               installerAssignedCounts={installerAssignedCounts}
@@ -262,25 +268,28 @@ export function RepairContractWorkOrdersPanels({ panelTab }: RepairContractWorkO
   if (panelTab === 'finalWorkOrder') {
     return (
       <div className={`${styles.blockData} ${styles.dataCompact} ${styles.estimateTabCompact}`}>
-        <div
-          className={`${styles.formGrid} ${styles.workOrderParamsBar}`}
-          style={{ gap: '2px 6px', display: 'flex', alignItems: 'flex-end', flexWrap: 'nowrap' }}
-        >
-          <RepairWorkOrderGradeButtons
-            value={form.workOrder.gradeIncreasePercent}
-            onChange={(gradeIncreasePercent) =>
-              updateWorkOrder('gradeIncreasePercent', gradeIncreasePercent)
-            }
-          />
-        </div>
+        {!isWindowsPackage ? (
+          <div
+            className={`${styles.formGrid} ${styles.workOrderParamsBar}`}
+            style={{ gap: '2px 6px', display: 'flex', alignItems: 'flex-end', flexWrap: 'nowrap' }}
+          >
+            <RepairWorkOrderGradeButtons
+              value={form.workOrder.gradeIncreasePercent}
+              onChange={(gradeIncreasePercent) =>
+                updateWorkOrder('gradeIncreasePercent', gradeIncreasePercent)
+              }
+            />
+          </div>
+        ) : null}
         <div className={styles.formGrid}>
           <div className={styles.sectionCard}>
             <h3 className={`${styles.sectionTitle} ${styles.estimateSectionTitle}`}>
               Итоговый заказ-наряд
             </h3>
             <p className={styles.hint} style={{ marginTop: 0 }}>
-              Формируется из итоговой сметы: включает все проводимые работы по основной смете и доп.
-              соглашениям, с вычетом работ из блока «Непроводимые ремонтно-отделочные работы».
+              {isWindowsPackage
+                ? 'Формируется из счёт-заказа и доп. соглашений с учётом назначенных мастеров.'
+                : 'Формируется из итоговой сметы: включает все проводимые работы по основной смете и доп. соглашениям, с вычетом работ из блока «Непроводимые ремонтно-отделочные работы».'}
             </p>
             <div
               className={styles.tabBar}
@@ -302,8 +311,8 @@ export function RepairContractWorkOrdersPanels({ panelTab }: RepairContractWorkO
                   }`}
                   onClick={() => setActiveFinalWorkOrderDocId(doc.installer.id)}
                 >
-                  {formatInstallerNameShort(doc.installer.fullName)} (
-                  {formatInstallerGradeShort(doc.installer.grade)})
+                  {formatInstallerNameShort(doc.installer.fullName)}
+                  {!isWindowsPackage ? ` (${formatInstallerGradeShort(doc.installer.grade)})` : ''}
                 </button>
               ))}
             </div>
@@ -329,8 +338,10 @@ export function RepairContractWorkOrdersPanels({ panelTab }: RepairContractWorkO
                 ) : activeInstallerWorkOrder ? (
                   <>
                     <h4 className={styles.estimateA4Title}>
-                      Заказ-наряд мастера: {activeInstallerWorkOrder.installer.fullName} (
-                      {formatInstallerGradeShort(activeInstallerWorkOrder.installer.grade)})
+                      Заказ-наряд мастера: {activeInstallerWorkOrder.installer.fullName}
+                      {!isWindowsPackage
+                        ? ` (${formatInstallerGradeShort(activeInstallerWorkOrder.installer.grade)})`
+                        : ''}
                     </h4>
                     {activeInstallerWorkOrder.categories.map((section) => (
                       <section
@@ -448,9 +459,10 @@ export function RepairContractWorkOrdersPanels({ panelTab }: RepairContractWorkO
                         <div className={styles.estimateA4Meta}>
                           {finalWorkOrderComputed.installerTotals.map((row) => (
                             <p key={row.installer.id} style={{ margin: '0 0 4px' }}>
-                              {formatInstallerNameShort(row.installer.fullName)} (
-                              {formatInstallerGradeShort(row.installer.grade)}, {row.lineCount}
-                              шт.) - {formatMoneyRubShort(row.total)}руб.
+                              {formatInstallerNameShort(row.installer.fullName)}
+                              {isWindowsPackage
+                                ? ` (${row.lineCount} шт.) - ${formatMoneyRubShort(row.total)}руб.`
+                                : ` (${formatInstallerGradeShort(row.installer.grade)}, ${row.lineCount} шт.) - ${formatMoneyRubShort(row.total)}руб.`}
                             </p>
                           ))}
                         </div>
@@ -473,12 +485,14 @@ export function RepairContractWorkOrdersPanels({ panelTab }: RepairContractWorkO
           className={`${styles.formGrid} ${styles.workOrderParamsBar}`}
           style={{ gap: '2px 6px', display: 'flex', alignItems: 'flex-end', flexWrap: 'nowrap' }}
         >
-          <RepairWorkOrderGradeButtons
-            value={form.workOrder.gradeIncreasePercent}
-            onChange={(gradeIncreasePercent) =>
-              updateWorkOrder('gradeIncreasePercent', gradeIncreasePercent)
-            }
-          />
+          {!isWindowsPackage ? (
+            <RepairWorkOrderGradeButtons
+              value={form.workOrder.gradeIncreasePercent}
+              onChange={(gradeIncreasePercent) =>
+                updateWorkOrder('gradeIncreasePercent', gradeIncreasePercent)
+              }
+            />
+          ) : null}
           <label
             className={`${styles.managerQuestionnaireNeedRow} ${styles.repairWorkOrderShowAmountsLabel}`}
             htmlFor="repair_work_order_show_amounts"

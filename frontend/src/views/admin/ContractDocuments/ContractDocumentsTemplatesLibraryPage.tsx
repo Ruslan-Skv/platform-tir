@@ -90,6 +90,12 @@ import {
   normalizeContractTemplatePageBreaksInHtml,
 } from '@/views/admin/ContractDocuments/repair/contractTemplatePageBreak';
 import {
+  applyHtmlParagraphAlign,
+  applyVisualParagraphAlign,
+  collectVisualBlocksInRange,
+  parseExplicitTextAlign,
+} from '@/views/admin/ContractDocuments/repair/contractTemplateParagraphAlign';
+import {
   REMARK_BLANK_LINES_TOOLTIP,
   insertContractRemarkBlankLinesInVisualEditor,
 } from '@/views/admin/ContractDocuments/repair/contractTemplateRemarkBlankLines';
@@ -122,6 +128,11 @@ import {
 } from '@/views/admin/ContractDocuments/repair/repairActTwinCopiesOnOnePageHtml';
 import { REPAIR_CONTRACT_PLACEHOLDER_GROUPS } from '@/views/admin/ContractDocuments/repair/repairContractPlaceholders';
 import { buildRepairContractRequisitesInsertHtmlForToolbar } from '@/views/admin/ContractDocuments/repair/repairContractRequisitesLayout';
+import {
+  canAutosaveLibraryTemplatePreset,
+  repairMisassignedWindowsLibraryPresets,
+  resolveLibraryTemplateSelection,
+} from '@/views/admin/ContractDocuments/repair/repairLibraryTemplateSelection';
 import {
   REPAIR_LIBRARY_TEMPLATE_TAB_IDS,
   REPAIR_LIBRARY_TEMPLATE_TAB_LABELS,
@@ -858,7 +869,7 @@ function applyVisualFontSizePt(editor: HTMLElement, sizePt: number): void {
   if (!editor.contains(range.commonAncestorContainer)) return;
 
   if (range.collapsed) {
-    const block = findVisualBlockElement(editor, range.startContainer);
+    const block = collectVisualBlocksInRange(editor, range)[0];
     if (block) {
       block.style.fontSize = `${sizePt}pt`;
       return;
@@ -894,68 +905,6 @@ function applyVisualFontSizePt(editor: HTMLElement, sizePt: number): void {
   sel.addRange(nextRange);
 }
 
-const VISUAL_BLOCK_TAGS = new Set([
-  'P',
-  'LI',
-  'H1',
-  'H2',
-  'H3',
-  'H4',
-  'H5',
-  'H6',
-  'TD',
-  'TH',
-  'BLOCKQUOTE',
-]);
-
-function findVisualBlockElement(editor: HTMLElement, node: Node | null): HTMLElement | null {
-  let current: Node | null = node;
-  while (current && current !== editor) {
-    if (current instanceof HTMLElement && VISUAL_BLOCK_TAGS.has(current.tagName)) {
-      return current;
-    }
-    current = current.parentNode;
-  }
-  return null;
-}
-
-function findVisualBlockAtCollapsedCaret(editor: HTMLElement, range: Range): HTMLElement | null {
-  const direct = findVisualBlockElement(editor, range.startContainer);
-  if (direct) return direct;
-
-  if (range.startContainer === editor) {
-    const next = editor.children[range.startOffset];
-    if (next instanceof HTMLElement && VISUAL_BLOCK_TAGS.has(next.tagName)) return next;
-    const prev = editor.children[range.startOffset - 1];
-    if (prev instanceof HTMLElement && VISUAL_BLOCK_TAGS.has(prev.tagName)) return prev;
-  }
-
-  return null;
-}
-
-function collectVisualBlocksInRange(editor: HTMLElement, range: Range): HTMLElement[] {
-  const blocks = new Set<HTMLElement>();
-
-  if (range.collapsed) {
-    const block = findVisualBlockAtCollapsedCaret(editor, range);
-    if (block) blocks.add(block);
-    return [...blocks];
-  }
-
-  for (const el of editor.querySelectorAll<HTMLElement>(
-    'p, li, h1, h2, h3, h4, h5, h6, td, th, blockquote'
-  )) {
-    if (range.intersectsNode(el)) blocks.add(el);
-  }
-
-  if (blocks.size === 0) {
-    const block = findVisualBlockElement(editor, range.commonAncestorContainer);
-    if (block) blocks.add(block);
-  }
-
-  return [...blocks];
-}
-
 const HTML_BLOCK_ALIGN_TAGS = [
   'p',
   'h1',
@@ -970,29 +919,12 @@ const HTML_BLOCK_ALIGN_TAGS = [
   'blockquote',
 ] as const;
 
-function normalizeTextAlignKeyword(raw: string): ParagraphTextAlign | null {
-  const value = raw.toLowerCase();
-  if (value === 'center') return 'center';
-  if (value === 'right' || value === 'end') return 'right';
-  if (value === 'justify') return 'justify';
-  if (value === 'left' || value === 'start') return 'left';
-  return null;
-}
-
-/** Только явный text-align в CSS-тексте (атрибут style или style.*). */
-function parseExplicitTextAlign(cssText: string | null | undefined): ParagraphTextAlign | null {
-  if (!cssText) return null;
-  const match = cssText.match(/text-align\s*:\s*([\w-]+)/i);
-  if (!match) return null;
-  return normalizeTextAlignKeyword(match[1]);
-}
-
 function getBlockTextAlign(block: HTMLElement): ParagraphTextAlign | null {
   const fromAttr = parseExplicitTextAlign(block.getAttribute('style'));
   if (fromAttr) return fromAttr;
   const fromInline = parseExplicitTextAlign(block.style.cssText);
   if (fromInline) return fromInline;
-  return normalizeTextAlignKeyword(window.getComputedStyle(block).textAlign);
+  return parseExplicitTextAlign(`text-align: ${window.getComputedStyle(block).textAlign}`);
 }
 
 function getVisualSelectionTextAlign(editor: HTMLElement, range: Range): ParagraphTextAlign | null {
@@ -1792,13 +1724,60 @@ function templateLibraryKindLabel(kind: ContractDocumentPackageKind): string {
   return found?.label ?? kind;
 }
 
+function isTemplateLibraryKind(
+  value: string | null | undefined
+): value is ContractDocumentPackageKind {
+  return Boolean(value && TEMPLATE_LIBRARY_KIND_OPTIONS.some((o) => o.value === value));
+}
+
+/** Синхронное чтение направления — чтобы первый рендер совпал с localStorage (без гонки с useEffect). */
+function readStoredTemplatesLibraryKind(): ContractDocumentPackageKind {
+  if (typeof window === 'undefined') return 'REPAIR';
+  try {
+    const activeKindRaw = window.localStorage.getItem(TEMPLATES_ACTIVE_KIND_KEY);
+    if (isTemplateLibraryKind(activeKindRaw)) return activeKindRaw;
+    const raw = window.localStorage.getItem(TEMPLATES_UI_PREFS_KEY);
+    const parsed = raw ? (JSON.parse(raw) as TemplatesUiPrefs) : null;
+    if (parsed && isTemplateLibraryKind(parsed.activeLibraryKind)) {
+      return parsed.activeLibraryKind;
+    }
+  } catch {
+    // ignore broken localStorage payload
+  }
+  return 'REPAIR';
+}
+
+function readStoredTemplatesLibraryTab(
+  kind: ContractDocumentPackageKind
+): RepairLibraryTemplateTabId {
+  if (typeof window === 'undefined') return 'contract';
+  try {
+    const activeTabRaw = window.localStorage.getItem(TEMPLATES_ACTIVE_TAB_KEY);
+    if (typeof activeTabRaw === 'string' && activeTabRaw.trim()) {
+      return normalizeLibraryTemplateTabForPackageKind(activeTabRaw, kind);
+    }
+    const raw = window.localStorage.getItem(TEMPLATES_UI_PREFS_KEY);
+    const parsed = raw ? (JSON.parse(raw) as TemplatesUiPrefs) : null;
+    if (parsed && typeof parsed.activeTemplateTab === 'string') {
+      return normalizeLibraryTemplateTabForPackageKind(parsed.activeTemplateTab, kind);
+    }
+  } catch {
+    // ignore broken localStorage payload
+  }
+  return 'contract';
+}
+
 export function ContractDocumentsTemplatesLibraryPage() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [items, setItems] = useState<ContractTemplatePreset[]>([]);
-  const [activeLibraryKind, setActiveLibraryKind] = useState<ContractDocumentPackageKind>('REPAIR');
-  const [activeTemplateTab, setActiveTemplateTab] =
-    useState<RepairLibraryTemplateTabId>('contract');
+  const [activeLibraryKind, setActiveLibraryKind] = useState<ContractDocumentPackageKind>(
+    readStoredTemplatesLibraryKind
+  );
+  const [activeTemplateTab, setActiveTemplateTab] = useState<RepairLibraryTemplateTabId>(() =>
+    readStoredTemplatesLibraryTab(readStoredTemplatesLibraryKind())
+  );
+  const activeLibraryKindPrevRef = useRef<ContractDocumentPackageKind | null>(null);
   const libraryTemplateTabIds = useMemo(
     () => libraryTemplateTabIdsForPackageKind(activeLibraryKind),
     [activeLibraryKind]
@@ -1833,6 +1812,8 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const [html, setHtml] = useState('');
   const [editorMode, setEditorMode] = useState<'html' | 'visual'>('html');
   const [visualDraftHtml, setVisualDraftHtml] = useState('');
+  /** Смена шаблона / загрузка с API — пересинхронизировать contentEditable без onInput. */
+  const [templateContentEpoch, setTemplateContentEpoch] = useState(0);
   const [templateHistory, setTemplateHistory] = useState<string[]>([]);
   const [templateHistoryIndex, setTemplateHistoryIndex] = useState(-1);
   const [firstExecutorProfile, setFirstExecutorProfile] = useState<ExecutorRequisiteProfile | null>(
@@ -1872,6 +1853,8 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const skipInitialSizingPersistRef = useRef(true);
   const templatesLoadRequestIdRef = useRef(0);
   const preferredTemplateIdsRef = useRef<Record<string, string>>({});
+  const itemsRef = useRef<ContractTemplatePreset[]>([]);
+  itemsRef.current = items;
 
   const templatesScopeKey = useCallback(
     (kind: ContractDocumentPackageKind, tab: RepairLibraryTemplateTabId, archived: boolean) =>
@@ -2248,6 +2231,40 @@ export function ContractDocumentsTemplatesLibraryPage() {
     setTemplateHistoryIndex(0);
   }, []);
 
+  const commitTemplateHtmlToState = useCallback(
+    (raw: string) => {
+      const normalized = normalizeTemplateEditorHtml(raw);
+      setHtml(normalized);
+      setVisualDraftHtml(normalized);
+      resetTemplateHistory(normalized);
+      setTemplateContentEpoch((epoch) => epoch + 1);
+      return normalized;
+    },
+    [resetTemplateHistory]
+  );
+
+  const applyLibraryTemplateSelection = useCallback(
+    (list: ContractTemplatePreset[], tab: RepairLibraryTemplateTabId) => {
+      const preferredId =
+        preferredTemplateIdsRef.current[
+          templatesScopeKey(activeLibraryKind, tab, showArchivedTemplates)
+        ];
+      const sel = resolveLibraryTemplateSelection(list, activeLibraryKind, tab, {
+        preferredId,
+        archived: showArchivedTemplates,
+      });
+      setTitleRenameMode(false);
+      setEditingId(sel.id);
+      setTitle(
+        sel.title ||
+          (sel.isFallback ? `Новый шаблон (${REPAIR_LIBRARY_TEMPLATE_TAB_LABELS[tab]})` : '')
+      );
+      commitTemplateHtmlToState(sel.html);
+      return sel;
+    },
+    [activeLibraryKind, showArchivedTemplates, templatesScopeKey, commitTemplateHtmlToState]
+  );
+
   const handleTemplateHtmlFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target;
     const file = input.files?.[0];
@@ -2346,7 +2363,12 @@ export function ContractDocumentsTemplatesLibraryPage() {
   }, []);
 
   const syncVisualEditorToHtmlState = useCallback(() => {
-    const next = readVisualEditorHtml();
+    const raw = readVisualEditorHtml();
+    const next = normalizeTemplateEditorHtml(raw);
+    const editor = visualEditorRef.current;
+    if (editor && editor.innerHTML !== next) {
+      editor.innerHTML = next;
+    }
     setVisualDraftHtml(next);
     setHtml(next);
     return next;
@@ -2591,32 +2613,15 @@ export function ContractDocumentsTemplatesLibraryPage() {
         const nextRaw = (templatesRes.value.items ?? []).map((it) =>
           normalizeContractTemplatePreset(it)
         );
-        const next = filterTemplatesByActiveKind(nextRaw, activeLibraryKind);
+        const next = repairMisassignedWindowsLibraryPresets(
+          filterTemplatesByActiveKind(nextRaw, activeLibraryKind),
+          activeLibraryKind
+        );
         setItems(next);
         lastSavedSnapshotRef.current = JSON.stringify(
           next.map((it) => normalizeContractTemplatePreset(it))
         );
         isInitialHydrationRef.current = true;
-        const tabItems = next.filter(
-          (it) =>
-            repairLibraryTemplateTabIdFromPreset(it.tabId) === activeTemplateTab && !it.archived
-        );
-        const preferredId =
-          preferredTemplateIdsRef.current[
-            templatesScopeKey(activeLibraryKind, activeTemplateTab, false)
-          ];
-        const firstId =
-          tabItems.find((it) => it.id === preferredId)?.id ??
-          tabItems.find((it) => it.isDefault)?.id ??
-          tabItems[0]?.id ??
-          '';
-        setEditingId(firstId);
-        const t = tabItems.find((it) => it.id === firstId);
-        setTitle(t?.title ?? '');
-        const loadedHtml = normalizeTemplateEditorHtml(t?.html ?? '');
-        setHtml(loadedHtml);
-        setVisualDraftHtml(loadedHtml);
-        resetTemplateHistory(loadedHtml);
         void refreshTrashCount();
       } catch (e) {
         if (templatesLoadRequestIdRef.current !== requestId) return;
@@ -2627,7 +2632,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeLibraryKind, activeTemplateTab, templatesScopeKey]);
+  }, [activeLibraryKind, templatesScopeKey]);
 
   const persist = async (next: ContractTemplatePreset[], successText: string): Promise<boolean> => {
     setSaving(true);
@@ -2656,6 +2661,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
     ).trim();
     const contentHtml = normalizeTemplateEditorHtml(rawContentHtml);
     if (!t || !contentHtml) return null;
+    if (!canAutosaveLibraryTemplatePreset(items, editingId, activeTemplateTab)) return null;
     const exists = items.some((it) => it.id === editingId);
     if (exists) {
       return items.map((it) =>
@@ -2697,6 +2703,14 @@ export function ContractDocumentsTemplatesLibraryPage() {
         await putContractDocumentTemplatePresets({ kind: activeLibraryKind, items: normalized });
         setItems(normalized);
         lastSavedSnapshotRef.current = JSON.stringify(normalized);
+        const savedCurrent = editingId ? normalized.find((it) => it.id === editingId) : undefined;
+        if (savedCurrent?.html) {
+          setHtml(savedCurrent.html);
+          setVisualDraftHtml(savedCurrent.html);
+          if (visualEditorRef.current) {
+            visualEditorRef.current.innerHTML = savedCurrent.html;
+          }
+        }
         setAutosaveSavedVisible(true);
         window.setTimeout(() => setAutosaveSavedVisible(false), 1200);
       } catch (e) {
@@ -2705,7 +2719,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
         setSaving(false);
       }
     },
-    [activeLibraryKind]
+    [activeLibraryKind, editingId]
   );
 
   const persistAutosave = useCallback(async () => {
@@ -2790,10 +2804,26 @@ export function ContractDocumentsTemplatesLibraryPage() {
   );
 
   useEffect(() => {
+    if (activeLibraryKindPrevRef.current === null) {
+      activeLibraryKindPrevRef.current = activeLibraryKind;
+      return;
+    }
+    if (activeLibraryKindPrevRef.current === activeLibraryKind) return;
+    activeLibraryKindPrevRef.current = activeLibraryKind;
     setActiveTemplateTab((tab) =>
       normalizeLibraryTemplateTabForPackageKind(tab, activeLibraryKind)
     );
   }, [activeLibraryKind]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!uiPrefsLoadedRef.current) return;
+    try {
+      window.localStorage.setItem(TEMPLATES_ACTIVE_TAB_KEY, activeTemplateTab);
+    } catch {
+      // ignore localStorage write issues
+    }
+  }, [activeTemplateTab]);
 
   const handlePreviewCustomerKindChange = useCallback(
     (nextKind: RepairTemplatePreviewCustomerKind) => {
@@ -2846,16 +2876,25 @@ export function ContractDocumentsTemplatesLibraryPage() {
       templateTabSwitchRef.current = true;
       setActiveTemplateTab(nextTab);
       void (async () => {
+        let listAfterSave = items;
         try {
           if (pendingSave) {
             await persistItemsSnapshot(pendingSave);
+            listAfterSave = pendingSave;
           }
         } finally {
+          applyLibraryTemplateSelection(listAfterSave, nextTab);
           templateTabSwitchRef.current = false;
         }
       })();
     },
-    [activeTemplateTab, buildItemsForAutosave, persistItemsSnapshot]
+    [
+      activeTemplateTab,
+      applyLibraryTemplateSelection,
+      buildItemsForAutosave,
+      items,
+      persistItemsSnapshot,
+    ]
   );
 
   useEffect(() => {
@@ -2895,17 +2934,15 @@ export function ContractDocumentsTemplatesLibraryPage() {
   const selectTemplate = (id: string) => {
     void (async () => {
       await flushAutosave();
+      const t = items.find((it) => it.id === id) ?? itemsByActiveTab.find((it) => it.id === id);
+      const tab = repairLibraryTemplateTabIdFromPreset(t?.tabId) ?? activeTemplateTab;
       preferredTemplateIdsRef.current[
-        templatesScopeKey(activeLibraryKind, activeTemplateTab, showArchivedTemplates)
+        templatesScopeKey(activeLibraryKind, tab, showArchivedTemplates)
       ] = id;
       setTitleRenameMode(false);
       setEditingId(id);
-      const t = itemsByActiveTab.find((it) => it.id === id);
       setTitle(t?.title ?? '');
-      const loadedHtml = normalizeTemplateEditorHtml(t?.html ?? '');
-      setHtml(loadedHtml);
-      setVisualDraftHtml(loadedHtml);
-      resetTemplateHistory(loadedHtml);
+      commitTemplateHtmlToState(t?.html ?? '');
     })();
   };
 
@@ -2919,58 +2956,43 @@ export function ContractDocumentsTemplatesLibraryPage() {
       const next = isRepairLibraryTemplateTabId(activeTemplateTab)
         ? libraryTemplateFallbackHtml(activeLibraryKind, activeTemplateTab)
         : '<div class="docPrint"></div>';
-      setHtml(next);
-      setVisualDraftHtml(next);
-      resetTemplateHistory(next);
+      commitTemplateHtmlToState(next);
     })();
   };
 
   useEffect(() => {
-    if (!visualEditorRef.current) return;
-    const raw = visualDraftHtml || html || '';
+    const editor = visualEditorRef.current;
+    if (!editor || editorMode !== 'visual') return;
+    const raw = html || visualDraftHtml || '';
     const source = normalizeTemplateEditorHtml(raw);
-    visualEditorRef.current.innerHTML = source;
-    if (editorMode === 'visual' && source !== raw) {
-      setVisualDraftHtml(source);
+    if (editor.innerHTML === source) return;
+    const prevScrollTop = editor.scrollTop;
+    const wasFocused = window.document.activeElement === editor;
+    editor.innerHTML = source;
+    window.requestAnimationFrame(() => {
+      editor.scrollTop = prevScrollTop;
+      if (wasFocused) {
+        editor.focus({ preventScroll: true });
+      }
+    });
+    if (source !== html || source !== visualDraftHtml) {
       setHtml(source);
+      setVisualDraftHtml(source);
     }
-    if (editorMode === 'visual' && templateHistoryRef.current.length === 0) {
-      resetTemplateHistory(source);
-    }
-    // Важно: НЕ зависим от visualDraftHtml/html, иначе при каждом onInput перезаписываем DOM
-    // и курсор прыгает в начало.
+    // Только смена шаблона / режима — не onInput (см. templateContentEpoch).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editorMode, editingId]);
+  }, [templateContentEpoch, editorMode, editingId]);
 
   useEffect(() => {
-    const preferredId =
-      preferredTemplateIdsRef.current[
-        templatesScopeKey(activeLibraryKind, activeTemplateTab, showArchivedTemplates)
-      ];
-    const firstId =
-      itemsByActiveTab.find((it) => it.id === preferredId)?.id ??
-      itemsByActiveTab.find((it) => it.isDefault)?.id ??
-      itemsByActiveTab[0]?.id ??
-      '';
-    setTitleRenameMode(false);
-    setEditingId(firstId);
-    const t = itemsByActiveTab.find((it) => it.id === firstId);
-    setTitle(t?.title ?? '');
-    const loadedHtml = t?.html ?? '';
-    const repairedHtml =
-      activeTemplateTab === 'contract'
-        ? repairContractTemplateStructureInHtml(loadedHtml)
-        : loadedHtml;
-    setHtml(repairedHtml);
-    setVisualDraftHtml(repairedHtml);
-    resetTemplateHistory(repairedHtml);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (loading) return;
+    if (templateTabSwitchRef.current || templateArchiveSwitchRef.current) return;
+    applyLibraryTemplateSelection(itemsRef.current, activeTemplateTab);
   }, [
+    loading,
     activeLibraryKind,
     activeTemplateTab,
-    items.length,
     showArchivedTemplates,
-    templatesScopeKey,
+    applyLibraryTemplateSelection,
   ]);
 
   const requestMoveTemplateToTrash = () => {
@@ -3043,13 +3065,18 @@ export function ContractDocumentsTemplatesLibraryPage() {
   };
 
   const applyEditingTemplateFromList = (list: ContractTemplatePreset[], id: string) => {
-    setEditingId(id);
     const t = list.find((it) => it.id === id);
-    setTitle(t?.title ?? '');
-    const loadedHtml = normalizeTemplateEditorHtml(t?.html ?? '');
-    setHtml(loadedHtml);
-    setVisualDraftHtml(loadedHtml);
-    resetTemplateHistory(loadedHtml);
+    const tab = repairLibraryTemplateTabIdFromPreset(t?.tabId) ?? activeTemplateTab;
+    preferredTemplateIdsRef.current[
+      templatesScopeKey(activeLibraryKind, tab, showArchivedTemplates)
+    ] = id;
+    if (t) {
+      setEditingId(id);
+      setTitle(t.title ?? '');
+      commitTemplateHtmlToState(t.html ?? '');
+      return;
+    }
+    applyLibraryTemplateSelection(list, tab);
   };
 
   const confirmArchiveTemplate = () => {
@@ -3302,26 +3329,28 @@ export function ContractDocumentsTemplatesLibraryPage() {
 
   const wrapParagraphWithAlign = (align: 'left' | 'center' | 'right' | 'justify') => {
     if (editorMode === 'visual') {
-      const cmd =
-        align === 'left'
-          ? 'justifyLeft'
-          : align === 'center'
-            ? 'justifyCenter'
-            : align === 'right'
-              ? 'justifyRight'
-              : 'justifyFull';
-      visualEditorRef.current?.focus();
-      document.execCommand(cmd);
-      const next = visualEditorRef.current?.innerHTML ?? '';
-      setVisualDraftHtml(next);
-      setHtml(next);
-      pushTemplateHistory(next);
-      captureVisualSelection();
+      const el = visualEditorRef.current;
+      if (!el) return;
+      el.focus();
+      restoreVisualSelection();
+      applyVisualParagraphAlign(el, align);
+      syncVisualEditorFromDom();
       window.requestAnimationFrame(() => refreshInlineFormatActiveState());
       return;
     }
-    wrapSelection(`<p style="text-align: ${align}; margin: 0 0 8pt;">`, '</p>', 'Новый абзац');
-    window.requestAnimationFrame(() => refreshInlineFormatActiveState());
+
+    const textarea = htmlTextareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart ?? 0;
+    const end = textarea.selectionEnd ?? start;
+    const next = applyHtmlParagraphAlign(html, start, end, align);
+    if (next === html) return;
+    setHtml(next);
+    window.requestAnimationFrame(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start, end);
+      refreshInlineFormatActiveState();
+    });
   };
   const applyParagraphIndentCm = (indentCm: number) => {
     if (editorMode === 'visual') {
@@ -3669,6 +3698,21 @@ export function ContractDocumentsTemplatesLibraryPage() {
       if (handleContractLegalListBackspace(el)) {
         e.preventDefault();
         syncVisualEditorFromDom();
+      }
+      return;
+    }
+
+    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+      if (e.key === 'z' && !e.shiftKey) {
+        if (templateHistoryIndexRef.current <= 0) return;
+        e.preventDefault();
+        handleTemplateUndo();
+        return;
+      }
+      if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) {
+        if (templateHistoryIndexRef.current >= templateHistoryRef.current.length - 1) return;
+        e.preventDefault();
+        handleTemplateRedo();
       }
     }
   };
@@ -5053,7 +5097,7 @@ export function ContractDocumentsTemplatesLibraryPage() {
                       const next = (e.currentTarget as HTMLDivElement).innerHTML;
                       setVisualDraftHtml(next);
                       setHtml(next);
-                      pushTemplateHistory(next);
+                      schedulePushTemplateHistoryFromHtml(next);
                       captureVisualSelection();
                     }}
                     onKeyUp={captureVisualSelection}

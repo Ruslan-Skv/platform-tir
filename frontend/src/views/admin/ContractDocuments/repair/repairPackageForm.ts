@@ -1,4 +1,5 @@
 import type {
+  ContractDocumentPackageKind,
   ContractEstimateGroup,
   ContractEstimatePreset,
   ContractSignatoryProfile,
@@ -25,6 +26,14 @@ import {
 import { resolveExecutorBankFields } from './repairExecutorBankFields';
 import { buildRepairInvoiceTemplateExtras } from './repairInvoiceTemplateFields';
 import { computeRepairPackagePayableBreakdown } from './repairPackagePaymentTotals';
+import { buildWindowsWorkOrderComputed } from './repairWindowsWorkOrder';
+import {
+  type WindowsAddendumSpecificationLine,
+  buildWindowsAddendumPrintHtml,
+  normalizeWindowsAddendumSpecificationLines,
+  windowsAddendumSlotHasAnyPrintContent,
+  windowsAddendumSlotHasSpecificationContent,
+} from './windowsAddendumSpecification';
 import { repairContractCostFieldsForTemplate } from './windowsContractCostBreakdown';
 
 /** ЮЛ — ОГРН и КПП; ИП — ОГРНИП (КПП в форме обычно пустой). */
@@ -299,6 +308,10 @@ export interface RepairAddendumSlotEstimateBlock {
   excludedSnapshot: RepairEstimateBlock['snapshot'];
   notes: string;
   excludedNotes: string;
+  /** Д/с по «Окна»: дополнительные изделия в спецификации. */
+  specificationAddedLines: WindowsAddendumSpecificationLine[];
+  /** Д/с по «Окна»: исключённые / уменьшенные изделия в спецификации. */
+  specificationExcludedLines: WindowsAddendumSpecificationLine[];
 }
 
 /** Выставленный счёт на оплату (без проводки в журнале до фактической оплаты). */
@@ -541,6 +554,8 @@ function defaultAddendumSlot(): RepairAddendumSlotEstimateBlock {
     excludedSnapshot: null,
     notes: '',
     excludedNotes: '',
+    specificationAddedLines: [],
+    specificationExcludedLines: [],
   };
 }
 
@@ -651,6 +666,12 @@ function normalizeAddendumSlots(raw: unknown): RepairAddendumSlotsTuple {
       excludedSnapshot,
       notes: typeof o.notes === 'string' ? o.notes : '',
       excludedNotes: typeof o.excludedNotes === 'string' ? o.excludedNotes : '',
+      specificationAddedLines: normalizeWindowsAddendumSpecificationLines(
+        o.specificationAddedLines
+      ),
+      specificationExcludedLines: normalizeWindowsAddendumSpecificationLines(
+        o.specificationExcludedLines
+      ),
     };
   }
   return out as RepairAddendumSlotsTuple;
@@ -778,6 +799,7 @@ function isRepairAddendumSlotUnused(
   const hasExcludedSnapshot =
     Boolean(slot.excludedSnapshot?.rooms?.length) || hasExcludedSnapshotTotal;
   const hasNotes = (slot.notes ?? '').trim() !== '' || (slot.excludedNotes ?? '').trim() !== '';
+  const hasSpec = windowsAddendumSlotHasSpecificationContent(slot);
   const isSigned =
     slot.status === 'SIGNED' || slot.status === 'PAID' || (slot.signedAt ?? '').trim() !== '';
   const isPaid = (slot.paidAt ?? '').trim() !== '';
@@ -787,9 +809,38 @@ function isRepairAddendumSlotUnused(
     hasSnapshot ||
     hasExcludedSnapshot ||
     hasNotes ||
+    hasSpec ||
     isSigned ||
     isPaid
   );
+}
+
+/** Дата в шапке Д/с: только для неподписанных слотов, если поле пустое. */
+export function applyOpenAddendumDocumentDateAutofill(
+  form: RepairPackageFormData,
+  todayDdMmYyyy: string
+): { form: RepairPackageFormData; changed: boolean } {
+  const nextDates = [
+    ...form.addendumDocumentDates,
+  ] as RepairPackageFormData['addendumDocumentDates'];
+  let changed = false;
+  for (let i = 0; i < form.addendumSlotCount; i++) {
+    const slot = form.addendumSlots[i];
+    const status = slot?.status ?? 'OPEN';
+    if (status === 'SIGNED' || status === 'PAID') continue;
+    if (nextDates[i]?.trim()) continue;
+    nextDates[i] = todayDdMmYyyy;
+    changed = true;
+  }
+  if (!changed) return { form, changed: false };
+  return { form: { ...form, addendumDocumentDates: nextDates }, changed: true };
+}
+
+export function isRepairAddendumSlotEditable(
+  slot: RepairAddendumSlotEstimateBlock | undefined
+): boolean {
+  if (!slot) return true;
+  return slot.status !== 'SIGNED' && slot.status !== 'PAID';
 }
 
 /** После загрузки: не показывать пустой хвост; не скрывать слот с данными. */
@@ -1247,12 +1298,67 @@ function buildWorkOrderComputed(
   };
 }
 
-function buildWorkOrderRoomsHtmlFromSnapshot(
+type WorkOrderComputedForHtml = ReturnType<typeof buildWorkOrderComputed>;
+
+function buildWindowsWorkOrderComputedForTemplate(
   snapshot: RepairEstimateBlock['snapshot'],
-  taxRaw: string,
-  markupRaw: string,
-  gradeIncreasePercentRaw: unknown,
   contractDiscountPercentRaw: string,
+  markupPercentRaw: unknown
+): WorkOrderComputedForHtml {
+  const w = buildWindowsWorkOrderComputed(snapshot, contractDiscountPercentRaw, markupPercentRaw);
+  const reductionAmount = Math.max(0, w.originalTotal - w.adjustedTotal);
+  return {
+    taxPercent: 0,
+    markupPercent: w.markupPercent,
+    gradeIncreasePercent: 0,
+    rooms: w.rooms.map((room) => ({
+      name: room.name,
+      originalTotal: room.originalTotal,
+      adjustedTotal: room.adjustedTotal,
+      lines: room.lines.map((line) => ({
+        name: line.name,
+        unit: line.unit,
+        quantity: line.quantity,
+        originalPrice: line.originalPrice,
+        originalAmount: line.originalAmount,
+        adjustedPrice: line.adjustedPrice,
+        adjustedAmount: line.adjustedAmount,
+      })),
+    })),
+    originalTotal: w.originalTotal,
+    adjustedTotal: w.adjustedTotal,
+    taxAmount: 0,
+    markupAmount: reductionAmount,
+    reductionAmount,
+  };
+}
+
+function resolveWorkOrderComputedForTemplate(
+  snapshot: RepairEstimateBlock['snapshot'],
+  form: RepairPackageFormData,
+  options?: {
+    packageKind?: ContractDocumentPackageKind;
+    windowsWorkOrderMarkupPercent?: number;
+  }
+): WorkOrderComputedForHtml {
+  if (options?.packageKind === 'WINDOWS') {
+    return buildWindowsWorkOrderComputedForTemplate(
+      snapshot,
+      form.contract.discountPercent,
+      options.windowsWorkOrderMarkupPercent
+    );
+  }
+  return buildWorkOrderComputed(
+    snapshot,
+    form.workOrder.taxPercent,
+    form.workOrder.markupPercent,
+    form.workOrder.gradeIncreasePercent,
+    form.contract.discountPercent
+  );
+}
+
+function buildWorkOrderRoomsHtmlFromComputed(
+  computed: WorkOrderComputedForHtml,
   sections?: EstimateEmbedSection[],
   showLineAmounts = true
 ): string {
@@ -1263,13 +1369,6 @@ function buildWorkOrderRoomsHtmlFromSnapshot(
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
-  const computed = buildWorkOrderComputed(
-    snapshot,
-    taxRaw,
-    markupRaw,
-    gradeIncreasePercentRaw,
-    contractDiscountPercentRaw
-  );
   if (computed.rooms.length === 0) return '';
   const sectionRooms =
     sections && sections.length > 0
@@ -1346,6 +1445,28 @@ function buildWorkOrderRoomsHtmlFromSnapshot(
 </table>`;
 }
 
+function buildWorkOrderRoomsHtmlFromSnapshot(
+  snapshot: RepairEstimateBlock['snapshot'],
+  taxRaw: string,
+  markupRaw: string,
+  gradeIncreasePercentRaw: unknown,
+  contractDiscountPercentRaw: string,
+  sections?: EstimateEmbedSection[],
+  showLineAmounts = true,
+  precomputed?: WorkOrderComputedForHtml
+): string {
+  const computed =
+    precomputed ??
+    buildWorkOrderComputed(
+      snapshot,
+      taxRaw,
+      markupRaw,
+      gradeIncreasePercentRaw,
+      contractDiscountPercentRaw
+    );
+  return buildWorkOrderRoomsHtmlFromComputed(computed, sections, showLineAmounts);
+}
+
 function buildWorkOrderCategoryTotalsHtml(options: {
   sections: EstimateEmbedSection[];
   roomTotals: number[];
@@ -1386,6 +1507,8 @@ export function repairPackageFormForTemplate(
     templateTab?: string;
     estimatePresets?: ContractEstimatePreset[];
     estimateGroups?: ContractEstimateGroup[];
+    packageKind?: ContractDocumentPackageKind;
+    windowsWorkOrderMarkupPercent?: number;
   }
 ): RepairPackageFormData & {
   meta: { currentDate: string };
@@ -1430,8 +1553,12 @@ export function repairPackageFormForTemplate(
     /** Склейка для старых шаблонов с одним плейсхолдером. */
     headerTitle: string;
     documentDate: string;
+    /** Доп. класс на `.docPrint` (напр. компактная печать для «Окна»). */
+    printDocClass: string;
     roomsHtml: string;
     workPeriodIncreaseSentence: string;
+    /** Абзац про увеличение срока или пустая строка (без плейсхолдера «__________»). */
+    workPeriodIncreaseHtml: string;
   };
 } {
   const estimateGroupsForTpl = options?.estimateGroups ?? [];
@@ -1516,61 +1643,106 @@ export function repairPackageFormForTemplate(
     addendumSlot !== null && addendumSlot >= 1 && addendumSlot <= 5
       ? (form.addendumSlots[addendumSlot - 1]?.excludedSnapshot ?? null)
       : null;
-  const addendumRoomsHtml =
-    addendumSlot && (addendumSlotSnap || addendumExcludedSnap)
-      ? (() => {
-          const additionalHtml = addendumSlotSnap
-            ? buildEstimateDocPrintEmbedHtml({
-                sections: addendumSections,
-                snapshot: addendumSlotSnap,
-                directorName: form.executor.directorName,
-                customerFullName: form.customer.fullName,
-                includeFooter: false,
-                includeTotals: false,
-              })
-            : '';
-          const excludedHtml = addendumExcludedSnap
-            ? buildEstimateDocPrintEmbedHtml({
-                sections: addendumExcludedSections,
-                snapshot: addendumExcludedSnap,
-                directorName: form.executor.directorName,
-                customerFullName: form.customer.fullName,
-                includeFooter: false,
-                includeTotals: false,
-              })
-            : '';
-          const additionalTotal = addendumSlotSnap?.total ?? 0;
-          const excludedTotal = addendumExcludedSnap?.total ?? 0;
-          const summaryTotal = additionalTotal - excludedTotal;
-          const sectionsHtml: string[] = [];
-          if (additionalHtml) {
-            sectionsHtml.push(
-              `<section><h2 class="repairAddendumEstimateHeading">Смета дополнительных ремонтно-отделочных работ</h2>${additionalHtml}</section>`
-            );
-          }
-          if (excludedHtml) {
-            sectionsHtml.push(
-              `<section><h2 class="repairAddendumEstimateHeading">Непроводимые ремонтно-отделочные работы</h2>${excludedHtml}</section>`
-            );
-          }
-          if (sectionsHtml.length === 0) return '';
-          const totalsAndFooterHtml = `<div class="estimateA4DocPrintEmbed">${buildEstimateDiscountTotalsBlockHtml(
-            {
-              grossTotal: summaryTotal,
-              contractDiscountPercent: form.contract.discountPercent,
-            }
-          )}${buildEstimateDocPrintFooterHtml({
-            directorName: form.executor.directorName,
-            customerFullName: form.customer.fullName,
-          })}</div>`;
-          return [...sectionsHtml, totalsAndFooterHtml].join('');
-        })()
+  const addendumSlotForPrint =
+    addendumSlotIdx !== null ? form.addendumSlots[addendumSlotIdx] : undefined;
+  const buildRepairAddendumEstimateRoomsHtml = () => {
+    if (!addendumSlotSnap && !addendumExcludedSnap) return '';
+    const additionalHtml = addendumSlotSnap
+      ? buildEstimateDocPrintEmbedHtml({
+          sections: addendumSections,
+          snapshot: addendumSlotSnap,
+          directorName: form.executor.directorName,
+          customerFullName: form.customer.fullName,
+          includeFooter: false,
+          includeTotals: false,
+        })
       : '';
+    const excludedHtml = addendumExcludedSnap
+      ? buildEstimateDocPrintEmbedHtml({
+          sections: addendumExcludedSections,
+          snapshot: addendumExcludedSnap,
+          directorName: form.executor.directorName,
+          customerFullName: form.customer.fullName,
+          includeFooter: false,
+          includeTotals: false,
+        })
+      : '';
+    const additionalTotal = addendumSlotSnap?.total ?? 0;
+    const excludedTotal = addendumExcludedSnap?.total ?? 0;
+    const summaryTotal = additionalTotal - excludedTotal;
+    const sectionsHtml: string[] = [];
+    if (additionalHtml) {
+      sectionsHtml.push(
+        `<section><h2 class="repairAddendumEstimateHeading">Смета дополнительных ремонтно-отделочных работ</h2>${additionalHtml}</section>`
+      );
+    }
+    if (excludedHtml) {
+      sectionsHtml.push(
+        `<section><h2 class="repairAddendumEstimateHeading">Непроводимые ремонтно-отделочные работы</h2>${excludedHtml}</section>`
+      );
+    }
+    if (sectionsHtml.length === 0) return '';
+    const totalsAndFooterHtml = `<div class="estimateA4DocPrintEmbed">${buildEstimateDiscountTotalsBlockHtml(
+      {
+        grossTotal: summaryTotal,
+        contractDiscountPercent: form.contract.discountPercent,
+      }
+    )}${buildEstimateDocPrintFooterHtml({
+      directorName: form.executor.directorName,
+      customerFullName: form.customer.fullName,
+    })}</div>`;
+    return [...sectionsHtml, totalsAndFooterHtml].join('');
+  };
+  const buildWindowsAddendumRoomsHtml = () => {
+    if (!addendumSlotForPrint || !windowsAddendumSlotHasAnyPrintContent(addendumSlotForPrint)) {
+      return '';
+    }
+    const additionalHtml = addendumSlotSnap
+      ? buildEstimateDocPrintEmbedHtml({
+          sections: addendumSections,
+          snapshot: addendumSlotSnap,
+          directorName: form.executor.directorName,
+          customerFullName: form.customer.fullName,
+          includeFooter: false,
+          includeTotals: false,
+        })
+      : '';
+    const excludedHtml = addendumExcludedSnap
+      ? buildEstimateDocPrintEmbedHtml({
+          sections: addendumExcludedSections,
+          snapshot: addendumExcludedSnap,
+          directorName: form.executor.directorName,
+          customerFullName: form.customer.fullName,
+          includeFooter: false,
+          includeTotals: false,
+        })
+      : '';
+    return buildWindowsAddendumPrintHtml({
+      slot: addendumSlotForPrint,
+      additionalEmbedHtml: additionalHtml,
+      excludedEmbedHtml: excludedHtml,
+      accountAdditionalTotal: addendumSlotSnap?.total ?? 0,
+      accountExcludedTotal: addendumExcludedSnap?.total ?? 0,
+      contractDiscountPercent: form.contract.discountPercent,
+      directorName: form.executor.directorName,
+      customerFullName: form.customer.fullName,
+    });
+  };
+  const addendumRoomsHtml =
+    addendumSlot && options?.packageKind === 'WINDOWS'
+      ? buildWindowsAddendumRoomsHtml()
+      : addendumSlot
+        ? buildRepairAddendumEstimateRoomsHtml()
+        : '';
   const addendumForTemplate =
     addendumSlot !== null && Number.isFinite(addendumSlot) && addendumSlot >= 1 && addendumSlot <= 5
       ? (() => {
           const headerMain = `Дополнительное соглашение №${addendumSlot}`;
-          const headerSub = `к договору на проведение ремонтно-отделочных работ с использованием материалов заказчика № ${form.contract.number.trim()} от ${form.contract.date.trim()}`;
+          const contractRef = `№ ${form.contract.number.trim()} от ${form.contract.date.trim()}`;
+          const headerSub =
+            options?.packageKind === 'WINDOWS'
+              ? `к Договору подряда (с элементами купли-продажи) ${contractRef}`
+              : `к договору на проведение ремонтно-отделочных работ с использованием материалов заказчика ${contractRef}`;
           const increaseRaw =
             form.addendumSlots[addendumSlot - 1]?.workPeriodIncreaseDays?.trim() ?? '';
           const increaseDays = Number.parseInt(increaseRaw, 10);
@@ -1578,22 +1750,26 @@ export function repairPackageFormForTemplate(
             Number.isFinite(increaseDays) && increaseDays > 0
               ? `В связи с увеличением объема работ, срок по договору увеличивается на ${increaseDays} рабочих дней.`
               : '';
+          const workPeriodIncreaseHtml = workPeriodIncreaseSentence
+            ? `<p style="margin: 10pt 0 0;">${workPeriodIncreaseSentence}</p>`
+            : '';
           return {
             headerMain,
             headerSub,
             headerTitle: `${headerMain} ${headerSub}`,
             documentDate: form.addendumDocumentDates[addendumSlot - 1] ?? '',
+            printDocClass:
+              options?.packageKind === 'WINDOWS' ? ' windowsAddendumPrintCompactDoc' : '',
             roomsHtml: addendumRoomsHtml,
             workPeriodIncreaseSentence,
+            workPeriodIncreaseHtml,
           };
         })()
       : undefined;
-  const workOrderComputed = buildWorkOrderComputed(
+  const workOrderComputed = resolveWorkOrderComputedForTemplate(
     form.estimate.snapshot,
-    form.workOrder.taxPercent,
-    form.workOrder.markupPercent,
-    form.workOrder.gradeIncreasePercent,
-    form.contract.discountPercent
+    form,
+    options
   );
   const workOrderSections = buildEstimateSectionsFromPresetIds(
     form.estimate.selectedPresetIds,
@@ -1606,12 +1782,10 @@ export function repairPackageFormForTemplate(
   });
   const workOrderAddendumComputed =
     addendumSlot !== null && addendumSlot >= 1 && addendumSlot <= 5
-      ? buildWorkOrderComputed(
+      ? resolveWorkOrderComputedForTemplate(
           form.addendumSlots[addendumSlot - 1]?.snapshot ?? null,
-          form.workOrder.taxPercent,
-          form.workOrder.markupPercent,
-          form.workOrder.gradeIncreasePercent,
-          form.contract.discountPercent
+          form,
+          options
         )
       : null;
   const workOrderAddendumSections =
@@ -1627,7 +1801,7 @@ export function repairPackageFormForTemplate(
     roomTotals: workOrderAddendumComputed?.rooms.map((room) => room.adjustedTotal) ?? [],
   });
   const workOrderAddendumRoomsHtml =
-    addendumSlot !== null && addendumSlot >= 1 && addendumSlot <= 5
+    addendumSlot !== null && addendumSlot >= 1 && addendumSlot <= 5 && workOrderAddendumComputed
       ? buildWorkOrderRoomsHtmlFromSnapshot(
           form.addendumSlots[addendumSlot - 1]?.snapshot ?? null,
           form.workOrder.taxPercent,
@@ -1635,7 +1809,8 @@ export function repairPackageFormForTemplate(
           form.workOrder.gradeIncreasePercent,
           form.contract.discountPercent,
           workOrderAddendumSections,
-          form.workOrder.showLineAmounts
+          form.workOrder.showLineAmounts,
+          workOrderAddendumComputed
         )
       : '';
   const workOrderAddendumForTemplate =
@@ -1736,7 +1911,8 @@ export function repairPackageFormForTemplate(
         form.workOrder.gradeIncreasePercent,
         form.contract.discountPercent,
         workOrderSections,
-        form.workOrder.showLineAmounts
+        form.workOrder.showLineAmounts,
+        workOrderComputed
       ),
       categoryTotalsHtml: workOrderCategoryTotalsHtml,
       showLineAmounts: form.workOrder.showLineAmounts,

@@ -1,4 +1,15 @@
+import { normalizeContractActHandwrittenSignaturesInDom } from './contractTemplateActSignatures';
+import {
+  repairContractAppendixAndActTitlesInDom,
+  repairContractAppendixRefInDom,
+  repairContractAppendixRefInHtml,
+} from './contractTemplateAppendixRef';
 import { normalizeContractHeaderCustomerTypography } from './contractTemplateHeader';
+import {
+  repairBrokenMemoHeadingNestingInDom,
+  repairBrokenMemoHeadingNestingInHtml,
+} from './contractTemplateMemoStructure';
+import { repairParagraphTextAlignInDom } from './contractTemplateParagraphAlign';
 import {
   applyStandardHeadingTitleStyle,
   isLikelyContractTitleText,
@@ -144,6 +155,7 @@ export function repairContractTitleBlock(docPrint: HTMLElement): void {
 export function repairContractTemplateStructureInDom(root: ParentNode): void {
   if (typeof window === 'undefined') return;
   removeEmptyDocPrintShells(root);
+  repairContractAppendixAndActTitlesInDom(root);
   sanitizeContractHeadingMarkup(root);
 
   const docPrint =
@@ -152,12 +164,18 @@ export function repairContractTemplateStructureInDom(root: ParentNode): void {
       : (root.querySelector('.docPrint') as HTMLElement | null);
   if (!docPrint) return;
 
+  repairBrokenMemoHeadingNestingInDom(docPrint);
+  repairContractAppendixRefInDom(docPrint);
+  repairParagraphTextAlignInDom(docPrint);
   repairContractTitleBlock(docPrint);
+  normalizeContractActHandwrittenSignaturesInDom(docPrint);
 }
 
 export function repairContractTemplateStructureInHtml(html: string): string {
-  if (typeof window === 'undefined') return html;
-  const wrapped = ensureContractContentInDocPrint(html);
+  const withMemo = repairBrokenMemoHeadingNestingInHtml(html);
+  const withAppendix = repairContractAppendixRefInHtml(withMemo);
+  if (typeof window === 'undefined') return withAppendix;
+  const wrapped = ensureContractContentInDocPrint(withAppendix);
   const container = document.createElement('div');
   container.innerHTML = wrapped;
   repairContractTemplateStructureInDom(container);

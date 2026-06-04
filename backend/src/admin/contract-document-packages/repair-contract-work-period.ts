@@ -1,5 +1,7 @@
 export const DEFAULT_REPAIR_CONTRACT_WORK_PERIOD_DAYS = 60;
 export const DEFAULT_WINDOWS_CONTRACT_WORK_PERIOD_DAYS = 90;
+/** Вычитается из цены позиции счёт-заказа при расчёте заказ-наряда «Окна». */
+export const DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT = 33;
 
 export function workPeriodDaysToFormValue(days: number): string {
   const n = Math.trunc(days);
