@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
@@ -538,6 +539,73 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   // Загрузка изображений
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const submitProductForm = useCallback(() => {
+    formRef.current?.requestSubmit();
+  }, []);
+  const getAdminHeaderBottomOffset = useCallback(() => {
+    const mainEl = document.querySelector('main');
+    const adminHeader =
+      mainEl?.previousElementSibling instanceof HTMLElement &&
+      mainEl.previousElementSibling.tagName === 'HEADER'
+        ? mainEl.previousElementSibling
+        : document.querySelector('header');
+
+    if (!(adminHeader instanceof HTMLElement)) {
+      return 8;
+    }
+
+    return Math.ceil(adminHeader.getBoundingClientRect().bottom) + 8;
+  }, []);
+  const scrollProductPageToTop = useCallback((): Promise<void> => {
+    const nextTop = 0;
+
+    if (window.scrollY < 2) {
+      updateSaveButtonPinRef.current?.();
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        window.removeEventListener('scroll', onScroll);
+        window.clearTimeout(fallbackTimer);
+        updateSaveButtonPinRef.current?.();
+        resolve();
+      };
+
+      const onScroll = () => {
+        if (window.scrollY < 2) {
+          finish();
+        }
+      };
+
+      const fallbackTimer = window.setTimeout(finish, 900);
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.scrollTo({ top: nextTop, left: 0, behavior: 'smooth' });
+    });
+  }, []);
+  const handleHeaderSaveClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      void scrollProductPageToTop().then(() => {
+        submitProductForm();
+      });
+    },
+    [scrollProductPageToTop, submitProductForm]
+  );
+  const saveButtonAnchorRef = useRef<HTMLDivElement>(null);
+  const saveButtonRef = useRef<HTMLButtonElement>(null);
+  const updateSaveButtonPinRef = useRef<(() => void) | null>(null);
+  const [saveButtonFixed, setSaveButtonFixed] = useState(false);
+  const [saveButtonFixedLeft, setSaveButtonFixedLeft] = useState<number | null>(null);
+  const [saveButtonPlaceholderSize, setSaveButtonPlaceholderSize] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
+  const [saveButtonPinnedTopPx, setSaveButtonPinnedTopPx] = useState(72);
+  const [saveButtonPortalRoot, setSaveButtonPortalRoot] = useState<HTMLElement | null>(null);
   const cardVariantFileInputRef = useRef<HTMLInputElement>(null);
   const [cardVariantUploadIndex, setCardVariantUploadIndex] = useState<number | null>(null);
   const [uploadingImages, setUploadingImages] = useState(false);
@@ -1066,6 +1134,60 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     };
   }, []);
 
+  useEffect(() => {
+    setSaveButtonPortalRoot(document.querySelector('main')?.parentElement ?? null);
+  }, []);
+
+  const measureSaveButtonPinnedTop = useCallback(() => {
+    return getAdminHeaderBottomOffset();
+  }, [getAdminHeaderBottomOffset]);
+
+  useEffect(() => {
+    if (loading || productNotFound) {
+      setSaveButtonFixed(false);
+      return;
+    }
+
+    const updateSaveButtonPin = () => {
+      const pinnedTop = measureSaveButtonPinnedTop();
+      setSaveButtonPinnedTopPx(pinnedTop);
+
+      const anchor = saveButtonAnchorRef.current;
+      if (!anchor) return;
+
+      const anchorRect = anchor.getBoundingClientRect();
+      const shouldFix = anchorRect.top < pinnedTop;
+
+      if (shouldFix) {
+        const button = saveButtonRef.current;
+        if (!button) return;
+
+        const buttonRect = button.getBoundingClientRect();
+        const buttonWidth = buttonRect.width || button.offsetWidth;
+        setSaveButtonFixedLeft(anchorRect.right - buttonWidth);
+        setSaveButtonPlaceholderSize({
+          width: buttonWidth,
+          height: buttonRect.height || button.offsetHeight,
+        });
+      } else {
+        setSaveButtonFixedLeft(null);
+        setSaveButtonPlaceholderSize(null);
+      }
+
+      setSaveButtonFixed(shouldFix);
+    };
+
+    updateSaveButtonPinRef.current = updateSaveButtonPin;
+    updateSaveButtonPin();
+    window.addEventListener('scroll', updateSaveButtonPin, { passive: true });
+    window.addEventListener('resize', updateSaveButtonPin);
+    return () => {
+      updateSaveButtonPinRef.current = null;
+      window.removeEventListener('scroll', updateSaveButtonPin);
+      window.removeEventListener('resize', updateSaveButtonPin);
+    };
+  }, [loading, productNotFound, measureSaveButtonPinnedTop]);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -1536,6 +1658,28 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     }
   };
 
+  const renderHeaderSaveButton = (fixed: boolean) => (
+    <button
+      ref={saveButtonRef}
+      type="button"
+      className={`${styles.saveButton} ${styles.headerSaveButton} ${fixed ? styles.saveButtonFixed : ''}`}
+      style={
+        fixed && saveButtonFixedLeft != null
+          ? { left: saveButtonFixedLeft, top: saveButtonPinnedTopPx }
+          : undefined
+      }
+      disabled={saving}
+      onClick={handleHeaderSaveClick}
+    >
+      <span className={styles.saveButtonTextWrap} aria-live="polite">
+        <span>{saving ? 'Сохранение...' : 'Сохранить изменения'}</span>
+        <span className={styles.saveButtonTextSizer} aria-hidden>
+          Сохранить изменения
+        </span>
+      </span>
+    </button>
+  );
+
   if (loading) {
     return (
       <div className={styles.page}>
@@ -1562,18 +1706,18 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   }
 
   return (
-    <div className={styles.page}>
-      <div
-        className={styles.header}
-        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+    <div
+      className={styles.page}
+      style={{ '--product-edit-sticky-top': `${saveButtonPinnedTopPx}px` } as React.CSSProperties}
+    >
+      <div className={styles.pageHeader}>
+        <div className={styles.pageHeaderMain}>
           <button className={styles.backButton} onClick={navigateBackToProductsList}>
             ← Назад к списку
           </button>
           <h1 className={styles.title}>Редактирование товара</h1>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className={styles.pageHeaderActions}>
           <button
             type="button"
             className={`${styles.cancelButton} ${styles.copyProductButton}`}
@@ -1589,23 +1733,27 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
             <CopyIcon />
             Скопировать
           </button>
-          <button
-            type="button"
-            className={styles.saveButton}
-            disabled={saving}
-            onClick={(e) => {
-              e.preventDefault();
-              if (formRef.current) {
-                formRef.current.requestSubmit();
-              }
-            }}
-          >
-            {saving ? 'Сохранение...' : 'Сохранить изменения'}
-          </button>
+          <div ref={saveButtonAnchorRef} className={styles.saveButtonAnchor}>
+            {saveButtonFixed && saveButtonPlaceholderSize ? (
+              <span
+                className={styles.saveButtonPlaceholder}
+                style={{
+                  width: saveButtonPlaceholderSize.width,
+                  height: saveButtonPlaceholderSize.height,
+                }}
+                aria-hidden
+              />
+            ) : null}
+            {!saveButtonFixed ? renderHeaderSaveButton(false) : null}
+          </div>
         </div>
       </div>
 
-      <form ref={formRef} onSubmit={handleSubmit} className={styles.form}>
+      {saveButtonFixed && saveButtonPortalRoot
+        ? createPortal(renderHeaderSaveButton(true), saveButtonPortalRoot)
+        : null}
+
+      <form ref={formRef} onSubmit={handleSubmit} className={styles.form} noValidate>
         <div className={styles.productMeta}>
           <div className={styles.productMetaRow}>
             <span className={styles.productMetaLabel}>Создал:</span>
@@ -3329,9 +3477,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
             disabled={saving}
             onClick={(e) => {
               e.preventDefault();
-              if (formRef.current) {
-                formRef.current.requestSubmit();
-              }
+              submitProductForm();
             }}
           >
             {saving ? 'Сохранение...' : 'Сохранить изменения'}

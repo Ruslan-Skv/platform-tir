@@ -1,6 +1,68 @@
 .page {
   max-width: 1200px;
   margin: 0 auto;
+  --product-edit-sticky-top: 4.75rem;
+}
+
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-md);
+}
+
+.pageHeaderMain {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-lg);
+  min-width: 0;
+  flex: 1;
+}
+
+.pageHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  flex-shrink: 0;
+}
+
+.saveButtonAnchor {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.saveButtonPlaceholder {
+  display: block;
+  flex-shrink: 0;
+}
+
+.saveButtonFixed {
+  position: fixed;
+  top: var(--product-edit-sticky-top);
+  z-index: 60;
+  isolation: isolate;
+  filter: drop-shadow(0 2px 15px rgb(0 0 0 / 0.52));
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease,
+    filter 0.15s ease;
+}
+
+.saveButtonFixed:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: drop-shadow(0 4px 12px rgb(0 0 0 / 0.16));
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveButtonFixed {
+  filter: drop-shadow(0 2px 10px rgb(0 0 0 / 0.32));
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveButtonFixed:hover:not(:disabled) {
+  filter: drop-shadow(0 4px 14px rgb(0 0 0 / 0.4));
 }
 
 .header {
@@ -949,6 +1011,26 @@
   cursor: not-allowed;
 }
 
+.headerSaveButton {
+  white-space: nowrap;
+}
+
+.saveButtonTextWrap {
+  display: inline-grid;
+  align-items: center;
+  justify-items: center;
+}
+
+.saveButtonTextWrap > span:first-child {
+  grid-area: 1 / 1;
+}
+
+.saveButtonTextSizer {
+  grid-area: 1 / 1;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 @media (max-width: 1024px) {
   .formGrid {
     grid-template-columns: 1fr;
@@ -960,6 +1042,16 @@
 
   .imagesGrid {
     grid-template-columns: repeat(6, 1fr);
+  }
+
+  .pageHeader {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .pageHeaderActions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }
 
