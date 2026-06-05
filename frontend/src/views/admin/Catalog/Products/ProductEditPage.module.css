@@ -506,11 +506,73 @@
   grid-template-columns: 1.1fr 1fr 1fr;
 }
 
+/* Ссылка поставщика шире, цена поставщика — уже */
+.supplierUrlPriceRow {
+  grid-template-columns: minmax(0, 1fr) minmax(14rem, 17rem);
+}
+
+.supplierUrlGroup,
+.supplierPriceGroup {
+  min-width: 0;
+}
+
+.supplierPriceGroup .input {
+  min-width: 0;
+}
+
+.supplierPriceControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  align-items: flex-start;
+}
+
+.supplierPriceControls .input {
+  flex: 1 1 5rem;
+  min-width: 5rem;
+}
+
+.supplierPriceSyncButton {
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  white-space: nowrap;
+  background-color: var(--admin-success-emerald);
+  color: var(--admin-text-inverse);
+  border: none;
+  border-radius: var(--admin-radius-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.supplierPriceSyncButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 /* Название (50%) + Партнёр (50%) в одной строке */
 .namePartnerRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--admin-space-md);
+}
+
+.inputWithAction {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-xs);
+}
+
+.inputWithActionField {
+  flex: 1;
+  min-width: 0;
+}
+
+.inputWithActionButton {
+  flex-shrink: 0;
+}
+
+.inputWithActionGrow {
+  flex: 1;
+  min-width: 0;
 }
 
 .input,

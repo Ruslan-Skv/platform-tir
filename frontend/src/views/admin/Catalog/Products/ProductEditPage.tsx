@@ -12,6 +12,7 @@ import { fetchAdminManufacturersList } from '@/shared/api/admin-manufacturers';
 import { fetchAdminWeatherstripsList } from '@/shared/api/admin-weatherstrips';
 import { getApiErrorMessage, isNetworkFetchError } from '@/shared/lib/api-error';
 import { apiFetch } from '@/shared/lib/api-fetch';
+import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
 
 import { ImageUrlModal } from './ImageUrlModal';
@@ -314,6 +315,8 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   const [fetchingPrice, setFetchingPrice] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [nameCopied, setNameCopied] = useState(false);
+  const nameCopyTimeoutRef = useRef<number | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<
     Array<{ id: string; legalName: string; commercialName?: string | null }>
@@ -1029,6 +1032,38 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     setFormData((prev) => ({ ...prev, [name]: numValue }));
   };
 
+  const copyProductName = useCallback(async () => {
+    const text = formData.name.trim();
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setNameCopied(true);
+      if (nameCopyTimeoutRef.current) {
+        window.clearTimeout(nameCopyTimeoutRef.current);
+      }
+      nameCopyTimeoutRef.current = window.setTimeout(() => {
+        setNameCopied(false);
+        nameCopyTimeoutRef.current = null;
+      }, 2000);
+    } catch {
+      setNameCopied(false);
+    }
+  }, [formData.name]);
+
+  const clearSupplierProductUrl = useCallback(() => {
+    setParserInfo(null);
+    setParserBannerError(null);
+    setFormData((prev) => ({ ...prev, supplierProductUrl: '' }));
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (nameCopyTimeoutRef.current) {
+        window.clearTimeout(nameCopyTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -1630,15 +1665,29 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
               <div className={`${styles.formRow} ${styles.namePartnerRow}`}>
                 <div className={`${styles.formGroup} ${styles.nameGroup}`}>
                   <label htmlFor="name">Название *</label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className={`${styles.input} ${adminProductFieldHighlightClass(reqHighlight.name, styles)}`}
-                  />
+                  <div className={styles.inputWithAction}>
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      required
+                      className={`${styles.input} ${styles.inputWithActionField} ${adminProductFieldHighlightClass(reqHighlight.name, styles)}`}
+                    />
+                    <AdminTableIconButton
+                      type="button"
+                      className={styles.inputWithActionButton}
+                      onClick={() => void copyProductName()}
+                      disabled={!formData.name.trim()}
+                      title={nameCopied ? 'Скопировано' : 'Скопировать название'}
+                      aria-label={
+                        nameCopied ? 'Название скопировано' : 'Скопировать название товара'
+                      }
+                    >
+                      <CopyIcon />
+                    </AdminTableIconButton>
+                  </div>
                 </div>
                 <div className={`${styles.formGroup} ${styles.partnerGroup}`}>
                   <label htmlFor="partnerId">Партнёр</label>
@@ -1746,21 +1795,33 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
               </div>
 
               {formData.supplierId && (
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
+                <div className={`${styles.formRow} ${styles.supplierUrlPriceRow}`}>
+                  <div className={`${styles.formGroup} ${styles.supplierUrlGroup}`}>
                     <label htmlFor="supplierProductUrl">Ссылка на товар поставщика *</label>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <input
-                        type="url"
-                        id="supplierProductUrl"
-                        name="supplierProductUrl"
-                        value={formData.supplierProductUrl}
-                        onChange={handleChange}
-                        onBlur={handleSupplierProductUrlBlur}
-                        required
-                        className={`${styles.input} ${adminProductFieldHighlightClass(reqHighlight.supplierUrl, styles)}`}
-                        placeholder="https://supplier.com/product/123"
-                      />
+                      <div className={`${styles.inputWithAction} ${styles.inputWithActionGrow}`}>
+                        <input
+                          type="url"
+                          id="supplierProductUrl"
+                          name="supplierProductUrl"
+                          value={formData.supplierProductUrl}
+                          onChange={handleChange}
+                          onBlur={handleSupplierProductUrlBlur}
+                          required
+                          className={`${styles.input} ${styles.inputWithActionField} ${adminProductFieldHighlightClass(reqHighlight.supplierUrl, styles)}`}
+                          placeholder="https://supplier.com/product/123"
+                        />
+                        <AdminTableIconButton
+                          type="button"
+                          className={styles.inputWithActionButton}
+                          onClick={clearSupplierProductUrl}
+                          disabled={!formData.supplierProductUrl.trim()}
+                          title="Очистить ссылку"
+                          aria-label="Очистить ссылку на товар поставщика"
+                        >
+                          ✕
+                        </AdminTableIconButton>
+                      </div>
                       <button
                         type="button"
                         onClick={async () => {
@@ -1834,9 +1895,9 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                       «Получить цену».
                     </p>
                   </div>
-                  <div className={styles.formGroup}>
+                  <div className={`${styles.formGroup} ${styles.supplierPriceGroup}`}>
                     <label htmlFor="supplierPrice">Цена поставщика</label>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                    <div className={styles.supplierPriceControls}>
                       <input
                         type="text"
                         inputMode="decimal"
@@ -1847,7 +1908,6 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                         className={styles.input}
                         placeholder="0.00"
                         autoComplete="off"
-                        style={{ flex: 1 }}
                       />
                       <button
                         type="button"
@@ -1864,26 +1924,13 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                           setTimeout(() => setSuccess(null), 3000);
                         }}
                         disabled={!formData.supplierPrice}
-                        className={styles.button}
-                        style={{
-                          padding: '0.5rem 1rem',
-                          whiteSpace: 'nowrap',
-                          backgroundColor: 'var(--admin-success-emerald)',
-                          color: 'var(--admin-text-inverse)',
-                          border: 'none',
-                          borderRadius: '0.375rem',
-                          cursor: !formData.supplierPrice ? 'not-allowed' : 'pointer',
-                          opacity: !formData.supplierPrice ? 0.5 : 1,
-                        }}
+                        className={`${styles.button} ${styles.supplierPriceSyncButton}`}
                         title="Синхронизировать цену товара с ценой поставщика"
                       >
                         Синхронизировать
                       </button>
                     </div>
-                    <p className={styles.hint}>
-                      Цена товара у поставщика. Может быть заполнена автоматически по ссылке.
-                      Нажмите "Синхронизировать" чтобы обновить цену товара.
-                    </p>
+                    <p className={styles.hint}>Цена товара у поставщика.</p>
                   </div>
                 </div>
               )}
