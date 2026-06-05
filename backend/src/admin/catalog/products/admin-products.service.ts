@@ -35,8 +35,89 @@ interface ImportProductDto {
 
 const MAX_BULK_IDS = 1000;
 const MAX_IMPORT_PRODUCTS = 500;
+const MAX_LIST_LIMIT = 100;
+const LOW_STOCK_THRESHOLD = 5;
 
 const PRODUCT_SEARCH_INDEX = 'products';
+
+const ADMIN_PRODUCT_LIST_SELECT = {
+  id: true,
+  name: true,
+  sku: true,
+  price: true,
+  comparePrice: true,
+  stock: true,
+  sortOrder: true,
+  isActive: true,
+  isFeatured: true,
+  isNew: true,
+  isPartnerProduct: true,
+  attributes: true,
+  images: true,
+  updatedAt: true,
+  createdAt: true,
+  category: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+    },
+  },
+  manufacturer: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+  createdBy: {
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+    },
+  },
+  suppliers: {
+    where: { isMainSupplier: true },
+    take: 1,
+    select: {
+      id: true,
+      supplierId: true,
+      isMainSupplier: true,
+      supplierSku: true,
+      supplierPrice: true,
+      supplierProductUrl: true,
+      supplierPriceChangedAt: true,
+      supplier: {
+        select: {
+          id: true,
+          legalName: true,
+          commercialName: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.ProductSelect;
+
+type AdminProductListSortOrder = 'asc' | 'desc';
+
+const ADMIN_PRODUCT_SORT_FIELDS: Record<
+  string,
+  (order: AdminProductListSortOrder) => Prisma.ProductOrderByWithRelationInput
+> = {
+  name: (order) => ({ name: order }),
+  sku: (order) => ({ sku: order }),
+  price: (order) => ({ price: order }),
+  stock: (order) => ({ stock: order }),
+  sortOrder: (order) => ({ sortOrder: order }),
+  isActive: (order) => ({ isActive: order }),
+  isFeatured: (order) => ({ isFeatured: order }),
+  isNew: (order) => ({ isNew: order }),
+  updatedAt: (order) => ({ updatedAt: order }),
+  createdAt: (order) => ({ createdAt: order }),
+  'category.name': (order) => ({ category: { name: order } }),
+  createdBy: (order) => ({ createdBy: { email: order } }),
+};
 
 @Injectable()
 export class AdminProductsService {
@@ -51,13 +132,15 @@ export class AdminProductsService {
     manufacturerId?: string;
     isActive?: boolean;
     isFeatured?: boolean;
+    isNew?: boolean;
     minPrice?: number;
     maxPrice?: number;
-    lowStock?: boolean;
+    stockFilter?: 'in-stock' | 'out-of-stock' | 'low-stock';
+    createdById?: string;
     page?: number;
     limit?: number;
     sortBy?: string;
-    sortOrder?: 'asc' | 'desc';
+    sortOrder?: AdminProductListSortOrder;
   }) {
     const {
       search,
@@ -65,88 +148,93 @@ export class AdminProductsService {
       manufacturerId,
       isActive,
       isFeatured,
+      isNew,
       minPrice,
       maxPrice,
-      lowStock,
+      stockFilter,
+      createdById,
       page = 1,
       limit = 20,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
+      sortBy = 'name',
+      sortOrder = 'asc',
     } = params || {};
 
-    const skip = (page - 1) * limit;
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(Math.max(1, limit), MAX_LIST_LIMIT);
+    const skip = (safePage - 1) * safeLimit;
     const where: Prisma.ProductWhereInput = {};
+    const andConditions: Prisma.ProductWhereInput[] = [];
 
-    if (search) {
+    if (search?.trim()) {
+      const q = search.trim();
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { sku: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
+        { name: { contains: q, mode: 'insensitive' } },
+        { sku: { contains: q, mode: 'insensitive' } },
       ];
     }
 
     if (categoryId) {
-      where.categoryId = categoryId;
+      const categoryIds = await this.resolveCategoryIdsWithDescendants(categoryId);
+      if (categoryIds.length > 0) {
+        andConditions.push({ categoryId: { in: categoryIds } });
+      }
     }
 
     if (manufacturerId) {
-      where.manufacturerId = manufacturerId;
+      andConditions.push({ manufacturerId });
     }
 
     if (isActive !== undefined) {
-      where.isActive = isActive;
+      andConditions.push({ isActive });
     }
 
     if (isFeatured !== undefined) {
-      where.isFeatured = isFeatured;
+      andConditions.push({ isFeatured });
+    }
+
+    if (isNew !== undefined) {
+      andConditions.push({ isNew });
     }
 
     if (minPrice !== undefined || maxPrice !== undefined) {
-      where.price = {};
+      const priceFilter: Prisma.DecimalFilter = {};
       if (minPrice !== undefined) {
-        where.price.gte = new Prisma.Decimal(minPrice);
+        priceFilter.gte = new Prisma.Decimal(minPrice);
       }
       if (maxPrice !== undefined) {
-        where.price.lte = new Prisma.Decimal(maxPrice);
+        priceFilter.lte = new Prisma.Decimal(maxPrice);
       }
+      andConditions.push({ price: priceFilter });
     }
 
-    if (lowStock) {
-      // Filter products where stock <= minStock threshold
-      where.AND = [
-        {
-          stock: { lte: 10 }, // Default low stock threshold
-        },
-      ];
+    if (stockFilter === 'in-stock') {
+      andConditions.push({ stock: { gt: 0 } });
+    } else if (stockFilter === 'out-of-stock') {
+      andConditions.push({ stock: 0 });
+    } else if (stockFilter === 'low-stock') {
+      andConditions.push({ stock: { gt: 0, lte: LOW_STOCK_THRESHOLD } });
     }
+
+    if (createdById === '__none__') {
+      andConditions.push({ createdById: null });
+    } else if (createdById) {
+      andConditions.push({ createdById });
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
+    }
+
+    const orderByFn = ADMIN_PRODUCT_SORT_FIELDS[sortBy] ?? ADMIN_PRODUCT_SORT_FIELDS.name;
+    const orderBy = orderByFn(sortOrder);
 
     const [products, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
-        include: {
-          category: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-            },
-          },
-          manufacturer: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          _count: {
-            select: {
-              orderItems: true,
-              reviews: true,
-            },
-          },
-        },
+        select: ADMIN_PRODUCT_LIST_SELECT,
         skip,
-        take: limit,
-        orderBy: { [sortBy]: sortOrder },
+        take: safeLimit,
+        orderBy,
       }),
       this.prisma.product.count({ where }),
     ]);
@@ -154,10 +242,55 @@ export class AdminProductsService {
     return {
       data: products,
       total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit),
     };
+  }
+
+  async getProductAuthors() {
+    const users = await this.prisma.user.findMany({
+      where: {
+        productsCreated: { some: {} },
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+      },
+      orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }, { email: 'asc' }],
+    });
+
+    return users.map((user) => ({
+      id: user.id,
+      label: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+    }));
+  }
+
+  /** Категория и все её подкategории (по parentId). */
+  private async resolveCategoryIdsWithDescendants(categoryId: string): Promise<string[]> {
+    const allCategories = await this.prisma.category.findMany({
+      select: { id: true, parentId: true },
+    });
+
+    const childrenByParent = new Map<string, string[]>();
+    for (const category of allCategories) {
+      if (!category.parentId) continue;
+      const siblings = childrenByParent.get(category.parentId) ?? [];
+      siblings.push(category.id);
+      childrenByParent.set(category.parentId, siblings);
+    }
+
+    const ids: string[] = [];
+    const collect = (id: string) => {
+      ids.push(id);
+      for (const childId of childrenByParent.get(id) ?? []) {
+        collect(childId);
+      }
+    };
+    collect(categoryId);
+    return ids;
   }
 
   async findOne(id: string) {

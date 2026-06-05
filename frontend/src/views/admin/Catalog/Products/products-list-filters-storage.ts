@@ -83,7 +83,7 @@ export function writeProductsListFilters(state: ProductsListFiltersState): void 
   }
 }
 
-/** URL списка товаров с сохранённым поиском и refresh (после «Назад к списку»). */
+/** URL списка товаров с сохранённым поиском (после «Назад к списку»). */
 export function buildProductsListBackUrl(fromCategory: string): string {
   const base = fromCategory
     ? `/admin/catalog/products/category/${fromCategory}`
@@ -94,6 +94,6 @@ export function buildProductsListBackUrl(fromCategory: string): string {
   if (searchQuery) {
     params.set('q', searchQuery);
   }
-  params.set('refresh', String(Date.now()));
-  return `${base}?${params.toString()}`;
+  const qs = params.toString();
+  return qs ? `${base}?${qs}` : base;
 }

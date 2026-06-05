@@ -13,7 +13,18 @@ import {
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
+
 import { useAuth } from '@/features/auth';
+import {
+  ADMIN_PRODUCTS_AUTHORS_QUERY_KEY,
+  ADMIN_PRODUCTS_LIST_QUERY_KEY,
+  type AdminProductListItem,
+  fetchAdminProductAuthors,
+  fetchAdminProductsList,
+  fetchMergedCategoryAttributes,
+  loadProductsListSort,
+} from '@/shared/api/admin-products-list';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
@@ -73,51 +84,7 @@ function hrefToProductEdit(productId: string, fromCategory: string): string {
   return `${base}${sep}v=${Date.now()}`;
 }
 
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  sku: string | null;
-  price: number | string;
-  comparePrice: number | string | null;
-  stock: number;
-  category: Category;
-  manufacturer: { id: string; name: string } | null;
-  isActive: boolean;
-  isFeatured: boolean;
-  isNew: boolean;
-  isPartnerProduct?: boolean;
-  sortOrder?: number;
-  updatedAt?: string; // ISO дата последнего обновления
-  attributes?: Record<string, string | number | boolean | string[]> | null;
-  images: string[];
-  suppliers?: Array<{
-    id: string;
-    supplierId: string;
-    isMainSupplier: boolean;
-    supplierSku?: string | null;
-    supplierPrice?: string | number;
-    supplierProductUrl?: string | null;
-    supplierPriceChangedAt?: string | null;
-    supplier: {
-      id: string;
-      legalName: string;
-      commercialName?: string | null;
-    };
-  }>;
-  /** Кто создал карточку товара */
-  createdBy?: {
-    id: string;
-    email: string;
-    firstName: string | null;
-    lastName: string | null;
-  } | null;
-}
+interface Product extends AdminProductListItem {}
 
 // Доступные для отображения и редактирования колонки
 interface ColumnConfig {
@@ -174,23 +141,24 @@ interface ProductsPageProps {
 
 export function ProductsPage({ categoryId }: ProductsPageProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { getAuthHeaders } = useAuth();
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<CategoriesResponse[]>([]);
-  const [categoryAttributes, setCategoryAttributes] = useState<
-    Array<{ id: string; name: string; slug: string; type: string }>
-  >([]);
   const [suppliers, setSuppliers] = useState<
     Array<{ id: string; legalName: string; commercialName?: string | null }>
   >([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState<string[]>(() => readProductsSearchHistory());
   const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
   const searchBlurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchHistoryListId = useId();
   const [categoryFilter, setCategoryFilter] = useState(categoryId ?? '');
+  const sortStorageKey = `admin_products_sort:${categoryFilter || categoryId || 'all'}`;
+  const initialSortRef = useRef(loadProductsListSort(sortStorageKey));
+  const [listSortBy, setListSortBy] = useState(initialSortRef.current.sortBy);
+  const [listSortOrder, setListSortOrder] = useState<'asc' | 'desc'>(
+    initialSortRef.current.sortOrder
+  );
   const [stockFilter, setStockFilter] = useState('');
   /** '' — все; '__none__' — без создателя; иначе id пользователя */
   const [authorFilter, setAuthorFilter] = useState('');
@@ -275,20 +243,17 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
   /** ID товаров, у которых изменилась цена поставщика после «Обновить цены» */
   const [priceChangedIds, setPriceChangedIds] = useState<string[]>([]);
   const selectionHintTimeoutRef = useRef<number | null>(null);
+  const selectedProductsCacheRef = useRef<Map<string, Product>>(new Map());
 
-  const authorOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const p of allProducts) {
-      const c = p.createdBy;
-      if (c?.id) {
-        const label = `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email;
-        map.set(c.id, label);
-      }
-    }
-    return Array.from(map.entries())
-      .map(([id, label]) => ({ id, label }))
-      .sort((a, b) => a.label.localeCompare(b.label, 'ru'));
-  }, [allProducts]);
+  const invalidateProductsList = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: [ADMIN_PRODUCTS_LIST_QUERY_KEY] });
+  }, [queryClient]);
+
+  const { data: authorOptions = [] } = useQuery({
+    queryKey: [ADMIN_PRODUCTS_AUTHORS_QUERY_KEY],
+    queryFn: () => fetchAdminProductAuthors(getAuthHeaders()),
+    staleTime: 5 * 60 * 1000,
+  });
 
   const showSelectionHint = useCallback((message = 'Выберите товары в таблице') => {
     setSelectionHintMessage(message);
@@ -420,8 +385,74 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
     fetchSuppliers();
   }, [getAuthHeaders]);
 
-  // Собираем ID категории для загрузки атрибутов.
-  // При фильтре по категории — эта категория + дети. Без фильтра — только категории товаров на странице (меньше запросов, нет 429).
+  const listQueryParams = useMemo(
+    () => ({
+      search: searchQuery.trim() || undefined,
+      categoryId: categoryFilter || undefined,
+      stockFilter: stockFilter || undefined,
+      createdById: authorFilter || undefined,
+      isActive: activeFilter === 'yes' ? true : activeFilter === 'no' ? false : undefined,
+      isFeatured: featuredFilter === 'yes' ? true : featuredFilter === 'no' ? false : undefined,
+      isNew: newFilter === 'yes' ? true : newFilter === 'no' ? false : undefined,
+      minPrice: (() => {
+        if (!priceMin) return undefined;
+        const value = parseFloat(priceMin);
+        return Number.isNaN(value) ? undefined : value;
+      })(),
+      maxPrice: (() => {
+        if (!priceMax) return undefined;
+        const value = parseFloat(priceMax);
+        return Number.isNaN(value) ? undefined : value;
+      })(),
+      page,
+      limit,
+      sortBy: listSortBy,
+      sortOrder: listSortOrder,
+    }),
+    [
+      searchQuery,
+      categoryFilter,
+      stockFilter,
+      authorFilter,
+      activeFilter,
+      featuredFilter,
+      newFilter,
+      priceMin,
+      priceMax,
+      page,
+      limit,
+      listSortBy,
+      listSortOrder,
+    ]
+  );
+
+  const {
+    data: listResponse,
+    isLoading: loading,
+    isFetching: refreshing,
+    refetch: refetchProductsList,
+  } = useQuery({
+    queryKey: [ADMIN_PRODUCTS_LIST_QUERY_KEY, listQueryParams],
+    queryFn: () => fetchAdminProductsList(listQueryParams, getAuthHeaders()),
+    placeholderData: keepPreviousData,
+  });
+
+  const listProducts = listResponse?.data ?? [];
+  const totalProducts = listResponse?.total ?? 0;
+
+  useEffect(() => {
+    for (const product of listProducts) {
+      selectedProductsCacheRef.current.set(product.id, product);
+    }
+  }, [listProducts]);
+
+  useEffect(() => {
+    const next = loadProductsListSort(sortStorageKey);
+    setListSortBy(next.sortBy);
+    setListSortOrder(next.sortOrder);
+  }, [sortStorageKey]);
+
+  // Собираем ID категорий для загрузки атрибутов колонок таблицы.
   const categoryIdsForAttributes = useMemo(() => {
     const collectIds = (cats: CategoriesResponse[]): string[] => {
       const ids: string[] = [];
@@ -448,70 +479,19 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       };
       return findAndCollect(categories, categoryFilter);
     }
-    // Без фильтра: только категории товаров на странице, чтобы не превысить rate limit
     const ids = new Set<string>();
-    for (const p of allProducts) {
-      if (p.category?.id) ids.add(p.category.id);
+    for (const product of listProducts) {
+      if (product.category?.id) ids.add(product.category.id);
     }
     return Array.from(ids);
-  }, [categories, categoryFilter, allProducts]);
+  }, [categories, categoryFilter, listProducts]);
 
-  // Fetch category attributes — при categoryId только для этой категории, иначе для всех
-  // Последовательно, чтобы не превысить rate limit (429 Too Many Requests)
-  useEffect(() => {
-    let cancelled = false;
-    const fetchCategoryAttributes = async () => {
-      if (categoryIdsForAttributes.length === 0) return;
-
-      const allAttrsMap = new Map<
-        string,
-        { id: string; name: string; slug: string; type: string }
-      >();
-
-      const allAttrsArrays: Array<
-        Array<{
-          id: string;
-          attributeId: string;
-          attribute: { id: string; name: string; slug: string; type: string };
-        }>
-      > = [];
-      for (const catId of categoryIdsForAttributes) {
-        if (cancelled) return;
-        try {
-          const response = await apiFetch(`${API_URL}/categories/${catId}/attributes`);
-          if (response.ok) {
-            const attrs = await response.json();
-            allAttrsArrays.push(attrs);
-          } else {
-            allAttrsArrays.push([]);
-          }
-        } catch (err) {
-          console.error(`Failed to fetch attributes for category ${catId}:`, err);
-          allAttrsArrays.push([]);
-        }
-      }
-      if (cancelled) return;
-      allAttrsArrays.forEach((attrs) => {
-        attrs.forEach((ca) => {
-          if (!allAttrsMap.has(ca.attribute.slug)) {
-            allAttrsMap.set(ca.attribute.slug, {
-              id: ca.attribute.id,
-              name: ca.attribute.name,
-              slug: ca.attribute.slug,
-              type: ca.attribute.type,
-            });
-          }
-        });
-      });
-
-      setCategoryAttributes(Array.from(allAttrsMap.values()));
-    };
-
-    fetchCategoryAttributes();
-    return () => {
-      cancelled = true;
-    };
-  }, [categoryIdsForAttributes]);
+  const { data: categoryAttributes = [] } = useQuery({
+    queryKey: ['category-attributes-merged', categoryIdsForAttributes],
+    queryFn: () => fetchMergedCategoryAttributes(categoryIdsForAttributes),
+    enabled: categoryIdsForAttributes.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
 
   // Заголовок только по селекту: пустое значение = «Товары» без подзаголовка (не подставляем categoryId из URL).
   const currentCategoryName = useMemo(() => {
@@ -542,220 +522,6 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
     };
     return flatten(categories);
   }, [categories]);
-
-  // Fetch all products (без кэша браузера, чтобы после создания/редактирования список был актуальным)
-  // full — первая загрузка (скелетон таблицы); refresh — явное обновление (кнопка, навигация);
-  // silent — только данные, без индикаторов (возврат на вкладку, иначе дёргается панель фильтров)
-  const fetchProducts = useCallback(async (mode: 'full' | 'refresh' | 'silent' = 'full') => {
-    if (mode === 'silent') {
-      try {
-        const response = await apiFetch(`${API_URL}/products/admin/all?_=${Date.now()}`, {
-          headers: getAuthHeaders(),
-          cache: 'no-store',
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setAllProducts(Array.isArray(data) ? data : []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch products:', err);
-      }
-      return;
-    }
-    if (mode === 'refresh') {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-    try {
-      const response = await apiFetch(`${API_URL}/products/admin/all?_=${Date.now()}`, {
-        headers: getAuthHeaders(),
-        cache: 'no-store',
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setAllProducts(Array.isArray(data) ? data : []);
-      }
-    } catch (err) {
-      console.error('Failed to fetch products:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
-
-  // При каждом появлении страницы списка (в т.ч. переход «Назад к списку») обновлять список
-  const prevPathnameRef = useRef<string | null>(null);
-
-  // Параметр ?refresh= в URL — явный запрос обновить список (после создания/редактирования)
-  const refreshParam = searchParams.get('refresh');
-  useEffect(() => {
-    if (refreshParam) {
-      fetchProducts('refresh');
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete('refresh');
-      const qs = params.toString();
-      router.replace(qs ? `${pathname}?${qs}` : pathname);
-    }
-  }, [refreshParam, pathname, fetchProducts, router, searchParams]);
-
-  useEffect(() => {
-    const isProductsList =
-      pathname === '/admin/catalog/products' ||
-      pathname.startsWith('/admin/catalog/products/category/');
-    const prev = prevPathnameRef.current;
-    const wasOnOtherPage = prev !== null && prev !== pathname;
-    prevPathnameRef.current = pathname;
-    if (!isProductsList || !wasOnOtherPage) {
-      return;
-    }
-    // Первая загрузка списка — уже в useEffect выше (fetch без аргумента). Здесь только смена маршрута.
-    // Возврат с формы товара — без индикатора «Обновление», иначе дёргается панель фильтров (как при вкладке).
-    const pathOnly = (prev.split('?')[0] ?? prev) as string;
-    const fromProductEditor =
-      pathOnly === '/admin/catalog/products/new' ||
-      pathOnly.startsWith('/admin/catalog/products/new/') ||
-      /^\/admin\/catalog\/products\/[^/]+\/edit$/.test(pathOnly);
-    fetchProducts(fromProductEditor ? 'silent' : 'refresh');
-  }, [pathname, fetchProducts]);
-
-  // При возврате на вкладку или восстановлении из bfcache — обновить список
-  useEffect(() => {
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') fetchProducts('silent');
-    };
-    const onPageShow = (e: PageTransitionEvent) => {
-      if (e.persisted) fetchProducts('silent');
-    };
-    window.addEventListener('pageshow', onPageShow);
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => {
-      window.removeEventListener('pageshow', onPageShow);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-    };
-  }, [fetchProducts]);
-
-  // Filter and paginate products client-side
-  const filteredProducts = useMemo(() => {
-    let result = [...allProducts];
-
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.name.toLowerCase().includes(query) || (p.sku && p.sku.toLowerCase().includes(query))
-      );
-    }
-
-    // Category filter - включает подкатегории (применяем только когда категории загружены и категория найдена)
-    if (categoryFilter) {
-      const getCategoryIds = (cats: CategoriesResponse[], targetId: string): string[] => {
-        const ids: string[] = [];
-        const findAndCollect = (categories: CategoriesResponse[]): boolean => {
-          for (const cat of categories) {
-            if (cat.id === targetId) {
-              ids.push(cat.id);
-              const collectChildren = (c: CategoriesResponse) => {
-                if (c.children) {
-                  for (const child of c.children) {
-                    ids.push(child.id);
-                    collectChildren(child);
-                  }
-                }
-              };
-              collectChildren(cat);
-              return true;
-            }
-            if (cat.children && findAndCollect(cat.children)) {
-              return true;
-            }
-          }
-          return false;
-        };
-        findAndCollect(cats);
-        return ids;
-      };
-
-      const categoryIds = getCategoryIds(categories, categoryFilter);
-      if (categoryIds.length > 0) {
-        result = result.filter((p) => categoryIds.includes(p.category.id));
-      }
-    }
-
-    // Stock filter
-    if (stockFilter === 'in-stock') {
-      result = result.filter((p) => p.stock > 0);
-    } else if (stockFilter === 'out-of-stock') {
-      result = result.filter((p) => p.stock === 0);
-    } else if (stockFilter === 'low-stock') {
-      result = result.filter((p) => p.stock > 0 && p.stock <= 5);
-    }
-
-    // Active filter
-    if (activeFilter === 'yes') {
-      result = result.filter((p) => p.isActive === true);
-    } else if (activeFilter === 'no') {
-      result = result.filter((p) => p.isActive === false);
-    }
-
-    // Featured filter
-    if (featuredFilter === 'yes') {
-      result = result.filter((p) => p.isFeatured === true);
-    } else if (featuredFilter === 'no') {
-      result = result.filter((p) => p.isFeatured === false);
-    }
-
-    // New filter
-    if (newFilter === 'yes') {
-      result = result.filter((p) => p.isNew === true);
-    } else if (newFilter === 'no') {
-      result = result.filter((p) => p.isNew === false);
-    }
-
-    // Price range filter
-    const minPrice = priceMin ? parseFloat(priceMin) : null;
-    const maxPrice = priceMax ? parseFloat(priceMax) : null;
-    if (minPrice !== null && !isNaN(minPrice)) {
-      result = result.filter((p) => {
-        const price = typeof p.price === 'string' ? parseFloat(p.price) : p.price;
-        return price >= minPrice;
-      });
-    }
-    if (maxPrice !== null && !isNaN(maxPrice)) {
-      result = result.filter((p) => {
-        const price = typeof p.price === 'string' ? parseFloat(p.price) : p.price;
-        return price <= maxPrice;
-      });
-    }
-
-    if (authorFilter === '__none__') {
-      result = result.filter((p) => !p.createdBy);
-    } else if (authorFilter) {
-      result = result.filter((p) => p.createdBy?.id === authorFilter);
-    }
-
-    return result;
-  }, [
-    allProducts,
-    searchQuery,
-    categoryFilter,
-    stockFilter,
-    authorFilter,
-    activeFilter,
-    featuredFilter,
-    newFilter,
-    priceMin,
-    priceMax,
-  ]);
-
-  const totalProducts = filteredProducts.length;
-  const _totalPages = Math.ceil(totalProducts / limit);
 
   const visibleRecentSearches = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -992,7 +758,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       });
       if (response.ok) {
         setSelectedIds([]);
-        fetchProducts();
+        invalidateProductsList();
 
         // Show success toast
         setSaveMessage(`✓ ${count} товар(ов) ${action}`);
@@ -1026,10 +792,8 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       });
       if (response.ok) {
         setShowDeleteConfirmModal(false);
-        const idsToRemove = new Set(selectedIds);
-        setAllProducts((prev) => prev.filter((p) => !idsToRemove.has(p.id)));
         setSelectedIds([]);
-        fetchProducts('refresh');
+        invalidateProductsList();
       }
     } catch (err) {
       console.error('Failed to bulk delete:', err);
@@ -1065,7 +829,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
 
       if (response.ok) {
         setImportResult(result);
-        fetchProducts();
+        invalidateProductsList();
       } else {
         setImportResult({
           created: 0,
@@ -1099,7 +863,9 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
 
   // Export functions: экспортируем только выбранные товары
   const getProductsToExport = (): Product[] => {
-    return allProducts.filter((p) => selectedIds.includes(p.id));
+    return selectedIds
+      .map((id) => selectedProductsCacheRef.current.get(id))
+      .filter((product): product is Product => Boolean(product));
   };
 
   const exportToCSV = () => {
@@ -1424,7 +1190,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       }, 3000);
 
       // Refresh products list
-      fetchProducts();
+      invalidateProductsList();
     } catch (err) {
       console.error('Error saving edits:', err);
       setSavingEdits(false);
@@ -1957,7 +1723,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
                       (data.errors?.length ? `, ошибок: ${data.errors.length}` : '');
                 setSyncSupplierPricesMessage(msg);
                 setTimeout(() => setSyncSupplierPricesMessage(null), 5000);
-                fetchProducts('refresh');
+                invalidateProductsList();
               } catch (e) {
                 setSyncSupplierPricesMessage(
                   e instanceof Error ? e.message : 'Ошибка обновления цен поставщика'
@@ -2008,7 +1774,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
                       (data.errors?.length ? `, ошибок: ${data.errors.length}` : '');
                 setSyncSupplierPricesMessage(msg);
                 setTimeout(() => setSyncSupplierPricesMessage(null), 5000);
-                fetchProducts('refresh');
+                invalidateProductsList();
               } catch (e) {
                 setSyncSupplierPricesMessage(
                   e instanceof Error ? e.message : 'Ошибка синхронизации цен'
@@ -2148,7 +1914,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
         </button>
         <button
           className={styles.refreshButton}
-          onClick={() => fetchProducts('refresh')}
+          onClick={() => void refetchProductsList()}
           disabled={loading || refreshing}
         >
           🔄 {refreshing ? 'Обновление...' : loading ? 'Загрузка...' : 'Обновить'}
@@ -2279,12 +2045,21 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       <DataTable
         paginationClassName={styles.productsPagination}
         paginationActiveClassName={styles.paginationPageActive}
-        data={filteredProducts}
+        data={listProducts}
         columns={columns}
         keyExtractor={(product) => product.id}
         defaultSortBy="name"
         defaultSortOrder="asc"
-        sortStorageKey={`admin_products_sort:${categoryFilter || categoryId || 'all'}`}
+        sortStorageKey={sortStorageKey}
+        serverSideSort
+        serverSidePagination
+        controlledSortBy={listSortBy}
+        controlledSortOrder={listSortOrder}
+        onSortChange={(sortBy, sortOrder) => {
+          setListSortBy(sortBy);
+          setListSortOrder(sortOrder);
+          setPage(1);
+        }}
         onRowClick={(product) => {
           navigateToProductEdit(product.id);
         }}

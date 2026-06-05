@@ -459,6 +459,36 @@ export class CategoriesService {
     return merged;
   }
 
+  /** Объединённые атрибуты (с учётом наследования) для нескольких категорий. */
+  async getMergedAttributesForCategories(categoryIds: string[]) {
+    const uniqueIds = [...new Set(categoryIds.filter(Boolean))];
+    if (uniqueIds.length === 0) {
+      return [];
+    }
+
+    const attributeLists = await Promise.all(
+      uniqueIds.map((categoryId) => this.getCategoryAttributes(categoryId)),
+    );
+
+    const map = new Map<string, { id: string; name: string; slug: string; type: string }>();
+
+    for (const rows of attributeLists) {
+      for (const row of rows) {
+        const attr = row.attribute;
+        if (!map.has(attr.slug)) {
+          map.set(attr.slug, {
+            id: attr.id,
+            name: attr.name,
+            slug: attr.slug,
+            type: attr.type,
+          });
+        }
+      }
+    }
+
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+  }
+
   // Добавить атрибут к категории
   async addAttributeToCategory(categoryId: string, dto: AddAttributeDto) {
     await this.findOne(categoryId);

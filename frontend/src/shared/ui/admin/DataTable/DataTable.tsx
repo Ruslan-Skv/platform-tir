@@ -43,6 +43,8 @@ interface DataTableProps<T> {
   };
   /** Сортировка на сервере: стрелки в шапке, данные не пересортировываются локально */
   serverSideSort?: boolean;
+  /** Данные уже содержат только текущую страницу — не делать slice в таблице */
+  serverSidePagination?: boolean;
   controlledSortBy?: string | null;
   controlledSortOrder?: SortOrder;
   onSortChange?: (sortBy: string, sortOrder: SortOrder) => void;
@@ -101,6 +103,7 @@ export function DataTable<T>({
   emptyMessage = 'Нет данных',
   pagination,
   serverSideSort = false,
+  serverSidePagination = false,
   controlledSortBy = null,
   controlledSortOrder = 'asc',
   onSortChange,
@@ -257,10 +260,10 @@ export function DataTable<T>({
   }, [data, isServerSort, sortBy, sortOrder]);
 
   const displayData = useMemo(() => {
-    if (!pagination) return sortedData;
+    if (!pagination || serverSidePagination) return sortedData;
     const start = (pagination.page - 1) * pagination.limit;
     return sortedData.slice(start, start + pagination.limit);
-  }, [sortedData, pagination]);
+  }, [sortedData, pagination, serverSidePagination]);
   const showLoadingPlaceholder = loading && displayData.length === 0;
   const isRefreshing = loading && displayData.length > 0;
 

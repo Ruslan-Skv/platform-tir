@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 
 import { AdminAccessibleResourcesProvider } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { AuthProvider, useAuth } from '@/features/auth';
+import { QueryProvider } from '@/shared/lib/react-query/QueryProvider';
 import { getOrCreateStore } from '@/shared/lib/redux/store';
 import { AdminHeader } from '@/widgets/admin/Header/AdminHeader';
 import { AdminPresenceHeartbeat } from '@/widgets/admin/Header/AdminPresenceHeartbeat';
@@ -116,9 +117,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <Provider store={store}>
-      <AuthProvider>
-        <AdminLayoutContent>{children}</AdminLayoutContent>
-      </AuthProvider>
+      <QueryProvider>
+        <AuthProvider>
+          <AdminLayoutContent>{children}</AdminLayoutContent>
+        </AuthProvider>
+      </QueryProvider>
     </Provider>
   );
 }

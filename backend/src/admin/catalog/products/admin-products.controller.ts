@@ -35,9 +35,11 @@ export class AdminProductsController {
     @Query('manufacturerId') manufacturerId?: string,
     @Query('isActive') isActive?: string,
     @Query('isFeatured') isFeatured?: string,
+    @Query('isNew') isNew?: string,
     @Query('minPrice') minPrice?: string,
     @Query('maxPrice') maxPrice?: string,
-    @Query('lowStock') lowStock?: string,
+    @Query('stockFilter') stockFilter?: 'in-stock' | 'out-of-stock' | 'low-stock',
+    @Query('createdById') createdById?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('sortBy') sortBy?: string,
@@ -49,14 +51,21 @@ export class AdminProductsController {
       manufacturerId,
       isActive: isActive ? isActive === 'true' : undefined,
       isFeatured: isFeatured ? isFeatured === 'true' : undefined,
+      isNew: isNew ? isNew === 'true' : undefined,
       minPrice: minPrice ? parseFloat(minPrice) : undefined,
       maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
-      lowStock: lowStock === 'true',
+      stockFilter,
+      createdById,
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 20,
       sortBy,
       sortOrder,
     });
+  }
+
+  @Get('authors')
+  getAuthors() {
+    return this.adminProductsService.getProductAuthors();
   }
 
   @Get('stats')

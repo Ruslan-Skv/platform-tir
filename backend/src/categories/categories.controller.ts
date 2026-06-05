@@ -56,6 +56,19 @@ export class CategoriesController {
     return this.categoriesService.getAllAttributes();
   }
 
+  @Get('attributes/by-categories')
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Объединённые атрибуты для нескольких категорий' })
+  getAttributesByCategories(@Query('ids') ids?: string) {
+    const categoryIds = ids
+      ? ids
+          .split(',')
+          .map((id) => id.trim())
+          .filter(Boolean)
+      : [];
+    return this.categoriesService.getMergedAttributesForCategories(categoryIds);
+  }
+
   @Post('attributes')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

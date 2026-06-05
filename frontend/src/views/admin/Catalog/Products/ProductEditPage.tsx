@@ -5,11 +5,14 @@ import { createPortal } from 'react-dom';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
+import { useQueryClient } from '@tanstack/react-query';
+
 import { useAuth } from '@/features/auth';
 import { fetchAdminCanvasTypesList } from '@/shared/api/admin-canvas-types';
 import { fetchAdminCoatingMaterialsList } from '@/shared/api/admin-coating-materials';
 import { fetchAdminDoorThicknessesList } from '@/shared/api/admin-door-thicknesses';
 import { fetchAdminManufacturersList } from '@/shared/api/admin-manufacturers';
+import { ADMIN_PRODUCTS_LIST_QUERY_KEY } from '@/shared/api/admin-products-list';
 import { fetchAdminWeatherstripsList } from '@/shared/api/admin-weatherstrips';
 import { getApiErrorMessage, isNetworkFetchError } from '@/shared/lib/api-error';
 import { apiFetch } from '@/shared/lib/api-fetch';
@@ -302,6 +305,7 @@ interface ProductEditPageProps {
 
 export function ProductEditPage({ productId }: ProductEditPageProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { getAuthHeaders, user } = useAuth();
@@ -1725,6 +1729,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
 
       setSuccess('Товар успешно сохранён');
       setTimeout(() => setSuccess(null), 3000);
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_PRODUCTS_LIST_QUERY_KEY] });
 
       // Сброс кэша публичных страниц (товар и каталог), чтобы изменения отображались без двойной перезагрузки
       const slug = formData.slug?.trim();
