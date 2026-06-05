@@ -316,6 +316,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [nameCopied, setNameCopied] = useState(false);
+  const [nameCopyFlashKey, setNameCopyFlashKey] = useState(0);
   const nameCopyTimeoutRef = useRef<number | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<
@@ -1037,6 +1038,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
+      setNameCopyFlashKey((key) => key + 1);
       setNameCopied(true);
       if (nameCopyTimeoutRef.current) {
         window.clearTimeout(nameCopyTimeoutRef.current);
@@ -1676,8 +1678,11 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
                       className={`${styles.input} ${styles.inputWithActionField} ${adminProductFieldHighlightClass(reqHighlight.name, styles)}`}
                     />
                     <AdminTableIconButton
+                      key={nameCopyFlashKey}
                       type="button"
-                      className={styles.inputWithActionButton}
+                      className={`${styles.inputWithActionButton} ${
+                        nameCopyFlashKey > 0 ? styles.copyNameButtonFlash : ''
+                      }`}
                       onClick={() => void copyProductName()}
                       disabled={!formData.name.trim()}
                       title={nameCopied ? 'Скопировано' : 'Скопировать название'}

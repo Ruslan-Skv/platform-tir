@@ -575,6 +575,45 @@
   min-width: 0;
 }
 
+@keyframes copyNameIconBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  20%,
+  60% {
+    opacity: 0.15;
+  }
+
+  40%,
+  80% {
+    opacity: 1;
+  }
+}
+
+.copyNameButtonFlash {
+  animation: copyNameButtonFlashBg 0.75s ease-in-out;
+}
+
+.copyNameButtonFlash svg {
+  animation: copyNameIconBlink 0.75s ease-in-out;
+  color: var(--admin-success-emerald);
+}
+
+@keyframes copyNameButtonFlashBg {
+  0%,
+  100% {
+    border-color: var(--admin-border);
+    background: var(--admin-surface-soft);
+  }
+
+  50% {
+    border-color: var(--admin-success-emerald);
+    background: var(--admin-success-bg-soft);
+  }
+}
+
 .input,
 .select,
 .textarea {
