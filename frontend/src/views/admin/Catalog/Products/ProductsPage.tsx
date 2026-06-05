@@ -1,6 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type KeyboardEvent,
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
@@ -12,9 +21,48 @@ import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
 import { EditIcon } from '@/shared/ui/icons/EditIcon';
 
 import styles from './ProductsPage.module.css';
+import { readProductsListFilters, writeProductsListFilters } from './products-list-filters-storage';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 const PRODUCTS_PAGE_LIMIT_STORAGE_KEY = 'admin_products_page_limit';
+const PRODUCTS_SEARCH_HISTORY_STORAGE_KEY = 'admin_products_search_history';
+const MAX_PRODUCTS_SEARCH_HISTORY = 10;
+
+function readProductsSearchHistory(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(PRODUCTS_SEARCH_HISTORY_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+      .slice(0, MAX_PRODUCTS_SEARCH_HISTORY);
+  } catch {
+    return [];
+  }
+}
+
+function persistProductsSearchHistory(items: string[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(
+      PRODUCTS_SEARCH_HISTORY_STORAGE_KEY,
+      JSON.stringify(items.slice(0, MAX_PRODUCTS_SEARCH_HISTORY))
+    );
+  } catch {
+    // ignore
+  }
+}
+
+function addProductsSearchHistoryEntry(query: string, current: string[]): string[] {
+  const trimmed = query.trim();
+  if (!trimmed) return current;
+  return [trimmed, ...current.filter((item) => item.toLowerCase() !== trimmed.toLowerCase())].slice(
+    0,
+    MAX_PRODUCTS_SEARCH_HISTORY
+  );
+}
 
 /** Уникальный query при каждом входе в карточку — иначе Next.js Router Cache может не перемонтировать страницу и показать старые поля */
 function hrefToProductEdit(productId: string, fromCategory: string): string {
@@ -138,6 +186,10 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => readProductsSearchHistory());
+  const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
+  const searchBlurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchHistoryListId = useId();
   const [categoryFilter, setCategoryFilter] = useState(categoryId ?? '');
   const [stockFilter, setStockFilter] = useState('');
   /** '' — все; '__none__' — без создателя; иначе id пользователя */
@@ -255,6 +307,9 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
 
   /** Предыдущий categoryId из URL — чтобы сбросить селект при уходе с /products/category/:id на /products */
   const prevRouteCategoryIdRef = useRef<string | undefined>(undefined);
+  const filtersHydratedRef = useRef(false);
+  const suppressPageResetRef = useRef(true);
+  const restoredListFiltersRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -263,6 +318,46 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       }
     };
   }, []);
+
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Восстановить фильтры списка после возврата из карточки товара (до paint, чтобы не затереть sessionStorage)
+  useLayoutEffect(() => {
+    if (restoredListFiltersRef.current) return;
+    restoredListFiltersRef.current = true;
+
+    const qFromUrl = searchParams.get('q');
+    const saved = readProductsListFilters();
+
+    if (qFromUrl !== null) {
+      setSearchQuery(qFromUrl);
+    } else if (saved?.searchQuery) {
+      setSearchQuery(saved.searchQuery);
+    }
+
+    if (saved) {
+      if (!categoryId) {
+        setCategoryFilter(saved.categoryFilter);
+      }
+      setStockFilter(saved.stockFilter);
+      setAuthorFilter(saved.authorFilter);
+      setPage(saved.page);
+      setActiveFilter(saved.activeFilter);
+      setFeaturedFilter(saved.featuredFilter);
+      setNewFilter(saved.newFilter);
+      setPriceMin(saved.priceMin);
+      setPriceMax(saved.priceMax);
+      setShowAdvancedFilters(saved.showAdvancedFilters);
+    }
+
+    filtersHydratedRef.current = true;
+    const frameId = requestAnimationFrame(() => {
+      suppressPageResetRef.current = false;
+    });
+    return () => cancelAnimationFrame(frameId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- восстанавливаем один раз при монтировании
+  }, [categoryId]);
 
   // Синхронизация фильтра с маршрутом: /products/category/:id → селект = id; уход на /products → сброс «Все категории»
   useEffect(() => {
@@ -495,8 +590,6 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
   }, [fetchProducts]);
 
   // При каждом появлении страницы списка (в т.ч. переход «Назад к списку») обновлять список
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const prevPathnameRef = useRef<string | null>(null);
 
   // Параметр ?refresh= в URL — явный запрос обновить список (после создания/редактирования)
@@ -504,9 +597,12 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
   useEffect(() => {
     if (refreshParam) {
       fetchProducts('refresh');
-      router.replace(pathname);
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('refresh');
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname);
     }
-  }, [refreshParam, pathname, fetchProducts, router]);
+  }, [refreshParam, pathname, fetchProducts, router, searchParams]);
 
   useEffect(() => {
     const isProductsList =
@@ -660,10 +756,158 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
 
   const totalProducts = filteredProducts.length;
   const _totalPages = Math.ceil(totalProducts / limit);
-  const paginatedProducts = filteredProducts.slice((page - 1) * limit, page * limit);
 
-  // Reset page when filters change
+  const visibleRecentSearches = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return recentSearches;
+    return recentSearches.filter((item) => item.toLowerCase().includes(query));
+  }, [recentSearches, searchQuery]);
+
+  const showSearchHistory = searchDropdownOpen && visibleRecentSearches.length > 0;
+
+  const cancelSearchBlurClose = useCallback(() => {
+    if (searchBlurTimerRef.current !== null) {
+      clearTimeout(searchBlurTimerRef.current);
+      searchBlurTimerRef.current = null;
+    }
+  }, []);
+
+  const commitSearchToHistory = useCallback((query: string) => {
+    setRecentSearches((prev) => {
+      const next = addProductsSearchHistoryEntry(query, prev);
+      if (next.length === prev.length && next.every((item, index) => item === prev[index])) {
+        return prev;
+      }
+      persistProductsSearchHistory(next);
+      return next;
+    });
+  }, []);
+
+  const handleSearchFocus = useCallback(() => {
+    cancelSearchBlurClose();
+    if (recentSearches.length > 0) {
+      setSearchDropdownOpen(true);
+    }
+  }, [cancelSearchBlurClose, recentSearches.length]);
+
+  const handleSearchBlur = useCallback(() => {
+    searchBlurTimerRef.current = setTimeout(() => {
+      setSearchDropdownOpen(false);
+      searchBlurTimerRef.current = null;
+    }, 180);
+  }, []);
+
+  const handleSearchBlurWithSave = useCallback(() => {
+    commitSearchToHistory(searchQuery);
+    handleSearchBlur();
+  }, [commitSearchToHistory, handleSearchBlur, searchQuery]);
+
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearchQuery(value);
+      if (recentSearches.length === 0) {
+        setSearchDropdownOpen(false);
+        return;
+      }
+      const query = value.trim().toLowerCase();
+      const hasMatches =
+        query.length === 0 || recentSearches.some((item) => item.toLowerCase().includes(query));
+      setSearchDropdownOpen(hasMatches);
+    },
+    [recentSearches]
+  );
+
+  const handleSearchKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Escape') {
+        setSearchDropdownOpen(false);
+        return;
+      }
+      if (e.key === 'Enter') {
+        commitSearchToHistory(searchQuery);
+        setSearchDropdownOpen(false);
+      }
+    },
+    [commitSearchToHistory, searchQuery]
+  );
+
+  const pickRecentSearch = useCallback(
+    (query: string) => {
+      setSearchQuery(query);
+      commitSearchToHistory(query);
+      setPage(1);
+      setSearchDropdownOpen(false);
+    },
+    [commitSearchToHistory]
+  );
+
+  const listFiltersSnapshot = useMemo(
+    () => ({
+      searchQuery,
+      categoryFilter,
+      stockFilter,
+      authorFilter,
+      page,
+      activeFilter,
+      featuredFilter,
+      newFilter,
+      priceMin,
+      priceMax,
+      showAdvancedFilters,
+    }),
+    [
+      searchQuery,
+      categoryFilter,
+      stockFilter,
+      authorFilter,
+      page,
+      activeFilter,
+      featuredFilter,
+      newFilter,
+      priceMin,
+      priceMax,
+      showAdvancedFilters,
+    ]
+  );
+
+  const persistListFiltersNow = useCallback(() => {
+    writeProductsListFilters(listFiltersSnapshot);
+  }, [listFiltersSnapshot]);
+
+  const navigateToProductEdit = useCallback(
+    (productId: string) => {
+      persistListFiltersNow();
+      router.push(hrefToProductEdit(productId, persistedCategoryId));
+    },
+    [persistListFiltersNow, persistedCategoryId, router]
+  );
+
+  // Синхронизируем поиск с URL (?q=), чтобы выборка сохранялась при возврате из карточки
   useEffect(() => {
+    if (!filtersHydratedRef.current) return;
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('refresh');
+    const trimmed = searchQuery.trim();
+    if (trimmed) {
+      params.set('q', trimmed);
+    } else {
+      params.delete('q');
+    }
+
+    const qs = params.toString();
+    const nextUrl = qs ? `${pathname}?${qs}` : pathname;
+    const currentQs = new URLSearchParams(searchParams.toString());
+    currentQs.delete('refresh');
+    const currentUrl = currentQs.toString() ? `${pathname}?${currentQs.toString()}` : pathname;
+    if (nextUrl !== currentUrl) {
+      router.replace(nextUrl, { scroll: false });
+    }
+  }, [searchQuery, pathname, router, searchParams]);
+
+  // Reset page when filters change (не сбрасываем при восстановлении фильтров после возврата из карточки)
+  useEffect(() => {
+    if (!filtersHydratedRef.current || suppressPageResetRef.current) return;
     setPage(1);
   }, [
     searchQuery,
@@ -676,6 +920,12 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
     priceMin,
     priceMax,
   ]);
+
+  // Сохраняем фильтры списка в sessionStorage — восстанавливаются после «Назад к списку»
+  useEffect(() => {
+    if (!filtersHydratedRef.current) return;
+    writeProductsListFilters(listFiltersSnapshot);
+  }, [listFiltersSnapshot]);
 
   // Persist selected page size between navigations
   useEffect(() => {
@@ -1475,7 +1725,7 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
         <AdminTableIconButton
           onClick={(e) => {
             e.stopPropagation();
-            router.push(hrefToProductEdit(product.id, persistedCategoryId));
+            navigateToProductEdit(product.id);
           }}
           title="Редактировать"
           aria-label="Редактировать товар"
@@ -1787,13 +2037,48 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       </div>
 
       <div className={styles.filters}>
-        <input
-          type="search"
-          placeholder="Поиск по названию, артикулу..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className={styles.searchInput}
-        />
+        <div className={styles.searchField}>
+          <input
+            type="search"
+            placeholder="Поиск по названию, артикулу..."
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            onFocus={handleSearchFocus}
+            onBlur={handleSearchBlurWithSave}
+            onKeyDown={handleSearchKeyDown}
+            className={styles.searchInput}
+            autoComplete="off"
+            aria-expanded={showSearchHistory}
+            aria-controls={showSearchHistory ? searchHistoryListId : undefined}
+            aria-autocomplete="list"
+          />
+          {showSearchHistory && (
+            <ul
+              id={searchHistoryListId}
+              className={styles.searchHistoryList}
+              role="listbox"
+              aria-label="Недавние поиски"
+              onMouseDown={cancelSearchBlurClose}
+            >
+              <li className={styles.searchHistoryHeader} role="presentation">
+                Недавние поиски
+              </li>
+              {visibleRecentSearches.map((query) => (
+                <li key={query} role="presentation">
+                  <button
+                    type="button"
+                    role="option"
+                    className={styles.searchHistoryItem}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => pickRecentSearch(query)}
+                  >
+                    {query}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <select
           value={categoryFilter}
           onChange={(e) => {
@@ -1994,14 +2279,14 @@ export function ProductsPage({ categoryId }: ProductsPageProps) {
       <DataTable
         paginationClassName={styles.productsPagination}
         paginationActiveClassName={styles.paginationPageActive}
-        data={paginatedProducts}
+        data={filteredProducts}
         columns={columns}
         keyExtractor={(product) => product.id}
         defaultSortBy="name"
         defaultSortOrder="asc"
         sortStorageKey={`admin_products_sort:${categoryFilter || categoryId || 'all'}`}
         onRowClick={(product) => {
-          router.push(hrefToProductEdit(product.id, persistedCategoryId));
+          navigateToProductEdit(product.id);
         }}
         selectable
         selectedIds={selectedIds}

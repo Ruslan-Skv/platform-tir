@@ -123,9 +123,15 @@
   margin-bottom: var(--admin-space-3xl);
 }
 
-.searchInput {
+.searchField {
+  position: relative;
   flex: 1;
   max-width: 400px;
+  z-index: 20;
+}
+
+.searchInput {
+  width: 100%;
   padding: var(--admin-space-sm) var(--admin-space-xl);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-md);
@@ -136,6 +142,48 @@
   outline: none;
   border-color: var(--admin-accent);
   box-shadow: var(--admin-shadow-focus-soft);
+}
+
+.searchHistoryList {
+  position: absolute;
+  top: calc(100% + var(--admin-space-xs));
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: var(--admin-space-xs) 0;
+  list-style: none;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-popover);
+  max-height: min(16rem, 40vh);
+  overflow-y: auto;
+}
+
+.searchHistoryHeader {
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  color: var(--admin-text-muted);
+}
+
+.searchHistoryItem {
+  display: block;
+  width: 100%;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: var(--admin-font-size-xs);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.searchHistoryItem:hover {
+  background: var(--admin-surface-muted);
 }
 
 .select {
@@ -837,7 +885,7 @@
     flex-wrap: wrap;
   }
 
-  .searchInput {
+  .searchField {
     max-width: none;
     width: 100%;
   }
@@ -1286,6 +1334,15 @@
   background: var(--admin-text-secondary);
   border-color: var(--admin-sidebar-text);
   color: var(--admin-surface-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchHistoryList {
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .searchHistoryItem:hover {
+  background: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .select {

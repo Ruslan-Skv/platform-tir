@@ -204,6 +204,18 @@ export function DataTable<T>({
     return value;
   };
 
+  const toSortableTimestamp = (value: unknown): number | null => {
+    if (value instanceof Date) {
+      const time = value.getTime();
+      return Number.isNaN(time) ? null : time;
+    }
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+      const time = Date.parse(value);
+      return Number.isNaN(time) ? null : time;
+    }
+    return null;
+  };
+
   const compareValues = (a: unknown, b: unknown, order: 'asc' | 'desc'): number => {
     const aNull = a === null || a === undefined;
     const bNull = b === null || b === undefined;
@@ -214,6 +226,15 @@ export function DataTable<T>({
       const va = a ? 1 : 0;
       const vb = b ? 1 : 0;
       return order === 'asc' ? va - vb : vb - va;
+    }
+    const aTime = toSortableTimestamp(a);
+    const bTime = toSortableTimestamp(b);
+    if (aTime !== null && bTime !== null) {
+      return order === 'asc' ? aTime - bTime : bTime - aTime;
+    }
+    if (aTime !== null || bTime !== null) {
+      if (aTime !== null) return order === 'asc' ? -1 : 1;
+      return order === 'asc' ? 1 : -1;
     }
     const aNum = typeof a === 'number' ? a : parseFloat(String(a));
     const bNum = typeof b === 'number' ? b : parseFloat(String(b));
@@ -235,7 +256,11 @@ export function DataTable<T>({
     });
   }, [data, isServerSort, sortBy, sortOrder]);
 
-  const displayData = sortedData;
+  const displayData = useMemo(() => {
+    if (!pagination) return sortedData;
+    const start = (pagination.page - 1) * pagination.limit;
+    return sortedData.slice(start, start + pagination.limit);
+  }, [sortedData, pagination]);
   const showLoadingPlaceholder = loading && displayData.length === 0;
   const isRefreshing = loading && displayData.length > 0;
 

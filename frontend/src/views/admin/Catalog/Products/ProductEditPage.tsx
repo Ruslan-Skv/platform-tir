@@ -41,6 +41,7 @@ import {
   categoryAttributeValueFilled,
   validateAdminProductRequiredFields,
 } from './product-form-required-fields';
+import { buildProductsListBackUrl } from './products-list-filters-storage';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -305,6 +306,9 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   const getAuthHeadersRef = useRef(getAuthHeaders);
   getAuthHeadersRef.current = getAuthHeaders;
   const fromCategory = searchParams.get('fromCategory') ?? '';
+  const navigateBackToProductsList = useCallback(() => {
+    router.push(buildProductsListBackUrl(fromCategory));
+  }, [router, fromCategory]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [fetchingPrice, setFetchingPrice] = useState(false);
@@ -1512,12 +1516,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         <div className={styles.notFound}>
           <h2>Товар не найден</h2>
           <p>Товар с ID {productId} не существует или был удалён.</p>
-          <button
-            className={styles.backButton}
-            onClick={() => {
-              router.push(`/admin/catalog/products?refresh=${Date.now()}`);
-            }}
-          >
+          <button className={styles.backButton} onClick={navigateBackToProductsList}>
             ← Вернуться к списку товаров
           </button>
         </div>
@@ -1532,15 +1531,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button
-            className={styles.backButton}
-            onClick={() => {
-              const base = fromCategory
-                ? `/admin/catalog/products/category/${fromCategory}`
-                : '/admin/catalog/products';
-              router.push(`${base}?refresh=${Date.now()}`);
-            }}
-          >
+          <button className={styles.backButton} onClick={navigateBackToProductsList}>
             ← Назад к списку
           </button>
           <h1 className={styles.title}>Редактирование товара</h1>
@@ -3268,12 +3259,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
         <button
           type="button"
           className={styles.backButtonBottom}
-          onClick={() => {
-            const base = fromCategory
-              ? `/admin/catalog/products/category/${fromCategory}`
-              : '/admin/catalog/products';
-            router.push(`${base}?refresh=${Date.now()}`);
-          }}
+          onClick={navigateBackToProductsList}
         >
           ← Назад к списку
         </button>
@@ -3281,12 +3267,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           <button
             type="button"
             className={styles.cancelButton}
-            onClick={() => {
-              const base = fromCategory
-                ? `/admin/catalog/products/category/${fromCategory}`
-                : '/admin/catalog/products';
-              router.push(`${base}?refresh=${Date.now()}`);
-            }}
+            onClick={navigateBackToProductsList}
           >
             Отмена
           </button>
