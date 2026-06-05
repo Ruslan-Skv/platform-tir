@@ -10,6 +10,7 @@
   align-items: center;
   gap: var(--admin-space-md);
   margin-bottom: var(--admin-space-md);
+  scroll-margin-top: var(--product-edit-sticky-top, 4.75rem);
 }
 
 .pageHeaderMain {

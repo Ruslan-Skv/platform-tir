@@ -539,6 +539,17 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
   // Загрузка изображений
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const pageHeaderRef = useRef<HTMLDivElement>(null);
+  const saveButtonAnchorRef = useRef<HTMLDivElement>(null);
+  const saveButtonRef = useRef<HTMLButtonElement>(null);
+  const updateSaveButtonPinRef = useRef<(() => void) | null>(null);
+  const saveButtonPinSnapshotRef = useRef({
+    pinnedTopPx: 72,
+    fixed: false,
+    left: null as number | null,
+    placeholderWidth: 0,
+    placeholderHeight: 0,
+  });
   const submitProductForm = useCallback(() => {
     formRef.current?.requestSubmit();
   }, []);
@@ -556,48 +567,62 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
 
     return Math.ceil(adminHeader.getBoundingClientRect().bottom) + 8;
   }, []);
-  const scrollProductPageToTop = useCallback((): Promise<void> => {
-    const nextTop = 0;
+  const getPageScrollTop = useCallback(() => {
+    return window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+  }, []);
+  const scrollProductPageToTop = useCallback(() => {
+    const pageHeader = pageHeaderRef.current;
+    const isPinned = saveButtonPinSnapshotRef.current.fixed;
 
-    if (window.scrollY < 2) {
-      updateSaveButtonPinRef.current?.();
-      return Promise.resolve();
+    if (getPageScrollTop() < 2 && !isPinned) {
+      return;
     }
 
-    return new Promise((resolve) => {
-      let settled = false;
-      const finish = () => {
-        if (settled) return;
-        settled = true;
-        window.removeEventListener('scroll', onScroll);
-        window.clearTimeout(fallbackTimer);
-        updateSaveButtonPinRef.current?.();
-        resolve();
-      };
+    const scrollWindowTo = (top: number, behavior: ScrollBehavior) => {
+      const options: ScrollToOptions = { top, left: 0, behavior };
+      window.scrollTo(options);
+      document.documentElement.scrollTo(options);
+      document.body.scrollTo(options);
+    };
 
-      const onScroll = () => {
-        if (window.scrollY < 2) {
-          finish();
-        }
-      };
+    let scrollFinishTimer: number | undefined;
+    let didFinishScroll = false;
+    const finishScroll = () => {
+      if (didFinishScroll) return;
 
-      const fallbackTimer = window.setTimeout(finish, 900);
-      window.addEventListener('scroll', onScroll, { passive: true });
-      window.scrollTo({ top: nextTop, left: 0, behavior: 'smooth' });
-    });
-  }, []);
+      if (getPageScrollTop() > 2) {
+        scrollWindowTo(0, 'auto');
+        pageHeader?.scrollIntoView({ behavior: 'auto', block: 'start' });
+      }
+
+      didFinishScroll = true;
+      if (scrollFinishTimer !== undefined) {
+        window.clearTimeout(scrollFinishTimer);
+      }
+      updateSaveButtonPinRef.current?.();
+    };
+
+    if (pageHeader) {
+      pageHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      scrollWindowTo(0, 'smooth');
+    }
+
+    scrollFinishTimer = window.setTimeout(finishScroll, 480);
+    if ('onscrollend' in window) {
+      window.addEventListener('scrollend', finishScroll, { once: true });
+    }
+  }, [getPageScrollTop]);
   const handleHeaderSaveClick = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
-      void scrollProductPageToTop().then(() => {
+      scrollProductPageToTop();
+      window.setTimeout(() => {
         submitProductForm();
-      });
+      }, 180);
     },
     [scrollProductPageToTop, submitProductForm]
   );
-  const saveButtonAnchorRef = useRef<HTMLDivElement>(null);
-  const saveButtonRef = useRef<HTMLButtonElement>(null);
-  const updateSaveButtonPinRef = useRef<(() => void) | null>(null);
   const [saveButtonFixed, setSaveButtonFixed] = useState(false);
   const [saveButtonFixedLeft, setSaveButtonFixedLeft] = useState<number | null>(null);
   const [saveButtonPlaceholderSize, setSaveButtonPlaceholderSize] = useState<{
@@ -1142,39 +1167,98 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     return getAdminHeaderBottomOffset();
   }, [getAdminHeaderBottomOffset]);
 
+  const applySaveButtonPinState = useCallback(
+    (next: {
+      pinnedTopPx: number;
+      fixed: boolean;
+      left: number | null;
+      placeholder: { width: number; height: number } | null;
+    }) => {
+      const placeholderWidth = next.placeholder?.width ?? 0;
+      const placeholderHeight = next.placeholder?.height ?? 0;
+      const prev = saveButtonPinSnapshotRef.current;
+
+      if (
+        prev.pinnedTopPx === next.pinnedTopPx &&
+        prev.fixed === next.fixed &&
+        prev.left === next.left &&
+        prev.placeholderWidth === placeholderWidth &&
+        prev.placeholderHeight === placeholderHeight
+      ) {
+        return;
+      }
+
+      saveButtonPinSnapshotRef.current = {
+        pinnedTopPx: next.pinnedTopPx,
+        fixed: next.fixed,
+        left: next.left,
+        placeholderWidth,
+        placeholderHeight,
+      };
+
+      setSaveButtonPinnedTopPx(next.pinnedTopPx);
+      setSaveButtonFixed(next.fixed);
+      setSaveButtonFixedLeft(next.left);
+      setSaveButtonPlaceholderSize(next.placeholder);
+    },
+    []
+  );
+
   useEffect(() => {
     if (loading || productNotFound) {
       setSaveButtonFixed(false);
       return;
     }
 
+    let pinFrameId = 0;
+
     const updateSaveButtonPin = () => {
-      const pinnedTop = measureSaveButtonPinnedTop();
-      setSaveButtonPinnedTopPx(pinnedTop);
+      if (pinFrameId) return;
 
-      const anchor = saveButtonAnchorRef.current;
-      if (!anchor) return;
+      pinFrameId = window.requestAnimationFrame(() => {
+        pinFrameId = 0;
 
-      const anchorRect = anchor.getBoundingClientRect();
-      const shouldFix = anchorRect.top < pinnedTop;
+        const pinnedTop = measureSaveButtonPinnedTop();
+        const anchor = saveButtonAnchorRef.current;
 
-      if (shouldFix) {
-        const button = saveButtonRef.current;
-        if (!button) return;
+        if (!anchor) {
+          applySaveButtonPinState({
+            pinnedTopPx: pinnedTop,
+            fixed: false,
+            left: null,
+            placeholder: null,
+          });
+          return;
+        }
 
-        const buttonRect = button.getBoundingClientRect();
-        const buttonWidth = buttonRect.width || button.offsetWidth;
-        setSaveButtonFixedLeft(anchorRect.right - buttonWidth);
-        setSaveButtonPlaceholderSize({
-          width: buttonWidth,
-          height: buttonRect.height || button.offsetHeight,
+        const anchorRect = anchor.getBoundingClientRect();
+        const shouldFix = anchorRect.top < pinnedTop;
+
+        if (shouldFix) {
+          const button = saveButtonRef.current;
+          if (!button) return;
+
+          const buttonRect = button.getBoundingClientRect();
+          const buttonWidth = buttonRect.width || button.offsetWidth;
+          applySaveButtonPinState({
+            pinnedTopPx: pinnedTop,
+            fixed: true,
+            left: anchorRect.right - buttonWidth,
+            placeholder: {
+              width: buttonWidth,
+              height: buttonRect.height || button.offsetHeight,
+            },
+          });
+          return;
+        }
+
+        applySaveButtonPinState({
+          pinnedTopPx: pinnedTop,
+          fixed: false,
+          left: null,
+          placeholder: null,
         });
-      } else {
-        setSaveButtonFixedLeft(null);
-        setSaveButtonPlaceholderSize(null);
-      }
-
-      setSaveButtonFixed(shouldFix);
+      });
     };
 
     updateSaveButtonPinRef.current = updateSaveButtonPin;
@@ -1183,10 +1267,13 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
     window.addEventListener('resize', updateSaveButtonPin);
     return () => {
       updateSaveButtonPinRef.current = null;
+      if (pinFrameId) {
+        window.cancelAnimationFrame(pinFrameId);
+      }
       window.removeEventListener('scroll', updateSaveButtonPin);
       window.removeEventListener('resize', updateSaveButtonPin);
     };
-  }, [loading, productNotFound, measureSaveButtonPinnedTop]);
+  }, [loading, productNotFound, measureSaveButtonPinnedTop, applySaveButtonPinState]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -1710,7 +1797,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
       className={styles.page}
       style={{ '--product-edit-sticky-top': `${saveButtonPinnedTopPx}px` } as React.CSSProperties}
     >
-      <div className={styles.pageHeader}>
+      <div ref={pageHeaderRef} className={styles.pageHeader}>
         <div className={styles.pageHeaderMain}>
           <button className={styles.backButton} onClick={navigateBackToProductsList}>
             ← Назад к списку
