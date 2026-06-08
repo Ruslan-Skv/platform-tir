@@ -10,7 +10,10 @@ import React, {
   useState,
 } from 'react';
 
+import { useQueryClient } from '@tanstack/react-query';
+
 import * as wishlistApi from '@/shared/api/wishlist';
+import { WISHLIST_PRODUCTS_QUERY_KEY } from '@/shared/lib/hooks/useWishlistProducts';
 
 interface WishlistContextValue {
   wishlist: string[];
@@ -28,6 +31,7 @@ interface WishlistContextValue {
 const WishlistContext = createContext<WishlistContextValue | undefined>(undefined);
 
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [count, setCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -58,9 +62,11 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
         const products = await wishlistApi.getWishlist();
         setWishlist(products.map((p) => p.id));
         setCount(products.length);
+        queryClient.setQueryData(WISHLIST_PRODUCTS_QUERY_KEY, products);
       } catch {
         setWishlist([]);
         setCount(0);
+        queryClient.setQueryData(WISHLIST_PRODUCTS_QUERY_KEY, []);
       }
     } else {
       if (prev === true) {
@@ -69,10 +75,20 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       const ids = wishlistApi.readGuestWishlistIds();
       setWishlist(ids);
       setCount(ids.length);
+      if (ids.length === 0) {
+        queryClient.setQueryData(WISHLIST_PRODUCTS_QUERY_KEY, []);
+      } else {
+        try {
+          const products = await wishlistApi.getWishlist();
+          queryClient.setQueryData(WISHLIST_PRODUCTS_QUERY_KEY, products);
+        } catch {
+          queryClient.removeQueries({ queryKey: WISHLIST_PRODUCTS_QUERY_KEY });
+        }
+      }
     }
 
     prevHadTokenRef.current = hasToken;
-  }, []);
+  }, [queryClient]);
 
   useEffect(() => {
     let alive = true;
@@ -128,8 +144,9 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       await wishlistApi.addToWishlist(productId);
       setWishlist((prev) => (prev.includes(productId) ? prev : [...prev, productId]));
       await refreshCount();
+      await queryClient.invalidateQueries({ queryKey: WISHLIST_PRODUCTS_QUERY_KEY });
     },
-    [refreshCount]
+    [queryClient, refreshCount]
   );
 
   const removeFromWishlist = useCallback(
@@ -137,8 +154,13 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       await wishlistApi.removeFromWishlist(productId);
       setWishlist((prev) => prev.filter((id) => id !== productId));
       await refreshCount();
+      queryClient.setQueryData(
+        WISHLIST_PRODUCTS_QUERY_KEY,
+        (prev: Awaited<ReturnType<typeof wishlistApi.getWishlist>> | undefined) =>
+          prev?.filter((p) => p.id !== productId) ?? []
+      );
     },
-    [refreshCount]
+    [queryClient, refreshCount]
   );
 
   const toggleWishlist = useCallback(

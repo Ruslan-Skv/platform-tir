@@ -4,10 +4,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 
-import * as wishlistApi from '@/shared/api/wishlist';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { useWishlist } from '@/shared/lib/hooks';
-import type { CatalogApiProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
+import { useWishlistProducts } from '@/shared/lib/hooks/useWishlistProducts';
 import { mapCatalogApiProductToProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
 import { ProductCard } from '@/views/catalog/ui/ProductsGrid';
 import catalogGridStyles from '@/views/catalog/ui/ProductsGrid/ProductsGrid.module.css';
@@ -32,10 +31,8 @@ function goodsWord(n: number): string {
 }
 
 export default function FavoritesPage() {
-  const { count, refreshCount } = useWishlist();
-  const [products, setProducts] = useState<CatalogApiProduct[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { count } = useWishlist();
+  const { data: products = [], isLoading, isFetching, error } = useWishlistProducts();
   const [partnerSettings, setPartnerSettings] = useState<{
     partnerLogoUrl: string | null;
     showPartnerIconOnCards: boolean;
@@ -59,34 +56,14 @@ export default function FavoritesPage() {
     fetchPartnerSettings();
   }, []);
 
-  useEffect(() => {
-    const loadWishlist = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const wishlistProducts = await wishlistApi.getWishlist();
-        setProducts(wishlistProducts);
-        await refreshCount();
-      } catch (err) {
-        if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError('Произошла ошибка при загрузке избранного');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadWishlist();
-  }, [refreshCount, count]);
-
   const mappedProducts = useMemo(
     () => products.map((p, index) => mapCatalogApiProductToProduct(p, index)),
     [products]
   );
 
-  if (loading) {
+  const showInitialLoading = isLoading && products.length === 0;
+
+  if (showInitialLoading) {
     return (
       <div className={styles.container}>
         <div className={styles.loading}>Загрузка избранного...</div>
@@ -99,7 +76,9 @@ export default function FavoritesPage() {
       <div className={styles.container}>
         <div className={styles.error}>
           <h1>Ошибка</h1>
-          <p>{error}</p>
+          <p>
+            {error instanceof Error ? error.message : 'Произошла ошибка при загрузке избранного'}
+          </p>
           <Link href="/" className={styles.link}>
             Вернуться на главную
           </Link>
@@ -116,6 +95,7 @@ export default function FavoritesPage() {
           {count > 0 && (
             <span className={styles.itemCount}>
               {count} {goodsWord(count)}
+              {isFetching && products.length > 0 ? ' · обновление…' : ''}
             </span>
           )}
         </div>

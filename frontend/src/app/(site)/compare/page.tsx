@@ -5,9 +5,9 @@ import React, { Fragment, useCallback, useEffect, useMemo, useState } from 'reac
 import Link from 'next/link';
 
 import type { ProductCharacteristic } from '@/entities/product';
-import * as compareApi from '@/shared/api/compare';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { useCompare } from '@/shared/lib/hooks';
+import { useCompareProducts } from '@/shared/lib/hooks/useCompareProducts';
 import {
   PRODUCT_AVAILABILITY_LABEL,
   getProductAvailability,
@@ -61,10 +61,8 @@ const SLOTS_MOBILE = 2;
 const SLOTS_DESKTOP = 4;
 
 export default function ComparePage() {
-  const { count, refreshCount } = useCompare();
-  const [products, setProducts] = useState<CatalogApiProduct[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { count } = useCompare();
+  const { data: products = [], isLoading, isFetching, error, refetch } = useCompareProducts();
   const [isMobile, setIsMobile] = useState(false);
   /** id товара в каждом слоте (устойчиво к удалению других позиций из списка). */
   const [slotProductId, setSlotProductId] = useState<string[]>([]);
@@ -101,33 +99,9 @@ export default function ComparePage() {
     );
   }, [productIdsKey, products, slotCount]);
 
-  const loadCompare = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const compareProducts = await compareApi.getCompare();
-      setProducts(compareProducts);
-      await refreshCount();
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Произошла ошибка при загрузке сравнения');
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [refreshCount]);
-
-  useEffect(() => {
-    loadCompare();
-  }, [loadCompare]);
-
-  useEffect(() => {
-    if (!loading && products.length !== count) {
-      loadCompare();
-    }
-  }, [count, loading, products.length, loadCompare]);
+  const refreshCompareProducts = useCallback(() => {
+    void refetch();
+  }, [refetch]);
 
   useEffect(() => {
     const fetchPartnerSettings = async () => {
@@ -200,7 +174,9 @@ export default function ComparePage() {
 
   const canPickInSlot = products.length > 1;
 
-  if (loading) {
+  const showInitialLoading = isLoading && products.length === 0;
+
+  if (showInitialLoading) {
     return (
       <div className={styles.container}>
         <div className={styles.loading}>Загрузка сравнения...</div>
@@ -213,7 +189,9 @@ export default function ComparePage() {
       <div className={styles.container}>
         <div className={styles.error}>
           <h1>Ошибка</h1>
-          <p>{error}</p>
+          <p>
+            {error instanceof Error ? error.message : 'Произошла ошибка при загрузке сравнения'}
+          </p>
           <Link href="/" className={styles.link}>
             Вернуться на главную
           </Link>
@@ -317,6 +295,7 @@ export default function ComparePage() {
           {count > 0 && (
             <span className={styles.itemCount}>
               {count} {goodsWord(count)}
+              {isFetching && products.length > 0 ? ' · обновление…' : ''}
             </span>
           )}
         </div>
@@ -337,7 +316,7 @@ export default function ComparePage() {
                           <ProductCard
                             product={product}
                             isCompareMode
-                            onRemoveFromCompare={loadCompare}
+                            onRemoveFromCompare={refreshCompareProducts}
                             partnerLogoUrl={partnerSettings.partnerLogoUrl}
                             showPartnerIconOnCards={partnerSettings.showPartnerIconOnCards}
                           />
@@ -389,7 +368,7 @@ export default function ComparePage() {
                       <ProductCard
                         product={mp}
                         isCompareMode
-                        onRemoveFromCompare={loadCompare}
+                        onRemoveFromCompare={refreshCompareProducts}
                         partnerLogoUrl={partnerSettings.partnerLogoUrl}
                         showPartnerIconOnCards={partnerSettings.showPartnerIconOnCards}
                       />
