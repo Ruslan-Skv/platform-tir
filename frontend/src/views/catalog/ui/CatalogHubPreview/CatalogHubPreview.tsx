@@ -12,7 +12,6 @@ import type {
   CatalogHubPreviewResponse,
 } from '@/shared/api/catalog-hub-preview';
 import { apiFetch } from '@/shared/lib/api-fetch';
-import { useMobileCatalogColumns } from '@/shared/lib/hooks';
 import { mapCatalogApiProductToProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
 import { useCatalogHubPreview } from '@/views/catalog/lib/useCatalogHubPreview';
 import { ProductCard } from '@/views/catalog/ui/ProductsGrid';
@@ -39,8 +38,6 @@ export const CatalogHubPreview: React.FC<CatalogHubPreviewProps> = ({
 }) => {
   const [mode, setMode] = useState<CatalogHubPreviewMode>(initialPreview?.mode ?? 'featured');
   const { data, isLoading, isFetching } = useCatalogHubPreview(mode, initialPreview);
-  const mobileCatalogColumns = useMobileCatalogColumns();
-
   const [partnerSettings, setPartnerSettings] = useState<{
     partnerLogoUrl: string | null;
     showPartnerIconOnCards: boolean;
@@ -64,17 +61,14 @@ export const CatalogHubPreview: React.FC<CatalogHubPreviewProps> = ({
     fetchPartnerSettings();
   }, []);
 
-  const sections = data?.sections ?? [];
-  const loading = isLoading && !data;
+  const previewMatchesMode = data?.mode === mode;
+  const sections = previewMatchesMode ? (data?.sections ?? []) : [];
+  const loading = (isLoading && !data) || Boolean(data && !previewMatchesMode);
   const hasProducts = sections.some((section) => section.products.length > 0);
 
   useEffect(() => {
     onPreviewReady?.(!loading && hasProducts);
   }, [loading, hasProducts, onPreviewReady]);
-
-  const gridClassName = `${gridStyles.grid} ${
-    mobileCatalogColumns === 2 ? gridStyles.gridMobile2 : ''
-  }`;
 
   return (
     <div className={styles.hubPreview}>
@@ -145,7 +139,7 @@ export const CatalogHubPreview: React.FC<CatalogHubPreviewProps> = ({
                   Смотреть все →
                 </Link>
               </div>
-              <div className={gridClassName}>
+              <div className={gridStyles.grid}>
                 {products.map((product) => (
                   <ProductCard
                     key={product.originalId ?? product.id}
@@ -160,7 +154,7 @@ export const CatalogHubPreview: React.FC<CatalogHubPreviewProps> = ({
         })
       )}
 
-      {isFetching && data ? (
+      {isFetching && previewMatchesMode && data ? (
         <p className={styles.loading} aria-live="polite">
           Обновление…
         </p>

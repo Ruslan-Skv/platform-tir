@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from 'next';
 
 import { ThemeInitializer } from '@/features/theme';
+import { buildSiteBootstrapScript } from '@/shared/lib/mobile-catalog-columns-bootstrap-script';
 import { StoreProvider } from '@/shared/lib/redux';
+import { getCatalogSettingsCached } from '@/views/catalog/lib/fetch-catalog-settings-cached';
 
 import './globals.css';
 
@@ -52,18 +54,30 @@ export const viewport: Viewport = {
   userScalable: true,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  let serverDefaultMobileCatalogColumns: 1 | 2 = 1;
+  try {
+    const catalogSettings = await getCatalogSettingsCached();
+    serverDefaultMobileCatalogColumns = catalogSettings.defaultMobileCatalogColumns === 2 ? 2 : 1;
+  } catch {
+    /* fallback: 1 колонка */
+  }
+
   return (
-    <html lang="ru" suppressHydrationWarning>
+    <html
+      lang="ru"
+      suppressHydrationWarning
+      data-mobile-catalog-columns={serverDefaultMobileCatalogColumns === 2 ? '2' : undefined}
+    >
       <body>
-        {/* Тема на html до React — убирает мигание светлой темы при навигации в тёмном режиме */}
+        {/* Тема и сетка каталога на html до React — без мигания при перезагрузке */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){var t=localStorage.getItem('theme');document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');})();`,
+            __html: buildSiteBootstrapScript(serverDefaultMobileCatalogColumns),
           }}
         />
         <StoreProvider>

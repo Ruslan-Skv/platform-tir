@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useState } from 'react';
+import { useLayoutEffect } from 'react';
 
 import { useUserAuth } from '@/features/auth/context/UserAuthContext';
 import { getCatalogSettings } from '@/shared/api/catalog-settings';
@@ -8,31 +8,17 @@ import { getUserNotificationSettings } from '@/shared/api/user-notifications';
 import {
   type MobileCatalogColumns,
   applyMobileCatalogColumnsToDocument,
-  readMobileCatalogColumnsFromDocument,
   writeStoredMobileCatalogColumns,
 } from '@/shared/lib/mobile-catalog-columns';
-
-export type { MobileCatalogColumns };
 
 function commitMobileCatalogColumns(columns: MobileCatalogColumns): void {
   writeStoredMobileCatalogColumns(columns);
   applyMobileCatalogColumnsToDocument(columns);
 }
 
-/**
- * Только для UI, где нужно знать число колонок после гидратации.
- * Разметку сетки каталога задавайте через data-mobile-catalog-columns на <html>, не через className.
- */
-export function useMobileCatalogColumns(): MobileCatalogColumns {
-  const [columns, setColumns] = useState<MobileCatalogColumns>(1);
+/** Синхронизирует data-mobile-catalog-columns с API; не влияет на className в React-дереве (без hydration mismatch). */
+export function MobileCatalogColumnsSync() {
   const { isAuthenticated } = useUserAuth();
-
-  useLayoutEffect(() => {
-    const fromDom = readMobileCatalogColumnsFromDocument();
-    if (fromDom != null) {
-      setColumns(fromDom);
-    }
-  }, []);
 
   useLayoutEffect(() => {
     let cancelled = false;
@@ -50,10 +36,9 @@ export function useMobileCatalogColumns(): MobileCatalogColumns {
           1) as MobileCatalogColumns;
         const userCols = userSettings?.mobileCatalogColumns;
         const effective: MobileCatalogColumns = userCols != null ? userCols : defaultCols;
-        setColumns(effective);
         commitMobileCatalogColumns(effective);
       } catch {
-        /* ignore */
+        /* bootstrap-скрипт и SSR-атрибут на <html> уже задали разумное значение */
       }
     }
 
@@ -63,5 +48,5 @@ export function useMobileCatalogColumns(): MobileCatalogColumns {
     };
   }, [isAuthenticated]);
 
-  return columns;
+  return null;
 }

@@ -14,7 +14,6 @@ import type {
   PublicCatalogSort,
 } from '@/shared/api/public-catalog-list';
 import { apiFetch } from '@/shared/lib/api-fetch';
-import { useMobileCatalogColumns } from '@/shared/lib/hooks';
 import {
   CATALOG_SORT_OPTIONS,
   catalogFilterSignature,
@@ -174,13 +173,23 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const mobileCatalogColumns = useMobileCatalogColumns();
   const refreshing = isFetching && Boolean(pageResponse);
+  const isCatalogRootTitle = categoryName.trim() === 'Каталог';
 
   const titleBlock = (
-    <div className={styles.titleBlock}>
+    <div
+      className={styles.titleBlock}
+      data-catalog-subcategory={isCatalogRootTitle ? undefined : ''}
+    >
       <div className={styles.titleRow}>
-        <h1 className={styles.title}>{categoryName}</h1>
+        {isCatalogRootTitle ? (
+          <h1 className={styles.title}>{categoryName}</h1>
+        ) : (
+          <div className={styles.titleHierarchy}>
+            <p className={styles.catalogRootLabel}>Каталог</p>
+            <h1 className={styles.categorySubtitle}>{categoryName}</h1>
+          </div>
+        )}
         {showMobileFiltersButton && onMobileFiltersOpen ? (
           <button
             type="button"
@@ -268,7 +277,7 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
         </div>
       </div>
 
-      <div className={`${styles.grid} ${mobileCatalogColumns === 2 ? styles.gridMobile2 : ''}`}>
+      <div className={styles.grid}>
         {mappedProducts.map((product) => (
           <ProductCard
             key={product.originalId ?? product.id}

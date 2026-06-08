@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import {
   type CatalogHubPreviewMode,
@@ -13,10 +13,14 @@ export function useCatalogHubPreview(
   mode: CatalogHubPreviewMode,
   initialData?: CatalogHubPreviewResponse | null
 ) {
+  /** SSR-ответ только для того же mode, что в queryKey — иначе «Новинки» мелькают данными «Популярное». */
+  const resolvedInitialData = initialData && initialData.mode === mode ? initialData : undefined;
+
   return useQuery({
     queryKey: catalogHubPreviewQueryKey(mode),
     queryFn: () => fetchCatalogHubPreview({ mode }),
-    initialData: initialData ?? undefined,
+    initialData: resolvedInitialData,
+    placeholderData: keepPreviousData,
     staleTime: 60_000,
   });
 }

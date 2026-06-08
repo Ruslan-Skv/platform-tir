@@ -151,6 +151,10 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
     subcategoryFilterOptions,
   ]);
 
+  const isSubcategoryCatalogView =
+    !isHubPreviewMode && Boolean(categorySlug && categorySlug !== 'all');
+  const hideMobileBreadcrumbs = isHubPreviewMode || isSubcategoryCatalogView;
+
   const showFilterColumn = Boolean(
     isCatalogHub ||
     (isCategoryPage && catalogBranchOptions.length > 0) ||
@@ -250,7 +254,9 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
   };
 
   return (
-    <div className={styles.catalogPage}>
+    <div
+      className={`${styles.catalogPage}${hideMobileBreadcrumbs ? ` ${styles.catalogPageHideMobileBreadcrumbs}` : ''}`}
+    >
       <CatalogSeoFallbackController syncKey={catalogUrlKey} />
       {initialPage?.products?.length && listUrl ? (
         <CatalogItemListJsonLd products={initialPage.products} listUrl={listUrl} />
