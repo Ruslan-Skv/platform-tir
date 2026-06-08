@@ -94,7 +94,8 @@ export function applyCatalogFilters(
 
   for (const facet of facets) {
     if (facet.id === 'availability') continue;
-    if (facet.id === 'manufacturer') continue;
+    // Атрибут «Производитель» (slug manufacturer) — через attr_*, не mfr.
+    if (facet.id === 'manufacturer' && !facet.attributeSlug) continue;
 
     const key = buildAttrParamKey(facet.id);
     const selected = params.getAll(key);

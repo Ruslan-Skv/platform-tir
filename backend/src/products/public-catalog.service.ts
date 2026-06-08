@@ -23,6 +23,7 @@ type CatalogFilterRow = {
   createdAt: Date;
   isNew: boolean;
   manufacturerId: string | null;
+  manufacturer?: { id: string; name: string; slug: string } | null;
   attributes: unknown;
   category: {
     slug: string;
@@ -223,12 +224,8 @@ export class PublicCatalogService {
     const { ctx, baseRows, priceRange, searchRelevanceOrder } = prepared;
     const { category } = ctx;
 
-    const facets = await this.loadAttributeFacets(ctx.effectiveSlug, params);
+    const facets = await this.loadAttributeFacets(ctx.effectiveSlug);
     const filtered = this.filterRowsForList(baseRows, params, facets);
-
-    if (filtered.length === 0 && (params.cat?.length || params.avail?.length)) {
-      return this.emptyCategoryPage(category, page, limit, priceRange);
-    }
 
     const rowsForCatFacet = this.applyCrossFilters(baseRows, params, facets, {
       excludeCat: true,
@@ -270,7 +267,7 @@ export class PublicCatalogService {
     params: PublicCatalogListParams,
     baseRows: CatalogFilterRow[],
   ): Promise<CatalogFiltersResponseDto> {
-    const facets = await this.loadAttributeFacets(ctx.effectiveSlug, params);
+    const facets = await this.loadAttributeFacets(ctx.effectiveSlug);
     const rowsForCatFacet = this.applyCrossFilters(baseRows, params, facets, {
       excludeCat: true,
     });
@@ -294,15 +291,14 @@ export class PublicCatalogService {
     return { branch: block.id, filters, categoryFilterOptions };
   }
 
-  private async loadAttributeFacets(
-    effectiveSlug: string,
-    params: PublicCatalogListParams,
-  ): Promise<CatalogFilterFacetDto[]> {
-    if (params.attributes && Object.keys(params.attributes).length > 0) {
+  /** Метаданные фасетов для сопоставления attr_* в URL с полями товара. */
+  private async loadAttributeFacets(effectiveSlug: string): Promise<CatalogFilterFacetDto[]> {
+    try {
       const block = await this.catalogFilterBlocks.getPublicFiltersByCategorySlug(effectiveSlug);
       return block.filters;
+    } catch {
+      return [];
     }
-    return [];
   }
 
   private resolveEffectiveCategorySlug(params: PublicCatalogListParams): string | null {
@@ -339,51 +335,45 @@ export class PublicCatalogService {
     category: CategoryWithChildren,
     rows: CatalogFilterRow[],
   ): CatalogCategoryFilterOptionDto[] {
-    const countBySlug = new Map<string, number>();
+    const countDirect = new Map<string, number>();
     for (const row of rows) {
       const slug = row.category.slug;
-      countBySlug.set(slug, (countBySlug.get(slug) ?? 0) + 1);
+      countDirect.set(slug, (countDirect.get(slug) ?? 0) + 1);
     }
 
-    const flattenWithDepth = (
-      cat: CategoryWithChildren,
-      depth: 0 | 1,
-      parentSlug?: string,
-    ): Array<{
-      slug: string;
-      label: string;
-      count: number;
-      depth: 0 | 1;
-      parentSlug?: string;
-    }> => {
-      const out: Array<{
-        slug: string;
-        label: string;
-        count: number;
-        depth: 0 | 1;
-        parentSlug?: string;
-      }> = [];
-      const selfCount = countBySlug.get(cat.slug) ?? 0;
-      if (cat.slug !== category.slug || (cat.children?.length ?? 0) > 0) {
-        out.push({
-          slug: cat.slug,
-          label: cat.name,
-          count: selfCount,
-          depth,
-          parentSlug,
-        });
-      }
+    const collectSlugs = (cat: CategoryWithChildren): Set<string> => {
+      const slugs = new Set<string>([cat.slug]);
       for (const child of cat.children ?? []) {
-        out.push(...flattenWithDepth(child, 1, cat.slug));
+        for (const s of collectSlugs(child)) slugs.add(s);
+      }
+      return slugs;
+    };
+
+    const subtreeCount = (cat: CategoryWithChildren): number => {
+      const slugs = collectSlugs(cat);
+      return rows.filter((r) => slugs.has(r.category.slug)).length;
+    };
+
+    const walk = (cat: CategoryWithChildren, depth: 0 | 1): CatalogCategoryFilterOptionDto[] => {
+      const out: CatalogCategoryFilterOptionDto[] = [];
+      const count = depth === 0 ? subtreeCount(cat) : (countDirect.get(cat.slug) ?? 0);
+
+      if (depth === 0) {
+        if ((cat.children?.length ?? 0) > 0 || count > 0) {
+          out.push({ slug: cat.slug, label: cat.name, count, depth });
+        }
+      } else if (count > 0) {
+        out.push({ slug: cat.slug, label: cat.name, count, depth });
+      }
+
+      for (const child of cat.children ?? []) {
+        out.push(...walk(child, 1));
       }
       return out;
     };
 
-    const options = flattenWithDepth(category, 0);
-    const filtered = options.filter((o) => o.count > 0);
-    return filtered.length > 1
-      ? filtered.map(({ slug, label, count, depth }) => ({ slug, label, count, depth }))
-      : [];
+    const options = walk(category, 0);
+    return options.length > 1 ? options : [];
   }
 
   /**
@@ -439,6 +429,7 @@ export class PublicCatalogService {
       excludeCat?: boolean;
       excludeMfr?: boolean;
       excludeAvail?: boolean;
+      excludePrice?: boolean;
       excludeAttributeSlug?: string;
     },
   ): CatalogFilterRow[] {
@@ -455,8 +446,17 @@ export class PublicCatalogService {
     }
 
     if (!options.excludeMfr && params.mfr?.length) {
-      const allowed = new Set(params.mfr);
-      result = result.filter((p) => p.manufacturerId != null && allowed.has(p.manufacturerId));
+      const allowed = new Set(params.mfr.map((v) => v.trim()).filter(Boolean));
+      result = result.filter((p) => this.matchesMfrFilter(p, allowed, facets));
+    }
+
+    if (!options.excludePrice && (params.priceMin !== undefined || params.priceMax !== undefined)) {
+      result = result.filter((p) => {
+        const price = Number(p.price);
+        if (params.priceMin !== undefined && price < params.priceMin) return false;
+        if (params.priceMax !== undefined && price > params.priceMax) return false;
+        return true;
+      });
     }
 
     if (params.attributes && Object.keys(params.attributes).length > 0) {
@@ -466,6 +466,31 @@ export class PublicCatalogService {
     }
 
     return result;
+  }
+
+  private matchesMfrFilter(
+    product: CatalogFilterRow,
+    allowed: Set<string>,
+    facets: CatalogFilterFacetDto[],
+  ): boolean {
+    if (product.manufacturerId && allowed.has(product.manufacturerId)) {
+      return true;
+    }
+    const name = product.manufacturer?.name?.trim();
+    if (name && allowed.has(name)) return true;
+    const slug = product.manufacturer?.slug?.trim();
+    if (slug && allowed.has(slug)) return true;
+
+    const attrFacet = facets.find((f) => f.id === 'manufacturer' && f.attributeSlug);
+    if (attrFacet?.attributeSlug) {
+      const attrValue = this.catalogFilterBlocks.getAttrValueForFacetProduct(product, {
+        slug: attrFacet.attributeSlug,
+        name: attrFacet.attributeName ?? attrFacet.attributeSlug,
+      });
+      if (attrValue && allowed.has(attrValue.trim())) return true;
+    }
+
+    return false;
   }
 
   private matchesAttributeFilters(
@@ -486,7 +511,10 @@ export class PublicCatalogService {
         slug,
         name,
       });
-      if (value == null || !selectedValues.includes(value)) {
+      if (value == null) return false;
+      const normalizedValue = value.trim();
+      const matches = selectedValues.some((v) => v.trim() === normalizedValue);
+      if (!matches) {
         return false;
       }
     }
@@ -686,19 +714,8 @@ export class PublicCatalogService {
       isActive: true,
     };
 
-    if (params.priceMin !== undefined || params.priceMax !== undefined) {
-      where.price = {};
-      if (params.priceMin !== undefined) {
-        where.price.gte = new Prisma.Decimal(params.priceMin);
-      }
-      if (params.priceMax !== undefined) {
-        where.price.lte = new Prisma.Decimal(params.priceMax);
-      }
-    }
-
-    if (params.mfr?.length) {
-      where.manufacturerId = { in: params.mfr };
-    }
+    // price/mfr/cat/avail/attr — только в applyCrossFilters, чтобы фасеты и список
+    // считались от одной базы товаров ветки (иначе price в URL обнуляет baseRows и все счётчики).
 
     const searchTerm = params.search?.trim();
     let searchRelevanceOrder: string[] | null = null;
@@ -729,6 +746,7 @@ export class PublicCatalogService {
         createdAt: true,
         isNew: true,
         manufacturerId: true,
+        manufacturer: { select: { id: true, name: true, slug: true } },
         attributes: true,
         category: {
           select: {

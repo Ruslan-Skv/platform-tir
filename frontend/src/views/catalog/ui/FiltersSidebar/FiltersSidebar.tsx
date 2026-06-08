@@ -183,12 +183,18 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
     }
   }, [parentCategoryRadioMode]);
 
-  const replaceParams = useCallback(
-    (mutate: (p: URLSearchParams) => void) => {
+  /** push — чтобы «Назад» в браузере возвращал к предыдущему состоянию фильтров. */
+  const navigateParams = useCallback(
+    (mutate: (p: URLSearchParams) => void, mode: 'push' | 'replace' = 'push') => {
       const next = newURLSearchParamsLive(pathname, searchParams.toString());
       mutate(next);
       const q = next.toString();
-      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+      const url = q ? `${pathname}?${q}` : pathname;
+      if (mode === 'replace') {
+        router.replace(url, { scroll: false });
+      } else {
+        router.push(url, { scroll: false });
+      }
     },
     [pathname, router, searchParams]
   );
@@ -200,7 +206,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
       if (parentCategoryRadioMode) {
         setBranchDisplayPending(slugNorm);
       }
-      replaceParams((p) => {
+      navigateParams((p) => {
         clearCatalogFilterKeys(p);
         if (slugNorm) {
           p.set('branch', slugNorm);
@@ -208,7 +214,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
         }
       });
     },
-    [parentCategoryRadioMode, replaceParams]
+    [parentCategoryRadioMode, navigateParams]
   );
 
   /** После blur ждём, пока selected* из URL догонит clamp — иначе эффект перезапишет поле старым числом. */
@@ -219,8 +225,8 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
     pendingMinRef.current = null;
     pendingMaxRef.current = null;
     setBranchDisplayPending(undefined);
-    replaceParams((p) => clearCatalogFilterKeys(p));
-  }, [replaceParams]);
+    navigateParams((p) => clearCatalogFilterKeys(p));
+  }, [navigateParams]);
 
   const attrKey = useCallback((filterId: string) => buildAttrParamKey(filterId), []);
 
@@ -234,16 +240,17 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
   const toggleAttr = useCallback(
     (filterId: string, value: string, checked: boolean) => {
       const key = attrKey(filterId);
-      replaceParams((p) => {
+      navigateParams((p) => {
         const prev = p.getAll(key);
         p.delete(key);
         const merged = checked
           ? [...prev.filter((x) => x !== value), value]
           : prev.filter((x) => x !== value);
         merged.forEach((v) => p.append(key, v));
+        p.delete('page');
       });
     },
-    [attrKey, replaceParams]
+    [attrKey, navigateParams]
   );
 
   const isMfrChecked = useCallback(
@@ -253,16 +260,17 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
 
   const toggleMfr = useCallback(
     (id: string, checked: boolean) => {
-      replaceParams((p) => {
+      navigateParams((p) => {
         const prev = p.getAll('mfr');
         p.delete('mfr');
         const merged = checked
           ? [...prev.filter((x) => x !== id), id]
           : prev.filter((x) => x !== id);
         merged.forEach((v) => p.append('mfr', v));
+        p.delete('page');
       });
     },
-    [replaceParams]
+    [navigateParams]
   );
 
   const isCatChecked = useCallback(
@@ -274,21 +282,21 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
   );
 
   const selectAllCategories = useCallback(() => {
-    replaceParams((p) => {
+    navigateParams((p) => {
       p.delete('cat');
       for (const opt of categoryOptions) {
         p.append('cat', opt.slug);
       }
       p.delete('page');
     });
-  }, [replaceParams, categoryOptions]);
+  }, [navigateParams, categoryOptions]);
 
   const clearAllCategories = useCallback(() => {
-    replaceParams((p) => {
+    navigateParams((p) => {
       p.delete('cat');
       p.delete('page');
     });
-  }, [replaceParams]);
+  }, [navigateParams]);
 
   const categoryBulkState = useMemo(() => {
     const selected = new Set(searchParams.getAll('cat'));
@@ -309,16 +317,17 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
 
   const toggleAvail = useCallback(
     (value: string, checked: boolean) => {
-      replaceParams((p) => {
+      navigateParams((p) => {
         const prev = p.getAll('avail');
         p.delete('avail');
         const merged = checked
           ? [...prev.filter((x) => x !== value), value]
           : prev.filter((x) => x !== value);
         merged.forEach((v) => p.append('avail', v));
+        p.delete('page');
       });
     },
-    [replaceParams]
+    [navigateParams]
   );
 
   const hasActiveFilters = useMemo(() => {
@@ -390,7 +399,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
           ? displayCatalogBranch.trim()
           : null;
 
-      replaceParams((p) => {
+      navigateParams((p) => {
         const prev = p
           .getAll('cat')
           .map((x) => x.trim())
@@ -412,10 +421,15 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
         }
 
         merged.forEach((v) => p.append('cat', v));
+        for (const key of [...p.keys()]) {
+          if (key.startsWith('attr_')) p.delete(key);
+        }
+        p.delete('avail');
+        p.delete('mfr');
         p.delete('page');
       });
     },
-    [replaceParams, parentCategoryRadioMode, displayCatalogBranch]
+    [navigateParams, parentCategoryRadioMode, displayCatalogBranch]
   );
 
   const toggleCategoryParentExpanded = useCallback((parentSlug: string) => {
@@ -436,6 +450,28 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
       return { ...prev, [id]: !open };
     });
   }, []);
+
+  /** Сброс price_* из URL, если диапазон не пересекается с ценами текущей ветки (типично после смены категории). */
+  useEffect(() => {
+    if (!priceBounds) return;
+    const rawMin = searchParams.get('price_min');
+    const rawMax = searchParams.get('price_max');
+    if (rawMin == null && rawMax == null) return;
+    const parsedMin = rawMin != null && rawMin !== '' ? Number(rawMin) : null;
+    const parsedMax = rawMax != null && rawMax !== '' ? Number(rawMax) : null;
+    const min = parsedMin != null && Number.isFinite(parsedMin) ? parsedMin : null;
+    const max = parsedMax != null && Number.isFinite(parsedMax) ? parsedMax : null;
+    const disjoint =
+      (min != null && min > priceBounds.max) ||
+      (max != null && max < priceBounds.min) ||
+      (min != null && max != null && min > max);
+    if (!disjoint) return;
+    navigateParams((p) => {
+      p.delete('price_min');
+      p.delete('price_max');
+      p.delete('page');
+    }, 'replace');
+  }, [priceBounds, searchParams, navigateParams]);
 
   /** Пока поле в фокусе — не подставляем значение из URL/слайдера, иначе ввод ломается (цифры «дописываются»). */
   useEffect(() => {
@@ -463,7 +499,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
 
   const setPriceRange = useCallback(
     (nextMin: number, nextMax: number) => {
-      replaceParams((p) => {
+      navigateParams((p) => {
         p.delete('price_min');
         p.delete('price_max');
         if (!priceBounds) return;
@@ -474,9 +510,10 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
         );
         if (clampedMin > priceBounds.min) p.set('price_min', String(clampedMin));
         if (clampedMax < priceBounds.max) p.set('price_max', String(clampedMax));
+        p.delete('page');
       });
     },
-    [priceBounds, replaceParams]
+    [priceBounds, navigateParams]
   );
 
   /** Мобильный оверлей: зафиксировать цену из полей ввода и закрыть панель */
@@ -542,7 +579,8 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
       );
     }
 
-    if (facet.id === 'manufacturer' && facet.type === 'checkbox') {
+    // id «manufacturer» бывает и у блока MANUFACTURER (mfr=id), и у атрибута со slug manufacturer (attr_*).
+    if (facet.id === 'manufacturer' && !facet.attributeSlug && facet.type === 'checkbox') {
       if (facet.options.length === 0) return null;
       return (
         <CatalogFilterSection

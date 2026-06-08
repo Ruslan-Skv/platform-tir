@@ -80,9 +80,8 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
   const facetBranchSlug = isCatalogHub ? searchParams.get('branch')?.trim() || null : null;
 
   const isHubPreviewMode = isCatalogHub && !facetBranchSlug;
-  const needsHubCategories = isHubPreviewMode;
   const { options: hubCategoryOptions, loading: hubCategoriesLoading } = useCatalogHubCategories(
-    needsHubCategories,
+    isCatalogHub,
     initialHubCategories
   );
 
@@ -93,10 +92,19 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
     categoryFilterOptions,
   } = useCatalogFilters(categorySlug, facetBranchSlug, parsedParams, productsPerPage, initialPage);
 
-  const effectiveCategoryOptions = useMemo(
-    () => (needsHubCategories ? hubCategoryOptions : categoryFilterOptions),
-    [needsHubCategories, hubCategoryOptions, categoryFilterOptions]
-  );
+  const effectiveCategoryOptions = useMemo(() => {
+    if (!isCatalogHub) return categoryFilterOptions;
+    if (!facetBranchSlug) return hubCategoryOptions;
+    const roots = hubCategoryOptions.filter((o) => o.depth !== 1);
+    const children = categoryFilterOptions.filter((o) => o.depth === 1);
+    const activeRoot = roots.find((r) => r.slug === facetBranchSlug);
+    if (!activeRoot) return roots.length > 0 ? roots : categoryFilterOptions;
+    const facetedRoot = categoryFilterOptions.find(
+      (o) => o.depth === 0 && o.slug === facetBranchSlug
+    );
+    const rootWithCount = facetedRoot ? { ...activeRoot, count: facetedRoot.count } : activeRoot;
+    return [rootWithCount, ...children];
+  }, [isCatalogHub, facetBranchSlug, hubCategoryOptions, categoryFilterOptions]);
 
   const showFilterColumn = Boolean(
     isCatalogHub ||
