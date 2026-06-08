@@ -425,7 +425,7 @@ chmod +x scripts/backup.sh
 3. **Push в main:** `git push`
 4. **GitHub Actions:** собирает образы и пушит в GHCR
 5. **На сервере:** `git pull` → `dc pull` → `dc up -d`
-6. Миграции применяются при старте backend
+6. Миграции применяются при старте backend (в т.ч. индексы каталога — см. [docs/CATALOG.md](docs/CATALOG.md))
 
 ### Чего избегать
 
@@ -452,6 +452,7 @@ chmod +x scripts/backup.sh
 - Главная: `http://your-server/`
 - API health: `http://your-server/api/v1/site-public/config`
 - Swagger: `http://your-server/api/v1/docs` (в production можно отключить)
+- Каталог товаров (архитектура, API, чеклист после деплоя): [docs/CATALOG.md](docs/CATALOG.md)
 
 ---
 

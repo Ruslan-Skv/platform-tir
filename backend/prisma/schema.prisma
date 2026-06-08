@@ -1359,6 +1359,7 @@ model Product {
   cardVariants          ProductCardVariant[]
   cardBadgeSelections   ProductCardBadgeOnProduct[]
 
+  @@index([categoryId, isActive, sortOrder])
   @@map("products")
 }
 

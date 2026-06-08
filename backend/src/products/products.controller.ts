@@ -22,6 +22,8 @@ import { CompareProductIdsDto } from './dto/compare-product-ids.dto';
 import { WishlistProductIdsDto } from './dto/wishlist-product-ids.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { RequestWithUser } from '../common/types/request-with-user.types';
+import { PublicCatalogService } from './public-catalog.service';
+import { parsePublicCatalogListQuery } from './dto/public-catalog-list.dto';
 
 @ApiTags('products')
 @Controller('products')
@@ -29,6 +31,7 @@ export class ProductsController {
   constructor(
     private readonly productsService: ProductsService,
     private readonly priceScraperService: PriceScraperService,
+    private readonly publicCatalogService: PublicCatalogService,
   ) {}
 
   @Post()
@@ -129,15 +132,34 @@ export class ProductsController {
     return { suggestions };
   }
 
-  @Get('catalog/all')
-  @ApiOperation({ summary: 'Получить все товары каталога' })
-  @ApiQuery({
-    name: 'search',
-    required: false,
-    description: 'Поиск по наименованию и артикулу (SKU)',
+  @Get('catalog/list')
+  @ApiOperation({
+    summary: 'Публичный каталог: пагинация, фильтры и сортировка',
   })
-  findAllProducts(@Query('search') search?: string) {
-    return this.productsService.findAllProducts(search);
+  findCatalogList(@Query() query: Record<string, string | string[] | undefined>) {
+    return this.publicCatalogService.list(parsePublicCatalogListQuery(query));
+  }
+
+  @Get('catalog/page')
+  @ApiOperation({
+    summary: 'Публичный каталог: список + faceted-фильтры одним запросом (SSR)',
+  })
+  findCatalogPage(@Query() query: Record<string, string | string[] | undefined>) {
+    return this.publicCatalogService.getPage(parsePublicCatalogListQuery(query));
+  }
+
+  @Get('catalog/filters')
+  @ApiOperation({
+    summary: 'Faceted-фильтры каталога с учётом активных параметров URL',
+  })
+  findCatalogFilters(@Query() query: Record<string, string | string[] | undefined>) {
+    return this.publicCatalogService.getFacetedFilters(parsePublicCatalogListQuery(query));
+  }
+
+  @Get('catalog/sitemap-data')
+  @ApiOperation({ summary: 'Slug категорий и товаров для sitemap.xml' })
+  getCatalogSitemapData() {
+    return this.publicCatalogService.getSitemapData();
   }
 
   @Get('featured')

@@ -1314,7 +1314,7 @@ export function ProductCreatePage({
       apiFetch('/api/revalidate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paths: revalidatePaths }),
+        body: JSON.stringify({ paths: revalidatePaths, tags: ['catalog-pages'] }),
       }).catch((e) => console.warn('Revalidate failed:', e));
       router.refresh();
 

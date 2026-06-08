@@ -1,10 +1,16 @@
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { getServerApiBaseUrl } from '@/shared/lib/server-api-base-url';
-import { CatalogPage } from '@/views/catalog/ui/CatalogPage';
+import { parseNextSearchParamsRecord } from '@/views/catalog/lib/catalog-search-params';
+import { buildCatalogMetadata } from '@/views/catalog/lib/catalog-seo';
+import { getCatalogPageCached } from '@/views/catalog/lib/get-catalog-page-cached';
+import {
+  loadCatalogRoutePage,
+  searchParamsRecordToQueryString,
+} from '@/views/catalog/lib/load-catalog-route-page';
+import { CatalogPageShell } from '@/views/catalog/ui/CatalogPageShell';
 
 const API_URL = getServerApiBaseUrl();
 
-// Маппинг slug на название (fallback, если API недоступен)
 const categoryNames: Record<string, string> = {
   'entrance-doors': 'Входные двери',
   'interior-doors': 'Межкомнатные двери',
@@ -20,15 +26,13 @@ const categoryNames: Record<string, string> = {
 };
 
 interface CategoryPageProps {
-  params: Promise<{
-    category: string;
-  }>;
+  params: Promise<{ category: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 async function getCategoryNameBySlug(slug: string): Promise<string | null> {
   try {
     const res = await apiFetch(`${API_URL}/categories/slug/${encodeURIComponent(slug)}`, {
-      // Ответ категории может быть >2 MB (Next Data Cache не пишет такие ответы — шум в логах).
       cache: 'no-store',
     });
     if (!res.ok) return null;
@@ -39,21 +43,53 @@ async function getCategoryNameBySlug(slug: string): Promise<string | null> {
   }
 }
 
-export default async function CategoryPage({ params }: CategoryPageProps) {
+export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
   const { category } = await params;
+  const sp = await searchParams;
+  const parsed = parseNextSearchParamsRecord(sp);
   const categoryName =
     categoryNames[category] ?? (await getCategoryNameBySlug(category)) ?? 'Каталог';
+  const pathname = `/catalog/products/${category}`;
+  const searchQueryString = searchParamsRecordToQueryString(sp);
 
-  return <CatalogPage categorySlug={category} categoryName={categoryName} />;
+  const route = await loadCatalogRoutePage({
+    categorySlug: category,
+    parsed,
+    pathname,
+    searchQueryString,
+  });
+
+  return (
+    <CatalogPageShell
+      categorySlug={category}
+      categoryName={categoryName}
+      initialPage={route.initialPage}
+      listUrl={route.listUrl}
+      pagination={route.pagination}
+    />
+  );
 }
 
-export async function generateMetadata({ params }: CategoryPageProps) {
+export async function generateMetadata({ params, searchParams }: CategoryPageProps) {
   const { category } = await params;
+  const sp = await searchParams;
+  const parsed = parseNextSearchParamsRecord(sp);
   const categoryName =
     categoryNames[category] ?? (await getCategoryNameBySlug(category)) ?? 'Каталог';
 
-  return {
+  const catalogPage = await getCatalogPageCached({
+    categorySlug: category,
+    parsed,
+    limit: 15,
+    apiBaseUrl: API_URL,
+  });
+
+  return buildCatalogMetadata({
     title: `${categoryName} | Территория интерьерных решений`,
-    description: `${categoryName} - Территория интерьерных решений`,
-  };
+    description: `${categoryName} — каталог товаров. Территория интерьерных решений`,
+    pathname: `/catalog/products/${category}`,
+    parsed,
+    totalPages: catalogPage.totalPages,
+    searchQueryString: searchParamsRecordToQueryString(sp),
+  });
 }

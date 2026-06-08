@@ -4,11 +4,15 @@ import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } fr
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
+import type { PublicCatalogPageResponse } from '@/shared/api/public-catalog-list';
+import { parseCatalogSearchParams } from '@/views/catalog/lib/catalog-search-params';
 import { newURLSearchParamsLive } from '@/views/catalog/lib/newURLSearchParamsLive';
 import { useCatalogFilters } from '@/views/catalog/lib/useCatalogFilters';
+import { useCatalogProductsPerPage } from '@/views/catalog/lib/useCatalogProductsPerPage';
 
 import { Breadcrumbs } from '../Breadcrumbs';
-import type { CategoryFilterOption } from '../FiltersSidebar';
+import { CatalogItemListJsonLd } from '../CatalogItemListJsonLd';
+import { CatalogSeoFallbackController } from '../CatalogSeoFallbackController';
 import { FiltersSidebar } from '../FiltersSidebar';
 import { Pagination } from '../Pagination';
 import { ProductsGrid } from '../ProductsGrid';
@@ -19,6 +23,9 @@ export interface CatalogPageProps {
   categoryName?: string | null;
   parentCategoryName?: string;
   parentCategorySlug?: string;
+  /** SSR: список + фильтры одним ответом */
+  initialPage?: PublicCatalogPageResponse | null;
+  listUrl?: string;
 }
 
 function readPageFromSearchParams(searchParams: URLSearchParams): number {
@@ -39,17 +46,21 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
   categoryName,
   parentCategoryName,
   parentCategorySlug,
+  initialPage = null,
+  listUrl,
 }) => {
   const displayCategoryName = categoryName || categorySlug || 'Каталог';
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const parsedParams = useMemo(() => parseCatalogSearchParams(searchParams), [searchParams]);
+  const productsPerPage = useCatalogProductsPerPage();
   /** 0 — ещё не получили из сетки; нельзя начинать с 1, иначе при возврате с ?page=N эффект сразу «поджимает» URL к 1 */
   const [totalPages, setTotalPages] = useState(0);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [didRestoreScroll, setDidRestoreScroll] = useState(false);
   const [priceBounds, setPriceBounds] = useState<{ min: number; max: number } | null>(null);
-  const [categoryFilterOptions, setCategoryFilterOptions] = useState<CategoryFilterOption[]>([]);
+  const [catalogGridReady, setCatalogGridReady] = useState(false);
 
   const pageFromUrl = useMemo(() => readPageFromSearchParams(searchParams), [searchParams]);
   const searchFromUrl = searchParams.get('search') ?? '';
@@ -62,7 +73,8 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
     filters: catalogFilters,
     loading: filtersLoading,
     hasFacets,
-  } = useCatalogFilters(categorySlug, facetBranchSlug);
+    categoryFilterOptions,
+  } = useCatalogFilters(categorySlug, facetBranchSlug, parsedParams, productsPerPage, initialPage);
   const showFilterColumn = Boolean(
     filtersLoading || hasFacets || priceBounds || categoryFilterOptions.length > 0
   );
@@ -157,6 +169,10 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
 
   return (
     <div className={styles.catalogPage}>
+      <CatalogSeoFallbackController ready={catalogGridReady} />
+      {initialPage?.products?.length && listUrl ? (
+        <CatalogItemListJsonLd products={initialPage.products} listUrl={listUrl} />
+      ) : null}
       {/* 1. Верхний блок: хлебные крошки */}
       <div className={styles.topSection}>
         <div className={styles.breadcrumbsSection}>
@@ -214,15 +230,15 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
           <ProductsGrid
             categorySlug={categorySlug}
             categoryName={displayCategoryName}
-            currentPage={currentPage}
             onTotalPagesChange={setTotalPages}
             onSortChange={goToFirstCatalogPage}
             onProductsPerPageLayoutChange={goToFirstCatalogPage}
-            catalogFilters={catalogFilters}
             onBasePriceBoundsChange={setPriceBounds}
-            onCategoryFilterOptionsChange={setCategoryFilterOptions}
+            onCatalogGridReady={setCatalogGridReady}
             showMobileFiltersButton={showFilterColumn}
             onMobileFiltersOpen={() => setMobileFiltersOpen(true)}
+            initialPage={initialPage}
+            facetBranchSlug={facetBranchSlug}
           />
         </main>
       </div>

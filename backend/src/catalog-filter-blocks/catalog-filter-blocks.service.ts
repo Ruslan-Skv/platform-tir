@@ -272,80 +272,103 @@ export class CatalogFilterBlocksService {
     const filters: CatalogFilterFacetDto[] = [];
 
     for (const item of block.items) {
-      if (item.kind === 'STOCK') {
-        let inStock = 0;
-        let onOrderOnly = 0;
-        let outOfStock = 0;
-        for (const p of products) {
-          const s = Number(p.stock ?? 0);
-          if (s > 0) inStock += 1;
-          else if (p.onOrder) onOrderOnly += 1;
-          else outOfStock += 1;
-        }
-        filters.push({
-          id: 'availability',
-          label: item.labelOverride?.trim() || 'Наличие',
-          type: 'checkbox',
-          options: [
-            { value: 'in_stock', label: 'В наличии', count: inStock },
-            { value: 'on_order', label: 'Под заказ', count: onOrderOnly },
-            { value: 'out_of_stock', label: 'Товар закончился', count: outOfStock },
-          ],
-        });
-        continue;
-      }
-
-      if (item.kind === 'MANUFACTURER') {
-        const map = new Map<string, { value: string; label: string; count: number }>();
-        for (const p of products) {
-          if (p.manufacturerId && p.manufacturer?.name) {
-            const id = p.manufacturerId;
-            const prev = map.get(id);
-            if (prev) prev.count += 1;
-            else map.set(id, { value: id, label: p.manufacturer.name, count: 1 });
-          }
-        }
-        const options = Array.from(map.values())
-          .sort((a, b) => a.label.localeCompare(b.label, 'ru'))
-          .map(({ value, label, count }) => ({ value, label, count }));
-        filters.push({
-          id: 'manufacturer',
-          label: item.labelOverride?.trim() || 'Производитель',
-          type: 'checkbox',
-          options,
-        });
-        continue;
-      }
-
-      if (item.kind === 'ATTRIBUTE') {
-        const meta = item.attribute;
-        if (!meta) continue;
-        const valueCounts = new Map<string, number>();
-        for (const p of products) {
-          const v = this.getAttrValueForFacetProduct(p, {
-            slug: meta.slug,
-            name: meta.name,
-          });
-          if (v) valueCounts.set(v, (valueCounts.get(v) ?? 0) + 1);
-        }
-        const sortedEntries = this.sortAttributeFacetEntries(
-          Array.from(valueCounts.entries()),
-          item.optionsSort ?? CatalogFilterOptionsSort.NUMERIC_DESC,
-          item.manualOptionOrder,
-        );
-        const options = sortedEntries.map(([value, count]) => ({ value, label: value, count }));
-        filters.push({
-          id: meta.slug,
-          label: (item.labelOverride?.trim() || meta.name).trim(),
-          type: 'checkbox',
-          options,
-          attributeSlug: meta.slug,
-          attributeName: meta.name,
-        });
-      }
+      const facet = this.buildFacetFromBlockItem(item, products);
+      if (facet) filters.push(facet);
     }
 
     return { branch: block.id, filters };
+  }
+
+  /** Построить один фасет по конфигурации блока и набору товаров (для faceted search). */
+  buildFacetFromBlockItem(
+    item: {
+      kind: string;
+      labelOverride?: string | null;
+      optionsSort?: CatalogFilterOptionsSort;
+      manualOptionOrder?: unknown;
+      attribute?: { slug: string; name: string } | null;
+    },
+    products: Array<{
+      attributes: unknown;
+      stock: number;
+      onOrder: boolean;
+      manufacturerId: string | null;
+      manufacturer?: { id: string; name: string } | null;
+      doorThickness?: { name: string } | null;
+      weatherstrip?: { name: string } | null;
+    }>,
+  ): CatalogFilterFacetDto | null {
+    if (item.kind === 'STOCK') {
+      let inStock = 0;
+      let onOrderOnly = 0;
+      let outOfStock = 0;
+      for (const p of products) {
+        const s = Number(p.stock ?? 0);
+        if (s > 0) inStock += 1;
+        else if (p.onOrder) onOrderOnly += 1;
+        else outOfStock += 1;
+      }
+      return {
+        id: 'availability',
+        label: item.labelOverride?.trim() || 'Наличие',
+        type: 'checkbox',
+        options: [
+          { value: 'in_stock', label: 'В наличии', count: inStock },
+          { value: 'on_order', label: 'Под заказ', count: onOrderOnly },
+          { value: 'out_of_stock', label: 'Товар закончился', count: outOfStock },
+        ],
+      };
+    }
+
+    if (item.kind === 'MANUFACTURER') {
+      const map = new Map<string, { value: string; label: string; count: number }>();
+      for (const p of products) {
+        if (p.manufacturerId && p.manufacturer?.name) {
+          const id = p.manufacturerId;
+          const prev = map.get(id);
+          if (prev) prev.count += 1;
+          else map.set(id, { value: id, label: p.manufacturer.name, count: 1 });
+        }
+      }
+      const options = Array.from(map.values())
+        .sort((a, b) => a.label.localeCompare(b.label, 'ru'))
+        .map(({ value, label, count }) => ({ value, label, count }));
+      return {
+        id: 'manufacturer',
+        label: item.labelOverride?.trim() || 'Производитель',
+        type: 'checkbox',
+        options,
+      };
+    }
+
+    if (item.kind === 'ATTRIBUTE') {
+      const meta = item.attribute;
+      if (!meta) return null;
+      const valueCounts = new Map<string, number>();
+      for (const p of products) {
+        const v = this.getAttrValueForFacetProduct(p, {
+          slug: meta.slug,
+          name: meta.name,
+        });
+        if (v) valueCounts.set(v, (valueCounts.get(v) ?? 0) + 1);
+      }
+      const sortedEntries = this.sortAttributeFacetEntries(
+        Array.from(valueCounts.entries()),
+        item.optionsSort ?? CatalogFilterOptionsSort.NUMERIC_DESC,
+        item.manualOptionOrder,
+      );
+      const options = sortedEntries.map(([value, count]) => ({ value, label: value, count }));
+      return {
+        id: meta.slug,
+        label: (item.labelOverride?.trim() || meta.name).trim(),
+        type: 'checkbox',
+        options,
+        attributeSlug: meta.slug,
+        attributeName: meta.name,
+      };
+    }
+
+    return null;
   }
 
   async findAllAdmin() {

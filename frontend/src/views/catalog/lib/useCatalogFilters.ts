@@ -1,23 +1,28 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
-import { apiFetch } from '@/shared/lib/api-fetch';
-
-import type { CatalogFiltersResponse } from './catalogFilters.types';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+import type { PublicCatalogPageResponse } from '@/shared/api/public-catalog-list';
+import type { ParsedCatalogSearchParams } from '@/views/catalog/lib/catalog-search-params';
+import { useCatalogPage } from '@/views/catalog/lib/useCatalogPage';
 
 /**
- * @param categorySlug slug страницы каталога или «all»
- * @param facetBranchSlug при «all»: slug родительской категории из ?branch=… — подгрузка фасетов API
+ * Faceted-фильтры из общего запроса `/catalog/page` (один HTTP с ProductsGrid).
  */
 export function useCatalogFilters(
   categorySlug: string | undefined,
-  facetBranchSlug?: string | null
+  facetBranchSlug: string | null | undefined,
+  parsedParams: ParsedCatalogSearchParams,
+  limit: number,
+  initialPage?: PublicCatalogPageResponse | null
 ) {
-  const [data, setData] = useState<CatalogFiltersResponse | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { data, isLoading, isFetching } = useCatalogPage(
+    categorySlug,
+    parsedParams,
+    facetBranchSlug,
+    limit,
+    initialPage
+  );
 
   const filtersSlug = useMemo(() => {
     if (categorySlug && categorySlug !== 'all') return categorySlug;
@@ -25,40 +30,17 @@ export function useCatalogFilters(
     return b ? b : null;
   }, [categorySlug, facetBranchSlug]);
 
-  useEffect(() => {
-    if (!filtersSlug) {
-      setData(null);
-      setLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setData(null);
-    setLoading(true);
-
-    apiFetch(`${API_URL}/products/category/${encodeURIComponent(filtersSlug)}/filters`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json: CatalogFiltersResponse | null) => {
-        if (!cancelled && json && Array.isArray(json.filters)) {
-          setData(json);
-        } else if (!cancelled) {
-          setData(null);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setData(null);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [filtersSlug]);
-
-  const filters = data?.filters ?? [];
+  const filters = data?.filters?.filters ?? [];
   const hasFacets = filters.length > 0;
+  const categoryFilterOptions =
+    data?.filters?.categoryFilterOptions ?? data?.categoryFilterOptions ?? [];
 
-  return { filters, branch: data?.branch ?? null, loading, hasFacets };
+  return {
+    filters,
+    branch: data?.filters?.branch ?? null,
+    categoryFilterOptions,
+    loading: Boolean(filtersSlug) && isLoading && !data,
+    refreshing: isFetching && Boolean(data),
+    hasFacets,
+  };
 }

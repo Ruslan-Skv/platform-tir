@@ -90,6 +90,8 @@ npm run test:e2e:ui
 
 Подробное описание тестов процесса оформления заказов из каталога товаров и услуг см. в [testing-orders.md](./testing-orders.md).
 
+Архитектура каталога (API, SSR, фильтры, SEO): [CATALOG.md](./CATALOG.md).
+
 ---
 
 ## CI

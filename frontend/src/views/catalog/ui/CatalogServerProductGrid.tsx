@@ -1,0 +1,41 @@
+import Link from 'next/link';
+
+import { formatCatalogProductPrice } from '@/views/catalog/lib/format-catalog-price';
+import type { CatalogApiProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
+
+import styles from './CatalogServerProductGrid.module.css';
+
+interface CatalogServerProductGridProps {
+  products: CatalogApiProduct[];
+}
+
+/**
+ * SSR-разметка карточек для SEO: видна до гидратации клиентской сетки,
+ * затем скрывается через атрибут hidden (см. CatalogPage).
+ */
+export function CatalogServerProductGrid({ products }: CatalogServerProductGridProps) {
+  if (products.length === 0) return null;
+
+  return (
+    <section id="catalog-seo-fallback" className={styles.seoGrid} aria-label="Товары в категории">
+      <ul className={styles.seoList}>
+        {products.map((product) => {
+          const image = product.images?.[0];
+          const priceLabel = formatCatalogProductPrice(product.price);
+          return (
+            <li key={product.id} className={styles.seoItem}>
+              <Link href={`/product/${product.slug}`} className={styles.seoLink}>
+                {image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={image} alt={product.name} className={styles.seoImage} loading="lazy" />
+                ) : null}
+                <span className={styles.seoName}>{product.name}</span>
+                {priceLabel ? <span className={styles.seoPrice}>{priceLabel}</span> : null}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}

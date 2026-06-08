@@ -17,4 +17,10 @@ export interface CatalogFilterFacet {
 export interface CatalogFiltersResponse {
   branch: string | null;
   filters: CatalogFilterFacet[];
+  categoryFilterOptions?: Array<{
+    slug: string;
+    label: string;
+    count: number;
+    depth?: 0 | 1;
+  }>;
 }

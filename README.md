@@ -9,6 +9,16 @@
 - `/scripts` — скрипты деплоя (SSL, бэкап)
 - `/docs` — документация
 
+## Документация
+
+| Документ | Содержание |
+|----------|------------|
+| [DEPLOYMENT.md](DEPLOYMENT.md) | Production-деплой |
+| [DOCKER.md](DOCKER.md) | Локальная разработка в Docker |
+| [docs/CATALOG.md](docs/CATALOG.md) | **Каталог товаров** — API, SSR, фильтры, SEO, кэш |
+| [docs/TESTING.md](docs/TESTING.md) | Тестирование |
+| [docs/PWA.md](docs/PWA.md) | PWA |
+
 ## Быстрый старт
 
 **Локальная разработка:** `DOCKER.md`  

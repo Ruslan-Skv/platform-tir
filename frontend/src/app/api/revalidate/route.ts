@@ -1,4 +1,4 @@
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 
 type PathEntry = string | { path: string; type?: 'page' | 'layout' };
@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     const pathEntries = (body.paths ?? (body.path ? [body.path] : [])) as PathEntry[];
+    const tags = (body.tags ?? []) as string[];
     const secret = request.headers.get('x-revalidate-secret') ?? body.secret;
 
     const expectedSecret = process.env.REVALIDATE_SECRET;
@@ -19,11 +20,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid secret' }, { status: 401 });
     }
 
-    if (!pathEntries.length) {
+    if (!pathEntries.length && !tags.length) {
       return NextResponse.json(
-        { error: 'Missing path or paths (array of paths to revalidate)' },
+        { error: 'Missing path/paths or tags to revalidate' },
         { status: 400 }
       );
+    }
+
+    for (const tag of tags) {
+      if (typeof tag === 'string' && tag.trim()) {
+        revalidateTag(tag.trim(), 'max');
+      }
     }
 
     for (const entry of pathEntries) {
@@ -34,7 +41,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ revalidated: true, paths: pathEntries });
+    return NextResponse.json({ revalidated: true, paths: pathEntries, tags });
   } catch (err) {
     console.error('Revalidate error:', err);
     return NextResponse.json(

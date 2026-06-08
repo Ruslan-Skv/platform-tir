@@ -2,50 +2,37 @@
 
 import { FunnelIcon } from '@heroicons/react/24/outline';
 
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+
+import { useQueryClient } from '@tanstack/react-query';
 
 import type { Product } from '@/entities/product/types';
+import type {
+  PublicCatalogPageResponse,
+  PublicCatalogSort,
+} from '@/shared/api/public-catalog-list';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { useMobileCatalogColumns } from '@/shared/lib/hooks';
 import {
-  applyCatalogFilters,
-  filterSearchSignature,
-} from '@/views/catalog/lib/applyCatalogFilters';
-import {
-  type CategoryFilterOption,
-  buildCategoryFilterOptions,
-} from '@/views/catalog/lib/buildCategoryFilterOptions';
-import type { CatalogFilterFacet } from '@/views/catalog/lib/catalogFilters.types';
+  CATALOG_SORT_OPTIONS,
+  catalogFilterSignature,
+  parseCatalogSearchParams,
+} from '@/views/catalog/lib/catalog-search-params';
 import {
   type CatalogApiProduct,
   mapCatalogApiProductToProduct,
 } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
 import { newURLSearchParamsLive } from '@/views/catalog/lib/newURLSearchParamsLive';
+import { patchProductInCatalogPageCache } from '@/views/catalog/lib/patch-catalog-page-cache';
+import { useCatalogPage } from '@/views/catalog/lib/useCatalogPage';
+import { useCatalogProductsPerPage } from '@/views/catalog/lib/useCatalogProductsPerPage';
 
 import { ProductCard } from './ProductCard';
 import styles from './ProductsGrid.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-
-interface CategoryResponse {
-  category: {
-    id: string;
-    name: string;
-    slug: string;
-    description: string | null;
-  };
-  products: CatalogApiProduct[];
-  total: number;
-}
 
 interface ProductsGridProps {
   categorySlug?: string;
@@ -53,166 +40,99 @@ interface ProductsGridProps {
   currentPage?: number;
   onTotalPagesChange?: (totalPages: number) => void;
   onSortChange?: () => void;
-  /** Вызывается при переключении десктоп ↔ мобильный (меняется число товаров на страницу) */
   onProductsPerPageLayoutChange?: () => void;
-  /** Фасеты с бэкенда (те же, что в FiltersSidebar) — для клиентской фильтрации */
-  catalogFilters?: CatalogFilterFacet[];
-  /** Границы цен по исходному списку категории/поиска (до фильтров) */
   onBasePriceBoundsChange?: (bounds: { min: number; max: number } | null) => void;
-  /** Уникальные подкатегории в выборке — для блока «Категория» в фильтрах (>1) */
-  onCategoryFilterOptionsChange?: (options: CategoryFilterOption[]) => void;
-  /** Мобильный каталог: иконка фильтров справа от заголовка */
+  onCatalogGridReady?: (ready: boolean) => void;
   showMobileFiltersButton?: boolean;
   onMobileFiltersOpen?: () => void;
-}
-
-/** Десктоп: 3 колонки × 5 строк; остальное — пагинация */
-const PRODUCTS_PER_PAGE_DESKTOP = 15;
-/**
- * Мобильный каталог (≤768px, как в ProductsGrid.module.css): чётное число,
- * чтобы при сетке в 2 колонки не оставалась одна карточка в последнем ряду.
- */
-const PRODUCTS_PER_PAGE_MOBILE = 16;
-
-const MOBILE_CATALOG_MEDIA = '(max-width: 768px)';
-
-function subscribeMobileCatalogViewport(cb: () => void) {
-  if (typeof window === 'undefined') return () => {};
-  const mq = window.matchMedia(MOBILE_CATALOG_MEDIA);
-  mq.addEventListener('change', cb);
-  return () => mq.removeEventListener('change', cb);
-}
-
-function getMobileCatalogViewport(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia(MOBILE_CATALOG_MEDIA).matches;
-}
-
-type SortOption =
-  | 'default'
-  | 'price-asc'
-  | 'price-desc'
-  | 'name-asc'
-  | 'name-desc'
-  | 'new'
-  | 'rating';
-
-function sortProducts(productsToSort: Product[], sortOption: SortOption): Product[] {
-  const sorted = [...productsToSort];
-
-  switch (sortOption) {
-    case 'price-asc':
-      return sorted.sort((a, b) => a.price - b.price);
-    case 'price-desc':
-      return sorted.sort((a, b) => b.price - a.price);
-    case 'name-asc':
-      return sorted.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
-    case 'name-desc':
-      return sorted.sort((a, b) => b.name.localeCompare(a.name, 'ru'));
-    case 'new':
-      return sorted.sort((a, b) => {
-        if (a.isNew !== b.isNew) {
-          return a.isNew ? -1 : 1;
-        }
-        return (b.createdAt || 0) - (a.createdAt || 0);
-      });
-    case 'rating':
-      return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    case 'default':
-    default:
-      return sorted.sort((a, b) => {
-        const sortOrderA = a.sortOrder ?? 0;
-        const sortOrderB = b.sortOrder ?? 0;
-        if (sortOrderA !== sortOrderB) {
-          return sortOrderA - sortOrderB;
-        }
-        return (b.createdAt || 0) - (a.createdAt || 0);
-      });
-  }
+  /** SSR: первая страница с сервера */
+  initialPage?: PublicCatalogPageResponse | null;
+  facetBranchSlug?: string | null;
 }
 
 export const ProductsGrid: React.FC<ProductsGridProps> = ({
   categorySlug,
   categoryName = 'Каталог',
-  currentPage = 1,
   onTotalPagesChange,
   onSortChange,
   onProductsPerPageLayoutChange,
-  catalogFilters,
   onBasePriceBoundsChange,
-  onCategoryFilterOptionsChange,
+  onCatalogGridReady,
   showMobileFiltersButton = false,
   onMobileFiltersOpen,
+  initialPage = null,
+  facetBranchSlug = null,
 }) => {
+  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const catalogSearchRaw = searchParams.get('search');
-  const catalogSearch = catalogSearchRaw?.trim() ?? '';
+  const queryClient = useQueryClient();
 
-  const [originalProducts, setOriginalProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<SortOption>('default');
-  const mobileCatalogColumns = useMobileCatalogColumns();
-  const isMobileCatalogViewport = useSyncExternalStore(
-    subscribeMobileCatalogViewport,
-    getMobileCatalogViewport,
-    () => false
-  );
-  const productsPerPage = isMobileCatalogViewport
-    ? PRODUCTS_PER_PAGE_MOBILE
-    : PRODUCTS_PER_PAGE_DESKTOP;
-  const [partnerSettings, setPartnerSettings] = useState<{
+  const parsedParams = useMemo(() => parseCatalogSearchParams(searchParams), [searchParams]);
+  const productsPerPage = useCatalogProductsPerPage();
+
+  const hasCatalogScope =
+    Boolean(categorySlug && categorySlug !== 'all') || Boolean(parsedParams.branch);
+
+  const {
+    data: pageResponse,
+    isLoading,
+    isFetching,
+    error,
+  } = useCatalogPage(categorySlug, parsedParams, facetBranchSlug, productsPerPage, initialPage);
+
+  const mappedProducts: Product[] = useMemo(() => {
+    const items = pageResponse?.products ?? [];
+    return items.map((p, index) => mapCatalogApiProductToProduct(p, index));
+  }, [pageResponse?.products]);
+
+  const totalProducts = pageResponse?.total ?? 0;
+  const totalPages = pageResponse?.totalPages ?? 0;
+
+  useEffect(() => {
+    onTotalPagesChange?.(totalPages);
+  }, [totalPages, onTotalPagesChange]);
+
+  useEffect(() => {
+    if (!onBasePriceBoundsChange) return;
+    onBasePriceBoundsChange(pageResponse?.priceRange ?? null);
+  }, [pageResponse?.priceRange, onBasePriceBoundsChange]);
+
+  const loading = isLoading && !pageResponse;
+  const catalogGridReady = hasCatalogScope && !loading && !error && mappedProducts.length > 0;
+  useEffect(() => {
+    onCatalogGridReady?.(catalogGridReady);
+  }, [catalogGridReady, onCatalogGridReady]);
+
+  const prevFilterSigRef = useRef<string | null>(null);
+  useEffect(() => {
+    const sig = catalogFilterSignature(searchParams);
+    if (prevFilterSigRef.current === null) {
+      prevFilterSigRef.current = sig;
+      return;
+    }
+    if (prevFilterSigRef.current !== sig) {
+      prevFilterSigRef.current = sig;
+      const live = newURLSearchParamsLive(pathname, searchParams.toString());
+      const page = Number.parseInt(live.get('page') || '1', 10);
+      if (Number.isFinite(page) && page > 1) {
+        onSortChange?.();
+      }
+    }
+  }, [pathname, searchParams, onSortChange]);
+
+  const prevProductsPerPageRef = useRef(productsPerPage);
+  useEffect(() => {
+    if (prevProductsPerPageRef.current !== productsPerPage) {
+      prevProductsPerPageRef.current = productsPerPage;
+      onProductsPerPageLayoutChange?.();
+    }
+  }, [productsPerPage, onProductsPerPageLayoutChange]);
+
+  const [partnerSettings, setPartnerSettings] = React.useState<{
     partnerLogoUrl: string | null;
     showPartnerIconOnCards: boolean;
   }>({ partnerLogoUrl: null, showPartnerIconOnCards: true });
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      if (!categorySlug) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-
-        const qs = new URLSearchParams();
-        if (catalogSearch) {
-          qs.set('search', catalogSearch);
-        }
-        const queryString = qs.toString();
-
-        // Для slug "all" используем специальный endpoint для всех товаров
-        const basePath =
-          categorySlug === 'all'
-            ? `${API_URL}/products/catalog/all`
-            : `${API_URL}/products/category/${encodeURIComponent(categorySlug)}`;
-        const endpoint = queryString ? `${basePath}?${queryString}` : basePath;
-        const response = await apiFetch(endpoint);
-
-        if (!response.ok) {
-          throw new Error('Не удалось загрузить товары');
-        }
-
-        const data: CategoryResponse = await response.json();
-
-        const mappedProducts: Product[] = data.products.map((p, index) =>
-          mapCatalogApiProductToProduct(p, index)
-        );
-
-        setOriginalProducts(mappedProducts);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Произошла ошибка');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
-    // Сбрасываем сортировку при изменении категории
-    setSortBy('default');
-  }, [categorySlug, catalogSearch]);
 
   useEffect(() => {
     const fetchPartnerSettings = async () => {
@@ -232,83 +152,29 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
     fetchPartnerSettings();
   }, []);
 
-  useEffect(() => {
-    if (!onBasePriceBoundsChange) return;
-    if (originalProducts.length === 0) {
-      onBasePriceBoundsChange(null);
-      return;
+  const handleProductCatalogPatched = useCallback(
+    (data: CatalogApiProduct) => {
+      patchProductInCatalogPageCache(queryClient, data);
+    },
+    [queryClient]
+  );
+
+  const handleSortChange = (sort: PublicCatalogSort) => {
+    const next = new URLSearchParams(searchParams.toString());
+    if (sort === 'default') {
+      next.delete('sort');
+    } else {
+      next.set('sort', sort);
     }
-    const prices = originalProducts.map((p) => p.price).filter((x) => Number.isFinite(x));
-    if (prices.length === 0) {
-      onBasePriceBoundsChange(null);
-      return;
-    }
-    const min = Math.floor(Math.min(...prices));
-    const max = Math.ceil(Math.max(...prices));
-    onBasePriceBoundsChange({ min, max });
-  }, [originalProducts, onBasePriceBoundsChange]);
+    next.delete('page');
+    const q = next.toString();
+    router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+    onSortChange?.();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-  useEffect(() => {
-    if (!onCategoryFilterOptionsChange) return;
-    onCategoryFilterOptionsChange(buildCategoryFilterOptions(originalProducts));
-  }, [originalProducts, onCategoryFilterOptionsChange]);
-
-  const prevFilterSigRef = useRef<string | null>(null);
-  useEffect(() => {
-    const sig = filterSearchSignature(searchParams);
-    if (prevFilterSigRef.current === null) {
-      prevFilterSigRef.current = sig;
-      return;
-    }
-    if (prevFilterSigRef.current !== sig) {
-      prevFilterSigRef.current = sig;
-      /**
-       * Уже на 1-й странице — не вызываем replacePageInUrl(1): второй router.replace
-       * часто идёт с устаревшим useSearchParams() и затирает только что выставленные ?cat=…
-       * (типичный кейс: чекбоксы дочерних категорий на /catalog/products).
-       * Номер страницы берём из window — после toggleCat там уже сброшен ?page=.
-       */
-      const live = newURLSearchParamsLive(pathname, searchParams.toString());
-      const page = Number.parseInt(live.get('page') || '1', 10);
-      if (Number.isFinite(page) && page > 1) {
-        onSortChange?.();
-      }
-    }
-  }, [pathname, searchParams, onSortChange]);
-
-  const filteredSortedProducts = useMemo(() => {
-    const filtered = applyCatalogFilters(originalProducts, searchParams, catalogFilters ?? []);
-    return sortProducts(filtered, sortBy);
-  }, [originalProducts, searchParams, catalogFilters, sortBy]);
-
-  const handleProductCatalogPatched = useCallback((data: CatalogApiProduct) => {
-    setOriginalProducts((prev) => {
-      const idx = prev.findIndex((p) => p.originalId === data.id);
-      if (idx < 0) return prev;
-      const mapped = mapCatalogApiProductToProduct(data, idx);
-      return prev.map((p, i) => (i === idx ? mapped : p));
-    });
-  }, []);
-
-  // Пагинация - вычисляем до условных возвратов
-  const totalPages = Math.ceil(filteredSortedProducts.length / productsPerPage);
-  const startIndex = (currentPage - 1) * productsPerPage;
-  const endIndex = startIndex + productsPerPage;
-  const currentProducts = filteredSortedProducts.slice(startIndex, endIndex);
-
-  // Передаём количество страниц в родительский компонент
-  // Этот useEffect должен быть до условных return, чтобы соблюдать правила хуков
-  useEffect(() => {
-    onTotalPagesChange?.(totalPages);
-  }, [totalPages, onTotalPagesChange]);
-
-  const prevMobileViewportRef = useRef(isMobileCatalogViewport);
-  useEffect(() => {
-    if (prevMobileViewportRef.current !== isMobileCatalogViewport) {
-      prevMobileViewportRef.current = isMobileCatalogViewport;
-      onProductsPerPageLayoutChange?.();
-    }
-  }, [isMobileCatalogViewport, onProductsPerPageLayoutChange]);
+  const mobileCatalogColumns = useMobileCatalogColumns();
+  const refreshing = isFetching && Boolean(pageResponse);
 
   const titleBlock = (
     <div className={styles.titleBlock}>
@@ -325,11 +191,22 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
           </button>
         ) : null}
       </div>
-      {catalogSearch ? (
-        <p className={styles.searchQueryHint}>По запросу: «{catalogSearch}»</p>
+      {parsedParams.search ? (
+        <p className={styles.searchQueryHint}>По запросу: «{parsedParams.search}»</p>
       ) : null}
     </div>
   );
+
+  if (!hasCatalogScope) {
+    return (
+      <div className={styles.productsGrid}>
+        <div className={styles.gridHeader}>{titleBlock}</div>
+        <div className={styles.empty}>
+          Выберите категорию в фильтрах слева, чтобы просмотреть товары.
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -344,18 +221,18 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
     return (
       <div className={styles.productsGrid}>
         <div className={styles.gridHeader}>{titleBlock}</div>
-        <div className={styles.error}>{error}</div>
+        <div className={styles.error}>
+          {error instanceof Error ? error.message : 'Произошла ошибка'}
+        </div>
       </div>
     );
   }
 
-  if (filteredSortedProducts.length === 0) {
+  if (mappedProducts.length === 0) {
     return (
       <div className={styles.productsGrid}>
         <div className={styles.gridHeader}>{titleBlock}</div>
-        <div className={styles.empty}>
-          {originalProducts.length > 0 ? 'Нет товаров по выбранным фильтрам' : 'Товары не найдены'}
-        </div>
+        <div className={styles.empty}>Нет товаров по выбранным фильтрам</div>
       </div>
     );
   }
@@ -366,12 +243,9 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
         {titleBlock}
         <div className={styles.headerRight}>
           <span className={styles.totalCount}>
-            {filteredSortedProducts.length}{' '}
-            {filteredSortedProducts.length === 1
-              ? 'товар'
-              : filteredSortedProducts.length < 5
-                ? 'товара'
-                : 'товаров'}
+            {totalProducts}{' '}
+            {totalProducts === 1 ? 'товар' : totalProducts < 5 ? 'товара' : 'товаров'}
+            {refreshing ? ' · обновление…' : ''}
           </span>
           <div className={styles.sorting}>
             <label htmlFor="sort-select" className={styles.sortLabel}>
@@ -380,30 +254,23 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
             <select
               id="sort-select"
               className={styles.sortSelect}
-              value={sortBy}
-              onChange={(e) => {
-                setSortBy(e.target.value as SortOption);
-                // Сбрасываем на первую страницу при изменении сортировки
-                onSortChange?.();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
+              value={parsedParams.sort}
+              onChange={(e) => handleSortChange(e.target.value as PublicCatalogSort)}
             >
-              <option value="default">По умолчанию</option>
-              <option value="price-asc">По цене (сначала дешевые)</option>
-              <option value="price-desc">По цене (сначала дорогие)</option>
-              <option value="name-asc">По названию (А-Я)</option>
-              <option value="name-desc">По названию (Я-А)</option>
-              <option value="new">По новизне</option>
-              <option value="rating">По рейтингу</option>
+              {CATALOG_SORT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
             </select>
           </div>
         </div>
       </div>
 
       <div className={`${styles.grid} ${mobileCatalogColumns === 2 ? styles.gridMobile2 : ''}`}>
-        {currentProducts.map((product) => (
+        {mappedProducts.map((product) => (
           <ProductCard
-            key={product.id}
+            key={product.originalId ?? product.id}
             product={product}
             partnerLogoUrl={partnerSettings.partnerLogoUrl}
             showPartnerIconOnCards={partnerSettings.showPartnerIconOnCards}

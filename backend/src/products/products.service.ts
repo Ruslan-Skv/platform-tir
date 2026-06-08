@@ -675,18 +675,6 @@ export class ProductsService {
     return orderedIds.map((id) => map.get(id)).filter((p): p is (typeof rows)[number] => p != null);
   }
 
-  private async findAllProductsFromPrisma(search?: string) {
-    const searchWhere = this.buildPublicProductSearchWhere(search);
-    return this.prisma.product.findMany({
-      where: {
-        isActive: true,
-        ...(searchWhere ?? {}),
-      },
-      include: this.catalogPublicListInclude(),
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-    });
-  }
-
   private async findByCategoryFromPrisma(categoryIds: string[], search?: string) {
     const searchWhere = this.buildPublicProductSearchWhere(search);
     return this.prisma.product.findMany({
@@ -698,38 +686,6 @@ export class ProductsService {
       include: this.catalogPublicListInclude(),
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
     });
-  }
-
-  // Получить все товары (для страницы "Каталог товаров")
-  async findAllProducts(search?: string) {
-    const term = search?.trim();
-    let products;
-
-    if (term) {
-      const esIds = await this.elasticsearchSearchCatalogProductIds(term);
-      if (esIds !== null && esIds.length > 0) {
-        products = await this.loadCatalogProductsOrderedByIds(esIds);
-        if (products.length === 0) {
-          products = await this.findAllProductsFromPrisma(search);
-        }
-      } else {
-        products = await this.findAllProductsFromPrisma(search);
-      }
-    } else {
-      products = await this.findAllProductsFromPrisma(undefined);
-    }
-
-    const enrichedProducts = await this.enrichProductsWithRating(products);
-    return {
-      category: {
-        id: 'all',
-        name: 'Каталог товаров',
-        slug: 'all',
-        description: 'Все товары',
-      },
-      products: enrichedProducts,
-      total: enrichedProducts.length,
-    };
   }
 
   /** Популярные товары для главной страницы. primaryFilter: featured | new | featured_or_new | any. secondaryOrder: sort_order | created_desc */

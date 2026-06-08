@@ -8,6 +8,7 @@ import { PriceScraperService } from './price-scraper.service';
 import { ProductCardBadgesService } from './product-card-badges.service';
 import { ProductCardBadgesController } from './product-card-badges.controller';
 import { AdminProductCardBadgesController } from './admin-product-card-badges.controller';
+import { PublicCatalogService } from './public-catalog.service';
 
 @Module({
   imports: [CatalogFilterBlocksModule],
@@ -22,12 +23,14 @@ import { AdminProductCardBadgesController } from './admin-product-card-badges.co
     ProductComponentsService,
     PriceScraperService,
     ProductCardBadgesService,
+    PublicCatalogService,
   ],
   exports: [
     ProductsService,
     ProductComponentsService,
     PriceScraperService,
     ProductCardBadgesService,
+    PublicCatalogService,
   ],
 })
 export class ProductsModule {}

@@ -15,8 +15,17 @@ export interface CatalogFilterFacetDto {
   attributeName?: string | null;
 }
 
+export interface CatalogCategoryFilterOptionDto {
+  slug: string;
+  label: string;
+  count: number;
+  depth?: 0 | 1;
+}
+
 export interface CatalogFiltersResponseDto {
   /** id блока в БД или null, если конфигурации нет */
   branch: string | null;
   filters: CatalogFilterFacetDto[];
+  /** Подкатегории с faceted-счётчиками (без учёта ?cat=) */
+  categoryFilterOptions?: CatalogCategoryFilterOptionDto[];
 }

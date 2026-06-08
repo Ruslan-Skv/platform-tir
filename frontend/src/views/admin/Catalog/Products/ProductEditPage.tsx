@@ -1739,6 +1739,7 @@ export function ProductEditPage({ productId }: ProductEditPageProps) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             paths: [`/product/${slug}`, { path: '/catalog/products', type: 'layout' as const }],
+            tags: ['catalog-pages'],
           }),
         }).catch((e) => console.warn('Revalidate failed:', e));
       }
