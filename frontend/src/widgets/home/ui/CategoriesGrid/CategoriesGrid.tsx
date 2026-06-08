@@ -2,14 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 
-import { apiFetch } from '@/shared/lib/api-fetch';
+import { useHomeDirectionsImages } from '@/shared/lib/hooks/useHomePageData';
 
 import { type Category, categories } from '../../lib/constants';
 import { DEFAULT_DIRECTION_IMAGES } from '../../lib/constants/homeConstants';
 import styles from './CategoriesGrid.module.css';
 import { CategoryCard } from './CategoryCard';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 const DIRECTIONS_IMAGES_STORAGE_KEY = 'platform-tir:home-directions-images';
 
@@ -35,29 +33,23 @@ function setStoredDirectionImages(data: Record<string, string>): void {
 }
 
 export const CategoriesGrid: React.FC = () => {
-  // Стартуем с дефолтных картинок (локальные пути), чтобы при остановленном бэкенде
-  // не рендерить URL с localhost:3001 и не получать ERR_CONNECTION_REFUSED в консоли.
+  // Дефолты на SSR и первом клиентском кадре — иначе localStorage/React Query дают другие URL и ломают гидрацию.
   const [directionImages, setDirectionImages] = useState<Record<string, string>>(
     () => DEFAULT_DIRECTION_IMAGES
   );
+  const { data: fetchedImages } = useHomeDirectionsImages();
 
   useEffect(() => {
-    apiFetch(`${API_URL}/home/directions/images`)
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('Not ok'))))
-      .then((data: Record<string, string>) => {
-        const next = data && typeof data === 'object' ? data : {};
-        const hasAnyImages = Object.keys(next).length > 0;
-        if (hasAnyImages) {
-          setStoredDirectionImages(next);
-          setDirectionImages(next);
-        }
-      })
-      .catch(() => {
-        // При недоступности бэкенда используем только локальные картинки из констант,
-        // чтобы не запрашивать http://localhost:3001/uploads/... (ERR_CONNECTION_REFUSED).
-        setDirectionImages(DEFAULT_DIRECTION_IMAGES);
-      });
-  }, []);
+    if (fetchedImages && Object.keys(fetchedImages).length > 0) {
+      setStoredDirectionImages(fetchedImages);
+      setDirectionImages(fetchedImages);
+      return;
+    }
+    const stored = getStoredDirectionImages();
+    if (Object.keys(stored).length > 0) {
+      setDirectionImages(stored);
+    }
+  }, [fetchedImages]);
 
   const categoriesWithImages: Category[] = categories.map((cat) => ({
     ...cat,

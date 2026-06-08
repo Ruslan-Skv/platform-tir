@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 
 import { ActionButton, useFormContext } from '@/features/forms';
 import type { ContactFormBlock } from '@/shared/api/contact-form';
-import { getContactFormBlock } from '@/shared/api/contact-form';
+import { useContactFormBlock } from '@/shared/lib/hooks/useHomePageData';
 
 import styles from './ContactSection.module.css';
 
@@ -24,13 +24,7 @@ function resolveBackgroundImageUrl(url: string | null | undefined): string | nul
 
 export const ContactSection: React.FC = () => {
   const { measurementModal, callbackModal } = useFormContext();
-  const [block, setBlock] = useState<ContactFormBlock>(DEFAULT_BLOCK);
-
-  useEffect(() => {
-    getContactFormBlock()
-      .then(setBlock)
-      .catch(() => {});
-  }, []);
+  const { data: block = DEFAULT_BLOCK } = useContactFormBlock(DEFAULT_BLOCK);
 
   const backgroundImageUrl = useMemo(
     () => resolveBackgroundImageUrl(block.backgroundImage ?? null),

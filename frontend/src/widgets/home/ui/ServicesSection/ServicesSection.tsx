@@ -1,30 +1,16 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
-import { apiFetch } from '@/shared/lib/api-fetch';
+import type { HomeServicesData } from '@/shared/api/home';
+import { useHomeServices } from '@/shared/lib/hooks/useHomePageData';
 
 import styles from './ServicesSection.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 const UPLOADS_BASE = API_URL.replace(/\/api\/v1\/?$/, '');
 
-interface ServiceItem {
-  id: string;
-  title: string;
-  description: string;
-  features: string[];
-  price: string;
-  imageUrl: string | null;
-  sortOrder: number;
-}
-
-interface ServicesData {
-  block: { title: string; subtitle: string };
-  items: ServiceItem[];
-}
-
-const DEFAULT_DATA: ServicesData = {
+const DEFAULT_DATA: HomeServicesData = {
   block: {
     title: 'Комплексные решения',
     subtitle: 'Полный цикл услуг для вашего комфорта',
@@ -33,16 +19,8 @@ const DEFAULT_DATA: ServicesData = {
 };
 
 export const ServicesSection: React.FC = () => {
-  const [data, setData] = useState<ServicesData>(DEFAULT_DATA);
-
-  useEffect(() => {
-    apiFetch(`${API_URL}/home/services`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((d: ServicesData | null) => {
-        if (d?.block) setData(d);
-      })
-      .catch(() => {});
-  }, []);
+  const { data } = useHomeServices();
+  const resolved = data?.block ? data : DEFAULT_DATA;
 
   const imageUrl = (url: string) => {
     if (!url) return '';
@@ -54,12 +32,12 @@ export const ServicesSection: React.FC = () => {
     <section className={styles.services}>
       <div className={styles.container}>
         <div className={styles.header}>
-          <h2 className={styles.title}>{data.block.title}</h2>
-          <p className={styles.subtitle}>{data.block.subtitle}</p>
+          <h2 className={styles.title}>{resolved.block.title}</h2>
+          <p className={styles.subtitle}>{resolved.block.subtitle}</p>
         </div>
 
         <div className={styles.servicesGrid}>
-          {data.items.map((service) => (
+          {resolved.items.map((service) => (
             <div key={service.id} className={styles.serviceCard}>
               <div
                 className={styles.serviceImage}

@@ -1,10 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
-import { apiFetch } from '@/shared/lib/api-fetch';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+import { SERVICE_CATALOG_QUERY_KEY, useServiceCatalog } from '@/shared/lib/hooks/useServiceCatalog';
 
 export interface ServiceCategoryForNav {
   id: string;
@@ -16,43 +14,20 @@ export interface ServiceCategoryForNav {
 }
 
 export function useDynamicServiceCategories() {
-  const [serviceCategories, setServiceCategories] = useState<ServiceCategoryForNav[]>([]);
+  const queryClient = useQueryClient();
+  const { data } = useServiceCatalog();
 
-  const fetchServiceCategories = useCallback(async () => {
-    try {
-      const res = await apiFetch(`${API_URL}/service-catalog`);
-      if (!res.ok) return;
-      const data = await res.json();
-      const categories = data?.categories ?? [];
-      setServiceCategories(
-        categories.map(
-          (cat: {
-            id: string;
-            name: string;
-            slug: string;
-            icon?: string | null;
-            image?: string | null;
-          }) => ({
-            id: cat.id,
-            name: cat.name,
-            slug: cat.slug,
-            href: `/catalog/services/${cat.slug}`,
-            icon: cat.icon ?? null,
-            image: cat.image ?? null,
-          })
-        )
-      );
-    } catch {
-      setServiceCategories([]);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchServiceCategories();
-  }, [fetchServiceCategories]);
+  const serviceCategories: ServiceCategoryForNav[] = (data?.categories ?? []).map((cat) => ({
+    id: cat.id,
+    name: cat.name,
+    slug: cat.slug,
+    href: `/catalog/services/${cat.slug}`,
+    icon: cat.icon ?? null,
+    image: cat.image ?? null,
+  }));
 
   return {
     serviceCategories,
-    refetch: fetchServiceCategories,
+    refetch: () => queryClient.invalidateQueries({ queryKey: SERVICE_CATALOG_QUERY_KEY }),
   };
 }

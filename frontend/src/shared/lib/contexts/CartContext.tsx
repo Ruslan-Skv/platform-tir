@@ -34,7 +34,7 @@ interface CartContextValue {
   removeCartItemById: (itemId: string) => Promise<void>;
   removeComponentFromCart: (componentId: string) => Promise<void>;
   clearCart: () => Promise<void>;
-  refreshCart: () => Promise<void>;
+  refreshCart: (options?: { silent?: boolean }) => Promise<void>;
   refreshCount: () => Promise<void>;
   getTotalPrice: () => number;
 }
@@ -48,6 +48,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [detachedServiceCategoryKeys, setDetachedServiceCategoryKeys] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const lastTokenRef = React.useRef<string | null>(null);
+  const refreshInFlightRef = React.useRef<Promise<void> | null>(null);
 
   const getOrderServiceCategoryKeys = useCallback((orders: UserOrder[]): string[] => {
     const activeStatuses = new Set(['PENDING_REVIEW', 'RETURNED_FOR_CORRECTION', 'APPROVED']);
@@ -87,27 +88,48 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return localStorage.getItem('user_token') || localStorage.getItem('admin_token');
   }, []);
 
-  const refreshCart = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const [items, serviceItems, orders] = await Promise.all([
-        cartApi.getCart(),
-        cartApi.getCartServiceItems().catch(() => []),
-        getUserOrders().catch(() => []),
-      ]);
-      setCart(items);
-      setCartServiceItems(serviceItems);
-      setServiceOrderCategoryKeys(getOrderServiceCategoryKeys(orders));
-      setDetachedServiceCategoryKeys(getDetachedServiceCategoryKeys());
-    } catch (error) {
-      setCart([]);
-      setCartServiceItems([]);
-      setServiceOrderCategoryKeys([]);
-      setDetachedServiceCategoryKeys([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [getOrderServiceCategoryKeys, getDetachedServiceCategoryKeys]);
+  const refreshCart = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (refreshInFlightRef.current) {
+        return refreshInFlightRef.current;
+      }
+
+      const task = (async () => {
+        const silent = options?.silent ?? false;
+        try {
+          if (!silent) {
+            setIsLoading(true);
+          }
+          const [items, serviceItems, orders] = await Promise.all([
+            cartApi.getCart(),
+            cartApi.getCartServiceItems().catch(() => []),
+            getUserOrders().catch(() => []),
+          ]);
+          setCart(items);
+          setCartServiceItems(serviceItems);
+          setServiceOrderCategoryKeys(getOrderServiceCategoryKeys(orders));
+          setDetachedServiceCategoryKeys(getDetachedServiceCategoryKeys());
+        } catch (error) {
+          setCart([]);
+          setCartServiceItems([]);
+          setServiceOrderCategoryKeys([]);
+          setDetachedServiceCategoryKeys([]);
+        } finally {
+          if (!silent) {
+            setIsLoading(false);
+          }
+        }
+      })();
+
+      refreshInFlightRef.current = task;
+      try {
+        await task;
+      } finally {
+        refreshInFlightRef.current = null;
+      }
+    },
+    [getOrderServiceCategoryKeys, getDetachedServiceCategoryKeys]
+  );
 
   // Счётчик: товары/комплектующие + каждая категория услуг (1 за категорию)
   const count = useMemo(() => {
@@ -162,7 +184,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener('auth-token-changed', handler);
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible' && getAuthToken()) {
-        refreshCart().catch(() => {});
+        refreshCart({ silent: true }).catch(() => {});
       }
     };
     document.addEventListener('visibilitychange', onVisibilityChange);

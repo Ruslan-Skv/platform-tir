@@ -2,15 +2,15 @@
 
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
-import type { PhotoCategory, PhotoGalleryInitialData, PhotoProject } from '@/shared/api/photo';
-import { getPhotoCategories, getPhotoProjects } from '@/shared/api/photo';
+import type { PhotoGalleryInitialData, PhotoProject, ProjectsResponse } from '@/shared/api/photo';
 import { usePhotoMobileLayout } from '@/shared/lib/hooks';
+import { usePhotoCategories, usePhotoProjects } from '@/shared/lib/hooks/usePhotoGallery';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
 import styles from './PhotoPage.module.css';
@@ -32,6 +32,23 @@ function formatPhotoProjectPublishedAt(iso: string): string {
   return Number.isNaN(d.getTime()) ? '' : photoProjectPublishedFormatter.format(d);
 }
 
+function slugsEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const sortedA = [...a].sort();
+  const sortedB = [...b].sort();
+  return sortedA.every((slug, index) => slug === sortedB[index]);
+}
+
+function toInitialProjectsResponse(initialData: PhotoGalleryInitialData): ProjectsResponse {
+  return {
+    data: initialData.projects,
+    total: initialData.projects.length,
+    totalPages: initialData.totalPages,
+    page: initialData.page,
+    limit: 12,
+  };
+}
+
 interface PhotoPageProps {
   initialCategorySlug?: string;
   /** Данные с сервера (RSC): сразу в разметке URL фото, без ожидания клиентского fetch. */
@@ -41,12 +58,6 @@ interface PhotoPageProps {
 export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug, initialData }) => {
   const router = useRouter();
   const pathname = usePathname();
-  const [projects, setProjects] = useState<PhotoProject[]>(() => initialData?.projects ?? []);
-  const [categories, setCategories] = useState<PhotoCategory[]>(
-    () => initialData?.categories ?? []
-  );
-  const [loading, setLoading] = useState(() => initialData == null);
-  const [totalPages, setTotalPages] = useState(() => initialData?.totalPages ?? 1);
   const [currentPage, setCurrentPage] = useState(() => initialData?.page ?? 1);
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>(() =>
     initialCategorySlug ? [initialCategorySlug] : []
@@ -54,10 +65,6 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug, initi
   /** Увеличенный просмотр: один лайтбокс для сетки, masonry и слайдера с листанием при нескольких фото */
   const [lightbox, setLightbox] = useState<{ project: PhotoProject; index: number } | null>(null);
   const [categoriesExpanded, setCategoriesExpanded] = useState(true);
-  /** Пропустить первый клиентский fetch, если начальные данные уже пришли с SSR. */
-  const skipInitialClientFetchRef = useRef(initialData != null);
-  const projectsRef = useRef(projects);
-  projectsRef.current = projects;
   const isMobileLayout = usePhotoMobileLayout();
 
   useEffect(() => {
@@ -65,23 +72,37 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug, initi
     setCurrentPage(1);
   }, [initialCategorySlug]);
 
-  const loadProjects = useCallback(async () => {
-    const blocking = projectsRef.current.length === 0;
-    if (blocking) setLoading(true);
-    try {
-      const res = await getPhotoProjects({
-        categories: selectedSlugs.length > 0 ? selectedSlugs : undefined,
-        page: currentPage,
-        limit: 12,
-      });
-      setProjects(res.data);
-      setTotalPages(res.totalPages);
-    } catch {
-      setProjects([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPage, selectedSlugs]);
+  const projectsParams = useMemo(
+    () => ({
+      categories: selectedSlugs.length > 0 ? selectedSlugs : undefined,
+      page: currentPage,
+      limit: 12,
+    }),
+    [selectedSlugs, currentPage]
+  );
+
+  const ssrSlugs = useMemo(
+    () => (initialCategorySlug ? [initialCategorySlug] : []),
+    [initialCategorySlug]
+  );
+
+  const initialProjectsData = useMemo(() => {
+    if (!initialData) return undefined;
+    if (!slugsEqual(selectedSlugs, ssrSlugs)) return undefined;
+    if (currentPage !== (initialData.page ?? 1)) return undefined;
+    return toInitialProjectsResponse(initialData);
+  }, [initialData, selectedSlugs, ssrSlugs, currentPage]);
+
+  const { data: projectsResponse, isLoading: projectsLoading } = usePhotoProjects(projectsParams, {
+    initialData: initialProjectsData,
+  });
+  const { data: categories = [] } = usePhotoCategories({
+    initialData: initialData?.categories,
+  });
+
+  const projects = projectsResponse?.data ?? [];
+  const totalPages = projectsResponse?.totalPages ?? 1;
+  const showProjectsLoading = projectsLoading && projects.length === 0;
 
   const toggleCategorySlug = useCallback((slug: string) => {
     setSelectedSlugs((prev) => {
@@ -98,21 +119,6 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug, initi
       router.push('/photo');
     }
   }, [pathname, router]);
-
-  useEffect(() => {
-    if (skipInitialClientFetchRef.current) {
-      skipInitialClientFetchRef.current = false;
-      return;
-    }
-    void loadProjects();
-  }, [loadProjects]);
-
-  useEffect(() => {
-    if (initialData != null) return;
-    getPhotoCategories()
-      .then(setCategories)
-      .catch(() => setCategories([]));
-  }, [initialData]);
 
   const closeLightbox = useCallback(() => setLightbox(null), []);
 
@@ -318,7 +324,7 @@ export const PhotoPage: React.FC<PhotoPageProps> = ({ initialCategorySlug, initi
         </aside>
 
         <main className={styles.main}>
-          {loading ? (
+          {showProjectsLoading ? (
             <div className={styles.loading}>Загрузка...</div>
           ) : projects.length === 0 ? (
             <div className={styles.empty}>

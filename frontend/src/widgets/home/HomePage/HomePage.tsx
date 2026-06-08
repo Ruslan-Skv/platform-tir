@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React from 'react';
 
 import type { HomeSectionsVisibility } from '@/shared/api/home-sections';
-import { getHomeSectionsVisibility } from '@/shared/api/home-sections';
+import { useHomeSectionsVisibility } from '@/shared/lib/hooks/useHomePageData';
 import {
   AdvantagesSection,
   CategoriesGrid,
@@ -30,20 +30,7 @@ interface HomePageProps {
 }
 
 export const HomePage: React.FC<HomePageProps> = ({ initialHeroData }) => {
-  const [visibility, setVisibility] = useState<HomeSectionsVisibility>(DEFAULT_VISIBILITY);
-
-  const loadVisibility = useCallback(async () => {
-    try {
-      const data = await getHomeSectionsVisibility();
-      setVisibility(data);
-    } catch {
-      setVisibility(DEFAULT_VISIBILITY);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadVisibility();
-  }, [loadVisibility]);
+  const { data: visibility = DEFAULT_VISIBILITY } = useHomeSectionsVisibility(DEFAULT_VISIBILITY);
 
   return (
     <div className={styles.homePage}>

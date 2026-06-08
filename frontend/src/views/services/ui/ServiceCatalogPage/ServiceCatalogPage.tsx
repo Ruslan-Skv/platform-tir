@@ -1,73 +1,20 @@
 'use client';
 
 import React from 'react';
-import { useCallback, useEffect, useState } from 'react';
 
 import Link from 'next/link';
 
-import { apiFetch } from '@/shared/lib/api-fetch';
+import { useServiceCatalog } from '@/shared/lib/hooks/useServiceCatalog';
 import { getSafeHref } from '@/shared/lib/sanitize';
 import { serviceCatalogIconMap } from '@/shared/lib/serviceCatalogIcons';
 
 import styles from './ServiceCatalogPage.module.css';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-
-interface ServiceCatalogItem {
-  id: string;
-  name: string;
-  description?: string | null;
-  unit: string;
-  price?: number;
-}
-
-interface ServiceCatalogCategory {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string | null;
-  icon?: string | null;
-  image?: string | null;
-  cardBackgroundImage?: string | null;
-  /** Без заливки карточки — фон страницы; при картинке фона — слабее градиент */
-  cardBackgroundTransparent?: boolean;
-  items: ServiceCatalogItem[];
-  children?: ServiceCatalogCategory[];
-  /** Всего видов работ в этой категории и во всех вложенных */
-  totalWorkTypes?: number;
-}
-
-interface CatalogData {
-  block: { title: string };
-  categories: ServiceCatalogCategory[];
-}
-
 export function ServiceCatalogPage() {
-  const [data, setData] = useState<CatalogData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading } = useServiceCatalog();
+  const showLoading = isLoading && !data;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await apiFetch(`${API_URL}/service-catalog`);
-      if (res.ok) {
-        const d = await res.json();
-        setData(d);
-      } else {
-        setData(null);
-      }
-    } catch {
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  if (loading) {
+  if (showLoading) {
     return (
       <div className={styles.page}>
         <p className={styles.loading}>Загрузка...</p>

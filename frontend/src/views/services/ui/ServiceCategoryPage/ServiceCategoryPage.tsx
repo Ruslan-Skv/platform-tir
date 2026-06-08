@@ -15,11 +15,13 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
+import type { ServiceCatalogCategoryDetail } from '@/shared/api/service-catalog';
 import { cancelOrderByCustomer, getUserOrder } from '@/shared/api/user-orders';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { isAuthRequiredForCartError } from '@/shared/lib/cart-auth-required';
 import { useApprovedOrderGuard } from '@/shared/lib/contexts/ApprovedOrderGuardContext';
 import { useCart } from '@/shared/lib/hooks';
+import { useServiceCatalogCategory } from '@/shared/lib/hooks/useServiceCatalog';
 import { getSafeHref } from '@/shared/lib/sanitize';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal/ConfirmModal';
 import {
@@ -50,29 +52,7 @@ interface CategoryItemSection {
   items: ServiceCatalogItem[];
 }
 
-interface CategoryData {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string | null;
-  icon?: string | null;
-  image?: string | null;
-  /** Плоский список всех видов работ (корень + вложенные), для пресетов и корзины */
-  items: ServiceCatalogItem[];
-  /** Секции таблицы: своя группа + вложенные, в порядке обхода дерева */
-  itemSections?: CategoryItemSection[];
-  showPricesInPublic: boolean;
-  parent?: { id: string; name: string; slug: string } | null;
-  children?: Array<{
-    id: string;
-    name: string;
-    slug: string;
-    description?: string | null;
-    icon?: string | null;
-    image?: string | null;
-    itemsCount: number;
-  }>;
-}
+type CategoryData = ServiceCatalogCategoryDetail;
 
 function workGroupKey(section: CategoryItemSection, sectionIdx: number): string {
   return `${section.slug}::${sectionIdx}`;
@@ -422,8 +402,8 @@ export function ServiceCategoryPage({
   const orderIdParam = searchParams.get('orderId');
   const { addServiceToCart, refreshCart, cartServiceItems, removeCartServiceItemById } = useCart();
   const guard = useApprovedOrderGuard();
-  const [data, setData] = useState<CategoryData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading: categoryLoading } = useServiceCatalogCategory(slug);
+  const showCategoryLoading = categoryLoading && !data;
   const [calculations, setCalculations] = useState<CalculatorDraft[]>(() => [
     {
       id: newCalcId(),
@@ -530,27 +510,6 @@ export function ServiceCategoryPage({
     );
     if (!Number.isNaN(total)) setLastAddedTotal(total);
   }, [roomsParam, data, cartServiceItems, calculations, presetInCart]);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await apiFetch(`${API_URL}/service-catalog/categories/${slug}`);
-      if (res.ok) {
-        const d = await res.json();
-        setData(d);
-      } else {
-        setData(null);
-      }
-    } catch {
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [slug]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   /** Предустановка из URL (?rooms= / ?preset=), иначе — черновик из localStorage. */
   const presetRaw = searchParams.get('preset');
@@ -1060,7 +1019,7 @@ export function ServiceCategoryPage({
     }
   };
 
-  if (loading) {
+  if (showCategoryLoading) {
     return (
       <div className={styles.container}>
         <p className={styles.loading}>Загрузка...</p>

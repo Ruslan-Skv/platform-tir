@@ -1,71 +1,29 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 
 import { useRouter } from 'next/navigation';
 
 import type { Product } from '@/entities/product/types';
-import { apiFetch } from '@/shared/lib/api-fetch';
+import type { FeaturedApiProduct, FeaturedProductsBlockSettings } from '@/shared/api/home';
+import {
+  useFeaturedProducts,
+  useFeaturedProductsBlock,
+  usePartnerProductsCardSettings,
+} from '@/shared/lib/hooks/useHomePageData';
 import { ProductCard } from '@/views/catalog/ui/ProductsGrid';
 
 import styles from './FeaturedProducts.module.css';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const defaultBlock: FeaturedProductsBlockSettings = {
+  title: 'Популярные товары',
+  subtitle: 'Товары, которые выбирают наши клиенты',
+  limit: 8,
+  primaryFilter: 'featured',
+  secondaryOrder: 'sort_order',
+};
 
-interface BlockSettings {
-  title: string;
-  subtitle: string;
-  limit: number;
-  primaryFilter: 'featured' | 'new' | 'featured_or_new' | 'any';
-  secondaryOrder: 'sort_order' | 'created_desc';
-}
-
-interface ApiProduct {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  sku: string | null;
-  price: string;
-  comparePrice: string | null;
-  stock: number;
-  onOrder?: boolean;
-  isActive: boolean;
-  isNew: boolean;
-  isFeatured: boolean;
-  isPartnerProduct?: boolean;
-  images: string[];
-  videoUrl?: string | null;
-  sortOrder?: number;
-  createdAt?: string;
-  rating?: number;
-  reviewsCount?: number;
-  category: {
-    id: string;
-    name: string;
-    slug: string;
-  };
-  partner?: {
-    id: string;
-    name: string;
-    logoUrl: string | null;
-    showLogoOnCards?: boolean;
-    tooltipText?: string | null;
-    showTooltip?: boolean;
-  } | null;
-  cardBadgeSelections?: Array<{
-    sortOrder: number;
-    badge: {
-      id: string;
-      key: string;
-      label: string;
-      imageUrl: string | null;
-      description?: string | null;
-    };
-  }>;
-}
-
-function mapApiProductToProduct(p: ApiProduct, index: number): Product {
+function mapApiProductToProduct(p: FeaturedApiProduct, index: number): Product {
   const price = parseFloat(p.price);
   const comparePrice = p.comparePrice ? parseFloat(p.comparePrice) : null;
   return {
@@ -116,84 +74,42 @@ function mapApiProductToProduct(p: ApiProduct, index: number): Product {
   };
 }
 
-const defaultBlock: BlockSettings = {
-  title: 'Популярные товары',
-  subtitle: 'Товары, которые выбирают наши клиенты',
-  limit: 8,
-  primaryFilter: 'featured',
-  secondaryOrder: 'sort_order',
-};
-
 export const FeaturedProducts: React.FC = () => {
   const router = useRouter();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [block, setBlock] = useState<BlockSettings>(defaultBlock);
-  const [loading, setLoading] = useState(true);
-  const [partnerSettings, setPartnerSettings] = useState<{
-    partnerLogoUrl: string | null;
-    showPartnerIconOnCards: boolean;
-  }>({ partnerLogoUrl: null, showPartnerIconOnCards: true });
+  const { data: blockResponse } = useFeaturedProductsBlock();
+  const { data: partnerSettings } = usePartnerProductsCardSettings();
 
-  useEffect(() => {
-    const fetchBlock = async () => {
-      try {
-        const res = await apiFetch(`${API_URL}/home/featured-products`);
-        if (res.ok) {
-          const data = await res.json();
-          setBlock({
-            ...defaultBlock,
-            ...data,
-            primaryFilter: data.primaryFilter ?? 'featured',
-            secondaryOrder: data.secondaryOrder ?? 'sort_order',
-          });
-        }
-      } catch {
-        // используем defaultBlock
-      }
-    };
-    fetchBlock();
-  }, []);
+  const block = useMemo(
+    () => ({
+      ...defaultBlock,
+      ...blockResponse,
+      primaryFilter: blockResponse?.primaryFilter ?? defaultBlock.primaryFilter,
+      secondaryOrder: blockResponse?.secondaryOrder ?? defaultBlock.secondaryOrder,
+    }),
+    [blockResponse]
+  );
 
-  useEffect(() => {
-    const fetchPartnerSettings = async () => {
-      try {
-        const res = await apiFetch(`${API_URL}/home/partner-products`);
-        if (res.ok) {
-          const data = await res.json();
-          setPartnerSettings({
-            partnerLogoUrl: data.partnerLogoUrl ?? null,
-            showPartnerIconOnCards: data.showPartnerIconOnCards ?? true,
-          });
-        }
-      } catch {
-        // ignore
-      }
-    };
-    fetchPartnerSettings();
-  }, []);
+  const productsParams = useMemo(
+    () => ({
+      limit: block.limit,
+      primaryFilter: block.primaryFilter,
+      secondaryOrder: block.secondaryOrder,
+    }),
+    [block.limit, block.primaryFilter, block.secondaryOrder]
+  );
 
-  useEffect(() => {
-    const fetchFeatured = async () => {
-      try {
-        setLoading(true);
-        const params = new URLSearchParams({
-          limit: String(block.limit),
-          primaryFilter: block.primaryFilter,
-          secondaryOrder: block.secondaryOrder,
-        });
-        const response = await apiFetch(`${API_URL}/products/featured?${params}`);
-        if (!response.ok) return;
-        const data: { products: ApiProduct[] } = await response.json();
-        const mapped = (data.products || []).map((p, i) => mapApiProductToProduct(p, i));
-        setProducts(mapped);
-      } catch {
-        setProducts([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchFeatured();
-  }, [block.limit, block.primaryFilter, block.secondaryOrder]);
+  const { data: apiProducts = [], isLoading } = useFeaturedProducts(productsParams);
+
+  const products = useMemo(
+    () => apiProducts.map((product, index) => mapApiProductToProduct(product, index)),
+    [apiProducts]
+  );
+
+  const showLoading = isLoading && products.length === 0;
+  const resolvedPartnerSettings = partnerSettings ?? {
+    partnerLogoUrl: null,
+    showPartnerIconOnCards: true,
+  };
 
   const handleViewAll = () => {
     router.push('/catalog');
@@ -212,7 +128,7 @@ export const FeaturedProducts: React.FC = () => {
           </button>
         </div>
 
-        {loading ? (
+        {showLoading ? (
           <div className={styles.loading}>Загрузка...</div>
         ) : products.length > 0 ? (
           <div className={styles.productsGrid}>
@@ -220,8 +136,8 @@ export const FeaturedProducts: React.FC = () => {
               <ProductCard
                 key={product.originalId ?? product.id}
                 product={product}
-                partnerLogoUrl={partnerSettings.partnerLogoUrl}
-                showPartnerIconOnCards={partnerSettings.showPartnerIconOnCards}
+                partnerLogoUrl={resolvedPartnerSettings.partnerLogoUrl}
+                showPartnerIconOnCards={resolvedPartnerSettings.showPartnerIconOnCards}
               />
             ))}
           </div>

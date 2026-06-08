@@ -64,6 +64,7 @@ export default function CartPage() {
     cartServiceItems,
     count,
     addServiceToCart,
+    isLoading,
     refreshCart,
     updateQuantity,
     updateCartItemQuantityById,
@@ -74,8 +75,6 @@ export default function CartPage() {
     removeCartServiceItemById,
     getTotalPrice,
   } = useCart();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
   const [userOrders, setUserOrders] = useState<UserOrder[] | null>(null);
   const [submitInProgress, setSubmitInProgress] = useState(false);
@@ -204,30 +203,6 @@ export default function CartPage() {
       })
       .catch(() => setDeliverySettlements([]));
   }, []);
-
-  useEffect(() => {
-    const loadCart = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        await refreshCart();
-      } catch (err) {
-        if (err instanceof Error) {
-          if (err.message === 'Необходима авторизация') {
-            setError('Войдите в систему, чтобы просмотреть корзину');
-          } else {
-            setError(err.message);
-          }
-        } else {
-          setError('Произошла ошибка при загрузке корзины');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadCart();
-  }, [refreshCart]);
 
   useEffect(() => {
     if (cart.length === 0) return;
@@ -1037,24 +1012,12 @@ export default function CartPage() {
     return many;
   };
 
-  if (loading) {
+  const showInitialLoading = isLoading && cart.length === 0 && cartServiceItems.length === 0;
+
+  if (showInitialLoading) {
     return (
       <div className={styles.container}>
         <div className={styles.loading}>Загрузка корзины...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.error}>
-          <h1>Ошибка</h1>
-          <p>{error}</p>
-          <Link href="/" className={styles.link}>
-            Вернуться на главную
-          </Link>
-        </div>
       </div>
     );
   }

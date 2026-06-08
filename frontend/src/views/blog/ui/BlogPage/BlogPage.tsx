@@ -1,18 +1,11 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
-import {
-  type BlogCategory,
-  type BlogPost,
-  type BlogTagStat,
-  getBlogCategories,
-  getBlogPosts,
-  getBlogTagStats,
-} from '@/shared/api/blog';
+import { useBlogCategories, useBlogPosts, useBlogTagStats } from '@/shared/lib/hooks/useBlogList';
 
 import styles from './BlogPage.module.css';
 
@@ -35,58 +28,33 @@ export const BlogPage: React.FC = () => {
 
   const tagFilter = searchParams.get('tag');
   const searchFromUrl = searchParams.get('search') ?? '';
+  const pageFromUrl = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
 
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [categories, setCategories] = useState<BlogCategory[]>([]);
-  const [tagStats, setTagStats] = useState<BlogTagStat[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [totalPages, setTotalPages] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-
-  const pageFromUrl = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
 
   useEffect(() => {
     setSearch(searchFromUrl);
   }, [searchFromUrl]);
 
-  const loadPosts = useCallback(async () => {
-    setLoading(true);
-    try {
-      const q = (searchParams.get('search') ?? '').trim();
-      const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
-      const t = searchParams.get('tag');
-      const res = await getBlogPosts({
-        category: selectedCategory || undefined,
-        search: q || undefined,
-        tag: t || undefined,
-        page,
-        limit: 12,
-      });
-      setPosts(res.data);
-      setTotalPages(res.totalPages);
-    } catch {
-      setPosts([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedCategory, searchParams]);
+  const postsParams = useMemo(
+    () => ({
+      category: selectedCategory || undefined,
+      search: searchFromUrl.trim() || undefined,
+      tag: tagFilter || undefined,
+      page: pageFromUrl,
+      limit: 12,
+    }),
+    [selectedCategory, searchFromUrl, tagFilter, pageFromUrl]
+  );
 
-  useEffect(() => {
-    loadPosts();
-  }, [loadPosts]);
+  const { data: postsResponse, isLoading: postsLoading } = useBlogPosts(postsParams);
+  const { data: categories = [] } = useBlogCategories();
+  const { data: tagStats = [] } = useBlogTagStats();
 
-  useEffect(() => {
-    getBlogCategories()
-      .then(setCategories)
-      .catch(() => setCategories([]));
-  }, []);
-
-  useEffect(() => {
-    getBlogTagStats()
-      .then(setTagStats)
-      .catch(() => setTagStats([]));
-  }, []);
+  const posts = postsResponse?.data ?? [];
+  const totalPages = postsResponse?.totalPages ?? 1;
+  const showPostsLoading = postsLoading && posts.length === 0;
 
   const handlePageChange = (page: number) => {
     const url = buildListUrl(pathname, {
@@ -242,7 +210,7 @@ export const BlogPage: React.FC = () => {
         </aside>
 
         <main className={styles.main}>
-          {loading ? (
+          {showPostsLoading ? (
             <div className={styles.loading}>Загрузка...</div>
           ) : posts.length === 0 ? (
             <div className={styles.empty}>
