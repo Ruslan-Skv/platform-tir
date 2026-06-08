@@ -176,13 +176,24 @@ chmod +x scripts/setup-ssl.sh
 
 ### Обновление сертификатов
 
-Let's Encrypt выдаёт сертификаты на 90 дней. Добавьте в crontab (`crontab -e`):
+Let's Encrypt выдаёт сертификаты на 90 дней. Certbot работает в режиме **standalone** (занимает порт 80), поэтому перед обновлением нужно останавливать Docker nginx.
+
+Добавьте в crontab (`crontab -e`):
 
 ```
-0 3 * * * certbot renew --quiet --deploy-hook "cd /home/ruslan/platform-tir && cp /etc/letsencrypt/live/territory-interior.ru/*.pem nginx/ssl/ && docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml -f docker-compose.ssl.yml restart nginx"
+0 3 * * * /home/ruslan/platform-tir/scripts/renew-ssl.sh >> /home/ruslan/platform-tir/logs/renew-ssl.log 2>&1
 ```
 
-Или используйте отдельный скрипт и вызывайте его из cron.
+Проверка (на сервере, ~1 мин простоя сайта):
+
+```bash
+cd ~/platform-tir
+docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml -f docker-compose.ssl.yml stop nginx
+sudo certbot renew --dry-run
+docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml -f docker-compose.ssl.yml up -d nginx
+```
+
+**Не используйте** `certbot --nginx` / `python3-certbot-nginx`: nginx работает в Docker, а не на хосте.
 
 ### Вариант: внешний reverse proxy (Traefik, Caddy, Cloudflare)
 
